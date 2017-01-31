@@ -20,6 +20,7 @@ cc_library(
         ":leaf_context",
         ":leaf_system",
         ":parameters",
+        ":single_output_vector_source",
         ":state",
         ":system",
         ":value",
@@ -44,7 +45,9 @@ cc_library(
     linkstatic = 1,
     deps = [
         "//drake/common",
+        "//drake/common:autodiff",
         "//drake/common:dummy_value",
+        "//drake/common:symbolic",
     ],
 )
 
@@ -229,6 +232,7 @@ cc_library(
         ":context",
         "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:symbolic",
     ],
 )
 
@@ -294,6 +298,16 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "single_output_vector_source",
+    srcs = ["single_output_vector_source.cc"],
+    hdrs = ["single_output_vector_source.h"],
+    linkstatic = 1,
+    deps = [
+        ":leaf_system",
+    ],
+)
+
 # === test/ ===
 
 cc_googletest(
@@ -303,7 +317,7 @@ cc_googletest(
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:eigen_matrix_compare",
-        "//drake/common:functional_form",
+        "//drake/common:symbolic",
     ],
 )
 
@@ -356,6 +370,7 @@ cc_googletest(
     deps = [
         ":diagram",
         "//drake/common",
+        "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:gain",
@@ -456,6 +471,13 @@ cc_googletest(
     deps = [
         ":value",
         "//drake/common",
+    ],
+)
+
+cc_googletest(
+    name = "single_output_vector_source_test",
+    deps = [
+        ":single_output_vector_source",
     ],
 )
 

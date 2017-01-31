@@ -86,7 +86,8 @@ class AutomotiveSimulator {
   /// @return The model instance ID of the TrajectoryCar that was just added to
   /// the simulation.
   int AddTrajectoryCarFromSdf(const std::string& sdf_filename,
-                              const Curve2<double>& curve, double speed,
+                              const Curve2<double>& curve,
+                              double speed,
                               double start_time);
 
   /// Adds an LCM publisher for the given @p system.

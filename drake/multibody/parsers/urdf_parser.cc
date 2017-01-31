@@ -60,8 +60,7 @@ void ParseInertial(RigidBody<double>* body, XMLElement* node) {
     body->set_mass(body_mass);
   }
 
-  Eigen::Vector3d com;
-  com << T(0, 3), T(1, 3), T(2, 3);
+  Eigen::Vector3d com(T(0, 3), T(1, 3), T(2, 3));
   body->set_center_of_mass(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
@@ -686,8 +685,7 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
     originAttributesToTransform(origin, transform_to_parent_body);
   }
 
-  Vector3d axis;
-  axis << 1, 0, 0;
+  Vector3d axis(1, 0, 0);
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
       type.compare("floating") != 0) {
@@ -884,8 +882,7 @@ void ParseTransmission(RigidBodyTree<double>* tree,
 
 void ParseLoop(RigidBodyTree<double>* tree, XMLElement* node,
                int model_instance_id) {
-  Vector3d axis;
-  axis << 1.0, 0.0, 0.0;
+  Vector3d axis(1.0, 0.0, 0.0);
 
   if (!node || !node->Attribute("name"))
     throw runtime_error("ERROR: loop is missing a name element");
@@ -1303,7 +1300,8 @@ std::shared_ptr<RigidBodyFrame<double>> MakeRigidBodyFrameFromUrdfNode(
                         "\" referenced in frame \"" + name + "\".");
   }
 
-  Vector3d xyz = Vector3d::Zero(), rpy = Vector3d::Zero();
+  Vector3d xyz = Vector3d::Zero();
+  Vector3d rpy = Vector3d::Zero();
   if (pose) {
     parseVectorAttribute(pose, "xyz", xyz);
     parseVectorAttribute(pose, "rpy", rpy);

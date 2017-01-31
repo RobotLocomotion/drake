@@ -8,6 +8,7 @@ add_library_with_exports(LIB_NAME drakePainleve SOURCE_FILES
 target_link_libraries(drakePainleve
   drakeCommon
   drakeSystemFramework
+  drakeOptimization
   )
 drake_install_libraries(drakePainleve)
 drake_install_headers(

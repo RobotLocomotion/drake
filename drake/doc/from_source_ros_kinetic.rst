@@ -105,11 +105,11 @@ Execute the following commands to build the workspace::
     catkin build
 
 The build will fail because ``libvtk5-dev`` is not installed. To get around
-this, execute the following commands, which configure Director to obtain VTK5
+this, execute the following commands, which configure Drake to obtain VTK5
 by building it from source::
 
-    cd ~/dev/drake_catkin_workspace/build/drake/externals/director
-    cmake . -DUSE_SYSTEM_VTK=OFF
+    cd ~/dev/drake_catkin_workspace/build/drake
+    cmake . -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
     cd ~/dev/drake_catkin_workspace
     catkin build
 
@@ -132,7 +132,7 @@ environment variables as follows::
 
 
     export LD_LIBRARY_PATH=$HOME/dev/drake_catkin_workspace/install/lib/vtk-5.10:$LD_LIBRARY_PATH
-    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/Wrapping/Python:$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/bin:$PYTHONPATH
+    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/vtk/Wrapping/Python:$HOME/dev/drake_catkin_workspace/build/drake/externals/vtk/bin:$PYTHONPATH
 
 You should now be able to run ``drake-visualizer``. For more background
 information, see

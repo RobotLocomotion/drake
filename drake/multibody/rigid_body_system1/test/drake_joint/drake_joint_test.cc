@@ -130,11 +130,10 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
   // Z = 1. Thus, the expected tranform has a Z offset of 1.
   Eigen::Isometry3d expected_transform_to_parent_body;
   {
-  Eigen::Vector3d rpy = Eigen::Vector3d::Zero(),
-                  xyz = Eigen::Vector3d::Zero();
-  xyz << 0, 0, 1;
-  expected_transform_to_parent_body.matrix()
-      << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz(0, 0, 1);
+    expected_transform_to_parent_body.matrix()
+        << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
   EXPECT_TRUE(CompareMatrices(
@@ -147,12 +146,10 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
   // Since the joint has a pose of Z=1, we expect a point expressed in the child
   // body's frame to have a Z coordinate that is +1 when expressed in the parent
   // body's frame.
-  Vector3<double> point_in_child_body;
-  point_in_child_body << 1, 2, 3;
-  Vector3<double> point_in_parent_body = transform_to_parent_body *
+  Eigen::Vector3d point_in_child_body(1, 2, 3);
+  Eigen::Vector3d point_in_parent_body = transform_to_parent_body *
       point_in_child_body;
-  Vector3<double> expected_point_in_parent_body;
-  expected_point_in_parent_body << 1, 2, 4;
+  Eigen::Vector3d expected_point_in_parent_body(1, 2, 4);
   EXPECT_EQ(point_in_parent_body, expected_point_in_parent_body);
 }
 

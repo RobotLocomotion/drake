@@ -9,5 +9,5 @@ if(PYTHON_EXECUTABLE)
     NAME yaml_to_obj_test
     COMMAND ${PYTHON_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/yaml_to_obj_test.py
-    ${CMAKE_CURRENT_BINARY_DIR}/../yaml_to_obj)
+    $<TARGET_FILE:yaml_to_obj>)
 endif()

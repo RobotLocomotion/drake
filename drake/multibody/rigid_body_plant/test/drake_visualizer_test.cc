@@ -311,8 +311,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     Eigen::Isometry3d joint_transform;
     {
       Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-      xyz(0) = 1;
+      Eigen::Vector3d xyz(1, 0, 0);
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
@@ -343,8 +342,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     Eigen::Isometry3d joint_transform;
     {
       Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-      xyz(0) = 2;
+      Eigen::Vector3d xyz(2, 0, 0);
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
@@ -375,8 +373,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     Eigen::Isometry3d joint_transform;
     {
       Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-      xyz(0) = -1;
+      Eigen::Vector3d xyz(-1, 0, 0);
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
@@ -410,8 +407,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     Eigen::Isometry3d joint_transform;
     {
       Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-      xyz(1) = -2;
+      Eigen::Vector3d xyz(0, -2, 0);
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 

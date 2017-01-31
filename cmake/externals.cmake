@@ -175,6 +175,8 @@ macro(drake_add_cmake_external PROJECT)
     Java_JAVAH_EXECUTABLE
     Java_VERSION_STRING
     CMAKE_JAVA_COMPILE_FLAGS
+    CMAKE_INSTALL_RPATH
+    CMAKE_INSTALL_RPATH_USE_LINK_PATH
     LIB_SUFFIX)
 
   if(_ext_FORTRAN)
@@ -204,11 +206,7 @@ macro(drake_add_cmake_external PROJECT)
     list(APPEND _ext_PROPAGATE_CACHE_VARS QT_QMAKE_EXECUTABLE)
   endif()
 
-  if(_ext_VTK)
-    find_package(VTK 5.10)
-    if(NOT VTK_FOUND)
-      find_package(VTK 5.8 REQUIRED)
-    endif()
+  if(_ext_VTK AND USE_SYSTEM_VTK)
     list(APPEND _ext_PROPAGATE_CACHE_VARS VTK_DIR)
   endif()
 

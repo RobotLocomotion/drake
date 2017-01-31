@@ -8,6 +8,43 @@ Frequently Asked Questions
    :depth: 3
    :local:
 
+.. _faq_cmake_vtk_version_crash:
+
+Why Does CMake Fail With An Error Indicating No Compatible VTK Found?
+=====================================================================
+
+Symptom: When running ``cmake ..`` in ``drake-distro/build``, the following
+error is reported::
+
+    CMake Error at cmake/options.cmake:172 (find_package):
+      Could not find a configuration file for package "VTK" that is compatible
+      with requested version "5.10".
+
+      The following configuration files were considered but not accepted:
+
+        /usr/lib/cmake/vtk-6.2/VTKConfig.cmake, version: 6.2.0
+
+    Call Stack (most recent call first):
+      cmake/options.cmake:249 (drake_system_dependency)
+      CMakeLists.txt:17 (drake_setup_options)
+
+
+    -- Configuring incomplete, errors occurred!
+
+Solution: This error is typically caused by your system having a newer version
+of VTK installed than the version required by Drake. As indicated by the error
+message, Drake needs VTK 5.10 whereas the system has VTK 6.2. To get around this
+error, add ``-DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON`` to the ``cmake`` command::
+
+    cd drake-distro/build
+    cmake .. -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
+
+Alternatively, if you have a compatible version of VTK5 installed, you can tell
+CMake to use it by specifying ``VTK_DIR`` as follows::
+
+    cd drake-distro/build
+    cmake .. -DVTK_DIR=path/to/vtk5
+
 .. _faq_vmware:
 
 Why doesn't Drake Visualizer work in VMWare Fusion or Workstation?
@@ -43,11 +80,11 @@ appropriate subsection below.
 Non-ROS Users
 -------------
 
-To workaround the problem, configure Director's build system to build VTK5 from
+To workaround the problem, configure Drake's build system to build VTK5 from
 source (``drake-visualizer`` is built on Director, which is built on VTK5)::
 
-    cd drake-distro/build/externals/director
-    cmake . -DUSE_SYSTEM_VTK=OFF
+    cd drake-distro/build
+    cmake . -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
     cd drake-distro/build
     make (or ninja)
 
@@ -57,7 +94,7 @@ the present working directory)::
 
     cd drake-distro
     export LD_LIBRARY_PATH=`pwd`/build/install/lib/vtk-5.10:$LD_LIBRARY_PATH
-    export PYTHONPATH=`pwd`/build/externals/director/src/vtk-build/Wrapping/Python:`pwd`/build/externals/director/src/vtk-build/bin:$PYTHONPATH
+    export PYTHONPATH=`pwd`/build/externals/vtk/Wrapping/Python:`pwd`/build/externals/vtk/bin:$PYTHONPATH
 
 You should now be able to start ``drake-visualizer``.
 
@@ -70,8 +107,8 @@ ROS Indigo Users
 To workaround the problem, configure Director's build system to build VTK5 from
 source (``drake-visualizer`` is built on Director, which is built on VTK5)::
 
-    cd ~/dev/drake_catkin_workspace/build/drake/externals/director
-    cmake . -DUSE_SYSTEM_VTK=OFF
+    cd ~/dev/drake_catkin_workspace/build/drake
+    cmake . -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
     cd ~/dev/drake_catkin_workspace
     catkin build
 
@@ -79,7 +116,7 @@ Next, modify two environment variables before starting
 ``drake-visualizer``::
 
     export LD_LIBRARY_PATH=$HOME/dev/drake_catkin_workspace/install/lib/vtk-5.10:$LD_LIBRARY_PATH
-    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/Wrapping/Python:$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/bin:$PYTHONPATH
+    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/vtk/Wrapping/Python:$HOME/dev/drake_catkin_workspace/build/drake/externals/vtk/bin:$PYTHONPATH
 
 You should now be able to start ``drake-visualizer``.
 

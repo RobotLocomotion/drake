@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace systems {
 namespace detail {
@@ -9,6 +11,9 @@ namespace detail {
 /// port's version number is incremented.
 class OutputPortListenerInterface {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPortListenerInterface)
+
+  OutputPortListenerInterface();
   virtual ~OutputPortListenerInterface();
 
   /// Invalidates any data that depends on the OutputPort. Called whenever

@@ -141,6 +141,16 @@ cc_library(
 )
 
 cc_library(
+    name = "saturation",
+    srcs = ["saturation.cc"],
+    hdrs = ["saturation.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+cc_library(
     name = "signal_logger",
     srcs = ["signal_logger.cc"],
     hdrs = ["signal_logger.h"],
@@ -301,6 +311,13 @@ cc_googletest(
         ":signal_logger",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/analysis",
+    ],
+)
+
+cc_googletest(
+    name = "saturation_test",
+    deps = [
+        ":saturation",
     ],
 )
 

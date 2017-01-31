@@ -149,24 +149,29 @@ void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
 void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<4>();
-  // We deliberately break the cost to c1' * [x0;x1;x2] + c2'*[x2;x3] here
+  // We deliberately break the cost to
+  // f1(x) = -3 * x(0) - x(1) - 4 * x(2)
+  // and f2(x) = -x(2) - x(3)
   // to test adding multiple costs.
-  Eigen::Vector3d c1(-3, -1, -4);
-  Eigen::Vector2d c2(-1, -1);
 
-  prog.AddLinearCost(c1, x.head<3>());
-  prog.AddLinearCost(c2, x.tail<2>());
+  prog.AddLinearCost(-3 * x(0) - x(1) - 4 * x(2));
+  prog.AddLinearCost(-x(2) - x(3));
 
-  Eigen::RowVector3d a1(3, 1, 2);
-  prog.AddLinearEqualityConstraint(a1, 30, x.head<3>());
+  prog.AddLinearEqualityConstraint(3 * x(0) + x(1) + 2 * x(2), 30);
 
-  Eigen::Matrix<double, 4, 4> A;
-  A << 2, 1, 3, 1, 0, 2, 0, 3, 1, 2, 0, 1, 1, 0, 2, 0;
+  Vector4<symbolic::Expression> v{};
+  // clang-format off
+  v << 2 * x(0) + x(1) + 3 * x(2) + x(3),
+       2 * x(1) + 3 * x(3),
+       x(0) + 2 * x(1) + x(3),
+       x(0) + 2 * x(2);
+  // clang-format on
+
   Eigen::Vector4d b_lb(15, -std::numeric_limits<double>::infinity(),
                        -std::numeric_limits<double>::infinity(), -100);
   Eigen::Vector4d b_ub(std::numeric_limits<double>::infinity(), 25,
                        std::numeric_limits<double>::infinity(), 40);
-  prog.AddLinearConstraint(A, b_lb, b_ub);
+  prog.AddLinearConstraint(v, b_lb, b_ub);
 
   prog.AddBoundingBoxConstraint(0, 10, x(1));
   prog.AddBoundingBoxConstraint(
@@ -604,24 +609,19 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     auto y = prog_intersect.NewContinuousVariables(kXdim, "y");
 
     // Add the constraint that both
-    // A_lorentz3 * u1 + b_lorentz3
-    // and
-    // A_lorentz4 * u2 + b_lorentz4
-    // are in the Lorentz cone.
-    // A_lorentz3 = [0; I], b_lorentz3 = [1; 0]
-    // A_lorentz4 = [0; I], b_lorentz4 = [1; 0]
-    Eigen::MatrixXd A_lorentz3(R1.cols() + 1, R1.cols());
-    Eigen::MatrixXd A_lorentz4(R2.cols() + 1, R2.cols());
-    Eigen::VectorXd b_lorentz3(R1.cols() + 1);
-    Eigen::VectorXd b_lorentz4(R2.cols() + 1);
-    A_lorentz3 << Eigen::RowVectorXd::Zero(R1.cols()),
-        Eigen::MatrixXd::Identity(R1.cols(), R1.cols());
-    A_lorentz4 << Eigen::RowVectorXd::Zero(R2.cols()),
-        Eigen::MatrixXd::Identity(R2.cols(), R1.cols());
-    b_lorentz3 << 1, Eigen::VectorXd::Zero(R1.cols());
-    b_lorentz4 << 1, Eigen::VectorXd::Zero(R2.cols());
-    prog_intersect.AddLorentzConeConstraint(A_lorentz3, b_lorentz3, u1);
-    prog_intersect.AddLorentzConeConstraint(A_lorentz4, b_lorentz4, u2);
+    // [1; u1] and [1; u2] are in the Lorentz cone.
+    VectorX<symbolic::Expression> e1(1 + u1.rows());
+    VectorX<symbolic::Expression> e2(1 + u2.rows());
+    e1(0) = 1;
+    e2(0) = 1;
+    for (int i = 0; i < u1.rows(); ++i) {
+      e1(i + 1) = +u1(i);
+    }
+    for (int i = 0; i < u2.rows(); ++i) {
+      e2(i + 1) = +u2(i);
+    }
+    prog_intersect.AddLorentzConeConstraint(e1);
+    prog_intersect.AddLorentzConeConstraint(e2);
 
     // Add constraint y = x1 + R1*u1
     //                y = x2 + R2*u2
@@ -691,21 +691,11 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
 
   auto x_socp = prog_socp.NewContinuousVariables(kXdim, "x");
   auto y = prog_socp.NewContinuousVariables<1>("y");
-  auto w = prog_socp.NewContinuousVariables(kXdim, "w");
-
-  Eigen::MatrixXd A_lorentz(2 + kXdim, 1 + kXdim);
-  A_lorentz << Eigen::RowVectorXd::Zero(1 + kXdim),
-      Eigen::MatrixXd::Identity(1 + kXdim, 1 + kXdim);
-  Eigen::VectorXd b_lorentz(2 + kXdim);
-  b_lorentz << 2, Eigen::VectorXd::Zero(1 + kXdim);
-  prog_socp.AddRotatedLorentzConeConstraint(A_lorentz, b_lorentz, {y, w});
-
   Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
   Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
-  Eigen::MatrixXd A_w(kXdim, 2 * kXdim);
-  A_w << Eigen::MatrixXd::Identity(kXdim, kXdim), -Q_sqrt;
-  prog_socp.AddLinearEqualityConstraint(A_w, Eigen::VectorXd::Zero(kXdim),
-                                        {w, x_socp});
+  VectorX<symbolic::Expression> e(2 + kXdim);
+  e << +y(0), 2, Q_sqrt * x_socp;
+  prog_socp.AddRotatedLorentzConeConstraint(e);
 
   prog_socp.AddLinearConstraint(A, b_lb, b_ub, x_socp);
 
@@ -720,13 +710,9 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
       c.transpose() * x_socp_value + prog_socp.GetSolution(y(0));
 
   // Check the solution
-  const auto& w_value = prog_socp.GetSolution(w);
-  EXPECT_NEAR(2 * prog_socp.GetSolution(y(0)), w_value.squaredNorm(), 1E-6);
-  EXPECT_TRUE(CompareMatrices(w_value, Q_sqrt * x_socp_value, 1e-6,
-                              MatrixCompareType::absolute));
+  EXPECT_NEAR(2 * prog_socp.GetSolution(y(0)),
+              (Q_sqrt * x_socp_value).squaredNorm(), 1E-6);
   EXPECT_GE(prog_socp.GetSolution(y(0)), 0);
-  EXPECT_TRUE(CompareMatrices(w_value, Q_sqrt * x_socp_value, 1E-6,
-                              MatrixCompareType::absolute));
 
   // Now solve the problem as a QP.
   MathematicalProgram prog_qp;

@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/system.h"
@@ -26,6 +27,9 @@ namespace systems {
 template <typename T>
 class DiagramBuilder {
  public:
+  // DiagramBuilder objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramBuilder)
+
   DiagramBuilder() {}
   virtual ~DiagramBuilder() {}
 
@@ -272,12 +276,6 @@ class DiagramBuilder {
     blueprint.sorted_systems = SortSystems();
     return blueprint;
   }
-
-  // DiagramBuilder objects are neither copyable nor moveable.
-  DiagramBuilder(const DiagramBuilder<T>& other) = delete;
-  DiagramBuilder& operator=(const DiagramBuilder<T>& other) = delete;
-  DiagramBuilder(DiagramBuilder<T>&& other) = delete;
-  DiagramBuilder& operator=(DiagramBuilder<T>&& other) = delete;
 
   // The ordered inputs and outputs of the Diagram to be built.
   std::vector<PortIdentifier> input_port_ids_;

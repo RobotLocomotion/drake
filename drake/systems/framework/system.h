@@ -8,8 +8,10 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
@@ -90,6 +92,9 @@ struct UpdateActions {
 template <typename T>
 class System {
  public:
+  // System objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
+
   virtual ~System() {}
 
   //----------------------------------------------------------------------------
@@ -156,9 +161,11 @@ class System {
   /// (implicit computations) in system diagrams. Any System for which none of
   /// the input ports ever feeds through to any of the output ports should
   /// override this method to return false.
-  // TODO(amcastro-tri): Provide a more descriptive mechanism to specify
-  // pairwise (input_port, output_port) feedthrough.
-  virtual bool has_any_direct_feedthrough() const { return true; }
+  // TODO(4105): Provide a more descriptive mechanism to specify pairwise
+  // (input_port, output_port) feedthrough.
+  virtual bool has_any_direct_feedthrough() const {
+    return (get_num_input_ports() > 0) && (get_num_output_ports() > 0);
+  }
 
   //@}
 
@@ -688,6 +695,52 @@ class System {
   }
   //@}
 
+
+  //----------------------------------------------------------------------------
+  /// @name                Symbolics
+  /// From a %System templatized by `double`, you can obtain an identical system
+  /// templatized by a symbolic expression scalar.
+
+  // This group appears as a top-level heading in Doxygen because it contains
+  // both static and non-static member functions.
+  //@{
+
+  /// Creates a deep copy of this System, transmogrified to use the symbolic
+  /// scalar type.
+  /// Concrete Systems may shadow this with a more specific return type.
+  std::unique_ptr<System<symbolic::Expression>> ToSymbolic() const {
+    return std::unique_ptr<System<symbolic::Expression>>(DoToSymbolic());
+  }
+
+  /// Creates a deep copy of `from`, transmogrified to use the symbolic
+  /// scalar type. Returns `nullptr` if the template parameter `S` is not the
+  /// type of the concrete system, or a superclass thereof.
+  ///
+  /// Usage: @code
+  ///   MySystem<double> plant;
+  ///   std::unique_ptr<MySystem<symbolic::Expression>> ad_plant =
+  ///       systems::System<double>::ToSymbolic<MySystem>(plant);
+  /// @endcode
+  ///
+  /// @tparam S The specific System pointer type to return.
+  template <template <typename> class S = ::drake::systems::System>
+  static std::unique_ptr<S<symbolic::Expression>> ToSymbolic(
+      const System<double>& from) {
+    // Capture the copy as System<symbolic::Expression>.
+    std::unique_ptr<System<symbolic::Expression>> clone(from.DoToSymbolic());
+    // Attempt to downcast to S<symbolic::Expression>.
+    S<symbolic::Expression>* downcast =
+        dynamic_cast<S<symbolic::Expression>*>(clone.get());
+    // If the downcast fails, return nullptr, letting the copy be deleted.
+    if (downcast == nullptr) {
+      return nullptr;
+    }
+    // If the downcast succeeds, redo it, taking ownership this time.
+    return std::unique_ptr<S<symbolic::Expression>>(
+        dynamic_cast<S<symbolic::Expression>*>(clone.release()));
+  }
+  //@}
+
  protected:
   //----------------------------------------------------------------------------
   /// @name                 System construction
@@ -971,6 +1024,19 @@ class System {
     DRAKE_ABORT_MSG("Override DoToAutoDiffXd before using ToAutoDiffXd.");
     return nullptr;
   }
+
+  /// NVI implementation of ToSymbolic. Caller takes ownership of the returned
+  /// pointer. Overrides should return a more specific covariant type.
+  /// Templated overrides may assume that they are subclasses of System<double>.
+  ///
+  /// No default implementation is provided in LeafSystem, since the member data
+  /// of a particular concrete leaf system is not knowable to the framework.
+  /// A default implementation is provided in Diagram, which Diagram subclasses
+  /// with member data should override.
+  virtual System<symbolic::Expression>* DoToSymbolic() const {
+    DRAKE_ABORT_MSG("Override DoToSymbolic before using ToSymbolic.");
+    return nullptr;
+  }
   //@}
 
   //----------------------------------------------------------------------------
@@ -1003,12 +1069,6 @@ class System {
   //@}
 
  private:
-  // System objects are neither copyable nor moveable.
-  System(const System<T>& other) = delete;
-  System& operator=(const System<T>& other) = delete;
-  System(System<T>&& other) = delete;
-  System& operator=(System<T>&& other) = delete;
-
   std::string name_;
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references
   // to the descriptors will remain valid even if the vector is resized.

@@ -16,20 +16,29 @@ namespace symbolic {
 /** Represents a symbolic variable. */
 class Variable {
  public:
+  typedef size_t Id;
+
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable)
 
-  /** Default constructor. This is needed to have Eigen::Matrix<Variable>. The
-      objects created by the default constructor share the same ID, zero. As a
-      result, they all are identified as a single variable by equality operator
-      (==). They all have the same hash value as well.
+  /** Default constructor. Constructs a dummy variable. This is needed to have
+   *  Eigen::Matrix<Variable>. The objects created by the default constructor
+   *  share the same ID, zero. As a result, they all are identified as a single
+   *  variable by equality operator (==). They all have the same hash value as
+   *  well.
+   *
+   *  It is allowed to construct a dummy variable but it should not be used to
+   *  construct a symbolic expression.
    */
   Variable() : id_{0}, name_{std::string()} {}
 
   /** Constructs a variable with a string . */
   explicit Variable(const std::string& name);
 
-  size_t get_id() const;
-  size_t get_hash() const { return std::hash<size_t>{}(id_); }
+  /** Checks if this is a dummy variable (ID = 0) which is created by
+   *  the default constructor. */
+  bool is_dummy() const { return get_id() == 0; }
+  Id get_id() const;
+  size_t get_hash() const { return std::hash<Id>{}(id_); }
   std::string get_name() const;
   std::string to_string() const;
 
@@ -37,8 +46,8 @@ class Variable {
 
  private:
   // Produces a unique ID for a variable.
-  static size_t get_next_id();
-  size_t id_{};       // Unique identifier.
+  static Id get_next_id();
+  Id id_{};           // Unique identifier.
   std::string name_;  // Name of variable.
 };
 

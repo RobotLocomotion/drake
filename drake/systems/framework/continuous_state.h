@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
@@ -22,6 +23,9 @@ namespace systems {
 template <typename T>
 class ContinuousState {
  public:
+  // ContinuousState is not copyable or moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContinuousState)
+
   /// Constructs a ContinuousState for a system that does not have second-order
   /// structure: All of the state is misc_continuous_state_.
   explicit ContinuousState(std::unique_ptr<VectorBase<T>> state) {
@@ -167,12 +171,6 @@ class ContinuousState {
 
   /// Returns a copy of the entire continuous state vector into an Eigen vector.
   VectorX<T> CopyToVector() const { return this->get_vector().CopyToVector(); }
-
-  // ContinuousState is not copyable or moveable.
-  ContinuousState(const ContinuousState& other) = delete;
-  ContinuousState& operator=(const ContinuousState& other) = delete;
-  ContinuousState(ContinuousState&& other) = delete;
-  ContinuousState& operator=(ContinuousState&& other) = delete;
 
  private:
   template <typename U>

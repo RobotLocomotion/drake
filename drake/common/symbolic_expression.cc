@@ -49,6 +49,8 @@ shared_ptr<ExpressionCell> make_cell(const double d) {
 
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<ExpressionVar>(var)} {}
+Expression::Expression(const string& name)
+    : ptr_{make_shared<ExpressionVar>(Variable{name})} {}
 Expression::Expression(const double d) : ptr_{make_cell(d)} {}
 Expression::Expression(const shared_ptr<ExpressionCell> ptr) : ptr_{ptr} {}
 
@@ -125,6 +127,16 @@ bool Expression::Less(const Expression& e) const {
   }
   // k1 == k2
   return ptr_->Less(*(e.ptr_));
+}
+
+bool Expression::is_polynomial() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->is_polynomial();
+}
+
+Polynomial<double> Expression::ToPolynomial() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->ToPolynomial();
 }
 
 double Expression::Evaluate(const Environment& env) const {

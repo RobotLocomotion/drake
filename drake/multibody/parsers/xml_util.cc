@@ -191,7 +191,8 @@ void originAttributesToTransform(
     tinyxml2::XMLElement* node,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Isometry3d& T) {
-  Eigen::Vector3d rpy = Eigen::Vector3d::Zero(), xyz = Eigen::Vector3d::Zero();
+  Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+  Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
 
   parseVectorAttribute(node, "xyz", xyz);
   parseVectorAttribute(node, "rpy", rpy);
@@ -203,7 +204,8 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
                           // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                           Eigen::Isometry3d& T,
                           const Eigen::Isometry3d& T_default_frame) {
-  Eigen::Vector3d rpy = Eigen::Vector3d::Zero(), xyz = Eigen::Vector3d::Zero();
+  Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+  Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
   const char* strval = node->FirstChild()->Value();
   if (strval) {
     stringstream s(strval);

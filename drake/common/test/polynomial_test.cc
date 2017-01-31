@@ -194,6 +194,13 @@ GTEST_TEST(PolynomialTest, IntegralAndDerivative) {
   testIntegralAndDerivative<double>();
 }
 
+GTEST_TEST(PolynomialTest, TestMakeMonomialsUnique) {
+  Eigen::Vector2d coefficients(1, 2);
+  Polynomial<double> poly(coefficients);
+  const auto poly_squared = poly * poly;
+  EXPECT_EQ(poly_squared.GetNumberOfCoefficients(), 3);
+}
+
 GTEST_TEST(PolynomialTest, Operators) { testOperators<double>(); }
 
 GTEST_TEST(PolynomialTest, Roots) { testRoots<double>(); }

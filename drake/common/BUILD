@@ -138,6 +138,7 @@ cc_library(
         ":cond",
         ":dummy_value",
         ":number_traits",
+        ":polynomial",
     ],
 )
 
@@ -187,6 +188,17 @@ cc_library(
     linkstatic = 1,
     deps = [
         ":common",
+    ],
+)
+
+cc_library(
+    name = "monomial",
+    srcs = ["monomial.cc"],
+    hdrs = ["monomial.h"],
+    linkstatic = 1,
+    deps = [
+        ":common",
+        ":symbolic",
     ],
 )
 
@@ -338,6 +350,15 @@ cc_googletest(
 )
 
 cc_googletest(
+    name = "monomial_test",
+    deps = [
+        ":common",
+        ":monomial",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
     name = "never_destroyed_test",
     deps = [
         ":common",
@@ -379,6 +400,30 @@ cc_googletest(
 
 cc_googletest(
     name = "symbolic_expression_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_mixing_scalar_types_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_expression_matrix_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_variable_overloading_test",
     deps = [
         ":common",
         ":symbolic",

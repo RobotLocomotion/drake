@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/abstract_state.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_state.h"
@@ -20,6 +21,9 @@ namespace systems {
 template <typename T>
 class State {
  public:
+  // State is not copyable or moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(State)
+
   State()
       : abstract_state_(std::make_unique<AbstractState>()),
         continuous_state_(std::make_unique<ContinuousState<T>>()),
@@ -65,6 +69,22 @@ class State {
     return abstract_state_.get();
   }
 
+  /// Returns a const pointer to the abstract component of the
+  /// state at @p index.  Asserts if @p index doesn't exist.
+  template <typename U>
+  const U& get_abstract_state(int index) const {
+    const AbstractState* xm = get_abstract_state();
+    return xm->get_abstract_state(index).GetValue<U>();
+  }
+
+  /// Returns a mutable pointer to element @p index of the abstract state.
+  /// Asserts if @p index doesn't exist.
+  template <typename U>
+  U& get_mutable_abstract_state(int index) {
+    AbstractState* xm = get_mutable_abstract_state();
+    return xm->get_mutable_abstract_state(index).GetMutableValue<U>();
+  }
+
   /// Copies the values from another State of the same scalar type into this
   /// State.
   void CopyFrom(const State<T>& other) {
@@ -80,12 +100,6 @@ class State {
     discrete_state_->SetFrom(*other.get_discrete_state());
     abstract_state_->CopyFrom(*other.get_abstract_state());
   }
-
-  // State is not copyable or moveable.
-  State(const State& other) = delete;
-  State& operator=(const State& other) = delete;
-  State(State&& other) = delete;
-  State& operator=(State&& other) = delete;
 
  private:
   std::unique_ptr<AbstractState> abstract_state_;

@@ -15,8 +15,8 @@ namespace mono = monolane;
 
 class InfiniteCircuitRoadTestBase : public ::testing::Test {
  protected:
-  const double kLinearTolerance {1e-6};
-  const double kAngularTolerance {1e-6 * M_PI};
+  const double kLinearTolerance{1e-6};
+  const double kAngularTolerance{1e-6 * M_PI};
 
   const api::Lane* FindLane(const api::RoadGeometry* road,
                             const std::string& id_string) {
@@ -79,7 +79,7 @@ class InfiniteCircuitRoadTest : public InfiniteCircuitRoadTestBase {
       const mono::EndpointZ kTiltedSlopedLowerZ(0., -10. / kShorterLength,
                                                 kTilt, 0.);
 
-      const mono::Endpoint start {{0., 0., M_PI / 2.}, kFlatLowZ};
+      const mono::Endpoint start{{0., 0., M_PI / 2.}, kFlatLowZ};
       auto c0 = b.Connect("0", start, kStraightLength, kFlatHighZ);
 
       auto c1 = b.Connect("1", c0->end(), kSmallClockwiseArc, kFlatHighZ);
@@ -220,7 +220,7 @@ TEST_F(InfiniteCircuitRoadTest, CycleLength) {
 
 
 TEST_F(InfiniteCircuitRoadTest, PathRecords) {
-  EXPECT_EQ(path_.size(), dut_->lane()->num_path_records());
+  EXPECT_EQ(static_cast<int>(path_.size()), dut_->lane()->num_path_records());
 
   double cumulative_length = 0;
   for (size_t i = 0; i < path_.size(); ++i) {
@@ -230,7 +230,7 @@ TEST_F(InfiniteCircuitRoadTest, PathRecords) {
     EXPECT_EQ((reversed_set_.count(i) > 0), rec.is_reversed);
 
     const double s = cumulative_length + (0.25 * path_[i]->length());
-    EXPECT_EQ(i, dut_->lane()->GetPathIndex(s));
+    EXPECT_EQ(static_cast<int>(i), dut_->lane()->GetPathIndex(s));
 
     cumulative_length += path_[i]->length();
   }
@@ -402,8 +402,8 @@ TEST_F(InfiniteCircuitRoadTestBase, Bounds) {
   mono::Builder b(kLaneBounds, kDriveableBounds,
                   kLinearTolerance, kAngularTolerance);
 
-  const mono::EndpointZ kZeroZ {0., 0., 0., 0.};
-  const mono::Endpoint start {{0., 0., 0.}, kZeroZ};
+  const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
+  const mono::Endpoint start{{0., 0., 0.}, kZeroZ};
   b.Connect("0", start, mono::ArcOffset(100., 2. * M_PI), kZeroZ);
   auto source = b.Build({"source"});
 
@@ -451,8 +451,8 @@ TEST_F(InfiniteCircuitRoadTestBase, CircuitFinding) {
 
   const double kSpurLength = 100.;
   const double kRingRadius = 50.;
-  const mono::EndpointZ kZeroZ {0., 0., 0., 0.};
-  const mono::Endpoint start {{0., 0., 0.}, kZeroZ};
+  const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
+  const mono::Endpoint start{{0., 0., 0.}, kZeroZ};
   auto c0 = b.Connect("spur", start, kSpurLength, kZeroZ);
   b.Connect("ring", c0->end(), mono::ArcOffset(kRingRadius, 2. * M_PI), kZeroZ);
   auto source = b.Build({"source"});

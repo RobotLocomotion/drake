@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
@@ -34,11 +35,10 @@ struct StepInfo {
 template <typename T>
 class Context {
  public:
-  virtual ~Context() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Context)
 
   Context() = default;
-  Context(const Context&) = delete;
-  Context& operator=(const Context&) = delete;
+  virtual ~Context() = default;
 
   // =========================================================================
   // Accessors and Mutators for Time.
@@ -145,6 +145,12 @@ class Context {
   /// Returns the number of elements in the abstract state.
   int get_num_abstract_state_groups() const {
     return get_state().get_abstract_state()->size();
+  }
+
+  /// Returns a pointer to the abstract component of the state, which
+  /// may be of size zero.
+  const AbstractState* get_abstract_state() const {
+    return get_state().get_abstract_state();
   }
 
   /// Returns a mutable pointer to the abstract component of the state,

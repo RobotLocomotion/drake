@@ -141,6 +141,26 @@ class SystemTest : public ::testing::Test {
   LeafContext<double> context_;
 };
 
+TEST_F(SystemTest, Feedthrough) {
+  // No inputs or outputs.
+  EXPECT_FALSE(system_.has_any_direct_feedthrough());
+
+  // Both inputs and outputs.
+  system_.AddAbstractInputPort();
+  system_.AddAbstractOutputPort();
+  EXPECT_TRUE(system_.has_any_direct_feedthrough());
+
+  // Only inputs.
+  TestSystem input_only;
+  input_only.AddAbstractInputPort();
+  EXPECT_FALSE(input_only.has_any_direct_feedthrough());
+
+  // Only outputs.
+  TestSystem output_only;
+  output_only.AddAbstractOutputPort();
+  EXPECT_FALSE(output_only.has_any_direct_feedthrough());
+}
+
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize);

@@ -80,14 +80,13 @@ GTEST_TEST(testIK, iiwaIK) {
 
   // Constrain iiwa_link_7 (the end effector) to move 0.58 on the X
   // axis and down slightly (to make room for the X axis motion).
-  Vector3d pos_end;
-  pos_end << 0.58, 0, 0.77;
+  Vector3d pos_end(0.58, 0, 0.77);
   const double pos_tol = 0.01;
   Vector3d pos_lb = pos_end - Vector3d::Constant(pos_tol);
   Vector3d pos_ub = pos_end + Vector3d::Constant(pos_tol);
   const int link_7_idx = model->FindBodyIndex("iiwa_link_7");
   WorldPositionConstraint wpc(model.get(), link_7_idx,
-                              Vector3d(0, 0, 0), pos_lb, pos_ub, tspan);
+                              Vector3d::Zero(), pos_lb, pos_ub, tspan);
 
   // Constrain iiwa_joint_4 between 0.9 and 1.0.
   PostureConstraint pc(model.get(), tspan);

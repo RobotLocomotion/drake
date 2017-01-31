@@ -11,6 +11,7 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/systems/framework/abstract_state.h"
@@ -45,6 +46,9 @@ struct PeriodicEvent {
 template <typename T>
 class LeafSystem : public System<T> {
  public:
+  // LeafSystem objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystem)
+
   ~LeafSystem() override {}
 
   // =========================================================================
@@ -147,12 +151,6 @@ class LeafSystem : public System<T> {
       const override {
     return AllocateDiscreteState();
   }
-
-  // LeafSystem objects are neither copyable nor moveable.
-  explicit LeafSystem(const System<T>& other) = delete;
-  LeafSystem& operator=(const System<T>& other) = delete;
-  explicit LeafSystem(System<T>&& other) = delete;
-  LeafSystem& operator=(System<T>&& other) = delete;
 
  protected:
   LeafSystem() {}
@@ -267,7 +265,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares that this System has a simple, fixed-period discrete update.
-  /// The first tick will be at t= offset_sec, and it will recur at every
+  /// The first tick will be at t = offset_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update the
   /// discrete state.
   void DeclarePeriodicDiscreteUpdate(const T& period_sec, const T& offset_sec) {
@@ -276,7 +274,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares that this System has a simple, fixed-period unrestricted state
-  /// update. The first tick will be at t= offset_sec, and it will recur at
+  /// update. The first tick will be at t = offset_sec, and it will recur at
   /// every period_sec thereafter. On the discrete tick, the system may perform
   /// unrestricted updates.
   void DeclarePeriodicUnrestrictedUpdate(const T& period_sec,

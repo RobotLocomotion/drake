@@ -198,7 +198,8 @@ class LcmUtilsTests : public ::testing::Test {
   virtual void SetUp() {
     tree_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
+        GetDrakePath() +
+            "/examples/Valkyrie/urdf/urdf/"
             "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
         multibody::joints::kRollPitchYaw, tree_.get());
   }
@@ -333,8 +334,7 @@ TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredCentroidalMomentumDot) {
 
 // Test encoding and decoding of QpInput <-> lcmt_qp_input.
 TEST_F(LcmUtilsTests, TestEncodeDecodeQpInput) {
-  HumanoidStatus tree_status(*tree_);
-  // Initializes QP input.
+  // Initialize QP input
   QpInput qp_input(GetDofNames(*tree_));
   ContactInformation contact(*tree_->FindBody("leftFoot"), 3);
   contact.mutable_contact_points() = Vector3<double>(1, 2, 3);

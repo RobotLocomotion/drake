@@ -93,6 +93,20 @@ new_git_repository(
     build_file = "tools/fcl.BUILD",
 )
 
+new_git_repository(
+    name = "ipopt",
+    remote = "https://github.com/RobotLocomotion/ipopt-mirror.git",
+    commit = "11649b7a063e03af38fcc59cf8cdb0694735c84c",
+    build_file = "tools/ipopt.BUILD",
+)
+
+new_git_repository(
+    name = "pybind11",
+    remote = "https://github.com/pybind/pybind11.git",
+    commit = "7830e8509f2adc97ce9ee32bf99cd4b82089cc4c",
+    build_file = "tools/pybind11.BUILD",
+)
+
 # Necessary for buildifier.
 http_archive(
     name = "io_bazel_rules_go",
@@ -130,3 +144,34 @@ soft_failure_binary_repository(
     name = "drake_visualizer",
     local_path = __workspace_dir__ + "/build/install/bin/drake-visualizer",
 )
+
+# Python Libraries
+new_http_archive(
+    name = "six_archive",
+    url = "https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz",
+    sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",
+    build_file = "tools/six.BUILD",
+)
+
+bind(
+    name = "six",
+    actual = "@six_archive//:six",
+)
+
+# Protocol Buffers
+http_archive(
+    name = 'protobuf_python',
+    url = 'https://github.com/google/protobuf/releases/download/v3.0.0/protobuf-python-3.0.0.tar.gz',
+    sha256 = '6a093cbdb6b40e593c508a03bc9a884239c7bfb377b79d0c0bf43eafe007fb0e',
+    strip_prefix = "protobuf-3.0.0",
+)
+
+git_repository(
+    name = "org_pubref_rules_protobuf",
+    remote = "https://github.com/pubref/rules_protobuf.git",
+    tag = "v0.7.1",
+)
+
+load("@org_pubref_rules_protobuf//python:rules.bzl",
+     "py_proto_repositories")
+py_proto_repositories()

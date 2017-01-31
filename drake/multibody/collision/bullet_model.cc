@@ -182,7 +182,8 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
   // Gathers vertices and triangles from the mesh's file.
   DrakeShapes::PointsVector vertices;
   DrakeShapes::TrianglesVector triangles;
-  geometry.LoadObjFile(&vertices, &triangles);
+  geometry.LoadObjFile(&vertices, &triangles,
+                       DrakeShapes::Mesh::TriangulatePolicy::kTry);
 
   btTriangleMesh* mesh = new btTriangleMesh();
   // BulletModel takes ownership of the mesh because Bullet does not.
@@ -270,22 +271,11 @@ void BulletModel::DoAddElement(const Element& element) {
       case DrakeShapes::MESH: {
         const auto mesh =
             static_cast<const DrakeShapes::Mesh&>(element.getGeometry());
-        // TODO(SeanCurtis-TRI): Rather than catching the exception and falling
-        // back to a convex hull (with notification), the better solution would
-        // be to give the system the ability to triangulate on the fly.
-        bool success = false;
         if (element.is_anchored()) {
-          try {
-            bt_shape = newBulletStaticMeshShape(mesh, true);
-            bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
-            success = true;
-          } catch (std::exception &e) {
-            drake::log()->warn(std::string(e.what()) +
-                ". Unable to construct triangle mesh from obj file; using "
-                "convex hull of mesh instead.");
-          }
-        }
-        if (!success) {  // A convex hull representation of the mesh points.
+          // Meshes are only allowed for anchored geometry.
+          bt_shape = newBulletStaticMeshShape(mesh, true);
+          bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
+        } else {  // A convex hull representation of the mesh points.
           bt_shape = newBulletMeshShape(mesh, true);
           bt_shape_no_margin = newBulletMeshShape(mesh, false);
         }

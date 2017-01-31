@@ -72,8 +72,7 @@ class ContactResultTest : public ::testing::Test {
     tree_ = unique_tree.get();
 
     x_anchor_ = 1.5;
-    Vector3d pos;
-    pos << x_anchor_ - (kRadius + distance), 0, 0;
+    Vector3d pos(x_anchor_ - (kRadius + distance), 0, 0);
     body1_ = AddSphere(pos, "sphere1");
     pos << x_anchor_ + (kRadius + distance), 0, 0;
     body2_ = AddSphere(pos, "sphere2");
