@@ -35,13 +35,15 @@ if(lcm_FOUND)
         COMMAND kuka_cartesian_way_point_demo)
   endif()
 
-  add_executable(kuka_inverse_dynamics_demo
-    kuka_inverse_dynamics_demo.cc
-    make_demo_plan.cc)
-  target_link_libraries(kuka_inverse_dynamics_demo
-    drakeKukaIiwaArmCommon
-    kuka_traj_follower_system
-    drakeLCMSystem2
-    drakeRigidBodyPlant
-    drakeSystemAnalysis)
+  if(yaml-cpp_FOUND AND gurobi_FOUND)
+    add_executable(kuka_inverse_dynamics_demo
+      kuka_inverse_dynamics_demo.cc
+      make_demo_plan.cc)
+    target_link_libraries(kuka_inverse_dynamics_demo
+      drakeKukaIiwaArmCommon
+      kuka_traj_follower_system
+      drakeLCMSystem2
+      drakeRigidBodyPlant
+      drakeSystemAnalysis)
+  endif()
 endif()
