@@ -11,6 +11,9 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/sensors/rotary_encoders.h"
 
+using std::sin;
+using std::cos;
+
 namespace drake {
 namespace examples {
 namespace acrobot {
@@ -28,11 +31,43 @@ AcrobotPlant<T>::AcrobotPlant() {
 
 template <typename T>
 void AcrobotPlant<T>::DoCalcOutput(const systems::Context<T>& context,
-                                 systems::SystemOutput<T>* output) const {
+                                   systems::SystemOutput<T>* output) const {
   output->GetMutableVectorData(0)->set_value(
       dynamic_cast<const AcrobotStateVector<T>&>(
           context.get_continuous_state_vector())
           .get_value());
+}
+
+template <typename T>
+Matrix2<T> AcrobotPlant<T>::MatrixH(
+    const AcrobotStateVector<T>& x) const {
+  const T c2 = cos(x.theta2());
+
+  const T h12 = I2_ + m2l1lc2_ * c2;
+  Matrix2<T> H;
+  H << I1_ + I2_ + m2_ * l1_ * l1_ + 2 * m2l1lc2_ * c2, h12, h12, I2_;
+  return H;
+}
+
+template <typename T>
+Vector2<T> AcrobotPlant<T>::VectorC(const AcrobotStateVector<T>& x) const {
+  const T s1 = sin(x.theta1()), s2 = sin(x.theta2());
+  const T s12 = sin(x.theta1() + x.theta2());
+
+  Vector2<T> C;
+  C << -2 * m2l1lc2_ * s2 * x.theta2dot() * x.theta1dot() +
+           -m2l1lc2_ * s2 * x.theta2dot() * x.theta2dot(),
+      m2l1lc2_ * s2 * x.theta1dot() * x.theta1dot();
+
+  // Add in G terms.
+  C(0) += g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
+  C(1) += g_ * m2_ * lc2_ * s12;
+
+  // Damping terms.
+  C(0) += b1_ * x.theta1dot();
+  C(1) += b2_ * x.theta2dot();
+
+  return C;
 }
 
 // Compute the actual physics.
@@ -46,40 +81,40 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
       context.get_continuous_state_vector());
   const T& tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
 
-  const double I1 = Ic1 + m1 * lc1 * lc1;
-  const double I2 = Ic2 + m2 * lc2 * lc2;
-  const double m2l1lc2 = m2 * l1 * lc2;  // occurs often!
+  Matrix2<T> H = MatrixH(x);
+  Vector2<T> C = VectorC(x);
+  Vector2<T> B(0, 1);  // input matrix
 
-  using std::sin;
-  using std::cos;
-  const T c2 = cos(x.theta2());
-  const T s1 = sin(x.theta1()), s2 = sin(x.theta2());
-  const T s12 = sin(x.theta1() + x.theta2());
-
-  const T h12 = I2 + m2l1lc2 * c2;
-  Eigen::Matrix<T, 2, 2> H;
-  H << I1 + I2 + m2 * l1 * l1 + 2 * m2l1lc2 * c2, h12, h12, I2;
-
-  Eigen::Matrix<T, 2, 1> C;
-  C << -2 * m2l1lc2 * s2 * x.theta2dot() * x.theta1dot() +
-           -m2l1lc2 * s2 * x.theta2dot() * x.theta2dot(),
-      m2l1lc2 * s2 * x.theta1dot() * x.theta1dot();
-
-  // add in G terms
-  C(0) += g * m1 * lc1 * s1 + g * m2 * (l1 * s1 + lc2 * s12);
-  C(1) += g * m2 * lc2 * s12;
-
-  // damping terms
-  C(0) += b1 * x.theta1dot();
-  C(1) += b2 * x.theta2dot();
-
-  // input matrix
-  Eigen::Matrix<T, 2, 1> B;
-  B << 0.0, 1.0;
-
-  Eigen::Matrix<T, 4, 1> xdot;
+  Vector4<T> xdot;
   xdot << x.theta1dot(), x.theta2dot(), H.inverse() * (B * tau - C);
   derivatives->SetFromVector(xdot);
+}
+
+template <typename T>
+T AcrobotPlant<T>::DoCalcKineticEnergy(
+    const systems::Context<T>& context) const {
+  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
+  const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
+      context.get_continuous_state_vector());
+
+  Matrix2<T> H = MatrixH(x);
+  Vector2<T> qdot(x.theta1dot(), x.theta2dot());
+
+  return 0.5 * qdot.transpose() * H * qdot;
+}
+
+template <typename T>
+T AcrobotPlant<T>::DoCalcPotentialEnergy(
+    const systems::Context<T>& context) const {
+  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
+  const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
+      context.get_continuous_state_vector());
+
+  using std::cos;
+  const T c1 = cos(x.theta1());
+  const T c12 = cos(x.theta1() + x.theta2());
+
+  return -m1_ * g_ * lc1_ * c1 - m2_ * g_ * (l1_ * c1 + lc2_ * c12);
 }
 
 template <typename T>
@@ -137,8 +172,8 @@ template class AcrobotWEncoder<double>;
 template class AcrobotWEncoder<AutoDiffXd>;
 
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
-    const AcrobotPlant<double>* acrobot) {
-  auto context = acrobot->CreateDefaultContext();
+    const AcrobotPlant<double>& acrobot) {
+  auto context = acrobot.CreateDefaultContext();
 
   // Set nominal torque to zero.
   context->FixInputPort(0, Vector1d::Constant(0.0));
@@ -160,7 +195,7 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
   Q(1, 1) = 10;
   Vector1d R = Vector1d::Constant(1);
 
-  return systems::LinearQuadraticRegulator(*acrobot, *context, Q, R);
+  return systems::LinearQuadraticRegulator(acrobot, *context, Q, R);
 }
 
 }  // namespace acrobot

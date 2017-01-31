@@ -1,3 +1,5 @@
+package drake;
+
 struct lcmt_acrobot_y
 {
 	int64_t timestamp;

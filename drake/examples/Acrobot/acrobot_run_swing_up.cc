@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
+#include "drake/examples/Acrobot/acrobot_spong_controller.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -14,14 +15,17 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
+#include "drake/systems/controllers/linear_quadratic_regulator.h"
+#include "drake/systems/primitives/linear_system.h"
+
 namespace drake {
 namespace examples {
 namespace acrobot {
 namespace {
 
-// Simple example which simulates the Acrobot, started near the upright, with an
-// LQR controller designed to stabilize the unstable fixed point.  Run
-// drake-visualizer to see the animated result.
+// Simple example which simulates the Acrobot, started near its stable fixed
+// point, with a Spong swing-up controller designed to reach the unstable
+// fixed point.  Run drake-visualizer to see the animated result.
 
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
@@ -41,9 +45,9 @@ int do_main(int argc, char* argv[]) {
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
 
-  auto controller = builder.AddSystem(BalancingLQRController(*acrobot));
-  builder.Connect(acrobot->get_output_port(0), controller->get_input_port());
-  builder.Connect(controller->get_output_port(), acrobot->get_input_port(0));
+  auto controller = builder.AddSystem<AcrobotSpongController>();
+  builder.Connect(acrobot->get_output_port(0), controller->get_input_port(0));
+  builder.Connect(controller->get_output_port(0), acrobot->get_input_port(0));
 
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
@@ -51,18 +55,19 @@ int do_main(int argc, char* argv[]) {
       diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
                                           acrobot);
 
-  // Set an initial condition near the upright fixed point.
+  // Sets an initial condition near the upright fixed point.
   AcrobotStateVector<double>* x0 = dynamic_cast<AcrobotStateVector<double>*>(
       acrobot_context->get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
-  x0->set_theta1(M_PI + 0.1);
-  x0->set_theta2(-.1);
+  x0->set_theta1(0.1);
+  x0->set_theta2(-0.1);
   x0->set_theta1dot(0.0);
-  x0->set_theta2dot(0.0);
+  x0->set_theta2dot(0.02);
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  simulator.StepTo(10);
+  simulator.StepTo(60);
+
   return 0;
 }
 
