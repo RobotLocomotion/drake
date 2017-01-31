@@ -14,6 +14,9 @@ _SOURCE_EXTENSIONS = [source_ext for source_ext in """
 .inc
 """.split("\n") if len(source_ext)]
 
+# Do not lint generated protocol buffer files.
+_IGNORE_EXTENSIONS = [".pb.h", ".pb.cc"]
+
 # The cpplint.py command-line argument so it doesn't skip our files!
 _EXTENSIONS_ARGS = ["--extensions=" + ",".join(
     [ext[1:] for ext in _SOURCE_EXTENSIONS],
@@ -30,6 +33,9 @@ def _extract_labels(srcs):
   return []
 
 def _is_source_label(label):
+  for extension in _IGNORE_EXTENSIONS:
+      if label.endswith(extension):
+        return False
   for extension in _SOURCE_EXTENSIONS:
       if label.endswith(extension):
         return True
