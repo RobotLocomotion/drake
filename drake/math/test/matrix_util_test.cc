@@ -30,9 +30,9 @@ GTEST_TEST(TestMatrixUtil, TestIsSymmetric) {
 
   // Tests a symbolic expression.
   Eigen::Matrix<symbolic::Expression, 2, 2> S;
-  symbolic::Variable s1{"s1"};
-  symbolic::Variable s2{"s2"};
-  symbolic::Variable s3{"s3"};
+  Variable s1{"s1"};
+  Variable s2{"s2"};
+  Variable s3{"s3"};
   symbolic::Expression S00{s1};
   symbolic::Expression S01{s2};
   symbolic::Expression S11{s3};
@@ -61,8 +61,8 @@ GTEST_TEST(TestMatrixUtil, TestToSymmetricMatrixFromLowerTriangularColumns) {
         2, 4, 5,
         3, 5, 6;
   // clang-format on
-  EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x2),
-                              X2));
+  EXPECT_TRUE(
+      CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x2), X2));
 }
 }  // namespace test
 }  // namespace math

@@ -7,13 +7,11 @@
 #include <set>
 #include <string>
 
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/variable.h"
 
 namespace drake {
 
-namespace symbolic {
-
-/** Represents a set of symbolic variables.
+/** Represents a set of variables.
  *
  * This class is based on std::set<Variable>. The intent is to add things that
  * we need including set-union (Variables::insert, operator+, operator+=),
@@ -26,8 +24,8 @@ class Variables {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variables)
 
-  typedef typename drake::symbolic::Variable key_type;
-  typedef typename drake::symbolic::Variable value_type;
+  typedef typename drake::Variable key_type;
+  typedef typename drake::Variable value_type;
   typedef typename std::set<key_type> set;
   typedef typename set::size_type size_type;
   typedef typename set::iterator iterator;
@@ -142,13 +140,9 @@ Variables operator-(Variables vars1, const Variables& vars2);
 /** Returns set-minus(@p vars, { @p var }). */
 Variables operator-(Variables vars, const Variable& var);
 
-}  // namespace symbolic
-
 /** Computes the hash value of a symbolic variables. */
 template <>
-struct hash_value<symbolic::Variables> {
-  size_t operator()(const symbolic::Variables& vars) const {
-    return vars.get_hash();
-  }
+struct hash_value<Variables> {
+  size_t operator()(const Variables& vars) const { return vars.get_hash(); }
 };
 }  // namespace drake

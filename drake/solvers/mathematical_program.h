@@ -20,7 +20,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/variable.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
@@ -334,8 +334,7 @@ class MathematicalProgram {
    * The name of the variable is only used for the user for understand.
    */
   MatrixXDecisionVariable NewContinuousVariables(
-      size_t rows, size_t cols,
-      const std::vector<std::string>& names);
+      size_t rows, size_t cols, const std::vector<std::string>& names);
 
   /**
    * Adds continuous variables to this MathematicalProgram, with default name
@@ -344,8 +343,7 @@ class MathematicalProgram {
    * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  MatrixXDecisionVariable NewContinuousVariables(size_t rows,
-                                                 size_t cols,
+  MatrixXDecisionVariable NewContinuousVariables(size_t rows, size_t cols,
                                                  const std::string& name = "X");
 
   /// Adds continuous variables to this MathematicalProgram.
@@ -1375,7 +1373,7 @@ class MathematicalProgram {
    * @param var The decision variable.
    */
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      double lb, double ub, const symbolic::Variable& var) {
+      double lb, double ub, const Variable& var) {
     MatrixDecisionVariable<1, 1> var_matrix(var);
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
                                     var_matrix);
@@ -1394,7 +1392,7 @@ class MathematicalProgram {
 
   /**
    * Adds the same scalar lower and upper bound to every variable in @p vars.
-   * @tparam Derived An Eigen Vector type with symbolic::Variable as the scalar
+   * @tparam Derived An Eigen Vector type with Variable as the scalar
    * type.
    * @param lb Lower bound.
    * @param ub Upper bound.
@@ -1402,7 +1400,7 @@ class MathematicalProgram {
    */
   template <typename Derived>
   typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
+      std::is_same<typename Derived::Scalar, Variable>::value &&
           Derived::ColsAtCompileTime == 1,
       std::shared_ptr<BoundingBoxConstraint>>::type
   AddBoundingBoxConstraint(double lb, double ub,
@@ -1415,7 +1413,7 @@ class MathematicalProgram {
 
   /**
    * Adds the same scalar lower and upper bound to every variable in @p vars.
-   * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar
+   * @tparam Derived An Eigen::Matrix with Variable as the scalar
    * type. The matrix has unknown number of columns at compile time, or has
    * more than one column.
    * @param lb Lower bound.
@@ -1424,7 +1422,7 @@ class MathematicalProgram {
    */
   template <typename Derived>
   typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
+      std::is_same<typename Derived::Scalar, Variable>::value &&
           Derived::ColsAtCompileTime != 1,
       std::shared_ptr<BoundingBoxConstraint>>::type
   AddBoundingBoxConstraint(double lb, double ub,
@@ -1434,7 +1432,7 @@ class MathematicalProgram {
                 Derived::ColsAtCompileTime != Eigen::Dynamic
             ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime
             : Eigen::Dynamic;
-    Eigen::Matrix<symbolic::Variable, kSize, 1> flat_vars(vars.size());
+    Eigen::Matrix<Variable, kSize, 1> flat_vars(vars.size());
     for (int j = 0; j < vars.cols(); ++j) {
       for (int i = 0; i < vars.rows(); ++i) {
         flat_vars(j * vars.rows() + i) = vars(i, j);
@@ -1985,7 +1983,7 @@ class MathematicalProgram {
    * @param var A decision variable in the program.
    * @param value The value of that decision variable.
    */
-  void SetDecisionVariableValue(const symbolic::Variable& var, double value);
+  void SetDecisionVariableValue(const Variable& var, double value);
 
   /**
    * Set an option for a particular solver.  This interface does not
@@ -2192,7 +2190,7 @@ class MathematicalProgram {
   }
 
   /** Returns the type of the decision variable. */
-  VarType DecisionVariableType(const symbolic::Variable& var) const;
+  VarType DecisionVariableType(const Variable& var) const;
 
   /** Getter for the initial guess */
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
@@ -2213,20 +2211,19 @@ class MathematicalProgram {
    * @pre{@p var is a decision variable in the mathematical program, otherwise
    * this function asserts an error.}
    */
-  size_t FindDecisionVariableIndex(const symbolic::Variable& var) const;
+  size_t FindDecisionVariableIndex(const Variable& var) const;
 
   /**
    * Gets the solution of an Eigen matrix of decision variables.
-   * @tparam Derived An Eigen matrix containing symbolic::Variable.
+   * @tparam Derived An Eigen matrix containing Variable.
    * @param var The decision variables.
    * @return The value of the decision variable after solving the problem.
    */
   template <typename Derived>
   Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
   GetSolution(const Eigen::MatrixBase<Derived>& var) const {
-    static_assert(
-        std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
-        "The input should be an Eigen matrix of symbolic::Variable object.");
+    static_assert(std::is_same<typename Derived::Scalar, Variable>::value,
+                  "The input should be an Eigen matrix of Variable object.");
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime>
         value(var.rows(), var.cols());
@@ -2243,7 +2240,7 @@ class MathematicalProgram {
   /**
    * Gets the value of a single decision variable.
    */
-  double GetSolution(const symbolic::Variable& var) const;
+  double GetSolution(const Variable& var) const;
 
   /**
    * Evaluate the constraint in the Binding at the solution value.
@@ -2265,14 +2262,14 @@ class MathematicalProgram {
   }
 
   /** Getter for the decision variable with index @p i in the program. */
-  const symbolic::Variable& decision_variable(int i) const {
+  const Variable& decision_variable(int i) const {
     return decision_variables_(i);
   }
 
  private:
   // maps the ID of a symbolic variable to the index of the variable stored in
   // the optimization program.
-  std::unordered_map<symbolic::Variable::Id, size_t> decision_variable_index_{};
+  std::unordered_map<Variable::Id, size_t> decision_variable_index_{};
 
   std::vector<VarType> decision_variable_type_;  // decision_variable_type_[i]
                                                  // stores the type of the
@@ -2354,7 +2351,7 @@ class MathematicalProgram {
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      decision_variables_(num_vars_ + i) = symbolic::Variable(names[i]);
+      decision_variables_(num_vars_ + i) = Variable(names[i]);
       const size_t new_var_index = num_vars_ + i;
       decision_variable_index_.insert(std::pair<size_t, size_t>(
           decision_variables_(new_var_index).get_id(), new_var_index));
@@ -2401,13 +2398,12 @@ class MathematicalProgram {
   /*
    * Given a matrix of decision variables, return true if every entry in the
    * matrix is a decision variable in the program; otherwise return false.
-   * @tparam  A Eigen::Matrix type of symbolic::Variable.
+   * @tparam  A Eigen::Matrix type of Variable.
    * @param vars A matrix of variable.
    */
   template <typename Derived>
   typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
-      bool>::type
+      std::is_same<typename Derived::Scalar, Variable>::value, bool>::type
   IsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) {
     for (int i = 0; i < vars.rows(); ++i) {
       for (int j = 0; j < vars.cols(); ++j) {
