@@ -7,7 +7,7 @@ if(Bullet_FOUND)
   target_link_libraries(accelerometer_test
       drakeCommon
       drakeLcm
-      drakeLCMSystem2
+      drakeLcmSystem
       drakeMultibodyParsers
       drakeSensors
       drakeSystemAnalysis
@@ -26,7 +26,7 @@ if(Bullet_FOUND AND lcm_FOUND)
   target_link_libraries(accelerometer_example
       drakeCommon
       drakeLcm
-      drakeLCMSystem2
+      drakeLcmSystem
       drakeMultibodyParsers
       drakeSensors
       drakeSystemAnalysis

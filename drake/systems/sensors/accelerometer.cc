@@ -17,8 +17,6 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-constexpr int Accelerometer::kNumDimensions;
-
 Accelerometer::Accelerometer(const string& name,
                              const RigidBodyFrame<double>& frame,
                              const RigidBodyTree<double>& tree,
@@ -34,7 +32,7 @@ Accelerometer::Accelerometer(const string& name,
       DeclareInputPort(kVectorValued, tree_.get_num_positions() +
                                       tree_.get_num_velocities()).get_index();
   output_port_index_ =
-      DeclareOutputPort(kVectorValued, kNumDimensions).get_index();
+      DeclareOutputPort(kVectorValued, 3).get_index();
 }
 
 Accelerometer* Accelerometer::AttachAccelerometer(
@@ -126,11 +124,15 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   drake::Isometry3<double> X_WF = tree_.CalcFramePoseInWorldFrame(
       kinematics_cache, frame_);
 
-  Vector3d a_WF_F = X_WF.linear().transpose() * A_WF.tail<3>();
+  // Extracts inverse rotation matrix from transform, and translational
+  // part of spatial acceleration.
+  auto R_FW = X_WF.linear().transpose();
+  auto a_WF_W = A_WF.tail<3>();     // Emphasizing expressed in W.
+  Vector3d a_WF_F = R_FW * a_WF_W;  // Re-expresses acceleration in F.
 
   if (include_gravity_) {
-    const Vector3d gravity = tree_.a_grav.tail<3>();
-    a_WF_F += X_WF.linear().transpose() * gravity;
+    const Vector3d gravity_W = tree_.a_grav.tail<3>();
+    a_WF_F += R_FW * gravity_W;
   }
 
   // Saves the acceleration readings into the output port.
