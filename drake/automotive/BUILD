@@ -4,7 +4,7 @@
 load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
-    "cc_googletest",
+    "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
@@ -236,7 +236,7 @@ filegroup(
 
 # === test/ ===
 
-cc_googletest(
+drake_cc_googletest(
     name = "automotive_simulator_test",
     data = ["//drake/automotive:models"],
     local = 1,
@@ -246,56 +246,56 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//drake/automotive:curve2",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "simple_car_test",
     deps = [
         "//drake/automotive:simple_car",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "idm_planner_test",
     deps = [
         "//drake/automotive:idm_planner",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "linear_car_test",
     deps = [
         "//drake/automotive:linear_car",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "simple_car_to_euler_floating_joint_test",
     deps = [
         "//drake/automotive:simple_car",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "single_lane_ego_and_agent_test",
     deps = [
         "//drake/automotive:single_lane_ego_and_agent",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "trajectory_car_test",
     deps = [
         "//drake/automotive:trajectory_car",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "simple_car_state_translator_test",
     deps = [
         "//drake/automotive:generated_translators",

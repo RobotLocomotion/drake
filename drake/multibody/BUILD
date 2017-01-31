@@ -4,7 +4,7 @@
 load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
-    "cc_googletest",
+    "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
@@ -124,7 +124,7 @@ drake_cc_binary(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rbt_collisions_test",
     srcs = ["test/rigid_body_tree/rbt_collisions_test.cc"],
     data = [":test_models"],
@@ -134,7 +134,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_collision_clique_test",
     srcs = ["test/rigid_body_tree/rigid_body_collision_clique_test.cc"],
     deps = [
@@ -143,7 +143,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_constraint_test",
     srcs = ["constraint/test/rigid_body_constraint_test.cc"],
     data = ["//drake/examples/Atlas:models"],
@@ -153,7 +153,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_tree_kinematics_test",
     srcs = ["test/rigid_body_tree/rigid_body_tree_kinematics_test.cc"],
     data = [
@@ -169,7 +169,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_tree_dynamics_test",
     srcs = ["test/rigid_body_tree/rigid_body_tree_dynamics_test.cc"],
     data = ["//drake/examples/Atlas:models"],
@@ -181,7 +181,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_tree_creation_test",
     srcs = ["test/rigid_body_tree/rigid_body_tree_creation_test.cc"],
     data = glob(["test/rigid_body_tree/*.urdf"]),
@@ -191,7 +191,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "test_kinematics_cache_checks",
     data = ["//drake/examples/Atlas:models"],
     deps = [
@@ -200,7 +200,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_test",
     deps = [
         ":rigid_body_tree",

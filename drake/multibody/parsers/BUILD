@@ -4,7 +4,7 @@
 load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
-    "cc_googletest",
+    "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
@@ -73,7 +73,7 @@ drake_cc_binary(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "package_map_test",
     srcs = ["test/package_map_test/package_map_test.cc"],
     data = [
@@ -84,7 +84,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "parser_common_test",
     srcs = ["test/parser_common_test/parser_common_test.cc"],
     data = ["test/parser_common_test/test_file.txt"],
@@ -93,7 +93,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "urdf_parser_test",
     srcs = ["test/urdf_parser_test/urdf_parser_test.cc"],
     data = [
@@ -105,7 +105,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "xml_util_test",
     deps = [
         ":parsers",

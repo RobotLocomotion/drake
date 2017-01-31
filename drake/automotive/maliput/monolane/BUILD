@@ -4,7 +4,7 @@
 load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
-    "cc_googletest",
+    "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )

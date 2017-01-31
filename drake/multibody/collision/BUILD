@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -90,7 +90,7 @@ alias(
     actual = ":bullet_collision",
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "model_test",
     data = [":test_models"],
     deps = [
@@ -100,14 +100,14 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "fcl_model_test",
     deps = [
         ":fcl_collision",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "collision_filter_group_test",
     data = [":test_models"],
     deps = [

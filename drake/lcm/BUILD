@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -73,7 +73,7 @@ drake_cc_library(
 
 # === test/ ===
 
-cc_googletest(
+drake_cc_googletest(
     name = "drake_lcm_test",
     local = 1,
     deps = [
@@ -82,7 +82,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "drake_mock_lcm_test",
     deps = [
         ":lcmt_drake_signal_utils",
@@ -90,14 +90,14 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "lcmt_drake_signal_utils_test",
     deps = [
         ":lcmt_drake_signal_utils",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "lcm_call_matlab_test",
     local = 1,
     deps = [

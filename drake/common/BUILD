@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -290,7 +290,7 @@ drake_cc_library(
     linkstatic = 1,
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "autodiff_overloads_test",
     deps = [
         ":autodiff",
@@ -300,7 +300,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "double_overloads_test",
     deps = [
         ":common",
@@ -309,21 +309,21 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "drake_assert_test",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "drake_assert_test_compile",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "drake_deprecated_test",
     # Remove spurious warnings from the default build output.
     copts = ["-Wno-deprecated-declarations"],
@@ -332,21 +332,21 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "drake_throw_test",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "dummy_value_test",
     deps = [
         ":dummy_value",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "eigen_matrix_compare_test",
     deps = [
         ":common",
@@ -354,14 +354,14 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "eigen_stl_types_test",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "extract_double_test",
     deps = [
         ":common",
@@ -369,7 +369,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "functional_form_test",
     deps = [
         ":common",
@@ -377,7 +377,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "is_approx_equal_abstol_test",
     deps = [
         ":common",
@@ -385,7 +385,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "monomial_test",
     deps = [
         ":common",
@@ -394,14 +394,14 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "never_destroyed_test",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "nice_type_name_test",
     deps = [
         ":common",
@@ -409,7 +409,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "polynomial_test",
     deps = [
         ":common",
@@ -418,7 +418,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "sorted_vectors_have_intersection_test",
     deps = [
         ":common",
@@ -426,7 +426,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "environment_test",
     deps = [
         ":common",
@@ -434,7 +434,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "symbolic_expression_test",
     deps = [
         ":common",
@@ -442,7 +442,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "symbolic_mixing_scalar_types_test",
     deps = [
         ":common",
@@ -450,7 +450,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "symbolic_expression_matrix_test",
     deps = [
         ":common",
@@ -458,7 +458,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "variable_overloading_test",
     deps = [
         ":common",
@@ -466,7 +466,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "symbolic_formula_test",
     deps = [
         ":common",
@@ -474,7 +474,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "variable_test",
     deps = [
         ":common",
@@ -482,7 +482,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "variables_test",
     deps = [
         ":common",
@@ -490,14 +490,14 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "text_logging_test",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "trig_poly_test",
     deps = [
         ":common",
