@@ -7,7 +7,7 @@ if(lcm_FOUND)
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers
-      drakeLCMSystem2
+      drakeLcmSystem
       drakeTrajectories
       gflags)
 
@@ -18,7 +18,7 @@ if(lcm_FOUND)
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers
-      drakeLCMSystem2
+      drakeLcmSystem
       drakeTrajectories
       gflags)
 

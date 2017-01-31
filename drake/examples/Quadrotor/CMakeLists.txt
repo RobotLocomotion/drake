@@ -6,7 +6,7 @@ if(lcm_FOUND)
       quadrotor_plant.cc)
   target_link_libraries(drakeQuadrotorCommon
       drakeLinearControl
-      drakeLCMSystem2
+      drakeLcmSystem
       drakeRBM)
   drake_install_libraries(drakeQuadrotorCommon)
   drake_install_headers(
@@ -21,7 +21,7 @@ if(lcm_FOUND)
 
   add_executable(run_quadrotor_dynamics run_quadrotor_dynamics.cc)
   target_link_libraries(run_quadrotor_dynamics
-      drakeLCMSystem2
+      drakeLcmSystem
       drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis
@@ -32,7 +32,7 @@ if(lcm_FOUND)
   add_executable(run_quadrotor_lqr run_quadrotor_lqr.cc)
   target_link_libraries(run_quadrotor_lqr
       drakeQuadrotorCommon
-      drakeLCMSystem2
+      drakeLcmSystem
       drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis
