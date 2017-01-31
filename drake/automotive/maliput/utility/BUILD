@@ -43,24 +43,18 @@ drake_cc_binary(
 
 # === test/ ===
 
-cc_test(
+drake_cc_googletest(
     name = "generate_urdf_test",
-    size = "small",
-    srcs = ["test/generate_urdf_test.cc"],
     deps = [
-        "@gtest//:main",
         ":utility",
         "//drake/automotive/maliput/monolane",
         "//drake/thirdParty:spruce",
     ],
 )
 
-cc_test(
+drake_cc_googletest(
     name = "infinite_circuit_road_test",
-    size = "small",
-    srcs = ["test/infinite_circuit_road_test.cc"],
     deps = [
-        "@gtest//:main",
         ":utility",
         "//drake/automotive/maliput/monolane",
     ],

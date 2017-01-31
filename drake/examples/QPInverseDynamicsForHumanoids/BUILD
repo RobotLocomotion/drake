@@ -84,7 +84,7 @@ drake_cc_library(
 
 # === test/ ===
 
-cc_test(
+drake_cc_googletest(
     name = "valkyrie_balancing_test",
     srcs = ["test/valkyrie_balancing_test.cc"],
     data = [
@@ -98,7 +98,6 @@ cc_test(
         "local",
     ],
     deps = [
-        "@gtest//:main",
         ":control_utils",
         ":param_parser",
         ":qp_controller",
@@ -108,7 +107,7 @@ cc_test(
     ],
 )
 
-cc_test(
+drake_cc_googletest(
     name = "rigid_body_tree_alias_groups_test",
     srcs = ["param_parsers/test/rigid_body_tree_alias_groups_test.cc"],
     data = [
@@ -119,14 +118,13 @@ cc_test(
         "//drake/multibody:test_models",
     ],
     deps = [
-        "@gtest//:main",
         ":rigid_body_tree_alias_groups",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
     ],
 )
 
-cc_test(
+drake_cc_googletest(
     name = "param_parser_test",
     srcs = ["param_parsers/test/param_parser_test.cc"],
     data = [
@@ -135,7 +133,6 @@ cc_test(
         "//drake/examples/Valkyrie:models",
     ],
     deps = [
-        "@gtest//:main",
         ":param_parser",
         ":rigid_body_tree_alias_groups",
         "//drake/common:eigen_matrix_compare",
