@@ -89,7 +89,7 @@ class SemiExplicitEulerIntegrator : public IntegratorBase<T> {
    * Gets the error estimate order (returns zero, since error estimation is
    * not provided).
    */
-  int get_error_estimate_order() const { return 0; }
+  int get_error_estimate_order() const override { return 0; }
 
   /**
    * Integrator does not support accuracy estimation.
