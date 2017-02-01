@@ -9,7 +9,8 @@ from ._pydrake_ik import (IKResults,
                           PostureConstraint,
                           WorldEulerConstraint,
                           WorldQuatConstraint,
-                          WorldGazeDirConstraint)
+                          WorldGazeDirConstraint,
+                          QuasiStaticConstraint)
 
 from ._pydrake_ik import WorldPositionConstraint as _WorldPositionConstraint
 from ._pydrake_ik import WorldPositionInFrameConstraint as \

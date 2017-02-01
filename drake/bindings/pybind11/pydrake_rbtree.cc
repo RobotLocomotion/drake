@@ -79,6 +79,8 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
     .def("get_num_positions", &RigidBodyTree<double>::get_num_positions)
     .def("number_of_velocities", &RigidBodyTree<double>::get_num_velocities)
     .def("get_num_velocities", &RigidBodyTree<double>::get_num_velocities)
+    .def("get_body", &RigidBodyTree<double>::get_body, py::return_value_policy::reference)
+    .def("get_position_name", &RigidBodyTree<double>::get_position_name)
     .def("_transformPoints", [](const RigidBodyTree<double>& tree,
                                const KinematicsCache<double>& cache,
                                const Eigen::Matrix<double, 3,
@@ -97,6 +99,18 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
       return tree.transformPoints(cache, points,
                                   from_body_or_frame_ind, to_body_or_frame_ind);
     })
+    .def("_relativeTransform", [](const RigidBodyTree<double>& tree,
+                                  const KinematicsCache<double>& cache,
+                                  int base_or_frame_ind,
+                                  int body_or_frame_ind) {
+      return tree.relativeTransform(cache, base_or_frame_ind, body_or_frame_ind).matrix();
+    })
+    .def("_relativeTransform", [](const RigidBodyTree<double>& tree,
+                                  const KinematicsCache<AutoDiffXd>& cache,
+                                  int base_or_frame_ind,
+                                  int body_or_frame_ind) {
+      return tree.relativeTransform(cache, base_or_frame_ind, body_or_frame_ind).matrix();
+    })
     .def("addFrame", &RigidBodyTree<double>::addFrame)
     .def("FindBody", [](const RigidBodyTree<double>& self,
                         const std::string& body_name,
@@ -112,13 +126,22 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
           ()) &RigidBodyTree<double>::world,
          py::return_value_policy::reference)
     .def("findFrame", &RigidBodyTree<double>::findFrame,
-         py::arg("frame_name"), py::arg("model_id") = -1);
+         py::arg("frame_name"), py::arg("model_id") = -1)
+    .def("getTerrainContactPoints", 
+         [](const RigidBodyTree<double>& self, 
+            const RigidBody<double>& body,
+            const std::string& group_name="") {
+          auto pts = Eigen::Matrix3Xd(3, 0);
+          self.getTerrainContactPoints(body, &pts, group_name);
+          return pts;
+        }, py::arg("body"), py::arg("group_name")="");
 
   py::class_<KinematicsCache<double> >(m, "KinematicsCacheDouble");
   py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
 
   py::class_<drake::parsers::PackageMap>(m, "PackageMap")
-    .def(py::init<>());
+    .def(py::init<>())
+    .def("Add", &drake::parsers::PackageMap::Add);
 
   py::class_<RigidBody<double> >(m, "RigidBody")
     .def("get_name", &RigidBody<double>::get_name)

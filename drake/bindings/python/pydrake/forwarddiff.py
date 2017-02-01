@@ -1,4 +1,4 @@
-from __future__ import print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
@@ -28,7 +28,7 @@ def jacobian(function, x):
         der[i] = 1
         x_ad.flat[i] = AutoDiffXd(x.flat[i], der)
     y_ad = function(x_ad)
-    return np.vstack(y.derivatives() for y in y_ad)
+    return np.vstack([y.derivatives() for y in y_ad]).reshape(y_ad.shape + (-1,))
 
 
 def sin(x):

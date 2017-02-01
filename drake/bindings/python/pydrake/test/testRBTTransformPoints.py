@@ -38,6 +38,24 @@ class TestRBMForwardKin(unittest.TestCase):
                                               [0, 1, 0, -1, 0, 1, 0],
                                               [0, 0, 1, 1, -1, 0, -1]])))
 
+    def test_relative_transform(self):
+        r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
+                                         "examples/Pendulum/Pendulum.urdf"))
+
+
+        q = np.zeros(7)
+        q[6] = np.pi / 2
+        kinsol = r.doKinematics(q)
+        T = r.relativeTransform(kinsol, 1, 2)
+        self.assertTrue(np.allclose(T,
+                                    np.array([[0, 0, 1, 0],
+                                              [0, 1, 0, 0],
+                                              [-1, 0, 0, 0],
+                                              [0, 0, 0, 1]])))
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,11 +6,9 @@ from ._pydrake_autodiffutils import *
 
 
 def wrap(wrapper_type, x):
-    print("wrapping:", x)
     wrapped = wrapper_type(x.shape)
     for i in range(x.size):
         wrapped[i] = x.flat[i]
-    print("returning:", wrapped)
     return wrapped
 
 

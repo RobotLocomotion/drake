@@ -109,7 +109,13 @@ PYBIND11_PLUGIN(_pydrake_ik) {
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan)
     .def(py::init<RigidBodyTree<double>*,
                   const Eigen::Vector2d&,
-                  const std::set<int>& >());
+                  const std::set<int>& >())
+    .def("setActive", &QuasiStaticConstraint::setActive)
+    .def("bounds", &QuasiStaticConstraint::bounds)
+    .def("setShrinkFactor", &QuasiStaticConstraint::setShrinkFactor)
+    .def("addContact", (void(QuasiStaticConstraint::*)(
+           std::vector<int>, const Eigen::Matrix3Xd&))
+         &QuasiStaticConstraint::addContact);
 
   py::class_<IKoptions>(m, "IKoptions")
     .def(py::init<RigidBodyTree<double> *>())

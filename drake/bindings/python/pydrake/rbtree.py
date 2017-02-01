@@ -1,4 +1,4 @@
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
@@ -34,3 +34,13 @@ def _transformPoints(self, *args, **kwargs):
         return wrapped
 
 RigidBodyTree.transformPoints = _transformPoints
+
+
+def _relativeTransform(self, *args, **kwargs):
+    wrapped = self._relativeTransform(*args, **kwargs)
+    if isinstance(wrapped, ad.Matrix44AutoDiffXd):
+        return ad.unwrap(wrapped)
+    else:
+        return wrapped
+
+RigidBodyTree.relativeTransform = _relativeTransform

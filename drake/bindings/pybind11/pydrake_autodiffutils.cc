@@ -125,5 +125,32 @@ PYBIND11_PLUGIN(_pydrake_autodiffutils) {
       self(i) = value;
     });
 
+    py::class_<Matrix44AutoDiffXd>(m, "Matrix44AutoDiffXd")
+    .def("__init__",
+         [](Matrix44AutoDiffXd& self, std::vector<int> shape) {
+          if (shape.size() != 2) {
+            throw std::runtime_error(
+        "Matrix44AutoDiffXd must be initialized with a two-dimensional shape");
+          }
+          new (&self) Matrix44AutoDiffXd(shape[0], shape[1]);
+        })
+    .def("shape",
+         [](const Matrix44AutoDiffXd& self) {
+      std::vector<Eigen::Index> shape = {self.rows(), self.cols()};
+      return shape;
+    })
+    .def("size",
+         [](const Matrix44AutoDiffXd& self) {
+      return self.size();
+    })
+    .def("__getitem__",
+         [](const Matrix44AutoDiffXd& self, size_t i) {
+      return self(i);
+    })
+    .def("__setitem__",
+         [](Matrix44AutoDiffXd& self, size_t i, const AutoDiffXd& value) {
+      self(i) = value;
+    });
+
   return m.ptr();
 }
