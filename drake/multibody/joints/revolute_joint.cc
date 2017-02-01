@@ -23,10 +23,8 @@ drake::TwistVector<double> RevoluteJoint::spatialJointAxis(
 bool RevoluteJoint::CompareToClone(const DrakeJoint& other) const {
   if (!FixedAxisOneDoFJoint::CompareToClone(other)) return false;
   const RevoluteJoint* downcasted_joint =
-      dynamic_cast<const RevoluteJoint*>(&other);
+      DrakeJoint::DowncastOrLog<RevoluteJoint>(&other);
   if (downcasted_joint == nullptr) {
-    drake::log()->debug(
-      "RevoluteJoint::CompareToClone(): other is not a RevoluteJoint.");
     return false;
   }
   if (rotation_axis != downcasted_joint->rotation_axis) {

@@ -10,6 +10,7 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/gradient.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
@@ -225,6 +226,19 @@ class DrakeJoint {
       Eigen::AutoDiffScalar<Eigen::VectorXd>)
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  /// Attempts to downcast the provided `other` to the template class type. If
+  /// the downcast is successful, it returns a pointer to the downcasted type.
+  /// Otherwise, it returns `nullptr`.
+  template <class DowncastType>
+  const DowncastType* DowncastOrLog(const DrakeJoint* other) const {
+    const DowncastType* result = dynamic_cast<const DowncastType*>(other);
+    if (result == nullptr) {
+      drake::log()->debug(
+          "DrakeJoint::DowncastOrLog(): Downcast failed.");
+    }
+    return result;
+  }
 
   /// Compares this joint with a cloned joint. Since this method is intended to
   /// compare a clone, an *exact* match is performed. This method will only
