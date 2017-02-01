@@ -311,24 +311,6 @@ Expression ExpressionNaN::Substitute(const Substitution& s) const {
 
 ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
 
-ExpressionNeg::ExpressionNeg(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Neg, e, e.is_polynomial()} {}
-
-ostream& ExpressionNeg::Display(ostream& os) const {
-  return os << "-(" << get_argument() << ")";
-}
-
-Polynomial<double> ExpressionNeg::ToPolynomial() const {
-  DRAKE_ASSERT(is_polynomial());
-  return -get_argument().ToPolynomial();
-}
-
-Expression ExpressionNeg::Substitute(const Substitution& s) const {
-  return -get_argument().Substitute(s);
-}
-
-double ExpressionNeg::DoEvaluate(const double v) const { return -v; }
-
 ExpressionAdd::ExpressionAdd(const double constant,
                              const map<Expression, double>& exp_to_coeff_map)
     : ExpressionCell{ExpressionKind::Add,
@@ -528,11 +510,6 @@ void ExpressionAddFactory::AddConstant(const double constant) {
 
 void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
   DRAKE_ASSERT(!is_constant(term));
-
-  // If (term, coeff) = (-E, coeff), add (E, -coeff) by recursive call.
-  if (is_unary_minus(term)) {
-    return AddTerm(-coeff, get_argument(term));
-  }
 
   const auto it(exp_to_coeff_map_.find(term));
   if (it != exp_to_coeff_map_.end()) {
@@ -1263,9 +1240,6 @@ bool is_constant(const ExpressionCell& c) {
 bool is_variable(const ExpressionCell& c) {
   return c.get_kind() == ExpressionKind::Var;
 }
-bool is_unary_minus(const ExpressionCell& c) {
-  return c.get_kind() == ExpressionKind::Neg;
-}
 bool is_addition(const ExpressionCell& c) {
   return c.get_kind() == ExpressionKind::Add;
 }
@@ -1350,11 +1324,11 @@ shared_ptr<ExpressionVar> to_variable(const Expression& e) {
 
 shared_ptr<UnaryExpressionCell> to_unary(
     const shared_ptr<ExpressionCell> exp_ptr) {
-  DRAKE_ASSERT(is_unary_minus(*exp_ptr) || is_log(*exp_ptr) ||
-               is_abs(*exp_ptr) || is_exp(*exp_ptr) || is_sqrt(*exp_ptr) ||
-               is_sin(*exp_ptr) || is_cos(*exp_ptr) || is_tan(*exp_ptr) ||
-               is_asin(*exp_ptr) || is_acos(*exp_ptr) || is_atan(*exp_ptr) ||
-               is_sinh(*exp_ptr) || is_cosh(*exp_ptr) || is_tanh(*exp_ptr));
+  DRAKE_ASSERT(is_log(*exp_ptr) || is_abs(*exp_ptr) || is_exp(*exp_ptr) ||
+               is_sqrt(*exp_ptr) || is_sin(*exp_ptr) || is_cos(*exp_ptr) ||
+               is_tan(*exp_ptr) || is_asin(*exp_ptr) || is_acos(*exp_ptr) ||
+               is_atan(*exp_ptr) || is_sinh(*exp_ptr) || is_cosh(*exp_ptr) ||
+               is_tanh(*exp_ptr));
   return static_pointer_cast<UnaryExpressionCell>(exp_ptr);
 }
 shared_ptr<UnaryExpressionCell> to_unary(const Expression& e) {

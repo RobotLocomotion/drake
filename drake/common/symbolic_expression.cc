@@ -45,6 +45,20 @@ shared_ptr<ExpressionCell> make_cell(const double d) {
     return make_shared<ExpressionConstant>(d);
   }
 }
+
+// Negates an addition expression.
+// - (E_1 + ... + E_n) => (-E_1 + ... + -E_n)
+Expression NegateAddition(const Expression& e) {
+  DRAKE_ASSERT(is_addition(e));
+  return ExpressionAddFactory{to_addition(e)}.Negate().GetExpression();
+}
+
+// Negates a multiplication expression.
+// - (c0 * E_1 * ... * E_n) => (-c0 * E_1 * ... * E_n)
+Expression NegateMultiplication(const Expression& e) {
+  DRAKE_ASSERT(is_multiplication(e));
+  return ExpressionMulFactory{to_multiplication(e)}.Negate().GetExpression();
+}
 }  // anonymous namespace
 
 Expression::Expression(const Variable& var)
@@ -247,27 +261,22 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
-// Unary minus case: -(E)
 Expression operator-(Expression e) {
   // Simplification: constant folding
   if (is_constant(e)) {
     return Expression{-get_constant_value(e)};
   }
-  // Simplification: -(-(E))  =>  E
-  if (is_unary_minus(e)) {
-    return get_argument(e);
-  }
   // Simplification: push '-' inside over '+'.
   // -(E_1 + ... + E_n) => (-E_1 + ... + -E_n)
   if (is_addition(e)) {
-    return ExpressionAddFactory{to_addition(e)}.Negate().GetExpression();
+    return NegateAddition(e);
   }
   // Simplification: push '-' inside over '*'.
   // -(c0 * E_1 * ... * E_n) => (-c0 * E_1 * ... * E_n)
   if (is_multiplication(e)) {
-    return ExpressionMulFactory{to_multiplication(e)}.Negate().GetExpression();
+    return NegateMultiplication(e);
   }
-  return Expression{make_shared<ExpressionNeg>(e)};
+  return -1 * e;
 }
 
 Expression& Expression::operator--() {
@@ -297,16 +306,37 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   if (is_one(rhs)) {
     return lhs;
   }
-  // Simplification: -1 * x => -x
+
   if (is_neg_one(lhs)) {
-    lhs = -rhs;
-    return lhs;
+    if (is_addition(rhs)) {
+      // Simplification: push '-' inside over '+'.
+      // -1 * (E_1 + ... + E_n) => (-E_1 + ... + -E_n)
+      lhs = NegateAddition(rhs);
+      return lhs;
+    }
+    if (is_multiplication(rhs)) {
+      // Simplification: push '-' inside over '*'.
+      // -1 * (c0 * E_1 * ... * E_n) => (-c0 * E_1 * ... * E_n)
+      lhs = NegateMultiplication(rhs);
+      return lhs;
+    }
   }
-  // Simplification: x * -1 => -x
+
   if (is_neg_one(rhs)) {
-    lhs = -lhs;
-    return lhs;
+    if (is_addition(lhs)) {
+      // Simplification: push '-' inside over '+'.
+      // (E_1 + ... + E_n) * -1 => (-E_1 + ... + -E_n)
+      lhs = NegateAddition(lhs);
+      return lhs;
+    }
+    if (is_multiplication(lhs)) {
+      // Simplification: push '-' inside over '*'.
+      // (c0 * E_1 * ... * E_n) * -1 => (-c0 * E_1 * ... * E_n)
+      lhs = NegateMultiplication(lhs);
+      return lhs;
+    }
   }
+
   // Simplification: 0 * E => 0
   // TODO(soonho-tri): This simplification is not sound since it cancels `E`
   // which might cause 0/0 during evaluation.
@@ -637,7 +667,6 @@ bool is_neg_one(const Expression& e) { return is_constant(e, -1.0); }
 bool is_two(const Expression& e) { return is_constant(e, 2.0); }
 bool is_nan(const Expression& e) { return e.get_kind() == ExpressionKind::NaN; }
 bool is_variable(const Expression& e) { return is_variable(*e.ptr_); }
-bool is_unary_minus(const Expression& e) { return is_unary_minus(*e.ptr_); }
 bool is_addition(const Expression& e) { return is_addition(*e.ptr_); }
 bool is_multiplication(const Expression& e) {
   return is_multiplication(*e.ptr_);
