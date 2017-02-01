@@ -21,8 +21,8 @@ class RigidBody {
  public:
   RigidBody();
 
-  // TODO(liang.fok) The following preprocessor condition is necessary because
-  // wrapping method Clone() in SWIG causes the following build error to occur:
+  // The following preprocessor condition is necessary because wrapping method
+  // Clone() in SWIG causes the following build error to occur:
   //
   //     "call to implicitly-deleted copy constructor"
   //

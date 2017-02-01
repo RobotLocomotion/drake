@@ -24,9 +24,9 @@ RigidBody<T>::RigidBody() {
   spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
 }
 
-// TODO(liang.fok) For an explanation of why these SWIG preprocessor commands
-// are needed, see the comment immediately above the declaration of
-// RigidBody::Clone() in rigid_body.h.
+// For an explanation of why these SWIG preprocessor commands are needed, see
+// the comment immediately above the declaration of RigidBody::Clone() in
+// rigid_body.h.
 #ifndef SWIG
 template <typename T>
 std::unique_ptr<RigidBody<T>> RigidBody<T>::Clone() const {
