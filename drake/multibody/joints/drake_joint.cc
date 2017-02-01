@@ -86,11 +86,11 @@ const Eigen::VectorXd& DrakeJoint::get_joint_limit_dissipation() const {
   return joint_limit_dissipation_;
 }
 
-bool DrakeJoint::CompareToClonedJoint(const DrakeJoint &other) const {
+bool DrakeJoint::CompareToClone(const DrakeJoint &other) const {
   if (get_transform_to_parent_body().matrix() !=
       other.get_transform_to_parent_body().matrix()) {
     drake::log()->debug(
-        "DrakeJoint::CompareToClonedJoint(): "
+        "DrakeJoint::CompareToClone(): "
         "transform_to_parent_body mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
@@ -100,7 +100,7 @@ bool DrakeJoint::CompareToClonedJoint(const DrakeJoint &other) const {
   }
   if (get_num_positions() != other.get_num_positions()) {
     drake::log()->debug(
-        "DrakeJoint::CompareToClonedJoint(): get_num_positions mismatch:\n"
+        "DrakeJoint::CompareToClone(): get_num_positions mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         get_num_positions(),
@@ -109,7 +109,7 @@ bool DrakeJoint::CompareToClonedJoint(const DrakeJoint &other) const {
   }
   if (get_num_velocities() != other.get_num_velocities()) {
     drake::log()->debug(
-        "DrakeJoint::CompareToClonedJoint(): get_num_velocities mismatch:\n"
+        "DrakeJoint::CompareToClone(): get_num_velocities mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         get_num_velocities(),
@@ -118,7 +118,7 @@ bool DrakeJoint::CompareToClonedJoint(const DrakeJoint &other) const {
   }
   if (get_name() != other.get_name()) {
     drake::log()->debug(
-        "DrakeJoint::CompareToClonedJoint(): get_name mismatch:\n"
+        "DrakeJoint::CompareToClone(): get_name mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         get_name(),
@@ -127,7 +127,7 @@ bool DrakeJoint::CompareToClonedJoint(const DrakeJoint &other) const {
   }
   if (getJointLimitMin() != other.getJointLimitMin()) {
     drake::log()->debug(
-        "DrakeJoint::CompareToClonedJoint(): getJointLimitMin mismatch:\n"
+        "DrakeJoint::CompareToClone(): getJointLimitMin mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         getJointLimitMin(),
@@ -136,7 +136,7 @@ bool DrakeJoint::CompareToClonedJoint(const DrakeJoint &other) const {
   }
   if (getJointLimitMax() != other.getJointLimitMax()) {
     drake::log()->debug(
-        "DrakeJoint::CompareToClonedJoint(): getJointLimitMax mismatch:\n"
+        "DrakeJoint::CompareToClone(): getJointLimitMax mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         getJointLimitMax(),
@@ -145,7 +145,7 @@ bool DrakeJoint::CompareToClonedJoint(const DrakeJoint &other) const {
   }
   if (get_joint_limit_stiffness() != other.get_joint_limit_stiffness()) {
     drake::log()->debug(
-        "DrakeJoint::CompareToClonedJoint(): "
+        "DrakeJoint::CompareToClone(): "
         "get_joint_limit_stiffness mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
@@ -155,7 +155,7 @@ bool DrakeJoint::CompareToClonedJoint(const DrakeJoint &other) const {
   }
   if (get_joint_limit_dissipation() != other.get_joint_limit_dissipation()) {
     drake::log()->debug(
-        "DrakeJoint::CompareToClonedJoint(): "
+        "DrakeJoint::CompareToClone(): "
         "get_joint_limit_dissipation mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",

@@ -20,18 +20,18 @@ drake::TwistVector<double> PrismaticJoint::spatialJointAxis(
   return ret;
 }
 
-bool PrismaticJoint::CompareToClonedJoint(const DrakeJoint& other) const {
-  if (!FixedAxisOneDoFJoint::CompareToClonedJoint(other)) return false;
+bool PrismaticJoint::CompareToClone(const DrakeJoint& other) const {
+  if (!FixedAxisOneDoFJoint::CompareToClone(other)) return false;
   const PrismaticJoint* downcasted_joint =
       dynamic_cast<const PrismaticJoint*>(&other);
   if (downcasted_joint == nullptr) {
     drake::log()->debug(
-      "PrismaticJoint::CompareToClonedJoint(): other is not a PrismaticJoint.");
+      "PrismaticJoint::CompareToClone(): other is not a PrismaticJoint.");
     return false;
   }
   if (translation_axis_ != downcasted_joint->translation_axis_) {
     drake::log()->debug(
-        "PrismaticJoint::CompareToClonedJoint(): translation_axis mismatch:\n"
+        "PrismaticJoint::CompareToClone(): translation_axis mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         translation_axis_.transpose(),

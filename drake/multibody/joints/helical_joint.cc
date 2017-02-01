@@ -22,18 +22,18 @@ drake::TwistVector<double> HelicalJoint::spatialJointAxis(const Vector3d& axis,
   return ret;
 }
 
-bool HelicalJoint::CompareToClonedJoint(const DrakeJoint& other) const {
-  if (!FixedAxisOneDoFJoint::CompareToClonedJoint(other)) return false;
+bool HelicalJoint::CompareToClone(const DrakeJoint& other) const {
+  if (!FixedAxisOneDoFJoint::CompareToClone(other)) return false;
   const HelicalJoint* downcasted_joint =
       dynamic_cast<const HelicalJoint*>(&other);
   if (downcasted_joint == nullptr) {
     drake::log()->debug(
-      "HelicalJoint::CompareToClonedJoint(): other is not a HelicalJoint.");
+      "HelicalJoint::CompareToClone(): other is not a HelicalJoint.");
     return false;
   }
   if (axis_ != downcasted_joint->axis_) {
     drake::log()->debug(
-        "HelicalJoint::CompareToClonedJoint(): axis mismatch:\n"
+        "HelicalJoint::CompareToClone(): axis mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         axis_,
@@ -42,7 +42,7 @@ bool HelicalJoint::CompareToClonedJoint(const DrakeJoint& other) const {
   }
   if (pitch_ != downcasted_joint->pitch_) {
       drake::log()->debug(
-        "HelicalJoint::CompareToClonedJoint(): pitch mismatch:\n"
+        "HelicalJoint::CompareToClone(): pitch mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         pitch_,

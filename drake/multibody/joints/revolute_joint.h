@@ -37,7 +37,7 @@ class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
     return ret;
   }
 
-  bool CompareToClonedJoint(const DrakeJoint& other) const final;
+  bool CompareToClone(const DrakeJoint& other) const final;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

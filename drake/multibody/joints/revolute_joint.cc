@@ -20,18 +20,18 @@ drake::TwistVector<double> RevoluteJoint::spatialJointAxis(
   return ret;
 }
 
-bool RevoluteJoint::CompareToClonedJoint(const DrakeJoint& other) const {
-  if (!FixedAxisOneDoFJoint::CompareToClonedJoint(other)) return false;
+bool RevoluteJoint::CompareToClone(const DrakeJoint& other) const {
+  if (!FixedAxisOneDoFJoint::CompareToClone(other)) return false;
   const RevoluteJoint* downcasted_joint =
       dynamic_cast<const RevoluteJoint*>(&other);
   if (downcasted_joint == nullptr) {
     drake::log()->debug(
-      "RevoluteJoint::CompareToClonedJoint(): other is not a RevoluteJoint.");
+      "RevoluteJoint::CompareToClone(): other is not a RevoluteJoint.");
     return false;
   }
   if (rotation_axis != downcasted_joint->rotation_axis) {
     drake::log()->debug(
-        "RevoluteJoint::CompareToClonedJoint(): rotation_axis mismatch:\n"
+        "RevoluteJoint::CompareToClone(): rotation_axis mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         rotation_axis.transpose(),

@@ -64,16 +64,16 @@ TEST_F(DrakeJointTests, TestIfJointIsFixed) {
 
 TEST_F(DrakeJointTests, TestCloneAndCompare) {
   // Verifies that each type of joint is equal to its clone.
-  EXPECT_TRUE(fixed_joint_->CompareToClonedJoint(*fixed_joint_->Clone()));
-  EXPECT_TRUE(helical_joint_->CompareToClonedJoint(*helical_joint_->Clone()));
-  EXPECT_TRUE(prismatic_joint_->CompareToClonedJoint(
+  EXPECT_TRUE(fixed_joint_->CompareToClone(*fixed_joint_->Clone()));
+  EXPECT_TRUE(helical_joint_->CompareToClone(*helical_joint_->Clone()));
+  EXPECT_TRUE(prismatic_joint_->CompareToClone(
       *prismatic_joint_->Clone()));
-  EXPECT_TRUE(quaternion_floating_joint_->CompareToClonedJoint(
+  EXPECT_TRUE(quaternion_floating_joint_->CompareToClone(
       *quaternion_floating_joint_->Clone()));
-  EXPECT_TRUE(revolute_joint_->CompareToClonedJoint(*revolute_joint_->Clone()));
+  EXPECT_TRUE(revolute_joint_->CompareToClone(*revolute_joint_->Clone()));
 
   // Verifies that two joints with different names do not match.
-  EXPECT_FALSE(fixed_joint_->CompareToClonedJoint(
+  EXPECT_FALSE(fixed_joint_->CompareToClone(
       FixedJoint("NonMatchingName",
                  fixed_joint_->get_transform_to_parent_body())));
 
@@ -95,20 +95,20 @@ TEST_F(DrakeJointTests, TestCloneAndCompare) {
   non_matching_transform.linear() =
       (AngleAxis<double>(non_matching_transform.linear()) *
           non_zero_angle_axis).toRotationMatrix();
-  EXPECT_FALSE(joints.at(0)->CompareToClonedJoint(
+  EXPECT_FALSE(joints.at(0)->CompareToClone(
       FixedJoint(fixed_joint_->get_name(), non_matching_transform)));
 
   // Verifies each type of joint can be cloned and that the clone is equal to
   // the original.
   for (int i = 0; i < static_cast<int>(joints.size()); ++i) {
-    EXPECT_TRUE(joints.at(i)->CompareToClonedJoint(*joints.at(i)->Clone()));
+    EXPECT_TRUE(joints.at(i)->CompareToClone(*joints.at(i)->Clone()));
   }
 
   // Verifies that two joints of different types do not match.
   for (int i = 0; i < static_cast<int>(joints.size()); ++i) {
     for (int j = 0; j < static_cast<int>(joints.size()); ++j) {
       if (j != i) {
-        EXPECT_FALSE(joints.at(i)->CompareToClonedJoint(*joints.at(j)));
+        EXPECT_FALSE(joints.at(i)->CompareToClone(*joints.at(j)));
       }
     }
   }

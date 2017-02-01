@@ -50,7 +50,7 @@ class PrismaticJoint : public FixedAxisOneDoFJoint<PrismaticJoint> {
 
   std::unique_ptr<DrakeJoint> Clone() const final;
 
-  bool CompareToClonedJoint(const DrakeJoint& other) const final;
+  bool CompareToClone(const DrakeJoint& other) const final;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

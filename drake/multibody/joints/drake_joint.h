@@ -230,7 +230,7 @@ class DrakeJoint {
   /// compare a clone, an *exact* match is performed. This method will only
   /// return `true` if the provided `other` joint is exactly the same as this
   /// joint.
-  virtual bool CompareToClonedJoint(const DrakeJoint& other) const;
+  virtual bool CompareToClone(const DrakeJoint& other) const;
 
  protected:
   const std::string name;
