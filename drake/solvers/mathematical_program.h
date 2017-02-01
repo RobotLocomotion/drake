@@ -1787,7 +1787,7 @@ class MathematicalProgram {
       M = NewSymmetricContinuousVariables<e_rows>();
     }
     // Adds the linear equality constraint that M = e.
-    AddLinearEqualityConstraint(e - M, Eigen::Matrix<double, e_rows, e_rows>::Zero(e.rows(), e.rows()));
+    AddLinearEqualityConstraint(e - M, Eigen::Matrix<double, e_rows, e_rows>::Zero(e.rows(), e.rows()), true);
     const int M_flat_size = e_rows == Eigen::Dynamic ? Eigen::Dynamic : e_rows * e_rows;
     const Eigen::Map<Eigen::Matrix<Variable, M_flat_size, 1>> M_flat(&M(0, 0), e.size());
     return Binding<PositiveSemidefiniteConstraint>(AddPositiveSemidefiniteConstraint(M), M_flat);
