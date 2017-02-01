@@ -267,8 +267,14 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
   StateVector<double> dot(nq + nv);
 
+  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
+  // templatized.
   Eigen::VectorXd vdot_value = prog.GetSolution(vdot);
-  dot << tree->transformVelocityToQDot(kinsol, v), vdot_value;
+  dot << tree->transformQDotMappingToVelocityMapping(kinsol,
+             Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(
+                 nq, nq).eval()) *
+             v,
+      vdot_value;
   return dot;
 }
 
