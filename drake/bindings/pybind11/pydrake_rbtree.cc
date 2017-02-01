@@ -79,7 +79,8 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
     .def("get_num_positions", &RigidBodyTree<double>::get_num_positions)
     .def("number_of_velocities", &RigidBodyTree<double>::get_num_velocities)
     .def("get_num_velocities", &RigidBodyTree<double>::get_num_velocities)
-    .def("get_body", &RigidBodyTree<double>::get_body, py::return_value_policy::reference)
+    .def("get_body", &RigidBodyTree<double>::get_body,
+         py::return_value_policy::reference)
     .def("get_position_name", &RigidBodyTree<double>::get_position_name)
     .def("_transformPoints", [](const RigidBodyTree<double>& tree,
                                const KinematicsCache<double>& cache,
@@ -103,13 +104,15 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
                                   const KinematicsCache<double>& cache,
                                   int base_or_frame_ind,
                                   int body_or_frame_ind) {
-      return tree.relativeTransform(cache, base_or_frame_ind, body_or_frame_ind).matrix();
+      return tree.relativeTransform(cache, base_or_frame_ind,
+        body_or_frame_ind).matrix();
     })
     .def("_relativeTransform", [](const RigidBodyTree<double>& tree,
                                   const KinematicsCache<AutoDiffXd>& cache,
                                   int base_or_frame_ind,
                                   int body_or_frame_ind) {
-      return tree.relativeTransform(cache, base_or_frame_ind, body_or_frame_ind).matrix();
+      return tree.relativeTransform(cache, base_or_frame_ind,
+        body_or_frame_ind).matrix();
     })
     .def("addFrame", &RigidBodyTree<double>::addFrame)
     .def("FindBody", [](const RigidBodyTree<double>& self,
@@ -127,10 +130,10 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
          py::return_value_policy::reference)
     .def("findFrame", &RigidBodyTree<double>::findFrame,
          py::arg("frame_name"), py::arg("model_id") = -1)
-    .def("getTerrainContactPoints", 
-         [](const RigidBodyTree<double>& self, 
+    .def("getTerrainContactPoints",
+         [](const RigidBodyTree<double>& self,
             const RigidBody<double>& body,
-            const std::string& group_name="") {
+            const std::string& group_name = "") {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getTerrainContactPoints(body, &pts, group_name);
           return pts;
