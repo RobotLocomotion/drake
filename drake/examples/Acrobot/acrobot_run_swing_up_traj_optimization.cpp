@@ -3,6 +3,8 @@
 #include <iostream>
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
@@ -28,6 +30,10 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 namespace {
+
+DEFINE_double(realtime_factor, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
 
 int do_main(int argc, char* argv[]) {
   systems::DiagramBuilder<double> builder;
@@ -81,14 +87,14 @@ int do_main(int argc, char* argv[]) {
 
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
 
-  builder.Connect(state_source->get_output_port(0),
+  builder.Connect(state_source->get_output_port(),
                   publisher->get_input_port(0));
 
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
 
-
+  simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
   simulator.StepTo(kTrajectoryTimeUpperBound);
 

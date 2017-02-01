@@ -86,6 +86,12 @@ if(lcm_FOUND)
           drakeSystemAnalysis
           drakeLinearControl)
 
+  add_executable(acrobot_run_swing_up_traj_optimization acrobot_run_swing_up_traj_optimization.cpp)
+  target_link_libraries(acrobot_run_swing_up_traj_optimization
+          drakeAcrobotPlant
+          drakeRigidBodyPlant
+          drakeSystemAnalysis
+          GTest::GTest)
 
 endif(lcm_FOUND)
 
