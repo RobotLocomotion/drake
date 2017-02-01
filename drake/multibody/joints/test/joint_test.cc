@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include  <memory>
 
+#include <Eigen/Geometry>
+
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/helical_joint.h"
 #include "drake/multibody/joints/prismatic_joint.h"
@@ -72,8 +74,8 @@ TEST_F(DrakeJointTests, TestCloneAndCompare) {
 
   // Verifies that two joints with different names do not match.
   EXPECT_FALSE(fixed_joint_->CompareToClonedJoint(
-            FixedJoint("NonMatchingName",
-                       fixed_joint_->get_transform_to_parent_body())));
+      FixedJoint("NonMatchingName",
+                 fixed_joint_->get_transform_to_parent_body())));
 
   const std::vector<DrakeJoint*> joints = {
       fixed_joint_.get(),
@@ -86,9 +88,15 @@ TEST_F(DrakeJointTests, TestCloneAndCompare) {
   // match.
   Eigen::Isometry3d non_matching_transform =
       joints.at(0)->get_transform_to_parent_body();
-  non_matching_transform.linear()(0, 0) += 1;
+  const double random_angle = 0.7;
+  Vector3<double> random_axis(-0.4, 0.3, 0.5);
+  random_axis.normalize();
+  const AngleAxis<double> non_zero_angle_axis(random_angle, random_axis);
+  non_matching_transform.linear() =
+      (AngleAxis<double>(non_matching_transform.linear()) *
+          non_zero_angle_axis).toRotationMatrix();
   EXPECT_FALSE(joints.at(0)->CompareToClonedJoint(
-            FixedJoint(fixed_joint_->get_name(), non_matching_transform)));
+      FixedJoint(fixed_joint_->get_name(), non_matching_transform)));
 
   // Verifies each type of joint can be cloned and that the clone is equal to
   // the original.

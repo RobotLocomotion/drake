@@ -81,7 +81,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
   virtual ~QuaternionFloatingJoint() {}
 
-  std::unique_ptr<DrakeJoint> Clone() const override;
+  std::unique_ptr<DrakeJoint> Clone() const final;
 
   /** Returns the transform `X_PB(q)` where P is the parent body and B the
    * child body connected by this joint.

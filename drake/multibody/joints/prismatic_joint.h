@@ -48,9 +48,9 @@ class PrismaticJoint : public FixedAxisOneDoFJoint<PrismaticJoint> {
 
   virtual ~PrismaticJoint() {}
 
-  std::unique_ptr<DrakeJoint> Clone() const override;
+  std::unique_ptr<DrakeJoint> Clone() const final;
 
-  bool CompareToClonedJoint(const DrakeJoint& other) const override;
+  bool CompareToClonedJoint(const DrakeJoint& other) const final;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

@@ -25,7 +25,7 @@ class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
 
   virtual ~RevoluteJoint() {}
 
-  std::unique_ptr<DrakeJoint> Clone() const override;
+  std::unique_ptr<DrakeJoint> Clone() const final;
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
@@ -37,7 +37,7 @@ class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
     return ret;
   }
 
-  bool CompareToClonedJoint(const DrakeJoint& other) const override;
+  bool CompareToClonedJoint(const DrakeJoint& other) const final;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

@@ -125,15 +125,6 @@ bool DrakeJoint::CompareToClonedJoint(const DrakeJoint &other) const {
         other.get_name());
     return false;
   }
-  if (is_fixed() != other.is_fixed()) {
-    drake::log()->debug(
-        "DrakeJoint::CompareToClonedJoint(): is_fixed mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        is_fixed(),
-        other.is_fixed());
-    return false;
-  }
   if (getJointLimitMin() != other.getJointLimitMin()) {
     drake::log()->debug(
         "DrakeJoint::CompareToClonedJoint(): getJointLimitMin mismatch:\n"

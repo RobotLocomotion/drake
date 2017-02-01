@@ -27,7 +27,7 @@ class RollPitchYawFloatingJoint
 
   virtual ~RollPitchYawFloatingJoint() {}
 
-  std::unique_ptr<DrakeJoint> Clone() const override;
+  std::unique_ptr<DrakeJoint> Clone() const final;
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
