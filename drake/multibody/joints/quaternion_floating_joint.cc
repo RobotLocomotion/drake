@@ -1,12 +1,20 @@
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 
+#include <memory>
 #include <random>
+#include <utility>
 
 #include "drake/math/random_rotation.h"
 
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::normal_distribution;
+
+std::unique_ptr<DrakeJoint> QuaternionFloatingJoint::Clone() const {
+  auto joint = std::make_unique<QuaternionFloatingJoint>(get_name(),
+      get_transform_to_parent_body());
+  return std::move(joint);
+}
 
 std::string QuaternionFloatingJoint::get_position_name(int index) const {
   switch (index) {

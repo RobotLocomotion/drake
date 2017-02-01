@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "drake/common/constants.h"
@@ -79,6 +80,8 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
       : DrakeJointImpl(*this, name, transform_to_parent_body, 7, 6) {}
 
   virtual ~QuaternionFloatingJoint() {}
+
+  std::unique_ptr<DrakeJoint> Clone() const final;
 
   /** Returns the transform `X_PB(q)` where P is the parent body and B the
    * child body connected by this joint.

@@ -10,6 +10,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
 #include "drake/multibody/joints/drake_joint_impl.h"
@@ -18,16 +19,6 @@
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
 template <typename Derived>
 class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
-  // disable copy construction and assignment
-  // FixedAxisOneDoFJoint(const DrakeJoint&) = delete;
-  // FixedAxisOneDoFJoint& operator=(const FixedAxisOneDoFJoint&) = delete;
-
- private:
-  drake::TwistVector<double> joint_axis;
-  double damping;
-  double coulomb_friction;
-  double coulomb_window;
-
  protected:
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   FixedAxisOneDoFJoint(Derived& derived, const std::string& name,
@@ -200,7 +191,63 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return get_position_name(index);
   }
 
- public:
+  bool CompareToClone(const DrakeJoint& other) const override {
+    if (!DrakeJoint::CompareToClone(other)) return false;
+    const FixedAxisOneDoFJoint* downcasted_joint =
+        dynamic_cast<const FixedAxisOneDoFJoint*>(&other);
+    if (downcasted_joint == nullptr) {
+      drake::log()->debug(
+        "FixedAxisOneDoFJoint::CompareToClone: "
+        "other is not of type FixedAxisOneDoFJoint.");
+      return false;
+    }
+    if (joint_axis != downcasted_joint->joint_axis) {
+      drake::log()->debug(
+          "FixedAxisOneDoFJoint::CompareToClone: joint_axis mismatch:\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          joint_axis,
+          downcasted_joint->joint_axis);
+      return false;
+    }
+    if (damping != downcasted_joint->damping) {
+        drake::log()->debug(
+          "FixedAxisOneDoFJoint::CompareToClone: damping mismatch:\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          damping,
+          downcasted_joint->damping);
+      return false;
+    }
+    if (coulomb_friction != downcasted_joint->coulomb_friction) {
+        drake::log()->debug(
+          "FixedAxisOneDoFJoint::CompareToClone: "
+          "coulomb_friction mismatch:\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          coulomb_friction,
+          downcasted_joint->coulomb_friction);
+      return false;
+    }
+    if (coulomb_window != downcasted_joint->coulomb_window) {
+        drake::log()->debug(
+          "FixedAxisOneDoFJoint::CompareToClone: "
+          "coulomb_window mismatch:\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          coulomb_window,
+          downcasted_joint->coulomb_window);
+      return false;
+    }
+    return true;
+  }
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ private:
+  drake::TwistVector<double> joint_axis;
+  double damping;
+  double coulomb_friction;
+  double coulomb_window;
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

@@ -1,5 +1,14 @@
 #include "drake/multibody/joints/fixed_joint.h"
 
+#include <memory>
+#include <utility>
+
+std::unique_ptr<DrakeJoint> FixedJoint::Clone() const {
+  auto joint = std::make_unique<FixedJoint>(get_name(),
+                                            get_transform_to_parent_body());
+  return std::move(joint);
+}
+
 std::string FixedJoint::get_position_name(int index) const {
   throw std::runtime_error("bad index");
 }
