@@ -78,6 +78,20 @@ bool Formula::Evaluate(const Environment& env) const {
   return ptr_->Evaluate(env);
 }
 
+Formula Formula::Substitute(const Variable& var, const Expression& e) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return Formula{ptr_->Substitute({{var, e}})};
+}
+
+Formula Formula::Substitute(const Substitution& s) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  if (s.size() > 0) {
+    return Formula{ptr_->Substitute(s)};
+  } else {
+    return *this;
+  }
+}
+
 string Formula::to_string() const {
   ostringstream oss;
   oss << *this;

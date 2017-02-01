@@ -49,6 +49,11 @@ class FormulaCell {
   virtual bool Less(const FormulaCell& c) const = 0;
   /** Evaluates under a given environment. */
   virtual bool Evaluate(const Environment& env) const = 0;
+  /** Returns a Formula obtained by replacing all occurrences of the
+   * variables in @p s in the current formula cell with the corresponding
+   * expressions in @p s.
+   */
+  virtual Formula Substitute(const Substitution& s) const = 0;
   /** Outputs string representation of formula into output stream @p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
@@ -74,11 +79,8 @@ class RelationalFormulaCell : public FormulaCell {
   /** Construct RelationalFormulaCell of kind @p k with @p hash. */
   RelationalFormulaCell(FormulaKind k, const Expression& e1,
                         const Expression& e2);
-  /** Returns set of free variables in formula. */
   Variables GetFreeVariables() const override;
-  /** Checks structural equality. */
   bool EqualTo(const FormulaCell& f) const override;
-  /** Checks ordering. */
   bool Less(const FormulaCell& f) const override;
 
   /** Returns the expression on left-hand-side. */
@@ -110,11 +112,8 @@ class NaryFormulaCell : public FormulaCell {
   NaryFormulaCell& operator=(const NaryFormulaCell& f) = delete;
   /** Construct NaryFormulaCell of kind @p k with @p hash. */
   NaryFormulaCell(FormulaKind k, const std::set<Formula>& formulas);
-  /** Returns free variables in formula. */
   Variables GetFreeVariables() const override;
-  /** Checks structural equality. */
   bool EqualTo(const FormulaCell& f) const override;
-  /** Checks ordering. */
   bool Less(const FormulaCell& f) const override;
   /** Returns the formulas. */
   const std::set<Formula>& get_operands() const { return formulas_; }
@@ -131,15 +130,11 @@ class FormulaTrue : public FormulaCell {
  public:
   /** Default Constructor. */
   FormulaTrue();
-  /** Returns set of free variables in formula. */
   Variables GetFreeVariables() const override;
-  /** Checks structural equality. */
   bool EqualTo(const FormulaCell& f) const override;
-  /** Checks ordering. */
   bool Less(const FormulaCell& f) const override;
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -148,15 +143,11 @@ class FormulaFalse : public FormulaCell {
  public:
   /** Default Constructor. */
   FormulaFalse();
-  /** Returns set of free variables in formula. */
   Variables GetFreeVariables() const override;
-  /** Checks structural equality. */
   bool EqualTo(const FormulaCell& f) const override;
-  /** Checks ordering. */
   bool Less(const FormulaCell& f) const override;
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -165,9 +156,8 @@ class FormulaEq : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaEq(const Expression& e1, const Expression& e2);
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -176,9 +166,8 @@ class FormulaNeq : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaNeq(const Expression& e1, const Expression& e2);
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -187,9 +176,8 @@ class FormulaGt : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaGt(const Expression& e1, const Expression& e2);
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -198,9 +186,8 @@ class FormulaGeq : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaGeq(const Expression& e1, const Expression& e2);
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -209,9 +196,8 @@ class FormulaLt : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaLt(const Expression& e1, const Expression& e2);
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -220,9 +206,8 @@ class FormulaLeq : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaLeq(const Expression& e1, const Expression& e2);
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -233,9 +218,8 @@ class FormulaAnd : public NaryFormulaCell {
   explicit FormulaAnd(const std::set<Formula>& formulas);
   /** Constructs @p f1 ∧ @p f2. */
   FormulaAnd(const Formula& f1, const Formula& f2);
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -246,9 +230,8 @@ class FormulaOr : public NaryFormulaCell {
   explicit FormulaOr(const std::set<Formula>& formula);
   /** Constructs @p f1 ∨ @p f2. */
   FormulaOr(const Formula& f1, const Formula& f2);
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -257,15 +240,11 @@ class FormulaNot : public FormulaCell {
  public:
   /** Constructs from @p f. */
   explicit FormulaNot(const Formula& f);
-  /** Returns set of free variables in formula. */
   Variables GetFreeVariables() const override;
-  /** Checks structural equality. */
   bool EqualTo(const FormulaCell& f) const override;
-  /** Checks ordering. */
   bool Less(const FormulaCell& f) const override;
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
   /** Returns the operand. */
   const Formula& get_operand() const { return f_; }
@@ -281,15 +260,11 @@ class FormulaForall : public FormulaCell {
  public:
   /** Constructs from @p vars and @p f. */
   FormulaForall(const Variables& vars, const Formula& f);
-  /** Returns set of free variables in formula. */
   Variables GetFreeVariables() const override;
-  /** Checks structural equality. */
   bool EqualTo(const FormulaCell& f) const override;
-  /** Checks ordering. */
   bool Less(const FormulaCell& f) const override;
-  /** Evaluates under a given environment. */
   bool Evaluate(const Environment& env) const override;
-  /** Outputs string representation of formula into output stream @p os. */
+  Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
   /** Returns the quantified variables. */
   const Variables& get_quantified_variables() const { return vars_; }
