@@ -1284,34 +1284,6 @@ GTEST_TEST(TestConvexOptimization, TestTrivialSDP) {
   }
 }
 
-namespace {
-// Add condition A' * P + P * A + Q = 0
-//               Q is p.s.d
-template <int x_dim>
-MatrixDecisionVariable<x_dim, x_dim> AddLyapunovCondition(
-    const Eigen::Matrix<double, x_dim, x_dim>& A,
-    const MatrixDecisionVariable<x_dim, x_dim>& P, MathematicalProgram* prog) {
-  const auto Q = prog->NewSymmetricContinuousVariables<x_dim>();
-  prog->AddPositiveSemidefiniteConstraint(Q);
-  // TODO(hongkai.dai): Use symbolic variable to compute the expression
-  // M = A' * P + P * A + Q.
-  Eigen::Matrix<symbolic::Expression, x_dim, x_dim> M;
-  M = A.transpose() * P + P * A + Q;
-  Eigen::Matrix<symbolic::Expression, x_dim*(x_dim + 1) / 2, 1>
-      M_lower_triangular{};
-  int M_count = 0;
-  for (int j = 0; j < x_dim; ++j) {
-    for (int i = j; i < x_dim; ++i) {
-      M_lower_triangular(M_count++) = M(i, j);
-    }
-  }
-  prog->AddLinearEqualityConstraint(
-      M_lower_triangular,
-      Eigen::Matrix<double, x_dim*(x_dim + 1) / 2, 1>::Zero());
-  return Q;
-}
-}  // namespace
-
 // Solve a semidefinite programming problem.
 // Find the common Lyapunov function for linear systems
 // xdot = Ai*x
@@ -1332,7 +1304,7 @@ GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
            0, -1, -3,
            0, 0, -1;
     // clang-format on
-    const auto& Q1 = AddLyapunovCondition(A1, P, &prog);
+    auto binding1 = prog.AddPositiveSemidefiniteConstraint(-A1.transpose() * P - P * A1);
 
     Eigen::Matrix3d A2;
     // clang-format off
@@ -1340,13 +1312,15 @@ GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
            0, -0.7, -2,
            0, 0, -0.4;
     // clang-format on
-    const auto& Q2 = AddLyapunovCondition(A2, P, &prog);
+    auto binding2 = prog.AddPositiveSemidefiniteConstraint(-A2.transpose() * P - P * A2);
 
     RunSolver(&prog, *solver);
 
-    Eigen::Matrix3d P_value = prog.GetSolution(P);
-    Eigen::Matrix3d Q1_value = prog.GetSolution(Q1);
-    Eigen::Matrix3d Q2_value = prog.GetSolution(Q2);
+    const Eigen::Matrix3d P_value = prog.GetSolution(P);
+    const auto Q1_flat_value = prog.GetSolution(binding1.variables());
+    const auto Q2_flat_value = prog.GetSolution(binding2.variables());
+    const Eigen::Map<const Eigen::Matrix3d> Q1_value(&Q1_flat_value(0));
+    const Eigen::Map<const Eigen::Matrix3d> Q2_value(&Q2_flat_value(0));
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
 
     // The comparison tolerance is set as 1E-8, to match the Mosek default

@@ -1772,10 +1772,12 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var);
 
   template <typename Derived>
-  typename std::enable_if<std::is_same<typename Derived::Scalar, symbolic::Expression>::value, Binding<PositiveSemidefiniteConstraint>>::type
-  AddPositionSemidefiniteConstraint(const Eigen::MatrixBase<Derived>& e) {
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
+      Binding<PositiveSemidefiniteConstraint>>::type
+  AddPositiveSemidefiniteConstraint(const Eigen::MatrixBase<Derived>& e) {
     DRAKE_DEMAND(e.rows() == e.cols());
-    DRAKE_ASSERT(math::IsSymmetric(e));
+    DRAKE_ASSERT(e == e.transpose());
     const int e_rows = Derived::RowsAtCompileTime;
     MatrixDecisionVariable<e_rows, e_rows> M{};
     if (Derived::RowsAtCompileTime == Eigen::Dynamic) {
@@ -1785,6 +1787,10 @@ class MathematicalProgram {
       M = NewSymmetricContinuousVariables<e_rows>();
     }
     // Adds the linear equality constraint that M = e.
+    AddLinearEqualityConstraint(e - M, Eigen::Matrix<double, e_rows, e_rows>::Zero(e.rows(), e.rows()));
+    const int M_flat_size = e_rows == Eigen::Dynamic ? Eigen::Dynamic : e_rows * e_rows;
+    const Eigen::Map<Eigen::Matrix<Variable, M_flat_size, 1>> M_flat(&M(0, 0), e.size());
+    return Binding<PositiveSemidefiniteConstraint>(AddPositiveSemidefiniteConstraint(M), M_flat);
   }
 
   /**
