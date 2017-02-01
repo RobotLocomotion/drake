@@ -38,7 +38,7 @@ class DrivingCommand : public systems::BasicVector<T> {
 
   DrivingCommand<T>* DoClone() const override {
     auto result = new DrivingCommand;
-    result->SetFromVector(this->CopyToVector());
+    result->set_value(this->get_value());
     return result;
   }
 

@@ -42,7 +42,7 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
 
   IdmPlannerParameters<T>* DoClone() const override {
     auto result = new IdmPlannerParameters;
-    result->SetFromVector(this->CopyToVector());
+    result->set_value(this->get_value());
     return result;
   }
 
