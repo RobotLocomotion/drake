@@ -27,7 +27,7 @@ HumanoidStatus::HumanoidStatus(
                                          "right_foot"};
   for (const auto& name : body_names) {
     if (alias_group.has_body_group(name)) {
-      const RigidBody<double>* body = alias_group.get_body_group(name).front();
+      const RigidBody<double>* body = alias_group.get_body(name);
       bodies_of_interest_.emplace(
           name, BodyOfInterest(name, *body, Vector3<double>::Zero()));
     }
@@ -37,7 +37,7 @@ HumanoidStatus::HumanoidStatus(
     bodies_of_interest_.emplace(
         "left_foot_sensor",
         BodyOfInterest("left_foot_sensor",
-                       *alias_group.get_body_group("left_foot").front(),
+                       *alias_group.get_body("left_foot"),
                        kFootToSensorPositionOffset));
   }
 
@@ -45,7 +45,7 @@ HumanoidStatus::HumanoidStatus(
     bodies_of_interest_.emplace(
         "right_foot_sensor",
         BodyOfInterest("right_foot_sensor",
-                       *alias_group.get_body_group("right_foot").front(),
+                       *alias_group.get_body("right_foot"),
                        kFootToSensorPositionOffset));
   }
 

@@ -26,8 +26,7 @@ class DiscreteTimePlanEvalSystem : public systems::LeafSystem<double> {
  public:
   DiscreteTimePlanEvalSystem(const RigidBodyTree<double>& robot,
                              const std::string& alias_groups_file_name,
-                             const std::string& param_file_name,
-                             double dt);
+                             const std::string& param_file_name, double dt);
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
@@ -91,10 +90,10 @@ class DiscreteTimePlanEvalSystem : public systems::LeafSystem<double> {
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups_;
   param_parsers::ParamSet paramset_;
 
-  int input_port_index_humanoid_status_;
-  int output_port_index_qp_input_;
-  int abstract_state_qp_input_index_;
-  int abstract_state_plan_index_;
+  int input_port_index_humanoid_status_{0};
+  int output_port_index_qp_input_{0};
+  int abstract_state_qp_input_index_{0};
+  int abstract_state_plan_index_{0};
 };
 
 }  // namespace qp_inverse_dynamics

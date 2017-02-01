@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -17,7 +18,8 @@ namespace qp_inverse_dynamics {
  */
 class RobotStateDecoderSystem : public systems::LeafSystem<double> {
  public:
-  explicit RobotStateDecoderSystem(const RigidBodyTree<double>& robot);
+  RobotStateDecoderSystem(const RigidBodyTree<double>& robot,
+                          const std::string& alias_group_path);
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
@@ -43,6 +45,7 @@ class RobotStateDecoderSystem : public systems::LeafSystem<double> {
 
  private:
   const RigidBodyTree<double>& robot_;
+  std::string alias_group_path_;
 
   int input_port_index_lcm_msg_;
   int output_port_index_humanoid_status_;

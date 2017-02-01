@@ -49,8 +49,8 @@ void controller_loop() {
                                   "/examples/QPInverseDynamicsForHumanoids/"
                                   "config/controller.yaml";
 
-  RobotStateDecoderSystem* rs_msg_to_rs =
-      builder.AddSystem(std::make_unique<RobotStateDecoderSystem>(*robot));
+  RobotStateDecoderSystem* rs_msg_to_rs = builder.AddSystem(
+      std::make_unique<RobotStateDecoderSystem>(*robot, alias_groups_config));
   HumanoidPlanEvalSystem* plan_eval =
       builder.AddSystem(std::make_unique<HumanoidPlanEvalSystem>(
           *robot, alias_groups_config, controller_config, 0.002));

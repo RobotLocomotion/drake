@@ -9,8 +9,13 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+/**
+ * Generates a demo PiecewisePolynomialTrajectory for the Kuka iiwa arm.
+ * @param urdf_path File path to the urdf model file for the Kuka iiwa arm.
+ * @return unique pointer to the resulting PiecewisePolynomialTrajectory.
+ */
 std::unique_ptr<PiecewisePolynomialTrajectory>
-MakePlan(const std::string& path);
+MakeKukaDemoTrajectory(const std::string& urdf_path);
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
