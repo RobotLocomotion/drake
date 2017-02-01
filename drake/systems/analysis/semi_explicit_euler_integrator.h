@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -115,7 +116,7 @@ void SemiExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
   const auto& xc = context->get_mutable_continuous_state();
   const auto& system = this->get_system();
 
-  // Retrieve the generalized coordinates and velocities and auxiliary 
+  // Retrieve the generalized coordinates and velocities and auxiliary
   // variables.
   VectorBase<T>* q = xc->get_mutable_generalized_position();
   VectorBase<T>* v = xc->get_mutable_generalized_velocity();
@@ -129,10 +130,10 @@ void SemiExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Retrieve the accelerations and auxiliary variable derivatives.
   const auto& vdot = derivs_->get_generalized_velocity();
   const auto& zdot = derivs_->get_misc_continuous_state();
-  
+ 
   // Update the generalized velocity and auxiliary variables.
   v->PlusEqScaled({ {dt, vdot} });
-  z->PlusEqScaled({ {dt, zdot} }); 
+  z->PlusEqScaled({ {dt, zdot} });
 
   // Convert the generalized velocity to the time derivative of generalized
   // coordinates and update the generalized coordinates.
