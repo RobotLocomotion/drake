@@ -152,6 +152,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "symbolic_test_util",
+    hdrs = [
+        "test/symbolic_test_util.h",
+    ],
+    deps = [
+        ":symbolic",
+    ],
+    testonly = 1,
+)
+
 cc_library(
     name = "variable",
     srcs = ["variable.cc"],
@@ -391,6 +402,7 @@ drake_cc_googletest(
         ":common",
         ":monomial",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
@@ -439,6 +451,7 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
@@ -463,6 +476,7 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
@@ -471,6 +485,7 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 

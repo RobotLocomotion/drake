@@ -13,6 +13,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/environment.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/test/symbolic_test_util.h"
 #include "drake/common/variable.h"
 #include "drake/common/variables.h"
 
@@ -20,43 +21,19 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-using std::all_of;
-using std::any_of;
 using std::map;
 using std::set;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
-template <typename F>
-bool all_of(const vector<Formula>& formulas, const F& f) {
-  return all_of(formulas.begin(), formulas.end(), f);
-}
-
-template <typename F>
-bool any_of(const vector<Formula>& formulas, const F& f) {
-  return any_of(formulas.begin(), formulas.end(), f);
-}
-
-static bool ExprEqual(const Expression& e1, const Expression& e2) {
-  return e1.EqualTo(e2);
-}
-
-static bool FormulaEqual(const Formula& f1, const Formula& f2) {
-  return f1.EqualTo(f2);
-}
-
-static bool FormulaNotEqual(const Formula& f1, const Formula& f2) {
-  return !FormulaEqual(f1, f2);
-}
-
-static bool FormulaLess(const Formula& f1, const Formula& f2) {
-  return f1.Less(f2);
-}
-
-static bool FormulaNotLess(const Formula& f1, const Formula& f2) {
-  return !FormulaLess(f1, f2);
-}
+using test::all_of;
+using test::any_of;
+using test::ExprEqual;
+using test::FormulaEqual;
+using test::FormulaLess;
+using test::FormulaNotEqual;
+using test::FormulaNotLess;
 
 // Checks if a given 'formulas' is ordered by Formula::Less.
 static void CheckOrdering(const vector<Formula>& formulas) {

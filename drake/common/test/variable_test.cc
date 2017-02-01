@@ -11,7 +11,6 @@
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace symbolic {
 namespace {
 
 using std::move;
@@ -152,5 +151,4 @@ TEST_F(VariableTest, EigenVariableMatrixOutput) {
 }
 
 }  // namespace
-}  // namespace symbolic
 }  // namespace drake

@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/test/symbolic_test_util.h"
 #include "drake/common/variable.h"
 
 namespace drake {
@@ -10,10 +11,7 @@ namespace {
 
 using std::ostringstream;
 using symbolic::Expression;
-
-bool ExprEqual(const Expression& e1, const Expression& e2) {
-  return e1.EqualTo(e2);
-}
+using symbolic::test::ExprEqual;
 
 // Provides common variables and matrices that are used by the
 // following tests.
