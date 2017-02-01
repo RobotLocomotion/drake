@@ -1,10 +1,20 @@
 add_library_with_exports(LIB_NAME drakeAcrobotPlant
-    SOURCE_FILES acrobot_plant.cc)
+        SOURCE_FILES acrobot_plant.cc acrobot_swing_up.cpp)
 target_link_libraries(drakeAcrobotPlant
-    drakeLinearControl
-    drakeMultibodyParsers
-    drakeSensors
-    drakeSystemFramework)
+        drakeLinearControl
+        drakeMultibodyParsers
+        drakeSensors
+        drakeSystemFramework
+        drakeTrajectoryOptimization
+        Eigen3::Eigen)
+drake_install_libraries(drakeAcrobotPlant)
+drake_install_headers(acrobot_plant.h acrobot_swing_up.h)
+drake_install_pkg_config_file(drake-acrobot-plant
+        TARGET drakeAcrobotPlant
+        LIBS -ldrakeAcrobotPlant
+        REQUIRES
+        drake-trajectory-optimization
+        eigen3)
 
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeAcrobotLcm SOURCE_FILES

@@ -1,0 +1,105 @@
+// based on pendulum_swing_up.cc
+
+#include <iostream>
+#include <memory>
+
+#include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/examples/Acrobot/acrobot_plant.h"
+#include "drake/examples/Acrobot/acrobot_swing_up.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/trajectory_source.h"
+#include "drake/systems/trajectory_optimization/direct_collocation.h"
+#include "drake/util/drakeAppUtil.h"
+
+
+using drake::solvers::SolutionResult;
+using drake::MatrixCompareType;
+
+typedef PiecewisePolynomial<double> PiecewisePolynomialType;
+
+namespace drake {
+namespace examples {
+namespace acrobot {
+namespace {
+
+int do_main(int argc, char* argv[]) {
+  systems::DiagramBuilder<double> builder;
+
+  AcrobotPlant<double>* acrobot{nullptr};
+  auto acrobot_ptr = std::make_unique<AcrobotPlant<double>>();
+  acrobot = acrobot_ptr.get();
+  DRAKE_DEMAND(acrobot != nullptr);
+
+  // This is a fairly small number of time samples for this system,
+  // and it winds up making the controller do a lot of the work when
+  // getting to the target state.  I (sam.creasey) suspect that a
+  // different interpolation strategy (not linear interpolation of a
+  // non-linear system, basically) would reduce this effect.
+  const int kNumTimeSamples = 21;
+  const int kTrajectoryTimeLowerBound = 2;
+  const int kTrajectoryTimeUpperBound = 10;
+
+  const Eigen::Vector4d x0(0, 0, 0, 0);
+  const Eigen::Vector4d xG(M_PI, 0, 0, 0);
+
+  auto context = acrobot->CreateDefaultContext();
+
+  systems::DircolTrajectoryOptimization dircol_traj(
+      acrobot, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
+      kTrajectoryTimeUpperBound);
+  AddSwingUpTrajectoryParams(kNumTimeSamples, x0, xG, &dircol_traj);
+
+  const double timespan_init = 4;
+  auto traj_init_x =
+      PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
+  SolutionResult result = dircol_traj.SolveTraj(
+      timespan_init, PiecewisePolynomialType(), traj_init_x);
+  if (result != SolutionResult::kSolutionFound) {
+    std::cerr << "Result is an Error" << std::endl;
+    return 1;
+  }
+
+  //const PiecewisePolynomialTrajectory pp_traj =
+  //    dircol_traj.ReconstructInputTrajectory();
+  const PiecewisePolynomialTrajectory pp_xtraj =
+      dircol_traj.ReconstructStateTrajectory();
+  //auto input_source = builder.AddSystem<systems::TrajectorySource>(pp_traj);
+  auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
+
+  lcm::DrakeLcm lcm;
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
+      multibody::joints::kFixed, tree.get());
+
+  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+
+  builder.Connect(state_source->get_output_port(0),
+                  publisher->get_input_port(0));
+
+  auto diagram = builder.Build();
+
+  systems::Simulator<double> simulator(*diagram);
+
+
+  simulator.Initialize();
+  simulator.StepTo(kTrajectoryTimeUpperBound);
+
+  return 0;
+}
+
+}  // namespace
+}  // namespace acrobot
+}  // namespace examples
+}  // namespace drake
+
+int main(int argc, char* argv[]) {
+  return drake::examples::acrobot::do_main(argc, argv);
+}
