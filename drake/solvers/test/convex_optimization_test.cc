@@ -1304,7 +1304,8 @@ GTEST_TEST(TestSemidefiniteProgram, TestCommonLyapunov) {
            0, -1, -3,
            0, 0, -1;
     // clang-format on
-    auto binding1 = prog.AddPositiveSemidefiniteConstraint(-A1.transpose() * P - P * A1);
+    auto binding1 =
+        prog.AddPositiveSemidefiniteConstraint(-A1.transpose() * P - P * A1);
 
     Eigen::Matrix3d A2;
     // clang-format off
@@ -1312,7 +1313,8 @@ GTEST_TEST(TestSemidefiniteProgram, TestCommonLyapunov) {
            0, -0.7, -2,
            0, 0, -0.4;
     // clang-format on
-    auto binding2 = prog.AddPositiveSemidefiniteConstraint(-A2.transpose() * P - P * A2);
+    auto binding2 =
+        prog.AddPositiveSemidefiniteConstraint(-A2.transpose() * P - P * A2);
 
     RunSolver(&prog, *solver);
 
@@ -1382,7 +1384,8 @@ GTEST_TEST(TestSemidefiniteProgram, TestOuterEllipsoid) {
     auto P = prog.NewSymmetricContinuousVariables<3>("P");
     prog.AddPositiveSemidefiniteConstraint(P);
     auto s = prog.NewContinuousVariables<3>("s");
-    prog.AddBoundingBoxConstraint(0, std::numeric_limits<double>::infinity(), s);
+    prog.AddBoundingBoxConstraint(0, std::numeric_limits<double>::infinity(),
+                                  s);
     auto c = prog.NewContinuousVariables<3>("c");
 
     for (int i = 0; i < 3; ++i) {
