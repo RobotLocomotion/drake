@@ -20,6 +20,7 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
   using drake::solvers::MathematicalProgram;
   using drake::solvers::LinearConstraint;
   using drake::solvers::QuadraticConstraint;
+  using drake::solvers::QuadraticConstraint;
   using drake::solvers::VectorXDecisionVariable;
   using drake::solvers::SolutionResult;
 
@@ -66,6 +67,11 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
           const Eigen::Ref<const VectorXDecisionVariable>&))
          &MathematicalProgram::AddQuadraticCost)
     .def("Solve", &MathematicalProgram::Solve)
+    .def("linear_constraints", &MathematicalProgram::linear_constraints)
+    .def("linear_equality_constraints", &MathematicalProgram::linear_equality_constraints)
+    .def("linear_costs", &MathematicalProgram::linear_costs)
+    .def("quadratic_costs", &MathematicalProgram::quadratic_costs)
+    .def("FindDecisionVariableIndex", &MathematicalProgram::FindDecisionVariableIndex)
     .def("_GetSolution", [](const MathematicalProgram& prog,
                             const Variable& var) {
       return prog.GetSolution(var);
@@ -271,13 +277,23 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
     });
 
   py::class_<LinearConstraint, std::shared_ptr<LinearConstraint> >(
-    m, "LinearConstraint");
+    m, "LinearConstraint")
+    .def("A", &LinearConstraint::A);
 
   py::class_<QuadraticConstraint, std::shared_ptr<QuadraticConstraint> >(
-    m, "QuadraticConstraint");
+    m, "QuadraticConstraint")
+    .def("Q", &QuadraticConstraint::Q)
+    .def("b", &QuadraticConstraint::b);
 
   py::class_<Binding<LinearConstraint> >(
-    m, "Binding_LinearConstraint");
+    m, "Binding_LinearConstraint")
+    .def("constraint", &Binding<LinearConstraint>::constraint)
+    .def("_variables", &Binding<LinearConstraint>::variables);
+
+  py::class_<Binding<QuadraticConstraint> >(
+    m, "Binding_QuadraticConstraint")
+    .def("constraint", &Binding<QuadraticConstraint>::constraint)
+    .def("_variables", &Binding<QuadraticConstraint>::variables);
 
   return m.ptr();
 }

@@ -42,6 +42,31 @@ class TestMathematicalProgram(unittest.TestCase):
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
 
+    def test_bindings(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        prog.AddLinearConstraint(x[0] >= 1)
+        prog.AddLinearConstraint(x[1] >= 1)
+        prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
+
+        lin_con_bindings = prog.linear_constraints()
+        for (i, binding) in enumerate(lin_con_bindings):
+            print("binding", binding)
+            constraint = binding.constraint()
+            print("constraint", constraint)
+            print("variables", binding.variables())
+            self.assertTrue((prog.FindDecisionVariableIndex(binding.variables()[0]) ==
+                             prog.FindDecisionVariableIndex(x[i])))
+            print("A", constraint.A())
+            self.assertTrue(np.allclose(constraint.A(), np.ones(1)))
+
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+
+        x_expected = np.array([1, 1])
+        self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+
+
 
 if __name__ == '__main__':
     unittest.main()

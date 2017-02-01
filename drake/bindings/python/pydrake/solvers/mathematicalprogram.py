@@ -44,3 +44,11 @@ def _GetSolution(self, x):
 
 MathematicalProgram.GetSolution = _GetSolution
 
+
+def _variables(self):
+    wrapper = self._variables()
+    return np.array([wrapper[i] for i in range(len(wrapper))])
+
+
+Binding_LinearConstraint.variables = _variables
+Binding_QuadraticConstraint.variables = _variables
