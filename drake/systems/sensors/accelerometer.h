@@ -33,7 +33,7 @@ namespace sensors {
 ///  - `W` be the world frame with origin point `Wo`.
 ///  - `v_WAo_W` be `Ao`'s translational velocity in `W` expressed in `W`.
 ///  - `J_WA` be the Jacobian matrix that relates `v_WAo_W` to `v`.
-///  - `X_AW` be the transform from `W` to `A`.
+///  - `R_AW` be the rotation matrix from `W` to `A`.
 ///
 /// The equation for `v_WAo_W` is as follows:
 ///
@@ -49,10 +49,10 @@ namespace sensors {
 /// a_WAo_W = d/dt v_WAo_W = J_WA vdot_WAo_W + Jdot_WA v_WAo_W
 /// </pre>
 ///
-/// `a_WAo_W` is then transformed into `A` using `X_AW`:
+/// `a_WAo_W` is then re-expressed in `A` using the rotation matrix `R_AW`:
 ///
 /// <pre>
-/// a_WAo_A = X_AW a_WAo_W
+/// a_WAo_A = R_AW a_WAo_W
 /// </pre>
 ///
 /// Note that `a_WA_A` does not include gravity. The constructor includes
@@ -64,11 +64,18 @@ namespace sensors {
 /// Let:
 ///  - `g_W` be the acceleration due to gravity in `W`, as specified by
 ///    RigidBodyTree::a_grav.
+///  - `g_A` be the acceleration due to gravity in `A`.
 ///
-/// The acceleration due to gravity is thus added to `a_WAo_A`:
+/// `g_A` is computed as follows:
 ///
 /// <pre>
-/// a_WAo_A = a_WAo_A + X_AW g_W
+/// g_A = R_AW * g_W
+/// </pre>
+///
+/// `g_A` is then added to `a_WAo_A`:
+///
+/// <pre>
+/// a_WAo_A = a_WAo_A + g_A
 /// </pre>
 ///
 /// This concludes the discussion of what is computed by this accelerometer.
@@ -105,16 +112,16 @@ class Accelerometer : public systems::LeafSystem<double> {
   /// @param[in] frame The frame `A` to which this accelerometer is attached
   /// (see class documentation for definition of `A`). This is the frame in
   /// which this accelerometer's output is given. This reference must remain
-  /// valid for the lifetime of this class' instance.
+  /// valid for the lifetime of this class's instance.
   ///
   /// @param[in] tree The RigidBodyTree that belongs to the RigidBodyPlant being
   /// sensed by this sensor. This should be a reference to the same
   /// RigidBodyTree that is being used by the RigidBodyPlant whose outputs are
   /// fed into this sensor. This parameter's lifespan must exceed that of this
-  /// class' instance.
+  /// class's instance.
   ///
   /// @param[in] include_gravity Whether to include the acceleration due to
-  /// gravity in the sensor's readings. See this class' description for more
+  /// gravity in the sensor's readings. See this class's description for more
   /// details about the meaning of this parameter.
   ///
   Accelerometer(const std::string& name, const RigidBodyFrame<double>& frame,
@@ -184,7 +191,7 @@ class Accelerometer : public systems::LeafSystem<double> {
     return System<double>::get_output_port(output_port_index_);
   }
 
-  /// Allocates the output vector. See this class' description for details of
+  /// Allocates the output vector. See this class's description for details of
   /// this output vector.
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const OutputPortDescriptor<double>& descriptor) const override;
