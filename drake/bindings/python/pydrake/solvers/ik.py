@@ -1,4 +1,5 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
+
 import numpy as np
 
 from ._pydrake_ik import (IKResults,
