@@ -253,10 +253,6 @@ Expression operator-(Expression e) {
   if (is_constant(e)) {
     return Expression{-get_constant_value(e)};
   }
-  // Simplification: -(-(E))  =>  E
-  if (is_unary_minus(e)) {
-    return get_argument(e);
-  }
   // Simplification: push '-' inside over '+'.
   // -(E_1 + ... + E_n) => (-E_1 + ... + -E_n)
   if (is_addition(e)) {
@@ -267,7 +263,7 @@ Expression operator-(Expression e) {
   if (is_multiplication(e)) {
     return ExpressionMulFactory{to_multiplication(e)}.Negate().GetExpression();
   }
-  return Expression{make_shared<ExpressionNeg>(e)};
+  return -1 * e;
 }
 
 Expression& Expression::operator--() {
@@ -295,16 +291,6 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   }
   // Simplification: x * 1 => x
   if (is_one(rhs)) {
-    return lhs;
-  }
-  // Simplification: -1 * x => -x
-  if (is_neg_one(lhs)) {
-    lhs = -rhs;
-    return lhs;
-  }
-  // Simplification: x * -1 => -x
-  if (is_neg_one(rhs)) {
-    lhs = -lhs;
     return lhs;
   }
   // Simplification: 0 * E => 0
@@ -637,7 +623,6 @@ bool is_neg_one(const Expression& e) { return is_constant(e, -1.0); }
 bool is_two(const Expression& e) { return is_constant(e, 2.0); }
 bool is_nan(const Expression& e) { return e.get_kind() == ExpressionKind::NaN; }
 bool is_variable(const Expression& e) { return is_variable(*e.ptr_); }
-bool is_unary_minus(const Expression& e) { return is_unary_minus(*e.ptr_); }
 bool is_addition(const Expression& e) { return is_addition(*e.ptr_); }
 bool is_multiplication(const Expression& e) {
   return is_multiplication(*e.ptr_);
