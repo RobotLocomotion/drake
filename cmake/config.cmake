@@ -181,7 +181,7 @@ macro(drake_setup_fortran)
       # Ninja and Xcode may not support Fortran, so manually find the Fortran
       # compiler and set any flags passed in by environment variable
       find_program(CMAKE_Fortran_COMPILER
-        NAMES "$ENV{FC}" gfortran gfortran-6 gfortran-5 gfortran-4
+        NAMES "$ENV{FC}" gfortran-6 gfortran-5 gfortran-4.9 gfortran-4 gfortran
         DOC "Fortran compiler")
       if(CMAKE_Fortran_COMPILER)
         message(STATUS "Found Fortran compiler: ${CMAKE_Fortran_COMPILER}")
