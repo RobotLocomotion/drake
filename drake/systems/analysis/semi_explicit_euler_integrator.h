@@ -130,7 +130,7 @@ void SemiExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Retrieve the accelerations and auxiliary variable derivatives.
   const auto& vdot = derivs_->get_generalized_velocity();
   const auto& zdot = derivs_->get_misc_continuous_state();
- 
+
   // Update the generalized velocity and auxiliary variables.
   v->PlusEqScaled({ {dt, vdot} });
   z->PlusEqScaled({ {dt, zdot} });

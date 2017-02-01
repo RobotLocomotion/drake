@@ -29,7 +29,7 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   // Create the integrator as a double and as an autodiff type
   SemiExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, dt,
                                           context_dbl.get());
-  SemiExplicitEulerIntegrator<AScalar> int_ad(spring_mass_ad, dt, 
+  SemiExplicitEulerIntegrator<AScalar> int_ad(spring_mass_ad, dt,
                                           context_ad.get());
 
   // Test that setting the target accuracy or initial step size target fails.
