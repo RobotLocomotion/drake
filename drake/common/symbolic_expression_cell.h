@@ -193,18 +193,6 @@ class ExpressionNaN : public ExpressionCell {
   std::ostream& Display(std::ostream& os) const override;
 };
 
-/** Symbolic expression representing unary minus. */
-class ExpressionNeg : public UnaryExpressionCell {
- public:
-  explicit ExpressionNeg(const Expression& e);
-  Polynomial<double> ToPolynomial() const override;
-  std::ostream& Display(std::ostream& os) const override;
-  Expression Substitute(const Substitution& s) const override;
-
- private:
-  double DoEvaluate(double v) const override;
-};
-
 /** Symbolic expression representing an addition which is a sum of products.
  *
  * @f[
@@ -674,8 +662,6 @@ class ExpressionIfThenElse : public ExpressionCell {
 bool is_constant(const ExpressionCell& c);
 /** Checks if @p exp_ptr is a variable expression. */
 bool is_variable(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a unary-minus expression. */
-bool is_unary_minus(const ExpressionCell& c);
 /** Checks if @p exp_ptr is an addition expression. */
 bool is_addition(const ExpressionCell& c);
 /** Checks if @p exp_ptr is an multiplication expression. */

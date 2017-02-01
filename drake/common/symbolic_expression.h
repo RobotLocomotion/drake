@@ -31,7 +31,6 @@ namespace symbolic {
 enum class ExpressionKind {
   Constant,    ///< constant (double)
   Var,         ///< variable
-  Neg,         ///< unary minus
   Add,         ///< addition (+)
   Mul,         ///< multiplication (*)
   Div,         ///< division (/)
@@ -82,7 +81,7 @@ using Substitution =
 Its syntax tree is as follows:
 
 @verbatim
-    E := Var | Constant | - E | E + ... + E | E * ... * E | E / E | log(E)
+    E := Var | Constant | E + ... + E | E * ... * E | E / E | log(E)
        | abs(E) | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E)
        | asin(E) | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
        | min(E, E) | max(E, E) | if_then_else(F, E, E) | NaN
@@ -96,8 +95,9 @@ allow sharing sub-expressions.
 
 @note The sharing of sub-expressions is not yet implemented.
 
-@note A subtraction E1 - E2 is represented with an addition and unary minus,
-that is, E1 + (-E2).
+@note -E is represented as -1 * E internally.
+
+@note A subtraction E1 - E2 is represented as E1 + (-1 * E2) internally.
 
 The following simple simplifications are implemented:
 @verbatim
@@ -107,8 +107,6 @@ The following simple simplifications are implemented:
     E - E             ->  0
     E * 1             ->  E
     1 * E             ->  E
-    E * -1            -> -E
-   -1 * E             -> -E
     E * 0             ->  0
     0 * E             ->  0
     E / 1             ->  E
@@ -303,7 +301,6 @@ class Expression {
 
   friend bool is_constant(const Expression& e);
   friend bool is_variable(const Expression& e);
-  friend bool is_unary_minus(const Expression& e);
   friend bool is_addition(const Expression& e);
   friend bool is_multiplication(const Expression& e);
   friend bool is_division(const Expression& e);
@@ -401,8 +398,6 @@ bool is_two(const Expression& e);
 bool is_nan(const Expression& e);
 /** Checks if @p e is a variable expression. */
 bool is_variable(const Expression& e);
-/** Checks if @p e is a unary-minus expression. */
-bool is_unary_minus(const Expression& e);
 /** Checks if @p e is an addition expression. */
 bool is_addition(const Expression& e);
 /** Checks if @p e is a multiplication expression. */
