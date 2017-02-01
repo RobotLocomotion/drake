@@ -11,8 +11,8 @@ namespace {
 
 const double kTolerance = 1e-10;
 
-const uint32_t kWidth = 640;
-const uint32_t kHeight = 480;
+const int kWidth = 640;
+const int kHeight = 480;
 const double kFx = 554.25625842204079;  // in pixels
 const double kFy = 579.41125496954282;  // in pixels
 const double kCx = kWidth * 0.5;
@@ -68,45 +68,9 @@ GTEST_TEST(TestCameraInfo, CopyConstructorTest) {
                               kTolerance));
 }
 
-GTEST_TEST(TestCameraInfo, CopyAssignmentOperatorTest) {
-  CameraInfo camera_info(kWidth, kHeight, kFx, kFy, kCx, kCy);
-  CameraInfo dut(0, 0, 0., 0., 0., 0.);
-  dut = camera_info;
-
-  Eigen::Matrix3d expected_intrinsic;
-  expected_intrinsic << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.;
-
-  EXPECT_EQ(kWidth, dut.width());
-  EXPECT_EQ(kHeight, dut.height());
-  EXPECT_NEAR(kFx, dut.fx(), kTolerance);
-  EXPECT_NEAR(kFy, dut.fy(), kTolerance);
-  EXPECT_NEAR(kCx, dut.cx(), kTolerance);
-  EXPECT_NEAR(kCy, dut.cy(), kTolerance);
-  EXPECT_TRUE(CompareMatrices(expected_intrinsic, dut.intrinsic_matrix(),
-                              kTolerance));
-}
-
 GTEST_TEST(TestCameraInfo, MoveConstructorTest) {
   CameraInfo camera_info(kWidth, kHeight, kFx, kFy, kCx, kCy);
   CameraInfo dut(std::move(camera_info));
-
-  Eigen::Matrix3d expected_intrinsic;
-  expected_intrinsic << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.;
-
-  EXPECT_EQ(kWidth, dut.width());
-  EXPECT_EQ(kHeight, dut.height());
-  EXPECT_NEAR(kFx, dut.fx(), kTolerance);
-  EXPECT_NEAR(kFy, dut.fy(), kTolerance);
-  EXPECT_NEAR(kCx, dut.cx(), kTolerance);
-  EXPECT_NEAR(kCy, dut.cy(), kTolerance);
-  EXPECT_TRUE(CompareMatrices(expected_intrinsic, dut.intrinsic_matrix(),
-                              kTolerance));
-}
-
-GTEST_TEST(TestCameraInfo, MoveAssignmentOperatorTest) {
-  CameraInfo camera_info(kWidth, kHeight, kFx, kFy, kCx, kCy);
-  CameraInfo dut(0, 0, 0., 0., 0., 0.);
-  dut = std::move(camera_info);
 
   Eigen::Matrix3d expected_intrinsic;
   expected_intrinsic << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.;
