@@ -15,7 +15,7 @@ namespace automotive {
 /// all physics.
 ///
 /// configuration:
-/// * see lcmt_SimpleCarConfig_t
+/// * uses systems::Parameters wrapping a SimpleCarConfig
 ///
 /// state vector (planar for now):
 /// * position: x, y, heading;
@@ -48,12 +48,8 @@ class SimpleCar : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCar)
 
-  explicit SimpleCar(const SimpleCarConfig<T>& config = get_default_config());
+  SimpleCar();
 
-  static SimpleCarConfig<T> get_default_config();
-  const SimpleCarConfig<T>& config() const { return config_; }
-
- public:
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
   void DoCalcOutput(const systems::Context<T>& context,
@@ -62,20 +58,27 @@ class SimpleCar : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  // LeafSystem<T> overrides
+  void SetDefaultParameters(const systems::LeafContext<T>& context,
+                            systems::Parameters<T>* params) const override;
+
+  /// Sets `config` to contain the default parameters for SimpleCar.
+  static void SetDefaultParameters(SimpleCarConfig<T>* config);
+
  protected:
   // LeafSystem<T> overrides
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::OutputPortDescriptor<T>& descriptor) const override;
+  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
  private:
   void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
-  void ImplCalcTimeDerivatives(const SimpleCarState<T>&,
+  void ImplCalcTimeDerivatives(const SimpleCarConfig<T>&,
+                               const SimpleCarState<T>&,
                                const DrivingCommand<T>&,
                                SimpleCarState<T>*) const;
-
-  const SimpleCarConfig<T> config_;
 };
 
 }  // namespace automotive
