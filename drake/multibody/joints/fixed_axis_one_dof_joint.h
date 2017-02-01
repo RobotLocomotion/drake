@@ -191,19 +191,19 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return get_position_name(index);
   }
 
-  bool operator==(const DrakeJoint& other) const override {
-    if (!DrakeJoint::operator==(other)) return false;
+  bool CompareToClonedJoint(const DrakeJoint& other) const override {
+    if (!DrakeJoint::CompareToClonedJoint(other)) return false;
     const FixedAxisOneDoFJoint* downcasted_joint =
         dynamic_cast<const FixedAxisOneDoFJoint*>(&other);
     if (downcasted_joint == nullptr) {
       drake::log()->debug(
-        "FixedAxisOneDoFJoint::operator==(): "
+        "FixedAxisOneDoFJoint::CompareToClonedJoint: "
         "other is not of type FixedAxisOneDoFJoint.");
       return false;
     }
     if (joint_axis != downcasted_joint->joint_axis) {
       drake::log()->debug(
-          "FixedAxisOneDoFJoint::operator==(): joint_axis mismatch:\n"
+          "FixedAxisOneDoFJoint::CompareToClonedJoint: joint_axis mismatch:\n"
           "  - this: {}\n"
           "  - other: {}",
           joint_axis,
@@ -212,7 +212,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     }
     if (damping != downcasted_joint->damping) {
         drake::log()->debug(
-          "FixedAxisOneDoFJoint::operator==(): damping mismatch:\n"
+          "FixedAxisOneDoFJoint::CompareToClonedJoint: damping mismatch:\n"
           "  - this: {}\n"
           "  - other: {}",
           damping,
@@ -221,7 +221,8 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     }
     if (coulomb_friction != downcasted_joint->coulomb_friction) {
         drake::log()->debug(
-          "FixedAxisOneDoFJoint::operator==(): coulomb_friction mismatch:\n"
+          "FixedAxisOneDoFJoint::CompareToClonedJoint: "
+          "coulomb_friction mismatch:\n"
           "  - this: {}\n"
           "  - other: {}",
           coulomb_friction,
@@ -230,7 +231,8 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     }
     if (coulomb_window != downcasted_joint->coulomb_window) {
         drake::log()->debug(
-          "FixedAxisOneDoFJoint::operator==(): coulomb_window mismatch:\n"
+          "FixedAxisOneDoFJoint::CompareToClonedJoint: "
+          "coulomb_window mismatch:\n"
           "  - this: {}\n"
           "  - other: {}",
           coulomb_window,
@@ -238,10 +240,6 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
       return false;
     }
     return true;
-  }
-
-  bool operator!=(const DrakeJoint& other) const override {
-    return !(*this == other);
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
