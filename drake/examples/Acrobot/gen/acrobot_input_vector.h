@@ -37,7 +37,7 @@ class AcrobotInputVector : public systems::BasicVector<T> {
 
   AcrobotInputVector<T>* DoClone() const override {
     auto result = new AcrobotInputVector;
-    result->SetFromVector(this->CopyToVector());
+    result->set_value(this->get_value());
     return result;
   }
 

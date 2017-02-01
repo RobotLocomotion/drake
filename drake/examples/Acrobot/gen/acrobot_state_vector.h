@@ -40,7 +40,7 @@ class AcrobotStateVector : public systems::BasicVector<T> {
 
   AcrobotStateVector<T>* DoClone() const override {
     auto result = new AcrobotStateVector;
-    result->SetFromVector(this->CopyToVector());
+    result->set_value(this->get_value());
     return result;
   }
 
