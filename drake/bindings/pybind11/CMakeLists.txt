@@ -6,6 +6,19 @@ else()
   string(REPLACE "-Wl,--no-undefined" "" CMAKE_MODULE_LINKER_FLAGS ${CMAKE_MODULE_LINKER_FLAGS})
 endif()
 
+# Look up the python module suffix (which varies by python version).
+# This uses the method from FindPythonLibsNew.cmake shipped with pybind11.
+execute_process(
+    COMMAND "${PYTHON_EXECUTABLE}" -c "from distutils import sysconfig; print(sysconfig.get_config_var('SO'))"
+    RESULT_VARIABLE PYTHON_MODULE_EXTENSION_SUCCESS
+    OUTPUT_VARIABLE PYTHON_MODULE_EXTENSION
+    ERROR_VARIABLE PYTHON_MODULE_EXTENSION_ERROR_VALUE
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if(NOT PYTHON_MODULE_EXTENSION_SUCCESS MATCHES 0)
+  message(FATAL_ERROR "Could not determine the python module extension:\n${PYTHON_MODULE_EXTENSION_ERROR_VALUE}")
+endif()
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shadow")
 pybind11_add_module(_pydrake_rbtree pydrake_rbtree.cc)
 target_link_libraries(_pydrake_rbtree PRIVATE drakeRBM drakeMultibodyParsers Eigen3::Eigen)
