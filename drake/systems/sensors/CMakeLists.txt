@@ -1,10 +1,12 @@
 set(drakeSensors_SRC_FILES
+    camera_info.cc
     depth_sensor.cc
     depth_sensor_output.cc
     depth_sensor_specification.cc
     rotary_encoders.cc)
 
 set(drakeSensors_HEADERS
+    camera_info.h
     depth_sensor.h
     depth_sensor_output.h
     depth_sensor_specification.h
