@@ -293,6 +293,11 @@ void DecomposeLinearExpression(
       // There are more than one base, like x^2 * y^3
       throw SymbolicError(e, "is not linear");
     }
+  } else if (is_unary_minus(e)) {
+    const Variable& var{get_variable(get_argument(e))};
+    const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
+        map_var_to_index.at(var.get_id())) = -1;
+    *constant_term = 0;
   } else if (is_variable(e)) {
     // Just a single variable.
     const Variable& var{get_variable(e)};

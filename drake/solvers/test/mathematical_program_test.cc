@@ -524,6 +524,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
   CheckAddedSymbolicLinearCost(&prog, 3);
   // Add Linear cost -x(0)
   CheckAddedSymbolicLinearCost(&prog, -x(0));
+  // Add Linear cost -(x(1) + 3 * x(0))
+  CheckAddedSymbolicLinearCost(&prog, -(x(1) + 3 * x(0)));
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
@@ -756,6 +758,8 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
                                              3 * x(0) + x(1) + 4 * x(2) + 1, 2);
   // Checks -x(1) = 3
   CheckAddedSymbolicLinearEqualityConstraint(&prog, -x(1), 3);
+  // Checks -(x(0) + 2 * x(1)) = 2
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, -(x(0) + 2 * x(1)), 2);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
@@ -840,11 +844,12 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint3) {
   // [2 * x(0) + 3 * x(2)]
   // [  - x(0) + 2 * x(2)]    is in Lorentz cone
   // [               x(2)]
+  // [  -x(1)            ]
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
-  Matrix<Expression, 3, 1> e;
+  Matrix<Expression, 4, 1> e;
   // clang-format on
-  e << 2 * x(0) + 3 * x(2), -x(0) + 2 * x(2), +x(2);
+  e << 2 * x(0) + 3 * x(2), -x(0) + 2 * x(2), +x(2), -x(1);
   // clang-format off;
   CheckParsedSymbolicLorentzConeConstraint(&prog, e);
 }
@@ -896,10 +901,11 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint3) {
   // [x(1) + 2] is in the rotated Lorentz cone
   // [x(2)    ]
   // [x(3) - 1]
+  // [-x(1)   ]
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<4>("x");
-  Matrix<Expression, 4, 1> e;
-  e << x(0) + 1, x(1) + 2, +x(2), x(3) - 1;
+  Matrix<Expression, 5, 1> e;
+  e << x(0) + 1, x(1) + 2, +x(2), x(3) - 1, -x(1);
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
