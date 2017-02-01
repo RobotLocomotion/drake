@@ -8,6 +8,7 @@
 #include <ostream>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 
 #include <Eigen/Core>
@@ -68,6 +69,13 @@ class ExpressionAdd;         // In drake/common/symbolic_expression_cell.h
 class ExpressionMul;         // In drake/common/symbolic_expression_cell.h
 class ExpressionIfThenElse;  // In drake/common/symbolic_expression_cell.h
 class Formula;               // In drake/common/symbolic_formula.h
+
+class Expression;
+
+// Substitution is a map from a Variable to a symbolic expression. It is used in
+// Expression::Substitute and Formula::Substitute methods as an argument.
+using Substitution =
+    std::unordered_map<Variable, Expression, hash_value<Variable>>;
 
 /** Represents a symbolic form of an expression.
 
@@ -174,6 +182,20 @@ class Expression {
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
   double Evaluate(const Environment& env = Environment{}) const;
+
+  /** Returns a copy of this expression replacing all occurrences of @p var
+   * with @p e.
+   * @throws std::runtime_error if NaN is detected during substitution.
+   */
+  Expression Substitute(const Variable& var, const Expression& e) const;
+
+  /** Returns a copy of this expression replacing all occurrences of the
+   * variables in @p s with corresponding expressions in @p s. Note that the
+   * substitutions occur simultaneously. For example, (x / y).Substitute({{x,
+   * y}, {y, x}}) gets (y / x).
+   * @throws std::runtime_error if NaN is detected during substitution.
+   */
+  Expression Substitute(const Substitution& s) const;
 
   /** Returns string representation of Expression. */
   std::string to_string() const;
@@ -477,7 +499,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Expression>::value &&
         std::is_same<typename MatrixR::Scalar, double>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
@@ -490,7 +512,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, double>::value &&
         std::is_same<typename MatrixR::Scalar, Expression>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
@@ -538,7 +560,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, symbolic::Expression>::value &&
         std::is_same<typename MatrixR::Scalar, Variable>::value,
     Eigen::Matrix<symbolic::Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs * rhs.template cast<symbolic::Expression>();
 }
@@ -551,7 +573,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Variable>::value &&
         std::is_same<typename MatrixR::Scalar, symbolic::Expression>::value,
     Eigen::Matrix<symbolic::Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<symbolic::Expression>() * rhs;
 }
@@ -564,7 +586,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Variable>::value &&
         std::is_same<typename MatrixR::Scalar, double>::value,
     Eigen::Matrix<symbolic::Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<symbolic::Expression>() *
          rhs.template cast<symbolic::Expression>();
@@ -578,7 +600,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, double>::value &&
         std::is_same<typename MatrixR::Scalar, Variable>::value,
     Eigen::Matrix<symbolic::Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<symbolic::Expression>() *
          rhs.template cast<symbolic::Expression>();
