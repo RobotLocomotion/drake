@@ -26,5 +26,3 @@ add_subdirectory(system)
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
-
-

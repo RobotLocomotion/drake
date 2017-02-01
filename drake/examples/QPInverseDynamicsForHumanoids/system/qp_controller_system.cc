@@ -26,7 +26,7 @@ void QPControllerSystem::DoCalcOutput(
     systems::SystemOutput<double>* output) const {
   // Copies QpInput from AbstractState.
   QpOutput& qp_output = output->GetMutableData(output_port_index_qp_output_)
-                          ->GetMutableValue<QpOutput>();
+                            ->GetMutableValue<QpOutput>();
   qp_output =
       context.get_abstract_state<QpOutput>(abstract_state_qp_output_index_);
 }

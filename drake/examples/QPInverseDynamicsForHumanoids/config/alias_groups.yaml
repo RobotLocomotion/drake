@@ -23,6 +23,15 @@ joint_groups:
   spine:
     [torsoYaw, torsoPitch, torsoRoll]
 
+  back_x:
+    [torsoRoll]
+
+  back_y:
+    [torsoPitch]
+
+  back_z:
+    [torsoYaw]
+
 body_groups:
   feet: [leftFoot, rightFoot]
   left_foot: [leftFoot]

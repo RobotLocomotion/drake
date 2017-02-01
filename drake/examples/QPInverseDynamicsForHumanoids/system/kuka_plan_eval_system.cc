@@ -25,10 +25,9 @@ struct KukaPlan {
 KukaPlanEvalSystem::KukaPlanEvalSystem(
     const RigidBodyTree<double>& robot,
     const std::string& alias_groups_file_name,
-    const std::string& param_file_name,
-    double dt)
-    : DiscreteTimePlanEvalSystem(robot, alias_groups_file_name,
-      param_file_name, dt) {
+    const std::string& param_file_name, double dt)
+    : DiscreteTimePlanEvalSystem(robot, alias_groups_file_name, param_file_name,
+                                 dt) {
   set_name("kuka_plan_eval");
 }
 
@@ -57,10 +56,9 @@ void KukaPlanEvalSystem::DoCalcUnrestrictedUpdate(
       context, input_port_index_humanoid_status_);
 
   QpInput& qp_input = get_mutable_qp_input(state);
-  qp_input = paramset_.MakeQpInput(
-      {}, /* contacts */
-      {}, /* tracked bodies */
-      alias_groups_);
+  qp_input = paramset_.MakeQpInput({}, /* contacts */
+                                   {}, /* tracked bodies */
+                                   alias_groups_);
 
   double time = context.get_time();
   plan.joint_PDff.mutable_desired_position() = plan.q_n_traj.value(time);
@@ -77,7 +75,7 @@ void KukaPlanEvalSystem::DoCalcUnrestrictedUpdate(
   // Update desired accelerations.
   qp_input.mutable_desired_dof_motions().mutable_values() =
       plan.joint_PDff.ComputeTargetAcceleration(robot_status->position(),
-                                      robot_status->velocity());
+                                                robot_status->velocity());
 }
 
 std::unique_ptr<systems::AbstractState>
@@ -87,11 +85,10 @@ KukaPlanEvalSystem::AllocateAbstractState() const {
       std::unique_ptr<systems::AbstractValue>(
           new systems::Value<KukaPlan>(KukaPlan()));
   abstract_vals[abstract_state_qp_input_index_] =
-      std::unique_ptr<systems::AbstractValue>(
-          new systems::Value<QpInput>(paramset_.MakeQpInput(
-              {}, /* contacts */
-              {}, /* tracked bodies */
-              alias_groups_)));
+      std::unique_ptr<systems::AbstractValue>(new systems::Value<QpInput>(
+          paramset_.MakeQpInput({}, /* contacts */
+                                {}, /* tracked bodies */
+                                alias_groups_)));
   return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
 }
 

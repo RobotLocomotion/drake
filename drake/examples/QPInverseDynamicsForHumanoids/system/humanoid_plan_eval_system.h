@@ -19,8 +19,7 @@ class HumanoidPlanEvalSystem : public DiscreteTimePlanEvalSystem {
  public:
   HumanoidPlanEvalSystem(const RigidBodyTree<double>& robot,
                          const std::string& alias_groups_file_name,
-                         const std::string& param_file_name,
-                         double dt);
+                         const std::string& param_file_name, double dt);
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;

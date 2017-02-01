@@ -51,7 +51,8 @@ void AtlasJointLevelControllerSystem::DoCalcOutput(
 
   // The torques have already been computed and set in
   // JointLevelControllerSystem::DoCalcOutput()
-  auto act_torques = GetMutableOutputVector(output, output_port_index_torque_);
+  VectorX<double> act_torques =
+      output->get_vector_data(output_port_index_torque_)->get_value();
 
   // Set desired position, velocity and torque for all actuators.
   for (int i = 0; i < msg.num_joints; ++i) {

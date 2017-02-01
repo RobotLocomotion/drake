@@ -31,7 +31,7 @@ int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
   std::string path = GetDrakePath() + kUrdfPath;
 
-  KukaDemo<double> model(MakePlan(path));
+  KukaDemo<double> model(MakeKukaDemoTrajectory(path));
   Simulator<double> simulator(model);
   Context<double>* context = simulator.get_mutable_context();
 

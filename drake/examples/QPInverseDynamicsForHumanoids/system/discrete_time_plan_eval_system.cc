@@ -17,8 +17,7 @@ namespace qp_inverse_dynamics {
 DiscreteTimePlanEvalSystem::DiscreteTimePlanEvalSystem(
     const RigidBodyTree<double>& robot,
     const std::string& alias_groups_file_name,
-    const std::string& param_file_name,
-    double dt)
+    const std::string& param_file_name, double dt)
     : robot_(robot),
       control_dt_(dt),
       alias_groups_(robot),
