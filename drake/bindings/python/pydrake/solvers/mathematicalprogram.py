@@ -29,6 +29,13 @@ def _NewBinaryVariables(self, *args, **kwargs):
 MathematicalProgram.NewBinaryVariables = _NewBinaryVariables
 
 
+def _AddQuadraticCost(self, Q, b, vars):
+    wrapper = VectorXDecisionVariable(vars)
+    return self._AddQuadraticCost(Q, b, wrapper)
+
+MathematicalProgram.AddQuadraticCost = _AddQuadraticCost
+
+
 def _GetSolution(self, x):
     if isinstance(x, np.ndarray):
         return self._GetSolution(VectorXDecisionVariable(x))

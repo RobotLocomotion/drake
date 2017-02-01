@@ -30,6 +30,18 @@ class TestMathematicalProgram(unittest.TestCase):
         for i in range(3):
             self.assertAlmostEqual(prog.GetSolution(x[i]), x_expected[i])
 
+    def test_qp(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        prog.AddLinearConstraint(x[0] >= 1)
+        prog.AddLinearConstraint(x[1] >= 1)
+        prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+
+        x_expected = np.array([1, 1])
+        self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+
 
 if __name__ == '__main__':
     unittest.main()

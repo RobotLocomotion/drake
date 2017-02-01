@@ -8,66 +8,80 @@
 
 namespace py = pybind11;
 
-using drake::Variable;
-using drake::symbolic::Expression;
-using drake::symbolic::Formula;
 
 PYBIND11_MAKE_OPAQUE(drake::solvers::VectorXDecisionVariable);
 
 PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
+  using drake::Variable;
+  using drake::symbolic::Expression;
+  using drake::symbolic::Formula;
+
+  using drake::solvers::Binding;
+  using drake::solvers::MathematicalProgram;
+  using drake::solvers::LinearConstraint;
+  using drake::solvers::QuadraticConstraint;
+  using drake::solvers::VectorXDecisionVariable;
+  using drake::solvers::SolutionResult;
+
   py::module m("_pybind_mathematicalprogram",
                "Drake MathematicalProgram Bindings");
 
-  py::class_<drake::solvers::MathematicalProgram>(m, "MathematicalProgram")
+  py::class_<MathematicalProgram>(m, "MathematicalProgram")
     .def(py::init<>())
-    .def("_NewContinuousVariables", (drake::solvers::VectorXDecisionVariable
-          (drake::solvers::MathematicalProgram::*)(
+    .def("_NewContinuousVariables", (VectorXDecisionVariable
+          (MathematicalProgram::*)(
           size_t,
           const std::string&))
-         &drake::solvers::MathematicalProgram::NewContinuousVariables,
+         &MathematicalProgram::NewContinuousVariables,
          py::arg("rows"),
          py::arg("name") = "x")
-    .def("_NewBinaryVariables", (drake::solvers::VectorXDecisionVariable
-         (drake::solvers::MathematicalProgram::*)(
+    .def("_NewBinaryVariables", (VectorXDecisionVariable
+         (MathematicalProgram::*)(
          size_t,
          const std::string&))
-         &drake::solvers::MathematicalProgram::NewBinaryVariables,
+         &MathematicalProgram::NewBinaryVariables,
          py::arg("rows"),
          py::arg("name") = "x")
     .def("AddLinearConstraint",
-         (drake::solvers::Binding<drake::solvers::LinearConstraint>
-          (drake::solvers::MathematicalProgram::*)(
+         (Binding<LinearConstraint>
+          (MathematicalProgram::*)(
           const Expression&,
           double,
           double))
-          &drake::solvers::MathematicalProgram::AddLinearConstraint)
+          &MathematicalProgram::AddLinearConstraint)
     .def("AddLinearConstraint",
-         (drake::solvers::Binding<drake::solvers::LinearConstraint>
-          (drake::solvers::MathematicalProgram::*)(
+         (Binding<LinearConstraint>
+          (MathematicalProgram::*)(
           const Formula&))
-          &drake::solvers::MathematicalProgram::AddLinearConstraint)
+          &MathematicalProgram::AddLinearConstraint)
     .def("AddLinearCost",
-         (drake::solvers::Binding<drake::solvers::LinearConstraint>
-          (drake::solvers::MathematicalProgram::*)(
+         (Binding<LinearConstraint>
+          (MathematicalProgram::*)(
           const Expression&))
-          &drake::solvers::MathematicalProgram::AddLinearCost)
-    .def("Solve", &drake::solvers::MathematicalProgram::Solve)
-    .def("_GetSolution", [](const drake::solvers::MathematicalProgram& prog,
+          &MathematicalProgram::AddLinearCost)
+    .def("_AddQuadraticCost", (std::shared_ptr<QuadraticConstraint>
+         (MathematicalProgram::*)(
+          const Eigen::Ref<const Eigen::MatrixXd>&,
+          const Eigen::Ref<const Eigen::VectorXd>&,
+          const Eigen::Ref<const VectorXDecisionVariable>&))
+         &MathematicalProgram::AddQuadraticCost)
+    .def("Solve", &MathematicalProgram::Solve)
+    .def("_GetSolution", [](const MathematicalProgram& prog,
                             const Variable& var) {
       return prog.GetSolution(var);
     })
     .def("_GetSolution",
-         [](const drake::solvers::MathematicalProgram& prog,
-            const drake::solvers::VectorXDecisionVariable& var) {
+         [](const MathematicalProgram& prog,
+            const VectorXDecisionVariable& var) {
       return prog.GetSolution(var);
     });
 
-  py::enum_<drake::solvers::SolutionResult>(m, "SolutionResult")
-    .value("kSolutionFound", drake::solvers::SolutionResult::kSolutionFound)
-    .value("kInvalidInput", drake::solvers::SolutionResult::kInvalidInput)
+  py::enum_<SolutionResult>(m, "SolutionResult")
+    .value("kSolutionFound", SolutionResult::kSolutionFound)
+    .value("kInvalidInput", SolutionResult::kInvalidInput)
     .value("kInfeasibleConstraints",
-           drake::solvers::SolutionResult::kInfeasibleConstraints)
-    .value("kUnknownError", drake::solvers::SolutionResult::kUnknownError);
+           SolutionResult::kInfeasibleConstraints)
+    .value("kUnknownError", SolutionResult::kUnknownError);
 
   py::class_<Variable>(m, "Variable")
     .def(py::init<const std::string&>())
@@ -241,27 +255,28 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
 
   py::class_<Formula>(m, "Formula");
 
-  py::class_<drake::solvers::VectorXDecisionVariable>(
+  py::class_<VectorXDecisionVariable>(
     m, "_VectorXDecisionVariable")
     .def(py::init<size_t>())
-    .def("__len__", [](const drake::solvers::VectorXDecisionVariable& v) {
+    .def("__len__", [](const VectorXDecisionVariable& v) {
       return v.size();
     })
-    .def("__getitem__", [](const drake::solvers::VectorXDecisionVariable& v,
+    .def("__getitem__", [](const VectorXDecisionVariable& v,
                            size_t i) {
       return v(i);
     }, py::return_value_policy::reference)
-    .def("__setitem__", [](drake::solvers::VectorXDecisionVariable& v,
+    .def("__setitem__", [](VectorXDecisionVariable& v,
                            size_t i, const Variable &var) {
       v(i) = var;
-    })
-    ;
+    });
 
-  py::class_<drake::solvers::LinearConstraint,
-             std::shared_ptr<drake::solvers::LinearConstraint> >(
+  py::class_<LinearConstraint, std::shared_ptr<LinearConstraint> >(
     m, "LinearConstraint");
 
-  py::class_<drake::solvers::Binding<drake::solvers::LinearConstraint> >(
+  py::class_<QuadraticConstraint, std::shared_ptr<QuadraticConstraint> >(
+    m, "QuadraticConstraint");
+
+  py::class_<Binding<LinearConstraint> >(
     m, "Binding_LinearConstraint");
 
   return m.ptr();
