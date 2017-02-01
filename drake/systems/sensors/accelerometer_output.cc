@@ -18,24 +18,12 @@ AccelerometerOutput<T>::AccelerometerOutput() : BasicVector<double>(3) {
 }
 
 template <typename T>
-const T& AccelerometerOutput<T>::get_accel_x() const {
-  return BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelXIndex);
-}
-
-template <typename T>
-const T& AccelerometerOutput<T>::get_accel_y() const {
-  return BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelYIndex);
-}
-
-template <typename T>
-const T& AccelerometerOutput<T>::get_accel_z() const {
-  return BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelZIndex);
-}
-
-template <typename T>
-Vector3<T> AccelerometerOutput<T>::get_accel() const {
-  Vector3<T> result(get_accel_x(), get_accel_y(), get_accel_z());
-  return result;
+const Vector3<T>& AccelerometerOutput<T>::get_accel() const {
+  acceleration_ <<
+      BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelXIndex),
+      BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelYIndex),
+      BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelZIndex);
+  return acceleration_;
 }
 
 template class AccelerometerOutput<double>;
