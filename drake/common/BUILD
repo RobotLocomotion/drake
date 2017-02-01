@@ -387,6 +387,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "monomial_test",
+    srcs = [
+        "test/symbolic_test_util.h",
+    ],
     deps = [
         ":common",
         ":monomial",
@@ -436,6 +439,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_expression_test",
+    srcs = [
+        "test/symbolic_test_util.h",
+    ],
     deps = [
         ":common",
         ":symbolic",
@@ -460,6 +466,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "variable_overloading_test",
+    srcs = [
+        "test/symbolic_test_util.h",
+    ],
     deps = [
         ":common",
         ":symbolic",
@@ -468,6 +477,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_formula_test",
+    srcs = [
+        "test/symbolic_test_util.h",
+    ],
     deps = [
         ":common",
         ":symbolic",

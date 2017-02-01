@@ -9,7 +9,7 @@
 #include "drake/common/variable.h"
 
 namespace drake {
-namespace {
+namespace test {
 
 using std::string;
 using std::runtime_error;
@@ -83,5 +83,5 @@ TEST_F(EnvironmentTest, DummyVariable2) {
   EXPECT_THROW(env.insert(var_dummy_, 0.0), runtime_error);
 }
 
-}  // namespace
+}  // namespace test
 }  // namespace drake

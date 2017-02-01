@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace symbolic {
-namespace {
+namespace test {
 
 using std::ostringstream;
 using std::string;
@@ -558,6 +558,6 @@ TEST_F(SymbolicMixingScalarTypesTest, VectorVectorMultiplicationDoubleVar) {
   EXPECT_EQ(to_string(M3), expected);
   EXPECT_EQ(to_string(M4), expected);
 }
-}  // namespace
+}  // namespace test
 }  // namespace symbolic
 }  // namespace drake

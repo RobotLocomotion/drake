@@ -7,38 +7,14 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/test/symbolic_test_util.h"
 #include "drake/common/variable.h"
 
 using std::unordered_map;
 
 namespace drake {
 namespace symbolic {
-namespace {
-
-bool ExprEqual(const Expression& e1, const Expression& e2) {
-  return e1.EqualTo(e2);
-}
-
-// Compare two Eigen::Matrix<Expression> m1 and m2.
-//
-// TODO(soonho): Make CompareMatrices in eigen_matrix_compare.h compatible
-// with Eigen::Matrix<symbolic::Expression> and use that instead of this.
-bool MatrixEqual(const drake::MatrixX<Expression>& m1,
-                 const drake::MatrixX<Expression>& m2) {
-  if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
-    return false;
-  }
-  for (int i{0}; i < m1.rows(); ++i) {
-    for (int j{0}; j < m1.cols(); ++j) {
-      const Expression& e1{m1(i, j)};
-      const Expression& e2{m2(i, j)};
-      if (!e1.EqualTo(e2)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
+namespace test {
 
 class MonomialTest : public ::testing::Test {
  protected:
@@ -91,8 +67,8 @@ TEST_F(MonomialTest, MonomialBasis_x_0) {
   // MonomialBasis({x}, 0)
   expected << Expression{1.0};
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_2) {
@@ -108,8 +84,8 @@ TEST_F(MonomialTest, MonomialBasis_x_2) {
               1.0;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_0) {
@@ -121,8 +97,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_0) {
   // MonomialBasis({x, y}, 0)
   expected << Expression{1.0};
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_1) {
@@ -138,8 +114,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_1) {
               1.0;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_2) {
@@ -158,8 +134,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_2) {
               1.0;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_3) {
@@ -182,8 +158,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_3) {
               1;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_z_2) {
@@ -208,8 +184,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_2) {
               1;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_z_3) {
@@ -243,8 +219,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_3) {
               1;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
@@ -293,10 +269,10 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
               1;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
-}  // namespace
+}  // namespace test
 }  // namespace symbolic
 }  // namespace drake

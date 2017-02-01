@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace symbolic {
-namespace {
+namespace test {
 
 class SymbolicExpressionMatrixTest : public ::testing::Test {
  protected:
@@ -129,6 +129,6 @@ TEST_F(SymbolicExpressionMatrixTest, EigenDiv) {
   EXPECT_EQ(M, M_expected);
 }
 
-}  // namespace
+}  // namespace test
 }  // namespace symbolic
 }  // namespace drake
