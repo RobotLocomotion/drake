@@ -227,6 +227,13 @@ class DrakeJoint {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+  /// Compares this joint with a cloned joint. Since this method is intended to
+  /// compare a clone, an *exact* match is performed. This method will only
+  /// return `true` if the provided `other` joint is exactly the same as this
+  /// joint.
+  virtual bool CompareToClone(const DrakeJoint& other) const;
+
+ protected:
   /// Attempts to downcast the provided `other` to the template class type. If
   /// the downcast is successful, it returns a pointer to the downcasted type.
   /// Otherwise, it returns `nullptr`.
@@ -240,13 +247,6 @@ class DrakeJoint {
     return result;
   }
 
-  /// Compares this joint with a cloned joint. Since this method is intended to
-  /// compare a clone, an *exact* match is performed. This method will only
-  /// return `true` if the provided `other` joint is exactly the same as this
-  /// joint.
-  virtual bool CompareToClone(const DrakeJoint& other) const;
-
- protected:
   const std::string name;
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
