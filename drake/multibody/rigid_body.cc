@@ -75,11 +75,6 @@ bool RigidBody<T>::CompareToClone(const RigidBody& other) const {
         other.get_model_instance_id());
     return false;
   }
-  if (other.has_parent_body()) {
-    drake::log()->debug(
-        "RigidBody::CompareToClone(): clone should not have parent body!");
-    return false;
-  }
   if (get_body_index() != other.get_body_index()) {
     drake::log()->debug(
         "RigidBody::CompareToClone(): body index mismatch:\n"
