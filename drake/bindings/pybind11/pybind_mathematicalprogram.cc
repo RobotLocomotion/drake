@@ -18,6 +18,7 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
 
   using drake::solvers::Binding;
   using drake::solvers::MathematicalProgram;
+  using drake::solvers::Constraint;
   using drake::solvers::LinearConstraint;
   using drake::solvers::QuadraticConstraint;
   using drake::solvers::QuadraticConstraint;
@@ -72,6 +73,7 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
     .def("linear_costs", &MathematicalProgram::linear_costs)
     .def("quadratic_costs", &MathematicalProgram::quadratic_costs)
     .def("FindDecisionVariableIndex", &MathematicalProgram::FindDecisionVariableIndex)
+    .def("num_vars", &MathematicalProgram::num_vars)
     .def("_GetSolution", [](const MathematicalProgram& prog,
                             const Variable& var) {
       return prog.GetSolution(var);
@@ -91,6 +93,7 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
 
   py::class_<Variable>(m, "Variable")
     .def(py::init<const std::string&>())
+    .def("__repr__", &Variable::to_string)
     .def("__add__", [](const Variable& self,
                        const Variable& other) {
       return Expression{self + other};
@@ -178,6 +181,7 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
   py::class_<Expression>(m, "Expression")
     .def(py::init<>())
     .def(py::init<const Variable&>())
+    .def("__repr__", &Expression::to_string)
     .def(py::self   + py::self)
     .def(py::self   + Variable())
     .def(Variable() + py::self)
@@ -259,7 +263,8 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
       return Formula{Expression(self) == Expression(other)};
     });
 
-  py::class_<Formula>(m, "Formula");
+  py::class_<Formula>(m, "Formula")
+    .def("__repr__", &Formula::to_string);
 
   py::class_<VectorXDecisionVariable>(
     m, "_VectorXDecisionVariable")
@@ -276,12 +281,19 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
       v(i) = var;
     });
 
+  // Assign the wrapped Constraint class to the name 'constraint'
+  // so we can use it in this file to indicate that the other constraint
+  // types inherit from it.
+  py::class_<Constraint> constraint(m, "Constraint");
+  constraint.def("lower_bound", &Constraint::lower_bound)
+            .def("upper_bound", &Constraint::upper_bound);
+
   py::class_<LinearConstraint, std::shared_ptr<LinearConstraint> >(
-    m, "LinearConstraint")
+    m, "LinearConstraint", constraint)
     .def("A", &LinearConstraint::A);
 
   py::class_<QuadraticConstraint, std::shared_ptr<QuadraticConstraint> >(
-    m, "QuadraticConstraint")
+    m, "QuadraticConstraint", constraint)
     .def("Q", &QuadraticConstraint::Q)
     .def("b", &QuadraticConstraint::b);
 
