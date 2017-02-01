@@ -159,6 +159,9 @@ drake_cc_binary(
         ":automotive_simulator",
         "//drake/common:text_logging_gflags",
     ],
+    data = [
+        "@drake_visualizer//:drake-visualizer",
+    ],
 )
 
 drake_cc_binary(
