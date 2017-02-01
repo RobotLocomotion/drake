@@ -502,6 +502,18 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
         throw SymbolicError(e_i,
                             "non-linear but called with AddLinearConstraint");
       }
+    } else if (is_unary_minus(e_i)) {
+      // i-th constraint is lb <= -var_i <= ub
+      const Variable& var_i{get_variable(get_argument(e_i))};
+      if (v.size() == 1) {
+        // If this is the only constraint, we call AddBoundingBoxConstraint.
+        return Binding<BoundingBoxConstraint>(
+            AddBoundingBoxConstraint(-ub(i), -lb(i), var_i), vars);
+      } else {
+        A(i, map_var_to_index[var_i.get_id()]) = -1;
+        new_lb(i) = lb(i);
+        new_ub(i) = ub(i);
+      }
     } else if (is_variable(e_i)) {
       // i-th constraint is lb <= var_i <= ub
       const Variable& var_i{get_variable(e_i)};

@@ -680,11 +680,15 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic6) {
   const auto& binding = prog.AddLinearConstraint(e, 1, 3);
   EXPECT_TRUE(prog.linear_constraints().empty());
   EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
-  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(), binding.constraint());
-  EXPECT_EQ(prog.bounding_box_constraints().back().variables(), binding.variables());
+  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
+            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
+            binding.variables());
   EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
-  EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-3)));
-  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-3)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
 }
 
 namespace {
