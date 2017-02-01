@@ -798,9 +798,10 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog,
                                              3 * x(0) + x(1) + 4 * x(2) + 1, 2);
   // Checks -x(1) = 3
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, -x(1), 3);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, -x(1), 3);
   // Checks -(x(0) + 2 * x(1)) = 2
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, -(x(0) + 2 * x(1)), 2);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog,
+                                                         -(x(0) + 2 * x(1)), 2);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
@@ -825,7 +826,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
   // Checks x(0) = 4
   //          1  = 1
   //       -x(1) = 2
-  CheckAddedSymbolicLinearEqualityConstraint(
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
       &prog, Vector3<Expression>(+x(0), 1, -x(1)), Eigen::Vector3d(4, 1, 2));
 }
 
