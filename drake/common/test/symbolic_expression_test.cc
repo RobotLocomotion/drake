@@ -19,6 +19,7 @@
 #include "drake/common/environment.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_formula.h"
+#include "drake/common/test/symbolic_test_util.h"
 #include "drake/common/variable.h"
 #include "drake/common/variables.h"
 
@@ -39,21 +40,10 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-bool ExprEqual(const Expression& e1, const Expression& e2) {
-  return e1.EqualTo(e2);
-}
-
-bool ExprNotEqual(const Expression& e1, const Expression& e2) {
-  return !ExprEqual(e1, e2);
-}
-
-bool ExprLess(const Expression& e1, const Expression& e2) {
-  return e1.Less(e2);
-}
-
-bool ExprNotLess(const Expression& e1, const Expression& e2) {
-  return !ExprLess(e1, e2);
-}
+using test::ExprEqual;
+using test::ExprLess;
+using test::ExprNotEqual;
+using test::ExprNotLess;
 
 // Checks if a given 'expressions' is ordered by Expression::Less.
 static void CheckOrdering(const vector<Expression>& expressions) {
