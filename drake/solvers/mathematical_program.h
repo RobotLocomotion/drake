@@ -1771,6 +1771,18 @@ class MathematicalProgram {
   AddPositiveSemidefiniteConstraint(
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var);
 
+  /**
+   * Adds a positive semidefinite constraint on a symmetric matrix.
+   * We create a new symmetric matrix of variables M being positive
+   * semidefinite, with the linear equality constraint e == M.
+   * @tparam Derived An Eigen Matrix of symbolic expressions.
+   * @param e Imposes constraint "e is positive semidefinite".
+   * @pre{1. e is symmetric.
+   *      2. e(i, j) is linear for all i, j
+   *      }
+   * @return The newly added positive semidefinite constraint, with the bound
+   * variable M that are also newly added.
+   */
   template <typename Derived>
   typename std::enable_if<
       std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
