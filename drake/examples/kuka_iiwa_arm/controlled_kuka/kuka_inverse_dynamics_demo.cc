@@ -56,7 +56,7 @@ int DoMain() {
                                          desired_state);
 
   // Sets desired trajectory.
-  demo.SetDesiredTrajectory(MakePlan(model_path), context);
+  demo.SetDesiredTrajectory(MakeKukaDemoTrajectory(model_path), context);
 
   simulator.Initialize();
   simulator.set_target_realtime_rate(1.0);

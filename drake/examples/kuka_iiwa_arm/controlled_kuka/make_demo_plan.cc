@@ -23,10 +23,11 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-unique_ptr<PiecewisePolynomialTrajectory> MakePlan(const std::string& path) {
+unique_ptr<PiecewisePolynomialTrajectory> MakeKukaDemoTrajectory(
+    const std::string& urdf_path) {
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      path, multibody::joints::kFixed, tree.get());
+      urdf_path, multibody::joints::kFixed, tree.get());
 
   // Creates a basic pointwise IK trajectory for moving the iiwa arm.
   // It starts in the zero configuration (straight up).

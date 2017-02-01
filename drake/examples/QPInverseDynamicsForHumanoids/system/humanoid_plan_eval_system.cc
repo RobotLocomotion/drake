@@ -28,10 +28,9 @@ struct SimpleValkyriePlan {
 HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
     const RigidBodyTree<double>& robot,
     const std::string& alias_groups_file_name,
-    const std::string& param_file_name,
-    double dt)
-    : DiscreteTimePlanEvalSystem(robot, alias_groups_file_name,
-                                 param_file_name, dt) {
+    const std::string& param_file_name, double dt)
+    : DiscreteTimePlanEvalSystem(robot, alias_groups_file_name, param_file_name,
+                                 dt) {
   set_name("humanoid_plan_eval");
 }
 
@@ -53,10 +52,9 @@ void HumanoidPlanEvalSystem::DoCalcUnrestrictedUpdate(
 
   // Generates a QpInput and stores it in AbstractState.
   QpInput& qp_input = get_mutable_qp_input(state);
-  qp_input = paramset_.MakeQpInput(
-      {"feet"}, /* contacts */
-      {"pelvis", "torso"}, /* tracekd bodies */
-      alias_groups_);
+  qp_input = paramset_.MakeQpInput({"feet"},            /* contacts */
+                                   {"pelvis", "torso"}, /* tracekd bodies */
+                                   alias_groups_);
 
   // Does acceleration feedback based on the plan.
   qp_input.mutable_desired_centroidal_momentum_dot()
@@ -69,10 +67,17 @@ void HumanoidPlanEvalSystem::DoCalcUnrestrictedUpdate(
       plan.joint_PDff.ComputeTargetAcceleration(robot_status->position(),
                                                 robot_status->velocity());
 
-  qp_input.mutable_desired_body_motions().at("pelvis").mutable_values() =
-      plan.pelvis_PDff.ComputeTargetAcceleration(
-          robot_status->pelvis().pose(), robot_status->pelvis().velocity());
-  qp_input.mutable_desired_body_motions().at("torso").mutable_values() =
+  const std::string& pelvis_body_name =
+      alias_groups_.get_body("pelvis")->get_name();
+  const std::string& torso_body_name =
+      alias_groups_.get_body("torso")->get_name();
+
+  qp_input.mutable_desired_body_motions()
+      .at(pelvis_body_name)
+      .mutable_values() = plan.pelvis_PDff.ComputeTargetAcceleration(
+      robot_status->pelvis().pose(), robot_status->pelvis().velocity());
+
+  qp_input.mutable_desired_body_motions().at(torso_body_name).mutable_values() =
       plan.torso_PDff.ComputeTargetAcceleration(
           robot_status->torso().pose(), robot_status->torso().velocity());
 }
@@ -84,11 +89,10 @@ HumanoidPlanEvalSystem::AllocateAbstractState() const {
       std::unique_ptr<systems::AbstractValue>(
           new systems::Value<SimpleValkyriePlan>(SimpleValkyriePlan()));
   abstract_vals[abstract_state_qp_input_index_] =
-      std::unique_ptr<systems::AbstractValue>(
-          new systems::Value<QpInput>(paramset_.MakeQpInput(
-              {"feet"}, /* contacts */
-              {"pelvis", "torso"}, /* tracekd bodies */
-              alias_groups_)));
+      std::unique_ptr<systems::AbstractValue>(new systems::Value<QpInput>(
+          paramset_.MakeQpInput({"feet"},            /* contacts */
+                                {"pelvis", "torso"}, /* tracekd bodies */
+                                alias_groups_)));
   return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
 }
 
@@ -101,11 +105,9 @@ void HumanoidPlanEvalSystem::SetDesired(const VectorX<double>& q_d,
 
   plan.initial_com = robot_.centerOfMass(cache);
   plan.pelvis_PDff.mutable_desired_pose() = robot_.relativeTransform(
-      cache, 0,
-      alias_groups_.get_body_group("pelvis").front()->get_body_index());
+      cache, 0, alias_groups_.get_body("pelvis")->get_body_index());
   plan.torso_PDff.mutable_desired_pose() = robot_.relativeTransform(
-      cache, 0,
-      alias_groups_.get_body_group("torso").front()->get_body_index());
+      cache, 0, alias_groups_.get_body("torso")->get_body_index());
 
   plan.com_PDff = VectorSetpoint<double>(3);
   plan.com_PDff.mutable_desired_position() = plan.initial_com;
@@ -115,10 +117,10 @@ void HumanoidPlanEvalSystem::SetDesired(const VectorX<double>& q_d,
   plan.joint_PDff.mutable_desired_position() = q_d;
 
   // Sets the gains
-  paramset_.LookupDesiredBodyMotionGains(*robot_.FindBody("pelvis"),
+  paramset_.LookupDesiredBodyMotionGains(*alias_groups_.get_body("pelvis"),
                                          &(plan.pelvis_PDff.mutable_Kp()),
                                          &(plan.pelvis_PDff.mutable_Kd()));
-  paramset_.LookupDesiredBodyMotionGains(*robot_.FindBody("torso"),
+  paramset_.LookupDesiredBodyMotionGains(*alias_groups_.get_body("torso"),
                                          &(plan.torso_PDff.mutable_Kp()),
                                          &(plan.torso_PDff.mutable_Kd()));
   paramset_.LookupDesiredDofMotionGains(&(plan.joint_PDff.mutable_Kp()),
