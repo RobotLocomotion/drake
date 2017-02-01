@@ -61,24 +61,19 @@ TEST_F(DrakeJointTests, TestIfJointIsFixed) {
 }
 
 TEST_F(DrakeJointTests, TestCloneAndCompare) {
-  // Verifies that a joint is equal to itself.
-  EXPECT_EQ(*fixed_joint_, *fixed_joint_);
-  EXPECT_EQ(*helical_joint_, *helical_joint_);
-  EXPECT_EQ(*prismatic_joint_, *prismatic_joint_);
-  EXPECT_EQ(*quaternion_floating_joint_, *quaternion_floating_joint_);
-  EXPECT_EQ(*revolute_joint_, *revolute_joint_);
-
   // Verifies that each type of joint is equal to its clone.
-  EXPECT_EQ(*fixed_joint_, *fixed_joint_->Clone());
-  EXPECT_EQ(*helical_joint_, *helical_joint_->Clone());
-  EXPECT_EQ(*prismatic_joint_, *prismatic_joint_->Clone());
-  EXPECT_EQ(*quaternion_floating_joint_, *quaternion_floating_joint_->Clone());
-  EXPECT_EQ(*revolute_joint_, *revolute_joint_->Clone());
+  EXPECT_TRUE(fixed_joint_->CompareToClonedJoint(*fixed_joint_->Clone()));
+  EXPECT_TRUE(helical_joint_->CompareToClonedJoint(*helical_joint_->Clone()));
+  EXPECT_TRUE(prismatic_joint_->CompareToClonedJoint(
+      *prismatic_joint_->Clone()));
+  EXPECT_TRUE(quaternion_floating_joint_->CompareToClonedJoint(
+      *quaternion_floating_joint_->Clone()));
+  EXPECT_TRUE(revolute_joint_->CompareToClonedJoint(*revolute_joint_->Clone()));
 
   // Verifies that two joints with different names do not match.
-  EXPECT_NE(*fixed_joint_,
+  EXPECT_FALSE(fixed_joint_->CompareToClonedJoint(
             FixedJoint("NonMatchingName",
-                       fixed_joint_->get_transform_to_parent_body()));
+                       fixed_joint_->get_transform_to_parent_body())));
 
   const std::vector<DrakeJoint*> joints = {
       fixed_joint_.get(),
@@ -89,25 +84,23 @@ TEST_F(DrakeJointTests, TestCloneAndCompare) {
 
   // Verifies that two joints with different transforms and/or types do not
   // match.
-  for (int i = 0; i < static_cast<int>(joints.size()); ++i) {
-    Eigen::Isometry3d non_matching_transform =
-        joints.at(i)->get_transform_to_parent_body();
-    non_matching_transform.linear()(0, 0) += 1;
-    EXPECT_NE(*joints.at(i),
-              FixedJoint(fixed_joint_->get_name(), non_matching_transform));
-  }
+  Eigen::Isometry3d non_matching_transform =
+      joints.at(0)->get_transform_to_parent_body();
+  non_matching_transform.linear()(0, 0) += 1;
+  EXPECT_FALSE(joints.at(0)->CompareToClonedJoint(
+            FixedJoint(fixed_joint_->get_name(), non_matching_transform)));
 
   // Verifies each type of joint can be cloned and that the clone is equal to
   // the original.
   for (int i = 0; i < static_cast<int>(joints.size()); ++i) {
-    EXPECT_EQ(*joints.at(i), *joints.at(i)->Clone());
+    EXPECT_TRUE(joints.at(i)->CompareToClonedJoint(*joints.at(i)->Clone()));
   }
 
   // Verifies that two joints of different types do not match.
   for (int i = 0; i < static_cast<int>(joints.size()); ++i) {
     for (int j = 0; j < static_cast<int>(joints.size()); ++j) {
       if (j != i) {
-        EXPECT_NE(*joints.at(i), *joints.at(j));
+        EXPECT_FALSE(joints.at(i)->CompareToClonedJoint(*joints.at(j)));
       }
     }
   }

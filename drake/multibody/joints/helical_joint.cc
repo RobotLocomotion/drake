@@ -22,18 +22,18 @@ drake::TwistVector<double> HelicalJoint::spatialJointAxis(const Vector3d& axis,
   return ret;
 }
 
-bool HelicalJoint::operator==(const DrakeJoint& other) const {
-  if (!FixedAxisOneDoFJoint::operator==(other)) return false;
+bool HelicalJoint::CompareToClonedJoint(const DrakeJoint& other) const {
+  if (!FixedAxisOneDoFJoint::CompareToClonedJoint(other)) return false;
   const HelicalJoint* downcasted_joint =
       dynamic_cast<const HelicalJoint*>(&other);
   if (downcasted_joint == nullptr) {
     drake::log()->debug(
-      "HelicalJoint::operator==(): other is not of type HelicalJoint.");
+      "HelicalJoint::CompareToClonedJoint(): other is not a HelicalJoint.");
     return false;
   }
   if (axis_ != downcasted_joint->axis_) {
     drake::log()->debug(
-        "HelicalJoint::operator==(): axis mismatch:\n"
+        "HelicalJoint::CompareToClonedJoint(): axis mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         axis_,
@@ -42,7 +42,7 @@ bool HelicalJoint::operator==(const DrakeJoint& other) const {
   }
   if (pitch_ != downcasted_joint->pitch_) {
       drake::log()->debug(
-        "HelicalJoint::operator==(): pitch mismatch:\n"
+        "HelicalJoint::CompareToClonedJoint(): pitch mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
         pitch_,
@@ -50,8 +50,4 @@ bool HelicalJoint::operator==(const DrakeJoint& other) const {
     return false;
   }
   return true;
-}
-
-bool HelicalJoint::operator!=(const DrakeJoint& other) const {
-  return !(*this == other);
 }
