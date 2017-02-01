@@ -293,7 +293,9 @@ void DecomposeLinearExpression(
       // There are more than one base, like x^2 * y^3
       throw SymbolicError(e, "is not linear");
     }
-  } else if (is_unary_minus(e)) {
+  } else if (is_unary_minus(e) && is_variable(get_argument(e))) {
+    // TODO(hongkai.dai or soonho): rewrite this condition without using
+    // is_unary_minus.
     const Variable& var{get_variable(get_argument(e))};
     const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
         map_var_to_index.at(var.get_id())) = -1;
@@ -502,7 +504,9 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
         throw SymbolicError(e_i,
                             "non-linear but called with AddLinearConstraint");
       }
-    } else if (is_unary_minus(e_i)) {
+    } else if (is_unary_minus(e_i) && is_variable(get_argument(e_i))) {
+      // TODO(hongkai.dai or soonho): rewrite this condition without using
+      // is_unary_minus.
       // i-th constraint is lb <= -var_i <= ub
       const Variable& var_i{get_variable(get_argument(e_i))};
       if (v.size() == 1) {
