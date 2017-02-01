@@ -73,6 +73,27 @@ class LinearSystemExample3 : public LinearSystemExample2 {
   bool CheckSolution() const override;
 };
 
+/**
+ * For a stable linear system ẋ = A x, find its Lyapunov function by solving
+ * the Lyapunov equality on the symmetric matrix X
+ * Aᵀ * X + X * A = -E
+ */
+class LinearMatrixEqualityExample {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearMatrixEqualityExample)
+
+  LinearMatrixEqualityExample();
+
+  MathematicalProgram* prog() const { return prog_.get(); }
+
+  bool CheckSolution() const;
+
+ private:
+  std::unique_ptr<MathematicalProgram> prog_;
+  MatrixDecisionVariable<3, 3> X_;
+  Eigen::Matrix3d A_;
+};
+
 /// This test comes from Section 2.2 of
 /// Handbook of Test Problems in Local and Global Optimization.
 /// © 1999

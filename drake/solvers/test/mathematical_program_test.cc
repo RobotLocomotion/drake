@@ -692,36 +692,66 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic6) {
 }
 
 namespace {
-void CheckAddedSymbolicLinearEqualityConstraint(
-    MathematicalProgram* prog, const Eigen::Ref<const VectorX<Expression>>& v,
-    const Eigen::Ref<const Eigen::VectorXd>& b) {
-  const int num_linear_eq_cnstr = prog->linear_equality_constraints().size();
-  auto binding = prog->AddLinearEqualityConstraint(v, b);
+void CheckAddedLinearEqualityConstraintCommon(
+    const Binding<LinearEqualityConstraint>& binding,
+    const MathematicalProgram& prog, int num_linear_eq_cnstr) {
   // Checks if the number of linear equality constraints get incremented by 1.
-  EXPECT_EQ(prog->linear_equality_constraints().size(),
+  EXPECT_EQ(prog.linear_equality_constraints().size(),
             num_linear_eq_cnstr + 1);
   // Checks if the newly added linear equality constraint in prog is the same as
   // that returned from AddLinearEqualityConstraint.
-  EXPECT_EQ(prog->linear_equality_constraints().back().constraint(),
+  EXPECT_EQ(prog.linear_equality_constraints().back().constraint(),
             binding.constraint());
   // Checks if the bound variables of the newly added linear equality constraint
   // in prog is the same as that returned from AddLinearEqualityConstraint.
-  EXPECT_EQ(prog->linear_equality_constraints().back().variables(),
+  EXPECT_EQ(prog.linear_equality_constraints().back().variables(),
             binding.variables());
-  // Checks if the number of rows in the newly added constraint is the same as
-  // the input expression.
-  EXPECT_EQ(binding.constraint()->num_constraints(), v.rows());
-  // Check if the newly added linear equality constraint matches with the input
-  // expression.
-  EXPECT_EQ(binding.constraint()->A() * binding.variables() -
-                binding.constraint()->lower_bound(),
-            v - b);
 }
 
-void CheckAddedSymbolicLinearEqualityConstraint(MathematicalProgram* prog,
-                                                const Expression& e, double b) {
-  CheckAddedSymbolicLinearEqualityConstraint(prog, Vector1<Expression>(e),
-                                             Vector1d(b));
+template <typename DerivedV, typename DerivedB>
+void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+    MathematicalProgram* prog, const Eigen::MatrixBase<DerivedV>& v,
+    const Eigen::MatrixBase<DerivedB>& b) {
+  const int num_linear_eq_cnstr = prog->linear_equality_constraints().size();
+  auto binding = prog->AddLinearEqualityConstraint(v, b);
+  CheckAddedLinearEqualityConstraintCommon(binding, *prog, num_linear_eq_cnstr);
+  // Checks if the number of rows in the newly added constraint is the same as
+  // the input expression.
+  int num_constraints_expected = v.size();
+
+  EXPECT_EQ(binding.constraint()->num_constraints(), num_constraints_expected);
+  // Check if the newly added linear equality constraint matches with the input
+  // expression.
+  VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
+      binding.constraint()->lower_bound();
+
+  MatrixX<Expression> v_resize = flat_V;
+  v_resize.resize(v.rows(), v.cols());
+  EXPECT_EQ(v_resize, v - b);
+}
+
+template <typename DerivedV, typename DerivedB>
+void CheckAddedSymmetricSymbolicLinearEqualityConstraint(
+    MathematicalProgram* prog, const Eigen::MatrixBase<DerivedV>& v,
+    const Eigen::MatrixBase<DerivedB>& b) {
+  const int num_linear_eq_cnstr = prog->linear_equality_constraints().size();
+  auto binding = prog->AddLinearEqualityConstraint(v, b, true);
+  CheckAddedLinearEqualityConstraintCommon(binding, *prog, num_linear_eq_cnstr);
+  // Checks if the number of rows in the newly added constraint is the same as
+  // the input expression.
+  int num_constraints_expected = v.rows() * (v.rows() + 1) / 2;
+  EXPECT_EQ(binding.constraint()->num_constraints(), num_constraints_expected);
+  // Check if the newly added linear equality constraint matches with the input
+  // expression.
+  VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
+      binding.constraint()->lower_bound();
+  EXPECT_EQ(math::ToSymmetricMatrixFromLowerTriangularColumns(flat_V), v - b);
+}
+
+void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+    MathematicalProgram* prog, const Expression& e, double b) {
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      prog, Vector1<Expression>(e), Vector1d(b));
 }
 }  // namespace
 
@@ -732,38 +762,46 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   auto x = prog.NewContinuousVariables<3>("x");
 
   // Checks x(0) = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, +x(0), 1);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, +x(0), 1);
   // Checks x(1) = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, +x(1), 1);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, +x(1), 1);
   // Checks x(0) + x(1) = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + x(1), 1);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + x(1), 1);
   // Checks x(0) + 2 * x(1) = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 2 * x(1), 1);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + 2 * x(1),
+                                                         1);
   // Checks 3 * x(0) - 2 * x(1) = 2
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, 3 * x(0) - 2 * x(1), 2);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, 3 * x(0) - 2 * x(1), 2);
   // Checks 2 * x(0) = 2
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(0), 2);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, 2 * x(0), 2);
   // Checks x(0) + 3 * x(2) = 3
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 3 * x(2), 3);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + 3 * x(2),
+                                                         3);
   // Checks 2 * x(1) - 3 * x(2) = 4
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(1) - 3 * x(2), 4);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, 2 * x(1) - 3 * x(2), 4);
   // Checks x(0) + 2 = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 2, 1);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + 2, 1);
   // Checks x(1) - 2 = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(1) - 2, 1);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(1) - 2, 1);
   // Checks 3 * x(1) + 4 = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, 3 * x(1) + 4, 1);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, 3 * x(1) + 4,
+                                                         1);
   // Checks x(0) + x(2) + 3 = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + x(2) + 3, 1);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + x(2) + 3,
+                                                         1);
   // Checks 2 * x(0) + x(2) - 3 = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(0) + x(2) - 3, 1);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, 2 * x(0) + x(2) - 3, 1);
   // Checks 3 * x(0) + x(1) + 4 * x(2) + 1 = 2
-  CheckAddedSymbolicLinearEqualityConstraint(&prog,
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog,
                                              3 * x(0) + x(1) + 4 * x(2) + 1, 2);
   // Checks -x(1) = 3
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, -x(1), 3);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, -x(1), 3);
   // Checks -(x(0) + 2 * x(1)) = 2
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, -(x(0) + 2 * x(1)), 2);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog,
+                                                         -(x(0) + 2 * x(1)), 2);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
@@ -774,7 +812,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
 
   // Checks x(1) = 2
   //        x(0) = 1
-  CheckAddedSymbolicLinearEqualityConstraint(
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
       &prog, Vector2<Expression>(+x(1), +x(0)), Eigen::Vector2d(2, 1));
 
   // Checks 2 * x(1) = 3
@@ -782,14 +820,76 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
   //        x(0) + 3 * x(1) + 7 = 1
   Vector3<Expression> v{};
   v << 2 * x(1), x(0) + x(2), x(0) + 3 * x(1) + 7;
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, v,
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, v,
                                              Eigen::Vector3d(3, 4, 1));
 
   // Checks x(0) = 4
   //          1  = 1
   //       -x(1) = 2
-  CheckAddedSymbolicLinearEqualityConstraint(
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
       &prog, Vector3<Expression>(+x(0), 1, -x(1)), Eigen::Vector3d(4, 1, 2));
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint3) {
+  // Checks adding a matrix of linear equality constraints. This matrix is not
+  // symmetric.
+  MathematicalProgram prog;
+  auto X = prog.NewContinuousVariables<2, 2>("X");
+
+  // Checks A * X = [1, 2; 3, 4], both A * X and B are static sized.
+  Eigen::Matrix2d A{};
+  A << 1, 3, 4, 2;
+  Eigen::Matrix2d B{};
+  B << 1, 2, 3, 4;
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, A * X, B);
+
+  // Checks A * X = B, with A*X being dynamic sized, and B being static sized.
+  MatrixX<Expression> A_times_X = A * X;
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, A_times_X, B);
+
+  // Checks A * X = B, with A*X being static sized, and B being dynamic sized.
+  Eigen::MatrixXd B_dynamic = B;
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, A * X,
+                                                         B_dynamic);
+
+  // Checks A * X = B, with both A*X and B being dynamic sized.
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, A_times_X,
+                                                         B_dynamic);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint4) {
+  // Checks adding a symmetric matrix of linear equality constraints.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<2>("X");
+  Eigen::Matrix2d A{};
+  A << 1, 3, 4, 2;
+  Eigen::Matrix2d B{};
+  B << 1, 2, 2, 1;
+  Eigen::MatrixXd B_dynamic = B;
+  Matrix2<Expression> M = A.transpose() * X + X * A;
+  MatrixX<Expression> M_dynamic = M;
+
+  // Checks Aᵀ * X + X * A = B, both the left and right hand-side are static
+  // sized.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(&prog, M, B);
+
+  // Checks Aᵀ * X + X * A = B, the left hand-side being static sized, while the
+  // right hand-side being dynamic sized.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(&prog, M, B_dynamic);
+
+  // Checks Aᵀ * X + X * A = B, the left hand-side being dynamic sized, while
+  // the
+  // right hand-side being static sized.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(&prog, M_dynamic, B);
+
+  // Checks Aᵀ * X + X * A = B, bot the left and right hand-side are dynamic
+  // sized.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(&prog, M_dynamic,
+                                                      B_dynamic);
+
+  // Checks Aᵀ * X + X * A = E.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(
+      &prog, M, Eigen::Matrix2d::Identity());
 }
 
 namespace {
