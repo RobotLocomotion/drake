@@ -24,9 +24,7 @@ bool PrismaticJoint::CompareToClone(const DrakeJoint& other) const {
   if (!FixedAxisOneDoFJoint::CompareToClone(other)) return false;
   const PrismaticJoint* downcasted_joint =
       DrakeJoint::DowncastOrLog<PrismaticJoint>(&other);
-  if (downcasted_joint == nullptr) {
-    return false;
-  }
+  if (downcasted_joint == nullptr) return false;
   if (translation_axis_ != downcasted_joint->translation_axis_) {
     drake::log()->debug(
         "PrismaticJoint::CompareToClone(): translation_axis mismatch:\n"

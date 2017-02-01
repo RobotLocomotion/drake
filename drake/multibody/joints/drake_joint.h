@@ -236,7 +236,8 @@ class DrakeJoint {
  protected:
   /// Attempts to downcast the provided `other` to the template class type. If
   /// the downcast is successful, it returns a pointer to the downcasted type.
-  /// Otherwise, it returns `nullptr`.
+  /// Otherwise, it will log a debug message using `drake::log()->debug()` and
+  /// return `nullptr`.
   template <class DowncastType>
   const DowncastType* DowncastOrLog(const DrakeJoint* other) const {
     const DowncastType* result = dynamic_cast<const DowncastType*>(other);

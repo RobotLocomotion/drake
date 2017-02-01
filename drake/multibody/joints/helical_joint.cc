@@ -26,9 +26,7 @@ bool HelicalJoint::CompareToClone(const DrakeJoint& other) const {
   if (!FixedAxisOneDoFJoint::CompareToClone(other)) return false;
   const HelicalJoint* downcasted_joint =
       DrakeJoint::DowncastOrLog<HelicalJoint>(&other);
-  if (downcasted_joint == nullptr) {
-    return false;
-  }
+  if (downcasted_joint == nullptr) return false;
   if (axis_ != downcasted_joint->axis_) {
     drake::log()->debug(
         "HelicalJoint::CompareToClone(): axis mismatch:\n"
