@@ -103,12 +103,6 @@ toolchain {
     linker_flag: "-Wl,--gc-sections"
   }
   linking_mode_flags { mode: DYNAMIC }
-
-  # Extra warning flags specific to Drake.
-  cxx_flag: "-Werror=extra"
-  cxx_flag: "-Werror=return-local-addr"
-  cxx_flag: "-Wno-unused-parameter"
-  cxx_flag: "-Wno-missing-field-initializers"
 }
 
 # GCC 4.9 on Linux
@@ -189,12 +183,6 @@ toolchain {
     linker_flag: "-Wl,--gc-sections"
   }
   linking_mode_flags { mode: DYNAMIC }
-
-  # Extra warning flags specific to Drake.
-  cxx_flag: "-Werror=extra"
-  cxx_flag: "-Werror=return-local-addr"
-  cxx_flag: "-Wno-unused-parameter"
-  cxx_flag: "-Wno-missing-field-initializers"
 }
 
 # Clang 3.9 on Linux
@@ -268,11 +256,6 @@ toolchain {
     linker_flag: "-Wl,--gc-sections"
   }
   linking_mode_flags { mode: DYNAMIC }
-
-  # Extra warning flags specific to Drake.
-  cxx_flag: "-Werror=inconsistent-missing-override"
-  cxx_flag: "-Werror=sign-compare"
-  cxx_flag: "-Werror=return-stack-address"
 }
 
 # Clang on OS X
@@ -369,9 +352,4 @@ toolchain {
     compiler_flag: "-fdata-sections"
   }
   linking_mode_flags { mode: DYNAMIC }
-
-  # Extra warning flags specific to Drake.
-  cxx_flag: "-Werror=inconsistent-missing-override"
-  cxx_flag: "-Werror=sign-compare"
-  cxx_flag: "-Werror=return-stack-address"
 }
