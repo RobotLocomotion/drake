@@ -12,7 +12,7 @@ set(drakeSensors_HEADERS
     rotary_encoders.h)
 
 if(VTK_FOUND)
-  list(APPEND drakeSensors_SRC_FILES rgbd_camera.cc)
+  list(APPEND drakeSensors_SRC_FILES rgbd_camera.cc vtk_util.cc)
   list(APPEND drakeSensors_HEADERS rgbd_camera.h)
 endif()
 
@@ -24,7 +24,7 @@ target_link_libraries(drakeSensors
     drakeSystemFramework)
 
 if(VTK_FOUND)
-  target_link_libraries(drakeSensors vtkRendering)
+  target_link_libraries(drakeSensors vtkRendering vtkIO)
   target_include_directories(drakeSensors PRIVATE ${VTK_INCLUDE_DIRS})
 endif()
 
