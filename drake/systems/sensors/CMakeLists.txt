@@ -1,6 +1,7 @@
 set(drakeSensors_SRC_FILES
     accelerometer.cc
     accelerometer_output.cc
+    camera_info.cc
     depth_sensor.cc
     depth_sensor_output.cc
     depth_sensor_specification.cc
@@ -9,6 +10,7 @@ set(drakeSensors_SRC_FILES
 set(drakeSensors_HEADERS
     accelerometer.h
     accelerometer_output.h
+    camera_info.h
     depth_sensor.h
     depth_sensor_output.h
     depth_sensor_specification.h
