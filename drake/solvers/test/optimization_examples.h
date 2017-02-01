@@ -84,7 +84,7 @@ class LinearMatrixEqualityExample {
 
   LinearMatrixEqualityExample();
 
-  MathematicalProgram* prog() const {return prog_.get();}
+  MathematicalProgram* prog() const { return prog_.get(); }
 
   bool CheckSolution() const;
 

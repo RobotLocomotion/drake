@@ -1086,8 +1086,8 @@ class MathematicalProgram {
    * linear expression. Throws an exception if
    * 1. @p v(i) is a non-linear expression.
    * 2. @p v(i) is a constant.
-   * @tparam DerivedV An Eigen Matrix type of Expression.
-   * @tparam DerivedB An Eigen Matrix type of double.
+   * @tparam DerivedV An Eigen Matrix type of Expression. A column vector.
+   * @tparam DerivedB An Eigen Matrix type of double. A column vector.
    * @param v v(i) is a linear symbolic expression in the form of
    * <tt> c0 + c1 * x1 + ... + cn * xn </tt> where ci is a constant and @xi is
    * a variable.
@@ -1110,8 +1110,8 @@ class MathematicalProgram {
 
   /**
    * Adds a linear equality constraint for a matrix of linear expression @p V,
-   * such that V(i, j) = B(i, j). If V is a symmetric matrix, then only the
-   * lower triangular part of V is constrained.
+   * such that V(i, j) = B(i, j). If V is a symmetric matrix, then the user
+   * may only want to constrain the lower triangular part of V.
    * This function is meant to provide convenience to the user, it incurs
    * additional copy and memory allocation. For faster speed, add each column
    * of the matrix equality in a for loop.
@@ -1154,12 +1154,9 @@ class MathematicalProgram {
                            ? static_cast<int>(DerivedV::ColsAtCompileTime)
                            : static_cast<int>(DerivedB::ColsAtCompileTime);
 
-    const int V_triangular_size =
-        V_rows != Eigen::Dynamic ? (V_rows + 1) * V_rows / 2 : Eigen::Dynamic;
-    const int V_size = V_rows != Eigen::Dynamic && V_cols != Eigen::Dynamic
-                           ? V_rows * V_cols
-                           : Eigen::Dynamic;
     if (lower_triangle) {
+      const int V_triangular_size =
+          V_rows != Eigen::Dynamic ? (V_rows + 1) * V_rows / 2 : Eigen::Dynamic;
       int V_triangular_size_dynamic = V.rows() * (V.rows() + 1) / 2;
       Eigen::Matrix<symbolic::Expression, V_triangular_size, 1> flat_lower_V(
           V_triangular_size_dynamic);
@@ -1175,6 +1172,8 @@ class MathematicalProgram {
       }
       return AddLinearEqualityConstraint(flat_lower_V, flat_lower_B);
     } else {
+      const int V_size = V_rows != Eigen::Dynamic && V_cols != Eigen::Dynamic
+                         ? V_rows * V_cols : Eigen::Dynamic;
       Eigen::Matrix<symbolic::Expression, V_size, 1> flat_V(V.size());
       Eigen::Matrix<double, V_size, 1> flat_B(V.size());
       int V_idx = 0;
