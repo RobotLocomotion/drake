@@ -82,7 +82,7 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
   void DoStepOnceFixedSize(const T& dt) override;
 
   // Workspace vector for storing the initial state during integration.
-  VectorX<T> x0_; 
+  VectorX<T> x0_;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;

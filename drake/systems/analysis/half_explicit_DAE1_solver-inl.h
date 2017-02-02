@@ -1,5 +1,9 @@
 #pragma once
 
+#include <algorithm>
+#include <memory>
+#include <limits>
+
 /// @file
 /// Template method implementations for half_explicit_DAE1_solver.h.
 /// Most users should only include that file, not this one.
@@ -53,10 +57,10 @@ Eigen::MatrixXd HalfExplicitDAE1Solver<T>::CalcAlgebraicJacobian(
 
   // Get the context as modifiable (we will restore everything we touch).
   Context<T>* context_mut = (Context<T>*) &context;
-  const auto& qsave = context.get_continuous_state()->get_generalized_position().
-      CopyToVector();
-  const auto& vsave = context.get_continuous_state()->get_generalized_velocity().
-      CopyToVector();
+  const auto& qsave = context.get_continuous_state()->
+      get_generalized_position().CopyToVector();
+  const auto& vsave = context.get_continuous_state()->
+      get_generalized_velocity().CopyToVector();
 
   // Calculate the error in the algebraic equations at the current lambda.
   UpdateContinuousState(context_mut, lambda, Jc, dt);
@@ -69,7 +73,7 @@ Eigen::MatrixXd HalfExplicitDAE1Solver<T>::CalcAlgebraicJacobian(
 
   // Copy lambda.
   Eigen::VectorXd lambda_prime = lambda;
-  
+
   // Iterate over each dimension of lambda
   for (int i=0; i< nf; ++i) {
     // Compute a good increment to the lambda dimension.
@@ -353,32 +357,89 @@ typename HalfExplicitDAE1Solver<T>::LineSearchOutput
           const Eigen::VectorXd& lambda, const Eigen::VectorXd& dlambda,
           double fold, const Eigen::VectorXd& gradient,
           const Eigen::MatrixXd& J, double dt) const {
-  // The initial step length scalar.
+  const auto& system = this->get_system();
+  const Context<T>& context = this->get_context();
+  Context<T>* context_mut = (Context<T>*) &context;
+
+  const double meps = std::numeric_limits<double>::epsilon();
+  const double gamma = 1e-4;          // Rate of decrease constant.
+  const double deltal_tol =  meps*100;     // Convergence criterion for Δλ.
+
+  // The initial step length scalar- we always try a full Newton step first.
   double alpha = 1.0;
 
   // Get the slope of the step.
   double slope = gradient.dot(dlambda);
-  double test = 0.0;
-  for (int i=0; i< dlambda.size(); ++i) {
-    test = std::max(test,
-                    std::abs(dlambda(i)) / std::max(std::abs(lambda(i), 1.0)));
-  }
 
   // Compute the new lambda.
   LineSearchOutput out;
-  out.lambda_new = lambda + dlambda*alpha;
 
-  //
+  // Set last alpha to NaN both to indicate that this is the first time the
+  // loop is being run and to help with debugging in case one or more values
+  // is spuriously not assigned.
+  double last_alpha = std::nan("");
+  double last_f = std::nan("");
 
-  // Evaluate the constraint equations.
-  const auto& system = this->get_system();
-  const Context<T>& context = this->get_context();
-  Context<T>* context_mut = (Context<T>*) &context;
-  UpdateContinuousState(context_mut, out.lambda_new, J, dt);
-  out.goutput = system.EvalConstraintEquations(context);
+  // Determine minimum possible value of alpha.
+  double test = 0.0;
+  for (int i=0; i< dlambda.size(); ++i) {
+    test = std::max(test,
+                    std::abs(dlambda(i)) / std::max(std::abs(lambda(i)), 1.0));
+  }
+  const double alpha_min = deltal_tol / test;
 
-  // Compute the new value of the objective function.
-  out.fnew = out.goutput.squaredNorm() / 2;
+  while (true) {
+    // Update lambda.
+    out.lambda_new = lambda + dlambda*alpha;
+
+    // Compute the new value of the objective function.
+    UpdateContinuousState(context_mut, out.lambda_new, J, dt);
+    out.goutput = system.EvalConstraintEquations(context);
+    out.fnew = out.goutput.squaredNorm() / 2;
+
+    // Look for minimum alpha.
+    if (alpha < alpha_min) {
+      break;
+    } else {
+      // Look for sufficient decrease.
+      if (out.fnew <= fold+gamma*alpha*slope) {
+        break;
+      } else {
+        double tmp_beta;
+        if (std::isnan(last_alpha)) {
+          tmp_beta = -slope / (2 * (out.fnew - fold - slope));
+        } else {
+          const double rhs1 = out.fnew - fold - alpha*slope;
+          const double rhs2 = last_f - fold - last_alpha * slope;
+          const double alpha2 = alpha*alpha;
+          const double last_alpha2 = last_alpha*last_alpha;
+          const double a = (rhs1/alpha2 - rhs2/last_alpha2)/(alpha-last_alpha);
+          const double b = (-last_alpha*rhs1/alpha2 + alpha*rhs2/last_alpha2)/
+              (alpha-last_alpha);
+          if (a == 0.0) {
+            tmp_beta = -slope / (2 * b);
+          } else {
+            const double disc = b*b - 3*a*slope;
+            if (disc < 0.0) {
+              tmp_beta = 0.5*alpha;
+            } else {
+              if (b <= 0.0)
+                tmp_beta = (-b+std::sqrt(disc))/(3*a);
+              else
+                tmp_beta = -slope/(b+std::sqrt(disc));
+            }
+
+            if (tmp_beta > alpha/2)
+              tmp_beta  = alpha/2;
+          }
+        }
+
+        last_alpha = alpha;
+        last_f = out.fnew;
+        alpha = std::max(tmp_beta, 0.1*alpha);
+      }
+    }
+  }
 
   return out;
 }

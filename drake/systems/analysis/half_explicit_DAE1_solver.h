@@ -1,7 +1,12 @@
 #pragma once
 
+#include <cmath>
+#include <limits>
+#include <memory>
+
 #include <Eigen/Dense>
-#include <eigen3/Eigen/src/LU/PartialPivLU.h>
+#include <Eigen/src/LU/PartialPivLU.h>
+
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -10,19 +15,59 @@ namespace systems {
 /// A first-order, half-explicit DAE solver. This approach solves DAEs of the
 /// form:
 /// <pre>
-/// dx/dt = f(x(t), λ)
+/// dx/dt = d(x(t), λ)
 /// g(x) = 0
 /// </pre>
-/// using the first order relationship:
+/// where d() is an ordinary differential equation dependent upon constraint
+/// forces λ, using the first order relationship:
 /// <pre>
-/// x(t+Δt) = x(t) + Δt⋅f(x(t), λ)
+/// x(t+Δt) = x(t) + Δt⋅d(x(t), λ)
 /// </pre>
 /// to solve the following nonlinear system of equations for λ:
 /// <pre>
-/// g(x(t)+Δt⋅f(x(t), λ) = 0
+/// g(x(t)+ Δt⋅d(x(t), λ) = 0
 /// </pre>
-/// After this value of λ has been obtained *implicitly*, x(t+Δt) is computed
-/// *explicitly* using the second to last equation above.
+/// After the value of λ has been obtained *implicitly*, x(t+Δt) is computed
+/// *explicitly* using the second to last equation above. This code uses
+/// the Newton-Raphson Algorithm to solve the nonlinear system of equations.
+///
+/// Let us now consider the state variables as representing a mechanical system
+/// with generalized coordinates `q` and generalized velocities `v`. We
+/// designate the matrix of partial derivatives of the constraint equations
+/// taken with respect to the generalized coordinates as K. Formally:
+/// <pre>
+/// K = ∂g/∂q
+/// </pre>
+/// Given that the time derivative of the constraint equations can be computed
+/// by K dq/dt and dq/dt = Nv, we can define the Jacobian matrix transforming
+/// generalized velocities to constraint velocities as J = KN. From the dual
+/// relationship between velocities and forces, constraint forces λ yield
+/// generalized forces (f) by f = Jᵀλ. The equations are now reformulated as:
+/// <pre>
+/// v(t+Δt) = v(t) + Δt⋅e() + M⁻¹Jᵀλ
+/// q(t+Δt) = q(t) + Δt⋅Nv(t+Δt)
+/// g(q(t+Δt)) = 0
+/// </pre>
+/// where e(q(t), v(t)) gives the time derivatives of the generalized velocity
+/// variables- now independently of λ. J and N are both dependent upon q(t). For
+/// simplicity, we consider only constraints dependent on generalized
+/// coordinates in this expository treatment.
+/// <pre>
+/// ∂g(q(t+Δt))/∂λ = ∂g/∂q(t+Δt)⋅∂q(t+Δt)/∂λ
+/// </pre>
+/// where:
+/// <pre>
+/// ∂q(t+Δt)/∂λ = Δt⋅NM⁻¹Jᵀ
+/// </pre>
+/// and:
+/// <pre>
+/// ∂g/∂q(t+Δt) = ???
+/// </pre>
+/// meaning that g(q(t+Δt)) can be treated effectively as g(λ). The
+/// Newton-Raphson process requires computing the Jacobian matrix ∂g/∂λ:
+/// <pre>
+/// ∂g/∂λ = Δt⋅JNM⁻¹Jᵀ
+/// </pre>
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.

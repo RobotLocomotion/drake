@@ -165,21 +165,21 @@ TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
 
   // Verify that the constraint error is effectively zero.
   const double tol = std::numeric_limits<double>::epsilon() * 10;
-  EXPECT_NEAR(dut_->EvalConstraintEquations(*context_).norm(),0.0,tol);
+  EXPECT_NEAR(dut_->EvalConstraintEquations(*context_).norm(), 0.0, tol);
 
   // Move the bead off of the wire and verify limit on expected error.
   const double err = 1.0;
   xc[0] += err;
-  EXPECT_LE(dut_->EvalConstraintEquations(*context_).norm(),1.0);
+  EXPECT_LE(dut_->EvalConstraintEquations(*context_).norm(), 1.0);
   xc[0] = std::cos(s);
   xc[1] += err;
-  EXPECT_LE(dut_->EvalConstraintEquations(*context_).norm(),1.0);
+  EXPECT_LE(dut_->EvalConstraintEquations(*context_).norm(), 1.0);
 
   // TODO(edrumwri): Test the constraint evaluation without the inverse
   // sinusoidal function.
 }
 
-// Tests the evaluation of the time derivative of the constraint functions 
+// Tests the evaluation of the time derivative of the constraint functions
 // using the sinusoidal function.
 TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
   // Use the version with the inverse sinusoidal function first.
@@ -200,7 +200,7 @@ TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
 
   // Verify that the constraint error is effectively zero.
   const double tol = std::numeric_limits<double>::epsilon() * 10;
-  EXPECT_NEAR(dut_->EvalConstraintEquationsDot(*context_).norm(),0.0,tol);
+  EXPECT_NEAR(dut_->EvalConstraintEquationsDot(*context_).norm(), 0.0, tol);
 }
 
 }  // namespace

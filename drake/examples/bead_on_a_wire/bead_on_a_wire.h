@@ -13,10 +13,10 @@ namespace bead_on_a_wire {
 /// minimal coordinates or absolute coordinates (with Lagrange Multipliers).
 /// Equations for the dynamics in absolute coordinates are provided by
 /// R. Rosales, "Bead Moving Along a Thin, Rigid Wire". Available from:
-/// https://ocw.mit.edu/courses/mathematics/18-385j-nonlinear-dynamics-and-chaos-fall-2004/lecture-notes/bead_on_wire.pdf 
+/// https://ocw.mit.edu/courses/mathematics/18-385j-nonlinear-dynamics-and-chaos-fall-2004/lecture-notes/bead_on_wire.pdf
 ///
 /// The presence of readily available solutions coupled with the potential
-/// for highly irregular geometric constraints (which can be viewed 
+/// for highly irregular geometric constraints (which can be viewed
 /// as complex contact constraints), make this a powerful example.
 ///
 /// The dynamic equations for the bead in minimal coordinates comes from
@@ -100,7 +100,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// Constructs the object using either minimal or absolute coordinates (the
   /// latter uses the method of Lagrange Multipliers to compute the time
   /// derivatives).
-  BeadOnAWire(CoordinateType type);
+  explicit BeadOnAWire(CoordinateType type);
 
   void DoCalcOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
@@ -130,7 +130,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///          (0 <= s <= 1) as default and outputs a point in 3D as output.
   /// @throws std::logic_error if f is a nullptr (the function must always be
   ///         set).
-  void reset_wire_parameter_function(std::function<Eigen::Matrix<DScalar,3,1>(
+  void reset_wire_parameter_function(std::function<Eigen::Matrix<DScalar, 3, 1>(
       const DScalar&)> f) {
     if (!f) throw std::logic_error("Function must be non-null.");
     f_ = f;
@@ -143,7 +143,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///              an acceptable value (BeadOnAWire will use a generic inversion
   ///              routine).
   void reset_inverse_wire_parameter_function(std::function<DScalar(
-      const Eigen::Matrix<DScalar,3,1>&)> inv_f) {
+      const Eigen::Matrix<DScalar, 3, 1>&)> inv_f) {
     inv_f_ = inv_f;
   }
 
@@ -155,21 +155,9 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///        | s      |
   static Eigen::Matrix<DScalar, 3, 1> sinusoidal_function(const DScalar& s);
 
-  /// Example wire parametric function for the bead on a wire example. The
-  /// exact function definition is:
-  /// <pre>
-  ///        | s |
-  /// f(s) = | 0 |
-  ///        | 0 |
-  static Eigen::Matrix<DScalar, 3, 1> linear_function(const DScalar& s);
-
   /// Inverse parametric function for the bead on a wire system that uses the
   /// sinusoidal parametric example function.
   static DScalar inverse_sinusoidal_function(const Vector3<DScalar>& v);
-
-  /// Inverse parametric function for the bead on a wire system that uses the
-  /// linear parametric example function.
-  static DScalar inverse_linear_function(const Vector3<DScalar>& v);
 
  protected:
   void SetDefaultState(const systems::Context<T>& context,
@@ -177,7 +165,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
 
   /// Gets the number of constraint equations.
   int do_get_num_constraint_equations(const systems::Context<T>& context) const
-  override;
+      override;
 
   /// Evaluates the constraint equations for a bead in absolute coordinates.
   /// This method is computationally expensive. To evaluate these equations,
@@ -205,7 +193,6 @@ class BeadOnAWire : public systems::LeafSystem<T> {
       const Eigen::VectorXd& lambda) const override;
 
  private:
-
   // The coordinate representation used for kinematics and dynamics.
   CoordinateType coordinate_type_;
 

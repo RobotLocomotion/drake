@@ -18,12 +18,13 @@ class HalfExplicitDAE1SolverTest : public ::testing::Test {
     bead_on_a_wire_ = std::make_unique<bead_on_a_wire::BeadOnAWire<double>>(
         bead_on_a_wire::BeadOnAWire<double>::kAbsoluteCoordinates);
 
+    /*
     // Use the linear function.
     bead_on_a_wire_->reset_wire_parameter_function(
         bead_on_a_wire::BeadOnAWire<double>::linear_function);
     bead_on_a_wire_->reset_inverse_wire_parameter_function(
         bead_on_a_wire::BeadOnAWire<double>::inverse_linear_function);
-
+*/
     // Create the context.
     context_ = bead_on_a_wire_->CreateDefaultContext();
 

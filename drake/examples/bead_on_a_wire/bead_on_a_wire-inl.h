@@ -30,20 +30,6 @@ BeadOnAWire<T>::BeadOnAWire(BeadOnAWire<T>::CoordinateType type) {
 
 template <class T>
 Eigen::Matrix<typename BeadOnAWire<T>::DScalar, 3, 1>
-BeadOnAWire<T>::linear_function(const typename BeadOnAWire<T>::DScalar& s) {
-  return Vector3<BeadOnAWire<T>::DScalar>(s, s, s);
-}
-
-template <class T>
-typename BeadOnAWire<T>::DScalar
-BeadOnAWire<T>::inverse_linear_function(
-    const Vector3<typename BeadOnAWire<T>::DScalar>& v) {
-  using std::atan2;
-  return v(0);
-}
-
-template <class T>
-Eigen::Matrix<typename BeadOnAWire<T>::DScalar, 3, 1>
   BeadOnAWire<T>::sinusoidal_function(
       const typename BeadOnAWire<T>::DScalar& s) {
   using std::cos;
@@ -59,7 +45,7 @@ typename BeadOnAWire<T>::DScalar
         const Vector3<typename BeadOnAWire<T>::DScalar>& v) {
   using std::atan2;
   return atan2(v(1), v(0));
- }
+}
 
 /*
 
@@ -89,15 +75,15 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
   const int three_d = 3;
   Eigen::Matrix<DScalar, 3, 1> x;
   const auto position = context.get_continuous_state()->
-                            get_generalized_position().CopyToVector();
-  for (int i=0; i< three_d; ++i)
+      get_generalized_position().CopyToVector();
+  for (int i = 0; i < three_d; ++i)
     x(i).value() = position[i];
 
   // Call the inverse function if there is one.
   DScalar s;
-  if (inv_f_)
+  if (inv_f_) {
     s = inv_f_(x);
-  else {
+  } else {
     // TODO(edrumwri): Implement generic method.
   }
 
@@ -233,7 +219,7 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
     const T zdot = state.GetAtIndex(5);
 
     // Get the external force.
-    const Vector3<T> fext = input.segment(0,3);
+    const Vector3<T> fext = input.segment(0, 3);
 
     // Set velocity components of derivative.
     f->SetAtIndex(0, xdot);
@@ -250,7 +236,9 @@ void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
                                   systems::State<T>* state) const {
   // TODO(edrumwri): Fix default state to be consistent.
   VectorX<T> x0(6);
-  x0 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;  // Initial state.
+//  x0 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;  // Initial state.
+  const double s = 0.0;
+  x0 << std::cos(s), std::sin(s), s, 0, 0, 0;
   state->get_mutable_continuous_state()->SetFromVector(x0);
 }
 
