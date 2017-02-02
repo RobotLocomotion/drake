@@ -9,7 +9,7 @@ namespace systems {
 namespace sensors {
 namespace {
 
-const double kTolerance = 1e-10;
+const double kTolerance = std::numeric_limits<double>::epsilon();
 
 const int kWidth = 640;
 const int kHeight = 480;
@@ -17,72 +17,51 @@ const double kFx = 554.25625842204079;  // in pixels
 const double kFy = 579.41125496954282;  // in pixels
 const double kCx = kWidth * 0.5;
 const double kCy = kHeight * 0.5;
-const double kVerticalFovRad = 0.78539816339744828;  // = 45.0 in degrees
+const double kVerticalFov = 0.78539816339744828;  // 45.0 degrees
 
-GTEST_TEST(TestCameraInfo, ConstructionTest) {
+class CameraInfoTest : public ::testing::Test {
+ public:
+  CameraInfoTest() : expected_intrinsic_(
+      (Eigen::Matrix3d() <<
+           kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished()) {}
+
+  void SetUp() {}
+
+  void Verify(const CameraInfo& dut) const {
+    EXPECT_EQ(kWidth, dut.width());
+    EXPECT_EQ(kHeight, dut.height());
+    EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
+    EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
+    EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
+    EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
+    EXPECT_TRUE(CompareMatrices(expected_intrinsic_, dut.intrinsic_matrix(),
+                                kTolerance));
+  }
+
+ private:
+  const Eigen::Matrix3d expected_intrinsic_;
+};
+
+TEST_F(CameraInfoTest, ConstructionTest) {
   CameraInfo dut(kWidth, kHeight, kFx, kFy, kCx, kCy);
-
-  Eigen::Matrix3d expected_intrinsic;
-  expected_intrinsic << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.;
-
-  EXPECT_EQ(kWidth, dut.width());
-  EXPECT_EQ(kHeight, dut.height());
-  EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
-  EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
-  EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
-  EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
-  EXPECT_TRUE(CompareMatrices(expected_intrinsic, dut.intrinsic_matrix(),
-                              kTolerance));
+  Verify(dut);
 }
 
-GTEST_TEST(TestCameraInfo, ConstructionWithFovTest) {
-  CameraInfo dut(kWidth, kHeight, kVerticalFovRad);
-
-  Eigen::Matrix3d expected_intrinsic;
-  expected_intrinsic << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.;
-
-  EXPECT_EQ(kWidth, dut.width());
-  EXPECT_EQ(kHeight, dut.height());
-  EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
-  EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
-  EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
-  EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
-  EXPECT_TRUE(CompareMatrices(expected_intrinsic, dut.intrinsic_matrix(),
-                              kTolerance));
+TEST_F(CameraInfoTest, ConstructionWithFovTest) {
+  CameraInfo dut(kWidth, kHeight, kVerticalFov);
+  Verify(dut);
 }
 
-GTEST_TEST(TestCameraInfo, CopyConstructorTest) {
+TEST_F(CameraInfoTest, CopyConstructorTest) {
   CameraInfo camera_info(kWidth, kHeight, kFx, kFy, kCx, kCy);
   CameraInfo dut(camera_info);
-
-  Eigen::Matrix3d expected_intrinsic;
-  expected_intrinsic << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.;
-
-  EXPECT_EQ(kWidth, dut.width());
-  EXPECT_EQ(kHeight, dut.height());
-  EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
-  EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
-  EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
-  EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
-  EXPECT_TRUE(CompareMatrices(expected_intrinsic, dut.intrinsic_matrix(),
-                              kTolerance));
+  Verify(dut);
 }
 
-GTEST_TEST(TestCameraInfo, MoveConstructorTest) {
+TEST_F(CameraInfoTest, MoveConstructorTest) {
   CameraInfo camera_info(kWidth, kHeight, kFx, kFy, kCx, kCy);
   CameraInfo dut(std::move(camera_info));
-
-  Eigen::Matrix3d expected_intrinsic;
-  expected_intrinsic << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.;
-
-  EXPECT_EQ(kWidth, dut.width());
-  EXPECT_EQ(kHeight, dut.height());
-  EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
-  EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
-  EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
-  EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
-  EXPECT_TRUE(CompareMatrices(expected_intrinsic, dut.intrinsic_matrix(),
-                              kTolerance));
+  Verify(dut);
 }
 
 }  // namespace
