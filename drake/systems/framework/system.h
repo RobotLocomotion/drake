@@ -299,14 +299,19 @@ class System {
   ///
   // @{
 
-  /// Gets the number of constraint equations for this system.
-  /// @returns zero by default
+  /// Gets the number of constraint equations for this system using the given
+  /// context (useful in case the number of constraints is dependent upon the
+  /// current state (as might be the case with a system modeled using piecewise
+  /// differential algebraic equations).
   int get_num_constraint_equations(const Context<T>& context) const {
     return do_get_num_constraint_equations(context);
   }
 
   /// Evaluates the constraint equations for the system at the generalized
-  /// coordinates and generalized velocity specified by the context.
+  /// coordinates and generalized velocity specified by the context. The context
+  /// allows the set of constraints to be dependent upon the current system
+  /// state (as might be the case with a system modeled using piecewise
+  /// differential algebraic equations).
   Eigen::VectorXd EvalConstraintEquations(
       const Context<T>& context) const {
     return DoEvalConstraintEquations(context);
@@ -314,7 +319,9 @@ class System {
 
   /// Computes the time derivative of each constraint equation, evaluated at
   /// the generalized coordinates and generalized velocity specified by the
-  /// context.
+  /// context. The context allows the set of constraints to be dependent upon
+  /// the current system state (as might be the case with a system modeled using
+  /// piecewise differential algebraic equations).
   Eigen::VectorXd EvalConstraintEquationsDot(
       const Context<T>& context) const {
     return DoEvalConstraintEquationsDot(context);
@@ -322,6 +329,23 @@ class System {
 
   /// Computes the change in velocity from applying the given constraint forces
   /// to the system at the given context.
+  /// @param context the current system state, provision of which also yields
+  ///           the ability of the constraints to be dependent upon the current
+  ///           system state (as might be the case with a piecewise differential
+  ///           algebraic equation).
+  /// @param J a `m × n` constraint Jacobian matrix of the `m` constraint
+  ///          equations `g()` differentiated with respect to the `n`
+  ///          configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
+  ///          the time derivatives of the generalized coordinates of the system
+  ///          are not identical to the generalized velocity, `J` should instead
+  ///          be defined as `∂g/∂q⋅N`, where `N` is the Jacobian matrix
+  ///          (dependent on `q`) of the generalized coordinates with respect
+  ///          to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
+  ///          the generalized velocities).
+  /// @param lambda the vector of constraint forces (of same dimension as the
+  ///               number of rows in the Jacobian matrix, @p J)
+  /// @returns a `n` dimensional vector, where `n` is the dimension of the
+  ///          quasi-coordinates.
   Eigen::VectorXd
       CalcVelocityChangeFromConstraintImpulses(const Context<T>& context,
                                                const Eigen::MatrixXd& J,
@@ -330,9 +354,14 @@ class System {
     return DoCalcVelocityChangeFromConstraintImpulses(context, J, lambda);
   }
 
-  /// Computes the norm on constraint error.
+  /// Computes the norm on constraint error (used as a metric for comparing
+  /// constraint errors).
+  /// @throws std::logic_error if the dimension of @p err is not equivalent to
+  ///         the output of get_num_constraint_equations().
   double CalcConstraintErrorNorm(const Context<T>& context,
                                  const Eigen::VectorXd& err) const {
+    if (err.size() != get_num_constraint_equations(context))
+      throw std::logic_error("Error vector is mis-sized.");
     return DoCalcConstraintErrorNorm(context, err);
   }
 
@@ -1088,14 +1117,21 @@ class System {
 ///
 // @{
 
-  /// Gets the number of constraint equations for this system.
+  /// Gets the number of constraint equations for this system from the given
+  /// context. The context is supplied in case the number of constraints is
+  /// dependent upon the current state (as might be the case with a piecewise
+  /// differential algebraic equation).
   /// @returns zero by default
   virtual int do_get_num_constraint_equations(const Context<T>& context) const {
     return 0;
   }
 
   /// Evaluates the constraint equations for the system at the generalized
-  /// coordinates and generalized velocity specified by the context.
+  /// coordinates and generalized velocity specified by the context. The context
+  /// allows the set of constraints to be dependent upon the current
+  /// system state (as might be the case with a piecewise differential algebraic
+  /// equation). The default implementation of this function returns a
+  /// zero-dimensional vector.
   virtual Eigen::VectorXd DoEvalConstraintEquations(
       const Context<T>& context) const {
     DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
@@ -1104,7 +1140,10 @@ class System {
 
   /// Computes the time derivative of each constraint equation, evaluated at
   /// the generalized coordinates and generalized velocity specified by the
-  /// context.
+  /// context.  The context allows the set of constraints to be dependent upon
+  /// the current system state (as might be the case with a piecewise
+  /// differential algebraic equation). The default implementation of this
+  /// function returns a zero-dimensional vector.
   virtual Eigen::VectorXd
       DoEvalConstraintEquationsDot(
         const Context<T>& context) const {
@@ -1114,6 +1153,23 @@ class System {
 
   /// Computes the change in velocity from applying the given constraint forces
   /// to the system at the given context.
+  /// @param context the current system state, provision of which also yields
+  ///           the ability of the constraints to be dependent upon the current
+  ///           system state (as might be the case with a piecewise differential
+  ///           algebraic equation).
+  /// @param J a m × n constraint Jacobian matrix of the `m` constraint
+  ///          equations `g()` differentiated with respect to the `n`
+  ///          configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
+  ///          the time derivatives of the generalized coordinates of the system
+  ///          are not identical to the generalized velocity, `J` should instead
+  ///          be defined as `∂g/∂q⋅N`, where `N` is the Jacobian matrix
+  ///          (dependent on `q`) of the generalized coordinates with respect
+  ///          to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
+  ///          the generalized velocities).
+  /// @param lambda the vector of constraint forces (of same dimension as the
+  ///               number of rows in the Jacobian matrix, @p J)
+  /// @returns the zero vector of dimension of the dimension of the
+  ///          quasi-coordinates, by default.
   virtual Eigen::VectorXd
     DoCalcVelocityChangeFromConstraintImpulses(const Context<T>& context,
                                                const Eigen::MatrixXd& J,

@@ -210,7 +210,7 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
     f->SetAtIndex(1, ydot);
     f->SetAtIndex(2, zdot);
     f->SetAtIndex(3, fext(0));
-    f->SetAtIndex(4, fext(1));
+    f->SetAtIndex(4, fext(1) + get_gravitational_acceleration());
     f->SetAtIndex(5, fext(2));
   }
 }

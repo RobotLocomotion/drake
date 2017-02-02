@@ -18,8 +18,8 @@ namespace systems {
 /// dx/dt = d(x(t), λ)
 /// g(x) = 0
 /// </pre>
-/// where d() is an ordinary differential equation dependent upon constraint
-/// forces λ, using the first order relationship:
+/// where `d()` is an ordinary differential equation dependent upon constraint
+/// forces `λ`, using the first order relationship:
 /// <pre>
 /// x(t+Δt) = x(t) + Δt⋅d(x(t), λ)
 /// </pre>
@@ -32,27 +32,28 @@ namespace systems {
 /// the Newton-Raphson Algorithm to solve the nonlinear system of equations.
 ///
 /// Let us now consider the state variables as representing a mechanical system
-/// with generalized coordinates `q` and generalized velocities `v`. We
-/// designate the matrix of partial derivatives of the constraint equations
-/// taken with respect to the generalized coordinates as K. Formally:
+/// with generalized coordinates `q` and generalized velocities `v`. We also
+/// define the "quasi-coordinates" `ꝗ` (pronounced "qbar"), where `dꝗ/dt` is
+/// equivalent to the generalized velocities. We can then designate the matrix
+/// of partial derivatives of the constraint equations
+/// taken with respect to the quasi-coordinates as `J`. Formally:
 /// <pre>
-/// K = ∂g/∂q
+/// J = ∂g/∂q
 /// </pre>
-/// Given that the time derivative of the constraint equations can be computed
-/// by `K dq/dt` and `dq/dt = Nv`, we can define the Jacobian matrix
-/// transforming generalized velocities to constraint velocities as `J = KN`.
-/// From the dual relationship between velocities and forces, constraint forces
-/// `λ` yield generalized forces (`f`) by `f = Jᵀλ`. The equations are now
-/// reformulated as:
+/// The time derivative of the constraint equations `dg/dt = Jv` yields-
+/// from the dual relationship between velocities and forces- generalized forces
+/// (`f`) via the relationship `f = Jᵀλ`. We now reformulated the equations
+/// above as:
 /// <pre>
 /// v(t+Δt) = v(t) + Δt⋅e() + M⁻¹Jᵀλ
 /// q(t+Δt) = q(t) + Δt⋅Nv(t+Δt)
 /// g(q(t+Δt), v(t+Δt)) = 0
 /// </pre>
 /// where `e(q(t), v(t))` gives the time derivatives of the generalized velocity
-/// variables- now independently of `λ`. `J` and `N` are both dependent upon
-/// `q(t)`. To determine the constraint forces, we use the Newton-Raphson
-/// Algorithm, which requires computing the Jacobian matrix `∂g/∂λ`. Focusing
+/// variables- now independently of `λ`- and `M` is the generalized inertia
+/// matrix of the mechanical system. `J` and `N` are both dependent upon
+/// `q(t)`. Determining the constraint forces via Newton-Raphson
+/// requires computing the Jacobian matrix `∂g/∂λ`. Focusing
 /// only on configuration-dependent constraints, i.e., assuming that `g(.)` is a
 /// function only of `q(t+Δt)`, we derive:
 /// <pre>

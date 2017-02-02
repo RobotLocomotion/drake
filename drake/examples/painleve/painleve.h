@@ -7,6 +7,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
+namespace examples {
 namespace painleve {
 
 /// Dynamical system representation of the Painleve' Paradox problem, taken
@@ -54,24 +55,24 @@ class Painleve : public systems::LeafSystem<T> {
   /// Possible dynamic modes for the Painleve Paradox rod.
   enum Mode {
     /// Mode is invalid.
-    kInvalid,
+        kInvalid,
 
     /// Rod is currently undergoing ballistic motion.
-    kBallisticMotion,
+        kBallisticMotion,
 
     /// Rod is sliding while undergoing non-impacting contact at one contact
     /// point (a rod endpoint); the other rod endpoint is not in contact.
-    kSlidingSingleContact,
+        kSlidingSingleContact,
 
     /// Rod is sticking while undergoing non-impacting contact at one contact
     /// point (a rod endpoint); the other rod endpoint is not in contact.
-    kStickingSingleContact,
+        kStickingSingleContact,
 
     /// Rod is sliding at two contact points without impact.
-    kSlidingTwoContacts,
+        kSlidingTwoContacts,
 
     /// Rod is sticking at two contact points without impact.
-    kStickingTwoContacts
+        kStickingTwoContacts
   };
 
   /// Constructor for the Painleve' Paradox system using a piecewise DAE
@@ -97,7 +98,7 @@ class Painleve : public systems::LeafSystem<T> {
   void set_cfm(double cfm) {
     if (!is_time_stepping_system())
       throw std::logic_error("Attempt to set CFM for non-time stepping "
-                             "system.");
+                                 "system.");
     if (cfm < 0)
       throw std::logic_error("Negative CFM value specified.");
     cfm_ = cfm;
@@ -115,7 +116,7 @@ class Painleve : public systems::LeafSystem<T> {
   void set_erp(double erp) {
     if (!is_time_stepping_system())
       throw std::logic_error("Attempt to set ERP for non-time stepping "
-                             "system.");
+                                 "system.");
     if (erp < 0 || erp > 1)
       throw std::logic_error("Invalid ERP value specified.");
     erp_ = erp;
@@ -123,8 +124,8 @@ class Painleve : public systems::LeafSystem<T> {
 
   /// Models impact using an inelastic impact model with friction.
   /// @p new_state is set to the output of the impact model on return.
-  void HandleImpact(const systems::Context<T>& context,
-                    systems::State<T>* new_state) const;
+  void HandleImpact(const systems::Context<T> &context,
+                    systems::State<T> *new_state) const;
 
   /// Gets the acceleration (with respect to the positive y-axis) due to
   /// gravity (i.e., this number should generally be negative).
@@ -164,7 +165,7 @@ class Painleve : public systems::LeafSystem<T> {
   /// at any time Δt in the future (i.e., Δt > 0). If the context does not
   /// correspond to a configuration where the rod and halfspace are contacting,
   /// this method returns `false`.
-  bool IsImpacting(const systems::Context<T>& context) const;
+  bool IsImpacting(const systems::Context<T> &context) const;
 
   /// Gets the integration step size for the time stepping system.
   /// @returns 0 if this is a DAE-based system.
@@ -174,43 +175,43 @@ class Painleve : public systems::LeafSystem<T> {
   bool is_time_stepping_system() const { return dt_ > 0.0; }
 
  protected:
-  int get_k(const systems::Context<T>& context) const;
+  int get_k(const systems::Context<T> &context) const;
   std::unique_ptr<systems::AbstractState> AllocateAbstractState()
-                                            const override;
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
-  void DoCalcTimeDerivatives(const systems::Context<T>& context,
-                             systems::ContinuousState<T>* derivatives)
-                               const override;
-  void DoCalcDiscreteVariableUpdates(const systems::Context<T>& context,
-                                     systems::DiscreteState<T>* discrete_state)
-      const override;
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override;
+  const override;
+  void DoCalcOutput(const systems::Context<T> &context,
+                    systems::SystemOutput<T> *output) const override;
+  void DoCalcTimeDerivatives(const systems::Context<T> &context,
+                             systems::ContinuousState<T> *derivatives)
+  const override;
+  void DoCalcDiscreteVariableUpdates(const systems::Context<T> &context,
+                                     systems::DiscreteState<T> *discrete_state)
+  const override;
+  void SetDefaultState(const systems::Context<T> &context,
+                       systems::State<T> *state) const override;
 
  private:
-  Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
-    const;
-  Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
-  void CalcAccelerationsBallistic(const systems::Context<T>& context,
-                                  systems::ContinuousState<T>* derivatives)
-                                    const;
-  void CalcAccelerationsTwoContact(const systems::Context<T>& context,
-                                   systems::ContinuousState<T>* derivatives)
-                                     const;
+  Vector2<T> CalcStickingImpactImpulse(const systems::Context<T> &context)
+  const;
+  Vector2<T> CalcFConeImpactImpulse(const systems::Context<T> &context) const;
+  void CalcAccelerationsBallistic(const systems::Context<T> &context,
+                                  systems::ContinuousState<T> *derivatives)
+  const;
+  void CalcAccelerationsTwoContact(const systems::Context<T> &context,
+                                   systems::ContinuousState<T> *derivatives)
+  const;
   void CalcAccelerationsOneContactNoSliding(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const;
+      const systems::Context<T> &context,
+      systems::ContinuousState<T> *derivatives) const;
   void CalcAccelerationsOneContactSliding(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const;
-  void SetAccelerations(const systems::Context<T>& context,
-                        systems::VectorBase<T>* const f,
+      const systems::Context<T> &context,
+      systems::ContinuousState<T> *derivatives) const;
+  void SetAccelerations(const systems::Context<T> &context,
+                        systems::VectorBase<T> *const f,
                         T fN, T fF, T xc, T yc) const;
   Vector2<T> CalcStickingContactForces(
-      const systems::Context<T>& context) const;
-  static std::pair<T, T> CalcRodEndpoint(const T& x, const T& y, const int k,
-                                         const T& ctheta, const T& stheta,
+      const systems::Context<T> &context) const;
+  static std::pair<T, T> CalcRodEndpoint(const T &x, const T &y, const int k,
+                                         const T &ctheta, const T &stheta,
                                          const double half_rod_len);
 
   // Solves linear complementarity problems for time stepping.
@@ -227,4 +228,5 @@ class Painleve : public systems::LeafSystem<T> {
 };
 
 }  // namespace painleve
+}  // namespace examples
 }  // namespace drake

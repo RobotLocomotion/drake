@@ -5,10 +5,11 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
+namespace examples {
 namespace bead_on_a_wire {
 
-/// Dynamical system of a point mass constrained to lie on a wire. The system
-/// is currently frictionless. The equation for the wire can be provided
+/// Dynamical system of a point (unit) mass constrained to lie on a wire. The
+/// system is currently frictionless. The equation for the wire can be provided
 /// parametrically *by the user*. Dynamics equations can be computed in both
 /// minimal coordinates or absolute coordinates (with Lagrange Multipliers).
 /// Equations for the dynamics in absolute coordinates are provided by
@@ -47,7 +48,7 @@ namespace bead_on_a_wire {
 /// Lagrangian Dynamics of the "second kind" (i.e., by formulating the problem
 /// as an Index-3 DAE):
 /// <pre>
-/// d²x/dt² = fg + fext + J^T*λ
+/// d²x/dt² = fg + fext + Jᵀλ
 /// g(x) = 0
 /// </pre>
 /// where `x` is the three dimensional position of the bead, `fg` is a three
@@ -86,15 +87,20 @@ namespace bead_on_a_wire {
 template <typename T>
 class BeadOnAWire : public systems::LeafSystem<T> {
  public:
+  /// AutoDiff scalar used for constraint function automatic differentiation.
   typedef Eigen::AutoDiffScalar<drake::Vector1d> AScalar;
+
+  /// AutoDiff scalar used for computing the second derivative of the constraint
+  /// function using automatic differentiation.
   typedef Eigen::AutoDiffScalar<Eigen::Matrix<AScalar, 1, 1>> DScalar;
 
+  /// The type of coordinate representation to use for kinematics and dynamics.
   enum CoordinateType {
-    // Coordinate representation will be wire parameter.
-    kMinimalCoordinates,
+    /// Coordinate representation will be wire parameter.
+        kMinimalCoordinates,
 
-    // Coordinate representation will be the bead location (in 3D).
-    kAbsoluteCoordinates
+    /// Coordinate representation will be the bead location (in 3D).
+        kAbsoluteCoordinates
   };
 
   /// Constructs the object using either minimal or absolute coordinates (the
@@ -102,12 +108,12 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// derivatives).
   explicit BeadOnAWire(CoordinateType type);
 
-  void DoCalcOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
+  void DoCalcOutput(const systems::Context<T> &context,
+                    systems::SystemOutput<T> *output) const override;
 
   void DoCalcTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
+      const systems::Context<T> &context,
+      systems::ContinuousState<T> *derivatives) const override;
 
   /// Sets the acceleration (with respect to the positive y-axis) due to
   /// gravity (i.e., this number should generally be negative).
@@ -117,21 +123,14 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// gravity (i.e., this number should generally be negative).
   double get_gravitational_acceleration() const { return g_; }
 
-  /// Computes the change in velocity that would occur by applying impulsive
-  /// force lambda to the constraints.
-  Eigen::VectorXd CalcVelocityChangeFromConstraintImpulses(
-              const systems::Context<T>& context,
-              const Eigen::MatrixXd& J,
-              const Eigen::VectorXd& lambda) const;
-
   /// Allows the user to reset the wire parameter function (which points to the
   /// sinusoidal function by default.
   /// @param f The pointer to a function that takes a wire parameter
-  ///          (0 <= s <= 1) as default and outputs a point in 3D as output.
+  ///          (scalar `s`) as input and outputs a point in 3D as output.
   /// @throws std::logic_error if f is a nullptr (the function must always be
   ///         set).
   void reset_wire_parameter_function(std::function<Eigen::Matrix<DScalar, 3, 1>(
-      const DScalar&)> f) {
+      const DScalar &)> f) {
     if (!f) throw std::logic_error("Function must be non-null.");
     f_ = f;
   }
@@ -143,7 +142,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///              an acceptable value (BeadOnAWire will use a generic inversion
   ///              routine).
   void reset_inverse_wire_parameter_function(std::function<DScalar(
-      const Eigen::Matrix<DScalar, 3, 1>&)> inv_f) {
+      const Eigen::Matrix<DScalar, 3, 1> &)> inv_f) {
     inv_f_ = inv_f;
   }
 
@@ -153,19 +152,19 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///        | cos(s) |
   /// f(s) = | sin(s) |
   ///        | s      |
-  static Eigen::Matrix<DScalar, 3, 1> sinusoidal_function(const DScalar& s);
+  static Eigen::Matrix<DScalar, 3, 1> sinusoidal_function(const DScalar &s);
 
   /// Inverse parametric function for the bead on a wire system that uses the
   /// sinusoidal parametric example function.
-  static DScalar inverse_sinusoidal_function(const Vector3<DScalar>& v);
+  static DScalar inverse_sinusoidal_function(const Vector3<DScalar> &v);
 
  protected:
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override;
+  void SetDefaultState(const systems::Context<T> &context,
+                       systems::State<T> *state) const override;
 
   /// Gets the number of constraint equations.
-  int do_get_num_constraint_equations(const systems::Context<T>& context) const
-      override;
+  int do_get_num_constraint_equations(const systems::Context<T> &context) const
+  override;
 
   /// Evaluates the constraint equations for a bead in absolute coordinates.
   /// This method is computationally expensive. To evaluate these equations,
@@ -176,12 +175,12 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// @TODO(edrumwri): Provide a special function that calculates the parameters
   ///                  for a given function?
   Eigen::VectorXd DoEvalConstraintEquations(
-      const systems::Context<T>& context) const override;
+      const systems::Context<T> &context) const override;
 
   /// Computes the time derivative of each constraint equation, evaluated at
   /// the current generalized coordinates and generalized velocity.
   Eigen::VectorXd DoEvalConstraintEquationsDot(
-      const systems::Context<T>& context) const override;
+      const systems::Context<T> &context) const override;
 
   /// Computes the change in generalized velocity from applying constraint
   /// impulses @p lambda.
@@ -189,8 +188,8 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// @param lambda The vector of constraint forces.
   Eigen::VectorXd
   DoCalcVelocityChangeFromConstraintImpulses(
-      const systems::Context<T>& context, const Eigen::MatrixXd& J,
-      const Eigen::VectorXd& lambda) const override;
+      const systems::Context<T> &context, const Eigen::MatrixXd &J,
+      const Eigen::VectorXd &lambda) const override;
 
  private:
   // The coordinate representation used for kinematics and dynamics.
@@ -198,22 +197,23 @@ class BeadOnAWire : public systems::LeafSystem<T> {
 
   // The wire parameter function. See set_wire_parameter_function() for more
   // information. This pointer must always be empty
-  std::function<Eigen::Matrix<DScalar, 3, 1>(const DScalar&)> f_{
+  std::function<Eigen::Matrix<DScalar, 3, 1>(const DScalar &)> f_{
       &sinusoidal_function};
 
   // The (optional) inverse of the wire parameter function.
-  // This function takes a point in 3D as input and outputs a point
-  // (0 <= s <= 1) as output. If this function is non-null, constraint
+  // This function takes a point in 3D as input and outputs a scalar
+  // in ℝ as output. If this function is non-null, constraint
   // stabilization methods for DAEs can use it (via
   // EvaluateConstraintEquations()) to efficiently project a bead represented
   // in absolute coordinates back onto the wire. If this function is null,
   // EvaluateConstraintEquations() will use generic, presumably less efficient
   // methods instead. This function is not to nullptr by default.
-  std::function<DScalar(const Eigen::Matrix<DScalar, 3, 1>&)> inv_f_{
+  std::function<DScalar(const Eigen::Matrix<DScalar, 3, 1> &)> inv_f_{
       &inverse_sinusoidal_function};
 
   double g_{-9.81};
 };
 
 }  // namespace bead_on_a_wire
+}  // namespace examples
 }  // namespace drake

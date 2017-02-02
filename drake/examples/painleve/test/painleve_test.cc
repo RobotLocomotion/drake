@@ -17,6 +17,7 @@ using drake::systems::Simulator;
 using drake::systems::Context;
 
 namespace drake {
+namespace examples {
 namespace painleve {
 namespace {
 
@@ -35,7 +36,7 @@ class PainleveDAETest : public ::testing::Test {
     return context_->CloneState();
   }
 
-  VectorBase<double>* continuous_state() {
+  VectorBase<double> *continuous_state() {
     return context_->get_mutable_continuous_state_vector();
   }
 
@@ -50,7 +51,7 @@ class PainleveDAETest : public ::testing::Test {
     using std::sqrt;
     const double half_len = dut_->get_rod_length() / 2;
     const double r22 = std::sqrt(2) / 2;
-    ContinuousState<double>& xc =
+    ContinuousState<double> &xc =
         *context_->get_mutable_continuous_state();
     xc[0] = -half_len * r22;
     xc[1] = half_len * r22;
@@ -60,36 +61,36 @@ class PainleveDAETest : public ::testing::Test {
     xc[5] = 0.0;
 
     // Indicate that the rod is in the single contact sliding mode.
-    AbstractState* abs_state = context_->get_mutable_state()->
-                                 get_mutable_abstract_state();
+    AbstractState *abs_state = context_->get_mutable_state()->
+        get_mutable_abstract_state();
     abs_state->get_mutable_abstract_state(0).
-      template GetMutableValue<Painleve<double>::Mode>() =
+        template GetMutableValue<Painleve<double>::Mode>() =
         Painleve<double>::kSlidingSingleContact;
 
     // Determine the point of contact.
     const double theta = xc[2];
     const int k = (std::sin(theta) > 0) ? -1 : 1;
     abs_state->get_mutable_abstract_state(1).
-      template GetMutableValue<int>() = k;
+        template GetMutableValue<int>() = k;
   }
 
   // Sets the rod to a state that corresponds to ballistic motion.
   void SetBallisticState() {
     const double half_len = dut_->get_rod_length() / 2;
-    ContinuousState<double>& xc =
+    ContinuousState<double> &xc =
         *context_->get_mutable_continuous_state();
     xc[0] = 0.0;
-    xc[1] = 10*half_len;
+    xc[1] = 10 * half_len;
     xc[2] = M_PI_2;
     xc[3] = 1.0;
     xc[4] = 2.0;
     xc[5] = 3.0;
 
     // Set the mode to ballistic.
-    AbstractState* abs_state = context_->get_mutable_state()->
-                                 get_mutable_abstract_state();
+    AbstractState *abs_state = context_->get_mutable_state()->
+        get_mutable_abstract_state();
     abs_state->get_mutable_abstract_state(0).
-      template GetMutableValue<Painleve<double>::Mode>() =
+        template GetMutableValue<Painleve<double>::Mode>() =
         Painleve<double>::kBallisticMotion;
 
     // Note: contact point mode is now arbitrary.
@@ -101,22 +102,22 @@ class PainleveDAETest : public ::testing::Test {
     // but with the vertical component of velocity set such that the state
     // corresponds to an impact.
     SetSecondInitialConfig();
-    ContinuousState<double>& xc =
+    ContinuousState<double> &xc =
         *context_->get_mutable_continuous_state();
     xc[4] = -1.0;
 
     // Indicate that the rod is in the single contact sliding mode.
-    AbstractState* abs_state = context_->get_mutable_state()->
-                                 get_mutable_abstract_state();
+    AbstractState *abs_state = context_->get_mutable_state()->
+        get_mutable_abstract_state();
     abs_state->get_mutable_abstract_state(0).
-      template GetMutableValue<Painleve<double>::Mode>() =
+        template GetMutableValue<Painleve<double>::Mode>() =
         Painleve<double>::kSlidingSingleContact;
 
     // Determine the point of contact.
     const double theta = xc[2];
     const int k = (std::sin(theta) > 0) ? -1 : 1;
     abs_state->get_mutable_abstract_state(1).
-      template GetMutableValue<int>() = k;
+        template GetMutableValue<int>() = k;
   }
 
   std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
@@ -127,11 +128,11 @@ class PainleveDAETest : public ::testing::Test {
 
 // Checks that the output port represents the state.
 TEST_F(PainleveDAETest, Output) {
-  const ContinuousState<double>& xc = *context_->get_continuous_state();
+  const ContinuousState<double> &xc = *context_->get_continuous_state();
   std::unique_ptr<SystemOutput<double>> output =
       dut_->AllocateOutput(*context_);
   dut_->CalcOutput(*context_, output.get());
-  for (int i=0; i< xc.size(); ++i)
+  for (int i = 0; i < xc.size(); ++i)
     EXPECT_EQ(xc[i], output->get_vector_data(0)->get_value()(i));
 }
 
@@ -170,7 +171,7 @@ TEST_F(PainleveDAETest, ImpactWorks) {
   // Cause the initial state to be impacting, with center of mass directly
   // over the point of contact.
   const double half_len = dut_->get_rod_length() / 2;
-  ContinuousState<double>& xc =
+  ContinuousState<double> &xc =
       *context_->get_mutable_continuous_state();
   xc[0] = 0.0;
   xc[1] = half_len;
@@ -217,7 +218,7 @@ TEST_F(PainleveDAETest, ConsistentDerivativesBallistic) {
   // ballistic system.
   const double tol = std::numeric_limits<double>::epsilon();
   const double g = dut_->get_gravitational_acceleration();
-  const ContinuousState<double>& xc = *context_->get_continuous_state();
+  const ContinuousState<double> &xc = *context_->get_continuous_state();
   EXPECT_NEAR((*derivatives_)[0], xc[3], tol);  // qdot = v ...
   EXPECT_NEAR((*derivatives_)[1], xc[4], tol);  // ... for this ...
   EXPECT_NEAR((*derivatives_)[2], xc[5], tol);  // ... system.
@@ -236,7 +237,7 @@ TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
   // Set the initial state to sustained contact with zero tangential velocity
   // at the point of contact.
   const double half_len = dut_->get_rod_length() / 2;
-  ContinuousState<double>& xc =
+  ContinuousState<double> &xc =
       *context_->get_mutable_continuous_state();
   xc[0] = 0.0;
   xc[1] = half_len;
@@ -392,7 +393,7 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact) {
 TEST_F(PainleveDAETest, NoSliding) {
   const double half_len = dut_->get_rod_length() / 2;
   const double r22 = std::sqrt(2) / 2;
-  ContinuousState<double>& xc =
+  ContinuousState<double> &xc =
       *context_->get_mutable_continuous_state();
 
   // Set the coefficient of friction to zero (triggering the case on the
@@ -425,7 +426,7 @@ TEST_F(PainleveDAETest, NoSliding) {
 
 // Test multiple (two-point) contact configurations.
 TEST_F(PainleveDAETest, MultiPoint) {
-  ContinuousState<double>& xc =
+  ContinuousState<double> &xc =
       *context_->get_mutable_continuous_state();
 
   // This configuration has no sliding velocity. It should throw no exceptions.
@@ -439,7 +440,7 @@ TEST_F(PainleveDAETest, MultiPoint) {
   context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
       Painleve<double>::kStickingTwoContacts;
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  for (int i=0; i< derivatives_->size(); ++i)
+  for (int i = 0; i < derivatives_->size(); ++i)
     EXPECT_NEAR((*derivatives_)[i], 0.0, tol);
 
   // Verify no impact.
@@ -565,7 +566,7 @@ TEST_F(PainleveDAETest, BallisticNoImpact) {
 
   // Move the rod upward vertically so that it is no longer impacting and
   // set the mode to ballistic motion.
-  ContinuousState<double>& xc =
+  ContinuousState<double> &xc =
       *context_->get_mutable_continuous_state();
   xc[1] += 10.0;
   context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
@@ -586,7 +587,7 @@ class PainleveTimeSteppingTest : public ::testing::Test {
     output_ = dut_->AllocateOutput(*context_);
   }
 
-  BasicVector<double>* mutable_discrete_state() {
+  BasicVector<double> *mutable_discrete_state() {
     return context_->get_mutable_discrete_state(0);
   }
 
@@ -686,11 +687,11 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
   xc->SetAtIndex(2, xc->GetAtIndex(2) + dt * xc->GetAtIndex(5));
 
   // See whether the states are equal.
-  const Context<double>& context_ts_new = simulator_ts.get_context();
-  const auto& xd = context_ts_new.get_discrete_state(0)->get_value();
+  const Context<double> &context_ts_new = simulator_ts.get_context();
+  const auto &xd = context_ts_new.get_discrete_state(0)->get_value();
 
   // Check that the solution is nearly identical.
-  const double tol = std::numeric_limits<double>::epsilon()*10;
+  const double tol = std::numeric_limits<double>::epsilon() * 10;
   EXPECT_NEAR(xc->GetAtIndex(0), xd[0], tol);
   EXPECT_NEAR(xc->GetAtIndex(1), xd[1], tol);
   EXPECT_NEAR(xc->GetAtIndex(2), xd[2], tol);
@@ -706,4 +707,5 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
 
 }  // namespace
 }  // namespace painleve
+}  // namespace examples
 }  // namespace drake

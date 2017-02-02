@@ -5,6 +5,7 @@
 #include "gtest/gtest.h"
 
 namespace drake {
+namespace examples {
 namespace bead_on_a_wire {
 namespace {
 
@@ -20,14 +21,14 @@ class BeadOnAWireTest : public ::testing::Test {
   }
 
   std::unique_ptr<systems::ContinuousState<double>> CreateNewContinuousState()
-                                                                         const {
+  const {
     const int state_dim = 6;
     auto cstate_vec = std::make_unique<systems::BasicVector<double>>(state_dim);
     return std::make_unique<systems::ContinuousState<double>>(
         std::move(cstate_vec), state_dim / 2, state_dim / 2, 0);
   }
 
-  systems::VectorBase<double>* continuous_state() {
+  systems::VectorBase<double> *continuous_state() {
     return context_->get_mutable_continuous_state_vector();
   }
 
@@ -39,11 +40,11 @@ class BeadOnAWireTest : public ::testing::Test {
 
 // Checks output is as expected.
 TEST_F(BeadOnAWireTest, Output) {
-  const systems::ContinuousState<double>& v = *context_->get_continuous_state();
+  const systems::ContinuousState<double> &v = *context_->get_continuous_state();
   std::unique_ptr<systems::SystemOutput<double>> output =
       dut_->AllocateOutput(*context_);
   dut_->DoCalcOutput(*context_, output.get());
-  for (int i=0; i< v.size(); ++i)
+  for (int i = 0; i < v.size(); ++i)
     EXPECT_EQ(v[i], output->get_vector_data(0)->get_value()(i));
 }
 
@@ -59,11 +60,11 @@ TEST_F(BeadOnAWireTest, Parameters) {
 // derivatives we expect.
 TEST_F(BeadOnAWireTest, Sinusoidal) {
   // Set small tolerance value.
-  const double tol = std::numeric_limits<double>::epsilon()*10.0;
+  const double tol = std::numeric_limits<double>::epsilon() * 10.0;
 
   // Compute the value at pi/3.
   BeadOnAWire<double>::DScalar s;
-  s = M_PI/3.0;
+  s = M_PI / 3.0;
   auto v = dut_->sinusoidal_function(s);
   const double svalue = s.value().value();
   EXPECT_NEAR(v(0).value().value(), std::cos(svalue), tol);
@@ -94,10 +95,10 @@ TEST_F(BeadOnAWireTest, Sinusoidal) {
 // values and derivatives we expect.
 TEST_F(BeadOnAWireTest, InverseSinusoidal) {
   // Set small tolerance value.
-  const double tol = std::numeric_limits<double>::epsilon()*10.0;
+  const double tol = std::numeric_limits<double>::epsilon() * 10.0;
 
   // Compute the value at pi/3.
-  const double test_value = M_PI/3.0;
+  const double test_value = M_PI / 3.0;
   BeadOnAWire<double>::DScalar s;
   s = test_value;
   auto v = dut_->sinusoidal_function(s);
@@ -123,9 +124,9 @@ TEST_F(BeadOnAWireTest, InverseSinusoidal) {
   //            ds
   const double ds = std::numeric_limits<double>::epsilon();
   auto fprime = dut_->inverse_sinusoidal_function(
-      dut_->sinusoidal_function(s+ds));
+      dut_->sinusoidal_function(s + ds));
   auto f = dut_->inverse_sinusoidal_function(dut_->sinusoidal_function(s));
-  const double num_value = (fprime.value().value() - f.value().value())/ds;
+  const double num_value = (fprime.value().value() - f.value().value()) / ds;
   EXPECT_NEAR(candidate_value, num_value, tol);
 
   // Compute the derivative of the inverse sinusoidal function using the
@@ -136,8 +137,8 @@ TEST_F(BeadOnAWireTest, InverseSinusoidal) {
   const double xdot = 1.0;
   const double ydot = 2.0;
   const double zdot = 3.0;
-  const double inv_sinusoidal_dot = -y/(x*x + y*y)*xdot +
-                                     x/(x*x + y*y)*ydot;
+  const double inv_sinusoidal_dot = -y / (x * x + y * y) * xdot +
+      x / (x * x + y * y) * ydot;
   Eigen::Matrix<BeadOnAWire<double>::DScalar, 3, 1> xx;
   xx(0).value() = x;
   xx(1).value() = y;
@@ -156,7 +157,7 @@ TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
       &dut_->inverse_sinusoidal_function);
 
   // Put the bead directly onto the wire.
-  systems::ContinuousState<double>& xc =
+  systems::ContinuousState<double> &xc =
       *context_->get_mutable_continuous_state();
   const double s = 1.0;
   xc[0] = std::cos(s);
@@ -188,7 +189,7 @@ TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
 
   // Put the bead directly onto the wire and make its velocity such that
   // it is not instantaneously leaving the wire.
-  systems::ContinuousState<double>& xc =
+  systems::ContinuousState<double> &xc =
       *context_->get_mutable_continuous_state();
   const double s = 1.0;
   xc[0] = std::cos(s);
@@ -205,4 +206,5 @@ TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
 
 }  // namespace
 }  // namespace bead_on_a_wire
+}  // namespace examples
 }  // namespace drake
