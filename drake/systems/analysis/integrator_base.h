@@ -365,7 +365,7 @@ class IntegratorBase {
   /// circumstances. This method is designed for integrator
   /// users that do not wish to consider publishing or discontinuous,
   /// mid-interval updates. One such example application is that of direct
-  /// collocation for trajectory optimization. In keeping with the naming
+  /// transcription for trajectory optimization. In keeping with the naming
   /// semantics of this function, error controlled integration is not supported
   /// (though error estimates will be computed for integrators that support that
   /// feature).
