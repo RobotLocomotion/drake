@@ -102,6 +102,11 @@ config_setting(
 )
 
 config_setting(
+    name = "with_snopt",
+    values = {"define": "WITH_SNOPT=ON"},
+)
+
+config_setting(
     name = "linux",
     values = {"cpu": "k8"},
 )
