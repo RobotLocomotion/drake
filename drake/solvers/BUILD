@@ -56,12 +56,12 @@ drake_cc_library(
 # - linear_system_solver
 # - moby_lcp_solver
 # - IPOPT
+# - SNOPT
 # - Gurobi (on Ubuntu only)
 
 # Unsupported solvers:
 # - dReal
 # - NLOPT
-# - SNOPT
 # - MOSEK
 
 # TODO(jwnimmer-tri, david-german-tri): Support more solvers.
@@ -81,8 +81,6 @@ drake_cc_library(
         "no_dreal.cc",
         "no_mosek.cc",
         "no_nlopt.cc",
-        "no_snopt.cc",
-        "snopt_solver.h",
     ],
     hdrs = [
         "mathematical_program.h",
@@ -96,6 +94,7 @@ drake_cc_library(
         ":function",
         ":gurobi_solver",
         ":ipopt_solver",
+        ":snopt_solver",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:number_traits",
@@ -165,6 +164,30 @@ drake_cc_library(
             ":mathematical_program_api",
             "//drake/math:eigen_sparse_triplet",
             "@gurobi//:lib",
+        ],
+        "//conditions:default": [
+            ":mathematical_program_api",
+        ],
+    }),
+)
+
+# If --config snopt is used, this target builds object code that satisfies
+# MathematicalProgramSolverInterface by calling SNOPT. Otherwise, this target
+# builds dummy object code that fails at runtime.
+drake_cc_library(
+    name = "snopt_solver",
+    srcs = select({
+        "//tools:with_snopt": ["snopt_solver.cc"],
+        "//conditions:default": ["no_snopt.cc"],
+    }),
+    hdrs = ["snopt_solver.h"],
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
+    deps = select({
+        "//tools:with_snopt": [
+            ":mathematical_program_api",
+            "//drake/math:autodiff",
+            "@snopt//:snopt_c",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
@@ -341,4 +364,7 @@ cpplint(extra_srcs = [
     "gurobi_solver.cc",
     "gurobi_solver.h",
     "no_gurobi.cc",
+    "snopt_solver.cc",
+    "snopt_solver.h",
+    "no_snopt.cc",
 ])

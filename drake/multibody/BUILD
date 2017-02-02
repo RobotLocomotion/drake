@@ -201,6 +201,51 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "test_ik",
+    data = [
+        "//drake/examples/Atlas:models",
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "test_ik_pointwise",
+    data = ["//drake/examples/Atlas:models"],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "test_ik_more_constraints",
+    data = ["//drake/examples/Atlas:models"],
+    tags = ["snopt"],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "test_ik_traj",
+    data = ["//drake/examples/Atlas:models"],
+    tags = ["snopt"],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
     name = "rigid_body_test",
     deps = [
         ":rigid_body_tree",
