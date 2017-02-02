@@ -226,6 +226,15 @@ double ExpressionVar::Evaluate(const Environment& env) const {
   }
 }
 
+Expression ExpressionVar::Substitute(const Substitution& s) const {
+  const Substitution::const_iterator it{s.find(var_)};
+  if (it != s.end()) {
+    return it->second;
+  } else {
+    return Expression{var_};
+  }
+}
+
 ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
 
 ExpressionConstant::ExpressionConstant(const double v)
@@ -252,8 +261,13 @@ Polynomial<double> ExpressionConstant::ToPolynomial() const {
 }
 
 double ExpressionConstant::Evaluate(const Environment& env) const {
-  DRAKE_ASSERT(!std::isnan(v_));
+  DRAKE_DEMAND(!std::isnan(v_));
   return v_;
+}
+
+Expression ExpressionConstant::Substitute(const Substitution& s) const {
+  DRAKE_DEMAND(!std::isnan(v_));
+  return Expression{v_};
 }
 
 ostream& ExpressionConstant::Display(ostream& os) const {
@@ -291,6 +305,10 @@ double ExpressionNaN::Evaluate(const Environment& env) const {
   throw runtime_error("NaN is detected during Symbolic computation.");
 }
 
+Expression ExpressionNaN::Substitute(const Substitution& s) const {
+  throw runtime_error("NaN is detected during substitution.");
+}
+
 ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
 
 ExpressionNeg::ExpressionNeg(const Expression& e)
@@ -303,6 +321,10 @@ ostream& ExpressionNeg::Display(ostream& os) const {
 Polynomial<double> ExpressionNeg::ToPolynomial() const {
   DRAKE_ASSERT(is_polynomial());
   return -get_argument().ToPolynomial();
+}
+
+Expression ExpressionNeg::Substitute(const Substitution& s) const {
+  return -get_argument().Substitute(s);
 }
 
 double ExpressionNeg::DoEvaluate(const double v) const { return -v; }
@@ -387,6 +409,14 @@ double ExpressionAdd::Evaluate(const Environment& env) const {
       exp_to_coeff_map_.begin(), exp_to_coeff_map_.end(), constant_,
       [&env](const double init, const pair<Expression, double>& p) {
         return init + p.first.Evaluate(env) * p.second;
+      });
+}
+
+Expression ExpressionAdd::Substitute(const Substitution& s) const {
+  return accumulate(
+      exp_to_coeff_map_.begin(), exp_to_coeff_map_.end(), Expression::Zero(),
+      [&s](const Expression& init, const pair<Expression, double>& p) {
+        return init + p.first.Substitute(s) * p.second;
       });
 }
 
@@ -620,6 +650,14 @@ double ExpressionMul::Evaluate(const Environment& env) const {
       });
 }
 
+Expression ExpressionMul::Substitute(const Substitution& s) const {
+  return accumulate(
+      base_to_exp_map_.begin(), base_to_exp_map_.end(), Expression::One(),
+      [&s](const Expression& init, const pair<Expression, Expression>& p) {
+        return init * pow(p.first.Substitute(s), p.second.Substitute(s));
+      });
+}
+
 ostream& ExpressionMul::Display(ostream& os) const {
   DRAKE_ASSERT(!base_to_exp_map_.empty());
   bool print_mul{false};
@@ -757,6 +795,11 @@ Polynomial<double> ExpressionDiv::ToPolynomial() const {
          get_constant_value(get_second_argument());
 }
 
+Expression ExpressionDiv::Substitute(const Substitution& s) const {
+  return get_first_argument().Substitute(s) /
+         get_second_argument().Substitute(s);
+}
+
 ostream& ExpressionDiv::Display(ostream& os) const {
   return os << "(" << get_first_argument() << " / " << get_second_argument()
             << ")";
@@ -788,6 +831,10 @@ Polynomial<double> ExpressionLog::ToPolynomial() const {
   throw runtime_error("Log expression is not polynomial-convertible.");
 }
 
+Expression ExpressionLog::Substitute(const Substitution& s) const {
+  return log(get_argument().Substitute(s));
+}
+
 ostream& ExpressionLog::Display(ostream& os) const {
   return os << "log(" << get_argument() << ")";
 }
@@ -804,6 +851,10 @@ Polynomial<double> ExpressionAbs::ToPolynomial() const {
   throw runtime_error("Abs expression is not polynomial-convertible.");
 }
 
+Expression ExpressionAbs::Substitute(const Substitution& s) const {
+  return abs(get_argument().Substitute(s));
+}
+
 ostream& ExpressionAbs::Display(ostream& os) const {
   return os << "abs(" << get_argument() << ")";
 }
@@ -815,6 +866,10 @@ ExpressionExp::ExpressionExp(const Expression& e)
 
 Polynomial<double> ExpressionExp::ToPolynomial() const {
   throw runtime_error("Exp expression is not polynomial-convertible.");
+}
+
+Expression ExpressionExp::Substitute(const Substitution& s) const {
+  return exp(get_argument().Substitute(s));
 }
 
 ostream& ExpressionExp::Display(ostream& os) const {
@@ -837,6 +892,10 @@ void ExpressionSqrt::check_domain(const double v) {
 
 Polynomial<double> ExpressionSqrt::ToPolynomial() const {
   throw runtime_error("Sqrt expression is not polynomial-convertible.");
+}
+
+Expression ExpressionSqrt::Substitute(const Substitution& s) const {
+  return sqrt(get_argument().Substitute(s));
 }
 
 ostream& ExpressionSqrt::Display(ostream& os) const {
@@ -870,6 +929,11 @@ Polynomial<double> ExpressionPow::ToPolynomial() const {
   return pow(get_first_argument().ToPolynomial(), exponent);
 }
 
+Expression ExpressionPow::Substitute(const Substitution& s) const {
+  return pow(get_first_argument().Substitute(s),
+             get_second_argument().Substitute(s));
+}
+
 ostream& ExpressionPow::Display(ostream& os) const {
   return os << "pow(" << get_first_argument() << ", " << get_second_argument()
             << ")";
@@ -887,6 +951,10 @@ Polynomial<double> ExpressionSin::ToPolynomial() const {
   throw runtime_error("Sin expression is not polynomial-convertible.");
 }
 
+Expression ExpressionSin::Substitute(const Substitution& s) const {
+  return sin(get_argument().Substitute(s));
+}
+
 ostream& ExpressionSin::Display(ostream& os) const {
   return os << "sin(" << get_argument() << ")";
 }
@@ -900,6 +968,10 @@ Polynomial<double> ExpressionCos::ToPolynomial() const {
   throw runtime_error("Cos expression is not polynomial-convertible.");
 }
 
+Expression ExpressionCos::Substitute(const Substitution& s) const {
+  return cos(get_argument().Substitute(s));
+}
+
 ostream& ExpressionCos::Display(ostream& os) const {
   return os << "cos(" << get_argument() << ")";
 }
@@ -911,6 +983,10 @@ ExpressionTan::ExpressionTan(const Expression& e)
 
 Polynomial<double> ExpressionTan::ToPolynomial() const {
   throw runtime_error("Tan expression is not polynomial-convertible.");
+}
+
+Expression ExpressionTan::Substitute(const Substitution& s) const {
+  return tan(get_argument().Substitute(s));
 }
 
 ostream& ExpressionTan::Display(ostream& os) const {
@@ -933,6 +1009,10 @@ void ExpressionAsin::check_domain(const double v) {
 
 Polynomial<double> ExpressionAsin::ToPolynomial() const {
   throw runtime_error("Asin expression is not polynomial-convertible.");
+}
+
+Expression ExpressionAsin::Substitute(const Substitution& s) const {
+  return asin(get_argument().Substitute(s));
 }
 
 ostream& ExpressionAsin::Display(ostream& os) const {
@@ -960,6 +1040,10 @@ Polynomial<double> ExpressionAcos::ToPolynomial() const {
   throw runtime_error("Acos expression is not polynomial-convertible.");
 }
 
+Expression ExpressionAcos::Substitute(const Substitution& s) const {
+  return acos(get_argument().Substitute(s));
+}
+
 ostream& ExpressionAcos::Display(ostream& os) const {
   return os << "acos(" << get_argument() << ")";
 }
@@ -976,6 +1060,10 @@ Polynomial<double> ExpressionAtan::ToPolynomial() const {
   throw runtime_error("Atan expression is not polynomial-convertible.");
 }
 
+Expression ExpressionAtan::Substitute(const Substitution& s) const {
+  return atan(get_argument().Substitute(s));
+}
+
 ostream& ExpressionAtan::Display(ostream& os) const {
   return os << "atan(" << get_argument() << ")";
 }
@@ -987,6 +1075,11 @@ ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
 
 Polynomial<double> ExpressionAtan2::ToPolynomial() const {
   throw runtime_error("Atan2 expression is not polynomial-convertible.");
+}
+
+Expression ExpressionAtan2::Substitute(const Substitution& s) const {
+  return atan2(get_first_argument().Substitute(s),
+               get_second_argument().Substitute(s));
 }
 
 ostream& ExpressionAtan2::Display(ostream& os) const {
@@ -1005,6 +1098,10 @@ Polynomial<double> ExpressionSinh::ToPolynomial() const {
   throw runtime_error("Sinh expression is not polynomial-convertible.");
 }
 
+Expression ExpressionSinh::Substitute(const Substitution& s) const {
+  return sinh(get_argument().Substitute(s));
+}
+
 ostream& ExpressionSinh::Display(ostream& os) const {
   return os << "sinh(" << get_argument() << ")";
 }
@@ -1016,6 +1113,10 @@ ExpressionCosh::ExpressionCosh(const Expression& e)
 
 Polynomial<double> ExpressionCosh::ToPolynomial() const {
   throw runtime_error("Cosh expression is not polynomial-convertible.");
+}
+
+Expression ExpressionCosh::Substitute(const Substitution& s) const {
+  return cosh(get_argument().Substitute(s));
 }
 
 ostream& ExpressionCosh::Display(ostream& os) const {
@@ -1031,6 +1132,10 @@ Polynomial<double> ExpressionTanh::ToPolynomial() const {
   throw runtime_error("Tanh expression is not polynomial-convertible.");
 }
 
+Expression ExpressionTanh::Substitute(const Substitution& s) const {
+  return tanh(get_argument().Substitute(s));
+}
+
 ostream& ExpressionTanh::Display(ostream& os) const {
   return os << "tanh(" << get_argument() << ")";
 }
@@ -1042,6 +1147,11 @@ ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
 
 Polynomial<double> ExpressionMin::ToPolynomial() const {
   throw runtime_error("Min expression is not polynomial-convertible.");
+}
+
+Expression ExpressionMin::Substitute(const Substitution& s) const {
+  return min(get_first_argument().Substitute(s),
+             get_second_argument().Substitute(s));
 }
 
 ostream& ExpressionMin::Display(ostream& os) const {
@@ -1058,6 +1168,11 @@ ExpressionMax::ExpressionMax(const Expression& e1, const Expression& e2)
 
 Polynomial<double> ExpressionMax::ToPolynomial() const {
   throw runtime_error("Max expression is not polynomial-convertible.");
+}
+
+Expression ExpressionMax::Substitute(const Substitution& s) const {
+  return max(get_first_argument().Substitute(s),
+             get_second_argument().Substitute(s));
 }
 
 ostream& ExpressionMax::Display(ostream& os) const {
@@ -1128,6 +1243,13 @@ double ExpressionIfThenElse::Evaluate(const Environment& env) const {
   } else {
     return e_else_.Evaluate(env);
   }
+}
+
+Expression ExpressionIfThenElse::Substitute(const Substitution& s) const {
+  // TODO(soonho): implement this.
+  throw runtime_error("Not yet implemented.");
+  // return if_then_else(f_cond_.Substitute(s), e_then_.Substitute(s),
+  //                     e_else_.Substitute(s));
 }
 
 ostream& ExpressionIfThenElse::Display(ostream& os) const {

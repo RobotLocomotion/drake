@@ -144,6 +144,17 @@ double Expression::Evaluate(const Environment& env) const {
   return ptr_->Evaluate(env);
 }
 
+Expression Expression::Substitute(const Variable& var,
+                                  const Expression& e) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return Expression{ptr_->Substitute({{var, e}})};
+}
+
+Expression Expression::Substitute(const Substitution& s) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return Expression{ptr_->Substitute(s)};
+}
+
 string Expression::to_string() const {
   ostringstream oss;
   oss << *this;

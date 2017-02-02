@@ -456,6 +456,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_expression_matrix_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_mixing_scalar_types_test",
     deps = [
         ":common",
@@ -464,10 +472,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "symbolic_expression_matrix_test",
+    name = "symbolic_substitution_test",
     deps = [
         ":common",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
