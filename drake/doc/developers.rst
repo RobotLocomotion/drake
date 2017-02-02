@@ -88,7 +88,7 @@ Bazel, and there are no plans to add support.
 | Operating System             | Build Systems    | Compilers          | Superbuild Deps   | Build   |
 +==============================+==================+====================+===================+=========+
 | Ubuntu 14.04 LTS ("Trusty")  | | CMake 3.5      | | GCC 4.9          | Minimal           | Debug   |
-|                              | | Bazel 0.4.2    | | Java 1.8         |                   +---------+
+|                              | | Bazel 0.4.3    | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 |                              |                  |                    +-------------------+---------+
 |                              |                  |                    | Default           | Debug   |
@@ -102,7 +102,7 @@ Bazel, and there are no plans to add support.
 |                              |                  |                    |                   | Release |
 +------------------------------+------------------+--------------------+-------------------+---------+
 | Ubuntu 16.04 LTS ("Xenial")  | | CMake 3.5      | | GCC 5.4          | Default           | Debug   |
-|                              | | Bazel 0.4.2    | | Java 1.8         |                   +---------+
+|                              | | Bazel 0.4.3    | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 |                              |                  +--------------------+-------------------+---------+
 |                              |                  | | Clang 3.9        | Default           | Debug   |
@@ -110,7 +110,7 @@ Bazel, and there are no plans to add support.
 |                              |                  |                    |                   | Release |
 +------------------------------+------------------+--------------------+-------------------+---------+
 | OS X 10.10                   | | CMake 3.5      | | Apple Clang 7.0  | Minimal           | Debug   |
-|                              | | Bazel 0.4.2    | | Java 1.8         |                   +---------+
+|                              | | Bazel 0.4.3    | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 |                              |                  |                    +-------------------+---------+
 |                              |                  |                    | Default           | Debug   |
