@@ -1,0 +1,2 @@
+drake_add_cc_test(dragway_test)
+target_link_libraries(dragway_test drakeMaliputDragway)
