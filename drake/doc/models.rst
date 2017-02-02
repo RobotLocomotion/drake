@@ -36,13 +36,10 @@ terminology and providing a brief description of what's in a model file.
 
 In this document, we call the URDF or SDF representation of the object a
 model. The model of an object will describe the object's physical properties,
-for example, visual properties to describe the appearance of an object. The
-object's physical form can be approximated by geometric primitives, such as
-cylinders or spheres, or by a more-detailed triangular mesh.
-
-Other physical properties that can be described in an URDF/SDF file include
-dynamic properties (how the object moves), with the parameters mass and
-inertia. Contact properties (how the object responds to contacting other
+including visual, contact, and dynamic properties. Visual properties
+describe the appearance of an object, such as it's shape and texture.
+Dynamic properties describe how the object moves with the parameters mass
+and inertia. Contact properties (how the object responds to contacting other
 objects) have collision parameters.
 
 These properties allow you to do simulation, visualization, motion planning,
@@ -70,7 +67,7 @@ onto an already available surface.
 `URDF <urdf/drakeURDF.html#://>`_- Unified Robot Description Format, an XML
 format for representing one robot model (unlike SDF, URDF does not model
 everything else in the world or the robot's pose in the world). Drake's URDF
-has extensions to the `official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
+extends the `official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
 
 .. _model_file_formats:
 
@@ -135,16 +132,17 @@ While the visual properties define how the model looks, often we need to
 describe the shape of the hard parts of the model (the rigid bodies), which
 the SDF file defines with a "collision" tag. You may wonder why we don't use
 the visual mesh for the collision element.  That is possible, and it would be
-accurate, but a mesh file is usually very detailed, often containing
+accurate, but a mesh is usually very detailed, often containing
 thousands of vertices. The vertices are used to determine if one object is
 colliding with another object, so the more vertices, the more computation.
 
-If you look at the cinder block SDF file, you'll see that the geometries of
-the collision elements are defined as boxes, instead of using the mesh. In
-this cinder block, the outline of the object is a rectangle (ignoring the
-holes in the cinder block), so we can use the box shape.  Other simple
-geometric shapes that you can use in the collision element include cylinder
-and sphere.
+A much simpler way to describe a shape is with geometric primitives, such as
+cylinders, spheres, or boxes. The number of vertices in a geometric primitive
+is far less than with a mesh. If you look at the cinder block SDF file,
+you'll see that the geometries of the collision elements are defined as
+boxes, instead of using the mesh. In this cinder block, the outline of the
+object is a rectangle (ignoring the holes in the cinder block), so we can
+use the box shape.
 
 See the `URDF <urdf/drakeURDF.html#://>`_ or `SDF <http://sdformat.org/>`_
 references for more information.
@@ -166,7 +164,7 @@ model to use a simpler form than the original high density mesh.
 
 Q: What is the easiest way to use something simpler for a collision model?
 
-A: If you are starting with a mesh of an object (perhaps from a 3D scanner),
+A: If you are starting with a mesh of an object (e.g. from a 3D scanner),
 you may be able to use a primitive geometric shape (e.g., cylinder, box, or
 sphere) instead of the mesh, as described above. To do this, consider a tool
 like `Gazebo <http://gazebosim.org/>`_, which provides a visual editor of model
