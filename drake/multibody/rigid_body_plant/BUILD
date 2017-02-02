@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "rigid_body_plant",
     srcs = [
         "contact_detail.cc",
@@ -36,7 +36,23 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
+    name = "rigid_body_plant_that_publishes_xdot",
+    srcs = [
+        "rigid_body_plant_that_publishes_xdot.cc",
+    ],
+    hdrs = [
+        "rigid_body_plant_that_publishes_xdot.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":rigid_body_plant",
+        "//drake/lcm",
+        "//drake/lcmtypes:drake_signal",
+    ],
+)
+
+drake_cc_library(
     name = "drake_visualizer",
     srcs = [
         "drake_visualizer.cc",
@@ -54,7 +70,7 @@ cc_library(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "compute_contact_result_test",
     deps = [
         ":rigid_body_plant",
@@ -62,14 +78,14 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "contact_detail_test",
     deps = [
         ":rigid_body_plant",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "contact_force_test",
     deps = [
         ":rigid_body_plant",
@@ -77,14 +93,14 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "contact_info_test",
     deps = [
         ":rigid_body_plant",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "contact_resultant_force_test",
     deps = [
         ":rigid_body_plant",
@@ -92,7 +108,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "drake_visualizer_test",
     data = ["//drake/multibody/collision:test_models"],
     deps = [
@@ -102,7 +118,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "kinematics_results_test",
     data = ["//drake/multibody:test_models"],
     deps = [
@@ -112,7 +128,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_plant_test",
     data = [
         ":test_models",
@@ -127,7 +143,21 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "rigid_body_plant_that_publishes_xdot_test",
+    data = [
+        "//drake/multibody:models",
+    ],
+    deps = [
+        ":rigid_body_plant_that_publishes_xdot",
+        "//drake/common:drake_path",
+        "//drake/lcm:lcmt_drake_signal_utils",
+        "//drake/lcm:mock",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
     name = "viewer_draw_translator_test",
     deps = [
         ":drake_visualizer",

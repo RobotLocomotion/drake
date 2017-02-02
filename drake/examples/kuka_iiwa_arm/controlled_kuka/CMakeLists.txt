@@ -3,11 +3,11 @@ if(lcm_FOUND)
       controlled_kuka_demo.cc)
   target_link_libraries(controlled_kuka_demo
       drakeKukaIiwaArmCommon
+      drakeLcmSystem
       drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers
-      drakeLCMSystem2
       drakeTrajectories
       gflags)
 
@@ -15,10 +15,10 @@ if(lcm_FOUND)
       kuka_cartesian_way_point_demo.cc)
   target_link_libraries(kuka_cartesian_way_point_demo
       drakeKukaIiwaArmCommon
+      drakeLcmSystem
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers
-      drakeLCMSystem2
       drakeTrajectories
       gflags)
 

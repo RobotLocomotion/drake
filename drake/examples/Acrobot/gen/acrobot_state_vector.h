@@ -38,20 +38,26 @@ class AcrobotStateVector : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  AcrobotStateVector<T>* DoClone() const override {
+    auto result = new AcrobotStateVector;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
-  // theta1
+  /// theta1
   const T& theta1() const { return this->GetAtIndex(K::kTheta1); }
   void set_theta1(const T& theta1) { this->SetAtIndex(K::kTheta1, theta1); }
-  // theta2
+  /// theta2
   const T& theta2() const { return this->GetAtIndex(K::kTheta2); }
   void set_theta2(const T& theta2) { this->SetAtIndex(K::kTheta2, theta2); }
-  // theta1dot
+  /// theta1dot
   const T& theta1dot() const { return this->GetAtIndex(K::kTheta1dot); }
   void set_theta1dot(const T& theta1dot) {
     this->SetAtIndex(K::kTheta1dot, theta1dot);
   }
-  // theta2dot
+  /// theta2dot
   const T& theta2dot() const { return this->GetAtIndex(K::kTheta2dot); }
   void set_theta2dot(const T& theta2dot) {
     this->SetAtIndex(K::kTheta2dot, theta2dot);

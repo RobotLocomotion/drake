@@ -19,18 +19,6 @@ _EXTENSIONS_ARGS = ["--extensions=" + ",".join(
     [ext[1:] for ext in _SOURCE_EXTENSIONS],
 )]
 
-# From https://bazel.build/versions/master/docs/be/c-cpp.html#cc_library.srcs
-_NON_SOURCE_EXTENSIONS = [non_source_ext for non_source_ext in """
-.S
-.a
-.lo
-.o
-.pic.a
-.pic.lo
-.pic.o
-.so
-""".split("\n") if len(non_source_ext)]
-
 def _extract_labels(srcs):
   """Convert a srcs= or hdrs= value to its set of labels."""
   # Tuples are already labels.
@@ -42,13 +30,11 @@ def _extract_labels(srcs):
   return []
 
 def _is_source_label(label):
-  for extention in _SOURCE_EXTENSIONS:
-      if label.endswith(extention):
+  for extension in _SOURCE_EXTENSIONS:
+      if label.endswith(extension):
         return True
-  for extention in _NON_SOURCE_EXTENSIONS:
-      if label.endswith(extention):
-        return False
-  fail("Unknown extension for source " + label)
+  return False
+
 
 def _add_linter_rules(source_labels, source_filenames, name, data=None):
   # Common attributes for all of our py_test invocations.
@@ -80,7 +66,7 @@ def _add_linter_rules(source_labels, source_filenames, name, data=None):
   )
 
 def cpplint(data=None, extra_srcs=None):
-  """For every C++ rule in the BUILD file so far, adds a test rule that runs
+  """For every rule in the BUILD file so far, adds a test rule that runs
   cpplint over the C++ sources listed in that rule.  Thus, BUILD file authors
   should call this function at the *end* of every C++-related BUILD file.
 
@@ -91,12 +77,9 @@ def cpplint(data=None, extra_srcs=None):
   be passed in as extra_srcs=[].
 
   """
-  # Iterate over all C++ rules.
+  # Iterate over all rules.
   for rule in native.existing_rules().values():
-    if not rule["kind"].startswith("cc_"):
-      continue
-
-    # Extract the list of source code labels and convert to filenames.
+    # Extract the list of C++ source code labels and convert to filenames.
     candidate_labels = (
       _extract_labels(rule.get("srcs", ())) +
       _extract_labels(rule.get("hdrs", ()))
@@ -105,14 +88,11 @@ def cpplint(data=None, extra_srcs=None):
       label for label in candidate_labels
       if _is_source_label(label)
     ]
-    if len(source_labels) == 0:
-      if len(candidate_labels) == 0:
-        continue
-      fail("No sources found in " + rule["name"])
     source_filenames = ["$(location %s)" % x for x in source_labels]
 
     # Run the cpplint checker as a unit test.
-    _add_linter_rules(source_labels, source_filenames, rule["name"], data)
+    if len(source_filenames) > 0:
+      _add_linter_rules(source_labels, source_filenames, rule["name"], data)
 
   # Lint all of the extra_srcs separately in a single rule.
   if extra_srcs:

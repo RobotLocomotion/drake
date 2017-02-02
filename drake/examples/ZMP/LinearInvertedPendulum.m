@@ -37,8 +37,11 @@ classdef LinearInvertedPendulum < LinearSystem
       obj.h = h;
       obj.g = g;
       
-      cartstateframe = CartTableState;
-      obj = setInputFrame(obj,CartTableInput);
+      path_to_this_file = fileparts(which(mfilename));
+      obj.manip = RigidBodyManipulator(fullfile(path_to_this_file,'CartTable.urdf'),struct('floating',true));
+      cartstateframe = obj.manip.getStateFrame();
+      
+      obj = setInputFrame(obj,obj.manip.getInputFrame());
       sframe = SingletonCoordinateFrame('LIMPState',4,'x',{'x_com','y_com','xdot_com','ydot_com'});
       if isempty(findTransform(sframe,cartstateframe))
         addTransform(sframe,AffineTransform(sframe,cartstateframe,sparse([7 8 15 16],[1 2 3 4],[1 1 1 1],16,4),zeros(16,1)));
@@ -51,7 +54,7 @@ classdef LinearInvertedPendulum < LinearSystem
     end
     
     function v = constructVisualizer(obj)
-      v = CartTableVisualizer;
+      v = constructVisualizer(obj.manip);
     end
     
     function varargout = lqr(obj,com0,Qy)
@@ -351,6 +354,7 @@ classdef LinearInvertedPendulum < LinearSystem
         ct{i} = LinearInvertedPendulum2D.COMtrajFromZMP(h,com0(i),comf(i),this_zmp_pp);
       end
       comtraj = vertcat(ct{1},ct{2});
+      % NOTEST
     end
     
     function com_pp = COMsplineFromZMP(h,com0,comf,zmp_pp)
@@ -432,6 +436,7 @@ classdef LinearInvertedPendulum < LinearSystem
   properties
     h
     g
+    manip  % just for frame logic
   end
   
 end

@@ -497,12 +497,15 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
 
   right_hand_side -= ComputeContactForce(kinsol);
 
+  solvers::VectorXDecisionVariable position_force{};
+
   if (tree_->getNumPositionConstraints()) {
     size_t nc = tree_->getNumPositionConstraints();
     // 1/time constant of position constraint satisfaction.
     const T alpha = 5.0;
 
-    prog.NewContinuousVariables(nc, "position constraint force");
+    position_force = prog.NewContinuousVariables(nc,
+                                                 "position constraint force");
 
     auto phi = tree_->positionConstraints(kinsol);
     auto J = tree_->positionConstraintsJacobian(kinsol, false);
@@ -518,24 +521,14 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   }
 
   // Adds [H,-J^T] * [vdot;f] = -C.
-  prog.AddLinearEqualityConstraint(H_and_neg_JT, -right_hand_side);
+  prog.AddLinearEqualityConstraint(H_and_neg_JT, -right_hand_side,
+                                   {vdot, position_force});
 
   prog.Solve();
 
   VectorX<T> xdot(get_num_states());
-
-  /*
-   * TODO(hongkai.dai): This only works for templates on double, it does not
-   * work for autodiff yet, I will add the code to compute the gradient of vdot
-   * w.r.t. q and v. See issue
-   * https://github.com/RobotLocomotion/drake/issues/4267.
-   */
-  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
-  // templatized.
   const auto& vdot_value = prog.GetSolution(vdot);
-  xdot << tree_->transformQDotMappingToVelocityMapping(
-      kinsol, MatrixX<T>::Identity(nq, nq).eval()) * v, vdot_value;
-
+  xdot << tree_->transformVelocityToQDot(kinsol, v), vdot_value;
   derivatives->SetFromVector(xdot);
 }
 
@@ -555,7 +548,7 @@ int RigidBodyPlant<T>::FindInstancePositionIndexFromWorldIndex(
 template <typename T>
 void RigidBodyPlant<T>::DoMapQDotToVelocity(
     const Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& configuration_dot,
+    const Eigen::Ref<const VectorX<T>>& qdot,
     VectorBase<T>* generalized_velocity) const {
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
@@ -567,7 +560,7 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   const int nv = get_num_velocities();
   const int nstates = get_num_states();
 
-  DRAKE_ASSERT(configuration_dot.size() == nq);
+  DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_ASSERT(generalized_velocity->size() == nv);
   DRAKE_ASSERT(x.size() == nstates);
 
@@ -583,8 +576,7 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
   // templatized.
   generalized_velocity->SetFromVector(
-      tree_->transformQDotMappingToVelocityMapping(
-          kinsol, configuration_dot.transpose().eval()).transpose());
+      tree_->transformQDotToVelocity(kinsol, qdot));
 }
 
 template <typename T>
@@ -616,11 +608,7 @@ void RigidBodyPlant<T>::DoMapVelocityToQDot(
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
 
-  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
-  // templatized.
-  configuration_dot->SetFromVector(
-      tree_->transformVelocityMappingToQDotMapping(
-          kinsol, v.transpose().eval()).transpose());
+  configuration_dot->SetFromVector(tree_->transformVelocityToQDot(kinsol, v));
 }
 
 template <typename T>
@@ -637,12 +625,14 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
     const T violation = position - qmax;
     const T limit_force =
         (-joint_stiffness * violation * (1 + joint_dissipation * velocity));
-    return std::min(limit_force, 0.);
+    using std::min;  // Needed for ADL.
+    return min(limit_force, 0.);
   } else if (position < qmin) {
     const T violation = position - qmin;
     const T limit_force =
         (-joint_stiffness * violation * (1 - joint_dissipation * velocity));
-    return std::max(limit_force, 0.);
+    using std::max;  // Needed for ADL.
+    return max(limit_force, 0.);
   }
   return 0;
 }

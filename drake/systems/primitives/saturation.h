@@ -8,9 +8,9 @@
 namespace drake {
 namespace systems {
 
-/// An element-wise hard saturation block with input `u` and output
-/// `y ` with lower and upper saturation limit values @f$ u_{min} @f$, and
-/// @f$ u_{max} @f$ respectively as in:
+/// An element-wise hard saturation block with inputs signal `u`,
+/// saturation values @f$ u_{min} @f$ and/or @f$ u_{max} @f$, and output
+/// `y` respectively as in:
 ///
 ///   @f[ y = u, u_{min} < u < u_{min} @f]
 ///   @f[ y = u_{min}, u \le u_{min} @f]
@@ -23,61 +23,71 @@ namespace systems {
 /// - AutoDiffXd
 ///
 /// Note that @f$ u_{min} @f$, and @f$ u_{max} @f$, and @f$ u @f$ are all
-/// vectors of same dimension, and the following condition holds elementwise.
+/// vectors of same dimension, and the following condition holds elementwise in
+/// runtime.
 ///
 ///   @f[ u_{min} <=  u_{max} @f]
+///
+/// The quantities @f$ u_{min} @f$, and @f$ u_{max} @f$ can be supplied as
+/// inputs in separate ports or be initialised as constants using the
+/// appropriate constructor by passing their default value. If these quantities
+/// are not defined as constants but they are not connected to appropriate
+/// sources, their values are taken by default to be
+/// @f$ u_{min} = -\infty @f$, and  @f$ u_{max} = \infty @f$ respectively.
+/// In this "variable" configuration, atleast one of the input ports must be
+/// connected.
 ///
 /// @ingroup primitive_systems
 template <typename T>
 class Saturation : public LeafSystem<T> {
  public:
-  /// Constructs a %Saturation system where the upper and lower values are
-  /// represented by scalars.
+  /// Constructs a variable %Saturation system where the upper and lower values
+  /// are represented by vectors of identical size and can be supplied via the
+  /// max_value_port and min_value_port respectively.
   ///
-  /// @param[in] u_min the lower (scalar) limit to the
-  /// saturation.
-  /// @param[in] u_max the upper (scalar) limit to the
-  /// saturation.
+  /// @param[in] input_size sets size of the input and output ports.
   ///
-  /// Please consult this class' description for the requirements of
-  /// @p u_min and @p u_max.
-  Saturation(const T& u_min, const T& u_max);
+  /// Please consult this class's description for the requirements of
+  /// @p u_min and @p u_max to be supplied via the corresponding ports.
+  explicit Saturation(int input_size);
 
-  /// Constructs a %Saturation system where the upper and lower values are
-  /// represented by vectors of identical size.
+  /// Constructs a constant %Saturation system where the upper and lower
+  /// values are represented by vectors of identical size supplied via this
+  /// constructor.
   ///
   /// @param[in] u_min the lower (vector) limit to the
   /// saturation.
   /// @param[in] u_max the upper (vector) limit to the
   /// saturation.
   ///
-  /// Please consult this class' description for the requirements of
+  /// Please consult this class's description for the requirements of
   /// @p u_min and @p u_max.
-  explicit Saturation(const Eigen::Ref<const VectorX<T>>& u_min,
-                      const Eigen::Ref<const VectorX<T>>& u_max);
+  Saturation(const VectorX<T>& min_value, const VectorX<T>& max_value);
 
   /// Returns the input port.
-  const InputPortDescriptor<T>& get_input_port() const;
+  const InputPortDescriptor<T>& get_input_port() const {
+    return System<T>::get_input_port(input_port_index_);
+  }
+
+  /// Returns the min value port.
+  const InputPortDescriptor<T>& get_min_value_port() const {
+    DRAKE_THROW_UNLESS(min_max_ports_enabled_);
+    return System<T>::get_input_port(min_value_port_index_);
+  }
+
+  /// Returns the max value port.
+  const InputPortDescriptor<T>& get_max_value_port() const {
+    DRAKE_THROW_UNLESS(min_max_ports_enabled_);
+    return System<T>::get_input_port(max_value_port_index_);
+  }
 
   /// Returns the output port.
-  const OutputPortDescriptor<T>& get_output_port() const;
+  const OutputPortDescriptor<T>& get_output_port() const {
+    return System<T>::get_output_port(output_port_index_);
+  }
 
-  /// Returns the lower limit `u_{min}` as a scalar value. Aborts if the lower
-  /// limit cannot be represented by a single scalar value. This can occur if
-  /// the lower limit is a vector containing more than one value.
-  const T& get_u_min_scalar() const;
-
-  /// Returns the upper limit `u_{max}` as a scalar value. Aborts if the upper
-  /// limit cannot be represented by a single scalar value. This can occur if
-  /// the upper limit is a vector containing more than one value.
-  const T& get_u_max_scalar() const;
-
-  /// Returns the lower limit `u_{min}` as a vector value.
-  const VectorX<T>& u_min() const { return u_min_; }
-
-  /// Returns the upper limit `u_{max}` as a vector value.
-  const VectorX<T>& u_max() const { return u_max_; }
-
+  /// Returns the size.
+  int get_size() const { return input_size_; }
   // TODO(naveenoid) : Add a witness function for capturing events when
   // saturation limits are reached.
 
@@ -85,12 +95,15 @@ class Saturation : public LeafSystem<T> {
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
 
-  const VectorX<T> u_min_;
-  const VectorX<T> u_max_;
-
  private:
   int input_port_index_{};
+  int min_value_port_index_{};
+  int max_value_port_index_{};
   int output_port_index_{};
+  const bool min_max_ports_enabled_{false};
+  const int input_size_{};
+  const VectorX<T> max_value_;
+  const VectorX<T> min_value_;
 };
 
 }  // namespace systems

@@ -1,13 +1,18 @@
 set(drakeSensors_SRC_FILES
+    accelerometer.cc
+    accelerometer_output.cc
     depth_sensor.cc
     depth_sensor_output.cc
     depth_sensor_specification.cc
     rotary_encoders.cc)
 
 set(drakeSensors_HEADERS
+    accelerometer.h
+    accelerometer_output.h
     depth_sensor.h
     depth_sensor_output.h
     depth_sensor_specification.h
+    image.h
     rotary_encoders.h)
 
 if(VTK_FOUND)
@@ -20,6 +25,7 @@ add_library_with_exports(LIB_NAME drakeSensors SOURCE_FILES
 
 target_link_libraries(drakeSensors
     drakeRBM
+    drakeRigidBodyPlant
     drakeSystemFramework)
 
 if(VTK_FOUND)

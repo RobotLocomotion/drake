@@ -39,9 +39,6 @@ find_package(Doxygen MODULE)
 find_package(Perl MODULE)
 find_package(Threads MODULE REQUIRED)
 
-# set up pods
-include(../cmake/pods.cmake)
-
 # A compatibility shim function that declares a library, with a built-in
 # default of SHARED.
 function(add_library_with_exports)

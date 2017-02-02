@@ -15,7 +15,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 
-DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
+DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
 
 using std::unique_ptr;
 

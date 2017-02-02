@@ -36,12 +36,18 @@ class PendulumStateVector : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  PendulumStateVector<T>* DoClone() const override {
+    auto result = new PendulumStateVector;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
-  // theta
+  /// theta
   const T& theta() const { return this->GetAtIndex(K::kTheta); }
   void set_theta(const T& theta) { this->SetAtIndex(K::kTheta, theta); }
-  // thetadot
+  /// thetadot
   const T& thetadot() const { return this->GetAtIndex(K::kThetadot); }
   void set_thetadot(const T& thetadot) {
     this->SetAtIndex(K::kThetadot, thetadot);

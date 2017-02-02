@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "drake/common/constants.h"
@@ -25,6 +26,8 @@ class RollPitchYawFloatingJoint
       : DrakeJointImpl(*this, name, transform_to_parent_body, 6, 6) {}
 
   virtual ~RollPitchYawFloatingJoint() {}
+
+  std::unique_ptr<DrakeJoint> Clone() const final;
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>

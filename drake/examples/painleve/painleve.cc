@@ -5,7 +5,6 @@ namespace drake {
 namespace painleve {
 
 template class Painleve<double>;
-template class Painleve<Eigen::AutoDiffScalar<drake::Vector1d>>;
 
 }  // namespace painleve
 }  // namespace drake

@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
@@ -24,6 +25,8 @@ namespace systems {
 template <typename T>
 class DiagramState : public State<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramState)
+
   /// Constructs a DiagramState consisting of @p size substates.
   explicit DiagramState<T>(int size) :
       State<T>(),
@@ -107,6 +110,8 @@ class DiagramState : public State<T> {
 template <typename T>
 class DiagramContext : public Context<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramContext)
+
   typedef int SystemIndex;
   typedef int PortIndex;
   typedef std::pair<SystemIndex, PortIndex> PortIdentifier;

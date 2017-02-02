@@ -5,7 +5,7 @@ Bazel build system
 ******************
 
 The Bazel build system is officially supported for a subset of Drake on
-Ubuntu Xenial, and is being tested on Ubuntu Trusty and OS X.
+Ubuntu Xenial, Ubuntu Trusty, and OS X.
 For more information, see:
 
  * https://bazel.build/
@@ -15,7 +15,7 @@ Bazel Installation
 ==================
 
 The Ubuntu Xenial platform setup process installs Bazel for you. On other
-platforms, refer to the Bazel installation instructions. We use Bazel 0.4.2.
+platforms, refer to the Bazel installation instructions. We use Bazel 0.4.3.
 https://bazel.build/versions/master/docs/install.html
 
 Drake clone and platform setup
@@ -40,12 +40,16 @@ target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
 https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns.
 
+Under Bazel, Clang is the default compiler on all platforms, but command-line
+options are available to use GCC on Ubuntu.
+
 Cheat sheet for operating on the entire project::
 
   cd /path/to/drake-distro
-  bazel build //...                 # Build the entire project.
-  bazel test //...                  # Build and test the entire project.
-  bazel build --config=clang //...  # Build the entire project using clang (on Ubuntu).
+  bazel build //...                     # Build the entire project.
+  bazel test //...                      # Build and test the entire project.
+  bazel build --compiler=gcc-4.9 //...  # Build using gcc 4.9 on Trusty.
+  bazel build --compiler=gcc-5 //...    # Build using gcc 5.x on Xenial.
 
 - The "``//``" means "starting from the root of the project".
 - The "``...``" means "everything including the subdirectories' ``BUILD`` files".

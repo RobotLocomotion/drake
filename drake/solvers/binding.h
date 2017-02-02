@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/decision_variable.h"
 
 namespace drake {
@@ -14,6 +15,8 @@ namespace solvers {
 template <typename C>
 class Binding {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Binding)
+
   Binding(const std::shared_ptr<C>& c,
           const Eigen::Ref<const VectorXDecisionVariable>& v)
       : constraint_(c), vars_(v) {
@@ -44,7 +47,7 @@ class Binding {
 
   /**
    * Returns true iff the given @p var is included in this Binding.*/
-  bool ContainsVariable(const symbolic::Variable& var) const {
+  bool ContainsVariable(const Variable& var) const {
     for (int i = 0; i < vars_.rows(); ++i) {
       if (vars_(i) == var) {
         return true;

@@ -6,7 +6,7 @@ if(lcm_FOUND)
       world_sim_diagram_factory.cc)
   target_link_libraries(drakeKukaIiwaWorld
       drakeKukaIiwaArmCommon
-      drakeLCMSystem2
+      drakeLcmSystem
       drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis

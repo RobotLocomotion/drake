@@ -10,13 +10,12 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/variable.h"
 
 namespace drake {
 namespace solvers {
 template <int rows, int cols>
-using MatrixDecisionVariable =
-    Eigen::Matrix<drake::symbolic::Variable, rows, cols>;
+using MatrixDecisionVariable = Eigen::Matrix<Variable, rows, cols>;
 template <int rows>
 using VectorDecisionVariable = MatrixDecisionVariable<rows, 1>;
 using MatrixXDecisionVariable =
@@ -30,6 +29,6 @@ using VariableRefList = std::list<Eigen::Ref<const VectorXDecisionVariable>>;
  * decision variables, returns this concatenated vector.
  */
 VectorXDecisionVariable ConcatenateVariableRefList(
-    const VariableRefList &var_list);
+    const VariableRefList& var_list);
 }  // end namespace solvers
 }  // end namespace drake

@@ -41,7 +41,7 @@ int do_main(int argc, char* argv[]) {
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
 
-  auto controller = builder.AddSystem(BalancingLQRController(acrobot));
+  auto controller = builder.AddSystem(BalancingLQRController(*acrobot));
   builder.Connect(acrobot->get_output_port(0), controller->get_input_port());
   builder.Connect(controller->get_output_port(), acrobot->get_input_port(0));
 

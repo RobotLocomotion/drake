@@ -48,3 +48,7 @@ target_link_libraries(leaf_system_test drakeSystemFramework drakeSystemPrimitive
 
 drake_add_cc_test(parameters_test)
 target_link_libraries(parameters_test drakeSystemFramework drakeSystemPrimitives)
+
+drake_add_cc_test(single_output_vector_source_test)
+target_link_libraries(single_output_vector_source_test
+  drakeSystemFramework drakeSystemPrimitives)

@@ -39,6 +39,12 @@ class EulerFloatingJointState : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  EulerFloatingJointState<T>* DoClone() const override {
+    auto result = new EulerFloatingJointState;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
   /// x

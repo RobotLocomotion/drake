@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <random>
 #include <string>
 
@@ -9,6 +10,7 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/gradient.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
@@ -102,17 +104,22 @@ class DrakeJoint {
   virtual ~DrakeJoint();
 
   /**
-   * Returns the transform `T_PF` giving the pose of the joint's "fixed" frame
+   * Returns a clone of this DrakeJoint.
+   */
+  virtual std::unique_ptr<DrakeJoint> Clone() const = 0;
+
+  /**
+   * Returns the transform `X_PF` giving the pose of the joint's "fixed" frame
    * `F` in its parent body frame `P`. Frame `F` is the joint frame that is
-   * fixed to the parent body; thus `T_PF` is not configuration dependent.
+   * fixed to the parent body; thus `X_PF` is not configuration dependent.
    *
-   * To clarify the sense of the returned transform `T_PF`, consider the
+   * To clarify the sense of the returned transform `X_PF`, consider the
    * location of a point `Q` somewhere in space. Let `p_PQ` be point `Q`
    * measured and expressed in frame `P` and `p_FQ` be point `Q` measured and
    * expressed in frame `F`. Then `p_PQ` is given by:
    *
    * <pre>
-   * p_PQ = T_PF * p_FQ
+   * p_PQ = X_PF * p_FQ
    * </pre>
    */
   const Eigen::Isometry3d& get_transform_to_parent_body() const;
@@ -220,7 +227,27 @@ class DrakeJoint {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+  /// Compares this joint with a cloned joint. Since this method is intended to
+  /// compare a clone, an *exact* match is performed. This method will only
+  /// return `true` if the provided `other` joint is exactly the same as this
+  /// joint.
+  virtual bool CompareToClone(const DrakeJoint& other) const;
+
  protected:
+  /// Attempts to downcast the provided `other` to the template class type. If
+  /// the downcast is successful, it returns a pointer to the downcasted type.
+  /// Otherwise, it will log a debug message using `drake::log()->debug()` and
+  /// return `nullptr`.
+  template <class DowncastType>
+  const DowncastType* DowncastOrLog(const DrakeJoint* other) const {
+    const DowncastType* result = dynamic_cast<const DowncastType*>(other);
+    if (result == nullptr) {
+      drake::log()->debug(
+          "DrakeJoint::DowncastOrLog(): Downcast failed.");
+    }
+    return result;
+  }
+
   const std::string name;
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;

@@ -36,6 +36,12 @@ class DrivingCommand : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  DrivingCommand<T>* DoClone() const override {
+    auto result = new DrivingCommand;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
   /// The desired steering angle of a virtual center wheel, positive results in

@@ -6,6 +6,7 @@
 #include <typeinfo>
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -28,6 +29,8 @@ class Value;
 /// sensitive code (e.g., inner loops), and the safer version otherwise.
 class AbstractValue {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AbstractValue)
+
   AbstractValue() {}
   virtual ~AbstractValue();
 
@@ -148,14 +151,11 @@ class AbstractValue {
 template <typename T>
 class Value : public AbstractValue {
  public:
+  // Values are copyable but not moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Value)
+
   explicit Value(const T& v) : value_(v) {}
   ~Value() override {}
-
-  // Values are neither copyable nor moveable.
-  Value(const Value<T>& other) = delete;
-  Value& operator=(const Value<T>& other) = delete;
-  Value(Value<T>&& other) = delete;
-  Value& operator=(Value<T>&& other) = delete;
 
   std::unique_ptr<AbstractValue> Clone() const override {
     return std::make_unique<Value<T>>(get_value());
@@ -203,9 +203,6 @@ class VectorValue : public Value<BasicVector<T>*> {
     owned_value_->set_value(other.get_value()->get_value());
     return *this;
   }
-
-  explicit VectorValue(Value<T>&& other) = delete;
-  VectorValue& operator=(Value<T>&& other) = delete;
 
   std::unique_ptr<AbstractValue> Clone() const override {
     return std::make_unique<VectorValue<T>>(*this);

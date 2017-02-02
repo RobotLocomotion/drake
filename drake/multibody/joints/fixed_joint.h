@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "drake/common/eigen_types.h"
@@ -14,6 +15,8 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
       : DrakeJointImpl(*this, name, transform_to_parent_body, 0, 0) {}
 
   virtual ~FixedJoint() {}
+
+  std::unique_ptr<DrakeJoint> Clone() const final;
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>

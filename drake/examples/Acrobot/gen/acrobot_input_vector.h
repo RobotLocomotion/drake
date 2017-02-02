@@ -35,9 +35,15 @@ class AcrobotInputVector : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  AcrobotInputVector<T>* DoClone() const override {
+    auto result = new AcrobotInputVector;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
-  // tau
+  /// tau
   const T& tau() const { return this->GetAtIndex(K::kTau); }
   void set_tau(const T& tau) { this->SetAtIndex(K::kTau, tau); }
   //@}

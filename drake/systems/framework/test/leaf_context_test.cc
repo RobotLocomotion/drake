@@ -128,6 +128,7 @@ void VerifyClonedState(const State<double>& clone) {
   EXPECT_EQ(1, clone.get_abstract_state()->size());
   EXPECT_EQ(42,
             clone.get_abstract_state()->get_abstract_state(0).GetValue<int>());
+  EXPECT_EQ(42, clone.get_abstract_state<int>(0));
 
   // Verify that the state type was preserved.
   const BasicVector<double>* xc_data =
@@ -264,6 +265,9 @@ TEST_F(LeafContextTest, Clone) {
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_abstract_state<int>(0));
+  EXPECT_EQ(42, context_.get_abstract_state()->get_abstract_state(0).
+                    GetValue<int>());
+  EXPECT_EQ(2048, clone->get_abstract_state<int>(0));
 
   // Verify that the parameters were copied.
   LeafContext<double>* leaf_clone =

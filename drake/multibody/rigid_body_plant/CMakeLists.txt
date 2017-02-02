@@ -30,7 +30,7 @@ endif ()
 set(lcm_dependent_link_libraries)
 set(lcm_dependent_requires)
 if (lcm_FOUND)
-  set(lcm_dependent_link_libraries drakeLCMSystem2)
+  set(lcm_dependent_link_libraries drakeLcmSystem)
   set(lcm_dependent_requires drake-lcm-system2)
 endif ()
 

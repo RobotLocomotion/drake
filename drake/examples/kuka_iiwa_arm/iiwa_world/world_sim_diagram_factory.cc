@@ -167,7 +167,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   Eigen::VectorXd ki = Eigen::VectorXd::Zero(num_robot_actuators);
   Eigen::VectorXd kd = Eigen::VectorXd::Zero(num_robot_actuators);
 
-  SetPositionControlledIIWAGains(kp, ki, kd);
+  SetPositionControlledIiwaGains(&kp, &ki, &kd);
   auto pid_controller = PidControlledSystem<T>::ConnectController(
       robot_input_port, robot_output_port, nullptr /* feedback */, kp, ki, kd,
       &builder);
@@ -201,7 +201,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   // Creates a plan and wraps it into a source system.
   desired_plan_ =
       builder.template AddSystem<TrajectorySource<double>>(*poly_trajectory_);
-  builder.Connect(desired_plan_->get_output_port(0),
+  builder.Connect(desired_plan_->get_output_port(),
                   input_mux_->get_input_port(0));
 
   auto rbp_state_demux = builder.template AddSystem<Demultiplexer<T>>(

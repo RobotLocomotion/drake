@@ -6,29 +6,65 @@
 // For background, see http://drake.mit.edu/cxx_inl.html.
 
 #include <limits>
+#include <memory>
+#include <vector>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/painleve/painleve.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace painleve {
 
 template <typename T>
 Painleve<T>::Painleve() {
+  // Piecewise DAE approach needs six continuous variables.
   this->DeclareContinuousState(3, 3, 0);
   this->DeclareOutputPort(systems::kVectorValued, 6);
 }
 
-// Utility method for determining the lower rod endpoint.
+template <typename T>
+Painleve<T>::Painleve(double dt) : dt_(dt) {
+  // Verify that step size parameter is valid.
+  if (dt_ <= 0.0)
+    throw std::logic_error("Time stepping system must be constructed using "
+                               "positive integration step.");
+
+  // Time stepping approach requires three position variables and
+  // three velocity variables.
+  this->DeclareDiscreteState(6);
+  this->DeclareDiscreteUpdatePeriodSec(dt);
+  this->DeclareOutputPort(systems::kVectorValued, 6);
+}
+
+/// Gets the integer variable 'k' used to determine the point of contact
+/// indicated by the current mode.
+/// @throws std::logic_error if this is a time-stepping system (implying that
+///         modes are unused).
+/// @returns the value -1 to indicate the bottom of the rod (when theta = pi/2),
+///          +1 to indicate the top of the rod (when theta = pi/2), or 0 to
+///          indicate the mode where both endpoints of the rod are contacting
+///          the halfspace.
 template <class T>
-std::pair<T, T> Painleve<T>::CalcRodLowerEndpoint(const T& x,
-                                                  const T& y,
-                                                  const int k,
-                                                  const T& ctheta,
-                                                  const T& stheta,
-                                                  const double half_rod_len) {
+int Painleve<T>::get_k(const systems::Context<T>& context) const {
+  if (is_time_stepping_system())
+    throw std::logic_error("'k' is not valid for time stepping systems.");
+  const int k = context.template get_abstract_state<int>(1);
+  DRAKE_DEMAND(std::abs(k) <= 1);
+  return k;
+}
+
+// Utility method for determining the rod endpoint, given the endpoint
+// k = { -1, 0, 1 }.
+template <class T>
+std::pair<T, T> Painleve<T>::CalcRodEndpoint(const T& x,
+                                             const T& y,
+                                             const int k,
+                                             const T& ctheta,
+                                             const T& stheta,
+                                             const double half_rod_len) {
   const T cx = x + k * ctheta * half_rod_len;
   const T cy = y + k * stheta * half_rod_len;
   return std::make_pair(cx, cy);
@@ -47,10 +83,180 @@ void Painleve<T>::DoCalcOutput(const systems::Context<T>& context,
       context.get_continuous_state()->CopyToVector();
 }
 
+/// Integrates the Painleve Paradox example forward in time using a
+/// half-explicit time stepping scheme.
+template <class T>
+void Painleve<T>::DoCalcDiscreteVariableUpdates(
+                           const systems::Context<T>& context,
+                           systems::DiscreteState<T>* discrete_state) const {
+  // Set ERP (error reduction parameter) and CFM (constraint force mixing)
+  // to make this problem "mostly rigid" and with rapid stabilization. These
+  // parameters are described in the Open Dynamics Engine user manual (see
+  // http://ode.org/ode-latest-userguide.html#sec_3_8 titled "Soft constraint
+  // and constraint force mixing (CFM)") as well as in a presentation by
+  // Erin Catto at the 2011 Game Developers Conference (Soft Constraints:
+  // Reinventing the Spring,
+  // http://box2d.org/files/GDC2011/GDC2011_Catto_Erin_Soft_Constraints.pdf).
+  const double erp = get_erp();
+  const double cfm = get_cfm();
+
+  // Get the necessary state variables.
+  const systems::BasicVector<T>& state = *context.get_discrete_state(0);
+  const auto& q = state.get_value().template segment<3>(0);
+  Vector3<T> v = state.get_value().template segment<3>(3);
+  const T& x = q(0);
+  const T& y = q(1);
+  const T& theta = q(2);
+
+  // Compute the two rod vertical endpoint locations.
+  const T stheta = sin(theta);
+  const T ctheta = cos(theta);
+  const int k1 = -1.0;
+  const int k2 = 1.0;
+  const T half_rod_length = rod_length_ / 2;
+
+  // Three generalized coordinates / velocities.
+  const int ngc = 3;
+
+  // Two contact points, corresponding to the two rod endpoints, are always
+  // used, regardless of whether any part of the rod is in contact with the
+  // halfspace. This practice is standard in time stepping approaches with
+  // constraint stabilization. See:
+  // M. Anitescu and G. Hart. A Constraint-Stabilized Time-Stepping Approach
+  // for Rigid Multibody Dynamics with Joints, Contact, and Friction. Intl.
+  // J. for Numerical Methods in Engr., 60(14), 2004.
+  const int nc = 2;
+
+  // The two contact points are (xep1, yep1) and (xep2, yep2).
+  const T xep1 = x + k1 * ctheta * half_rod_length;
+  const T yep1 = y + k1 * stheta * half_rod_length;
+  const T xep2 = x + k2 * ctheta * half_rod_length;
+  const T yep2 = y + k2 * stheta * half_rod_length;
+
+  // Total number of friction directions = number of friction directions
+  // per contact * number of contacts. Because this problem is two dimensional,
+  // no polygonalization of a friction cone is necessary. However, the LCP
+  // variables can only assume positive values, so the negation of the tangent
+  // direction permits obtaining the same effect.
+  const int nk = 2 * nc;
+
+  // Problem matrices and vectors are mildly adapted from:
+  // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
+  // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
+  // 14, 1997.
+
+  // Construct the inverse generalized inertia matrix computed about the
+  // center of mass of the rod and expressed in the world frame.
+  Matrix3<T> iM;
+  iM << 1.0/mass_, 0,         0,
+        0,         1.0/mass_, 0,
+        0,         0,         1.0/J_;
+
+  // Update the generalized velocity vector with discretized external forces
+  // (expressed in Frame A).
+  v(1) += dt_ * get_gravitational_acceleration();
+
+  // Set up the contact normal and tangent (friction) direction Jacobian
+  // matrices. These take the form:
+  //     | 0 1 n1 |        | 1 0 f1 |
+  // N = | 0 1 n2 |    F = | 1 0 f2 |
+  // where n1, n2/f1, f2 are the moment arm induced by applying the
+  // force at the given contact point along the normal/tangent direction.
+  Eigen::Matrix<T, nc, ngc> N, F;
+  N(0, 0) = N(1, 0) = 0;
+  N(0, 1) = N(1, 1) = 1;
+  N(0, 2) = (xep1 - x);
+  N(1, 2) = (xep2 - x);
+  F(0, 0) = F(1, 0) = 1;
+  F(0, 1) = F(1, 1) = 0;
+  F(0, 2) = -(yep1 - y);
+  F(1, 2) = -(yep2 - y);
+
+  // Construct a matrix similar to E in Anitscu and Potra 1997. This matrix
+  // will yield mu*fN - E*fF = 0, or, equivalently:
+  // mu*fN₁ - fF₁⁺ - fF₁⁻ ≥ 0
+  // mu*fN₂ - fF₂⁺ - fF₂⁻ ≥ 0
+  Eigen::Matrix<T, nk, nc> E;
+  E.col(0) << 1, 0, 1, 0;
+  E.col(1) << 0, 1, 0, 1;
+
+  // Construct the LCP matrix. First do the "normal contact direction" rows.
+  Eigen::Matrix<T, 8, 8> MM;
+  MM.template block<2, 2>(0, 0) = N * iM * N.transpose();
+  MM.template block<2, 2>(0, 2) = N * iM * F.transpose();
+  MM.template block<2, 2>(0, 4) = -MM.template block<2, 2>(0, 2);
+  MM.template block<2, 2>(0, 6).setZero();
+
+  // Now construct the un-negated tangent contact direction rows (everything
+  // but last block column).
+  MM.template block<2, 2>(2, 0) = F * iM * N.transpose();
+  MM.template block<2, 2>(2, 2) = F * iM * F.transpose();
+  MM.template block<2, 2>(2, 4) = -MM.template block<2, 2>(2, 2);
+
+  // Now construct the negated tangent contact direction rows (everything but
+  // last block column). These negated tangent contact directions allow the
+  // LCP to compute forces applied along the negative x-axis.
+  MM.template block<2, 6>(4, 0) = -MM.template block<2, 6>(2, 0);
+
+  // Construct the last block column for the last set of rows (see Anitescu and
+  // Potra, 1997).
+  MM.template block<4, 2>(2, 6) = E;
+
+  // Construct the last two rows, which provide the friction "cone" constraint.
+  MM.template block<2, 2>(6, 0) = Matrix2<T>::Identity() * get_mu_coulomb();
+  MM.template block<2, 4>(6, 2) = -E.transpose();
+  MM.template block<2, 2>(6, 6).setZero();
+
+  // Construct the LCP vector.
+  Eigen::Matrix<T, 8, 1> qq(8);
+  qq.segment(0, 2) = N * v;
+  qq(0) += erp * yep1/dt_;
+  qq(1) += erp * yep2/dt_;
+  qq.segment(2, 2) = F * v;
+  qq.segment(4, 2) = -qq.segment(2, 2);
+  qq.template segment(6, 2).setZero();
+
+  // Regularize the LCP matrix: this is essentially Tikhonov Regularization.
+  // Cottle et al. show that any linear complementarity problem is solvable
+  // for sufficiently large cfm.
+  // R. Cottle, J.-S. Pang, and R. Stone. The Linear Complementarity Problem.
+  // Academic Press, 1992.
+  MM += Eigen::Matrix<T, 8, 8>::Identity() * cfm;
+
+  // Solve the LCP.
+  VectorX<T> zz;
+  bool success = lcp_.SolveLcpLemke(MM, qq, &zz);
+  DRAKE_DEMAND(success);
+
+  // Obtain the normal and frictional contact forces.
+  VectorX<T> fN = zz.segment(0, 2);
+  VectorX<T> fF_pos = zz.segment(2, 2);
+  VectorX<T> fF_neg = zz.segment(4, 2);
+
+  // Compute the new velocity. Note that external forces have already been
+  // incorporated into v.
+  VectorX<T> vplus = v + iM * (N.transpose()*fN + F.transpose()*fF_pos -
+                               F.transpose()*fF_neg);
+
+  // Compute the new position using explicit Euler integration.
+  VectorX<T> qplus = q + vplus*dt_;
+
+  // Set the new discrete state.
+  systems::BasicVector<T>* new_state = discrete_state->
+      get_mutable_discrete_state(0);
+  new_state->get_mutable_value().segment(0, 3) = qplus;
+  new_state->get_mutable_value().segment(3, 3) = vplus;
+}
+
+/// Models impact using an inelastic impact model with friction.
 template <typename T>
 void Painleve<T>::HandleImpact(const systems::Context<T>& context,
-                               systems::ContinuousState<T>* new_state) const {
+                               systems::State<T>* new_state) const {
   using std::abs;
+
+  // This method is only used for piecewise DAE integration. The time
+  // stepping method implicitly incorporates impact into its model.
+  DRAKE_DEMAND(!is_time_stepping_system());
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -61,13 +267,19 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   const T& ydot = state.GetAtIndex(4);
   const T& thetadot = state.GetAtIndex(5);
 
-  // Get the state vector.
-  systems::VectorBase<T>* new_statev = new_state->get_mutable_vector();
+  // Get the continuous state vector.
+  systems::VectorBase<T>* new_statev = new_state->
+      get_mutable_continuous_state()->get_mutable_vector();
 
   // Positional aspects of state do not change.
   new_statev->SetAtIndex(0, x);
   new_statev->SetAtIndex(1, y);
   new_statev->SetAtIndex(2, theta);
+
+  // Copy abstract variables (mode and contact point) by default. Mode
+  // may change depending on impact outcome.
+  new_state->get_mutable_abstract_state()->CopyFrom(
+      *context.get_abstract_state());
 
   // If there is no impact, quit now.
   if (!IsImpacting(context)) {
@@ -76,6 +288,9 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
     new_statev->SetAtIndex(5, thetadot);
     return;
   }
+
+  // TODO(edrumwri): Handle two-point impact.
+  DRAKE_DEMAND(abs(sin(theta)) >= std::numeric_limits<T>::epsilon());
 
   // The two points of the rod are located at (x,y) + R(theta)*[0,r/2] and
   // (x,y) + R(theta)*[0,-r/2], where
@@ -90,7 +305,7 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
   const double half_rod_length = rod_length_ / 2;
-  const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
+  const std::pair<T, T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
                                                  half_rod_length);
   const T cx = c.first;
   const T cy = c.second;
@@ -108,6 +323,14 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
     const Vector2<T> f_sliding = CalcFConeImpactImpulse(context);
     fN = f_sliding(0);
     fF = f_sliding(1);
+
+    // Set the mode to sliding.
+    new_state->template get_mutable_abstract_state<Mode>(0) =
+      Painleve<T>::kSlidingSingleContact;
+  } else {
+    // Set the mode to sticking.
+    new_state->template get_mutable_abstract_state<Mode>(0) =
+      Painleve<T>::kStickingSingleContact;
   }
 
   // Compute the change in linear velocity.
@@ -301,9 +524,9 @@ Vector2<T> Painleve<T>::CalcStickingImpactImpulse(
 
 // Sets the velocity derivatives for the rod, given contact forces.
 template <class T>
-void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
-                                         systems::VectorBase<T>* const f,
-                                         T fN, T fF, T cx, T cy) const {
+void Painleve<T>::SetAccelerations(const systems::Context<T>& context,
+                                   systems::VectorBase<T>* const f,
+                                   T fN, T fF, T cx, T cy) const {
   using std::abs;
 
   // Get necessary state variables.
@@ -327,7 +550,7 @@ void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
   const double r = rod_length_;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
+  const int k = get_k(context);
 
   // Verify that the vertical acceleration at the point of contact is zero
   // (i.e., cyddot = 0).
@@ -387,7 +610,7 @@ Vector2<T> Painleve<T>::CalcStickingContactForces(
   // Precompute quantities that will be used repeatedly.
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
+  const int k = get_k(context);
 
   // Set named Mathematica constants.
   const double mass = mass_;
@@ -417,10 +640,10 @@ Vector2<T> Painleve<T>::CalcStickingContactForces(
   return Vector2<T>(fN, fF);
 }
 
-// Computes the time derivatives for the case of the rod contacting the
-// surface at exactly one point and with sliding velocity.
+// Computes the accelerations of the rod center of mass for the case of the rod
+// contacting the surface at exactly one point and with sliding velocity.
 template <class T>
-void Painleve<T>::CalcTimeDerivativesOneContactSliding(
+void Painleve<T>::CalcAccelerationsOneContactSliding(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   using std::abs;
@@ -446,10 +669,10 @@ void Painleve<T>::CalcTimeDerivativesOneContactSliding(
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
+  const int k = get_k(context);
 
   // Determine the point of contact (cx, cy).
-  const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
+  const std::pair<T, T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
                                                  half_rod_length);
   const T cx = c.first;
   const T cy = c.second;
@@ -522,10 +745,10 @@ void Painleve<T>::CalcTimeDerivativesOneContactSliding(
   DRAKE_DEMAND(abs(cyddot) < std::numeric_limits<double>::epsilon() * 10);
 }
 
-// Computes the time derivatives for the case of the rod contacting the
-// surface at exactly one point and without any sliding velocity.
+// Computes the accelerations of the rod center of mass for the case of the rod
+// contacting the surface at exactly one point and without any sliding velocity.
 template <class T>
-void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
+void Painleve<T>::CalcAccelerationsOneContactNoSliding(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   using std::abs;
@@ -540,12 +763,12 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
   const T& theta = context.get_continuous_state_vector().GetAtIndex(2);
   const T& thetadot = context.get_continuous_state_vector().GetAtIndex(5);
 
-  // Compute contact point.
+  // Get the contact point.
+  const int k = get_k(context);
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
-  const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
+  const std::pair<T, T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
                                                  half_rod_length);
   const T cx = c.first;
   const T cy = c.second;
@@ -606,20 +829,20 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
 
     // Pick the one that is smaller in magnitude.
     if (abs(cxddot1) < abs(cxddot2)) {
-      SetVelocityDerivatives(context, f, fN1, fF1, cx, cy);
+      SetAccelerations(context, f, fN1, fF1, cx, cy);
     } else {
-      SetVelocityDerivatives(context, f, fN2, fF2, cx, cy);
+      SetAccelerations(context, f, fN2, fF2, cx, cy);
     }
   } else {
     // Friction force is within the friction cone.
-    SetVelocityDerivatives(context, f, fN, fF, cx, cy);
+    SetAccelerations(context, f, fN, fF, cx, cy);
   }
 }
 
-// Computes the time derivatives for the case of the rod contacting the
-// surface at more than one point.
+// Computes the accelerations of the rod center of mass for the case of the rod
+// contacting the surface at more than one point.
 template <class T>
-void Painleve<T>::CalcTimeDerivativesTwoContact(
+void Painleve<T>::CalcAccelerationsTwoContact(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   using std::abs;
@@ -651,6 +874,8 @@ bool Painleve<T>::IsImpacting(const systems::Context<T>& context) const {
   using std::sin;
   using std::cos;
 
+  // Note: we do not consider modes here.
+
   // Get state data necessary to compute the point of contact.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
   const T& y = state.GetAtIndex(1);
@@ -662,7 +887,7 @@ bool Painleve<T>::IsImpacting(const systems::Context<T>& context) const {
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
+  const int k = (stheta > 0) ? -1 : (stheta < 0) ? 1 : 0;
   const T cy = y + k * stheta * half_rod_length;
 
   // If rod endpoint is not touching, there is no impact.
@@ -676,6 +901,22 @@ bool Painleve<T>::IsImpacting(const systems::Context<T>& context) const {
   return (cydot < -std::numeric_limits<double>::epsilon());
 }
 
+// Computes the accelerations of the rod center of mass for the case of
+// ballistic motion.
+template <typename T>
+void Painleve<T>::CalcAccelerationsBallistic(
+    const systems::Context<T>& context,
+    systems::ContinuousState<T>* derivatives) const {
+  // Obtain the structure we need to write into.
+  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
+
+  // Second three derivative components are simple: just add in gravitational
+  // acceleration.
+  f->SetAtIndex(3, T(0));
+  f->SetAtIndex(4, get_gravitational_acceleration());
+  f->SetAtIndex(5, T(0));
+}
+
 template <typename T>
 void Painleve<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
@@ -685,20 +926,14 @@ void Painleve<T>::DoCalcTimeDerivatives(
   using std::cos;
   using std::abs;
 
-  // TODO(edrumwri): This method currently determines the (hybrid) dynamics
-  //                 mode based on the current values of the state variables.
-  //                 Different dynamics equations are evaluated depending on
-  //                 which mode is selected (e.g., sliding at a single contact,
-  //                 ballistic motion, etc.) A future update to this example
-  //                 will store the dynamics mode as an abstract variable, and
-  //                 this mode variable will be updated through event handling
-  //                 functions.
+  // Don't compute any derivatives if this is the time stepping system.
+  if (is_time_stepping_system()) {
+    DRAKE_ASSERT(derivatives->size() == 0);
+    return;
+  }
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
-  const T& x = state.GetAtIndex(0);
-  const T& y = state.GetAtIndex(1);
-  const T& theta = state.GetAtIndex(2);
   const T& xdot = state.GetAtIndex(3);
   const T& ydot = state.GetAtIndex(4);
   const T& thetadot = state.GetAtIndex(5);
@@ -706,67 +941,51 @@ void Painleve<T>::DoCalcTimeDerivatives(
   // Obtain the structure we need to write into.
   systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
 
-  // The two endpoints of the rod are located at (x,y) + R(theta)*[0,r/2] and
-  // (x,y) + R(theta)*[0,-r/2], where
-  // R(theta) = | cos(theta) -sin(theta) |
-  //            | sin(theta)  cos(theta) |
-  // and r is designated as the rod length. Thus, the heights of
-  // the rod endpoints are y + sin(theta)*r/2 and y - sin(theta)*r/2.
-  const double half_rod_length = rod_length_ / 2;
-  const T ctheta = cos(theta);
-  const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
-
-  // Determine the height of the point of contact (cx, cy).
-  const T cy =  CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
-                                     half_rod_length).second;
-
-  // Compute the horizontal velocity at the point of contact.
-  const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
+  // Get the abstract variables that determine the current system mode and
+  // the endpoint in contact.
+  const Mode mode = context.template get_abstract_state<Mode>(0);
 
   // First three derivative components are xdot, ydot, thetadot.
   f->SetAtIndex(0, xdot);
   f->SetAtIndex(1, ydot);
   f->SetAtIndex(2, thetadot);
 
-  // Case 1 (ballistic mode): the rod is not touching the ground
-  // (located at y=0).
-  if (cy > std::numeric_limits<double>::epsilon()) {
-    // Second three derivative components are simple: just add in gravitational
-    // acceleration.
-    f->SetAtIndex(3, T(0));
-    f->SetAtIndex(4, get_gravitational_acceleration());
-    f->SetAtIndex(5, T(0));
+  // Call the proper derivative function (depending on mode type).
+  switch (mode) {
+    case kBallisticMotion:
+      return CalcAccelerationsBallistic(context, derivatives);
+    case kSlidingSingleContact:
+      return CalcAccelerationsOneContactSliding(context, derivatives);
+    case kStickingSingleContact:
+      return CalcAccelerationsOneContactNoSliding(context, derivatives);
+    case kSlidingTwoContacts:
+      return CalcAccelerationsTwoContact(context, derivatives);
+    case kStickingTwoContacts:
+      return CalcAccelerationsTwoContact(context, derivatives);
+
+    default:
+      DRAKE_ABORT_MSG("Invalid mode detected");
+  }
+}
+
+/// Allocates the abstract state (for piecewise DAE systems).
+template <typename T>
+std::unique_ptr<systems::AbstractState> Painleve<T>::
+  AllocateAbstractState() const {
+  if (!is_time_stepping_system()) {
+    // Piecewise DAE approach needs two abstract variables (one mode and one
+    // contact point indicator).
+    std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
+    abstract_data.push_back(
+        std::make_unique<systems::Value<Painleve<T>::Mode>>(
+            Painleve<T>::kInvalid));
+
+    // Indicates that the rod is in contact at both points.
+    abstract_data.push_back(std::make_unique<systems::Value<int>>(0));
+    return std::make_unique<systems::AbstractState>(std::move(abstract_data));
   } else {
-    // Case 2: the rod is touching the ground (or even embedded in the ground).
-    // Constraint stabilization should be used to eliminate embedding, but we
-    // perform no such check in the derivative evaluation.
-
-    // Handle the case where the rod is both parallel to the halfspace and
-    // contacting the halfspace (at the entire length of the rod).
-    // TODO(edrumwri): Modify this two-contact point routine to account for
-    //                 contacts along the entire length of the rod, assumingly
-    //                 only a single coefficient of friction).
-    if (abs(sin(theta)) < std::numeric_limits<double>::epsilon()) {
-      CalcTimeDerivativesTwoContact(context, derivatives);
-      return;
-    }
-
-    // At this point, it is known that exactly one endpoint of the rod is
-    // touching the halfspace. Compute the normal acceleration at that point of
-    // contact (cy_ddot), *assuming zero contact force*.
-    T cyddot = get_gravitational_acceleration() -
-               k * half_rod_length * stheta * thetadot * thetadot;
-
-    // If this derivative is negative, we must compute the normal force
-    // necessary to set it to zero.
-    if (cyddot < 0) {
-      // Look for the case where the tangential velocity is zero.
-      if (abs(cxdot) < std::numeric_limits<double>::epsilon())
-        CalcTimeDerivativesOneContactNoSliding(context, derivatives);
-      else
-        CalcTimeDerivativesOneContactSliding(context, derivatives);
-    }
+    // Time stepping approach needs no abstract variables.
+    return std::make_unique<systems::AbstractState>();
   }
 }
 
@@ -782,7 +1001,24 @@ void Painleve<T>::SetDefaultState(const systems::Context<T>& context,
   VectorX<T> x0(6);
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
-  state->get_mutable_continuous_state()->SetFromVector(x0);
+  if (!is_time_stepping_system()) {
+    // DAE mode.
+    state->get_mutable_continuous_state()->SetFromVector(x0);
+
+    // Indicate that the rod is in the single contact sliding mode.
+    state->get_mutable_abstract_state()->get_mutable_abstract_state(0).
+        template GetMutableValue<Painleve<T>::Mode>() =
+            Painleve<T>::kSlidingSingleContact;
+
+    // Determine and set the point of contact.
+    const double theta = x0(2);
+    const int k = (std::sin(theta) > 0) ? -1 : 1;
+    state->get_mutable_abstract_state()->get_mutable_abstract_state(1).
+        template GetMutableValue<int>() = k;
+  } else {
+    state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->
+        SetFromVector(x0);
+  }
 }
 
 }  // namespace painleve

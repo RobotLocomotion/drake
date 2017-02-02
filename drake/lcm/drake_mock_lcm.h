@@ -22,12 +22,18 @@ class DrakeMockLcm : public DrakeLcmInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeMockLcm);
 
   /**
-   * A constructor that creates a DrakeMockLcm where loopback is diabled, i.e.,
-   * a call to Publish() will not result in subscriber callback function being
-   * called. To enable loop-back behavior, call EnableLoopBack().
+   * A constructor that creates a DrakeMockLcm with loopback disabled, i.e., a
+   * call to Publish() will not result in subscriber callback functions being
+   * executed. To enable loopback behavior, call EnableLoopBack().
    */
   DrakeMockLcm();
 
+  /**
+   * Enables loopback behavior. With loopback enabled, a call to Publish() will
+   * result in subscriber callback functions being called. Without loopback
+   * enabled, the only way to induce a call to a subscriber's callback function
+   * is through InduceSubscriberCallback().
+   */
   void EnableLoopBack() { enable_loop_back_ = true; }
 
   void StartReceiveThread() override;

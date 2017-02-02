@@ -233,6 +233,11 @@ macro(drake_setup_options)
     "Google command-line flags processing library")
 
   drake_system_dependency(
+    PYBIND11 OPTIONAL REQUIRES pybind11
+    DEPENDS "NOT DISABLE_PYTHON"
+    "Python/C++11 interoperability tool")
+
+  drake_system_dependency(
     LCM OPTIONAL REQUIRES lcm
     "Lightweight Communications and Marshaling IPC suite")
 
@@ -324,10 +329,6 @@ macro(drake_setup_options)
   # The following projects are default OFF when MATLAB is present and enabled.
   # Otherwise, they are hidden and default OFF. Some of them may also be hidden
   # on Windows regardless of the status of MATLAB.
-  drake_optional_external(IRIS OFF
-    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND\;WITH_MOSEK"
-    "fast approximate convex segmentation")
-
   drake_optional_external(YALMIP OFF
     DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
     "free optimization front-end for MATLAB")
@@ -345,6 +346,10 @@ macro(drake_setup_options)
 
   drake_optional_external(GUROBI OFF
     "Convex/integer optimization solver\; free for academics")
+
+  drake_optional_external(IRIS OFF
+    DEPENDS "WITH_MOSEK"
+    "fast approximate convex segmentation")
 
   drake_optional_external(MESHCONVERTERS OFF
     "uses vcglib to convert a few standard filetypes")

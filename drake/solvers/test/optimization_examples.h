@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -13,6 +14,8 @@ namespace test {
  */
 class LinearSystemExample1 {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample1)
+
   LinearSystemExample1();
 
   MathematicalProgram* prog() const { return prog_.get(); }
@@ -26,7 +29,7 @@ class LinearSystemExample1 {
   virtual bool CheckSolution() const;
 
  protected:
-  double tol() const {return 1E-10;}
+  double tol() const { return 1E-10; }
 
  private:
   std::unique_ptr<MathematicalProgram> prog_;
@@ -43,6 +46,8 @@ class LinearSystemExample1 {
  */
 class LinearSystemExample2 : public LinearSystemExample1 {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample2)
+
   LinearSystemExample2();
 
   VectorDecisionVariable<2> y() const { return y_; }
@@ -61,9 +66,32 @@ class LinearSystemExample2 : public LinearSystemExample1 {
  */
 class LinearSystemExample3 : public LinearSystemExample2 {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample3)
+
   LinearSystemExample3();
 
   bool CheckSolution() const override;
+};
+
+/**
+ * For a stable linear system ẋ = A x, find its Lyapunov function by solving
+ * the Lyapunov equality on the symmetric matrix X
+ * Aᵀ * X + X * A = -E
+ */
+class LinearMatrixEqualityExample {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearMatrixEqualityExample)
+
+  LinearMatrixEqualityExample();
+
+  MathematicalProgram* prog() const { return prog_.get(); }
+
+  bool CheckSolution() const;
+
+ private:
+  std::unique_ptr<MathematicalProgram> prog_;
+  MatrixDecisionVariable<3, 3> X_;
+  Eigen::Matrix3d A_;
 };
 
 /// This test comes from Section 2.2 of
@@ -76,6 +104,8 @@ class NonConvexQPproblem1 {
   /// to test different solvers, and whether MathematicalProgram can parse
   /// constraints in different forms.
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem1)
+
   enum CostForm {
     kCostBegin = 0,
     kGenericCost = 0,
@@ -100,12 +130,16 @@ class NonConvexQPproblem1 {
  private:
   class TestProblem1Cost {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProblem1Cost)
+
+    TestProblem1Cost() = default;
+
     static size_t numInputs() { return 5; }
     static size_t numOutputs() { return 1; }
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -133,6 +167,8 @@ class NonConvexQPproblem1 {
 /// ISBN 978-1-4757-3040-1
 class NonConvexQPproblem2 {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem2)
+
   enum CostForm {
     kCostBegin = 0,
     kGenericCost = 0,
@@ -157,12 +193,16 @@ class NonConvexQPproblem2 {
  private:
   class TestProblem2Cost {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProblem2Cost)
+
+    TestProblem2Cost() = default;
+
     static size_t numInputs() { return 6; }
     static size_t numOutputs() { return 1; }
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -180,7 +220,7 @@ class NonConvexQPproblem2 {
   void AddSymbolicConstraint();
 
   std::unique_ptr<MathematicalProgram> prog_;
-  Eigen::Matrix<symbolic::Variable, 6, 1> x_;
+  Eigen::Matrix<Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 
@@ -190,6 +230,8 @@ class NonConvexQPproblem2 {
 /// ISBN 978-1-4757-3040-1
 class LowerBoundedProblem {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem)
+
   enum ConstraintForm {
     kConstraintBegin = 0,
     kNonSymbolic = 0,
@@ -210,12 +252,16 @@ class LowerBoundedProblem {
  private:
   class LowerBoundTestCost {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LowerBoundTestCost)
+
+    LowerBoundTestCost() = default;
+
     static size_t numInputs() { return 6; }
     static size_t numOutputs() { return 1; }
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -227,6 +273,8 @@ class LowerBoundedProblem {
 
   class LowerBoundTestConstraint : public Constraint {
    public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundTestConstraint)
+
     LowerBoundTestConstraint(int i1, int i2)
         : Constraint(
               1, Eigen::Dynamic, Vector1d::Constant(4),
@@ -264,7 +312,7 @@ class LowerBoundedProblem {
   void AddNonSymbolicConstraint();
 
   std::unique_ptr<MathematicalProgram> prog_;
-  Eigen::Matrix<symbolic::Variable, 6, 1> x_;
+  Eigen::Matrix<Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 
@@ -280,12 +328,14 @@ class LowerBoundedProblem {
 /// correctly with multiple decision variables.
 class GloptiPolyConstrainedMinimizationProblem {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem)
+
   enum CostForm {
     kCostBegin = 0,
     kGenericCost = 0,
     kNonSymbolicCost = 1,
-    // TODO(hongkai.dai): add symbolic linear cost
-    kCostEnd = 1
+    kSymbolicCost = 2,
+    kCostEnd = 2
   };
 
   enum ConstraintForm {
@@ -306,12 +356,16 @@ class GloptiPolyConstrainedMinimizationProblem {
  private:
   class GloptipolyConstrainedExampleCost {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GloptipolyConstrainedExampleCost)
+
+    GloptipolyConstrainedExampleCost() = default;
+
     static size_t numInputs() { return 3; }
     static size_t numOutputs() { return 1; }
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -323,6 +377,8 @@ class GloptiPolyConstrainedMinimizationProblem {
       : public Constraint {  // Want to also support deriving directly from
                              // constraint without going through Function.
    public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptipolyConstrainedExampleConstraint)
+
     GloptipolyConstrainedExampleConstraint()
         : Constraint(
               1, 3, Vector1d::Constant(0),
@@ -346,14 +402,16 @@ class GloptiPolyConstrainedMinimizationProblem {
         Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>* y) const {
       y->resize(1);
       (*y)(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -
-             4 * x(0) * x(1) + 4 * x(0) * x(2) + 2 * x(1) * x(1) -
-             2 * x(1) * x(2) + 2 * x(2) * x(2);
+                4 * x(0) * x(1) + 4 * x(0) * x(2) + 2 * x(1) * x(1) -
+                2 * x(1) * x(2) + 2 * x(2) * x(2);
     }
   };
 
   void AddGenericCost();
 
   void AddSymbolicCost();
+
+  void AddNonSymbolicCost();
 
   void AddNonSymbolicConstraint();
 
@@ -385,10 +443,12 @@ class GloptiPolyConstrainedMinimizationProblem {
 /// where A_hat = [A 0; 2*I Aᵀ].
 class MinDistanceFromPlaneToOrigin {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinDistanceFromPlaneToOrigin)
+
   enum CostForm {
     kCostBegin = 0,
     kNonSymbolicCost = 0,
-    // TODO(hongkai.dai): add symbolic cost form
+    kSymbolicCost = 1,
     kCostEnd = 1
   };
 
@@ -403,9 +463,7 @@ class MinDistanceFromPlaneToOrigin {
                                const Eigen::VectorXd& b, CostForm cost_form,
                                ConstraintForm cnstr_form);
 
-  MathematicalProgram* prog_lorentz() const {
-    return prog_lorentz_.get();
-  }
+  MathematicalProgram* prog_lorentz() const { return prog_lorentz_.get(); }
 
   MathematicalProgram* prog_rotated_lorentz() const {
     return prog_rotated_lorentz_.get();

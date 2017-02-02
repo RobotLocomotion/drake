@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/variable.h"
 
 namespace drake {
 namespace symbolic {

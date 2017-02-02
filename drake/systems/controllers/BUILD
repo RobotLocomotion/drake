@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "gravity_compensator",
     srcs = ["gravity_compensator.cc"],
     hdrs = ["gravity_compensator.h"],
@@ -18,7 +18,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "linear_quadratic_regulator",
     srcs = ["linear_quadratic_regulator.cc"],
     hdrs = ["linear_quadratic_regulator.h"],
@@ -31,7 +31,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "pid_controller",
     srcs = ["pid_controller.cc"],
     hdrs = ["pid_controller.h"],
@@ -42,10 +42,11 @@ cc_library(
         "//drake/systems/primitives:gain",
         "//drake/systems/primitives:integrator",
         "//drake/systems/primitives:pass_through",
+        "//drake/systems/primitives:saturation",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "pid_controlled_system",
     srcs = ["pid_controlled_system.cc"],
     hdrs = ["pid_controlled_system.h"],
@@ -60,7 +61,7 @@ cc_library(
 
 # === test/ ===
 
-cc_googletest(
+drake_cc_googletest(
     name = "gravity_compensator_test",
     data = [
         "//drake/examples/SimpleFourBar:models",
@@ -72,7 +73,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "linear_quadratic_regulator_test",
     deps = [
         ":linear_quadratic_regulator",
@@ -80,7 +81,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "pid_controlled_system_test",
     deps = [
         ":pid_controlled_system",
@@ -88,7 +89,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "pid_controller_test",
     deps = [
         ":pid_controller",
