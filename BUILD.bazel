@@ -4,6 +4,25 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
+package(
+    default_visibility = ["//visibility:public"],
+)
+
 exports_files([
     "CPPLINT.cfg",
 ])
+
+alias(
+    name="protoc",
+    actual="@protobuf//:protoc",
+)
+
+alias(
+    name="protobuf",
+    actual="@protobuf//:protobuf",
+)
+
+alias(
+    name="protobuf_python",
+    actual="@protobuf//:protobuf_python",
+)

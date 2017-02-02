@@ -184,26 +184,14 @@ bind(
     actual = "@six_archive//:six",
 )
 
-# Protocol Buffers
-http_archive(
-    name = 'protobuf_python',
-    url = 'https://github.com/google/protobuf/releases/download/v3.0.0/protobuf-python-3.0.0.tar.gz',
-    sha256 = '6a093cbdb6b40e593c508a03bc9a884239c7bfb377b79d0c0bf43eafe007fb0e',
-    strip_prefix = "protobuf-3.0.0",
-)
-
 github_archive(
-    name = "org_pubref_rules_protobuf",
-    repository = "pubref/rules_protobuf",
-    commit = "v0.7.1",
-    sha256 = "646b39438d8eeba02d9af890dee444c7e4e9d08ae8611bc0e0621257010162db",
+    name = "protobuf",
+    repository = "google/protobuf",
+    commit = "v3.1.0",
+    sha256 = "0a0ae63cbffc274efb573bdde9a253e3f32e458c41261df51c5dbc5ad541e8f7",
 )
 
-load("@org_pubref_rules_protobuf//python:rules.bzl",
-     "py_proto_repositories")
-py_proto_repositories()
-
-# The "@python_headers//:python_headers" target is required by protobuf_python
+# The "@python_headers//:python_headers" target is required by protobuf
 # during "bazel query" but not "bazel build", so a stub is fine.
 new_local_repository(
     name = "python_headers",
