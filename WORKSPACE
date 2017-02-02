@@ -7,6 +7,7 @@ workspace(name = "drake")
 
 load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 load("//tools:github.bzl", "github_archive")
+load('@bazel_tools//tools/build_defs/repo:git.bzl', 'git_repository')
 
 pkg_config_package(
     name = "glib",
@@ -162,6 +163,12 @@ soft_failure_binary_repository(
 load("//tools:gfortran.bzl", "gfortran_repository")
 gfortran_repository(
     name = "gfortran",
+)
+
+git_repository(
+  name = "snopt",
+  remote = "git@github.com:RobotLocomotion/snopt.git",
+  commit = "9f8c7972fa257d2341ecefcf58617e11b9ebb504",
 )
 
 # Python Libraries
