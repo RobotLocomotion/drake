@@ -92,8 +92,8 @@ template <typename T>
 void EndlessRoadCar<T>::ImplCalcOutput(const EndlessRoadCarState<T>& state,
                                        EndlessRoadCarState<T>* output) const {
   output->set_value(state.get_value());
-  // TODO(maddog)  Until we have a way to express this constraint to the
-  //               simulator, forbid exposing negative speeds.
+  // TODO(maddog@tri.global) Until we have a way to express this constraint
+  //                         to the simulator, forbid exposing negative speeds.
   if (output->speed() < 0.) {
     output->set_speed(0.);
   }
@@ -197,15 +197,13 @@ EndlessRoadCar<T>::ComputeIdmAccelerations(
   const double a{config_.max_acceleration()};  // max acceleration.
   const double b{a};  // comfortable braking deceleration.
   const double delta{4.0};  // recommended choice of free-road exponent.
-  // TODO(maddog)  This belongs somewhere.
-  //  const double l_a{4.5};  // length of leading car.
 
   // Velocity difference to car ahead
   const double delta_v = input.delta_sigma_dot();
   // Net distance to car ahead (front bumper to rear bumper)
   const double s = input.net_delta_sigma();
-  // TODO(maddog)  Demand that we are not pointing backwards, because we are
-  //               not handling that correctly yet.
+  // TODO(maddog@tri.global) Demand that we are not pointing backwards, because
+  //                         we are not handling that correctly yet.
   DRAKE_DEMAND(std::cos(state.heading()) >= 0.);
   // Current longitudinal velocity
   const double v = state.speed() * std::cos(state.heading());
