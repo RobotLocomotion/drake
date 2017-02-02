@@ -71,6 +71,7 @@ drake_cc_library(
         "equality_constrained_qp_solver.cc",
         "linear_system_solver.cc",
         "mathematical_program.cc",
+        "mathematical_program_solver_interface.cc",
         "moby_lcp_solver.cc",
         "no_dreal.cc",
         "no_mosek.cc",

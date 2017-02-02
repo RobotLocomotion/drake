@@ -16,8 +16,6 @@ class LinearSystemSolver : public MathematicalProgramSolverInterface {
 
   bool available() const override;
 
-  static std::string SolverName() { return "Linear System Solver"; }
-
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
 

@@ -158,7 +158,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   // internally.
 
   // We don't actually indicate different results.
-  prog.SetSolverResult(MobyLCPSolver::SolverName(), 0);
+  prog.SetSolverResult(SolverName(), 0);
 
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());

@@ -21,8 +21,6 @@ class MosekSolver : public MathematicalProgramSolverInterface {
    */
   bool available() const override;
 
-  static std::string SolverName() { return "Mosek";}
-
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
 

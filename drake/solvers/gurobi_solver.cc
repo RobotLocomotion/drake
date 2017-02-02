@@ -610,7 +610,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult(GurobiSolver::SolverName(), error);
+  prog.SetSolverResult(SolverName(), error);
 
   GRBfreemodel(model);
   GRBfreeenv(env);

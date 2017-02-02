@@ -18,8 +18,6 @@ class DrealSolver : public MathematicalProgramSolverInterface {
   // Dreal was available during compilation.
   bool available() const override;
 
-  static std::string SolverName() { return "dReal"; }
-
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
 

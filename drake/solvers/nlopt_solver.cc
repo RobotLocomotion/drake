@@ -391,7 +391,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   }
 
   prog.SetDecisionVariableValues(sol);
-  prog.SetSolverResult(NloptSolver::SolverName(), nlopt_result);
+  prog.SetSolverResult(SolverName(), nlopt_result);
   return result;
 }
 

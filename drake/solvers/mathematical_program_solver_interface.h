@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ostream>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
@@ -48,10 +49,14 @@ class MathematicalProgramSolverInterface {
   /// Returns the type of the solver.
   Solver solver_type() const {return solver_type_;}
 
+  std::string SolverName() const;
+
  private:
   const Solver solver_type_;
 };
 
-// std::ostream& operator<<(std::ostream& os, const MathematicalProgramSolverInterface::Solver& solver_type);
+std::ostream& operator<<(std::ostream& os, const MathematicalProgramSolverInterface::Solver& solver_type);
+
+std::string Name(MathematicalProgramSolverInterface::Solver solver_type);
 }  // namespace solvers
 }  // namespace drake

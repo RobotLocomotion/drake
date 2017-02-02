@@ -15,12 +15,12 @@
 namespace drake {
 namespace solvers {
 namespace test {
-void CheckSolverName(const MathematicalProgram &prog,
-                     const std::string& desired_solver_name) {
+void CheckSolver(const MathematicalProgram &prog,
+                 MathematicalProgramSolverInterface::Solver desired_solver_type) {
   std::string solver_name;
   int solver_result;
   prog.GetSolverResult(&solver_name, &solver_result);
-  EXPECT_EQ(solver_name, desired_solver_name);
+  EXPECT_EQ(solver_name, Name(desired_solver_type));
 }
 
 void RunSolver(MathematicalProgram* prog,

@@ -141,7 +141,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
   prog.SetDecisionVariableValues(sol.segment(0, prog.num_vars()));
 
-  prog.SetSolverResult(EqualityConstrainedQPSolver::SolverName(), 0);
+  prog.SetSolverResult(SolverName(), 0);
   return SolutionResult::kSolutionFound;
 }
 

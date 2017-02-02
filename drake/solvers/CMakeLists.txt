@@ -33,6 +33,7 @@ list(APPEND optimization_files
   equality_constrained_qp_solver.cc
   linear_system_solver.cc
   mathematical_program.cc
+  mathematical_program_solver_interface.cc
   moby_lcp_solver.cc
   rotation_constraint.cc
   system_identification.cc
