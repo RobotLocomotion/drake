@@ -82,7 +82,13 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
          [](const MathematicalProgram& prog,
             const VectorXDecisionVariable& var) {
       return prog.GetSolution(var);
-    });
+    })
+    .def("EvalBindingAtSolution", 
+         (Eigen::VectorXd(MathematicalProgram::*)(
+          const Binding<LinearConstraint>&) const) &MathematicalProgram::EvalBindingAtSolution)
+    .def("EvalBindingAtSolution", 
+         (Eigen::VectorXd(MathematicalProgram::*)(
+          const Binding<QuadraticConstraint>&) const) &MathematicalProgram::EvalBindingAtSolution);
 
   py::enum_<SolutionResult>(m, "SolutionResult")
     .value("kSolutionFound", SolutionResult::kSolutionFound)

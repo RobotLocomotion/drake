@@ -47,7 +47,7 @@ class TestMathematicalProgram(unittest.TestCase):
         x = prog.NewContinuousVariables(2, "x")
         prog.AddLinearConstraint(x[0] >= 1)
         prog.AddLinearConstraint(x[1] >= 1)
-        prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
+        cost = prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
 
         lin_con_bindings = prog.linear_constraints()
         for (i, binding) in enumerate(lin_con_bindings):
@@ -65,6 +65,21 @@ class TestMathematicalProgram(unittest.TestCase):
 
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+
+
+    def test_eval_binding(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        constraints = [prog.AddLinearConstraint(x[0] >= 1),
+                       prog.AddLinearConstraint(x[1] >= 1)]
+        cost = prog.AddLinearCost(np.sum(x))
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+        x_expected = np.array([1, 1])
+        self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+        for constraint in constraints:
+            self.assertTrue(np.isclose(prog.EvalBindingAtSolution(constraint), 1))
+        self.assertTrue(np.isclose(prog.EvalBindingAtSolution(cost), 2))
 
 
 
