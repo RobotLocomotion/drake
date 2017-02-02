@@ -38,7 +38,7 @@ class PendulumStateVector : public systems::BasicVector<T> {
 
   PendulumStateVector<T>* DoClone() const override {
     auto result = new PendulumStateVector;
-    result->SetFromVector(this->CopyToVector());
+    result->set_value(this->get_value());
     return result;
   }
 
