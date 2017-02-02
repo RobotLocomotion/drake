@@ -221,16 +221,6 @@ EndlessRoadCar<T>::ComputeIdmAccelerations(
   forward_acceleration = std::max(forward_acceleration,
                                   -config_.max_deceleration());
 
-  // Furthermore, speed should be non-negative, so if it has dipped to/below
-  // zero, then we want to clamp any more negative acceleration.
-  if ((state.speed() <= 0.) && (forward_acceleration < 0.)) {
-    drake::log()->warn(
-        "Clamping negative acceleration for id {}:  speed {}  fa {}"
-        "  v_0 {}  delta_v {}  delta_s {}",
-        id_, state.speed(), forward_acceleration, v_0, delta_v, s);
-    forward_acceleration = 0.;
-  }
-
   // Lateral acceleration is always zero, since we're just doing car-following.
   return {forward_acceleration, 0.};
 }
@@ -262,12 +252,20 @@ void EndlessRoadCar<T>::ImplCalcTimeDerivatives(
   rates->set_r(derivatives.r);
   // Ignore derivatives.h_, which should be zero anyhow.
 
-  const double speed_dot = accelerations.forward;
   const double heading_dot =
       (state.speed() == 0.) ? 0. : (accelerations.lateral / state.speed());
+  double speed_dot = accelerations.forward;
+  // Speed should be non-negative, so if it has dipped to/below
+  // zero, then we want to clamp any more negative acceleration.
+  if ((state.speed() <= 0.) && (speed_dot < 0.)) {
+    drake::log()->warn(
+        "Clamping negative acceleration for id {}:  speed {}  forward accel {}",
+        id_, state.speed(), speed_dot);
+    speed_dot = 0.;
+  }
 
-  rates->set_speed(speed_dot);
   rates->set_heading(heading_dot);
+  rates->set_speed(speed_dot);
 }
 
 
