@@ -14,6 +14,7 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -380,6 +381,134 @@ std::tuple<Vector3d, Vector3d, Vector3d>
 }
 
 
+/**
+ * Test Drake state versus an exact analytical solution for torque-free
+ * motion of axis-symmetric uniform rigid cylinder B in Newtonian frame N,
+ * where torque-free means the moment of forces about B's mass center is zero.
+ * The quaternion characterizes the orientiation between right-handed orthogonal
+ * unit vectors Nx, Ny, Nz fixed in world N and right-handed orthogonal unit
+ * vectors Bx, By, Bz fixed in B, where Bz is parallel to B's symmetry axis.
+ * @param t Current value of time.
+ * @param quat_NB_initial Initial value of the quaternion (which should already
+ *   be normalized) that relates Nx, Ny, Nz to Bx, By, Bz.
+ *   Note: quat_NB_initial is analogous to the initial rotation matrix R_NB.
+ * @param w_NB_B_initial  B's initial angular velocity in N, expressed in B.
+ * @param xyz_initial Initial values of x, y, z -- [the Nx, Ny, Nz measures of
+ * Bcm's (B's center of mass) position from a point No fixed in world N].
+ * @param xyzDt_initial Initial values of x', y', z' (which are time-derivatives
+ * of x, y,z -- and equal to the Nx, Ny, Nz measures of Bcm's velocity in N).
+ */
+  void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
+      const double t,
+      const Quaterniond& quat_NB_initial,
+      const Vector3d& w_NB_B_initial,
+      const Vector3d& xyz_initial,
+      const Vector3d& v_NBo_B_initial,
+      const Vector3d& gravity,
+      systems::VectorBase<double>& state_drake,
+      const std::unique_ptr<systems::ContinuousState<double>>& stateDt_drake) {
+
+  // Get the state (defined above) and state time-derivatives for comparison.
+  const VectorXd state_as_vector = state_drake.CopyToVector();
+  const Vector3d xyz_drake     = state_as_vector.segment<3>(0);
+  const Vector4d quat_NB_drake = state_as_vector.segment<4>(3);
+  const Vector3d w_NB_B_drake  = state_as_vector.segment<3>(7);
+  const Vector3d v_NBo_B_drake = state_as_vector.segment<3>(10);
+
+  const VectorXd stateDt_as_vector = stateDt_drake->CopyToVector();
+  const Vector3d xyzDt_drake     = stateDt_as_vector.segment<3>(0);
+  const Vector4d quatDt_NB_drake = stateDt_as_vector.segment<4>(3);
+  const Vector3d wDt_NB_B_drake  = stateDt_as_vector.segment<3>(7);
+  const Vector3d vDt_NBo_B_drake = stateDt_as_vector.segment<3>(10);
+
+  // Reserve space for values returned by calculating exact solution.
+  Vector4d quat_NB_exact, quatDt_NB_exact;
+  Vector3d w_NB_B_exact, wDt_NB_B_exact;
+  Vector3d xyz_exact, xyzDt_exact, xyzDDt_exact;
+
+  // Calculate exact analytical rotational solution.
+  //Quaterniond quat_initial = math::quat2eigenQuaternion(quat_NB_initial);
+  Quaterniond quat_NB;
+  std::tie(quat_NB, quatDt_NB_exact, w_NB_B_exact, wDt_NB_B_exact) =
+      CalculateExactRotationalSolutionNB(t, quat_NB_initial, w_NB_B_initial);
+  quat_NB_exact << quat_NB.w(), quat_NB.x(), quat_NB.y(), quat_NB.z();
+
+  // Calculate exact analytical translational solution.
+  // Exact analytical solution needs v_initial expressed in terms of Nx, Ny, Nz.
+  const Eigen::Matrix3d R_NB_initial = math::quat2rotmat(quat_NB_initial);
+  const Vector3d v_NBo_N_initial = R_NB_initial * v_NBo_B_initial;
+  std::tie(xyz_exact, xyzDt_exact, xyzDDt_exact) =
+  CalculateExactTranslationalSolution(t, xyz_initial, v_NBo_N_initial, gravity);
+
+  // Compare Drake quaternion with exact quaternion.
+  // Since more than one quaternion is associated with the same orientation,
+  // convert quaternions to rotation matrix and compare rotation matrices.
+  // Initially, (time=0), these matrices should be close to machine-precision,
+  // which is approximately 2.22E-16.
+  // TODO(mitiguy) Add direct comparision of quaternions.
+  const double epsilon = std::numeric_limits<double>::epsilon();
+  const double tol = 50 * epsilon;
+  const Eigen::Matrix3d R_NB_drake = math::quat2rotmat(quat_NB_drake);
+  const Eigen::Matrix3d R_NB_exact = math::quat2rotmat(quat_NB_exact);
+  EXPECT_TRUE(R_NB_drake.isApprox(R_NB_exact, tol));
+
+  // Drake: Compensate for definition of vDt = acceleration - w x v.
+  const Vector3d w_cross_v_drake = w_NB_B_drake.cross(v_NBo_B_drake);
+  const Vector3d xyzDDt_drake = R_NB_drake *(vDt_NBo_B_drake + w_cross_v_drake);
+
+  // Exact: Compensate for definition of vDt = acceleration - w x v.
+  const Eigen::Matrix3d R_BN_exact = R_NB_exact.inverse();
+  const Vector3d v_NBo_B_exact = R_BN_exact * xyzDt_exact;
+  const Vector3d w_cross_v_exact = w_NB_B_exact.cross(v_NBo_B_exact);
+  const Vector3d vDt_NBo_B_exact = R_BN_exact * xyzDDt_exact - w_cross_v_exact;
+
+#if 0  // TODO(mitiguy) Remove these debug statements.
+  std::cout << "\n\n quat_NB_drake\n"   << quat_NB_drake;
+  std::cout << "\n quat_NB_exact\n"     << quat_NB_exact;
+  std::cout << "\n\n quatDt_drake\n"    << quatDt_NB_drake;
+  std::cout << "\n quatDt_NB_exact\n"   << quatDt_NB_exact;
+  std::cout << "\n\n w_NB_B_drake\n"    << w_NB_B_drake;
+  std::cout << "\n w_NB_B_exact\n"      << w_NB_B_exact;
+  std::cout << "\n\n wDt_NB_B_drake\n"  << wDt_NB_B_drake;
+  std::cout << "\n wDt_NB_B_exact\n"    << wDt_NB_B_exact;
+  std::cout << "\n\n xyz_drake\n"       << xyz_drake;
+  std::cout << "\n xyz_exact\n"         << xyz_exact;
+  std::cout << "\n\n xyzDt_drake\n"     << xyzDt_drake;
+  std::cout << "\n xyzDt_exact\n"       << xyzDt_exact;
+  std::cout << "\n\n xyzDDt_drake\n"    << xyzDDt_drake;
+  std::cout << "\n xyzDDt_exact\n"      << xyzDDt_exact;
+  std::cout << "\n\n v_NBo_B_drake\n"   << v_NBo_B_drake;
+  std::cout << "\n v_NBo_B_exact\n"     << v_NBo_B_exact;
+  std::cout << "\n\n vDt_NBo_B_drake\n" << vDt_NBo_B_drake;
+  std::cout << "\n vDt_NBo_B_exact\n"   << vDt_NBo_B_exact << "\n\n";
+#endif
+
+  // Compare Drake and exact results.
+  // TODO(mitiguy) Investigate why big factor (1600) needed to test wDt_NB_B.
+  EXPECT_TRUE(CompareMatrices(w_NB_B_drake,       w_NB_B_exact,      tol));
+  EXPECT_TRUE(CompareMatrices(wDt_NB_B_drake,   wDt_NB_B_exact, 1600*tol));
+  EXPECT_TRUE(CompareMatrices(xyz_drake,             xyz_exact,      tol));
+  EXPECT_TRUE(CompareMatrices(xyzDt_drake,         xyzDt_exact,      tol));
+  EXPECT_TRUE(CompareMatrices(xyzDDt_drake,       xyzDDt_exact,   10*tol));
+  EXPECT_TRUE(CompareMatrices(v_NBo_B_drake,     v_NBo_B_exact,      tol));
+  EXPECT_TRUE(CompareMatrices(vDt_NBo_B_drake, vDt_NBo_B_exact,   10*tol));
+
+  // Two-step process to compare time-derivative of Drake quaternion with exact.
+  // Since more than one time-derivative of a quaternion is associated with the
+  // same angular velocity, convert to angular velocity to compare results.
+  Quaterniond quaternion_drake = math::quat2eigenQuaternion(quat_NB_drake);
+  const Vector3d w_from_quatDt_drake =
+      CalculateAngularVelocityExpressedInBFromQuaternionDt(
+          quaternion_drake, quatDt_NB_drake);
+  Quaterniond quatd_exact = math::quat2eigenQuaternion(quat_NB_exact);
+  const Vector3d w_from_quatDt_exact =
+      CalculateAngularVelocityExpressedInBFromQuaternionDt(
+          quatd_exact, quatDt_NB_exact);
+  EXPECT_TRUE(CompareMatrices(w_from_quatDt_drake, w_NB_B_drake, tol));
+  EXPECT_TRUE(CompareMatrices(w_from_quatDt_exact, w_NB_B_exact, tol));
+}
+
+
 //-----------------------------------------------------------------------------
 void  TestMapVelocityToQDot(
     const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
@@ -468,6 +597,35 @@ void  TestMapQDotToVelocity(
 }
 
 
+// Assumptions: context is already filled with initial values.  dt and t_final are positive.
+// dt will be adjusted for last step (in case user cannot do math).
+//-----------------------------------------------------------------------------
+void  IntegrateForwardWithFixedStepRungeKutta2(double dt, const double t_final,
+    const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
+    const std::unique_ptr<systems::Context<double>>& context,
+    const std::unique_ptr<systems::ContinuousState<double>>& stateDt_drake) {
+
+  // Integrate with fixed-sized steps with Runge-Kutta2 integrator.
+  const double inf = std::numeric_limits<double>::infinity();
+  systems::RungeKutta2Integrator<double> rk2(rigid_body_plant, dt, context.get());
+  rk2.Initialize();
+
+  bool is_last_step = t_final <= 0.0;
+  double t = 0.0;
+  while( is_last_step ) {
+    const double t_remaining = t_final - t;
+    if( t_remaining <= 1.0E-15*dt ) break;
+    if( (is_last_step = (t_remaining <= dt)) == true ) dt = t_remaining;
+    rk2.StepOnceAtMost(inf, inf, dt);  // Step forward by dt.
+    t += dt;
+  }
+
+  // Get the state and its time-derivative at t_final for
+  // comparision with exact closed-form analytical solution.
+  rigid_body_plant.CalcTimeDerivatives(*context, stateDt_drake.get());
+}
+
+
 //-----------------------------------------------------------------------------
 // Test Drake solution versus closed-form solution for specific initial value.
 void  TestDrakeSolutionForSpecificInitialValue(
@@ -518,107 +676,11 @@ void  TestDrakeSolutionForSpecificInitialValue(
   // Evaluate the time-derivatives of the state.
   rigid_body_plant.CalcTimeDerivatives(*context, stateDt_drake.get());
 
-  // TODO(mitiguy) Add simulation and check numerical integrator.
-
-  // Get the state (defined above) and state time-derivatives for comparison.
-  const VectorXd state_as_vector = state_drake.CopyToVector();
-  const Vector3d xyz_drake     = state_as_vector.segment<3>(0);
-  const Vector4d quat_NB_drake = state_as_vector.segment<4>(3);
-  const Vector3d w_NB_B_drake  = state_as_vector.segment<3>(7);
-  const Vector3d v_NBo_B_drake = state_as_vector.segment<3>(10);
-
-  const VectorXd stateDt_as_vector = stateDt_drake->CopyToVector();
-  const Vector3d xyzDt_drake     = stateDt_as_vector.segment<3>(0);
-  const Vector4d quatDt_NB_drake = stateDt_as_vector.segment<4>(3);
-  const Vector3d wDt_NB_B_drake  = stateDt_as_vector.segment<3>(7);
-  const Vector3d vDt_NBo_B_drake = stateDt_as_vector.segment<3>(10);
-
-  // Reserve space for values returned by calculating exact solution.
-  Vector4d quat_NB_exact, quatDt_NB_exact;
-  Vector3d w_NB_B_exact, wDt_NB_B_exact;
-  Vector3d xyz_exact, xyzDt_exact, xyzDDt_exact;
-
-  // Calculate exact analytical rotational solution.
-  Quaterniond quat_initial = math::quat2eigenQuaternion(quat_NB_initial);
-  Quaterniond quat_NB;
-  const double t = 0;
-  std::tie(quat_NB, quatDt_NB_exact, w_NB_B_exact, wDt_NB_B_exact) =
-      CalculateExactRotationalSolutionNB(t, quat_initial, w_NB_B_initial);
-  quat_NB_exact << quat_NB.w(), quat_NB.x(), quat_NB.y(), quat_NB.z();
-
-  // Calculate exact analytical translational solution.
-  // Exact analytical solution needs v_initial expressed in terms of Nx, Ny, Nz.
-  const Eigen::Matrix3d R_NB_initial = math::quat2rotmat(quat_NB_initial);
-  const Vector3d v_NBo_N_initial = R_NB_initial * v_NBo_B_initial;
-  std::tie(xyz_exact, xyzDt_exact, xyzDDt_exact) =
-  CalculateExactTranslationalSolution(t, xyz_initial, v_NBo_N_initial, gravity);
-
-  // Compare Drake quaternion with exact quaternion.
-  // Since more than one quaternion is associated with the same orientation,
-  // convert quaternions to rotation matrix and compare rotation matrices.
-  // Initially, (time=0), these matrices should be close to machine-precision,
-  // which is approximately 2.22E-16.
-  // TODO(mitiguy) Add direct comparision of quaternions.
-  const double epsilon = std::numeric_limits<double>::epsilon();
-  const double tol = 50 * epsilon;
-  const Eigen::Matrix3d R_NB_drake = math::quat2rotmat(quat_NB_drake);
-  const Eigen::Matrix3d R_NB_exact = math::quat2rotmat(quat_NB_exact);
-  EXPECT_TRUE(R_NB_drake.isApprox(R_NB_exact, tol));
-
-  // Drake: Compensate for definition of vDt = acceleration - w x v.
-  const Vector3d w_cross_v_drake = w_NB_B_drake.cross(v_NBo_B_drake);
-  const Vector3d xyzDDt_drake = R_NB_drake *(vDt_NBo_B_drake + w_cross_v_drake);
-
-  // Exact: Compensate for definition of vDt = acceleration - w x v.
-  const Eigen::Matrix3d R_BN_exact = R_NB_exact.inverse();
-  const Vector3d v_NBo_B_exact = R_BN_exact * xyzDt_exact;
-  const Vector3d w_cross_v_exact = w_NB_B_exact.cross(v_NBo_B_exact);
-  const Vector3d vDt_NBo_B_exact = R_BN_exact * xyzDDt_exact - w_cross_v_exact;
-
-#if 0  // TODO(mitiguy) Remove these debug statements.
-  std::cout << "\n\n quat_NB_drake\n"   << quat_NB_drake;
-  std::cout << "\n quat_NB_exact\n"     << quat_NB_exact;
-  std::cout << "\n\n quatDt_drake\n"    << quatDt_NB_drake;
-  std::cout << "\n quatDt_NB_exact\n"   << quatDt_NB_exact;
-  std::cout << "\n\n w_NB_B_drake\n"    << w_NB_B_drake;
-  std::cout << "\n w_NB_B_exact\n"      << w_NB_B_exact;
-  std::cout << "\n\n wDt_NB_B_drake\n"  << wDt_NB_B_drake;
-  std::cout << "\n wDt_NB_B_exact\n"    << wDt_NB_B_exact;
-  std::cout << "\n\n xyz_drake\n"       << xyz_drake;
-  std::cout << "\n xyz_exact\n"         << xyz_exact;
-  std::cout << "\n\n xyzDt_drake\n"     << xyzDt_drake;
-  std::cout << "\n xyzDt_exact\n"       << xyzDt_exact;
-  std::cout << "\n\n xyzDDt_drake\n"    << xyzDDt_drake;
-  std::cout << "\n xyzDDt_exact\n"      << xyzDDt_exact;
-  std::cout << "\n\n v_NBo_B_drake\n"   << v_NBo_B_drake;
-  std::cout << "\n v_NBo_B_exact\n"     << v_NBo_B_exact;
-  std::cout << "\n\n vDt_NBo_B_drake\n" << vDt_NBo_B_drake;
-  std::cout << "\n vDt_NBo_B_exact\n"   << vDt_NBo_B_exact << "\n\n";
-#endif
-
-  // Compare Drake and exact results.
-  // TODO(mitiguy) Investigate why big factor (1600) needed to test wDt_NB_B.
-  EXPECT_TRUE(CompareMatrices(w_NB_B_drake,       w_NB_B_exact,      tol));
-  EXPECT_TRUE(CompareMatrices(wDt_NB_B_drake,   wDt_NB_B_exact, 1600*tol));
-  EXPECT_TRUE(CompareMatrices(xyz_drake,             xyz_exact,      tol));
-  EXPECT_TRUE(CompareMatrices(xyzDt_drake,         xyzDt_exact,      tol));
-  EXPECT_TRUE(CompareMatrices(xyzDDt_drake,       xyzDDt_exact,   10*tol));
-  EXPECT_TRUE(CompareMatrices(v_NBo_B_drake,     v_NBo_B_exact,      tol));
-  EXPECT_TRUE(CompareMatrices(vDt_NBo_B_drake, vDt_NBo_B_exact,   10*tol));
-
-  // Two-step process to compare time-derivative of Drake quaternion with exact.
-  // Since more than one time-derivative of a quaternion is associated with the
-  // same angular velocity, convert to angular velocity to compare results.
-  Quaterniond quaternion_drake = math::quat2eigenQuaternion(quat_NB_drake);
-  const Vector3d w_from_quatDt_drake =
-      CalculateAngularVelocityExpressedInBFromQuaternionDt(
-          quaternion_drake, quatDt_NB_drake);
-  Quaterniond quatd_exact = math::quat2eigenQuaternion(quat_NB_exact);
-  const Vector3d w_from_quatDt_exact =
-      CalculateAngularVelocityExpressedInBFromQuaternionDt(
-          quatd_exact, quatDt_NB_exact);
-  EXPECT_TRUE(CompareMatrices(w_from_quatDt_drake, w_NB_B_drake, tol));
-  EXPECT_TRUE(CompareMatrices(w_from_quatDt_exact, w_NB_B_exact, tol));
+  // Test Drake solution versus exact analytical (closed-form) solution.
+  TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(0.0,
+                       quat_NB_initial, w_NB_B_initial,
+                       xyz_initial, v_NBo_B_initial, gravity,
+                       state_drake, stateDt_drake);
 
   //--------------------------------------------------------------
   // EXTRA: Test MapQDotToVelocity and MapVelocityToQDot for Evan's PR #4604.
@@ -629,6 +691,21 @@ void  TestDrakeSolutionForSpecificInitialValue(
 
   TestMapQDotToVelocity(rigid_body_plant, quatDt_NB_exact, xyzDt_exact,
                         w_NB_B_exact, v_NBo_B_exact, context);
+
+  // Simulation using numerically integration and check accuracy of results.
+  const double dt = 1.0E-3, t_final = 1.0;
+  IntegrateForwardWithFixedStepRungeKutta2(dt, t_final, rigid_body_plant,
+                                           context, stateDt_drake );
+
+  // Pull the state at t_final from the context.
+  const systems::VectorBase<double>& final_state_drake =
+                                    context->get_continuous_state_vector();
+
+  // Test Drake solution versus exact analytical (closed-form) solution.
+  TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(t_final,
+                       quat_NB_initial, w_NB_B_initial,
+                       xyz_initial, v_NBo_B_initial, gravity,
+                       final_state_drake, stateDt_drake);
 }
 
 
