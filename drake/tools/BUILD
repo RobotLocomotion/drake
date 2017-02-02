@@ -1,20 +1,14 @@
-load("@org_pubref_rules_protobuf//python:rules.bzl", "py_proto_compile")
+load("@protobuf//:protobuf.bzl", "py_proto_library")
 
-py_proto_compile(
+py_proto_library(
     name = "named_vector",
-    protos = [
-        "named_vector.proto",
-    ],
-    with_grpc = False,
+    srcs = ["named_vector.proto"],
 )
 
 py_binary(
     name = "lcm_vector_gen",
-    srcs = [
-        "lcm_vector_gen.py",
-        ":named_vector",
-    ],
+    srcs = ["lcm_vector_gen.py"],
     deps = [
-        "@protobuf_python//:protobuf_python",
+        ":named_vector",
     ],
 )
