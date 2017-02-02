@@ -253,6 +253,14 @@ TEST_F(UserEndlessRoadCarTest, Derivatives) {
   EXPECT_EQ(0.0, result->heading());
   EXPECT_EQ(0.0, result->speed());
 
+  // Braking while already stopped should have zero acceleration.
+  SetInputValue(0.0, 0.0, 0.5);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_EQ(0.0, result->s());
+  EXPECT_EQ(0.0, result->r());
+  EXPECT_EQ(0.0, result->heading());
+  EXPECT_EQ(0.0, result->speed());
+
   // Half throttle yields half of the max acceleration.
   const double max_acceleration =
       EndlessRoadCar<double>::get_default_config().max_acceleration();
@@ -317,13 +325,13 @@ TEST_F(UserEndlessRoadCarTest, Derivatives) {
 
   // ...test at maximum-r boundary:
   continuous_state()->set_r(kDriveableBounds.r_max);
-  continuous_state()->set_heading(M_PI / 6.); // 30 degrees
+  continuous_state()->set_heading(M_PI / 6.);  // 30 degrees
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0 * std::sqrt(3.) / 2. *
               kRingRadius / (kRingRadius - kDriveableBounds.r_max),
               result->s(), kTolerance);
-  EXPECT_NEAR(0., result->r(), kTolerance); // clamped
-  continuous_state()->set_heading(-M_PI / 6.); // -30 degrees
+  EXPECT_NEAR(0., result->r(), kTolerance);  // clamped
+  continuous_state()->set_heading(-M_PI / 6.);  // -30 degrees
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0 * std::sqrt(3.) / 2. *
               kRingRadius / (kRingRadius - kDriveableBounds.r_max),
@@ -332,18 +340,18 @@ TEST_F(UserEndlessRoadCarTest, Derivatives) {
 
   // ...test at minimum-r boundary:
   continuous_state()->set_r(kDriveableBounds.r_min);
-  continuous_state()->set_heading(M_PI / 6.); // 30 degrees
+  continuous_state()->set_heading(M_PI / 6.);  // 30 degrees
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0 * std::sqrt(3.) / 2. *
               kRingRadius / (kRingRadius - kDriveableBounds.r_min),
               result->s(), kTolerance);
   EXPECT_NEAR(10.0 * 0.5, result->r(), kTolerance);
-  continuous_state()->set_heading(-M_PI / 6.); // -30 degrees
+  continuous_state()->set_heading(-M_PI / 6.);  // -30 degrees
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0 * std::sqrt(3.) / 2. *
               kRingRadius / (kRingRadius - kDriveableBounds.r_min),
               result->s(), kTolerance);
-  EXPECT_NEAR(0., result->r(), kTolerance); // clamped
+  EXPECT_NEAR(0., result->r(), kTolerance);  // clamped
 }
 
 
