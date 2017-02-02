@@ -12,7 +12,8 @@ class LinearSystemSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSolver)
 
-  LinearSystemSolver() : MathematicalProgramSolverInterface(Solver::kLinearSystem) {}
+  LinearSystemSolver() :
+      MathematicalProgramSolverInterface(Solver::kLinearSystem) {}
 
   bool available() const override;
 

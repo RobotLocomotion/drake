@@ -33,7 +33,8 @@ class MathematicalProgramSolverInterface {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgramSolverInterface)
 
-  MathematicalProgramSolverInterface(Solver solver_type) : solver_type_(solver_type) {}
+  explicit MathematicalProgramSolverInterface(Solver solver_type)
+      : solver_type_(solver_type) {}
   virtual ~MathematicalProgramSolverInterface() = default;
 
   /// Returns true iff this solver was enabled at compile-time.
@@ -55,7 +56,9 @@ class MathematicalProgramSolverInterface {
   const Solver solver_type_;
 };
 
-std::ostream& operator<<(std::ostream& os, const MathematicalProgramSolverInterface::Solver& solver_type);
+std::ostream& operator<<(
+    std::ostream& os,
+    const MathematicalProgramSolverInterface::Solver& solver_type);
 
 std::string Name(MathematicalProgramSolverInterface::Solver solver_type);
 }  // namespace solvers
