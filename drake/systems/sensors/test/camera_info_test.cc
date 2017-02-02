@@ -27,10 +27,10 @@ GTEST_TEST(TestCameraInfo, ConstructionTest) {
 
   EXPECT_EQ(kWidth, dut.width());
   EXPECT_EQ(kHeight, dut.height());
-  EXPECT_NEAR(kFx, dut.fx(), kTolerance);
-  EXPECT_NEAR(kFy, dut.fy(), kTolerance);
-  EXPECT_NEAR(kCx, dut.cx(), kTolerance);
-  EXPECT_NEAR(kCy, dut.cy(), kTolerance);
+  EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
+  EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
+  EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
+  EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
   EXPECT_TRUE(CompareMatrices(expected_intrinsic, dut.intrinsic_matrix(),
                               kTolerance));
 }
@@ -43,10 +43,10 @@ GTEST_TEST(TestCameraInfo, ConstructionWithFovTest) {
 
   EXPECT_EQ(kWidth, dut.width());
   EXPECT_EQ(kHeight, dut.height());
-  EXPECT_NEAR(kFx, dut.fx(), kTolerance);
-  EXPECT_NEAR(kFy, dut.fy(), kTolerance);
-  EXPECT_NEAR(kCx, dut.cx(), kTolerance);
-  EXPECT_NEAR(kCy, dut.cy(), kTolerance);
+  EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
+  EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
+  EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
+  EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
   EXPECT_TRUE(CompareMatrices(expected_intrinsic, dut.intrinsic_matrix(),
                               kTolerance));
 }
@@ -60,10 +60,10 @@ GTEST_TEST(TestCameraInfo, CopyConstructorTest) {
 
   EXPECT_EQ(kWidth, dut.width());
   EXPECT_EQ(kHeight, dut.height());
-  EXPECT_NEAR(kFx, dut.fx(), kTolerance);
-  EXPECT_NEAR(kFy, dut.fy(), kTolerance);
-  EXPECT_NEAR(kCx, dut.cx(), kTolerance);
-  EXPECT_NEAR(kCy, dut.cy(), kTolerance);
+  EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
+  EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
+  EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
+  EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
   EXPECT_TRUE(CompareMatrices(expected_intrinsic, dut.intrinsic_matrix(),
                               kTolerance));
 }
@@ -77,10 +77,10 @@ GTEST_TEST(TestCameraInfo, MoveConstructorTest) {
 
   EXPECT_EQ(kWidth, dut.width());
   EXPECT_EQ(kHeight, dut.height());
-  EXPECT_NEAR(kFx, dut.fx(), kTolerance);
-  EXPECT_NEAR(kFy, dut.fy(), kTolerance);
-  EXPECT_NEAR(kCx, dut.cx(), kTolerance);
-  EXPECT_NEAR(kCy, dut.cy(), kTolerance);
+  EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
+  EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
+  EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
+  EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
   EXPECT_TRUE(CompareMatrices(expected_intrinsic, dut.intrinsic_matrix(),
                               kTolerance));
 }

@@ -17,12 +17,15 @@ namespace sensors {
 class CameraInfo {
  public:
   /// Constructor with image size, focal lengths and center of image.
-  /// @param width Size of width for image which should be greater than zero
-  /// @param height Size of height for image which should be greater than zero
-  /// @param fx Focal length for x direction in pixel.
-  /// @param fy Focal length for y direction in pixel.
-  /// @param cx X value for center of image at image coordinate system.
-  /// @param cy Y value for center of image at image coordinate system.
+  ///
+  /// @param width Size of width for image in pixels which should be greater
+  /// than zero
+  /// @param height Size of height for image in pixels which should be greater
+  /// than zero
+  /// @param fx Focal length for x direction in pixels
+  /// @param fy Focal length for y direction in pixels
+  /// @param cx X value for center of image at image coordinate system in pixels
+  /// @param cy Y value for center of image at image coordinate system in pixels
   CameraInfo(int width, int height, double fx, double fy, double cx, double cy)
       : width_(width), height_(height), intrinsic_matrix_(
             (Eigen::Matrix3d() <<
@@ -36,18 +39,21 @@ class CameraInfo {
   }
 
   /// Constructor with image size and vertical field of view (fov).  We assume
-  /// there is no image offset, so the center of the image "(cx, cy)" is equal
-  /// to "(width / 2, height / 2)".  The horizontal field of view is calculated
+  /// there is no image offset, so the center of the image `(cx, cy)` is equal
+  /// to `(width / 2, height / 2)`.  The horizontal field of view is calculated
   /// by the aspect ratio of the image width and height together with the
   /// vertical field of view. The focal lengths "fx" and "fy" are calculated by
   /// both of the field of views:
-  ///   fx = width / 2. / tan(horizontal_fov_rad / 2.)
-  ///   fy = height / 2. / tan(vertical_fov_rad / 2.)
-  ///   where horizontal_fov_rad = width / height * vertical_fov_rad.
-  /// @param width Size of width for image which should be greater than zero.
-  /// @param height Size of height for image which should be greater than zero.
-  /// @param vertical_fov_rad Vertical field of view in radians.
-  CameraInfo(int width, int height, double vertical_fov_rad);
+  /// <pre>
+  ///   fx = width / 2 / tan(horizontal_fov / 2)
+  ///   fy = height / 2 / tan(vertical_fov / 2)
+  /// </pre>
+  /// where horizontal_fov = width / height * vertical_fov.
+  ///
+  /// @param width Size of width for image which should be greater than zero
+  /// @param height Size of height for image which should be greater than zero
+  /// @param vertical_fov Vertical field of view angle
+  CameraInfo(int width, int height, double vertical_fov);
 
   /// Default copy constructor.
   CameraInfo(const CameraInfo&) = default;
@@ -59,23 +65,23 @@ class CameraInfo {
   CameraInfo& operator=(const CameraInfo&) = delete;
   CameraInfo& operator=(CameraInfo&&) = delete;
 
-  /// Returns the size of width for image.
+  /// Returns the width of the image in pixels.
   int width() const { return width_; }
 
-  /// Returns the size of height for image.
+  /// Returns the height of the image in pixels.
   int height() const { return height_; }
 
-  /// Returns the focal length for x direction.
-  double fx() const { return intrinsic_matrix_(0, 0); }
+  /// Returns the focal length for x direction in pixels.
+  double focal_x() const { return intrinsic_matrix_(0, 0); }
 
-  /// Returns the focal length for y direction.
-  double fy() const { return intrinsic_matrix_(1, 1); }
+  /// Returns the focal length for y direction in pixels.
+  double focal_y() const { return intrinsic_matrix_(1, 1); }
 
-  /// Returns the center of image for x direction.
-  double cx() const { return intrinsic_matrix_(0, 2); }
+  /// Returns the center of image for x direction in pixels.
+  double center_x() const { return intrinsic_matrix_(0, 2); }
 
-  /// Returns the center of image for y direction.
-  double cy() const { return intrinsic_matrix_(1, 2); }
+  /// Returns the center of image for y direction in pixels.
+  double center_y() const { return intrinsic_matrix_(1, 2); }
 
   /// Returns the camera intrinsic matrix.
   const Eigen::Matrix3d& intrinsic_matrix() const {
@@ -85,6 +91,9 @@ class CameraInfo {
  private:
   const int width_;
   const int height_;
+  // Camera intrinsic parameter matrix. For the detail, see
+  // http://docs.opencv.org/2.4/modules/calib3d/doc/
+  // camera_calibration_and_3d_reconstruction.html
   const Eigen::Matrix3d intrinsic_matrix_;
 };
 
