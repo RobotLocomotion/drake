@@ -95,9 +95,6 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   const auto& system = this->get_system();
   auto& context = this->get_context();
 
-  // Store the start state
-  x0_ = context.get_continuous_state_vector().CopyToVector();
-
   // Compute the first intermediate state and derivative (at t=0.5, x(0.5)).
   this->get_mutable_context()->set_time(ta + dt * 0.5);
   xc->PlusEqScaled(dt * 0.5, xcdot0);
