@@ -71,16 +71,16 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
 
 void SetIKSolverOptions(const IKoptions& ikoptions,
                         drake::solvers::MathematicalProgram* prog) {
-  prog->SetSolverOption("SNOPT", "Derivative option", 1);
-  prog->SetSolverOption("SNOPT", "Major optimality tolerance",
+  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Derivative option", 1);
+  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Major optimality tolerance",
                         ikoptions.getMajorOptimalityTolerance());
-  prog->SetSolverOption("SNOPT", "Major feasibility tolerance",
+  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Major feasibility tolerance",
                         ikoptions.getMajorFeasibilityTolerance());
-  prog->SetSolverOption("SNOPT", "Superbasics limit",
+  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Superbasics limit",
                         ikoptions.getSuperbasicsLimit());
-  prog->SetSolverOption("SNOPT", "Major iterations limit",
+  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Major iterations limit",
                         ikoptions.getMajorIterationsLimit());
-  prog->SetSolverOption("SNOPT", "Iterations limit",
+  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Iterations limit",
                         ikoptions.getIterationsLimit());
 }
 

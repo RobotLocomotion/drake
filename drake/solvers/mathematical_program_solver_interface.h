@@ -18,6 +18,18 @@ enum SolutionResult {
 /// Interface used by implementations of individual solvers.
 class MathematicalProgramSolverInterface {
  public:
+  enum Solver {
+    kDReal,
+    kEqualityConstrainedQP,
+    kGurobi,
+    kIpopt,
+    kLinearSystem,
+    kMobyLCP,
+    kMosek,
+    kNlopt,
+    kSnopt,
+  };
+
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgramSolverInterface)
 
   MathematicalProgramSolverInterface() = default;
@@ -26,8 +38,8 @@ class MathematicalProgramSolverInterface {
   /// Returns true iff this solver was enabled at compile-time.
   virtual bool available() const = 0;
 
-  /// Returns the name of the solver.
-  virtual std::string SolverName() const = 0;
+  /// Returns the type of the solver.
+  virtual Solver solver_type() const = 0;
 
   /// Sets values for the decision variables on the given MathematicalProgram
   /// @p prog, or:

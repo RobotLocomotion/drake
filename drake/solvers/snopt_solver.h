@@ -18,7 +18,9 @@ class SnoptSolver : public MathematicalProgramSolverInterface  {
   // SNOPT was available during compilation.
   bool available() const override;
 
-  std::string SolverName() const override { return "SNOPT"; }
+  Solver solver_type() const override { return Solver::kSnopt; }
+
+  static std::string SolverName() { return "SNOPT"; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };

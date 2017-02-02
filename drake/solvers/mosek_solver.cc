@@ -701,7 +701,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult(SolverName(), result);
+  prog.SetSolverResult(MosekSolver::SolverName(), result);
   if (rescode != MSK_RES_OK) {
     result = SolutionResult::kUnknownError;
   }

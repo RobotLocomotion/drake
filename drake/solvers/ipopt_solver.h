@@ -18,7 +18,9 @@ class IpoptSolver : public MathematicalProgramSolverInterface {
   // Ipopt was available during compilation.
   bool available() const override;
 
-  std::string SolverName() const override { return "IPOPT";}
+  Solver solver_type() const override { return Solver::kIpopt;}
+
+  static std::string SolverName() { return "IPOPT";}
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };

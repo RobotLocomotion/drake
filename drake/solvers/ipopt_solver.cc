@@ -379,7 +379,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  const Number* g, const Number* lambda,
                                  Number obj_value, const IpoptData* ip_data,
                                  IpoptCalculatedQuantities* ip_cq) {
-    problem_->SetSolverResult("IPOPT", status);
+    problem_->SetSolverResult(IpoptSolver::SolverName(), status);
 
     switch (status) {
       case Ipopt::SUCCESS: {
@@ -497,15 +497,15 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   app->Options()->SetStringValue("hessian_approximation", "limited-memory");
   app->Options()->SetIntegerValue("print_level", 2);
 
-  for (const auto& it : prog.GetSolverOptionsDouble("IPOPT")) {
+  for (const auto& it : prog.GetSolverOptionsDouble(Solver::kIpopt)) {
     app->Options()->SetNumericValue(it.first, it.second);
   }
 
-  for (const auto& it : prog.GetSolverOptionsInt("IPOPT")) {
+  for (const auto& it : prog.GetSolverOptionsInt(Solver::kIpopt)) {
     app->Options()->SetIntegerValue(it.first, it.second);
   }
 
-  for (const auto& it : prog.GetSolverOptionsStr("IPOPT")) {
+  for (const auto& it : prog.GetSolverOptionsStr(Solver::kIpopt)) {
     app->Options()->SetStringValue(it.first, it.second);
   }
 

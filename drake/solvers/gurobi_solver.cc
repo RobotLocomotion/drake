@@ -552,13 +552,13 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));
 
-  for (const auto it : prog.GetSolverOptionsDouble("GUROBI")) {
+  for (const auto it : prog.GetSolverOptionsDouble(Solver::kGurobi)) {
     error = GRBsetdblparam(env, it.first.c_str(), it.second);
     DRAKE_DEMAND(!error);
   }
 
 
-  for (const auto it : prog.GetSolverOptionsInt("GUROBI")) {
+  for (const auto it : prog.GetSolverOptionsInt(Solver::kGurobi)) {
     error = GRBsetintparam(env, it.first.c_str(), it.second);
     DRAKE_DEMAND(!error);
   }
@@ -610,7 +610,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult(SolverName(), error);
+  prog.SetSolverResult(GurobiSolver::SolverName(), error);
 
   GRBfreemodel(model);
   GRBfreeenv(env);
