@@ -1049,10 +1049,12 @@ CheckAddedSymbolicPositiveSemidefiniteConstraint(
   // variables representing the psd matrix.
   const Eigen::Map<const MatrixX<Variable>> M(&binding.variables()(0), V.rows(),
                                               V.cols());
+  // The linear equality constraint is only imposed on the lower triangular
+  // part of the psd matrix.
+  const auto& new_lin_eq_cnstr = prog->linear_equality_constraints().back();
   auto V_minus_M = math::ToSymmetricMatrixFromLowerTriangularColumns(
-      prog->linear_equality_constraints().back().constraint()->A() *
-          prog->linear_equality_constraints().back().variables() -
-      prog->linear_equality_constraints().back().constraint()->lower_bound());
+      new_lin_eq_cnstr.constraint()->A() * new_lin_eq_cnstr.variables() -
+          new_lin_eq_cnstr.constraint()->lower_bound());
   EXPECT_EQ(V_minus_M, V - M);
 }
 }  // namespace
@@ -1063,21 +1065,20 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
 
   auto psd_cnstr = prog.AddPositiveSemidefiniteConstraint(X);
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(psd_cnstr.get(),
-            prog.positive_semidefinite_constraints().back().constraint().get());
+  const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
+  EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.constraint().get());
   Eigen::Map<Eigen::Matrix<Variable, 16, 1>> X_flat(&X(0, 0));
-  EXPECT_TRUE(X_flat ==
-              prog.positive_semidefinite_constraints().back().variables());
+  EXPECT_TRUE(X_flat == new_psd_cnstr.variables());
 
-  // Checks X is psd.
+  // Adds X is psd.
   CheckAddedSymbolicPositiveSemidefiniteConstraint(
       &prog, Matrix4d::Identity() * X);
 
-  // Checks 2 * X + E is psd.
+  // Adds 2 * X + Identity() is psd.
   CheckAddedSymbolicPositiveSemidefiniteConstraint(
       &prog, 2.0 * X + Matrix4d::Identity());
 
-  // Checks Aᵀ * X + X * A is psd.
+  // Adds a linear matrix expression Aᵀ * X + X * A is psd.
   Matrix4d A{};
   // clang-format off
   A << 1, 2, 3, 4,
@@ -1088,8 +1089,8 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog,
                                                    A.transpose() * X + X * A);
 
-  // Checks [X.topLeftCorner<2, 2>()  0                        ] is psd
-  //        [ 0                     X.bottomRightCorner<2, 2>()]
+  // Adds [X.topLeftCorner<2, 2>()  0                        ] is psd
+  //      [ 0                     X.bottomRightCorner<2, 2>()]
   Eigen::Matrix<symbolic::Expression, 4, 4> Y{};
   // clang-format off
   Y << Matrix2d::Identity() * X.topLeftCorner<2, 2>(), Matrix2d::Zero(),

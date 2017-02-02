@@ -1201,7 +1201,8 @@ class MathematicalProgram {
    *   Aeq << -1, 2,
    *           1, 1;
    *   Eigen::Vector2d beq(1, 3);
-   *   prog.AddLinearEqualityConstraint(Aeq, beq,{x.segment<1>(2), x.segment<1>(5)});
+   *   prog.AddLinearEqualityConstraint(Aeq, beq, {x.segment<1>(2),
+   *                                    x.segment<1>(5)});
    * @endcode
    * The code above imposes constraints
    * @f[-x(2) + 2x(5) = 1 @f]
@@ -1772,9 +1773,9 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var);
 
   /**
-   * Adds a positive semidefinite constraint on a symmetric matrix.
-   * We create a new symmetric matrix of variables M being positive
-   * semidefinite, with the linear equality constraint e == M.
+   * Adds a positive semidefinite constraint on a symmetric matrix of symbolic
+   * espressions @p e. We create a new symmetric matrix of variables M being
+   * positive semidefinite, with the linear equality constraint e == M.
    * @tparam Derived An Eigen Matrix of symbolic expressions.
    * @param e Imposes constraint "e is positive semidefinite".
    * @pre{1. e is symmetric.
