@@ -47,22 +47,6 @@ typename BeadOnAWire<T>::DScalar
   return atan2(v(1), v(0));
 }
 
-/*
-
-template <class T>
-Eigen::VectorXd BeadOnAWire<T>::CalcVelocityChangeFromConstraintImpulses(
-        const systems::Context<T>& context,
-        const Eigen::VectorXd& lambda) const {
-  // Determine the Jacobian matrix of the partial derivatives of the constraint
-  // equations taken with respect to the generalized velocity variables.
-  Eigen::MatrixXd J = CalcConstraintJacobian(context);
-
-  // The bead has unit mass, so the constraint impulse yields a change in
-  // velocity of just J^T * lambda
-  return (J.transpose() * lambda);
-}
-*/
-
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
     const systems::Context<T>& context) const {
@@ -234,9 +218,12 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
 template <typename T>
 void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
                                   systems::State<T>* state) const {
-  // TODO(edrumwri): Fix default state to be consistent.
+  // TODO(edrumwri): Fix default state to be consistent no matter the
+  //                parametric wire function used..
+
+  // Use a consistent default state for the sinusoidal bead-on-the-wire
+  // example.
   VectorX<T> x0(6);
-//  x0 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;  // Initial state.
   const double s = 0.0;
   x0 << std::cos(s), std::sin(s), s, 0, 0, 0;
   state->get_mutable_continuous_state()->SetFromVector(x0);

@@ -18,13 +18,6 @@ class HalfExplicitDAE1SolverTest : public ::testing::Test {
     bead_on_a_wire_ = std::make_unique<bead_on_a_wire::BeadOnAWire<double>>(
         bead_on_a_wire::BeadOnAWire<double>::kAbsoluteCoordinates);
 
-    /*
-    // Use the linear function.
-    bead_on_a_wire_->reset_wire_parameter_function(
-        bead_on_a_wire::BeadOnAWire<double>::linear_function);
-    bead_on_a_wire_->reset_inverse_wire_parameter_function(
-        bead_on_a_wire::BeadOnAWire<double>::inverse_linear_function);
-*/
     // Create the context.
     context_ = bead_on_a_wire_->CreateDefaultContext();
 
@@ -47,7 +40,6 @@ class HalfExplicitDAE1SolverTest : public ::testing::Test {
   const double dt_ = 1e-3;        // Integration step size.
 };
 
-/*
 // Try a purely continuous system with no sampling.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
@@ -109,7 +101,6 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }
-*/
 
 // Simulate the bead on the wire example.
 TEST_F(HalfExplicitDAE1SolverTest, BeadOnAWire) {
@@ -125,9 +116,7 @@ TEST_F(HalfExplicitDAE1SolverTest, BeadOnAWire) {
   for (t = 0.0; std::abs(t - t_final) >= dt_; t += dt_)
     integrator_->StepOnceAtMost(inf, inf, dt_);
 
-  std::cout << "final position: "
-            << context_->get_mutable_continuous_state()->CopyToVector()
-            << std::endl;
+  // TODO(edrumwri): Insert a proper test in here.
 }
 
 }  // namespace

@@ -27,7 +27,7 @@ namespace systems {
 /// <pre>
 /// g(x(t)+ Δt⋅d(x(t), λ) = 0
 /// </pre>
-/// After the value of λ has been obtained *implicitly*, x(t+Δt) is computed
+/// After the value of `λ` has been obtained *implicitly*, `x(t+Δt)` is computed
 /// *explicitly* using the second to last equation above. This code uses
 /// the Newton-Raphson Algorithm to solve the nonlinear system of equations.
 ///
@@ -39,35 +39,31 @@ namespace systems {
 /// K = ∂g/∂q
 /// </pre>
 /// Given that the time derivative of the constraint equations can be computed
-/// by K dq/dt and dq/dt = Nv, we can define the Jacobian matrix transforming
-/// generalized velocities to constraint velocities as J = KN. From the dual
-/// relationship between velocities and forces, constraint forces λ yield
-/// generalized forces (f) by f = Jᵀλ. The equations are now reformulated as:
+/// by `K dq/dt` and `dq/dt = Nv`, we can define the Jacobian matrix
+/// transforming generalized velocities to constraint velocities as `J = KN`.
+/// From the dual relationship between velocities and forces, constraint forces
+/// `λ` yield generalized forces (`f`) by `f = Jᵀλ`. The equations are now
+/// reformulated as:
 /// <pre>
 /// v(t+Δt) = v(t) + Δt⋅e() + M⁻¹Jᵀλ
 /// q(t+Δt) = q(t) + Δt⋅Nv(t+Δt)
-/// g(q(t+Δt)) = 0
+/// g(q(t+Δt), v(t+Δt)) = 0
 /// </pre>
-/// where e(q(t), v(t)) gives the time derivatives of the generalized velocity
-/// variables- now independently of λ. J and N are both dependent upon q(t). For
-/// simplicity, we consider only constraints dependent on generalized
-/// coordinates in this expository treatment.
+/// where `e(q(t), v(t))` gives the time derivatives of the generalized velocity
+/// variables- now independently of `λ`. `J` and `N` are both dependent upon
+/// `q(t)`. To determine the constraint forces, we use the Newton-Raphson
+/// Algorithm, which requires computing the Jacobian matrix `∂g/∂λ`. Focusing
+/// only on configuration-dependent constraints, i.e., assuming that `g(.)` is a
+/// function only of `q(t+Δt)`, we derive:
 /// <pre>
 /// ∂g(q(t+Δt))/∂λ = ∂g/∂q(t+Δt)⋅∂q(t+Δt)/∂λ
 /// </pre>
-/// where:
+/// where ∂q(t+Δt)/∂λ is straightforward to obtain in closed form:
 /// <pre>
 /// ∂q(t+Δt)/∂λ = Δt⋅NM⁻¹Jᵀ
 /// </pre>
-/// and:
-/// <pre>
-/// ∂g/∂q(t+Δt) = ???
-/// </pre>
-/// meaning that g(q(t+Δt)) can be treated effectively as g(λ). The
-/// Newton-Raphson process requires computing the Jacobian matrix ∂g/∂λ:
-/// <pre>
-/// ∂g/∂λ = Δt⋅JNM⁻¹Jᵀ
-/// </pre>
+/// but `∂g(q(t+Δt))/∂λ` is not. This particular implementation uses finite
+/// differencing to compute `∂g/∂λ`, as a result.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.
