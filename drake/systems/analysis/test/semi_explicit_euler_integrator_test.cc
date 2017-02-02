@@ -14,29 +14,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-GTEST_TEST(IntegratorTest, MiscAPI) {
-  typedef Eigen::AutoDiffScalar<Eigen::VectorXd> AScalar;
-  SpringMassSystem<double> spring_mass_dbl(1., 1., 0.);
-  SpringMassSystem<AScalar> spring_mass_ad(1., 1., 0.);
-
-  // Setup the integration step size.
-  const double dt = 1e-3;
-
-  // Create a context.
-  auto context_dbl = spring_mass_dbl.CreateDefaultContext();
-  auto context_ad = spring_mass_ad.CreateDefaultContext();
-
-  // Create the integrator as a double and as an autodiff type
-  SemiExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, dt,
-                                          context_dbl.get());
-  SemiExplicitEulerIntegrator<AScalar> int_ad(spring_mass_ad, dt,
-                                          context_ad.get());
-
-  // Test that setting the target accuracy or initial step size target fails.
-  EXPECT_THROW(int_dbl.set_target_accuracy(1.0), std::logic_error);
-  EXPECT_THROW(int_dbl.request_initial_step_size_target(1.0), std::logic_error);
-}
-
 GTEST_TEST(IntegratorTest, ContextAccess) {
   // Create the mass spring system.
   SpringMassSystem<double> spring_mass(1., 1., 0.);
@@ -207,9 +184,9 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
               5e-3);
 
   // Verify that integrator statistics are valid
-  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
-  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
-  EXPECT_GE(integrator.get_num_steps_taken(), 0);
+  EXPECT_GT(integrator.get_previous_integration_step_size(), 0.0);
+  EXPECT_GT(integrator.get_largest_step_size_taken(), 0.0);
+  EXPECT_GT(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }
 
