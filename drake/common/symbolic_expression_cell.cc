@@ -629,7 +629,7 @@ double ExpressionMul::Evaluate(const Environment& env) const {
 
 Expression ExpressionMul::Substitute(const Substitution& s) const {
   return accumulate(
-      base_to_exp_map_.begin(), base_to_exp_map_.end(), Expression::One(),
+      base_to_exp_map_.begin(), base_to_exp_map_.end(), Expression{constant_},
       [&s](const Expression& init, const pair<Expression, Expression>& p) {
         return init * pow(p.first.Substitute(s), p.second.Substitute(s));
       });
