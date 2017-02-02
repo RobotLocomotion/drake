@@ -2208,9 +2208,15 @@ class MathematicalProgram {
   std::shared_ptr<SolverData> solver_data_;
   std::string solver_name_;
   int solver_result_;
-  std::map<MathematicalProgramSolverInterface::Solver, std::map<std::string, double>> solver_options_double_;
-  std::map<MathematicalProgramSolverInterface::Solver, std::map<std::string, int>> solver_options_int_;
-  std::map<MathematicalProgramSolverInterface::Solver, std::map<std::string, std::string>> solver_options_str_;
+  std::map<MathematicalProgramSolverInterface::Solver,
+           std::map<std::string, double>>
+      solver_options_double_;
+  std::map<MathematicalProgramSolverInterface::Solver,
+           std::map<std::string, int>>
+      solver_options_int_;
+  std::map<MathematicalProgramSolverInterface::Solver,
+           std::map<std::string, std::string>>
+      solver_options_str_;
 
   AttributesSet required_capabilities_{0};
 
