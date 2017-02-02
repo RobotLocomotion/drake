@@ -22,10 +22,10 @@ class CameraInfo {
   /// @param height The image height in pixels, must be greater than zero.
   /// @param focal_x The focal length for the x direction in pixels.
   /// @param focal_y The focal length for the y direction in pixels.
-  /// @param center_x X value for the image center at image coordinate system in
-  /// pixels.
-  /// @param center_y Y value for the image center at image coordinate system in
-  /// pixels.
+  /// @param center_x X value at the image center in the image coordinate system
+  /// in pixels.
+  /// @param center_y Y value at the image center in the image coordinate system
+  /// in pixels.
   CameraInfo(int width, int height, double focal_x, double focal_y,
              double center_x, double center_y)
       : width_(width), height_(height), intrinsic_matrix_((
