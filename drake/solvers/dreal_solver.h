@@ -12,13 +12,11 @@ class DrealSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrealSolver)
 
-  DrealSolver() = default;
+  DrealSolver() : MathematicalProgramSolverInterface(Solver::kDReal) {}
 
   // This solver is implemented in various pieces depending on if
   // Dreal was available during compilation.
   bool available() const override;
-
-  Solver solver_type() const override { return Solver::kDReal; }
 
   static std::string SolverName() { return "dReal"; }
 

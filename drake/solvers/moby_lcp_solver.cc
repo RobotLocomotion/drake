@@ -84,7 +84,7 @@ const double NEAR_ZERO = std::sqrt(std::numeric_limits<double>::epsilon());
 }  // anonymous namespace
 
 // Sole constructor
-MobyLCPSolver::MobyLCPSolver() : log_enabled_(false) {}
+MobyLCPSolver::MobyLCPSolver() : MathematicalProgramSolverInterface(Solver::kMobyLCP), log_enabled_(false) {}
 
 void MobyLCPSolver::SetLoggingEnabled(bool enabled) { log_enabled_ = enabled; }
 

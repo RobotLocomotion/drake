@@ -1,9 +1,9 @@
-#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/equality_constrained_qp_solver.h"
 
 #include <gtest/gtest.h>
-#include <drake/solvers/equality_constrained_qp_solver.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::MatrixXd;

@@ -14,14 +14,12 @@ class MosekSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekSolver)
 
-  MosekSolver() = default;
+  MosekSolver() : MathematicalProgramSolverInterface(Solver::kMosek) {}
 
   /**
    * Defined true if Mosek was included during compilation, false otherwise.
    */
   bool available() const override;
-
-  Solver solver_type() const override { return Solver::kMosek;}
 
   static std::string SolverName() { return "Mosek";}
 

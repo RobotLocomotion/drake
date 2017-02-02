@@ -18,7 +18,7 @@ enum SolutionResult {
 /// Interface used by implementations of individual solvers.
 class MathematicalProgramSolverInterface {
  public:
-  enum Solver {
+  enum class Solver {
     kDReal,
     kEqualityConstrainedQP,
     kGurobi,
@@ -32,14 +32,11 @@ class MathematicalProgramSolverInterface {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgramSolverInterface)
 
-  MathematicalProgramSolverInterface() = default;
+  MathematicalProgramSolverInterface(Solver solver_type) : solver_type_(solver_type) {}
   virtual ~MathematicalProgramSolverInterface() = default;
 
   /// Returns true iff this solver was enabled at compile-time.
   virtual bool available() const = 0;
-
-  /// Returns the type of the solver.
-  virtual Solver solver_type() const = 0;
 
   /// Sets values for the decision variables on the given MathematicalProgram
   /// @p prog, or:
@@ -47,6 +44,14 @@ class MathematicalProgramSolverInterface {
   ///  * If the solver returns an error, returns a nonzero SolutionResult.
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
+
+  /// Returns the type of the solver.
+  Solver solver_type() const {return solver_type_;}
+
+ private:
+  const Solver solver_type_;
 };
+
+// std::ostream& operator<<(std::ostream& os, const MathematicalProgramSolverInterface::Solver& solver_type);
 }  // namespace solvers
 }  // namespace drake

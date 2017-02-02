@@ -12,13 +12,11 @@ class IpoptSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IpoptSolver)
 
-  IpoptSolver() = default;
+  IpoptSolver() : MathematicalProgramSolverInterface(Solver::kIpopt) {}
 
   // This solver is implemented in various pieces depending on if
   // Ipopt was available during compilation.
   bool available() const override;
-
-  Solver solver_type() const override { return Solver::kIpopt;}
 
   static std::string SolverName() { return "IPOPT";}
 

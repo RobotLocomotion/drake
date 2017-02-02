@@ -12,13 +12,11 @@ class NloptSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NloptSolver)
 
-  NloptSolver() = default;
+  NloptSolver() : MathematicalProgramSolverInterface(Solver::kNlopt) {}
 
   // This solver is implemented in various pieces depending on if
   // NLOpt was available during compilation.
   bool available() const override;
-
-  Solver solver_type() const override { return Solver::kNlopt; }
 
   static std::string SolverName() { return "NLopt"; }
 

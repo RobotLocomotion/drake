@@ -20,6 +20,7 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLCPSolver)
 
   MobyLCPSolver();
+
   ~MobyLCPSolver() override = default;
 
   void SetLoggingEnabled(bool enabled);
@@ -48,8 +49,6 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
                                 double zero_tol = -1.0) const;
 
   bool available() const override { return true; }
-
-  Solver solver_type() const override {return Solver::kMobyLCP; }
 
   static std::string SolverName() {return "MobyLCP"; }
 

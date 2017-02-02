@@ -1910,20 +1910,20 @@ class MathematicalProgram {
    * Manual, section 10.2 "Parameter Descriptions"
    * https://www.gurobi.com/documentation/6.5/refman/parameters.html
    */
-  void SetSolverOption(MathematicalProgramSolverInterface::Solver solver_name,
+  void SetSolverOption(MathematicalProgramSolverInterface::Solver solver_type,
                        const std::string& solver_option, double option_value) {
-    solver_options_double_[solver_name][solver_option] = option_value;
+    solver_options_double_[solver_type][solver_option] = option_value;
   }
 
-  void SetSolverOption(MathematicalProgramSolverInterface::Solver solver_name,
+  void SetSolverOption(MathematicalProgramSolverInterface::Solver solver_type,
                        const std::string& solver_option, int option_value) {
-    solver_options_int_[solver_name][solver_option] = option_value;
+    solver_options_int_[solver_type][solver_option] = option_value;
   }
 
-  void SetSolverOption(MathematicalProgramSolverInterface::Solver solver_name,
+  void SetSolverOption(MathematicalProgramSolverInterface::Solver solver_type,
                        const std::string& solver_option,
                        const std::string& option_value) {
-    solver_options_str_[solver_name][solver_option] = option_value;
+    solver_options_str_[solver_type][solver_option] = option_value;
   }
 
   const std::map<std::string, double>& GetSolverOptionsDouble(

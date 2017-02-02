@@ -12,13 +12,11 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GurobiSolver)
 
-  GurobiSolver() = default;
+  GurobiSolver() : MathematicalProgramSolverInterface(Solver::kGurobi) {}
 
   // This solver is implemented in various pieces depending on if
   // Gurobi was available during compilation.
   bool available() const override;
-
-  Solver solver_type() const override {return Solver::kGurobi; }
 
   static std::string SolverName() {return "Gurobi"; }
 

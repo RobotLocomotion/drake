@@ -12,11 +12,9 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EqualityConstrainedQPSolver)
 
-  EqualityConstrainedQPSolver() = default;
+  EqualityConstrainedQPSolver() : MathematicalProgramSolverInterface(Solver::kEqualityConstrainedQP) {}
 
   bool available() const override;
-
-  Solver solver_type() const override { return Solver::kEqualityConstrainedQP; }
 
   static std::string SolverName() { return "Equality Constrained QP Solver"; }
 

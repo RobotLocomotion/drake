@@ -12,11 +12,9 @@ class LinearSystemSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSolver)
 
-  LinearSystemSolver() = default;
+  LinearSystemSolver() : MathematicalProgramSolverInterface(Solver::kLinearSystem) {}
 
   bool available() const override;
-
-  Solver solver_type() const override { return Solver::kLinearSystem; }
 
   static std::string SolverName() { return "Linear System Solver"; }
 
