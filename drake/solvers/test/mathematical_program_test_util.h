@@ -16,7 +16,7 @@ namespace drake {
 namespace solvers {
 namespace test {
 void CheckSolverName(const MathematicalProgram &prog,
-                     std::string desired_solver_name) {
+                     const std::string& desired_solver_name) {
   std::string solver_name;
   int solver_result;
   prog.GetSolverResult(&solver_name, &solver_result);
@@ -37,7 +37,7 @@ void RunSolver(MathematicalProgram* prog,
 }
 
 void AddSolverIfAvailable(
-    const std::string &solver_name,
+    MathematicalProgramSolverInterface::Solver solver_type,
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>> *
     solver_list) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> all_solvers;
@@ -49,14 +49,14 @@ void AddSolverIfAvailable(
   all_solvers.push_back(std::move(snopt_solver));
 
   for (auto& solver : all_solvers) {
-    if (solver->SolverName() == solver_name) {
+    if (solver->solver_type() == solver_type) {
       if (solver->available()) {
         solver_list->push_back(std::move(solver));
       }
       return;
     }
   }
-  throw std::runtime_error(solver_name + " is not supported");
+  throw std::runtime_error("solver is not supported");
 }
 }  // namespace test
 }  // namespace solvers

@@ -49,7 +49,9 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
   bool available() const override { return true; }
 
-  std::string SolverName() const override {return "MobyLCP"; }
+  Solver solver_type() const override {return Solver::kMobyLCP; }
+
+  static std::string SolverName() {return "MobyLCP"; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 

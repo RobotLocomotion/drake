@@ -18,7 +18,9 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   // Gurobi was available during compilation.
   bool available() const override;
 
-  std::string SolverName() const override {return "Gurobi"; }
+  Solver solver_type() const override {return Solver::kGurobi; }
+
+  static std::string SolverName() {return "Gurobi"; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
