@@ -71,17 +71,24 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
 
 void SetIKSolverOptions(const IKoptions& ikoptions,
                         drake::solvers::MathematicalProgram* prog) {
-  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Derivative option", 1);
-  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Major optimality tolerance",
-                        ikoptions.getMajorOptimalityTolerance());
-  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Major feasibility tolerance",
-                        ikoptions.getMajorFeasibilityTolerance());
-  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Superbasics limit",
-                        ikoptions.getSuperbasicsLimit());
-  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Major iterations limit",
-                        ikoptions.getMajorIterationsLimit());
-  prog->SetSolverOption(drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt, "Iterations limit",
-                        ikoptions.getIterationsLimit());
+  prog->SetSolverOption(
+      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+      "Derivative option", 1);
+  prog->SetSolverOption(
+      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+      "Major optimality tolerance", ikoptions.getMajorOptimalityTolerance());
+  prog->SetSolverOption(
+      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+      "Major feasibility tolerance", ikoptions.getMajorFeasibilityTolerance());
+  prog->SetSolverOption(
+      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+      "Superbasics limit", ikoptions.getSuperbasicsLimit());
+  prog->SetSolverOption(
+      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+      "Major iterations limit", ikoptions.getMajorIterationsLimit());
+  prog->SetSolverOption(
+      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+      "Iterations limit", ikoptions.getIterationsLimit());
 }
 
 void AddSingleTimeLinearPostureConstraint(
