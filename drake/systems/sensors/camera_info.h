@@ -20,33 +20,35 @@ class CameraInfo {
   ///
   /// @param width The image width in pixels, must be greater than zero.
   /// @param height The image height in pixels, must be greater than zero.
-  /// @param fx The focal length for the x direction in pixels.
-  /// @param fy The focal length for the y direction in pixels.
-  /// @param cx X value for the image center at image coordinate system in
+  /// @param focal_x The focal length for the x direction in pixels.
+  /// @param focal_y The focal length for the y direction in pixels.
+  /// @param center_x X value for the image center at image coordinate system in
   /// pixels.
-  /// @param cy Y value for the image center at image coordinate system in
+  /// @param center_y Y value for the image center at image coordinate system in
   /// pixels.
-  CameraInfo(int width, int height, double fx, double fy, double cx, double cy)
-      : width_(width), height_(height), intrinsic_matrix_(
-            (Eigen::Matrix3d() <<
-             fx, 0., cx, 0., fy, cy, 0., 0., 1.).finished()) {
+  CameraInfo(int width, int height, double focal_x, double focal_y,
+             double center_x, double center_y)
+      : width_(width), height_(height), intrinsic_matrix_((
+            Eigen::Matrix3d() << focal_x, 0., center_x,
+                                 0., focal_y, center_y,
+                                 0., 0., 1.).finished()) {
     DRAKE_ASSERT(width > 0);
     DRAKE_ASSERT(height > 0);
-    DRAKE_ASSERT(fx > 0);
-    DRAKE_ASSERT(fy > 0);
-    DRAKE_ASSERT(cx > 0 && cx < static_cast<double>(width));
-    DRAKE_ASSERT(cy > 0 && cy < static_cast<double>(height));
+    DRAKE_ASSERT(focal_x > 0);
+    DRAKE_ASSERT(focal_y > 0);
+    DRAKE_ASSERT(center_x > 0 && center_x < static_cast<double>(width));
+    DRAKE_ASSERT(center_y > 0 && center_y < static_cast<double>(height));
   }
 
-  /// Constructor that sets the image size, vertical field of view (fov).  We
-  /// assume there is no image offset, so the center of the image `(cx, cy)` is
-  /// equal to `(width / 2, height / 2)`.  The horizontal field of view is
-  /// calculated by the aspect ratio of the image width and height together with
-  /// the vertical field of view. The focal lengths `fx` and `fy` are calculated
-  /// by both of the field of views:
+  /// Constructor that sets the image size and vertical field of view (fov).  We
+  /// assume there is no image offset, so the center of the image `(center_x,`
+  /// `center_y)` is equal to `(width / 2, height / 2)`.  The horizontal field
+  /// of view is calculated by the aspect ratio of the image width and height
+  /// together with the vertical field of view. The focal lengths `focal_x` and
+  /// `focal_y` are calculated by both of the field of views:
   /// <pre>
-  ///   fx = width / 2 / tan(horizontal_fov / 2)
-  ///   fy = height / 2 / tan(vertical_fov / 2)
+  ///   focal_x = width / 2 / tan(horizontal_fov / 2)
+  ///   focal_y = height / 2 / tan(vertical_fov / 2)
   /// </pre>
   /// where `horizontal_fov = width / height * vertical_fov`.
   ///
