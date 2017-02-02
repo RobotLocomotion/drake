@@ -12,20 +12,20 @@ namespace sensors {
 /// and camera intrinsic parameters.
 ///
 /// @ingroup sensor_systems
-// TODO(kunimatsu-tri) Add camera distortion parameters and other things when
+// TODO(kunimatsu-tri) Add camera distortion parameters and other parameters as
 // needed.
 class CameraInfo {
  public:
-  /// Constructor with image size, focal lengths and center of image.
+  /// Constructor that directly sets the image size, center, and focal lengths.
   ///
-  /// @param width Size of width for image in pixels which should be greater
-  /// than zero
-  /// @param height Size of height for image in pixels which should be greater
-  /// than zero
-  /// @param fx Focal length for x direction in pixels
-  /// @param fy Focal length for y direction in pixels
-  /// @param cx X value for center of image at image coordinate system in pixels
-  /// @param cy Y value for center of image at image coordinate system in pixels
+  /// @param width The image width in pixels, must be greater than zero.
+  /// @param height The image height in pixels, must be greater than zero.
+  /// @param fx The focal length for the x direction in pixels.
+  /// @param fy The focal length for the y direction in pixels.
+  /// @param cx X value for the image center at image coordinate system in
+  /// pixels.
+  /// @param cy Y value for the image center at image coordinate system in
+  /// pixels.
   CameraInfo(int width, int height, double fx, double fy, double cx, double cy)
       : width_(width), height_(height), intrinsic_matrix_(
             (Eigen::Matrix3d() <<
@@ -38,21 +38,21 @@ class CameraInfo {
     DRAKE_ASSERT(cy > 0 && cy < static_cast<double>(height));
   }
 
-  /// Constructor with image size and vertical field of view (fov).  We assume
-  /// there is no image offset, so the center of the image `(cx, cy)` is equal
-  /// to `(width / 2, height / 2)`.  The horizontal field of view is calculated
-  /// by the aspect ratio of the image width and height together with the
-  /// vertical field of view. The focal lengths "fx" and "fy" are calculated by
-  /// both of the field of views:
+  /// Constructor that sets the image size, vertical field of view (fov).  We
+  /// assume there is no image offset, so the center of the image `(cx, cy)` is
+  /// equal to `(width / 2, height / 2)`.  The horizontal field of view is
+  /// calculated by the aspect ratio of the image width and height together with
+  /// the vertical field of view. The focal lengths `fx` and `fy` are calculated
+  /// by both of the field of views:
   /// <pre>
   ///   fx = width / 2 / tan(horizontal_fov / 2)
   ///   fy = height / 2 / tan(vertical_fov / 2)
   /// </pre>
-  /// where horizontal_fov = width / height * vertical_fov.
+  /// where `horizontal_fov = width / height * vertical_fov`.
   ///
-  /// @param width Size of width for image which should be greater than zero
-  /// @param height Size of height for image which should be greater than zero
-  /// @param vertical_fov Vertical field of view angle
+  /// @param width The image width in pixels, must be greater than zero.
+  /// @param height The image height in pixels, must be greater than zero.
+  /// @param vertical_fov The vertical field of view.
   CameraInfo(int width, int height, double vertical_fov);
 
   /// Default copy constructor.
@@ -71,16 +71,16 @@ class CameraInfo {
   /// Returns the height of the image in pixels.
   int height() const { return height_; }
 
-  /// Returns the focal length for x direction in pixels.
+  /// Returns the focal length for the x direction in pixels.
   double focal_x() const { return intrinsic_matrix_(0, 0); }
 
-  /// Returns the focal length for y direction in pixels.
+  /// Returns the focal length for the y direction in pixels.
   double focal_y() const { return intrinsic_matrix_(1, 1); }
 
-  /// Returns the center of image for x direction in pixels.
+  /// Returns the center of image for the x direction in pixels.
   double center_x() const { return intrinsic_matrix_(0, 2); }
 
-  /// Returns the center of image for y direction in pixels.
+  /// Returns the center of image for the y direction in pixels.
   double center_y() const { return intrinsic_matrix_(1, 2); }
 
   /// Returns the camera intrinsic matrix.
