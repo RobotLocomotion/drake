@@ -14,27 +14,31 @@ Models in Drake
 Introduction
 ============
 
-This document discusses how physical objects (i.e. robots and other
-objects such as furniture) are represented in Drake .
+This document discusses how physical objects (i.e., robots and other objects
+such as furniture) are represented in Drake .
 
 The representations of physical objects are modelled in Drake declaratively
-with either URDF (Unified Robot Description Format) or SDF, which are both
-XML formats.
+with either URDF (Unified Robot Description Format) or SDF (Simulation
+Description Format), which are both XML formats.
 
 * `SDF Reference <http://sdformat.org/>`_
 
-* `URDF Reference <urdf/drakeURDF.html#://>`_
+* `Drake's version of URDF <urdf/drakeURDF.html#://>`_.  Drake's URDF has
+  extensions to the `official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
 
-The target audience for this document is for those who want to model a physical
-object in Drake.  You should have some understanding of XML formats, and be
-able to run Drake. However, you don't need to know C++. This document is not
-meant as a tutorial of creating URDF/SDF files, which you can find elsewhere.
+The target audience for this document is for those who want to model a
+physical object in Drake. You should have some understanding of XML formats,
+and be able to run Drake. However, you don't need to know C++. This document
+is not meant as a tutorial for creating URDF/SDF files, which you can find
+elsewhere. But it does provide enough reference material for someone to edit
+or create a representation of an object for Drake, by defining the
+terminology and providing a brief description of what's in a model file.
 
 In this document, we call the URDF or SDF representation of the object a
 model. The model of an object will describe the object's physical properties,
- for example, visual properties to describe the appearance of an object. The
- object's physical form can be approximated by geometric primitives, such as
- cylinders or spheres, or by a more-detailed triangular mesh.
+for example, visual properties to describe the appearance of an object. The
+object's physical form can be approximated by geometric primitives, such as
+cylinders or spheres, or by a more-detailed triangular mesh.
 
 Other physical properties that can be described in an URDF/SDF file include
 dynamic properties (how the object moves), with the parameters mass and
@@ -51,24 +55,22 @@ Terminology
 
 `Mesh <https://en.wikipedia.org/wiki/Polygon_mesh>`_  - a collection of
 vertices, edges, and faces that describe the shape of a 3D object. A mesh
-often contains hundreds of vertices to describe a complex shape.  In Drake,
-meshes must be triangulated. Furthermore, for dynamic objects, meshes will be
- replaced with the convex hulls of those meshes.
+often contains hundreds of vertices to describe a complex shape.
 
 `SDF <http://sdformat.org/>`_ - Simulation Description Format. An XML format
 that describes objects and environments for robot simulators, visualization,
 and control. SDF is OSRF's successor to URDF. Relative to URDF, SDF is being
 more actively maintained.
 
-`Texture <https://en.wikipedia.org/wiki/Texture_mapping#Texture_maps>`_  -
-the digital representation of the surface of an object. May include color,
+`Texture <https://en.wikipedia.org/wiki/Texture_mapping#Texture_maps>`_ -
+the digital representation of an object's surface. A texture may include color,
 brightness, transparency and reflectivity (shininess). The texture is mapped
 onto an already available surface.
 
-`URDF <http://wiki.ros.org/urdf/XML>`_ - Unified Robot Description Format, an
-XML format for representing one robot model (but not everything else in the
-world, or the pose of the robot in the world: see SDF).  Drake has its own
-`version of URDF <urdf/drakeURDF.html#://>`_  with additional custom tags.
+`URDF <urdf/drakeURDF.html#://>`_- Unified Robot Description Format, an XML
+format for representing one robot model (unlike SDF, URDF does not model
+everything else in the world or the robot's pose in the world). Drake's URDF
+has extensions to the `official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
 
 .. _model_file_formats:
 
