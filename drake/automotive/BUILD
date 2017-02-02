@@ -384,6 +384,23 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "endless_road_car_state_translator_test",
+    deps = [
+        "//drake/automotive:generated_translators",
+    ],
+)
+
+drake_cc_googletest(
+    name = "endless_road_car_test",
+    srcs = ["test/endless_road_car_test.cc"],
+    deps = [
+        "//drake/automotive:endless_road_car",
+        "//drake/automotive/maliput/monolane:builder",
+        "//drake/automotive/maliput/utility:utility",
+    ],
+)
+
+drake_cc_googletest(
     name = "endless_road_oracle_test",
     srcs = ["dev/test/endless_road_oracle_test.cc"],
     deps = [
