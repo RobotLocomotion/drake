@@ -1,0 +1,4 @@
+joint_groups:
+
+body_groups:
+  flange: iiwa_link_ee
