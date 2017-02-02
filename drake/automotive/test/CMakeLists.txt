@@ -27,6 +27,10 @@ if(lcm_FOUND)
   drake_add_cc_test(simple_car_state_translator_test)
   target_link_libraries(simple_car_state_translator_test drakeAutomotiveLcm)
 
+  drake_add_cc_test(endless_road_car_state_translator_test)
+  target_link_libraries(endless_road_car_state_translator_test
+                        drakeAutomotiveLcm)
+
   drake_add_cc_test(automotive_simulator_test)
   target_link_libraries(automotive_simulator_test drakeAutomotiveLcm)
 endif()
