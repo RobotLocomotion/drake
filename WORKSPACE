@@ -124,8 +124,8 @@ github_archive(
 github_archive(
     name = "io_bazel_rules_go",
     repository = "bazelbuild/rules_go",
-    commit = "0.3.1",
-    sha256 = "b7759f01d29c075db177f688ffb4464aad2b8fbb7017f89a1d3819ce07f1d584",
+    commit = "0.4.0",
+    sha256 = "ef1aa6a368808d3aa18cbe588924f15fb8fac75d80860080355595e75eb9a529",
 )
 
 # Necessary for buildifier.
