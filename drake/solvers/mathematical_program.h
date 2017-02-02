@@ -1201,7 +1201,8 @@ class MathematicalProgram {
    *   Aeq << -1, 2,
    *           1, 1;
    *   Eigen::Vector2d beq(1, 3);
-   *   prog.AddLinearEqualityConstraint(Aeq, beq,{x(2), x(5)});
+   *   prog.AddLinearEqualityConstraint(Aeq, beq, {x.segment<1>(2),
+   *                                    x.segment<1>(5)});
    * @endcode
    * The code above imposes constraints
    * @f[-x(2) + 2x(5) = 1 @f]
@@ -1770,6 +1771,44 @@ class MathematicalProgram {
   std::shared_ptr<PositiveSemidefiniteConstraint>
   AddPositiveSemidefiniteConstraint(
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var);
+
+  /**
+   * Adds a positive semidefinite constraint on a symmetric matrix of symbolic
+   * espressions @p e. We create a new symmetric matrix of variables M being
+   * positive semidefinite, with the linear equality constraint e == M.
+   * @tparam Derived An Eigen Matrix of symbolic expressions.
+   * @param e Imposes constraint "e is positive semidefinite".
+   * @pre{1. e is symmetric.
+   *      2. e(i, j) is linear for all i, j
+   *      }
+   * @return The newly added positive semidefinite constraint, with the bound
+   * variable M that are also newly added.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
+      Binding<PositiveSemidefiniteConstraint>>::type
+  AddPositiveSemidefiniteConstraint(const Eigen::MatrixBase<Derived>& e) {
+    DRAKE_DEMAND(e.rows() == e.cols());
+    DRAKE_ASSERT(e == e.transpose());
+    const int e_rows = Derived::RowsAtCompileTime;
+    MatrixDecisionVariable<e_rows, e_rows> M{};
+    if (Derived::RowsAtCompileTime == Eigen::Dynamic) {
+      M = NewSymmetricContinuousVariables(e_rows);
+    } else {
+      M = NewSymmetricContinuousVariables<e_rows>();
+    }
+    // Adds the linear equality constraint that M = e.
+    AddLinearEqualityConstraint(
+        e - M, Eigen::Matrix<double, e_rows, e_rows>::Zero(e.rows(), e.rows()),
+        true);
+    const int M_flat_size =
+        e_rows == Eigen::Dynamic ? Eigen::Dynamic : e_rows * e_rows;
+    const Eigen::Map<Eigen::Matrix<Variable, M_flat_size, 1>> M_flat(&M(0, 0),
+                                                                     e.size());
+    return Binding<PositiveSemidefiniteConstraint>(
+        AddPositiveSemidefiniteConstraint(M), M_flat);
+  }
 
   /**
    * Adds a linear matrix inequality constraint to the program.
