@@ -108,8 +108,8 @@ class SymbolicExpressionTest : public ::testing::Test {
 
   const Expression e_constant_{1.0};
   const Expression e_var_{var_x_};
-  const Expression e_neg_{-x_};
   const Expression e_add_{x_ + y_};
+  const Expression e_neg_{-x_};  // -1 * x_
   const Expression e_mul_{x_ * y_};
   const Expression e_div_{x_ / y_};
   const Expression e_log_{log(x_)};
@@ -132,7 +132,7 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression e_ite_{if_then_else(x_ < y_, x_, y_)};
 
   const vector<Expression> collection_{
-      e_constant_, e_var_,  e_neg_,   e_add_,  e_mul_,
+      e_constant_, e_var_,  e_add_,   e_neg_,  e_mul_,
       e_div_,      e_log_,  e_abs_,   e_exp_,  e_sqrt_,
       e_pow_,      e_sin_,  e_cos_,   e_tan_,  e_asin_,
       e_acos_,     e_atan_, e_atan2_, e_sinh_, e_cosh_,
@@ -190,14 +190,6 @@ TEST_F(SymbolicExpressionTest, IsVariable) {
   EXPECT_EQ(cnt, 1);
 }
 
-TEST_F(SymbolicExpressionTest, IsUnaryMinus) {
-  EXPECT_TRUE(is_unary_minus(e_neg_));
-  const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_unary_minus(e); })};
-  EXPECT_EQ(cnt, 1);
-}
-
 TEST_F(SymbolicExpressionTest, IsAddition) {
   EXPECT_TRUE(is_addition(e_add_));
   const vector<Expression>::difference_type cnt{
@@ -211,7 +203,7 @@ TEST_F(SymbolicExpressionTest, IsMultiplication) {
   const vector<Expression>::difference_type cnt{
       count_if(collection_.begin(), collection_.end(),
                [](const Expression& e) { return is_multiplication(e); })};
-  EXPECT_EQ(cnt, 1);
+  EXPECT_EQ(cnt, 2);
 }
 
 TEST_F(SymbolicExpressionTest, IsDivision) {
@@ -377,7 +369,6 @@ TEST_F(SymbolicExpressionTest, GetVariable) {
 }
 
 TEST_F(SymbolicExpressionTest, GetArgument) {
-  EXPECT_PRED2(ExprEqual, get_argument(e_neg_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_log_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_abs_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_exp_), x_);
@@ -423,6 +414,7 @@ TEST_F(SymbolicExpressionTest, GetTermsInAddition) {
 }
 
 TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(e_neg_), -1.0);
   EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(x_ * y_ * y_), 1.0);
   EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(2 * x_ * y_ * y_),
                2.0);
@@ -557,7 +549,7 @@ TEST_F(SymbolicExpressionTest, ToPolynomial2) {
 }
 
 TEST_F(SymbolicExpressionTest, LessKind) {
-  CheckOrdering({e_constant_, e_var_,  e_neg_,   e_add_,  e_mul_,
+  CheckOrdering({e_constant_, e_var_,  e_add_,   e_neg_,  e_mul_,
                  e_div_,      e_log_,  e_abs_,   e_exp_,  e_sqrt_,
                  e_pow_,      e_sin_,  e_cos_,   e_tan_,  e_asin_,
                  e_acos_,     e_atan_, e_atan2_, e_sinh_, e_cosh_,
@@ -859,7 +851,7 @@ TEST_F(SymbolicExpressionTest, UnaryMinus) {
 
   EXPECT_PRED2(ExprEqual, -(x_plus_y_ + x_plus_z_ + pi_),
                -x_plus_y_ + (-x_plus_z_) + (-pi_));
-  EXPECT_EQ((-(x_)).to_string(), "-(x)");
+  EXPECT_EQ((-(x_)).to_string(), "(-1 * x)");
 }
 
 TEST_F(SymbolicExpressionTest, Add1) {

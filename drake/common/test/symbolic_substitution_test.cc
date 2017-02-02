@@ -86,7 +86,9 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionVarExpr) {
   vector<F> fns;
   fns.push_back([](const Expression& x) { return 3.0; });
   fns.push_back([](const Expression& x) { return x; });
+  fns.push_back([](const Expression& x) { return 2 * x; });
   fns.push_back([](const Expression& x) { return -x; });
+  fns.push_back([](const Expression& x) { return -3 * x; });
   fns.push_back([&](const Expression& x) { return x + y_; });
   fns.push_back([&](const Expression& x) { return y_ + x; });
   fns.push_back([&](const Expression& x) { return x - y_; });
@@ -158,7 +160,9 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionSubstitution) {
   vector<F> fns;
   fns.push_back([](const vector<Expression>& v) { return 3.0; });
   fns.push_back([](const vector<Expression>& v) { return v[0]; });
+  fns.push_back([](const vector<Expression>& v) { return 2 * v[0]; });
   fns.push_back([](const vector<Expression>& v) { return -v[0]; });
+  fns.push_back([](const vector<Expression>& v) { return -3 * v[0]; });
   fns.push_back([](const vector<Expression>& v) { return v[0] + v[1]; });
   fns.push_back([](const vector<Expression>& v) { return v[1] - v[2]; });
   fns.push_back([](const vector<Expression>& v) { return v[0] * v[2]; });
