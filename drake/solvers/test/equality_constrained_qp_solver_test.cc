@@ -43,8 +43,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
                               MatrixCompareType::absolute));
 // There are no inequality constraints, and only quadratic costs,
 // so this should hold:
-  CheckSolver(
-      prog, MathematicalProgramSolverInterface::Solver::kEqualityConstrainedQP);
+  CheckSolver(prog, SolverType::kEqualityConstrainedQP);
 
   // Add one more variable and constrain a view into them.
   auto y = prog.NewContinuousVariables<1>("y");
@@ -69,8 +68,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
             << "\tActual: " << actual_answer.transpose();
 
   // Problem still has only quadratic costs, so solver should be the same.
-  CheckSolver(
-      prog, MathematicalProgramSolverInterface::Solver::kEqualityConstrainedQP);
+  CheckSolver(prog, SolverType::kEqualityConstrainedQP);
 }
 
 // Test how an equality-constrained QP is dispatched
@@ -107,7 +105,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   // This problem is now an Equality Constrained QP and should
   // use this solver:
   CheckSolver(
-      prog, MathematicalProgramSolverInterface::Solver::kEqualityConstrainedQP);
+      prog, SolverType::kEqualityConstrainedQP);
 
   // Add one more variable and constrain it in a different way
   auto y = prog.NewContinuousVariables(1);

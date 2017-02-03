@@ -12,7 +12,7 @@ class DrealSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrealSolver)
 
-  DrealSolver() : MathematicalProgramSolverInterface(Solver::kDReal) {}
+  DrealSolver() : MathematicalProgramSolverInterface(SolverType::kDReal) {}
 
   // This solver is implemented in various pieces depending on if
   // Dreal was available during compilation.

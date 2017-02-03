@@ -183,8 +183,7 @@ solvers::SolutionResult DirectTrajectoryOptimization::SolveTraj(
   // If we're using IPOPT, it can't quite solve trajectories to the
   // default precision level.
   opt_problem_.SetSolverOption(
-      drake::solvers::MathematicalProgramSolverInterface::Solver::kIpopt, "tol",
-      1e-7);
+      drake::solvers::SolverType::kIpopt, "tol", 1e-7);
 
   solvers::SolutionResult result = opt_problem_.Solve();
   return result;

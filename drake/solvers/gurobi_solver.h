@@ -12,7 +12,7 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GurobiSolver)
 
-  GurobiSolver() : MathematicalProgramSolverInterface(Solver::kGurobi) {}
+  GurobiSolver() : MathematicalProgramSolverInterface(SolverType::kGurobi) {}
 
   // This solver is implemented in various pieces depending on if
   // Gurobi was available during compilation.

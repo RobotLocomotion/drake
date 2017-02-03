@@ -14,36 +14,27 @@ namespace test {
 namespace {
 void GetLinearProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable(MathematicalProgramSolverInterface::Solver::kGurobi,
-                       solvers);
-  AddSolverIfAvailable(MathematicalProgramSolverInterface::Solver::kMosek,
-                       solvers);
-  AddSolverIfAvailable(MathematicalProgramSolverInterface::Solver::kSnopt,
-                       solvers);
+  AddSolverIfAvailable(SolverType::kGurobi, solvers);
+  AddSolverIfAvailable(SolverType::kMosek, solvers);
+  AddSolverIfAvailable(SolverType::kSnopt, solvers);
 }
 
 void GetQuadraticProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable(MathematicalProgramSolverInterface::Solver::kGurobi,
-                       solvers);
-  AddSolverIfAvailable(MathematicalProgramSolverInterface::Solver::kMosek,
-                       solvers);
-  AddSolverIfAvailable(MathematicalProgramSolverInterface::Solver::kSnopt,
-                       solvers);
+  AddSolverIfAvailable(SolverType::kGurobi, solvers);
+  AddSolverIfAvailable(SolverType::kMosek, solvers);
+  AddSolverIfAvailable(SolverType::kSnopt, solvers);
 }
 
 void GetSecondOrderConicProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable(MathematicalProgramSolverInterface::Solver::kGurobi,
-                       solvers);
-  AddSolverIfAvailable(MathematicalProgramSolverInterface::Solver::kMosek,
-                       solvers);
+  AddSolverIfAvailable(SolverType::kGurobi, solvers);
+  AddSolverIfAvailable(SolverType::kMosek, solvers);
 }
 
 void GetSemidefiniteProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable(MathematicalProgramSolverInterface::Solver::kMosek,
-                       solvers);
+  AddSolverIfAvailable(SolverType::kMosek, solvers);
 }
 
 /////////////////////////
@@ -68,8 +59,7 @@ void TestLinearProgramFeasibility(
   prog.AddBoundingBoxConstraint(1.0, std::numeric_limits<double>::infinity(),
                                 x(1));
 
-  if (solver.solver_type() ==
-      MathematicalProgramSolverInterface::Solver::kSnopt) {
+  if (solver.solver_type() == SolverType::kSnopt) {
     prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   }
   RunSolver(&prog, solver);
@@ -111,8 +101,7 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
                       std::numeric_limits<double>::infinity()),
       x.head<2>());
 
-  if (solver.solver_type() ==
-      MathematicalProgramSolverInterface::Solver::kSnopt) {
+  if (solver.solver_type() == SolverType::kSnopt) {
     prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   }
   RunSolver(&prog, solver);
@@ -136,8 +125,7 @@ void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
   prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4),
                                 x);
 
-  if (solver.solver_type() ==
-      MathematicalProgramSolverInterface::Solver::kSnopt) {
+  if (solver.solver_type() == SolverType::kSnopt) {
     prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   }
   RunSolver(&prog, solver);
@@ -192,8 +180,7 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
       x.head<3>());
 
-  if (solver.solver_type() ==
-      MathematicalProgramSolverInterface::Solver::kSnopt) {
+  if (solver.solver_type() == SolverType::kSnopt) {
     prog.SetInitialGuessForAllVariables(Eigen::Vector4d::Zero());
   }
   RunSolver(&prog, solver);
@@ -272,8 +259,7 @@ void TestLinearProgram3(const MathematicalProgramSolverInterface& solver) {
             prog.linear_equality_constraints().size());
   EXPECT_EQ(++num_bounding_box_cnstr, prog.bounding_box_constraints().size());
 
-  if (solver.solver_type() ==
-      MathematicalProgramSolverInterface::Solver::kSnopt) {
+  if (solver.solver_type() == SolverType::kSnopt) {
     prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   }
   RunSolver(&prog, solver);
@@ -323,8 +309,7 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
 
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), 1, x);
 
-  if (solver.solver_type() ==
-      MathematicalProgramSolverInterface::Solver::kSnopt) {
+  if (solver.solver_type() == SolverType::kSnopt) {
     prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   }
   RunSolver(&prog, solver);
@@ -377,8 +362,7 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   // This test also handles linear equality constraint
   prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3), 3, x);
 
-  if (solver.solver_type() ==
-      MathematicalProgramSolverInterface::Solver::kSnopt) {
+  if (solver.solver_type() == SolverType::kSnopt) {
     prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   }
   RunSolver(&prog, solver);
@@ -413,8 +397,7 @@ void TestQuadraticProgram2(const MathematicalProgramSolverInterface& solver) {
 
   prog.AddQuadraticCost(Q, b, x);
 
-  if (solver.solver_type() ==
-      MathematicalProgramSolverInterface::Solver::kSnopt) {
+  if (solver.solver_type() == SolverType::kSnopt) {
     prog.SetInitialGuessForAllVariables(Eigen::Matrix<double, 5, 1>::Zero());
   }
   RunSolver(&prog, solver);
@@ -476,8 +459,7 @@ void TestQuadraticProgram3(const MathematicalProgramSolverInterface& solver) {
   // Exact solution.
   Eigen::VectorXd expected = -Q.ldlt().solve(b);
 
-  if (solver.solver_type() ==
-      MathematicalProgramSolverInterface::Solver::kSnopt) {
+  if (solver.solver_type() == SolverType::kSnopt) {
     prog.SetInitialGuessForAllVariables(Eigen::Matrix<double, 6, 1>::Zero());
   }
   RunSolver(&prog, solver);
@@ -506,8 +488,7 @@ void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
                                    Vector1d::Constant(2),
                                    {x.segment<1>(0), x.segment<1>(2)});
 
-  if (solver.solver_type() ==
-      MathematicalProgramSolverInterface::Solver::kSnopt) {
+  if (solver.solver_type() == SolverType::kSnopt) {
     prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   }
   RunSolver(&prog, solver);
@@ -561,8 +542,7 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
           (x_desired(0) + x_desired(1) + 1.0) / 2.0;
     }
 
-    if (solver.solver_type() ==
-        MathematicalProgramSolverInterface::Solver::kSnopt) {
+    if (solver.solver_type() == SolverType::kSnopt) {
       prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
     }
     RunSolver(&prog, solver);
@@ -584,8 +564,7 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
 
     SolutionResult result = SolutionResult::kUnknownError;
 
-    prog.SetSolverOption(MathematicalProgramSolverInterface::Solver::kGurobi,
-                         "BarConvTol", 1E-9);
+    prog.SetSolverOption(SolverType::kGurobi, "BarConvTol", 1E-9);
     ASSERT_NO_THROW(result = prog.Solve());
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
@@ -949,13 +928,13 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
 
   RunSolver(&prog, solver);
 
-  MathematicalProgramSolverInterface::Solver solver_type;
+  SolverType solver_type;
   int solver_result;
   prog.GetSolverResult(&solver_type, &solver_result);
   double precision = 1e-3;
   // The precision of Gurobi solver is not as good as Mosek, in
   // this problem.
-  if (solver_type == MathematicalProgramSolverInterface::Solver::kGurobi) {
+  if (solver_type == SolverType::kGurobi) {
     precision = 2e-2;
   }
   for (int i = 0; i < num_nodes - 1; ++i) {
@@ -1187,8 +1166,7 @@ GTEST_TEST(TestConvexOptimization, TestQuadraticProgram5) {
     prog.AddLinearConstraint(CI_xy, ci_xy_lower, ci_xy_upper, {x, y});
     prog.AddLinearConstraint(CI_z, ci_z_lower, ci_z_upper, z);
 
-    if (solver->solver_type() ==
-        MathematicalProgramSolverInterface::Solver::kSnopt) {
+    if (solver->solver_type() == SolverType::kSnopt) {
       prog.SetInitialGuessForAllVariables(drake::Vector6<double>::Zero());
     }
     RunSolver(&prog, *solver);

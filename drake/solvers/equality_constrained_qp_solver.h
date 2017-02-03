@@ -13,7 +13,7 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EqualityConstrainedQPSolver)
 
   EqualityConstrainedQPSolver() :
-      MathematicalProgramSolverInterface(Solver::kEqualityConstrainedQP) {}
+      MathematicalProgramSolverInterface(SolverType::kEqualityConstrainedQP) {}
 
   bool available() const override;
 

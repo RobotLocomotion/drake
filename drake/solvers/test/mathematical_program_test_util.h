@@ -15,10 +15,9 @@
 namespace drake {
 namespace solvers {
 namespace test {
-void CheckSolver(
-    const MathematicalProgram &prog,
-    MathematicalProgramSolverInterface::Solver desired_solver_type) {
-  MathematicalProgramSolverInterface::Solver solver_type;
+void CheckSolver(const MathematicalProgram& prog,
+                 SolverType desired_solver_type) {
+  SolverType solver_type;
   int solver_result;
   prog.GetSolverResult(&solver_type, &solver_result);
   EXPECT_EQ(solver_type, desired_solver_type);
@@ -28,7 +27,7 @@ void RunSolver(MathematicalProgram* prog,
                const MathematicalProgramSolverInterface& solver) {
   if (solver.available()) {
     SolutionResult result = solver.Solve(*prog);
-    MathematicalProgramSolverInterface::Solver solver_type;
+    SolverType solver_type;
     int solver_status;
     prog->GetSolverResult(&solver_type, &solver_status);
     EXPECT_EQ(result, SolutionResult::kSolutionFound)
@@ -38,9 +37,9 @@ void RunSolver(MathematicalProgram* prog,
 }
 
 void AddSolverIfAvailable(
-    MathematicalProgramSolverInterface::Solver solver_type,
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>> *
-    solver_list) {
+    SolverType solver_type,
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>*
+        solver_list) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> all_solvers;
   auto gurobi_solver = std::make_unique<GurobiSolver>();
   all_solvers.push_back(std::move(gurobi_solver));

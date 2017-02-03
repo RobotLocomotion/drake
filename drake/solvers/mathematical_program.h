@@ -1910,34 +1910,34 @@ class MathematicalProgram {
    * Manual, section 10.2 "Parameter Descriptions"
    * https://www.gurobi.com/documentation/6.5/refman/parameters.html
    */
-  void SetSolverOption(MathematicalProgramSolverInterface::Solver solver_type,
+  void SetSolverOption(SolverType solver_type,
                        const std::string& solver_option, double option_value) {
     solver_options_double_[solver_type][solver_option] = option_value;
   }
 
-  void SetSolverOption(MathematicalProgramSolverInterface::Solver solver_type,
+  void SetSolverOption(SolverType solver_type,
                        const std::string& solver_option, int option_value) {
     solver_options_int_[solver_type][solver_option] = option_value;
   }
 
-  void SetSolverOption(MathematicalProgramSolverInterface::Solver solver_type,
+  void SetSolverOption(SolverType solver_type,
                        const std::string& solver_option,
                        const std::string& option_value) {
     solver_options_str_[solver_type][solver_option] = option_value;
   }
 
   const std::map<std::string, double>& GetSolverOptionsDouble(
-      MathematicalProgramSolverInterface::Solver solver_type) {
+      SolverType solver_type) {
     return solver_options_double_[solver_type];
   }
 
   const std::map<std::string, int>& GetSolverOptionsInt(
-      MathematicalProgramSolverInterface::Solver solver_type) {
+      SolverType solver_type) {
     return solver_options_int_[solver_type];
   }
 
   const std::map<std::string, std::string>& GetSolverOptionsStr(
-      MathematicalProgramSolverInterface::Solver solver_type) {
+      SolverType solver_type) {
     return solver_options_str_[solver_type];
   }
 
@@ -1948,13 +1948,13 @@ class MathematicalProgram {
    * for debugging, testing, and support of certain legacy
    * APIs.
    */
-  void GetSolverResult(MathematicalProgramSolverInterface::Solver* solver_type,
+  void GetSolverResult(SolverType* solver_type,
                        int* solver_result) const {
     *solver_type = solver_type_;
     *solver_result = solver_result_;
   }
 
-  void SetSolverResult(MathematicalProgramSolverInterface::Solver solver_type,
+  void SetSolverResult(SolverType solver_type,
                        int solver_result) {
     solver_type_ = solver_type;
     solver_result_ = solver_result;
@@ -2208,17 +2208,11 @@ class MathematicalProgram {
   Eigen::VectorXd x_initial_guess_;
   std::vector<double> x_values_;
   std::shared_ptr<SolverData> solver_data_;
-  MathematicalProgramSolverInterface::Solver solver_type_;
+  SolverType solver_type_;
   int solver_result_;
-  std::map<MathematicalProgramSolverInterface::Solver,
-           std::map<std::string, double>>
-      solver_options_double_;
-  std::map<MathematicalProgramSolverInterface::Solver,
-           std::map<std::string, int>>
-      solver_options_int_;
-  std::map<MathematicalProgramSolverInterface::Solver,
-           std::map<std::string, std::string>>
-      solver_options_str_;
+  std::map<SolverType, std::map<std::string, double>> solver_options_double_;
+  std::map<SolverType, std::map<std::string, int>> solver_options_int_;
+  std::map<SolverType, std::map<std::string, std::string>> solver_options_str_;
 
   AttributesSet required_capabilities_{0};
 

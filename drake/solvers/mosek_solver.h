@@ -14,7 +14,7 @@ class MosekSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekSolver)
 
-  MosekSolver() : MathematicalProgramSolverInterface(Solver::kMosek) {}
+  MosekSolver() : MathematicalProgramSolverInterface(SolverType::kMosek) {}
 
   /**
    * Defined true if Mosek was included during compilation, false otherwise.

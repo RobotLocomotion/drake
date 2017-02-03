@@ -12,7 +12,7 @@ class NloptSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NloptSolver)
 
-  NloptSolver() : MathematicalProgramSolverInterface(Solver::kNlopt) {}
+  NloptSolver() : MathematicalProgramSolverInterface(SolverType::kNlopt) {}
 
   // This solver is implemented in various pieces depending on if
   // NLOpt was available during compilation.

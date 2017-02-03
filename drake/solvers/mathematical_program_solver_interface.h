@@ -16,24 +16,24 @@ enum SolutionResult {
   kUnknownError = -3,
 };
 
+enum class SolverType {
+  kDReal,
+  kEqualityConstrainedQP,
+  kGurobi,
+  kIpopt,
+  kLinearSystem,
+  kMobyLCP,
+  kMosek,
+  kNlopt,
+  kSnopt,
+};
+
 /// Interface used by implementations of individual solvers.
 class MathematicalProgramSolverInterface {
  public:
-  enum class Solver {
-    kDReal,
-    kEqualityConstrainedQP,
-    kGurobi,
-    kIpopt,
-    kLinearSystem,
-    kMobyLCP,
-    kMosek,
-    kNlopt,
-    kSnopt,
-  };
-
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgramSolverInterface)
 
-  explicit MathematicalProgramSolverInterface(Solver solver_type)
+  explicit MathematicalProgramSolverInterface(SolverType solver_type)
       : solver_type_(solver_type) {}
   virtual ~MathematicalProgramSolverInterface() = default;
 
@@ -48,18 +48,18 @@ class MathematicalProgramSolverInterface {
   virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
 
   /// Returns the type of the solver.
-  Solver solver_type() const {return solver_type_;}
+  SolverType solver_type() const {return solver_type_;}
 
   std::string SolverName() const;
 
  private:
-  const Solver solver_type_;
+  const SolverType solver_type_;
 };
 
 std::ostream& operator<<(
     std::ostream& os,
-    const MathematicalProgramSolverInterface::Solver& solver_type);
+    const SolverType& solver_type);
 
-std::string Name(MathematicalProgramSolverInterface::Solver solver_type);
+std::string Name(SolverType solver_type);
 }  // namespace solvers
 }  // namespace drake

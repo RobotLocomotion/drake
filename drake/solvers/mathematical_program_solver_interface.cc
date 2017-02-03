@@ -7,41 +7,41 @@ namespace drake {
 namespace solvers {
 std::ostream& operator<<(
     std::ostream& os,
-    const MathematicalProgramSolverInterface::Solver& solver_type) {
+    const SolverType& solver_type) {
   switch (solver_type) {
-    case MathematicalProgramSolverInterface::Solver::kDReal : {
+    case SolverType::kDReal : {
       os << "dReal";
       break;
     }
-    case MathematicalProgramSolverInterface::Solver::kEqualityConstrainedQP : {
+    case SolverType::kEqualityConstrainedQP : {
       os << "Equality constrained QP";
       break;
     }
-    case MathematicalProgramSolverInterface::Solver::kGurobi : {
+    case SolverType::kGurobi : {
       os << "Gurobi";
       break;
     }
-    case MathematicalProgramSolverInterface::Solver::kIpopt : {
+    case SolverType::kIpopt : {
       os << "IPOPT";
       break;
     }
-    case MathematicalProgramSolverInterface::Solver::kLinearSystem : {
+    case SolverType::kLinearSystem : {
       os << "Linear system";
       break;
     }
-    case MathematicalProgramSolverInterface::Solver::kMobyLCP : {
+    case SolverType::kMobyLCP : {
       os << "Moby LCP";
       break;
     }
-    case MathematicalProgramSolverInterface::Solver::kMosek : {
+    case SolverType::kMosek : {
       os << "Mosek";
       break;
     }
-    case MathematicalProgramSolverInterface::Solver::kNlopt : {
+    case SolverType::kNlopt : {
       os << "NLopt";
       break;
     }
-    case MathematicalProgramSolverInterface::Solver::kSnopt : {
+    case SolverType::kSnopt : {
       os << "SNOPT";
       break;
     }
@@ -50,7 +50,7 @@ std::ostream& operator<<(
   return os;
 }
 
-std::string Name(MathematicalProgramSolverInterface::Solver solver_type) {
+std::string Name(SolverType solver_type) {
   std::ostringstream oss;
   oss << solver_type;
   return oss.str();

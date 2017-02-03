@@ -12,7 +12,7 @@ class IpoptSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IpoptSolver)
 
-  IpoptSolver() : MathematicalProgramSolverInterface(Solver::kIpopt) {}
+  IpoptSolver() : MathematicalProgramSolverInterface(SolverType::kIpopt) {}
 
   // This solver is implemented in various pieces depending on if
   // Ipopt was available during compilation.

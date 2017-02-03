@@ -41,12 +41,12 @@ namespace systems {
 namespace plants {
 
 int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
-  solvers::MathematicalProgramSolverInterface::Solver solver_type;
+  solvers::SolverType solver_type;
   int solver_result = 0;
   prog.GetSolverResult(&solver_type, &solver_result);
 
   if (solver_type ==
-      solvers::MathematicalProgramSolverInterface::Solver::kSnopt) {
+      solvers::SolverType::kSnopt) {
     // We can return SNOPT results directly.
     return solver_result;
   }
@@ -72,23 +72,17 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
 
 void SetIKSolverOptions(const IKoptions& ikoptions,
                         drake::solvers::MathematicalProgram* prog) {
-  prog->SetSolverOption(
-      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
       "Derivative option", 1);
-  prog->SetSolverOption(
-      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
       "Major optimality tolerance", ikoptions.getMajorOptimalityTolerance());
-  prog->SetSolverOption(
-      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
       "Major feasibility tolerance", ikoptions.getMajorFeasibilityTolerance());
-  prog->SetSolverOption(
-      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
       "Superbasics limit", ikoptions.getSuperbasicsLimit());
-  prog->SetSolverOption(
-      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
       "Major iterations limit", ikoptions.getMajorIterationsLimit());
-  prog->SetSolverOption(
-      drake::solvers::MathematicalProgramSolverInterface::Solver::kSnopt,
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
       "Iterations limit", ikoptions.getIterationsLimit());
 }
 
