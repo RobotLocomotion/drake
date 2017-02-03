@@ -185,6 +185,11 @@ Expression Expression::Substitute(const Substitution& s) const {
   }
 }
 
+Expression Expression::Differentiate(const Variable& x) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return Expression{ptr_->Differentiate(x)};
+}
+
 string Expression::to_string() const {
   ostringstream oss;
   oss << *this;
