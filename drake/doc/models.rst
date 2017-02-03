@@ -15,7 +15,7 @@ Introduction
 ============
 
 This document discusses how physical objects (i.e., robots and other objects
-such as furniture) are represented in Drake .
+such as furniture) are represented in Drake.
 
 The representations of physical objects are modeled in Drake declaratively
 with either URDF (Unified Robot Description Format) or SDF (Simulation
@@ -63,8 +63,8 @@ in the mesh must be triangles. Many modeling tools have a simple tool for
 `SDF <http://sdformat.org/>`_ - Simulation Description Format. An XML format
 that describes objects and environments for robot simulators, visualization,
 and control. SDF is OSRF's successor to URDF.  In SDF, additional things
-besides robots can be modelled, such as the pose of the robot in the world,
-and things that are not robots (e.g. lights). Pose and non-robots cannot be
+besides robots can be modeled, such as the pose of the robot in the world,
+and things that are not robots (e.g., lights). Pose and non-robots cannot be
 modeled in URDF. Relative to URDF, SDF is being more actively maintained.
 
 `Texture <https://en.wikipedia.org/wiki/Texture_mapping#Texture_maps>`_ - the
@@ -140,8 +140,8 @@ While the visual properties define how the model looks, often we need to
 describe the shape of the hard parts of the model (the rigid bodies), which
 the SDF file defines with a "collision" tag. You may wonder why we don't use
 the visual mesh for the collision element.  That is possible, and it would be
-accurate, but a mesh is usually a very detailed, complex object. A complex
-object is very expensive to process.
+accurate, but a visual mesh is usually very detailed and complex, making it
+computationally expensive to use as a collision model.
 
 A much simpler way to describe a shape is with geometric primitives, such as
 cylinders, spheres, or boxes. The complexity of a geometric primitive
