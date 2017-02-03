@@ -4,8 +4,6 @@
 #include <stdexcept>
 #include <vector>
 
-#include <boost/optional.hpp>
-
 #include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/gen/endless_road_oracle_output.h"
 #include "drake/systems/framework/leaf_system.h"
