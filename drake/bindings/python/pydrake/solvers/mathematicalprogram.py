@@ -1,8 +1,8 @@
 from __future__ import absolute_import
 
 import numpy as np
-from ._pybind_mathematicalprogram import *
-from ._pybind_mathematicalprogram import _VectorXDecisionVariable
+from ._pydrake_mathematicalprogram import *
+from ._pydrake_mathematicalprogram import _VectorXDecisionVariable
 
 
 def VectorXDecisionVariable(vars_as_ndarray):
