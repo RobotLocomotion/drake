@@ -7,6 +7,8 @@
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "gtest/gtest.h"
 
+using namespace drake::examples::bead_on_a_wire;
+
 namespace drake {
 namespace systems {
 namespace {
@@ -15,8 +17,8 @@ class HalfExplicitDAE1SolverTest : public ::testing::Test {
  public:
   HalfExplicitDAE1SolverTest() {
     // Create and initialize the bead on the wire.
-    bead_on_a_wire_ = std::make_unique<bead_on_a_wire::BeadOnAWire<double>>(
-        bead_on_a_wire::BeadOnAWire<double>::kAbsoluteCoordinates);
+    bead_on_a_wire_ = std::make_unique<BeadOnAWire<double>>(
+        BeadOnAWire<double>::kAbsoluteCoordinates);
 
     // Create the context.
     context_ = bead_on_a_wire_->CreateDefaultContext();
@@ -34,7 +36,7 @@ class HalfExplicitDAE1SolverTest : public ::testing::Test {
         *bead_on_a_wire_, dt_, context_.get());  // Use default Context.
   }
 
-  std::unique_ptr<bead_on_a_wire::BeadOnAWire<double>> bead_on_a_wire_;
+  std::unique_ptr<BeadOnAWire<double>> bead_on_a_wire_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<HalfExplicitDAE1Solver<double>> integrator_;
   const double dt_ = 1e-3;        // Integration step size.
