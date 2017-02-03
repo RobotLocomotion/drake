@@ -20,37 +20,39 @@ namespace sensors {
 /// system" to denote 2D/3D spaces and "frame" to denote a captured image.
 ///
 /// There are three types of the coordinate systems that are relevant to this
-/// class: 1) "camera coordinate system", 2) "image coordinate system", 3)
-/// "pixel coordinate system".
-/// The "camera coordinate system" expresses a camera's 6D pose with regard to
-/// the world coordinate system.  We have chosen the axes in the "camera
-/// coordinate system" to be `X-right`, `Y-down` and `Z-forward`.  The `Z` axis
-/// is also called the "optical axis".  Note that each axis in the "camera
-/// coordinate system" is expressed in the upper case, like `(X, Y, Z)` to
-/// distinguish from those of the "image coordinate system" which we explain
-/// next.
+/// class:
+///   - the camera coordinate system
+///   - the image coordinate system
+///   - the pixel coordinate system.
 ///
-/// The "image coordinate system" is the 2D coordinate system made by projecting
-/// the "camera coordinate system" onto the 2D image plane which is
-/// perpendicular to the "optical axis".  Therefore, the direction of the each
-/// axis is `x-right` and `y-down`, and the origin of the "image coordinate
-/// system" is located at the crossing point between the 2D image plane and the
-/// "optical axis".  This origin is called the "image center" or "principal
-/// point".  Note that each axis in the "image coordinate system" is expressed
-/// in the lower case, like `(x, y)`.
+/// The camera coordinate system expresses a camera's 6D pose with regard to the
+/// world coordinate system.  We have chosen the axes in the camera coordinate
+/// system to be `X-right`, `Y-down` and `Z-forward`.  The `Z` axis is also
+/// called the "optical axis".  Note that each axis in the camera coordinate
+/// system is expressed in the upper case, like `(X, Y, Z)` to distinguish from
+/// those of the image coordinate system which we explain next.
 ///
-/// The "pixel coordinate system" is also the 2D coordinate system.  The main
-/// differences between the "pixel coordinate system" and the "image coordinate
-/// system" are the location of the origin and the direction of the axes.  We
-/// have chosen the origin of the "pixel coordinate system" to be the left-upper
-/// corner of the image and the direction of the each axis to be the same as
-/// those of the "image coordinate system".  The axes of the "pixel coordinate
-/// system" are expressed by using `u` and `v`, therefore the directions of
-/// the axes are `u-right` and `v-down`.
+/// The image coordinate system is the 2D coordinate system made by projecting
+/// the camera coordinate system onto the 2D image plane which is perpendicular
+/// to the "optical axis".  Therefore, the direction of the each axis is
+/// `x-right` and `y-down`, and the origin of the image coordinate system is
+/// located at the crossing point between the 2D image plane and the "optical
+/// axis".  This origin is called the "image center" or "principal point".  Note
+/// that each axis in the image coordinate system is expressed in the lower case
+/// , like `(x, y)`.
+///
+/// The pixel coordinate system is also a 2D coordinate system.  The main
+/// differences between the pixel coordinate system and the image coordinate
+/// system are the location of the origin the direction of the axes. We have
+/// chosen the origin of the pixel coordinate system to be the left-upper corner
+/// of the image and the direction of the each axis to be the same as those of
+/// the image coordinate system.  The axes of the pixel coordinate system are
+/// expressed by using `u` and `v`, therefore the directions of the axes are
+/// `u-right` and `v-down`.
 ///
 /// For more detail including an explanation of the focal lengths, refer to:
-/// http://docs.opencv.org/2.4/modules/calib3d/doc/calib3d.html and
-/// https://en.wikipedia.org/wiki/Pinhole_camera_model.
+/// http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html
+/// and https://en.wikipedia.org/wiki/Pinhole_camera_model.
 ///
 /// @ingroup sensor_systems
 // TODO(kunimatsu-tri) Add camera distortion parameters and other parameters as
