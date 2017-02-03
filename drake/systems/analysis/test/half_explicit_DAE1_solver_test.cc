@@ -7,7 +7,7 @@
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "gtest/gtest.h"
 
-using namespace drake::examples::bead_on_a_wire;
+using drake::examples::bead_on_a_wire::BeadOnAWire;
 
 namespace drake {
 namespace systems {
