@@ -41,11 +41,12 @@ namespace systems {
 namespace plants {
 
 int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
-  std::string solver_name;
+  solvers::MathematicalProgramSolverInterface::Solver solver_type;
   int solver_result = 0;
-  prog.GetSolverResult(&solver_name, &solver_result);
+  prog.GetSolverResult(&solver_type, &solver_result);
 
-  if (solver_name == "SNOPT") {
+  if (solver_type ==
+      solvers::MathematicalProgramSolverInterface::Solver::kSnopt) {
     // We can return SNOPT results directly.
     return solver_result;
   }

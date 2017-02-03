@@ -949,13 +949,13 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
 
   RunSolver(&prog, solver);
 
-  std::string solver_name;
+  MathematicalProgramSolverInterface::Solver solver_type;
   int solver_result;
-  prog.GetSolverResult(&solver_name, &solver_result);
+  prog.GetSolverResult(&solver_type, &solver_result);
   double precision = 1e-3;
   // The precision of Gurobi solver is not as good as Mosek, in
   // this problem.
-  if (solver_name == "Gurobi") {
+  if (solver_type == MathematicalProgramSolverInterface::Solver::kGurobi) {
     precision = 2e-2;
   }
   for (int i = 0; i < num_nodes - 1; ++i) {

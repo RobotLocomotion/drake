@@ -379,7 +379,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  const Number* g, const Number* lambda,
                                  Number obj_value, const IpoptData* ip_data,
                                  IpoptCalculatedQuantities* ip_cq) {
-    problem_->SetSolverResult("IPOPT", status);
+    problem_->SetSolverResult(
+        MathematicalProgramSolverInterface::Solver::kIpopt, status);
 
     switch (status) {
       case Ipopt::SUCCESS: {

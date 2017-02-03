@@ -541,7 +541,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     sol(i) = static_cast<double>(x[i]);
   }
   prog.SetDecisionVariableValues(sol);
-  prog.SetSolverResult(SolverName(), info);
+  prog.SetSolverResult(solver_type(), info);
 
   // todo: extract the other useful quantities, too.
 

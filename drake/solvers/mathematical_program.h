@@ -1892,7 +1892,7 @@ class MathematicalProgram {
    * Set an option for a particular solver.  This interface does not
    * do any verification of solver parameters beyond what an
    * individual solver does for itself.  It does not even verify that
-   * the specifed solver exists.  Use this only when you have
+   * the specified solver exists.  Use this only when you have
    * particular knowledge of what solver is being invoked, and exactly
    * what tuning is required.
    *
@@ -1948,13 +1948,15 @@ class MathematicalProgram {
    * for debugging, testing, and support of certain legacy
    * APIs.
    */
-  void GetSolverResult(std::string* solver_name, int* solver_result) const {
-    *solver_name = solver_name_;
+  void GetSolverResult(MathematicalProgramSolverInterface::Solver* solver_type,
+                       int* solver_result) const {
+    *solver_type = solver_type_;
     *solver_result = solver_result_;
   }
 
-  void SetSolverResult(const std::string& solver_name, int solver_result) {
-    solver_name_ = solver_name;
+  void SetSolverResult(MathematicalProgramSolverInterface::Solver solver_type,
+                       int solver_result) {
+    solver_type_ = solver_type;
     solver_result_ = solver_result;
   }
 
@@ -2206,7 +2208,7 @@ class MathematicalProgram {
   Eigen::VectorXd x_initial_guess_;
   std::vector<double> x_values_;
   std::shared_ptr<SolverData> solver_data_;
-  std::string solver_name_;
+  MathematicalProgramSolverInterface::Solver solver_type_;
   int solver_result_;
   std::map<MathematicalProgramSolverInterface::Solver,
            std::map<std::string, double>>

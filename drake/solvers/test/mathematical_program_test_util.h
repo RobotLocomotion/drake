@@ -18,21 +18,21 @@ namespace test {
 void CheckSolver(
     const MathematicalProgram &prog,
     MathematicalProgramSolverInterface::Solver desired_solver_type) {
-  std::string solver_name;
+  MathematicalProgramSolverInterface::Solver solver_type;
   int solver_result;
-  prog.GetSolverResult(&solver_name, &solver_result);
-  EXPECT_EQ(solver_name, Name(desired_solver_type));
+  prog.GetSolverResult(&solver_type, &solver_result);
+  EXPECT_EQ(solver_type, desired_solver_type);
 }
 
 void RunSolver(MathematicalProgram* prog,
                const MathematicalProgramSolverInterface& solver) {
   if (solver.available()) {
     SolutionResult result = solver.Solve(*prog);
-    std::string solver_name;
+    MathematicalProgramSolverInterface::Solver solver_type;
     int solver_status;
-    prog->GetSolverResult(&solver_name, &solver_status);
+    prog->GetSolverResult(&solver_type, &solver_status);
     EXPECT_EQ(result, SolutionResult::kSolutionFound)
-        << "Solver " << solver_name << " fails to find the solution."
+        << "Solver " << solver_type << " fails to find the solution."
         << std::endl;
   }
 }
