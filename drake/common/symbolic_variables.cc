@@ -1,4 +1,4 @@
-#include "drake/common/variables.h"
+#include "drake/common/symbolic_variables.h"
 
 #include <algorithm>
 #include <iterator>
@@ -17,6 +17,7 @@ using std::ostringstream;
 using std::string;
 
 namespace drake {
+namespace symbolic {
 
 Variables::Variables(std::initializer_list<value_type> init) : vars_(init) {}
 
@@ -125,4 +126,5 @@ ostream& operator<<(ostream& os, const Variables& vars) {
   return os;
 }
 
+}  // namespace symbolic
 }  // namespace drake

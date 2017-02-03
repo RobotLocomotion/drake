@@ -16,12 +16,12 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/dummy_value.h"
-#include "drake/common/environment.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/variable.h"
-#include "drake/common/variables.h"
+#include "drake/common/symbolic_environment.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 
 namespace drake {
 
@@ -512,52 +512,44 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
 
-}  // namespace symbolic
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator+=(Expression& lhs, const Variable& rhs);
+Expression operator+(const Variable& lhs, const Variable& rhs);
+Expression operator+(Expression lhs, const Variable& rhs);
+Expression operator+(const Variable& lhs, Expression rhs);
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator+=(symbolic::Expression& lhs,
-                                 const Variable& rhs);
-symbolic::Expression operator+(const Variable& lhs, const Variable& rhs);
-symbolic::Expression operator+(symbolic::Expression lhs, const Variable& rhs);
-symbolic::Expression operator+(const Variable& lhs, symbolic::Expression rhs);
+Expression& operator-=(Expression& lhs, const Variable& rhs);
+Expression operator-(const Variable& lhs, const Variable& rhs);
+Expression operator-(Expression lhs, const Variable& rhs);
+Expression operator-(const Variable& lhs, const Expression& rhs);
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator-=(symbolic::Expression& lhs,
-                                 const Variable& rhs);
-symbolic::Expression operator-(const Variable& lhs, const Variable& rhs);
-symbolic::Expression operator-(symbolic::Expression lhs, const Variable& rhs);
-symbolic::Expression operator-(const Variable& lhs,
-                               const symbolic::Expression& rhs);
+Expression& operator*=(Expression& lhs, const Variable& rhs);
+Expression operator*(const Variable& lhs, const Variable& rhs);
+Expression operator*(Expression lhs, const Variable& rhs);
+Expression operator*(const Variable& lhs, Expression rhs);
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator*=(symbolic::Expression& lhs,
-                                 const Variable& rhs);
-symbolic::Expression operator*(const Variable& lhs, const Variable& rhs);
-symbolic::Expression operator*(symbolic::Expression lhs, const Variable& rhs);
-symbolic::Expression operator*(const Variable& lhs, symbolic::Expression rhs);
+Expression& operator/=(Expression& lhs, const Variable& rhs);
+Expression operator/(const Variable& lhs, const Variable& rhs);
+Expression operator/(Expression lhs, const Variable& rhs);
+Expression operator/(const Variable& lhs, const Expression& rhs);
 
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator/=(symbolic::Expression& lhs,
-                                 const Variable& rhs);
-symbolic::Expression operator/(const Variable& lhs, const Variable& rhs);
-symbolic::Expression operator/(symbolic::Expression lhs, const Variable& rhs);
-symbolic::Expression operator/(const Variable& lhs,
-                               const symbolic::Expression& rhs);
-
-symbolic::Expression operator+(const Variable& var);
-symbolic::Expression operator-(const Variable& var);
+Expression operator+(const Variable& var);
+Expression operator-(const Variable& var);
 
 // Matrix<Expression> * Matrix<Variable> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
         std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        std::is_same<typename MatrixL::Scalar, symbolic::Expression>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value &&
         std::is_same<typename MatrixR::Scalar, Variable>::value,
-    Eigen::Matrix<symbolic::Expression, MatrixL::RowsAtCompileTime,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
                   MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs * rhs.template cast<symbolic::Expression>();
+  return lhs * rhs.template cast<Expression>();
 }
 
 // Matrix<Variable> * Matrix<Expression> => Matrix<Expression>
@@ -566,11 +558,11 @@ typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
         std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
         std::is_same<typename MatrixL::Scalar, Variable>::value &&
-        std::is_same<typename MatrixR::Scalar, symbolic::Expression>::value,
-    Eigen::Matrix<symbolic::Expression, MatrixL::RowsAtCompileTime,
+        std::is_same<typename MatrixR::Scalar, Expression>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
                   MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.template cast<symbolic::Expression>() * rhs;
+  return lhs.template cast<Expression>() * rhs;
 }
 
 // Matrix<Variable> * Matrix<double> => Matrix<Expression>
@@ -580,11 +572,10 @@ typename std::enable_if<
         std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
         std::is_same<typename MatrixL::Scalar, Variable>::value &&
         std::is_same<typename MatrixR::Scalar, double>::value,
-    Eigen::Matrix<symbolic::Expression, MatrixL::RowsAtCompileTime,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
                   MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.template cast<symbolic::Expression>() *
-         rhs.template cast<symbolic::Expression>();
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
 
 // Matrix<double> * Matrix<Variable> => Matrix<Expression>
@@ -594,12 +585,13 @@ typename std::enable_if<
         std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
         std::is_same<typename MatrixL::Scalar, double>::value &&
         std::is_same<typename MatrixR::Scalar, Variable>::value,
-    Eigen::Matrix<symbolic::Expression, MatrixL::RowsAtCompileTime,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
                   MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.template cast<symbolic::Expression>() *
-         rhs.template cast<symbolic::Expression>();
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
+
+}  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
  * file. This specialization is required to handle @c double to @c
@@ -665,37 +657,38 @@ struct NumTraits<drake::symbolic::Expression>
 
 // Informs Eigen that Variable op Variable gets Expression.
 template <typename BinaryOp>
-struct ScalarBinaryOpTraits<drake::Variable, drake::Variable, BinaryOp> {
+struct ScalarBinaryOpTraits<drake::symbolic::Variable,
+                            drake::symbolic::Variable, BinaryOp> {
   enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
 // Informs Eigen that Variable op Expression gets Expression.
 template <typename BinaryOp>
-struct ScalarBinaryOpTraits<drake::Variable, drake::symbolic::Expression,
-                            BinaryOp> {
+struct ScalarBinaryOpTraits<drake::symbolic::Variable,
+                            drake::symbolic::Expression, BinaryOp> {
   enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
 // Informs Eigen that Expression op Variable gets Expression.
 template <typename BinaryOp>
-struct ScalarBinaryOpTraits<drake::symbolic::Expression, drake::Variable,
-                            BinaryOp> {
+struct ScalarBinaryOpTraits<drake::symbolic::Expression,
+                            drake::symbolic::Variable, BinaryOp> {
   enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
 // Informs Eigen that Variable op double gets Expression.
 template <typename BinaryOp>
-struct ScalarBinaryOpTraits<drake::Variable, double, BinaryOp> {
+struct ScalarBinaryOpTraits<drake::symbolic::Variable, double, BinaryOp> {
   enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
 // Informs Eigen that double op Variable gets Expression.
 template <typename BinaryOp>
-struct ScalarBinaryOpTraits<double, drake::Variable, BinaryOp> {
+struct ScalarBinaryOpTraits<double, drake::symbolic::Variable, BinaryOp> {
   enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };

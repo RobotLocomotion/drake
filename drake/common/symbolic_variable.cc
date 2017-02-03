@@ -1,4 +1,4 @@
-#include "drake/common/variable.h"
+#include "drake/common/symbolic_variable.h"
 
 #include <atomic>
 #include <iostream>
@@ -13,6 +13,7 @@ using std::ostringstream;
 using std::string;
 
 namespace drake {
+namespace symbolic {
 
 Variable::Id Variable::get_next_id() {
   // Note that id 0 is reserved for anonymous variable which is created by the
@@ -44,4 +45,5 @@ ostream& operator<<(ostream& os, const Variable& var) {
   return os;
 }
 
+}  // namespace symbolic
 }  // namespace drake

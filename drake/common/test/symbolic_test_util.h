@@ -5,7 +5,7 @@
 
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
-#include "drake/common/variable.h"
+#include "drake/common/symbolic_variable.h"
 
 namespace drake {
 namespace symbolic {

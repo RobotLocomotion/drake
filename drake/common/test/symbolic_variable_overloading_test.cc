@@ -3,10 +3,11 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_variable.h"
 #include "drake/common/test/symbolic_test_util.h"
-#include "drake/common/variable.h"
 
 namespace drake {
+namespace symbolic {
 namespace {
 
 using std::ostringstream;
@@ -321,4 +322,5 @@ TEST_F(VariableOverloadingTest, EigenExpressionMatrixOutput) {
   EXPECT_EQ(oss1.str(), oss2.str());
 }
 }  // namespace
+}  // namespace symbolic
 }  // namespace drake

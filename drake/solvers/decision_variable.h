@@ -10,12 +10,12 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/variable.h"
+#include "drake/common/symbolic_variable.h"
 
 namespace drake {
 namespace solvers {
 template <int rows, int cols>
-using MatrixDecisionVariable = Eigen::Matrix<Variable, rows, cols>;
+using MatrixDecisionVariable = Eigen::Matrix<symbolic::Variable, rows, cols>;
 template <int rows>
 using VectorDecisionVariable = MatrixDecisionVariable<rows, 1>;
 using MatrixXDecisionVariable =

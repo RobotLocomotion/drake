@@ -1,4 +1,4 @@
-#include "drake/common/environment.h"
+#include "drake/common/symbolic_environment.h"
 
 #include <cmath>
 #include <stdexcept>
@@ -6,9 +6,10 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/common/variable.h"
+#include "drake/common/symbolic_variable.h"
 
 namespace drake {
+namespace symbolic {
 namespace {
 
 using std::string;
@@ -84,4 +85,5 @@ TEST_F(EnvironmentTest, DummyVariable2) {
 }
 
 }  // namespace
+}  // namespace symbolic
 }  // namespace drake

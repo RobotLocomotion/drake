@@ -9,12 +9,12 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/environment.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression_cell.h"
 #include "drake/common/symbolic_formula.h"
-#include "drake/common/variable.h"
-#include "drake/common/variables.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 
 namespace drake {
 namespace symbolic {
@@ -721,75 +721,53 @@ const map<Expression, Expression>& get_base_to_exp_map_in_multiplication(
   return to_multiplication(e)->get_base_to_exp_map();
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator+=(Expression& lhs, const Variable& rhs) {
+  return lhs += Expression{rhs};
+}
+Expression operator+(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} + Expression{rhs};
+}
+Expression operator+(Expression lhs, const Variable& rhs) { return lhs += rhs; }
+Expression operator+(const Variable& lhs, Expression rhs) { return rhs += lhs; }
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator-=(Expression& lhs, const Variable& rhs) {
+  return lhs -= Expression{rhs};
+}
+Expression operator-(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} - Expression{rhs};
+}
+Expression operator-(Expression lhs, const Variable& rhs) { return lhs -= rhs; }
+Expression operator-(const Variable& lhs, const Expression& rhs) {
+  return Expression(lhs) - rhs;
+}
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator*=(Expression& lhs, const Variable& rhs) {
+  return lhs *= Expression{rhs};
+}
+Expression operator*(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} * Expression{rhs};
+}
+Expression operator*(Expression lhs, const Variable& rhs) { return lhs *= rhs; }
+Expression operator*(const Variable& lhs, Expression rhs) { return rhs *= lhs; }
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator/=(Expression& lhs, const Variable& rhs) {
+  return lhs /= Expression{rhs};
+}
+Expression operator/(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} / Expression{rhs};
+}
+Expression operator/(Expression lhs, const Variable& rhs) { return lhs /= rhs; }
+Expression operator/(const Variable& lhs, const Expression& rhs) {
+  return Expression(lhs) / rhs;
+}
+
+Expression operator+(const Variable& var) { return Expression{var}; }
+Expression operator-(const Variable& var) { return -Expression{var}; }
+
 }  // namespace symbolic
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator+=(symbolic::Expression& lhs,
-                                 const Variable& rhs) {
-  return lhs += symbolic::Expression{rhs};
-}
-symbolic::Expression operator+(const Variable& lhs, const Variable& rhs) {
-  return symbolic::Expression{lhs} + symbolic::Expression{rhs};
-}
-symbolic::Expression operator+(symbolic::Expression lhs, const Variable& rhs) {
-  return lhs += rhs;
-}
-symbolic::Expression operator+(const Variable& lhs, symbolic::Expression rhs) {
-  return rhs += lhs;
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator-=(symbolic::Expression& lhs,
-                                 const Variable& rhs) {
-  return lhs -= symbolic::Expression{rhs};
-}
-symbolic::Expression operator-(const Variable& lhs, const Variable& rhs) {
-  return symbolic::Expression{lhs} - symbolic::Expression{rhs};
-}
-symbolic::Expression operator-(symbolic::Expression lhs, const Variable& rhs) {
-  return lhs -= rhs;
-}
-symbolic::Expression operator-(const Variable& lhs,
-                               const symbolic::Expression& rhs) {
-  return symbolic::Expression(lhs) - rhs;
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator*=(symbolic::Expression& lhs,
-                                 const Variable& rhs) {
-  return lhs *= symbolic::Expression{rhs};
-}
-symbolic::Expression operator*(const Variable& lhs, const Variable& rhs) {
-  return symbolic::Expression{lhs} * symbolic::Expression{rhs};
-}
-symbolic::Expression operator*(symbolic::Expression lhs, const Variable& rhs) {
-  return lhs *= rhs;
-}
-symbolic::Expression operator*(const Variable& lhs, symbolic::Expression rhs) {
-  return rhs *= lhs;
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator/=(symbolic::Expression& lhs,
-                                 const Variable& rhs) {
-  return lhs /= symbolic::Expression{rhs};
-}
-symbolic::Expression operator/(const Variable& lhs, const Variable& rhs) {
-  return symbolic::Expression{lhs} / symbolic::Expression{rhs};
-}
-symbolic::Expression operator/(symbolic::Expression lhs, const Variable& rhs) {
-  return lhs /= rhs;
-}
-symbolic::Expression operator/(const Variable& lhs,
-                               const symbolic::Expression& rhs) {
-  return symbolic::Expression(lhs) / rhs;
-}
-
-symbolic::Expression operator+(const Variable& var) {
-  return symbolic::Expression{var};
-}
-symbolic::Expression operator-(const Variable& var) {
-  return -symbolic::Expression{var};
-}
 
 }  // namespace drake

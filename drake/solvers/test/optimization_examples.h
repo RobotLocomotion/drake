@@ -220,7 +220,7 @@ class NonConvexQPproblem2 {
   void AddSymbolicConstraint();
 
   std::unique_ptr<MathematicalProgram> prog_;
-  Eigen::Matrix<Variable, 6, 1> x_;
+  Eigen::Matrix<symbolic::Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 
@@ -312,7 +312,7 @@ class LowerBoundedProblem {
   void AddNonSymbolicConstraint();
 
   std::unique_ptr<MathematicalProgram> prog_;
-  Eigen::Matrix<Variable, 6, 1> x_;
+  Eigen::Matrix<symbolic::Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 

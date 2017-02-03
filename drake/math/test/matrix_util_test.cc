@@ -30,9 +30,9 @@ GTEST_TEST(TestMatrixUtil, TestIsSymmetric) {
 
   // Tests a symbolic expression.
   Eigen::Matrix<symbolic::Expression, 2, 2> S;
-  Variable s1{"s1"};
-  Variable s2{"s2"};
-  Variable s3{"s3"};
+  symbolic::Variable s1{"s1"};
+  symbolic::Variable s2{"s2"};
+  symbolic::Variable s3{"s3"};
   symbolic::Expression S00{s1};
   symbolic::Expression S01{s2};
   symbolic::Expression S11{s3};

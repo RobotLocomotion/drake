@@ -1,4 +1,4 @@
-#include "drake/common/environment.h"
+#include "drake/common/symbolic_environment.h"
 
 #include <cmath>
 #include <initializer_list>
@@ -8,6 +8,7 @@
 #include <string>
 
 namespace drake {
+namespace symbolic {
 
 using std::endl;
 using std::ostream;
@@ -76,4 +77,5 @@ ostream& operator<<(ostream& os, const Environment& env) {
   }
   return os;
 }
+}  // namespace symbolic
 }  // namespace drake
