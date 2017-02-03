@@ -12,41 +12,46 @@ namespace sensors {
 /// and camera intrinsic parameters.
 ///
 /// To clarify the terminology used to describe 2D and/or 3D spaces throughout
-/// the class, we use `coordinate system` rather than `frame`.  Since the term
-/// `frame` in the computer vision field has two major meaning: a synonym of
-/// coordinate system, and a snaphot out of consecutively captured images.  To
-/// ensure the reader will not be confused, we clearly differenciate the use of
-/// the terms `coordinate system` and `frame`.
+/// the class, we use "coordinate system" rather than "frame".  This is because
+/// the term "frame" in the computer vision field has two major meaning: a
+/// synonym of coordinate system, and a snapshot out of consecutively captured
+/// images.  To ensure the reader will not be confused, we clearly differentiate
+/// the use of the terms "coordinate system" and "frame" by using "coordinate
+/// system" to denote 2D/3D spaces and "frame" to denote a captured image.
 ///
-/// There are three types of the coordinate systems that you should be aware of:
-/// 1) `camera coordinate system`, 2) `image coordinate system`, 3) `pixel`
-/// `coordinate system`.
-/// The `camera coordinate system` expresses camera's 6D pose with regard to the
-/// world coordinate system.  We have chosen the axes in the `camera coordinate`
-/// `system` to be `X-right`, `Y-down` and `Z-forward`.  The `Z` axis is also
-/// called `optical axis`.  Note that the each axis is expressed by the upper
-/// case like `(X, Y, Z)` to distinguish from those of the `image coordinate`
-/// `system` which we explain next.
-/// The `image coordinate system` is the 2D coordinate system made by projecting
-/// the `camera coordinate system` onto the 2D image plane which is
-/// perpendicular to the `optical axis`.  Therefore, the direction of the each
-/// axis is `x-right` and `y-down`, and the origin of the `image coordinate`
-/// `system` is located at the crossing point between the 2D image plane and the
-/// `optical axis`.  This origin is called `image center` or `principal point`.
-/// Note that the each axis is expressed by the lower case like `(x, y)`.
-/// The `pixel coordinate system` is also the 2D coordinate system.  The main
-/// differences between the `pixel coordinate system` and the `image coordinate`
-/// `system` are the location of the origin and the direction of the axes.  We
-/// have chosen the origin of the `pixel coordinate system` to be the left-upper
-/// corner in the image and the direction of the each axis to be the same as
-/// those of the `image coordinate system`.  The axes of the `pixel coordinate`
-/// `system` are expressed by using the `u` and `v`, therefore the directions of
+/// There are three types of the coordinate systems that are relevant to this
+/// class: 1) "camera coordinate system", 2) "image coordinate system", 3)
+/// "pixel coordinate system".
+/// The "camera coordinate system" expresses a camera's 6D pose with regard to
+/// the world coordinate system.  We have chosen the axes in the "camera
+/// coordinate system" to be `X-right`, `Y-down` and `Z-forward`.  The `Z` axis
+/// is also called the "optical axis".  Note that each axis in the "camera
+/// coordinate system" is expressed in the upper case, like `(X, Y, Z)` to
+/// distinguish from those of the "image coordinate system" which we explain
+/// next.
+///
+/// The "image coordinate system" is the 2D coordinate system made by projecting
+/// the "camera coordinate system" onto the 2D image plane which is
+/// perpendicular to the "optical axis".  Therefore, the direction of the each
+/// axis is `x-right` and `y-down`, and the origin of the "image coordinate
+/// system" is located at the crossing point between the 2D image plane and the
+/// "optical axis".  This origin is called the "image center" or "principal
+/// point".  Note that each axis in the "image coordinate system" is expressed
+/// in the lower case, like `(x, y)`.
+///
+/// The "pixel coordinate system" is also the 2D coordinate system.  The main
+/// differences between the "pixel coordinate system" and the "image coordinate
+/// system" are the location of the origin and the direction of the axes.  We
+/// have chosen the origin of the "pixel coordinate system" to be the left-upper
+/// corner of the image and the direction of the each axis to be the same as
+/// those of the "image coordinate system".  The axes of the "pixel coordinate
+/// system" are expressed by using `u` and `v`, therefore the directions of
 /// the axes are `u-right` and `v-down`.
 ///
-/// For more detail including the explanation for the focal lengths, refer to:
+/// For more detail including an explanation of the focal lengths, refer to:
 /// http://docs.opencv.org/2.4/modules/calib3d/doc/
 /// camera_calibration_and_3d_reconstruction.html and https://en.wikipedia.org/
-/// wiki/Pinhole_camera_model
+/// wiki/Pinhole_camera_model.
 ///
 /// @ingroup sensor_systems
 // TODO(kunimatsu-tri) Add camera distortion parameters and other parameters as
@@ -59,9 +64,9 @@ class CameraInfo {
   /// @param height The image height in pixels, must be greater than zero.
   /// @param focal_x The focal length x in pixels.
   /// @param focal_y The focal length y in pixels.
-  /// @param center_x The image center x with regard to the pixel coordinate
+  /// @param center_x The x coordinate of the image center in the pixel coordinate
   /// system in pixels.
-  /// @param center_y The image center y with regard to the pixel coordinate
+  /// @param center_y The y coordinate of the image center in the pixel coordinate
   /// system in pixels.
   CameraInfo(int width, int height, double focal_x, double focal_y,
              double center_x, double center_y)
@@ -80,9 +85,9 @@ class CameraInfo {
   /// Constructor that sets the image size and vertical field of view `fov_y`.
   /// We assume there is no image offset, so the image center `(center_x,`
   /// `center_y)` is equal to `(width / 2, height / 2)`.  The horizontal field
-  /// of view `fov_x`is calculated by the aspect ratio of the image width and
+  /// of view `fov_x` is calculated using the aspect ratio of the image width and
   /// height together with the vertical field of view. The focal lengths
-  /// `focal_x` and `focal_y` are calculated by both of the field of views:
+  /// `focal_x` and `focal_y` are calculated as follows:
   /// <pre>
   ///   focal_x = width / 2 / tan(fov_x / 2)
   ///   focal_y = height / 2 / tan(fov_y / 2)
