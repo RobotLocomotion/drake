@@ -12,6 +12,7 @@
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
+namespace examples {
 namespace bead_on_a_wire {
 
 template <typename T>
@@ -230,4 +231,5 @@ void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
 }
 
 }  // namespace bead_on_a_wire
+}  // namespace examples
 }  // namespace drake
