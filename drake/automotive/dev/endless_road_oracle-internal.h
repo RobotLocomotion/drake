@@ -49,6 +49,11 @@ struct SourceState {
 
 // Element of a car's travel path in the source maliput::api::RoadGeometry.
 struct PathRecord {
+  PathRecord() {}
+
+  PathRecord(const api::Lane* lane_in, bool is_reversed_in)
+      : lane(lane_in), is_reversed(is_reversed_in) {}
+
   const api::Lane* lane{};
   bool is_reversed{};
 };
