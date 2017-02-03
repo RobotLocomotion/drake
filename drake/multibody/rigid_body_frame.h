@@ -69,11 +69,12 @@ class RigidBodyFrame {
   // TODO(liang.fok) Update this to return a unique_ptr. This is related to
   // #3093.
   /**
-   * Returns a clone of this RigidBodyFrame. Note that the body to which this
-   * frame is attached is not cloned. The body must later be set using
-   * set_rigid_body().
+   * Returns a clone of this RigidBodyFrame.
+   *
+   * @param[in] body A pointer to the body to include in the returned clone.
+   * This pointer must remain valid for the duration of the clone's lifetime.
    */
-  virtual std::shared_ptr<RigidBodyFrame<T>> Clone() const;
+  virtual std::shared_ptr<RigidBodyFrame<T>> Clone(RigidBody<T>* body) const;
 #endif
 
   /**

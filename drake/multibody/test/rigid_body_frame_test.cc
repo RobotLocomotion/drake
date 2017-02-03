@@ -16,15 +16,22 @@ using std::make_unique;
 
 // Tests ability to clone a RigidBodyFrame.
 GTEST_TEST(RigidBodyFrameTest, TestClone) {
+  const std::string kBodyName = "FooBody";
+  const int kModelInstanceId = 1234;
+
   const std::string kName = "MyRigidBodyFrame";
+  RigidBody<double> original_body;
+  original_body.set_name(kBodyName);
+  original_body.set_model_instance_id(kModelInstanceId);
   const Vector3d xyz(1, 2, 3);
   const Vector3d rpy(4, 5, 6);
 
   // A nullptr is used since the rigid body pointer is not cloned.
   RigidBodyFrame<double> original_frame(
-      kName, nullptr /* rigid body */, xyz, rpy);
+      kName, &original_body, xyz, rpy);
 
-  auto cloned_frame = original_frame.Clone();
+  auto cloned_body = original_body.Clone();
+  auto cloned_frame = original_frame.Clone(cloned_body.get());
   EXPECT_TRUE(original_frame.CompareToClone(*cloned_frame));
 
   // Ensures that a modified clone does not match.

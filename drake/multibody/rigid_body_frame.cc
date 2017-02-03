@@ -24,9 +24,11 @@ RigidBodyFrame<T>::RigidBodyFrame(const std::string& name, RigidBody<T>* body,
 // rigid_body_frame.h.
 #ifndef SWIG
 template <typename T>
-std::shared_ptr<RigidBodyFrame<T>> RigidBodyFrame<T>::Clone() const {
+std::shared_ptr<RigidBodyFrame<T>> RigidBodyFrame<T>::Clone(RigidBody<T>* body)
+    const {
   auto frame = std::make_shared<RigidBodyFrame<T>>();
   frame->set_name(name_);
+  frame->set_rigid_body(body);
   frame->set_transform_to_body(transform_to_body_);
   frame->set_frame_index(frame_index_);
   return move(frame);
@@ -42,6 +44,26 @@ bool RigidBodyFrame<T>::CompareToClone(const RigidBodyFrame& other) const {
         "  - other: {}",
         get_name(),
         other.get_name());
+    return false;
+  }
+  if (get_rigid_body().get_name() != other.get_rigid_body().get_name()) {
+    drake::log()->debug(
+        "RigidBodyFrame::CompareToClone(): rigid body name mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_rigid_body().get_name(),
+        other.get_rigid_body().get_name());
+    return false;
+  }
+  if (get_rigid_body().get_model_instance_id() !=
+      other.get_rigid_body().get_model_instance_id()) {
+    drake::log()->debug(
+        "RigidBodyFrame::CompareToClone(): rigid body model instance ID"
+        " mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_rigid_body().get_model_instance_id(),
+        other.get_rigid_body().get_model_instance_id());
     return false;
   }
   if (get_transform_to_body().matrix() !=
