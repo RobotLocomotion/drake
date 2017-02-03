@@ -35,6 +35,14 @@ Monomial::Monomial(const Variable& var, const int expnt)
 Monomial::Monomial(const map<Variable::Id, int>& powers)
     : total_degree_{TotalDegree(powers)}, powers_(powers) {}
 
+size_t Monomial::GetHash() const {
+  return hash_value<map<Variable::Id, int>>{}(powers_);
+}
+
+bool Monomial::operator==(const Monomial& m) const {
+  return powers_ == m.powers_;
+}
+
 Expression Monomial::ToExpression(
     const unordered_map<Variable::Id, Variable>& id_to_var_map) const {
   // It builds this base_to_expnt_map and uses ExpressionMulFactory to build a
