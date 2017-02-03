@@ -17,7 +17,7 @@ Introduction
 This document discusses how physical objects (i.e., robots and other objects
 such as furniture) are represented in Drake .
 
-The representations of physical objects are modelled in Drake declaratively
+The representations of physical objects are modeled in Drake declaratively
 with either URDF (Unified Robot Description Format) or SDF (Simulation
 Description Format), which are both XML formats.
 
@@ -30,17 +30,18 @@ The target audience for this document is for those who want to model a
 physical object in Drake. You should have some understanding of XML formats,
 and be able to run Drake. However, you don't need to know C++. This document
 is not meant as a tutorial for creating URDF/SDF files, which you can find
-elsewhere. But it does provide enough reference material for someone to edit
-or create a representation of an object for Drake, by defining the
-terminology and providing a brief description of what's in a model file.
+`elsewhere <http://gazebosim.org/tutorials?tut=build_robot>`_. But it does
+provide enough reference material for someone to edit or create a
+representation of an object for Drake, by defining the terminology and
+providing a brief description of what's in a model file.
 
 In this document, we call the URDF or SDF representation of the object a
 model. The model of an object will describe the object's physical properties,
 including visual, contact, and dynamic properties. Visual properties
-describe the appearance of an object, such as it's shape and texture.
-Dynamic properties describe how the object moves with the parameters mass
-and inertia. Contact properties (how the object responds to contacting other
-objects) have collision parameters.
+describe the appearance of an object, such as its shape and texture. Dynamic
+properties describe how the object moves and have parameters like mass and
+spatial inertia. Contact properties describe how an object behaves when in
+contact with other objects and include numerous collision parameters.
 
 These properties allow you to do simulation, visualization, motion planning,
 and control.
@@ -50,24 +51,31 @@ and control.
 Terminology
 ===========
 
-`Mesh <https://en.wikipedia.org/wiki/Polygon_mesh>`_  - a collection of
-vertices, edges, and faces that describe the shape of a 3D object. A mesh
-often contains hundreds of vertices to describe a complex shape.
+`Mesh <https://en.wikipedia.org/wiki/Polygon_mesh>`_ - a polygon mesh which
+is a collection of vertices, edges, and faces that describes the surface of a
+3D object. For a mesh to represent the fine details of a surface, a complex
+mesh is required. Processing a mesh gets more expensive as the mesh becomes
+more complex. Therefore, it is important to use a mesh with just enough
+detail to serve the purpose. To be compatible with Drake, all of the faces
+in the mesh must be triangles. Many modeling tools have a simple tool for
+"triangulating" the mesh.
 
 `SDF <http://sdformat.org/>`_ - Simulation Description Format. An XML format
 that describes objects and environments for robot simulators, visualization,
-and control. SDF is OSRF's successor to URDF. Relative to URDF, SDF is being
-more actively maintained.
+and control. SDF is OSRF's successor to URDF.  In SDF, additional things
+besides robots can be modelled, such as the pose of the robot in the world,
+and things that are not robots (e.g. lights). Pose and non-robots cannot be
+modeled in URDF. Relative to URDF, SDF is being more actively maintained.
 
-`Texture <https://en.wikipedia.org/wiki/Texture_mapping#Texture_maps>`_ -
-the digital representation of an object's surface. A texture may include color,
-brightness, transparency and reflectivity (shininess). The texture is mapped
-onto an already available surface.
+`Texture <https://en.wikipedia.org/wiki/Texture_mapping#Texture_maps>`_ - the
+digital representation of an object's surface. A texture may include color,
+brightness, transparency, reflectivity, and other aspects. The texture is
+mapped onto an already available surface.
 
-`URDF <urdf/drakeURDF.html#://>`_- Unified Robot Description Format, an XML
-format for representing one robot model (unlike SDF, URDF does not model
-everything else in the world or the robot's pose in the world). Drake's URDF
-extends the `official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
+`URDF <urdf/drakeURDF.html#://>`_ - Unified Robot Description Format, an XML
+format for representing one robot model. Unlike SDF, only robots can be modeled,
+and pose cannot be modeled. Drake's URDF extends the
+`official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
 
 .. _model_file_formats:
 
@@ -132,12 +140,11 @@ While the visual properties define how the model looks, often we need to
 describe the shape of the hard parts of the model (the rigid bodies), which
 the SDF file defines with a "collision" tag. You may wonder why we don't use
 the visual mesh for the collision element.  That is possible, and it would be
-accurate, but a mesh is usually very detailed, often containing
-thousands of vertices. The vertices are used to determine if one object is
-colliding with another object, so the more vertices, the more computation.
+accurate, but a mesh is usually a very detailed, complex object. A complex
+object is very expensive to process.
 
 A much simpler way to describe a shape is with geometric primitives, such as
-cylinders, spheres, or boxes. The number of vertices in a geometric primitive
+cylinders, spheres, or boxes. The complexity of a geometric primitive
 is far less than with a mesh. If you look at the cinder block SDF file,
 you'll see that the geometries of the collision elements are defined as
 boxes, instead of using the mesh. In this cinder block, the outline of the
@@ -164,7 +171,7 @@ model to use a simpler form than the original high density mesh.
 
 Q: What is the easiest way to use something simpler for a collision model?
 
-A: If you are starting with a mesh of an object (e.g. from a 3D scanner),
+A: If you are starting with a mesh of an object (e.g., from a 3D scanner),
 you may be able to use a primitive geometric shape (e.g., cylinder, box, or
 sphere) instead of the mesh, as described above. To do this, consider a tool
 like `Gazebo <http://gazebosim.org/>`_, which provides a visual editor of model
