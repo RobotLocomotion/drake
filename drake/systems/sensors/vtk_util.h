@@ -7,7 +7,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// Utility class for VTK library.
+/// Utility class for the VTK library.
 class VtkUtil {
  public:
   /// Creates a square plane with the given size, color and:
