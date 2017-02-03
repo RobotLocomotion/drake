@@ -16,8 +16,23 @@ drake_cc_library(
     linkstatic = 1,
     deps = [
         ":accelerometer",
+        ":camera_info",
         ":depth_sensor",
         ":rotary_encoders",
+    ],
+)
+
+drake_cc_library(
+    name = "camera_info",
+    srcs = [
+        "camera_info.cc",
+    ],
+    hdrs = [
+        "camera_info.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        "//drake/systems/framework",
     ],
 )
 
@@ -112,6 +127,14 @@ drake_cc_binary(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "camera_info_test",
+    deps = [
+        ":camera_info",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
 
 drake_cc_googletest(
     name = "rotary_encoders_test",

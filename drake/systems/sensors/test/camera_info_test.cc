@@ -1,0 +1,70 @@
+#include "drake/systems/sensors/camera_info.h"
+
+#include "gtest/gtest.h"
+
+#include "drake/common/eigen_matrix_compare.h"
+
+namespace drake {
+namespace systems {
+namespace sensors {
+namespace {
+
+const double kTolerance = std::numeric_limits<double>::epsilon();
+
+const int kWidth = 640;
+const int kHeight = 480;
+const double kFx = 554.25625842204079;  // in pixels
+const double kFy = 579.41125496954282;  // in pixels
+const double kCx = kWidth * 0.5;
+const double kCy = kHeight * 0.5;
+const double kVerticalFov = 0.78539816339744828;  // 45.0 degrees
+
+class CameraInfoTest : public ::testing::Test {
+ public:
+  CameraInfoTest() : expected_intrinsic_(
+      (Eigen::Matrix3d() <<
+           kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished()) {}
+
+  void SetUp() {}
+
+  void Verify(const CameraInfo& dut) const {
+    EXPECT_EQ(kWidth, dut.width());
+    EXPECT_EQ(kHeight, dut.height());
+    EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
+    EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
+    EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
+    EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
+    EXPECT_TRUE(CompareMatrices(expected_intrinsic_, dut.intrinsic_matrix(),
+                                kTolerance));
+  }
+
+ private:
+  const Eigen::Matrix3d expected_intrinsic_;
+};
+
+TEST_F(CameraInfoTest, ConstructionTest) {
+  CameraInfo dut(kWidth, kHeight, kFx, kFy, kCx, kCy);
+  Verify(dut);
+}
+
+TEST_F(CameraInfoTest, ConstructionWithFovTest) {
+  CameraInfo dut(kWidth, kHeight, kVerticalFov);
+  Verify(dut);
+}
+
+TEST_F(CameraInfoTest, CopyConstructorTest) {
+  CameraInfo camera_info(kWidth, kHeight, kFx, kFy, kCx, kCy);
+  CameraInfo dut(camera_info);
+  Verify(dut);
+}
+
+TEST_F(CameraInfoTest, MoveConstructorTest) {
+  CameraInfo camera_info(kWidth, kHeight, kFx, kFy, kCx, kCy);
+  CameraInfo dut(std::move(camera_info));
+  Verify(dut);
+}
+
+}  // namespace
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake
