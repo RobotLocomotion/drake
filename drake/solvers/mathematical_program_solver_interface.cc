@@ -51,11 +51,9 @@ std::ostream& operator<<(
 }
 
 std::string Name(MathematicalProgramSolverInterface::Solver solver_type) {
-  std::stringbuf str;
-  std::ostream stream(nullptr);
-  stream.rdbuf(&str);
-  stream << solver_type;
-  return str.str();
+  std::ostringstream oss;
+  oss << solver_type;
+  return oss.str();
 }
 
 std::string MathematicalProgramSolverInterface::SolverName() const {
