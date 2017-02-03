@@ -39,23 +39,24 @@ class MonomialTest : public ::testing::Test {
 
 TEST_F(MonomialTest, Monomial) {
   // clang-format off
-  EXPECT_PRED2(ExprEqual,
-               Monomial(unordered_map<Variable, int, hash_value<Variable>>{}),
-               Expression{1.0});
+  EXPECT_PRED2(
+      ExprEqual,
+      GetMonomial(unordered_map<Variable, int, hash_value<Variable>>{}),
+      Expression{1.0});
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}}),
                x_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_y_, 1}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_y_, 1}}),
                y_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}, {var_y_, 1}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}, {var_y_, 1}}),
                x_ * y_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 2}, {var_y_, 3}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 2}, {var_y_, 3}}),
                x_ * x_ * y_ * y_ * y_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}),
                pow(x_, 1) * pow(y_, 2) * pow(z_, 3));
   // clang-format on
 }
@@ -273,6 +274,27 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
 
   EXPECT_EQ(basis1, expected);
   EXPECT_EQ(basis2, expected);
+}
+
+// This test shows that we can have a std::unordered_map whose key is of
+// internal::Monomial.
+TEST_F(MonomialTest, UnorderedMapOfMonomial) {
+  unordered_map<internal::Monomial, double, hash_value<internal::Monomial>>
+      monomial_to_coeff_map;
+  internal::Monomial x_3{var_x_, 3};
+  internal::Monomial y_5{var_y_, 5};
+  // Add 2 * x^3
+  monomial_to_coeff_map.emplace(x_3, 2);
+  // Add -7 * y^5
+  monomial_to_coeff_map.emplace(y_5, -7);
+
+  const auto it1 = monomial_to_coeff_map.find(x_3);
+  ASSERT_TRUE(it1 != monomial_to_coeff_map.end());
+  EXPECT_EQ(it1->second, 2);
+
+  const auto it2 = monomial_to_coeff_map.find(y_5);
+  ASSERT_TRUE(it2 != monomial_to_coeff_map.end());
+  EXPECT_EQ(it2->second, -7);
 }
 
 }  // namespace
