@@ -396,7 +396,7 @@ double ExpressionAdd::Evaluate(const Environment& env) const {
 
 Expression ExpressionAdd::Substitute(const Substitution& s) const {
   return accumulate(
-      exp_to_coeff_map_.begin(), exp_to_coeff_map_.end(), Expression::Zero(),
+      exp_to_coeff_map_.begin(), exp_to_coeff_map_.end(), Expression{constant_},
       [&s](const Expression& init, const pair<Expression, double>& p) {
         return init + p.first.Substitute(s) * p.second;
       });
