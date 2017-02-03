@@ -8,8 +8,8 @@ namespace drake {
 namespace systems {
 namespace sensors {
 namespace {
-
-const double kTolerance = std::numeric_limits<double>::epsilon();
+// This is bacause there is a precision difference between Ubuntu and Mac.
+const double kTolerance = 1e-12;
 
 const int kWidth = 640;
 const int kHeight = 480;
