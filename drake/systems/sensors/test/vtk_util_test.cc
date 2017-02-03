@@ -1,5 +1,7 @@
 #include "drake/systems/sensors/vtk_util.h"
 
+#include <vector>
+
 #include "gtest/gtest.h"
 
 namespace drake {
@@ -54,9 +56,9 @@ class VtkUtilTest : public ::testing::Test {
   std::vector<Point> point_set_;
 };
 
-
+// Verifies whether the created plane has the expected set of 3D points.
 TEST_F(VtkUtilTest, PointsCorrespoindenceTest) {
-  unsigned char color[3] = {255, 128, 0};
+  const unsigned char color[3] = {255, 128, 0};
   vtkSmartPointer<vtkPolyData> dut = VtkUtil::CreateSquarePlane(kSize, color);
 
   EXPECT_EQ(kNumPoints, dut->GetPoints()->GetNumberOfPoints());
