@@ -76,19 +76,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "environment",
-    srcs = ["environment.cc"],
-    hdrs = [
-        "environment.h",
-    ],
-    linkstatic = 1,
-    deps = [
-        ":common",
-        ":variable",
-    ],
-)
-
-drake_cc_library(
     name = "extract_double",
     hdrs = ["extract_double.h"],
     linkstatic = 1,
@@ -127,28 +114,31 @@ drake_cc_library(
 drake_cc_library(
     name = "symbolic",
     srcs = [
+        "symbolic_environment.cc",
         "symbolic_expression.cc",
         "symbolic_expression_cell.cc",
         "symbolic_expression_cell.h",
         "symbolic_formula.cc",
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
+        "symbolic_variable.cc",
+        "symbolic_variables.cc",
     ],
     hdrs = [
         "hash.h",
+        "symbolic_environment.h",
         "symbolic_expression.h",
         "symbolic_formula.h",
+        "symbolic_variable.h",
+        "symbolic_variables.h",
     ],
     linkstatic = 1,
     deps = [
         ":common",
         ":cond",
         ":dummy_value",
-        ":environment",
         ":number_traits",
         ":polynomial",
-        ":variable",
-        ":variables",
     ],
 )
 
@@ -161,32 +151,6 @@ drake_cc_library(
         ":symbolic",
     ],
     testonly = 1,
-)
-
-cc_library(
-    name = "variable",
-    srcs = ["variable.cc"],
-    hdrs = [
-        "hash.h",
-        "variable.h",
-    ],
-    linkstatic = 1,
-    deps = [
-        ":common",
-    ],
-)
-
-cc_library(
-    name = "variables",
-    srcs = ["variables.cc"],
-    hdrs = [
-        "variables.h",
-    ],
-    linkstatic = 1,
-    deps = [
-        ":common",
-        ":variable",
-    ],
 )
 
 # Miscellaneous utilities.
@@ -439,7 +403,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "environment_test",
+    name = "symbolic_environment_test",
     deps = [
         ":common",
         ":symbolic",
@@ -481,7 +445,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "variable_overloading_test",
+    name = "symbolic_variable_overloading_test",
     deps = [
         ":common",
         ":symbolic",
@@ -499,7 +463,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "variable_test",
+    name = "symbolic_variable_test",
     deps = [
         ":common",
         ":symbolic",
@@ -507,7 +471,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "variables_test",
+    name = "symbolic_variables_test",
     deps = [
         ":common",
         ":symbolic",

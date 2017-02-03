@@ -8,8 +8,8 @@
 
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic_variable.h"
 #include "drake/common/test/symbolic_test_util.h"
-#include "drake/common/variable.h"
 
 using std::function;
 using std::is_same;

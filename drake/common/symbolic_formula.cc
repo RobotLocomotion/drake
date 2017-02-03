@@ -6,11 +6,11 @@
 #include <set>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/environment.h"
+#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula_cell.h"
-#include "drake/common/variable.h"
-#include "drake/common/variables.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 
 namespace drake {
 namespace symbolic {
