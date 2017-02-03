@@ -1225,10 +1225,8 @@ double ExpressionIfThenElse::Evaluate(const Environment& env) const {
 }
 
 Expression ExpressionIfThenElse::Substitute(const Substitution& s) const {
-  // TODO(soonho): implement this.
-  throw runtime_error("Not yet implemented.");
-  // return if_then_else(f_cond_.Substitute(s), e_then_.Substitute(s),
-  //                     e_else_.Substitute(s));
+  return if_then_else(f_cond_.Substitute(s), e_then_.Substitute(s),
+                      e_else_.Substitute(s));
 }
 
 ostream& ExpressionIfThenElse::Display(ostream& os) const {

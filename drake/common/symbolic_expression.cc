@@ -166,7 +166,11 @@ Expression Expression::Substitute(const Variable& var,
 
 Expression Expression::Substitute(const Substitution& s) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return Expression{ptr_->Substitute(s)};
+  if (s.size() > 0) {
+    return Expression{ptr_->Substitute(s)};
+  } else {
+    return *this;
+  }
 }
 
 string Expression::to_string() const {
