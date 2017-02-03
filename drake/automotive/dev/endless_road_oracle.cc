@@ -165,7 +165,8 @@ void UnwrapEndlessRoadCarState(
         road->lane()->path_record(path_index);
     double circuit_s_in = circuit_s_now;
     while (circuit_s_in <= circuit_s_horizon) {
-      self_path->push_back({path_record.lane, path_record.is_reversed});
+      self_path->push_back(
+          PathRecord {path_record.lane, path_record.is_reversed});
 
       // TODO(maddog) Index should decrement for speed < 0.
       if (++path_index >= road->lane()->num_path_records()) {
@@ -274,7 +275,11 @@ void AssessForwardPath(
           break;
         }
       } else {
-        auto next_it = std::make_reverse_iterator(cars_in_lane.lower_bound(s0));
+        // TODO(maddog)  In the modern world, we can use the convenient
+        //               std::make_reverse_iterator.
+        auto next_it = std::reverse_iterator<
+          std::multimap<double, int>::const_iterator>(
+              cars_in_lane.lower_bound(s0));
         if (next_it != cars_in_lane.rend()) {
           const size_t next_car_index = next_it->second;
           const SourceState& next = source_states[next_car_index];

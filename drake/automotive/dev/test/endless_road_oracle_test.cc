@@ -252,33 +252,33 @@ TEST_F(EndlessRoadOracleInternalTest, AssessForwardPath) {
 
   source_states.emplace_back(
       api::RoadPosition {source_lanes_[0], {400., 0., 0.}}, 1., 1.);
-  paths.emplace_back<std::vector<internal::PathRecord>>(
-    {{source_lanes_[0], false},
+  paths.emplace_back(std::vector<internal::PathRecord> {
+      {source_lanes_[0], false},
       {source_lanes_[1], false},
       {source_lanes_[4], true}});
 
   source_states.emplace_back(
       api::RoadPosition {source_lanes_[0], {600., 0., 0.}}, 1., 5.);
-  paths.emplace_back<std::vector<internal::PathRecord>>(
-    {{source_lanes_[0], false},
+  paths.emplace_back(std::vector<internal::PathRecord> {
+      {source_lanes_[0], false},
       {source_lanes_[1], false},
       {source_lanes_[4], true}});
 
   source_states.emplace_back(
       api::RoadPosition {source_lanes_[3], {0., 0., 0.}}, 1., 10.);
-  paths.emplace_back<std::vector<internal::PathRecord>>(
-    {{source_lanes_[3], false},
+  paths.emplace_back(std::vector<internal::PathRecord> {
+      {source_lanes_[3], false},
       {source_lanes_[0], true},
       {source_lanes_[5], false},
       {source_lanes_[2], true}});
 
   source_states.emplace_back(
       api::RoadPosition {source_lanes_[5], {50., 0., 0.}}, 1., 100.);
-  paths.emplace_back<std::vector<internal::PathRecord>>(
-      {{source_lanes_[5], true},
-        {source_lanes_[0], false},
-        {source_lanes_[3], true},
-        {source_lanes_[4], false}});
+  paths.emplace_back(std::vector<internal::PathRecord> {
+      {source_lanes_[5], true},
+      {source_lanes_[0], false},
+      {source_lanes_[3], true},
+      {source_lanes_[4], false}});
 
   std::vector<EndlessRoadOracleOutput<double>> outputs(source_states.size());
   std::vector<EndlessRoadOracleOutput<double>*> output_ptrs;
