@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import unittest
 import numpy as np
 from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers.gurobi import GurobiSolver
+from pydrake.solvers.mosek import MosekSolver
 
 
 class TestMathematicalProgram(unittest.TestCase):
@@ -13,9 +13,9 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(x[0] >= 1)
         prog.AddLinearConstraint(x[1] >= 1)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
-        solver = GurobiSolver()
+        solver = MosekSolver()
         self.assertTrue(solver.available())
-        self.assertEqual(solver.SolverName(), "Gurobi")
+        self.assertEqual(solver.SolverName(), "Mosek")
         result = solver.Solve(prog)
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         x_expected = np.array([1, 1])
