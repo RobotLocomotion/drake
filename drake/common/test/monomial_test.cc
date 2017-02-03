@@ -275,6 +275,27 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
   EXPECT_EQ(basis2, expected);
 }
 
+// This test shows that we can have a std::unordered_map whose key is of
+// internal::Monomial.
+TEST_F(MonomialTest, UnorderedMapOfMonomial) {
+  unordered_map<internal::Monomial, double, hash_value<internal::Monomial>>
+      monomial_to_coeff_map;
+  internal::Monomial x_3{var_x_, 3};
+  internal::Monomial y_5{var_y_, 5};
+  // Add 2 * x^3
+  monomial_to_coeff_map.emplace(x_3, 2);
+  // Add -7 * y^5
+  monomial_to_coeff_map.emplace(y_5, -7);
+
+  const auto it1 = monomial_to_coeff_map.find(x_3);
+  ASSERT_TRUE(it1 != monomial_to_coeff_map.end());
+  EXPECT_EQ(it1->second, 2);
+
+  const auto it2 = monomial_to_coeff_map.find(y_5);
+  ASSERT_TRUE(it2 != monomial_to_coeff_map.end());
+  EXPECT_EQ(it2->second, -7);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

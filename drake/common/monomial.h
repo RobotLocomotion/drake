@@ -39,6 +39,8 @@ class Monomial {
   Monomial(const Variable& var, int exponent);
   /** Returns the total degree of this Monomial. */
   int total_degree() const { return total_degree_; }
+  /** Returns hash value. */
+  size_t GetHash() const;
   const std::map<Variable::Id, int>& get_powers() const { return powers_; }
   /** Returns a symbolic expression representing this monomial. Since, this
    * class only includes the ID of a variable, not a variable itself, we need
@@ -46,6 +48,7 @@ class Monomial {
    * this method to build an expression. */
   Expression ToExpression(
       const std::unordered_map<Variable::Id, Variable>& id_to_var_map) const;
+  bool operator==(const Monomial& m) const;
 
  private:
   // Computes the total degree of a monomial. This method is used in a
@@ -238,4 +241,13 @@ MonomialBasis(const Variables& vars) {
       vars, degree);
 }
 }  // namespace symbolic
+
+/** Computes the hash value of a Monomial. */
+template <>
+struct hash_value<symbolic::internal::Monomial> {
+  size_t operator()(const symbolic::internal::Monomial& m) const {
+    return m.GetHash();
+  }
+};
+
 }  // namespace drake
