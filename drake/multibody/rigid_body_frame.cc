@@ -46,24 +46,14 @@ bool RigidBodyFrame<T>::CompareToClone(const RigidBodyFrame& other) const {
         other.get_name());
     return false;
   }
-  if (get_rigid_body().get_name() != other.get_rigid_body().get_name()) {
+  if (get_rigid_body().get_body_index() !=
+      other.get_rigid_body().get_body_index()) {
     drake::log()->debug(
-        "RigidBodyFrame::CompareToClone(): rigid body name mismatch:\n"
+        "RigidBodyFrame::CompareToClone(): rigid body index mismatch:\n"
         "  - this: {}\n"
         "  - other: {}",
-        get_rigid_body().get_name(),
-        other.get_rigid_body().get_name());
-    return false;
-  }
-  if (get_rigid_body().get_model_instance_id() !=
-      other.get_rigid_body().get_model_instance_id()) {
-    drake::log()->debug(
-        "RigidBodyFrame::CompareToClone(): rigid body model instance ID"
-        " mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        get_rigid_body().get_model_instance_id(),
-        other.get_rigid_body().get_model_instance_id());
+        get_rigid_body().get_body_index(),
+        other.get_rigid_body().get_body_index());
     return false;
   }
   if (get_transform_to_body().matrix() !=

@@ -69,7 +69,9 @@ class RigidBodyFrame {
   // TODO(liang.fok) Update this to return a unique_ptr. This is related to
   // #3093.
   /**
-   * Returns a clone of this RigidBodyFrame.
+   * Returns a clone of this RigidBodyFrame. It is admittedly awkward for a
+   * clone method to have an input parameter. This parameter, however, is
+   * necessary to ensure the returned clone is fully initialized.
    *
    * @param[in] body A pointer to the body to include in the returned clone.
    * This pointer must remain valid for the duration of the clone's lifetime.
@@ -83,7 +85,7 @@ class RigidBodyFrame {
    * return `true` if the provided `other` %RigidBodyFrame is exactly the same
    * as this %RigidBodyFrame.
    */
-  virtual bool CompareToClone(const RigidBodyFrame& other) const;
+  bool CompareToClone(const RigidBodyFrame& other) const;
 
   /**
    * Returns the ID of the model instance to which this rigid body frame
