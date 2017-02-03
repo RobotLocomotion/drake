@@ -420,6 +420,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_expression_differentiation_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_expression_matrix_test",
     deps = [
         ":common",

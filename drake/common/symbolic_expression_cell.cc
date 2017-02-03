@@ -211,7 +211,7 @@ Polynomial<double> ExpressionVar::ToPolynomial() const {
   return Polynomial<double>(1.0, var_.get_id());
 }
 
-int ExpressionVar::Degree(const Variables &vars) const {
+int ExpressionVar::Degree(const Variables& vars) const {
   return vars.include(var_) ? 1 : 0;
 }
 
@@ -236,6 +236,14 @@ Expression ExpressionVar::Substitute(const Substitution& s) const {
     return it->second;
   } else {
     return Expression{var_};
+  }
+}
+
+Expression ExpressionVar::Differentiate(const Variable& x) const {
+  if (x == var_) {
+    return Expression::One();
+  } else {
+    return Expression::Zero();
   }
 }
 
@@ -264,9 +272,7 @@ Polynomial<double> ExpressionConstant::ToPolynomial() const {
   return Polynomial<double>(v_);
 }
 
-int ExpressionConstant::Degree(const Variables& vars) const {
-  return 0;
-}
+int ExpressionConstant::Degree(const Variables& vars) const { return 0; }
 
 double ExpressionConstant::Evaluate(const Environment& env) const {
   DRAKE_DEMAND(!std::isnan(v_));
@@ -276,6 +282,10 @@ double ExpressionConstant::Evaluate(const Environment& env) const {
 Expression ExpressionConstant::Substitute(const Substitution& s) const {
   DRAKE_DEMAND(!std::isnan(v_));
   return Expression{v_};
+}
+
+Expression ExpressionConstant::Differentiate(const Variable& x) const {
+  return Expression::Zero();
 }
 
 ostream& ExpressionConstant::Display(ostream& os) const {
@@ -319,6 +329,10 @@ double ExpressionNaN::Evaluate(const Environment& env) const {
 
 Expression ExpressionNaN::Substitute(const Substitution& s) const {
   throw runtime_error("NaN is detected during substitution.");
+}
+
+Expression ExpressionNaN::Differentiate(const Variable& x) const {
+  throw runtime_error("NaN is detected during differentiation.");
 }
 
 ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
@@ -421,6 +435,17 @@ Expression ExpressionAdd::Substitute(const Substitution& s) const {
       Expression{constant_},
       [&s](const Expression& init, const pair<Expression, double>& p) {
         return init + p.first.Substitute(s) * p.second;
+      });
+}
+
+Expression ExpressionAdd::Differentiate(const Variable& x) const {
+  //   ∂/∂x (c_0 + c_1 * f_1 + ... + c_n * f_n)
+  // = (∂/∂x c_0) + (∂/∂x c_1 * f_1) + ... + (∂/∂x c_n * f_n)
+  // =  0.0       + c_1 * (∂/∂x f_1) + ... + c_n * (∂/∂x f_n)
+  return accumulate(
+      expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(), Expression::Zero(),
+      [&x](const Expression& init, const pair<Expression, double>& p) {
+        return init + p.second * p.first.Differentiate(x);
       });
 }
 
@@ -642,15 +667,16 @@ Polynomial<double> ExpressionMul::ToPolynomial() const {
       });
 }
 
-int ExpressionMul::Degree(const Variables &vars) const {
+int ExpressionMul::Degree(const Variables& vars) const {
   // The precondition is is_polynomial() == True.
   return accumulate(
       base_to_exponent_map_.begin(), base_to_exponent_map_.end(), 0,
       [vars](const int& degree, const pair<Expression, Expression>& p) {
         const Expression& base{p.first};
-        const Expression& expnt{p.second};
+        const Expression& exponent{p.second};
         return degree +
-               base.Degree(vars) * static_cast<int>(get_constant_value(expnt));
+               base.Degree(vars) *
+                   static_cast<int>(get_constant_value(exponent));
       });
 }
 
@@ -669,6 +695,50 @@ Expression ExpressionMul::Substitute(const Substitution& s) const {
       [&s](const Expression& init, const pair<Expression, Expression>& p) {
         return init * pow(p.first.Substitute(s), p.second.Substitute(s));
       });
+}
+
+// Computes ∂/∂x pow(f, g).
+Expression DifferentiatePow(const Expression& f, const Expression& g,
+                            const Variable& x) {
+  if (is_constant(g)) {
+    const Expression& n{g};  // alias n = g
+    // Special case where exponent is a constant:
+    //     ∂/∂x pow(f, n) = n * pow(f, n - 1) * ∂/∂x f
+    return n * pow(f, n - 1) * f.Differentiate(x);
+  } else if (is_constant(f)) {
+    const Expression& n{f};  // alias n = f
+    // Special case where base is a constant:
+    //     ∂/∂x pow(n, g) = log(n) * pow(n, g) * ∂/∂x g
+    return log(n) * pow(n, g) * g.Differentiate(x);
+  } else {
+    // General case:
+    //    ∂/∂x pow(f, g)
+    // = ∂/∂f pow(f, g) * ∂/∂x f + ∂/∂g pow(f, g) * ∂/∂x g
+    // = g * pow(f, g - 1) * ∂/∂x f + log(f) * pow(f, g) * ∂/∂x g
+    // = pow(f, g - 1) * (g * ∂/∂x f + log(f) * f * ∂/∂x g)
+    return pow(f, g - 1) *
+           (g * f.Differentiate(x) + log(f) * f * g.Differentiate(x));
+  }
+}
+
+Expression ExpressionMul::Differentiate(const Variable& x) const {
+  // ∂/∂x (c   * f_1^g_1  * f_2^g_2        * ... * f_n^g_n
+  //= c * [expr * (∂/∂x f_1^g_1) / f_1^g_1 +
+  //       expr * (∂/∂x f_2^g_2) / f_2^g_2 +
+  //                      ...              +
+  //       expr * (∂/∂x f_n^g_n) / f_n^g_n]
+  //
+  // where expr = (f_1^g_1 * f_2^g_2 * ... * f_n^g_n).
+  const map<Expression, Expression>& m{base_to_exponent_map_};
+  Expression ret{Expression::Zero()};
+  const Expression expr{
+      ExpressionMulFactory{1.0, base_to_exponent_map_}.GetExpression()};
+  for (const auto& term : m) {
+    const Expression& base{term.first};
+    const Expression& exponent{term.second};
+    ret += expr * DifferentiatePow(base, exponent, x) * pow(base, -exponent);
+  }
+  return constant_ * ret;
 }
 
 ostream& ExpressionMul::Display(ostream& os) const {
@@ -822,6 +892,13 @@ Expression ExpressionDiv::Substitute(const Substitution& s) const {
          get_second_argument().Substitute(s);
 }
 
+Expression ExpressionDiv::Differentiate(const Variable& x) const {
+  // ∂/∂x (f / g) = (∂/∂x f * g - f * ∂/∂x g) / g^2
+  const Expression& f{get_first_argument()};
+  const Expression& g{get_second_argument()};
+  return (f.Differentiate(x) * g - f * g.Differentiate(x)) / pow(g, 2.0);
+}
+
 ostream& ExpressionDiv::Display(ostream& os) const {
   return os << "(" << get_first_argument() << " / " << get_second_argument()
             << ")";
@@ -853,12 +930,18 @@ Polynomial<double> ExpressionLog::ToPolynomial() const {
   throw runtime_error("Log expression is not polynomial-convertible.");
 }
 
-int ExpressionLog::Degree(const Variables &vars) const {
+int ExpressionLog::Degree(const Variables& vars) const {
   throw runtime_error("Log expression does not have a polynomial degree.");
 }
 
 Expression ExpressionLog::Substitute(const Substitution& s) const {
   return log(get_argument().Substitute(s));
+}
+
+Expression ExpressionLog::Differentiate(const Variable& x) const {
+  // ∂/∂x log(f) = (∂/∂x f) / f
+  const Expression& f{get_argument()};
+  return f.Differentiate(x) / f;
 }
 
 ostream& ExpressionLog::Display(ostream& os) const {
@@ -885,6 +968,16 @@ Expression ExpressionAbs::Substitute(const Substitution& s) const {
   return abs(get_argument().Substitute(s));
 }
 
+Expression ExpressionAbs::Differentiate(const Variable& x) const {
+  if (GetVariables().include(x)) {
+    ostringstream oss;
+    Display(oss) << "is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    return Expression::Zero();
+  }
+}
+
 ostream& ExpressionAbs::Display(ostream& os) const {
   return os << "abs(" << get_argument() << ")";
 }
@@ -898,12 +991,18 @@ Polynomial<double> ExpressionExp::ToPolynomial() const {
   throw runtime_error("Exp expression is not polynomial-convertible.");
 }
 
-int ExpressionExp::Degree(const Variables &vars) const {
+int ExpressionExp::Degree(const Variables& vars) const {
   throw runtime_error("Exp expression does not have a polynomial degree.");
 }
 
 Expression ExpressionExp::Substitute(const Substitution& s) const {
   return exp(get_argument().Substitute(s));
+}
+
+Expression ExpressionExp::Differentiate(const Variable& x) const {
+  // ∂/∂x exp(f) = exp(f) * (∂/∂x f)
+  const Expression& f{get_argument()};
+  return exp(f) * f.Differentiate(x);
 }
 
 ostream& ExpressionExp::Display(ostream& os) const {
@@ -934,6 +1033,12 @@ int ExpressionSqrt::Degree(const Variables& vars) const {
 
 Expression ExpressionSqrt::Substitute(const Substitution& s) const {
   return sqrt(get_argument().Substitute(s));
+}
+
+Expression ExpressionSqrt::Differentiate(const Variable& x) const {
+  // ∂/∂x (sqrt(f)) = 1 / (2 * sqrt(f)) * (∂/∂x f)
+  const Expression& f{get_argument()};
+  return 1 / (2 * sqrt(f)) * f.Differentiate(x);
 }
 
 ostream& ExpressionSqrt::Display(ostream& os) const {
@@ -967,16 +1072,21 @@ Polynomial<double> ExpressionPow::ToPolynomial() const {
   return pow(get_first_argument().ToPolynomial(), exponent);
 }
 
-int ExpressionPow::Degree(const Variables &vars) const {
+int ExpressionPow::Degree(const Variables& vars) const {
   // As a precondition, this expression `is_polynomial`, so the exponent is an
   // integer and this cast does not change its value.
-  const int expnt{static_cast<int>(get_constant_value(get_second_argument()))};
-  return get_first_argument().Degree(vars) * expnt;
+  const int exponent{
+      static_cast<int>(get_constant_value(get_second_argument()))};
+  return get_first_argument().Degree(vars) * exponent;
 }
 
 Expression ExpressionPow::Substitute(const Substitution& s) const {
   return pow(get_first_argument().Substitute(s),
              get_second_argument().Substitute(s));
+}
+
+Expression ExpressionPow::Differentiate(const Variable& x) const {
+  return DifferentiatePow(get_first_argument(), get_second_argument(), x);
 }
 
 ostream& ExpressionPow::Display(ostream& os) const {
@@ -1004,6 +1114,12 @@ Expression ExpressionSin::Substitute(const Substitution& s) const {
   return sin(get_argument().Substitute(s));
 }
 
+Expression ExpressionSin::Differentiate(const Variable& x) const {
+  // ∂/∂x (sin f) = (cos f) * (∂/∂x f)
+  const Expression& f{get_argument()};
+  return cos(f) * f.Differentiate(x);
+}
+
 ostream& ExpressionSin::Display(ostream& os) const {
   return os << "sin(" << get_argument() << ")";
 }
@@ -1017,12 +1133,18 @@ Polynomial<double> ExpressionCos::ToPolynomial() const {
   throw runtime_error("Cos expression is not polynomial-convertible.");
 }
 
-int ExpressionCos::Degree(const Variables &vars) const {
+int ExpressionCos::Degree(const Variables& vars) const {
   throw runtime_error("Cos expression does not have a polynomial degree.");
 }
 
 Expression ExpressionCos::Substitute(const Substitution& s) const {
   return cos(get_argument().Substitute(s));
+}
+
+Expression ExpressionCos::Differentiate(const Variable& x) const {
+  // ∂/∂x (cos f) = - (sin f) * (∂/∂x f)
+  const Expression& f{get_argument()};
+  return -sin(f) * f.Differentiate(x);
 }
 
 ostream& ExpressionCos::Display(ostream& os) const {
@@ -1044,6 +1166,12 @@ int ExpressionTan::Degree(const Variables& vars) const {
 
 Expression ExpressionTan::Substitute(const Substitution& s) const {
   return tan(get_argument().Substitute(s));
+}
+
+Expression ExpressionTan::Differentiate(const Variable& x) const {
+  // ∂/∂x (tan f) = (1 / (cos f)^2) * (∂/∂x f)
+  const Expression& f{get_argument()};
+  return (1 / pow(cos(f), 2)) * f.Differentiate(x);
 }
 
 ostream& ExpressionTan::Display(ostream& os) const {
@@ -1068,12 +1196,18 @@ Polynomial<double> ExpressionAsin::ToPolynomial() const {
   throw runtime_error("Asin expression is not polynomial-convertible.");
 }
 
-int ExpressionAsin::Degree(const Variables &vars) const {
+int ExpressionAsin::Degree(const Variables& vars) const {
   throw runtime_error("Asin expression does not have a polynomial degree.");
 }
 
 Expression ExpressionAsin::Substitute(const Substitution& s) const {
   return asin(get_argument().Substitute(s));
+}
+
+Expression ExpressionAsin::Differentiate(const Variable& x) const {
+  // ∂/∂x (asin f) = (1 / sqrt(1 - f^2)) (∂/∂x f)
+  const Expression& f{get_argument()};
+  return (1 / sqrt(1 - pow(f, 2))) * f.Differentiate(x);
 }
 
 ostream& ExpressionAsin::Display(ostream& os) const {
@@ -1101,12 +1235,18 @@ Polynomial<double> ExpressionAcos::ToPolynomial() const {
   throw runtime_error("Acos expression is not polynomial-convertible.");
 }
 
-int ExpressionAcos::Degree(const Variables &vars) const {
+int ExpressionAcos::Degree(const Variables& vars) const {
   throw runtime_error("Acos expression does not have a polynomial degree.");
 }
 
 Expression ExpressionAcos::Substitute(const Substitution& s) const {
   return acos(get_argument().Substitute(s));
+}
+
+Expression ExpressionAcos::Differentiate(const Variable& x) const {
+  // ∂/∂x (acos f) = - 1 / sqrt(1 - f^2) * (∂/∂x f)
+  const Expression& f{get_argument()};
+  return -1 / sqrt(1 - pow(f, 2)) * f.Differentiate(x);
 }
 
 ostream& ExpressionAcos::Display(ostream& os) const {
@@ -1125,12 +1265,18 @@ Polynomial<double> ExpressionAtan::ToPolynomial() const {
   throw runtime_error("Atan expression is not polynomial-convertible.");
 }
 
-int ExpressionAtan::Degree(const Variables &vars) const {
+int ExpressionAtan::Degree(const Variables& vars) const {
   throw runtime_error("Atan expression does not have a polynomial degree.");
 }
 
 Expression ExpressionAtan::Substitute(const Substitution& s) const {
   return atan(get_argument().Substitute(s));
+}
+
+Expression ExpressionAtan::Differentiate(const Variable& x) const {
+  // ∂/∂x (atan f) = (1 / (1 + f^2)) * ∂/∂x f
+  const Expression& f{get_argument()};
+  return (1 / (1 + pow(f, 2))) * f.Differentiate(x);
 }
 
 ostream& ExpressionAtan::Display(ostream& os) const {
@@ -1146,13 +1292,21 @@ Polynomial<double> ExpressionAtan2::ToPolynomial() const {
   throw runtime_error("Atan2 expression is not polynomial-convertible.");
 }
 
-int ExpressionAtan2::Degree(const Variables &vars) const {
+int ExpressionAtan2::Degree(const Variables& vars) const {
   throw runtime_error("Atan2 expression does not have a polynomial degree.");
 }
 
 Expression ExpressionAtan2::Substitute(const Substitution& s) const {
   return atan2(get_first_argument().Substitute(s),
                get_second_argument().Substitute(s));
+}
+
+Expression ExpressionAtan2::Differentiate(const Variable& x) const {
+  // ∂/∂x (atan2(f,g)) = (g * (∂/∂x f) - f * (∂/∂x g)) / (f^2 + g^2)
+  const Expression& f{get_first_argument()};
+  const Expression& g{get_second_argument()};
+  return (g * f.Differentiate(x) - f * g.Differentiate(x)) /
+         (pow(f, 2) + pow(g, 2));
 }
 
 ostream& ExpressionAtan2::Display(ostream& os) const {
@@ -1171,12 +1325,18 @@ Polynomial<double> ExpressionSinh::ToPolynomial() const {
   throw runtime_error("Sinh expression is not polynomial-convertible.");
 }
 
-int ExpressionSinh::Degree(const Variables &vars) const {
+int ExpressionSinh::Degree(const Variables& vars) const {
   throw runtime_error("Sinh expression does not have a polynomial degree.");
 }
 
 Expression ExpressionSinh::Substitute(const Substitution& s) const {
   return sinh(get_argument().Substitute(s));
+}
+
+Expression ExpressionSinh::Differentiate(const Variable& x) const {
+  // ∂/∂x (sinh f) = cosh(f) * (∂/∂x f)
+  const Expression& f{get_argument()};
+  return cosh(f) * f.Differentiate(x);
 }
 
 ostream& ExpressionSinh::Display(ostream& os) const {
@@ -1192,12 +1352,18 @@ Polynomial<double> ExpressionCosh::ToPolynomial() const {
   throw runtime_error("Cosh expression is not polynomial-convertible.");
 }
 
-int ExpressionCosh::Degree(const Variables &vars) const {
+int ExpressionCosh::Degree(const Variables& vars) const {
   throw runtime_error("Cosh expression does not have a polynomial degree.");
 }
 
 Expression ExpressionCosh::Substitute(const Substitution& s) const {
   return cosh(get_argument().Substitute(s));
+}
+
+Expression ExpressionCosh::Differentiate(const Variable& x) const {
+  // ∂/∂x (cosh f) = sinh(f) * (∂/∂x f)
+  const Expression& f{get_argument()};
+  return sinh(f) * f.Differentiate(x);
 }
 
 ostream& ExpressionCosh::Display(ostream& os) const {
@@ -1221,6 +1387,12 @@ Expression ExpressionTanh::Substitute(const Substitution& s) const {
   return tanh(get_argument().Substitute(s));
 }
 
+Expression ExpressionTanh::Differentiate(const Variable& x) const {
+  // ∂/∂x (tanh f) = 1 / (cosh^2(f)) * (∂/∂x f)
+  const Expression& f{get_argument()};
+  return 1 / pow(cosh(f), 2) * f.Differentiate(x);
+}
+
 ostream& ExpressionTanh::Display(ostream& os) const {
   return os << "tanh(" << get_argument() << ")";
 }
@@ -1234,13 +1406,23 @@ Polynomial<double> ExpressionMin::ToPolynomial() const {
   throw runtime_error("Min expression is not polynomial-convertible.");
 }
 
-int ExpressionMin::Degree(const Variables &vars) const {
+int ExpressionMin::Degree(const Variables& vars) const {
   throw runtime_error("Min expression does not have a polynomial degree.");
 }
 
 Expression ExpressionMin::Substitute(const Substitution& s) const {
   return min(get_first_argument().Substitute(s),
              get_second_argument().Substitute(s));
+}
+
+Expression ExpressionMin::Differentiate(const Variable& x) const {
+  if (GetVariables().include(x)) {
+    ostringstream oss;
+    Display(oss) << "is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    return Expression::Zero();
+  }
 }
 
 ostream& ExpressionMin::Display(ostream& os) const {
@@ -1259,13 +1441,23 @@ Polynomial<double> ExpressionMax::ToPolynomial() const {
   throw runtime_error("Max expression is not polynomial-convertible.");
 }
 
-int ExpressionMax::Degree(const Variables &vars) const {
+int ExpressionMax::Degree(const Variables& vars) const {
   throw runtime_error("Max expression does not have a polynomial degree.");
 }
 
 Expression ExpressionMax::Substitute(const Substitution& s) const {
   return max(get_first_argument().Substitute(s),
              get_second_argument().Substitute(s));
+}
+
+Expression ExpressionMax::Differentiate(const Variable& x) const {
+  if (GetVariables().include(x)) {
+    ostringstream oss;
+    Display(oss) << "is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    return Expression::Zero();
+  }
 }
 
 ostream& ExpressionMax::Display(ostream& os) const {
@@ -1330,7 +1522,7 @@ Polynomial<double> ExpressionIfThenElse::ToPolynomial() const {
   throw runtime_error("IfThenElse expression is not polynomial-convertible.");
 }
 
-int ExpressionIfThenElse::Degree(const Variables &vars) const {
+int ExpressionIfThenElse::Degree(const Variables& vars) const {
   throw runtime_error(
       "IfThenElse expression does not have a polynomial degree.");
 }
@@ -1346,6 +1538,16 @@ double ExpressionIfThenElse::Evaluate(const Environment& env) const {
 Expression ExpressionIfThenElse::Substitute(const Substitution& s) const {
   return if_then_else(f_cond_.Substitute(s), e_then_.Substitute(s),
                       e_else_.Substitute(s));
+}
+
+Expression ExpressionIfThenElse::Differentiate(const Variable& x) const {
+  if (GetVariables().include(x)) {
+    ostringstream oss;
+    Display(oss) << "is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    return Expression::Zero();
+  }
 }
 
 ostream& ExpressionIfThenElse::Display(ostream& os) const {
