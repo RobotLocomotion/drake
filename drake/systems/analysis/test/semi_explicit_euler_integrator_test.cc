@@ -94,8 +94,7 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
 
-  // Integrate for one second of virtual time using explicit Euler integrator
-  // with large step size.
+  // Integrate for one second of virtual time using explicit Euler integrator.
   const double small_dt = 1e-4;
   ExplicitEulerIntegrator<double> ee(plant, small_dt, context.get());
   ee.Initialize();
