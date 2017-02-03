@@ -20,7 +20,7 @@ vtkSmartPointer<vtkPolyData> VtkUtil::CreateSquarePlane(
   points->InsertNextPoint( size, -size, 0.);
 
   vtkNew<vtkPolygon> polygon;
-  polygon->GetPointIds()->SetNumberOfIds(4);  // Make a quad
+  polygon->GetPointIds()->SetNumberOfIds(4);  // Makes a quad.
   polygon->GetPointIds()->SetId(0, 0);
   polygon->GetPointIds()->SetId(1, 1);
   polygon->GetPointIds()->SetId(2, 2);
