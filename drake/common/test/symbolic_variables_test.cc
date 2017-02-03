@@ -1,10 +1,11 @@
-#include "drake/common/variables.h"
+#include "drake/common/symbolic_variables.h"
 
 #include "gtest/gtest.h"
 
-#include "drake/common/variable.h"
+#include "drake/common/symbolic_variable.h"
 
 namespace drake {
+namespace symbolic {
 namespace {
 
 // Provides common variables that are used by the following tests.
@@ -285,4 +286,5 @@ TEST_F(VariablesTest, ToString) {
   EXPECT_EQ(vars5.to_string(), "{w, v}");
 }
 }  // namespace
+}  // namespace symbolic
 }  // namespace drake

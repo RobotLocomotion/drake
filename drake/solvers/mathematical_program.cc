@@ -34,6 +34,7 @@ using std::vector;
 
 using symbolic::Expression;
 using symbolic::Formula;
+using symbolic::Variable;
 
 namespace {
 

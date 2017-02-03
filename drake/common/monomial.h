@@ -13,8 +13,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/common/variable.h"
-#include "drake/common/variables.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 
 namespace drake {
 
