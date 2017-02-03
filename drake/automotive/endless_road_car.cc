@@ -20,9 +20,8 @@ template <typename T>
 EndlessRoadCar<T>::EndlessRoadCar(
     const std::string& id,
     const maliput::utility::InfiniteCircuitRoad* road,
-    const ControlType control_type,
-    const EndlessRoadCarConfig<T>& config)
-    : id_(id), road_(road), control_type_(control_type), config_(config) {
+    const ControlType control_type)
+    : id_(id), road_(road), control_type_(control_type) {
   switch (control_type) {
     case kNone: {
       // No input ports.
@@ -42,21 +41,6 @@ EndlessRoadCar<T>::EndlessRoadCar(
   }
   this->DeclareOutputPort(systems::kVectorValued,
                           EndlessRoadCarStateIndices::kNumCoordinates);
-}
-
-
-template <typename T>
-EndlessRoadCarConfig<T> EndlessRoadCar<T>::get_default_config() {
-  constexpr double kInchToMeter = 0.0254;
-  constexpr double kDegToRadian = 0.0174532925199;
-  // This approximates a 2010 Toyota Prius.
-  EndlessRoadCarConfig<T> result;
-  result.set_wheelbase(static_cast<T>(106.3 * kInchToMeter));
-  result.set_max_abs_steering_angle(static_cast<T>(27 * kDegToRadian));
-  result.set_max_velocity(static_cast<T>(45.0));  // meters/second
-  result.set_max_acceleration(static_cast<T>(2.5));  // meters/second**2
-  result.set_max_deceleration(static_cast<T>(8.0));  // meters/second**2
-  return result;
 }
 
 
@@ -106,6 +90,10 @@ void EndlessRoadCar<T>::DoCalcTimeDerivatives(
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
+  // Obtain the parameters.
+  const EndlessRoadCarConfig<T>& config =
+      this->template GetNumericParameter<EndlessRoadCarConfig>(context, 0);
+
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
@@ -136,7 +124,7 @@ void EndlessRoadCar<T>::DoCalcTimeDerivatives(
         const DrivingCommand<T>* const input =
         dynamic_cast<const DrivingCommand<T>*>(vector_input);
         DRAKE_ASSERT(input);
-        return ComputeUserAccelerations(*state, *input);
+        return ComputeUserAccelerations(*state, *input, config);
       }
       case kIdm: {
         // Obtain the EndlessRoadOracleOutput input.
@@ -146,7 +134,7 @@ void EndlessRoadCar<T>::DoCalcTimeDerivatives(
         const EndlessRoadOracleOutput<T>* const input =
         dynamic_cast<const EndlessRoadOracleOutput<T>*>(vector_input);
         DRAKE_ASSERT(input);
-        return ComputeIdmAccelerations(*state, *input);
+        return ComputeIdmAccelerations(*state, *input, config);
       }
       default: { DRAKE_ABORT(); }
     }
@@ -160,12 +148,13 @@ template <typename T>
 typename EndlessRoadCar<T>::Accelerations
 EndlessRoadCar<T>::ComputeUserAccelerations(
     const EndlessRoadCarState<T>& state,
-    const DrivingCommand<T>& input) const {
+    const DrivingCommand<T>& input,
+    const EndlessRoadCarConfig<T>& config) const {
 
   // Simplistic throttle and brake yields longitudinal acceleration.
   const T forward_acceleration =
-      (input.throttle() * config_.max_acceleration()) -
-      (input.brake() * config_.max_deceleration());
+      (input.throttle() * config.max_acceleration()) -
+      (input.brake() * config.max_deceleration());
 
   // Simplistic steering: centripetal acceleration --> lateral acceleration.
   const T speed = state.speed();
@@ -173,10 +162,10 @@ EndlessRoadCar<T>::ComputeUserAccelerations(
   DRAKE_DEMAND(static_cast<T>(-M_PI) < sane_steering_angle);
   DRAKE_DEMAND(sane_steering_angle < static_cast<T>(M_PI));
   sane_steering_angle = std::min(
-      sane_steering_angle, config_.max_abs_steering_angle());
+      sane_steering_angle, config.max_abs_steering_angle());
   sane_steering_angle = std::max(
-      sane_steering_angle, static_cast<T>(-config_.max_abs_steering_angle()));
-  const T curvature = tan(sane_steering_angle) / config_.wheelbase();
+      sane_steering_angle, static_cast<T>(-config.max_abs_steering_angle()));
+  const T curvature = tan(sane_steering_angle) / config.wheelbase();
   // Recall:  centripetal acceleration = v^2 / r.
   const T lateral_acceleration = speed * speed * curvature;
 
@@ -188,13 +177,14 @@ template <typename T>
 typename EndlessRoadCar<T>::Accelerations
 EndlessRoadCar<T>::ComputeIdmAccelerations(
     const EndlessRoadCarState<T>& state,
-    const EndlessRoadOracleOutput<T>& input) const {
+    const EndlessRoadOracleOutput<T>& input,
+    const EndlessRoadCarConfig<T>& config) const {
 
   // Adapted from https://en.wikipedia.org/wiki/Intelligent_driver_model
   const double v_0{30.0};  // desired velocity in free traffic.
   const double s_0{2.0};  // minimum desired net distance.
   const double h{1.0};  // desired time headway to vehicle in front.
-  const double a{config_.max_acceleration()};  // max acceleration.
+  const double a{config.max_acceleration()};  // max acceleration.
   const double b{a};  // comfortable braking deceleration.
   const double delta{4.0};  // recommended choice of free-road exponent.
 
@@ -215,9 +205,9 @@ EndlessRoadCar<T>::ComputeIdmAccelerations(
 
   // Clamp forward_acceleration to vehicle limits.
   forward_acceleration = std::min(forward_acceleration,
-                                  config_.max_acceleration());
+                                  config.max_acceleration());
   forward_acceleration = std::max(forward_acceleration,
-                                  -config_.max_deceleration());
+                                  -config.max_deceleration());
 
   // Lateral acceleration is always zero, since we're just doing car-following.
   return {forward_acceleration, 0.};
@@ -280,6 +270,39 @@ std::unique_ptr<systems::BasicVector<T>>
 EndlessRoadCar<T>::AllocateOutputVector(
     const systems::OutputPortDescriptor<T>& descriptor) const {
   return std::make_unique<EndlessRoadCarState<T>>();
+}
+
+
+template <typename T>
+std::unique_ptr<systems::Parameters<T>>
+EndlessRoadCar<T>::AllocateParameters() const {
+  auto params = std::make_unique<EndlessRoadCarConfig<T>>();
+  return std::make_unique<systems::Parameters<T>>(std::move(params));
+}
+
+
+template <typename T>
+void EndlessRoadCar<T>::SetDefaultParameters(
+    const systems::LeafContext<T>& context,
+    systems::Parameters<T>* params) const {
+  EndlessRoadCarConfig<T>* config = dynamic_cast<EndlessRoadCarConfig<T>*>(
+      params->get_mutable_numeric_parameter(0));
+  DRAKE_DEMAND(config != nullptr);
+  SetDefaultParameters(config);
+}
+
+
+template <typename T>
+void EndlessRoadCar<T>::SetDefaultParameters(EndlessRoadCarConfig<T>* config) {
+  DRAKE_DEMAND(config != nullptr);
+  constexpr double kInchToMeter = 0.0254;
+  constexpr double kDegToRadian = 0.0174532925199;
+  // This approximates a 2010 Toyota Prius.
+  config->set_wheelbase(static_cast<T>(106.3 * kInchToMeter));
+  config->set_max_abs_steering_angle(static_cast<T>(27 * kDegToRadian));
+  config->set_max_velocity(static_cast<T>(45.0));  // meters/second
+  config->set_max_acceleration(static_cast<T>(2.5));  // meters/second**2
+  config->set_max_deceleration(static_cast<T>(8.0));  // meters/second**2
 }
 
 

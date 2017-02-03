@@ -46,10 +46,13 @@ class BaseEndlessRoadCarTest : public ::testing::Test {
         api::LaneEnd(source_road_->junction(0)->segment(0)->lane(0),
                      api::LaneEnd::kStart),
         std::vector<const api::Lane*>());
+
+    EndlessRoadCar<double>::SetDefaultParameters(&default_config_);
   }
 
   std::unique_ptr<const api::RoadGeometry> source_road_;
   std::unique_ptr<const utility::InfiniteCircuitRoad> infinite_road_;
+  EndlessRoadCarConfig<double> default_config_;
 };
 
 
@@ -262,8 +265,7 @@ TEST_F(UserEndlessRoadCarTest, Derivatives) {
   EXPECT_EQ(0.0, result->speed());
 
   // Half throttle yields half of the max acceleration.
-  const double max_acceleration =
-      EndlessRoadCar<double>::get_default_config().max_acceleration();
+  const double max_acceleration = default_config_.max_acceleration();
   SetInputValue(0.0, 0.5, 0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->s());
@@ -283,8 +285,7 @@ TEST_F(UserEndlessRoadCarTest, Derivatives) {
 
   // A non-zero steering_angle turns in the same direction.  We'd like to turn
   // at 0.1 rad/s at a speed of 10m/s, so we want a curvature of 0.01.
-  const double wheelbase =
-      EndlessRoadCar<double>::get_default_config().wheelbase();
+  const double wheelbase = default_config_.wheelbase();
   const double steering_angle = std::atan(0.01 * wheelbase);
   SetInputValue(steering_angle, 0.0, 0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
@@ -300,8 +301,7 @@ TEST_F(UserEndlessRoadCarTest, Derivatives) {
   EXPECT_EQ(0.0, result->speed());
 
   // Half brake yields half of the max deceleration.
-  const double max_deceleration =
-      EndlessRoadCar<double>::get_default_config().max_deceleration();
+  const double max_deceleration = default_config_.max_deceleration();
   SetInputValue(0.0, 0.0, 0.5);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0, result->s(), kTolerance);
@@ -478,8 +478,7 @@ TEST_F(IdmEndlessRoadCarTest, Derivatives) {
   EXPECT_NEAR(0.0, result->speed(), kTolerance);
   // 2)  Current velocity matches IDM desired, but distance is tiny.
   //     Longitudinal acceleration should be clamped to max deceleration.
-  const double max_deceleration =
-      EndlessRoadCar<double>::get_default_config().max_deceleration();
+  const double max_deceleration = default_config_.max_deceleration();
   continuous_state()->set_speed(30.);
   SetInputValue(1e-5, 0.);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
@@ -489,8 +488,7 @@ TEST_F(IdmEndlessRoadCarTest, Derivatives) {
   EXPECT_EQ(-max_deceleration, result->speed());
   // 3)  Current velocity is zero, and distance is enormous.
   //     Longitudinal acceleration should be max acceleration.
-  const double max_acceleration =
-      EndlessRoadCar<double>::get_default_config().max_acceleration();
+  const double max_acceleration = default_config_.max_acceleration();
   continuous_state()->set_speed(0.);
   SetInputValue(1e26, 0.);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
