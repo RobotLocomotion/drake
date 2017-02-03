@@ -14,6 +14,8 @@ namespace drake {
 namespace systems {
 namespace {
 
+// Tests context-related operations, including determining whether or not
+// system can be integrated without a context (it can't).
 GTEST_TEST(IntegratorTest, ContextAccess) {
   // Create the mass spring system.
   SpringMassSystem<double> spring_mass(1., 1., 0.);
@@ -36,7 +38,7 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_THROW(integrator.StepOnceAtMost(dt, dt, dt), std::logic_error);
 }
 
-/// Verifies error estimation is unsupported.
+// Verifies error estimation is unsupported.
 GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   // Spring-mass system is necessary only to setup the problem.
   SpringMassSystem<double> spring_mass(1., 1., 0.);
@@ -83,14 +85,17 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   Eigen::Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
   Eigen::Vector3d w0(-4, 5, 6);  // Angular velocity in body's frame.
   BasicVector<double> generalized_velocities(plant.get_num_velocities());
+
+  // NOTE: the functionality of this code is dependent upon the rigid body
+  // velocity variables being ordering as [ angular, linear ].
   generalized_velocities.get_mutable_value() << w0, v0;
 
   // Set the linear and angular velocity.
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
 
-  // Integrate for one second of virtual time using a RK2 integrator with
-  // large step size.
+  // Integrate for one second of virtual time using explicit Euler integrator
+  // with large step size.
   const double small_dt = 1e-4;
   ExplicitEulerIntegrator<double> ee(plant, small_dt, context.get());
   ee.Initialize();

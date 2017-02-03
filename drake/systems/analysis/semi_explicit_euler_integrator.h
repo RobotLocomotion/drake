@@ -11,15 +11,15 @@ namespace systems {
  * following manner:
  * <pre>
  * v(t₀+h) = v(t₀) + dv/dt(t₀) * h
- * dq/dt  = N(q(t₀)) * v(t₀+h)
+ * dq/dt  = N * v(t₀+h)
  * q(t₀+h) = q(t₀) + dq/dt * h
  * </pre>
  * where `v` are the generalized velocity variables and `q` are generalized
  * coordinates. `h` is the integration step size, and `N` is a matrix 
- * (dependent upon `q`) that maps velocities to time derivatives of generalized
- * coordinates. For rigid body systems in 2D, for example, `N` will generally 
- * be an identity matrix. For a single rigid body in 3D, `N` and its 
- * pseudo-inverse (`N` is generally non-square but always left invertible)
+ * (dependent upon `q(t₀)`) that maps velocities to time derivatives of 
+ * generalized coordinates. For rigid body systems in 2D, for example, `N`
+ * will generally be an identity matrix. For a single rigid body in 3D, `N` and
+ * its pseudo-inverse (`N` is generally non-square but always left invertible)
  * are frequently used to transform between time derivatives of Euler 
  * parameters (unit quaternions) and angular velocities (and vice versa), 
  * [Nikravesh 1988].
@@ -31,12 +31,13 @@ namespace systems {
  *
  * When a mechanical system is Hamiltonian (informally meaning that the
  * system is not subject to velocity-dependent forces), the semi-explicit
- * Euler integrator is a symplectic (momentum conserving) integrator.
+ * Euler integrator is a symplectic (energy conserving) integrator.
  * Symplectic integrators advertise energetically consistent behavior with large
  * step sizes compared to non-symplectic integrators. Multi-body systems
  * are not Hamiltonian, even in the absence of externally applied
  * velocity-dependent forces, due to the presence of both Coriolis and
- * gyroscopic forces. 
+ * gyroscopic forces. This integrator thus does not generally conserve energy
+ * for such systems.
  *
  * <h4>Association between time stepping and the semi-explicit Euler
  * integrator:</h4>
@@ -78,7 +79,7 @@ class SemiExplicitEulerIntegrator : public IntegratorBase<T> {
    * @sa Initialize()
    */
   SemiExplicitEulerIntegrator(const System<T>& system, const T& max_step_size,
-                          Context<T>* context = nullptr)
+                              Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
     derivs_ = system.AllocateTimeDerivatives();
