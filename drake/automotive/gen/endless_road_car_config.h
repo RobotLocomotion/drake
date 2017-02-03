@@ -38,6 +38,12 @@ class EndlessRoadCarConfig : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  EndlessRoadCarConfig<T>* DoClone() const override {
+    auto result = new EndlessRoadCarConfig;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
   /// wheelbase

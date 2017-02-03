@@ -35,6 +35,12 @@ class EndlessRoadOracleOutput : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  EndlessRoadOracleOutput<T>* DoClone() const override {
+    auto result = new EndlessRoadOracleOutput;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
   /// net_delta_sigma

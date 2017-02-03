@@ -9,6 +9,7 @@
 #include "drake/automotive/gen/endless_road_car_config.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/gen/endless_road_oracle_output.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -49,6 +50,8 @@ namespace automotive {
 template <typename T>
 class EndlessRoadCar : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EndlessRoadCar)
+
   enum ControlType {
     kNone,  // no controls, i.e., constant velocity
     kUser,  // processes DrivingCommand input
@@ -69,16 +72,11 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
   /// * `kIdm`:   single port accepting EndlessRoadOracleOutput
   EndlessRoadCar(const std::string& id,
                  const maliput::utility::InfiniteCircuitRoad* road,
-                 const ControlType control_type,
-                 const EndlessRoadCarConfig<T>& config = get_default_config());
+                 const ControlType control_type);
 
   const std::string& id() const { return id_; }
 
   ControlType control_type() const { return control_type_; }
-
-  static EndlessRoadCarConfig<T> get_default_config();
-
-  const EndlessRoadCarConfig<T>& config() const { return config_; }
 
  public:
   // System<T> overrides
@@ -89,12 +87,20 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  // LeafSystem<T> overrides
+  void SetDefaultParameters(const systems::LeafContext<T>& context,
+                            systems::Parameters<T>* params) const override;
+
+  /// Sets `config` to contain the default parameters for EndlessRoadCar.
+  static void SetDefaultParameters(EndlessRoadCarConfig<T>* config);
+
  protected:
   // LeafSystem<T> overrides
   std::unique_ptr<systems::ContinuousState<T>
                   > AllocateContinuousState() const override;
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::OutputPortDescriptor<T>& descriptor) const override;
+  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
  private:
   struct Accelerations {
@@ -110,11 +116,13 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
 
   Accelerations ComputeUserAccelerations(
       const EndlessRoadCarState<T>& state,
-      const DrivingCommand<T>& input) const;
+      const DrivingCommand<T>& input,
+      const EndlessRoadCarConfig<T>& config) const;
 
   Accelerations ComputeIdmAccelerations(
       const EndlessRoadCarState<T>& state,
-      const EndlessRoadOracleOutput<T>& input) const;
+      const EndlessRoadOracleOutput<T>& input,
+      const EndlessRoadCarConfig<T>& config) const;
 
   void ImplCalcTimeDerivatives(const EndlessRoadCarState<T>&,
                                const Accelerations& accelerations,
@@ -123,7 +131,6 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
   const std::string id_;
   const maliput::utility::InfiniteCircuitRoad* road_;
   const ControlType control_type_;
-  const EndlessRoadCarConfig<T> config_;
 };
 
 }  // namespace automotive
