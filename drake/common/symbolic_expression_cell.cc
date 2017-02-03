@@ -235,6 +235,14 @@ Expression ExpressionVar::Substitute(const Substitution& s) const {
   }
 }
 
+Expression ExpressionVar::Differentiate(const Variable& x) const {
+  if (x == var_) {
+    return Expression::One();
+  } else {
+    return Expression::Zero();
+  }
+}
+
 ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
 
 ExpressionConstant::ExpressionConstant(const double v)
@@ -268,6 +276,10 @@ double ExpressionConstant::Evaluate(const Environment& env) const {
 Expression ExpressionConstant::Substitute(const Substitution& s) const {
   DRAKE_DEMAND(!std::isnan(v_));
   return Expression{v_};
+}
+
+Expression ExpressionConstant::Differentiate(const Variable& x) const {
+  return Expression::Zero();
 }
 
 ostream& ExpressionConstant::Display(ostream& os) const {
@@ -307,6 +319,10 @@ double ExpressionNaN::Evaluate(const Environment& env) const {
 
 Expression ExpressionNaN::Substitute(const Substitution& s) const {
   throw runtime_error("NaN is detected during substitution.");
+}
+
+Expression ExpressionNaN::Differentiate(const Variable& x) const {
+  throw runtime_error("NaN is detected during differentiation.");
 }
 
 ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
@@ -401,6 +417,17 @@ Expression ExpressionAdd::Substitute(const Substitution& s) const {
       Expression{constant_},
       [&s](const Expression& init, const pair<Expression, double>& p) {
         return init + p.first.Substitute(s) * p.second;
+      });
+}
+
+Expression ExpressionAdd::Differentiate(const Variable& x) const {
+  //   d/dx (c_0 + c_1 * f_1 + ... + c_n * f_n)
+  // = (d/dx c_0) + (d/dx c_1 * f_1) + ... + (d/dx c_n * f_n)
+  // =  0.0       + c_1 * (d/dx f_1) + ... + c_n * (d/dx f_n)
+  return accumulate(
+      expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(), Expression::Zero(),
+      [&x](const Expression& init, const pair<Expression, double>& p) {
+        return init + p.second * p.first.Differentiate(x);
       });
 }
 
@@ -638,6 +665,47 @@ Expression ExpressionMul::Substitute(const Substitution& s) const {
       });
 }
 
+// Computes d/dx pow(f, g).
+Expression DifferentiatePow(const Expression& f, const Expression& g,
+                            const Variable& x) {
+  if (is_constant(g)) {
+    const Expression& n{g};  // alias n = g
+    // Special case where exponent is a constant:
+    //     d/dx pow(f, n) = n * pow(f, n - 1) * d/dx f
+    return n * pow(f, n - 1) * f.Differentiate(x);
+  } else {
+    // General case:
+    //    d/dx pow(f, g)
+    // =  pow(f, g - 1) * (g * (d/dx f) + f * log(f) * (d/dx g))
+    return pow(f, g - 1) *
+           (g * f.Differentiate(x) + f * log(f) * g.Differentiate(x));
+  }
+}
+
+Expression ExpressionMul::Differentiate(const Variable& x) const {
+  // d/dx (c   * f_1^g_1  * f_2^g_2        * ... * f_n^g_n
+  //= c * [(d/dx f_1^g_1) * f_2^g_2        * ... * f_n^g_n +
+  //       f_1^g_1        * (d/dx f_2^g_2) * ... * f_n^g_n +
+  //                      ...                              +
+  //       f_1^g_1        * f_2^g_2        * ... * (d/dx f_n^g_n)]
+  const map<Expression, Expression>& m{base_to_expnt_map_};
+  Expression ret{Expression::Zero()};
+  for (auto it1 = m.begin(); it1 != m.end(); ++it1) {
+    Expression product{Expression::One()};
+    for (auto it2 = m.begin(); it2 != m.end(); ++it2) {
+      const Expression& base{it2->first};
+      const Expression& expnt{it2->second};
+      if (it1 == it2) {
+        product *= DifferentiatePow(base, expnt, x);
+      } else {
+        product *= pow(base, expnt);
+      }
+    }
+    ret += product;
+  }
+  return constant_ * ret;
+}
+
 ostream& ExpressionMul::Display(ostream& os) const {
   DRAKE_ASSERT(!base_to_expnt_map_.empty());
   bool print_mul{false};
@@ -780,6 +848,13 @@ Expression ExpressionDiv::Substitute(const Substitution& s) const {
          get_second_argument().Substitute(s);
 }
 
+Expression ExpressionDiv::Differentiate(const Variable& x) const {
+  // d/dx (f / g) = (d/dx f * g - f * d/dx g) / g^2
+  const Expression& f{get_first_argument()};
+  const Expression& g{get_second_argument()};
+  return (f.Differentiate(x) * g - f * g.Differentiate(x)) / pow(g, 2.0);
+}
+
 ostream& ExpressionDiv::Display(ostream& os) const {
   return os << "(" << get_first_argument() << " / " << get_second_argument()
             << ")";
@@ -815,6 +890,12 @@ Expression ExpressionLog::Substitute(const Substitution& s) const {
   return log(get_argument().Substitute(s));
 }
 
+Expression ExpressionLog::Differentiate(const Variable& x) const {
+  // d/dx log(f) = (d/dx f) / f
+  const Expression& f{get_argument()};
+  return f.Differentiate(x) / f;
+}
+
 ostream& ExpressionLog::Display(ostream& os) const {
   return os << "log(" << get_argument() << ")";
 }
@@ -835,6 +916,16 @@ Expression ExpressionAbs::Substitute(const Substitution& s) const {
   return abs(get_argument().Substitute(s));
 }
 
+Expression ExpressionAbs::Differentiate(const Variable& x) const {
+  if (GetVariables().include(x)) {
+    ostringstream oss;
+    Display(oss) << "is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    return Expression::Zero();
+  }
+}
+
 ostream& ExpressionAbs::Display(ostream& os) const {
   return os << "abs(" << get_argument() << ")";
 }
@@ -850,6 +941,12 @@ Polynomial<double> ExpressionExp::ToPolynomial() const {
 
 Expression ExpressionExp::Substitute(const Substitution& s) const {
   return exp(get_argument().Substitute(s));
+}
+
+Expression ExpressionExp::Differentiate(const Variable& x) const {
+  // d/dx exp(f) = exp(f) * (d/dx f)
+  const Expression& f{get_argument()};
+  return exp(f) * f.Differentiate(x);
 }
 
 ostream& ExpressionExp::Display(ostream& os) const {
@@ -876,6 +973,12 @@ Polynomial<double> ExpressionSqrt::ToPolynomial() const {
 
 Expression ExpressionSqrt::Substitute(const Substitution& s) const {
   return sqrt(get_argument().Substitute(s));
+}
+
+Expression ExpressionSqrt::Differentiate(const Variable& x) const {
+  // d/dx (sqrt(f)) = 1 / (2 * sqrt(f)) * (d/dx f')
+  const Expression& f{get_argument()};
+  return 1 / (2 * sqrt(f)) * f.Differentiate(x);
 }
 
 ostream& ExpressionSqrt::Display(ostream& os) const {
@@ -913,6 +1016,10 @@ Expression ExpressionPow::Substitute(const Substitution& s) const {
              get_second_argument().Substitute(s));
 }
 
+Expression ExpressionPow::Differentiate(const Variable& x) const {
+  return DifferentiatePow(get_first_argument(), get_second_argument(), x);
+}
+
 ostream& ExpressionPow::Display(ostream& os) const {
   return os << "pow(" << get_first_argument() << ", " << get_second_argument()
             << ")";
@@ -934,6 +1041,12 @@ Expression ExpressionSin::Substitute(const Substitution& s) const {
   return sin(get_argument().Substitute(s));
 }
 
+Expression ExpressionSin::Differentiate(const Variable& x) const {
+  // d/dx (sin f) = (cos f) * (d/dx f)
+  const Expression& f{get_argument()};
+  return cos(f) * f.Differentiate(x);
+}
+
 ostream& ExpressionSin::Display(ostream& os) const {
   return os << "sin(" << get_argument() << ")";
 }
@@ -951,6 +1064,12 @@ Expression ExpressionCos::Substitute(const Substitution& s) const {
   return cos(get_argument().Substitute(s));
 }
 
+Expression ExpressionCos::Differentiate(const Variable& x) const {
+  // d/dx (cos f) = - (sin f) * (d/dx f)
+  const Expression& f{get_argument()};
+  return -sin(f) * f.Differentiate(x);
+}
+
 ostream& ExpressionCos::Display(ostream& os) const {
   return os << "cos(" << get_argument() << ")";
 }
@@ -966,6 +1085,12 @@ Polynomial<double> ExpressionTan::ToPolynomial() const {
 
 Expression ExpressionTan::Substitute(const Substitution& s) const {
   return tan(get_argument().Substitute(s));
+}
+
+Expression ExpressionTan::Differentiate(const Variable& x) const {
+  // d/dx (tan f) = 1 / (cos f)^2 * (d/dx f)
+  const Expression& f{get_argument()};
+  return 1 / pow(cos(f), 2) * f.Differentiate(x);
 }
 
 ostream& ExpressionTan::Display(ostream& os) const {
@@ -992,6 +1117,12 @@ Polynomial<double> ExpressionAsin::ToPolynomial() const {
 
 Expression ExpressionAsin::Substitute(const Substitution& s) const {
   return asin(get_argument().Substitute(s));
+}
+
+Expression ExpressionAsin::Differentiate(const Variable& x) const {
+  // d/dx (asin f) = (1 / sqrt(1 - f^2)) (d/dx f)
+  const Expression& f{get_argument()};
+  return (1 / sqrt(1 - pow(f, 2))) * f.Differentiate(x);
 }
 
 ostream& ExpressionAsin::Display(ostream& os) const {
@@ -1023,6 +1154,12 @@ Expression ExpressionAcos::Substitute(const Substitution& s) const {
   return acos(get_argument().Substitute(s));
 }
 
+Expression ExpressionAcos::Differentiate(const Variable& x) const {
+  // d/dx (acos f) = - 1 / sqrt(1 - f^2) * (d/dx f)
+  const Expression& f{get_argument()};
+  return -1 / sqrt(1 - pow(f, 2)) * f.Differentiate(x);
+}
+
 ostream& ExpressionAcos::Display(ostream& os) const {
   return os << "acos(" << get_argument() << ")";
 }
@@ -1043,6 +1180,12 @@ Expression ExpressionAtan::Substitute(const Substitution& s) const {
   return atan(get_argument().Substitute(s));
 }
 
+Expression ExpressionAtan::Differentiate(const Variable& x) const {
+  // d/dx (atan f) = (1 / (1 + f^2)) * d/dx f
+  const Expression& f{get_argument()};
+  return (1 / (1 + pow(f, 2))) * f.Differentiate(x);
+}
+
 ostream& ExpressionAtan::Display(ostream& os) const {
   return os << "atan(" << get_argument() << ")";
 }
@@ -1059,6 +1202,14 @@ Polynomial<double> ExpressionAtan2::ToPolynomial() const {
 Expression ExpressionAtan2::Substitute(const Substitution& s) const {
   return atan2(get_first_argument().Substitute(s),
                get_second_argument().Substitute(s));
+}
+
+Expression ExpressionAtan2::Differentiate(const Variable& x) const {
+  // d/dx (atan2(f,g)) = (g * (d/dx f) - f * (d/dx g)) / (f^2 + g^2)
+  const Expression& f{get_first_argument()};
+  const Expression& g{get_second_argument()};
+  return (g * f.Differentiate(x) - f * g.Differentiate(x)) /
+         (pow(f, 2) + pow(g, 2));
 }
 
 ostream& ExpressionAtan2::Display(ostream& os) const {
@@ -1081,6 +1232,12 @@ Expression ExpressionSinh::Substitute(const Substitution& s) const {
   return sinh(get_argument().Substitute(s));
 }
 
+Expression ExpressionSinh::Differentiate(const Variable& x) const {
+  // d/dx (sinh f) = cosh(f) * (d/dx f)
+  const Expression& f{get_argument()};
+  return cosh(f) * f.Differentiate(x);
+}
+
 ostream& ExpressionSinh::Display(ostream& os) const {
   return os << "sinh(" << get_argument() << ")";
 }
@@ -1096,6 +1253,12 @@ Polynomial<double> ExpressionCosh::ToPolynomial() const {
 
 Expression ExpressionCosh::Substitute(const Substitution& s) const {
   return cosh(get_argument().Substitute(s));
+}
+
+Expression ExpressionCosh::Differentiate(const Variable& x) const {
+  // d/dx (cosh f) = sinh(f) * (d/dx f)
+  const Expression& f{get_argument()};
+  return sinh(f) * f.Differentiate(x);
 }
 
 ostream& ExpressionCosh::Display(ostream& os) const {
@@ -1115,6 +1278,12 @@ Expression ExpressionTanh::Substitute(const Substitution& s) const {
   return tanh(get_argument().Substitute(s));
 }
 
+Expression ExpressionTanh::Differentiate(const Variable& x) const {
+  // d/dx (tanh f) = 1 / (cosh^2(f)) * (d/dx f)
+  const Expression& f{get_argument()};
+  return 1 / pow(cosh(f), 2) * f.Differentiate(x);
+}
+
 ostream& ExpressionTanh::Display(ostream& os) const {
   return os << "tanh(" << get_argument() << ")";
 }
@@ -1131,6 +1300,16 @@ Polynomial<double> ExpressionMin::ToPolynomial() const {
 Expression ExpressionMin::Substitute(const Substitution& s) const {
   return min(get_first_argument().Substitute(s),
              get_second_argument().Substitute(s));
+}
+
+Expression ExpressionMin::Differentiate(const Variable& x) const {
+  if (GetVariables().include(x)) {
+    ostringstream oss;
+    Display(oss) << "is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    return Expression::Zero();
+  }
 }
 
 ostream& ExpressionMin::Display(ostream& os) const {
@@ -1152,6 +1331,16 @@ Polynomial<double> ExpressionMax::ToPolynomial() const {
 Expression ExpressionMax::Substitute(const Substitution& s) const {
   return max(get_first_argument().Substitute(s),
              get_second_argument().Substitute(s));
+}
+
+Expression ExpressionMax::Differentiate(const Variable& x) const {
+  if (GetVariables().include(x)) {
+    ostringstream oss;
+    Display(oss) << "is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    return Expression::Zero();
+  }
 }
 
 ostream& ExpressionMax::Display(ostream& os) const {
@@ -1227,6 +1416,16 @@ double ExpressionIfThenElse::Evaluate(const Environment& env) const {
 Expression ExpressionIfThenElse::Substitute(const Substitution& s) const {
   return if_then_else(f_cond_.Substitute(s), e_then_.Substitute(s),
                       e_else_.Substitute(s));
+}
+
+Expression ExpressionIfThenElse::Differentiate(const Variable& x) const {
+  if (GetVariables().include(x)) {
+    ostringstream oss;
+    Display(oss) << "is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    return Expression::Zero();
+  }
 }
 
 ostream& ExpressionIfThenElse::Display(ostream& os) const {

@@ -55,6 +55,11 @@ class ExpressionCell {
    * @throws std::runtime_error if NaN is detected during substitution.
    */
   virtual Expression Substitute(const Substitution& s) const = 0;
+  /** Differentiates this symbolic expression with respect to the variable @p
+   * var.
+   * @throws std::runtime_error if it is not differentiable.
+   */
+  virtual Expression Differentiate(const Variable& x) const = 0;
   /** Outputs string representation of expression into output stream @p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
@@ -157,6 +162,7 @@ class ExpressionVar : public ExpressionCell {
   Polynomial<double> ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -174,6 +180,7 @@ class ExpressionConstant : public ExpressionCell {
   Polynomial<double> ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -190,6 +197,7 @@ class ExpressionNaN : public ExpressionCell {
   Polynomial<double> ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -218,6 +226,7 @@ class ExpressionAdd : public ExpressionCell {
   Polynomial<double> ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
   /** Returns the constant. */
   double get_constant() const { return constant_; }
@@ -316,6 +325,7 @@ class ExpressionMul : public ExpressionCell {
   Polynomial<double> ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
   /** Returns constant term. */
   double get_constant() const { return constant_; }
@@ -396,6 +406,7 @@ class ExpressionDiv : public BinaryExpressionCell {
   ExpressionDiv(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -408,6 +419,7 @@ class ExpressionLog : public UnaryExpressionCell {
   explicit ExpressionLog(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression log(const Expression& e);
@@ -424,6 +436,7 @@ class ExpressionAbs : public UnaryExpressionCell {
   explicit ExpressionAbs(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression abs(const Expression& e);
@@ -439,6 +452,7 @@ class ExpressionExp : public UnaryExpressionCell {
   explicit ExpressionExp(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -451,6 +465,7 @@ class ExpressionSqrt : public UnaryExpressionCell {
   explicit ExpressionSqrt(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression sqrt(const Expression& e);
@@ -467,6 +482,7 @@ class ExpressionPow : public BinaryExpressionCell {
   ExpressionPow(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression pow(const Expression& e1, const Expression& e2);
@@ -484,6 +500,7 @@ class ExpressionSin : public UnaryExpressionCell {
   explicit ExpressionSin(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -496,6 +513,7 @@ class ExpressionCos : public UnaryExpressionCell {
   explicit ExpressionCos(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -508,6 +526,7 @@ class ExpressionTan : public UnaryExpressionCell {
   explicit ExpressionTan(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -520,6 +539,7 @@ class ExpressionAsin : public UnaryExpressionCell {
   explicit ExpressionAsin(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression asin(const Expression& e);
@@ -536,6 +556,7 @@ class ExpressionAcos : public UnaryExpressionCell {
   explicit ExpressionAcos(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression acos(const Expression& e);
@@ -552,6 +573,7 @@ class ExpressionAtan : public UnaryExpressionCell {
   explicit ExpressionAtan(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -565,6 +587,7 @@ class ExpressionAtan2 : public BinaryExpressionCell {
   ExpressionAtan2(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -577,6 +600,7 @@ class ExpressionSinh : public UnaryExpressionCell {
   explicit ExpressionSinh(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -589,6 +613,7 @@ class ExpressionCosh : public UnaryExpressionCell {
   explicit ExpressionCosh(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -601,6 +626,7 @@ class ExpressionTanh : public UnaryExpressionCell {
   explicit ExpressionTanh(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -613,6 +639,7 @@ class ExpressionMin : public BinaryExpressionCell {
   ExpressionMin(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -625,6 +652,7 @@ class ExpressionMax : public BinaryExpressionCell {
   ExpressionMax(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -644,6 +672,7 @@ class ExpressionIfThenElse : public ExpressionCell {
   Polynomial<double> ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   /** Returns the conditional formula. */
