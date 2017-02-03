@@ -1,5 +1,8 @@
 #include "drake/multibody/rigid_body_frame.h"
 
+#include <memory>
+#include <utility>
+
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -14,6 +17,53 @@ RigidBodyFrame<T>::RigidBodyFrame(const std::string& name, RigidBody<T>* body,
                                const Eigen::Vector3d& rpy)
     : name_(name), body_(body) {
   transform_to_body_.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+}
+
+// For an explanation of why these SWIG preprocessor commands are needed, see
+// the comment immediately above the declaration of RigidBodyFrame::Clone() in
+// rigid_body_frame.h.
+#ifndef SWIG
+template <typename T>
+std::shared_ptr<RigidBodyFrame<T>> RigidBodyFrame<T>::Clone() const {
+  auto frame = std::make_shared<RigidBodyFrame<T>>();
+  frame->set_name(name_);
+  frame->set_transform_to_body(transform_to_body_);
+  frame->set_frame_index(frame_index_);
+  return move(frame);
+}
+#endif
+
+template <typename T>
+bool RigidBodyFrame<T>::CompareToClone(const RigidBodyFrame& other) const {
+  if (get_name() != other.get_name()) {
+    drake::log()->debug(
+        "RigidBodyFrame::CompareToClone(): name mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_name(),
+        other.get_name());
+    return false;
+  }
+  if (get_transform_to_body().matrix() !=
+      other.get_transform_to_body().matrix()) {
+    drake::log()->debug(
+        "RigidBodyFrame::CompareToClone(): transform_to_body mismatch:\n"
+        "  - this:\n{}\n"
+        "  - other:\n{}",
+        get_transform_to_body().matrix(),
+        other.get_transform_to_body().matrix());
+    return false;
+  }
+  if (get_frame_index() != other.get_frame_index()) {
+    drake::log()->debug(
+        "RigidBodyFrame::CompareToClone(): frame index mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_frame_index(),
+        other.get_frame_index());
+    return false;
+  }
+  return true;
 }
 
 template <typename T>

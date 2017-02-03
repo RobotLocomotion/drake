@@ -252,6 +252,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "rigid_body_frame_test",
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
 filegroup(
     name = "test_models",
     testonly = 1,

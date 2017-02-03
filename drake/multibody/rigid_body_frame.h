@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include <Eigen/Dense>
@@ -56,6 +57,32 @@ class RigidBodyFrame {
   // described in #4407.
   RigidBodyFrame()
       : RigidBodyFrame("", nullptr, Eigen::Isometry3d::Identity()) {}
+
+  // The following preprocessor condition is necessary because wrapping method
+  // Clone() in SWIG causes the following build error to occur:
+  //
+  //     "call to implicitly-deleted copy constructor"
+  //
+  // Unfortunately, adding "%ignore RigidBodyFrame<double>::Clone()" to
+  // drake-distro/drake/bindings/swig/rbtree.i does not work.
+#ifndef SWIG
+  // TODO(liang.fok) Update this to return a unique_ptr. This is related to
+  // #3093.
+  /**
+   * Returns a clone of this RigidBodyFrame. Note that the body to which this
+   * frame is attached is not cloned. The body must later be set using
+   * set_rigid_body().
+   */
+  virtual std::shared_ptr<RigidBodyFrame<T>> Clone() const;
+#endif
+
+  /**
+   * Compares this %RigidBodyFrame with a clone. Since this method is intended
+   * to compare a clone, an *exact* match is performed. This method will only
+   * return `true` if the provided `other` %RigidBodyFrame is exactly the same
+   * as this %RigidBodyFrame.
+   */
+  virtual bool CompareToClone(const RigidBodyFrame& other) const;
 
   /**
    * Returns the ID of the model instance to which this rigid body frame
