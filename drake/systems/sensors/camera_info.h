@@ -13,7 +13,7 @@ namespace sensors {
 ///
 /// To clarify the terminology used to describe 2D and/or 3D spaces throughout
 /// the class, we use "coordinate system" rather than "frame".  This is because
-/// the term "frame" in the computer vision field has two major meaning: a
+/// the term "frame" has two different meanings in the computer vision field: a
 /// synonym of coordinate system, and a snapshot out of consecutively captured
 /// images.  To ensure the reader will not be confused, we clearly differentiate
 /// the use of the terms "coordinate system" and "frame" by using "coordinate
@@ -49,9 +49,8 @@ namespace sensors {
 /// the axes are `u-right` and `v-down`.
 ///
 /// For more detail including an explanation of the focal lengths, refer to:
-/// http://docs.opencv.org/2.4/modules/calib3d/doc/
-/// camera_calibration_and_3d_reconstruction.html and https://en.wikipedia.org/
-/// wiki/Pinhole_camera_model.
+/// http://docs.opencv.org/2.4/modules/calib3d/doc/calib3d.html and
+/// https://en.wikipedia.org/wiki/Pinhole_camera_model.
 ///
 /// @ingroup sensor_systems
 // TODO(kunimatsu-tri) Add camera distortion parameters and other parameters as
@@ -64,10 +63,10 @@ class CameraInfo {
   /// @param height The image height in pixels, must be greater than zero.
   /// @param focal_x The focal length x in pixels.
   /// @param focal_y The focal length y in pixels.
-  /// @param center_x The x coordinate of the image center in the pixel coordinate
-  /// system in pixels.
-  /// @param center_y The y coordinate of the image center in the pixel coordinate
-  /// system in pixels.
+  /// @param center_x The x coordinate of the image center in the pixel
+  /// coordinate system in pixels.
+  /// @param center_y The y coordinate of the image center in the pixel
+  /// coordinate system in pixels.
   CameraInfo(int width, int height, double focal_x, double focal_y,
              double center_x, double center_y)
       : width_(width), height_(height), intrinsic_matrix_((
@@ -85,8 +84,8 @@ class CameraInfo {
   /// Constructor that sets the image size and vertical field of view `fov_y`.
   /// We assume there is no image offset, so the image center `(center_x,`
   /// `center_y)` is equal to `(width / 2, height / 2)`.  The horizontal field
-  /// of view `fov_x` is calculated using the aspect ratio of the image width and
-  /// height together with the vertical field of view. The focal lengths
+  /// of view `fov_x` is calculated using the aspect ratio of the image width
+  /// and height together with the vertical field of view. The focal lengths
   /// `focal_x` and `focal_y` are calculated as follows:
   /// <pre>
   ///   focal_x = width / 2 / tan(fov_x / 2)
