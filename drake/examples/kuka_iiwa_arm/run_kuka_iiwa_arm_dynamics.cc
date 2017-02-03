@@ -63,8 +63,10 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
 
     // Instantiates a RigidBodyPlant from the MBD model of the world.
     plant_ = builder.template AddSystem<RigidBodyPlant<T>>(move(tree));
+#ifndef USE_STRIBECK
     plant_->set_contact_parameters(3000 /* penetration stiffness */,
         0 /* penetration damping */, 1.0 /* friction coefficient */);
+#endif
 
     // Feed in constant inputs of zero into the RigidBodyPlant.
     VectorX<T> constant_value(plant_->get_input_size());

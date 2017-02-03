@@ -56,7 +56,12 @@ int main(int argc, const char** argv) {
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
   // Contact parameters set arbitrarily.
+#ifdef USE_STRIBECK
+    //                         k       us   ud    v     d
+  plant.set_contact_parameters(100000, 1.5, 1.0, 0.01, 20.0);
+#else
   plant.set_contact_parameters(10000., 100., 10.);
+#endif
   const auto& tree = plant.get_rigid_body_tree();
 
   // RigidBodyActuators.

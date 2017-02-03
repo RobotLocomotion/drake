@@ -63,8 +63,10 @@ unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
     DRAKE_DEMAND(plant_ptr != nullptr);
 
     // Sets the name and contact parameters.
+#ifndef USE_STRIBECK
     plant_ptr->set_contact_parameters(
         penetration_stiffness, penetration_damping, friction_coefficient);
+#endif
   }
 
   const RigidBodyTreed& tree = plant_ptr->get_rigid_body_tree();
