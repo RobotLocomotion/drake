@@ -106,7 +106,7 @@ class NonConvexQPproblem1 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem1)
 
-  enum CostForm {
+  enum class CostForm {
     kCostBegin = 0,
     kGenericCost = 0,
     kQuadraticCost = 1,
@@ -114,7 +114,7 @@ class NonConvexQPproblem1 {
     // TODO(hongkai.dai) Add quadratic symbolic cost
   };
 
-  enum ConstraintForm {
+  enum class ConstraintForm {
     kConstraintBegin = 0,
     kSymbolicConstraint = 0,
     kNonSymbolicConstraint = 1,
@@ -169,7 +169,7 @@ class NonConvexQPproblem2 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem2)
 
-  enum CostForm {
+  enum class CostForm {
     kCostBegin = 0,
     kGenericCost = 0,
     kQuadraticCost = 1,
@@ -177,7 +177,7 @@ class NonConvexQPproblem2 {
     kCostEnd = 1
   };
 
-  enum ConstraintForm {
+  enum class ConstraintForm {
     kConstraintBegin = 0,
     kNonSymbolicConstraint = 0,
     kSymbolicConstraint = 1,
@@ -232,7 +232,7 @@ class LowerBoundedProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem)
 
-  enum ConstraintForm {
+  enum class ConstraintForm {
     kConstraintBegin = 0,
     kNonSymbolic = 0,
     kSymbolic = 1,
@@ -330,7 +330,7 @@ class GloptiPolyConstrainedMinimizationProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem)
 
-  enum CostForm {
+  enum class CostForm {
     kCostBegin = 0,
     kGenericCost = 0,
     kNonSymbolicCost = 1,
@@ -338,7 +338,7 @@ class GloptiPolyConstrainedMinimizationProblem {
     kCostEnd = 2
   };
 
-  enum ConstraintForm {
+  enum class ConstraintForm {
     kConstraintBegin = 0,
     kNonSymbolicConstraint = 0,
     kSymbolicConstraint = 1,
@@ -445,14 +445,14 @@ class MinDistanceFromPlaneToOrigin {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinDistanceFromPlaneToOrigin)
 
-  enum CostForm {
+  enum class CostForm {
     kCostBegin = 0,
     kNonSymbolicCost = 0,
     kSymbolicCost = 1,
     kCostEnd = 1
   };
 
-  enum ConstraintForm {
+  enum class ConstraintForm {
     kConstraintBegin = 0,
     kNonSymbolicConstraint = 0,
     kSymbolicConstraint = 1,
@@ -486,6 +486,39 @@ class MinDistanceFromPlaneToOrigin {
   VectorDecisionVariable<1> t_rotated_lorentz_;
   VectorXDecisionVariable x_rotated_lorentz_;
   Eigen::VectorXd x_expected_;
+};
+
+/// Test a simple linear programming problem with zero cost, i.e. a feasibility
+/// problem
+///    0 <= x0 + 2x1 + 3x2 <= 10
+/// -inf <=       x1 - 2x2 <= 3
+///   -1 <= 0x0+ 0x1 + 0x2 <= 0
+///           x1 >= 1
+class LinearFeasibilityProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearFeasibilityProgram)
+
+  enum class ConstraintForm {
+    kConstraintBegin = 0,
+    kNonSymbolicConstraint = 0,
+    kSymbolicConstraint = 1,
+    kFormulaConstraint = 2,
+    kConstraintEnd = 2,
+  };
+
+  LinearFeasibilityProgram(ConstraintForm cnstr_form);
+
+  MathematicalProgram* prog() const { return prog_.get(); }
+
+  void CheckSolution() const;
+
+ private:
+  std::unique_ptr<MathematicalProgram> prog_;
+  VectorDecisionVariable<3> x_;
+  Eigen::Matrix3d A_;
+  Eigen::Vector3d b_lb_;
+  Eigen::Vector3d b_ub_;
+  ConstraintForm cnstr_form_;
 };
 }  // namespace test
 }  // namespace solvers

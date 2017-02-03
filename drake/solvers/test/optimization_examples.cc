@@ -2,10 +2,11 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 
-using Eigen::Matrix4d;
 using Eigen::Vector4d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::Matrix4d;
+using Eigen::Matrix3d;
 using Eigen::Matrix2d;
 using Eigen::RowVector2d;
 using Eigen::MatrixXd;
@@ -548,6 +549,21 @@ bool MinDistanceFromPlaneToOrigin::CheckSolution(bool rotated_cone) const {
            CompareMatrices(t_lorentz_value, Vector1d(x_expected_.norm()), 1E-3,
                            MatrixCompareType::absolute);
   }
+}
+
+LinearFeasibilityProgram::LinearFeasibilityProgram(ConstraintForm cnstr_form)
+    : prog_(std::make_unique<MathematicalProgram>()),
+      x_(),
+      A_(),
+      b_lb_(0, -std::numeric_limits<double>::infinity(), -1),
+      b_ub_(10, 3, 0),
+      cnstr_form_(cnstr_form){
+  x_ = prog_->NewContinuousVariables<3>();
+  // clang-format off
+  A_ << 1, 2, 3,
+        0, 1, -2,
+        0, 0, 0;
+  // clang-format on
 }
 }  // namespace test
 }  // namespace solvers
