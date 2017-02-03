@@ -28,5 +28,10 @@ if(BUILD_TESTING)
 
   if(gurobi_FOUND)
     drake_add_python_test(pydrake.test.testMathematicalProgram)
+    drake_add_python_test(pydrake.test.testGurobiSolver)
+  endif()
+
+  if(mosek_FOUND)
+    drake_add_python_test(pydrake.test.testMosekSolver)
   endif()
 endif()
