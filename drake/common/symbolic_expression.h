@@ -258,25 +258,25 @@ class Expression {
   /** Constructs if-then-else expression.
 
     @verbatim
-      if_then_else(cond, exp_then, exp_else)
+      if_then_else(cond, expr_then, expr_else)
     @endverbatim
 
-    The value returned by the above if-then-else expression is @p exp_then if @p
-    cond is evaluated to true. Otherwise, it returns @p exp_else.
+    The value returned by the above if-then-else expression is @p expr_then if
+    @p cond is evaluated to true. Otherwise, it returns @p expr_else.
 
     The semantics is similar to the C++'s conditional expression constructed by
     its ternary operator, @c ?:. However, there is a key difference between the
     C++'s conditional expression and our @c if_then_else expression in a way the
     arguments are evaluated during the construction.
 
-     - In case of the C++'s conditional expression, <tt> cond ? exp_then :
-       exp_else</tt>, the then expression @c exp_then (respectively, the else
-       expression @c exp_else) is \b only evaluated when the conditional
+     - In case of the C++'s conditional expression, <tt> cond ? expr_then :
+       expr_else</tt>, the then expression @c expr_then (respectively, the else
+       expression @c expr_else) is \b only evaluated when the conditional
        expression @c cond is evaluated to \b true (respectively, when @c cond is
        evaluated to \b false).
 
-     - In case of the symbolic expression, <tt>if_then_else(cond, exp_then,
-       exp_else)</tt>, however, \b both arguments @c exp_then and @c exp_else
+     - In case of the symbolic expression, <tt>if_then_else(cond, expr_then,
+       expr_else)</tt>, however, \b both arguments @c expr_then and @c expr_else
        are evaluated first and then passed to the @c if_then_else function.
 
      @note This function returns an \b expression and it is different from the
@@ -471,7 +471,7 @@ double get_constant_in_addition(const Expression& e);
  *  maps 'x' to 2 and 'y' to 3.
  *  \pre{@p e is an addition expression.}
 */
-const std::map<Expression, double>& get_exp_to_coeff_map_in_addition(
+const std::map<Expression, double>& get_expr_to_coeff_map_in_addition(
     const Expression& e);
 /** Returns the constant part of the multiplication expression @p e. For
  *  instance, given 7 * x^2 * y^3, it returns 7.
@@ -483,7 +483,7 @@ double get_constant_in_multiplication(const Expression& e);
  * return value maps 'x' to 2, 'y' to 3, and 'z' to 'x'.
  *  \pre{@p e is a multiplication expression.}
 */
-const std::map<Expression, Expression>& get_base_to_exp_map_in_multiplication(
+const std::map<Expression, Expression>& get_base_to_expnt_map_in_multiplication(
     const Expression& e);
 
 // Matrix<Expression> * Matrix<double> => Matrix<Expression>
