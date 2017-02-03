@@ -528,8 +528,8 @@ Expression pow(const Expression& e1, const Expression& e2) {
   if (is_pow(e1)) {
     // pow(base, exponent) ^ e2 => pow(base, exponent * e2)
     const Expression& base{get_first_argument(e1)};
-    const Expression& exponent{get_second_argument(e1)};
-    return Expression{make_shared<ExpressionPow>(base, exponent * e2)};
+    const Expression& expnt{get_second_argument(e1)};
+    return Expression{make_shared<ExpressionPow>(base, expnt * e2)};
   }
   return Expression{make_shared<ExpressionPow>(e1, e2)};
 }
@@ -709,16 +709,16 @@ const Expression& get_second_argument(const Expression& e) {
 double get_constant_in_addition(const Expression& e) {
   return to_addition(e)->get_constant();
 }
-const map<Expression, double>& get_exp_to_coeff_map_in_addition(
+const map<Expression, double>& get_expr_to_coeff_map_in_addition(
     const Expression& e) {
-  return to_addition(e)->get_exp_to_coeff_map();
+  return to_addition(e)->get_expr_to_coeff_map();
 }
 double get_constant_in_multiplication(const Expression& e) {
   return to_multiplication(e)->get_constant();
 }
-const map<Expression, Expression>& get_base_to_exp_map_in_multiplication(
+const map<Expression, Expression>& get_base_to_expnt_map_in_multiplication(
     const Expression& e) {
-  return to_multiplication(e)->get_base_to_exp_map();
+  return to_multiplication(e)->get_base_to_expnt_map();
 }
 
 }  // namespace symbolic

@@ -408,7 +408,7 @@ TEST_F(SymbolicExpressionTest, GetConstantTermInAddition) {
 
 TEST_F(SymbolicExpressionTest, GetTermsInAddition) {
   const Expression e{3 + 2 * x_ + 3 * y_};
-  const map<Expression, double> terms{get_exp_to_coeff_map_in_addition(e)};
+  const map<Expression, double> terms{get_expr_to_coeff_map_in_addition(e)};
   EXPECT_EQ(terms.at(x_), 2.0);
   EXPECT_EQ(terms.at(y_), 3.0);
 }
@@ -425,7 +425,7 @@ TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
 TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
   const Expression e{2 * x_ * y_ * y_ * pow(z_, y_)};
   const map<Expression, Expression> products{
-      get_base_to_exp_map_in_multiplication(e)};
+      get_base_to_expnt_map_in_multiplication(e)};
   EXPECT_PRED2(ExprEqual, products.at(x_), 1.0);
   EXPECT_PRED2(ExprEqual, products.at(y_), 2.0);
   EXPECT_PRED2(ExprEqual, products.at(z_), y_);

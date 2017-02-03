@@ -24,11 +24,11 @@ using std::runtime_error;
 using std::unordered_map;
 
 namespace internal {
-Monomial::Monomial(const Variable& var, const int exponent)
-    : total_degree_{exponent} {
-  DRAKE_DEMAND(exponent >= 0);
-  if (exponent > 0) {
-    powers_.emplace(var.get_id(), exponent);
+Monomial::Monomial(const Variable& var, const int expnt)
+    : total_degree_{expnt} {
+  DRAKE_DEMAND(expnt >= 0);
+  if (expnt > 0) {
+    powers_.emplace(var.get_id(), expnt);
   }
 }
 
@@ -37,16 +37,16 @@ Monomial::Monomial(const map<Variable::Id, int>& powers)
 
 Expression Monomial::ToExpression(
     const unordered_map<Variable::Id, Variable>& id_to_var_map) const {
-  // It builds this base_to_exp_map and uses ExpressionMulFactory to build a
+  // It builds this base_to_expnt_map and uses ExpressionMulFactory to build a
   // multiplication expression.
-  map<Expression, Expression> base_to_exp_map;
+  map<Expression, Expression> base_to_expnt_map;
   for (const auto& p : powers_) {
     const Variable::Id id{p.first};
-    const int exponent{p.second};
+    const int expnt{p.second};
     const auto it = id_to_var_map.find(id);
     if (it != id_to_var_map.end()) {
       const Variable& var{it->second};
-      base_to_exp_map.emplace(Expression{var}, exponent);
+      base_to_expnt_map.emplace(Expression{var}, expnt);
     } else {
       ostringstream oss;
       oss << "Variable whose ID is " << id << " appeared in a monomial "
@@ -56,7 +56,7 @@ Expression Monomial::ToExpression(
       throw runtime_error(oss.str());
     }
   }
-  return ExpressionMulFactory{1.0, base_to_exp_map}.GetExpression();
+  return ExpressionMulFactory{1.0, base_to_expnt_map}.GetExpression();
 }
 
 int Monomial::TotalDegree(const map<Variable::Id, int>& powers) {
@@ -78,12 +78,12 @@ Monomial operator*(const Monomial& m1, const Monomial& m2) {
   map<Variable::Id, int> powers{m1.get_powers()};
   for (const pair<Variable::Id, int>& p : m2.get_powers()) {
     const Variable::Id var{p.first};
-    const int exponent{p.second};
+    const int expnt{p.second};
     auto it = powers.find(var);
     if (it == powers.end()) {
       powers.insert(p);
     } else {
-      it->second += exponent;
+      it->second += expnt;
     }
   }
   return Monomial{powers};
@@ -91,13 +91,13 @@ Monomial operator*(const Monomial& m1, const Monomial& m2) {
 }  // namespace internal
 
 Expression Monomial(const unordered_map<Variable, int, hash_value<Variable>>&
-                        map_var_to_exponent) {
-  map<Expression, Expression> base_to_exp_map;
-  for (const auto& p : map_var_to_exponent) {
+                        map_var_to_expnt) {
+  map<Expression, Expression> base_to_expnt_map;
+  for (const auto& p : map_var_to_expnt) {
     DRAKE_DEMAND(p.second > 0);
-    base_to_exp_map.emplace(Expression{p.first}, p.second);
+    base_to_expnt_map.emplace(Expression{p.first}, p.second);
   }
-  return ExpressionMulFactory{1.0, base_to_exp_map}.GetExpression();
+  return ExpressionMulFactory{1.0, base_to_expnt_map}.GetExpression();
 }
 
 Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
