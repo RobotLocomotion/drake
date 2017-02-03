@@ -27,13 +27,16 @@ Description Format), which are both XML formats.
   extensions to the `official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
 
 The target audience for this document is for those who want to model a
-physical object in Drake. You should have some understanding of XML formats,
-and be able to run Drake. However, you don't need to know C++. This document
-is not meant as a tutorial for creating URDF/SDF files, which you can find
-`elsewhere <http://gazebosim.org/tutorials?tut=build_robot>`_. But it does
-provide enough reference material for someone to edit or create a
-representation of an object for Drake, by defining the terminology and
-providing a brief description of what's in a model file.
+physical object for use in Drake. You should have some understanding of XML
+formats, and be able to run Drake. You don't need to know C++. This document
+provides enough reference material for someone to edit or create a
+representation of a simple object for Drake, by defining the terminology and
+providing an overview of what's in a model file. This document is not meant
+as a tutorial for creating URDF/SDF files, which you can find
+`elsewhere <http://gazebosim.org/tutorials?tut=build_robot>`_. For deeper
+understanding of polygonal modeling and advanced topics like meshes and
+textures, we try to provide links to further information, but you may have to
+do more of your own research and education.
 
 In this document, we call the URDF or SDF representation of the object a
 model. The model of an object will describe the object's physical properties,
