@@ -69,18 +69,7 @@ class CameraInfo {
   /// @param center_y The y coordinate of the image center in the pixel
   /// coordinate system in pixels.
   CameraInfo(int width, int height, double focal_x, double focal_y,
-             double center_x, double center_y)
-      : width_(width), height_(height), intrinsic_matrix_((
-            Eigen::Matrix3d() << focal_x, 0., center_x,
-                                 0., focal_y, center_y,
-                                 0., 0., 1.).finished()) {
-    DRAKE_ASSERT(width > 0);
-    DRAKE_ASSERT(height > 0);
-    DRAKE_ASSERT(focal_x > 0);
-    DRAKE_ASSERT(focal_y > 0);
-    DRAKE_ASSERT(center_x > 0 && center_x < static_cast<double>(width));
-    DRAKE_ASSERT(center_y > 0 && center_y < static_cast<double>(height));
-  }
+             double center_x, double center_y);
 
   /// Constructor that sets the image size and vertical field of view `fov_y`.
   /// We assume there is no image offset, so the image center `(center_x,`
@@ -133,8 +122,8 @@ class CameraInfo {
   }
 
  private:
-  const int width_;
-  const int height_;
+  const int width_{};
+  const int height_{};
   // Camera intrinsic parameter matrix. For the detail, see
   // http://docs.opencv.org/2.4/modules/calib3d/doc/
   // camera_calibration_and_3d_reconstruction.html
