@@ -6,10 +6,11 @@
 #include <unordered_map>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/variable.h"
+#include "drake/common/symbolic_variable.h"
 
 namespace drake {
-/** Represents an environment (mapping from a variable to a value).
+namespace symbolic {
+/** Represents a symbolic environment (mapping from a variable to a value).
  *
  * This class is used when we evaluate symbolic expressions or formulas which
  * include unquantified (free) variables. Here are examples:
@@ -51,7 +52,7 @@ class Environment {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Environment)
 
-  typedef typename drake::Variable key_type;
+  typedef Variable key_type;
   typedef double mapped_type;
   typedef
       typename std::unordered_map<key_type, mapped_type, hash_value<key_type>>
@@ -110,4 +111,5 @@ class Environment {
  private:
   map map_;
 };
+}  // namespace symbolic
 }  // namespace drake

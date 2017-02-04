@@ -516,11 +516,11 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   snopt::doublereal ObjAdd = 0.0;
   snopt::integer ObjRow = 1;  // feasibility problem (for now)
 
-  for (const auto it : prog.GetSolverOptionsDouble("SNOPT")) {
+  for (const auto it : prog.GetSolverOptionsDouble(SolverType::kSnopt)) {
     cur.snSetr(it.first, it.second);
   }
 
-  for (const auto it : prog.GetSolverOptionsInt("SNOPT")) {
+  for (const auto it : prog.GetSolverOptionsInt(SolverType::kSnopt)) {
     cur.snSeti(it.first, it.second);
   }
 
@@ -541,7 +541,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     sol(i) = static_cast<double>(x[i]);
   }
   prog.SetDecisionVariableValues(sol);
-  prog.SetSolverResult(SolverName(), info);
+  prog.SetSolverResult(solver_type(), info);
 
   // todo: extract the other useful quantities, too.
 

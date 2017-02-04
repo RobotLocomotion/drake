@@ -37,7 +37,6 @@ std::unique_ptr<RigidBody<T>> RigidBody<T>::Clone() const {
   body->set_body_index(body_index_);
   body->set_position_start_index(position_start_index_);
   body->set_velocity_start_index(velocity_start_index_);
-
   body->set_contact_points(contact_points_);
   body->set_mass(mass_);
   body->set_center_of_mass(center_of_mass_);

@@ -68,23 +68,25 @@ drake_cc_library(
 drake_cc_library(
     name = "mathematical_program",
     srcs = [
-        "dreal_solver.h",
         "equality_constrained_qp_solver.cc",
-        "equality_constrained_qp_solver.h",
         "linear_system_solver.cc",
-        "linear_system_solver.h",
         "mathematical_program.cc",
+        "mathematical_program_solver_interface.cc",
         "moby_lcp_solver.cc",
-        "moby_lcp_solver.h",
-        "mosek_solver.h",
-        "nlopt_solver.h",
         "no_dreal.cc",
         "no_mosek.cc",
         "no_nlopt.cc",
     ],
     hdrs = [
+        "dreal_solver.h",
+        "equality_constrained_qp_solver.h",
+        "linear_system_solver.h",
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
+        "moby_lcp_solver.h",
+        "mosek_solver.h",
+        "nlopt_solver.h",
+        "snopt_solver.h",
     ],
     linkstatic = 1,
     deps = [
@@ -262,7 +264,7 @@ drake_cc_googletest(
         "test/mathematical_program_test_util.h",
     ],
     deps = [
-        "mathematical_program",
+        ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
     ],
 )

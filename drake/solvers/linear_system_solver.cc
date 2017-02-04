@@ -47,7 +47,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   prog.SetDecisionVariableValues(
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
 
-  prog.SetSolverResult(SolverName(), 0);
+  prog.SetSolverResult(solver_type(), 0);
   return SolutionResult::kSolutionFound;
 }
 

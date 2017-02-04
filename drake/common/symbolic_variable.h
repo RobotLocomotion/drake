@@ -11,8 +11,9 @@
 #include "drake/common/hash.h"
 
 namespace drake {
+namespace symbolic {
 
-/** Represents a variable. */
+/** Represents a symbolic variable. */
 class Variable {
  public:
   typedef size_t Id;
@@ -56,18 +57,22 @@ bool operator<(const Variable& lhs, const Variable& rhs);
 /// Check equality
 bool operator==(const Variable& lhs, const Variable& rhs);
 
+}  // namespace symbolic
+
 /** Computes the hash value of a variable. */
 template <>
-struct hash_value<Variable> {
-  size_t operator()(const Variable& v) const { return v.get_hash(); }
+struct hash_value<symbolic::Variable> {
+  size_t operator()(const symbolic::Variable& v) const { return v.get_hash(); }
 };
+
 }  // namespace drake
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 namespace Eigen {
-// Eigen scalar type traits for Matrix<drake::Variable>.
+// Eigen scalar type traits for Matrix<drake::symbolic::Variable>.
 template <>
-struct NumTraits<drake::Variable> : GenericNumTraits<drake::Variable> {
+struct NumTraits<drake::symbolic::Variable>
+    : GenericNumTraits<drake::symbolic::Variable> {
   static inline int digits10() { return 0; }
 };
 }  // namespace Eigen

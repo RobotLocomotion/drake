@@ -76,6 +76,16 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "schunk",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_schunk_wsg_command.lcm",
+        "lcmt_schunk_wsg_status.lcm",
+    ],
+    linkstatic = 1,
+)
+
+lcm_cc_library(
     name = "call_matlab",
     lcm_package = "drake",
     lcm_srcs = [

@@ -12,13 +12,11 @@ class SnoptSolver : public MathematicalProgramSolverInterface  {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptSolver)
 
-  SnoptSolver() = default;
+  SnoptSolver() : MathematicalProgramSolverInterface(SolverType::kSnopt) {}
 
   // This solver is implemented in various pieces depending on if
   // SNOPT was available during compilation.
   bool available() const override;
-
-  std::string SolverName() const override { return "SNOPT"; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
