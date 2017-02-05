@@ -33,7 +33,7 @@ environment variable ``CCACHE_CPP2=yes``. Try adding the following line to your
     export CCACHE_CPP2=yes
 
 Alternatively, update to
-`cache 3.3 <https://ccache.samba.org/releasenotes.html#_ccache_3_3>`_ or newer
+`ccache 3.3 <https://ccache.samba.org/releasenotes.html#_ccache_3_3>`_ or newer
 since it by default sets ``CCACHE_CPP2=yes``.
 
 .. _faq_cmake_vtk_version_crash:
