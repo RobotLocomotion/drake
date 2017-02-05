@@ -322,7 +322,22 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   if (is_one(rhs)) {
     return lhs;
   }
-
+  // Simplification: (E1 / E2) * (E3 / E4) => (E1 * E3) / (E2 * E4)
+  if (is_division(lhs) && is_division(rhs)) {
+    lhs = (get_first_argument(lhs) * get_first_argument(rhs)) /
+          (get_second_argument(lhs) * get_second_argument(rhs));
+    return lhs;
+  }
+  // Simplification: lhs * (c / E) => (c * lhs) / E
+  if (is_division(rhs) && is_constant(get_first_argument(rhs))) {
+    lhs = (get_first_argument(rhs) * lhs) / get_second_argument(rhs);
+    return lhs;
+  }
+  // Simplification: (c / E) * rhs => (c * rhs) / E
+  if (is_division(lhs) && is_constant(get_first_argument(lhs))) {
+    lhs = (get_first_argument(lhs) * rhs) / get_second_argument(lhs);
+    return lhs;
+  }
   if (is_neg_one(lhs)) {
     if (is_addition(rhs)) {
       // Simplification: push '-' inside over '+'.
