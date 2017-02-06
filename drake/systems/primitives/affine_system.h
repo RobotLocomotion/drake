@@ -8,18 +8,19 @@ namespace systems {
 
 /// A discrete OR continuous affine system.
 ///
-/// If time_period>0.0, then the affine system will have the following discrete-
-/// time state update:
+/// Let `u` denote the input vector, `x` denote the state vector, and
+/// `y` denote the output vector.
+///
+/// If `time_period > 0.0`, the affine system will have the following
+/// discrete-time state update:
 ///   @f[ x[n+1] = A x[n] + B u[n] + f_0, @f]
 ///
-/// or if time_period==0.0, then the affine system will have the following
+/// or if `time_period == 0.0`, the affine system will have the following
 /// continuous-time state update:
 ///   @f[\dot{x} = A x + B u + f_0. @f]
 ///
 /// In both cases, the system will have the output:
 ///   @f[y = C x + D u + y_0, @f]
-/// where `u` denotes the input vector, `x` denotes the state vector, and
-/// `y` denotes the output vector.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
