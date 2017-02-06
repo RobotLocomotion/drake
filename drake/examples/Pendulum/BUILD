@@ -68,10 +68,10 @@ drake_cc_googletest(
 
 filegroup(
     name = "models",
-    visibility = ["//visibility:public"],
     srcs = glob([
         "Pendulum.urdf",
     ]),
+    visibility = ["//visibility:public"],
 )
 
 cpplint()

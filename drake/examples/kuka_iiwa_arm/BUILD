@@ -49,7 +49,6 @@ drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
     deps = [
-        "@gflags//:gflags",
         ":iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
@@ -59,6 +58,7 @@ drake_cc_binary(
         "//drake/systems/controllers:gravity_compensator",
         "//drake/systems/controllers:pid_controlled_system",
         "//drake/systems/primitives:multiplexer",
+        "@gflags//:gflags",
     ],
 )
 
@@ -66,7 +66,6 @@ drake_cc_binary(
     name = "kuka_simulation",
     srcs = ["kuka_simulation.cc"],
     deps = [
-        "@gflags//:gflags",
         ":iiwa_common",
         ":iiwa_lcm",
         "//drake/lcm",
@@ -78,6 +77,7 @@ drake_cc_binary(
         "//drake/systems/controllers:pid_controlled_system",
         "//drake/systems/primitives:demultiplexer",
         "//drake/systems/primitives:multiplexer",
+        "@gflags//:gflags",
     ],
 )
 

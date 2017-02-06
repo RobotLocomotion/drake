@@ -105,10 +105,10 @@ drake_cc_binary(
     srcs = ["test/benchmark_rigid_body_tree.cc"],
     linkstatic = 1,
     deps = [
-        "@gtest//:main",
         ":rigid_body_tree",
         "//drake/common:measure_execution",
         "//drake/multibody/parsers",
+        "@gtest//:main",
     ],
 )
 
