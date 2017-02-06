@@ -161,7 +161,7 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // Update the generalized velocity vector with discretized external forces
   // (expressed in Frame A).
   const Vector3<T> fgrav(0, mass_*get_gravitational_acceleration(), 0);
-  const Vector3<T> fapplied = input.segment(0,3);
+  const Vector3<T> fapplied = input.segment(0, 3);
   v += dt_ * (fgrav + fapplied);
 
   // Set up the contact normal and tangent (friction) direction Jacobian
@@ -437,7 +437,7 @@ Vector2<T> Painleve<T>::CalcFConeImpactImpulse(
   // Compute the impulses.
   const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
   const int sgn_cxdot = (cxdot > 0) ? 1 : -1;
-  const T fN = -(( 2 * (2 * fY * J + k * mass * r * tau * ctheta +
+  const T fN = -((2 * (2 * fY * J + k * mass * r * tau * ctheta +
        J * k * mass * r * ctheta * thetadot +
        2 * J * mass * ydot)) /
       (4 * J - 2 * k * mass * r * x * ctheta +
@@ -557,7 +557,7 @@ void Painleve<T>::SetAccelerations(const systems::Context<T>& context,
   const T& thetadot = context.get_continuous_state_vector().GetAtIndex(5);
 
   // Compute the external forces.
-  const Vector3<T> fapplied = input.segment(0,3);
+  const Vector3<T> fapplied = input.segment(0, 3);
 
   // Compute the derivatives
   const T xddot = (fapplied(0) + fF) / mass_;
@@ -661,8 +661,8 @@ Vector2<T> Painleve<T>::CalcStickingContactForces(
       k * mass * r * (4 * J + k * k * mass * r * r)*
           stheta * thetadot * thetadot));
 
-  const T fF = (-(1/(8 * J + 2 * k * k * mass * r * r))*
-      (8 * fX * J + fX * k * k * mass * r * r +
+  const T fF = (-(1/(8 * J + 2 * k * k * mass * r * r)) *
+         (8 * fX * J + fX * k * k * mass * r * r +
           fX * k * k * mass* r * r * cos(2 * theta)-
           4 * k * mass * r * tau * stheta +
           fY * k * k * mass * r * r * sin(2 * theta)+
