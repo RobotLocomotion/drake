@@ -57,10 +57,10 @@ class ContactFormulaTest : public ::testing::Test {
     Vector6d v_WS2 = get_v_WS2();
     VectorXd target_velocities;
     target_velocities.resize(12);
-    target_velocities << 0, 0, 0,     // sphere 1 angular velocity
-        0, 0, 0,                      // sphere 1 linear velocity
-        v_WS2[0], v_WS2[1], v_WS2[2], // sphere 2 angular velocity
-        v_WS2[3], v_WS2[4], v_WS2[5]; // sphere 2 linear velocity
+    target_velocities << 0, 0, 0,      // sphere 1 angular velocity
+        0, 0, 0,                       // sphere 1 linear velocity
+        v_WS2[0], v_WS2[1], v_WS2[2],  // sphere 2 angular velocity
+        v_WS2[3], v_WS2[4], v_WS2[5];  // sphere 2 linear velocity
     velocities->SetFromVector(target_velocities);
 
     SetContactParameters();
@@ -395,7 +395,8 @@ class SlidingSpinContactFormulaTest : public ContactFormulaTest {
   // The contact is at a distance of radius - 1/2 penetration depth. I want
   // that point to have a *linear* velocity of 5 * transition speed (in the +y
   // direction). This is the angular velocity that provides it.
-  const double kZAngularSpeed = -0.5 * transition_speed_ / (kRadius - kPenetrationDepth * 0.5);
+  const double kZAngularSpeed =
+      -0.5 * transition_speed_ / (kRadius - kPenetrationDepth * 0.5);
 };
 
 // Confirms that a slight tangential force (between 1 and 3X the transition
