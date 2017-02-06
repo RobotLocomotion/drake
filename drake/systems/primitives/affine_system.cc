@@ -146,5 +146,87 @@ void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
 template class AffineSystem<double>;
 template class AffineSystem<AutoDiffXd>;
 
+template <typename T>
+TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(int num_states,
+                                                    int num_inputs,
+                                                    int num_outputs)
+    : num_states_(num_states),
+      num_inputs_(num_inputs),
+      num_outputs_(num_outputs) {
+  // Declare state and input/output ports.
+  this->DeclareContinuousState(num_states_);
+  if (num_inputs_ > 0) this->DeclareInputPort(kVectorValued, num_inputs_);
+  if (num_outputs_ > 0) this->DeclareOutputPort(kVectorValued, num_outputs_);
+}
+
+template <typename T>
+const InputPortDescriptor<T>& TimeVaryingAffineSystem<T>::get_input_port()
+    const {
+  DRAKE_DEMAND(num_inputs_ > 0);
+  return System<T>::get_input_port(0);
+}
+
+template <typename T>
+const OutputPortDescriptor<T>& TimeVaryingAffineSystem<T>::get_output_port()
+    const {
+  DRAKE_DEMAND(num_outputs_ > 0);
+  return System<T>::get_output_port(0);
+}
+
+template <typename T>
+void TimeVaryingAffineSystem<T>::DoCalcOutput(const Context<T>& context,
+                                              SystemOutput<T>* output) const {
+  if (num_outputs_ == 0) return;
+
+  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
+
+  // Evaluates the state output port.
+  BasicVector<T>* output_vector = output->GetMutableVectorData(0);
+
+  T t = context.get_time();
+
+  const auto& x =
+      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
+          .get_value();
+
+  auto y = output_vector->get_mutable_value();
+  y = C(t) * x + y0(t);
+
+  if (num_inputs_) {
+    const BasicVector<T>* input = this->EvalVectorInput(context, 0);
+    DRAKE_DEMAND(input);
+    const auto& u = input->get_value();
+    y += D(t) * u;
+  }
+}
+
+template <typename T>
+void TimeVaryingAffineSystem<T>::DoCalcTimeDerivatives(
+    const Context<T>& context, ContinuousState<T>* derivatives) const {
+  if (num_states_ == 0) return;
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
+
+  T t = context.get_time();
+
+  const auto& x =
+      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
+          .get_value();
+
+  VectorX<T> xdot = A(t) * x + f0(t);
+
+  if (num_inputs_ > 0) {
+    const BasicVector<T>* input = this->EvalVectorInput(context, 0);
+    DRAKE_DEMAND(input);
+    const auto& u = input->get_value();
+
+    xdot += B(t) * u;
+  }
+  derivatives->SetFromVector(xdot);
+}
+
+template class TimeVaryingAffineSystem<double>;
+template class TimeVaryingAffineSystem<AutoDiffXd>;
+
 }  // namespace systems
 }  // namespace drake

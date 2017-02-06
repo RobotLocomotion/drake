@@ -1,5 +1,5 @@
-#include "drake/systems/primitives/affine_system.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/primitives/affine_system.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -167,6 +167,74 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
 
   EXPECT_TRUE(CompareMatrices(update->get_discrete_state(0)->CopyToVector(),
                               A * x0 + B * u0 + f0));
+}
+
+// xdot = rotmat(t)*x, y = x;
+class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double>,
+                                      public ::testing::Test {
+ public:
+  SimpleTimeVaryingAffineSystem() : TimeVaryingAffineSystem(2, 0, 2) {}
+
+  Eigen::MatrixXd A(const double& t) const override {
+    Eigen::Matrix2d mat;
+    mat << std::cos(t), -std::sin(t), std::sin(t), std::cos(t);
+    return mat;
+  }
+  Eigen::MatrixXd B(const double& t) const override {
+    return Eigen::Matrix<double, 2, 0>();
+  }
+  Eigen::VectorXd f0(const double& t) const override {
+    return Eigen::Matrix<double, 2, 1>::Zero();
+  }
+  Eigen::MatrixXd C(const double& t) const override {
+    return Eigen::Matrix2d::Identity();
+  }
+  Eigen::MatrixXd D(const double& t) const override {
+    return Eigen::Matrix<double, 2, 0>();
+  }
+  Eigen::VectorXd y0(const double& t) const override {
+    return Eigen::Matrix<double, 2, 1>::Zero();
+  }
+};
+
+TEST_F(SimpleTimeVaryingAffineSystem, EvalTest) {
+  double t = 2.5;
+  Eigen::Matrix2d A;
+  A << std::cos(t), -std::sin(t), std::sin(t), std::cos(t);
+  Eigen::Vector2d x;
+  x << 1, 2;
+
+  auto context = CreateDefaultContext();
+  context->set_time(t);
+  context->get_mutable_continuous_state_vector()->SetFromVector(x);
+
+  auto derivs = AllocateTimeDerivatives();
+  CalcTimeDerivatives(*context, derivs.get());
+  EXPECT_TRUE(CompareMatrices(A * x, derivs->CopyToVector()));
+
+  auto output = AllocateOutput(*context);
+  CalcOutput(*context, output.get());
+  EXPECT_TRUE(CompareMatrices(x, output->get_vector_data(0)->CopyToVector()));
+}
+
+// Checks that a time-varying affine system will fail if the matrices do not
+// match the specified number of states.
+class IllegalTimeVaryingAffineSystem : public SimpleTimeVaryingAffineSystem {
+  Eigen::MatrixXd A(const double& t) const override {
+    Eigen::Matrix<double, 3, 2> mat;
+    mat << std::cos(t), -std::sin(t), std::sin(t), std::cos(t), 0, 1;
+    return mat;
+  }
+};
+
+TEST_F(IllegalTimeVaryingAffineSystem, EvalTest) {
+  double t = 2.5;
+
+  auto context = CreateDefaultContext();
+  context->set_time(t);
+
+  auto derivs = AllocateTimeDerivatives();
+  EXPECT_DEATH(CalcTimeDerivatives(*context, derivs.get()), "rows");
 }
 
 }  // namespace
