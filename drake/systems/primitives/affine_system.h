@@ -23,7 +23,7 @@ namespace systems {
 /// In both cases, the system will have the output:
 ///   @f[y = C x + D u + y_0, @f]
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @tparam T The scalar element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -107,5 +107,54 @@ class AffineSystem : public LeafSystem<T> {
   const double time_period_{0.0};
 };
 
+/**
+ * Interface class for a continuous-time, time-varying affine system.
+ *
+ * The affine system will have the state update:
+ *   @f[\dot{x}(t) = A(t) x(t) + B(t) u(t) + f_0(t), @f]
+ * and the output:
+ *   @f[y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f]
+ * where `u` denotes the input vector, `x` denotes the state vector, and
+ * `y` denotes the output vector.
+ *
+ * @tparam T The scalar element type, which must be a valid Eigen scalar.
+ */
+template <typename T>
+class TimeVaryingAffineSystem : public LeafSystem<T> {
+ public:
+  TimeVaryingAffineSystem(int num_states, int num_inputs, int num_outputs);
+
+  /// Returns the input port containing the externally applied input.
+  const InputPortDescriptor<T>& get_input_port() const;
+
+  /// Returns the port containing the output state.
+  const OutputPortDescriptor<T>& get_output_port() const;
+
+  // Implementations must define these, and the returned matrices must
+  // be sized to match the num_states, num_inputs, and num_outputs specified
+  // in the constructor.
+  virtual MatrixX<T> A(const T& t) const = 0;
+  virtual MatrixX<T> B(const T& t) const = 0;
+  virtual VectorX<T> f0(const T& t) const = 0;
+  virtual MatrixX<T> C(const T& t) const = 0;
+  virtual MatrixX<T> D(const T& t) const = 0;
+  virtual VectorX<T> y0(const T& t) const = 0;
+
+  // TODO(russt): Consider an interface for discrete-time, time-varying affine
+  // systems that implement, e.g., A(int n) instead of taking the real-valued
+  // time. Perhaps this warrants a separate class.
+
+ private:
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override;
+
+ protected:
+  const int num_states_{0};
+  const int num_inputs_{0};
+  const int num_outputs_{0};
+};
 }  // namespace systems
 }  // namespace drake
