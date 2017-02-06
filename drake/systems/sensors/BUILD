@@ -148,8 +148,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "accelerometer_test",
     srcs = [
-        "test/accelerometer_test/accelerometer_example_diagram.cc",
-        "test/accelerometer_test/accelerometer_example_diagram.h",
         "test/accelerometer_test/accelerometer_test.cc",
     ],
     data = [
