@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -14,6 +15,8 @@ namespace systems {
 template <typename T>
 class ZeroOrderHold : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold)
+
   /// Constructs a ZeroOrderHold system with the given @p period_sec, over a
   /// vector-valued input of size @p size.
   ZeroOrderHold(const T& period_sec, int size);
