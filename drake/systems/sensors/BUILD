@@ -2,10 +2,12 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl",
+load(
+    "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
-    "drake_cc_library")
+    "drake_cc_library",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -106,11 +108,10 @@ drake_cc_library(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",
         "//drake/systems/lcm:lcmt_drake_signal_translator",
-        "//drake/systems/primitives:signal_logger",
         "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:signal_logger",
     ],
 )
-
 
 drake_cc_binary(
     name = "accelerometer_example",
@@ -147,17 +148,17 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "accelerometer_test",
     srcs = [
-        "test/accelerometer_test/accelerometer_test.cc",
         "test/accelerometer_test/accelerometer_example_diagram.cc",
         "test/accelerometer_test/accelerometer_example_diagram.h",
+        "test/accelerometer_test/accelerometer_test.cc",
     ],
     data = [
         "//drake/multibody:models",
     ],
     deps = [
         ":accelerometer_example_diagram",
-        "//drake/lcm:mock",
         "//drake/common:eigen_matrix_compare",
+        "//drake/lcm:mock",
         "//drake/systems/analysis:simulator",
     ],
 )

@@ -203,9 +203,9 @@ drake_cc_library(
     linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = [
-        "@ipopt//:lib",
         ":mathematical_program_api",
         "//drake/math:autodiff",
+        "@ipopt//:lib",
     ],
 )
 

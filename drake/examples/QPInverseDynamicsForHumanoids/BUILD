@@ -25,8 +25,8 @@ drake_cc_library(
     ],
     linkstatic = 1,
     deps = [
-        "@yaml_cpp//:lib",
         "//drake/multibody:rigid_body_tree",
+        "@yaml_cpp//:lib",
     ],
 )
 
