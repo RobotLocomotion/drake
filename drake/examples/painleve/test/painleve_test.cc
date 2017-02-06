@@ -29,6 +29,14 @@ class PainleveDAETest : public ::testing::Test {
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
+
+    // Set a zero input force (this is the default).
+    std::unique_ptr<BasicVector<double>> ext_input =
+        std::make_unique<BasicVector<double>>(3);
+    ext_input->SetAtIndex(0, 0.0);
+    ext_input->SetAtIndex(1, 0.0);
+    ext_input->SetAtIndex(2, 0.0);
+    context_->FixInputPort(0, std::move(ext_input));
   }
 
   std::unique_ptr<State<double>> CloneState() const {
@@ -278,6 +286,73 @@ TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
   EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
 }
 
+// Returns the sign of the floating point argument.
+int intsign(double x) {
+  if (x > std::numeric_limits<double>::epsilon()) {
+    return 1;
+  } else {
+    if (x < -std::numeric_limits<double>::epsilon())
+      return -1;
+    else
+      return 0;
+  }
+}
+
+// Verify that derivatives match what we expect from a sticking contact
+// configuration.
+TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
+  // Set the initial state to sustained contact with zero tangential velocity
+  // at the point of contact and the rod being straight up.
+  const double half_len = dut_->get_rod_length() / 2;
+  ContinuousState<double>& xc =
+      *context_->get_mutable_continuous_state();
+  xc[0] = 0.0;
+  xc[1] = half_len;
+  xc[2] = M_PI_2;
+  xc[3] = 0.0;
+  xc[4] = 0.0;
+  xc[5] = 0.0;
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+  Painleve<double>::kStickingSingleContact;
+
+  // Set a constant horizontal input force, as if applied at the bottom of
+  // the rod.
+  std::unique_ptr<BasicVector<double>> ext_input =
+      std::make_unique<BasicVector<double>>(3);
+  const double f = 1.0;
+  ext_input->SetAtIndex(0, f);
+  ext_input->SetAtIndex(1, 0.0);
+  ext_input->SetAtIndex(2, f * dut_->get_rod_length()/2);
+  const Vector3<double> fext = ext_input->CopyToVector();
+  context_->FixInputPort(0, std::move(ext_input));
+
+  // Set a large coefficient of friction.
+  dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
+
+  // Calculate the derivatives.
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+
+  // Verify that derivatives match what we expect: sticking should continue.
+  const double tol = std::numeric_limits<double>::epsilon() * 10;
+  EXPECT_NEAR((*derivatives_)[0], xc[3], tol);
+  EXPECT_NEAR((*derivatives_)[1], xc[4], tol);
+  EXPECT_NEAR((*derivatives_)[2], xc[5], tol);
+  EXPECT_NEAR((*derivatives_)[3], 0.0, tol);
+  EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
+
+  // Set the coefficient of friction to zero and try again. Rod should now
+  // accelerate in the direction of any external forces.
+  dut_->set_mu_coulomb(0.0);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR((*derivatives_)[0], xc[3], tol);
+  EXPECT_NEAR((*derivatives_)[1], xc[4], tol);
+  EXPECT_NEAR((*derivatives_)[2], xc[5], tol);
+  EXPECT_EQ(intsign((*derivatives_)[3]), intsign(fext(0)));
+  EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
+  EXPECT_EQ(intsign((*derivatives_)[5]), intsign(fext(2)));
+}
+
 // Verify the inconsistent (Painlevé Paradox) configuration occurs.
 TEST_F(PainleveDAETest, Inconsistent) {
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
@@ -287,6 +362,7 @@ TEST_F(PainleveDAETest, Inconsistent) {
 // Verify the second inconsistent (Painlevé Paradox) configuration occurs.
 TEST_F(PainleveDAETest, Inconsistent2) {
   SetSecondInitialConfig();
+
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
                std::runtime_error);
 }
@@ -584,13 +660,20 @@ class PainleveTimeSteppingTest : public ::testing::Test {
     dut_ = std::make_unique<Painleve<double>>(dt);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
+
+    // Set a zero input force (this is the default).
+    std::unique_ptr<BasicVector<double>> ext_input =
+        std::make_unique<BasicVector<double>>(3);
+    ext_input->SetAtIndex(0, 0.0);
+    ext_input->SetAtIndex(1, 0.0);
+    ext_input->SetAtIndex(2, 0.0);
+    context_->FixInputPort(0, std::move(ext_input));
   }
 
   BasicVector<double>* mutable_discrete_state() {
     return context_->get_mutable_discrete_state(0);
   }
-
-  // Sets a secondary initial Painleve configuration.
+// Sets a secondary initial Painleve configuration.
   void SetSecondInitialConfig() {
     // Set the configuration to an inconsistent (Painlevé) type state with
     // the rod at a 135 degree counter-clockwise angle with respect to the
@@ -663,6 +746,14 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
   // Create contexts for both.
   std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();
   std::unique_ptr<Context<double>> context_pdae = pdae.CreateDefaultContext();
+
+  // Set zero input forces for both.
+  Vector3<double> fext(0, 0, 0);
+  std::unique_ptr<BasicVector<double>> ext_input =
+    std::make_unique<BasicVector<double>>(fext);
+  context_ts->FixInputPort(0, std::move(ext_input));
+  ext_input = std::make_unique<BasicVector<double>>(fext);
+  context_pdae->FixInputPort(0, std::move(ext_input));
 
   // Init the simulator for the time stepping system.
   Simulator<double> simulator_ts(ts, std::move(context_ts));

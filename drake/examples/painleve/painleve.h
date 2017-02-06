@@ -26,7 +26,9 @@ namespace painleve {
 ///
 /// They are already available to link against in the containing library.
 ///
-/// Inputs: no inputs.
+/// Inputs: force and torque (i.e., three-dimensional), which are arbitrary
+//          "external" forces (expressed in the world frame) applied at the
+//          center-of-mass of the rod.
 ///
 /// States: planar position (state indices 0 and 1) and orientation (state
 ///         index 2), and planar linear velocity (state indices 3 and 4) and
