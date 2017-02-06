@@ -286,7 +286,8 @@ TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
   EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
 }
 
-// Returns the sign of the floating point argument.
+// Returns the sign of the floating point argument with a two-epsilon band
+// around zero.
 int intsign(double x) {
   if (x > std::numeric_limits<double>::epsilon()) {
     return 1;
@@ -333,7 +334,7 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
 
   // Verify that derivatives match what we expect: sticking should continue.
-  const double tol = std::numeric_limits<double>::epsilon() * 10;
+  const double tol = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_NEAR((*derivatives_)[0], xc[3], tol);
   EXPECT_NEAR((*derivatives_)[1], xc[4], tol);
   EXPECT_NEAR((*derivatives_)[2], xc[5], tol);
@@ -341,15 +342,18 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
   EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
 
-  // Set the coefficient of friction to zero and try again. Rod should now
-  // accelerate in the direction of any external forces.
+  // Set the coefficient of friction to zero and try again.
   dut_->set_mu_coulomb(0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR((*derivatives_)[0], xc[3], tol);
   EXPECT_NEAR((*derivatives_)[1], xc[4], tol);
   EXPECT_NEAR((*derivatives_)[2], xc[5], tol);
+  // Rod should now accelerate in the direction of any external forces.
   EXPECT_EQ(intsign((*derivatives_)[3]), intsign(fext(0)));
+  // There should still be no vertical acceleration.
   EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
+  // The moment caused by applying the force should result in a
+  // counter-clockwise acceleration.
   EXPECT_EQ(intsign((*derivatives_)[5]), intsign(fext(2)));
 }
 

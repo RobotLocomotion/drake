@@ -159,10 +159,10 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
         0,         0,         1.0/J_;
 
   // Update the generalized velocity vector with discretized external forces
-  // (expressed in Frame A).
+  // (expressed in the world frame).
   const Vector3<T> fgrav(0, mass_*get_gravitational_acceleration(), 0);
   const Vector3<T> fapplied = input.segment(0, 3);
-  v += dt_ * (fgrav + fapplied);
+  v += dt_ * iM*(fgrav + fapplied);
 
   // Set up the contact normal and tangent (friction) direction Jacobian
   // matrices. These take the form:
@@ -371,18 +371,15 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
 //
 // cx[t_] := x[t] + k*Cos[theta[t]]*(r/2)
 // cy[t_] := y[t] + k*Sin[theta[t]]*(r/2)
-// Solve[{mass*delta_xdot == fF + fX,
-//        mass*delta_ydot == fN + fY,
-//        J*delta_thetadot == (cx[t] - x)*fN - (cy - y)*fF + tau,
+// Solve[{mass*delta_xdot == fF,
+//        mass*delta_ydot == fN,
+//        J*delta_thetadot == (cx[t] - x)*fN - (cy - y)*fF,
 //        0 == (D[y[t], t] + delta_ydot) +
 //              k*(r/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
 //        fF == mu*fN *-sgn_cxdot},
 //       {delta_xdot, delta_ydot, delta_thetadot, fN, fF}]
 // where theta is the counter-clockwise angle the rod makes with the x-axis,
-// fN and fF are contact normal and frictional forces; [fX fY] are arbitrary
-// "external" forces (expressed in the world frame) applied at the
-// center-of-mass of the rod; tau is an arbitrary "external" torque (expressed
-// in the world frame) applied at the center-of-mass; delta_xdot,
+// fN and fF are contact normal and frictional forces;  delta_xdot,
 // delta_ydot, and delta_thetadot represent the changes in velocity,
 // r is the length of the rod, sgn_xdot is the sign of the tangent
 // velocity (pre-impact), and (hopefully) all other variables are
@@ -431,19 +428,13 @@ Vector2<T> Painleve<T>::CalcFConeImpactImpulse(
   const double J = J_;
   const double mass = mass_;
   const double r = rod_length_;
-  const double fY = 0;
-  const double tau = 0;
 
   // Compute the impulses.
   const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
   const int sgn_cxdot = (cxdot > 0) ? 1 : -1;
-  const T fN = -((2 * (2 * fY * J + k * mass * r * tau * ctheta +
-       J * k * mass * r * ctheta * thetadot +
-       2 * J * mass * ydot)) /
-      (4 * J - 2 * k * mass * r * x * ctheta +
-          k * k * mass * r * r * ctheta * ctheta +
-          2 * k * mass * mu * r * (cy - y) * ctheta * sgn_cxdot +
-          2 * k * mass * r * ctheta * x));
+  const T fN = (J * mass * (-(r * k * ctheta * thetadot) / 2 - ydot)) /
+      (J + (r * k * mass * mu * (-y + cy) * ctheta * sgn_cxdot) / 2 -
+          (r * k * mass * ctheta * (x - (r * k * ctheta) / 2 - x)) / 2);
   const T fF = -sgn_cxdot * mu * fN;
 
   // Verify normal force is non-negative.
@@ -556,7 +547,7 @@ void Painleve<T>::SetAccelerations(const systems::Context<T>& context,
   const T& theta = context.get_continuous_state_vector().GetAtIndex(2);
   const T& thetadot = context.get_continuous_state_vector().GetAtIndex(5);
 
-  // Compute the external forces.
+  // Retrieve the external forces.
   const Vector3<T> fapplied = input.segment(0, 3);
 
   // Compute the derivatives
@@ -962,8 +953,8 @@ void Painleve<T>::CalcAccelerationsBallistic(
   const int port_index = 0;
   const auto input = this->EvalEigenVectorInput(context, port_index);
 
-  // Second three derivative components are simple: just add in gravitational
-  // acceleration.
+  // Second three derivative components are acceleration due to gravity and
+  // other "external" forces.
   f->SetAtIndex(3, input(0)/mass_);
   f->SetAtIndex(4, input(1)/mass_ + get_gravitational_acceleration());
   f->SetAtIndex(5, input(2)/J_);
