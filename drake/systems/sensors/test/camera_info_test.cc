@@ -1,5 +1,6 @@
 #include "drake/systems/sensors/camera_info.h"
 
+#include <Eigen/Dense>
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
@@ -8,16 +9,16 @@ namespace drake {
 namespace systems {
 namespace sensors {
 namespace {
-// This is bacause there is a precision difference between Ubuntu and Mac.
+// This is because there is a precision difference between Ubuntu and Mac.
 const double kTolerance = 1e-12;
 
 const int kWidth = 640;
 const int kHeight = 480;
-const double kFx = 554.25625842204079;  // in pixels
-const double kFy = 579.41125496954282;  // in pixels
+const double kFx = 554.25625842204079;  // In pixels.
+const double kFy = 579.41125496954282;  // In pixels.
 const double kCx = kWidth * 0.5;
 const double kCy = kHeight * 0.5;
-const double kVerticalFov = 0.78539816339744828;  // 45.0 degrees
+const double kVerticalFov = 0.78539816339744828;  // 45.0 degrees.
 
 class CameraInfoTest : public ::testing::Test {
  public:
