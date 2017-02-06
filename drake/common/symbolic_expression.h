@@ -183,14 +183,21 @@ class Expression {
   * w.r.t (x, y) is 3 (from x^2 * y)
   * w.r.t (x, z) is 4 (from x*y*z^3)
   * w.r.t (z)    is 3 (from x*y*z^3)
-  * Throws a runtime error if
-  * 1. is_polynomial() is false
-  * 2. vars is not a subset of the variables in GetVariables();
+  * Throws a runtime error if is_polynomial() is false.
   * @param vars A set of variables.
-  * @return The total degree
+  * @return The total degree.
   */
   int Degree(const Variables& vars) const;
 
+  /**
+   * Returns the total degress of all the variables in the polynomial.
+   * For example, the total degree of
+   * x^2*y + 2*x*y*z^3 + x*z^2
+   * is 5, from x*y*z^3
+   * Throws a runtime error is is_polynomial() is false.
+   * @return The total degree.
+   */
+  int Degree() const;
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
