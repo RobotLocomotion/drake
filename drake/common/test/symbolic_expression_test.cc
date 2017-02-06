@@ -605,7 +605,8 @@ TEST_F(SymbolicExpressionTest, Degree) {
   EXPECT_EQ(e6.Degree({var_x_, var_y_, var_z_}), 3);
   EXPECT_EQ(e6.Degree(), 3);
 
-  const Expression e7{pow(x_ + x_ * y_*y_, 2) * y_ + pow(x_ + pow(y_ + x_ * z_, 2), 3)};
+  const Expression e7{pow(x_ + x_ * y_ * y_, 2) * y_ +
+                      pow(x_ + pow(y_ + x_ * z_, 2), 3)};
   EXPECT_EQ(e7.Degree({var_x_}), 6);
   EXPECT_EQ(e7.Degree({var_y_}), 6);
   EXPECT_EQ(e7.Degree({var_z_}), 6);
