@@ -651,9 +651,9 @@ int ExpressionMul::Degree(const Variables &vars) const {
         const Expression& base{p.first};
         const Expression& expnt{p.second};
         DRAKE_DEMAND(is_constant(expnt));
-        return degree + base.Degree(vars) * static_cast<int>(get_constant_value(expnt));
-      }
-  );
+        return degree +
+               base.Degree(vars) * static_cast<int>(get_constant_value(expnt));
+      });
 }
 
 double ExpressionMul::Evaluate(const Environment& env) const {
@@ -1332,7 +1332,8 @@ Polynomial<double> ExpressionIfThenElse::ToPolynomial() const {
 }
 
 int ExpressionIfThenElse::Degree(const Variables &vars) const {
-  throw runtime_error("IfThenElse expression does not have a polynomial degree.");
+  throw runtime_error(
+      "IfThenElse expression does not have a polynomial degree.");
 }
 
 double ExpressionIfThenElse::Evaluate(const Environment& env) const {
