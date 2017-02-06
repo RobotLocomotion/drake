@@ -652,7 +652,7 @@ Vector2<T> Painleve<T>::CalcStickingContactForces(
   const double fY = input(1);
   const double tau = input(2);
   const T fN = (-(1/(8*J +
-   2 * k * k * mass * r * r)) * (8 * fY * J + 8 * g * J * mass +
+      2 * k * k * mass * r * r)) * (8 * fY * J + 8 * g * J * mass +
       fY * k * k * mass * r * r +  g * k * k * mass * mass * r * r +
       4 * k * mass * r * tau * ctheta -
       fY * k * k * mass * r * r * cos(2 * theta) -
