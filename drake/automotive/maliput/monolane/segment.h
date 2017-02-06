@@ -12,7 +12,6 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-class Junction;
 class ArcLane;
 class LineLane;
 
@@ -26,7 +25,7 @@ class Segment : public api::Segment {
   /// The Segment is not fully initialized until one of NewLineLane()
   /// or NewArcLane() is called exactly once.  @p junction must remain
   /// valid for the lifetime of this class.
-  Segment(const api::SegmentId& id, Junction* junction)
+  Segment(const api::SegmentId& id, api::Junction* junction)
       : id_(id), junction_(junction) {}
 
   /// Gives the segment a newly constructed LineLane.
@@ -58,7 +57,7 @@ class Segment : public api::Segment {
   const api::Lane* do_lane(int index) const override;
 
   api::SegmentId id_;
-  Junction* junction_{};
+  api::Junction* junction_{};
   std::unique_ptr<Lane> lane_;
 };
 

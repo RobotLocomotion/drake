@@ -17,7 +17,6 @@ namespace maliput {
 namespace monolane {
 
 class BranchPoint;
-class Segment;
 
 typedef Vector2<double> V2;
 typedef Vector3<double> V3;
@@ -171,7 +170,7 @@ class Lane : public api::Lane {
   ///  * @p p_scale is q_max (and p = q / p_scale);
   ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
   ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
-  Lane(const api::LaneId& id, const Segment* segment,
+  Lane(const api::LaneId& id, const api::Segment* segment,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
        double p_scale,
@@ -330,7 +329,7 @@ class Lane : public api::Lane {
   V3 r_hat_of_Rabg(const Rot3& Rabg) const;
 
   const api::LaneId id_;
-  const Segment* segment_{};
+  const api::Segment* segment_{};
   BranchPoint* start_bp_{};
   BranchPoint* end_bp_{};
 

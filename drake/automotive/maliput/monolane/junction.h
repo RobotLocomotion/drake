@@ -13,8 +13,6 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-class RoadGeometry;
-
 /// An api::Junction implementation.
 class Junction : public api::Junction {
  public:
@@ -25,7 +23,7 @@ class Junction : public api::Junction {
   /// @p road_geometry must remain valid for the lifetime of this class,
   /// and must refer to the RoadGeometry which will contain the newly
   /// constructed Junction instance.
-  Junction(const api::JunctionId& id, RoadGeometry* road_geometry)
+  Junction(const api::JunctionId& id, api::RoadGeometry* road_geometry)
       : id_(id), road_geometry_(road_geometry) {}
 
   /// Creates and adds a new Segment with the specified @p id.
@@ -45,7 +43,7 @@ class Junction : public api::Junction {
   }
 
   api::JunctionId id_;
-  RoadGeometry* road_geometry_{};
+  api::RoadGeometry* road_geometry_{};
   std::vector<std::unique_ptr<Segment>> segments_;
 };
 
