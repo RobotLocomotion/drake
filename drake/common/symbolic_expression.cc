@@ -158,6 +158,11 @@ int Expression::Degree(const Variables& vars) const {
   return ptr_->Degree(vars);
 }
 
+int Expression::Degree() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->Degree(GetVariables());
+}
+
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->Evaluate(env);
