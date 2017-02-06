@@ -983,10 +983,10 @@ T RigidBodyPlant<T>::ComputeFrictionCoefficient(T v_tangent_BC) const {
 }
 
 template <typename T>
-T RigidBodyPlant<T>::step5(T x){
+T RigidBodyPlant<T>::step5(T x) {
   DRAKE_ASSERT(0 <= x && x <= 1);
   const T x3 = x * x * x;
-  return x3 * (10 + x * (6 * x - 15)); // 10x³ - 15x⁴ + 6x⁵
+  return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
 }
 #endif
 // Explicitly instantiates on the most common scalar types.

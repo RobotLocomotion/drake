@@ -454,7 +454,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   T penetration_stiffness_{150.0};  // An arbitrarily large number.
 #ifdef USE_STRIBECK
   T dissipation_{0.5};  // An arbitrary value.
-  T inv_transition_speed_{1000}; // Inverse of the arbitrary value: 1 mm/sec.
+  T inv_transition_speed_{1000};  // Inverse of the arbitrary value: 1 mm/sec.
   T static_friction_coef_{0.5};
   T dynamic_friction_ceof_{0.7};
 #else
