@@ -30,7 +30,13 @@ MathematicalProgram.AddQuadraticCost = _AddQuadraticCost
 
 def _GetSolution(self, x):
     if isinstance(x, np.ndarray):
-        return self._GetSolution(wrap(VectorXDecisionVariable, x))
+        if x.ndim == 1:
+            wrapper_type = VectorXDecisionVariable
+        elif x.ndim == 2:
+            wrapper_type = MatrixXDecisionVariable
+        else:
+            raise TypeError("GetSolution(x) requires that x be a scalar or a 1- or 2- dimensional numpy array")
+        return self._GetSolution(wrap(wrapper_type, x))
     else:
         return self._GetSolution(x)
 

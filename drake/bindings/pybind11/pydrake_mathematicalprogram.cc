@@ -103,6 +103,11 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
             const VectorXDecisionVariable& var) {
       return prog.GetSolution(var);
     })
+    .def("_GetSolution",
+         [](const MathematicalProgram& prog,
+            const MatrixXDecisionVariable& var) {
+      return prog.GetSolution(var);
+    })
     .def("EvalBindingAtSolution", 
          (Eigen::VectorXd(MathematicalProgram::*)(
           const Binding<LinearConstraint>&) const) &MathematicalProgram::EvalBindingAtSolution)

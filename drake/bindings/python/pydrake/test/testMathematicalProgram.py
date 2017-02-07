@@ -81,6 +81,19 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertTrue(np.isclose(prog.EvalBindingAtSolution(constraint), 1))
         self.assertTrue(np.isclose(prog.EvalBindingAtSolution(cost), 2))
 
+    def test_matrix_variables(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 2, "x")
+        for i in range(2):
+            for j in range(2):
+                prog.AddLinearConstraint(x[i, j] == 2 * i + j)
+        prog.Solve()
+        xval = prog.GetSolution(x)
+        for i in range(2):
+            for j in range(2):
+                self.assertAlmostEqual(xval[i, j], 2 * i + j)
+                self.assertEqual(xval[i, j], prog.GetSolution(x[i, j]))
+
 
 
 if __name__ == '__main__':

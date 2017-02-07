@@ -13,8 +13,9 @@ def wrap(wrapper_type, x):
 
     """
     wrapped = wrapper_type(x.shape)
+    x = x.flatten(order='F')
     for i in range(x.size):
-        wrapped[i] = x.flat[i]
+        wrapped[i] = x[i]
     return wrapped
 
 
@@ -23,7 +24,7 @@ def unwrap(scalar_type, wrapped):
     Given an opaque C++ wrapper type, copy its contents into a new
     numpy ndarray of wrapped scalars
     """
-    unwrapped = np.empty(wrapped.shape(), dtype=scalar_type)
+    unwrapped = np.empty(wrapped.size(), dtype=scalar_type)
     for i in range(unwrapped.size):
-        unwrapped.flat[i] = wrapped[i]
-    return unwrapped
+        unwrapped[i] = wrapped[i]
+    return unwrapped.reshape(wrapped.shape(), order='F')
