@@ -39,6 +39,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "image",
+    srcs = [],
+    hdrs = ["image.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+        "//drake/common:default_value",
+    ],
+)
+
+drake_cc_library(
     name = "rotary_encoders",
     srcs = ["rotary_encoders.cc"],
     hdrs = ["rotary_encoders.h"],
@@ -134,6 +145,13 @@ drake_cc_googletest(
     deps = [
         ":camera_info",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "image_test",
+    deps = [
+        ":image",
     ],
 )
 
