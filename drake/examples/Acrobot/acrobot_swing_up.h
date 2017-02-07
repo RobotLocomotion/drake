@@ -1,4 +1,4 @@
-// based on pendulum_swing_up.h
+// This file is based on pendulum_swing_up.h.
 
 #pragma once
 

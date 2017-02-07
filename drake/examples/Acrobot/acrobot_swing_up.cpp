@@ -1,4 +1,5 @@
-// based on pendulum_swing_up.cc
+// This file contains utility functions for swing-up trajectory
+// optimization. It is based on pendulum_swing_up.cc.
 
 #include <cmath>
 
@@ -23,8 +24,8 @@ namespace acrobot {
 namespace {
 
 /**
- * Define a function to be evaluated as the running cost for a
- * pendulum trajectory (using the solvers::FunctionTraits style
+ * Define a function to be evaluated as the running cost for an
+ * acrobot trajectory (using the solvers::FunctionTraits style
  * interface).
  */
 class AcrobotRunningCost {
@@ -40,8 +41,7 @@ class AcrobotRunningCost {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
 
-    // u represents the input vector.  Convention preserved here from
-    // PendulumPlant.m.
+    // u represents the input vector.
     const auto u = x.tail(1);
     const double R = 10;  // From PendulumPlant.m, arbitrary AFAICT
     y = (R * u) * u;
@@ -49,8 +49,8 @@ class AcrobotRunningCost {
 };
 
 /**
- * Define a function to be evaluated as the final cost for a
- * pendulum trajectory (using the solvers::FunctionTraits style
+ * Define a function to be evaluated as the final cost for an
+ * acrobot trajectory (using the solvers::FunctionTraits style
  * interface).
  */
 class AcrobotFinalCost {
@@ -76,7 +76,8 @@ void AddSwingUpTrajectoryParams(
     const Eigen::Vector4d& x0, const Eigen::Vector4d& xG,
     systems::DircolTrajectoryOptimization* dircol_traj) {
 
-  const int kTorqueLimit = 8;  // 7-9 Amps, accroding to Michael Posa
+  // 7-9 Amps, accroding to Michael Posa
+  const int kTorqueLimit = 8;
   const drake::Vector1d umin(-kTorqueLimit);
   const drake::Vector1d umax(kTorqueLimit);
   dircol_traj->AddInputBounds(umin, umax);

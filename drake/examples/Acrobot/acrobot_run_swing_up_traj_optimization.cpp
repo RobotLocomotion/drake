@@ -1,4 +1,6 @@
-// based on pendulum_swing_up.cc
+// Generates a swing-up trajectory for acrobot and displays the trajectory
+// in DrakeVisualizer. Trajectory generation code is based on
+// pendulum_swing_up.cc.
 
 #include <iostream>
 #include <memory>
@@ -39,15 +41,10 @@ int do_main(int argc, char* argv[]) {
   systems::DiagramBuilder<double> builder;
 
   AcrobotPlant<double>* acrobot{nullptr};
-  auto acrobot_ptr = std::make_unique<AcrobotPlant<double>>();
+  auto acrobot_ptr = AcrobotPlant<double>::CreateAcrobotMIT();
   acrobot = acrobot_ptr.get();
   DRAKE_DEMAND(acrobot != nullptr);
 
-  // This is a fairly small number of time samples for this system,
-  // and it winds up making the controller do a lot of the work when
-  // getting to the target state.  I (sam.creasey) suspect that a
-  // different interpolation strategy (not linear interpolation of a
-  // non-linear system, basically) would reduce this effect.
   const int kNumTimeSamples = 21;
   const int kTrajectoryTimeLowerBound = 2;
   const int kTrajectoryTimeUpperBound = 10;
@@ -72,11 +69,8 @@ int do_main(int argc, char* argv[]) {
     return 1;
   }
 
-  //const PiecewisePolynomialTrajectory pp_traj =
-  //    dircol_traj.ReconstructInputTrajectory();
   const PiecewisePolynomialTrajectory pp_xtraj =
       dircol_traj.ReconstructStateTrajectory();
-  //auto input_source = builder.AddSystem<systems::TrajectorySource>(pp_traj);
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
 
   lcm::DrakeLcm lcm;
