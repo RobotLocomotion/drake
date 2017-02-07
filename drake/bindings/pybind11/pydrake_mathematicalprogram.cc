@@ -329,28 +329,20 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
           }
           new (&self) MatrixXDecisionVariable(shape[0], shape[1]);
         })
-    .def("size", [](const VectorXDecisionVariable& v) {
+    .def("size", [](const MatrixXDecisionVariable& v) {
       return v.size();
     })
-    .def("shape", [](const VectorXDecisionVariable& v) {
+    .def("shape", [](const MatrixXDecisionVariable& v) {
       std::vector<Eigen::Index> shape = {v.rows(), v.cols()};
       return shape;
     })
-    .def("__getitem__", [](const VectorXDecisionVariable& v,
+    .def("__getitem__", [](const MatrixXDecisionVariable& v,
                            size_t i) {
       return v(i);
-    })
-    .def("__getitem__", [](const VectorXDecisionVariable& v,
-                           size_t i, size_t j) {
-      return v(i, j);
     }, py::return_value_policy::reference)
-    .def("__setitem__", [](VectorXDecisionVariable& v,
+    .def("__setitem__", [](MatrixXDecisionVariable& v,
                            size_t i, const Variable &var) {
       v(i) = var;
-    })
-    .def("__setitem__", [](VectorXDecisionVariable& v,
-                           size_t i, size_t j, const Variable &var) {
-      v(i, j) = var;
     });
 
   // Assign the wrapped Constraint class to the name 'constraint'
