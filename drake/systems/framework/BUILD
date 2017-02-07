@@ -16,6 +16,7 @@ drake_cc_library(
         ":diagram",
         ":diagram_builder",
         ":diagram_context",
+        ":hybrid_automaton_context",
         ":leaf_context",
         ":leaf_system",
         ":parameters",
@@ -261,6 +262,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "hybrid_automaton_context",
+    srcs = ["hybrid_automaton_context.cc"],
+    hdrs = ["hybrid_automaton_context.h"],
+    linkstatic = 1,
+    deps = [
+        ":context",
+        ":hybrid_automaton_continuous_state",
+        ":system",
+        ":vector",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "diagram_continuous_state",
     srcs = ["diagram_continuous_state.cc"],
     hdrs = ["diagram_continuous_state.h"],
@@ -361,6 +376,20 @@ drake_cc_googletest(
     deps = [
         ":continuous_state",
         "//drake/common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hybrid_automaton_context_test",
+    deps = [
+        ":diagram",
+        "diagram_builder",
+        ":hybrid_automaton_context",
+        "//drake/common",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework/test_utilities:pack_value",
+        "//drake/systems/primitives:integrator",
+        "//drake/systems/primitives:zero_order_hold",
     ],
 )
 

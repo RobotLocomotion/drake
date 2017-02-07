@@ -58,3 +58,6 @@ target_link_libraries(sparsity_matrix_test drakeSystemFramework)
 drake_add_cc_test(single_output_vector_source_test)
 target_link_libraries(single_output_vector_source_test
   drakeSystemFramework drakeSystemPrimitives)
+
+drake_add_cc_test(hybrid_automaton_context_test)
+target_link_libraries(hybrid_automaton_context_test drakeSystemPrimitives)

@@ -1,0 +1,196 @@
+#pragma once
+
+#include <map>
+#include <memory>
+#include <numeric>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+
+#include "drake/common/symbolic_formula.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/hybrid_automaton_continuous_state.h"
+#include "drake/systems/framework/input_port_evaluator_interface.h"
+#include "drake/systems/framework/system.h"
+
+namespace drake {
+namespace systems {
+
+using std::make_unique;
+using std::move;
+using std::shared_ptr;
+using std::unique_ptr;
+
+// TODO(jadecastro): Some comments are in order.
+template <typename T>
+class ModalSubsystem {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModalSubsystem)
+
+  typedef int ModeId;
+  typedef int PortId;
+
+  explicit ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system,
+                          std::vector<symbolic::Expression> invariant,
+                          std::vector<symbolic::Expression> initial_conditions,
+                          std::vector<PortId> input_port_ids,
+                          std::vector<PortId> output_port_ids)
+      : mode_id_(mode_id),
+        system_(move(system)),
+        invariant_(invariant),
+        initial_conditions_(initial_conditions),
+        input_port_ids_(input_port_ids),
+        output_port_ids_(output_port_ids) {
+    CreateSymbolicStatesAndInputs();
+  }
+
+  explicit ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system,
+                          std::vector<PortId> input_port_ids,
+                          std::vector<PortId> output_port_ids)
+      : mode_id_(mode_id),
+        system_(move(system)),
+        input_port_ids_(input_port_ids),
+        output_port_ids_(output_port_ids) {
+    CreateSymbolicStatesAndInputs();
+  }
+
+  explicit ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system)
+      : mode_id_(mode_id), system_(move(system)) {
+    CreateSymbolicStatesAndInputs();
+    PopulateDefaultPorts();
+  }
+
+  /// Accessors for the underlying data.
+  ModeId get_mode_id() const { return mode_id_; }
+  System<T>* get_system() const { return system_.get(); }
+  const std::vector<PortId> get_input_port_ids() const {
+    return input_port_ids_;
+  }
+  std::vector<PortId>* get_mutable_input_port_ids() { return &input_port_ids_; }
+  PortId get_input_port_id(const int index) const {
+    DRAKE_DEMAND(index >= 0 &&
+                 index < static_cast<int>(input_port_ids_.size()));
+    return input_port_ids_[index];
+  }
+  int get_num_input_ports() const {
+    return static_cast<int>(input_port_ids_.size());
+  }
+  const std::vector<PortId> get_output_port_ids() const {
+    return output_port_ids_;
+  }
+  std::vector<PortId>* get_mutable_output_port_ids() {
+    return &output_port_ids_;
+  }
+  PortId get_output_port_id(const int index) const {
+    DRAKE_DEMAND(index >= 0 &&
+                 index < static_cast<int>(output_port_ids_.size()));
+    return output_port_ids_[index];
+  }
+  int get_num_output_ports() const {
+    return static_cast<int>(output_port_ids_.size());
+  }
+
+  /// Accessors for the symbolic::Expressions for the invariants and initial
+  /// condition state sets for this ModalSubsystem. Their defining sets are
+  /// semialgebraic: a state assignment is within the set iff it evaluates to a
+  /// non-negative value.
+  const std::vector<symbolic::Expression> get_invariant() const {
+    return invariant_;
+  }
+  std::vector<symbolic::Expression>* get_mutable_invariant() {
+    return &invariant_;
+  }
+  const std::vector<symbolic::Expression> get_initial_conditions() const {
+    return initial_conditions_;
+  }
+  std::vector<symbolic::Expression>* get_mutable_initial_conditions() {
+    return &initial_conditions_;
+  }
+
+  // TODO(jadecastro): Check for consistency of any incoming invariants or
+  // initial condition formulas with the given symbolic_state_.
+  const std::vector<symbolic::Variable>& get_symbolic_continuous_states()
+      const {
+    return symbolic_variables_.at("xc")[0];
+  };
+  const std::vector<symbolic::Variable>& get_symbolic_discrete_states_at(
+      const int index) const {
+    return symbolic_variables_.at("xd")[index];
+  };
+  int get_num_symbolic_discrete_states() const {
+    return symbolic_variables_.at("xd").size();
+  };
+
+  /// Returns a clone that includes a deep copy of all the underlying data.
+  unique_ptr<ModalSubsystem<T>> Clone() const {
+    DRAKE_DEMAND(system_ != nullptr);
+    shared_ptr<System<T>> sys = system_;
+    ModalSubsystem<T>* clone =
+        new ModalSubsystem<T>(mode_id_, sys, invariant_, initial_conditions_,
+                              input_port_ids_, output_port_ids_);
+    DRAKE_DEMAND(clone != nullptr);
+    return unique_ptr<ModalSubsystem<T>>(clone);
+  }
+
+ private:
+  // Create symbolic variables based on the expected context for this subsystem.
+  void CreateSymbolicStatesAndInputs() {
+    // Create a temporary context to extract the needed dimensions.
+    unique_ptr<Context<T>> context = system_->AllocateContext();
+
+    // Create symbolic variables for the continuous and discrete states.
+    CreateSymbolicVariables("xc",
+                            context->get_continuous_state_vector().size());
+    for (int i = 0; i < context->get_num_discrete_state_groups(); ++i) {
+      CreateSymbolicVariables("xd", context->get_discrete_state(i)->size());
+    }
+    context.reset();
+  }
+
+  // Creates symbolic variables according to the variable_type key word.
+  void CreateSymbolicVariables(const std::string variable_type,
+                               const int size) {
+    std::vector<std::vector<symbolic::Variable>> sym{};
+    if (symbolic_variables_.find(variable_type) != symbolic_variables_.end()) {
+      sym = symbolic_variables_.at(variable_type);
+    }
+    std::vector<symbolic::Variable> row;
+    for (int i = 0; i < size; ++i) {
+      std::ostringstream key{};
+      key << variable_type << i;
+      symbolic::Variable var{key.str()};
+      row.emplace_back(var);
+    }
+    sym.emplace_back(row);
+    symbolic_variables_.insert(std::make_pair(variable_type, sym));
+  }
+
+  // Populates the input and output ports with the full complement of system
+  // inputs and outputs.
+  void PopulateDefaultPorts() {
+    input_port_ids_.resize(system_->get_num_input_ports());
+    std::iota(std::begin(input_port_ids_), std::end(input_port_ids_), 0);
+    output_port_ids_.resize(system_->get_num_output_ports());
+    std::iota(std::begin(output_port_ids_), std::end(output_port_ids_), 0);
+  }
+
+  // An identifier for this mode.
+  // TODO(jadecastro): Allow ModeId to take on a descriptor in place of the int.
+  ModeId mode_id_;
+  // The system model.
+  shared_ptr<System<T>> system_;
+  // Expression representing the invariant for this mode.
+  std::vector<symbolic::Expression> invariant_;
+  // Expression representing the initial conditions for this mode.
+  std::vector<symbolic::Expression> initial_conditions_;
+  // Index set of the input and output ports.
+  std::vector<PortId> input_port_ids_;
+  std::vector<PortId> output_port_ids_;
+  // A vector of symbolic variables for each of the continuous states in the
+  // system.
+  std::map<std::string, std::vector<std::vector<symbolic::Variable>>>
+      symbolic_variables_;
+};
+
+}  // namespace systems
+}  // namespace drake
