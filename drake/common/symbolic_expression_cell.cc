@@ -645,7 +645,7 @@ Polynomial<double> ExpressionMul::ToPolynomial() const {
 int ExpressionMul::Degree(const Variables &vars) const {
   // The precondition is is_polynomial() == True.
   return accumulate(
-      base_to_expnt_map_.begin(), base_to_expnt_map_.end(), 0,
+      base_to_exponent_map_.begin(), base_to_exponent_map_.end(), 0,
       [vars](const int& degree, const pair<Expression, Expression>& p) {
         const Expression& base{p.first};
         const Expression& expnt{p.second};
