@@ -29,7 +29,6 @@ using std::shared_ptr;
 using std::unique_ptr;
 
 constexpr int kSize{1};
-constexpr double kTime{12.};
 constexpr double kZohSamplingPeriod{0.1};
 
 class AbstractTestSource : public LeafSystem<double> {
@@ -89,7 +88,7 @@ class HybridAutomatonContextTest : public ::testing::Test {
     // Instantiate a new modal subsystem. Implicitly, one input and one output
     // are exported as freestanding.
     const int mode_id = 42;
-    mss.reset(new ModalSubsystem<double>(mode_id, integrator_));
+    mss_.reset(new ModalSubsystem<double>(mode_id, integrator_));
   }
 
   unique_ptr<ModalSubsystem<double>> mss_;
@@ -126,16 +125,16 @@ TEST_F(HybridAutomatonContextTest, ModalSubsystemPortIds) {
   // Explicitly specify the ports for a non-trivial example via the constructor.
   shared_ptr<System<double>> example_system(
       new ContinuousDiscreteAbstractSystem());
-  const ModalSubsystem<double>& mss =
+  const ModalSubsystem<double>& mss_new =
       ModalSubsystem<double>(0, example_system, {0}, {1, 0});
 
   // Verify the number and identities of the ports have passed into the object.
-  EXPECT_EQ(1, mss.get_num_input_ports());
-  EXPECT_EQ(2, mss.get_num_output_ports());
+  EXPECT_EQ(1, mss_new.get_num_input_ports());
+  EXPECT_EQ(2, mss_new.get_num_output_ports());
 
-  EXPECT_EQ(0, mss.get_input_port_ids()[0]);
-  EXPECT_EQ(1, mss.get_output_port_ids()[0]);
-  EXPECT_EQ(0, mss.get_output_port_ids()[1]);
+  EXPECT_EQ(0, mss_new.get_input_port_ids()[0]);
+  EXPECT_EQ(1, mss_new.get_output_port_ids()[0]);
+  EXPECT_EQ(0, mss_new.get_output_port_ids()[1]);
 }
 
 // Tests the ability to specify symbolic expressions and evaluate them.
@@ -179,8 +178,8 @@ TEST_F(HybridAutomatonContextStateTest, CloneModalSubsystem) {
   // Set fictitious invariants and initial conditions.
   const symbolic::Expression y{symbolic::Variable{"x"}};
   symbolic::Expression expression{y};
-  (*mss->get_mutable_invariant()).push_back(y);
-  (*mss->get_mutable_initial_conditions()).push_back(y);
+  (*mss_->get_mutable_invariant()).push_back(y);
+  (*mss_->get_mutable_initial_conditions()).push_back(y);
 
   // Retrieve a clone.
   unique_ptr<ModalSubsystem<double>> mss_new = mss_->Clone();
@@ -188,8 +187,8 @@ TEST_F(HybridAutomatonContextStateTest, CloneModalSubsystem) {
   // Verify that the data survives the clone.
   EXPECT_EQ(6, mss_new->get_mode_id());
   EXPECT_EQ("Bob", mss_new->get_system()->get_name());
-  EXPECT_EQ(1, mss->get_invariant().size());
-  EXPECT_EQ(1, mss->get_initial_conditions().size());
+  EXPECT_EQ(1, mss_new->get_invariant().size());
+  EXPECT_EQ(1, mss_new->get_initial_conditions().size());
   EXPECT_EQ(1, mss_new->get_num_input_ports());
   EXPECT_EQ(2, mss_new->get_num_output_ports());
 }
