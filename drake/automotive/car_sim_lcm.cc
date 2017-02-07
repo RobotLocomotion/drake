@@ -1,3 +1,11 @@
+/// @file
+/// For details about this demo, see README.md in this same directory, section
+/// "Running the dynamics". Or, point your favorite web browser to:
+///
+/// https://github.com/RobotLocomotion/drake/blob/master/drake/automotive/README.md#running-the-dynamics
+///
+///
+
 #include <gflags/gflags.h>
 
 #include "drake/automotive/car_sim_lcm_common.h"
