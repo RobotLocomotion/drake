@@ -840,12 +840,19 @@ void Painleve<T>::CalcAccelerationsOneContactNoSliding(
     // This solution was obtained by solving for zero normal acceleration
     // with the frictional force pointing either possible direction (indicated
     // by d, meaning positive x-axis and negative x-axis).
+    // cx[t_] := x[t] + k*Cos[theta[t]]*(r/2)
+    // cy[t_] := y[t] + k*Sin[theta[t]]*(r/2)
+    // Solve[{0 == D[D[cy[t], t], t],
+    //       D[D[y[t], t], t] == (N + fY)/mass + g,
+    //       D[D[x[t], t], t] == (F + fX)/mass,
+    // J*D[D[theta[t], t], t] == (cx[t] - x[t])*N - (cy[t] - y[t])*F + tau,
+    //       F == -d*mu*N},
+   // {N, F, D[D[y[t], t], t], D[D[x[t], t], t], D[D[theta[t], t], t]}]
     auto calc_force = [=](int d) {
-      const T N =
-          (2 * mass *
-              (-2 * g * J + r * J * k * stheta * thetadot * thetadot)) /
-              (4 * J + r * r * k * k * mass * ctheta * ctheta +
-                  r * r * k * k * mass * mu * ctheta * d * stheta) - fY;
+      const T N = (-2 * (2 * J * (fY + g * mass) + k * mass * r * tau * ctheta -
+                   J * k * mass * r * stheta * thetadot * thetadot)/
+                   (4 * J + k * k * mass * r * r * ctheta * ctheta +
+                    d* k * k * mass * mu * r * r * ctheta * stheta));
       const T F = -d * mu * (N + fY);
       return Vector2<T>(N, F);
     };
