@@ -857,6 +857,8 @@ void Painleve<T>::CalcAccelerationsOneContactNoSliding(
     const T fN2 = s2(0);
     const T fF1 = s1(1);
     const T fF2 = s2(1);
+    DRAKE_ASSERT(fN1 > -10*std::numeric_limits<double>::epsilon());
+    DRAKE_ASSERT(fN2 > -10*std::numeric_limits<double>::epsilon());
 
     // Calculate candidate tangential accelerations.
     auto calc_tan_accel = [=](int d, const T N, const T F) {
