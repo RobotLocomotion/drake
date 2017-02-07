@@ -304,7 +304,7 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   xc[4] = 0.0;
   xc[5] = 0.0;
   context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-  Painleve<double>::kStickingSingleContact;
+      Painleve<double>::kStickingSingleContact;
 
   // Set a constant horizontal input force, as if applied at the bottom of
   // the rod.
