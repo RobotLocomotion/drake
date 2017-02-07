@@ -828,24 +828,23 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
 #ifdef USE_STRIBECK
         // Normal force:
         // This is the implementation of the Hunt-Crossley contact model
-        // Normal force is simply f(x, x') = kx(1 + dx') where
+        // Normal force is simply f(x, ẋ) = kx(1 + dẋ) where
         //    x: is the *penetration depth*.
-        //    x': is the rate of change of penetration, x' > 0 -> increased
+        //    ẋ: is the rate of change of penetration, ẋ > 0 -> increased
         //        penetration.
         //    k: penetration stiffness, k > 0
         //    d: dissipation factor, d > 0
-        // f(x, x') > 0 provides a repulsive force.
+        // f(x, ẋ) > 0 provides a repulsive force.
         // It is *possible* for this force to become attractive if there is a
         // sufficiently large *separating* velocity.  In fact, this occurs if
-        // x' < -1 / d or dx' < -1.  In these cases, we simply clamp the force
-        // to zero.
+        // ẋ < -1 / d.  In these cases, we simply clamp the force to zero.
 
         // pair.distance is the signed distance (with negative values indicating
         // collision.  Therefore, x = -pair.distance.
         // The relative velocity, v_BA_C, is the velocity of A w.r.t. B
         // expressed in C.  If the objects are getting closer (i.e., increasing
         // penetration depth), then A is moving *against* the normal direction.
-        // That means, x' = -v_BA_C(2).
+        // That means, ẋ = -v_BA_C(2).
 
         double x = -pair.distance;
         double x_dot = -v_BA_C(2);
