@@ -17,6 +17,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 
@@ -33,6 +34,7 @@ namespace drake {
 
 using lcm::DrakeLcm;
 using parsers::sdf::AddModelInstancesFromSdfFile;
+using systems::SemiExplicitEulerIntegrator;
 using systems::Diagram;
 using systems::Simulator;
 
@@ -111,6 +113,11 @@ int main(int argc, char* argv[]) {
                             &lcm);
   lcm.StartReceiveThread();
   Simulator<double> simulator(*diagram);
+
+  auto context = simulator.get_mutable_context();
+  simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
+      *diagram, 1e-4, context);
+
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_sec);
   return 0;
