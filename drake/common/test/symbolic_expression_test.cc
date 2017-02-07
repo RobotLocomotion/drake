@@ -425,7 +425,7 @@ TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
 TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
   const Expression e{2 * x_ * y_ * y_ * pow(z_, y_)};
   const map<Expression, Expression> products{
-      get_base_to_expnt_map_in_multiplication(e)};
+      get_base_to_exponent_map_in_multiplication(e)};
   EXPECT_PRED2(ExprEqual, products.at(x_), 1.0);
   EXPECT_PRED2(ExprEqual, products.at(y_), 2.0);
   EXPECT_PRED2(ExprEqual, products.at(z_), y_);

@@ -302,14 +302,14 @@ class ExpressionAddFactory {
  * expressions.
  *
  * Internally this class maintains a member variable @c constant_ representing
- * @f$ c_0 @f$ and another member variable @c base_to_expnt_map_ representing
+ * @f$ c_0 @f$ and another member variable @c base_to_exponent_map_ representing
  * a mapping from a base, @f$ b_i @f$ to its exponentiation @f$ e_i @f$.
  */
 class ExpressionMul : public ExpressionCell {
  public:
-  /** Constructs ExpressionMul from @p constant and @p base_to_expnt_map. */
+  /** Constructs ExpressionMul from @p constant and @p base_to_exponent_map. */
   ExpressionMul(double constant,
-                const std::map<Expression, Expression>& base_to_expnt_map);
+                const std::map<Expression, Expression>& base_to_exponent_map);
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
@@ -320,8 +320,8 @@ class ExpressionMul : public ExpressionCell {
   /** Returns constant term. */
   double get_constant() const { return constant_; }
   /** Returns map from a term to its coefficient. */
-  const std::map<Expression, Expression>& get_base_to_expnt_map() const {
-    return base_to_expnt_map_;
+  const std::map<Expression, Expression>& get_base_to_exponent_map() const {
+    return base_to_exponent_map_;
   }
 
  private:
@@ -330,7 +330,7 @@ class ExpressionMul : public ExpressionCell {
                             const Expression& pow) const;
 
   double constant_{};
-  std::map<Expression, Expression> base_to_expnt_map_;
+  std::map<Expression, Expression> base_to_exponent_map_;
 };
 
 /** Factory class to help build ExpressionMul expressions. */
@@ -342,10 +342,10 @@ class ExpressionMulFactory {
   ExpressionMulFactory() = default;
 
   /** Constructs ExpressionMulFactory with @p constant and @p
-   * base_to_expnt_map. */
+   * base_to_exponent_map. */
   ExpressionMulFactory(
       double constant,
-      const std::map<Expression, Expression>& base_to_expnt_map);
+      const std::map<Expression, Expression>& base_to_exponent_map);
 
   /** Constructs ExpressionMulFactory from @p ptr. */
   explicit ExpressionMulFactory(std::shared_ptr<const ExpressionMul> ptr);
@@ -382,12 +382,12 @@ class ExpressionMulFactory {
      it also performs simplifications to merge the exponents of common bases.
   */
   void AddTerm(const Expression& base, const Expression& exponent);
-  /* Adds base_to_expnt_map to this factory. It calls AddConstant and AddTerm
+  /* Adds base_to_exponent_map to this factory. It calls AddConstant and AddTerm
    * methods. */
-  void AddMap(const std::map<Expression, Expression> base_to_expnt_map);
+  void AddMap(const std::map<Expression, Expression> base_to_exponent_map);
 
   double constant_{1.0};
-  std::map<Expression, Expression> base_to_expnt_map_;
+  std::map<Expression, Expression> base_to_exponent_map_;
 };
 
 /** Symbolic expression representing division. */

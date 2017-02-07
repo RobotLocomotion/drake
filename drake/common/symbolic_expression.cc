@@ -532,8 +532,8 @@ Expression pow(const Expression& e1, const Expression& e2) {
   if (is_pow(e1)) {
     // pow(base, exponent) ^ e2 => pow(base, exponent * e2)
     const Expression& base{get_first_argument(e1)};
-    const Expression& expnt{get_second_argument(e1)};
-    return Expression{make_shared<ExpressionPow>(base, expnt * e2)};
+    const Expression& exponent{get_second_argument(e1)};
+    return Expression{make_shared<ExpressionPow>(base, exponent * e2)};
   }
   return Expression{make_shared<ExpressionPow>(e1, e2)};
 }
@@ -720,9 +720,9 @@ const map<Expression, double>& get_expr_to_coeff_map_in_addition(
 double get_constant_in_multiplication(const Expression& e) {
   return to_multiplication(e)->get_constant();
 }
-const map<Expression, Expression>& get_base_to_expnt_map_in_multiplication(
+const map<Expression, Expression>& get_base_to_exponent_map_in_multiplication(
     const Expression& e) {
-  return to_multiplication(e)->get_base_to_expnt_map();
+  return to_multiplication(e)->get_base_to_exponent_map();
 }
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.

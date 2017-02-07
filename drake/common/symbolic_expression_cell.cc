@@ -72,33 +72,33 @@ bool determine_polynomial(
 // polynomial-convertible or not. This function is used in the
 // constructor of ExpressionMul.
 static bool determine_polynomial(
-    const std::map<Expression, Expression>& base_to_expnt_map) {
-  return all_of(base_to_expnt_map.begin(), base_to_expnt_map.end(),
+    const std::map<Expression, Expression>& base_to_exponent_map) {
+  return all_of(base_to_exponent_map.begin(), base_to_exponent_map.end(),
                 [](const pair<Expression, Expression>& p) {
                   // For each base^exponent, it has to satisfy the following
                   // conditions:
                   //     - base is polynomial-convertible.
                   //     - exponent is a non-negative integer.
                   const Expression& base{p.first};
-                  const Expression& expnt{p.second};
-                  if (!base.is_polynomial() || !is_constant(expnt)) {
+                  const Expression& exponent{p.second};
+                  if (!base.is_polynomial() || !is_constant(exponent)) {
                     return false;
                   }
-                  const double e{get_constant_value(expnt)};
+                  const double e{get_constant_value(exponent)};
                   return is_non_negative_integer(e);
                 });
 }
 
 // Determines if pow(base, exponent) is polynomial-convertible or not. This
 // function is used in constructor of ExpressionPow.
-bool determine_polynomial(const Expression& base, const Expression& expnt) {
+bool determine_polynomial(const Expression& base, const Expression& exponent) {
   // base ^ exponent is polynomial-convertible if the followings hold:
   //    - base is polynomial-convertible.
   //    - exponent is a non-negative integer.
-  if (!(base.is_polynomial() && is_constant(expnt))) {
+  if (!(base.is_polynomial() && is_constant(exponent))) {
     return false;
   }
-  const double e{get_constant_value(expnt)};
+  const double e{get_constant_value(exponent)};
   return is_non_negative_integer(e);
 }
 
@@ -465,10 +465,10 @@ void ExpressionAddFactory::AddExpression(const Expression& e) {
     if (constant != 1.0) {
       // Instead of adding (1.0 * (constant * b1^t1 ... bn^tn)),
       // add (constant, 1.0 * b1^t1 ... bn^tn).
-      return AddTerm(
-          constant,
-          ExpressionMulFactory(1.0, get_base_to_expnt_map_in_multiplication(e))
-              .GetExpression());
+      return AddTerm(constant,
+                     ExpressionMulFactory(
+                         1.0, get_base_to_exponent_map_in_multiplication(e))
+                         .GetExpression());
     }
   }
   return AddTerm(1.0, e);
@@ -539,18 +539,19 @@ void ExpressionAddFactory::AddMap(
 }
 
 ExpressionMul::ExpressionMul(
-    const double constant, const map<Expression, Expression>& base_to_expnt_map)
-    : ExpressionCell{ExpressionKind::Mul,
-                     hash_combine(hash<double>{}(constant), base_to_expnt_map),
-                     determine_polynomial(base_to_expnt_map)},
+    const double constant,
+    const map<Expression, Expression>& base_to_exponent_map)
+    : ExpressionCell{ExpressionKind::Mul, hash_combine(hash<double>{}(constant),
+                                                       base_to_exponent_map),
+                     determine_polynomial(base_to_exponent_map)},
       constant_(constant),
-      base_to_expnt_map_(base_to_expnt_map) {
-  DRAKE_ASSERT(!base_to_expnt_map_.empty());
+      base_to_exponent_map_(base_to_exponent_map) {
+  DRAKE_ASSERT(!base_to_exponent_map_.empty());
 }
 
 Variables ExpressionMul::GetVariables() const {
   Variables ret{};
-  for (const auto& p : base_to_expnt_map_) {
+  for (const auto& p : base_to_exponent_map_) {
     ret.insert(p.first.GetVariables());
     ret.insert(p.second.GetVariables());
   }
@@ -567,8 +568,8 @@ bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
   }
   // Check each (term, coeff) pairs in two maps.
   return equal(
-      base_to_expnt_map_.cbegin(), base_to_expnt_map_.cend(),
-      mul_e.base_to_expnt_map_.cbegin(), mul_e.base_to_expnt_map_.cend(),
+      base_to_exponent_map_.cbegin(), base_to_exponent_map_.cend(),
+      mul_e.base_to_exponent_map_.cbegin(), mul_e.base_to_exponent_map_.cend(),
       [](const pair<Expression, Expression>& p1,
          const pair<Expression, Expression>& p2) {
         return p1.first.EqualTo(p2.first) && p1.second.EqualTo(p2.second);
@@ -588,8 +589,8 @@ bool ExpressionMul::Less(const ExpressionCell& e) const {
   }
   // Compare the two maps.
   return lexicographical_compare(
-      base_to_expnt_map_.cbegin(), base_to_expnt_map_.cend(),
-      mul_e.base_to_expnt_map_.cbegin(), mul_e.base_to_expnt_map_.cend(),
+      base_to_exponent_map_.cbegin(), base_to_exponent_map_.cend(),
+      mul_e.base_to_exponent_map_.cbegin(), mul_e.base_to_exponent_map_.cend(),
       [](const pair<Expression, Expression>& p1,
          const pair<Expression, Expression>& p2) {
         const Expression& base1{p1.first};
@@ -609,21 +610,21 @@ bool ExpressionMul::Less(const ExpressionCell& e) const {
 Polynomial<double> ExpressionMul::ToPolynomial() const {
   DRAKE_ASSERT(is_polynomial());
   return accumulate(
-      base_to_expnt_map_.begin(), base_to_expnt_map_.end(),
+      base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
       Polynomial<double>{constant_}, [](const Polynomial<double>& polynomial,
                                         const pair<Expression, Expression>& p) {
         const Expression& base{p.first};
-        const Expression& expnt{p.second};
+        const Expression& exponent{p.second};
         DRAKE_ASSERT(base.is_polynomial());
-        DRAKE_ASSERT(is_constant(expnt));
+        DRAKE_ASSERT(is_constant(exponent));
         return polynomial * pow(base.ToPolynomial(),
-                                static_cast<int>(get_constant_value(expnt)));
+                                static_cast<int>(get_constant_value(exponent)));
       });
 }
 
 double ExpressionMul::Evaluate(const Environment& env) const {
   return accumulate(
-      base_to_expnt_map_.begin(), base_to_expnt_map_.end(), constant_,
+      base_to_exponent_map_.begin(), base_to_exponent_map_.end(), constant_,
       [&env](const double init, const pair<Expression, Expression>& p) {
         return init * std::pow(p.first.Evaluate(env), p.second.Evaluate(env));
       });
@@ -631,7 +632,7 @@ double ExpressionMul::Evaluate(const Environment& env) const {
 
 Expression ExpressionMul::Substitute(const Substitution& s) const {
   return accumulate(
-      base_to_expnt_map_.begin(), base_to_expnt_map_.end(),
+      base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
       Expression{constant_},
       [&s](const Expression& init, const pair<Expression, Expression>& p) {
         return init * pow(p.first.Substitute(s), p.second.Substitute(s));
@@ -639,14 +640,14 @@ Expression ExpressionMul::Substitute(const Substitution& s) const {
 }
 
 ostream& ExpressionMul::Display(ostream& os) const {
-  DRAKE_ASSERT(!base_to_expnt_map_.empty());
+  DRAKE_ASSERT(!base_to_exponent_map_.empty());
   bool print_mul{false};
   os << "(";
   if (constant_ != 1.0) {
     os << constant_;
     print_mul = true;
   }
-  for (auto& p : base_to_expnt_map_) {
+  for (auto& p : base_to_exponent_map_) {
     DisplayTerm(os, print_mul, p.first, p.second);
     print_mul = true;
   }
@@ -656,28 +657,30 @@ ostream& ExpressionMul::Display(ostream& os) const {
 
 ostream& ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
                                     const Expression& base,
-                                    const Expression& expnt) const {
+                                    const Expression& exponent) const {
   // Print " * pow(base, exponent)" if print_mul is true
   // Print "pow(base, exponent)" if print_mul is false
   // Print "base" instead of "pow(base, exponent)" if exponent == 1.0
   if (print_mul) {
     os << " * ";
   }
-  if (is_one(expnt)) {
+  if (is_one(exponent)) {
     os << base;
   } else {
-    os << "pow(" << base << ", " << expnt << ")";
+    os << "pow(" << base << ", " << exponent << ")";
   }
   return os;
 }
 
 ExpressionMulFactory::ExpressionMulFactory(
-    const double constant, const map<Expression, Expression>& base_to_expnt_map)
-    : constant_{constant}, base_to_expnt_map_{base_to_expnt_map} {}
+    const double constant,
+    const map<Expression, Expression>& base_to_exponent_map)
+    : constant_{constant}, base_to_exponent_map_{base_to_exponent_map} {}
 
 ExpressionMulFactory::ExpressionMulFactory(
     const shared_ptr<const ExpressionMul> ptr)
-    : ExpressionMulFactory{ptr->get_constant(), ptr->get_base_to_expnt_map()} {}
+    : ExpressionMulFactory{ptr->get_constant(),
+                           ptr->get_base_to_exponent_map()} {}
 
 void ExpressionMulFactory::AddExpression(const Expression& e) {
   if (is_constant(e)) {
@@ -693,13 +696,13 @@ void ExpressionMulFactory::AddExpression(const Expression& e) {
 
 void ExpressionMulFactory::Add(const shared_ptr<const ExpressionMul> ptr) {
   AddConstant(ptr->get_constant());
-  AddMap(ptr->get_base_to_expnt_map());
+  AddMap(ptr->get_base_to_exponent_map());
 }
 
 ExpressionMulFactory& ExpressionMulFactory::operator=(
     const shared_ptr<ExpressionMul> ptr) {
   constant_ = ptr->get_constant();
-  base_to_expnt_map_ = ptr->get_base_to_expnt_map();
+  base_to_exponent_map_ = ptr->get_base_to_exponent_map();
   return *this;
 }
 
@@ -709,15 +712,16 @@ ExpressionMulFactory& ExpressionMulFactory::Negate() {
 }
 
 Expression ExpressionMulFactory::GetExpression() const {
-  if (base_to_expnt_map_.empty()) {
+  if (base_to_exponent_map_.empty()) {
     return Expression{constant_};
   }
-  if (constant_ == 1.0 && base_to_expnt_map_.size() == 1u) {
+  if (constant_ == 1.0 && base_to_exponent_map_.size() == 1u) {
     // 1.0 * c1^t1 -> c1^t1
-    const auto it(base_to_expnt_map_.cbegin());
+    const auto it(base_to_exponent_map_.cbegin());
     return pow(it->first, it->second);
   }
-  return Expression{make_shared<ExpressionMul>(constant_, base_to_expnt_map_)};
+  return Expression{
+      make_shared<ExpressionMul>(constant_, base_to_exponent_map_)};
 }
 
 void ExpressionMulFactory::AddConstant(const double constant) {
@@ -725,41 +729,42 @@ void ExpressionMulFactory::AddConstant(const double constant) {
 }
 
 void ExpressionMulFactory::AddTerm(const Expression& base,
-                                   const Expression& expnt) {
+                                   const Expression& exponent) {
   // The following assertion holds because of
   // ExpressionMulFactory::AddExpression.
-  DRAKE_ASSERT(!(is_constant(base) && is_constant(expnt)));
+  DRAKE_ASSERT(!(is_constant(base) && is_constant(exponent)));
   if (is_pow(base)) {
     // If (base, exponent) = (pow(e1, e2), exponent)), then add (e1, e2 *
     // exponent)
     // Example: (x^2)^3 => x^(2 * 3)
-    return AddTerm(get_first_argument(base), get_second_argument(base) * expnt);
+    return AddTerm(get_first_argument(base),
+                   get_second_argument(base) * exponent);
   }
 
-  const auto it(base_to_expnt_map_.find(base));
-  if (it != base_to_expnt_map_.end()) {
+  const auto it(base_to_exponent_map_.find(base));
+  if (it != base_to_exponent_map_.end()) {
     // base is already in map.
     // (= b1^e1 * ... * (base^this_exponent) * ... * en^bn).
     // Update it to be (... * (base^(this_exponent + exponent)) * ...)
     // Example: x^3 * x^2 => x^5
-    Expression& this_expnt{it->second};
-    this_expnt += expnt;
-    if (is_zero(this_expnt)) {
+    Expression& this_exponent{it->second};
+    this_exponent += exponent;
+    if (is_zero(this_exponent)) {
       // If it ends up with base^0 (= 1.0) then remove this entry from the map.
       // TODO(soonho-tri): The following operation is not sound since it can
       // cancels `base` which might include 0/0 problems.
-      base_to_expnt_map_.erase(it);
+      base_to_exponent_map_.erase(it);
     }
   } else {
-    // Product is not found in base_to_expnt_map_. Add the entry (base,
+    // Product is not found in base_to_exponent_map_. Add the entry (base,
     // exponent).
-    base_to_expnt_map_.emplace(base, expnt);
+    base_to_exponent_map_.emplace(base, exponent);
   }
 }
 
 void ExpressionMulFactory::AddMap(
-    const map<Expression, Expression> base_to_expnt_map) {
-  for (const auto& p : base_to_expnt_map) {
+    const map<Expression, Expression> base_to_exponent_map) {
+  for (const auto& p : base_to_exponent_map) {
     AddTerm(p.first, p.second);
   }
 }
@@ -904,8 +909,9 @@ void ExpressionPow::check_domain(const double v1, const double v2) {
 
 Polynomial<double> ExpressionPow::ToPolynomial() const {
   DRAKE_ASSERT(is_polynomial());
-  const int expnt{static_cast<int>(get_constant_value(get_second_argument()))};
-  return pow(get_first_argument().ToPolynomial(), expnt);
+  const int exponent{
+      static_cast<int>(get_constant_value(get_second_argument()))};
+  return pow(get_first_argument().ToPolynomial(), exponent);
 }
 
 Expression ExpressionPow::Substitute(const Substitution& s) const {
