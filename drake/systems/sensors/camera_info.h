@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace systems {
@@ -58,6 +58,8 @@ namespace sensors {
 // needed.
 class CameraInfo {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CameraInfo)
+
   /// Constructor that directly sets the image size, center, and focal lengths.
   ///
   /// @param width The image width in pixels, must be greater than zero.
@@ -87,16 +89,6 @@ class CameraInfo {
   /// @param height The image height in pixels, must be greater than zero.
   /// @param fov_y The vertical field of view.
   CameraInfo(int width, int height, double fov_y);
-
-  /// Default copy constructor.
-  CameraInfo(const CameraInfo&) = default;
-
-  /// Default move constructor.
-  CameraInfo(CameraInfo&&) = default;
-
-  CameraInfo() = delete;
-  CameraInfo& operator=(const CameraInfo&) = delete;
-  CameraInfo& operator=(CameraInfo&&) = delete;
 
   /// Returns the width of the image in pixels.
   int width() const { return width_; }

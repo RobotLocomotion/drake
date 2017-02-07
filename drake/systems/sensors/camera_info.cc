@@ -1,5 +1,7 @@
 #include "drake/systems/sensors/camera_info.h"
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace systems {
 namespace sensors {
