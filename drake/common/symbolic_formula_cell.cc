@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_compat.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
@@ -45,16 +46,16 @@ Variables RelationalFormulaCell::GetFreeVariables() const {
 bool RelationalFormulaCell::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == f.get_kind());
-  const RelationalFormulaCell& rel_f{
-      static_cast<const RelationalFormulaCell&>(f)};
+  const RelationalFormulaCell& rel_f =
+      static_cast<const RelationalFormulaCell&>(f);
   return e_lhs_.EqualTo(rel_f.e_lhs_) && e_rhs_.EqualTo(rel_f.e_rhs_);
 }
 
 bool RelationalFormulaCell::Less(const FormulaCell& f) const {
   // Formula::Less guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == f.get_kind());
-  const RelationalFormulaCell& rel_f{
-      static_cast<const RelationalFormulaCell&>(f)};
+  const RelationalFormulaCell& rel_f =
+      static_cast<const RelationalFormulaCell&>(f);
   if (e_lhs_.Less(rel_f.e_lhs_)) {
     return true;
   }
@@ -80,7 +81,7 @@ Variables NaryFormulaCell::GetFreeVariables() const {
 bool NaryFormulaCell::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == f.get_kind());
-  const NaryFormulaCell& nary_f{static_cast<const NaryFormulaCell&>(f)};
+  const NaryFormulaCell& nary_f = static_cast<const NaryFormulaCell&>(f);
   return equal(
       formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
       nary_f.formulas_.cend(),
@@ -90,7 +91,7 @@ bool NaryFormulaCell::EqualTo(const FormulaCell& f) const {
 bool NaryFormulaCell::Less(const FormulaCell& f) const {
   // Formula::Less guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == f.get_kind());
-  const NaryFormulaCell& nary_f{static_cast<const NaryFormulaCell&>(f)};
+  const NaryFormulaCell& nary_f = static_cast<const NaryFormulaCell&>(f);
   return lexicographical_compare(
       formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
       nary_f.formulas_.cend(),

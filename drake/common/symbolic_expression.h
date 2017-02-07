@@ -643,6 +643,23 @@ struct equal_to<drake::symbolic::Expression> {
     return lhs.EqualTo(rhs);
   }
 };
+
+#if !EIGEN_VERSION_AT_LEAST(3, 2, 93)
+/// Provides std::max<drake::symbolic::Expression>. There is nothing about this
+/// hack that is not horrible.
+template <>
+inline const drake::symbolic::Expression& max(
+    const drake::symbolic::Expression& lhs,
+    const drake::symbolic::Expression& rhs) {
+  static constexpr char doom[] = R"doom(
+Eigen algebra over drake::symbolic::Expressions cannot be safely implemented
+using Eigen 3.2. If you need this, use a platform that supports Eigen 3.3 or
+later.
+)doom";
+  DRAKE_ABORT_MSG(doom);
+}
+#endif  // EIGEN_VERSION_AT_LEAST(3, 2, 93)
+
 }  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -655,6 +672,7 @@ struct NumTraits<drake::symbolic::Expression>
   static inline int digits10() { return 0; }
 };
 
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)
 // Informs Eigen that Variable op Variable gets Expression.
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable,
@@ -706,6 +724,7 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
   enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
+#endif  // EIGEN_VERSION_AT_LEAST(3, 2, 93)
 
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
