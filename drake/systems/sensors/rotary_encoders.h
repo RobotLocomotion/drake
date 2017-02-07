@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -21,6 +22,8 @@ namespace sensors {
 template <typename T>
 class RotaryEncoders : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotaryEncoders)
+
   /// Quantization-only constructor.  Specifies one ticks_per_revolution count
   /// for every element of the input port.
   explicit RotaryEncoders(const std::vector<int>& ticks_per_revolution);
@@ -37,11 +40,6 @@ class RotaryEncoders : public systems::LeafSystem<T> {
   RotaryEncoders(int input_port_size,
                  const std::vector<int>& input_vector_indices,
                  const std::vector<int>& ticks_per_revolution);
-
-  // Non-copyable.
-  RotaryEncoders(const RotaryEncoders<T>&) = delete;
-  RotaryEncoders& operator=(const RotaryEncoders<T>&) = delete;
-
 
   /// Calibration offsets are defined as parameters.
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
