@@ -56,7 +56,7 @@ class AbstractTestSource : public LeafSystem<double> {
 // ZeroOrderHold element, in parallel with an AbstractTestSource system.
 class ContinuousDiscreteAbstractSystem : public Diagram<double> {
  public:
-  explicit ContinuousDiscreteAbstractSystem() {
+  ContinuousDiscreteAbstractSystem() {
     DiagramBuilder<double> builder;
 
     integrator_ = builder.template AddSystem<Integrator<double>>(kSize);

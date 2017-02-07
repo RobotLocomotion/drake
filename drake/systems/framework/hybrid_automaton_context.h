@@ -3,6 +3,8 @@
 #include <map>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/symbolic_formula.h"
@@ -17,38 +19,38 @@ using std::move;
 using std::shared_ptr;
 using std::unique_ptr;
 
-/*
-ModalSubsystem represents the mode of a hybrid system.
-
-Let P(X) denote the power set (set of all subsets) of X and let R denote the
-space of real numbers.  Define a hybrid automaton as a tuple HA = (Q, Q₀, X, U,
-Y, f, g, Init, Invar, E, Guard, Reset), where:
-
-- Q = {q₁, q₂, …, qᵣ} is a set of discrete-valued states (modes);
-  - Q₀ ⊆ Q is a set of initial modes;
-  - X = Rⁿ is a set of continuous-valued states;
-  - U = Rᵐ is a set of continuous-valued inputs;
-  - Y = Rᵖ is a set of continuous-valued outputs;
-  - f(·, ·, ·) : Q × X × U → Rⁿ is a vector field representing the system's
-dynamics;
-  - g(·, ·, ·) : Q × X × U → Rᵖ is a mapping from states and inputs to system
-outputs;
-  - Init ⊆ Q × X is a set of initial states;
-  - Invar(·) : Q → P(X) is an invariant defining the domain over which
-f(·, ·, ·) holds;
-  - E ⊆ Q × Q is a set of edges describing discrete transitions between modes;
-  - Guard(·) : E → P(X) is a guard condition defining the conditions where it is
-possible to make a discrete mode transition;
-  - Reset(·, ·, ·) : E × X × U → P(X) is a reset map taking, for each edge, the
-state and input and producing new states following the mode transition.
-
-Note that the sets Invar(q) ⊆ Rⁿ and Init are assigned to each discrete state q
-∈ Q.  We refer to q ∈ Q × X as the mode of the HA.
-
-In the context of Drake's System framework, ModalSubsystem captures, for each
-mode, the System (f, g) for each mode, the Init and Invar for System, and the
-list of inputs and outputs of the System.
-*/
+/**
+ * ModalSubsystem represents the mode of a hybrid system.
+ *
+ * Let P(X) denote the power set (set of all subsets) of X and let R denote the
+ * space of real numbers.  Define a hybrid automaton as a tuple HA = (Q, Q₀, X,
+ * U, Y, f, g, Init, Invar, E, Guard, Reset), where:
+ *
+ * - Q = {q₁, q₂, …, qᵣ} is a set of discrete-valued states (modes);
+ * - Q₀ ⊆ Q is a set of initial modes;
+ * - X = Rⁿ is a set of continuous-valued states;
+ * - U = Rᵐ is a set of continuous-valued inputs;
+ * - Y = Rᵖ is a set of continuous-valued outputs;
+ * - f(·, ·, ·) : Q × X × U → Rⁿ is a vector field representing the system's
+ *   dynamics;
+ * - g(·, ·, ·) : Q × X × U → Rᵖ is a mapping from states and inputs to system
+ *   outputs;
+ * - Init ⊆ Q × X is a set of initial states;
+ * - Invar(·) : Q → P(X) is an invariant defining the domain over which
+ *   f(·, ·, ·) holds;
+ * - E ⊆ Q × Q is a set of edges describing discrete transitions between modes;
+ * - Guard(·) : E → P(X) is a guard condition defining the conditions where it
+ *   is possible to make a discrete mode transition;
+ * - Reset(·, ·, ·) : E × X × U → P(X) is a reset map taking, for each edge, the
+ *   state and input and producing new states following the mode transition.
+ *
+ * Note that the sets Invar(q) ⊆ Rⁿ and Init are assigned to each discrete state
+ * q ∈ Q.  We refer to q ∈ Q as the mode of the HA.
+ *
+ * In the context of Drake's System framework, ModalSubsystem captures, for each
+ * mode, the System (f, g) for each mode, the Init and Invar for System, and the
+ * list of inputs and outputs of the System.
+ */
 template <typename T>
 class ModalSubsystem {
  public:
@@ -139,14 +141,14 @@ class ModalSubsystem {
   const std::vector<symbolic::Variable>& get_symbolic_continuous_states()
       const {
     return symbolic_variables_.at("xc")[0];
-  };
+  }
   const std::vector<symbolic::Variable>& get_symbolic_discrete_states_at(
       const int index) const {
     return symbolic_variables_.at("xd")[index];
-  };
+  }
   int get_num_symbolic_discrete_states() const {
     return symbolic_variables_.at("xd").size();
-  };
+  }
 
   /// Returns a clone that includes a deep copy of all the underlying data.
   unique_ptr<ModalSubsystem<T>> Clone() const {
