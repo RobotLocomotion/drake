@@ -643,6 +643,7 @@ Polynomial<double> ExpressionMul::ToPolynomial() const {
 }
 
 int ExpressionMul::Degree(const Variables &vars) const {
+  // The precondition is is_polynomial() == True.
   return accumulate(
       base_to_expnt_map_.begin(), base_to_expnt_map_.end(), 0,
       [vars](const int& degree, const pair<Expression, Expression>& p) {
@@ -812,6 +813,7 @@ Polynomial<double> ExpressionDiv::ToPolynomial() const {
 }
 
 int ExpressionDiv::Degree(const Variables& vars) const {
+  // The precondition is is_polynomial() == True.
   return get_first_argument().Degree(vars) - get_second_argument().Degree(vars);
 }
 
@@ -966,6 +968,8 @@ Polynomial<double> ExpressionPow::ToPolynomial() const {
 }
 
 int ExpressionPow::Degree(const Variables &vars) const {
+  // As a precondition, this expression `is_polynomial`, so the exponent is an
+  // integer and this cast does not change its value.
   const int expnt{static_cast<int>(get_constant_value(get_second_argument()))};
   return get_first_argument().Degree(vars) * expnt;
 }
