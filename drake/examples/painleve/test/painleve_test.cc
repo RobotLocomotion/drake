@@ -20,8 +20,8 @@ namespace drake {
 namespace painleve {
 namespace {
 
-/// Class for testing the Painleve Paradox example using a piecewise DAE
-/// approach.
+// Class for testing the Painleve Paradox example using a piecewise DAE
+// approach.
 class PainleveDAETest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -646,8 +646,8 @@ TEST_F(PainleveDAETest, BallisticNoImpact) {
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 }
 
-/// Class for testing the Painleve Paradox example using a first order time
-/// stepping approach.
+// Class for testing the Painleve Paradox example using a first order time
+// stepping approach.
 class PainleveTimeSteppingTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -830,8 +830,8 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSticking) {
       Painleve<double>::kStickingSingleContact;
 
   // Set constant input forces for both.
-  const double x = 1.0;
-  Vector3<double> fext(x, -1.0, x * ts.get_rod_length()/2);
+  const double fext_x = 1.0;
+  Vector3<double> fext(fext_x, -1.0, fext_x * ts.get_rod_length()/2);
   std::unique_ptr<BasicVector<double>> ext_input =
     std::make_unique<BasicVector<double>>(fext);
   context_ts->FixInputPort(0, std::move(ext_input));
