@@ -93,6 +93,6 @@ void AddSwingUpTrajectoryParams(
   dircol_traj->AddFinalCostFunc(AcrobotFinalCost());
 }
 
-}  // namespace pendulum
+}  // namespace acrobot
 }  // namespace examples
 }  // namespace drake

@@ -36,8 +36,7 @@ AcrobotPlant<T>::AcrobotPlant(double m1, double m2, double l1, double l2,
       Ic2_(Ic2),
       b1_(b1),
       b2_(b2),
-      g_(g)
-{
+      g_(g) {
   this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareContinuousState(kNumDOF * 2);  // Position + velocity.
   this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2);
