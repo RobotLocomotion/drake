@@ -140,10 +140,8 @@ TEST_F(HybridAutomatonContextTest, ModalSubsystemPortIds) {
 // Tests the ability to specify symbolic expressions and evaluate them.
 TEST_F(HybridAutomatonContextStateTest, ModalSubsystemSymbolicExpressions) {
   // Fetch the symbolic variables and mutable expressions for this context.
-  symbolic::Variable xc =
-      mss_->get_symbolic_continuous_states()[0];
-  symbolic::Variable xd =
-      mss_->get_symbolic_discrete_states_at(0)[0];
+  symbolic::Variable xc = mss_->get_symbolic_continuous_states()[0];
+  symbolic::Variable xd = mss_->get_symbolic_discrete_states_at(0)[0];
   std::vector<symbolic::Expression>* example_invariant =
       mss_->get_mutable_invariant();
   std::vector<symbolic::Expression>* example_ic =
@@ -192,6 +190,8 @@ TEST_F(HybridAutomatonContextStateTest, CloneModalSubsystem) {
   EXPECT_EQ(1, mss_new->get_num_input_ports());
   EXPECT_EQ(2, mss_new->get_num_output_ports());
 }
+
+// TODO(jadecastro): Include unit tests for HybridAutomatonContext.
 
 }  // namespace
 }  // namespace systems

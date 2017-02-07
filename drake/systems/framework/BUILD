@@ -268,7 +268,6 @@ drake_cc_library(
     linkstatic = 1,
     deps = [
         ":context",
-        ":hybrid_automaton_continuous_state",
         ":system",
         ":vector",
         "//drake/common",
