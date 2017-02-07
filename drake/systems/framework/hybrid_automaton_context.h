@@ -3,6 +3,8 @@
 #include <map>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/symbolic_formula.h"
@@ -43,7 +45,7 @@ possible to make a discrete mode transition;
 state and input and producing new states following the mode transition.
 
 Note that the sets Invar(q) ⊆ Rⁿ and Init are assigned to each discrete state q
-∈ Q.  We refer to q ∈ Q × X as the mode of the HA.
+∈ Q.  We refer to q ∈ Q as the mode of the HA.
 
 In the context of Drake's System framework, ModalSubsystem captures, for each
 mode, the System (f, g) for each mode, the Init and Invar for System, and the
@@ -139,14 +141,14 @@ class ModalSubsystem {
   const std::vector<symbolic::Variable>& get_symbolic_continuous_states()
       const {
     return symbolic_variables_.at("xc")[0];
-  };
+  }
   const std::vector<symbolic::Variable>& get_symbolic_discrete_states_at(
       const int index) const {
     return symbolic_variables_.at("xd")[index];
-  };
+  }
   int get_num_symbolic_discrete_states() const {
     return symbolic_variables_.at("xd").size();
-  };
+  }
 
   /// Returns a clone that includes a deep copy of all the underlying data.
   unique_ptr<ModalSubsystem<T>> Clone() const {
