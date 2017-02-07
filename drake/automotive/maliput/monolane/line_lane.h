@@ -21,7 +21,7 @@ class LineLane : public Lane {
   ///
   /// @param id,segment,lane_bounds,driveable_bounds,elevation,superelevation
   ///        See documentation for the Lane base class.
-  LineLane(const api::LaneId& id, const Segment* segment,
+  LineLane(const api::LaneId& id, const api::Segment* segment,
            const V2& xy0, const V2& dxy,
            const api::RBounds& lane_bounds,
            const api::RBounds& driveable_bounds,

@@ -15,7 +15,6 @@ namespace monolane {
 
 class BranchPoint;
 class Lane;
-class RoadGeometry;
 
 
 /// An implementation of LaneEndSet.
@@ -46,7 +45,7 @@ class BranchPoint : public api::BranchPoint {
   /// Constructs an empty BranchPoint.
   ///
   /// @p road_geometry must remain valid for the lifetime of this class.
-  BranchPoint(const api::BranchPointId& id, RoadGeometry* road_geometry);
+  BranchPoint(const api::BranchPointId& id, api::RoadGeometry* road_geometry);
 
   /// Adds a LaneEnd to the "A side" of the BranchPoint.
   const api::LaneEnd& AddABranch(const api::LaneEnd& lane_end);
@@ -81,7 +80,7 @@ class BranchPoint : public api::BranchPoint {
   const api::LaneEndSet* DoGetBSide() const override { return &b_side_; }
 
   api::BranchPointId id_;
-  RoadGeometry* road_geometry_{};
+  api::RoadGeometry* road_geometry_{};
   LaneEndSet a_side_;
   LaneEndSet b_side_;
 

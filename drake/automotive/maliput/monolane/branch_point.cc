@@ -1,8 +1,5 @@
 #include "drake/automotive/maliput/monolane/branch_point.h"
 
-#include "drake/automotive/maliput/monolane/lane.h"
-#include "drake/automotive/maliput/monolane/road_geometry.h"
-
 #include "drake/common/drake_assert.h"
 
 namespace drake {
@@ -10,7 +7,7 @@ namespace maliput {
 namespace monolane {
 
 BranchPoint::BranchPoint(const api::BranchPointId& id,
-                         RoadGeometry* road_geometry)
+                         api::RoadGeometry* road_geometry)
     : id_(id), road_geometry_(road_geometry) {}
 
 const api::RoadGeometry* BranchPoint::do_road_geometry() const {
