@@ -37,13 +37,31 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
          &MathematicalProgram::NewContinuousVariables,
          py::arg("rows"),
          py::arg("name") = "x")
+    .def("_NewContinuousVariables", (VectorXDecisionVariable
+          (MathematicalProgram::*)(
+          size_t,
+          size_t,
+          const std::string&))
+         &MathematicalProgram::NewContinuousVariables,
+         py::arg("rows"),
+         py::arg("cols"),
+         py::arg("name") = "x")
     .def("_NewBinaryVariables", (VectorXDecisionVariable
          (MathematicalProgram::*)(
          size_t,
          const std::string&))
          &MathematicalProgram::NewBinaryVariables,
          py::arg("rows"),
-         py::arg("name") = "x")
+         py::arg("name") = "b")
+    .def("_NewBinaryVariables", (VectorXDecisionVariable
+         (MathematicalProgram::*)(
+         size_t,
+         size_t,
+         const std::string&))
+         &MathematicalProgram::NewBinaryVariables,
+         py::arg("rows"),
+         py::arg("cols"),
+         py::arg("name") = "b")
     .def("AddLinearConstraint",
          (Binding<LinearConstraint>
           (MathematicalProgram::*)(
@@ -273,10 +291,14 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("__repr__", &Formula::to_string);
 
   py::class_<VectorXDecisionVariable>(
-    m, "_VectorXDecisionVariable")
+    m, "VectorXDecisionVariable")
     .def(py::init<size_t>())
-    .def("__len__", [](const VectorXDecisionVariable& v) {
+    .def("size", [](const VectorXDecisionVariable& v) {
       return v.size();
+    })
+    .def("shape", [](const VectorXDecisionVariable& v) {
+      std::vector<size_t> shape = {v.rows()};
+      return shape;
     })
     .def("__getitem__", [](const VectorXDecisionVariable& v,
                            size_t i) {
@@ -285,6 +307,32 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("__setitem__", [](VectorXDecisionVariable& v,
                            size_t i, const Variable &var) {
       v(i) = var;
+    });
+
+  py::class_<MatrixXDecisionVariable>(
+    m, "MatrixXDecisionVariable")
+    .def(py::init<size_t>())
+    .def("size", [](const VectorXDecisionVariable& v) {
+      return v.size();
+    })
+    .def("shape", [](const VectorXDecisionVariable& v) {
+      std::vector<size_t> shape = {v.rows(), v.cols()};
+      return shape;
+    })
+    .def("__getitem__", [](const VectorXDecisionVariable& v,
+                           size_t i) {
+      return v(i);
+    .def("__getitem__", [](const VectorXDecisionVariable& v,
+                           size_t i, size_t j) {
+      return v(i, j);
+    }, py::return_value_policy::reference)
+    .def("__setitem__", [](VectorXDecisionVariable& v,
+                           size_t i, const Variable &var) {
+      v(i) = var;
+    })
+    .def("__setitem__", [](VectorXDecisionVariable& v,
+                           size_t i, size_t j, const Variable &var) {
+      v(i, j) = var;
     });
 
   // Assign the wrapped Constraint class to the name 'constraint'

@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import numpy as np
 from ._pydrake_mathematicalprogram import *
-from ._pydrake_mathematicalprogram import _VectorXDecisionVariable
+from ..wrapperutils import wrap, unwrap
 
 
 def VectorXDecisionVariable(vars_as_ndarray):
@@ -17,20 +17,20 @@ def VectorXDecisionVariable(vars_as_ndarray):
 # in order to convert those to numpy ndarray of decision variable wrappers
 def _NewContinuousVariables(self, *args, **kwargs):
     wrapper = self._NewContinuousVariables(*args, **kwargs)
-    return np.array([wrapper[i] for i in range(len(wrapper))])
+    return unwrap(Variable, wrapper)
 
 MathematicalProgram.NewContinuousVariables = _NewContinuousVariables
 
 
 def _NewBinaryVariables(self, *args, **kwargs):
     wrapper = self._NewBinaryVariables(*args, **kwargs)
-    return np.array([wrapper[i] for i in range(len(wrapper))])
+    return unwrap(Variable, wrapper)
 
 MathematicalProgram.NewBinaryVariables = _NewBinaryVariables
 
 
 def _AddQuadraticCost(self, Q, b, vars):
-    wrapper = VectorXDecisionVariable(vars)
+    wrapper = wrap(VectorXDecisionVariable, vars)
     return self._AddQuadraticCost(Q, b, wrapper)
 
 MathematicalProgram.AddQuadraticCost = _AddQuadraticCost
@@ -38,7 +38,7 @@ MathematicalProgram.AddQuadraticCost = _AddQuadraticCost
 
 def _GetSolution(self, x):
     if isinstance(x, np.ndarray):
-        return self._GetSolution(VectorXDecisionVariable(x))
+        return self._GetSolution(wrap(VectorXDecisionVariable, x))
     else:
         return self._GetSolution(x)
 
@@ -47,8 +47,7 @@ MathematicalProgram.GetSolution = _GetSolution
 
 def _variables(self):
     wrapper = self._variables()
-    return np.array([wrapper[i] for i in range(len(wrapper))])
-
+    unwrap(Variable, wrapper)
 
 Binding_LinearConstraint.variables = _variables
 Binding_QuadraticConstraint.variables = _variables
