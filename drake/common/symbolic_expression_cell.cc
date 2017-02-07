@@ -648,7 +648,6 @@ int ExpressionMul::Degree(const Variables &vars) const {
       [vars](const int& degree, const pair<Expression, Expression>& p) {
         const Expression& base{p.first};
         const Expression& expnt{p.second};
-        DRAKE_DEMAND(is_constant(expnt));
         return degree +
                base.Degree(vars) * static_cast<int>(get_constant_value(expnt));
       });
