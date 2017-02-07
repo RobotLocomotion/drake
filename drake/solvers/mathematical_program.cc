@@ -279,7 +279,7 @@ void DecomposeLinearExpression(
   } else if (is_multiplication(e)) {
     const double c = get_constant_in_multiplication(e);
     const std::map<Expression, Expression>& map_base_to_exponent =
-        get_base_to_expnt_map_in_multiplication(e);
+        get_base_to_exponent_map_in_multiplication(e);
     if (map_base_to_exponent.size() == 1) {
       const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
       if (!is_variable(p.first) || !is_one(p.second)) {
@@ -468,7 +468,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
       // i-th constraint should be lb <= c * var_i <= ub, where c is a constant.
       const double c = get_constant_in_multiplication(e_i);
       const std::map<Expression, Expression>& map_base_to_exponent =
-          get_base_to_expnt_map_in_multiplication(e_i);
+          get_base_to_exponent_map_in_multiplication(e_i);
       if (map_base_to_exponent.size() == 1) {
         const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
         if (!is_variable(p.first) || !is_one(p.second)) {

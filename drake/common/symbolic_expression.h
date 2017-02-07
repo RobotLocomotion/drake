@@ -483,8 +483,8 @@ double get_constant_in_multiplication(const Expression& e);
  * return value maps 'x' to 2, 'y' to 3, and 'z' to 'x'.
  *  \pre{@p e is a multiplication expression.}
 */
-const std::map<Expression, Expression>& get_base_to_expnt_map_in_multiplication(
-    const Expression& e);
+const std::map<Expression, Expression>&
+get_base_to_exponent_map_in_multiplication(const Expression& e);
 
 // Matrix<Expression> * Matrix<double> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
