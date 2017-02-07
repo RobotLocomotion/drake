@@ -17,44 +17,38 @@ using std::move;
 using std::shared_ptr;
 using std::unique_ptr;
 
-/// A ModalSubsystem is a object 
+/*
+ModalSubsystem represents the mode of a hybrid system.
 
-/// Let P(X) denote the power set (set of all subsets) of X.  Define a hybrid
-/// automaton as a tuple H = (Q, Q0, X, U, Y, f, g, Init, Invar, E, Guard,
-/// Reset), where:
+Let P(X) denote the power set (set of all subsets) of X and let R denote the
+space of real numbers.  Define a hybrid automaton as a tuple HA = (Q, Q₀, X, U,
+Y, f, g, Init, Invar, E, Guard, Reset), where:
 
-///  - Q = {q1, q2, …, qN} is a set of discrete-valued states (modes);
+- Q = {q₁, q₂, …, qᵣ} is a set of discrete-valued states (modes);
+  - Q₀ ⊆ Q is a set of initial modes;
+  - X = Rⁿ is a set of continuous-valued states;
+  - U = Rᵐ is a set of continuous-valued inputs;
+  - Y = Rᵖ is a set of continuous-valued outputs;
+  - f(·, ·, ·) : Q × X × U → Rⁿ is a vector field representing the system's
+dynamics;
+  - g(·, ·, ·) : Q × X × U → Rᵖ is a mapping from states and inputs to system
+outputs;
+  - Init ⊆ Q × X is a set of initial states;
+  - Invar(·) : Q → P(X) is an invariant defining the domain over which
+f(·, ·, ·) holds;
+  - E ⊆ Q × Q is a set of edges describing discrete transitions between modes;
+  - Guard(·) : E → P(X) is a guard condition defining the conditions where it is
+possible to make a discrete mode transition;
+  - Reset(·, ·, ·) : E × X × U → P(X) is a reset map taking, for each edge, the
+state and input and producing new states following the mode transition.
 
-///  - Q0 ⊆ Q is a set of initial modes;
+Note that the sets Invar(q) ⊆ Rⁿ and Init are assigned to each discrete state q
+∈ Q.  We refer to q ∈ Q × X as the mode of the HA.
 
-///  - X = R^n is a set of continuous-valued states;
-
-///  - U = R^m is a set of continuous-valued inputs;
-
-///  - Y = R^p is a set of continuous-valued outputs;
-
-///  - f(·, ·, ·) : Q × X × U → R^n is a vector field;
-
-///  - g(·, ·, ·) : Q × X × U → R^p is a mapping from states and inputs to
-/// system outputs;
-
-///  - Init ⊆ Q × X is a set of initial states;
-
-///  - Invar(·) : Q → P(X) is an invariant defining the domain over which
-/// f(·,·) holds;
-
-///  - E ⊆ Q × Q is a set of edges describing discrete transitions between
-///  modes;
-
-///  - Guard(·) : E → P(X) is a guard condition defining the conditions where it
-/// is possible to make a discrete mode transition;
-
-///  - Reset(·, ·, ·) : E × X × U → P(X) is a reset map taking, for each edge,
-/// the state and input and producing new states following the mode transition.
-
-/// The notation of the Definition suggests, for example, that the function
-/// Invar assigns a set of continuous states Invar(q) ⊆ R^n to each discrete
-/// state q ∈ Q. We refer to (q, x) ∈ Q × X as the state of the HA.
+In the context of Drake's System framework, ModalSubsystem captures, for each
+mode, the System (f, g) for each mode, the Init and Invar for System, and the
+list of inputs and outputs of the System.
+*/
 template <typename T>
 class ModalSubsystem {
  public:
@@ -64,11 +58,11 @@ class ModalSubsystem {
   typedef int PortId;
 
   // Constructor
-  explicit ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system,
-                          std::vector<symbolic::Expression> invariant,
-                          std::vector<symbolic::Expression> initial_conditions,
-                          std::vector<PortId> input_port_ids,
-                          std::vector<PortId> output_port_ids)
+  ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system,
+                 std::vector<symbolic::Expression> invariant,
+                 std::vector<symbolic::Expression> initial_conditions,
+                 std::vector<PortId> input_port_ids,
+                 std::vector<PortId> output_port_ids)
       : mode_id_(mode_id),
         system_(move(system)),
         invariant_(invariant),
@@ -78,9 +72,9 @@ class ModalSubsystem {
     CreateSymbolicStatesAndInputs();
   }
 
-  explicit ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system,
-                          std::vector<PortId> input_port_ids,
-                          std::vector<PortId> output_port_ids)
+  ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system,
+                 std::vector<PortId> input_port_ids,
+                 std::vector<PortId> output_port_ids)
       : mode_id_(mode_id),
         system_(move(system)),
         input_port_ids_(input_port_ids),
@@ -88,7 +82,7 @@ class ModalSubsystem {
     CreateSymbolicStatesAndInputs();
   }
 
-  explicit ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system)
+  ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system)
       : mode_id_(mode_id), system_(move(system)) {
     CreateSymbolicStatesAndInputs();
     PopulateDefaultPorts();
@@ -141,8 +135,7 @@ class ModalSubsystem {
     return &initial_conditions_;
   }
 
-  // TODO(jadecastro): Check for consistency of any incoming invariants or
-  // initial condition formulas with the given symbolic_state_.
+  /// Accessors for the auto-generated symbolic states.
   const std::vector<symbolic::Variable>& get_symbolic_continuous_states()
       const {
     return symbolic_variables_.at("xc")[0];
@@ -225,6 +218,8 @@ class ModalSubsystem {
   std::map<std::string, std::vector<std::vector<symbolic::Variable>>>
       symbolic_variables_;
 };
+
+// TODO(jadecastro): Include the Hybrid Automaton specialization of Context.
 
 }  // namespace systems
 }  // namespace drake
