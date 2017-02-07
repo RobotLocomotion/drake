@@ -603,7 +603,8 @@ void Painleve<T>::SetAccelerations(const systems::Context<T>& context,
 // x-axis; fN and fF are contact normal and frictional forces; [fX fY] are
 // arbitrary "external" forces (expressed in the world frame) applied at the
 // center-of-mass of the rod; tau is an arbitrary "external" torque (expressed
-// in the world frame) applied at the center-of-mass; g is the
+// in the world frame) that should contain any moments due to any forces applied
+// away from the center-of-mass plus any pure torques; g is the
 // acceleration due to gravity, and (hopefully) all other variables are
 // self-explanatory.
 //
@@ -731,8 +732,9 @@ void Painleve<T>::CalcAccelerationsOneContactSliding(
   // frictional forces, respectively; [fX fY] are arbitrary
   // "external" forces (expressed in the world frame) applied at the
   // center-of-mass of the rod; tau is an arbitrary "external" torque (expressed
-  // in the world frame) applied at the center-of-mass; sgn_cxdot is the signum
-  // function applied to the horizontal contact velocity; g is the
+  // in the world frame) that should contain any moments due to any forces
+  // applied away from the center-of-mass plus any pure torques; sgn_cxdot is
+  // the signum function applied to the horizontal contact velocity; g is the
   // acceleration due to gravity, and (hopefully) all other variables are
   // self-explanatory. The first two equations above are the formula
   // for the point of contact. The next equation requires that the

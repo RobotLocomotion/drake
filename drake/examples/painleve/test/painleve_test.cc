@@ -30,6 +30,9 @@ class PainleveDAETest : public ::testing::Test {
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
 
+    // Use a non-unit mass.
+    dut_->set_rod_mass(2.0);
+
     // Set a zero input force (this is the default).
     std::unique_ptr<BasicVector<double>> ext_input =
         std::make_unique<BasicVector<double>>(3);
@@ -665,6 +668,9 @@ class PainleveTimeSteppingTest : public ::testing::Test {
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
 
+    // Use a non-unit mass.
+    dut_->set_rod_mass(2.0);
+
     // Set a zero input force (this is the default).
     std::unique_ptr<BasicVector<double>> ext_input =
         std::make_unique<BasicVector<double>>(3);
@@ -795,10 +801,84 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
 
   // TODO(edrumwri): Introduce more extensive tests that cross-validate the
   // time-stepping based approach against the piecewise DAE-based approach for
-  // cases of sticking contact (once arbitrary external forcing is introduced)
-  // and sliding contacts at multiple points.
+  // the case of sliding contacts at multiple points.
 }
 
+// This test checks to see whether a single semi-explicit step of the piecewise
+// DAE based Painleve system is equivalent to a single step of the semi-explicit
+// time stepping based system for a sticking contact scenario.
+GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSticking) {
+  // Create two Painleve systems.
+  const double dt = 1e-1;
+  Painleve<double> ts(dt);
+  Painleve<double> pdae;
+
+  // Set the coefficient of friction to a large value for both.
+  const double mu = 100.0;
+  ts.set_mu_coulomb(mu);
+  pdae.set_mu_coulomb(mu);
+
+  // Set "one step" constraint stabilization (not generally recommended, but
+  // works for a single step) and small regularization.
+  ts.set_cfm(std::numeric_limits<double>::epsilon());
+  ts.set_erp(1.0);
+
+  // Create contexts for both.
+  std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();
+  std::unique_ptr<Context<double>> context_pdae = pdae.CreateDefaultContext();
+
+  // This configuration has no sliding velocity.
+  const double half_len = pdae.get_rod_length() / 2;
+  ContinuousState<double>& xc =
+      *context_pdae->get_mutable_continuous_state();
+  auto xd = context_ts->get_mutable_discrete_state(0)->get_mutable_value();
+  xc[0] = xd[0] = 0.0;
+  xc[1] = xd[1] = half_len;
+  xc[2] = xd[2] = M_PI_2;
+  xc[3] = xd[3] = 0.0;
+  xc[4] = xd[4] = 0.0;
+  xc[5] = xd[5] = 0.0;
+  context_pdae->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kStickingSingleContact;
+
+  // Set constant input forces for both.
+  const double x = 1.0;
+  Vector3<double> fext(x, 0, x * ts.get_rod_length()/2);
+  std::unique_ptr<BasicVector<double>> ext_input =
+    std::make_unique<BasicVector<double>>(fext);
+  context_ts->FixInputPort(0, std::move(ext_input));
+  ext_input = std::make_unique<BasicVector<double>>(fext);
+  context_pdae->FixInputPort(0, std::move(ext_input));
+
+  // Init the simulator for the time stepping system.
+  Simulator<double> simulator_ts(ts, std::move(context_ts));
+
+  // Integrate forward by a single *large* dt. Note that the update rate
+  // is set by the time stepping system, so stepping to dt should yield
+  // exactly one step.
+  simulator_ts.StepTo(dt);
+  EXPECT_EQ(simulator_ts.get_num_discrete_updates(), 1);
+
+  // Manually integrate the continuous state forward for the piecewise DAE
+  // based approach.
+  std::unique_ptr<ContinuousState<double>> f = pdae.AllocateTimeDerivatives();
+  pdae.CalcTimeDerivatives(*context_pdae, f.get());
+  xc[3] += + dt * ((*f)[3]);
+  xc[4] += + dt * ((*f)[4]);
+  xc[5] += + dt * ((*f)[5]);
+  xc[0] += + dt * xc[3];
+  xc[1] += + dt * xc[4];
+  xc[2] += + dt * xc[5];
+
+  // Check that the solution is nearly identical.
+  const double tol = 10 * std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(xc[0], xd[0], tol);
+  EXPECT_NEAR(xc[1], xd[1], tol);
+  EXPECT_NEAR(xc[2], xd[2], tol);
+  EXPECT_NEAR(xc[3], xd[3], tol);
+  EXPECT_NEAR(xc[4], xd[4], tol);
+  EXPECT_NEAR(xc[5], xd[5], tol);
+}
 }  // namespace
 }  // namespace painleve
 }  // namespace drake
