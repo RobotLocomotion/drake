@@ -22,9 +22,7 @@
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 #include "drake/util/drakeAppUtil.h"
 
-
 using drake::solvers::SolutionResult;
-using drake::MatrixCompareType;
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
