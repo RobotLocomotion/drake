@@ -53,18 +53,6 @@ TEST_F(CameraInfoTest, ConstructionWithFovTest) {
   Verify(dut);
 }
 
-TEST_F(CameraInfoTest, CopyConstructorTest) {
-  CameraInfo camera_info(kWidth, kHeight, kFx, kFy, kCx, kCy);
-  CameraInfo dut(camera_info);
-  Verify(dut);
-}
-
-TEST_F(CameraInfoTest, MoveConstructorTest) {
-  CameraInfo camera_info(kWidth, kHeight, kFx, kFy, kCx, kCy);
-  CameraInfo dut(std::move(camera_info));
-  Verify(dut);
-}
-
 }  // namespace
 }  // namespace sensors
 }  // namespace systems
