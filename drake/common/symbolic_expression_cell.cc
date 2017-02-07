@@ -400,7 +400,6 @@ Polynomial<double> ExpressionAdd::ToPolynomial() const {
 }
 
 int ExpressionAdd::Degree(const Variables& vars) const {
-  DRAKE_DEMAND(is_polynomial());
   int degree = 0;
   for (const auto& p : expr_to_coeff_map_) {
     degree = std::max(degree, p.first.Degree(vars));
@@ -644,7 +643,6 @@ Polynomial<double> ExpressionMul::ToPolynomial() const {
 }
 
 int ExpressionMul::Degree(const Variables &vars) const {
-  DRAKE_DEMAND(is_polynomial());
   return accumulate(
       base_to_expnt_map_.begin(), base_to_expnt_map_.end(), 0,
       [vars](const int& degree, const pair<Expression, Expression>& p) {
@@ -815,7 +813,6 @@ Polynomial<double> ExpressionDiv::ToPolynomial() const {
 }
 
 int ExpressionDiv::Degree(const Variables& vars) const {
-  DRAKE_DEMAND(is_polynomial());
   return get_first_argument().Degree(vars) - get_second_argument().Degree(vars);
 }
 
@@ -970,7 +967,6 @@ Polynomial<double> ExpressionPow::ToPolynomial() const {
 }
 
 int ExpressionPow::Degree(const Variables &vars) const {
-  DRAKE_DEMAND(is_polynomial());
   const int expnt{static_cast<int>(get_constant_value(get_second_argument()))};
   return get_first_argument().Degree(vars) * expnt;
 }
