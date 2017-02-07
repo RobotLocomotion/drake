@@ -344,7 +344,7 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
   // The moment caused by applying the force should result in a
   // counter-clockwise acceleration.
-  EXPECT_NEAR((*derivatives_)[5], 
+  EXPECT_NEAR((*derivatives_)[5],
               fext(2)/dut_->get_rod_moment_of_inertia(), tol);
 }
 
