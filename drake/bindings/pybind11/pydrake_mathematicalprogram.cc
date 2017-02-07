@@ -127,6 +127,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("__add__", [](const Variable& self, double other) {
       return Expression{self + other};
     })
+    .def("__add__", [](const Variable& self, const Expression& other) {
+      return Expression{self + other};
+    })
     .def("__radd__", [](const Variable& self, double other) {
       return Expression{other + self};
     })
@@ -135,6 +138,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
       return Expression{self - other};
     })
     .def("__sub__", [](const Variable& self, double other) {
+      return Expression{self - other};
+    })
+    .def("__sub__", [](const Variable& self, const Expression& other) {
       return Expression{self - other};
     })
     .def("__rsub__", [](const Variable& self, double other) {
@@ -147,6 +153,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("__mul__", [](const Variable& self, double other) {
       return Expression{self * other};
     })
+    .def("__mul__", [](const Variable& self, const Expression& other) {
+      return Expression{self * other};
+    })
     .def("__rmul__", [](const Variable& self, double other) {
       return Expression{other * self};
     })
@@ -156,6 +165,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     })
     .def("__truediv__", [](const Variable& self,
                            double other) {
+      return Expression{self / other};
+    })
+    .def("__truediv__", [](const Variable& self, const Expression& other) {
       return Expression{self / other};
     })
     .def("__rtruediv__", [](const Variable& self,
@@ -170,6 +182,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
                       double other) {
       return Formula{Expression(self) < Expression(other)};
     })
+    .def("__lt__", [](const Variable& self, const Expression& other) {
+      return Formula{Expression(self) < other};
+    })
     .def("__le__", [](const Variable& self,
                       const Variable& other) {
       return Formula{Expression(self) <= Expression(other)};
@@ -177,6 +192,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("__le__", [](const Variable& self,
                       double other) {
       return Formula{Expression(self) <= Expression(other)};
+    })
+    .def("__le__", [](const Variable& self, const Expression& other) {
+      return Formula{Expression(self) <= other};
     })
     .def("__gt__", [](const Variable& self,
                       const Variable& other) {
@@ -186,6 +204,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
                       double other) {
       return Formula{Expression(self) > Expression(other)};
     })
+    .def("__gt__", [](const Variable& self, const Expression& other) {
+      return Formula{Expression(self) > other};
+    })
     .def("__ge__", [](const Variable& self,
                       const Variable& other) {
       return Formula{Expression(self) >= Expression(other)};
@@ -194,6 +215,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
                       double other) {
       return Formula{Expression(self) >= Expression(other)};
     })
+    .def("__ge__", [](const Variable& self, const Expression& other) {
+      return Formula{Expression(self) >= other};
+    })
     .def("__eq__", [](const Variable& self,
                       const Variable& other) {
       return Formula{Expression(self) == Expression(other)};
@@ -201,6 +225,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("__eq__", [](const Variable& self,
                       double other) {
       return Formula{Expression(self) == Expression(other)};
+    })
+    .def("__eq__", [](const Variable& self, const Expression& other) {
+      return Formula{Expression(self) == other};
     });
 
 
@@ -210,22 +237,18 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("__repr__", &Expression::to_string)
     .def(py::self   + py::self)
     .def(py::self   + Variable())
-    .def(Variable() + py::self)
     .def(py::self   + double())
     .def(double()   + py::self)
     .def(py::self   - py::self)
     .def(py::self   - Variable())
-    .def(Variable() - py::self)
     .def(py::self   - double())
     .def(double()   - py::self)
     .def(py::self   * py::self)
     .def(py::self   * Variable())
-    .def(Variable() * py::self)
     .def(py::self   * double())
     .def(double()   * py::self)
     .def(py::self   / py::self)
     .def(py::self   / Variable())
-    .def(Variable() / py::self)
     .def(py::self   / double())
     .def(double()   / py::self)
     .def("__lt__", [](const Expression& self,
