@@ -85,6 +85,7 @@ struct UpdateActions {
   std::vector<DiscreteEvent<T>> events;
 };
 
+
 /// A superclass template for systems that receive input, maintain state, and
 /// produce output of a given mathematical type T.
 ///
@@ -152,20 +153,32 @@ class System {
   // override.
   virtual void SetDefaults(Context<T>* context) const = 0;
 
-  /// Evaluates to `true` if any of the inputs to the system is directly
-  /// fed through to any of its outputs and `false` otherwise.
-  ///
-  /// By default we assume that there is direct feedthrough of values from
-  /// every input port to every output port. This is a conservative assumption
-  /// that ensures we detect and can prevent the formation of algebraic loops
-  /// (implicit computations) in system diagrams. Any System for which none of
-  /// the input ports ever feeds through to any of the output ports should
-  /// override this method to return false.
-  // TODO(4105): Provide a more descriptive mechanism to specify pairwise
-  // (input_port, output_port) feedthrough.
+  // This method is DEPRECATED. Legacy overrides will be respected, but should
+  // migrate to override LeafSystem::DoHasDirectFeedthrough.
   virtual bool has_any_direct_feedthrough() const {
     return (get_num_input_ports() > 0) && (get_num_output_ports() > 0);
   }
+
+  /// Returns `true` if any of the inputs to the system might be directly
+  /// fed through to any of its outputs and `false` otherwise.
+  ///
+  /// This method is virtual for framework purposes only. User code should not
+  /// override it.
+  virtual bool HasAnyDirectFeedthrough() const = 0;
+
+  /// Returns true if there might be direct-feedthrough from any input port to
+  /// the given @p output_port, and false otherwise.
+  ///
+  /// This method is virtual for framework purposes only. User code should not
+  /// override it.
+  virtual bool HasDirectFeedthrough(int output_port) const = 0;
+
+  /// Returns true if there might be direct-feedthrough from the given
+  /// @p input_port to the given @p output_port, and false otherwise.
+  ///
+  /// This method is virtual for framework purposes only. User code should not
+  /// override it.
+  virtual bool HasDirectFeedthrough(int input_port, int output_port) const = 0;
 
   //@}
 
@@ -791,7 +804,8 @@ class System {
   //@{
 
   /// Creates a deep copy of this System, transmogrified to use the symbolic
-  /// scalar type.
+  /// scalar type. Returns `nullptr` if DoToSymbolic has not been implemented.
+  ///
   /// Concrete Systems may shadow this with a more specific return type.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolic() const {
     return std::unique_ptr<System<symbolic::Expression>>(DoToSymbolic());
@@ -799,7 +813,8 @@ class System {
 
   /// Creates a deep copy of `from`, transmogrified to use the symbolic
   /// scalar type. Returns `nullptr` if the template parameter `S` is not the
-  /// type of the concrete system, or a superclass thereof.
+  /// type of the concrete system, or a superclass thereof. Returns `nullptr`
+  /// if DoToSymbolic has not been implemented.
   ///
   /// Usage: @code
   ///   MySystem<double> plant;
@@ -1114,12 +1129,14 @@ class System {
   /// pointer. Overrides should return a more specific covariant type.
   /// Templated overrides may assume that they are subclasses of System<double>.
   ///
+  /// Returns `nullptr` by default.  Direct-feedthrough detection relies on
+  /// this behavior.
+  ///
   /// No default implementation is provided in LeafSystem, since the member data
   /// of a particular concrete leaf system is not knowable to the framework.
   /// A default implementation is provided in Diagram, which Diagram subclasses
   /// with member data should override.
   virtual System<symbolic::Expression>* DoToSymbolic() const {
-    DRAKE_ABORT_MSG("Override DoToSymbolic before using ToSymbolic.");
     return nullptr;
   }
   //@}
@@ -1202,6 +1219,7 @@ class System {
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
   //@{
+
   /// Returns a mutable Eigen expression for a vector valued output port with
   /// index @p port_index in this system. All InputPorts that directly depend
   /// on this OutputPort will be notified that upstream data has changed, and

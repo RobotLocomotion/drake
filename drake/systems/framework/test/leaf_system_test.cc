@@ -406,6 +406,138 @@ GTEST_TEST(AutodiffLeafSystemTest, NextUpdateTimeAutodiff) {
   EXPECT_EQ(25.0, actions.time);
 }
 
+// A LeafSystem that uses the default, conservative direct-feedthrough
+// implementation, informed by neither symbolic sparsity analysis nor manual
+// sparsity declarations.
+class DefaultFeedthroughSystem : public LeafSystem<double> {
+ public:
+  DefaultFeedthroughSystem() {}
+
+  ~DefaultFeedthroughSystem() override {}
+
+  void AddAbstractInputPort() {
+    this->DeclareAbstractInputPort();
+  }
+
+  void AddAbstractOutputPort() {
+    this->DeclareAbstractOutputPort();
+  }
+
+ protected:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+};
+
+
+GTEST_TEST(FeedthroughTest, DefaultWithNoInputsOrOutputs) {
+  DefaultFeedthroughSystem system;
+  EXPECT_FALSE(system.HasAnyDirectFeedthrough());
+}
+
+GTEST_TEST(FeedthroughTest, DefaultWithBothInputsAndOutputs) {
+  DefaultFeedthroughSystem system;
+  system.AddAbstractInputPort();
+  system.AddAbstractOutputPort();
+  EXPECT_TRUE(system.HasAnyDirectFeedthrough());
+  EXPECT_TRUE(system.HasDirectFeedthrough(0));
+  EXPECT_TRUE(system.HasDirectFeedthrough(0, 0));
+}
+
+GTEST_TEST(FeedthroughTest, DefaultWithInputsOnly) {
+  DefaultFeedthroughSystem input_only;
+  input_only.AddAbstractInputPort();
+  EXPECT_FALSE(input_only.HasAnyDirectFeedthrough());
+}
+
+GTEST_TEST(FeedthroughTest, DefaultWithOutputsOnly) {
+  DefaultFeedthroughSystem output_only;
+  output_only.AddAbstractOutputPort();
+  EXPECT_FALSE(output_only.HasAnyDirectFeedthrough());
+  EXPECT_FALSE(output_only.HasDirectFeedthrough(0));
+}
+
+// A MIMO system with manually-configured direct feedthrough properties: input
+// 0 affects only output 1, and input 1 affects only output 0.
+class ManualSparsitySystem : public DefaultFeedthroughSystem {
+ public:
+  ManualSparsitySystem() {
+    this->AddAbstractInputPort();
+    this->AddAbstractInputPort();
+    this->AddAbstractOutputPort();
+    this->AddAbstractOutputPort();
+  }
+
+ protected:
+  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
+                              int input_port,
+                              int output_port) const override {
+    if (input_port == 0 && output_port == 1) {
+      return true;
+    }
+    if (input_port == 1 && output_port == 0) {
+      return true;
+    }
+    return false;
+  }
+};
+
+GTEST_TEST(FeedthroughTest, ManualSparsity) {
+  ManualSparsitySystem system;
+  // Both the output ports have direct feedthrough from some input.
+  EXPECT_TRUE(system.HasAnyDirectFeedthrough());
+  EXPECT_TRUE(system.HasDirectFeedthrough(0));
+  EXPECT_TRUE(system.HasDirectFeedthrough(1));
+  // Check the entire matrix.
+  EXPECT_FALSE(system.HasDirectFeedthrough(0, 0));
+  EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
+  EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
+  EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
+}
+
+// SymbolicSparsitySystem has the same sparsity matrix as ManualSparsitySystem,
+// but the matrix can be inferred from the symbolic form.
+template <typename T>
+class SymbolicSparsitySystem : public LeafSystem<T> {
+ public:
+  SymbolicSparsitySystem() {
+    this->DeclareInputPort(kVectorValued, kSize);
+    this->DeclareInputPort(kVectorValued, kSize);
+    this->DeclareOutputPort(kVectorValued, kSize);
+    this->DeclareOutputPort(kVectorValued, kSize);
+  }
+
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {
+    const auto& u0 = *(this->EvalVectorInput(context, 0));
+    const auto& u1 = *(this->EvalVectorInput(context, 1));
+    auto& y0 = *(output->GetMutableVectorData(0));
+    auto& y1 = *(output->GetMutableVectorData(1));
+
+    y0.set_value(u1.get_value());
+    y1.set_value(u0.get_value());
+  }
+
+ protected:
+  SymbolicSparsitySystem<symbolic::Expression>* DoToSymbolic() const override {
+    return new SymbolicSparsitySystem<symbolic::Expression>();
+  }
+
+  const int kSize = 1;
+};
+
+GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
+  SymbolicSparsitySystem<double> system;
+  // Both the output ports have direct feedthrough from some input.
+  EXPECT_TRUE(system.HasAnyDirectFeedthrough());
+  EXPECT_TRUE(system.HasDirectFeedthrough(0));
+  EXPECT_TRUE(system.HasDirectFeedthrough(1));
+  // Check the entire matrix.
+  EXPECT_FALSE(system.HasDirectFeedthrough(0, 0));
+  EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
+  EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
+  EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
