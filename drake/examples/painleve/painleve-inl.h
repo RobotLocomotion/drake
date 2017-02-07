@@ -823,6 +823,7 @@ void Painleve<T>::CalcAccelerationsOneContactNoSliding(
   const int port_index = 0;
   const auto input = this->EvalEigenVectorInput(context, port_index);
   const double fX = input(0);
+  const double fY = input(1);
   const double tau = input(2);
 
   // Recompute fF if it does not lie within the friction cone.
@@ -844,8 +845,8 @@ void Painleve<T>::CalcAccelerationsOneContactNoSliding(
           (2 * mass *
               (-2 * g * J + r * J * k * stheta * thetadot * thetadot)) /
               (4 * J + r * r * k * k * mass * ctheta * ctheta +
-                  r * r * k * k * mass * mu * ctheta * d * stheta);
-      const T F = -d * mu * N;
+                  r * r * k * k * mass * mu * ctheta * d * stheta) - fY;
+      const T F = -d * mu * (N + fY);
       return Vector2<T>(N, F);
     };
     Vector2<T> s1 = calc_force(+1);

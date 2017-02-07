@@ -312,7 +312,7 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
       std::make_unique<BasicVector<double>>(3);
   const double f = 1.0;
   ext_input->SetAtIndex(0, f);
-  ext_input->SetAtIndex(1, 0.0);
+  ext_input->SetAtIndex(1, -1.0);
   ext_input->SetAtIndex(2, f * dut_->get_rod_length()/2);
   const Vector3<double> fext = ext_input->CopyToVector();
   context_->FixInputPort(0, std::move(ext_input));
@@ -831,7 +831,7 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSticking) {
 
   // Set constant input forces for both.
   const double x = 1.0;
-  Vector3<double> fext(x, 0, x * ts.get_rod_length()/2);
+  Vector3<double> fext(x, -1.0, x * ts.get_rod_length()/2);
   std::unique_ptr<BasicVector<double>> ext_input =
     std::make_unique<BasicVector<double>>(fext);
   context_ts->FixInputPort(0, std::move(ext_input));
