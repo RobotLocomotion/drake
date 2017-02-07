@@ -11,7 +11,7 @@ namespace drake {
 namespace automotive {
 
 std::unique_ptr<systems::Diagram<double>>
-CreatCarSimLcmDiagram(
+CreateCarSimLcmDiagram(
     const DrivingCommandTranslator& driving_command_translator,
     std::unique_ptr<RigidBodyTree<double>> tree,
     lcm::DrakeLcmInterface* lcm);

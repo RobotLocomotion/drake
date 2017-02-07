@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
   DrivingCommandTranslator driving_command_translator;
   std::unique_ptr<systems::Diagram<double>> diagram =
-      CreatCarSimLcmDiagram(driving_command_translator, move(rigid_body_tree),
+      CreateCarSimLcmDiagram(driving_command_translator, move(rigid_body_tree),
                             &lcm);
   lcm.StartReceiveThread();
   Simulator<double> simulator(*diagram);
