@@ -2,15 +2,11 @@
 
 #include <map>
 #include <memory>
-#include <numeric>
 #include <stdexcept>
-#include <utility>
 #include <vector>
 
 #include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/hybrid_automaton_continuous_state.h"
-#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
@@ -21,7 +17,44 @@ using std::move;
 using std::shared_ptr;
 using std::unique_ptr;
 
-// TODO(jadecastro): Some comments are in order.
+/// A ModalSubsystem is a object 
+
+/// Let P(X) denote the power set (set of all subsets) of X.  Define a hybrid
+/// automaton as a tuple H = (Q, Q0, X, U, Y, f, g, Init, Invar, E, Guard,
+/// Reset), where:
+
+///  - Q = {q1, q2, …, qN} is a set of discrete-valued states (modes);
+
+///  - Q0 ⊆ Q is a set of initial modes;
+
+///  - X = R^n is a set of continuous-valued states;
+
+///  - U = R^m is a set of continuous-valued inputs;
+
+///  - Y = R^p is a set of continuous-valued outputs;
+
+///  - f(·, ·, ·) : Q × X × U → R^n is a vector field;
+
+///  - g(·, ·, ·) : Q × X × U → R^p is a mapping from states and inputs to
+/// system outputs;
+
+///  - Init ⊆ Q × X is a set of initial states;
+
+///  - Invar(·) : Q → P(X) is an invariant defining the domain over which
+/// f(·,·) holds;
+
+///  - E ⊆ Q × Q is a set of edges describing discrete transitions between
+///  modes;
+
+///  - Guard(·) : E → P(X) is a guard condition defining the conditions where it
+/// is possible to make a discrete mode transition;
+
+///  - Reset(·, ·, ·) : E × X × U → P(X) is a reset map taking, for each edge,
+/// the state and input and producing new states following the mode transition.
+
+/// The notation of the Definition suggests, for example, that the function
+/// Invar assigns a set of continuous states Invar(q) ⊆ R^n to each discrete
+/// state q ∈ Q. We refer to (q, x) ∈ Q × X as the state of the HA.
 template <typename T>
 class ModalSubsystem {
  public:
@@ -30,6 +63,7 @@ class ModalSubsystem {
   typedef int ModeId;
   typedef int PortId;
 
+  // Constructor
   explicit ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system,
                           std::vector<symbolic::Expression> invariant,
                           std::vector<symbolic::Expression> initial_conditions,
