@@ -76,7 +76,7 @@ void AddSwingUpTrajectoryParams(
     const Eigen::Vector4d& x0, const Eigen::Vector4d& xG,
     systems::DircolTrajectoryOptimization* dircol_traj) {
 
-  // 7-9 Amps, accroding to Michael Posa
+  // Current limit for MIT's acrobot is 7-9 Amps, accroding to Michael Posa.
   const int kTorqueLimit = 8;
   const drake::Vector1d umin(-kTorqueLimit);
   const drake::Vector1d umax(kTorqueLimit);
