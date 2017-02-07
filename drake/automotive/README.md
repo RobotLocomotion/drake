@@ -70,10 +70,9 @@ wheels also have velocity-controlled actuators that enable the vehicle to move
 forward and backward. PID controllers are used to control both the steering
 angle and front wheel rotational velocities. A simple sliding friction model is
 used for the contacts between the wheels and the ground. The input reference
-values for the PID controllers are settable via LCM via `lcmt_driving_command_t`
-messages published on channel "DRIVING_COMMAND". The current state of the
-`RigidBodyPlant` that contains the vehicle model can be visualized via Drake
-Visualizer.
+values for the PID controllers are settable via LCM using
+`lcmt_driving_command_t` messages published on channel "DRIVING_COMMAND". The
+current state of the simulation can be visualized in Drake Visualizer.
 
 To run `car_sim_lcm`, open a new terminal and execute the following commands:
 
