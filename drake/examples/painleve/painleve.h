@@ -208,7 +208,8 @@ class Painleve : public systems::LeafSystem<T> {
       systems::ContinuousState<T>* derivatives) const;
   void SetAccelerations(const systems::Context<T>& context,
                         systems::VectorBase<T>* const f,
-                        T fN, T fF, T xc, T yc) const;
+                        const T& fN, const T& fF,
+                        const T& xc, const T& yc) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
   static std::pair<T, T> CalcRodEndpoint(const T& x, const T& y, const int k,

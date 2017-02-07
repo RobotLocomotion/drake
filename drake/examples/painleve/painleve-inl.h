@@ -160,9 +160,9 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
 
   // Update the generalized velocity vector with discretized external forces
   // (expressed in the world frame).
-  const Vector3<T> fgrav(0, mass_*get_gravitational_acceleration(), 0);
+  const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
   const Vector3<T> fapplied = input.segment(0, 3);
-  v += dt_ * iM*(fgrav + fapplied);
+  v += dt_ * iM * (fgrav + fapplied);
 
   // Set up the contact normal and tangent (friction) direction Jacobian
   // matrices. These take the form:
@@ -534,7 +534,8 @@ Vector2<T> Painleve<T>::CalcStickingImpactImpulse(
 template <class T>
 void Painleve<T>::SetAccelerations(const systems::Context<T>& context,
                                    systems::VectorBase<T>* const f,
-                                   T fN, T fF, T cx, T cy) const {
+                                   const T& fN, const T& fF,
+                                   const T& cx, const T& cy) const {
   using std::abs;
 
   // Get the inputs.
@@ -576,7 +577,7 @@ void Painleve<T>::SetAccelerations(const systems::Context<T>& context,
 
   // If the force is within the friction cone, verify that the horizontal
   // acceleration at the point of contact is zero (i.e., cxddot = 0).
-  if (fN*mu > abs(fF)) {
+  if (fN * mu > abs(fF)) {
     const T cxddot =
         xddot +
             r * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
@@ -734,7 +735,7 @@ void Painleve<T>::CalcAccelerationsOneContactSliding(
   // center-of-mass of the rod; tau is an arbitrary "external" torque (expressed
   // in the world frame) that should contain any moments due to any forces
   // applied away from the center-of-mass plus any pure torques; sgn_cxdot is
-  // the signum function applied to the horizontal contact velocity; g is the
+  // the sign function applied to the horizontal contact velocity; g is the
   // acceleration due to gravity, and (hopefully) all other variables are
   // self-explanatory. The first two equations above are the formula
   // for the point of contact. The next equation requires that the
@@ -822,7 +823,6 @@ void Painleve<T>::CalcAccelerationsOneContactNoSliding(
   const int port_index = 0;
   const auto input = this->EvalEigenVectorInput(context, port_index);
   const double fX = input(0);
-//  const double fY = input(1);
   const double tau = input(2);
 
   // Recompute fF if it does not lie within the friction cone.
@@ -956,7 +956,7 @@ void Painleve<T>::CalcAccelerationsBallistic(
   const auto input = this->EvalEigenVectorInput(context, port_index);
 
   // Second three derivative components are acceleration due to gravity and
-  // other "external" forces.
+  // external forces.
   f->SetAtIndex(3, input(0)/mass_);
   f->SetAtIndex(4, input(1)/mass_ + get_gravitational_acceleration());
   f->SetAtIndex(5, input(2)/J_);

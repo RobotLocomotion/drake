@@ -289,19 +289,6 @@ TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
   EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
 }
 
-// Returns the sign of the floating point argument with a two-epsilon band
-// around zero.
-int intsign(double x) {
-  if (x > std::numeric_limits<double>::epsilon()) {
-    return 1;
-  } else {
-    if (x < -std::numeric_limits<double>::epsilon())
-      return -1;
-    else
-      return 0;
-  }
-}
-
 // Verify that derivatives match what we expect from a sticking contact
 // configuration.
 TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
@@ -352,12 +339,13 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   EXPECT_NEAR((*derivatives_)[1], xc[4], tol);
   EXPECT_NEAR((*derivatives_)[2], xc[5], tol);
   // Rod should now accelerate in the direction of any external forces.
-  EXPECT_EQ(intsign((*derivatives_)[3]), intsign(fext(0)));
+  EXPECT_NEAR((*derivatives_)[3], fext(0)/dut_->get_rod_mass(), tol);
   // There should still be no vertical acceleration.
   EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
   // The moment caused by applying the force should result in a
   // counter-clockwise acceleration.
-  EXPECT_EQ(intsign((*derivatives_)[5]), intsign(fext(2)));
+  EXPECT_NEAR((*derivatives_)[5], 
+              fext(2)/dut_->get_rod_moment_of_inertia(), tol);
 }
 
 // Verify the inconsistent (Painlevé Paradox) configuration occurs.
