@@ -39,23 +39,24 @@ class MonomialTest : public ::testing::Test {
 
 TEST_F(MonomialTest, Monomial) {
   // clang-format off
-  EXPECT_PRED2(ExprEqual,
-               Monomial(unordered_map<Variable, int, hash_value<Variable>>{}),
-               Expression{1.0});
+  EXPECT_PRED2(
+      ExprEqual,
+      GetMonomial(unordered_map<Variable, int, hash_value<Variable>>{}),
+      Expression{1.0});
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}}),
                x_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_y_, 1}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_y_, 1}}),
                y_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}, {var_y_, 1}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}, {var_y_, 1}}),
                x_ * y_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 2}, {var_y_, 3}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 2}, {var_y_, 3}}),
                x_ * x_ * y_ * y_ * y_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}),
                pow(x_, 1) * pow(y_, 2) * pow(z_, 3));
   // clang-format on
 }

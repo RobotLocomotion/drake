@@ -48,6 +48,9 @@ class Monomial {
    * this method to build an expression. */
   Expression ToExpression(
       const std::unordered_map<Variable::Id, Variable>& id_to_var_map) const;
+  /** Checks if this monomial and @p m represent the same monomial. This method
+   * checks if the two monomials have the same map from a variable ID to its
+   * exponent. */
   bool operator==(const Monomial& m) const;
 
  private:
@@ -205,7 +208,7 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
  *
  * \pre{All exponents in @p map_var_to_exponent are positive integers.}
  */
-Expression Monomial(
+Expression GetMonomial(
     const std::unordered_map<Variable, int, hash_value<Variable>>&
         map_var_to_exponent);
 
