@@ -30,9 +30,26 @@ drake_cc_library(
     ],
     linkstatic = 1,
     deps = [
+        "//drake/lcmtypes:viewer",
         "//drake/multibody:rigid_body_tree",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_results_to_lcm",
+    srcs = [
+        "contact_results_to_lcm.cc",
+    ],
+    hdrs = [
+        "contact_results_to_lcm.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":rigid_body_plant",
+        "//drake/lcmtypes:contact_info_for_viz",
+        "//drake/lcmtypes:contact_results_for_viz",
     ],
 )
 
