@@ -1,4 +1,5 @@
 #include <memory>
+#include <drake/systems/analysis/semi_explicit_euler_integrator.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
@@ -13,7 +14,7 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/systems/analysis/explicit_euler_integrator.h"
+#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
@@ -56,9 +57,10 @@ int main(int argc, const char** argv) {
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
   // Contact parameters set arbitrarily.
+
 #ifdef USE_STRIBECK
     //                         k       us   ud    v     d
-  plant.set_contact_parameters(100000, 1.5, 1.0, 0.01, 20.0);
+  plant.set_contact_parameters(100000, 0.9, 0.5, 0.01, 5.0);
 #else
   plant.set_contact_parameters(10000., 100., 10.);
 #endif
@@ -191,8 +193,9 @@ int main(int argc, const char** argv) {
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
   auto context = simulator->get_mutable_context();
   // Integrator set arbitrarily.
-  simulator->reset_integrator<ExplicitEulerIntegrator<double>>(*diagram, 1e-3,
-                                                               context);
+  simulator->reset_integrator<SemiExplicitEulerIntegrator<double>>(*diagram,
+                                                                   3e-4,
+                                                                   context);
 
   // Set initial state.
   auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);
