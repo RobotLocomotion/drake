@@ -42,24 +42,20 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
       return tree.getRandomConfiguration(generator);
     })
     .def("getZeroConfiguration", &RigidBodyTree<double>::getZeroConfiguration)
-    .def("_doKinematics", [](const RigidBodyTree<double>& tree,
+    .def("doKinematics", [](const RigidBodyTree<double>& tree,
                             const Eigen::VectorXd& q) {
       return tree.doKinematics(q);
     })
-    .def("_doKinematics", [](const RigidBodyTree<double>& tree,
-                             const VectorXAutoDiffXd& q) {
-      return tree.doKinematics(q);
-    })
-    .def("_doKinematics", [](const RigidBodyTree<double>& tree,
+    .def("doKinematics", [](const RigidBodyTree<double>& tree,
                             const Eigen::VectorXd& q,
                             const Eigen::VectorXd& v) {
       return tree.doKinematics(q, v);
     })
-    .def("_doKinematics", [](const RigidBodyTree<double>& tree,
+    .def("doKinematics", [](const RigidBodyTree<double>& tree,
                             const VectorXAutoDiffXd& q) {
       return tree.doKinematics(q);
     })
-    .def("_doKinematics", [](const RigidBodyTree<double>& tree,
+    .def("doKinematics", [](const RigidBodyTree<double>& tree,
                             const VectorXAutoDiffXd& q,
                             const VectorXAutoDiffXd& v) {
       return tree.doKinematics(q, v);
@@ -82,7 +78,7 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
     .def("get_body", &RigidBodyTree<double>::get_body,
          py::return_value_policy::reference)
     .def("get_position_name", &RigidBodyTree<double>::get_position_name)
-    .def("_transformPoints", [](const RigidBodyTree<double>& tree,
+    .def("transformPoints", [](const RigidBodyTree<double>& tree,
                                const KinematicsCache<double>& cache,
                                const Eigen::Matrix<double, 3,
                                                    Eigen::Dynamic>& points,
@@ -91,7 +87,7 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
       return tree.transformPoints(cache, points,
                                   from_body_or_frame_ind, to_body_or_frame_ind);
     })
-    .def("_transformPoints", [](const RigidBodyTree<double>& tree,
+    .def("transformPoints", [](const RigidBodyTree<double>& tree,
                                const KinematicsCache<AutoDiffXd>& cache,
                                const Eigen::Matrix<double, 3,
                                                    Eigen::Dynamic>& points,
@@ -100,14 +96,14 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
       return tree.transformPoints(cache, points,
                                   from_body_or_frame_ind, to_body_or_frame_ind);
     })
-    .def("_relativeTransform", [](const RigidBodyTree<double>& tree,
+    .def("relativeTransform", [](const RigidBodyTree<double>& tree,
                                   const KinematicsCache<double>& cache,
                                   int base_or_frame_ind,
                                   int body_or_frame_ind) {
       return tree.relativeTransform(cache, base_or_frame_ind,
         body_or_frame_ind).matrix();
     })
-    .def("_relativeTransform", [](const RigidBodyTree<double>& tree,
+    .def("relativeTransform", [](const RigidBodyTree<double>& tree,
                                   const KinematicsCache<AutoDiffXd>& cache,
                                   int base_or_frame_ind,
                                   int body_or_frame_ind) {

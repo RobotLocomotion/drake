@@ -43,7 +43,7 @@ def jacobian(function, x):
         der[i] = 1
         x_ad.flat[i] = AutoDiffXd(x.flat[i], der)
     y_ad = function(x_ad)
-    return np.vstack([y.derivatives() for y in y_ad]).reshape(y_ad.shape + (-1,))
+    return np.vstack([y.derivatives() for y in y_ad.flat]).reshape(y_ad.shape + (-1,))
 
 
 # Method overloads:

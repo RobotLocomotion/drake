@@ -35,9 +35,9 @@ class TestRBMForwardKin(unittest.TestCase):
 
         g = fd.jacobian(do_transform, q)
         self.assertTrue(np.allclose(g,
-                                    np.array([[1, 0, 0, 0, 1, -1, 1],
-                                              [0, 1, 0, -1, 0, 1, 0],
-                                              [0, 0, 1, 1, -1, 0, -1]])))
+                                    np.array([[[1, 0, 0, 0, 1, -1, 1]],
+                                              [[0, 1, 0, -1, 0, 1, 0]],
+                                              [[0, 0, 1, 1, -1, 0, -1]]])))
 
     def test_relative_transform(self):
         r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
