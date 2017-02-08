@@ -15,6 +15,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -113,18 +114,18 @@ T CalculateQuaternionDtConstraintFromQuaternionDt(
 template <typename T>
 bool TestQuaternionDtConstraintFromQuaternionDt(
     const Eigen::Quaternion<T>& quat, const Vector4<T>& quatDt) {
+  using std::abs;
 
   // For an accurate test, the quaternion should be reasonably accurate.
   const double double_epsilon = std::numeric_limits<double>::epsilon();
-  const double tolerance = 800 * double_epsilon;
-  const double quat_epsilon = std::abs(1.0 - quat.norm());
+  const double tolerance = 800E15 * double_epsilon;
+  const double quat_epsilon = abs(1.0 - quat.norm());
   const bool is_good_quat_norm = (quat_epsilon <= tolerance);
+  if ( is_good_quat_norm == false ) return false;
 
   const double quatDt_test =
     CalculateQuaternionDtConstraintFromQuaternionDt(quat, quatDt);
-  const bool is_good_quatDt = (quatDt_test <= tolerance);
-
-  return is_good_quat_norm && is_good_quatDt;
+  return (quatDt_test <= tolerance);
 }
 
 /** Calculate angular velocity from quaternion and quaternion's time derivative.
@@ -170,10 +171,10 @@ Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDt(
 /**
  * Calculates exact solutions for quaternion, angular velocity, and angular
  * acceleration expressed in body-frame, for torque-free rotational motion of an
- * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (world) A,
+ * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (World) A,
  * where torque-free means the moment of forces about B's mass center is zero.
- * Initially, right-handed orthogonal unit vectors Ax, Ay, Az fixed in world A
- * are equal to right-handed orthogonal unit vectors Bx, By, Bz fixed in B,
+ * Right-handed orthogonal unit vectors Ax, Ay, Az fixed in A are initially
+ * equal to right-handed orthogonal unit vectors Bx, By, Bz fixed in B,
  * where Bz is parallel to B's symmetry axis.
  * Note: The function CalculateExactRotationalSolutionNB() is a more general
  * solution that allows for initial misalignment of Bx, By, Bz.
@@ -220,7 +221,7 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t,
 
   // Kane's analytical solution is for quaternion quat_AB that relates A to B,
   // where A is a set Ax, Ay, Az of right-handed orthogonal unit vectors which
-  // are fixed in N (Newtonian frame) and initially aligned to Bx, By, Bz,
+  // are fixed in N (Newtonian frame/World) and initially aligned to Bx, By, Bz,
   // where Bz is parallel to B's symmetry axis.
   // Kane produced an analytical solution for quat_AB [eAB0, eAB1, eB2, eB3],
   // which allows for direct calculation of the R_AB rotation matrix.
@@ -257,11 +258,11 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t,
 /**
  * Calculates exact solutions for quaternion and angular velocity expressed in
  * body-frame, and their time derivatives for torque-free rotational motion of
- * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (world) N,
+ * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (World) N,
  * where torque-free means the moment of forces about B's mass center is zero.
  * The quaternion characterizes the orientiation between right-handed orthogonal
- * unit vectors Nx, Ny, Nz fixed in world N and right-handed orthogonal unit
- * vectors Bx, By, Bz fixed in B, where Bz is parallel to B's symmetry axis.
+ * unit vectors Nx, Ny, Nz fixed in N and right-handed orthogonal unit vectors
+ * Bx, By, Bz fixed in B, where Bz is parallel to B's symmetry axis.
  * Note: CalculateExactRotationalSolutionABInitiallyAligned() implements the
  * algorithm from [Kane, 1983] Sections 1.13 and 3.1, Pages 60-62 and 159-169.
  * This function allows for initial misalignment of Nx, Ny, Nz and Bx, By, Bz.
@@ -325,10 +326,11 @@ std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
  * body B in a Newtonian frame (world) N.  Algorithm from high-school physics.
  * @param t Current value of time.
  * @param xyz_initial Initial values of x, y, z -- [the Nx, Ny, Nz measures of
- * Bcm's (B's center of mass) position from a point No fixed in world N].
+ * Bcm's (B's center of mass) position from a point No fixed in World N].
  * Note: Nx, Ny, Nz are right-handed orthogonal unit vectors fixed in N.
  * @param xyzDt_initial Initial values of x', y', z' (which are time-derivatives
  * of x, y,z -- and equal to the Nx, Ny, Nz measures of Bcm's velocity in N).
+ * @param gravity Gravitational acceleration expressed in N (e.g. [0, 0, -9.8]).
  * @returns Machine-precision values at time t are returned as defined below.
  *
  * std::tuple | Description
@@ -386,7 +388,7 @@ std::tuple<Vector3d, Vector3d, Vector3d>
 //-----------------------------------------------------------------------------
 void  TestMapVelocityToQDot(
     const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-    const std::unique_ptr<systems::Context<double>>& context,
+    const drake::systems::Context<double>& context,
     const Vector3d& w_NB_B_exact,
     const Vector3d& v_NBo_B_exact,
     const Vector4d& quatDt_NB_exact,
@@ -400,7 +402,7 @@ void  TestMapVelocityToQDot(
   // Test whether MapVelocityToQDot accurately converts motion variables to
   // time-derivatives of coordinates.
   systems::BasicVector<double> coordinatesDt_from_map(7);
-  rigid_body_plant.MapVelocityToQDot(*context, motion_variables,
+  rigid_body_plant.MapVelocityToQDot(context, motion_variables,
                                      &coordinatesDt_from_map);
   const double xDt_map = coordinatesDt_from_map[0];
   const double yDt_map = coordinatesDt_from_map[1];
@@ -432,7 +434,7 @@ void  TestMapVelocityToQDot(
 //-----------------------------------------------------------------------------
 void  TestMapQDotToVelocity(
     const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-    const std::unique_ptr<systems::Context<double>>& context,
+    const drake::systems::Context<double>& context,
     const Vector4d& quatDt_NB_exact,
     const Vector3d& xyzDt_exact,
     const Vector3d& w_NB_B_exact,
@@ -446,7 +448,7 @@ void  TestMapQDotToVelocity(
   // Test whether MapQDotToVelocity accurately converts time-derivative of
   // coordinates to motion variables.
   systems::BasicVector<double> wv_from_map(6);
-  rigid_body_plant.MapQDotToVelocity(*context, coordinatesDt, &wv_from_map);
+  rigid_body_plant.MapQDotToVelocity(context, coordinatesDt, &wv_from_map);
   const Vector3d w_map(wv_from_map[0], wv_from_map[1], wv_from_map[2]);
   const Vector3d v_map(wv_from_map[3], wv_from_map[4], wv_from_map[5]);
 #if 0  // TODO(mitiguy) Remove these debug statements.
@@ -466,46 +468,44 @@ void  TestMapQDotToVelocity(
 
 
 /**
- * Test Drake state versus an exact analytical solution for torque-free
- * motion of axis-symmetric uniform rigid cylinder B in Newtonian frame N,
+ * This function tests Drake state versus an exact solution for torque-free
+ * motion of axis-symmetric uniform rigid cylinder B in Newtonian frame/World N,
  * where torque-free means the moment of forces about B's mass center is zero.
  * The quaternion characterizes the orientiation between right-handed orthogonal
- * unit vectors Nx, Ny, Nz fixed in world N and right-handed orthogonal unit
- * vectors Bx, By, Bz fixed in B, where Bz is parallel to B's symmetry axis.
+ * unit vectors Nx, Ny, Nz fixed in N and right-handed orthogonal unit vectors
+ * Bx, By, Bz fixed in B, where Bz is parallel to B's symmetry axis.
  * @param rigid_body_plant A reference to the rigid-body system being simulated.
- * @param[in,out] context On entry, context should be properly filled (with
- * initial values at t=0).  On output, context stores values at t = t_final.
+ * @param[in] context All input to System (input ports, parameters, time, state)
+ * with cache for computations dependent on these values.
  * @param[out] stateDt_drake On output, stores value at t = t_final.
- * @param t Current value of time.
  * @param quat_NB_initial Initial value of the quaternion (which should already
  *   be normalized) that relates Nx, Ny, Nz to Bx, By, Bz.
  *   Note: quat_NB_initial is analogous to the initial rotation matrix R_NB.
  * @param w_NB_B_initial  B's initial angular velocity in N, expressed in B.
  * @param xyz_initial Initial values of x, y, z -- [the Nx, Ny, Nz measures of
- * Bcm's (B's center of mass) position from a point No fixed in world N].
+ * Bcm's (B's center of mass) position from a point No fixed in N].
  * @param v_NBo_B_initial Initial values of Bx, By, Bz measures of Bo's velocity
  * in N, where Bo is the same as Bcm.  Note: These values are not (in general)
  * x', y', z' (i.e., these values are not time-derivatives of x, y,z).
- * @param gravity Earth's local gravitational acceleration (e.g., 9.8 m/s^2).
  * @param tolerance Minimum tolerance required to match results.
  */
   void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
        const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-       const std::unique_ptr<systems::Context<double>>& context,
-       const std::unique_ptr<systems::ContinuousState<double>>& stateDt_drake,
-       const double t,
+       const drake::systems::Context<double>& context,
+       drake::systems::ContinuousState<double>* stateDt_drake,
        const Quaterniond& quat_NB_initial,
        const Vector3d& w_NB_B_initial,
        const Vector3d& xyz_initial,
        const Vector3d& v_NBo_B_initial,
-       const Vector3d& gravity,
        const double tolerance) {
+  DRAKE_DEMAND(stateDt_drake != NULL);
+
   // Pull the state at time t from the context.
   const systems::VectorBase<double>& state_drake =
-      context->get_continuous_state_vector();
+      context.get_continuous_state_vector();
 
   // Evaluate the time-derivatives of the state.
-  rigid_body_plant.CalcTimeDerivatives(*context, stateDt_drake.get());
+  rigid_body_plant.CalcTimeDerivatives(context, stateDt_drake);
 
   // Get the state (defined above) and state time-derivatives for comparison.
   const VectorXd state_as_vector = state_drake.CopyToVector();
@@ -526,10 +526,16 @@ void  TestMapQDotToVelocity(
   Vector3d xyz_exact, xyzDt_exact, xyzDDt_exact;
 
   // Calculate exact analytical rotational solution.
+  const double t = context.get_time();
   Quaterniond quat_NB;
   std::tie(quat_NB, quatDt_NB_exact, w_NB_B_exact, wDt_NB_B_exact) =
       CalculateExactRotationalSolutionNB(t, quat_NB_initial, w_NB_B_initial);
   quat_NB_exact << quat_NB.w(), quat_NB.x(), quat_NB.y(), quat_NB.z();
+
+  // Get gravitational acceleration expressed in N (e.g. [0, 0, -9.8]).
+  // Note: a_grav is an improperly-named public member of tree class (BAD).
+  const RigidBodyTree<double>& tree = rigid_body_plant.get_rigid_body_tree();
+  const Vector3d gravity = tree.a_grav.tail<3>();
 
   // Calculate exact analytical translational solution.
   // Exact analytical solution needs v_initial expressed in terms of Nx, Ny, Nz.
@@ -604,7 +610,6 @@ void  TestMapQDotToVelocity(
 
   //--------------------------------------------------------------
   // EXTRA: Test MapQDotToVelocity and MapVelocityToQDot for Evan's PR #4604.
-  // TODO(Mitiguy and Drumwright) change tolerance to 50*epsilon with PR #4604.
   //--------------------------------------------------------------
   TestMapVelocityToQDot(rigid_body_plant, context, w_NB_B_exact, v_NBo_B_exact,
                         quatDt_NB_exact, xyzDt_exact, tolerance);
@@ -617,72 +622,86 @@ void  TestMapQDotToVelocity(
 /**
  * Numerically integrate rigid body plant's equations of motion from time t = 0
  * to time t_final with a 2nd-order fixed-step Runge-Kutta integrator.
- * @param rigid_body_plant A reference to the rigid-body system being simulated.
- * @param[in,out] context On entry, context should be properly filled (with
- * initial values at t=0).  On output, context stores values at t = t_final.
- * @param dt The maximum (fixed) step size taken by the integrator.  If  t_final
- * is not an exact multiple of dt, the final integration step is adjusted.
- * @param t_final The (positive) time to that signals the simulation to stop.
+ * @param[in] rigid_body_plant
+ *    A reference to the rigid-body system being simulated.
+ * @param[in,out] context
+ *    On entry, context should be properly filled with all input to System
+ *    (input ports, parameters, time = 0.0, state).  On output, context has been
+ *    changed so its time = t_final and its state has been updated.
+ * @param[in] dt
+ *    The maximum (fixed) step size taken by the integrator.  If  t_final
+ *    is not an exact multiple of dt, the final integration step is adjusted.
+ * @param[in] t_final
+ *    Value of time that signals the simulation to stop.
  */
 void  IntegrateForwardWithFixedStepRungeKutta2(
     const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-    const std::unique_ptr<systems::Context<double>>& context,
+    drake::systems::Context<double>* context,
     double dt, const double t_final) {
+  DRAKE_DEMAND(context != NULL  &&  dt >= 0.0);
 
-  // Integrate with fixed-sized steps with Runge-Kutta2 integrator.
-  const double inf = std::numeric_limits<double>::infinity();
-  systems::RungeKutta2Integrator<double> rk2(rigid_body_plant, dt,
-                                             context.get());
-  rk2.Initialize();
+  // The initial value of time t is set from the context.
+  double t = context->get_time();
+  if ( t < t_final ) {
+    // Integrate with fixed-sized steps with Runge-Kutta2 integrator.
+    systems::RungeKutta2Integrator<double> rk2(rigid_body_plant, dt, context);
+    rk2.Initialize();
 
-  const double t_final_minus_epsilon = t_final - 1.0E-9*dt;
-  bool is_last_step = (t_final <= 0.0);
-  double t = 0.0;
-  while ( is_last_step ) {
-    is_last_step = (t+dt > t_final);
-    if ( is_last_step ) dt = t_final - t;
-    rk2.StepOnceAtMost(inf, inf, dt);  // Step forward by dt.
-    if ( (t += dt) >= t_final_minus_epsilon ) is_last_step = true;
+    // Integrate to within a small amount of dt of t_final.
+    const double epsilon_based_on_dt = 1.0E-9 * dt;
+    const double t_final_minus_epsilon = t_final - epsilon_based_on_dt;
+    do {
+      if ( t + dt > t_final ) dt = t_final - t;
+      rk2.StepOnceExactly(dt);           // Step forward by dt.
+      t += dt;                           // or t = context->get_time();
+    }while ( t < t_final_minus_epsilon );
   }
 }
 
 
 /**
- * Test Drake's calculation of the time-derivative of the state at a specific
- * initial value, then numerically integrate the rigid body plant's equations
- * of motion from that initial value from time t = 0 to t_final = 1.0 sec.
+ * This function tests Drake's calculation of time-derivative of the state at a
+ * specific initial value, then numerically integrates the rigid body plant's
+ * equations of motion from that initial value from time t=0 to t_final=1.0 sec.
  * with a 2nd-order fixed-step Runge-Kutta integrator.
- * @param rigid_body_plant A reference to the rigid-body system being simulated.
- * @param[in,out] context On entry, context should be properly filled (with
- * initial values at t=0).  On output, context stores values at t = t_final.
- * @param[out] stateDt_drake On output, stores value at t = t_final.
- * @param quat_NB_initial Initial value of the quaternion (which should already
- *   be normalized) that relates Nx, Ny, Nz to Bx, By, Bz.
+ *
+ * @param[in] rigid_body_plant
+ *    A reference to the rigid-body system being simulated.
+ * @param[in,out] context
+ *    On entry, context is properly sized for all input to System (input ports,
+ *    parameters, time, state).  On output, context may be changed with
+ *    specific values of time and state.
+ * @param[out] stateDt_drake
+ *    On output, stores time-derivatives of state.
+ * @param[in] quat_NB_initial
+ *   Initial value of the quaternion (which should already be normalized) that
+ *   that relates Nx, Ny, Nz to Bx, By, Bz.
  *   Note: quat_NB_initial is analogous to the initial rotation matrix R_NB.
- * @param w_NB_B_initial  B's initial angular velocity in N, expressed in B.
- * @param xyz_initial Initial values of x, y, z -- [the Nx, Ny, Nz measures of
- * Bcm's (B's center of mass) position from a point No fixed in world N].
- * @param v_NBo_B_initial Initial values of Bx, By, Bz measures of Bo's velocity
- * in N, where Bo is the same as Bcm.  Note: These values are not (in general)
- * x', y', z' (i.e., these values are not time-derivatives of x, y,z).
- * @param gravity Earth's local gravitational acceleration (e.g., 9.8 m/s^2).
-  */
+ * @param[in] w_NB_B_initial
+ *   B's initial angular velocity in N, expressed in B.
+ * @param[in] xyz_initial
+ *   Initial values of x, y, z -- [the Nx, Ny, Nz measures of Bcm's (B's center
+ *   of mass) position from a point No fixed in N (NewtonianFrame/World N)].
+ * @param[in] v_NBo_B_initial
+ *    Initial values of Bx, By, Bz measures of Bo's velocity in N, where Bo is
+ *    Bcm.  Note: These values are not (in general) x', y', z' (i.e., these
+ *    values are not time-derivatives of x, y,z).
+ */
 void  TestDrakeSolutionForSpecificInitialValue(
     const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-    const std::unique_ptr<systems::Context<double>>& context,
-    const std::unique_ptr<systems::ContinuousState<double>>& stateDt_drake,
+    drake::systems::Context<double>* context,
+    drake::systems::ContinuousState<double>* stateDt_drake,
     const Eigen::Quaterniond& quat_NB_initial,
     const Vector3d& w_NB_B_initial,
     const Vector3d& xyz_initial,
-    const Vector3d& v_NBo_B_initial,
-    const Vector3d& gravity) {
-  // Get the state portion of the Context. State has weird/inconsistent order.
-  // State for joints::kQuaternion   -- x,y,z, e0,e1,e2,e3, wx,wy,wz, vx,vy,vz.
-  // State for joints::kRollPitchYaw -- x,y,z, q1,q2,q3, x',y',z', q1',q2',q3'.
-  // (where q1=Roll, q2=Pitch, q3=Yaw for SpaceXYZ rotation sequence).
+    const Vector3d& v_NBo_B_initial) {
+  DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL);
+
+  // Get the state portion of the Context. State has unusual order/mearning.
+  // State for joints::kQuaternion -- x,y,z, e0,e1,e2,e3, wx,wy,wz, vx,vy,vz.
   // Note: Bo is the origin of rigid cylinder B (here, coincident with Bcm).
   // Bx, By, Bz are fixed in B, with Bz along cylinder B's symmetric axis.
-  // No is the origin of the Newtonian reference frame N (world).
+  // No is the origin of the Newtonian reference frame (World) N.
   // Nx, Ny, Nz are fixed in N, with Nz vertically upward (opposite gravity).
   // e0, e1, e2, e3 is the quaternion relating Nx, Ny, Nz to Bx, By, Bz,
   // with e0 being the scalar term in the quaternion.
@@ -699,9 +718,6 @@ void  TestDrakeSolutionForSpecificInitialValue(
   //  https://ecommons.cornell.edu/handle/1813/637
   //
   // TODO(mitiguy) Update comment/code when GitHub issue #4398 is fixed.
-  // TODO(mitiguy) kRollPitchYaw is documented here for my sanity/later use.
-  // TODO(mitiguy) Confirm above comment about state kRollPitchYaw: x' or vx...?
-
   // Concatenate these 4 Eigen column matrices into one Eigen column matrix.
   // Note: The state has a weird order (see previous comment).
   // Set state portion of Context from initial state.
@@ -717,18 +733,20 @@ void  TestDrakeSolutionForSpecificInitialValue(
       *(context->get_mutable_continuous_state_vector());
   state_drake.SetFromVector(state_initial);
 
-  // Test Drake's calculated values for time-derivate of state at time t = 0
+  // Ensure the time stored by context is set to 0.0 (initial value).
+  context->set_time(0.0);
+
+  // Test Drake's calculated values for time-derivative of state at time t = 0
   // versus exact analytical (closed-form) solution.
-  // Initially, (time=0), Drake's results should be close to machine-precision,
-  // which is approximately 2.22E-16.
+  // Initially, (time=0), Drake's results should be close to machine-precision.
   const double epsilon = std::numeric_limits<double>::epsilon();
   TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
-                      rigid_body_plant, context, stateDt_drake,
-                      0.0, quat_NB_initial, w_NB_B_initial,
-                      xyz_initial, v_NBo_B_initial, gravity, 50 * epsilon);
+                      rigid_body_plant, *context, stateDt_drake,
+                      quat_NB_initial, w_NB_B_initial,
+                      xyz_initial, v_NBo_B_initial, 50 * epsilon);
 
   // Numerically integrate with one of Drake's numerical integrators.
-  const double dt = 1.0E-3, t_final = 1.0;
+  const double dt = 1.0E-01, t_final = 1.0;
   IntegrateForwardWithFixedStepRungeKutta2(rigid_body_plant, context,
                                            dt, t_final);
 
@@ -738,9 +756,9 @@ void  TestDrakeSolutionForSpecificInitialValue(
   // TODO(Mitiguy and Drumwright) change tolerance to more reasonable value.
   //--------------------------------------------------------------
   TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
-                      rigid_body_plant, context, stateDt_drake,
-                      t_final, quat_NB_initial, w_NB_B_initial,
-                      xyz_initial, v_NBo_B_initial, gravity, 1.0E18 * epsilon);
+                      rigid_body_plant, *context, stateDt_drake,
+                      quat_NB_initial, w_NB_B_initial,
+                      xyz_initial, v_NBo_B_initial, 1.0E21 * epsilon);
 }
 
 
@@ -748,17 +766,22 @@ void  TestDrakeSolutionForSpecificInitialValue(
  * initial values, then numerically integrate the rigid body plant's equations
  * of motion from that initial value from time t = 0 to t_final = 1.0 sec.
  * with a 2nd-order fixed-step Runge-Kutta integrator.
- * @param rigid_body_plant A reference to the rigid-body system being simulated.
- * @param[in,out] context On entry, context should be properly filled (with
- * initial values at t=0).  On output, context stores values at t = t_final.
- * @param[out] stateDt_drake On output, stores value at t = t_final.
- * @param gravity Earth's local gravitational acceleration (e.g., 9.8 m/s^2).
-*/
+ *
+ * @param[in] rigid_body_plant
+ *    A reference to the rigid-body system being simulated.
+ * @param[in,out] context
+ *    On entry, context is properly sized for all input to System (input ports,
+ *    parameters, time, state).  On output, context may be changed with
+ *    specific values of time and state.
+ * @param[out] stateDt_drake
+ *    On output, stores time-derivatives of state.
+ */
 void  TestDrakeSolutionForVariousInitialValues(
       const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-      const std::unique_ptr<systems::Context<double>>& context,
-      const std::unique_ptr<systems::ContinuousState<double>>& stateDt_drake,
-      const Vector3d& gravity) {
+      drake::systems::Context<double>* context,
+      drake::systems::ContinuousState<double>* stateDt_drake) {
+  DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL);
+
   // Create 3x1 matrix for wx, wy, wz (defined above).
   // Create 3x1 matrix for x, y, z (defined above).
   // Create 3x1 matrix for vx, vy, vz (defined above -- not x', y', z').
@@ -770,7 +793,6 @@ void  TestDrakeSolutionForVariousInitialValues(
   // Iterate through many initial values for quaternion.
   // Since cylinder B is axis-symmetric for axis Bz, iterate on BodyXY rotation
   // sequence with 0 <= thetaX <= 2*pi and 0 <= thetaY <= pi.
-  Vector4d vector4d_NB_initial;
   for (double thetaX = 0; thetaX <= 2* M_PI; thetaX += 0.01*M_PI) {
     for (double thetaY = 0; thetaY <= M_PI; thetaY += 0.2*M_PI) {
       const Vector3<double> spaceXYZ_angles = {thetaX, thetaY, 0};
@@ -786,15 +808,14 @@ void  TestDrakeSolutionForVariousInitialValues(
                                                quat_NB_initial,
                                                w_NB_B_initial,
                                                xyz_initial,
-                                               v_NBo_B_initial,
-                                               gravity);
+                                               v_NBo_B_initial);
     }
   }
 }
 
 
 /**
- * Test Drake solution for quaternion, angular velocity, and angular
+ * This function tests Drake solution for quaternion, angular velocity, and angular
  * acceleration expressed in body-frame, for torque-free rotational motion of an
  * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (world) N,
  * where torque-free means the moment of forces about B's mass center is zero.
@@ -807,7 +828,6 @@ void  TestDrakeSolutionForVariousInitialValues(
  *   https://ecommons.cornell.edu/handle/1813/637
  */
 // Test Drake solution versus closed-form analytical solution.
-// GTEST_TEST: 1st arg is name of test, 2nd arg is name of sub-test.
 GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Create path to .urdf file containing mass/inertia and geometry properties.
   const std::string urdf_name = "uniform_solid_cylinder.urdf";
@@ -831,10 +851,6 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       urdf_dir_file_name, joint_type, weld_to_frame, tree.get());
 
-  // Query Drake for gravitational acceleration before moving tree.
-  // Note: a_grav is an improperly-named public member of tree class (BAD).
-  const Vector3d gravity = tree->a_grav.tail<3>();
-
   // Create a RigidBodyPlant which takes ownership of tree.
   drake::systems::RigidBodyPlant<double> rigid_body_plant(std::move(tree));
 
@@ -846,8 +862,8 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   std::unique_ptr<systems::ContinuousState<double>> stateDt_drake =
       rigid_body_plant.AllocateTimeDerivatives();
 
-  TestDrakeSolutionForVariousInitialValues(rigid_body_plant, context,
-                                           stateDt_drake, gravity);
+  TestDrakeSolutionForVariousInitialValues(rigid_body_plant, context.get(),
+                                           stateDt_drake.get());
 }
 
 }  // namespace cylinder_torque_free_analytical_solution
