@@ -66,6 +66,7 @@ def drake_cc_googletest(
         size=None,
         srcs=None,
         deps=None,
+        nodebug=False,
         **kwargs):
     """Creates a rule to declare a C++ unit test using googletest.  Always adds a
     deps= entry for googletest main (@gtest//:main).
@@ -78,6 +79,11 @@ def drake_cc_googletest(
         size = "small"
     if srcs == None:
         srcs = ["test/%s.cc" % name]
+    if nodebug:
+        # Remove the test declarations from the test in debug mode.
+        # The test will trivially pass.
+        # TODO(david-german-tri): Actually suppress the test rule.
+        srcs = select({"//tools:debug" : [], "//conditions:default" : srcs})
     if deps == None:
         deps = []
     deps.append("@gtest//:main")

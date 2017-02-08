@@ -97,6 +97,11 @@ cc_toolchain(
 # === config_setting rules ===
 
 config_setting(
+    name = "debug",
+    values = {"compilation_mode": "dbg"}
+)
+
+config_setting(
     name = "with_gurobi",
     values = {"define": "WITH_GUROBI=ON"},
 )
