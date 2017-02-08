@@ -36,13 +36,13 @@ PlanEvalSystem::PlanEvalSystem(const RigidBodyTree<double>& robot)
 
   std::string alias_groups_config =
       drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
-      "config/alias_groups.yaml";
+      "config/valkyrie.alias_groups";
   std::string controller_config =
       drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
       "config/controller.yaml";
 
   // KinematicsProperty
-  alias_groups_.LoadFromYAMLFile(YAML::LoadFile(alias_groups_config));
+  alias_groups_.LoadFromFile(alias_groups_config);
 
   // Controller config
   paramset_.LoadFromYAMLConfigFile(YAML::LoadFile(controller_config),
