@@ -151,6 +151,21 @@ Polynomial<double> Expression::ToPolynomial() const {
   return ptr_->ToPolynomial();
 }
 
+void Expression::DecomposePolynomial(
+    Eigen::RowVectorXd* coeffs,
+    Eigen::SparseMatrix<int>* exponent,
+    Eigen::Matrix<Variable, Eigen::Dynamic, 1>* vars) const {
+  DRAKE_DEMAND(is_polynomial());
+  // First get all variables.
+  const Variables& var_set = GetVariables();
+  vars->resize(var_set.size());
+  // Constructs a map between variable ID to the index, such that
+  // vars(map_var_to_idx[v.get_id()]) = v.
+  std::unordered_map<Variable::Id, int> map_var_to_idx;
+  map_var_to_idx.reserve(vars->size());
+  
+}
+
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->Evaluate(env);

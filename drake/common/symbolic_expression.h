@@ -12,6 +12,7 @@
 #include <utility>
 
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 
 #include "drake/common/cond.h"
 #include "drake/common/drake_copyable.h"
@@ -176,6 +177,42 @@ class Expression {
    *  \pre{is_polynomial() is true.}
    */
   Polynomial<double> ToPolynomial() const;
+
+  /**
+   * Returns the total degress of all the variables in the polynomial.
+   * For example, the total degree of
+   * x^2*y + 2*x*y*z^3 + x*z^2
+   * is 5, from x*y*z^3
+   * Throws a runtime error is is_polynomial() is false.
+   * @return The total degree.
+   */
+  int Degree() const;
+
+  /**
+   * Decompose a polynomial into three parts, such that the polynomial
+   * can be represented as
+   * <!-->
+   * ∑ᵢ coeffs(i) * ∏ⱼpower(vars(j), exponent(i, j))
+   * <-->
+   * \f[
+   * \sum_i c_i \prod_j v_j^{e_{i,j}}
+   * \f]
+   * where \f$c_i=coeffs(i), v_j=vars(j), e_{i,j} = exponent(i, j)\f$.
+   * For example, for a polynomial \f$ x^2y^3 + 3xy^2z^3\f$, after
+   * decomposition, the result is
+   * coeffs = [1 3]
+   * exponent = [2 3 0]
+   *            [1 2 3]
+   * vars = [x y z]
+   * @pre{The expression is a polynomial, namely is_polynomial() == True.
+   * Otherwise throws a runtime error.}
+   * @param coeffs The coefficients of each monomials.
+   * @param exponent The number of rows in @p exponent equals to the length
+   * of @p coeffs. The number of columns in @p exponent equals to the length of
+   * @p vars.
+   * @param vars The variables in the polynomial.
+   */
+  void DecomposePolynomial(Eigen::RowVectorXd* coeffs, Eigen::SparseMatrix<int>* exponent, Eigen::Matrix<Variable, Eigen::Dynamic, 1>* vars) const;
 
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
