@@ -4,7 +4,6 @@
 load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
-    "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
@@ -30,43 +29,6 @@ drake_cc_library(
         "//drake/lcmtypes:schunk",
         "//drake/systems/framework:leaf_system",
     ],
-)
-
-# === test/ ===
-
-drake_cc_googletest(
-    name = "schunk_wsg_lift_test",
-    data = [
-        ":models",
-        "//drake/multibody:models",
-    ],
-    deps = [
-        "//drake/common",
-        "//drake/common:drake_path",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-        "//drake/common/trajectories:trajectory",
-        "//drake/lcm:lcm",
-        "//drake/multibody/parsers:parsers",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody:rigid_body_tree_construction",
-        "//drake/systems/analysis",
-        "//drake/systems/controllers:pid_controlled_system",
-        "//drake/systems/framework:diagram_builder",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:trajectory_source",
-    ]
-)
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
 )
 
 cpplint()
