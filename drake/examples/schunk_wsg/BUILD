@@ -40,23 +40,25 @@ drake_cc_googletest(
         ":models",
         "//drake/multibody:models",
     ],
+    # This test is prohibitively slow with --compilation_mode=dbg.
+    disable_in_compilation_mode_dbg = True,
     deps = [
         "//drake/common",
         "//drake/common:drake_path",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/common/trajectories:trajectory",
-        "//drake/lcm:lcm",
-        "//drake/multibody/parsers:parsers",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:pid_controlled_system",
         "//drake/systems/framework:diagram_builder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:trajectory_source",
-    ]
+    ],
 )
 
 filegroup(
