@@ -176,6 +176,28 @@ class Expression {
    */
   Polynomial<double> ToPolynomial() const;
 
+ /**
+  * Returns the total degrees of the polynomial w.r.t the variables in
+  * @p vars. For example, the total degree of
+  * e = x^2*y + 2 * x*y*z^3 + x * z^2
+  * w.r.t (x, y) is 3 (from x^2 * y)
+  * w.r.t (x, z) is 4 (from x*y*z^3)
+  * w.r.t (z)    is 3 (from x*y*z^3)
+  * Throws a runtime error if is_polynomial() is false.
+  * @param vars A set of variables.
+  * @return The total degree.
+  */
+  int Degree(const Variables& vars) const;
+
+  /**
+   * Returns the total degress of all the variables in the polynomial.
+   * For example, the total degree of
+   * x^2*y + 2*x*y*z^3 + x*z^2
+   * is 5, from x*y*z^3
+   * Throws a runtime error is is_polynomial() is false.
+   * @return The total degree.
+   */
+  int Degree() const;
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
@@ -483,8 +505,8 @@ double get_constant_in_multiplication(const Expression& e);
  * return value maps 'x' to 2, 'y' to 3, and 'z' to 'x'.
  *  \pre{@p e is a multiplication expression.}
 */
-const std::map<Expression, Expression>& get_base_to_expnt_map_in_multiplication(
-    const Expression& e);
+const std::map<Expression, Expression>&
+get_base_to_exponent_map_in_multiplication(const Expression& e);
 
 // Matrix<Expression> * Matrix<double> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
@@ -643,6 +665,23 @@ struct equal_to<drake::symbolic::Expression> {
     return lhs.EqualTo(rhs);
   }
 };
+
+#if !EIGEN_VERSION_AT_LEAST(3, 2, 93)
+/// Provides std::max<drake::symbolic::Expression>. There is nothing about this
+/// hack that is not horrible.
+template <>
+inline const drake::symbolic::Expression& max(
+    const drake::symbolic::Expression& lhs,
+    const drake::symbolic::Expression& rhs) {
+  static constexpr char doom[] = R"doom(
+Eigen algebra over drake::symbolic::Expressions cannot be safely implemented
+using Eigen 3.2. If you need this, use a platform that supports Eigen 3.3 or
+later.
+)doom";
+  DRAKE_ABORT_MSG(doom);
+}
+#endif  // EIGEN_VERSION_AT_LEAST(3, 2, 93)
+
 }  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -655,6 +694,7 @@ struct NumTraits<drake::symbolic::Expression>
   static inline int digits10() { return 0; }
 };
 
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)
 // Informs Eigen that Variable op Variable gets Expression.
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable,
@@ -706,6 +746,7 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
   enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
+#endif  // EIGEN_VERSION_AT_LEAST(3, 2, 93)
 
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)

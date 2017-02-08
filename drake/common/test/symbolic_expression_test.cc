@@ -425,7 +425,7 @@ TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
 TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
   const Expression e{2 * x_ * y_ * y_ * pow(z_, y_)};
   const map<Expression, Expression> products{
-      get_base_to_expnt_map_in_multiplication(e)};
+      get_base_to_exponent_map_in_multiplication(e)};
   EXPECT_PRED2(ExprEqual, products.at(x_), 1.0);
   EXPECT_PRED2(ExprEqual, products.at(y_), 2.0);
   EXPECT_PRED2(ExprEqual, products.at(z_), y_);
@@ -515,7 +515,7 @@ TEST_F(SymbolicExpressionTest, ToPolynomial1) {
   const Expression e5{pow(x_ + y_ + z_, 3)};
   const Expression e6{pow(x_ + y_ + z_, 3) / 10};
   const Expression e7{-pow(y_, 3)};
-  const Expression e8{pow(pow(x_, 3), 1 / 3)};
+  const Expression e8{pow(pow(x_, 3), 1.0 / 3)};
 
   EXPECT_NEAR(e0.Evaluate(env),
               e0.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
@@ -546,6 +546,105 @@ TEST_F(SymbolicExpressionTest, ToPolynomial2) {
     EXPECT_FALSE(e.is_polynomial());
     EXPECT_THROW(e.ToPolynomial(), runtime_error);
   }
+}
+
+TEST_F(SymbolicExpressionTest, Degree) {
+  const Expression e0{42.0};
+  EXPECT_EQ(e0.Degree({var_x_, var_y_}), 0);
+  EXPECT_EQ(e0.Degree(), 0);
+
+  const Expression e1{pow(x_, 2)};
+  EXPECT_EQ(e1.Degree({var_x_}), 2);
+  EXPECT_EQ(e1.Degree({var_y_}), 0);
+  EXPECT_EQ(e1.Degree({var_x_, var_y_}), 2);
+  EXPECT_EQ(e1.Degree(), 2);
+
+  const Expression e2{pow(x_, 2) * pow(y_, 3)};
+  EXPECT_EQ(e2.Degree({var_x_}), 2);
+  EXPECT_EQ(e2.Degree({var_y_}), 3);
+  EXPECT_EQ(e2.Degree({var_z_}), 0);
+  EXPECT_EQ(e2.Degree({var_x_, var_y_}), 5);
+  EXPECT_EQ(e2.Degree({var_x_, var_z_}), 2);
+  EXPECT_EQ(e2.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e2.Degree({var_x_, var_y_, var_z_}), 5);
+  EXPECT_EQ(e2.Degree(), 5);
+
+  const Expression e3{3 + x_ + y_ + z_};
+  EXPECT_EQ(e3.Degree({var_x_}), 1);
+  EXPECT_EQ(e3.Degree({var_y_}), 1);
+  EXPECT_EQ(e3.Degree({var_z_}), 1);
+  EXPECT_EQ(e3.Degree({var_x_, var_y_}), 1);
+  EXPECT_EQ(e3.Degree({var_x_, var_y_, var_z_}), 1);
+  EXPECT_EQ(e3.Degree(), 1);
+
+  const Expression e4{1 + pow(x_, 2) + pow(y_, 3)};
+  EXPECT_EQ(e4.Degree({var_x_}), 2);
+  EXPECT_EQ(e4.Degree({var_y_}), 3);
+  EXPECT_EQ(e4.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e4.Degree({var_x_, var_z_}), 2);
+  EXPECT_EQ(e4.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e4.Degree(), 3);
+
+  const Expression e5{1 + pow(x_, 2) * y_ + x_ * y_ * y_ * z_};
+  EXPECT_EQ(e5.Degree({var_x_}), 2);
+  EXPECT_EQ(e5.Degree({var_y_}), 2);
+  EXPECT_EQ(e5.Degree({var_z_}), 1);
+  EXPECT_EQ(e5.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e5.Degree({var_x_, var_z_}), 2);
+  EXPECT_EQ(e5.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e5.Degree({var_x_, var_y_, var_z_}), 4);
+  EXPECT_EQ(e5.Degree(), 4);
+
+  const Expression e6{pow(x_ + y_ + z_, 3)};
+  EXPECT_EQ(e6.Degree({var_x_}), 3);
+  EXPECT_EQ(e6.Degree({var_y_}), 3);
+  EXPECT_EQ(e6.Degree({var_z_}), 3);
+  EXPECT_EQ(e6.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e6.Degree({var_x_, var_z_}), 3);
+  EXPECT_EQ(e6.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e6.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e6.Degree(), 3);
+
+  const Expression e7{pow(x_ + x_ * y_ * y_, 2) * y_ +
+                      pow(x_ + pow(y_ + x_ * z_, 2), 3)};
+  EXPECT_EQ(e7.Degree({var_x_}), 6);
+  EXPECT_EQ(e7.Degree({var_y_}), 6);
+  EXPECT_EQ(e7.Degree({var_z_}), 6);
+  EXPECT_EQ(e7.Degree({var_x_, var_y_}), 7);
+  EXPECT_EQ(e7.Degree({var_x_, var_z_}), 12);
+  EXPECT_EQ(e7.Degree({var_y_, var_z_}), 6);
+  EXPECT_EQ(e7.Degree({var_x_, var_y_, var_z_}), 12);
+  EXPECT_EQ(e7.Degree(), 12);
+
+  const Expression e8{pow(x_ + y_ + z_, 3) / 10};
+  EXPECT_EQ(e8.Degree({var_x_}), 3);
+  EXPECT_EQ(e8.Degree({var_y_}), 3);
+  EXPECT_EQ(e8.Degree({var_z_}), 3);
+  EXPECT_EQ(e8.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e8.Degree({var_x_, var_z_}), 3);
+  EXPECT_EQ(e8.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e8.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e8.Degree(), 3);
+
+  const Expression e9{-pow(y_, 3)};
+  EXPECT_EQ(e9.Degree({var_x_}), 0);
+  EXPECT_EQ(e9.Degree({var_y_}), 3);
+  EXPECT_EQ(e9.Degree({var_z_}), 0);
+  EXPECT_EQ(e9.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e9.Degree({var_x_, var_z_}), 0);
+  EXPECT_EQ(e9.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e9.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e9.Degree(), 3);
+
+  const Expression e10{pow(pow(x_, 3), 1.0 / 3)};
+  EXPECT_EQ(e10.Degree({var_x_}), 1);
+  EXPECT_EQ(e10.Degree({var_y_}), 0);
+  EXPECT_EQ(e10.Degree({var_z_}), 0);
+  EXPECT_EQ(e10.Degree({var_x_, var_y_}), 1);
+  EXPECT_EQ(e10.Degree({var_x_, var_z_}), 1);
+  EXPECT_EQ(e10.Degree({var_y_, var_z_}), 0);
+  EXPECT_EQ(e10.Degree({var_x_, var_y_, var_z_}), 1);
+  EXPECT_EQ(e10.Degree(), 1);
 }
 
 TEST_F(SymbolicExpressionTest, LessKind) {

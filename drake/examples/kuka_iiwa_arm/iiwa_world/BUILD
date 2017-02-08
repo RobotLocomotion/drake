@@ -46,13 +46,13 @@ drake_cc_binary(
     name = "controlled_iiwa_world_demo",
     srcs = ["controlled_iiwa_world_demo.cc"],
     deps = [
-        "@gflags//:gflags",
         ":world_sim_diagram_factory",
         ":world_sim_tree_builder",
         "//drake/common",
         "//drake/common:drake_path",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "@gflags//:gflags",
     ],
 )
 

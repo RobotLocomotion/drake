@@ -35,7 +35,6 @@ def _is_source_label(label):
         return True
   return False
 
-
 def _add_linter_rules(source_labels, source_filenames, name, data=None):
   # Common attributes for all of our py_test invocations.
   data = (data or [])

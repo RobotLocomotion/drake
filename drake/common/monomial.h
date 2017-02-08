@@ -35,8 +35,8 @@ class Monomial {
   Monomial() = default;
   /** Constructs a Monomial from @p powers. */
   explicit Monomial(const std::map<Variable::Id, int>& powers);
-  /** Constructs a Monomial from @p var and @expnt. */
-  Monomial(const Variable& var, int expnt);
+  /** Constructs a Monomial from @p var and @exponent. */
+  Monomial(const Variable& var, int exponent);
   /** Returns the total degree of this Monomial. */
   int total_degree() const { return total_degree_; }
   const std::map<Variable::Id, int>& get_powers() const { return powers_; }
@@ -114,19 +114,19 @@ struct GradedReverseLexOrder {
     while (it1 != powers1.cend() && it2 != powers2.cend()) {
       const Variable::Id var1{it1->first};
       const Variable::Id var2{it2->first};
-      const int expnt1{it1->second};
-      const int expnt2{it2->second};
+      const int exponent1{it1->second};
+      const int exponent2{it2->second};
       if (variable_order_(var2, var1)) {
         return true;
       } else if (variable_order_(var1, var2)) {
         return false;
       } else {
         // var1 == var2
-        if (expnt1 == expnt2) {
+        if (exponent1 == exponent2) {
           ++it1;
           ++it2;
         } else {
-          return expnt2 > expnt1;
+          return exponent2 > exponent1;
         }
       }
     }
@@ -197,14 +197,14 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
 }  // namespace internal
 
 /** Returns a monomial of the form x^2*y^3, it does not have the constant
- * factor. To generate a monomial x^2*y^3, @p map_var_to_expnt contains the
+ * factor. To generate a monomial x^2*y^3, @p map_var_to_exponent contains the
  * pair (x, 2) and (y, 3).
  *
- * \pre{All exponents in @p map_var_to_expnt are positive integers.}
+ * \pre{All exponents in @p map_var_to_exponent are positive integers.}
  */
 Expression Monomial(
     const std::unordered_map<Variable, int, hash_value<Variable>>&
-        map_var_to_expnt);
+        map_var_to_exponent);
 
 /** Returns all monomials up to a given degree under the graded reverse
  * lexicographic order. Note that graded reverse lexicographic order uses the

@@ -144,13 +144,13 @@ drake_cc_library(
 
 drake_cc_library(
     name = "symbolic_test_util",
+    testonly = 1,
     hdrs = [
         "test/symbolic_test_util.h",
     ],
     deps = [
         ":symbolic",
     ],
-    testonly = 1,
 )
 
 # Miscellaneous utilities.

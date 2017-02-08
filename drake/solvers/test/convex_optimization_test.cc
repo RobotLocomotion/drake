@@ -8,6 +8,14 @@
 #include "drake/common/eigen_types.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
+using Eigen::Vector2d;
+using Eigen::Matrix2d;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::Matrix4d;
+using Eigen::RowVector2d;
+
 namespace drake {
 namespace solvers {
 namespace test {
@@ -51,21 +59,21 @@ void TestLinearProgramFeasibility(
     const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
-  Eigen::Matrix<double, 3, 3> A;
+  Matrix3d A;
   A << 1, 2, 3, 0, 1, -2, 0, 0, 0;
-  Eigen::Vector3d b_lb(0, -std::numeric_limits<double>::infinity(), -1);
-  Eigen::Vector3d b_ub(10, 3, 0);
+  Vector3d b_lb(0, -std::numeric_limits<double>::infinity(), -1);
+  Vector3d b_ub(10, 3, 0);
   prog.AddLinearConstraint(A, b_lb, b_ub, x);
   prog.AddBoundingBoxConstraint(1.0, std::numeric_limits<double>::infinity(),
                                 x(1));
 
   if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
+    prog.SetInitialGuessForAllVariables(Vector3d::Zero());
   }
   RunSolver(&prog, solver);
 
   const auto& x_value = prog.GetSolution(x);
-  Eigen::Vector3d A_times_x = A * x_value;
+  Vector3d A_times_x = A * x_value;
   EXPECT_GE(A_times_x(0), 0 - 1e-10);
   EXPECT_LE(A_times_x(0), 10 + 1e-10);
   EXPECT_LE(A_times_x(1), 3 + 1E-10);
@@ -88,25 +96,25 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
-  prog.AddLinearCost(Eigen::Vector2d(2.0, 1.0), x);
+  prog.AddLinearCost(Vector2d(2.0, 1.0), x);
   Eigen::Matrix<double, 3, 2> A;
   A << -1, 1, 1, 1, 1, -2;
-  Eigen::Vector3d b_lb(-std::numeric_limits<double>::infinity(), 2.0,
+  Vector3d b_lb(-std::numeric_limits<double>::infinity(), 2.0,
                        -std::numeric_limits<double>::infinity());
-  Eigen::Vector3d b_ub(1.0, std::numeric_limits<double>::infinity(), 4.0);
+  Vector3d b_ub(1.0, std::numeric_limits<double>::infinity(), 4.0);
   prog.AddLinearConstraint(A, b_lb, b_ub, x);
   prog.AddBoundingBoxConstraint(
-      Eigen::Vector2d(0.0, 2.0),
-      Eigen::Vector2d(std::numeric_limits<double>::infinity(),
+      Vector2d(0.0, 2.0),
+      Vector2d(std::numeric_limits<double>::infinity(),
                       std::numeric_limits<double>::infinity()),
       x.head<2>());
 
   if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+    prog.SetInitialGuessForAllVariables(Vector2d::Zero());
   }
   RunSolver(&prog, solver);
 
-  Eigen::Vector2d x_expected(1, 2);
+  Vector2d x_expected(1, 2);
   const auto& x_value = prog.GetSolution(x);
   EXPECT_TRUE(
       CompareMatrices(x_value, x_expected, 1E-10, MatrixCompareType::absolute));
@@ -121,17 +129,16 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
 void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  prog.AddLinearCost(Eigen::Vector2d(1.0, -2.0), x);
-  prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4),
-                                x);
+  prog.AddLinearCost(Vector2d(1.0, -2.0), x);
+  prog.AddBoundingBoxConstraint(Vector2d(0, -1), Vector2d(2, 4), x);
 
   if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+    prog.SetInitialGuessForAllVariables(Vector2d::Zero());
   }
   RunSolver(&prog, solver);
 
   const auto& x_value = prog.GetSolution(x);
-  EXPECT_TRUE(x_value.isApprox(Eigen::Vector2d(0, 4)));
+  EXPECT_TRUE(x_value.isApprox(Vector2d(0, 4)));
 }
 
 // Test a simple linear programming problem
@@ -168,24 +175,24 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
        x(0) + 2 * x(2);
   // clang-format on
 
-  Eigen::Vector4d b_lb(15, -std::numeric_limits<double>::infinity(),
+  Vector4d b_lb(15, -std::numeric_limits<double>::infinity(),
                        -std::numeric_limits<double>::infinity(), -100);
-  Eigen::Vector4d b_ub(std::numeric_limits<double>::infinity(), 25,
+  Vector4d b_ub(std::numeric_limits<double>::infinity(), 25,
                        std::numeric_limits<double>::infinity(), 40);
   prog.AddLinearConstraint(v, b_lb, b_ub);
 
   prog.AddBoundingBoxConstraint(0, 10, x(1));
   prog.AddBoundingBoxConstraint(
-      Eigen::Vector3d::Zero(),
-      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
+      Vector3d::Zero(),
+      Vector3d::Constant(std::numeric_limits<double>::infinity()),
       x.head<3>());
 
   if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Eigen::Vector4d::Zero());
+    prog.SetInitialGuessForAllVariables(Vector4d::Zero());
   }
   RunSolver(&prog, solver);
 
-  Eigen::Vector4d x_expected(0, 0, 15, 25.0 / 3.0);
+  Vector4d x_expected(0, 0, 15, 25.0 / 3.0);
   const auto& x_value = prog.GetSolution(x);
   EXPECT_TRUE(
       CompareMatrices(x_value, x_expected, 1e-10, MatrixCompareType::absolute));
@@ -260,11 +267,11 @@ void TestLinearProgram3(const MathematicalProgramSolverInterface& solver) {
   EXPECT_EQ(++num_bounding_box_cnstr, prog.bounding_box_constraints().size());
 
   if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
+    prog.SetInitialGuessForAllVariables(Vector3d::Zero());
   }
   RunSolver(&prog, solver);
 
-  Eigen::Vector3d x_expected(8, 3, 11);
+  Vector3d x_expected(8, 3, 11);
   const auto& x_value = prog.GetSolution(x);
   EXPECT_TRUE(
       CompareMatrices(x_value, x_expected, 1e-6, MatrixCompareType::absolute));
@@ -289,10 +296,10 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   // 2x1^2 + x2^2 + x1x2 + x1
   // add a linear cost
   // x2
-  Eigen::Matrix2d Q;
+  Matrix2d Q;
   // The quadratic cost is 0.5*x'*Q*x+b'*x.
   Q << 4, 2, 0, 2;
-  Eigen::Vector2d b(1, 0);
+  Vector2d b(1, 0);
   prog.AddQuadraticCost(Q, b, x);
   prog.AddLinearCost(drake::Vector1d(1.0), x.segment<1>(1));
 
@@ -302,19 +309,19 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   // x2 >= -1
   // to test multiple bounding box constraints.
   prog.AddBoundingBoxConstraint(
-      Eigen::Vector2d(0, 0),
-      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), x);
+      Vector2d(0, 0),
+      Vector2d::Constant(std::numeric_limits<double>::infinity()), x);
   prog.AddBoundingBoxConstraint(-1, std::numeric_limits<double>::infinity(),
                                 x(1));
 
-  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), 1, x);
+  prog.AddLinearEqualityConstraint(RowVector2d(1, 1), 1, x);
 
   if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+    prog.SetInitialGuessForAllVariables(Vector2d::Zero());
   }
   RunSolver(&prog, solver);
 
-  Eigen::Vector2d x_expected(0.25, 0.75);
+  Vector2d x_expected(0.25, 0.75);
   const auto& x_value = prog.GetSolution(x);
   EXPECT_TRUE(
       CompareMatrices(x_value, x_expected, 1E-8, MatrixCompareType::absolute));
@@ -333,12 +340,12 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(3);
 
-  Eigen::MatrixXd Q = 2 * Eigen::Matrix<double, 3, 3>::Identity();
+  Matrix3d Q = 2 * Matrix3d::Identity();
   Q(0, 1) = 1;
   Q(1, 2) = 1;
   Q(1, 0) = 1;
   Q(2, 1) = 1;
-  Eigen::VectorXd b(3);
+  Vector3d b{};
   b << 2.0, 0.0, 0.0;
   prog.AddQuadraticCost(Q, b, x);
 
@@ -354,20 +361,20 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   // some rows have none.
   Eigen::Matrix<double, 4, 3> A1;
   A1 << 1, 2, 3, -1, -1, 0, 0, 1, 2, 1, 1, 2;
-  Eigen::Vector4d b_lb(4, -std::numeric_limits<double>::infinity(), -20,
+  Vector4d b_lb(4, -std::numeric_limits<double>::infinity(), -20,
                        -std::numeric_limits<double>::infinity());
-  Eigen::Vector4d b_ub(std::numeric_limits<double>::infinity(), -1, 100,
+  Vector4d b_ub(std::numeric_limits<double>::infinity(), -1, 100,
                        std::numeric_limits<double>::infinity());
   prog.AddLinearConstraint(A1, b_lb, b_ub, x);
   // This test also handles linear equality constraint
   prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3), 3, x);
 
   if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
+    prog.SetInitialGuessForAllVariables(Vector3d::Zero());
   }
   RunSolver(&prog, solver);
 
-  Eigen::VectorXd expected(3);
+  Vector3d expected{};
   expected << 0, 1, 2.0 / 3.0;
 
   const auto& x_value = prog.GetSolution(x);
@@ -1289,23 +1296,23 @@ GTEST_TEST(TestSemidefiniteProgram, TestTrivialSDP) {
 // xdot = Ai*x
 // The condition is
 // min 0
-// s.t P is positive semidefinite
-//     Ai'*P + P*Ai is positive semidefinite
+// s.t P is positive definite
+//     - (Ai'*P + P*Ai) is positive definite
 GTEST_TEST(TestSemidefiniteProgram, TestCommonLyapunov) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetSemidefiniteProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     MathematicalProgram prog;
     auto P = prog.NewSymmetricContinuousVariables<3>("P");
-    prog.AddPositiveSemidefiniteConstraint(P);
+    prog.AddPositiveSemidefiniteConstraint(P - 1E-3 * Matrix3d::Identity());
     Eigen::Matrix3d A1;
     // clang-format off
     A1 << -1, -1, -2,
            0, -1, -3,
            0, 0, -1;
     // clang-format on
-    auto binding1 =
-        prog.AddPositiveSemidefiniteConstraint(-A1.transpose() * P - P * A1);
+    auto binding1 = prog.AddPositiveSemidefiniteConstraint(
+        -A1.transpose() * P - P * A1 - 1E-3 * Matrix3d::Identity());
 
     Eigen::Matrix3d A2;
     // clang-format off
@@ -1313,32 +1320,34 @@ GTEST_TEST(TestSemidefiniteProgram, TestCommonLyapunov) {
            0, -0.7, -2,
            0, 0, -0.4;
     // clang-format on
-    auto binding2 =
-        prog.AddPositiveSemidefiniteConstraint(-A2.transpose() * P - P * A2);
+    auto binding2 = prog.AddPositiveSemidefiniteConstraint(
+        -A2.transpose() * P - P * A2 - 1E-3 * Matrix3d::Identity());
 
     RunSolver(&prog, *solver);
 
-    const Eigen::Matrix3d P_value = prog.GetSolution(P);
+    const Matrix3d P_value = prog.GetSolution(P);
     const auto Q1_flat_value = prog.GetSolution(binding1.variables());
     const auto Q2_flat_value = prog.GetSolution(binding2.variables());
-    const Eigen::Map<const Eigen::Matrix3d> Q1_value(&Q1_flat_value(0));
-    const Eigen::Map<const Eigen::Matrix3d> Q2_value(&Q2_flat_value(0));
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
+    const Eigen::Map<const Matrix3d> Q1_value(&Q1_flat_value(0));
+    const Eigen::Map<const Matrix3d> Q2_value(&Q2_flat_value(0));
+    Eigen::SelfAdjointEigenSolver<Matrix3d> eigen_solver_P(P_value);
 
     // The comparison tolerance is set as 1E-8, to match the Mosek default
     // feasibility tolerance 1E-8.
     EXPECT_TRUE(CompareMatrices(P_value, P_value.transpose(),
                                 std::numeric_limits<double>::epsilon(),
                                 MatrixCompareType::absolute));
-    EXPECT_GE(eigen_solver_P.eigenvalues().minCoeff(), -1E-8);
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_Q1(Q1_value);
-    EXPECT_GE(eigen_solver_Q1.eigenvalues().minCoeff(), -1E-8);
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_Q2(Q2_value);
-    EXPECT_GE(eigen_solver_Q2.eigenvalues().minCoeff(), -1E-8);
-    EXPECT_TRUE(CompareMatrices(A1.transpose() * P_value + P_value * A1,
-                                -Q1_value, 1e-8, MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(A2.transpose() * P_value + P_value * A2,
-                                -Q2_value, 1e-8, MatrixCompareType::absolute));
+    EXPECT_GE(eigen_solver_P.eigenvalues().minCoeff(), 0);
+    Eigen::SelfAdjointEigenSolver<Matrix3d> eigen_solver_Q1(Q1_value);
+    EXPECT_GE(eigen_solver_Q1.eigenvalues().minCoeff(), 0);
+    Eigen::SelfAdjointEigenSolver<Matrix3d> eigen_solver_Q2(Q2_value);
+    EXPECT_GE(eigen_solver_Q2.eigenvalues().minCoeff(), 0);
+    EXPECT_TRUE(CompareMatrices(
+        A1.transpose() * P_value + P_value * A1 + 1E-3 * Matrix3d::Identity(),
+        -Q1_value, 1E-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(
+        A2.transpose() * P_value + P_value * A2 + 1E-3 * Matrix3d::Identity(),
+        -Q2_value, 1E-8, MatrixCompareType::absolute));
   }
 }
 
@@ -1365,10 +1374,10 @@ GTEST_TEST(TestSemidefiniteProgram, TestCommonLyapunov) {
 GTEST_TEST(TestSemidefiniteProgram, TestOuterEllipsoid) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetSemidefiniteProgramSolvers(&solvers);
-  std::array<Eigen::Matrix3d, 3> Q;
-  std::array<Eigen::Vector3d, 3> b;
-  Q[0] = Eigen::Matrix3d::Identity();
-  b[0] = Eigen::Vector3d::Zero();
+  std::array<Matrix3d, 3> Q;
+  std::array<Vector3d, 3> b;
+  Q[0] = Matrix3d::Identity();
+  b[0] = Vector3d::Zero();
   // clang-format off
   Q[1] << 1, 0.2, 0.3,
          0.2, 2,  0.6,
@@ -1411,15 +1420,15 @@ GTEST_TEST(TestSemidefiniteProgram, TestOuterEllipsoid) {
     auto s_value = prog.GetSolution(s);
     auto c_value = prog.GetSolution(c);
 
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es_P(P_value);
+    Eigen::SelfAdjointEigenSolver<Matrix3d> es_P(P_value);
     EXPECT_TRUE((es_P.eigenvalues().array() >= -1E-6).all());
     for (int i = 0; i < 3; ++i) {
-      Eigen::Matrix4d M_value;
+      Matrix4d M_value;
       // clang-format off
       M_value << s_value(i) * Q[i] - P_value, s_value(i) * b[i] - c_value,
           s_value(i) * b[i].transpose() - c_value.transpose(), 1 - s_value(i);
       // clang-format on
-      Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> es_M(M_value);
+      Eigen::SelfAdjointEigenSolver<Matrix4d> es_M(M_value);
       EXPECT_TRUE((es_M.eigenvalues().array() >= -1E-6).all());
     }
   }
@@ -1438,13 +1447,13 @@ GTEST_TEST(TestSemidefiniteProgram, TestEigenvalueProblem) {
   for (const auto& solver : solvers) {
     MathematicalProgram prog;
     auto x = prog.NewContinuousVariables<2>("x");
-    Eigen::Matrix3d F1;
+    Matrix3d F1;
     // clang-format off
     F1 << 1, 0.2, 0.3,
           0.2, 2, -0.1,
           0.3, -0.1, 4;
     // clang-format on
-    Eigen::Matrix3d F2;
+    Matrix3d F2;
     // clang-format off
     F2 << 2, 0.4, 0.7,
          0.4, -1, 0.1,
@@ -1452,11 +1461,11 @@ GTEST_TEST(TestSemidefiniteProgram, TestEigenvalueProblem) {
     // clang-format on
     auto z = prog.NewContinuousVariables<1>("z");
     prog.AddLinearMatrixInequalityConstraint(
-        {Eigen::Matrix3d::Zero(), Eigen::Matrix3d::Identity(), -F1, -F2},
+        {Matrix3d::Zero(), Matrix3d::Identity(), -F1, -F2},
         {z, x});
 
-    Eigen::Vector2d x_lb(0.1, 1);
-    Eigen::Vector2d x_ub(2, 3);
+    Vector2d x_lb(0.1, 1);
+    Vector2d x_ub(2, 3);
     prog.AddBoundingBoxConstraint(x_lb, x_ub, x);
 
     prog.AddLinearCost(drake::Vector1d(1), z);
@@ -1467,7 +1476,7 @@ GTEST_TEST(TestSemidefiniteProgram, TestEigenvalueProblem) {
     auto x_value = prog.GetSolution(x);
     auto xF_sum = x_value(0) * F1 + x_value(1) * F2;
 
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_xF(xF_sum);
+    Eigen::SelfAdjointEigenSolver<Matrix3d> eigen_solver_xF(xF_sum);
     // The comparison tolerance is set to 1E-7, slightly larger than Mosek's
     // default feasibility tolerance 1E-8.
     EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().maxCoeff(), 1E-7);

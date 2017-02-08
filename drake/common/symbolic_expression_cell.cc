@@ -14,6 +14,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_compat.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
@@ -72,33 +73,33 @@ bool determine_polynomial(
 // polynomial-convertible or not. This function is used in the
 // constructor of ExpressionMul.
 static bool determine_polynomial(
-    const std::map<Expression, Expression>& base_to_expnt_map) {
-  return all_of(base_to_expnt_map.begin(), base_to_expnt_map.end(),
+    const std::map<Expression, Expression>& base_to_exponent_map) {
+  return all_of(base_to_exponent_map.begin(), base_to_exponent_map.end(),
                 [](const pair<Expression, Expression>& p) {
                   // For each base^exponent, it has to satisfy the following
                   // conditions:
                   //     - base is polynomial-convertible.
                   //     - exponent is a non-negative integer.
                   const Expression& base{p.first};
-                  const Expression& expnt{p.second};
-                  if (!base.is_polynomial() || !is_constant(expnt)) {
+                  const Expression& exponent{p.second};
+                  if (!base.is_polynomial() || !is_constant(exponent)) {
                     return false;
                   }
-                  const double e{get_constant_value(expnt)};
+                  const double e{get_constant_value(exponent)};
                   return is_non_negative_integer(e);
                 });
 }
 
 // Determines if pow(base, exponent) is polynomial-convertible or not. This
 // function is used in constructor of ExpressionPow.
-bool determine_polynomial(const Expression& base, const Expression& expnt) {
+bool determine_polynomial(const Expression& base, const Expression& exponent) {
   // base ^ exponent is polynomial-convertible if the followings hold:
   //    - base is polynomial-convertible.
   //    - exponent is a non-negative integer.
-  if (!(base.is_polynomial() && is_constant(expnt))) {
+  if (!(base.is_polynomial() && is_constant(exponent))) {
     return false;
   }
-  const double e{get_constant_value(expnt)};
+  const double e{get_constant_value(exponent)};
   return is_non_negative_integer(e);
 }
 
@@ -122,16 +123,16 @@ Variables UnaryExpressionCell::GetVariables() const {
 bool UnaryExpressionCell::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  const UnaryExpressionCell& unary_e{
-      static_cast<const UnaryExpressionCell&>(e)};
+  const UnaryExpressionCell& unary_e =
+      static_cast<const UnaryExpressionCell&>(e);
   return e_.EqualTo(unary_e.e_);
 }
 
 bool UnaryExpressionCell::Less(const ExpressionCell& e) const {
   // Expression::Less guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  const UnaryExpressionCell& unary_e{
-      static_cast<const UnaryExpressionCell&>(e)};
+  const UnaryExpressionCell& unary_e =
+      static_cast<const UnaryExpressionCell&>(e);
   return e_.Less(unary_e.e_);
 }
 
@@ -157,16 +158,16 @@ Variables BinaryExpressionCell::GetVariables() const {
 bool BinaryExpressionCell::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  const BinaryExpressionCell& binary_e{
-      static_cast<const BinaryExpressionCell&>(e)};
+  const BinaryExpressionCell& binary_e =
+      static_cast<const BinaryExpressionCell&>(e);
   return e1_.EqualTo(binary_e.e1_) && e2_.EqualTo(binary_e.e2_);
 }
 
 bool BinaryExpressionCell::Less(const ExpressionCell& e) const {
   // Expression::Less guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  const BinaryExpressionCell& binary_e{
-      static_cast<const BinaryExpressionCell&>(e)};
+  const BinaryExpressionCell& binary_e =
+      static_cast<const BinaryExpressionCell&>(e);
   if (e1_.Less(binary_e.e1_)) {
     return true;
   }
@@ -209,6 +210,10 @@ bool ExpressionVar::Less(const ExpressionCell& e) const {
 
 Polynomial<double> ExpressionVar::ToPolynomial() const {
   return Polynomial<double>(1.0, var_.get_id());
+}
+
+int ExpressionVar::Degree(const Variables &vars) const {
+  return vars.include(var_) ? 1 : 0;
 }
 
 double ExpressionVar::Evaluate(const Environment& env) const {
@@ -260,6 +265,10 @@ Polynomial<double> ExpressionConstant::ToPolynomial() const {
   return Polynomial<double>(v_);
 }
 
+int ExpressionConstant::Degree(const Variables& vars) const {
+  return 0;
+}
+
 double ExpressionConstant::Evaluate(const Environment& env) const {
   DRAKE_DEMAND(!std::isnan(v_));
   return v_;
@@ -299,6 +308,10 @@ bool ExpressionNaN::Less(const ExpressionCell& e) const {
 
 Polynomial<double> ExpressionNaN::ToPolynomial() const {
   throw runtime_error("NaN is detected while converting to Polynomial.");
+}
+
+int ExpressionNaN::Degree(const Variables& vars) const {
+  throw runtime_error("NaN is detected while enquiring polynomial degree.");
 }
 
 double ExpressionNaN::Evaluate(const Environment& env) const {
@@ -387,6 +400,14 @@ Polynomial<double> ExpressionAdd::ToPolynomial() const {
                     });
 }
 
+int ExpressionAdd::Degree(const Variables& vars) const {
+  int degree = 0;
+  for (const auto& p : expr_to_coeff_map_) {
+    degree = std::max(degree, p.first.Degree(vars));
+  }
+  return degree;
+}
+
 double ExpressionAdd::Evaluate(const Environment& env) const {
   return accumulate(
       expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(), constant_,
@@ -465,10 +486,10 @@ void ExpressionAddFactory::AddExpression(const Expression& e) {
     if (constant != 1.0) {
       // Instead of adding (1.0 * (constant * b1^t1 ... bn^tn)),
       // add (constant, 1.0 * b1^t1 ... bn^tn).
-      return AddTerm(
-          constant,
-          ExpressionMulFactory(1.0, get_base_to_expnt_map_in_multiplication(e))
-              .GetExpression());
+      return AddTerm(constant,
+                     ExpressionMulFactory(
+                         1.0, get_base_to_exponent_map_in_multiplication(e))
+                         .GetExpression());
     }
   }
   return AddTerm(1.0, e);
@@ -539,18 +560,19 @@ void ExpressionAddFactory::AddMap(
 }
 
 ExpressionMul::ExpressionMul(
-    const double constant, const map<Expression, Expression>& base_to_expnt_map)
-    : ExpressionCell{ExpressionKind::Mul,
-                     hash_combine(hash<double>{}(constant), base_to_expnt_map),
-                     determine_polynomial(base_to_expnt_map)},
+    const double constant,
+    const map<Expression, Expression>& base_to_exponent_map)
+    : ExpressionCell{ExpressionKind::Mul, hash_combine(hash<double>{}(constant),
+                                                       base_to_exponent_map),
+                     determine_polynomial(base_to_exponent_map)},
       constant_(constant),
-      base_to_expnt_map_(base_to_expnt_map) {
-  DRAKE_ASSERT(!base_to_expnt_map_.empty());
+      base_to_exponent_map_(base_to_exponent_map) {
+  DRAKE_ASSERT(!base_to_exponent_map_.empty());
 }
 
 Variables ExpressionMul::GetVariables() const {
   Variables ret{};
-  for (const auto& p : base_to_expnt_map_) {
+  for (const auto& p : base_to_exponent_map_) {
     ret.insert(p.first.GetVariables());
     ret.insert(p.second.GetVariables());
   }
@@ -567,8 +589,8 @@ bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
   }
   // Check each (term, coeff) pairs in two maps.
   return equal(
-      base_to_expnt_map_.cbegin(), base_to_expnt_map_.cend(),
-      mul_e.base_to_expnt_map_.cbegin(), mul_e.base_to_expnt_map_.cend(),
+      base_to_exponent_map_.cbegin(), base_to_exponent_map_.cend(),
+      mul_e.base_to_exponent_map_.cbegin(), mul_e.base_to_exponent_map_.cend(),
       [](const pair<Expression, Expression>& p1,
          const pair<Expression, Expression>& p2) {
         return p1.first.EqualTo(p2.first) && p1.second.EqualTo(p2.second);
@@ -588,8 +610,8 @@ bool ExpressionMul::Less(const ExpressionCell& e) const {
   }
   // Compare the two maps.
   return lexicographical_compare(
-      base_to_expnt_map_.cbegin(), base_to_expnt_map_.cend(),
-      mul_e.base_to_expnt_map_.cbegin(), mul_e.base_to_expnt_map_.cend(),
+      base_to_exponent_map_.cbegin(), base_to_exponent_map_.cend(),
+      mul_e.base_to_exponent_map_.cbegin(), mul_e.base_to_exponent_map_.cend(),
       [](const pair<Expression, Expression>& p1,
          const pair<Expression, Expression>& p2) {
         const Expression& base1{p1.first};
@@ -609,21 +631,33 @@ bool ExpressionMul::Less(const ExpressionCell& e) const {
 Polynomial<double> ExpressionMul::ToPolynomial() const {
   DRAKE_ASSERT(is_polynomial());
   return accumulate(
-      base_to_expnt_map_.begin(), base_to_expnt_map_.end(),
+      base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
       Polynomial<double>{constant_}, [](const Polynomial<double>& polynomial,
                                         const pair<Expression, Expression>& p) {
         const Expression& base{p.first};
-        const Expression& expnt{p.second};
+        const Expression& exponent{p.second};
         DRAKE_ASSERT(base.is_polynomial());
-        DRAKE_ASSERT(is_constant(expnt));
+        DRAKE_ASSERT(is_constant(exponent));
         return polynomial * pow(base.ToPolynomial(),
-                                static_cast<int>(get_constant_value(expnt)));
+                                static_cast<int>(get_constant_value(exponent)));
+      });
+}
+
+int ExpressionMul::Degree(const Variables &vars) const {
+  // The precondition is is_polynomial() == True.
+  return accumulate(
+      base_to_exponent_map_.begin(), base_to_exponent_map_.end(), 0,
+      [vars](const int& degree, const pair<Expression, Expression>& p) {
+        const Expression& base{p.first};
+        const Expression& expnt{p.second};
+        return degree +
+               base.Degree(vars) * static_cast<int>(get_constant_value(expnt));
       });
 }
 
 double ExpressionMul::Evaluate(const Environment& env) const {
   return accumulate(
-      base_to_expnt_map_.begin(), base_to_expnt_map_.end(), constant_,
+      base_to_exponent_map_.begin(), base_to_exponent_map_.end(), constant_,
       [&env](const double init, const pair<Expression, Expression>& p) {
         return init * std::pow(p.first.Evaluate(env), p.second.Evaluate(env));
       });
@@ -631,7 +665,7 @@ double ExpressionMul::Evaluate(const Environment& env) const {
 
 Expression ExpressionMul::Substitute(const Substitution& s) const {
   return accumulate(
-      base_to_expnt_map_.begin(), base_to_expnt_map_.end(),
+      base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
       Expression{constant_},
       [&s](const Expression& init, const pair<Expression, Expression>& p) {
         return init * pow(p.first.Substitute(s), p.second.Substitute(s));
@@ -639,14 +673,14 @@ Expression ExpressionMul::Substitute(const Substitution& s) const {
 }
 
 ostream& ExpressionMul::Display(ostream& os) const {
-  DRAKE_ASSERT(!base_to_expnt_map_.empty());
+  DRAKE_ASSERT(!base_to_exponent_map_.empty());
   bool print_mul{false};
   os << "(";
   if (constant_ != 1.0) {
     os << constant_;
     print_mul = true;
   }
-  for (auto& p : base_to_expnt_map_) {
+  for (auto& p : base_to_exponent_map_) {
     DisplayTerm(os, print_mul, p.first, p.second);
     print_mul = true;
   }
@@ -656,28 +690,30 @@ ostream& ExpressionMul::Display(ostream& os) const {
 
 ostream& ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
                                     const Expression& base,
-                                    const Expression& expnt) const {
+                                    const Expression& exponent) const {
   // Print " * pow(base, exponent)" if print_mul is true
   // Print "pow(base, exponent)" if print_mul is false
   // Print "base" instead of "pow(base, exponent)" if exponent == 1.0
   if (print_mul) {
     os << " * ";
   }
-  if (is_one(expnt)) {
+  if (is_one(exponent)) {
     os << base;
   } else {
-    os << "pow(" << base << ", " << expnt << ")";
+    os << "pow(" << base << ", " << exponent << ")";
   }
   return os;
 }
 
 ExpressionMulFactory::ExpressionMulFactory(
-    const double constant, const map<Expression, Expression>& base_to_expnt_map)
-    : constant_{constant}, base_to_expnt_map_{base_to_expnt_map} {}
+    const double constant,
+    const map<Expression, Expression>& base_to_exponent_map)
+    : constant_{constant}, base_to_exponent_map_{base_to_exponent_map} {}
 
 ExpressionMulFactory::ExpressionMulFactory(
     const shared_ptr<const ExpressionMul> ptr)
-    : ExpressionMulFactory{ptr->get_constant(), ptr->get_base_to_expnt_map()} {}
+    : ExpressionMulFactory{ptr->get_constant(),
+                           ptr->get_base_to_exponent_map()} {}
 
 void ExpressionMulFactory::AddExpression(const Expression& e) {
   if (is_constant(e)) {
@@ -693,13 +729,13 @@ void ExpressionMulFactory::AddExpression(const Expression& e) {
 
 void ExpressionMulFactory::Add(const shared_ptr<const ExpressionMul> ptr) {
   AddConstant(ptr->get_constant());
-  AddMap(ptr->get_base_to_expnt_map());
+  AddMap(ptr->get_base_to_exponent_map());
 }
 
 ExpressionMulFactory& ExpressionMulFactory::operator=(
     const shared_ptr<ExpressionMul> ptr) {
   constant_ = ptr->get_constant();
-  base_to_expnt_map_ = ptr->get_base_to_expnt_map();
+  base_to_exponent_map_ = ptr->get_base_to_exponent_map();
   return *this;
 }
 
@@ -709,15 +745,16 @@ ExpressionMulFactory& ExpressionMulFactory::Negate() {
 }
 
 Expression ExpressionMulFactory::GetExpression() const {
-  if (base_to_expnt_map_.empty()) {
+  if (base_to_exponent_map_.empty()) {
     return Expression{constant_};
   }
-  if (constant_ == 1.0 && base_to_expnt_map_.size() == 1u) {
+  if (constant_ == 1.0 && base_to_exponent_map_.size() == 1u) {
     // 1.0 * c1^t1 -> c1^t1
-    const auto it(base_to_expnt_map_.cbegin());
+    const auto it(base_to_exponent_map_.cbegin());
     return pow(it->first, it->second);
   }
-  return Expression{make_shared<ExpressionMul>(constant_, base_to_expnt_map_)};
+  return Expression{
+      make_shared<ExpressionMul>(constant_, base_to_exponent_map_)};
 }
 
 void ExpressionMulFactory::AddConstant(const double constant) {
@@ -725,41 +762,42 @@ void ExpressionMulFactory::AddConstant(const double constant) {
 }
 
 void ExpressionMulFactory::AddTerm(const Expression& base,
-                                   const Expression& expnt) {
+                                   const Expression& exponent) {
   // The following assertion holds because of
   // ExpressionMulFactory::AddExpression.
-  DRAKE_ASSERT(!(is_constant(base) && is_constant(expnt)));
+  DRAKE_ASSERT(!(is_constant(base) && is_constant(exponent)));
   if (is_pow(base)) {
     // If (base, exponent) = (pow(e1, e2), exponent)), then add (e1, e2 *
     // exponent)
     // Example: (x^2)^3 => x^(2 * 3)
-    return AddTerm(get_first_argument(base), get_second_argument(base) * expnt);
+    return AddTerm(get_first_argument(base),
+                   get_second_argument(base) * exponent);
   }
 
-  const auto it(base_to_expnt_map_.find(base));
-  if (it != base_to_expnt_map_.end()) {
+  const auto it(base_to_exponent_map_.find(base));
+  if (it != base_to_exponent_map_.end()) {
     // base is already in map.
     // (= b1^e1 * ... * (base^this_exponent) * ... * en^bn).
     // Update it to be (... * (base^(this_exponent + exponent)) * ...)
     // Example: x^3 * x^2 => x^5
-    Expression& this_expnt{it->second};
-    this_expnt += expnt;
-    if (is_zero(this_expnt)) {
+    Expression& this_exponent = it->second;
+    this_exponent += exponent;
+    if (is_zero(this_exponent)) {
       // If it ends up with base^0 (= 1.0) then remove this entry from the map.
       // TODO(soonho-tri): The following operation is not sound since it can
       // cancels `base` which might include 0/0 problems.
-      base_to_expnt_map_.erase(it);
+      base_to_exponent_map_.erase(it);
     }
   } else {
-    // Product is not found in base_to_expnt_map_. Add the entry (base,
+    // Product is not found in base_to_exponent_map_. Add the entry (base,
     // exponent).
-    base_to_expnt_map_.emplace(base, expnt);
+    base_to_exponent_map_.emplace(base, exponent);
   }
 }
 
 void ExpressionMulFactory::AddMap(
-    const map<Expression, Expression> base_to_expnt_map) {
-  for (const auto& p : base_to_expnt_map) {
+    const map<Expression, Expression> base_to_exponent_map) {
+  for (const auto& p : base_to_exponent_map) {
     AddTerm(p.first, p.second);
   }
 }
@@ -773,6 +811,11 @@ Polynomial<double> ExpressionDiv::ToPolynomial() const {
   DRAKE_ASSERT(is_constant(get_second_argument()));
   return get_first_argument().ToPolynomial() /
          get_constant_value(get_second_argument());
+}
+
+int ExpressionDiv::Degree(const Variables& vars) const {
+  // The precondition is is_polynomial() == True.
+  return get_first_argument().Degree(vars) - get_second_argument().Degree(vars);
 }
 
 Expression ExpressionDiv::Substitute(const Substitution& s) const {
@@ -811,6 +854,10 @@ Polynomial<double> ExpressionLog::ToPolynomial() const {
   throw runtime_error("Log expression is not polynomial-convertible.");
 }
 
+int ExpressionLog::Degree(const Variables &vars) const {
+  throw runtime_error("Log expression does not have a polynomial degree.");
+}
+
 Expression ExpressionLog::Substitute(const Substitution& s) const {
   return log(get_argument().Substitute(s));
 }
@@ -831,6 +878,10 @@ Polynomial<double> ExpressionAbs::ToPolynomial() const {
   throw runtime_error("Abs expression is not polynomial-convertible.");
 }
 
+int ExpressionAbs::Degree(const Variables& vars) const {
+  throw runtime_error("Abs expression does not have a polynomial degree.");
+}
+
 Expression ExpressionAbs::Substitute(const Substitution& s) const {
   return abs(get_argument().Substitute(s));
 }
@@ -846,6 +897,10 @@ ExpressionExp::ExpressionExp(const Expression& e)
 
 Polynomial<double> ExpressionExp::ToPolynomial() const {
   throw runtime_error("Exp expression is not polynomial-convertible.");
+}
+
+int ExpressionExp::Degree(const Variables &vars) const {
+  throw runtime_error("Exp expression does not have a polynomial degree.");
 }
 
 Expression ExpressionExp::Substitute(const Substitution& s) const {
@@ -872,6 +927,10 @@ void ExpressionSqrt::check_domain(const double v) {
 
 Polynomial<double> ExpressionSqrt::ToPolynomial() const {
   throw runtime_error("Sqrt expression is not polynomial-convertible.");
+}
+
+int ExpressionSqrt::Degree(const Variables& vars) const {
+  throw runtime_error("Sqrt expression does not have a polynomial degree.");
 }
 
 Expression ExpressionSqrt::Substitute(const Substitution& s) const {
@@ -904,8 +963,16 @@ void ExpressionPow::check_domain(const double v1, const double v2) {
 
 Polynomial<double> ExpressionPow::ToPolynomial() const {
   DRAKE_ASSERT(is_polynomial());
+  const int exponent{
+      static_cast<int>(get_constant_value(get_second_argument()))};
+  return pow(get_first_argument().ToPolynomial(), exponent);
+}
+
+int ExpressionPow::Degree(const Variables &vars) const {
+  // As a precondition, this expression `is_polynomial`, so the exponent is an
+  // integer and this cast does not change its value.
   const int expnt{static_cast<int>(get_constant_value(get_second_argument()))};
-  return pow(get_first_argument().ToPolynomial(), expnt);
+  return get_first_argument().Degree(vars) * expnt;
 }
 
 Expression ExpressionPow::Substitute(const Substitution& s) const {
@@ -930,6 +997,10 @@ Polynomial<double> ExpressionSin::ToPolynomial() const {
   throw runtime_error("Sin expression is not polynomial-convertible.");
 }
 
+int ExpressionSin::Degree(const Variables& vars) const {
+  throw runtime_error("Sin expression does not have a polynomial degree.");
+}
+
 Expression ExpressionSin::Substitute(const Substitution& s) const {
   return sin(get_argument().Substitute(s));
 }
@@ -947,6 +1018,10 @@ Polynomial<double> ExpressionCos::ToPolynomial() const {
   throw runtime_error("Cos expression is not polynomial-convertible.");
 }
 
+int ExpressionCos::Degree(const Variables &vars) const {
+  throw runtime_error("Cos expression does not have a polynomial degree.");
+}
+
 Expression ExpressionCos::Substitute(const Substitution& s) const {
   return cos(get_argument().Substitute(s));
 }
@@ -962,6 +1037,10 @@ ExpressionTan::ExpressionTan(const Expression& e)
 
 Polynomial<double> ExpressionTan::ToPolynomial() const {
   throw runtime_error("Tan expression is not polynomial-convertible.");
+}
+
+int ExpressionTan::Degree(const Variables& vars) const {
+  throw runtime_error("Tan expression does not have a polynomial degree.");
 }
 
 Expression ExpressionTan::Substitute(const Substitution& s) const {
@@ -988,6 +1067,10 @@ void ExpressionAsin::check_domain(const double v) {
 
 Polynomial<double> ExpressionAsin::ToPolynomial() const {
   throw runtime_error("Asin expression is not polynomial-convertible.");
+}
+
+int ExpressionAsin::Degree(const Variables &vars) const {
+  throw runtime_error("Asin expression does not have a polynomial degree.");
 }
 
 Expression ExpressionAsin::Substitute(const Substitution& s) const {
@@ -1019,6 +1102,10 @@ Polynomial<double> ExpressionAcos::ToPolynomial() const {
   throw runtime_error("Acos expression is not polynomial-convertible.");
 }
 
+int ExpressionAcos::Degree(const Variables &vars) const {
+  throw runtime_error("Acos expression does not have a polynomial degree.");
+}
+
 Expression ExpressionAcos::Substitute(const Substitution& s) const {
   return acos(get_argument().Substitute(s));
 }
@@ -1039,6 +1126,10 @@ Polynomial<double> ExpressionAtan::ToPolynomial() const {
   throw runtime_error("Atan expression is not polynomial-convertible.");
 }
 
+int ExpressionAtan::Degree(const Variables &vars) const {
+  throw runtime_error("Atan expression does not have a polynomial degree.");
+}
+
 Expression ExpressionAtan::Substitute(const Substitution& s) const {
   return atan(get_argument().Substitute(s));
 }
@@ -1054,6 +1145,10 @@ ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
 
 Polynomial<double> ExpressionAtan2::ToPolynomial() const {
   throw runtime_error("Atan2 expression is not polynomial-convertible.");
+}
+
+int ExpressionAtan2::Degree(const Variables &vars) const {
+  throw runtime_error("Atan2 expression does not have a polynomial degree.");
 }
 
 Expression ExpressionAtan2::Substitute(const Substitution& s) const {
@@ -1077,6 +1172,10 @@ Polynomial<double> ExpressionSinh::ToPolynomial() const {
   throw runtime_error("Sinh expression is not polynomial-convertible.");
 }
 
+int ExpressionSinh::Degree(const Variables &vars) const {
+  throw runtime_error("Sinh expression does not have a polynomial degree.");
+}
+
 Expression ExpressionSinh::Substitute(const Substitution& s) const {
   return sinh(get_argument().Substitute(s));
 }
@@ -1092,6 +1191,10 @@ ExpressionCosh::ExpressionCosh(const Expression& e)
 
 Polynomial<double> ExpressionCosh::ToPolynomial() const {
   throw runtime_error("Cosh expression is not polynomial-convertible.");
+}
+
+int ExpressionCosh::Degree(const Variables &vars) const {
+  throw runtime_error("Cosh expression does not have a polynomial degree.");
 }
 
 Expression ExpressionCosh::Substitute(const Substitution& s) const {
@@ -1111,6 +1214,10 @@ Polynomial<double> ExpressionTanh::ToPolynomial() const {
   throw runtime_error("Tanh expression is not polynomial-convertible.");
 }
 
+int ExpressionTanh::Degree(const Variables& vars) const {
+  throw runtime_error("Tanh expression does not have a polynomial degree.");
+}
+
 Expression ExpressionTanh::Substitute(const Substitution& s) const {
   return tanh(get_argument().Substitute(s));
 }
@@ -1126,6 +1233,10 @@ ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
 
 Polynomial<double> ExpressionMin::ToPolynomial() const {
   throw runtime_error("Min expression is not polynomial-convertible.");
+}
+
+int ExpressionMin::Degree(const Variables &vars) const {
+  throw runtime_error("Min expression does not have a polynomial degree.");
 }
 
 Expression ExpressionMin::Substitute(const Substitution& s) const {
@@ -1147,6 +1258,10 @@ ExpressionMax::ExpressionMax(const Expression& e1, const Expression& e2)
 
 Polynomial<double> ExpressionMax::ToPolynomial() const {
   throw runtime_error("Max expression is not polynomial-convertible.");
+}
+
+int ExpressionMax::Degree(const Variables &vars) const {
+  throw runtime_error("Max expression does not have a polynomial degree.");
 }
 
 Expression ExpressionMax::Substitute(const Substitution& s) const {
@@ -1214,6 +1329,11 @@ bool ExpressionIfThenElse::Less(const ExpressionCell& e) const {
 
 Polynomial<double> ExpressionIfThenElse::ToPolynomial() const {
   throw runtime_error("IfThenElse expression is not polynomial-convertible.");
+}
+
+int ExpressionIfThenElse::Degree(const Variables &vars) const {
+  throw runtime_error(
+      "IfThenElse expression does not have a polynomial degree.");
 }
 
 double ExpressionIfThenElse::Evaluate(const Environment& env) const {

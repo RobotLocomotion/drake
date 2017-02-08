@@ -118,10 +118,10 @@ cc_library(
     srcs = IPOPT_LIBS,
     hdrs = IPOPT_HDRS,
     includes = ["include/coin"],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
     deps = [
         "@gfortran//:lib",
     ],
-    linkstatic = 1,
-    visibility = ["//visibility:public"],
     alwayslink = 1,
 )
