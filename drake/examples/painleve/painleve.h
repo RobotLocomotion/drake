@@ -26,7 +26,9 @@ namespace painleve {
 ///
 /// They are already available to link against in the containing library.
 ///
-/// Inputs: no inputs.
+/// Inputs: planar force (two-dimensional) and torque (scalar), which are
+///         arbitrary "external" forces (expressed in the world frame) applied
+///         at the center-of-mass of the rod.
 ///
 /// States: planar position (state indices 0 and 1) and orientation (state
 ///         index 2), and planar linear velocity (state indices 3 and 4) and
@@ -206,7 +208,8 @@ class Painleve : public systems::LeafSystem<T> {
       systems::ContinuousState<T>* derivatives) const;
   void SetAccelerations(const systems::Context<T>& context,
                         systems::VectorBase<T>* const f,
-                        T fN, T fF, T xc, T yc) const;
+                        const T& fN, const T& fF,
+                        const T& xc, const T& yc) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
   static std::pair<T, T> CalcRodEndpoint(const T& x, const T& y, const int k,
