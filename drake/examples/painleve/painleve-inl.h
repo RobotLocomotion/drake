@@ -602,8 +602,8 @@ void Painleve<T>::SetAccelerations(const systems::Context<T>& context,
 //          D[D[theta[t], t], t] } ]
 // where theta is the counter-clockwise angle the rod makes with the
 // x-axis; fN and fF are contact normal and frictional forces; [fX fY] are
-// arbitrary "external" forces (expressed in the world frame) applied at the
-// center-of-mass of the rod; tau is an arbitrary "external" torque (expressed
+// arbitrary external forces (expressed in the world frame) applied at the
+// center-of-mass of the rod; tau is an arbitrary external torque (expressed
 // in the world frame) that should contain any moments due to any forces applied
 // away from the center-of-mass plus any pure torques; g is the
 // acceleration due to gravity, and (hopefully) all other variables are
@@ -731,8 +731,8 @@ void Painleve<T>::CalcAccelerationsOneContactSliding(
   // where theta is the counter-clockwise angle the rod makes with the
   // x-axis; 'r' is the length of the rod; fN and fF are normal and
   // frictional forces, respectively; [fX fY] are arbitrary
-  // "external" forces (expressed in the world frame) applied at the
-  // center-of-mass of the rod; tau is an arbitrary "external" torque (expressed
+  // external forces (expressed in the world frame) applied at the
+  // center-of-mass of the rod; tau is an arbitrary external torque (expressed
   // in the world frame) that should contain any moments due to any forces
   // applied away from the center-of-mass plus any pure torques; sgn_cxdot is
   // the sign function applied to the horizontal contact velocity; g is the
@@ -836,10 +836,13 @@ void Painleve<T>::CalcAccelerationsOneContactNoSliding(
     const double J = get_rod_moment_of_inertia();
     const double g = get_gravitational_acceleration();
 
-    // Pick the solution that minimizes the tangential acceleration.
-    // This solution was obtained by solving for zero normal acceleration
-    // with the frictional force pointing either possible direction (indicated
-    // by d, meaning positive x-axis and negative x-axis).
+    // Pick the solution that minimizes the tangential acceleration toward
+    // obeying the principle of maximum dissipation, which states that the
+    // friction forces should be those that maximize the dot product
+    // between slip velocity and frictional force. This particular solution was
+    // obtained by solving for zero normal acceleration with the frictional
+    // force pointing either possible direction (indicated by d, meaning
+    // positive x-axis and negative x-axis).
     // cx[t_] := x[t] + k*Cos[theta[t]]*(r/2)
     // cy[t_] := y[t] + k*Sin[theta[t]]*(r/2)
     // Solve[{0 == D[D[cy[t], t], t],
@@ -853,7 +856,7 @@ void Painleve<T>::CalcAccelerationsOneContactNoSliding(
                    J * k * mass * r * stheta * thetadot * thetadot)/
                    (4 * J + k * k * mass * r * r * ctheta * ctheta +
                     d* k * k * mass * mu * r * r * ctheta * stheta));
-      const T F = -d * mu * (N + fY);
+      const T F = -d * mu * N;
       return Vector2<T>(N, F);
     };
     Vector2<T> s1 = calc_force(+1);

@@ -20,8 +20,8 @@ namespace drake {
 namespace painleve {
 namespace {
 
-// Class for testing the Painleve Paradox example using a piecewise DAE
-// approach.
+/// Class for testing the Painleve Paradox example using a piecewise DAE
+/// approach.
 class PainleveDAETest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -310,15 +310,21 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   // the rod.
   std::unique_ptr<BasicVector<double>> ext_input =
       std::make_unique<BasicVector<double>>(3);
-  const double f = 1.0;
-  ext_input->SetAtIndex(0, f);
-  ext_input->SetAtIndex(1, -1.0);
-  ext_input->SetAtIndex(2, f * dut_->get_rod_length()/2);
+  const double f_x = 1.0;
+  const double f_y = 0.0;
+  ext_input->SetAtIndex(0, f_x);
+  ext_input->SetAtIndex(1, f_y);
+  ext_input->SetAtIndex(2, f_x * dut_->get_rod_length()/2);
   const Vector3<double> fext = ext_input->CopyToVector();
   context_->FixInputPort(0, std::move(ext_input));
 
-  // Set a large coefficient of friction.
-  dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
+  // Set the coefficient of friction such that the contact forces are right
+  // on the edge of the friction cone. Determine the predicted normal force
+  // (this simple formula is dependent upon the upright rod configuration). 
+  const double mu_stick = f_x / (dut_->get_rod_mass() *
+                                 -dut_->get_gravitational_acceleration() -
+                                 f_y);
+  dut_->set_mu_coulomb(mu_stick);
 
   // Calculate the derivatives.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
@@ -332,7 +338,17 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
   EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
 
+  // Set the coefficient of friction to 99.9% of the sticking value and then
+  // verify that the contact state transitions from a sticking one to a
+  // non-sticking one. 
+  const double mu_slide = 0.999 * mu_stick;
+  dut_->set_mu_coulomb(mu_slide);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_GT((*derivatives_)[3], tol);
+
   // Set the coefficient of friction to zero and try again.
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kStickingSingleContact;
   dut_->set_mu_coulomb(0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR((*derivatives_)[0], xc[3], tol);
@@ -344,7 +360,7 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
   // The moment caused by applying the force should result in a
   // counter-clockwise acceleration.
-  EXPECT_NEAR((*derivatives_)[5],
+  EXPECT_NEAR((*derivatives_)[5], 
               fext(2)/dut_->get_rod_moment_of_inertia(), tol);
 }
 
@@ -646,8 +662,8 @@ TEST_F(PainleveDAETest, BallisticNoImpact) {
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 }
 
-// Class for testing the Painleve Paradox example using a first order time
-// stepping approach.
+/// Class for testing the Painleve Paradox example using a first order time
+/// stepping approach.
 class PainleveTimeSteppingTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -830,8 +846,8 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSticking) {
       Painleve<double>::kStickingSingleContact;
 
   // Set constant input forces for both.
-  const double fext_x = 1.0;
-  Vector3<double> fext(fext_x, -1.0, fext_x * ts.get_rod_length()/2);
+  const double x = 1.0;
+  Vector3<double> fext(x, 0, x * ts.get_rod_length()/2);
   std::unique_ptr<BasicVector<double>> ext_input =
     std::make_unique<BasicVector<double>>(fext);
   context_ts->FixInputPort(0, std::move(ext_input));
