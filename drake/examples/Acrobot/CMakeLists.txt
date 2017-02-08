@@ -1,5 +1,5 @@
 add_library_with_exports(LIB_NAME drakeAcrobotPlant
-        SOURCE_FILES acrobot_plant.cc acrobot_swing_up.cpp)
+        SOURCE_FILES acrobot_plant.cc acrobot_swing_up.cc)
 target_link_libraries(drakeAcrobotPlant
         drakeLinearControl
         drakeMultibodyParsers
