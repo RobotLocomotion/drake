@@ -30,6 +30,17 @@ class PainleveDAETest : public ::testing::Test {
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
+
+    // Use a non-unit mass.
+    dut_->set_rod_mass(2.0);
+
+    // Set a zero input force (this is the default).
+    std::unique_ptr<BasicVector<double>> ext_input =
+        std::make_unique<BasicVector<double>>(3);
+    ext_input->SetAtIndex(0, 0.0);
+    ext_input->SetAtIndex(1, 0.0);
+    ext_input->SetAtIndex(2, 0.0);
+    context_->FixInputPort(0, std::move(ext_input));
   }
 
   std::unique_ptr<State<double>> CloneState() const {
@@ -279,6 +290,81 @@ TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
   EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
 }
 
+// Verify that derivatives match what we expect from a sticking contact
+// configuration.
+TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
+  // Set the initial state to sustained contact with zero tangential velocity
+  // at the point of contact and the rod being straight up.
+  const double half_len = dut_->get_rod_length() / 2;
+  ContinuousState<double>& xc =
+      *context_->get_mutable_continuous_state();
+  xc[0] = 0.0;
+  xc[1] = half_len;
+  xc[2] = M_PI_2;
+  xc[3] = 0.0;
+  xc[4] = 0.0;
+  xc[5] = 0.0;
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kStickingSingleContact;
+
+  // Set a constant horizontal input force, as if applied at the bottom of
+  // the rod.
+  std::unique_ptr<BasicVector<double>> ext_input =
+      std::make_unique<BasicVector<double>>(3);
+  const double f_x = 1.0;
+  const double f_y = -1.0;
+  ext_input->SetAtIndex(0, f_x);
+  ext_input->SetAtIndex(1, f_y);
+  ext_input->SetAtIndex(2, f_x * dut_->get_rod_length()/2);
+  const Vector3<double> fext = ext_input->CopyToVector();
+  context_->FixInputPort(0, std::move(ext_input));
+
+  // Set the coefficient of friction such that the contact forces are right
+  // on the edge of the friction cone. Determine the predicted normal force
+  // (this simple formula is dependent upon the upright rod configuration).
+  const double mu_stick = f_x / (dut_->get_rod_mass() *
+                                 -dut_->get_gravitational_acceleration() -
+                                 f_y);
+  dut_->set_mu_coulomb(mu_stick);
+
+  // Calculate the derivatives.
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+
+  // Verify that derivatives match what we expect: sticking should continue.
+  const double tol = 10 * std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR((*derivatives_)[0], xc[3], tol);
+  EXPECT_NEAR((*derivatives_)[1], xc[4], tol);
+  EXPECT_NEAR((*derivatives_)[2], xc[5], tol);
+  EXPECT_NEAR((*derivatives_)[3], 0.0, tol);
+  EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
+
+  // Set the coefficient of friction to 99.9% of the sticking value and then
+  // verify that the contact state transitions from a sticking one to a
+  // non-sticking one.
+  const double mu_slide = 0.999 * mu_stick;
+  dut_->set_mu_coulomb(mu_slide);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_GT((*derivatives_)[3], tol);  // horizontal accel. should be nonzero.
+
+  // Set the coefficient of friction to zero and try again.
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kStickingSingleContact;
+  dut_->set_mu_coulomb(0.0);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR((*derivatives_)[0], xc[3], tol);
+  EXPECT_NEAR((*derivatives_)[1], xc[4], tol);
+  EXPECT_NEAR((*derivatives_)[2], xc[5], tol);
+  // Rod should now accelerate in the direction of any external forces.
+  EXPECT_NEAR((*derivatives_)[3], fext(0)/dut_->get_rod_mass(), tol);
+  // There should still be no vertical acceleration.
+  EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
+  // The moment caused by applying the force should result in a
+  // counter-clockwise acceleration.
+  EXPECT_NEAR((*derivatives_)[5],
+              fext(2)/dut_->get_rod_moment_of_inertia(), tol);
+}
+
 // Verify the inconsistent (Painlevé Paradox) configuration occurs.
 TEST_F(PainleveDAETest, Inconsistent) {
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
@@ -288,6 +374,7 @@ TEST_F(PainleveDAETest, Inconsistent) {
 // Verify the second inconsistent (Painlevé Paradox) configuration occurs.
 TEST_F(PainleveDAETest, Inconsistent2) {
   SetSecondInitialConfig();
+
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
                std::runtime_error);
 }
@@ -585,13 +672,23 @@ class PainleveTimeSteppingTest : public ::testing::Test {
     dut_ = std::make_unique<Painleve<double>>(dt);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
+
+    // Use a non-unit mass.
+    dut_->set_rod_mass(2.0);
+
+    // Set a zero input force (this is the default).
+    std::unique_ptr<BasicVector<double>> ext_input =
+        std::make_unique<BasicVector<double>>(3);
+    ext_input->SetAtIndex(0, 0.0);
+    ext_input->SetAtIndex(1, 0.0);
+    ext_input->SetAtIndex(2, 0.0);
+    context_->FixInputPort(0, std::move(ext_input));
   }
 
   BasicVector<double> *mutable_discrete_state() {
     return context_->get_mutable_discrete_state(0);
   }
-
-  // Sets a secondary initial Painleve configuration.
+// Sets a secondary initial Painleve configuration.
   void SetSecondInitialConfig() {
     // Set the configuration to an inconsistent (Painlevé) type state with
     // the rod at a 135 degree counter-clockwise angle with respect to the
@@ -665,6 +762,14 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
   std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();
   std::unique_ptr<Context<double>> context_pdae = pdae.CreateDefaultContext();
 
+  // Set zero input forces for both.
+  Vector3<double> fext(0, 0, 0);
+  std::unique_ptr<BasicVector<double>> ext_input =
+    std::make_unique<BasicVector<double>>(fext);
+  context_ts->FixInputPort(0, std::move(ext_input));
+  ext_input = std::make_unique<BasicVector<double>>(fext);
+  context_pdae->FixInputPort(0, std::move(ext_input));
+
   // Init the simulator for the time stepping system.
   Simulator<double> simulator_ts(ts, std::move(context_ts));
 
@@ -701,10 +806,84 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
 
   // TODO(edrumwri): Introduce more extensive tests that cross-validate the
   // time-stepping based approach against the piecewise DAE-based approach for
-  // cases of sticking contact (once arbitrary external forcing is introduced)
-  // and sliding contacts at multiple points.
+  // the case of sliding contacts at multiple points.
 }
 
+// This test checks to see whether a single semi-explicit step of the piecewise
+// DAE based Painleve system is equivalent to a single step of the semi-explicit
+// time stepping based system for a sticking contact scenario.
+GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSticking) {
+  // Create two Painleve systems.
+  const double dt = 1e-1;
+  Painleve<double> ts(dt);
+  Painleve<double> pdae;
+
+  // Set the coefficient of friction to a large value for both.
+  const double mu = 100.0;
+  ts.set_mu_coulomb(mu);
+  pdae.set_mu_coulomb(mu);
+
+  // Set "one step" constraint stabilization (not generally recommended, but
+  // works for a single step) and small regularization.
+  ts.set_cfm(std::numeric_limits<double>::epsilon());
+  ts.set_erp(1.0);
+
+  // Create contexts for both.
+  std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();
+  std::unique_ptr<Context<double>> context_pdae = pdae.CreateDefaultContext();
+
+  // This configuration has no sliding velocity.
+  const double half_len = pdae.get_rod_length() / 2;
+  ContinuousState<double>& xc =
+      *context_pdae->get_mutable_continuous_state();
+  auto xd = context_ts->get_mutable_discrete_state(0)->get_mutable_value();
+  xc[0] = xd[0] = 0.0;
+  xc[1] = xd[1] = half_len;
+  xc[2] = xd[2] = M_PI_2;
+  xc[3] = xd[3] = 0.0;
+  xc[4] = xd[4] = 0.0;
+  xc[5] = xd[5] = 0.0;
+  context_pdae->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kStickingSingleContact;
+
+  // Set constant input forces for both.
+  const double x = 1.0;
+  Vector3<double> fext(x, 0, x * ts.get_rod_length()/2);
+  std::unique_ptr<BasicVector<double>> ext_input =
+    std::make_unique<BasicVector<double>>(fext);
+  context_ts->FixInputPort(0, std::move(ext_input));
+  ext_input = std::make_unique<BasicVector<double>>(fext);
+  context_pdae->FixInputPort(0, std::move(ext_input));
+
+  // Init the simulator for the time stepping system.
+  Simulator<double> simulator_ts(ts, std::move(context_ts));
+
+  // Integrate forward by a single *large* dt. Note that the update rate
+  // is set by the time stepping system, so stepping to dt should yield
+  // exactly one step.
+  simulator_ts.StepTo(dt);
+  EXPECT_EQ(simulator_ts.get_num_discrete_updates(), 1);
+
+  // Manually integrate the continuous state forward for the piecewise DAE
+  // based approach.
+  std::unique_ptr<ContinuousState<double>> f = pdae.AllocateTimeDerivatives();
+  pdae.CalcTimeDerivatives(*context_pdae, f.get());
+  xc[3] += + dt * ((*f)[3]);
+  xc[4] += + dt * ((*f)[4]);
+  xc[5] += + dt * ((*f)[5]);
+  xc[0] += + dt * xc[3];
+  xc[1] += + dt * xc[4];
+  xc[2] += + dt * xc[5];
+
+  // Check that the solution is nearly identical.
+  const double tol = 10 * std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(xc[0], xd[0], tol);
+  EXPECT_NEAR(xc[1], xd[1], tol);
+  EXPECT_NEAR(xc[2], xd[2], tol);
+  EXPECT_NEAR(xc[3], xd[3], tol);
+  EXPECT_NEAR(xc[4], xd[4], tol);
+  EXPECT_NEAR(xc[5], xd[5], tol);
+}
 }  // namespace
 }  // namespace painleve
 }  // namespace examples

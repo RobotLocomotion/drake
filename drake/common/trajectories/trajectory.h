@@ -5,9 +5,7 @@
 namespace drake {
 
 /**
- * A Trajectory represents a path from a start state to a goal state.
- * Each point in the path of the trajectory is represented by a state (a matrix
- * of doubles).
+ * A Trajectory represents a time-varying matrix of doubles. 
  */
 class Trajectory {
  public:

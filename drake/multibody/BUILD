@@ -105,10 +105,10 @@ drake_cc_binary(
     srcs = ["test/benchmark_rigid_body_tree.cc"],
     linkstatic = 1,
     deps = [
-        "@gtest//:main",
         ":rigid_body_tree",
         "//drake/common:measure_execution",
         "//drake/multibody/parsers",
+        "@gtest//:main",
     ],
 )
 
@@ -252,6 +252,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "rigid_body_frame_test",
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
 filegroup(
     name = "test_models",
     testonly = 1,
@@ -267,6 +274,7 @@ filegroup(
     name = "models",
     srcs = [
         "models/box.urdf",
+        "models/box_small.urdf",
     ],
 )
 

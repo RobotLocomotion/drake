@@ -7,7 +7,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/common/variable.h"
+#include "drake/common/symbolic_variable.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
@@ -27,6 +27,7 @@ using Eigen::VectorXd;
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
 using drake::symbolic::Expression;
+using drake::symbolic::Variable;
 
 using std::numeric_limits;
 
@@ -696,8 +697,7 @@ void CheckAddedLinearEqualityConstraintCommon(
     const Binding<LinearEqualityConstraint>& binding,
     const MathematicalProgram& prog, int num_linear_eq_cnstr) {
   // Checks if the number of linear equality constraints get incremented by 1.
-  EXPECT_EQ(prog.linear_equality_constraints().size(),
-            num_linear_eq_cnstr + 1);
+  EXPECT_EQ(prog.linear_equality_constraints().size(), num_linear_eq_cnstr + 1);
   // Checks if the newly added linear equality constraint in prog is the same as
   // that returned from AddLinearEqualityConstraint.
   EXPECT_EQ(prog.linear_equality_constraints().back().constraint(),
@@ -723,7 +723,7 @@ void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
   // Check if the newly added linear equality constraint matches with the input
   // expression.
   VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
-      binding.constraint()->lower_bound();
+                               binding.constraint()->lower_bound();
 
   MatrixX<Expression> v_resize = flat_V;
   v_resize.resize(v.rows(), v.cols());
@@ -744,7 +744,7 @@ void CheckAddedSymmetricSymbolicLinearEqualityConstraint(
   // Check if the newly added linear equality constraint matches with the input
   // expression.
   VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
-      binding.constraint()->lower_bound();
+                               binding.constraint()->lower_bound();
   EXPECT_EQ(math::ToSymmetricMatrixFromLowerTriangularColumns(flat_V), v - b);
 }
 
@@ -795,8 +795,8 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
       &prog, 2 * x(0) + x(2) - 3, 1);
   // Checks 3 * x(0) + x(1) + 4 * x(2) + 1 = 2
-  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog,
-                                             3 * x(0) + x(1) + 4 * x(2) + 1, 2);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, 3 * x(0) + x(1) + 4 * x(2) + 1, 2);
   // Checks -x(1) = 3
   CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, -x(1), 3);
   // Checks -(x(0) + 2 * x(1)) = 2
@@ -820,8 +820,8 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
   //        x(0) + 3 * x(1) + 7 = 1
   Vector3<Expression> v{};
   v << 2 * x(1), x(0) + x(2), x(0) + 3 * x(1) + 7;
-  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, v,
-                                             Eigen::Vector3d(3, 4, 1));
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, v, Eigen::Vector3d(3, 4, 1));
 
   // Checks x(0) = 4
   //          1  = 1
@@ -1027,6 +1027,76 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
+namespace {
+template <typename Derived>
+typename std::enable_if<
+    std::is_same<typename Derived::Scalar, symbolic::Expression>::value>::type
+CheckAddedSymbolicPositiveSemidefiniteConstraint(
+    MathematicalProgram* prog, const Eigen::MatrixBase<Derived>& V) {
+  int num_psd_cnstr = prog->positive_semidefinite_constraints().size();
+  int num_lin_eq_cnstr = prog->linear_equality_constraints().size();
+  auto binding = prog->AddPositiveSemidefiniteConstraint(V);
+  // Check if number of linear equality constraints and positive semidefinite
+  // constraints are both incremented by 1.
+  EXPECT_EQ(num_psd_cnstr + 1,
+            prog->positive_semidefinite_constraints().size());
+  EXPECT_EQ(num_lin_eq_cnstr + 1, prog->linear_equality_constraints().size());
+  // Check if the returned binding is the correct one.
+  EXPECT_EQ(
+      binding.constraint().get(),
+      prog->positive_semidefinite_constraints().back().constraint().get());
+  // Check if the added linear constraint is correct. M is the newly added
+  // variables representing the psd matrix.
+  const Eigen::Map<const MatrixX<Variable>> M(&binding.variables()(0), V.rows(),
+                                              V.cols());
+  // The linear equality constraint is only imposed on the lower triangular
+  // part of the psd matrix.
+  const auto& new_lin_eq_cnstr = prog->linear_equality_constraints().back();
+  auto V_minus_M = math::ToSymmetricMatrixFromLowerTriangularColumns(
+      new_lin_eq_cnstr.constraint()->A() * new_lin_eq_cnstr.variables() -
+      new_lin_eq_cnstr.constraint()->lower_bound());
+  EXPECT_EQ(V_minus_M, V - M);
+}
+}  // namespace
+
+GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<4>("X");
+
+  auto psd_cnstr = prog.AddPositiveSemidefiniteConstraint(X);
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
+  const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
+  EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.constraint().get());
+  Eigen::Map<Eigen::Matrix<Variable, 16, 1>> X_flat(&X(0, 0));
+  EXPECT_TRUE(X_flat == new_psd_cnstr.variables());
+
+  // Adds X is psd.
+  CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog,
+                                                   Matrix4d::Identity() * X);
+
+  // Adds 2 * X + Identity() is psd.
+  CheckAddedSymbolicPositiveSemidefiniteConstraint(
+      &prog, 2.0 * X + Matrix4d::Identity());
+
+  // Adds a linear matrix expression Aᵀ * X + X * A is psd.
+  Matrix4d A{};
+  // clang-format off
+  A << 1, 2, 3, 4,
+       0, 1, 2, 3,
+       0, 0, 2, 3,
+       0, 0, 0, 1;
+  // clang-format on
+  CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog,
+                                                   A.transpose() * X + X * A);
+
+  // Adds [X.topLeftCorner<2, 2>()  0                        ] is psd
+  //      [ 0                     X.bottomRightCorner<2, 2>()]
+  Eigen::Matrix<symbolic::Expression, 4, 4> Y{};
+  // clang-format off
+  Y << Matrix2d::Identity() * X.topLeftCorner<2, 2>(), Matrix2d::Zero(),
+       Matrix2d::Zero(), Matrix2d::Identity() * X.bottomRightCorner<2, 2>();
+  CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog, Y);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

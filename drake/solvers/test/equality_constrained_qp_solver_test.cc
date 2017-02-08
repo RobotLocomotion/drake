@@ -1,8 +1,9 @@
-#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/equality_constrained_qp_solver.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::MatrixXd;
@@ -42,9 +43,9 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
                               MatrixCompareType::absolute));
 // There are no inequality constraints, and only quadratic costs,
 // so this should hold:
-  CheckSolverName(prog, "Equality Constrained QP Solver");
+  CheckSolver(prog, SolverType::kEqualityConstrainedQP);
 
-// Add one more variable and constrain a view into them.
+  // Add one more variable and constrain a view into them.
   auto y = prog.NewContinuousVariables<1>("y");
   Q << 2.0, 0.0, 0.0, 2.0;
   c << -5.0, -2.0;
@@ -66,8 +67,8 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
             << "\tExpected: " << expected_answer.transpose()
             << "\tActual: " << actual_answer.transpose();
 
-// Problem still has only quadratic costs, so solver should be the same.
-  CheckSolverName(prog, "Equality Constrained QP Solver");
+  // Problem still has only quadratic costs, so solver should be the same.
+  CheckSolver(prog, SolverType::kEqualityConstrainedQP);
 }
 
 // Test how an equality-constrained QP is dispatched
@@ -103,7 +104,8 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
 
   // This problem is now an Equality Constrained QP and should
   // use this solver:
-  CheckSolverName(prog, "Equality Constrained QP Solver");
+  CheckSolver(
+      prog, SolverType::kEqualityConstrainedQP);
 
   // Add one more variable and constrain it in a different way
   auto y = prog.NewContinuousVariables(1);

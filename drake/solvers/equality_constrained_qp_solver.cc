@@ -111,7 +111,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
     // Solve G*x = A'y - c
     prog.SetDecisionVariableValues(llt.solve(A.transpose() * lambda - c));
-    prog.SetSolverResult("Equality Constrained QP Solver", 0);
+    prog.SetSolverResult(solver_type(), 0);
     return SolutionResult::kSolutionFound;
   }
 
@@ -141,7 +141,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
   prog.SetDecisionVariableValues(sol.segment(0, prog.num_vars()));
 
-  prog.SetSolverResult(SolverName(), 0);
+  prog.SetSolverResult(solver_type(), 0);
   return SolutionResult::kSolutionFound;
 }
 

@@ -8,6 +8,34 @@ Frequently Asked Questions
    :depth: 3
    :local:
 
+.. _faq_missing_or_stray_characters_in_generate_urdf_test:
+
+Why Does Build Fail With Missing or Stray Character Error in generate_urdf_test.cc?
+===================================================================================
+
+Symptom: When building Drake using ``cmake`` and ``make`` or ``ninja``, the
+following error occurs::
+
+    drake-distro/drake/automotive/maliput/utility/test/generate_urdf_test.cc:88:3: error: missing terminating " character
+       EXPECT_EQ(R"R(<?xml version="1.0" ?>
+       ^
+    drake-distro/drake/automotive/maliput/utility/test/generate_urdf_test.cc:89:1: error: stray ‘\’ in program
+     <robot name="dut">
+     ^
+    drake-distro/drake/automotive/maliput/utility/test/generate_urdf_test.cc:89:1: error: missing terminating " character
+    drake-distro/drake/automotive/maliput/utility/test/generate_urdf_test.cc:90:3: error: stray ‘\’ in program
+       <link name="world"/>
+
+Solution: One known cause of this problem is employing ``ccache`` without the
+environment variable ``CCACHE_CPP2=yes``. Try adding the following line to your
+``~/.bashrc``::
+
+    export CCACHE_CPP2=yes
+
+Alternatively, update to
+`ccache 3.3 <https://ccache.samba.org/releasenotes.html#_ccache_3_3>`_ or newer
+since it by default sets ``CCACHE_CPP2=yes``.
+
 .. _faq_cmake_vtk_version_crash:
 
 Why Does CMake Fail With An Error Indicating No Compatible VTK Found?

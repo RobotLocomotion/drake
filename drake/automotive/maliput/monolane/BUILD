@@ -70,8 +70,8 @@ drake_cc_library(
     ],
     linkstatic = 1,
     deps = [
-        "@yaml_cpp//:lib",
         ":builder",
+        "@yaml_cpp//:lib",
     ],
 )
 
@@ -87,8 +87,8 @@ cc_test(
     size = "small",
     srcs = ["test/monolane_builder_test.cc"],
     deps = [
-        "@gtest//:main",
         ":builder",
+        "@gtest//:main",
     ],
 )
 
@@ -97,9 +97,9 @@ cc_test(
     size = "small",
     srcs = ["test/monolane_lanes_test.cc"],
     deps = [
-        "@gtest//:main",
         ":lanes",
         "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
     ],
 )
 

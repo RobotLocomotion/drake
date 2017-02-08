@@ -24,8 +24,7 @@ class ParamParserTests : public ::testing::Test {
         "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
     std::string alias_groups_config_name =
         drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "param_parsers/test/alias_groups.yaml";
+        "/examples/QPInverseDynamicsForHumanoids/config/valkyrie.alias_groups";
     std::string controller_config_name =
         drake::GetDrakePath() +
         "/examples/QPInverseDynamicsForHumanoids/"
@@ -36,7 +35,7 @@ class ParamParserTests : public ::testing::Test {
         urdf_name, multibody::joints::kRollPitchYaw, robot_.get());
 
     rbt_alias_ = std::make_unique<RigidBodyTreeAliasGroups<double>>(*robot_);
-    rbt_alias_->LoadFromYAMLFile(YAML::LoadFile(alias_groups_config_name));
+    rbt_alias_->LoadFromFile(alias_groups_config_name);
 
     paramset_.LoadFromYAMLConfigFile(YAML::LoadFile(controller_config_name),
                                      *rbt_alias_);

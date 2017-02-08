@@ -105,7 +105,7 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree<double>& tree) {
 }
 
 template <typename T>
-RigidBodyTree<T>::RigidBodyTree(void)
+RigidBodyTree<T>::RigidBodyTree()
     : collision_model_(DrakeCollision::newModel()) {
   // Sets the gravity vector.
   a_grav << 0, 0, 0, 0, 0, -9.81;
@@ -122,7 +122,7 @@ RigidBodyTree<T>::RigidBodyTree(void)
 }
 
 template <typename T>
-RigidBodyTree<T>::~RigidBodyTree(void) {}
+RigidBodyTree<T>::~RigidBodyTree() {}
 
 template <typename T>
 bool RigidBodyTree<T>::transformCollisionFrame(
@@ -247,7 +247,7 @@ void RigidBodyTree<T>::SetBodyCollisionFilters(
 }
 
 template <typename T>
-void RigidBodyTree<T>::compile(void) {
+void RigidBodyTree<T>::compile() {
   SortTree();
 
   // Welds joints for links that have zero inertia and no children (as seen in

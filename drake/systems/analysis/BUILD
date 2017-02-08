@@ -15,6 +15,7 @@ drake_cc_library(
         ":explicit_euler_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
+        ":semi_explicit_euler_integrator",
         ":simulator",
     ],
 )
@@ -60,6 +61,18 @@ drake_cc_library(
     deps = [
         ":integrator_base",
         ":runge_kutta2_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "semi_explicit_euler_integrator",
+    srcs = [],
+    hdrs = [
+        "semi_explicit_euler_integrator.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":integrator_base",
     ],
 )
 
@@ -122,6 +135,17 @@ drake_cc_googletest(
         "//drake/common:drake_path",
         "//drake/math:geometric_transform",
         "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "semi_explicit_euler_integrator_test",
+    deps = [
+        ":explicit_euler_integrator",
+        ":my_spring_mass_system",
+        ":semi_explicit_euler_integrator",
+        "//drake/multibody/joints",
         "//drake/multibody/rigid_body_plant",
     ],
 )

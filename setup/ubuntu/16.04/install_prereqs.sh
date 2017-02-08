@@ -113,15 +113,15 @@ EOF
     )
 
 # Install Bazel.
-wget -O /tmp/bazel_0.4.2-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.4.2/bazel_0.4.2-linux-x86_64.deb
-if echo "de12abbf8bf1b5ec5f7676afb32019e10e144fe986fb170ebb7d976bb2229539 /tmp/bazel_0.4.2-linux-x86_64.deb" | sha256sum -c -; then
-  dpkg -i /tmp/bazel_0.4.2-linux-x86_64.deb
+wget -O /tmp/bazel_0.4.3-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.4.3/bazel_0.4.3-linux-x86_64.deb
+if echo "0cd6592ac2c5548d566fa9f874a386737e76029f5aabe1f04f8320173a05280d /tmp/bazel_0.4.3-linux-x86_64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/bazel_0.4.3-linux-x86_64.deb
 else
   echo "The Bazel deb does not have the expected SHA256.  Not installing Bazel."
   exit 1
 fi
 
-rm /tmp/bazel_0.4.2-linux-x86_64.deb
+rm /tmp/bazel_0.4.3-linux-x86_64.deb
 
 # TODO(david-german-tri): Do we need to munge the MATLAB C++ libraries?
 # http://drake.mit.edu/ubuntu.html#matlab

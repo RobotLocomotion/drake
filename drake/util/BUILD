@@ -16,11 +16,30 @@ drake_cc_library(
         "drakeGeometryUtil.h",
         "drakeUtil.h",
     ],
+    deprecation = "These utilities are moving to //drake/math.",
     linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_util",
+    srcs = ["lcmUtil.cpp"],
+    hdrs = ["lcmUtil.h"],
+    linkstatic = 1,
+    deps = [
+        "@bot_core_lcmtypes//:lib",
+        "@eigen//:eigen",
+        ":util",
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/lcmtypes:piecewise_polynomial",
+        "//drake/lcmtypes:polynomial",
+        "//drake/lcmtypes:polynomial_matrix",
+        "//drake/lcmtypes:qp_controller_input",
+        "//drake/math:geometric_transform",
     ],
 )
 

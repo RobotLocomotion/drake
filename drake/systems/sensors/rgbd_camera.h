@@ -1,13 +1,17 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace systems {
 namespace sensors {
 
 // TODO(kunimatsu.hashimoto) Implement this.
-class RGBDCamera {
+class RgbdCamera {
  public:
-  RGBDCamera();
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCamera)
+
+  RgbdCamera();
 };
 
 }  // namespace sensors

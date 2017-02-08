@@ -42,9 +42,9 @@ drake_cc_binary(
     srcs = ["test/urdf_kinematics_test.cc"],
     linkstatic = 1,
     deps = [
-        "@gtest//:main",
         ":parsers",
         "//drake/multibody:rigid_body_tree",
+        "@gtest//:main",
     ],
 )
 
@@ -55,9 +55,9 @@ drake_cc_binary(
     srcs = ["test/urdf_collision_test.cc"],
     linkstatic = 1,
     deps = [
-        "@gtest//:main",
         ":parsers",
         "//drake/multibody:rigid_body_tree",
+        "@gtest//:main",
     ],
 )
 
@@ -67,9 +67,9 @@ drake_cc_binary(
     srcs = ["test/urdf_manipulator_dynamics_test.cc"],
     linkstatic = 1,
     deps = [
-        "@gtest//:main",
         ":parsers",
         "//drake/multibody:rigid_body_tree",
+        "@gtest//:main",
     ],
 )
 

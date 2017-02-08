@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -27,6 +28,8 @@ namespace systems {
 template <typename T>
 class Integrator : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Integrator)
+
   /// Constructs an %Integrator system.
   /// @param size number of elements in the signal to be processed.
   explicit Integrator(int size);

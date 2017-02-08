@@ -184,10 +184,10 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
 
   prog.PrintSolution();
 
-  std::string solver_name;
+  drake::solvers::SolverType solver_type;
   int solver_result;
-  prog.GetSolverResult(&solver_name, &solver_result);
-  std::cout << solver_name << " exit code = " << static_cast<int>(r)
+  prog.GetSolverResult(&solver_type, &solver_result);
+  std::cout << solver_type << " exit code = " << static_cast<int>(r)
             << std::endl;
   Eigen::Isometry3d T;
   T.translation() = prog.GetSolution(t);

@@ -120,12 +120,28 @@ github_archive(
     sha256 = "16612244e7585f82228fe27e0629f6b01e7459b7b4ead90447cfb53c48dd86f3",
 )
 
+github_archive(
+    name = "bot_core_lcmtypes",
+    repository = "openhumanoids/bot_core_lcmtypes",
+    commit = "99676541398749c2aab4b5b2c38be77d268085cc",
+    build_file = "tools/bot_core_lcmtypes.BUILD",
+    sha256 = "896fd3edf87c7dfaae378af12d52d233577cc495ae96b5076c48b5b9ca700b4a",
+)
+
+github_archive(
+    name = "robotlocomotion_lcmtypes",
+    repository = "robotlocomotion/lcmtypes",
+    commit = "4bd59a1b62a1eca31a2550b37f356426bc793d67",
+    build_file = "tools/robotlocomotion_lcmtypes.BUILD",
+    sha256 = "d4b7b006ffd8918ecafda050d94c18388d9cd113a8849263bbedc7c488144ed4",
+)
+
 # Necessary for buildifier.
 github_archive(
     name = "io_bazel_rules_go",
     repository = "bazelbuild/rules_go",
-    commit = "0.3.1",
-    sha256 = "b7759f01d29c075db177f688ffb4464aad2b8fbb7017f89a1d3819ce07f1d584",
+    commit = "0.4.0",
+    sha256 = "ef1aa6a368808d3aa18cbe588924f15fb8fac75d80860080355595e75eb9a529",
 )
 
 # Necessary for buildifier.

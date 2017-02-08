@@ -16,12 +16,12 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/common/environment.h"
 #include "drake/common/hash.h"
+#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 #include "drake/common/test/symbolic_test_util.h"
-#include "drake/common/variable.h"
-#include "drake/common/variables.h"
 
 using std::count_if;
 using std::domain_error;
@@ -108,8 +108,8 @@ class SymbolicExpressionTest : public ::testing::Test {
 
   const Expression e_constant_{1.0};
   const Expression e_var_{var_x_};
-  const Expression e_neg_{-x_};
   const Expression e_add_{x_ + y_};
+  const Expression e_neg_{-x_};  // -1 * x_
   const Expression e_mul_{x_ * y_};
   const Expression e_div_{x_ / y_};
   const Expression e_log_{log(x_)};
@@ -132,7 +132,7 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression e_ite_{if_then_else(x_ < y_, x_, y_)};
 
   const vector<Expression> collection_{
-      e_constant_, e_var_,  e_neg_,   e_add_,  e_mul_,
+      e_constant_, e_var_,  e_add_,   e_neg_,  e_mul_,
       e_div_,      e_log_,  e_abs_,   e_exp_,  e_sqrt_,
       e_pow_,      e_sin_,  e_cos_,   e_tan_,  e_asin_,
       e_acos_,     e_atan_, e_atan2_, e_sinh_, e_cosh_,
@@ -190,14 +190,6 @@ TEST_F(SymbolicExpressionTest, IsVariable) {
   EXPECT_EQ(cnt, 1);
 }
 
-TEST_F(SymbolicExpressionTest, IsUnaryMinus) {
-  EXPECT_TRUE(is_unary_minus(e_neg_));
-  const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_unary_minus(e); })};
-  EXPECT_EQ(cnt, 1);
-}
-
 TEST_F(SymbolicExpressionTest, IsAddition) {
   EXPECT_TRUE(is_addition(e_add_));
   const vector<Expression>::difference_type cnt{
@@ -211,7 +203,7 @@ TEST_F(SymbolicExpressionTest, IsMultiplication) {
   const vector<Expression>::difference_type cnt{
       count_if(collection_.begin(), collection_.end(),
                [](const Expression& e) { return is_multiplication(e); })};
-  EXPECT_EQ(cnt, 1);
+  EXPECT_EQ(cnt, 2);
 }
 
 TEST_F(SymbolicExpressionTest, IsDivision) {
@@ -377,7 +369,6 @@ TEST_F(SymbolicExpressionTest, GetVariable) {
 }
 
 TEST_F(SymbolicExpressionTest, GetArgument) {
-  EXPECT_PRED2(ExprEqual, get_argument(e_neg_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_log_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_abs_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_exp_), x_);
@@ -417,12 +408,13 @@ TEST_F(SymbolicExpressionTest, GetConstantTermInAddition) {
 
 TEST_F(SymbolicExpressionTest, GetTermsInAddition) {
   const Expression e{3 + 2 * x_ + 3 * y_};
-  const map<Expression, double> terms{get_exp_to_coeff_map_in_addition(e)};
+  const map<Expression, double> terms{get_expr_to_coeff_map_in_addition(e)};
   EXPECT_EQ(terms.at(x_), 2.0);
   EXPECT_EQ(terms.at(y_), 3.0);
 }
 
 TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(e_neg_), -1.0);
   EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(x_ * y_ * y_), 1.0);
   EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(2 * x_ * y_ * y_),
                2.0);
@@ -433,7 +425,7 @@ TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
 TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
   const Expression e{2 * x_ * y_ * y_ * pow(z_, y_)};
   const map<Expression, Expression> products{
-      get_base_to_exp_map_in_multiplication(e)};
+      get_base_to_exponent_map_in_multiplication(e)};
   EXPECT_PRED2(ExprEqual, products.at(x_), 1.0);
   EXPECT_PRED2(ExprEqual, products.at(y_), 2.0);
   EXPECT_PRED2(ExprEqual, products.at(z_), y_);
@@ -523,7 +515,7 @@ TEST_F(SymbolicExpressionTest, ToPolynomial1) {
   const Expression e5{pow(x_ + y_ + z_, 3)};
   const Expression e6{pow(x_ + y_ + z_, 3) / 10};
   const Expression e7{-pow(y_, 3)};
-  const Expression e8{pow(pow(x_, 3), 1 / 3)};
+  const Expression e8{pow(pow(x_, 3), 1.0 / 3)};
 
   EXPECT_NEAR(e0.Evaluate(env),
               e0.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
@@ -556,8 +548,107 @@ TEST_F(SymbolicExpressionTest, ToPolynomial2) {
   }
 }
 
+TEST_F(SymbolicExpressionTest, Degree) {
+  const Expression e0{42.0};
+  EXPECT_EQ(e0.Degree({var_x_, var_y_}), 0);
+  EXPECT_EQ(e0.Degree(), 0);
+
+  const Expression e1{pow(x_, 2)};
+  EXPECT_EQ(e1.Degree({var_x_}), 2);
+  EXPECT_EQ(e1.Degree({var_y_}), 0);
+  EXPECT_EQ(e1.Degree({var_x_, var_y_}), 2);
+  EXPECT_EQ(e1.Degree(), 2);
+
+  const Expression e2{pow(x_, 2) * pow(y_, 3)};
+  EXPECT_EQ(e2.Degree({var_x_}), 2);
+  EXPECT_EQ(e2.Degree({var_y_}), 3);
+  EXPECT_EQ(e2.Degree({var_z_}), 0);
+  EXPECT_EQ(e2.Degree({var_x_, var_y_}), 5);
+  EXPECT_EQ(e2.Degree({var_x_, var_z_}), 2);
+  EXPECT_EQ(e2.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e2.Degree({var_x_, var_y_, var_z_}), 5);
+  EXPECT_EQ(e2.Degree(), 5);
+
+  const Expression e3{3 + x_ + y_ + z_};
+  EXPECT_EQ(e3.Degree({var_x_}), 1);
+  EXPECT_EQ(e3.Degree({var_y_}), 1);
+  EXPECT_EQ(e3.Degree({var_z_}), 1);
+  EXPECT_EQ(e3.Degree({var_x_, var_y_}), 1);
+  EXPECT_EQ(e3.Degree({var_x_, var_y_, var_z_}), 1);
+  EXPECT_EQ(e3.Degree(), 1);
+
+  const Expression e4{1 + pow(x_, 2) + pow(y_, 3)};
+  EXPECT_EQ(e4.Degree({var_x_}), 2);
+  EXPECT_EQ(e4.Degree({var_y_}), 3);
+  EXPECT_EQ(e4.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e4.Degree({var_x_, var_z_}), 2);
+  EXPECT_EQ(e4.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e4.Degree(), 3);
+
+  const Expression e5{1 + pow(x_, 2) * y_ + x_ * y_ * y_ * z_};
+  EXPECT_EQ(e5.Degree({var_x_}), 2);
+  EXPECT_EQ(e5.Degree({var_y_}), 2);
+  EXPECT_EQ(e5.Degree({var_z_}), 1);
+  EXPECT_EQ(e5.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e5.Degree({var_x_, var_z_}), 2);
+  EXPECT_EQ(e5.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e5.Degree({var_x_, var_y_, var_z_}), 4);
+  EXPECT_EQ(e5.Degree(), 4);
+
+  const Expression e6{pow(x_ + y_ + z_, 3)};
+  EXPECT_EQ(e6.Degree({var_x_}), 3);
+  EXPECT_EQ(e6.Degree({var_y_}), 3);
+  EXPECT_EQ(e6.Degree({var_z_}), 3);
+  EXPECT_EQ(e6.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e6.Degree({var_x_, var_z_}), 3);
+  EXPECT_EQ(e6.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e6.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e6.Degree(), 3);
+
+  const Expression e7{pow(x_ + x_ * y_ * y_, 2) * y_ +
+                      pow(x_ + pow(y_ + x_ * z_, 2), 3)};
+  EXPECT_EQ(e7.Degree({var_x_}), 6);
+  EXPECT_EQ(e7.Degree({var_y_}), 6);
+  EXPECT_EQ(e7.Degree({var_z_}), 6);
+  EXPECT_EQ(e7.Degree({var_x_, var_y_}), 7);
+  EXPECT_EQ(e7.Degree({var_x_, var_z_}), 12);
+  EXPECT_EQ(e7.Degree({var_y_, var_z_}), 6);
+  EXPECT_EQ(e7.Degree({var_x_, var_y_, var_z_}), 12);
+  EXPECT_EQ(e7.Degree(), 12);
+
+  const Expression e8{pow(x_ + y_ + z_, 3) / 10};
+  EXPECT_EQ(e8.Degree({var_x_}), 3);
+  EXPECT_EQ(e8.Degree({var_y_}), 3);
+  EXPECT_EQ(e8.Degree({var_z_}), 3);
+  EXPECT_EQ(e8.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e8.Degree({var_x_, var_z_}), 3);
+  EXPECT_EQ(e8.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e8.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e8.Degree(), 3);
+
+  const Expression e9{-pow(y_, 3)};
+  EXPECT_EQ(e9.Degree({var_x_}), 0);
+  EXPECT_EQ(e9.Degree({var_y_}), 3);
+  EXPECT_EQ(e9.Degree({var_z_}), 0);
+  EXPECT_EQ(e9.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e9.Degree({var_x_, var_z_}), 0);
+  EXPECT_EQ(e9.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e9.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e9.Degree(), 3);
+
+  const Expression e10{pow(pow(x_, 3), 1.0 / 3)};
+  EXPECT_EQ(e10.Degree({var_x_}), 1);
+  EXPECT_EQ(e10.Degree({var_y_}), 0);
+  EXPECT_EQ(e10.Degree({var_z_}), 0);
+  EXPECT_EQ(e10.Degree({var_x_, var_y_}), 1);
+  EXPECT_EQ(e10.Degree({var_x_, var_z_}), 1);
+  EXPECT_EQ(e10.Degree({var_y_, var_z_}), 0);
+  EXPECT_EQ(e10.Degree({var_x_, var_y_, var_z_}), 1);
+  EXPECT_EQ(e10.Degree(), 1);
+}
+
 TEST_F(SymbolicExpressionTest, LessKind) {
-  CheckOrdering({e_constant_, e_var_,  e_neg_,   e_add_,  e_mul_,
+  CheckOrdering({e_constant_, e_var_,  e_add_,   e_neg_,  e_mul_,
                  e_div_,      e_log_,  e_abs_,   e_exp_,  e_sqrt_,
                  e_pow_,      e_sin_,  e_cos_,   e_tan_,  e_asin_,
                  e_acos_,     e_atan_, e_atan2_, e_sinh_, e_cosh_,
@@ -859,7 +950,7 @@ TEST_F(SymbolicExpressionTest, UnaryMinus) {
 
   EXPECT_PRED2(ExprEqual, -(x_plus_y_ + x_plus_z_ + pi_),
                -x_plus_y_ + (-x_plus_z_) + (-pi_));
-  EXPECT_EQ((-(x_)).to_string(), "-(x)");
+  EXPECT_EQ((-(x_)).to_string(), "(-1 * x)");
 }
 
 TEST_F(SymbolicExpressionTest, Add1) {

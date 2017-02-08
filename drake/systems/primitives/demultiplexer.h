@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -23,6 +24,8 @@ namespace systems {
 template <typename T>
 class Demultiplexer : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Demultiplexer)
+
   /// Constructs %Demultiplexer with one vector valued input port of size
   /// @p size and vector valued output ports of size @p output_ports_sizes.
   ///
