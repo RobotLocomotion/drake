@@ -320,7 +320,7 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
 
   // Set the coefficient of friction such that the contact forces are right
   // on the edge of the friction cone. Determine the predicted normal force
-  // (this simple formula is dependent upon the upright rod configuration). 
+  // (this simple formula is dependent upon the upright rod configuration).
   const double mu_stick = f_x / (dut_->get_rod_mass() *
                                  -dut_->get_gravitational_acceleration() -
                                  f_y);
@@ -340,11 +340,11 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
 
   // Set the coefficient of friction to 99.9% of the sticking value and then
   // verify that the contact state transitions from a sticking one to a
-  // non-sticking one. 
+  // non-sticking one.
   const double mu_slide = 0.999 * mu_stick;
   dut_->set_mu_coulomb(mu_slide);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_GT((*derivatives_)[3], tol);
+  EXPECT_GT((*derivatives_)[3], tol);  // horizontal accel. should be nonzero.
 
   // Set the coefficient of friction to zero and try again.
   context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
@@ -360,7 +360,7 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
   // The moment caused by applying the force should result in a
   // counter-clockwise acceleration.
-  EXPECT_NEAR((*derivatives_)[5], 
+  EXPECT_NEAR((*derivatives_)[5],
               fext(2)/dut_->get_rod_moment_of_inertia(), tol);
 }
 
