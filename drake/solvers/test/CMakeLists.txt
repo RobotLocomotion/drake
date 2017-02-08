@@ -22,25 +22,22 @@ target_link_libraries(system_identification_test drakeOptimization)
 drake_add_cc_test(constraint_test)
 target_link_libraries(constraint_test drakeOptimization drakeCommon)
 
-add_executable(nonlinear_program_test
-    optimization_examples.cc
-    nonlinear_program_test.cc)
-target_link_libraries(nonlinear_program_test
-    drakeCommon
-    drakeOptimization
-    GTest::GTest
-    GTest::Main)
-drake_add_test(NAME nonlinear_program_test COMMAND nonlinear_program_test)
-
-add_executable(linear_system_solver_test
-    optimization_examples.cc
-    linear_system_solver_test.cc)
-target_link_libraries(linear_system_solver_test
-    drakeCommon
-    drakeOptimization
-    GTest::GTest
-    GTest::Main)
-drake_add_test(NAME linear_system_solver_test COMMAND linear_system_solver_test)
+macro(add_solver_test)
+  add_executable(${ARGV}
+          optimization_examples.cc
+          mathematical_program_test_util.cc
+          ${ARGV}.cc)
+  target_link_libraries(${ARGV}
+          drakeCommon
+          drakeOptimization
+          GTest::GTest
+          GTest::Main)
+  drake_add_test(NAME ${ARGV} COMMAND ${ARGV})
+endmacro()
+add_solver_test(nonlinear_program_test)
+add_solver_test(linear_system_solver_test)
+add_solver_test(gurobi_solver_test)
+add_solver_test(mosek_solver_test)
 
 drake_add_cc_test(linear_complementary_problem_test)
 target_link_libraries(linear_complementary_problem_test drakeOptimization)

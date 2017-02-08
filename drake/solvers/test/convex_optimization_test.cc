@@ -49,77 +49,6 @@ void GetSemidefiniteProgramSolvers(
 ///// Linear Program ////
 /////////////////////////
 
-// Test a simple linear programming problem with zero cost, i.e. a feasibility
-// problem
-//    0 <= x0 + 2x1 + 3x2 <= 10
-// -inf <=       x1 - 2x2 <= 3
-//   -1 <= 0x0+ 0x1 + 0x2 <= 0
-//           x1 >= 1
-void TestLinearProgramFeasibility(
-    const MathematicalProgramSolverInterface& solver) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>();
-  Matrix3d A;
-  A << 1, 2, 3, 0, 1, -2, 0, 0, 0;
-  Vector3d b_lb(0, -std::numeric_limits<double>::infinity(), -1);
-  Vector3d b_ub(10, 3, 0);
-  prog.AddLinearConstraint(A, b_lb, b_ub, x);
-  prog.AddBoundingBoxConstraint(1.0, std::numeric_limits<double>::infinity(),
-                                x(1));
-
-  if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Vector3d::Zero());
-  }
-  RunSolver(&prog, solver);
-
-  const auto& x_value = prog.GetSolution(x);
-  Vector3d A_times_x = A * x_value;
-  EXPECT_GE(A_times_x(0), 0 - 1e-10);
-  EXPECT_LE(A_times_x(0), 10 + 1e-10);
-  EXPECT_LE(A_times_x(1), 3 + 1E-10);
-  EXPECT_LE(A_times_x(2), 0 + 1E-10);
-  EXPECT_GE(A_times_x(2), 0 - 1E-10);
-  EXPECT_GE(prog.GetSolution(x(1)), 1 - 1E-10);
-}
-
-// Adapt from the linear programming example
-// http://cvxopt.org/examples/tutorial/lp.html
-// Solve the following linear program
-// min     2x0 + x1
-// s.t  -inf <= -x0 + x1 <= 1
-//         2 <= x0 + x1  <=inf
-//      -inf <= x0 - 2x1 <= 4
-//      x1 >= 2
-//      x0 >= 0
-// The optimal solution is x0 = 1, x1 = 2
-void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>();
-
-  prog.AddLinearCost(Vector2d(2.0, 1.0), x);
-  Eigen::Matrix<double, 3, 2> A;
-  A << -1, 1, 1, 1, 1, -2;
-  Vector3d b_lb(-std::numeric_limits<double>::infinity(), 2.0,
-                       -std::numeric_limits<double>::infinity());
-  Vector3d b_ub(1.0, std::numeric_limits<double>::infinity(), 4.0);
-  prog.AddLinearConstraint(A, b_lb, b_ub, x);
-  prog.AddBoundingBoxConstraint(
-      Vector2d(0.0, 2.0),
-      Vector2d(std::numeric_limits<double>::infinity(),
-                      std::numeric_limits<double>::infinity()),
-      x.head<2>());
-
-  if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Vector2d::Zero());
-  }
-  RunSolver(&prog, solver);
-
-  Vector2d x_expected(1, 2);
-  const auto& x_value = prog.GetSolution(x);
-  EXPECT_TRUE(
-      CompareMatrices(x_value, x_expected, 1E-10, MatrixCompareType::absolute));
-}
-
 // Test a simple linear programming problem with only bounding box constraint
 // on x.
 // min x0 - 2*x1
@@ -1004,21 +933,6 @@ void TestFindSpringEquilibrium(
 }
 }  // namespace
 
-GTEST_TEST(TestLP, TestLinearProgramFeasibility) {
-  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
-  GetLinearProgramSolvers(&solvers);
-  for (const auto& solver : solvers) {
-    TestLinearProgramFeasibility(*solver);
-  }
-}
-
-GTEST_TEST(TestLP, TestLinearProgram0) {
-  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
-  GetLinearProgramSolvers(&solvers);
-  for (const auto& solver : solvers) {
-    TestLinearProgram0(*solver);
-  }
-}
 
 GTEST_TEST(TestLP, TestLinearProgram1) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;

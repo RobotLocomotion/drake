@@ -9,6 +9,35 @@
 namespace drake {
 namespace solvers {
 namespace test {
+enum class CostForm {
+  Generic = 0,
+  NonSymbolic = 1,
+  Symbolic = 2,
+};
+
+enum class ConstraintForm {
+  Generic = 0,
+  NonSymbolic = 1,
+  Symbolic = 2,
+  Formula = 3,
+};
+
+class LinearProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram)
+
+  LinearProgram(CostForm cost_form, ConstraintForm cnstr_form);
+
+  MathematicalProgram* prog() const { return prog_.get(); }
+
+  virtual void CheckSolution() const = 0;
+
+ private:
+  std::unique_ptr<MathematicalProgram> prog_;
+  CostForm cost_form_;
+  ConstraintForm cnstr_form_;
+};
+
 /**
  * Simple example x = b
  */
@@ -494,32 +523,61 @@ class MinDistanceFromPlaneToOrigin {
 /// -inf <=       x1 - 2x2 <= 3
 ///   -1 <= 0x0+ 0x1 + 0x2 <= 0
 ///           x1 >= 1
-class LinearFeasibilityProgram {
+class LinearFeasibilityProgram : public LinearProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearFeasibilityProgram)
 
-  enum class ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolicConstraint = 0,
-    kSymbolicConstraint = 1,
-    kFormulaConstraint = 2,
-    kConstraintEnd = 2,
-  };
-
   LinearFeasibilityProgram(ConstraintForm cnstr_form);
 
-  MathematicalProgram* prog() const { return prog_.get(); }
-
-  void CheckSolution() const;
+  void CheckSolution() const override;
 
  private:
-  std::unique_ptr<MathematicalProgram> prog_;
   VectorDecisionVariable<3> x_;
-  Eigen::Matrix3d A_;
-  Eigen::Vector3d b_lb_;
-  Eigen::Vector3d b_ub_;
-  ConstraintForm cnstr_form_;
 };
+
+/// Adapt from the linear programming example
+/// http://cvxopt.org/examples/tutorial/lp.html
+/// Solve the following linear program
+/// min     2x0 + x1
+/// s.t  -inf <= -x0 + x1 <= 1
+///         2 <= x0 + x1  <=inf
+///      -inf <= x0 - 2x1 <= 4
+///      x1 >= 2
+///      x0 >= 0
+/// The optimal solution is x0 = 1, x1 = 2
+class LinearProgram0 : public LinearProgram{
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram0)
+
+  LinearProgram0(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<2> x_;
+  Eigen::Vector2d x_expected_;
+};
+
+// Test a simple linear programming problem with only bounding box constraint
+// on x.
+// min x0 - 2*x1
+//     0 <= x0 <= 2
+//    -1 <= x1 <= 4
+// The optimal solution is (0, 4)
+class LinearProgram1 : public LinearProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram1)
+
+  LinearProgram1(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<2> x_;
+  Eigen::Vector2d x_expected_;
+};
+
+void RunLinearPrograms(const MathematicalProgramSolverInterface& solver);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

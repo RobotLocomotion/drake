@@ -16,7 +16,7 @@
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/moby_lcp_solver.h"
-#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/mosek_solver_test.h"
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
 
