@@ -14,6 +14,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_compat.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
@@ -122,16 +123,16 @@ Variables UnaryExpressionCell::GetVariables() const {
 bool UnaryExpressionCell::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  const UnaryExpressionCell& unary_e{
-      static_cast<const UnaryExpressionCell&>(e)};
+  const UnaryExpressionCell& unary_e =
+      static_cast<const UnaryExpressionCell&>(e);
   return e_.EqualTo(unary_e.e_);
 }
 
 bool UnaryExpressionCell::Less(const ExpressionCell& e) const {
   // Expression::Less guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  const UnaryExpressionCell& unary_e{
-      static_cast<const UnaryExpressionCell&>(e)};
+  const UnaryExpressionCell& unary_e =
+      static_cast<const UnaryExpressionCell&>(e);
   return e_.Less(unary_e.e_);
 }
 
@@ -157,16 +158,16 @@ Variables BinaryExpressionCell::GetVariables() const {
 bool BinaryExpressionCell::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  const BinaryExpressionCell& binary_e{
-      static_cast<const BinaryExpressionCell&>(e)};
+  const BinaryExpressionCell& binary_e =
+      static_cast<const BinaryExpressionCell&>(e);
   return e1_.EqualTo(binary_e.e1_) && e2_.EqualTo(binary_e.e2_);
 }
 
 bool BinaryExpressionCell::Less(const ExpressionCell& e) const {
   // Expression::Less guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  const BinaryExpressionCell& binary_e{
-      static_cast<const BinaryExpressionCell&>(e)};
+  const BinaryExpressionCell& binary_e =
+      static_cast<const BinaryExpressionCell&>(e);
   if (e1_.Less(binary_e.e1_)) {
     return true;
   }
@@ -779,7 +780,7 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
     // (= b1^e1 * ... * (base^this_exponent) * ... * en^bn).
     // Update it to be (... * (base^(this_exponent + exponent)) * ...)
     // Example: x^3 * x^2 => x^5
-    Expression& this_exponent{it->second};
+    Expression& this_exponent = it->second;
     this_exponent += exponent;
     if (is_zero(this_exponent)) {
       // If it ends up with base^0 (= 1.0) then remove this entry from the map.
