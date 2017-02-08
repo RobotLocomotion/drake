@@ -311,7 +311,7 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   std::unique_ptr<BasicVector<double>> ext_input =
       std::make_unique<BasicVector<double>>(3);
   const double f_x = 1.0;
-  const double f_y = 0.0;
+  const double f_y = -1.0;
   ext_input->SetAtIndex(0, f_x);
   ext_input->SetAtIndex(1, f_y);
   ext_input->SetAtIndex(2, f_x * dut_->get_rod_length()/2);
