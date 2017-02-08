@@ -26,6 +26,19 @@ if(PYTHON_EXECUTABLE)
   find_package(PythonLibs ${Python_FIND_VERSION} ${PYTHON_EXACT} MODULE ${PYTHON_QUIET})
 endif()
 
+# Look up the python module suffix (which varies by python version).
+# This uses the method from FindPythonLibsNew.cmake shipped with pybind11.
+execute_process(
+    COMMAND "${PYTHON_EXECUTABLE}" -c "from distutils import sysconfig; print(sysconfig.get_config_var('SO'))"
+    RESULT_VARIABLE PYTHON_MODULE_EXTENSION_SUCCESS
+    OUTPUT_VARIABLE PYTHON_MODULE_EXTENSION
+    ERROR_VARIABLE PYTHON_MODULE_EXTENSION_ERROR_VALUE
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if(NOT PYTHON_MODULE_EXTENSION_SUCCESS MATCHES 0)
+  message(FATAL_ERROR "Could not determine the python module extension:\n${PYTHON_MODULE_EXTENSION_ERROR_VALUE}")
+endif()
+
 find_package_handle_standard_args(Python
   REQUIRED_VARS PYTHON_EXECUTABLE PYTHON_INCLUDE_DIR PYTHON_LIBRARY
   VERSION_VAR PYTHON_VERSION_STRING)
