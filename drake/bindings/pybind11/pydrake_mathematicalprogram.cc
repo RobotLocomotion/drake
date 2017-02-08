@@ -9,8 +9,9 @@
 namespace py = pybind11;
 
 
-PYBIND11_MAKE_OPAQUE(drake::solvers::VectorXDecisionVariable);
-PYBIND11_MAKE_OPAQUE(drake::solvers::MatrixXDecisionVariable);
+PYBIND11_NUMPY_OBJECT_DTYPE(drake::Variable);
+PYBIND11_NUMPY_OBJECT_DTYPE(drake::symbolic::Expression);
+PYBIND11_NUMPY_OBJECT_DTYPE(drake::symbolic::Formula);
 
 PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   using drake::Variable;
@@ -32,14 +33,14 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
 
   py::class_<MathematicalProgram>(m, "MathematicalProgram")
     .def(py::init<>())
-    .def("_NewContinuousVariables", (VectorXDecisionVariable
+    .def("NewContinuousVariables", (VectorXDecisionVariable
           (MathematicalProgram::*)(
           size_t,
           const std::string&))
          &MathematicalProgram::NewContinuousVariables,
          py::arg("rows"),
          py::arg("name") = "x")
-    .def("_NewContinuousVariables", (MatrixXDecisionVariable
+    .def("NewContinuousVariables", (MatrixXDecisionVariable
           (MathematicalProgram::*)(
           size_t,
           size_t,
@@ -48,14 +49,14 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
          py::arg("rows"),
          py::arg("cols"),
          py::arg("name") = "x")
-    .def("_NewBinaryVariables", (VectorXDecisionVariable
+    .def("NewBinaryVariables", (VectorXDecisionVariable
          (MathematicalProgram::*)(
          size_t,
          const std::string&))
          &MathematicalProgram::NewBinaryVariables,
          py::arg("rows"),
          py::arg("name") = "b")
-    .def("_NewBinaryVariables", (MatrixXDecisionVariable
+    .def("NewBinaryVariables", (MatrixXDecisionVariable
          (MathematicalProgram::*)(
          size_t,
          size_t,
@@ -81,7 +82,7 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
           (MathematicalProgram::*)(
           const Expression&))
           &MathematicalProgram::AddLinearCost)
-    .def("_AddQuadraticCost", (std::shared_ptr<QuadraticConstraint>
+    .def("AddQuadraticCost", (std::shared_ptr<QuadraticConstraint>
          (MathematicalProgram::*)(
           const Eigen::Ref<const Eigen::MatrixXd>&,
           const Eigen::Ref<const Eigen::VectorXd>&,
@@ -94,16 +95,16 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("quadratic_costs", &MathematicalProgram::quadratic_costs)
     .def("FindDecisionVariableIndex", &MathematicalProgram::FindDecisionVariableIndex)
     .def("num_vars", &MathematicalProgram::num_vars)
-    .def("_GetSolution", [](const MathematicalProgram& prog,
+    .def("GetSolution", [](const MathematicalProgram& prog,
                             const Variable& var) {
       return prog.GetSolution(var);
     })
-    .def("_GetSolution",
+    .def("GetSolution",
          [](const MathematicalProgram& prog,
             const VectorXDecisionVariable& var) {
       return prog.GetSolution(var);
     })
-    .def("_GetSolution",
+    .def("GetSolution",
          [](const MathematicalProgram& prog,
             const MatrixXDecisionVariable& var) {
       return prog.GetSolution(var);
@@ -320,59 +321,6 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   py::class_<Formula>(m, "Formula")
     .def("__repr__", &Formula::to_string);
 
-  py::class_<VectorXDecisionVariable>(
-    m, "VectorXDecisionVariable")
-    .def("__init__",
-     [](VectorXDecisionVariable& self, std::vector<int> shape) {
-      if (shape.size() == 1) {
-        new (&self) VectorXDecisionVariable(shape[0]);
-      } else {
-        throw std::runtime_error(
-      "VectorXDecisionVariable must be initialized with a one-dimensional shape");
-      }
-    })
-    .def("size", [](const VectorXDecisionVariable& v) {
-      return v.size();
-    })
-    .def("shape", [](const VectorXDecisionVariable& v) {
-      std::vector<Eigen::Index> shape = {v.rows()};
-      return shape;
-    })
-    .def("__getitem__", [](const VectorXDecisionVariable& v,
-                           size_t i) {
-      return v(i);
-    }, py::return_value_policy::reference)
-    .def("__setitem__", [](VectorXDecisionVariable& v,
-                           size_t i, const Variable &var) {
-      v(i) = var;
-    });
-
-  py::class_<MatrixXDecisionVariable>(
-    m, "MatrixXDecisionVariable")
-    .def("__init__",
-         [](MatrixXDecisionVariable& self, std::vector<int> shape) {
-          if (shape.size() != 2) {
-            throw std::runtime_error(
-        "MatrixXDecisionVariable must be initialized with a two-dimensional shape");
-          }
-          new (&self) MatrixXDecisionVariable(shape[0], shape[1]);
-        })
-    .def("size", [](const MatrixXDecisionVariable& v) {
-      return v.size();
-    })
-    .def("shape", [](const MatrixXDecisionVariable& v) {
-      std::vector<Eigen::Index> shape = {v.rows(), v.cols()};
-      return shape;
-    })
-    .def("__getitem__", [](const MatrixXDecisionVariable& v,
-                           size_t i) {
-      return v(i);
-    }, py::return_value_policy::reference)
-    .def("__setitem__", [](MatrixXDecisionVariable& v,
-                           size_t i, const Variable &var) {
-      v(i) = var;
-    });
-
   // Assign the wrapped Constraint class to the name 'constraint'
   // so we can use it in this file to indicate that the other constraint
   // types inherit from it.
@@ -392,12 +340,12 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   py::class_<Binding<LinearConstraint> >(
     m, "Binding_LinearConstraint")
     .def("constraint", &Binding<LinearConstraint>::constraint)
-    .def("_variables", &Binding<LinearConstraint>::variables);
+    .def("variables", &Binding<LinearConstraint>::variables);
 
   py::class_<Binding<QuadraticConstraint> >(
     m, "Binding_QuadraticConstraint")
     .def("constraint", &Binding<QuadraticConstraint>::constraint)
-    .def("_variables", &Binding<QuadraticConstraint>::variables);
+    .def("variables", &Binding<QuadraticConstraint>::variables);
 
   return m.ptr();
 }
