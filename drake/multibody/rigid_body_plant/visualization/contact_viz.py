@@ -9,28 +9,28 @@ import drake as lcmdrakemsg
 
 class ContactVisualizer(object):
     def __init__(self):
-        self.folderName = 'Contact Results'
+        self.folder_name = 'Contact Results'
         self.name = "Contact Visualizer"
         self.enabled = True
         # Subscribes to the LCM topic
         lcmUtils.addSubscriber(
             'CONTACT_RESULTS',
             messageClass=lcmdrakemsg.lcmt_contact_results_for_viz,
-            callback=self.handleMessage)
+            callback=self.handle_message)
 
-    def isEnabled(self):
+    def is_enabled(self):
         return self.enabled
 
-    def setEnabled(self, enable):
+    def set_enabled(self, enable):
         self.enabled = enable
 
-    def handleMessage(self, msg):
+    def handle_message(self, msg):
+        # Removes the folder completely.
+        # om is a magic object from director
+        om.removeFromObjectModel(om.findObjectByName(self.folder_name))
 
-        # Removes the folder completely
-        om.removeFromObjectModel(om.findObjectByName(self.folderName))
-
-        # Recreates folder
-        folder = om.getOrCreateContainer(self.folderName)
+        # Recreates folder.
+        folder = om.getOrCreateContainer(self.folder_name)
 
         # Doesn't draw anything if disabled.
         if not self.enabled:
@@ -53,13 +53,17 @@ class ContactVisualizer(object):
             key2 = (str(contact.body2_name), str(contact.body1_name))
 
             if key1 in collision_pair_to_forces:
-                collision_pair_to_forces[key1].append((point, point + mag*force))
+                collision_pair_to_forces[key1].append(
+                    (point, point + mag*force))
             elif key2 in collision_pair_to_forces:
-                collision_pair_to_forces[key2].append((point, point + mag*force))
+                collision_pair_to_forces[key2].append(
+                    (point, point + mag*force))
             else:
                 collision_pair_to_forces[key1] = [(point, point + mag*force)]
 
         for key, list_of_forces in collision_pair_to_forces.iteritems():
+            # DebugData is an object from director that provides drawing
+            # utilities for primitive geometries.
             d = DebugData()
             for force_pair in list_of_forces:
                 d.addArrow(start=force_pair[0],
@@ -67,17 +71,20 @@ class ContactVisualizer(object):
                            tubeRadius=0.005,
                            headRadius=0.01)
 
-            vis.showPolyData(d.getPolyData(), str(key), parent=folder, color=[0,1,0])
+            # vis is an object from director
+            vis.showPolyData(
+                d.getPolyData(), str(key), parent=folder, color=[0, 1, 0])
 
 
-def initVisualizer():
+def init_visualizer():
     # create visualizer instance
-    myVisualizer = ContactVisualizer()
+    my_visualizer = ContactVisualizer()
 
     # add to tools menu
-    applogic.MenuActionToggleHelper('Tools', myVisualizer.name,
-                                    myVisualizer.isEnabled, myVisualizer.setEnabled)
-    return myVisualizer
+    applogic.MenuActionToggleHelper(
+        'Tools', my_visualizer.name,
+        my_visualizer.is_enabled, my_visualizer.set_enabled)
+    return my_visualizer
 
 # create visualizer when this script is executed
-myVisualizer = initVisualizer()
+contact_viz = init_visualizer()

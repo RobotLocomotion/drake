@@ -30,7 +30,6 @@ drake_cc_library(
     ],
     linkstatic = 1,
     deps = [
-        "//drake/lcmtypes:viewer",
         "//drake/multibody:rigid_body_tree",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework",
