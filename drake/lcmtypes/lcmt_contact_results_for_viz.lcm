@@ -1,0 +1,9 @@
+package drake;
+
+struct lcmt_contact_results_for_viz {
+  // in microseconds
+  int64_t timestamp;
+
+  int32_t num_contacts;
+  lcmt_contact_info_for_viz contact_info[num_contacts];
+}
