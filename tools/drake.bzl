@@ -66,6 +66,7 @@ def drake_cc_googletest(
         size=None,
         srcs=None,
         deps=None,
+        disable_in_compilation_mode_dbg=False,
         **kwargs):
     """Creates a rule to declare a C++ unit test using googletest.  Always adds a
     deps= entry for googletest main (@gtest//:main).
@@ -73,11 +74,18 @@ def drake_cc_googletest(
     By default, sets size="small" because that indicates a unit test.
     By default, sets name="test/${name}.cc" per Drake's filename convention.
 
+    If disable_in_compilation_mode_dbg is True, the srcs will be suppressed
+    in debug-mode builds, so the test will trivially pass. This option should
+    be used only rarely, and the reason should always be documented.
     """
     if size == None:
         size = "small"
     if srcs == None:
         srcs = ["test/%s.cc" % name]
+    if disable_in_compilation_mode_dbg:
+        # Remove the test declarations from the test in debug mode.
+        # TODO(david-german-tri): Actually suppress the test rule.
+        srcs = select({"//tools:debug" : [], "//conditions:default" : srcs})
     if deps == None:
         deps = []
     deps.append("@gtest//:main")
