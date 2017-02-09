@@ -20,6 +20,7 @@ endif()
 if(gurobi_FOUND AND yaml-cpp_FOUND)
   add_library(kuka_traj_follower_system
     kuka_plan_eval_system.cc
+    kuka_servo_system.cc
     discrete_time_plan_eval_system.cc
     qp_controller_system.cc
     robot_status_wrapper.cc

@@ -1,3 +1,5 @@
+add_definitions(-g)
+
 if(lcm_FOUND)
   add_executable(controlled_kuka_demo
       controlled_kuka_demo.cc
@@ -44,6 +46,7 @@ if(lcm_FOUND)
       kuka_traj_follower_system
       drakeLcmSystem
       drakeRigidBodyPlant
-      drakeSystemAnalysis)
+      drakeSystemAnalysis
+      drakeSystemPrimitives)
   endif()
 endif()

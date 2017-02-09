@@ -21,8 +21,8 @@ DiscreteTimePlanEvalSystem::DiscreteTimePlanEvalSystem(
     : robot_(robot),
       control_dt_(dt),
       alias_groups_(robot),
-      abstract_state_qp_input_index_(0),
-      abstract_state_plan_index_(1) {
+      abstract_state_index_qp_input_(0),
+      abstract_state_index_plan_(1) {
   input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
   output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
   // Declare discrete time update.
@@ -35,8 +35,8 @@ DiscreteTimePlanEvalSystem::DiscreteTimePlanEvalSystem(
   paramset_.LoadFromYAMLConfigFile(YAML::LoadFile(param_file_name),
                                    alias_groups_);
 
-  abstract_state_qp_input_index_ = 0;
-  abstract_state_plan_index_ = 1;
+  abstract_state_index_qp_input_ = 0;
+  abstract_state_index_plan_ = 1;
 }
 
 void DiscreteTimePlanEvalSystem::DoCalcOutput(
@@ -46,7 +46,7 @@ void DiscreteTimePlanEvalSystem::DoCalcOutput(
   QpInput& qp_input = output->GetMutableData(output_port_index_qp_input_)
                           ->GetMutableValue<QpInput>();
   qp_input =
-      context.get_abstract_state<QpInput>(abstract_state_qp_input_index_);
+      context.get_abstract_state<QpInput>(abstract_state_index_qp_input_);
 }
 
 std::unique_ptr<systems::AbstractValue>
