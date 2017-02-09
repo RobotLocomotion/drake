@@ -18,14 +18,13 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
 endif()
 
 if(gurobi_FOUND AND yaml-cpp_FOUND)
-  add_library(kuka_traj_follower_system
-    kuka_plan_eval_system.cc
-    kuka_servo_system.cc
+  add_library(drakeInverseDynamicsControllerForIiwa
     discrete_time_plan_eval_system.cc
+    kuka_servo_system.cc
     qp_controller_system.cc
     robot_status_wrapper.cc
     joint_level_controller_system.cc)
-  target_link_libraries(kuka_traj_follower_system
+  target_link_libraries(drakeInverseDynamicsControllerForIiwa
     drakeMultibodyParsers
     drakeQPController
     drakeQPControllerParamParsing

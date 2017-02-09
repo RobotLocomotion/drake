@@ -43,7 +43,7 @@ if(lcm_FOUND)
       make_demo_plan.cc)
     target_link_libraries(kuka_inverse_dynamics_demo
       drakeKukaIiwaArmCommon
-      kuka_traj_follower_system
+      drakeInverseDynamicsControllerForIiwa
       drakeLcmSystem
       drakeRigidBodyPlant
       drakeSystemAnalysis
