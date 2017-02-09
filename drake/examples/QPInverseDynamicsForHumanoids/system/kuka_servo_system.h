@@ -17,8 +17,8 @@ namespace qp_inverse_dynamics {
 class KukaServoSystem : public DiscreteTimePlanEvalSystem {
  public:
   KukaServoSystem(const RigidBodyTree<double>& robot,
-                     const std::string& alias_groups_file_name,
-                     const std::string& param_file_name, double dt);
+                  const std::string& alias_groups_file_name,
+                  const std::string& param_file_name, double dt);
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;
@@ -29,8 +29,7 @@ class KukaServoSystem : public DiscreteTimePlanEvalSystem {
   void Initialize(systems::State<double>* state);
 
   void Initialize(systems::Context<double>* context) {
-    systems::State<double>* servo_state =
-        context->get_mutable_state();
+    systems::State<double>* servo_state = context->get_mutable_state();
     Initialize(servo_state);
   }
 
