@@ -132,9 +132,12 @@ supplies in source form only.
    `previous releases <https://www.jetbrains.com/clion/download/previous.html>`_.
    No other version of CLion is compatible with the Bazel plugin.
 
-2. Adjust your JVM options to increase CLion's memory limits.
-   Edit ``bin/clion64.vmoptions`` so that ``-Xms`` is ``1024m`` and
-   ``-Xmx`` is ``16384m``.
+2. Adjust your JVM options to increase CLion's memory limits so that ``-Xms``
+   is ``1024m`` and ``-Xmx`` is ``8196m``. The JVM options file location
+   is platform-dependent:
+
+   a. **Linux:**  ``bin/clion64.vmoptions``, in the CLion tarball.
+   b. **OS X:** ``Contents/bin/clion.vmoptions``, in the CLion app package.
 
 3. Clone the `bazelbuild/intellij <https://github.com/bazelbuild/intellij>`_
    project from GitHub, and build the CLion plugin with
@@ -184,11 +187,6 @@ Keeping CLion Up-to-Date with the Bazel Build
 Changes to BUILD files can add or remove source files from the Bazel build.
 To propagate those changes into the CLion project structure, select
 ``Bazel > Sync Project With BUILD Files``.
-
-Known Limitations
------------------
-CLion does not index symbols from any Bazel ``WORKSPACE`` externals, although
-those externals do participate as usual in Bazel builds initiated from CLion.
 
 Integrating External Tools with CLion
 =====================================
