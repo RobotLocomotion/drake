@@ -43,14 +43,16 @@ class EndlessRoadOracleOutput : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  /// net_delta_sigma
+  /// net ('bumper-to-bumper') longitudinal path distance to the closest
+  /// preceding vehicle/obstacle [meters]
   const T& net_delta_sigma() const {
     return this->GetAtIndex(K::kNetDeltaSigma);
   }
   void set_net_delta_sigma(const T& net_delta_sigma) {
     this->SetAtIndex(K::kNetDeltaSigma, net_delta_sigma);
   }
-  /// delta_sigma_dot
+  /// difference in longitudinal velocity of sensing vehicle relative to the
+  /// closest preceding vehicle/obstacle [m/s, +value means obstacle is slower]
   const T& delta_sigma_dot() const {
     return this->GetAtIndex(K::kDeltaSigmaDot);
   }

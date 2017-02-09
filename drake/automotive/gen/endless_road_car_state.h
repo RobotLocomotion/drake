@@ -45,16 +45,16 @@ class EndlessRoadCarState : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  /// s
+  /// s (longitudinal) component of LANE-space position [meters]
   const T& s() const { return this->GetAtIndex(K::kS); }
   void set_s(const T& s) { this->SetAtIndex(K::kS, s); }
-  /// r
+  /// r (lateral) component of LANE-space position [meters]
   const T& r() const { return this->GetAtIndex(K::kR); }
   void set_r(const T& r) { this->SetAtIndex(K::kR, r); }
-  /// heading
+  /// heading in the (s,r) plane [radians, 0 == +s direction]
   const T& heading() const { return this->GetAtIndex(K::kHeading); }
   void set_heading(const T& heading) { this->SetAtIndex(K::kHeading, heading); }
-  /// speed
+  /// speed in the heading direction in the (s,r) plane [m/s]
   const T& speed() const { return this->GetAtIndex(K::kSpeed); }
   void set_speed(const T& speed) { this->SetAtIndex(K::kSpeed, speed); }
   //@}

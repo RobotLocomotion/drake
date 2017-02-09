@@ -7,8 +7,8 @@ struct lcmt_endless_road_car_state_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 
-  double s;  // s
-  double r;  // r
-  double heading;  // heading
-  double speed;  // speed
+  double s;  // s (longitudinal) component of LANE-space position [meters]
+  double r;  // r (lateral) component of LANE-space position [meters]
+  double heading;  // heading in the (s,r) plane [radians, 0 == +s direction]
+  double speed;  // speed in the heading direction in the (s,r) plane [m/s]
 }

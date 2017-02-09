@@ -28,17 +28,20 @@ EndlessRoadCar<T>::EndlessRoadCar(
       break;
     }
     case kUser: {
+      // A single DrivingCommand input.
       this->DeclareInputPort(systems::kVectorValued,
                              DrivingCommandIndices::kNumCoordinates);
       break;
     }
     case kIdm: {
+      // A single EndlessRoadOracleOutput as input.
       this->DeclareInputPort(systems::kVectorValued,
                              EndlessRoadOracleOutputIndices::kNumCoordinates);
       break;
     }
     default: { DRAKE_ABORT(); }
   }
+  // A single EndlessRoadCarState output.
   this->DeclareOutputPort(systems::kVectorValued,
                           EndlessRoadCarStateIndices::kNumCoordinates);
 }
