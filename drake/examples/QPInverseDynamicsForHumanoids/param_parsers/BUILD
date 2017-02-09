@@ -20,9 +20,9 @@ drake_cc_library(
     ],
     linkstatic = 1,
     deps = [
-        "@yaml_cpp//:lib",
         ":rigid_body_tree_alias_groups",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
+        "@yaml_cpp//:lib",
     ],
 )
 

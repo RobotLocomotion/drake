@@ -23,7 +23,8 @@ namespace qp_inverse_dynamics {
 // simulation should be replaced later with real simulation.
 // The controller should drive the position and velocity close to zero in 4
 // seconds.
-GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
+void aa() {
+//GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   // Loads model.
   std::string urdf = drake::GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
       "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
@@ -170,3 +171,8 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
 }  // namespace qp_inverse_dynamics
 }  // namespace examples
 }  // namespace drake
+
+int main() {
+  drake::examples::qp_inverse_dynamics::aa();
+  return 0;
+}

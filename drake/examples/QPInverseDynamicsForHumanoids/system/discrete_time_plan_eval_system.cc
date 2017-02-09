@@ -31,7 +31,7 @@ DiscreteTimePlanEvalSystem::DiscreteTimePlanEvalSystem(
   set_name("plan_eval");
 
   // KinematicsProperty
-  alias_groups_.LoadFromFile(alias_groups_config);
+  alias_groups_.LoadFromFile(alias_groups_file_name);
 
   paramset_.LoadFromYAMLConfigFile(YAML::LoadFile(param_file_name),
                                    alias_groups_);

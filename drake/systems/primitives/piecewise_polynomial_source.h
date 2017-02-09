@@ -16,20 +16,35 @@ class PiecewisePolynomialSource : public SingleOutputVectorSource<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PiecewisePolynomialSource)
 
-  /// @param trajectory Trajectory used by the system.  This reference is
-  /// aliased, and must remain valid for the lifetime of the system.
-  PiecewisePolynomialSource(const PiecewisePolynomial<T>& trajectory,
-                            int output_derivative_order);
+  /**
+   * Constructs a PiecewisePolynomialSource that interpolates a given
+   * PiecewisePolynomial and its derivatives up to the order specified by
+   * @p output_derivative_order.
+   * @param trajectory Trajectory to be interpolated, and it must have only
+   * one column.
+   * @param output_derivative_order Highest derivative order, needs to be
+   * bigger than or equal to 0.
+   */
+  PiecewisePolynomialSource(
+      const PiecewisePolynomial<T>& trajectory,
+      int output_derivative_order,
+      bool set_derivatives_to_zero_when_time_is_past_limits);
 
  protected:
-  /// Outputs a signal using the time-varying trajectory specified in the
-  /// constructor.
+  /**
+   * Outputs a vector of values evaluated at the context time of the trajectory
+   * and up to its Nth derivatives, where the trajectory and N are passed to the
+   * constructor. The size of the vector is
+   * (1 + output_derivative_order) * rows of the trajectory passed to the
+   * constructor.
+   */
   void DoCalcVectorOutput(
       const Context<T>& context,
       Eigen::VectorBlock<VectorX<T>>* output) const override;
 
  private:
   const PiecewisePolynomial<T> trajectory_;
+  const bool clamp_derivatives_;
   std::vector<PiecewisePolynomial<T>> derivatives_;
 };
 

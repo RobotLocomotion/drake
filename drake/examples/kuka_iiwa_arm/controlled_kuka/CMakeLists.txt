@@ -36,17 +36,4 @@ if(lcm_FOUND)
     drake_add_test(NAME kuka_cartesian_way_point_demo
         COMMAND kuka_cartesian_way_point_demo)
   endif()
-
-  if(yaml-cpp_FOUND AND gurobi_FOUND)
-    add_executable(kuka_inverse_dynamics_demo
-      kuka_inverse_dynamics_demo.cc
-      make_demo_plan.cc)
-    target_link_libraries(kuka_inverse_dynamics_demo
-      drakeKukaIiwaArmCommon
-      drakeInverseDynamicsControllerForIiwa
-      drakeLcmSystem
-      drakeRigidBodyPlant
-      drakeSystemAnalysis
-      drakeSystemPrimitives)
-  endif()
 endif()

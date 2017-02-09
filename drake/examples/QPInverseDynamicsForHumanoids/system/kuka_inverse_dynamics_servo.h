@@ -9,7 +9,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/kuka_servo_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_status_wrapper.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/state_to_humanoid_status.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -43,8 +43,8 @@ class KukaInverseDynamicsServo : public systems::Diagram<double> {
     systems::DiagramBuilder<double> builder;
 
     // converter from raw state to humanoid status
-    RobotStatusWrapper* rs_wrapper = builder.AddSystem(
-        std::make_unique<RobotStatusWrapper>(robot, alias_group_path));
+    StateToHumanoidStatus* rs_wrapper = builder.AddSystem(
+        std::make_unique<StateToHumanoidStatus>(robot, alias_group_path));
     // converter from qp output to raw torque
     JointLevelControllerSystem* joint_level_controller =
         builder.AddSystem(std::make_unique<JointLevelControllerSystem>(robot));

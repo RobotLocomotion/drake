@@ -31,8 +31,6 @@ drake_cc_library(
     hdrs = ["lcmUtil.h"],
     linkstatic = 1,
     deps = [
-        "@bot_core_lcmtypes//:lib",
-        "@eigen//:eigen",
         ":util",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/lcmtypes:piecewise_polynomial",
@@ -40,6 +38,8 @@ drake_cc_library(
         "//drake/lcmtypes:polynomial_matrix",
         "//drake/lcmtypes:qp_controller_input",
         "//drake/math:geometric_transform",
+        "@bot_core_lcmtypes//:lib",
+        "@eigen//:eigen",
     ],
 )
 

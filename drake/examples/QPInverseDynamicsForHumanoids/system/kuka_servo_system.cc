@@ -7,8 +7,6 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 
-#include "drake/common/trajectories/piecewise_quaternion.h"
-
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
