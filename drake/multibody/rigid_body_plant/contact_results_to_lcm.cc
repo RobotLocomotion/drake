@@ -1,5 +1,7 @@
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 
+#include <memory>
+
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/util/drakeUtil.h"
 

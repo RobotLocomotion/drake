@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"

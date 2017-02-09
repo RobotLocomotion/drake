@@ -3,38 +3,61 @@
 
 from director import lcmUtils
 from director import applogic
+from director import objectmodel as om
+from director import visualization as vis
+from director.debugVis import DebugData
+
 import numpy as np
 import drake as lcmdrakemsg
 
-
 class ContactVisualizer(object):
     def __init__(self):
-        self.folder_name = 'Contact Results'
-        self.name = "Contact Visualizer"
-        self.enabled = True
-        # Subscribes to the LCM topic
-        lcmUtils.addSubscriber(
+        self._folder_name = 'Contact Results'
+        self._name = "Contact Visualizer"
+        self._enabled = False
+        self._sub = None
+
+        self.set_enabled(True)
+
+    def add_subscriber(self):
+        if self._sub is not None:
+            return
+
+        self._sub = lcmUtils.addSubscriber(
             'CONTACT_RESULTS',
             messageClass=lcmdrakemsg.lcmt_contact_results_for_viz,
             callback=self.handle_message)
+        # Limits the rate of message handling, since redrawing is done in the
+        # message handler.
+        self._sub.setSpeedLimit(30)
+        print self._name + " subscriber added."
+
+    def remove_subscriber(self):
+        if self._sub is None:
+            return
+
+        lcmUtils.removeSubscriber(self._sub)
+        self._sub = None
+        om.removeFromObjectModel(om.findObjectByName(self._folder_name))
+        print self._name + " subscriber removed."
 
     def is_enabled(self):
-        return self.enabled
+        return self._enabled
 
     def set_enabled(self, enable):
-        self.enabled = enable
+        self._enabled = enable
+        if enable:
+            self.add_subscriber()
+        else:
+            self.remove_subscriber()
 
     def handle_message(self, msg):
         # Removes the folder completely.
         # om is a magic object from director
-        om.removeFromObjectModel(om.findObjectByName(self.folder_name))
+        om.removeFromObjectModel(om.findObjectByName(self._folder_name))
 
         # Recreates folder.
-        folder = om.getOrCreateContainer(self.folder_name)
-
-        # Doesn't draw anything if disabled.
-        if not self.enabled:
-            return
+        folder = om.getOrCreateContainer(self._folder_name)
 
         # A map from pair of body names to a list of contact forces
         collision_pair_to_forces = {}
@@ -82,7 +105,7 @@ def init_visualizer():
 
     # add to tools menu
     applogic.MenuActionToggleHelper(
-        'Tools', my_visualizer.name,
+        'Tools', my_visualizer._name,
         my_visualizer.is_enabled, my_visualizer.set_enabled)
     return my_visualizer
 

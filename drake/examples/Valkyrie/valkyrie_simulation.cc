@@ -115,7 +115,8 @@ int main(int argc, const char** argv) {
   const ContactResultsToLcmSystem<double>& contact_viz =
       *builder.template AddSystem<ContactResultsToLcmSystem<double>>(tree);
   auto& contact_results_publisher = *builder.AddSystem(
-      LcmPublisherSystem::Make<lcmt_contact_results_for_viz>("CONTACT_RESULTS", &lcm));
+      LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
+          "CONTACT_RESULTS", &lcm));
 
   // Connections.
   // LCM message to desired effort conversion.
