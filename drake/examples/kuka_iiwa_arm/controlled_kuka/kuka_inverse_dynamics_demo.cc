@@ -16,8 +16,8 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/kuka_inverse_dynamics_servo.h"
 #include "drake/examples/kuka_iiwa_arm/controlled_kuka/make_demo_plan.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/primitives/piecewise_polynomial_source.h"
@@ -53,12 +53,13 @@ int DoMain() {
   lcm::DrakeLcm lcm;
 
   // Makes a RBT.
-  std::unique_ptr<RigidBodyTree<double>> tree = std::make_unique<RigidBodyTree<double>>();
+  std::unique_ptr<RigidBodyTree<double>> tree =
+      std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() +
-      "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf",
-      drake::multibody::joints::kFixed,
-      nullptr /* weld to frame */, tree.get());
+          "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf",
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      tree.get());
 
   drake::multibody::AddFlatTerrainToWorld(tree.get());
 
@@ -66,11 +67,18 @@ int DoMain() {
 
   // Builds Diagram of the closed loop simulation.
   systems::DiagramBuilder<double> builder;
-  systems::RigidBodyPlant<double>* plant = builder.AddSystem<systems::RigidBodyPlant<double>>(std::move(tree));
-  KukaInverseDynamicsServo* controller = builder.AddSystem<KukaInverseDynamicsServo>(model_path, alias_group_path, controller_config_path);
-  systems::PiecewisePolynomialSource<double>* trajectory = builder.AddSystem<systems::PiecewisePolynomialSource<double>>(MakeKukaDemoTrajectory(model_path)->get_piecewise_polynomial(), 2);
+  systems::RigidBodyPlant<double>* plant =
+      builder.AddSystem<systems::RigidBodyPlant<double>>(std::move(tree));
+  KukaInverseDynamicsServo* controller =
+      builder.AddSystem<KukaInverseDynamicsServo>(model_path, alias_group_path,
+                                                  controller_config_path);
+  systems::PiecewisePolynomialSource<double>* trajectory =
+      builder.AddSystem<systems::PiecewisePolynomialSource<double>>(
+          MakeKukaDemoTrajectory(model_path)->get_piecewise_polynomial(), 2);
 
-  systems::DrakeVisualizer* visualizer = builder.AddSystem<systems::DrakeVisualizer>(plant->get_rigid_body_tree(), &lcm);
+  systems::DrakeVisualizer* visualizer =
+      builder.AddSystem<systems::DrakeVisualizer>(plant->get_rigid_body_tree(),
+                                                  &lcm);
 
   // plant -> controller
   builder.Connect(plant->model_instance_state_output_port(iiwa_instance_id),
@@ -81,12 +89,12 @@ int DoMain() {
                   controller->get_input_port_desired_state_and_acceleration());
 
   // controller -> plant
-  builder.Connect(controller->get_output_port_torque(),
-                  plant->model_instance_actuator_command_input_port(iiwa_instance_id));
+  builder.Connect(
+      controller->get_output_port_torque(),
+      plant->model_instance_actuator_command_input_port(iiwa_instance_id));
 
   // plant -> viz
-  builder.Connect(plant->state_output_port(),
-                  visualizer->get_input_port(0));
+  builder.Connect(plant->state_output_port(), visualizer->get_input_port(0));
 
   std::unique_ptr<systems::System<double>> demo = builder.Build();
 
@@ -94,7 +102,8 @@ int DoMain() {
   Context<double>* context = simulator.get_mutable_context();
 
   // Initliazations.
-  controller->Initialize(dynamic_cast<systems::Diagram<double>*>(demo.get())->GetMutableSubsystemContext(context, controller));
+  controller->Initialize(dynamic_cast<systems::Diagram<double>*>(demo.get())
+                             ->GetMutableSubsystemContext(context, controller));
 
   simulator.Initialize();
   simulator.set_target_realtime_rate(1.0);

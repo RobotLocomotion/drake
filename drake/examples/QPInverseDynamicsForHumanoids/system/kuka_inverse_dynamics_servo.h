@@ -29,13 +29,13 @@ namespace qp_inverse_dynamics {
 class KukaInverseDynamicsServo : public systems::Diagram<double> {
  public:
   KukaInverseDynamicsServo(
-      const std::string& model_path,
-      const std::string& alias_group_path,
+      const std::string& model_path, const std::string& alias_group_path,
       const std::string& controller_config_path,
       std::shared_ptr<RigidBodyFrame<double>> world_offset = nullptr) {
     robot_for_control_ = std::make_unique<RigidBodyTree<double>>();
-    parsers::urdf::AddModelInstanceFromUrdfFile(model_path,
-        multibody::joints::kFixed, world_offset, robot_for_control_.get());
+    parsers::urdf::AddModelInstanceFromUrdfFile(
+        model_path, multibody::joints::kFixed, world_offset,
+        robot_for_control_.get());
     const RigidBodyTree<double>& robot = *robot_for_control_;
 
     this->set_name("KukaInverseDynamicsServo");
@@ -73,7 +73,8 @@ class KukaInverseDynamicsServo : public systems::Diagram<double> {
     builder.ExportInput(rs_wrapper->get_input_port_state());
 
     // expose desired q qd input.
-    builder.ExportInput(servo_->get_input_port_desired_state_and_acceleration());
+    builder.ExportInput(
+        servo_->get_input_port_desired_state_and_acceleration());
 
     // expose arm torque output.
     builder.ExportOutput(joint_level_controller->get_output_port_torque());
@@ -84,20 +85,21 @@ class KukaInverseDynamicsServo : public systems::Diagram<double> {
   void Initialize(systems::Context<double>* context) {
     systems::Context<double>* servo_context =
         GetMutableSubsystemContext(context, servo_);
-    systems::State<double>* servo_state =
-        servo_context->get_mutable_state();
+    systems::State<double>* servo_state = servo_context->get_mutable_state();
     servo_->Initialize(servo_state);
   }
 
-  const RigidBodyTree<double>& get_robot_for_control() const { return *robot_for_control_; }
+  const RigidBodyTree<double>& get_robot_for_control() const {
+    return *robot_for_control_;
+  }
 
-  inline const systems::InputPortDescriptor<double>& get_input_port_measured_state()
-      const {
+  inline const systems::InputPortDescriptor<double>&
+  get_input_port_measured_state() const {
     return get_input_port(0);
   }
 
-  inline const systems::InputPortDescriptor<double>& get_input_port_desired_state_and_acceleration()
-      const {
+  inline const systems::InputPortDescriptor<double>&
+  get_input_port_desired_state_and_acceleration() const {
     return get_input_port(1);
   }
 

@@ -113,7 +113,8 @@ unique_ptr<PiecewisePolynomialTrajectory> MakeKukaDemoTrajectory(
   }
 
   return make_unique<PiecewisePolynomialTrajectory>(
-      PiecewisePolynomial<double>::Cubic(kTimes, knots, MatrixXd::Zero(7, 1), MatrixXd::Zero(7, 1)));
+      PiecewisePolynomial<double>::Cubic(
+          kTimes, knots, MatrixXd::Zero(7, 1), MatrixXd::Zero(7, 1)));
 }
 
 }  // namespace kuka_iiwa_arm
