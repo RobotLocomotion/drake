@@ -236,7 +236,7 @@ drake_cc_googletest(
     name = "convex_optimization_test",
     srcs = [
         "test/convex_optimization_test.cc",
-        "test/mathematical_program_test_util.h",
+        "test/mathematical_program_test_util.cc",
     ],
     # This test uses Gurobi if present, but does not require it.
     tags = [
@@ -261,7 +261,7 @@ drake_cc_googletest(
     name = "equality_constrained_qp_solver_test",
     srcs = [
         "test/equality_constrained_qp_solver_test.cc",
-        "test/mathematical_program_test_util.h",
+        "test/mathematical_program_test_util.cc",
     ],
     deps = [
         ":mathematical_program",
@@ -284,9 +284,8 @@ drake_cc_googletest(
     name = "linear_system_solver_test",
     srcs = [
         "test/linear_system_solver_test.cc",
-        "test/mathematical_program_test_util.h",
+        "test/mathematical_program_test_util.cc",
         "test/optimization_examples.cc",
-        "test/optimization_examples.h",
     ],
     deps = [
         ":mathematical_program",
@@ -298,7 +297,7 @@ drake_cc_googletest(
     name = "mathematical_program_test",
     srcs = [
         "test/mathematical_program_test.cc",
-        "test/mathematical_program_test_util.h",
+        "test/mathematical_program_test_util.cc",
     ],
     deps = [
         ":mathematical_program",
@@ -311,7 +310,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mixed_integer_optimization_test",
     srcs = [
-        "test/mathematical_program_test_util.h",
+        "test/mathematical_program_test_util.cc",
         "test/mixed_integer_optimization_test.cc",
     ],
     # This test uses Gurobi if present, but does not require it.
@@ -336,10 +335,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "nonlinear_program_test",
     srcs = [
-        "test/mathematical_program_test_util.h",
+        "test/mathematical_program_test_util.cc",
         "test/nonlinear_program_test.cc",
         "test/optimization_examples.cc",
-        "test/optimization_examples.h",
     ],
     deps = [
         ":mathematical_program",
