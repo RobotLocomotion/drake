@@ -34,6 +34,20 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "contact_info_for_viz",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_contact_info_for_viz.lcm"],
+    linkstatic = 1,
+)
+
+lcm_cc_library(
+    name = "contact_results_for_viz",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_contact_results_for_viz.lcm"],
+    linkstatic = 1,
+)
+
+lcm_cc_library(
     name = "contact_information",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_contact_information.lcm"],
