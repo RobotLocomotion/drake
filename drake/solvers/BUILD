@@ -237,6 +237,7 @@ drake_cc_googletest(
     srcs = [
         "test/convex_optimization_test.cc",
         "test/mathematical_program_test_util.cc",
+        "test/mathematical_program_test_util.h",
     ],
     # This test uses Gurobi if present, but does not require it.
     tags = [
@@ -262,6 +263,7 @@ drake_cc_googletest(
     srcs = [
         "test/equality_constrained_qp_solver_test.cc",
         "test/mathematical_program_test_util.cc",
+        "test/mathematical_program_test_util.h",
     ],
     deps = [
         ":mathematical_program",
@@ -285,7 +287,9 @@ drake_cc_googletest(
     srcs = [
         "test/linear_system_solver_test.cc",
         "test/mathematical_program_test_util.cc",
+        "test/mathematical_program_test_util.h",
         "test/optimization_examples.cc",
+        "test/optimization_examples.h",
     ],
     deps = [
         ":mathematical_program",
@@ -298,6 +302,7 @@ drake_cc_googletest(
     srcs = [
         "test/mathematical_program_test.cc",
         "test/mathematical_program_test_util.cc",
+        "test/mathematical_program_test_util.h",
     ],
     deps = [
         ":mathematical_program",
@@ -311,6 +316,7 @@ drake_cc_googletest(
     name = "mixed_integer_optimization_test",
     srcs = [
         "test/mathematical_program_test_util.cc",
+        "test/mathematical_program_test_util.h",
         "test/mixed_integer_optimization_test.cc",
     ],
     # This test uses Gurobi if present, but does not require it.
@@ -336,8 +342,10 @@ drake_cc_googletest(
     name = "nonlinear_program_test",
     srcs = [
         "test/mathematical_program_test_util.cc",
+        "test/mathematical_program_test_util.h",
         "test/nonlinear_program_test.cc",
         "test/optimization_examples.cc",
+        "test/optimization_examples.h",
     ],
     deps = [
         ":mathematical_program",

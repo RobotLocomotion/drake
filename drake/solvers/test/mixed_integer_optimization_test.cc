@@ -3,7 +3,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mosek_solver_test.h"
+#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 namespace drake {

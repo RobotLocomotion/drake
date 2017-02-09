@@ -7,10 +7,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mosek_solver_test.h"
-#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -21,6 +18,7 @@ void CheckSolver(const MathematicalProgram& prog,
 void RunSolver(MathematicalProgram* prog,
                const MathematicalProgramSolverInterface& solver);
 
+// TODO (hongkai.dai) : delete this function when mixed_integer_optimization_test.cc and convex_optimization_test.cc are refactored.
 void AddSolverIfAvailable(
     SolverType solver_type,
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>*
