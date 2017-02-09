@@ -7,8 +7,7 @@ namespace systems {
 
 template <typename T>
 PiecewisePolynomialSource<T>::PiecewisePolynomialSource(
-    const PiecewisePolynomial<T>& trajectory,
-    int output_derivative_order,
+    const PiecewisePolynomial<T>& trajectory, int output_derivative_order,
     bool set_derivatives_to_zero_when_time_is_past_limits)
     : SingleOutputVectorSource<T>(trajectory.rows() *
                                   (1 + output_derivative_order)),
@@ -32,7 +31,8 @@ void PiecewisePolynomialSource<T>::DoCalcVectorOutput(
   output->head(len) = trajectory_.value(context.get_time());
 
   double time = context.get_time();
-  bool set_zero = clamp_derivatives_ && (time > trajectory_.getEndTime() || time < trajectory_.getStartTime());
+  bool set_zero = clamp_derivatives_ && (time > trajectory_.getEndTime() ||
+                                         time < trajectory_.getStartTime());
 
   for (size_t i = 0; i < derivatives_.size(); ++i) {
     if (set_zero) {

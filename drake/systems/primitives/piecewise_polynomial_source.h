@@ -26,8 +26,7 @@ class PiecewisePolynomialSource : public SingleOutputVectorSource<T> {
    * bigger than or equal to 0.
    */
   PiecewisePolynomialSource(
-      const PiecewisePolynomial<T>& trajectory,
-      int output_derivative_order,
+      const PiecewisePolynomial<T>& trajectory, int output_derivative_order,
       bool set_derivatives_to_zero_when_time_is_past_limits);
 
  protected:
