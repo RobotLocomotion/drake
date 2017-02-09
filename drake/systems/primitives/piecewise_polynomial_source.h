@@ -24,6 +24,9 @@ class PiecewisePolynomialSource : public SingleOutputVectorSource<T> {
    * one column.
    * @param output_derivative_order Highest derivative order, needs to be
    * bigger than or equal to 0.
+   * @param set_derivatives_to_zero_when_time_is_past_limits All derivatives
+   * will be zero for interpolating time before the start time or after the
+   * end time of @p trajectory.
    */
   PiecewisePolynomialSource(
       const PiecewisePolynomial<T>& trajectory, int output_derivative_order,

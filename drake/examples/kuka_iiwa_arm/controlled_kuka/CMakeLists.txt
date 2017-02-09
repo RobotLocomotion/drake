@@ -1,5 +1,3 @@
-add_definitions(-g)
-
 if(lcm_FOUND)
   add_executable(controlled_kuka_demo
       controlled_kuka_demo.cc

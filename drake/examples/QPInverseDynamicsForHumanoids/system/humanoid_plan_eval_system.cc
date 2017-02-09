@@ -54,7 +54,7 @@ void HumanoidPlanEvalSystem::DoCalcUnrestrictedUpdate(
   QpInput& qp_input = get_mutable_qp_input(state);
   qp_input =
       get_paramset().MakeQpInput({"feet"},            /* contacts */
-                                 {"pelvis", "torso"}, /* tracekd bodies */
+                                 {"pelvis", "torso"}, /* tracked bodies */
                                  get_alias_groups());
 
   // Does acceleration feedback based on the plan.

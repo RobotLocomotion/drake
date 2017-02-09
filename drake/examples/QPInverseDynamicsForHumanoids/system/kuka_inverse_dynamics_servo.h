@@ -28,6 +28,17 @@ namespace qp_inverse_dynamics {
  */
 class KukaInverseDynamicsServo : public systems::Diagram<double> {
  public:
+  /**
+   * Constructs a inverse dynamics controller for the Kuka iiwa arm. It
+   * maintains a separate RigidBodyTree just for the controller, which can be
+   * instantiated with different model file than the one used for simulation.
+   * @param model_path Path to the Kuka iiwa model, from which the internal
+   * model is instantiated.
+   * @param alias_group_path Path to the alias groups file. Used by the
+   * controller to understand to topology of the robot.
+   * @param controller_config_path Path the config file for the controller.
+   * @param world_offset RigidBodyFrame X_WB, where B is the base of the robot.
+   */
   KukaInverseDynamicsServo(
       const std::string& model_path, const std::string& alias_group_path,
       const std::string& controller_config_path,
@@ -42,16 +53,16 @@ class KukaInverseDynamicsServo : public systems::Diagram<double> {
 
     systems::DiagramBuilder<double> builder;
 
-    // converter from raw state to humanoid status
+    // Converts raw state to humanoid status.
     StateToHumanoidStatus* rs_wrapper = builder.AddSystem(
         std::make_unique<StateToHumanoidStatus>(robot, alias_group_path));
-    // converter from qp output to raw torque
+    // Converts qp output to raw torque.
     JointLevelControllerSystem* joint_level_controller =
         builder.AddSystem(std::make_unique<JointLevelControllerSystem>(robot));
-    // generate qp_input from desired q and qd
+    // Generates qp_input from desired q and qd qdd.
     servo_ = builder.AddSystem(std::make_unique<KukaServoSystem>(
         robot, alias_group_path, controller_config_path, 0.002));
-    // inverse dynamics
+    // Inverse dynamics controller
     QPControllerSystem* id_controller =
         builder.AddSystem(std::make_unique<QPControllerSystem>(robot, 0.002));
 
@@ -69,14 +80,14 @@ class KukaInverseDynamicsServo : public systems::Diagram<double> {
     builder.Connect(id_controller->get_output_port_qp_output(),
                     joint_level_controller->get_input_port_qp_output());
 
-    // expose arm state input.
+    // Exposes arm state input.
     builder.ExportInput(rs_wrapper->get_input_port_state());
 
-    // expose desired q qd input.
+    // Exposes desired q qd qdd input.
     builder.ExportInput(
         servo_->get_input_port_desired_state_and_acceleration());
 
-    // expose arm torque output.
+    // Exposes arm torque output.
     builder.ExportOutput(joint_level_controller->get_output_port_torque());
 
     builder.BuildInto(this);

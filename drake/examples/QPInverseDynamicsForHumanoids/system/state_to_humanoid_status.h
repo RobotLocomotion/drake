@@ -12,12 +12,12 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * A translator class that constructs a HumanoidStatus from a state vector.
+ * A translator class from state vector to HumanoidStatus.
  */
 class StateToHumanoidStatus : public systems::LeafSystem<double> {
  public:
   StateToHumanoidStatus(const RigidBodyTree<double>& robot,
-                     const std::string& path);
+                        const std::string& path);
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
@@ -45,8 +45,8 @@ class StateToHumanoidStatus : public systems::LeafSystem<double> {
   const RigidBodyTree<double>& robot_;
   const std::string alias_group_path_;
 
-  int input_port_index_state_;
-  int output_port_index_humanoid_status_;
+  int input_port_index_state_{0};
+  int output_port_index_humanoid_status_{0};
 };
 
 }  // namespace qp_inverse_dynamics

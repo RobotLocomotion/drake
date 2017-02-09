@@ -55,9 +55,7 @@ int DoMain() {
   // Makes a RBT.
   std::unique_ptr<RigidBodyTree<double>> tree =
       std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() +
-          "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf",
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(model_path,
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
 
@@ -75,7 +73,8 @@ int DoMain() {
   systems::PiecewisePolynomialSource<double>* trajectory =
       builder.AddSystem<systems::PiecewisePolynomialSource<double>>(
           MakeKukaDemoTrajectory(model_path)->get_piecewise_polynomial(),
-          2, true);
+          2 /* up to second derivative */,
+          true /* clip velocity and acceleration to zero for out of bound t */);
 
   systems::DrakeVisualizer* visualizer =
       builder.AddSystem<systems::DrakeVisualizer>(plant->get_rigid_body_tree(),
