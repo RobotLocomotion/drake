@@ -114,7 +114,16 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
           const Binding<LinearConstraint>&) const) &MathematicalProgram::EvalBindingAtSolution)
     .def("EvalBindingAtSolution", 
          (Eigen::VectorXd(MathematicalProgram::*)(
-          const Binding<QuadraticConstraint>&) const) &MathematicalProgram::EvalBindingAtSolution);
+          const Binding<QuadraticConstraint>&) const) &MathematicalProgram::EvalBindingAtSolution)
+    .def("SetSolverOption", (void(MathematicalProgram::*)(
+         const std::string&, const std::string&, double))
+         &MathematicalProgram::SetSolverOption)
+    .def("SetSolverOption", (void(MathematicalProgram::*)(
+         const std::string&, const std::string&, int))
+         &MathematicalProgram::SetSolverOption)
+    .def("SetSolverOption", (void(MathematicalProgram::*)(
+         const std::string&, const std::string&, const std::string&))
+         &MathematicalProgram::SetSolverOption);
 
   py::enum_<SolutionResult>(m, "SolutionResult")
     .value("kSolutionFound", SolutionResult::kSolutionFound)
