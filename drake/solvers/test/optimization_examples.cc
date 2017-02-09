@@ -26,8 +26,7 @@ static std::set<CostForm> linear_cost_form{CostForm::NonSymbolic, CostForm::Symb
 static std::set<ConstraintForm> linear_constraint_form{ConstraintForm::NonSymbolic, ConstraintForm::Symbolic, ConstraintForm::Formula};
 static std::set<CostForm> quadratic_cost_form{CostForm::NonSymbolic};
 
-LinearProgram::LinearProgram(CostForm cost_form, ConstraintForm cnstr_form)
-: prog_(std::make_unique<MathematicalProgram>()), cost_form_(cost_form), cnstr_form_(cnstr_form) {}
+LinearProgram::LinearProgram(CostForm cost_form, ConstraintForm cnstr_form) : prog_(std::make_unique<MathematicalProgram>()), cost_form_(cost_form), cnstr_form_(cnstr_form) {}
 
 LinearSystemExample1::LinearSystemExample1()
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, b_{}, con_{} {
@@ -706,23 +705,98 @@ void LinearProgram1::CheckSolution() const {
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_));
 }
 
+LinearProgram2::LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form) : LinearProgram(cost_form, cnstr_form), x_(), x_expected_(0, 0, 15, 25.0 / 3.0) {
+  x_ = prog()->NewContinuousVariables<4>();
+  switch (cost_form) {
+    case CostForm::NonSymbolic : {
+      prog()->AddLinearCost(Vector3d(-3, -1, -4), x_.head<3>());
+      prog()->AddLinearCost(Vector2d(-1, -1), x_.tail<2>());
+      break;
+    }
+    case CostForm::Symbolic : {
+      prog()->AddLinearCost(-3 * x_(0) - x_(1) - 4 * x_(2));
+      prog()->AddLinearCost(-x_(2) - x_(3));
+      break;
+    }
+    default : throw std::runtime_error("Unsupported cost term.");
+  }
+
+  Vector4d b_lb(15, -numeric_limits<double>::infinity(), -numeric_limits<double>::infinity(), -100);
+  Vector4d b_ub(numeric_limits<double>::infinity(), 25, numeric_limits<double>::infinity(), 40);
+  switch (cnstr_form) {
+    case ConstraintForm::NonSymbolic : {
+      prog()->AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 2), 30, x_.head<3>());
+
+      Matrix4d A;
+      // clang-format off
+      A << 2, 1, 3, 1,
+          0, 2, 0, 3,
+          1, 2, 0, 1,
+          1, 0, 0, 2;
+      // clang-format on
+
+      prog()->AddLinearConstraint(A, b_lb, b_ub, x_);
+      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_);
+      prog()->AddBoundingBoxConstraint(0, 10, x_.segment<1>(1));
+      break;
+    }
+    case ConstraintForm::Symbolic : {
+      prog()->AddLinearEqualityConstraint(3 * x_(0) + x_(1) + 2 * x_(2), 30);
+      Eigen::Matrix<Expression, 4, 1> expr;
+      // clang-format off
+      expr << 2 * x_(0) + x_(1) + 3 * x_(2) + x_(3),
+              2 * x_(1) + 3 * x_(3),
+              x_(0) + 2 * x_(1) + x_(3),
+              x_(0) + 2 * x_(2);
+      // clang-format on
+      prog()->AddLinearConstraint(expr, b_lb, b_ub);
+      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_);
+      prog()->AddBoundingBoxConstraint(0, 10, x_.segment<1>(1));
+      break;
+    }
+    case ConstraintForm::Formula : {
+      prog()->AddLinearConstraint(3 * x_(0) + x_(1) + 2 * x_(2) == 30);
+      prog()->AddLinearConstraint(2 * x_(0) + x_(1) + 3 * x_(2) + x_(3) >= 15);
+      prog()->AddLinearConstraint(2 * x_(1) + 3 * x_(3) <= 25);
+      prog()->AddLinearConstraint(x_(0) + 2 * x_(1) + x_(3) >= -numeric_limits<double>::infinity());
+      prog()->AddLinearConstraint(x_(0) + 2 * x_(2) <= 40);
+      prog()->AddLinearConstraint(x_(0) + 2 * x_(2) >= -100);
+      prog()->AddLinearConstraint(+x_(0) >= 0);
+      prog()->AddLinearConstraint(+x_(1) >= 0);
+      prog()->AddLinearConstraint(+x_(2) >= 0);
+      prog()->AddLinearConstraint(+x_(3) >= 0);
+      prog()->AddLinearConstraint(+x_(1) <= 10);
+      break;
+    }
+    default : throw std::runtime_error("Unsupported constraint form.");
+  }
+}
+
+void LinearProgram2::CheckSolution() const {
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-10, MatrixCompareType::absolute));
+}
+
 void RunLinearPrograms(const MathematicalProgramSolverInterface& solver) {
-  std::vector<LinearProgram*> probs;
   for (auto cnstr_form : linear_constraint_form) {
     LinearFeasibilityProgram prob_feas(cnstr_form);
-    probs.push_back(&prob_feas);
+    RunSolver(prob_feas.prog(), solver);
+    prob_feas.CheckSolution();
   }
+
   for (auto cost_form : linear_cost_form) {
     for (auto cnstr_form : linear_constraint_form) {
       LinearProgram0 prob0(cost_form, cnstr_form);
-      probs.push_back(&prob0);
+      RunSolver(prob0.prog(), solver);
+      prob0.CheckSolution();
+
       LinearProgram1 prob1(cost_form, cnstr_form);
-      probs.push_back(&prob1);
+      RunSolver(prob1.prog(), solver);
+      prob1.CheckSolution();
+
+      LinearProgram1 prob2(cost_form, cnstr_form);
+      RunSolver(prob2.prog(), solver);
+      prob2.CheckSolution();
     }
-  }
-  for (const auto& prob : probs) {
-    RunSolver(prob->prog(), solver);
-    prob->CheckSolution();
   }
 }
 }  // namespace test

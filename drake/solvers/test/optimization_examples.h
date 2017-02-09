@@ -527,7 +527,7 @@ class LinearFeasibilityProgram : public LinearProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearFeasibilityProgram)
 
-  LinearFeasibilityProgram(ConstraintForm cnstr_form);
+  explicit LinearFeasibilityProgram(ConstraintForm cnstr_form);
 
   void CheckSolution() const override;
 
@@ -577,6 +577,29 @@ class LinearProgram1 : public LinearProgram {
   Eigen::Vector2d x_expected_;
 };
 
+// Test a simple linear programming problem
+// Adapt from http://docs.mosek.com/7.1/capi/Linear_optimization.html
+// min -3x0 - x1 - 5x2 - x3
+// s.t     3x0 +  x1 + 2x2        = 30
+//   15 <= 2x0 +  x1 + 3x2 +  x3 <= inf
+//  -inf<=       2x1       + 3x3 <= 25
+// -inf <=  x0 + 2x1       + x3  <= inf
+// -100 <=  x0       + 2x2       <= 40
+//           0 <= x0 <= inf
+//           0 <= x1 <= 10
+//           0 <= x2 <= inf
+//           0 <= x3 <= inf
+// The optimal solution is at (0, 0, 15, 25/3)
+class LinearProgram2 : public LinearProgram {
+ public:
+  LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<4> x_;
+  Eigen::Vector4d x_expected_;
+};
 void RunLinearPrograms(const MathematicalProgramSolverInterface& solver);
 }  // namespace test
 }  // namespace solvers

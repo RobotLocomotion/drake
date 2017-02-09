@@ -49,84 +49,6 @@ void GetSemidefiniteProgramSolvers(
 ///// Linear Program ////
 /////////////////////////
 
-// Test a simple linear programming problem with only bounding box constraint
-// on x.
-// min x0 - 2*x1
-//     0 <= x0 <= 2
-//    -1 <= x1 <= 4
-// The optimal solution is (0, 4)
-void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>();
-  prog.AddLinearCost(Vector2d(1.0, -2.0), x);
-  prog.AddBoundingBoxConstraint(Vector2d(0, -1), Vector2d(2, 4), x);
-
-  if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Vector2d::Zero());
-  }
-  RunSolver(&prog, solver);
-
-  const auto& x_value = prog.GetSolution(x);
-  EXPECT_TRUE(x_value.isApprox(Vector2d(0, 4)));
-}
-
-// Test a simple linear programming problem
-// Adapt from http://docs.mosek.com/7.1/capi/Linear_optimization.html
-// min -3x0 - x1 - 5x2 - x3
-// s.t     3x0 +  x1 + 2x2        = 30
-//   15 <= 2x0 +  x1 + 3x2 +  x3 <= inf
-//  -inf<=       2x1       + 3x3 <= 25
-// -inf <=  x0 + 2x1       + x3  <= inf
-// -100 <=  x0       + 2x2       <= 40
-//           0 <= x0 <= inf
-//           0 <= x1 <= 10
-//           0 <= x2 <= inf
-//           0 <= x3 <= inf
-// The optimal solution is at (0, 0, 15, 25/3)
-void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<4>();
-  // We deliberately break the cost to
-  // f1(x) = -3 * x(0) - x(1) - 4 * x(2)
-  // and f2(x) = -x(2) - x(3)
-  // to test adding multiple costs.
-
-  prog.AddLinearCost(-3 * x(0) - x(1) - 4 * x(2));
-  prog.AddLinearCost(-x(2) - x(3));
-
-  prog.AddLinearEqualityConstraint(3 * x(0) + x(1) + 2 * x(2), 30);
-
-  Vector4<symbolic::Expression> v{};
-  // clang-format off
-  v << 2 * x(0) + x(1) + 3 * x(2) + x(3),
-       2 * x(1) + 3 * x(3),
-       x(0) + 2 * x(1) + x(3),
-       x(0) + 2 * x(2);
-  // clang-format on
-
-  Vector4d b_lb(15, -std::numeric_limits<double>::infinity(),
-                       -std::numeric_limits<double>::infinity(), -100);
-  Vector4d b_ub(std::numeric_limits<double>::infinity(), 25,
-                       std::numeric_limits<double>::infinity(), 40);
-  prog.AddLinearConstraint(v, b_lb, b_ub);
-
-  prog.AddBoundingBoxConstraint(0, 10, x(1));
-  prog.AddBoundingBoxConstraint(
-      Vector3d::Zero(),
-      Vector3d::Constant(std::numeric_limits<double>::infinity()),
-      x.head<3>());
-
-  if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Vector4d::Zero());
-  }
-  RunSolver(&prog, solver);
-
-  Vector4d x_expected(0, 0, 15, 25.0 / 3.0);
-  const auto& x_value = prog.GetSolution(x);
-  EXPECT_TRUE(
-      CompareMatrices(x_value, x_expected, 1e-10, MatrixCompareType::absolute));
-}
-
 // Test a simple linear programming problem
 // Adapt from http://people.brunel.ac.uk/~mastjjb/jeb/or/morelp.html
 // min 4x0 + 5x1 + 6x2
@@ -932,23 +854,6 @@ void TestFindSpringEquilibrium(
                         solver);
 }
 }  // namespace
-
-
-GTEST_TEST(TestLP, TestLinearProgram1) {
-  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
-  GetLinearProgramSolvers(&solvers);
-  for (const auto& solver : solvers) {
-    TestLinearProgram1(*solver);
-  }
-}
-
-GTEST_TEST(TestLP, TestLinearProgram2) {
-  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
-  GetLinearProgramSolvers(&solvers);
-  for (const auto& solver : solvers) {
-    TestLinearProgram2(*solver);
-  }
-}
 
 GTEST_TEST(TestLP, TestLinearProgram3) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
