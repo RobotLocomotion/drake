@@ -51,7 +51,6 @@ drake_cc_library(
     srcs = ["lcm_utils.cc"],
     hdrs = ["lcm_utils.h"],
     deps = [
-        "@bot_core_lcmtypes//:lib",
         ":qp_controller_common",
         "//drake/lcmtypes:body_acceleration",
         "//drake/lcmtypes:constrained_values",
@@ -62,6 +61,7 @@ drake_cc_library(
         "//drake/lcmtypes:qp_input",
         "//drake/lcmtypes:resolved_contact",
         "//drake/util:lcm_util",
+        "@bot_core_lcmtypes//:lib",
     ],
 )
 
@@ -105,8 +105,8 @@ drake_cc_googletest(
     name = "valkyrie_balancing_test",
     srcs = ["test/valkyrie_balancing_test.cc"],
     data = [
-        "config/alias_groups.yaml",
         "config/controller.yaml",
+        "config/valkyrie.alias_groups",
         "//drake/examples/Valkyrie:models",
     ],
     tags = [

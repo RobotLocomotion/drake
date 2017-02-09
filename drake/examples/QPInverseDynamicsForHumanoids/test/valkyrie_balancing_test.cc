@@ -23,14 +23,15 @@ namespace qp_inverse_dynamics {
 // simulation should be replaced later with real simulation.
 // The controller should drive the position and velocity close to zero in 4
 // seconds.
-GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
+void aa() {
+//GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   // Loads model.
   std::string urdf = drake::GetDrakePath() +
                      "/examples/Valkyrie/urdf/urdf/"
                      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
   std::string alias_groups_config = drake::GetDrakePath() +
                                     "/examples/QPInverseDynamicsForHumanoids/"
-                                    "config/alias_groups.yaml";
+                                    "config/valkyrie.alias_groups";
   std::string controller_config = drake::GetDrakePath() +
                                   "/examples/QPInverseDynamicsForHumanoids/"
                                   "config/controller.yaml";
@@ -41,7 +42,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
 
   // KinematicsProperty
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(*robot);
-  alias_groups.LoadFromYAMLFile(YAML::LoadFile(alias_groups_config));
+  alias_groups.LoadFromFile(alias_groups_config);
 
   // Controller config
   param_parsers::ParamSet paramset;
@@ -171,3 +172,8 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
 }  // namespace qp_inverse_dynamics
 }  // namespace examples
 }  // namespace drake
+
+int main() {
+  drake::examples::qp_inverse_dynamics::aa();
+  return 0;
+}

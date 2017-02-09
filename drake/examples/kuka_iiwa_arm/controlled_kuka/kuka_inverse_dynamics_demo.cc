@@ -44,11 +44,11 @@ int DoMain() {
   std::string alias_group_path = GetDrakePath() +
                                  "/examples/kuka_iiwa_arm/controlled_kuka/"
                                  "inverse_dynamics_controller_config/"
-                                 "kuka_alias_groups.yaml";
+                                 "iiwa.alias_groups";
   std::string controller_config_path =
       GetDrakePath() +
       "/examples/kuka_iiwa_arm/controlled_kuka/"
-      "inverse_dynamics_controller_config/kuka_controller.yaml";
+      "inverse_dynamics_controller_config/iiwa_id_config.yaml";
 
   lcm::DrakeLcm lcm;
 
@@ -74,7 +74,8 @@ int DoMain() {
                                                   controller_config_path);
   systems::PiecewisePolynomialSource<double>* trajectory =
       builder.AddSystem<systems::PiecewisePolynomialSource<double>>(
-          MakeKukaDemoTrajectory(model_path)->get_piecewise_polynomial(), 2);
+          MakeKukaDemoTrajectory(model_path)->get_piecewise_polynomial(),
+          2, true);
 
   systems::DrakeVisualizer* visualizer =
       builder.AddSystem<systems::DrakeVisualizer>(plant->get_rigid_body_tree(),

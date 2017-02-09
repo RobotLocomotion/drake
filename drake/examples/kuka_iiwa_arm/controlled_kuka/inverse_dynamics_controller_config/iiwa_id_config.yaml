@@ -30,6 +30,6 @@ BodyMotions:
 
 DoFMotions:
   default:
-    Kp: 100
-    Kd: 20
+    Kp: 10
+    Kd: 3
     weight: 1e-1

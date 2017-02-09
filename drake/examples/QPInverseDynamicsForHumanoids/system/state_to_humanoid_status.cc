@@ -1,4 +1,4 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_status_wrapper.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/state_to_humanoid_status.h"
 
 #include <string>
 
@@ -9,7 +9,7 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-RobotStatusWrapper::RobotStatusWrapper(const RigidBodyTree<double>& robot,
+StateToHumanoidStatus::StateToHumanoidStatus(const RigidBodyTree<double>& robot,
                                        const std::string& path)
     : robot_(robot), alias_group_path_(path) {
   input_port_index_state_ =
@@ -19,7 +19,7 @@ RobotStatusWrapper::RobotStatusWrapper(const RigidBodyTree<double>& robot,
   output_port_index_humanoid_status_ = DeclareAbstractOutputPort().get_index();
 }
 
-void RobotStatusWrapper::DoCalcOutput(
+void StateToHumanoidStatus::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
   // Input:
@@ -37,13 +37,13 @@ void RobotStatusWrapper::DoCalcOutput(
 }
 
 std::unique_ptr<systems::SystemOutput<double>>
-RobotStatusWrapper::AllocateOutput(
+StateToHumanoidStatus::AllocateOutput(
     const systems::Context<double>& context) const {
   std::unique_ptr<systems::LeafSystemOutput<double>> output(
       new systems::LeafSystemOutput<double>);
 
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(robot_);
-  alias_groups.LoadFromYAMLFile(YAML::LoadFile(alias_group_path_));
+  alias_groups.LoadFromFile(alias_group_path_);
 
   HumanoidStatus rs(robot_, alias_groups);
   output->add_port(std::unique_ptr<systems::AbstractValue>(

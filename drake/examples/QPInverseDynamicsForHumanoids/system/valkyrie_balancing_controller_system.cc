@@ -44,7 +44,7 @@ void controller_loop() {
 
   std::string alias_groups_config = drake::GetDrakePath() +
                                     "/examples/QPInverseDynamicsForHumanoids/"
-                                    "config/alias_groups.yaml";
+                                    "config/valkyrie.alias_groups";
   std::string controller_config = drake::GetDrakePath() +
                                   "/examples/QPInverseDynamicsForHumanoids/"
                                   "config/controller.yaml";
