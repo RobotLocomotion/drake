@@ -74,16 +74,38 @@ class DiscreteTimePlanEvalSystem : public systems::LeafSystem<double> {
   template <typename PlanType>
   PlanType& get_mutable_plan(systems::State<double>* state) const {
     return state->get_mutable_abstract_state()
-        ->get_mutable_abstract_state(abstract_state_plan_index_)
+        ->get_mutable_abstract_state(abstract_state_index_plan_)
         .GetMutableValue<PlanType>();
   }
 
   QpInput& get_mutable_qp_input(systems::State<double>* state) const {
     return state->get_mutable_abstract_state()
-        ->get_mutable_abstract_state(abstract_state_qp_input_index_)
+        ->get_mutable_abstract_state(abstract_state_index_qp_input_)
         .GetMutableValue<QpInput>();
   }
 
+  const RigidBodyTree<double>& get_robot() const { return robot_; }
+  double get_control_dt() const { return control_dt_; }
+  const param_parsers::RigidBodyTreeAliasGroups<double>& get_alias_groups()
+      const {
+    return alias_groups_;
+  }
+  const param_parsers::ParamSet& get_paramset() const { return paramset_; }
+
+  int get_input_port_index_humanoid_status() const {
+    return input_port_index_humanoid_status_;
+  }
+  int get_output_port_index_qp_input() const {
+    return output_port_index_qp_input_;
+  }
+  int get_abstract_state_index_qp_input() const {
+    return abstract_state_index_qp_input_;
+  }
+  int get_abstract_state_index_plan() const {
+    return abstract_state_index_plan_;
+  }
+
+ private:
   const RigidBodyTree<double>& robot_;
   const double control_dt_{2e-3};
 
@@ -92,8 +114,8 @@ class DiscreteTimePlanEvalSystem : public systems::LeafSystem<double> {
 
   int input_port_index_humanoid_status_{0};
   int output_port_index_qp_input_{0};
-  int abstract_state_qp_input_index_{0};
-  int abstract_state_plan_index_{0};
+  int abstract_state_index_qp_input_{0};
+  int abstract_state_index_plan_{0};
 };
 
 }  // namespace qp_inverse_dynamics

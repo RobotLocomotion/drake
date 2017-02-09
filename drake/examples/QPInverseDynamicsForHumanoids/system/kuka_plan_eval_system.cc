@@ -33,16 +33,16 @@ KukaPlanEvalSystem::KukaPlanEvalSystem(
 
 void KukaPlanEvalSystem::SetDesiredTrajectory(
     const PiecewisePolynomialTrajectory& traj, systems::State<double>* state) {
-  DRAKE_DEMAND(robot_.get_num_velocities() == traj.rows());
+  DRAKE_DEMAND(get_robot().get_num_velocities() == traj.rows());
 
   KukaPlan& plan = get_mutable_plan<KukaPlan>(state);
   plan.q_n_traj = traj.get_piecewise_polynomial();
   plan.qd_n_traj = plan.q_n_traj.derivative();
   plan.qdd_n_traj = plan.qd_n_traj.derivative();
 
-  plan.joint_PDff = VectorSetpoint<double>(robot_.get_num_velocities());
-  paramset_.LookupDesiredDofMotionGains(&(plan.joint_PDff.mutable_Kp()),
-                                        &(plan.joint_PDff.mutable_Kd()));
+  plan.joint_PDff = VectorSetpoint<double>(get_robot().get_num_velocities());
+  get_paramset().LookupDesiredDofMotionGains(&(plan.joint_PDff.mutable_Kp()),
+                                             &(plan.joint_PDff.mutable_Kd()));
 }
 
 void KukaPlanEvalSystem::DoCalcUnrestrictedUpdate(
@@ -53,12 +53,12 @@ void KukaPlanEvalSystem::DoCalcUnrestrictedUpdate(
 
   // Gets the robot state from input.
   const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
-      context, input_port_index_humanoid_status_);
+      context, get_input_port_index_humanoid_status());
 
   QpInput& qp_input = get_mutable_qp_input(state);
-  qp_input = paramset_.MakeQpInput({}, /* contacts */
-                                   {}, /* tracked bodies */
-                                   alias_groups_);
+  qp_input = get_paramset().MakeQpInput({}, /* contacts */
+                                        {}, /* tracked bodies */
+                                        get_alias_groups());
 
   double time = context.get_time();
   plan.joint_PDff.mutable_desired_position() = plan.q_n_traj.value(time);
@@ -81,14 +81,14 @@ void KukaPlanEvalSystem::DoCalcUnrestrictedUpdate(
 std::unique_ptr<systems::AbstractState>
 KukaPlanEvalSystem::AllocateAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
-  abstract_vals[abstract_state_plan_index_] =
+  abstract_vals[get_abstract_state_index_plan()] =
       std::unique_ptr<systems::AbstractValue>(
           new systems::Value<KukaPlan>(KukaPlan()));
-  abstract_vals[abstract_state_qp_input_index_] =
+  abstract_vals[get_abstract_state_index_qp_input()] =
       std::unique_ptr<systems::AbstractValue>(new systems::Value<QpInput>(
-          paramset_.MakeQpInput({}, /* contacts */
-                                {}, /* tracked bodies */
-                                alias_groups_)));
+          get_paramset().MakeQpInput({}, /* contacts */
+                                     {}, /* tracked bodies */
+                                     get_alias_groups())));
   return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
 }
 
