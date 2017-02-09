@@ -189,6 +189,15 @@ Review Process Tooling
 
     reviewable
 
+.. _code_coverage_tools:
+
+Code Coverage Tools
+===================
+.. toctree::
+    :maxdepth: 1
+
+    code_coverage_tools
+
 .. _continuous_integration_notes:
 
 Continuous Integration Notes
