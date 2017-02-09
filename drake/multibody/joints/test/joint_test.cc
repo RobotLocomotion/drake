@@ -9,8 +9,17 @@
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
+#include "drake/multibody/joints/test/joint_compare_to_clone.h"
 
 namespace drake {
+
+using multibody::CompareDrakeJointToClone;
+using multibody::CompareFixedJointToClone;
+using multibody::CompareHelicalJointToClone;
+using multibody::ComparePrismaticJointToClone;
+using multibody::CompareRevoluteJointToClone;
+using multibody::CompareQuaternionFloatingJointToClone;
+
 namespace systems {
 namespace plants {
 namespace joints {
@@ -64,18 +73,26 @@ TEST_F(DrakeJointTests, TestIfJointIsFixed) {
 
 TEST_F(DrakeJointTests, TestCloneAndCompare) {
   // Verifies that each type of joint is equal to its clone.
-  EXPECT_TRUE(fixed_joint_->CompareToClone(*fixed_joint_->Clone()));
-  EXPECT_TRUE(helical_joint_->CompareToClone(*helical_joint_->Clone()));
-  EXPECT_TRUE(prismatic_joint_->CompareToClone(
-      *prismatic_joint_->Clone()));
-  EXPECT_TRUE(quaternion_floating_joint_->CompareToClone(
-      *quaternion_floating_joint_->Clone()));
-  EXPECT_TRUE(revolute_joint_->CompareToClone(*revolute_joint_->Clone()));
+  EXPECT_TRUE(CompareFixedJointToClone(
+      *fixed_joint_,
+      *dynamic_cast<FixedJoint*>(fixed_joint_->Clone().get())));
+  EXPECT_TRUE(CompareHelicalJointToClone(
+      *helical_joint_,
+      *dynamic_cast<HelicalJoint*>(helical_joint_->Clone().get())));
+  EXPECT_TRUE(ComparePrismaticJointToClone(
+      *prismatic_joint_,
+      *dynamic_cast<PrismaticJoint*>(prismatic_joint_->Clone().get())));
+  EXPECT_TRUE(CompareQuaternionFloatingJointToClone(
+      *quaternion_floating_joint_,
+      *dynamic_cast<QuaternionFloatingJoint*>(
+          quaternion_floating_joint_->Clone().get())));
+  EXPECT_TRUE(CompareRevoluteJointToClone(
+      *revolute_joint_,
+      *dynamic_cast<RevoluteJoint*>(revolute_joint_->Clone().get())));
 
   // Verifies that two joints with different names do not match.
-  EXPECT_FALSE(fixed_joint_->CompareToClone(
-      FixedJoint("NonMatchingName",
-                 fixed_joint_->get_transform_to_parent_body())));
+  EXPECT_FALSE(CompareFixedJointToClone(*fixed_joint_, FixedJoint(
+      "NonMatchingName", fixed_joint_->get_transform_to_parent_body())));
 
   const std::vector<DrakeJoint*> joints = {
       fixed_joint_.get(),
@@ -95,20 +112,21 @@ TEST_F(DrakeJointTests, TestCloneAndCompare) {
   non_matching_transform.linear() =
       (AngleAxis<double>(non_matching_transform.linear()) *
           non_zero_angle_axis).toRotationMatrix();
-  EXPECT_FALSE(joints.at(0)->CompareToClone(
+  EXPECT_FALSE(CompareDrakeJointToClone(*joints.at(0),
       FixedJoint(fixed_joint_->get_name(), non_matching_transform)));
 
   // Verifies each type of joint can be cloned and that the clone is equal to
   // the original.
   for (int i = 0; i < static_cast<int>(joints.size()); ++i) {
-    EXPECT_TRUE(joints.at(i)->CompareToClone(*joints.at(i)->Clone()));
+    EXPECT_TRUE(CompareDrakeJointToClone(
+        *joints.at(i), *joints.at(i)->Clone()));
   }
 
   // Verifies that two joints of different types do not match.
   for (int i = 0; i < static_cast<int>(joints.size()); ++i) {
     for (int j = 0; j < static_cast<int>(joints.size()); ++j) {
       if (j != i) {
-        EXPECT_FALSE(joints.at(i)->CompareToClone(*joints.at(j)));
+        EXPECT_FALSE(CompareDrakeJointToClone(*joints.at(i), *joints.at(j)));
       }
     }
   }

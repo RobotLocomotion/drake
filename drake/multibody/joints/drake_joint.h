@@ -106,7 +106,7 @@ class DrakeJoint {
   /**
    * Returns a clone of this DrakeJoint.
    */
-  virtual std::unique_ptr<DrakeJoint> Clone() const = 0;
+  std::unique_ptr<DrakeJoint> Clone() const;
 
   /**
    * Returns the transform `X_PF` giving the pose of the joint's "fixed" frame
@@ -227,35 +227,26 @@ class DrakeJoint {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  /// Compares this joint with a cloned joint. Since this method is intended to
-  /// compare a clone, an *exact* match is performed. This method will only
-  /// return `true` if the provided `other` joint is exactly the same as this
-  /// joint.
-  virtual bool CompareToClone(const DrakeJoint& other) const;
-
  protected:
-  /// Attempts to downcast the provided `other` to the template class type. If
-  /// the downcast is successful, it returns a pointer to the downcasted type.
-  /// Otherwise, it will log a debug message using `drake::log()->debug()` and
-  /// return `nullptr`.
-  template <class DowncastType>
-  const DowncastType* DowncastOrLog(const DrakeJoint* other) const {
-    const DowncastType* result = dynamic_cast<const DowncastType*>(other);
-    if (result == nullptr) {
-      drake::log()->debug(
-          "DrakeJoint::DowncastOrLog(): Downcast failed.");
-    }
-    return result;
-  }
-
   const std::string name;
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
   Eigen::VectorXd joint_limit_stiffness_;
   Eigen::VectorXd joint_limit_dissipation_;
 
+ protected:
+  /// Allows descendent classes to perform the actual clone operation.
+  virtual std::unique_ptr<DrakeJoint> DoClone() const = 0;
+
+  /// Initializes the private member variables within the provided `clone`.
+  void InitializeClone(DrakeJoint* clone) const;
+
+  /// Initializes any additional members within @p clone that could not be set
+  /// during construction.
+  virtual void DoInitializeClone(DrakeJoint* clone) const = 0;
+
  private:
   const Eigen::Isometry3d transform_to_parent_body;
-  const int num_positions;
-  const int num_velocities;
+  const int num_positions{};
+  const int num_velocities{};
 };
