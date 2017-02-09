@@ -135,20 +135,15 @@ class NonConvexQPproblem1 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem1)
 
-  enum class CostForm {
-    kCostBegin = 0,
-    kGenericCost = 0,
-    kQuadraticCost = 1,
-    kCostEnd = 1
-    // TODO(hongkai.dai) Add quadratic symbolic cost
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::Generic, CostForm::NonSymbolic};
+    return costs;
+  }
 
-  enum class ConstraintForm {
-    kConstraintBegin = 0,
-    kSymbolicConstraint = 0,
-    kNonSymbolicConstraint = 1,
-    kConstraintEnd = 1
-  };
+  static::std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::Symbolic, ConstraintForm::NonSymbolic};
+    return cnstr;
+  }
 
   NonConvexQPproblem1(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -198,20 +193,15 @@ class NonConvexQPproblem2 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem2)
 
-  enum class CostForm {
-    kCostBegin = 0,
-    kGenericCost = 0,
-    kQuadraticCost = 1,
-    // TODO(hongkai.dai): Add symbolic quadratic cost
-    kCostEnd = 1
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::Generic, CostForm::NonSymbolic};
+    return costs;
+  }
 
-  enum class ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolicConstraint = 0,
-    kSymbolicConstraint = 1,
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::NonSymbolic, ConstraintForm::Symbolic};
+    return cnstr;
+  }
 
   NonConvexQPproblem2(CostForm cost_form, ConstraintForm cnstr_form);
 
@@ -261,12 +251,10 @@ class LowerBoundedProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem)
 
-  enum class ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolic = 0,
-    kSymbolic = 1,
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::NonSymbolic, ConstraintForm::Symbolic};
+    return cnstr;
+  }
 
   explicit LowerBoundedProblem(ConstraintForm cnstr_form);
 
@@ -359,21 +347,15 @@ class GloptiPolyConstrainedMinimizationProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem)
 
-  enum class CostForm {
-    kCostBegin = 0,
-    kGenericCost = 0,
-    kNonSymbolicCost = 1,
-    kSymbolicCost = 2,
-    kCostEnd = 2
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::Generic, CostForm::NonSymbolic, CostForm::Symbolic};
+    return costs;
+  }
 
-  enum class ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolicConstraint = 0,
-    kSymbolicConstraint = 1,
-    // TODO(hongkai.dai): add quadratic constraint
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::NonSymbolic, ConstraintForm::Symbolic};
+    return cnstr;
+  }
 
   GloptiPolyConstrainedMinimizationProblem(CostForm cost_form,
                                            ConstraintForm cnstr_form);
@@ -474,19 +456,15 @@ class MinDistanceFromPlaneToOrigin {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinDistanceFromPlaneToOrigin)
 
-  enum class CostForm {
-    kCostBegin = 0,
-    kNonSymbolicCost = 0,
-    kSymbolicCost = 1,
-    kCostEnd = 1
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::NonSymbolic, CostForm::Symbolic};
+    return costs;
+  }
 
-  enum class ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolicConstraint = 0,
-    kSymbolicConstraint = 1,
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::NonSymbolic, ConstraintForm::Symbolic};
+    return cnstr;
+  }
 
   MinDistanceFromPlaneToOrigin(const Eigen::MatrixXd& A,
                                const Eigen::VectorXd& b, CostForm cost_form,
@@ -599,6 +577,27 @@ class LinearProgram2 : public LinearProgram {
  private:
   VectorDecisionVariable<4> x_;
   Eigen::Vector4d x_expected_;
+};
+
+// Test a simple linear programming problem
+// Adapt from http://people.brunel.ac.uk/~mastjjb/jeb/or/morelp.html
+// min 4x0 + 5x1 + 6x2
+// s.t.
+//     x0 + x1 >= 11
+//     x0 - x1 <= 5
+//     x2 - x0 - x1 = 0
+//     7x0 >= 35 - 12x1
+//     x0 >= 0 x1 >= 0 x2 >= 0
+// The optimal solution is at (8, 3, 11)
+class LinearProgram3 : public LinearProgram {
+ public:
+  LinearProgram3(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<3> x_;
+  Eigen::Vector3d x_expected_;
 };
 void RunLinearPrograms(const MathematicalProgramSolverInterface& solver);
 }  // namespace test

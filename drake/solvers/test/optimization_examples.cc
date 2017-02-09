@@ -119,11 +119,11 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
   x_ = prog_->NewContinuousVariables<5>("x");
   prog_->AddBoundingBoxConstraint(0, 1, x_);
   switch (cost_form) {
-    case CostForm::kGenericCost: {
+    case CostForm::Generic : {
       prog_->AddCost(TestProblem1Cost(), x_);
       break;
     }
-    case CostForm::kQuadraticCost: {
+    case CostForm::NonSymbolic : {
       AddQuadraticCost();
       break;
     }
@@ -131,11 +131,11 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
       throw std::runtime_error("unsupported cost form");
   }
   switch (constraint_form) {
-    case ConstraintForm::kSymbolicConstraint: {
+    case ConstraintForm::Symbolic: {
       AddSymbolicConstraint();
       break;
     }
-    case ConstraintForm::kNonSymbolicConstraint: {
+    case ConstraintForm::NonSymbolic: {
       AddConstraint();
       break;
     }
@@ -184,11 +184,11 @@ NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
   prog_->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_(5));
 
   switch (cost_form) {
-    case CostForm::kGenericCost: {
+    case CostForm::Generic: {
       prog_->AddCost(TestProblem2Cost(), x_);
       break;
     }
-    case CostForm::kQuadraticCost: {
+    case CostForm::NonSymbolic : {
       AddQuadraticCost();
       break;
     }
@@ -197,11 +197,11 @@ NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
   }
 
   switch (cnstr_form) {
-    case ConstraintForm::kNonSymbolicConstraint: {
+    case ConstraintForm::NonSymbolic: {
       AddNonSymbolicConstraint();
       break;
     }
-    case ConstraintForm::kSymbolicConstraint: {
+    case ConstraintForm::Symbolic: {
       AddSymbolicConstraint();
       break;
     }
@@ -267,11 +267,11 @@ LowerBoundedProblem::LowerBoundedProblem(ConstraintForm cnstr_form)
   prog_->AddConstraint(con2, x_);
 
   switch (cnstr_form) {
-    case ConstraintForm::kNonSymbolic: {
+    case ConstraintForm::NonSymbolic: {
       AddNonSymbolicConstraint();
       break;
     }
-    case ConstraintForm::kSymbolic: {
+    case ConstraintForm::Symbolic: {
       AddSymbolicConstraint();
       break;
     }
@@ -338,15 +338,15 @@ GloptiPolyConstrainedMinimizationProblem::
       Eigen::Vector3d(2, std::numeric_limits<double>::infinity(), 3), y_);
 
   switch (cost_form) {
-    case CostForm::kGenericCost: {
+    case CostForm::Generic: {
       AddGenericCost();
       break;
     }
-    case CostForm::kNonSymbolicCost: {
+    case CostForm::NonSymbolic: {
       AddNonSymbolicCost();
       break;
     }
-    case CostForm::kSymbolicCost: {
+    case CostForm::Symbolic: {
       AddSymbolicCost();
       break;
     }
@@ -361,11 +361,11 @@ GloptiPolyConstrainedMinimizationProblem::
   prog_->AddConstraint(qp_con, y_);
 
   switch (cnstr_form) {
-    case ConstraintForm::kNonSymbolicConstraint: {
+    case ConstraintForm::NonSymbolic: {
       AddNonSymbolicConstraint();
       break;
     }
-    case ConstraintForm::kSymbolicConstraint: {
+    case ConstraintForm::Symbolic: {
       AddSymbolicConstraint();
       break;
     }
@@ -452,12 +452,12 @@ MinDistanceFromPlaneToOrigin::MinDistanceFromPlaneToOrigin(
       prog_rotated_lorentz_->NewContinuousVariables(kXdim, "x");
 
   switch (cost_form) {
-    case CostForm::kNonSymbolicCost: {
+    case CostForm::NonSymbolic: {
       prog_lorentz_->AddLinearCost(Vector1d(1), t_lorentz_);
       prog_rotated_lorentz_->AddLinearCost(Vector1d(1), t_rotated_lorentz_);
       break;
     }
-    case CostForm::kSymbolicCost: {
+    case CostForm::Symbolic: {
       prog_lorentz_->AddLinearCost(+t_lorentz_(0));
       prog_rotated_lorentz_->AddLinearCost(+t_rotated_lorentz_(0));
       break;
@@ -467,11 +467,11 @@ MinDistanceFromPlaneToOrigin::MinDistanceFromPlaneToOrigin(
   }
 
   switch (cnstr_form) {
-    case ConstraintForm::kNonSymbolicConstraint: {
+    case ConstraintForm::NonSymbolic: {
       AddNonSymbolicConstraint();
       break;
     }
-    case ConstraintForm::kSymbolicConstraint: {
+    case ConstraintForm::Symbolic: {
       AddSymbolicConstraint();
       break;
     }
@@ -758,7 +758,8 @@ LinearProgram2::LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form) : 
       prog()->AddLinearConstraint(3 * x_(0) + x_(1) + 2 * x_(2) == 30);
       prog()->AddLinearConstraint(2 * x_(0) + x_(1) + 3 * x_(2) + x_(3) >= 15);
       prog()->AddLinearConstraint(2 * x_(1) + 3 * x_(3) <= 25);
-      prog()->AddLinearConstraint(x_(0) + 2 * x_(1) + x_(3) >= -numeric_limits<double>::infinity());
+      // TODO (hongkai.dai) : uncomment the next line when the bug expression >= -inf is fixed.
+      // prog()->AddLinearConstraint(x_(0) + 2 * x_(1) + x_(3) >= -numeric_limits<double>::infinity());
       prog()->AddLinearConstraint(x_(0) + 2 * x_(2) <= 40);
       prog()->AddLinearConstraint(x_(0) + 2 * x_(2) >= -100);
       prog()->AddLinearConstraint(+x_(0) >= 0);
@@ -774,6 +775,73 @@ LinearProgram2::LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form) : 
 
 void LinearProgram2::CheckSolution() const {
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-10, MatrixCompareType::absolute));
+}
+
+LinearProgram3::LinearProgram3(CostForm cost_form, ConstraintForm cnstr_form) : LinearProgram(cost_form, cnstr_form), x_(), x_expected_(8, 3, 11) {
+  x_ = prog()->NewContinuousVariables<3>("x");
+  switch (cost_form) {
+    case CostForm::NonSymbolic : {
+      prog()->AddLinearCost(Eigen::Vector3d(4, 5, 6), x_);
+      break;
+    }
+
+    case CostForm::Symbolic : {
+      prog()->AddLinearCost(4 * x_(0) + 5 * x_(1) + 6 * x_(2));
+      break;
+    }
+    default : throw std::runtime_error("Unsupported cost form.");
+  }
+  Eigen::Vector3d b_lb(11, -numeric_limits<double>::infinity(), 35);
+  Eigen::Vector3d b_ub(numeric_limits<double>::infinity(), 5, numeric_limits<double>::infinity());
+  switch (cnstr_form) {
+    case ConstraintForm::NonSymbolic : {
+      prog()->AddLinearEqualityConstraint(Eigen::RowVector3d(1, -1, -1), 0, {x_.segment<1>(2), x_.head<2>()});
+      Eigen::Matrix<double, 3, 2> A;
+      // clang-format off
+      A << 1, 1,
+           1, -1,
+           7, 12;
+      // clang-format on
+      prog()->AddLinearConstraint(A, b_lb, b_ub, x_.head<2>());
+      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_);
+      break;
+    }
+    case ConstraintForm::Symbolic : {
+      prog()->AddLinearEqualityConstraint(x_(2) - x_(0) - x_(1) , 0);
+      Vector3<Expression> expr;
+      // clang-format off
+      expr << x_(0) + x_(1),
+              x_(0) - x_(1),
+              7 * x_(0) + 12 * x_(1);
+      // clang-format on
+      prog()->AddLinearConstraint(expr, b_lb, b_ub);
+      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_);
+      break;
+    }
+    case ConstraintForm::Formula : {
+      prog()->AddLinearConstraint(x_(2) - x_(0) - x_(1) == 0);
+      prog()->AddLinearConstraint(x_(0) + x_(1) >= 11);
+      prog()->AddLinearConstraint(x_(0) - x_(1) <= 5);
+      prog()->AddLinearConstraint(7 * x_(0) >= 35 - 12 * x_(1));
+      prog()->AddLinearConstraint(+x_(0) >= 0);
+      prog()->AddLinearConstraint(+x_(1) >= 0);
+      prog()->AddLinearConstraint(+x_(2) >= 0);
+      break;
+    }
+    default : throw std::runtime_error("Unsupported constraint form.");
+  }
+}
+
+void LinearProgram3::CheckSolution() const {
+  // Mosek has a looser tolerance.
+  SolverType solver_type;
+  int solver_result;
+  prog()->GetSolverResult(&solver_type, &solver_result);
+  double tol = 1E-10;
+  if (solver_type == SolverType::kMosek) {
+    tol = 1E-6;
+  }
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol, MatrixCompareType::absolute));
 }
 
 void RunLinearPrograms(const MathematicalProgramSolverInterface& solver) {
@@ -793,9 +861,13 @@ void RunLinearPrograms(const MathematicalProgramSolverInterface& solver) {
       RunSolver(prob1.prog(), solver);
       prob1.CheckSolution();
 
-      LinearProgram1 prob2(cost_form, cnstr_form);
+      LinearProgram2 prob2(cost_form, cnstr_form);
       RunSolver(prob2.prog(), solver);
       prob2.CheckSolution();
+
+      LinearProgram3 prob3(cost_form, cnstr_form);
+      RunSolver(prob3.prog(), solver);
+      prob3.CheckSolution();
     }
   }
 }
