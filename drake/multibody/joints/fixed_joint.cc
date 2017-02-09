@@ -6,6 +6,7 @@
 std::unique_ptr<DrakeJoint> FixedJoint::Clone() const {
   auto joint = std::make_unique<FixedJoint>(get_name(),
                                             get_transform_to_parent_body());
+  DrakeJoint::InitializeClone(joint.get());
   return std::move(joint);
 }
 

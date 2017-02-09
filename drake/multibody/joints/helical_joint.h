@@ -34,7 +34,8 @@ class HelicalJoint : public FixedAxisOneDoFJoint<HelicalJoint> {
     return ret;
   }
 
-  bool CompareToClone(const DrakeJoint& other) const final;
+  const Eigen::Vector3d& axis() const { return axis_; }
+  double pitch() const { return pitch_; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -43,6 +44,6 @@ class HelicalJoint : public FixedAxisOneDoFJoint<HelicalJoint> {
       const Eigen::Vector3d& axis, double pitch);
 
   const Eigen::Vector3d axis_;
-  const double pitch_;
+  const double pitch_{};
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual
