@@ -10,16 +10,16 @@ namespace drake {
 namespace solvers {
 namespace test {
 enum class CostForm {
-  Generic = 0,
-  NonSymbolic = 1,
-  Symbolic = 2,
+  kGeneric = 0,
+  kNonSymbolic = 1,
+  kSymbolic = 2,
 };
 
 enum class ConstraintForm {
-  Generic = 0,
-  NonSymbolic = 1,
-  Symbolic = 2,
-  Formula = 3,
+  kGeneric = 0,
+  kNonSymbolic = 1,
+  kSymbolic = 2,
+  kFormula = 3,
 };
 
 class LinearProgram {
@@ -136,12 +136,12 @@ class NonConvexQPproblem1 {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem1)
 
   static std::vector<CostForm> cost_forms() {
-    std::vector<CostForm> costs{CostForm::Generic, CostForm::NonSymbolic};
+    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic};
     return costs;
   }
 
   static::std::vector<ConstraintForm> constraint_forms() {
-    std::vector<ConstraintForm> cnstr{ConstraintForm::Symbolic, ConstraintForm::NonSymbolic};
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kSymbolic, ConstraintForm::kNonSymbolic};
     return cnstr;
   }
 
@@ -194,12 +194,12 @@ class NonConvexQPproblem2 {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem2)
 
   static std::vector<CostForm> cost_forms() {
-    std::vector<CostForm> costs{CostForm::Generic, CostForm::NonSymbolic};
+    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic};
     return costs;
   }
 
   static std::vector<ConstraintForm> constraint_forms() {
-    std::vector<ConstraintForm> cnstr{ConstraintForm::NonSymbolic, ConstraintForm::Symbolic};
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic, ConstraintForm::kSymbolic};
     return cnstr;
   }
 
@@ -252,7 +252,7 @@ class LowerBoundedProblem {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem)
 
   static std::vector<ConstraintForm> constraint_forms() {
-    std::vector<ConstraintForm> cnstr{ConstraintForm::NonSymbolic, ConstraintForm::Symbolic};
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic, ConstraintForm::kSymbolic};
     return cnstr;
   }
 
@@ -348,12 +348,12 @@ class GloptiPolyConstrainedMinimizationProblem {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem)
 
   static std::vector<CostForm> cost_forms() {
-    std::vector<CostForm> costs{CostForm::Generic, CostForm::NonSymbolic, CostForm::Symbolic};
+    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic, CostForm::kSymbolic};
     return costs;
   }
 
   static std::vector<ConstraintForm> constraint_forms() {
-    std::vector<ConstraintForm> cnstr{ConstraintForm::NonSymbolic, ConstraintForm::Symbolic};
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic, ConstraintForm::kSymbolic};
     return cnstr;
   }
 
@@ -457,12 +457,12 @@ class MinDistanceFromPlaneToOrigin {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinDistanceFromPlaneToOrigin)
 
   static std::vector<CostForm> cost_forms() {
-    std::vector<CostForm> costs{CostForm::NonSymbolic, CostForm::Symbolic};
+    std::vector<CostForm> costs{CostForm::kNonSymbolic, CostForm::kSymbolic};
     return costs;
   }
 
   static std::vector<ConstraintForm> constraint_forms() {
-    std::vector<ConstraintForm> cnstr{ConstraintForm::NonSymbolic, ConstraintForm::Symbolic};
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic, ConstraintForm::kSymbolic};
     return cnstr;
   }
 
