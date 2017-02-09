@@ -35,7 +35,7 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
             drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
                 urdf_filename, floating_base_type, &instance);
         },
-        py::arg("urdf_filename"), py::arg("joint_type")="ROLLPITCHYAW"
+        py::arg("urdf_filename"), py::arg("joint_type") = "ROLLPITCHYAW"
       )
     .def("getRandomConfiguration", [](const RigidBodyTree<double>& tree) {
       std::default_random_engine generator(std::random_device {}());

@@ -10,6 +10,13 @@ namespace py = pybind11;
 using std::sin;
 using std::cos;
 
+/**
+ * Force Eigen to evaluate an autodiff expression. We need this function
+ * because, for example, adding two Eigen::AutoDiffXd values produces an
+ * Eigen::AutoDiffScalar<Eigen::CWiseBinaryOp> which cannot be returned to
+ * python. This just forces an evaluation and conversion to AutoDiffXd which
+ * would normally happen automatically in C++.
+ */
 template <typename Derived>
 AutoDiffXd eval(const Eigen::AutoDiffScalar<Derived>& x) {
   return AutoDiffXd(x.value(), x.derivatives());
