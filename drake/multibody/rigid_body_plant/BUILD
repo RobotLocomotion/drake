@@ -37,6 +37,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "contact_results_to_lcm",
+    srcs = [
+        "contact_results_to_lcm.cc",
+    ],
+    hdrs = [
+        "contact_results_to_lcm.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":rigid_body_plant",
+        "//drake/lcmtypes:contact_info_for_viz",
+        "//drake/lcmtypes:contact_results_for_viz",
+    ],
+)
+
+drake_cc_library(
     name = "rigid_body_plant_that_publishes_xdot",
     srcs = [
         "rigid_body_plant_that_publishes_xdot.cc",

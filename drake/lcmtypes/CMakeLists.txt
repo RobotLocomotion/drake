@@ -28,6 +28,8 @@ lcm_wrap_types(
   lcmt_body_wrench_data.lcm
   lcmt_constrained_values.lcm
   lcmt_contact_information.lcm
+  lcmt_contact_info_for_viz.lcm
+  lcmt_contact_results_for_viz.lcm
   lcmt_desired_body_motion.lcm
   lcmt_desired_centroidal_momentum_dot.lcm
   lcmt_desired_dof_motions.lcm
