@@ -13,6 +13,7 @@ using std::normal_distribution;
 std::unique_ptr<DrakeJoint> QuaternionFloatingJoint::Clone() const {
   auto joint = std::make_unique<QuaternionFloatingJoint>(get_name(),
       get_transform_to_parent_body());
+  InitializeClone(joint.get());
   return std::move(joint);
 }
 

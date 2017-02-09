@@ -50,7 +50,7 @@ class PrismaticJoint : public FixedAxisOneDoFJoint<PrismaticJoint> {
 
   std::unique_ptr<DrakeJoint> Clone() const final;
 
-  bool CompareToClone(const DrakeJoint& other) const final;
+  const Eigen::Vector3d& translation_axis() const { return translation_axis_; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

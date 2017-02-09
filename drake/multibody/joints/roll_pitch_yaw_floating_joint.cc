@@ -16,6 +16,7 @@ std::unique_ptr<DrakeJoint> RollPitchYawFloatingJoint::Clone() const {
   auto joint = std::make_unique<RollPitchYawFloatingJoint>(
       get_name(),
       get_transform_to_parent_body());
+  InitializeClone(joint.get());
   return std::move(joint);
 }
 
