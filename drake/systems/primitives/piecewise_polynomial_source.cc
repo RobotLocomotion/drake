@@ -6,8 +6,10 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-PiecewisePolynomialSource<T>::PiecewisePolynomialSource(const PiecewisePolynomial<T>& trajectory, int output_derivative_order)
-    : SingleOutputVectorSource<T>(trajectory.rows() * (1 + output_derivative_order)),
+PiecewisePolynomialSource<T>::PiecewisePolynomialSource(
+    const PiecewisePolynomial<T>& trajectory, int output_derivative_order)
+    : SingleOutputVectorSource<T>(trajectory.rows() *
+                                  (1 + output_derivative_order)),
       trajectory_(trajectory) {
   DRAKE_DEMAND(trajectory.cols() == 1);
   DRAKE_DEMAND(output_derivative_order >= 0);
@@ -26,7 +28,8 @@ void PiecewisePolynomialSource<T>::DoCalcVectorOutput(
   int len = trajectory_.rows();
   output->head(len) = trajectory_.value(context.get_time());
   for (size_t i = 0; i < derivatives_.size(); ++i) {
-    output->segment(len * (i + 1), len) = derivatives_[i].value(context.get_time());
+    output->segment(len * (i + 1), len) =
+        derivatives_[i].value(context.get_time());
   }
 }
 

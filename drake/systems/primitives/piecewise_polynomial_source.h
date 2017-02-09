@@ -18,7 +18,8 @@ class PiecewisePolynomialSource : public SingleOutputVectorSource<T> {
 
   /// @param trajectory Trajectory used by the system.  This reference is
   /// aliased, and must remain valid for the lifetime of the system.
-  PiecewisePolynomialSource(const PiecewisePolynomial<T>& trajectory, int output_derivative_order = 0);
+  PiecewisePolynomialSource(const PiecewisePolynomial<T>& trajectory,
+                            int output_derivative_order);
 
  protected:
   /// Outputs a signal using the time-varying trajectory specified in the
