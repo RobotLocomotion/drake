@@ -189,6 +189,18 @@ class Expression {
   int Degree() const;
 
   /**
+   * Decomposes a polynomial into monomials and their coefficients.
+   * A polynomial can be represented as
+   * ∑ᵢ c(i) * m(i)
+   * where m(i) is a monomial and c(i) is the coefficient.
+   * @pre{The expression is a polynomial, namely is_polynomial() == True,
+   * otherwise returns a runtime error.}
+   * @retval monomial_to_coeff_map Map the monomial to the coefficient in each
+   * term of the polynomial.
+   */
+  std::unordered_map<Expression, double> DecomposePolynomial() const;
+
+  /**
    * Decompose a polynomial into three parts, such that the polynomial
    * can be represented as
    * <!-->

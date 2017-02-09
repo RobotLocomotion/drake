@@ -9,6 +9,7 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/monomial.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression_cell.h"
@@ -149,6 +150,23 @@ bool Expression::is_polynomial() const {
 Polynomial<double> Expression::ToPolynomial() const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->ToPolynomial();
+}
+
+std::unordered_map<Expression, double> Expression::DecomposePolynomial() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  DRAKE_DEMAND(is_polynomial());
+  const std::unordered_map<internal::Monomial, double>& monomial_to_coeff_map = ptr_->DecomposePolynomial();
+  const Variables& vars = GetVariables();
+  std::unordered_map<Variable::Id, Variable> id_to_var_map;
+  for (const Variable& var : vars) {
+    id_to_var_map.emplace(var.get_id(), var);
+  }
+  std::unordered_map<Expression, double> monomial_expression_to_coeff_map;
+  monomial_expression_to_coeff_map.reserve(monomial_to_coeff_map.size());
+  for (const auto& m : monomial_to_coeff_map) {
+    monomial_expression_to_coeff_map.emplace(m.first.ToExpression(id_to_var_map), m.second);
+  }
+  return monomial_expression_to_coeff_map;
 }
 
 void Expression::DecomposePolynomial(
