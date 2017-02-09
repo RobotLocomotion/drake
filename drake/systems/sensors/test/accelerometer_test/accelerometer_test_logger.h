@@ -12,8 +12,6 @@ namespace systems {
 
 /// A sink block that logs the most recent plant state and the accelerometer
 /// reading.
-///
-/// @ingroup primitive_systems
 class AccelerometerTestLogger : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AccelerometerTestLogger);

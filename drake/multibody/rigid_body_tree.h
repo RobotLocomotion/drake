@@ -109,9 +109,9 @@ class RigidBodyTree {
   /// A constructor that initializes the gravity vector to be [0, 0, -9.81] and
   /// a single RigidBody named "world". This RigidBody can be accessed by
   /// calling RigidBodyTree::world().
-  RigidBodyTree(void);
+  RigidBodyTree();
 
-  virtual ~RigidBodyTree(void);
+  virtual ~RigidBodyTree();
 
   /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
@@ -170,7 +170,7 @@ class RigidBodyTree {
       RigidBody<T>* body,
       const Eigen::Isometry3d& displace_transform);
 
-  void compile(void);  // call me after the model is loaded
+  void compile();  // call me after the model is loaded
 
   Eigen::VectorXd getZeroConfiguration() const;
 

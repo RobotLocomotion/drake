@@ -217,6 +217,12 @@ class Expression {
    */
   Expression Substitute(const Substitution& s) const;
 
+  /** Differentiates this symbolic expression with respect to the variable @p
+   * var.
+   * @throws std::runtime_error if it is not differentiable.
+   */
+  Expression Differentiate(const Variable& x) const;
+
   /** Returns string representation of Expression. */
   std::string to_string() const;
 

@@ -16,7 +16,7 @@ drake_cc_library(
         "drakeGeometryUtil.h",
         "drakeUtil.h",
     ],
-    deprecation = "These utilities are moving to //drake/math.",
+    deprecation = "Consider pitching in by porting the dependencies you need to //drake/math.",
     linkstatic = 1,
     deps = [
         "//drake/common",

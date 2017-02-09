@@ -274,6 +274,7 @@ filegroup(
     name = "models",
     srcs = [
         "models/box.urdf",
+        "models/box_small.urdf",
     ],
 )
 

@@ -35,6 +35,18 @@ Monomial::Monomial(const Variable& var, const int exponent)
 Monomial::Monomial(const map<Variable::Id, int>& powers)
     : total_degree_{TotalDegree(powers)}, powers_(powers) {}
 
+size_t Monomial::GetHash() const {
+  // To get a hash value for a Monomial, we re-use the hash value for
+  // powers_. This is suitable because powers_ is the only independent
+  // data-member of Monomial class while another data-member, total_degree_ is
+  // determined by a given powers_.
+  return hash_value<map<Variable::Id, int>>{}(powers_);
+}
+
+bool Monomial::operator==(const Monomial& m) const {
+  return powers_ == m.powers_;
+}
+
 Expression Monomial::ToExpression(
     const unordered_map<Variable::Id, Variable>& id_to_var_map) const {
   // It builds this base_to_exponent_map and uses ExpressionMulFactory to build
@@ -90,8 +102,8 @@ Monomial operator*(const Monomial& m1, const Monomial& m2) {
 }
 }  // namespace internal
 
-Expression Monomial(const unordered_map<Variable, int, hash_value<Variable>>&
-                        map_var_to_exponent) {
+Expression GetMonomial(const unordered_map<Variable, int, hash_value<Variable>>&
+                           map_var_to_exponent) {
   map<Expression, Expression> base_to_exponent_map;
   for (const auto& p : map_var_to_exponent) {
     DRAKE_DEMAND(p.second > 0);
