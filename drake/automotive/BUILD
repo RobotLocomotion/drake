@@ -90,7 +90,6 @@ drake_cc_library(
         ":generated_vectors",
         "//drake/automotive/maliput/api:api",
         "//drake/automotive/maliput/utility:utility",
-        "//drake/common:symbolic",
     ],
 )
 
@@ -106,7 +105,6 @@ drake_cc_library(
         ":generated_vectors",
         "//drake/automotive/maliput/api:api",
         "//drake/automotive/maliput/utility:utility",
-        "//drake/common:symbolic",
     ],
 )
 
