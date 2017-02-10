@@ -111,7 +111,7 @@ GTEST_TEST(IntegratorTest, BeadOnAWire) {
 
   // Set the tolerance to very tight on the constraint tolerance for the bead on
   // the wire in absolute coordinates.
-  integrator_abs.set_constraint_error_tolerance(1e-14);
+  integrator_abs.set_constraint_error_tolerance(1e-12);
 
   // Initialize the integrators.
   integrator_abs.Initialize();
