@@ -43,6 +43,12 @@ class EndlessRoadOracleInternalTestBase : public ::testing::Test {
 
 class EndlessRoadOracleInternalTest : public EndlessRoadOracleInternalTestBase {
  protected:
+  const double kRingLength{1000.};
+  // NB:  Each ring is divided into a 300 deg and 60 deg segment by
+  // the tangent points.  (See road network construction below.)
+  const double k300DegLength{kRingLength * 300. / 360.};
+  const double k60DegLength{kRingLength * 60. / 360.};
+
   void SetUp() override {
     const api::RBounds kLaneBounds(-2., 2.);
     const api::RBounds kDriveableBounds(-4., 4.);
@@ -63,7 +69,7 @@ class EndlessRoadOracleInternalTest : public EndlessRoadOracleInternalTestBase {
       //     +--/ \         / \<-+
       //           \<--2---/
       //
-      const double kRadius = 1000. / (2. * M_PI);
+      const double kRadius = kRingLength / (2. * M_PI);
       const mono::EndpointZ kFlatZ(0., 0., 0., 0.);
       const mono::Endpoint start {{0., 0., M_PI / 2.}, kFlatZ};
       const mono::ArcOffset kClockwise300Deg(kRadius, -M_PI * 5. / 3.);
@@ -226,10 +232,10 @@ TEST_F(EndlessRoadOracleInternalTest, UnwrapEndlessRoadCarState) {
   EXPECT_TRUE(IsSourceStateClose(source_lanes_[0], 10., 0., 0., kSpeed,
                                  source_states[0], kLinearTolerance));
   EXPECT_TRUE(IsSourceStateClose(source_lanes_[4],
-                                 (1000. * 5. / 6.) - 10., 0., 0., kSpeed,
+                                 k300DegLength - 10., 0., 0., kSpeed,
                                  source_states[1], kLinearTolerance));
   EXPECT_TRUE(IsSourceStateClose(source_lanes_[0],
-                                 (1000. * 5. / 6.) - 10., 0., 0., kSpeed,
+                                 k300DegLength - 10., 0., 0., kSpeed,
                                  source_states[2], kLinearTolerance));
   EXPECT_TRUE(IsSourceStateClose(source_lanes_[0], 500., 0., 0., kSpeed,
                                  source_states[3], kLinearTolerance));
@@ -295,7 +301,7 @@ TEST_F(EndlessRoadOracleInternalTest, AssessForwardPath) {
   EXPECT_TRUE(IsOracleOutputNear(internal::kEnormousDistance, 0., outputs[1],
                                  kLinearTolerance));
   EXPECT_TRUE(IsOracleOutputNear(
-      ((1000. / 6) + ((1000. * 5. / 6.) - 600.) - internal::kCarLength), 15.,
+      (k60DegLength + (k300DegLength - 600.) - internal::kCarLength), 15.,
       outputs[2],
       kLinearTolerance));
   EXPECT_TRUE(IsOracleOutputNear(
@@ -303,11 +309,11 @@ TEST_F(EndlessRoadOracleInternalTest, AssessForwardPath) {
       kLinearTolerance));
 }
 
-#if 0
+
+// TODO(maddog@tri.global) Implement these tests!
 TEST_F(EndlessRoadOracleInternalTest, DetermineLaneRelation) {}
 TEST_F(EndlessRoadOracleInternalTest, AssessJunctions) {}
 TEST_F(EndlessRoadOracleInternalTest, MeasureJunctions) {}
-#endif
 
 }  // namespace
 }  // namespace automotive

@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "drake/automotive/gen/euler_floating_joint_state.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
+#include "drake/automotive/gen/euler_floating_joint_state.h"
 #include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -29,8 +29,10 @@ class EndlessRoadCarToEulerFloatingJoint : public systems::LeafSystem<T> {
       const maliput::utility::InfiniteCircuitRoad* road)
       : road_(road) {
     this->set_name("EndlessRoadCarToEulerFloatingJoint");
+    // Single EndlessRoadCarState input.
     this->DeclareInputPort(systems::kVectorValued,
                            EndlessRoadCarStateIndices::kNumCoordinates);
+    // Single EulerFloatingJointState output.
     this->DeclareOutputPort(systems::kVectorValued,
                             EulerFloatingJointStateIndices::kNumCoordinates);
   }
@@ -79,6 +81,8 @@ class EndlessRoadCarToEulerFloatingJoint : public systems::LeafSystem<T> {
     const double cg = std::cos(rot.yaw);
     const double sg = std::sin(rot.yaw);
 
+    // TODO(maddog@tri.global)  Replace this hand-rolled math with rotmat2rpy()
+    //                          applied to the underlying product of rotations.
     // We compute the five coefficients of the composite rotation matrix
     // which we need to extract roll/pitch/yaw.
     const double A = ct*(cb*cg) + st*(-ca*sg + sa*sb*cg);

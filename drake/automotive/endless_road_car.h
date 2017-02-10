@@ -58,7 +58,7 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
     kIdm,   // IDM controller using input from EndlessRoadOracle
   };
 
-  /// Construct an EndlessRoadCar.
+  /// Constructs an EndlessRoadCar.
   ///
   /// @param id  ID string, helpful for logging and visualization
   /// @param road  the maliput::api::RoadGeometry on which this car will
@@ -70,6 +70,10 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
   /// * `kNone`:  no input ports (accelerations are just zero)
   /// * `kUser`:  single port accepting DrivingCommand
   /// * `kIdm`:   single port accepting EndlessRoadOracleOutput
+  ///
+  /// In `kUser` mode, `throttle` and `brake` from DrivingCommand are
+  /// normalized against a car's `max_acceleration` and `max_deceleration`,
+  /// respectively, from its EndlessRoadCarConfig parameter.
   EndlessRoadCar(const std::string& id,
                  const maliput::utility::InfiniteCircuitRoad* road,
                  const ControlType control_type);

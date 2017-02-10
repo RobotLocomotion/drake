@@ -42,7 +42,7 @@ struct SourceState {
   /// Position in the source RoadGeometry.
   api::RoadPosition rp;
   /// Cosine of heading in (s,r) frame.
-  double cos_heading;
+  double cos_heading{};
   /// Rate of change of s-parameter along the infinite circuit.
   double circuit_s_speed{};
 };
@@ -60,12 +60,12 @@ struct PathRecord {
 
 // Record of when/where a car is expected to enter/exit a junction.
 struct TimeBox {
-  size_t car_index;
+  size_t car_index{};
   PathRecord pr;
-  double time_in;
-  double time_out;
-  double s_in;   // Distance to entry from current position.
-  double s_out;  // Distance to exit from current position.
+  double time_in{};
+  double time_out{};
+  double s_in{};   // Distance to entry from current position.
+  double s_out{};  // Distance to exit from current position.
 };
 
 void UnwrapEndlessRoadCarState(

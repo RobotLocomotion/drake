@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -194,12 +195,20 @@ EndlessRoadCar<T>::ComputeIdmAccelerations(
   // Velocity difference to car ahead
   const double delta_v = input.delta_sigma_dot();
   // Net distance to car ahead (front bumper to rear bumper)
-  const double s = input.net_delta_sigma();
+  double s = input.net_delta_sigma();
+  if (s <= 0.) {
+    // Non-positive distances imply a collision or some other catastrophe.
+    // Treat it as a very small positive value, which will lead to maximal
+    // deceleration.
+    drake::log()->warn(
+        "Collision?  Clamping non-positive net_delta_sigma {}!", s);
+    s = std::numeric_limits<double>::epsilon();
+  }
   // TODO(maddog@tri.global) Demand that we are not pointing backwards, because
   //                         we are not handling that correctly yet.
-  DRAKE_DEMAND(std::cos(state.heading()) >= 0.);
+  DRAKE_DEMAND(cos(state.heading()) >= 0.);
   // Current longitudinal velocity
-  const double v = state.speed() * std::cos(state.heading());
+  const double v = state.speed() * cos(state.heading());
 
   const double s_star = s_0 + (v * h) + (v * delta_v / 2. / std::sqrt(a * b));
 
@@ -225,8 +234,8 @@ void EndlessRoadCar<T>::ImplCalcTimeDerivatives(
   // Position + velocity ---> position derivatives.
   maliput::api::LanePosition lane_position(state.s(), state.r(), 0.);
   maliput::api::IsoLaneVelocity lane_velocity(
-      state.speed() * std::cos(state.heading()),
-      state.speed() * std::sin(state.heading()),
+      state.speed() * cos(state.heading()),
+      state.speed() * sin(state.heading()),
       0.);
   maliput::api::LanePosition derivatives =
       road_->lane()->EvalMotionDerivatives(lane_position, lane_velocity);

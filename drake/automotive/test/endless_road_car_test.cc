@@ -257,7 +257,7 @@ TEST_F(UserEndlessRoadCarTest, Derivatives) {
   EXPECT_EQ(0.0, result->speed());
 
   // Braking while already stopped should have zero acceleration.
-  SetInputValue(0.0, 0.0, 0.5);
+  SetInputValue(0.0/*steering*/, 0.0/*throttle*/, 0.5/*brake*/);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->s());
   EXPECT_EQ(0.0, result->r());
@@ -266,7 +266,7 @@ TEST_F(UserEndlessRoadCarTest, Derivatives) {
 
   // Half throttle yields half of the max acceleration.
   const double max_acceleration = default_config_.max_acceleration();
-  SetInputValue(0.0, 0.5, 0.0);
+  SetInputValue(0.0/*steering*/, 0.5/*throttle*/, 0.0/*brake*/);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->s());
   EXPECT_EQ(0.0, result->r());
@@ -287,13 +287,13 @@ TEST_F(UserEndlessRoadCarTest, Derivatives) {
   // at 0.1 rad/s at a speed of 10m/s, so we want a curvature of 0.01.
   const double wheelbase = default_config_.wheelbase();
   const double steering_angle = std::atan(0.01 * wheelbase);
-  SetInputValue(steering_angle, 0.0, 0.0);
+  SetInputValue(steering_angle, 0.0/*throttle*/, 0.0/*brake*/);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0, result->s(), kTolerance);
   EXPECT_EQ(0.0, result->r());
   EXPECT_NEAR(0.1, result->heading(), kTolerance);
   EXPECT_EQ(0.0, result->speed());
-  SetInputValue(-steering_angle, 0.0, 0.0);
+  SetInputValue(-steering_angle, 0.0/*throttle*/, 0.0/*brake*/);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0, result->s(), kTolerance);
   EXPECT_EQ(0.0, result->r());
@@ -302,7 +302,7 @@ TEST_F(UserEndlessRoadCarTest, Derivatives) {
 
   // Half brake yields half of the max deceleration.
   const double max_deceleration = default_config_.max_deceleration();
-  SetInputValue(0.0, 0.0, 0.5);
+  SetInputValue(0.0/*steering*/, 0.0/*throttle*/, 0.5/*brake*/);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0, result->s(), kTolerance);
   EXPECT_EQ(0.0, result->r());
@@ -470,7 +470,7 @@ TEST_F(IdmEndlessRoadCarTest, Derivatives) {
   // 1)  Current velocity matches IDM desired, and distance is enormous.
   //     Longitudinal acceleration should be zero.
   continuous_state()->set_speed(30.);
-  SetInputValue(1e26, 0.);
+  SetInputValue(1e26/*net_delta_sigma*/, 0./*delta_sigma_dot*/);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(30.0, result->s());
   EXPECT_EQ(0.0, result->r());
@@ -480,7 +480,7 @@ TEST_F(IdmEndlessRoadCarTest, Derivatives) {
   //     Longitudinal acceleration should be clamped to max deceleration.
   const double max_deceleration = default_config_.max_deceleration();
   continuous_state()->set_speed(30.);
-  SetInputValue(1e-5, 0.);
+  SetInputValue(1e-5/*net_delta_sigma*/, 0./*delta_sigma_dot*/);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(30.0, result->s());
   EXPECT_EQ(0.0, result->r());
@@ -490,7 +490,7 @@ TEST_F(IdmEndlessRoadCarTest, Derivatives) {
   //     Longitudinal acceleration should be max acceleration.
   const double max_acceleration = default_config_.max_acceleration();
   continuous_state()->set_speed(0.);
-  SetInputValue(1e26, 0.);
+  SetInputValue(1e26/*net_delta_sigma*/, 0./*delta_sigma_dot*/);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->s());
   EXPECT_EQ(0.0, result->r());
@@ -500,7 +500,7 @@ TEST_F(IdmEndlessRoadCarTest, Derivatives) {
   //     and differential-velocity is large.
   //     Longitudinal acceleration should be negative.
   continuous_state()->set_speed(30.);
-  SetInputValue(2.0, 100.);
+  SetInputValue(2.0/*net_delta_sigma*/, 100./*delta_sigma_dot*/);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(30.0, result->s());
   EXPECT_EQ(0.0, result->r());

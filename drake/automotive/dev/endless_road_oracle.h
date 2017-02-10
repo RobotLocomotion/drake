@@ -24,8 +24,8 @@ namespace automotive {
 ///
 /// (Elevation-above-road 'h' is implicitly zero, too.)
 ///
-/// For each car, the basic sensing performed is to determine:
-///  * the net (bumper-to-bumper) longitudinal distance, and
+/// For each car, the basic sensing performed is to determine both
+///  * the net (bumper-to-bumper) longitudinal distance and
 ///  * the differential longitudinal speed
 /// to the closest car ahead in the lane.  There are a couple of special
 /// enhancements as well:
