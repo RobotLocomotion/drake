@@ -25,7 +25,7 @@ namespace bead_on_a_wire {
 /// using the Euler-Lagrange equation. The potential energy (V) of the bead with
 /// respect to the parametric function f(s) is:
 /// <pre>
-/// 1/2⋅f₃(s)⋅ag
+/// -f₃(s)⋅ag
 /// </pre>
 /// where `ag` is the magnitude (i.e., non-negative value) of the acceleration
 /// due to gravity. The velocity of the bead is df/ds⋅ṡ, and the kinetic
@@ -33,16 +33,16 @@ namespace bead_on_a_wire {
 ///
 /// The Lagrangian is then defined as:
 /// <pre>
-/// ℒ = T - V = 1/2⋅(df/ds)²⋅ṡ² - f₃(s)⋅ag
+/// ℒ = T - V = 1/2⋅(df/ds)²⋅ṡ² + f₃(s)⋅ag
 /// </pre>
 /// And Lagrangian Dynamics specifies that the dynamics for the system are
 /// defined by:
 /// <pre>
-/// ∂ℒ/∂s - d/dt ∂ℒ/∂ṡ =ṡ⋅
+/// ∂ℒ/∂s - d/dt ∂ℒ/∂ṡ = τ̇⋅
 /// </pre>
 /// where τ is the generalized force on the system. Thus:
 /// <pre>
-/// df(s)/ds⋅ṡ⋅d²f/ds² - (df(s)/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
+/// df(s)/ds⋅ṡ⋅d²f/ds² + (df(s)/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
 /// </pre>
 /// The dynamic equations for the bead in absolute coordinates comes from the
 /// Lagrangian Dynamics of the "second kind" (i.e., by formulating the problem
@@ -192,6 +192,11 @@ class BeadOnAWire : public systems::LeafSystem<T> {
       const Eigen::VectorXd &lambda) const override;
 
  private:
+  static Eigen::Vector3d get_first_derivative(
+      const Eigen::Matrix<DScalar, 3, 1>& m);
+  static Eigen::Vector3d get_second_derivative(
+      const Eigen::Matrix<DScalar, 3, 1>& m);
+
   // The coordinate representation used for kinematics and dynamics.
   CoordinateType coordinate_type_;
 

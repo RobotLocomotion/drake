@@ -51,6 +51,10 @@ typename BeadOnAWire<T>::DScalar
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
     const systems::Context<T>& context) const {
+  // Return a zero vector if this system is in minimal coordinates.
+  if (coordinate_type_ == BeadOnAWire<T>::kMinimalCoordinates)
+    return Eigen::VectorXd(0);
+
   // The constraint function is defined as:
   // g(x) = f(f⁻¹(x)) - x
   // where x is the position of the bead and f() is the parametric wire
@@ -86,6 +90,10 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
     const systems::Context<T>& context) const {
+  // Return a zero vector if this system is in minimal coordinates.
+  if (coordinate_type_ == BeadOnAWire<T>::kMinimalCoordinates)
+    return Eigen::VectorXd(0);
+
   // The constraint function is defined as:
   // g(x) = f(f⁻¹(x)) - x
   // where x is the position of the bead and f() is the parametric wire
@@ -156,11 +164,35 @@ template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
     const systems::Context<T>& context, const Eigen::MatrixXd& J,
     const Eigen::VectorXd& lambda) const {
-  DRAKE_DEMAND(coordinate_type_ == kAbsoluteCoordinates);
 
   // The bead on the wire is massless, so the velocity change is equal to
   // simply Jᵀλ
-  return J.transpose() * lambda;
+  if (coordinate_type_ == kAbsoluteCoordinates)
+    return J.transpose() * lambda;
+  else
+    return Eigen::Matrix<T, 1, 1>(0);
+}
+
+// Gets the first derivative from the parametric function, in Vector3d form,
+// using the output from that parametric function.
+template <class T>
+Eigen::Vector3d BeadOnAWire<T>::get_first_derivative(
+    const Eigen::Matrix<DScalar, 3, 1>& m) {
+  const double x = m(0).derivatives()(0).value();
+  const double y = m(1).derivatives()(0).value();
+  const double z = m(2).derivatives()(0).value();
+  return Eigen::Vector3d(x, y, z);
+}
+
+// Gets the second derivative from the parametric function, in Vector3d form,
+// using the output from that parametric function.
+template <class T>
+Eigen::Vector3d BeadOnAWire<T>::get_second_derivative(
+    const Eigen::Matrix<DScalar, 3, 1>& m) {
+  const double x = m(0).derivatives()(0).derivatives()(0);
+  const double y = m(1).derivatives()(0).derivatives()(0);
+  const double z = m(2).derivatives()(0).derivatives()(0);
+  return Eigen::Vector3d(x, y, z);
 }
 
 template <typename T>
@@ -184,19 +216,34 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
 
   // Compute the derivatives using the desired coordinate representation.
   if (coordinate_type_ == kMinimalCoordinates) {
-    /*
     // Get the necessary parts of the state.
     const T s = state.GetAtIndex(0);
-    const T sdot = state.GetAtIndex(1);
+    const T s_dot = state.GetAtIndex(1);
 
     // Get the external force.
-    const T fext = input(0);
+    const double tau = input(0);
 
-    // Set velocity component of derivative.
-    f->SetAtIndex(0, sdot);
+    // Compute derivatives.
+    DScalar s_in;
+    s_in.value().value() = s;
+    s_in.derivatives()(0) = 1;
+    s_in.value().derivatives()(0) = 1;
+    Eigen::Matrix<DScalar, 3, 1> foutput = f_(s_in);
 
-    // TODO(edrumwri): Compute acceleration from Lagrangian Dynamics.
-     */
+    // From the description in the header file, the dynamics of the bead in
+    // minimal coordinates is:
+    // df/ds⋅ṡ⋅d²f/ds² + (df/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
+    // Implying that:
+    // dṡ/dt = (-τ + (df(s)/ds)₃⋅ag - df(s)/ds⋅ṡ⋅d²f/ds²) / (df/ds)²
+    const double ag = get_gravitational_acceleration();
+    const Eigen::Vector3d dfds = get_first_derivative(foutput);
+    const Eigen::Vector3d d2fds2 = get_second_derivative(foutput);
+    const double s_ddot = (-tau + dfds(2)*ag - dfds.dot(d2fds2)*s_dot*s_dot) /
+                          dfds.dot(dfds);
+
+    // Set derivative.
+    f->SetAtIndex(0, s_dot);
+    f->SetAtIndex(1, s_ddot);
   } else {
     // Compute acceleration from unconstrained Newtonian dynamics.
     const T xdot = state.GetAtIndex(3);
@@ -211,8 +258,8 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
     f->SetAtIndex(1, ydot);
     f->SetAtIndex(2, zdot);
     f->SetAtIndex(3, fext(0));
-    f->SetAtIndex(4, fext(1) + get_gravitational_acceleration());
-    f->SetAtIndex(5, fext(2));
+    f->SetAtIndex(4, fext(1));
+    f->SetAtIndex(5, fext(2) + get_gravitational_acceleration());
   }
 }
 
@@ -224,9 +271,18 @@ void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
 
   // Use a consistent default state for the sinusoidal bead-on-the-wire
   // example.
-  VectorX<T> x0(6);
-  const double s = 0.0;
-  x0 << std::cos(s), std::sin(s), s, 0, 0, 0;
+  const double s = 0.0, s_dot = 0.0;
+  VectorX<T> x0;
+  if (coordinate_type_ == BeadOnAWire<T>::kAbsoluteCoordinates) {
+    const int state_size = 6;
+    x0.resize(state_size);
+    x0 << std::cos(s), std::sin(s), s,
+        -std::sin(s) * s_dot, std::cos(s) * s_dot, s_dot;
+  } else {
+    const int state_size = 2;
+    x0.resize(state_size);
+    x0 << s, s_dot;
+  }
   state->get_mutable_continuous_state()->SetFromVector(x0);
 }
 

@@ -13,35 +13,7 @@ namespace drake {
 namespace systems {
 namespace {
 
-class HalfExplicitDAE1SolverTest : public ::testing::Test {
- public:
-  HalfExplicitDAE1SolverTest() {
-    // Create and initialize the bead on the wire.
-    bead_on_a_wire_ = std::make_unique<BeadOnAWire<double>>(
-        BeadOnAWire<double>::kAbsoluteCoordinates);
-
-    // Create the context.
-    context_ = bead_on_a_wire_->CreateDefaultContext();
-
-    // Fix an input port for gravity.
-    std::unique_ptr<BasicVector<double>> grav_input =
-      std::make_unique<BasicVector<double>>(3);
-    grav_input->SetAtIndex(0, 0.0);
-    grav_input->SetAtIndex(1, 0.0);
-    grav_input->SetAtIndex(2, -1.0);
-    context_->FixInputPort(0, std::move(grav_input));
-
-    // Create and initialize the integrator.
-    integrator_ = std::make_unique<HalfExplicitDAE1Solver<double>>(
-        *bead_on_a_wire_, dt_, context_.get());  // Use default Context.
-  }
-
-  std::unique_ptr<BeadOnAWire<double>> bead_on_a_wire_;
-  std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<HalfExplicitDAE1Solver<double>> integrator_;
-  const double dt_ = 1e-3;        // Integration step size.
-};
-
+/*
 // Try a purely continuous system with no sampling.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
@@ -103,22 +75,60 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }
+*/
 
 // Simulate the bead on the wire example.
-TEST_F(HalfExplicitDAE1SolverTest, BeadOnAWire) {
+GTEST_TEST(IntegratorTest, BeadOnAWire) {
   // Setup the integration size and infinity.
   const double inf = std::numeric_limits<double>::infinity();
+  const double dt = 1e-5;
 
-  // Take all the defaults.
-  integrator_->Initialize();
+  // Create and initialize the beads on the wire.
+  std::unique_ptr<BeadOnAWire<double>> bw_abs =
+      std::make_unique<BeadOnAWire<double>>(
+          BeadOnAWire<double>::kAbsoluteCoordinates);
+  std::unique_ptr<BeadOnAWire<double>> bw_min =
+      std::make_unique<BeadOnAWire<double>>(
+          BeadOnAWire<double>::kMinimalCoordinates);
 
-  // Integrate for 1 second.
-  const double t_final = 1.0;
-  double t;
-  for (t = 0.0; std::abs(t - t_final) >= dt_; t += dt_)
-    integrator_->StepOnceAtMost(inf, inf, dt_);
+  // Create the context.
+  auto context_min = bw_min->CreateDefaultContext();
+  auto context_abs = bw_abs->CreateDefaultContext();
 
-  // TODO(edrumwri): Insert a proper test in here.
+  // Fix unused input ports.
+  std::unique_ptr<BasicVector<double>> input_abs =
+      std::make_unique<BasicVector<double>>(3);
+  std::unique_ptr<BasicVector<double>> input_min =
+      std::make_unique<BasicVector<double>>(1);
+  input_abs->SetAtIndex(0, 0.0);
+  input_abs->SetAtIndex(1, 0.0);
+  input_abs->SetAtIndex(2, 0.0);
+  input_min->SetAtIndex(0, 0.0);
+  context_abs->FixInputPort(0, std::move(input_abs));
+  context_min->FixInputPort(0, std::move(input_min));
+
+  // Create the integrators.
+  HalfExplicitDAE1Solver<double> integrator_abs(*bw_abs, dt, context_abs.get());
+  HalfExplicitDAE1Solver<double> integrator_min(*bw_min, dt, context_min.get());
+
+  // Set the tolerance to very tight on the constraint tolerance for the bead on
+  // the wire in absolute coordinates.
+  integrator_abs.set_constraint_error_tolerance(1e-14);
+
+  // Initialize the integrators.
+  integrator_abs.Initialize();
+  integrator_min.Initialize();
+
+  // Integrate for a single step.
+  integrator_abs.StepOnceAtMost(inf, inf, dt);
+  integrator_min.StepOnceAtMost(inf, inf, dt);
+
+  // Since the parametric sinusoidal function [ cos(s) sin(s) s ] is default,
+  // we should expect last index of absolute coordinates and only index of
+  // minimal coordinate to match.
+  const double tol = 10*integrator_abs.get_constraint_error_tolerance();
+  EXPECT_NEAR(context_abs->get_continuous_state_vector().GetAtIndex(2),
+              context_min->get_continuous_state_vector().GetAtIndex(0), tol);
 }
 
 }  // namespace
