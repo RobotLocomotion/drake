@@ -9,6 +9,8 @@
 
 #include "yaml-cpp/yaml.h"
 
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/id_controller_params.pb.h"
+
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
@@ -370,7 +372,6 @@ class ParamSet {
 
   // One DesiredMotionParam of size 1 per DoF.
   std::vector<DesiredMotionParam> dof_motion_params_;
-  DesiredMotionParam default_dof_motion_param_;
 
   DesiredMotionParam centroidal_momentum_dot_params_;
 

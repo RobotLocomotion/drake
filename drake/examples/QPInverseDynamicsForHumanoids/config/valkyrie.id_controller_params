@@ -1,0 +1,23 @@
+centroidal_momentum {
+    name: "centroidal"
+    kp: 0
+    kp: 0
+    kp: 0
+    kp: 40
+    kp: 40
+    kp: 40
+
+    kd: 4
+    kd: 4
+    kd: 4
+    kd: 12
+    kd: 12
+    kd: 12
+
+    weight: 0
+    weight: 0
+    weight: 0
+    weight: 10
+    weight: 10
+    weight: 10
+}

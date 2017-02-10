@@ -105,14 +105,9 @@ drake_cc_googletest(
     name = "valkyrie_balancing_test",
     srcs = ["test/valkyrie_balancing_test.cc"],
     data = [
-        "config/controller.yaml",
         "config/valkyrie.alias_groups",
+        "config/valkyrie.id_controller_params",
         "//drake/examples/Valkyrie:models",
-    ],
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
     ],
     deps = [
         ":control_utils",
