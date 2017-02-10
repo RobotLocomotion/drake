@@ -21,7 +21,7 @@ drake_cc_library(
     linkstatic = 1,
     deps = [
         ":rigid_body_tree_alias_groups",
-        ":id_controller_params",
+        ":id_controller_config",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
     ],
 )
@@ -34,9 +34,9 @@ cc_proto_library(
 )
 
 cc_proto_library(
-    name = "id_controller_params",
+    name = "id_controller_config",
     srcs = [
-        "id_controller_params.proto",
+        "id_controller_config.proto",
     ],
 )
 
