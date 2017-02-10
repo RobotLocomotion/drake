@@ -38,8 +38,6 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf, multibody::joints::kRollPitchYaw, robot.get());
 
-  std::cout << "hahahahaha\n";
-
   // KinematicsProperty
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(*robot);
   alias_groups.LoadFromFile(alias_groups_config);
