@@ -126,10 +126,7 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
                           xc.GetAtIndex(5));
 
   // Compute the result.
-  const int three_d = 3;
-  Eigen::VectorXd result(three_d);
-  for (int i=0; i< three_d; ++i)
-    result(i) = fprime(i).derivatives()(0).value()*dinvf_dt - v(i);
+  Eigen::VectorXd result = get_first_derivative(fprime)*dinvf_dt - v; 
 
   return result;
 }
