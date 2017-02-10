@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package drake.examples.qp_inverse_dynamics.param_parsers.protobuf_msg;
+
+message AccelerationParam {
+    string name = 1;
+    repeated double kp = 2;
+    repeated double kd = 3;
+    repeated double weight = 4;
+}
+
+message Vec3 {
+    double x = 1;
+    double y = 2;
+    double z = 3;
+}
+
+message ContactParam {
+    string name = 1;
+    double weight = 2;
+    double kp = 3;
+    double kd = 4;
+    double mu = 5;
+    repeated Vec3 contact_point = 6;
+    Vec3 contact_normal = 7;
+    int32 num_basis_per_contact_point = 8;
+}
+
+message InverseDynamicsControllerParam {
+    string name = 1;
+
+    // for com
+    AccelerationParam centroidal_momentum = 2;
+
+    // for tracked bodies.
+    repeated AccelerationParam body_motion = 3;
+
+    // for dof
+    repeated AccelerationParam dof_motion = 4;
+
+    // contacts
+    repeated ContactParam contact = 5;
+
+    double contact_force_basis_weight = 6;
+}
