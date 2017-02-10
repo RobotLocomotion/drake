@@ -29,7 +29,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
       "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
   std::string alias_groups_config =
       drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
-          "config/alias_groups.yaml";
+          "config/valkyrie.alias_groups";
   std::string controller_config =
       drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
           "config/controller.yaml";
@@ -40,7 +40,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
 
   // KinematicsProperty
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(*robot);
-  alias_groups.LoadFromYAMLFile(YAML::LoadFile(alias_groups_config));
+  alias_groups.LoadFromFile(alias_groups_config);
 
   // Controller config
   param_parsers::ParamSet paramset;
