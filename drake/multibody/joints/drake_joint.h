@@ -106,7 +106,7 @@ class DrakeJoint {
   /**
    * Returns a clone of this DrakeJoint.
    */
-  virtual std::unique_ptr<DrakeJoint> Clone() const = 0;
+  std::unique_ptr<DrakeJoint> Clone() const;
 
   /**
    * Returns the transform `X_PF` giving the pose of the joint's "fixed" frame
@@ -235,8 +235,15 @@ class DrakeJoint {
   Eigen::VectorXd joint_limit_dissipation_;
 
  protected:
+  /// Allows descendent classes to perform the actual clone operation.
+  virtual std::unique_ptr<DrakeJoint> DoClone() const = 0;
+
   /// Initializes the private member variables within the provided `clone`.
   void InitializeClone(DrakeJoint* clone) const;
+
+  /// Initializes any additional state within @p clone that could not be set at
+  /// construction.
+  virtual void DoInitializeClone(DrakeJoint* clone) const = 0;
 
  private:
   const Eigen::Isometry3d transform_to_parent_body;

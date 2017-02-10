@@ -13,8 +13,8 @@
 
 namespace drake {
 
-using multibody::CompareFixedJointToClone;
 using multibody::CompareDrakeJointToClone;
+using multibody::CompareFixedJointToClone;
 using multibody::CompareHelicalJointToClone;
 using multibody::ComparePrismaticJointToClone;
 using multibody::CompareRevoluteJointToClone;

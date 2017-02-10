@@ -9,6 +9,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
@@ -201,12 +202,14 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
 
  protected:
   /// Initializes the private member variables within the provided `clone`.
-  void InitializeClone(FixedAxisOneDoFJoint* clone) const {
-    clone->joint_axis_ = this->joint_axis_;
-    clone->damping_ = this->damping_;
-    clone->coulomb_friction_ = this->coulomb_friction_;
-    clone->coulomb_window_ = this->coulomb_window_;
-    DrakeJoint::InitializeClone(clone);
+  virtual void DoInitializeClone(DrakeJoint* clone) const override {
+    FixedAxisOneDoFJoint* fixed_axis_one_dof_joint =
+        dynamic_cast<FixedAxisOneDoFJoint*>(clone);
+    DRAKE_DEMAND(fixed_axis_one_dof_joint != nullptr);
+    fixed_axis_one_dof_joint->joint_axis_ = this->joint_axis_;
+    fixed_axis_one_dof_joint->damping_ = this->damping_;
+    fixed_axis_one_dof_joint->coulomb_friction_ = this->coulomb_friction_;
+    fixed_axis_one_dof_joint->coulomb_window_ = this->coulomb_window_;
   }
 
  private:

@@ -31,6 +31,12 @@ DrakeJoint::~DrakeJoint() {
   // empty
 }
 
+std::unique_ptr<DrakeJoint> DrakeJoint::Clone() const {
+  std::unique_ptr<DrakeJoint> clone = DoClone();
+  InitializeClone(clone.get());
+  return clone;
+}
+
 const Isometry3d& DrakeJoint::get_transform_to_parent_body() const {
   return transform_to_parent_body;
 }
@@ -87,6 +93,7 @@ const Eigen::VectorXd& DrakeJoint::get_joint_limit_dissipation() const {
 }
 
 void DrakeJoint::InitializeClone(DrakeJoint* clone) const {
+  DoInitializeClone(clone);
   clone->joint_limit_min = joint_limit_min;
   clone->joint_limit_max = joint_limit_max;
   clone->joint_limit_stiffness_ = joint_limit_stiffness_;

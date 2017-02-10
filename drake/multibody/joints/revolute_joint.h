@@ -25,8 +25,6 @@ class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
 
   virtual ~RevoluteJoint() {}
 
-  std::unique_ptr<DrakeJoint> Clone() const final;
-
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
@@ -40,6 +38,9 @@ class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
   const Eigen::Vector3d& rotation_axis() const { return rotation_axis_; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ protected:
+  std::unique_ptr<DrakeJoint> DoClone() const final;
 
  private:
   static drake::TwistVector<double> spatialJointAxis(

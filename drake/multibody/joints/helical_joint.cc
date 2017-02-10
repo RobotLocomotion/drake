@@ -7,18 +7,17 @@
 
 using Eigen::Vector3d;
 
-std::unique_ptr<DrakeJoint> HelicalJoint::Clone() const {
-  auto joint = std::make_unique<HelicalJoint>(get_name(),
-                                              get_transform_to_parent_body(),
-                                              axis_, pitch_);
-  FixedAxisOneDoFJoint::InitializeClone(joint.get());
-  return std::move(joint);
-}
-
 drake::TwistVector<double> HelicalJoint::spatialJointAxis(const Vector3d& axis,
                                                           double pitch) {
   drake::TwistVector<double> ret;
   ret.topRows<3>() = axis;
   ret.bottomRows<3>() = pitch * axis;
   return ret;
+}
+
+std::unique_ptr<DrakeJoint> HelicalJoint::DoClone() const {
+  auto joint = std::make_unique<HelicalJoint>(get_name(),
+                                              get_transform_to_parent_body(),
+                                              axis_, pitch_);
+  return std::move(joint);
 }
