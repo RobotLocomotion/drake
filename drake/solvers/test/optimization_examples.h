@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
@@ -138,8 +139,9 @@ class NonConvexQPproblem1 {
     return costs;
   }
 
-  static::std::vector<ConstraintForm> constraint_forms() {
-    std::vector<ConstraintForm> cnstr{ConstraintForm::kSymbolic, ConstraintForm::kNonSymbolic};
+  static ::std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kSymbolic,
+                                      ConstraintForm::kNonSymbolic};
     return cnstr;
   }
 
@@ -197,7 +199,8 @@ class NonConvexQPproblem2 {
   }
 
   static std::vector<ConstraintForm> constraint_forms() {
-    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic, ConstraintForm::kSymbolic};
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
     return cnstr;
   }
 
@@ -250,7 +253,8 @@ class LowerBoundedProblem {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem)
 
   static std::vector<ConstraintForm> constraint_forms() {
-    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic, ConstraintForm::kSymbolic};
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
     return cnstr;
   }
 
@@ -346,12 +350,14 @@ class GloptiPolyConstrainedMinimizationProblem {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem)
 
   static std::vector<CostForm> cost_forms() {
-    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic, CostForm::kSymbolic};
+    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic,
+                                CostForm::kSymbolic};
     return costs;
   }
 
   static std::vector<ConstraintForm> constraint_forms() {
-    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic, ConstraintForm::kSymbolic};
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
     return cnstr;
   }
 
@@ -460,7 +466,8 @@ class MinDistanceFromPlaneToOrigin {
   }
 
   static std::vector<ConstraintForm> constraint_forms() {
-    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic, ConstraintForm::kSymbolic};
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
     return cnstr;
   }
 
@@ -521,7 +528,7 @@ class LinearFeasibilityProgram : public LinearProgram {
 ///      x1 >= 2
 ///      x0 >= 0
 /// The optimal solution is x0 = 1, x1 = 2
-class LinearProgram0 : public LinearProgram{
+class LinearProgram0 : public LinearProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram0)
 

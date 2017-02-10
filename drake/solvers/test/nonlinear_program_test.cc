@@ -223,8 +223,10 @@ GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
 }
 
 GTEST_TEST(testNonlinearProgram, testGloptiPolyConstrainedMinimization) {
-  for (auto cost_form : GloptiPolyConstrainedMinimizationProblem::cost_forms()) {
-    for (auto cnstr_form : GloptiPolyConstrainedMinimizationProblem::constraint_forms()) {
+  for (auto cost_form :
+       GloptiPolyConstrainedMinimizationProblem::cost_forms()) {
+    for (auto cnstr_form :
+         GloptiPolyConstrainedMinimizationProblem::constraint_forms()) {
       GloptiPolyConstrainedMinimizationProblem prob(cost_form, cnstr_form);
       RunNonlinearProgram(prob.prog(),
                           [&]() { EXPECT_TRUE(prob.CheckSolution()); });
