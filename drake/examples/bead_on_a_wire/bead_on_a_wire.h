@@ -10,15 +10,13 @@ namespace bead_on_a_wire {
 
 /// Dynamical system of a point (unit) mass constrained to lie on a wire. The
 /// system is currently frictionless. The equation for the wire can be provided
-/// parametrically *by the user*. Dynamics equations can be computed in both
+/// parametrically by the user. Dynamics equations can be computed in both
 /// minimal coordinates or absolute coordinates (with Lagrange Multipliers).
-/// Equations for the dynamics in absolute coordinates are provided by
-/// R. Rosales, "Bead Moving Along a Thin, Rigid Wire". Available from:
-/// https://ocw.mit.edu/courses/mathematics/18-385j-nonlinear-dynamics-and-chaos-fall-2004/lecture-notes/bead_on_wire.pdf
 ///
 /// The presence of readily available solutions coupled with the potential
 /// for highly irregular geometric constraints (which can be viewed
-/// as complex contact constraints), make this a powerful example.
+/// as complex contact constraints), can make this a challenging problem
+/// to simulate.
 ///
 /// The dynamic equations for the bead in minimal coordinates comes from
 /// Lagrangian Dynamics of the "first kind": forming the Lagrangian and
@@ -97,10 +95,10 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// The type of coordinate representation to use for kinematics and dynamics.
   enum CoordinateType {
     /// Coordinate representation will be wire parameter.
-        kMinimalCoordinates,
+    kMinimalCoordinates,
 
     /// Coordinate representation will be the bead location (in 3D).
-        kAbsoluteCoordinates
+    kAbsoluteCoordinates
   };
 
   /// Constructs the object using either minimal or absolute coordinates (the
@@ -123,26 +121,20 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// gravity (i.e., this number should generally be negative).
   double get_gravitational_acceleration() const { return g_; }
 
-  /// Allows the user to reset the wire parameter function (which points to the
-  /// sinusoidal function by default.
+  /// Allows the user to reset the wire parameter function and its inverse
+  /// (which points to sinusoidal_function and inverse_sinusoidal_function by
+  /// default.
   /// @param f The pointer to a function that takes a wire parameter
   ///          (scalar `s`) as input and outputs a point in 3D as output.
-  /// @throws std::logic_error if f is a nullptr (the function must always be
-  ///         set).
-  void reset_wire_parameter_function(std::function<Eigen::Matrix<DScalar, 3, 1>(
-      const DScalar &)> f) {
-    if (!f) throw std::logic_error("Function must be non-null.");
-    f_ = f;
-  }
-
-  /// Allows the user to reset the inverse wire parameter function (which
-  /// points to the inverse sinusoidal function by default).
   /// @param inv_f The pointer to a function that takes a point in 3D as input
-  ///              and outputs a floating point scalar as output. nullptr is
-  ///              an acceptable value (BeadOnAWire will use a generic inversion
-  ///              routine).
-  void reset_inverse_wire_parameter_function(std::function<DScalar(
-      const Eigen::Matrix<DScalar, 3, 1> &)> inv_f) {
+  ///              and outputs a floating point scalar as output.
+  /// @throws std::logic_error if f or inv_f is a nullptr (the functions must
+  ///         always be set).
+  void reset_wire_parameter_functions(
+        std::function<Eigen::Matrix<DScalar, 3, 1>(const DScalar &)> f,
+        std::function<DScalar(const Eigen::Matrix<DScalar, 3, 1> &)> inv_f) {
+    if (!f || !inv_f) throw std::logic_error("Function must be non-null.");
+    f_ = f;
     inv_f_ = inv_f;
   }
 
@@ -164,7 +156,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
 
   /// Gets the number of constraint equations.
   int do_get_num_constraint_equations(const systems::Context<T> &context) const
-  override;
+                                     override;
 
   /// Evaluates the constraint equations for a bead in absolute coordinates.
   /// This method is computationally expensive. To evaluate these equations,
@@ -172,8 +164,6 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// ||f(s) - x||, where x is the location of the bead.
   /// @warning The solution returned by this approach is not generally a global
   ///          minimum.
-  /// @TODO(edrumwri): Provide a special function that calculates the parameters
-  ///                  for a given function?
   Eigen::VectorXd DoEvalConstraintEquations(
       const systems::Context<T> &context) const override;
 
@@ -186,8 +176,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// impulses @p lambda.
   /// @param context The current state of the system.
   /// @param lambda The vector of constraint forces.
-  Eigen::VectorXd
-  DoCalcVelocityChangeFromConstraintImpulses(
+  Eigen::VectorXd DoCalcVelocityChangeFromConstraintImpulses(
       const systems::Context<T> &context, const Eigen::MatrixXd &J,
       const Eigen::VectorXd &lambda) const override;
 
@@ -201,21 +190,22 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   CoordinateType coordinate_type_;
 
   // The wire parameter function. See set_wire_parameter_function() for more
-  // information. This pointer must always be empty
+  // information. This pointer is expected to never be null.
   std::function<Eigen::Matrix<DScalar, 3, 1>(const DScalar &)> f_{
       &sinusoidal_function};
 
-  // The (optional) inverse of the wire parameter function.
+  // The inverse of the wire parameter function.
   // This function takes a point in 3D as input and outputs a scalar
-  // in ℝ as output. If this function is non-null, constraint
-  // stabilization methods for DAEs can use it (via
-  // EvaluateConstraintEquations()) to efficiently project a bead represented
-  // in absolute coordinates back onto the wire. If this function is null,
-  // EvaluateConstraintEquations() will use generic, presumably less efficient
-  // methods instead. This function is not to nullptr by default.
+  // in ℝ as output. Constraint stabilization methods for DAEs can use this
+  // function (via EvaluateConstraintEquations()) to efficiently project the
+  // bead represented in absolute coordinates back onto the wire. If this
+  // function is null, EvaluateConstraintEquations() will use generic,
+  // presumably less efficient methods instead. This pointer is expected to
+  // never be null.
   std::function<DScalar(const Eigen::Matrix<DScalar, 3, 1> &)> inv_f_{
       &inverse_sinusoidal_function};
 
+  // Signed acceleration due to gravity.
   double g_{-9.81};
 };
 

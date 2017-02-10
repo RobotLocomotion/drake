@@ -36,8 +36,8 @@ Eigen::Matrix<typename BeadOnAWire<T>::DScalar, 3, 1>
   using std::cos;
   using std::sin;
   return Vector3<BeadOnAWire<T>::DScalar>(cos(s),
-                          sin(s),
-                          s);
+                                          sin(s),
+                                          s);
 }
 
 template <class T>
@@ -68,13 +68,8 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
   for (int i = 0; i < three_d; ++i)
     x(i).value() = position[i];
 
-  // Call the inverse function if there is one.
-  DScalar s;
-  if (inv_f_) {
-    s = inv_f_(x);
-  } else {
-    // TODO(edrumwri): Implement generic method.
-  }
+  // Call the inverse function.
+  DScalar s = inv_f_(x);
 
   // Get the output position.
   Eigen::Matrix<DScalar, 3, 1> fs = f_(s);
@@ -165,7 +160,7 @@ Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
     const systems::Context<T>& context, const Eigen::MatrixXd& J,
     const Eigen::VectorXd& lambda) const {
 
-  // The bead on the wire is massless, so the velocity change is equal to
+  // The bead on the wire is unit mass, so the velocity change is equal to
   // simply Jᵀλ
   if (coordinate_type_ == kAbsoluteCoordinates)
     return J.transpose() * lambda;
@@ -266,18 +261,27 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
 template <typename T>
 void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
                                   systems::State<T>* state) const {
-  // TODO(edrumwri): Fix default state to be consistent no matter the
-  //                parametric wire function used..
-
   // Use a consistent default state for the sinusoidal bead-on-the-wire
   // example.
-  const double s = 0.0, s_dot = 0.0;
+  const double s = 0.0, s_dot = 1.0;
   VectorX<T> x0;
   if (coordinate_type_ == BeadOnAWire<T>::kAbsoluteCoordinates) {
     const int state_size = 6;
+
+    // Evaluate the wire parameter function at s.
+    DScalar ss;
+    ss.value() = s;
+    ss.derivatives()(0).value() = 1;
+    const Eigen::Matrix<DScalar, 3, 1> q = f_(ss);
+
+    // Set x0 appropriately.
     x0.resize(state_size);
-    x0 << std::cos(s), std::sin(s), s,
-        -std::sin(s) * s_dot, std::cos(s) * s_dot, s_dot;
+    x0 << q(0).value().value(),
+          q(1).value().value(),
+          q(2).value().value(),
+          q(0).derivatives()(0).value()*s_dot,
+          q(1).derivatives()(0).value()*s_dot,
+          q(2).derivatives()(0).value()*s_dot;
   } else {
     const int state_size = 2;
     x0.resize(state_size);

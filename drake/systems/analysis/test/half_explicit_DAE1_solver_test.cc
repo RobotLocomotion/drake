@@ -13,7 +13,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-/*
 // Try a purely continuous system with no sampling.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
@@ -75,7 +74,6 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }
-*/
 
 // Simulate the bead on the wire example.
 GTEST_TEST(IntegratorTest, BeadOnAWire) {
@@ -126,7 +124,7 @@ GTEST_TEST(IntegratorTest, BeadOnAWire) {
   // Since the parametric sinusoidal function [ cos(s) sin(s) s ] is default,
   // we should expect last index of absolute coordinates and only index of
   // minimal coordinate to match.
-  const double tol = 10*integrator_abs.get_constraint_error_tolerance();
+  const double tol = 25*integrator_abs.get_constraint_error_tolerance();
   EXPECT_NEAR(context_abs->get_continuous_state_vector().GetAtIndex(2),
               context_min->get_continuous_state_vector().GetAtIndex(0), tol);
 }

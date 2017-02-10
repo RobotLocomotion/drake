@@ -152,10 +152,6 @@ TEST_F(BeadOnAWireTest, InverseSinusoidal) {
 
 // Tests the constraint function evaluation using the sinusoidal function.
 TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
-  // Use the version with the inverse sinusoidal function first.
-  dut_->reset_inverse_wire_parameter_function(
-      &dut_->inverse_sinusoidal_function);
-
   // Put the bead directly onto the wire.
   systems::ContinuousState<double> &xc =
       *context_->get_mutable_continuous_state();
@@ -175,18 +171,11 @@ TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
   xc[0] = std::cos(s);
   xc[1] += err;
   EXPECT_LE(dut_->EvalConstraintEquations(*context_).norm(), 1.0);
-
-  // TODO(edrumwri): Test the constraint evaluation without the inverse
-  // sinusoidal function.
 }
 
 // Tests the evaluation of the time derivative of the constraint functions
 // using the sinusoidal function.
 TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
-  // Use the version with the inverse sinusoidal function first.
-  dut_->reset_inverse_wire_parameter_function(
-      &dut_->inverse_sinusoidal_function);
-
   // Put the bead directly onto the wire and make its velocity such that
   // it is not instantaneously leaving the wire.
   systems::ContinuousState<double> &xc =
