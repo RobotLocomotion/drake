@@ -81,8 +81,6 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
   virtual ~QuaternionFloatingJoint() {}
 
-  std::unique_ptr<DrakeJoint> Clone() const final;
-
   /** Returns the transform `X_PB(q)` where P is the parent body and B the
    * child body connected by this joint.
    */
@@ -330,5 +328,9 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ protected:
+  std::unique_ptr<DrakeJoint> DoClone() const final;
+  void DoInitializeClone(DrakeJoint* clone) const final {}
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

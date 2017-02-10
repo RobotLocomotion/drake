@@ -27,8 +27,6 @@ class RollPitchYawFloatingJoint
 
   virtual ~RollPitchYawFloatingJoint() {}
 
-  std::unique_ptr<DrakeJoint> Clone() const final;
-
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
@@ -292,5 +290,9 @@ class RollPitchYawFloatingJoint
   std::string getPositionName(int index) const override;
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ protected:
+  std::unique_ptr<DrakeJoint> DoClone() const final;
+  void DoInitializeClone(DrakeJoint* clone) const final {}
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual
