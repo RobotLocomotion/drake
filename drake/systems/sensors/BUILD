@@ -86,6 +86,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "gyroscope",
+    srcs = [
+        "gyroscope.cc",
+        "gyroscope_output.cc",
+    ],
+    hdrs = [
+        "gyroscope.h",
+        "gyroscope_output.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "accelerometer_example_diagram",
     srcs = [
         "test/accelerometer_test/accelerometer_example_diagram.cc",
@@ -167,6 +184,19 @@ drake_cc_googletest(
     deps = [
         ":depth_sensor",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gyroscope_test",
+    srcs = ["test/gyroscope_test.cc"],
+    data = [
+        "//drake/multibody:models",
+    ],
+    deps = [
+        ":gyroscope",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
     ],
 )
 
