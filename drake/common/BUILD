@@ -155,6 +155,14 @@ drake_cc_library(
 
 # Miscellaneous utilities.
 drake_cc_library(
+    name = "default_value",
+    srcs = [],
+    hdrs = ["default_value.h"],
+    linkstatic = 1,
+    deps = [],
+)
+
+drake_cc_library(
     name = "drake_path",
     # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
     # drake_path are removed.
@@ -272,6 +280,13 @@ drake_cc_googletest(
         ":common",
         ":eigen_matrix_compare",
         ":extract_double",
+    ],
+)
+
+drake_cc_googletest(
+    name = "default_value_test",
+    deps = [
+        ":default_value",
     ],
 )
 
