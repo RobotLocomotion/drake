@@ -368,18 +368,20 @@ std::ostream& operator<<(std::ostream& out, const ContactParam& param) {
   return out;
 }
 
-
-
-void ParamSet::LoadFromYAMLConfigFile(
-    const YAML::Node& config,
+void ParamSet::LoadFromFile(
+    const std::string& config_path,
     const RigidBodyTreeAliasGroups<double>& alias_group) {
 
+  std::cout << config_path << std::endl;
+
   protobuf_msg::InverseDynamicsControllerParam id_configs;
-  google::protobuf::io::FileInputStream istream(open("/home/sfeng/code/drake/drake/examples/QPInverseDynamicsForHumanoids/config/valkyrie.id_controller_id_configs", O_RDONLY));
+  google::protobuf::io::FileInputStream istream(open(config_path.data(), O_RDONLY));
   DRAKE_DEMAND(google::protobuf::TextFormat::Parse(&istream, &id_configs));
   istream.Close();
 
   name_ = id_configs.name();
+
+  std::cout << name_ << std::endl;
 
   // Contact force basis regularization weight.
   basis_regularization_weight_ = id_configs.contact_force_basis_weight();
