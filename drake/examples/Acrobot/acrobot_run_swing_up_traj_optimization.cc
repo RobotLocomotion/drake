@@ -44,8 +44,8 @@ int do_main(int argc, char* argv[]) {
   DRAKE_DEMAND(acrobot != nullptr);
 
   const int kNumTimeSamples = 21;
-  const int kTrajectoryTimeLowerBound = 2;
-  const int kTrajectoryTimeUpperBound = 10;
+  const double kTrajectoryTimeLowerBound = 2;
+  const double kTrajectoryTimeUpperBound = 10;
 
   const Eigen::Vector4d x0(0, 0, 0, 0);
   const Eigen::Vector4d xG(M_PI, 0, 0, 0);
