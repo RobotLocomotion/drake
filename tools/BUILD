@@ -53,9 +53,25 @@ cc_toolchain_suite(
     },
 )
 
+sh_binary(
+    name = "complain_about_ccache",
+    srcs = ["complain_about_ccache.sh"],
+    visibility = ["//visibility:private"],
+)
+
+# This genrule will fail loudly if ccache is on the path.
+genrule(
+    name = "ccache_is_bad",
+    srcs = [],
+    outs = ["ccache.txt"],
+    cmd = "$(location :complain_about_ccache) | tee $(@)",
+    tools = [":complain_about_ccache"],
+    visibility = ["//visibility:private"],
+)
+
 filegroup(
     name = "empty",
-    srcs = [],
+    srcs = ["ccache.txt"],
     visibility = ["//visibility:private"],
 )
 
@@ -98,7 +114,7 @@ cc_toolchain(
 
 config_setting(
     name = "debug",
-    values = {"compilation_mode": "dbg"}
+    values = {"compilation_mode": "dbg"},
 )
 
 config_setting(
