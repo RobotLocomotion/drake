@@ -43,14 +43,15 @@ class SignalLogger : public LeafSystem<T> {
     return const_cast<const MatrixX<T>&>(data_).leftCols(num_samples_);
   }
 
- private:
-  // No output.
+ protected:
+  /// Calculates the output - by default, there are no outputs.
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override {}
 
-  // Logging is done in this method.
+  /// Logs the context state.
   void DoPublish(const Context<T>& context) const override;
 
+ private:
   const int batch_allocation_size_{1000};
 
   // Use mutable variables to hold the logged data.

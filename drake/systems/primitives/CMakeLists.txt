@@ -13,6 +13,7 @@ set(sources
     pass_through.cc
     saturation.cc
     signal_logger.cc
+    signal_logger_playback.cc
     trajectory_source.cc
     zero_order_hold.cc)
 
@@ -34,6 +35,7 @@ drake_install_headers(
   random_source.h
   saturation.h
   signal_logger.h
+  signal_logger_playback.h
   trajectory_source.h
   zero_order_hold.h
   zero_order_hold-inl.h
@@ -45,7 +47,11 @@ set(private_headers)
 
 add_library_with_exports(LIB_NAME drakeSystemPrimitives
     SOURCE_FILES ${sources} ${private_headers})
-target_link_libraries(drakeSystemPrimitives drakeSystemFramework drakeCommon)
+target_link_libraries(drakeSystemPrimitives
+    drakeSystemFramework
+    drakeCommon
+    drakeSystemAnalysis
+    )
 
 drake_install_libraries(drakeSystemPrimitives)
 drake_install_pkg_config_file(drake-system-primitives
