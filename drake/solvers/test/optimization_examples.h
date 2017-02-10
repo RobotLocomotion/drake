@@ -34,8 +34,6 @@ class LinearProgram {
 
  private:
   std::unique_ptr<MathematicalProgram> prog_;
-  CostForm cost_form_;
-  ConstraintForm cnstr_form_;
 };
 
 /**

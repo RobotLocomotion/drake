@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/solvers/test/add_solver_util.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Vector2d;

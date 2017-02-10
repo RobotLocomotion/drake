@@ -235,6 +235,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "convex_optimization_test",
     srcs = [
+        "test/add_solver_util.cc",
+        "test/add_solver_util.h",
         "test/convex_optimization_test.cc",
         "test/mathematical_program_test_util.cc",
         "test/mathematical_program_test_util.h",
@@ -266,6 +268,27 @@ drake_cc_googletest(
         "test/mathematical_program_test_util.h",
     ],
     deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gurobi_solver_test",
+    srcs = [
+        "test/gurobi_solver_test.cc",
+        "test/mathematical_program_test_util.cc",
+        "test/mathematical_program_test_util.h",
+        "test/optimization_examples.cc",
+        "test/optimization_examples.h",
+    ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    deps = [
+        ":gurobi_solver",
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
     ],
@@ -315,6 +338,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mixed_integer_optimization_test",
     srcs = [
+        "test/add_solver_util.cc",
+        "test/add_solver_util.h",
         "test/mathematical_program_test_util.cc",
         "test/mathematical_program_test_util.h",
         "test/mixed_integer_optimization_test.cc",

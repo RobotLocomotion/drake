@@ -26,7 +26,7 @@ static std::set<CostForm> linear_cost_form{CostForm::kNonSymbolic, CostForm::kSy
 static std::set<ConstraintForm> linear_constraint_form{ConstraintForm::kNonSymbolic, ConstraintForm::kSymbolic, ConstraintForm::kFormula};
 static std::set<CostForm> quadratic_cost_form{CostForm::kNonSymbolic};
 
-LinearProgram::LinearProgram(CostForm cost_form, ConstraintForm cnstr_form) : prog_(std::make_unique<MathematicalProgram>()), cost_form_(cost_form), cnstr_form_(cnstr_form) {}
+LinearProgram::LinearProgram(CostForm cost_form, ConstraintForm cnstr_form) : prog_(std::make_unique<MathematicalProgram>()) {}
 
 LinearSystemExample1::LinearSystemExample1()
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, b_{}, con_{} {

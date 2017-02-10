@@ -8,6 +8,7 @@ drake_add_cc_test(mathematical_program_test)
 target_link_libraries(mathematical_program_test drakeOptimization)
 
 add_executable(convex_optimization_test
+        add_solver_util.cc
         mathematical_program_test_util.cc
         convex_optimization_test.cc)
 target_link_libraries(convex_optimization_test
@@ -28,6 +29,7 @@ target_link_libraries(constraint_test drakeOptimization drakeCommon)
 
 macro(add_solver_test)
   add_executable(${ARGV}
+          add_solver_util.cc
           optimization_examples.cc
           mathematical_program_test_util.cc
           ${ARGV}.cc)
