@@ -98,7 +98,7 @@ cc_toolchain(
 
 config_setting(
     name = "debug",
-    values = {"compilation_mode": "dbg"}
+    values = {"compilation_mode": "dbg"},
 )
 
 config_setting(
