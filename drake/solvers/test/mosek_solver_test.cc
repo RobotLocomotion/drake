@@ -13,8 +13,6 @@ GTEST_TEST(testLP, LinearPrograms) {
   MosekSolver solver;
   RunLinearPrograms(solver);
 }
-
-
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

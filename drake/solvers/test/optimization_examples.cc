@@ -23,12 +23,15 @@ namespace drake {
 namespace solvers {
 namespace test {
 
-static std::set<CostForm> linear_cost_form{CostForm::kNonSymbolic,
-                                           CostForm::kSymbolic};
-static std::set<ConstraintForm> linear_constraint_form{
-    ConstraintForm::kNonSymbolic, ConstraintForm::kSymbolic,
-    ConstraintForm::kFormula};
-static std::set<CostForm> quadratic_cost_form{CostForm::kNonSymbolic};
+static std::set<CostForm> linear_cost_form() {
+    return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
+}
+
+static std::set<ConstraintForm> linear_constraint_form() {
+  return std::set<ConstraintForm>{ConstraintForm::kNonSymbolic,
+                                  ConstraintForm::kSymbolic,
+                                  ConstraintForm::kFormula};
+}
 
 LinearProgram::LinearProgram(CostForm cost_form, ConstraintForm cnstr_form)
     : prog_(std::make_unique<MathematicalProgram>()) {}
@@ -881,14 +884,14 @@ void RunLinearPrograms(const MathematicalProgramSolverInterface& solver) {
   if (!solver.available()) {
     return;
   }
-  for (auto cnstr_form : linear_constraint_form) {
+  for (auto cnstr_form : linear_constraint_form()) {
     LinearFeasibilityProgram prob_feas(cnstr_form);
     RunSolver(prob_feas.prog(), solver);
     prob_feas.CheckSolution();
   }
 
-  for (auto cost_form : linear_cost_form) {
-    for (auto cnstr_form : linear_constraint_form) {
+  for (auto cost_form : linear_cost_form()) {
+    for (auto cnstr_form : linear_constraint_form()) {
       LinearProgram0 prob0(cost_form, cnstr_form);
       RunSolver(prob0.prog(), solver);
       prob0.CheckSolution();

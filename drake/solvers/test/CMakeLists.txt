@@ -7,17 +7,6 @@ target_link_libraries(binding_test drakeOptimization)
 drake_add_cc_test(mathematical_program_test)
 target_link_libraries(mathematical_program_test drakeOptimization)
 
-add_executable(convex_optimization_test
-        add_solver_util.cc
-        mathematical_program_test_util.cc
-        convex_optimization_test.cc)
-target_link_libraries(convex_optimization_test
-        drakeCommon
-        drakeOptimization
-        GTest::GTest
-        GTest::Main)
-drake_add_test(NAME convex_optimization_test COMMAND convex_optimization_test)
-
 drake_add_cc_test(moby_lcp_solver_test)
 target_link_libraries(moby_lcp_solver_test drakeOptimization)
 
@@ -27,25 +16,44 @@ target_link_libraries(system_identification_test drakeOptimization)
 drake_add_cc_test(constraint_test)
 target_link_libraries(constraint_test drakeOptimization drakeCommon)
 
-macro(add_solver_test)
-  add_executable(${ARGV}
-          add_solver_util.cc
-          optimization_examples.cc
-          mathematical_program_test_util.cc
-          ${ARGV}.cc)
-  target_link_libraries(${ARGV}
-          drakeCommon
-          drakeOptimization
-          GTest::GTest
-          GTest::Main)
-  drake_add_test(NAME ${ARGV} COMMAND ${ARGV})
-endmacro()
-add_solver_test(equality_constrained_qp_solver_test)
-add_solver_test(nonlinear_program_test)
-add_solver_test(linear_system_solver_test)
-add_solver_test(mixed_integer_optimization_test)
-add_solver_test(gurobi_solver_test)
-add_solver_test(mosek_solver_test)
+set(drakeOptimizationTestSources
+        add_solver_util.cc
+        optimization_examples.cc
+        mathematical_program_test_util.cc)
+set(drakeOptimizationHeaders
+        add_solver_util.h
+        optimization_examples.h
+        mathematical_program_test_util.h)
+set(drakeOptimizationPrivateHeaders
+        )
+add_library_with_exports(LIB_NAME drakeOptimizationTest
+        SOURCE_FILES ${drakeOptimizationTestSources} ${drakeOptimizationHeaders} ${drakeOptimizationPrivateHeaders})
+target_link_libraries(drakeOptimizationTest
+        Eigen3::Eigen
+        gflags
+        GTest::GTest
+        drakeOptimization)
+
+drake_add_cc_test(convex_optimization_test)
+target_link_libraries(convex_optimization_test drakeCommon drakeOptimizationTest)
+
+drake_add_cc_test(equality_constrained_qp_solver_test)
+target_link_libraries(equality_constrained_qp_solver_test drakeCommon drakeOptimizationTest)
+
+drake_add_cc_test(nonlinear_program_test)
+target_link_libraries(nonlinear_program_test drakeCommon drakeOptimizationTest)
+
+drake_add_cc_test(linear_system_solver_test)
+target_link_libraries(linear_system_solver_test drakeCommon drakeOptimizationTest)
+
+drake_add_cc_test(mixed_integer_optimization_test)
+target_link_libraries(mixed_integer_optimization_test drakeCommon drakeOptimizationTest)
+
+drake_add_cc_test(gurobi_solver_test)
+target_link_libraries(gurobi_solver_test drakeCommon drakeOptimizationTest)
+
+drake_add_cc_test(mosek_solver_test)
+target_link_libraries(mosek_solver_test drakeCommon drakeOptimizationTest)
 
 drake_add_cc_test(linear_complementary_problem_test)
 target_link_libraries(linear_complementary_problem_test drakeOptimization)
