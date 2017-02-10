@@ -207,7 +207,7 @@ TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
 
   // Verify that the constraint error is effectively zero.
   const double tol = std::numeric_limits<double>::epsilon() * 10;
-  EXPECT_NEAR(dut_abs_->EvalConstraintEquationsDot(*context_abs_).norm(), 
+  EXPECT_NEAR(dut_abs_->EvalConstraintEquationsDot(*context_abs_).norm(),
               0.0, tol);
 }
 
@@ -237,7 +237,7 @@ TEST_F(BeadOnAWireTest, MinimalCoordinateDeriv) {
   const double tol = std::numeric_limits<double>::epsilon();
 
   // For horizontal wire function, velocity derivatives should be zero.
-  dut_min_->reset_wire_parameter_functions(&horz_line_function, 
+  dut_min_->reset_wire_parameter_functions(&horz_line_function,
                                            &inverse_horz_line_function);
   dut_min_->CalcTimeDerivatives(*context_min_, derivatives_min_.get());
   Eigen::VectorXd deriv = derivatives_min_->get_vector().CopyToVector();
@@ -245,11 +245,11 @@ TEST_F(BeadOnAWireTest, MinimalCoordinateDeriv) {
 
   // For vertical wire function, velocity derivatives should be gravitational
   // acceleration.
-  dut_min_->reset_wire_parameter_functions(&vert_line_function, 
+  dut_min_->reset_wire_parameter_functions(&vert_line_function,
                                            &inverse_vert_line_function);
   dut_min_->CalcTimeDerivatives(*context_min_, derivatives_min_.get());
   deriv = derivatives_min_->get_vector().CopyToVector();
-  EXPECT_NEAR(deriv.segment(n_vars/2, n_vars/2).norm(), 
+  EXPECT_NEAR(deriv.segment(n_vars/2, n_vars/2).norm(),
               std::abs(dut_min_->get_gravitational_acceleration()), tol);
 }
 
