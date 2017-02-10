@@ -1,9 +1,10 @@
-name: "valkyrie_manip"
+name: "test"
 
 contact_force_basis_weight: 1e-6
 
 centroidal_momentum {
     name: "centroidal"
+
     kp: 0
     kp: 0
     kp: 0
@@ -34,38 +35,19 @@ body_motion {
 }
 
 body_motion {
-    name: "feet"
+    name: "left_foot"
     kp: 20
-    kd: 8
+    kd: 0
     weight: 1
+    weight: 1
+    weight: 1
+    weight: 1
+    weight: 1
+    weight: 2
 }
 
 body_motion {
     name: "pelvis"
-    kp: 20
-    kp: 20
-    kp: 20
-    kp: 0
-    kp: 0
-    kp: 0
-
-    kd: 8
-    kd: 8
-    kd: 8
-    kd: 0
-    kd: 0
-    kd: 0
-
-    weight: 1
-    weight: 1
-    weight: 1
-    weight: 0
-    weight: 0
-    weight: 0
-}
-
-body_motion {
-    name: "torso"
     kp: 20
     kp: 20
     kp: 20
@@ -98,7 +80,14 @@ dof_motion {
 dof_motion {
     name: "floating_base"
     kp: 0
-    kd: 0
+
+    kd: 1
+    kd: 2
+    kd: 3
+    kd: 4
+    kd: 5
+    kd: 6
+
     weight: 0
 }
 
@@ -111,16 +100,9 @@ dof_motion {
 
 dof_motion {
     name: "right_arm"
-    kp: 10
-    kd: 3
-    weight: -1
-}
-
-dof_motion {
-    name: "neck"
-    kp: 10
-    kd: 3
-    weight: -1
+    kp: 20
+    kd: 11
+    weight: 1
 }
 
 contact {
@@ -138,12 +120,12 @@ contact {
         y: 0
         z: 1
     }
-    num_basis_per_contact_point: 4
+    num_basis_per_contact_point: 3
 }
 
 contact {
-    name: "feet"
-    weight: 1e5
+    name: "left_foot"
+    weight: -1
     kd: 8
     mu: 1
     contact_point {
@@ -171,6 +153,5 @@ contact {
         y: 0
         z: 1
     }
-    num_basis_per_contact_point: 4
+    num_basis_per_contact_point: 5
 }
-
