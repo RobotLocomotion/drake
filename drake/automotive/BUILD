@@ -348,6 +348,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "monolane_onramp_merge_test",
+    deps = [
+        "//drake/automotive:monolane_onramp_merge",
+    ],
+)
+
+drake_cc_googletest(
     name = "simple_car_to_euler_floating_joint_test",
     deps = [
         "//drake/automotive:simple_car",
