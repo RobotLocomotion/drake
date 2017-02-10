@@ -109,6 +109,11 @@ drake_cc_googletest(
         "config/valkyrie.id_controller_config",
         "//drake/examples/Valkyrie:models",
     ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
     deps = [
         ":control_utils",
         ":qp_controller",

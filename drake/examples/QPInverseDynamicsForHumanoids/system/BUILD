@@ -61,6 +61,11 @@ drake_cc_binary(
         "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",
         "//drake/examples/Valkyrie:models",
     ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
     deps = [
         ":joint_level_controller_system",
         ":plan_eval_system",
