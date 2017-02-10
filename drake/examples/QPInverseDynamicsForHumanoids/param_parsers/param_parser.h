@@ -213,10 +213,10 @@ class ParamSet {
    *
    * @throws std::runtime_error if the config file is not formatted correctly.
    */
-  void LoadFromYAMLConfigFile(
-      const YAML::Node& config,
-      const RigidBodyTreeAliasGroups<double>& alias_group);
 
+  void LoadFromFile(
+      const std::string& config_path,
+      const RigidBodyTreeAliasGroups<double>& alias_group);
   /**
    * Returns a map from body names to ContactInformation, where the body names
    * belong to the body group specified by @p group_name in @p alias_group.
