@@ -28,7 +28,7 @@ class ParamParserTests : public ::testing::Test {
     std::string controller_config_name =
         drake::GetDrakePath() +
         "/examples/QPInverseDynamicsForHumanoids/"
-        "param_parsers/test/params.yaml";
+        "param_parsers/test/params.id_controller_config";
 
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -37,8 +37,7 @@ class ParamParserTests : public ::testing::Test {
     rbt_alias_ = std::make_unique<RigidBodyTreeAliasGroups<double>>(*robot_);
     rbt_alias_->LoadFromFile(alias_groups_config_name);
 
-    paramset_.LoadFromYAMLConfigFile(YAML::LoadFile(controller_config_name),
-                                     *rbt_alias_);
+    paramset_.LoadFromFile(controller_config_name, *rbt_alias_);
   }
 
   std::unique_ptr<RigidBodyTree<double>> robot_;

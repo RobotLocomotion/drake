@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package drake.examples.qp_inverse_dynamics;
+package drake.examples.qp_inverse_dynamics.param_parsers.protobuf_msg;
 
 // Next ID: 3
 message AliasGroup {

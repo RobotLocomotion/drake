@@ -58,7 +58,7 @@ drake_cc_googletest(
     name = "rigid_body_tree_alias_groups_test",
     srcs = ["test/rigid_body_tree_alias_groups_test.cc"],
     data = [
-        "test/full.alias_groups",
+        "test/test.alias_groups",
         "//drake/multibody:test_models",
     ],
     deps = [
@@ -72,8 +72,8 @@ drake_cc_googletest(
     name = "param_parser_test",
     srcs = ["test/param_parser_test.cc"],
     data = [
-        "test/params.yaml",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",
+        "test/params.alias_groups",
+        "test/params.id_controller_config",
         "//drake/examples/Valkyrie:models",
     ],
     deps = [
