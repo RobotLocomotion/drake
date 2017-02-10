@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/id_controller_params.pb.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/id_controller_config.pb.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 
@@ -134,7 +134,7 @@ class ParamSet {
 
   /**
    * Loads parameters from a config file for the inverse dynamics controller.
-   * The format of the config file is defined in id_controller_params.proto.
+   * The format of the config file is defined in id_controller_config.proto.
    *
    * For the protobuf_msg::ContactParam and protobuf_msg::AccelerationParam,
    * the `name` field should correspond to either a body group or joint group
