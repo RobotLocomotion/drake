@@ -22,6 +22,7 @@ drake_cc_library(
     deps = [
         "@yaml_cpp//:lib",
         ":rigid_body_tree_alias_groups",
+        ":id_controller_params",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
     ],
 )
@@ -30,6 +31,13 @@ cc_proto_library(
     name = "alias_groups",
     srcs = [
         "alias_groups.proto",
+    ],
+)
+
+cc_proto_library(
+    name = "id_controller_params",
+    srcs = [
+        "id_controller_params.proto",
     ],
 )
 

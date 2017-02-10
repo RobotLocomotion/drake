@@ -121,6 +121,8 @@ void RigidBodyTreeAliasGroups<T>::LoadFromFile(
     AddJointGroup(group.name(), std::vector<std::string>(group.member().begin(),
                                                          group.member().end()));
   }
+
+
 }
 
 template class RigidBodyTreeAliasGroups<double>;

@@ -32,7 +32,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
           "config/valkyrie.alias_groups";
   std::string controller_config =
       drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
-          "config/controller.yaml";
+          "config/valkyrie.id_controller_config";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -44,8 +44,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
 
   // Controller config
   param_parsers::ParamSet paramset;
-  paramset.LoadFromYAMLConfigFile(YAML::LoadFile(controller_config),
-                                  alias_groups);
+  paramset.LoadFromFile(controller_config, alias_groups);
 
   HumanoidStatus robot_status(*robot, alias_groups);
 

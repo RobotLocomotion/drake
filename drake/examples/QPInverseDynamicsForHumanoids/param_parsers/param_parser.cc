@@ -1,5 +1,11 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
 
+#include <fcntl.h>
+
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "google/protobuf/text_format.h"
+
 #include "drake/common/drake_assert.h"
 #include "drake/util/drakeUtil.h"
 
@@ -10,6 +16,7 @@ namespace param_parsers {
 
 namespace {
 
+/*
 template <typename Type>
 std::vector<Type> ParseYAMLNodeAsVector(const YAML::Node& node) {
   std::vector<Type> values;
@@ -191,6 +198,7 @@ inline DesiredMotionParam ParseDesiredMotionParam6(
     const YAML::Node& config, const DesiredMotionParam* def_param) {
   return ParseDesiredMotionParam(config, 6, def_param);
 }
+*/
 
 // Attempts to find a Param with name. If name doesn't exist, returns the
 // default param. If default doesn't exist, throws an exception.
@@ -215,6 +223,46 @@ const ParamType& FindParam(
   return *param;
 }
 
+ContactParam ParseContactParam(const protobuf_msg::ContactParam& config) {
+  ContactParam param;
+
+  param.name = config.name();
+  param.contact_points.resize(3, config.contact_point_size());
+  for (int i = 0; i < config.contact_point_size(); i++) {
+    param.contact_points.col(i) = Vector3<double>(config.contact_point(i).x(),
+                                                  config.contact_point(i).y(),
+                                                  config.contact_point(i).z());
+  }
+  param.normal = Vector3<double>(config.contact_normal().x(),
+                                 config.contact_normal().y(),
+                                 config.contact_normal().z());
+  param.num_basis_per_contact_point = config.num_basis_per_contact_point();
+  param.mu = config.mu();
+  param.Kd = config.kd();
+  param.weight = config.weight();
+
+  return param;
+}
+
+DesiredMotionParam ParseDesiredMotionParam(const protobuf_msg::AccelerationParam& config) {
+  DesiredMotionParam param;
+
+  param.name = config.name();
+  DRAKE_DEMAND(config.kp_size() == config.kd_size() && config.kp_size() == config.weight_size());
+
+  int dim = config.kp_size();
+  param.Kp.resize(dim);
+  param.Kd.resize(dim);
+  param.weight.resize(dim);
+  for (int i = 0; i < dim; ++i) {
+    param.Kp(i) = config.kp(i);
+    param.Kd(i) = config.kd(i);
+    param.weight(i) = config.weight(i);
+  }
+
+  return param;
+}
+
 // Returns a parameter map (`M`) from body names to parameters of type
 // ParamType. The YAML node @p config is assumed to be formatted as a collection
 // of entries, where each entry is a `<key, content>` pair. This function first
@@ -233,6 +281,8 @@ const ParamType& FindParam(
 // or it fails to parse individual entries, or some group name does not exist in
 // @p alias_group, or attempts to set the same body's parameters multiple times
 // with different values.
+
+/*
 template <typename ParamType>
 std::unordered_map<std::string, ParamType> BuildBodyGroupParamMap(
     const YAML::Node& config,
@@ -292,6 +342,7 @@ std::unordered_map<std::string, ParamType> BuildBodyGroupParamMap(
 
   return params;
 }
+*/
 
 }  // namespace
 
@@ -317,9 +368,165 @@ std::ostream& operator<<(std::ostream& out, const ContactParam& param) {
   return out;
 }
 
+
+
 void ParamSet::LoadFromYAMLConfigFile(
     const YAML::Node& config,
     const RigidBodyTreeAliasGroups<double>& alias_group) {
+
+  protobuf_msg::InverseDynamicsControllerParam id_configs;
+  google::protobuf::io::FileInputStream istream(open("/home/sfeng/code/drake/drake/examples/QPInverseDynamicsForHumanoids/config/valkyrie.id_controller_id_configs", O_RDONLY));
+  DRAKE_DEMAND(google::protobuf::TextFormat::Parse(&istream, &id_configs));
+  istream.Close();
+
+  name_ = id_configs.name();
+
+  // Contact force basis regularization weight.
+  basis_regularization_weight_ = id_configs.contact_force_basis_weight();
+
+  // Centroidal momentum.
+  centroidal_momentum_dot_params_ = ParseDesiredMotionParam(id_configs.centroidal_momentum());
+
+  // Contacts.
+  for (const auto& contact_config : id_configs.contact()) {
+    ContactParam contact_param = ParseContactParam(contact_config);
+    const std::string& group_name = contact_config.name();
+    // Default contact param
+    if (group_name.compare("default") == 0) {
+      // Checks if default has already been defined.
+      if (contact_params_.find(contact_param.name) != contact_params_.end()) {
+        throw std::runtime_error("Default param cannot be specified multiple times.");
+      }
+      contact_params_.emplace("default", contact_param);
+    } else {
+      // group_name exists.
+      if (alias_group.has_body_group(group_name)) {
+        // Makes a param entry for each body in this body group.
+        const std::vector<const RigidBody<double>*> bodies =
+          alias_group.get_body_group(group_name);
+        for (const RigidBody<double>* body : bodies) {
+          contact_param.name = body->get_name();
+
+          auto find_res = contact_params_.find(contact_param.name);
+          // If this body already has a contact param defined, checks that they
+          // are the same. Throws if they are not.
+          if (find_res != contact_params_.end()) {
+            if (contact_param != find_res->second) {
+              std::string error_msg =
+                "Param for " + contact_param.name +
+                " is specified twice, and they are different.";
+              throw std::runtime_error(error_msg);
+            }
+          } else {
+            contact_params_.emplace(contact_param.name, contact_param);
+          }
+        }
+      } else {
+        std::string error_msg = "Param for unknown body group: " + group_name;
+        throw std::runtime_error(error_msg);
+      }
+    }
+  }
+
+  // Body motion.
+  for (const auto& body_motion_config : id_configs.body_motion()) {
+    DesiredMotionParam body_motion_param = ParseDesiredMotionParam(body_motion_config);
+    DRAKE_ASSERT(body_motion_param.Kp.size() == 6);
+
+    const std::string& group_name = body_motion_config.name();
+    // Default body motion param
+    if (group_name.compare("default") == 0) {
+      // Checks if default has already been defined.
+      if (body_motion_params_.find(body_motion_param.name) != body_motion_params_.end()) {
+        throw std::runtime_error("Default param cannot be specified multiple times.");
+      }
+      body_motion_params_.emplace("default", body_motion_param);
+    } else {
+      // group_name exists.
+      if (alias_group.has_body_group(group_name)) {
+        // Makes a param entry for each body in this body group.
+        const std::vector<const RigidBody<double>*> bodies =
+          alias_group.get_body_group(group_name);
+        for (const RigidBody<double>* body : bodies) {
+          body_motion_param.name = body->get_name();
+
+          auto find_res = body_motion_params_.find(body_motion_param.name);
+          // If this body already has a body_motion param defined, checks that they
+          // are the same. Throws if they are not.
+          if (find_res != body_motion_params_.end()) {
+            if (body_motion_param != find_res->second) {
+              std::string error_msg =
+                "Param for " + body_motion_param.name +
+                " is specified twice, and they are different.";
+              throw std::runtime_error(error_msg);
+            }
+          } else {
+            body_motion_params_.emplace(body_motion_param.name, body_motion_param);
+          }
+        }
+      } else {
+        std::string error_msg = "Param for unknown body group: " + group_name;
+        throw std::runtime_error(error_msg);
+      }
+    }
+  }
+
+  // Dof motion.
+  const RigidBodyTree<double>& robot = alias_group.get_tree();
+  bool has_default_dof_motion_param = false;
+  DesiredMotionParam dof_motion_param, default_dof_motion_param;
+
+  for (const auto& dof_config : id_configs.dof_motion()) {
+    if (dof_config.name().compare("default") == 0) {
+      if (!has_default_dof_motion_param) {
+        default_dof_motion_param = ParseDesiredMotionParam(dof_config);
+        DRAKE_ASSERT(default_dof_motion_param.Kp.size() == 1);
+        has_default_dof_motion_param = true;
+      } else {
+        throw std::runtime_error("Default param cannot be specified multiple times.");
+      }
+    }
+  }
+
+  // Initializes everything to default.
+  dof_motion_params_.resize(robot.get_num_velocities(), default_dof_motion_param);
+
+  std::string dof_name;
+  for (const auto& dof_config : id_configs.dof_motion()) {
+    // Skips default param
+    if (dof_config.name().compare("default") == 0)
+      continue;
+
+    dof_motion_param = ParseDesiredMotionParam(dof_config);
+    DRAKE_ASSERT(dof_motion_param.Kp.size() == 1);
+
+    const std::string& group_name = dof_config.name();
+
+    if (alias_group.has_velocity_group(group_name)) {
+      const std::vector<int>& v_indices =
+        alias_group.get_velocity_group(group_name);
+      for (int dof_idx : v_indices) {
+        dof_name = robot.get_velocity_name(dof_idx);
+        dof_name = dof_name.substr(0, dof_name.size() - 3);
+
+        dof_motion_param.name = dof_name;
+
+        if (dof_motion_params_.at(dof_idx) != default_dof_motion_param &&
+            dof_motion_params_.at(dof_idx) != dof_motion_param) {
+          std::string error_msg = "Param for " + dof_name +
+            " is specified twice, and they are different.";
+          throw std::runtime_error(error_msg);
+        } else {
+          dof_motion_params_.at(dof_idx) = dof_motion_param;
+        }
+      }
+    } else {
+      std::string error_msg = "Param for unknown dof group: " + group_name;
+      throw std::runtime_error(error_msg);
+    }
+  }
+
+  /*
   // Parses section: Contacts.
   YAML::Node contact = config["Contacts"];
   contact_params_ = BuildBodyGroupParamMap<ContactParam>(contact, alias_group,
@@ -392,6 +599,7 @@ void ParamSet::LoadFromYAMLConfigFile(
   centroidal_momentum_dot_params_ =
       ParseDesiredMotionParam6(centroidal_momentum, nullptr);
   centroidal_momentum_dot_params_.name = "centroidal_momentum";
+  */
 }
 
 ContactInformation ParamSet::MakeContactInformationFromParam(
