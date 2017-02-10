@@ -880,35 +880,28 @@ void LinearProgram3::CheckSolution() const {
                               MatrixCompareType::absolute));
 }
 
-void RunLinearPrograms(const MathematicalProgramSolverInterface& solver) {
-  if (!solver.available()) {
-    return;
+std::vector<std::shared_ptr<LinearProgram>> GetLinearPrograms() {
+  std::vector<std::shared_ptr<LinearProgram>> lin_progs;
+  for (const auto& cnstr_form : linear_constraint_form()) {
+    std::shared_ptr<LinearProgram> prob_feas = std::make_shared<LinearFeasibilityProgram>(cnstr_form);
+    lin_progs.push_back(prob_feas);
   }
-  for (auto cnstr_form : linear_constraint_form()) {
-    LinearFeasibilityProgram prob_feas(cnstr_form);
-    RunSolver(prob_feas.prog(), solver);
-    prob_feas.CheckSolution();
-  }
+  for (const auto& cost_form : linear_cost_form()) {
+    for (const auto& cnstr_form : linear_constraint_form()) {
+      std::shared_ptr<LinearProgram> prob0 = std::make_shared<LinearProgram0>(cost_form, cnstr_form);
+      lin_progs.push_back(prob0);
 
-  for (auto cost_form : linear_cost_form()) {
-    for (auto cnstr_form : linear_constraint_form()) {
-      LinearProgram0 prob0(cost_form, cnstr_form);
-      RunSolver(prob0.prog(), solver);
-      prob0.CheckSolution();
+      std::shared_ptr<LinearProgram> prob1 = std::make_shared<LinearProgram1>(cost_form, cnstr_form);
+      lin_progs.push_back(prob1);
 
-      LinearProgram1 prob1(cost_form, cnstr_form);
-      RunSolver(prob1.prog(), solver);
-      prob1.CheckSolution();
+      std::shared_ptr<LinearProgram> prob2 = std::make_shared<LinearProgram2>(cost_form, cnstr_form);
+      lin_progs.push_back(prob2);
 
-      LinearProgram2 prob2(cost_form, cnstr_form);
-      RunSolver(prob2.prog(), solver);
-      prob2.CheckSolution();
-
-      LinearProgram3 prob3(cost_form, cnstr_form);
-      RunSolver(prob3.prog(), solver);
-      prob3.CheckSolution();
+      std::shared_ptr<LinearProgram> prob3 = std::make_shared<LinearProgram3>(cost_form, cnstr_form);
+      lin_progs.push_back(prob3);
     }
   }
+  return lin_progs;
 }
 }  // namespace test
 }  // namespace solvers

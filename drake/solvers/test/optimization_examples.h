@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -25,7 +27,7 @@ enum class ConstraintForm {
 
 class LinearProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram)
+  //DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram)
 
   LinearProgram(CostForm cost_form, ConstraintForm cnstr_form);
 
@@ -575,6 +577,8 @@ class LinearProgram1 : public LinearProgram {
 // The optimal solution is at (0, 0, 15, 25/3)
 class LinearProgram2 : public LinearProgram {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram2)
+
   LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form);
 
   void CheckSolution() const override;
@@ -596,6 +600,8 @@ class LinearProgram2 : public LinearProgram {
 // The optimal solution is at (8, 3, 11)
 class LinearProgram3 : public LinearProgram {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram3)
+
   LinearProgram3(CostForm cost_form, ConstraintForm cnstr_form);
 
   void CheckSolution() const override;
@@ -604,7 +610,12 @@ class LinearProgram3 : public LinearProgram {
   VectorDecisionVariable<3> x_;
   Eigen::Vector3d x_expected_;
 };
-void RunLinearPrograms(const MathematicalProgramSolverInterface& solver);
+
+class LinearProgramTest : public ::testing::TestWithParam<std::shared_ptr<LinearProgram>> {
+};
+
+std::vector<std::shared_ptr<LinearProgram>> GetLinearPrograms();
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

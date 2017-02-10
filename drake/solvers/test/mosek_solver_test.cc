@@ -9,10 +9,18 @@
 namespace drake {
 namespace solvers {
 namespace test {
-GTEST_TEST(testLP, LinearPrograms) {
+
+class MosekLinearProgramTest : public LinearProgramTest {
+
+};
+
+TEST_P(MosekLinearProgramTest, TestLP) {
   MosekSolver solver;
-  RunLinearPrograms(solver);
+  RunSolver(GetParam()->prog(), solver);
+  GetParam()->CheckSolution();
 }
+
+INSTANTIATE_TEST_CASE_P(MosekTest, MosekLinearProgramTest, ::testing::ValuesIn(GetLinearPrograms()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

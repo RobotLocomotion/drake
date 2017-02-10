@@ -9,10 +9,17 @@
 namespace drake {
 namespace solvers {
 namespace test {
-GTEST_TEST(testLP, LinearPrograms) {
+class GurobiLinearProgramTest : public LinearProgramTest {
+
+};
+
+TEST_P(GurobiLinearProgramTest, TestLP) {
   GurobiSolver solver;
-  RunLinearPrograms(solver);
+  RunSolver(GetParam()->prog(), solver);
+  GetParam()->CheckSolution();
 }
+
+INSTANTIATE_TEST_CASE_P(GurobiTest, GurobiLinearProgramTest, ::testing::ValuesIn(GetLinearPrograms()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
