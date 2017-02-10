@@ -878,6 +878,9 @@ void LinearProgram3::CheckSolution() const {
 }
 
 void RunLinearPrograms(const MathematicalProgramSolverInterface& solver) {
+  if (!solver.available()) {
+    return;
+  }
   for (auto cnstr_form : linear_constraint_form) {
     LinearFeasibilityProgram prob_feas(cnstr_form);
     RunSolver(prob_feas.prog(), solver);
