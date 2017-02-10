@@ -274,7 +274,6 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
   bool solution_found =
       (system.CalcConstraintErrorNorm(*context, err) < constraint_tol_);
 
-  // TODO(edrumwri): Fix this comment.
   // If the error is acceptable, use the updated velocity and position.
   if (!solution_found) {
     // Given the starting value for λ, iteratively compute the correct
@@ -326,10 +325,11 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
         break;
     }
 
-    // TODO(edrumwri): If the residual error is too large, throw an exception
+    // If the residual error is too large, throw an exception
     // indicating that a smaller step size should be attempted.
     if (!solution_found) {
-      // TODO(edrumwri): Throw an exception.
+      // TODO(edrumwri): Throw the exception.
+      DRAKE_ABORT_MSG("Non-convergence of Newton-Raphson not yet handled.");
     }
   }
 
@@ -348,9 +348,23 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
 /// @param gradient The gradient of the objective function (i.e., the gradient
 ///                 of the Euclidean norm of the vector output of the algebraic
 ///                 constraint equations and then scaling by 1/2).
-/// \returns a structure containing the new value of λ, the new value of the
+/// @returns a structure containing the new value of λ, the new value of the
 ///          objective function, and the new outputs of the algebraic constraint
 ///          equations.
+/// @note This routine is an implementation of the line search algorithm
+///       described in "Numerical Recipes in C" (Section 9.7). The routine
+///       does not attempt to optimize α, as common wisdom indicates that
+///       approach to be computationally inefficient. Instead, this algorithm
+///       seeks the α for which (1) the average decrease of the objective (f)
+///       is at least some fraction of the initial rate of decrease Δλ⋅∇, where
+///       ∇ is @p gradient- this ensures that f does not decrease
+///       too slowly relative to the step lengths- and (2) the rate of decrease
+///       in the objective at λ+αΔλ is greater than a fraction of the rate of
+///       decrease in f at λ (addressing the problem where the
+///       step lengths are too small relative to the initial rate of decrease
+///       of f). This algorithm attempts to fit a quadratic (for the first
+///       backtracking attempt) or cubic (for subsequent backtracking attempts)
+///       to find a good value for α.
 template <class T>
 typename HalfExplicitDAE1Solver<T>::LineSearchOutput
       HalfExplicitDAE1Solver<T>::search_line(
@@ -362,7 +376,7 @@ typename HalfExplicitDAE1Solver<T>::LineSearchOutput
   Context<T>* context_mut = (Context<T>*) &context;
 
   const double meps = std::numeric_limits<double>::epsilon();
-  const double gamma = 1e-4;          // Rate of decrease constant.
+  const double gamma = 1e-4;               // Rate of decrease constant.
   const double deltal_tol =  meps*100;     // Convergence criterion for Δλ.
 
   // The initial step length scalar- we always try a full Newton step first.
@@ -376,7 +390,7 @@ typename HalfExplicitDAE1Solver<T>::LineSearchOutput
 
   // Set last alpha to NaN both to indicate that this is the first time the
   // loop is being run and to help with debugging in case one or more values
-  // is spuriously not assigned.
+  // is unexpectedly not assigned.
   double last_alpha = std::nan("");
   double last_f = std::nan("");
 
