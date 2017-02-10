@@ -1,7 +1,5 @@
 #pragma once
 
-#pragma once
-
 #include <memory>
 #include <vector>
 
@@ -11,57 +9,111 @@
 namespace drake {
 namespace multibody {
 
+/// This class is used to represent physical quantities that can be expressed as
+/// a pair of three dimensional vectors. These include spatial velocities,
+/// spatial accelerations and spatial forces.
+/// See section @ref multibody_spatial_vectors for a detailed description of the
+/// concept of spatial vectors.
+///
+/// @tparam T The unerlying scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in the containing library.
+/// No other values for T are currently supported.
 template <typename T>
 class SpatialVector {
  public:
+  // Sizes for spatial quantities and its components in three dimensions.
   enum {
     kSpatialVectorSize = 6,
     kSpatialVectorAngularSize = 3,
     kSpatialVectorLinearSize = 3
   };
+  // The type of the underlying in-memory representation using an Eigen vector.
   typedef Eigen::Matrix<T, kSpatialVectorSize, 1> CoeffsEigenType;
 
+  /// Default constructor leaving numerical entries un-initialized to avoid any
+  /// computational cost.
   SpatialVector() {}
 
+  /// SpatialVector constructor from an angular component @p w and a linear
+  /// component @p v.
   SpatialVector(const Vector3<T>& w, const Vector3<T>& v) {
     V_ << w, v;
   }
 
+  /// The total size of the concatenation of the angular and linear components.
+  /// In three dimension this is six (6) and it is known at compile time.
   int size() const { return kSpatialVectorSize; }
+
+  /// The size of the angular component.
+  /// In three dimension this is three (3) and it is known at compile time.
   int angular_size() const { return kSpatialVectorAngularSize; }
+
+  /// The size of the linear component.
+  /// In three dimension this is three (3) and it is known at compile time.
   int linear_size() const { return kSpatialVectorLinearSize; }
 
+  /// Const access to the underlying Eigen vector.
   const CoeffsEigenType& get_coeffs() const { return V_;}
 
-  T& operator[](int i) { return V_[i];}
-  const T& operator[](int i) const { return V_[i];}
+  /// Const access to the i-th component of this spatial vector.
+  /// Bounds are only checked in Debug builds for a zero overhead implementation
+  /// in Release builds.
+  const T& operator[](int i) const
+  {
+    DRAKE_ASSERT(0 <= i && i < kSpatialVectorSize);
+    return V_[i];
+  }
 
+  /// Mutable access to the i-th component of this spatial vector.
+  /// Bounds are only checked in Debug builds for a zero overhead implementation
+  /// in Release builds.
+  T& operator[](int i) {
+    DRAKE_ASSERT(0 <= i && i < kSpatialVectorSize);
+    return V_[i];
+  }
+
+  /// Const access to the angular component of this spatial vector.
   const Vector3<T>& angular() const {
     return *reinterpret_cast<const Vector3<T>*>(V_.data());
   }
 
+  /// Mutable access to the angular component of this spatial vector.
   Vector3<T>& angular() {
     return *reinterpret_cast<Vector3<T>*>(V_.data());
   }
 
+  /// Const access to the linear component of this spatial vector.
   const Vector3<T>& linear() const {
     return *reinterpret_cast<const Vector3<T>*>(
         V_.data() + kSpatialVectorAngularSize);
   }
 
+  /// Mutable access to the linear component of this spatial vector.
   Vector3<T>& linear() {
     return *reinterpret_cast<Vector3<T>*>(
         V_.data() + kSpatialVectorAngularSize);
   }
 
+  /// Performs the dot product in R^6 of `this` spatial vector with @p other.
   T dot(const SpatialVector& V) const {
     return V_.dot(V.V_);
   }
 
+  /// Returns a (const) bare pointer to the unerlying data.
   const T* data() const { return V_.data(); }
 
+  /// Returns a (mutable) bare pointer to the unerlying data.
   T* mutable_data() { return V_.data(); }
 
+  /// @returns `true` if `other` is within a precision given by @p tolerance.
+  /// The comparison is performed by comparing the angular (linear) component of
+  /// `this` spatial vector with the angular (linear) component of @p other
+  /// using the fuzzy comparison provided by Eigen's method isApprox().
   bool IsApprox(const SpatialVector<T>& other,
                 double tolerance = Eigen::NumTraits<T>::epsilon()) {
     return linear().isApprox(other.linear(), tolerance) &&
@@ -77,6 +129,8 @@ class SpatialVector {
 #endif
 };
 
+/// Insertion operator to write SpatialVectors into a `std::ostream`.
+/// Especially useful for debugging.
 template <typename T> inline
 std::ostream& operator<<(std::ostream& o, const SpatialVector<T>& V) {
   o << "[" << V[0];
@@ -85,211 +139,13 @@ std::ostream& operator<<(std::ostream& o, const SpatialVector<T>& V) {
   return o;
 }
 
-/// Multiplication from the left by a scalar.
+/// Multiplication of a SpatialVector from the left by a scalar.
 template <typename T>
 inline SpatialVector<T> operator*(
     const T& s, const SpatialVector<T>& V)
 {
   return SpatialVector<T>(s * V.angular(), s * V.linear());
 }
-
-namespace internal {
-// Helper traits-like struct to determine the number of columns at compile time
-// of the internal Eigen representation of SpatialVelocityJacobian.
-template <int ndofs>
-struct SpatialVelocityJacobianMaxSize {
-  enum { kMaxCols = ndofs};
-};
-
-// Specialization to Eigen::Dynamic. In this case we want a maximum fixed size
-// of six (6) to avoid dynamic memory allocation for fast computations.
-// See Eigen documentation here:
-// http://eigen.tuxfamily.org/dox/classEigen_1_1Matrix.html#maxrows
-template <>
-struct SpatialVelocityJacobianMaxSize<Eigen::Dynamic> {
-  enum { kMaxCols = 6};
-};
-}  // namespace internal
-
-// Forward declaration of the SpatialVelocityJacobian's transpose.
-template <typename T, int ndofs> class SpatialVelocityJacobianTranspose;
-
-/// Class representing the Hinge matrix...
-/// Essentially a matrix containing a SpatialVector in the column corresponding
-/// to a generalized velocity.
-template <typename T, int ndofs>
-class SpatialVelocityJacobian {
- public:
-  enum {
-    kSpatialVectorSize = 6,
-    kSpatialVectorAngularSize = 3,
-    kSpatialVectorLinearSize = 3,
-    kMaxCols = internal::SpatialVelocityJacobianMaxSize<ndofs>::kMaxCols
-  };
-  typedef Eigen::Matrix<T,
-                        kSpatialVectorSize, ndofs, /*size*/
-                        0, /*options*/
-                        kSpatialVectorSize, kMaxCols> /*max size*/
-      CoeffsEigenType;
-
-  /// Default constructor. For a dynamic-size Jacobian the number of columns is
-  /// initially zero. The method resize() can be called to allocate a given
-  /// number of columns on a dynamic-size Jacobian. resize() however will
-  /// trigger an assertion on fixed-size Jacobians.
-  SpatialVelocityJacobian() {}
-
-  /// This constructor is used for spatial velocity Jacobians of dynamic size.
-  /// The input parameter @p num_velocities has no effect for fixed sized
-  SpatialVelocityJacobian(int num_velocities) :
-      J_(int(kSpatialVectorSize), num_velocities) {}
-
-  /// Dynamically allocates @p num_columns for dynamic-size Jacobians.
-  /// This method will trigger an assertion for fixed-size Jacobians.
-  void resize(int num_columns) {
-    J_.resize(kSpatialVectorSize, num_columns);
-  }
-
-  int rows() const { return J_.rows(); }
-  int cols() const { return J_.cols(); }
-
-  const T& operator()(int i, int j) const { return J_(i, j);}
-
-  const SpatialVector<T>& col(int i) const {
-    DRAKE_ASSERT(0 <= i && i < cols());
-    // Assumes column major order. Eigen's default.
-    return *reinterpret_cast<const SpatialVector<T>*>(
-        J_.data() + kSpatialVectorSize * i);
-  }
-
-  SpatialVector<T>& col(int i) {
-    DRAKE_ASSERT(0 <= i && i < cols());
-    // Assumes column major order. Eigen's default.
-    return *reinterpret_cast<SpatialVector<T>*>(
-        J_.data() + kSpatialVectorSize * i);
-  }
-
-  SpatialVelocityJacobianTranspose<T, ndofs> transpose() const;
-
-  const CoeffsEigenType& get_coeffs() const { return J_;}
-
-  CoeffsEigenType& get_mutable_coeffs() { return J_;}
-
-  static const SpatialVelocityJacobian& View(const T* data) {
-    return *reinterpret_cast<const SpatialVelocityJacobian*>(data);
-  }
-
-  static SpatialVelocityJacobian& MutableView(T* data) {
-    return *reinterpret_cast<SpatialVelocityJacobian*>(data);
-  }
-
-  const T* mutable_data() const { return J_.data(); }
-
-  T* mutable_data() { return J_.data(); }
-
-  bool IsApprox(const SpatialVelocityJacobian& other,
-                double tolerance = Eigen::NumTraits<T>::epsilon()) {
-    return get_coeffs().isApprox(other.get_coeffs(), tolerance);
-  }
-
- private:
-  CoeffsEigenType J_;
-
- public:
-#ifndef SWIG
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
-};
-
-/// Operator multiplication of a rotation matrix @p R_AB times a
-/// SpatialVelocityJacobian @p J_XY_B. This operator re-expresses the angular
-/// and linear components of the Jacobian @p J_XY_B in a frame `A`.
-/// Essentially for each column `V_XY_B` in `J_XY_B` this operator performs the
-/// operation:
-///   Vw_XY_A = R_AB * Vw_XY_B
-///   Vv_XY_A = R_AB * Vv_XY_B
-/// where:
-///   Vw_XY = Vw_XY.angular(), the angular component of the spatial vector.
-///   Vv_XY = Vv_XY.linear() , the linear component of the spatial vector.
-template <typename T, int ndofs>
-inline SpatialVelocityJacobian<T, ndofs> operator*(
-    const Matrix3<T>& R_AB, const SpatialVelocityJacobian<T, ndofs>& J_XY_B)
-{
-  SpatialVelocityJacobian<T, ndofs> J_XY_A;
-  auto& Eigen_J_XY_A = J_XY_A.get_mutable_coeffs();
-  const auto& Eigen_J_XY_B = J_XY_B.get_coeffs();
-
-  // Re-express angular components.
-  // TODO: have a SpatialVelocityJacobian::topRows (or similar name).
-  Eigen_J_XY_A.template topRows<3>().noalias() =
-      R_AB * Eigen_J_XY_B.template topRows<3>();
-
-  // Re-express linear components.
-  Eigen_J_XY_A.template bottomRows<3>().noalias() =
-      R_AB * Eigen_J_XY_B.template bottomRows<3>();
-
-  return J_XY_A;
-};
-
-template <typename T, int ndofs>
-class SpatialVelocityJacobianTranspose {
- public:
-  typedef Eigen::Transpose<
-      typename SpatialVelocityJacobian<T, ndofs>::CoeffsEigenType>
-      TransposeEigenType;
-  typedef Eigen::Transpose<
-      const typename SpatialVelocityJacobian<T, ndofs>::CoeffsEigenType>
-      ConstTransposeEigenType;
-
-  explicit SpatialVelocityJacobianTranspose(
-      const SpatialVelocityJacobian<T, ndofs>& H) : H_(H) {}
-
-  int rows() const { return H_.cols(); }
-  int cols() const { return H_.rows(); }
-
-  const T& operator()(int i, int j) const { return H_(j, i);}
-
-  const ConstTransposeEigenType get_coeffs() const {
-    return H_.get_coeffs().transpose();
-  }
-
-  TransposeEigenType get_mutable_coeffs() {
-    return H_.get_coeffs().transpose();
-  }
-
- private:
-  const SpatialVelocityJacobian<T, ndofs>& H_;
-};
-
-template <typename T, int ndofs>
-inline SpatialVelocityJacobianTranspose<T, ndofs>
-SpatialVelocityJacobian<T, ndofs>::transpose() const {
-  return SpatialVelocityJacobianTranspose<T, ndofs>(*this);
-}
-
-
-/// This defines a SpatialVelocityJacobian with a maximum number of columns at
-/// compile time of six (6).
-/// The biggest reason why you might want to use this class is to avoid dynamic
-/// memory allocation.
-template <typename T>
-using SpatialVelocityJacobianUpTo6 = SpatialVelocityJacobian<T, Eigen::Dynamic>;
-
-template <typename T>
-using SpatialVelocityJacobianUpTo6Transpose =
-SpatialVelocityJacobianTranspose<T, Eigen::Dynamic>;
-
-/// This method multiplies the transpose of a Jacobian matrix Ja with another
-/// Jacobian Jb. The input Jacobians Ja and Jb are expected to be of dynamic
-/// size up-to a maximum of six and therefore the expected result of this
-/// operation is a dynamic sized matrix with a fixed size at compile time of
-/// up-to six rows and columns.
-template <typename T>
-inline MatrixUpTo6<T> operator*(
-    const SpatialVelocityJacobianUpTo6Transpose<T>& Ja,
-    const SpatialVelocityJacobianUpTo6<T>& Jb)
-{
-  return Ja.get_coeffs() * Jb.get_coeffs();
-};
 
 // Forward declaration of the ShiftOperator's transpose.
 template <typename T> class ShiftOperatorTranspose;
@@ -410,41 +266,6 @@ inline SpatialVector<T> operator*(
 {
   return ShiftOperatorTranspose<T>::ShiftSpatialVelocity(
       V_AB_E, phiT_BQ_E.offset());
-}
-
-/// @param[in] phiT_AB_F Transpose of the shift operator from frame A to B
-/// expressed in a frame F.
-/// @param[in] H_FA A spatial velocity Jacobian with each column representing a
-/// spatial velocity of frame A measured and expressed in frame F.
-/// @returns H_FB The spatial velocity jacobain for frame B measured and
-/// expressed in F.
-template <typename T, int ndofs>
-inline SpatialVelocityJacobian<T, ndofs> operator*(
-    const ShiftOperatorTranspose<T>& phiT_BQ_E,
-    const SpatialVelocityJacobian<T, ndofs>& J_AB_E)
-{
-  SpatialVelocityJacobian<T, ndofs> J_AQ_E;
-  auto& Eigen_J_AQ_E = J_AQ_E.get_mutable_coeffs();
-  const auto& Eigen_J_AB_E = J_AB_E.get_coeffs();
-  // Same angular velocity.
-  Eigen_J_AQ_E.template topRows<3>() = Eigen_J_AB_E.template topRows<3>();
-  // Linear velocity v_AQ = v_AB + w_AB.cross(r_BQ).
-  Eigen_J_AQ_E.template bottomRows<3>().noalias() =
-      Eigen_J_AB_E.template bottomRows<3>() +
-          Eigen_J_AB_E.template topRows<3>().colwise().cross(
-              phiT_BQ_E.offset());
-  return J_AQ_E;
-}
-
-template <typename T, int ndofs> inline
-std::ostream& operator<<(std::ostream& o,
-                         const SpatialVelocityJacobian<T, ndofs>& J) {
-  for(int i = 0; i < J.rows(); ++i) {
-    o << "[" << J(i, 0);
-    for (int j = 1; j < J.cols(); ++j) o << " | " << J(i, j);
-    o << "]" << std::endl;
-  }
-  return o;
 }
 
 }  // namespace multibody
