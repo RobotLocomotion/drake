@@ -58,6 +58,15 @@ build:everything --define=WITH_SNOPT=ON
 # This may be useful for developers with unsupported workstation configurations.
 build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 
+### git submodules
+# If a CMake build is performed from the same source tree, it will checkout git
+# submodules, and if they have BUILD files then `bazel build //...` will find
+# them and complain that the paths don't line up correctly anymore.  Here, we
+# manually list out all git submodule externals' BUILD files.
+#
+# TODO(jwnimmer-tri) Remove this once git submodules are no longer used.
+build --deleted_packages=externals/snopt,externals/snopt/cppsrc,externals/snopt/csrc,externals/snopt/libf2c
+
 ### Cpplint. ###
 # By default, cpplint tests are run as part of `bazel test` alongside all of
 # the other compilation and test targets.  This is a convenience shortcut to
