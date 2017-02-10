@@ -184,6 +184,10 @@ EndlessRoadCar<T>::ComputeIdmAccelerations(
     const EndlessRoadOracleOutput<T>& input,
     const EndlessRoadCarConfig<T>& config) const {
 
+  // TODO(maddog@tri.global) These parameters are known to make the maliput
+  //                         road demos in automotive_demo work well.  However,
+  //                         there should be a better mechanism for managing
+  //                         and/or deriving these values.
   // Adapted from https://en.wikipedia.org/wiki/Intelligent_driver_model
   const double v_0{30.0};  // desired velocity in free traffic.
   const double s_0{2.0};  // minimum desired net distance.
