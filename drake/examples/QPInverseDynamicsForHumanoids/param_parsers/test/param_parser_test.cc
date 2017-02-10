@@ -24,7 +24,8 @@ class ParamParserTests : public ::testing::Test {
         "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
     std::string alias_groups_config_name =
         drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/config/valkyrie.alias_groups";
+        "/examples/QPInverseDynamicsForHumanoids/"
+        "param_parsers/test/params.alias_groups";
     std::string controller_config_name =
         drake::GetDrakePath() +
         "/examples/QPInverseDynamicsForHumanoids/"
