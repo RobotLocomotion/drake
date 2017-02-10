@@ -18,7 +18,8 @@ MonolaneOnrampMerge<T>::MonolaneOnrampMerge(const T& lane_length,
                                             const T& lane_width,
                                             const T& driveable_width)
     : lane_bounds_(-lane_width / 2., lane_width / 2.),
-      driveable_bounds_{-driveable_width / 2., driveable_width / 2.} {
+      driveable_bounds_(-driveable_width / 2., driveable_width / 2.),
+      RoadGeometry({"figure-eight"}, kLinearTolerance, kAngularTolerance) {
   Build(lane_length);
 }
 

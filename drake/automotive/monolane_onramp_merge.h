@@ -5,6 +5,7 @@
 
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
+#include "drake/automotive/maliput/monolane/road_geometry.h"
 
 namespace drake {
 namespace maliput {
@@ -14,7 +15,8 @@ const double& kDefaultLaneWidth = 2.;
 const double& kDefaultDriveableWidth = 4.;
 
 template <typename T>
-class MonolaneOnrampMerge {
+// TODO(jadecastro): Derive from RoadGeometry.
+class MonolaneOnrampMerge : public RoadGeometry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MonolaneOnrampMerge)
 
