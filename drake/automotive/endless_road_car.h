@@ -24,7 +24,10 @@ namespace automotive {
 
 /// A non-physical car that operates in LANE-space on an InfiniteCircuitRoad,
 /// i.e., a maliput road network that only has a single Lane and infinite
-/// longitudinal extent.
+/// longitudinal extent.  The car is constrained to operating within the
+/// driveable-bounds of the road network:  a "Magic Guard Rail" feature will
+/// clamp lateral (`r`) derivatives to zero if they would push the car's
+/// position past the driveable-bounds.
 ///
 /// (Elevation-above-road 'h' is implicitly zero, too.)
 ///

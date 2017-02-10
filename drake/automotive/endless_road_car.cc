@@ -259,8 +259,12 @@ void EndlessRoadCar<T>::ImplCalcTimeDerivatives(
   const double heading_dot =
       (state.speed() == 0.) ? 0. : (accelerations.lateral / state.speed());
   double speed_dot = accelerations.forward;
-  // Speed should be non-negative, so if it has dipped to/below
-  // zero, then we want to clamp any more negative acceleration.
+  // TODO(maddog@tri.global) Speed should be non-negative (because braking
+  //                         deceleration should cause car to stop, not to
+  //                         travel in reverse.)  Until we have a way to
+  //                         express this constraint to the simulator (and/or
+  //                         integrator, etc), clamp negative accelerations
+  //                         if speed <= 0.
   if ((state.speed() <= 0.) && (speed_dot < 0.)) {
     drake::log()->warn(
         "Clamping negative acceleration for id {}:  speed {}  forward accel {}",
