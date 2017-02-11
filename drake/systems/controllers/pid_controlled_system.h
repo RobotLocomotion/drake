@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -60,6 +61,8 @@ namespace systems {
 template <typename T>
 class PidControlledSystem : public Diagram<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidControlledSystem)
+
   /// A constructor where the gains are scalar values and all of the plant's
   /// output port zero is part of the feedback signal.
   ///

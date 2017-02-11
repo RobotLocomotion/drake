@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -25,6 +26,8 @@ namespace systems {
 template <typename T>
 class GravityCompensator : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GravityCompensator)
+
   /// Constructs a gravity compensator for the given @tree. The provided @p tree
   /// must be fully actuated, i.e., the number of actuators must equal the
   /// number of positions in the RigidBodyTree. Otherwise, the process will

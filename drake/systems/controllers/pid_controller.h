@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/adder.h"
@@ -34,6 +35,8 @@ namespace systems {
 template <typename T>
 class PidController : public Diagram<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
+
   /// Constructs a %PidController system where all of the gains are the same
   /// value.
   ///
