@@ -6,20 +6,12 @@
 
 #include "gtest/gtest.h"
 
-#include <iostream>
-#include <sstream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-#define PRINT_VARn(x) std::cout <<  #x ":\n" << x << std::endl;
-
 namespace drake {
 namespace multibody {
 namespace math {
 namespace {
 
-using Eigen::AngleAxisd;
-using Eigen::Matrix;
 using Eigen::Vector3d;
-using Eigen::Matrix3d;
 
 // Tests default construction and proper sizes at compile time.
 GTEST_TEST(SpatialVector, SizeAtCompileTime) {
@@ -56,7 +48,7 @@ class SpatialVectorTest : public ::testing::Test {
   Vector3d v_XY_A_{1, 2, 0};
 
   // Angular velocity of a frame Y measured in X and expressed in A.
-  Vector3d w_XY_A_{1, 2, 0};
+  Vector3d w_XY_A_{0, 0, 3};
 
   // Spatial velocity of a frame Y measured in X and expressed in A.
   SpatialVector<double> V_XY_A_{w_XY_A_, v_XY_A_};
@@ -125,25 +117,19 @@ TEST_F(SpatialVectorTest, IsApprox) {
   EXPECT_FALSE(V_XY_A_.IsApprox(other, 0.99 * precision));
 }
 
-GTEST_TEST(SpatialAlgebra, SpatialVelocityShift) {
-  // Linear velocity of frame B measured and expressed in frame A.
-  Vector3d v_AB(1, 2, 0);
+// Tests the transformation of a spatial velocity between two frames using the
+// spatial operator and its transpose.
+TEST_F(SpatialVectorTest, ShiftOperator) {
+  // A shift operator representing the rigid body transformation from frame Z
+  // to frame X, expressed in a third frame A.
+  ShiftOperator<double> phi_YZ_A({2, -2, 0});
 
-  // Angular velocity of frame B measured and expressed in frame A.
-  Vector3d w_AB(0, 0, 3);
+  // Perform the actual shift operation.
+  SpatialVector<double> V_XZ_A = phi_YZ_A.transpose() * V_XY_A_;
 
-  // Spatial velocity of frame B with respect to A and expressed in A.
-  SpatialVector<double> V_AB(w_AB, v_AB);
-
-  // A shift operator representing the rigid body transformation from frame B
-  // to frame Q, expressed in A.
-  ShiftOperator<double> phi_BQ_A({2, -2, 0});
-
-  SpatialVector<double> V_AQ = phi_BQ_A.transpose() * V_AB;
-  SpatialVector<double> expected_V_AQ(w_AB, {7, 8, 0});
-
-  EXPECT_TRUE(V_AQ.angular().isApprox(expected_V_AQ.angular()));
-  EXPECT_TRUE(V_AQ.linear().isApprox(expected_V_AQ.linear()));
+  // Verify the result.
+  SpatialVector<double> expected_V_XZ_A(w_XY_A_, {7, 8, 0});
+  EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
 }
 
 }
