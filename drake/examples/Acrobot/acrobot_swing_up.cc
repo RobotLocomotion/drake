@@ -77,7 +77,7 @@ void AddSwingUpTrajectoryParams(
     systems::DircolTrajectoryOptimization* dircol_traj) {
 
   // Current limit for MIT's acrobot is 7-9 Amps, accroding to Michael Posa.
-  const int kTorqueLimit = 8;
+  const double kTorqueLimit = 8;
   const drake::Vector1d umin(-kTorqueLimit);
   const drake::Vector1d umax(kTorqueLimit);
   dircol_traj->AddInputBounds(umin, umax);
