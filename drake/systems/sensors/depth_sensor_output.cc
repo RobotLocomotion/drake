@@ -104,6 +104,13 @@ Matrix3Xd DepthSensorOutput<T>::GetPointCloud() const {
   return result;
 }
 
+template <typename T>
+DepthSensorOutput<T>* DepthSensorOutput<T>::DoClone() const {
+  auto result = new DepthSensorOutput(spec_);
+  result->set_value(this->get_value());
+  return result;
+}
+
 template class DepthSensorOutput<double>;
 
 }  // namespace sensors

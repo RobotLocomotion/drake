@@ -32,6 +32,9 @@ class GyroscopeOutput : public BasicVector<T> {
   /// `[roll, pitch, yaw]`.
   Vector3<T> get_rotational_velocities() const;
   /// @}
+
+ protected:
+  GyroscopeOutput* DoClone() const override;
 };
 
 }  // namespace sensors

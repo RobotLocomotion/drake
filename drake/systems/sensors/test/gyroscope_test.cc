@@ -147,6 +147,15 @@ TEST_F(TestGyroscope, TestNonZeroRotationalVelocity) {
   EXPECT_TRUE(CompareMatrices(gyroscope_output->get_rotational_velocities(),
                               angular_velocity, 1e-10,
                               MatrixCompareType::absolute));
+
+  // Confirms that Clone is correct.
+  std::unique_ptr<BasicVector<double>> cloned_base = gyroscope_output->Clone();
+  const GyroscopeOutput<double>* const cloned_sub =
+      dynamic_cast<const GyroscopeOutput<double>*>(cloned_base.get());
+  ASSERT_NE(cloned_sub, nullptr);
+  EXPECT_TRUE(CompareMatrices(cloned_sub->get_rotational_velocities(),
+                              angular_velocity, 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace

@@ -26,6 +26,13 @@ Vector3<T> GyroscopeOutput<T>::get_rotational_velocities() const {
   return rotational_velocity;
 }
 
+template <typename T>
+GyroscopeOutput<T>* GyroscopeOutput<T>::DoClone() const {
+  auto result = new GyroscopeOutput;
+  result->set_value(this->get_value());
+  return result;
+}
+
 template class GyroscopeOutput<double>;
 
 }  // namespace sensors
