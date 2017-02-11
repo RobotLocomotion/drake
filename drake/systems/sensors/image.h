@@ -3,9 +3,12 @@
 #include <vector>
 #include <utility>
 
+#include "drake/common/default_value.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
+
 namespace systems {
 namespace sensors {
 
@@ -20,6 +23,8 @@ namespace sensors {
 template <typename T>
 class Image {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Image)
+
   /// Image size and number of channel only constructor.  Specifies a width,
   /// height and number of channels for the image.  All the channel values in
   /// all the pixels are initialized with zero.
@@ -41,42 +46,9 @@ class Image {
   Image(int width, int height, int channel, T initial_value)
       : width_(width), height_(height), channel_(channel),
         data_(width * height * channel, initial_value) {
-    DRAKE_ASSERT(width > 0);
-    DRAKE_ASSERT(height > 0);
-    DRAKE_ASSERT(channel > 0);
-  }
-
-  /// Default copy constructor
-  Image(const Image<T>&) = default;
-
-  /// Default assignment operator
-  Image& operator=(const Image<T>&) = default;
-
-  /// Move constructor.  After the move, the sizes of the width and height and
-  /// the number of channels for the source object become zero.
-  Image(Image<T>&& other) : width_(other.width_),
-                            height_(other.height_),
-                            channel_(other.channel_),
-                            data_(std::move(other.data_)) {
-    other.width_ = 0;
-    other.height_ = 0;
-    other.channel_ = 0;
-  }
-
-  /// Move assignment operator.  After the move, the sizes of the width and
-  /// height and the number of channels for the source object become zero.
-  Image& operator=(Image<T>&& other) {
-    if (this != &other) {
-      width_ = other.width_;
-      height_ = other.height_;
-      channel_ = other.channel_;
-      data_ = std::move(other.data_);
-
-      other.width_ = 0;
-      other.height_ = 0;
-      other.channel_ = 0;
-    }
-    return *this;
+    DRAKE_ASSERT(width >= 0);
+    DRAKE_ASSERT(height >= 0);
+    DRAKE_ASSERT(channel >= 0);
   }
 
   /// Return the size of width for the image
@@ -96,8 +68,8 @@ class Image {
   /// them should be greater than zero.  All the values in the pixels become
   /// zero after resize.
   void resize(int width, int height) {
-    DRAKE_ASSERT(width > 0);
-    DRAKE_ASSERT(height > 0);
+    DRAKE_ASSERT(width >= 0);
+    DRAKE_ASSERT(height >= 0);
 
     data_.resize(width * height * channel_);
     std::fill(data_.begin(), data_.end(), 0);
@@ -130,9 +102,9 @@ class Image {
   }
 
  private:
-  int width_;
-  int height_;
-  int channel_;
+  default_value<int> width_;
+  default_value<int> height_;
+  default_value<int> channel_;
   std::vector<T> data_;
 };
 
