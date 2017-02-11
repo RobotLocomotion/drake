@@ -10,7 +10,6 @@ namespace drake {
 namespace solvers {
 namespace test {
 class GurobiLinearProgramTest : public LinearProgramTest {
-
 };
 
 TEST_P(GurobiLinearProgramTest, TestLP) {
@@ -19,7 +18,8 @@ TEST_P(GurobiLinearProgramTest, TestLP) {
   GetParam()->CheckSolution();
 }
 
-INSTANTIATE_TEST_CASE_P(GurobiTest, GurobiLinearProgramTest, ::testing::ValuesIn(GetLinearPrograms()));
+INSTANTIATE_TEST_CASE_P(GurobiTest, GurobiLinearProgramTest,
+                        ::testing::ValuesIn(GetLinearPrograms()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -27,7 +27,7 @@ enum class ConstraintForm {
 
 class LinearProgram {
  public:
-  //DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram)
 
   LinearProgram(CostForm cost_form, ConstraintForm cnstr_form);
 
@@ -611,8 +611,8 @@ class LinearProgram3 : public LinearProgram {
   Eigen::Vector3d x_expected_;
 };
 
-class LinearProgramTest : public ::testing::TestWithParam<std::shared_ptr<LinearProgram>> {
-};
+class LinearProgramTest
+    : public ::testing::TestWithParam<std::shared_ptr<LinearProgram>> {};
 
 std::vector<std::shared_ptr<LinearProgram>> GetLinearPrograms();
 

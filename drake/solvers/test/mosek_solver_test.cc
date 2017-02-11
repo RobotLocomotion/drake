@@ -11,7 +11,6 @@ namespace solvers {
 namespace test {
 
 class MosekLinearProgramTest : public LinearProgramTest {
-
 };
 
 TEST_P(MosekLinearProgramTest, TestLP) {
@@ -20,7 +19,8 @@ TEST_P(MosekLinearProgramTest, TestLP) {
   GetParam()->CheckSolution();
 }
 
-INSTANTIATE_TEST_CASE_P(MosekTest, MosekLinearProgramTest, ::testing::ValuesIn(GetLinearPrograms()));
+INSTANTIATE_TEST_CASE_P(MosekTest, MosekLinearProgramTest,
+                        ::testing::ValuesIn(GetLinearPrograms()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

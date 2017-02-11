@@ -883,21 +883,26 @@ void LinearProgram3::CheckSolution() const {
 std::vector<std::shared_ptr<LinearProgram>> GetLinearPrograms() {
   std::vector<std::shared_ptr<LinearProgram>> lin_progs;
   for (const auto& cnstr_form : linear_constraint_form()) {
-    std::shared_ptr<LinearProgram> prob_feas = std::make_shared<LinearFeasibilityProgram>(cnstr_form);
+    std::shared_ptr<LinearProgram> prob_feas =
+        std::make_shared<LinearFeasibilityProgram>(cnstr_form);
     lin_progs.push_back(prob_feas);
   }
   for (const auto& cost_form : linear_cost_form()) {
     for (const auto& cnstr_form : linear_constraint_form()) {
-      std::shared_ptr<LinearProgram> prob0 = std::make_shared<LinearProgram0>(cost_form, cnstr_form);
+      std::shared_ptr<LinearProgram> prob0 =
+          std::make_shared<LinearProgram0>(cost_form, cnstr_form);
       lin_progs.push_back(prob0);
 
-      std::shared_ptr<LinearProgram> prob1 = std::make_shared<LinearProgram1>(cost_form, cnstr_form);
+      std::shared_ptr<LinearProgram> prob1 =
+          std::make_shared<LinearProgram1>(cost_form, cnstr_form);
       lin_progs.push_back(prob1);
 
-      std::shared_ptr<LinearProgram> prob2 = std::make_shared<LinearProgram2>(cost_form, cnstr_form);
+      std::shared_ptr<LinearProgram> prob2 =
+          std::make_shared<LinearProgram2>(cost_form, cnstr_form);
       lin_progs.push_back(prob2);
 
-      std::shared_ptr<LinearProgram> prob3 = std::make_shared<LinearProgram3>(cost_form, cnstr_form);
+      std::shared_ptr<LinearProgram> prob3 =
+          std::make_shared<LinearProgram3>(cost_form, cnstr_form);
       lin_progs.push_back(prob3);
     }
   }
