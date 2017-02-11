@@ -15,8 +15,10 @@ class MosekLinearProgramTest : public LinearProgramTest {
 
 TEST_P(MosekLinearProgramTest, TestLP) {
   MosekSolver solver;
-  RunSolver(GetParam()->prog(), solver);
-  GetParam()->CheckSolution();
+  if (solver.available()) {
+    RunSolver(GetParam()->prog(), solver);
+    GetParam()->CheckSolution();
+  }
 }
 
 INSTANTIATE_TEST_CASE_P(MosekTest, MosekLinearProgramTest,

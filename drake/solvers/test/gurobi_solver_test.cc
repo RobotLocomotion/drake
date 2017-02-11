@@ -14,8 +14,10 @@ class GurobiLinearProgramTest : public LinearProgramTest {
 
 TEST_P(GurobiLinearProgramTest, TestLP) {
   GurobiSolver solver;
-  RunSolver(GetParam()->prog(), solver);
-  GetParam()->CheckSolution();
+  if (solver.available()) {
+    RunSolver(GetParam()->prog(), solver);
+    GetParam()->CheckSolution();
+  }
 }
 
 INSTANTIATE_TEST_CASE_P(GurobiTest, GurobiLinearProgramTest,
