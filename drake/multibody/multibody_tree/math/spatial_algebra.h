@@ -26,13 +26,13 @@ namespace multibody {
 template <typename T>
 class SpatialVector {
  public:
-  // Sizes for spatial quantities and its components in three dimensions.
+  /// Sizes for spatial quantities and its components in three dimensions.
   enum {
     kSpatialVectorSize = 6,
     kSpatialVectorAngularSize = 3,
     kSpatialVectorLinearSize = 3
   };
-  // The type of the underlying in-memory representation using an Eigen vector.
+  /// The type of the underlying in-memory representation using an Eigen vector.
   typedef Eigen::Matrix<T, kSpatialVectorSize, 1> CoeffsEigenType;
 
   /// Default constructor leaving numerical entries un-initialized to avoid any
