@@ -34,8 +34,8 @@ constexpr int NChooseK(int n, int k) {
 class Monomial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Monomial)
-  /** Default constructor. */
-  Monomial() = default;
+  /** Constructs a monomial equal to 1. Namely the total degree is zero. */
+  Monomial();
   /** Constructs a Monomial from @p powers. */
   explicit Monomial(const std::map<Variable::Id, int>& powers);
   /** Constructs a Monomial from @p var and @exponent. */

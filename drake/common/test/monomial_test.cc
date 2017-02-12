@@ -37,6 +37,16 @@ class MonomialTest : public ::testing::Test {
   }
 };
 
+TEST_F(MonomialTest, MonomialOne) {
+  // Compares monomials all equal to 1, but with different variables.
+  internal::Monomial m1{};
+  internal::Monomial m2({{var_x_.get_id(), 0}});
+  internal::Monomial m3({{var_x_.get_id(), 0}, {var_y_.get_id(), 0}});
+  EXPECT_EQ(m1, m2);
+  EXPECT_EQ(m1, m3);
+  EXPECT_EQ(m2, m3);
+}
+
 TEST_F(MonomialTest, Monomial) {
   // clang-format off
   EXPECT_PRED2(
