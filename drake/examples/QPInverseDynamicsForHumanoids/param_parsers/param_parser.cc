@@ -31,7 +31,8 @@ const ParamType& FindParam(
     if (find_res != params.end()) {
       param = &(find_res->second);
     } else {
-      throw std::runtime_error("Parameter for " + name + " cannot be found. Default parameter doesn't exist either.");
+      throw std::runtime_error("Parameter for " + name + " cannot be found. "
+          "Default parameter doesn't exist either.");
     }
   }
   return *param;
@@ -187,15 +188,16 @@ void ParamSet::LoadFromFile(
           if (find_res != contact_params_.end()) {
             if (contact_param != find_res->second) {
               throw std::runtime_error("Contact param for " +
-                                      contact_param.name +
-                                      " cannot be set to different values.");
+                                       contact_param.name +
+                                       " cannot be set to different values.");
             }
           } else {
             contact_params_.emplace(contact_param.name, contact_param);
           }
         }
       } else {
-        throw std::runtime_error("Contact param for unknown body group: " + group_name);
+        throw std::runtime_error("Contact param for unknown body group: " +
+            group_name);
       }
     }
   }
@@ -233,8 +235,8 @@ void ParamSet::LoadFromFile(
           if (find_res != body_motion_params_.end()) {
             if (body_motion_param != find_res->second) {
               throw std::runtime_error("Body motion param for " +
-                                      body_motion_param.name +
-                                      " cannot be set to different values.");
+                                       body_motion_param.name +
+                                       " cannot be set to different values.");
             }
           } else {
             body_motion_params_.emplace(body_motion_param.name,
@@ -242,7 +244,8 @@ void ParamSet::LoadFromFile(
           }
         }
       } else {
-        throw std::runtime_error("Body motion param for unknown body group: " + group_name);
+        throw std::runtime_error("Body motion param for unknown body group: " +
+            group_name);
       }
     }
   }
@@ -303,14 +306,15 @@ void ParamSet::LoadFromFile(
         if (dof_motion_params_.at(dof_idx) != default_dof_motion_param &&
             dof_motion_params_.at(dof_idx) != single_dof_motion_param) {
           throw std::runtime_error("Dof motion param for " +
-                                  single_dof_motion_param.name +
-                                  " cannot be set to different values.");
+                                   single_dof_motion_param.name +
+                                   " cannot be set to different values.");
         } else {
           dof_motion_params_.at(dof_idx) = single_dof_motion_param;
         }
       }
     } else {
-      throw std::runtime_error("Dof motion param for unknown joint group: " + group_name);
+      throw std::runtime_error("Dof motion param for unknown joint group: " +
+          group_name);
     }
   }
 }
