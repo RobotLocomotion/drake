@@ -152,16 +152,17 @@ Polynomial<double> Expression::ToPolynomial() const {
   return ptr_->ToPolynomial();
 }
 
-std::unordered_map<Expression, double> Expression::DecomposePolynomial() const {
+std::unordered_map<Expression, Expression> Expression::DecomposePolynomial(const Variables& vars) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   DRAKE_DEMAND(is_polynomial());
-  const std::unordered_map<internal::Monomial, double>& monomial_to_coeff_map = ptr_->DecomposePolynomial();
-  const Variables& vars = GetVariables();
+
+  const std::unordered_map<internal::Monomial, Expression>& monomial_to_coeff_map = ptr_->DecomposePolynomial(GetVariables(vars));
+  const Variables& expr_vars = GetVariables();
   std::unordered_map<Variable::Id, Variable> id_to_var_map;
-  for (const Variable& var : vars) {
+  for (const Variable& var : expr_vars) {
     id_to_var_map.emplace(var.get_id(), var);
   }
-  std::unordered_map<Expression, double> monomial_expression_to_coeff_map;
+  std::unordered_map<Expression, Expression> monomial_expression_to_coeff_map;
   monomial_expression_to_coeff_map.reserve(monomial_to_coeff_map.size());
   for (const auto& m : monomial_to_coeff_map) {
     monomial_expression_to_coeff_map.emplace(m.first.ToExpression(id_to_var_map), m.second);
@@ -169,20 +170,6 @@ std::unordered_map<Expression, double> Expression::DecomposePolynomial() const {
   return monomial_expression_to_coeff_map;
 }
 
-void Expression::DecomposePolynomial(
-    Eigen::RowVectorXd* coeffs,
-    Eigen::SparseMatrix<int>* exponent,
-    Eigen::Matrix<Variable, Eigen::Dynamic, 1>* vars) const {
-  DRAKE_DEMAND(is_polynomial());
-  // First get all variables.
-  const Variables& var_set = GetVariables();
-  vars->resize(var_set.size());
-  // Constructs a map between variable ID to the index, such that
-  // vars(map_var_to_idx[v.get_id()]) = v.
-  std::unordered_map<Variable::Id, int> map_var_to_idx;
-  map_var_to_idx.reserve(vars->size());
-  
-}
 
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);

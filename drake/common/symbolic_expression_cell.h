@@ -46,6 +46,7 @@ class ExpressionCell {
    */
   virtual Polynomial<double> ToPolynomial() const = 0;
 
+  std::unordered_map<internal::Monomial, Expression> DecomposePolynomial(const Variables& vars) const = 0;
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
