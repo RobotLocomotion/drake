@@ -79,6 +79,16 @@ void DoEmptyWorldTest(const char* const name,
   EXPECT_TRUE(CompareMatrices(
       expected_output, output->get_vector_data(output_port_index)->get_value(),
       1e-10));
+
+  // Confirms that Clone is correct.
+  std::unique_ptr<BasicVector<double>> cloned_base =
+      output->get_vector_data(output_port_index)->Clone();
+  const DepthSensorOutput<double>* const cloned_sub =
+      dynamic_cast<const DepthSensorOutput<double>*>(cloned_base.get());
+  ASSERT_NE(cloned_sub, nullptr);
+  EXPECT_TRUE(CompareMatrices(
+      expected_output, cloned_sub->get_value(),
+      1e-10));
 }
 
 // Tests the ability to scan the sensor's X,Y plane (i.e., pitch = 0).
