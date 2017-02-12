@@ -212,6 +212,17 @@ Polynomial<double> ExpressionVar::ToPolynomial() const {
   return Polynomial<double>(1.0, var_.get_id());
 }
 
+MonomialToCoeffMap ExpressionVar::DecomposePolynomial(
+    const Variables &vars) const {
+  MonomialToCoeffMap map;
+  map.reserve(1);
+  int power = vars.include(var_) ? 1 : 0;
+  Expression coeff = vars.include(var_) ? Expression(1) : Expression(var_);
+  internal::Monomial m(var_, power);
+  map.insert(std::make_pair<internal::Monomial, Expression>(m, coeff));
+  return map;
+}
+
 double ExpressionVar::Evaluate(const Environment& env) const {
   Environment::const_iterator const it{env.find(var_)};
   if (it != env.cend()) {
@@ -269,6 +280,11 @@ Polynomial<double> ExpressionConstant::ToPolynomial() const {
   return Polynomial<double>(v_);
 }
 
+MonomialToCoeffMap ExpressionConstant::DecomposePolynomial(const Variables &vars) const {
+  MonomialToCoeffMap map;
+  return map;
+}
+
 double ExpressionConstant::Evaluate(const Environment& env) const {
   DRAKE_DEMAND(!std::isnan(v_));
   return v_;
@@ -312,6 +328,10 @@ bool ExpressionNaN::Less(const ExpressionCell& e) const {
 
 Polynomial<double> ExpressionNaN::ToPolynomial() const {
   throw runtime_error("NaN is detected while converting to Polynomial.");
+}
+
+MonomialToCoeffMap ExpressionConstant::DecomposePolynomial(const Variables &vars) const {
+  throw runtime_error("NaN is detected while decomposing a polynomial.");
 }
 
 double ExpressionNaN::Evaluate(const Environment& env) const {
@@ -402,6 +422,11 @@ Polynomial<double> ExpressionAdd::ToPolynomial() const {
                        const pair<Expression, double>& p) {
                       return polynomial + p.first.ToPolynomial() * p.second;
                     });
+}
+
+MonomialToCoeffMap ExpressionAdd::DecomposePolynomial(const Variables &vars) const {
+  MonomialToCoeffMap map;
+  return map;
 }
 
 double ExpressionAdd::Evaluate(const Environment& env) const {

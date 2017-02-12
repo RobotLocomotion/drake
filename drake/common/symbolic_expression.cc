@@ -154,9 +154,8 @@ Polynomial<double> Expression::ToPolynomial() const {
 
 std::unordered_map<Expression, Expression> Expression::DecomposePolynomial(const Variables& vars) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  DRAKE_DEMAND(is_polynomial());
 
-  const std::unordered_map<internal::Monomial, Expression>& monomial_to_coeff_map = ptr_->DecomposePolynomial(GetVariables(vars));
+  const std::unordered_map<internal::Monomial, Expression, hash_value<internal::Monomial>>& monomial_to_coeff_map = ptr_->DecomposePolynomial(vars);
   const Variables& expr_vars = GetVariables();
   std::unordered_map<Variable::Id, Variable> id_to_var_map;
   for (const Variable& var : expr_vars) {
