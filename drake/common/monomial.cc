@@ -35,7 +35,15 @@ Monomial::Monomial(const Variable& var, const int exponent)
 }
 
 Monomial::Monomial(const map<Variable::Id, int>& powers)
-    : total_degree_{TotalDegree(powers)}, powers_(powers) {}
+    : total_degree_{TotalDegree(powers)}, powers_{} {
+  for (const auto& p : powers) {
+    if (p.second > 0) {
+      powers_.insert(p);
+    } else if (p.second < 0) {
+      throw std::runtime_error("The exponent is negative.");
+    }
+  }
+}
 
 size_t Monomial::GetHash() const {
   // To get a hash value for a Monomial, we re-use the hash value for
