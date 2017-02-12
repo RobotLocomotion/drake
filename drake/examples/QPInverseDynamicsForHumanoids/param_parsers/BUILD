@@ -20,8 +20,8 @@ drake_cc_library(
     ],
     linkstatic = 1,
     deps = [
-        ":rigid_body_tree_alias_groups",
         ":id_controller_config",
+        ":rigid_body_tree_alias_groups",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
     ],
 )

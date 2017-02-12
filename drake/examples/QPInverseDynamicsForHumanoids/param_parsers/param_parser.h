@@ -53,7 +53,7 @@ struct DesiredMotionParam {
     weight = VectorX<double>::Zero(dim);
   }
 
-  /// Only check numerical values being equal. Does not check for
+  /// Only checks numerical values being equal. Does not check for
   /// name equality.
   bool operator==(const DesiredMotionParam& other) const {
     if (!kp.isApprox(other.kp)) return false;
@@ -123,8 +123,8 @@ std::ostream& operator<<(std::ostream& out, const ContactParam& param);
  * computed by some feedback policy, which outside the scope of this class.
  *
  * This class relies on Protobuf for text parsing. Uninitialized fields will
- * default to 0 for numerical values, and empty string for strings. It is
- * highly recommended to specify all the values when writing a config file.
+ * default to 0 for numerical values, and empty string for string values. It is
+ * highly recommended that all fields are specified when writing a config file.
  */
 class ParamSet {
  public:
@@ -136,11 +136,13 @@ class ParamSet {
    * Loads parameters from a config file for the inverse dynamics controller.
    * The format of the config file is defined in id_controller_config.proto.
    *
-   * For the protobuf_msg::ContactParam and protobuf_msg::AccelerationParam,
-   * the `name` field should correspond to either a body group or joint group
-   * name in the associated RigidBodyTreeAliasGroups. Every member in that
-   * group will have the same parameters. A `default` parameter can also be
-   * specified for `body_motion`, `dof_motion` and `contact` for
+   * For the `protobuf_msg::ContactParam` and
+   * `protobuf_msg::AccelerationParam` (defined in
+   * id_controller_config.proto), the `name` field should correspond to either
+   * a body group or joint group name in the associated
+   * RigidBodyTreeAliasGroups. Every member in that group will have the same
+   * parameters. A `default` parameter can also be specified for `body_motion`,
+   * `dof_motion` and `contact` for
    * protobuf_msg::InverseDynamicsControllerParam. It will be returned when
    * parameters are not explicitly specified. It is recommended to supply the
    * default parameters.
@@ -153,7 +155,7 @@ class ParamSet {
    * dimensional. When used for accelerations in the generalized coordinates,
    * `kp`, `kd` and `weight` need to match the dimension of that joint group.
    * E.g. `kp`, `kd` and `weight` need to be 8 dimensional for a joint group
-   * consists of a floating base joint and 2 single dof joints.
+   * that consists of a floating base joint and 2 single dof joints.
    *
    * @param config_path Path to the config file.
    * @param alias_group Specifies the relationship between body / joint groups

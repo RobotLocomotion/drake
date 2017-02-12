@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_library", "drake_cc_binary")
+load("//tools:drake.bzl", "drake_cc_binary", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -69,8 +69,8 @@ drake_cc_binary(
     srcs = ["valkyrie_simulation.cc"],
     data = [":models"],
     deps = [
-        "actuator_effort_to_rigid_body_plant_input_converter",
-        "robot_command_to_desired_effort_converter",
+        ":actuator_effort_to_rigid_body_plant_input_converter",
+        ":robot_command_to_desired_effort_converter",
         ":valkyrie_constants",
         ":valkyrie_robot_state_encoder",
         "//drake/lcmtypes:contact_info_for_viz",

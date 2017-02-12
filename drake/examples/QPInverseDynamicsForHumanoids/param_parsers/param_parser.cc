@@ -15,8 +15,9 @@ namespace qp_inverse_dynamics {
 namespace param_parsers {
 
 namespace {
-// Attempts to find a Param with name. If name doesn't exist, returns the
-// default param. If default doesn't exist, throws an exception.
+// Attempts to find a ParamType with @p name. If no such parameter exists, the
+// default parameter is returned. An exception is thrown if the default
+// parameter doesn't exist either.
 template <typename ParamType>
 const ParamType& FindParam(
     const std::string& name,
@@ -30,9 +31,7 @@ const ParamType& FindParam(
     if (find_res != params.end()) {
       param = &(find_res->second);
     } else {
-      std::string err_msg = "Parameter for " + name + " cannot be found." +
-                            "Default parameter doesn't exist either.";
-      throw std::runtime_error(err_msg);
+      throw std::runtime_error("Parameter for " + name + " cannot be found. Default parameter doesn't exist either.");
     }
   }
   return *param;
@@ -43,7 +42,7 @@ ContactParam ParseContactParam(const protobuf_msg::ContactParam& config) {
 
   param.name = config.name();
   param.contact_points.resize(3, config.contact_point_size());
-  for (int i = 0; i < config.contact_point_size(); i++) {
+  for (int i = 0; i < config.contact_point_size(); ++i) {
     param.contact_points.col(i) = Vector3<double>(config.contact_point(i).x(),
                                                   config.contact_point(i).y(),
                                                   config.contact_point(i).z());
@@ -64,7 +63,7 @@ DesiredMotionParam ParseDesiredMotionParam(
   DesiredMotionParam param(size);
   param.name = config.name();
 
-  // Parses kp
+  // Parses kp.
   if (config.kp_size() == size) {
     for (int i = 0; i < size; ++i) param.kp(i) = config.kp(i);
   } else if (config.kp_size() == 1) {
@@ -75,7 +74,7 @@ DesiredMotionParam ParseDesiredMotionParam(
         std::to_string(size) + ", got " + std::to_string(config.kp_size()));
   }
 
-  // Parses kd
+  // Parses kd.
   if (config.kd_size() == size) {
     for (int i = 0; i < size; ++i) param.kd(i) = config.kd(i);
   } else if (config.kd_size() == 1) {
@@ -86,7 +85,7 @@ DesiredMotionParam ParseDesiredMotionParam(
         std::to_string(size) + ", got " + std::to_string(config.kd_size()));
   }
 
-  // Parses weight
+  // Parses weight.
   if (config.weight_size() == size) {
     for (int i = 0; i < size; ++i) param.weight(i) = config.weight(i);
   } else if (config.weight_size() == 1) {
@@ -100,6 +99,10 @@ DesiredMotionParam ParseDesiredMotionParam(
   return param;
 }
 
+// Generates a vector of names for the generalized coordinate. Since q and v
+// can have different dimensions, and we are only interested in the
+// accelerations (vdot). So it is more consistent to use the velocities' names.
+// However these names have the suffix `dot`, which are strips away here.
 template <typename T>
 std::string get_dof_name(const RigidBodyTree<T>& robot, int dof_idx) {
   DRAKE_DEMAND(dof_idx >= 0 && dof_idx < robot.get_num_velocities());
@@ -159,9 +162,9 @@ void ParamSet::LoadFromFile(
   for (const auto& contact_config : id_configs.contact()) {
     ContactParam contact_param = ParseContactParam(contact_config);
     const std::string& group_name = contact_config.name();
-    // Default contact param
-    if (group_name.compare("default") == 0) {
-      // Checks if default has already been defined.
+    // Parses the default contact parameter.
+    if (group_name == "default") {
+      // Checks if the default has already been defined.
       if (contact_params_.find(contact_param.name) != contact_params_.end() &&
           contact_params_.find(contact_param.name)->second != contact_param) {
         throw std::runtime_error(
@@ -170,7 +173,7 @@ void ParamSet::LoadFromFile(
         contact_params_.emplace("default", contact_param);
       }
     } else {
-      // group_name exists.
+      // Parses the contact parameter for this body group.
       if (alias_group.has_body_group(group_name)) {
         const std::vector<const RigidBody<double>*> bodies =
             alias_group.get_body_group(group_name);
@@ -183,19 +186,16 @@ void ParamSet::LoadFromFile(
           // are the same. Throws if they are not.
           if (find_res != contact_params_.end()) {
             if (contact_param != find_res->second) {
-              std::string error_msg = "Contact param for " +
+              throw std::runtime_error("Contact param for " +
                                       contact_param.name +
-                                      " cannot be set to different values.";
-              throw std::runtime_error(error_msg);
+                                      " cannot be set to different values.");
             }
           } else {
             contact_params_.emplace(contact_param.name, contact_param);
           }
         }
       } else {
-        std::string error_msg =
-            "Contact param for unknown body group: " + group_name;
-        throw std::runtime_error(error_msg);
+        throw std::runtime_error("Contact param for unknown body group: " + group_name);
       }
     }
   }
@@ -206,8 +206,8 @@ void ParamSet::LoadFromFile(
         ParseDesiredMotionParam(body_motion_config, 6);
 
     const std::string& group_name = body_motion_config.name();
-    // Default body motion param
-    if (group_name.compare("default") == 0) {
+    // Parses the default body motion parameter.
+    if (group_name == "default") {
       // Checks if default has already been defined.
       if (body_motion_params_.find(body_motion_param.name) !=
               body_motion_params_.end() &&
@@ -219,7 +219,7 @@ void ParamSet::LoadFromFile(
         body_motion_params_.emplace("default", body_motion_param);
       }
     } else {
-      // group_name exists.
+      // Parses the body motion parameter for this body group.
       if (alias_group.has_body_group(group_name)) {
         const std::vector<const RigidBody<double>*> bodies =
             alias_group.get_body_group(group_name);
@@ -229,14 +229,12 @@ void ParamSet::LoadFromFile(
 
           auto find_res = body_motion_params_.find(body_motion_param.name);
           // If this body already has a body_motion param defined, checks that
-          // they
-          // are the same. Throws if they are not.
+          // they are the same. Throws if they are not.
           if (find_res != body_motion_params_.end()) {
             if (body_motion_param != find_res->second) {
-              std::string error_msg = "Body motion param for " +
+              throw std::runtime_error("Body motion param for " +
                                       body_motion_param.name +
-                                      " cannot be set to different values.";
-              throw std::runtime_error(error_msg);
+                                      " cannot be set to different values.");
             }
           } else {
             body_motion_params_.emplace(body_motion_param.name,
@@ -244,9 +242,7 @@ void ParamSet::LoadFromFile(
           }
         }
       } else {
-        std::string error_msg =
-            "Body motion param for unknown body group: " + group_name;
-        throw std::runtime_error(error_msg);
+        throw std::runtime_error("Body motion param for unknown body group: " + group_name);
       }
     }
   }
@@ -260,7 +256,7 @@ void ParamSet::LoadFromFile(
   // Finds the default param first, and initializes all dof param to the
   // default. We then overwrite the default values.
   for (const auto& dof_config : id_configs.dof_motion()) {
-    if (dof_config.name().compare("default") == 0) {
+    if (dof_config.name() == "default") {
       DesiredMotionParam tmp_param = ParseDesiredMotionParam(dof_config, 1);
       if (!has_default_dof_motion_param) {
         default_dof_motion_param = tmp_param;
@@ -275,14 +271,14 @@ void ParamSet::LoadFromFile(
   // Initializes everything to the default param.
   dof_motion_params_.resize(robot.get_num_velocities(),
                             default_dof_motion_param);
-  for (int i = 0; i < robot.get_num_velocities(); i++) {
+  for (int i = 0; i < robot.get_num_velocities(); ++i) {
     dof_motion_params_[i].name = get_dof_name(robot, i);
   }
 
   DesiredMotionParam single_dof_motion_param(1), group_dof_motion_param;
   for (const auto& dof_config : id_configs.dof_motion()) {
-    // Skips default param
-    if (dof_config.name().compare("default") == 0) continue;
+    // Skips default param.
+    if (dof_config.name() == "default") continue;
 
     const std::string& group_name = dof_config.name();
 
@@ -290,35 +286,31 @@ void ParamSet::LoadFromFile(
       const std::vector<int>& v_indices =
           alias_group.get_velocity_group(group_name);
 
-      // This is the param for the entire group
+      // This is the param for the entire group.
       group_dof_motion_param = ParseDesiredMotionParam(
           dof_config, static_cast<int>(v_indices.size()));
 
-      int ctr = 0;
-      for (int dof_idx : v_indices) {
+      for (int i = 0; i < static_cast<int>(v_indices.size()); i++) {
+        int dof_idx = v_indices[i];
         // Creates a 1 dim param just for this dof.
         single_dof_motion_param.name = get_dof_name(robot, dof_idx);
-        single_dof_motion_param.kp(0) = group_dof_motion_param.kp(ctr);
-        single_dof_motion_param.kd(0) = group_dof_motion_param.kd(ctr);
-        single_dof_motion_param.weight(0) = group_dof_motion_param.weight(ctr);
+        single_dof_motion_param.kp(0) = group_dof_motion_param.kp(i);
+        single_dof_motion_param.kd(0) = group_dof_motion_param.kd(i);
+        single_dof_motion_param.weight(0) = group_dof_motion_param.weight(i);
 
-        // Throws if we are tying to overwrite something different than the
+        // Throws if we are trying to overwrite something different than the
         // current value and is not the default value.
         if (dof_motion_params_.at(dof_idx) != default_dof_motion_param &&
             dof_motion_params_.at(dof_idx) != single_dof_motion_param) {
-          std::string error_msg = "Dof motion param for " +
+          throw std::runtime_error("Dof motion param for " +
                                   single_dof_motion_param.name +
-                                  " cannot be set to different values.";
-          throw std::runtime_error(error_msg);
+                                  " cannot be set to different values.");
         } else {
           dof_motion_params_.at(dof_idx) = single_dof_motion_param;
         }
-        ctr++;
       }
     } else {
-      std::string error_msg =
-          "Dof motion param for unknown joint group: " + group_name;
-      throw std::runtime_error(error_msg);
+      throw std::runtime_error("Dof motion param for unknown joint group: " + group_name);
     }
   }
 }
