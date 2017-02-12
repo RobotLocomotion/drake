@@ -1,3 +1,10 @@
+# See id_controller_config.proto for more details about semantics.
+
+# For centroidal_momentum and body_motion, there should be 6 kp kd and weight
+# field to fully specify the parameters, and the first 3 dimensions correspond
+# to the angular components. A single parameter can also be used to specify
+# same value for all the dimensions.
+
 name: "valkyrie_manip"
 
 contact_force_basis_weight: 1e-6
@@ -123,6 +130,7 @@ dof_motion {
     weight: -1
 }
 
+# Contact points and normals are specified in the body frame.
 contact {
     name: "default"
     weight: 1e5
