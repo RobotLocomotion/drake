@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 
 namespace drake {
@@ -26,6 +27,9 @@ namespace systems {
 template <typename T>
 class ContactDetail {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactDetail)
+
+  ContactDetail();
   virtual ~ContactDetail();
 
   virtual std::unique_ptr<ContactDetail<T>> Clone() const = 0;

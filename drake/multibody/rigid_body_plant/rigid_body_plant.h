@@ -7,6 +7,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
@@ -112,6 +113,8 @@ namespace systems {
 template <typename T>
 class RigidBodyPlant : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyPlant)
+
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in `tree`.  `tree` must not be `nullptr`.
   ///
