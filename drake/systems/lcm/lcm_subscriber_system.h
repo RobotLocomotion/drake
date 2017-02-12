@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -26,6 +27,8 @@ namespace lcm {
 class LcmSubscriberSystem : public LeafSystem<double>,
     public drake::lcm::DrakeLcmMessageHandlerInterface  {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem)
+
   /**
    * Factory method that returns a subscriber System that provides
    * Value<LcmMessage> message objects on its sole abstract-valued output port.
@@ -113,10 +116,6 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    * @pre this system is using a vector-valued port (not abstract-valued).
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
-
-  // Disable copy and assign.
-  LcmSubscriberSystem(const LcmSubscriberSystem&) = delete;
-  LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
 
  protected:
   void DoCalcOutput(const Context<double>& context,

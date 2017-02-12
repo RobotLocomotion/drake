@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -19,6 +20,8 @@ namespace lcm {
  */
 class LcmPublisherSystem : public LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmPublisherSystem)
+
   /**
    * A factory method that returns an %LcmPublisherSystem that takes
    * Value<LcmMessage> message objects on its sole abstract-valued input port.
@@ -91,10 +94,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
                      drake::lcm::DrakeLcmInterface* lcm);
 
   ~LcmPublisherSystem() override;
-
-  // Disable copy and assign.
-  LcmPublisherSystem(const LcmPublisherSystem&) = delete;
-  LcmPublisherSystem& operator=(const LcmPublisherSystem&) = delete;
 
   const std::string& get_channel_name() const;
 
