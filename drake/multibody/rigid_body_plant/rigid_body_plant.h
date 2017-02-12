@@ -8,9 +8,9 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -119,9 +119,14 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// the world in `tree`.  `tree` must not be `nullptr`.
   ///
   /// @param[in] tree the dynamic model to use with this plant.
+  /// @param[in] timestep a non-negative value specifying the update period of
+  ///   the model; 0.0 implies continuous-time dynamics with derivatives, and
+  ///   values > 0.0 result in discrete-time dynamics implementing a
+  ///   time-stepping approximation to the dynamics.  @default 0.0.
   // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
   // already.  Confirm/deny and document that result.
-  explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree);
+  explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
+                          double timestep = 0.0);
 
   ~RigidBodyPlant() override;
 
@@ -129,7 +134,8 @@ class RigidBodyPlant : public LeafSystem<T> {
   // framework is available.
   /// Sets the contact parameters.
   void set_contact_parameters(double penetration_stiffness,
-      double penetration_damping, double friction_coefficient);
+                              double penetration_damping,
+                              double friction_coefficient);
 
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
@@ -181,13 +187,11 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   /// Sets the generalized coordinate `position_index` to the value
   /// `position`.
-  void set_position(Context<T>* context,
-                    int position_index, T position) const;
+  void set_position(Context<T>* context, int position_index, T position) const;
 
   /// Sets the generalized velocity `velocity_index` to the value
   /// `velocity`.
-  void set_velocity(Context<T>* context,
-                    int velocity_index, T velocity) const;
+  void set_velocity(Context<T>* context, int velocity_index, T velocity) const;
 
   /// Sets the continuous state vector of the system to be `x`.
   void set_state_vector(Context<T>* context,
@@ -227,15 +231,15 @@ class RigidBodyPlant : public LeafSystem<T> {
   ///
   /// Linear stiffness formula (and definition of "dissipation") from:
   /// https://simtk.org/api_docs/simbody/latest/classSimTK_1_1Force_1_1MobilityLinearStop.html#details
-  static T JointLimitForce(const DrakeJoint& joint,
-                           const T& position, const T& velocity);
+  static T JointLimitForce(const DrakeJoint& joint, const T& position,
+                           const T& velocity);
 
   /// Returns the index into the output port for `model_instance_id`
   /// which corresponds to the world position index of
   /// `world_position_index`, or throws if the position index does not
   /// correspond to the model id.
-  int FindInstancePositionIndexFromWorldIndex(
-      int model_instance_id, int world_position_index);
+  int FindInstancePositionIndexFromWorldIndex(int model_instance_id,
+                                              int world_position_index);
 
   /// Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
   /// and y-axis such that the basis is orthonormal. The basis is R_WL, where W
@@ -260,14 +264,16 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// parameter RigidBodyTreeConstants::kFirstNonWorldModelInstanceId.
   const InputPortDescriptor<T>& actuator_command_input_port() const {
     if (get_num_model_instances() != 1) {
-      throw std::runtime_error("RigidBodyPlant::actuator_command_input_port(): "
+      throw std::runtime_error(
+          "RigidBodyPlant::actuator_command_input_port(): "
           "ERROR: This method can only called when there is only one model "
           "instance in the RigidBodyTree. There are currently " +
-          std::to_string(get_num_model_instances()) + " model instances in the "
+          std::to_string(get_num_model_instances()) +
+          " model instances in the "
           "RigidBodyTree.");
     }
     return model_instance_actuator_command_input_port(
-                         RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
+        RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
   }
 
   /// Returns true if and only if the model instance with the provided
@@ -315,13 +321,16 @@ class RigidBodyPlant : public LeafSystem<T> {
   ///@}
 
  protected:
-  // LeafSystem<T> override.
+  // LeafSystem<T> overrides.
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
+  std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const override;
 
   // System<T> overrides.
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
+  void DoCalcDiscreteVariableUpdates(const Context<T>& context,
+                                     DiscreteState<T>* updates) const override;
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
 
@@ -345,14 +354,14 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
 
   void DoMapVelocityToQDot(
-      const Context<T> &context,
-      const Eigen::Ref<const VectorX<T>> &generalized_velocity,
-      VectorBase<T> *positions_derivative) const override;
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      VectorBase<T>* positions_derivative) const override;
 
   void DoMapQDotToVelocity(
-      const Context<T> &context,
-      const Eigen::Ref<const VectorX<T>> &configuration_dot,
-      VectorBase<T> *generalized_velocity) const override;
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& configuration_dot,
+      VectorBase<T>* generalized_velocity) const override;
 
  private:
   void ExportModelInstanceCentricPorts();
@@ -373,6 +382,10 @@ class RigidBodyPlant : public LeafSystem<T> {
   VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
                                  ContactResults<T>* contacts = nullptr) const;
 
+  // Evaluates the actuator command input ports and throws a runtime_error
+  // exception if at least one of the ports is not connected.
+  VectorX<T> EvaluateActuatorInputs(const Context<T>& context) const;
+
   std::unique_ptr<const RigidBodyTree<T>> tree_;
 
   // Some parameters defining the contact.
@@ -384,6 +397,10 @@ class RigidBodyPlant : public LeafSystem<T> {
   int state_output_port_index_{};
   int kinematics_output_port_index_{};
   int contact_output_port_index_{};
+
+  // timestep == 0.0 implies continuous-time dynamics,
+  // timestep > 0.0 implies a discrete-time dynamics approximation.
+  const double timestep_{0.0};
 
   // Maps model instance ids to input port indices.  A value of
   // kInvalidPortIdentifier indicates that a model instance has no actuators,
