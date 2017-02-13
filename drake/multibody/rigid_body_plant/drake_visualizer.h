@@ -1,8 +1,10 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -11,6 +13,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/primitives/signal_log.h"
 
 namespace drake {
 namespace systems {
@@ -37,6 +40,11 @@ namespace systems {
  * this phase is `lcmt_viewer_draw` and the channel name is
  * "DRAKE_VIEWER_DRAW".
  *
+ * The visualizer has an option that allows it to save the state it dispatches
+ * for drawing and then replay it at realtime (capped at 60 Hz).  This is useful
+ * for immediate review of slow simulations to gain an intuitive understanding
+ * at realtime.  See ReplayCachedSimulation().
+ *
  * @ingroup rigid_body_systems
  */
 class DrakeVisualizer : public LeafSystem<double> {
@@ -55,9 +63,14 @@ class DrakeVisualizer : public LeafSystem<double> {
    *
    * @param[in] lcm A pointer to the object through which LCM messages can be
    * published. This pointer must remain valid for the duration of this object.
+   *
+   * @param[in] record_for_playback  If true, the visualizer will cache the
+   * input data for playback and ReplayCachedSimulation() will replay that
+   * cache data.
    */
   DrakeVisualizer(const RigidBodyTree<double>& tree,
-      drake::lcm::DrakeLcmInterface* lcm);
+                  drake::lcm::DrakeLcmInterface* lcm,
+                  bool record_for_playback = false);
 
   /**
    * Sets the publishing period of this system. See
@@ -65,6 +78,21 @@ class DrakeVisualizer : public LeafSystem<double> {
    * parameter `period`.
    */
   void set_publish_period(double period);
+
+
+  // TODO(SeanCurtis-TRI): Optional features:
+  //    1. Specify number of loops (<= 0 --> infinite looping)
+  //    2. Specify range of playback [start, end] for cached data from times
+  //       in the range [0, T], such that start < end, start >= 0 and
+  //       end <= T.  (Although, putting end > T *is* valid, it would
+  //       manifest as a *pause* at the end of the playback before finishing.
+  //    3. Optionally force the replay to emit the messages to load the
+  //       geometry again.
+  /**
+   * Cause the visualizer to playback its cached data at realtime.  If it has
+   * not been configured to record/playback, no work is done.
+   */
+  void ReplayCachedSimulation();
 
  private:
   void DoCalcOutput(const systems::Context<double>& context,
@@ -88,6 +116,11 @@ class DrakeVisualizer : public LeafSystem<double> {
   // are published.
   drake::lcm::DrakeLcmInterface* const lcm_;
 
+  // Performs the playback loop for the given trajectory up to the requested
+  // time.
+  void RunPlaybackLoop(const PiecewisePolynomial<double>& trajectory,
+                       const double kMaxTime) const;
+
   // Using 'mutable' here is OK since it's only used for assertion checking.
   mutable bool sent_load_robot_{false};
 
@@ -97,6 +130,13 @@ class DrakeVisualizer : public LeafSystem<double> {
   // The translator that converts from the RigidBodyTree's generalized state
   // vector to a lcmt_viewer_draw message.
   const ViewerDrawTranslator draw_message_translator_;
+
+  // If true, DrakeVisualizer records the data it "publishes", making it
+  // available for playback.
+  bool has_playback_{false};
+
+  // The (optional) log used for recording and playback.
+  std::unique_ptr<SignalLog<double>> log_{nullptr};
 };
 
 }  // namespace systems

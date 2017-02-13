@@ -76,9 +76,11 @@ drake_cc_library(
         "viewer_draw_translator.h",
     ],
     deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
         "//drake/lcmtypes:viewer",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/lcm",
+        "//drake/systems/primitives:signal_log"
     ],
 )
 
