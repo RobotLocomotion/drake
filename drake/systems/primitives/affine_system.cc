@@ -79,9 +79,6 @@ void AffineSystem<T>::DoCalcOutput(const Context<T>& context,
                                    SystemOutput<T>* output) const {
   if (num_outputs_ == 0) return;
 
-  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
   // Evaluates the state output port.
   BasicVector<T>* output_vector = output->GetMutableVectorData(0);
 
@@ -104,7 +101,6 @@ template <typename T>
 void AffineSystem<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   if (num_states_ == 0 || time_period_ > 0.0) return;
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   const auto& x =
       dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
@@ -127,7 +123,6 @@ void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
     drake::systems::DiscreteState<T>* updates) const {
   if (num_states_ == 0 || time_period_ == 0.0) return;
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   const auto& x = context.get_discrete_state(0)->get_value();
 

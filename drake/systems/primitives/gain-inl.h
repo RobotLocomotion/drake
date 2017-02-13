@@ -59,9 +59,6 @@ const OutputPortDescriptor<T>& Gain<T>::get_output_port() const {
 template <typename T>
 void Gain<T>::DoCalcOutput(const Context<T>& context,
                            SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
   auto input_vector = this->EvalEigenVectorInput(context, 0);
   System<T>::GetMutableOutputVector(output, 0) =
       k_.array() * input_vector.array();

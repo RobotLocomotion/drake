@@ -34,9 +34,6 @@ bool SimpleCar<T>::has_any_direct_feedthrough() const {
 template <typename T>
 void SimpleCar<T>::DoCalcOutput(const systems::Context<T>& context,
                                 systems::SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
@@ -62,8 +59,6 @@ template <typename T>
 void SimpleCar<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-
   // Obtain the parameters.
   const SimpleCarConfig<T>& config =
       this->template GetNumericParameter<SimpleCarConfig>(context, 0);
