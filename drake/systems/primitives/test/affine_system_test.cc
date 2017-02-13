@@ -43,6 +43,15 @@ TEST_F(AffineSystemTest, Construction) {
   EXPECT_EQ(dut_->y0(), y0_);
   EXPECT_EQ(dut_->get_num_output_ports(), 1);
   EXPECT_EQ(dut_->get_num_input_ports(), 1);
+
+  // Test TimeVaryingAffineSystem accessor methods.
+  const double t = 3.5;
+  EXPECT_TRUE(CompareMatrices(dut_->A(t), A_));
+  EXPECT_TRUE(CompareMatrices(dut_->B(t), B_));
+  EXPECT_TRUE(CompareMatrices(dut_->f0(t), f0_));
+  EXPECT_TRUE(CompareMatrices(dut_->C(t), C_));
+  EXPECT_TRUE(CompareMatrices(dut_->D(t), D_));
+  EXPECT_TRUE(CompareMatrices(dut_->y0(t), y0_));
 }
 
 // Tests that the derivatives are correctly computed.
@@ -167,6 +176,15 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
 
   EXPECT_TRUE(CompareMatrices(update->get_discrete_state(0)->CopyToVector(),
                               A * x0 + B * u0 + f0));
+
+  // Test TimeVaryingAffineSystem accessor methods.
+  const double t = 3.0;
+  EXPECT_TRUE(CompareMatrices(system.A(t), A));
+  EXPECT_TRUE(CompareMatrices(system.B(t), B));
+  EXPECT_TRUE(CompareMatrices(system.f0(t), f0));
+  EXPECT_TRUE(CompareMatrices(system.C(t), C));
+  EXPECT_TRUE(CompareMatrices(system.D(t), D));
+  EXPECT_TRUE(CompareMatrices(system.y0(t), y0));
 }
 
 // xdot = rotmat(t)*x, y = x;
@@ -198,11 +216,10 @@ class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double>,
 };
 
 TEST_F(SimpleTimeVaryingAffineSystem, EvalTest) {
-  double t = 2.5;
+  const double t = 2.5;
   Eigen::Matrix2d A;
   A << std::cos(t), -std::sin(t), std::sin(t), std::cos(t);
-  Eigen::Vector2d x;
-  x << 1, 2;
+  Eigen::Vector2d x(1, 2);
 
   auto context = CreateDefaultContext();
   context->set_time(t);
@@ -227,14 +244,15 @@ class IllegalTimeVaryingAffineSystem : public SimpleTimeVaryingAffineSystem {
   }
 };
 
-TEST_F(IllegalTimeVaryingAffineSystem, EvalTest) {
-  double t = 2.5;
+TEST_F(IllegalTimeVaryingAffineSystem, EvalDeathTest) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  const double t = 2.5;
 
   auto context = CreateDefaultContext();
   context->set_time(t);
 
-  auto derivs = AllocateTimeDerivatives();
-  EXPECT_DEATH(CalcTimeDerivatives(*context, derivs.get()), "rows");
+  auto derivatives = AllocateTimeDerivatives();
+  ASSERT_DEATH(CalcTimeDerivatives(*context, derivatives.get()), "rows");
 }
 
 }  // namespace
