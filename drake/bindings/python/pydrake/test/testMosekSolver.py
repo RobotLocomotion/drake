@@ -16,6 +16,7 @@ class TestMathematicalProgram(unittest.TestCase):
         solver = MosekSolver()
         self.assertTrue(solver.available())
         self.assertEqual(solver.SolverName(), "Mosek")
+        self.assertEqual(solver.solver_type(), mp.SolverType.kMosek)
         result = solver.Solve(prog)
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         x_expected = np.array([1, 1])

@@ -9,12 +9,12 @@
 namespace py = pybind11;
 
 
-PYBIND11_NUMPY_OBJECT_DTYPE(drake::Variable);
+PYBIND11_NUMPY_OBJECT_DTYPE(drake::symbolic::Variable);
 PYBIND11_NUMPY_OBJECT_DTYPE(drake::symbolic::Expression);
 PYBIND11_NUMPY_OBJECT_DTYPE(drake::symbolic::Formula);
 
 PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
-  using drake::Variable;
+  using drake::symbolic::Variable;
   using drake::symbolic::Expression;
   using drake::symbolic::Formula;
 
@@ -23,13 +23,32 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   using drake::solvers::Constraint;
   using drake::solvers::LinearConstraint;
   using drake::solvers::QuadraticConstraint;
-  using drake::solvers::QuadraticConstraint;
   using drake::solvers::VectorXDecisionVariable;
   using drake::solvers::MatrixXDecisionVariable;
   using drake::solvers::SolutionResult;
+  using drake::solvers::MathematicalProgramSolverInterface;
+  using drake::solvers::SolverType;
 
   py::module m("_pydrake_mathematicalprogram",
                "Drake MathematicalProgram Bindings");
+
+  py::class_<MathematicalProgramSolverInterface>(
+    m, "MathematicalProgramSolverInterface")
+    .def("available", &MathematicalProgramSolverInterface::available)
+    .def("Solve", &MathematicalProgramSolverInterface::Solve)
+    .def("solver_type", &MathematicalProgramSolverInterface::solver_type)
+    .def("SolverName", &MathematicalProgramSolverInterface::SolverName);
+
+  py::enum_<SolverType>(m, "SolverType")
+    .value("kDReal", SolverType::kDReal)
+    .value("kEqualityConstrainedQP", SolverType::kEqualityConstrainedQP)
+    .value("kGurobi", SolverType::kGurobi)
+    .value("kIpopt", SolverType::kIpopt)
+    .value("kLinearSystem", SolverType::kLinearSystem)
+    .value("kMobyLCP", SolverType::kMobyLCP)
+    .value("kMosek", SolverType::kMosek)
+    .value("kNlopt", SolverType::kNlopt)
+    .value("kSnopt", SolverType::kSnopt);
 
   py::class_<MathematicalProgram>(m, "MathematicalProgram")
     .def(py::init<>())
@@ -120,13 +139,13 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
           const Binding<QuadraticConstraint>&) const)
          &MathematicalProgram::EvalBindingAtSolution)
     .def("SetSolverOption", (void(MathematicalProgram::*)(
-         const std::string&, const std::string&, double))
+         SolverType, const std::string&, double))
          &MathematicalProgram::SetSolverOption)
     .def("SetSolverOption", (void(MathematicalProgram::*)(
-         const std::string&, const std::string&, int))
+         SolverType, const std::string&, int))
          &MathematicalProgram::SetSolverOption)
     .def("SetSolverOption", (void(MathematicalProgram::*)(
-         const std::string&, const std::string&, const std::string&))
+         SolverType, const std::string&, const std::string&))
          &MathematicalProgram::SetSolverOption);
 
   py::enum_<SolutionResult>(m, "SolutionResult")

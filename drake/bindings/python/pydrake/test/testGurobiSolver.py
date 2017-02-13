@@ -16,6 +16,7 @@ class TestMathematicalProgram(unittest.TestCase):
         solver = GurobiSolver()
         self.assertTrue(solver.available())
         self.assertEqual(solver.SolverName(), "Gurobi")
+        self.assertEqual(solver.solver_type(), mp.SolverType.kGurobi)
         result = solver.Solve(prog)
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         x_expected = np.array([1, 1])
