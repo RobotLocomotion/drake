@@ -34,6 +34,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   maliput/utility/generate_obj.cc
   maliput/utility/generate_urdf.cc
   maliput/utility/infinite_circuit_road.cc
+  monolane_onramp_merge.cc
   simple_car.cc
   single_lane_ego_and_agent.cc
   trajectory_car.cc
@@ -52,6 +53,7 @@ drake_install_headers(
   curve2.h
   idm_planner.h
   linear_car.h
+  monolane_onramp_merge.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
   single_lane_ego_and_agent.h
