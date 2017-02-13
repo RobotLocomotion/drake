@@ -10,57 +10,68 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-const double& kLinearTolerance = 0.01;
-const double& kAngularTolerance = 0.01 * M_PI;
-
 template <typename T>
-MonolaneOnrampMerge<T>::MonolaneOnrampMerge(const T& lane_length,
-                                            const T& lane_width,
-                                            const T& driveable_width)
-    : lane_bounds_(-lane_width / 2., lane_width / 2.),
-      driveable_bounds_(-driveable_width / 2., driveable_width / 2.),
-      RoadGeometry({"figure-eight"}, kLinearTolerance, kAngularTolerance) {
-  Build(lane_length);
+void RoadSection<T>::AddArcSegment(const T& arc_length, const T& arc_radius,
+                                   const ArcDirection& dir,
+                                   const EndpointZ& end_z) {
+  DRAKE_DEMAND(arc_length < 2 * M_PI * arc_radius);
+  const T& angle = dir == kCCW ? arc_length / arc_radius
+      : -arc_length / arc_radius;
+  const ArcOffset& arc{arc_radius, angle};
+
+  const Connection* connection = b_->Connect(std::to_string(id_++),
+                                             last_endpoint_, arc, end_z);
+  last_endpoint_ = connection->end();
 }
 
 template <typename T>
-MonolaneOnrampMerge<T>::MonolaneOnrampMerge(const T& lane_length) {
-  Build(lane_length);
+void RoadSection<T>::AddArcSegment(const T& arc_length, const T& arc_radius,
+                                   const ArcDirection& dir) {
+  AddArcSegment(arc_length, arc_radius, dir, flat_z_);
 }
 
 template <typename T>
-void MonolaneOnrampMerge<T>::Build(const T& lane_length) {
-  Builder b{lane_bounds_, driveable_bounds_, kLinearTolerance,
-        kAngularTolerance};
+void RoadSection<T>::AddStraightSegment(const T& lane_length,
+                                        const EndpointZ& end_z) {
+  const Connection* connection = b_->Connect(std::to_string(id_++),
+                                             last_endpoint_, lane_length,
+                                             end_z);
+  last_endpoint_ = connection->end();
+}
 
-  const EndpointZ& kLowFlatZ{0., 0., 0., 0.};
-  const EndpointZ& kMidFlatZ{3., 0., 0., 0.};
-  const EndpointZ& kMidTiltLeftZ{3., 0., -0.4, 0.};
-  const EndpointZ& kMidTiltRightZ{3., 0., 0.4, 0.};
-  const EndpointZ& kHighFlatZ{6., 0., 0., 0.};
+template <typename T>
+void RoadSection<T>::AddStraightSegment(const T& lane_length) {
+  AddStraightSegment(lane_length, flat_z_);
+}
 
-  const ArcOffset& kCounterClockwiseArc{lane_length, 0.75 * M_PI};  // 135deg,
-                                                                    // 50m
-                                                                    // radius
-  const ArcOffset& kClockwiseArc{lane_length, -0.75 * M_PI};  // 135deg, 50m
-                                                              // radius
+template <typename T>
+void MonolaneOnrampMerge<T>::BuildOnramp() {
+  Builder b{road_.lane_bounds, road_.driveable_bounds, kLinearTolerance_,
+            kAngularTolerance_};
 
-  Endpoint start {{0., 0., -M_PI / 4.}, kLowFlatZ};
+  std::unique_ptr<RoadSection<T>>
+      rs_pre(new RoadSection<T>(std::move(b_), "Pre", road_));
+  rs_pre->AddArcSegment(70., 50., kCW);
+  rs_pre->AddArcSegment(40., 50., kCCW);
+  const Endpoint endpoint_pre = rs_pre->get_last_endpoint();
+  b_ = rs_pre->Finalize();
 
-  auto c0 = b.Connect("0", start, lane_length, kMidFlatZ);
+  std::unique_ptr<RoadSection<T>>
+      rs_post(new RoadSection<T>(std::move(b_), "Post", road_, endpoint_pre));
+  rs_post->AddStraightSegment(50.);
+  b_ = rs_post->Finalize();
 
-  auto c1 = b.Connect("1", c0->end(), kCounterClockwiseArc, kMidTiltLeftZ);
-  auto c2 = b.Connect("2", c1->end(), kCounterClockwiseArc, kMidFlatZ);
+  std::unique_ptr<RoadSection<T>>
+      rs_onramp(new RoadSection<T>(std::move(b_), "Onramp", road_,
+                                   endpoint_pre.reverse()));
+  rs_onramp->AddArcSegment(50., 30, kCCW);
+  rs_onramp->AddStraightSegment(100.);
+  b_ = rs_onramp->Finalize();
 
-  auto c3 = b.Connect("3", c2->end(), lane_length, kHighFlatZ);
-  auto c4 = b.Connect("4", c3->end(), lane_length, kMidFlatZ);
+  //b.SetDefaultBranch(
+  //    left1, api::LaneEnd::kStart, left1, api::LaneEnd::kFinish);
 
-  auto c5 = b.Connect("5", c4->end(), kClockwiseArc, kMidTiltRightZ);
-  auto c6 = b.Connect("6", c5->end(), kClockwiseArc, kMidFlatZ);
-
-  b.Connect("7", c6->end(), lane_length, c0->start().z());
-
-  rg_ = b.Build({"figure-eight"});
+  rg_ = b_->Build({"example"});
 }
 
 // These instantiations must match the API documentation in
