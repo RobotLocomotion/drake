@@ -11,6 +11,15 @@ const int kHeight = 480;
 const int kChannel = 4;
 const uint8_t kInitialValue = 100;
 
+GTEST_TEST(TestImage, EmptyTest) {
+  Image<uint8_t> dut;
+
+  EXPECT_EQ(dut.width(), 0);
+  EXPECT_EQ(dut.height(), 0);
+  EXPECT_EQ(dut.size(), 0);
+  EXPECT_EQ(dut.num_channels(), 0);
+}
+
 GTEST_TEST(TestImage, InstantiateTest) {
   Image<uint8_t> dut(kWidth, kHeight, kChannel);
 

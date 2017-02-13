@@ -1,11 +1,14 @@
 #pragma once
 
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/common/reinit_after_move.h"
 
 namespace drake {
+
 namespace systems {
 namespace sensors {
 
@@ -20,6 +23,8 @@ namespace sensors {
 template <typename T>
 class Image {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Image)
+
   /// Image size and number of channel only constructor.  Specifies a width,
   /// height and number of channels for the image.  All the channel values in
   /// all the pixels are initialized with zero.
@@ -46,55 +51,26 @@ class Image {
     DRAKE_ASSERT(channel > 0);
   }
 
-  /// Default copy constructor
-  Image(const Image<T>&) = default;
+  /// Constructs a zero-sized image with zero channels.
+  Image() = default;
 
-  /// Default assignment operator
-  Image& operator=(const Image<T>&) = default;
-
-  /// Move constructor.  After the move, the sizes of the width and height and
-  /// the number of channels for the source object become zero.
-  Image(Image<T>&& other) : width_(other.width_),
-                            height_(other.height_),
-                            channel_(other.channel_),
-                            data_(std::move(other.data_)) {
-    other.width_ = 0;
-    other.height_ = 0;
-    other.channel_ = 0;
-  }
-
-  /// Move assignment operator.  After the move, the sizes of the width and
-  /// height and the number of channels for the source object become zero.
-  Image& operator=(Image<T>&& other) {
-    if (this != &other) {
-      width_ = other.width_;
-      height_ = other.height_;
-      channel_ = other.channel_;
-      data_ = std::move(other.data_);
-
-      other.width_ = 0;
-      other.height_ = 0;
-      other.channel_ = 0;
-    }
-    return *this;
-  }
-
-  /// Return the size of width for the image
+  /// Returns the size of width for the image
   int width() const { return width_; }
 
-  /// Return the size of height for the image
+  /// Returns the size of height for the image
   int height() const { return height_; }
 
-  /// Return the number of channel for the image
+  /// Returns the number of channel for the image
   int num_channels() const { return channel_; }
 
-  /// Return the result of the number of pixels in a image by the number of
+  /// Returns the result of the number of pixels in a image by the number of
   /// channels in a pixel
   int size() const { return width_ * height_ * channel_; }
 
-  /// Change the sizes of the width and height for the image.  The values for
-  /// them should be greater than zero.  All the values in the pixels become
-  /// zero after resize.
+  /// Changes the sizes of the width and height for the image.  The values for
+  /// them should be greater than zero.  (To resize to zero, assign a default-
+  /// constructed Image into this; do not use this method.)  All the values in
+  /// the pixels become zero after resize.
   void resize(int width, int height) {
     DRAKE_ASSERT(width > 0);
     DRAKE_ASSERT(height > 0);
@@ -130,9 +106,9 @@ class Image {
   }
 
  private:
-  int width_;
-  int height_;
-  int channel_;
+  reinit_after_move<int> width_;
+  reinit_after_move<int> height_;
+  reinit_after_move<int> channel_;
   std::vector<T> data_;
 };
 

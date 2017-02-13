@@ -222,6 +222,11 @@ drake_cc_library(
         ":common",
     ],
 )
+drake_cc_library(
+    name = "reinit_after_move",
+    hdrs = ["reinit_after_move.h"],
+    linkstatic = 1,
+)
 
 drake_cc_library(
     name = "sorted_vectors_have_intersection",
@@ -272,6 +277,13 @@ drake_cc_googletest(
         ":common",
         ":eigen_matrix_compare",
         ":extract_double",
+    ],
+)
+
+drake_cc_googletest(
+    name = "reinit_after_move_test",
+    deps = [
+        ":reinit_after_move",
     ],
 )
 
