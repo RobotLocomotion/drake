@@ -15,7 +15,6 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
         solver = MosekSolver()
         self.assertTrue(solver.available())
-        self.assertEqual(solver.SolverName(), "Mosek")
         self.assertEqual(solver.solver_type(), mp.SolverType.kMosek)
         result = solver.Solve(prog)
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
