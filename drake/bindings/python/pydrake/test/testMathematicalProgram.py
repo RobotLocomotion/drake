@@ -4,12 +4,14 @@ import unittest
 import numpy as np
 import pydrake
 from pydrake.solvers import mathematicalprogram as mp
+import pydrake.symbolic as sym
 
 
 class TestMathematicalProgram(unittest.TestCase):
     def test_program_construction(self):
         prog = mp.MathematicalProgram()
         vars = prog.NewContinuousVariables(5, "x")
+        self.assertEqual(vars.dtype, sym.Variable)
 
     def test_mixed_integer_optimization(self):
         prog = mp.MathematicalProgram()
