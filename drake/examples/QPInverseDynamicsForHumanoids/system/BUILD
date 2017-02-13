@@ -21,10 +21,10 @@ drake_cc_library(
     srcs = ["joint_level_controller_system.cc"],
     hdrs = ["joint_level_controller_system.h"],
     deps = [
-        "@bot_core_lcmtypes//:lib",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
+        "@bot_core_lcmtypes//:lib",
     ],
 )
 
@@ -62,7 +62,6 @@ drake_cc_binary(
         "//drake/examples/Valkyrie:models",
     ],
     deps = [
-        "@bot_core_lcmtypes//:lib",
         ":joint_level_controller_system",
         ":plan_eval_system",
         ":qp_controller_system",
@@ -73,6 +72,7 @@ drake_cc_binary(
         "//drake/systems/framework",
         "//drake/systems/lcm",
         "//drake/systems/primitives:constant_value_source",
+        "@bot_core_lcmtypes//:lib",
     ],
 )
 
