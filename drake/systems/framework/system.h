@@ -337,15 +337,17 @@ class System {
   ///        the ability of the constraints to be dependent upon the current
   ///        system state (as might be the case with a piecewise differential
   ///        algebraic equation).
-  /// @param J a `m × n` constraint Jacobian matrix of the `m` constraint
-  ///        equations `g()` differentiated with respect to the `n`
-  ///        configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
-  ///        the time derivatives of the generalized coordinates of the system
-  ///        are not identical to the generalized velocity, `J` should instead
-  ///        be defined as `∂g/∂q⋅N`, where `N` is the Jacobian matrix
-  ///        (dependent on `q`) of the generalized coordinates with respect
-  ///        to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
-  ///        the generalized velocities).
+  /// @param J a m × n constraint Jacobian matrix of the `m` constraint
+  ///          equations `g()` differentiated with respect to the `n`
+  ///          configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
+  ///          the time derivatives of the generalized coordinates of the system
+  ///          are not identical to the generalized velocity (in general they
+  ///          need not be, e.g., if generalized coordinates use unit
+  ///          unit quaternions to represent 3D orientation), `J` should instead
+  ///          be defined as `∂g/∂q⋅N`, where `N ≡ ∂q/∂ꝗ` is the Jacobian matrix
+  ///          (dependent on `q`) of the generalized coordinates with respect
+  ///          to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
+  ///          the generalized velocities).
   /// @param lambda the vector of constraint forces (of same dimension as the
   ///        number of rows in the Jacobian matrix, @p J)
   /// @returns a `n` dimensional vector, where `n` is the dimension of the
@@ -1138,6 +1140,9 @@ class System {
   /// system state (as might be the case with a piecewise differential algebraic
   /// equation). The default implementation of this function returns a
   /// zero-dimensional vector.
+  /// @returns a vector of dimension get_num_constraint_equations(); the
+  ///          zero vector indicates that the algebraic constraints are all
+  ///          satisfied.
   virtual Eigen::VectorXd DoEvalConstraintEquations(
       const Context<T>& context) const {
     DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
@@ -1150,6 +1155,7 @@ class System {
   /// the current system state (as might be the case with a piecewise
   /// differential algebraic equation). The default implementation of this
   /// function returns a zero-dimensional vector.
+  /// @returns a vector of dimension get_num_constraint_equations().
   virtual Eigen::VectorXd
       DoEvalConstraintEquationsDot(
         const Context<T>& context) const {
@@ -1189,10 +1195,11 @@ class System {
   }
 
   /// Computes the norm of the constraint error. This default implementation
-  /// computes a Euclidean norm of the error.
+  /// computes a Euclidean norm of the error. This norm need be neither 
+  /// continuous nor differentiable.
   virtual double DoCalcConstraintErrorNorm(const Context<T>& context,
-                                 const Eigen::VectorXd& err) const {
-    return err.norm();
+                                 const Eigen::VectorXd& error) const {
+    return error.norm();
   }
 
   //----------------------------------------------------------------------------
