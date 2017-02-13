@@ -90,10 +90,12 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
          &MathematicalProgram::AddQuadraticCost)
     .def("Solve", &MathematicalProgram::Solve)
     .def("linear_constraints", &MathematicalProgram::linear_constraints)
-    .def("linear_equality_constraints", &MathematicalProgram::linear_equality_constraints)
+    .def("linear_equality_constraints",
+         &MathematicalProgram::linear_equality_constraints)
     .def("linear_costs", &MathematicalProgram::linear_costs)
     .def("quadratic_costs", &MathematicalProgram::quadratic_costs)
-    .def("FindDecisionVariableIndex", &MathematicalProgram::FindDecisionVariableIndex)
+    .def("FindDecisionVariableIndex",
+         &MathematicalProgram::FindDecisionVariableIndex)
     .def("num_vars", &MathematicalProgram::num_vars)
     .def("GetSolution", [](const MathematicalProgram& prog,
                             const Variable& var) {
@@ -109,12 +111,14 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
             const MatrixXDecisionVariable& var) {
       return prog.GetSolution(var);
     })
-    .def("EvalBindingAtSolution", 
+    .def("EvalBindingAtSolution",
          (Eigen::VectorXd(MathematicalProgram::*)(
-          const Binding<LinearConstraint>&) const) &MathematicalProgram::EvalBindingAtSolution)
-    .def("EvalBindingAtSolution", 
+          const Binding<LinearConstraint>&) const)
+         &MathematicalProgram::EvalBindingAtSolution)
+    .def("EvalBindingAtSolution",
          (Eigen::VectorXd(MathematicalProgram::*)(
-          const Binding<QuadraticConstraint>&) const) &MathematicalProgram::EvalBindingAtSolution)
+          const Binding<QuadraticConstraint>&) const)
+         &MathematicalProgram::EvalBindingAtSolution)
     .def("SetSolverOption", (void(MathematicalProgram::*)(
          const std::string&, const std::string&, double))
          &MathematicalProgram::SetSolverOption)
