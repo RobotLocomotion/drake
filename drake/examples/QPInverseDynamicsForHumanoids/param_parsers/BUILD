@@ -18,7 +18,6 @@ drake_cc_library(
     hdrs = [
         "param_parser.h",
     ],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree_alias_groups",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
@@ -37,7 +36,6 @@ drake_cc_library(
     name = "rigid_body_tree_alias_groups",
     srcs = ["rigid_body_tree_alias_groups.cc"],
     hdrs = ["rigid_body_tree_alias_groups.h"],
-    linkstatic = 1,
     deps = [
         ":alias_groups",
         "//drake/multibody:rigid_body_tree",

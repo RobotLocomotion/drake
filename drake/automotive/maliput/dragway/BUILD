@@ -22,7 +22,6 @@ drake_cc_library(
         "road_geometry.h",
         "segment.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/common",

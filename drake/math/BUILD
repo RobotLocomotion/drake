@@ -10,7 +10,6 @@ drake_cc_library(
     name = "autodiff",
     srcs = ["autodiff.cc"],
     hdrs = ["autodiff.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
@@ -21,7 +20,6 @@ drake_cc_library(
     name = "continuous_algebraic_ricatti_equation",
     srcs = ["continuous_algebraic_ricatti_equation.cc"],
     hdrs = ["continuous_algebraic_ricatti_equation.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:is_approx_equal_abstol",
@@ -47,7 +45,6 @@ drake_cc_library(
         "roll_pitch_yaw_using_quaternion.h",
         "rotation_matrix.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
@@ -70,7 +67,6 @@ drake_cc_library(
         "normalize_vector.h",
         "rotation_conversion_gradient.h",
     ],
-    linkstatic = 1,
     deps = [
         ":autodiff",
         "//drake/common",
@@ -81,7 +77,6 @@ drake_cc_library(
     name = "matrix_util",
     srcs = ["matrix_util.cc"],
     hdrs = ["matrix_util.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:number_traits",
@@ -94,7 +89,6 @@ drake_cc_library(
     name = "eigen_sparse_triplet",
     srcs = ["eigen_sparse_triplet.cc"],
     hdrs = ["eigen_sparse_triplet.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
@@ -104,7 +98,6 @@ drake_cc_library(
     name = "expmap",
     srcs = ["expmap.cc"],
     hdrs = ["expmap.h"],
-    linkstatic = 1,
     deps = [
         ":gradient",
         "//drake/common",
@@ -115,7 +108,6 @@ drake_cc_library(
     name = "jacobian",
     srcs = ["jacobian.cc"],
     hdrs = ["jacobian.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
