@@ -469,9 +469,7 @@ void IndexJunctions(
       //                          for the length of the vehicle, too.
       const double time_in = s_in / speed;
       const double time_out = s_out / speed;
-      const TimeBox time_box = TimeBox{car_index, pr,
-                                       time_in, time_out,
-                                       s_in, s_out};
+      const TimeBox time_box {car_index, pr, time_in, time_out, s_in, s_out};
 
       const maliput::api::Junction* junction =
           pr.lane->segment()->junction();
