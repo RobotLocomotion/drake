@@ -108,7 +108,7 @@ void RigidBodyTreeAliasGroups<T>::AddJointGroup(
 template <typename T>
 void RigidBodyTreeAliasGroups<T>::LoadFromFile(
     const std::string& file_path) {
-  protobuf_msg::AliasGroups alias_groups;
+  ProtobufMsgAliasGroups alias_groups;
   int fid = open(file_path.data(), O_RDONLY);
   if (fid < 0) {
     throw std::runtime_error("Cannot open file " + file_path);

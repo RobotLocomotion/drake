@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package drake.examples.qp_inverse_dynamics.param_parsers.protobuf_msg;
+package drake.examples.qp_inverse_dynamics;
 
 // Next ID: 3
-message AliasGroup {
+message ProtobufMsgAliasGroup {
     // The name of the group itself.
     string name = 1;
     // The names of the members of the group.
@@ -14,15 +14,15 @@ message AliasGroup {
 // in a robot.
 //
 // Next ID: 3
-message AliasGroups {
+message ProtobufMsgAliasGroups {
     // Each member of each joint group corresponds to a joint in a
     // RigidBodyTree, whose name is the member's name.  No member name may
     // appear twice in a given group, but a member may appear in multiple
     // different groups.
-    repeated AliasGroup joint_group = 1;
+    repeated ProtobufMsgAliasGroup joint_group = 1;
     // Each member of each joint group corresponds to a joint in a
     // RigidBodyTree, whose name is the member's name.  No member name may
     // appear twice in a given group, but a member may appear in multiple
     // different groups.
-    repeated AliasGroup body_group = 2;
+    repeated ProtobufMsgAliasGroup body_group = 2;
 }

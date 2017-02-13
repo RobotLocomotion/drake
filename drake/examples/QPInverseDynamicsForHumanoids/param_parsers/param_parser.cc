@@ -38,7 +38,7 @@ const ParamType& FindParam(
   return *param;
 }
 
-ContactParam ParseContactParam(const protobuf_msg::ContactParam& config) {
+ContactParam ParseContactParam(const ProtobufMsgContactParam& config) {
   ContactParam param;
 
   param.name = config.name();
@@ -60,7 +60,7 @@ ContactParam ParseContactParam(const protobuf_msg::ContactParam& config) {
 }
 
 DesiredMotionParam ParseDesiredMotionParam(
-    const protobuf_msg::AccelerationParam& config, int size) {
+    const ProtobufMsgAccelerationParam& config, int size) {
   DesiredMotionParam param(size);
   param.name = config.name();
 
@@ -139,7 +139,7 @@ std::ostream& operator<<(std::ostream& out, const ContactParam& param) {
 void ParamSet::LoadFromFile(
     const std::string& config_path,
     const RigidBodyTreeAliasGroups<double>& alias_group) {
-  protobuf_msg::InverseDynamicsControllerParam id_configs;
+  ProtobufMsgInverseDynamicsControllerParam id_configs;
   int fid = open(config_path.data(), O_RDONLY);
   if (fid < 0) {
     throw std::runtime_error("Cannot open file " + config_path);
