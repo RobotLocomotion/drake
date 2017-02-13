@@ -44,13 +44,12 @@ class MonolaneOnrampMergeTest : public ::testing::Test {
  */
 
 
-/*
-TEST_F(MonolaneOnrampMergeTest, Attributes) {
-  EXPECT_EQ(rg_->id().id, "figure-eight");
-  EXPECT_EQ(rg_->num_junctions(), 3);
 
+TEST_F(MonolaneOnrampMergeTest, Attributes) {
+  EXPECT_EQ(rg_->id().id, "monolane-onramp-example");
+  EXPECT_EQ(rg_->num_junctions(), 9);
 }
-*/
+
 TEST_F(MonolaneOnrampMergeTest, OutputFile) {
   EXPECT_NE(nullptr, rg_.get());
   GenerateUrdfFile(rg_.get(), directory_.getStr(), kJunkBasename,
