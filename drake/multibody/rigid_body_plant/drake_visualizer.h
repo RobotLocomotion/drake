@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -40,6 +41,8 @@ namespace systems {
  */
 class DrakeVisualizer : public LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeVisualizer)
+
   /**
    * A constructor that prepares for the transmission of `lcmt_viewer_draw` and
    * `lcmt_viewer_load_robot` messages, but does not actually publish anything.
