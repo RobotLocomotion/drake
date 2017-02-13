@@ -1,5 +1,21 @@
 <?xml version="1.0"?>
 
+<!--
+Implements a Pendulum that, in its zero configuration, is oriented down the
+world frame's -Z axis and:
+
+  1. has a length 0.75 m.
+
+  2. has a mass of 1 kg.
+
+  3. has a center of mass at Z = -0.5 m.
+
+  4. has a blue sphere to visualize center-of-mass location.
+
+Note that the center of mass of this Pendulum's swing arm will not be computed
+correctly using RigidBodyTree::centerOfMass() since its "world" and "base_part2"
+links have non-zero mass, see: #5142.
+-->
 <robot xmlns="http://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="Pendulum">
