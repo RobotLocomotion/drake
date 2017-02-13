@@ -29,7 +29,9 @@ endmacro()
 # Set compiler flags and CTest variables for dynamic and static analysis tools
 #------------------------------------------------------------------------------
 macro(drake_setup_tools_common)
+  set(TESTS_ENVIRONMENT)
   drake_setup_clang_tidy()
+  drake_setup_coverage()
   drake_setup_include_what_you_use()
   drake_setup_link_what_you_use()
   drake_setup_sanitizers()
@@ -207,15 +209,17 @@ macro(drake_setup_sanitizers)
 
     if(USE_SANITIZER STREQUAL "Address")
       _drake_add_compiler_and_linker_flag("-fsanitize=address" FSANITIZE_ADDRESS)
+      set(MEMORYCHECK_TYPE AddressSanitizer)
       set(ENV{ASAN_OPTIONS}
         "${SANITIZER_COMMON_OPTIONS}:suppressions=${_tools_dir}/asan.supp:$ENV{ASAN_OPTIONS}")
-      set(MEMORYCHECK_TYPE AddressSanitizer)
+      list(APPEND TESTS_ENVIRONMENT ASAN_OPTIONS=$ENV{ASAN_OPTIONS})
     elseif(USE_SANITIZER STREQUAL "Leak")
       _drake_add_compiler_and_linker_flag("-fsanitize=leak" FSANITIZE_LEAK)
       # LeakSanitizer is part of AddressSanitizer
       set(MEMORYCHECK_TYPE AddressSanitizer)
       set(ENV{LSAN_OPTIONS}
         "${SANITIZER_COMMON_OPTIONS}:suppressions=${_tools_dir}/lsan.supp:$ENV{LSAN_OPTIONS}")
+      list(APPEND TESTS_ENVIRONMENT LSAN_OPTIONS=$ENV{LSAN_OPTIONS})
     elseif(USE_SANITIZER MATCHES "^Memory(WithOrigins)?$")
 
       # Work around the generator not supporting Fortran for the compiler
@@ -233,20 +237,23 @@ macro(drake_setup_sanitizers)
 
       set(MEMORYCHECK_TYPE MemorySanitizer)
       set(ENV{MSAN_OPTIONS}
-        "${SANITIZER_COMMON_OPTIONS}:suppressions=${_tools_dir}/msan.supp:$ENV{MSAN_OPTIONS}")
+        "${SANITIZER_COMMON_OPTIONS}:suppressions=${MSAN_OPTIONS}/msan.supp:$ENV{MSAN_OPTIONS}")
+      list(APPEND TESTS_ENVIRONMENT MSAN_OPTIONS=$ENV{MSAN_OPTIONS})
     elseif(USE_SANITIZER STREQUAL "Thread")
       _drake_add_compiler_and_linker_flag("-fsanitize=thread" FSANITIZE_THREAD)
       set(MEMORYCHECK_TYPE ThreadSanitizer)
       set(ENV{TSAN_OPTIONS}
         "${SANITIZER_COMMON_OPTIONS}:suppressions=${_tools_dir}/tsan.supp:$ENV{TSAN_OPTIONS}")
+      list(APPEND TESTS_ENVIRONMENT TSAN_OPTIONS=$ENV{TSAN_OPTIONS})
     elseif(USE_SANITIZER STREQUAL "Undefined")
       _drake_add_compiler_and_linker_flag("-fsanitize=undefined"
         FSANITIZE_UNDEFINED)
       set(MEMORYCHECK_TYPE UndefinedBehaviorSanitizer)
       set(ENV{UBSAN_OPTIONS}
         "${SANITIZER_COMMON_OPTIONS}:suppressions=${_tools_dir}/ubsan.supp:$ENV{UBSAN_OPTIONS}")
+      list(APPEND TESTS_ENVIRONMENT UBSAN_OPTIONS=$ENV{UBSAN_OPTIONS})
     else()
-      message(FATAL_ERROR "Sanitizer ${USE_SANITIZER} is not supported")
+      message(FATAL_ERROR "Sanitizer ${USE_SANITIZER} is NOT supported")
     endif()
   endif()
 endmacro()
@@ -296,6 +303,86 @@ macro(drake_setup_valgrind)
       endif()
 
       unset(_use_valgrind_lower)
+    endif()
+  endif()
+endmacro()
+
+#------------------------------------------------------------------------------
+macro(drake_setup_coverage)
+  set(USE_COVERAGE OFF CACHE STRING
+    "Choose a coverage tool to use; options are Gcov Sanitizer")
+  set_property(CACHE USE_COVERAGE PROPERTY STRINGS OFF Gcov Sanitizer)
+
+  if(USE_COVERAGE)
+    if(NOT DISABLE_PYTHON)
+      set(DISABLE_PYTHON ON)
+      message(STATUS "Disabling Python because USE_COVERAGE is enabled")
+    endif()
+
+    if(USE_COVERAGE STREQUAL "Gcov")
+      _drake_add_compiler_and_linker_flag("-fprofile-arcs" FPROFILE_ARCS)
+      _drake_add_compiler_and_linker_flag("-ftest-coverage" FTEST_COVERAGE)
+
+      find_program(LCOV_EXECUTABLE lcov)
+      mark_as_advanced(LCOV_EXECUTABLE)
+
+      find_program(GENHTML_EXECUTABLE genhtml)
+      mark_as_advanced(GENHTML_EXECUTABLE)
+
+      if(LCOV_EXECUTABLE AND GENHTML_EXECUTABLE)
+        add_custom_target(lcov
+          COMMAND "${LCOV_EXECUTABLE}"
+            --capture
+            --directory .
+            --output-file "${CMAKE_CURRENT_BINARY_DIR}/coverage.info"
+          COMMAND "${GENHTML_EXECUTABLE}"
+            "${CMAKE_CURRENT_BINARY_DIR}/coverage.info"
+            --output-directory "${CMAKE_CURRENT_BINARY_DIR}/coverage-html")
+      else()
+        message(STATUS
+          "Could NOT find lcov and/or genhtml. HTML coverage report will NOT be created.")
+      endif()
+
+    elseif(USE_COVERAGE STREQUAL "Sanitizer")
+      if(NOT DISABLE_MATLAB)
+        set(DISABLE_MATLAB ON)
+        message(STATUS "Disabling MATLAB because USE_COVERAGE=Sanitizer is enabled")
+      endif()
+
+      set(SANITIZER_COVERAGE_LEVEL Edge CACHE STRING
+        "Choose a sanitizer coverage level to use; options are BasicBlock Edge Source")
+      set_property(CACHE SANITIZER_COVERAGE_LEVEL PROPERTY STRINGS
+        BasicBlock Edge Function)
+
+      if(SANITIZER_COVERAGE_LEVEL STREQUAL "BasicBlock")
+         _drake_add_compiler_and_linker_flag("-fsanitize-coverage=bb"
+           FSANITIZE_COVERAGE_BB)
+      elseif(SANITIZER_COVERAGE_LEVEL STREQUAL "Edge")
+         _drake_add_compiler_and_linker_flag("-fsanitize-coverage=edge"
+           FSANITIZE_COVERAGE_EDGE)
+      elseif(SANITIZER_COVERAGE_LEVEL STREQUAL "Function")
+         _drake_add_compiler_and_linker_flag("-fsanitize-coverage=func"
+           FSANITIZE_COVERAGE_FUNC)
+      else()
+        message(FATAL_ERROR
+          "Sanitizer coverage level ${SANITIZER_COVERAGE_LEVEL} is NOT supported")
+      endif()
+
+      set(ENV{UBSAN_OPTIONS} "coverage=1:$ENV{UBSAN_OPTIONS}")
+
+      find_program(SANCOV_EXECUTABLE NAMES sancov)
+      mark_as_advanced(SANCOV_EXECUTABLE)
+
+      if(SANCOV_EXECUTABLE)
+        set(ENV{UBSAN_OPTIONS}
+          "html_cov_report=1:sancov_path=${SANCOV_EXECUTABLE}:$ENV{UBSAN_OPTIONS}")
+      else()
+        message(STATUS "Could NOT find sancov. HTML coverage report will NOT be created.")
+      endif()
+
+      list(APPEND TESTS_ENVIRONMENT UBSAN_OPTIONS=$ENV{UBSAN_OPTIONS})
+    else()
+      message(FATAL_ERROR "Coverage tool ${USE_COVERAGE} is not supported")
     endif()
   endif()
 endmacro()

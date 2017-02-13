@@ -77,6 +77,7 @@ gfortran-5
 gfortran-5-multilib
 git
 graphviz
+lcov
 libgl1-mesa-dri
 libgtk2.0-dev
 libhtml-form-perl
