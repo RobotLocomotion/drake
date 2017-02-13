@@ -102,8 +102,8 @@ DesiredMotionParam ParseDesiredMotionParam(
 
 // Generates a vector of names for the generalized coordinate. Since q and v
 // can have different dimensions, and we are only interested in the
-// accelerations (vdot). So it is more consistent to use the velocities' names.
-// However these names have the suffix `dot`, which are strips away here.
+// accelerations (vdot), so it is more consistent to use the velocities' names.
+// However these names have the suffix `dot`, which are stripped away here.
 template <typename T>
 std::string get_dof_name(const RigidBodyTree<T>& robot, int dof_idx) {
   DRAKE_DEMAND(dof_idx >= 0 && dof_idx < robot.get_num_velocities());

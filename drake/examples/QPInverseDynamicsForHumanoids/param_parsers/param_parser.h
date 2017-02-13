@@ -94,7 +94,7 @@ struct ContactParam {
   double kd;
   double weight;
 
-  /// Only check numerical values being equal. Does not check for
+  /// Only checks numerical values being equal. Does not check for
   /// name equality.
   bool operator==(const ContactParam& other) const {
     if (num_basis_per_contact_point != other.num_basis_per_contact_point)
