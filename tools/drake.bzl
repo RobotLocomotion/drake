@@ -35,14 +35,21 @@ def drake_cc_library(
         srcs=None,
         deps=None,
         copts=[],
+        linkstatic=1,
         **kwargs):
-    """Creates a rule to declare a C++ library."""
+    """Creates a rule to declare a C++ library.
+
+    By default, we produce only static libraries, to reduce compilation time
+    on all platforms, and to avoid mysterious dyld errors on OS X. This default
+    could be revisited if binary size becomes a concern.
+    """
     native.cc_library(
         name=name,
         hdrs=hdrs,
         srcs=srcs,
         deps=deps,
         copts=_platform_copts(copts),
+        linkstatic=linkstatic,
         **kwargs)
 
 def drake_cc_binary(
@@ -51,14 +58,20 @@ def drake_cc_binary(
         srcs=None,
         deps=None,
         copts=[],
+        linkstatic=1,
         **kwargs):
-    """Creates a rule to declare a C++ binary."""
+    """Creates a rule to declare a C++ binary.
+
+    By default, we prefer to link static libraries whenever they are available.
+    This default could be revisited if binary size becomes a concern.
+    """
     native.cc_binary(
         name=name,
         hdrs=hdrs,
         srcs=srcs,
         deps=deps,
         copts=_platform_copts(copts),
+        linkstatic=linkstatic,
         **kwargs)
 
 def drake_cc_googletest(
