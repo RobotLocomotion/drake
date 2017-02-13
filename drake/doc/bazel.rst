@@ -120,6 +120,7 @@ Proprietary Solvers
 The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi (on Ubuntu only)
+ * SNOPT
 
 Gurobi
 ------
@@ -130,10 +131,30 @@ Gurobi
 4. Unzip it in a local directory, e.g. ``/home/myuser/bin/gurobi``
 5. ``export GUROBI_PATH=/home/myuser/bin/gurobi/gurobi605/linux64``
 
-To confirm that your setup was successful, run the tests that require Gurobi.
-Note that this config includes *only* the tests that require Gurobi::
 
-  ``bazel test --config gurobi ...``
+To confirm that your setup was successful, run the tests that require Gurobi.
+
+  ``bazel test --config gurobi --test_tag_filters=gurobi ...``
+
+The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
+these tests. If you will be developing with Gurobi regularly, you may wish
+to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
+See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
+
+SNOPT
+-----
+
+1. Obtain access to the private RobotLocomotion/snopt GitHub repository.
+2. `Set up SSH access to github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_.
+
+To confirm that your setup was successful, run the tests that require SNOPT.
+
+  ``bazel test --config snopt --test_tag_filters=snopt ...``
+
+The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
+these tests. If you will be developing with SNOPT regularly, you may wish
+to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
+See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
 
 Optional Tools
 ==============
