@@ -80,9 +80,11 @@ drake_cc_library(
     ],
     linkstatic = 1,
     deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
         "//drake/lcmtypes:viewer",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/lcm",
+        "//drake/systems/primitives:signal_log"
     ],
 )
 
