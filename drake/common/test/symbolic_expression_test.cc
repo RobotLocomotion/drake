@@ -1736,8 +1736,9 @@ void CheckMonomialToCoeffMap(const symbolic::Expression& e, const Variables& var
   }
   EXPECT_TRUE(e.EqualTo(e_expected));
 }
+
 TEST_F(SymbolicExpressionTest, DecomposePolynomial) {
-  std::unordered_map<Expression, Expression, hash_value<Expression>> map_expected;
+  Expression::MonomialToCoeffMap map_expected;
   map_expected.emplace(x_, 1);
   CheckMonomialToCoeffMap(x_, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(x_, {var_x_, var_y_}, map_expected);
@@ -1746,6 +1747,16 @@ TEST_F(SymbolicExpressionTest, DecomposePolynomial) {
   map_expected.emplace(1, x_);
   CheckMonomialToCoeffMap(x_, {var_y_}, map_expected);
   CheckMonomialToCoeffMap(x_, {var_y_, var_z_}, map_expected);
+
+  map_expected.clear();
+  map_expected.emplace(1, 2);
+  CheckMonomialToCoeffMap(two_, {var_x_}, map_expected);
+  CheckMonomialToCoeffMap(two_, {var_x_, var_y_}, map_expected);
+
+  map_expected.clear();
+  map_expected.emplace(1, pi_);
+  CheckMonomialToCoeffMap(pi_, {var_x_}, map_expected);
+  CheckMonomialToCoeffMap(pi_, {var_x_, var_y_}, map_expected);
 }
 }  // namespace
 }  // namespace symbolic

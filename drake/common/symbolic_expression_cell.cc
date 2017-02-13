@@ -427,6 +427,13 @@ Polynomial<double> ExpressionAdd::ToPolynomial() const {
 
 ExpressionCell::MonomialToCoeffMap ExpressionAdd::DecomposePolynomial(const Variables &vars) const {
   ExpressionCell::MonomialToCoeffMap map;
+  map.emplace(1, constant_);
+  return accumulate(expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(),
+  map, [](const ExpressionCell::MonomialToCoeffMap& m,
+      const pair<Expression, double>& p) {
+        ExpressionCell::MonomialToCoeffMap p_m = p.first.ptr_->DecomposePolynomial(vars);
+
+      });
   return map;
 }
 
