@@ -154,19 +154,7 @@ Polynomial<double> Expression::ToPolynomial() const {
 
 Expression::MonomialToCoeffMap Expression::DecomposePolynomial(const Variables& vars) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-
-  const auto& monomial_to_coeff_map = ptr_->DecomposePolynomial(vars);
-  const Variables& expr_vars = GetVariables();
-  std::unordered_map<Variable::Id, Variable> id_to_var_map;
-  for (const Variable& var : expr_vars) {
-    id_to_var_map.emplace(var.get_id(), var);
-  }
-  Expression::MonomialToCoeffMap monomial_expression_to_coeff_map;
-  monomial_expression_to_coeff_map.reserve(monomial_to_coeff_map.size());
-  for (const auto& m : monomial_to_coeff_map) {
-    monomial_expression_to_coeff_map.emplace(m.first.ToExpression(id_to_var_map), m.second);
-  }
-  return monomial_expression_to_coeff_map;
+  return ptr_->DecomposePolynomial(vars);
 }
 
 

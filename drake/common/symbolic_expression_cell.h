@@ -29,8 +29,6 @@ namespace symbolic {
  */
 class ExpressionCell {
  public:
-  typedef std::unordered_map<internal::Monomial, Expression, hash_value<internal::Monomial>> MonomialToCoeffMap;
-
   /** Returns expression kind. */
   ExpressionKind get_kind() const { return kind_; }
   /** Returns hash value. */
@@ -60,7 +58,7 @@ class ExpressionCell {
    * @param vars The set of variables.
    * @return Maps the monomial to the coefficient.
    */
-  virtual MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const = 0;
+  virtual Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const = 0;
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
@@ -176,7 +174,7 @@ class ExpressionVar : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -195,7 +193,7 @@ class ExpressionConstant : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -213,7 +211,7 @@ class ExpressionNaN : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -243,7 +241,7 @@ class ExpressionAdd : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -343,7 +341,7 @@ class ExpressionMul : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -426,7 +424,7 @@ class ExpressionDiv : public BinaryExpressionCell {
  public:
   ExpressionDiv(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -440,7 +438,7 @@ class ExpressionLog : public UnaryExpressionCell {
  public:
   explicit ExpressionLog(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -458,7 +456,7 @@ class ExpressionAbs : public UnaryExpressionCell {
  public:
   explicit ExpressionAbs(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -475,7 +473,7 @@ class ExpressionExp : public UnaryExpressionCell {
  public:
   explicit ExpressionExp(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -489,7 +487,7 @@ class ExpressionSqrt : public UnaryExpressionCell {
  public:
   explicit ExpressionSqrt(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -507,7 +505,7 @@ class ExpressionPow : public BinaryExpressionCell {
  public:
   ExpressionPow(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -526,7 +524,7 @@ class ExpressionSin : public UnaryExpressionCell {
  public:
   explicit ExpressionSin(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -540,7 +538,7 @@ class ExpressionCos : public UnaryExpressionCell {
  public:
   explicit ExpressionCos(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -554,7 +552,7 @@ class ExpressionTan : public UnaryExpressionCell {
  public:
   explicit ExpressionTan(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -568,7 +566,7 @@ class ExpressionAsin : public UnaryExpressionCell {
  public:
   explicit ExpressionAsin(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -586,7 +584,7 @@ class ExpressionAcos : public UnaryExpressionCell {
  public:
   explicit ExpressionAcos(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -604,7 +602,7 @@ class ExpressionAtan : public UnaryExpressionCell {
  public:
   explicit ExpressionAtan(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -619,7 +617,7 @@ class ExpressionAtan2 : public BinaryExpressionCell {
  public:
   ExpressionAtan2(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -633,7 +631,7 @@ class ExpressionSinh : public UnaryExpressionCell {
  public:
   explicit ExpressionSinh(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -647,7 +645,7 @@ class ExpressionCosh : public UnaryExpressionCell {
  public:
   explicit ExpressionCosh(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -661,7 +659,7 @@ class ExpressionTanh : public UnaryExpressionCell {
  public:
   explicit ExpressionTanh(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -675,7 +673,7 @@ class ExpressionMin : public BinaryExpressionCell {
  public:
   ExpressionMin(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -689,7 +687,7 @@ class ExpressionMax : public BinaryExpressionCell {
  public:
   ExpressionMax(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -709,7 +707,7 @@ class ExpressionIfThenElse : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
+  Expression::MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;

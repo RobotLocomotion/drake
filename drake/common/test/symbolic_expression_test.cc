@@ -1737,18 +1737,22 @@ void CheckMonomialToCoeffMap(const symbolic::Expression& e, const Variables& var
   EXPECT_TRUE(e.EqualTo(e_expected));
 }
 
-TEST_F(SymbolicExpressionTest, DecomposePolynomial) {
+TEST_F(SymbolicExpressionTest, DecomposePolynomial0) {
   Expression::MonomialToCoeffMap map_expected;
   map_expected.emplace(x_, 1);
   CheckMonomialToCoeffMap(x_, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(x_, {var_x_, var_y_}, map_expected);
+}
 
-  map_expected.clear();
+TEST_F(SymbolicExpressionTest, DecomposePolynomial1) {
+  Expression::MonomialToCoeffMap map_expected;
   map_expected.emplace(1, x_);
   CheckMonomialToCoeffMap(x_, {var_y_}, map_expected);
   CheckMonomialToCoeffMap(x_, {var_y_, var_z_}, map_expected);
+}
 
-  map_expected.clear();
+TEST_F(SymbolicExpressionTest, DecomposePolynomial2) {
+  Expression::MonomialToCoeffMap map_expected;
   map_expected.emplace(1, 2);
   CheckMonomialToCoeffMap(two_, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(two_, {var_x_, var_y_}, map_expected);
@@ -1757,6 +1761,26 @@ TEST_F(SymbolicExpressionTest, DecomposePolynomial) {
   map_expected.emplace(1, pi_);
   CheckMonomialToCoeffMap(pi_, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(pi_, {var_x_, var_y_}, map_expected);
+}
+
+TEST_F(SymbolicExpressionTest, DecomposePolynomial3) {
+  Expression::MonomialToCoeffMap map_expected;
+  map_expected.emplace(x_, 1);
+  map_expected.emplace(y_, 1);
+  CheckMonomialToCoeffMap(e_add_, {var_x_, var_y_}, map_expected);
+  CheckMonomialToCoeffMap(e_add_, {var_x_, var_y_, var_z_}, map_expected);
+
+  map_expected.clear();
+  map_expected.emplace(x_, 1);
+  map_expected.emplace(y_, 1);
+  map_expected.emplace(1, 2);
+  CheckMonomialToCoeffMap(x_ + y_ + 2, {var_x_, var_y_}, map_expected);
+  CheckMonomialToCoeffMap(x_ + y_ + 2, {var_x_, var_y_, var_z_}, map_expected);
+  CheckMonomialToCoeffMap((x_ + y_) + 2, {var_x_, var_y_}, map_expected);
+  CheckMonomialToCoeffMap((x_ + y_) + 2, {var_x_, var_y_, var_z_}, map_expected);
+  map_expected[Expression(1)] = 4;
+  CheckMonomialToCoeffMap((x_ + 1) + (y_ + 1) + 2, {var_x_, var_y_}, map_expected);
+  CheckMonomialToCoeffMap((x_ + 1) + (y_ + 1) + 2, {var_x_, var_y_, var_z_}, map_expected);
 }
 }  // namespace
 }  // namespace symbolic
