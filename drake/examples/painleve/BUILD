@@ -16,7 +16,7 @@ drake_cc_library(
     linkstatic = 1,
     deps = [
         "//drake/common",
-        "//drake/solvers:moby_lcp_solver",
+        "//drake/solvers:mathematical_program",
         "//drake/systems/framework:leaf_system",
     ],
 )
