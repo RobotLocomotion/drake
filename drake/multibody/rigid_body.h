@@ -162,9 +162,7 @@ class RigidBody {
   bool has_parent_body() const;
 
   // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use has_parent_body().")
-#endif
   bool hasParent() const;
 
   /**
@@ -412,9 +410,7 @@ class RigidBody {
       std::ostream& out, const RigidBody<double>& b);
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 
   typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
   typedef typename CollisionElementsVector::iterator CollisionElementsIterator;

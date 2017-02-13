@@ -129,9 +129,7 @@ class RigidBodyTree {
    */
   int get_num_model_instances() const;
 
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_model_instances().")
-#endif
   int get_number_of_model_instances() const;
 
   void addFrame(std::shared_ptr<RigidBodyFrame<T>> frame);
@@ -201,15 +199,11 @@ class RigidBodyTree {
   std::string get_velocity_name(int velocity_num) const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_position_name.")
-#endif
   std::string getPositionName(int position_num) const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_velocity_name.")
-#endif
   std::string getVelocityName(int velocity_num) const;
 
   std::string getStateName(int state_num) const;
@@ -638,9 +632,7 @@ class RigidBodyTree {
    */
   std::vector<int> FindAncestorBodies(int body_index) const;
 
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use RigidBodyTree::FindAncestorBodies().")
-#endif
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body) const;
 
@@ -664,12 +656,10 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache) const;
 
-#ifndef SWIG
   /// Convenience alias for rigid body to external wrench map, for use with
   /// inverseDynamics and dynamicsBiasTerm.
   using BodyToWrenchMap = drake::eigen_aligned_std_unordered_map<
     RigidBody<double> const*, drake::WrenchVector<T>>;
-#endif
 
   /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator
   *equations
@@ -1133,9 +1123,7 @@ class RigidBodyTree {
  * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
  * instead.
  */
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use RigidBodyTree::FindBody().")
-#endif
   RigidBody<T>* findLink(const std::string& link_name,
                       const std::string& model_name = "",
                       int model_id = -1) const;
@@ -1185,9 +1173,7 @@ class RigidBodyTree {
  * This is a deprecated version of `FindBodyIndex(...)`. Please use
  * `FindBodyIndex(...)` instead.
  */
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use RigidBodyTree::FindBodyIndex().")
-#endif
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
   /**
@@ -1213,9 +1199,7 @@ class RigidBodyTree {
   RigidBody<T>* FindChildBodyOfJoint(const std::string& joint_name,
                                      int model_instance_id = -1) const;
 
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use FindChildBodyOfJoint().")
-#endif
   RigidBody<T>* findJoint(
           const std::string& joint_name, int model_id = -1) const;
 
@@ -1243,9 +1227,7 @@ class RigidBodyTree {
   int FindIndexOfChildBodyOfJoint(const std::string& joint_name,
                                   int model_instance_id = -1) const;
 
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use FindIndexOfChildBodyOfJoint().")
-#endif
   int findJointId(const std::string& joint_name, int model_id = -1) const;
 
   /**
@@ -1279,9 +1261,7 @@ class RigidBodyTree {
    */
   int get_num_bodies() const;
 
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_bodies().")
-#endif
   int get_number_of_bodies() const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
@@ -1438,9 +1418,7 @@ class RigidBodyTree {
    */
   int get_num_positions() const;
 
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_positions().")
-#endif
   int number_of_positions() const;
 
   /**
@@ -1448,9 +1426,7 @@ class RigidBodyTree {
    */
   int get_num_velocities() const;
 
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_velocities().")
-#endif
   int number_of_velocities() const;
 
   /**
@@ -1557,9 +1533,7 @@ class RigidBodyTree {
   std::unique_ptr<DrakeCollision::Model> collision_model_;
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 
  private:
   RigidBodyTree(const RigidBodyTree&);
