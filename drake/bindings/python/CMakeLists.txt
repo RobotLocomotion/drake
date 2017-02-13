@@ -25,6 +25,7 @@ if(BUILD_TESTING)
   drake_add_python_test(pydrake.test.testRBTTransformPoints)
   drake_add_python_test(pydrake.test.testRBTCoM)
   drake_add_python_test(pydrake.test.testForwardDiff)
+  drake_add_python_test(pydrake.test.testSymbolic)
 
   if(gurobi_FOUND)
     drake_add_python_test(pydrake.test.testMathematicalProgram)

@@ -24,6 +24,12 @@ target_link_libraries(_pydrake_ik PRIVATE drakeIK Eigen3::Eigen)
 target_compile_options(_pydrake_autodiffutils PRIVATE "-fvisibility=default")
 install(TARGETS _pydrake_ik DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
 
+pybind11_add_module(_pydrake_symbolic pydrake_symbolic.cc)
+target_link_libraries(_pydrake_symbolic PRIVATE drakeOptimization Eigen3::Eigen)
+set_target_properties(_pydrake_symbolic PROPERTIES OUTPUT_NAME "symbolic")
+target_compile_options(_pydrake_symbolic PRIVATE "-fvisibility=default")
+install(TARGETS _pydrake_symbolic DESTINATION ${PYDRAKE_INSTALL_DIR})
+
 pybind11_add_module(_pydrake_mathematicalprogram pydrake_mathematicalprogram.cc)
 target_link_libraries(_pydrake_mathematicalprogram PRIVATE drakeOptimization Eigen3::Eigen)
 target_compile_options(_pydrake_mathematicalprogram PRIVATE "-fvisibility=default")
