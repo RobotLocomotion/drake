@@ -27,6 +27,7 @@ drake_cc_googletest(
     name = "painleve_test",
     deps = [
         ":painleve",
+        "//drake/common",
         "//drake/systems/analysis",
     ],
 )
