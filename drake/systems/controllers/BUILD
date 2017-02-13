@@ -10,7 +10,6 @@ drake_cc_library(
     name = "gravity_compensator",
     srcs = ["gravity_compensator.cc"],
     hdrs = ["gravity_compensator.h"],
-    linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
@@ -22,7 +21,6 @@ drake_cc_library(
     name = "linear_quadratic_regulator",
     srcs = ["linear_quadratic_regulator.cc"],
     hdrs = ["linear_quadratic_regulator.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common:is_approx_equal_abstol",
         "//drake/math:continuous_algebraic_ricatti_equation",
@@ -35,7 +33,6 @@ drake_cc_library(
     name = "pid_controller",
     srcs = ["pid_controller.cc"],
     hdrs = ["pid_controller.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework",
         "//drake/systems/primitives:adder",
@@ -50,7 +47,6 @@ drake_cc_library(
     name = "pid_controlled_system",
     srcs = ["pid_controlled_system.cc"],
     hdrs = ["pid_controlled_system.h"],
-    linkstatic = 1,
     deps = [
         ":pid_controller",
         "//drake/systems/primitives:constant_vector_source",

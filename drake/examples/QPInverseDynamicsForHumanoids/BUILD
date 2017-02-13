@@ -12,7 +12,6 @@ drake_cc_library(
     name = "control_utils",
     srcs = [],
     hdrs = ["control_utils.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/math:geometric_transform",
@@ -27,7 +26,6 @@ drake_cc_library(
     name = "humanoid_status",
     srcs = ["humanoid_status.cc"],
     hdrs = ["humanoid_status.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
@@ -40,7 +38,6 @@ drake_cc_library(
     name = "qp_controller_common",
     srcs = ["qp_controller_common.cc"],
     hdrs = ["qp_controller_common.h"],
-    linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
     ],
@@ -69,7 +66,6 @@ drake_cc_library(
     name = "qp_controller",
     srcs = ["qp_controller.cc"],
     hdrs = ["qp_controller.h"],
-    linkstatic = 1,
     deps = [
         ":humanoid_status",
         ":qp_controller_common",

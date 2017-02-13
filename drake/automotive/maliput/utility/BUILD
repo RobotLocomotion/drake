@@ -23,7 +23,6 @@ drake_cc_library(
         "generate_urdf.h",
         "infinite_circuit_road.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/common",

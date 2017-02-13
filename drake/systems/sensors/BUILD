@@ -15,7 +15,6 @@ drake_cc_library(
     name = "sensors",
     srcs = [],
     hdrs = [],
-    linkstatic = 1,
     deps = [
         ":accelerometer",
         ":camera_info",
@@ -32,7 +31,6 @@ drake_cc_library(
     hdrs = [
         "camera_info.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework",
     ],
@@ -53,7 +51,6 @@ drake_cc_library(
     name = "rotary_encoders",
     srcs = ["rotary_encoders.cc"],
     hdrs = ["rotary_encoders.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework",
     ],
@@ -69,7 +66,6 @@ drake_cc_library(
         "accelerometer.h",
         "accelerometer_output.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/rigid_body_plant",
@@ -89,7 +85,6 @@ drake_cc_library(
         "depth_sensor_output.h",
         "depth_sensor_specification.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
@@ -106,7 +101,6 @@ drake_cc_library(
         "gyroscope.h",
         "gyroscope_output.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
@@ -128,7 +122,6 @@ drake_cc_library(
     data = [
         "//drake/examples/Pendulum:models",
     ],
-    linkstatic = 1,
     deps = [
         ":accelerometer",
         "//drake/common",

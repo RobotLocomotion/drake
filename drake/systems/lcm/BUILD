@@ -16,7 +16,6 @@ drake_cc_library(
         "lcm_and_vector_base_translator.h",
         "lcm_translator_dictionary.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework",
     ],
@@ -34,7 +33,6 @@ drake_cc_library(
         "lcm_subscriber_system.h",
         "serializer.h",
     ],
-    linkstatic = 1,
     deps = [
         ":translator",
         "//drake/lcm:interface",
@@ -46,7 +44,6 @@ drake_cc_library(
     name = "lcmt_drake_signal_translator",
     srcs = ["lcmt_drake_signal_translator.cc"],
     hdrs = ["lcmt_drake_signal_translator.h"],
-    linkstatic = 1,
     deps = [
         ":translator",
         "//drake/lcmtypes:drake_signal",

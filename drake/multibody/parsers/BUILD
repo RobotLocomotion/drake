@@ -29,7 +29,6 @@ drake_cc_library(
         "urdf_parser.h",
         "xml_util.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
     ],
@@ -40,7 +39,6 @@ drake_cc_binary(
     name = "urdf_kinematics_test",
     testonly = 1,
     srcs = ["test/urdf_kinematics_test.cc"],
-    linkstatic = 1,
     deps = [
         ":parsers",
         "//drake/multibody:rigid_body_tree",
@@ -53,7 +51,6 @@ drake_cc_binary(
     name = "urdf_collision_test",
     testonly = 1,
     srcs = ["test/urdf_collision_test.cc"],
-    linkstatic = 1,
     deps = [
         ":parsers",
         "//drake/multibody:rigid_body_tree",
@@ -65,7 +62,6 @@ drake_cc_binary(
 drake_cc_binary(
     name = "urdf_manipulator_dynamics_test",
     srcs = ["test/urdf_manipulator_dynamics_test.cc"],
-    linkstatic = 1,
     deps = [
         ":parsers",
         "//drake/multibody:rigid_body_tree",

@@ -30,7 +30,6 @@ drake_cc_library(
         "inverse_kinematics_backend.h",
         "rigid_body_ik.h",
     ],
-    linkstatic = 1,
     deps = [
         ":rigid_body_constraint",
         ":rigid_body_tree",
@@ -43,7 +42,6 @@ drake_cc_library(
     name = "rigid_body_constraint",
     srcs = ["constraint/rigid_body_constraint.cc"],
     hdrs = ["constraint/rigid_body_constraint.h"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
     ],
@@ -73,7 +71,6 @@ drake_cc_library(
         "rigid_body_loop.h",
         "rigid_body_tree.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common:drake_path",
         "//drake/math:geometric_transform",
@@ -92,7 +89,6 @@ drake_cc_library(
     name = "rigid_body_tree_construction",
     srcs = ["rigid_body_tree_construction.cc"],
     hdrs = ["rigid_body_tree_construction.h"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
     ],
@@ -103,7 +99,6 @@ drake_cc_binary(
     name = "benchmark_rigid_body_tree",
     testonly = 1,
     srcs = ["test/benchmark_rigid_body_tree.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
         "//drake/common:measure_execution",
@@ -117,7 +112,6 @@ drake_cc_binary(
     name = "debug_manipulator_dynamics",
     testonly = 1,
     srcs = ["test/debug_manipulator_dynamics.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
         "//drake/multibody/parsers",
