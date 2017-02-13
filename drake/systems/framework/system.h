@@ -1173,7 +1173,7 @@ class System {
   ///          be defined as `∂g/∂q⋅N`, where `N ≡ ∂q/∂ꝗ` is the Jacobian matrix
   ///          (dependent on `q`) of the generalized coordinates with respect
   ///          to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
-  ///          the generalized velocities). 
+  ///          the generalized velocities).
   /// @param lambda the vector of constraint forces (of same dimension as the
   ///               number of rows in the Jacobian matrix, @p J)
   /// @returns the zero vector of dimension of the dimension of the

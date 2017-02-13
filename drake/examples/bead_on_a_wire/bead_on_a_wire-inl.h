@@ -257,7 +257,7 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
 
 /// Sets the default state for the bead-on-a-wire system to `s = 0, ds/dt = 0`
 /// for the bead represented in minimal coordinates; for the bead represented
-/// in absolute coordinates, the default state is set to `f(0), ds/dt(0)⋅0 = 0`. 
+/// in absolute coordinates, the default state is set to `f(0), ds/dt(0)⋅0 = 0`.
 template <typename T>
 void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
                                   systems::State<T>* state) const {

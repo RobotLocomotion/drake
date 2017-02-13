@@ -58,7 +58,7 @@ namespace bead_on_a_wire {
 /// g(x) = f(f⁻¹(x)) - x
 /// </pre>
 /// where f⁻¹ : ℝ³ → ℝ maps points in Cartesian space to wire parameters (this
-/// class expects that this inverse function may be ill-defined). 
+/// class expects that this inverse function may be ill-defined).
 /// g(x) = 0 will only be satisfied if x corresponds to a point on the wire.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
