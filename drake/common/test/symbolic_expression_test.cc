@@ -1782,6 +1782,56 @@ TEST_F(SymbolicExpressionTest, DecomposePolynomial3) {
   CheckMonomialToCoeffMap((x_ + 1) + (y_ + 1) + 2, {var_x_, var_y_}, map_expected);
   CheckMonomialToCoeffMap((x_ + 1) + (y_ + 1) + 2, {var_x_, var_y_, var_z_}, map_expected);
 }
+
+void CheckDecomposePolynomial5(const Expression& e, const Variable& x, const Variable& y) {
+  // Decompose 2 * x * x
+  EXPECT_TRUE(e.EqualTo(2 * x * x));
+  Expression::MonomialToCoeffMap map_expected1;
+  Expression::MonomialToCoeffMap map_expected2;
+  map_expected1.emplace(x * x, 2);
+  map_expected2.emplace(1, 2 * x * x);
+
+  CheckMonomialToCoeffMap(e, {x}, map_expected1);
+  CheckMonomialToCoeffMap(e, {x, y}, map_expected1);
+  CheckMonomialToCoeffMap(e, {y}, map_expected2);
+}
+
+TEST_F(SymbolicExpressionTest, DecomposePolynomial4) {
+  // Decompose 2 * x * x
+  CheckDecomposePolynomial5(2 * x_ * x_, var_x_, var_y_);
+
+  CheckDecomposePolynomial5(2 * pow(x_, 2), var_x_, var_y_);
+
+  CheckDecomposePolynomial5(2 * (x_ * x_), var_x_, var_y_);
+
+  CheckDecomposePolynomial5(x_ * (2 * x_), var_x_, var_y_);
+}
+
+void CheckDecomposePolynomial6(const Expression& e, const Variable& x, const Variable& y) {
+  // Decompose 6 * x * y
+  EXPECT_TRUE(e.EqualTo(6 * x * y));
+
+  Expression::MonomialToCoeffMap map_expected1;
+  Expression::MonomialToCoeffMap map_expected2;
+  Expression::MonomialToCoeffMap map_expected3;
+  map_expected1.emplace(x * y, 6);
+  map_expected2.emplace(Expression(x), 6 * Expression(y));
+  map_expected3.emplace(Expression(y), 6 * Expression(x));
+
+  CheckMonomialToCoeffMap(e, {x, y}, map_expected1);
+  CheckMonomialToCoeffMap(e, {x}, map_expected2);
+  CheckMonomialToCoeffMap(e, {y}, map_expected3);
+}
+
+TEST_F(SymbolicExpressionTest, DecomposePolynomial5) {
+  CheckDecomposePolynomial6(6 * x_ * y_, var_x_, var_y_);
+
+  CheckDecomposePolynomial6(6 * (x_ * y_), var_x_, var_y_);
+
+  CheckDecomposePolynomial6((2 * x_) * (3 * y_), var_x_, var_y_);
+
+  CheckDecomposePolynomial6(6 * x_ * y_ * pow(z_, 0), var_x_, var_y_);
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

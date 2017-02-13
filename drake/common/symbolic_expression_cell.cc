@@ -436,7 +436,13 @@ Expression::MonomialToCoeffMap ExpressionAdd::DecomposePolynomial(const Variable
   if (constant_ != 0) {
     map.emplace(1, constant_);
   }
+  // For an expression 2*(3*x*y+4*x) + 4*y.
+  // expr_to_coeff_map_[3*x*y+4*x] = 2
+  // expr_to_coeff_map_[y] = 4
   for (const auto& p : expr_to_coeff_map_) {
+    // For expr_to_coeff_map_[3*x*y+4*x] = 2
+    // map_p[x*y] = 3
+    // map_p[x] = 4
     const auto& map_p = p.first.DecomposePolynomial(vars);
     map.reserve(map.size() + map_p.size());
     for (const auto& map_p_pair : map_p) {
@@ -699,6 +705,34 @@ Polynomial<double> ExpressionMul::ToPolynomial() const {
 
 Expression::MonomialToCoeffMap ExpressionMul::DecomposePolynomial(const Variables &vars) const {
   Expression::MonomialToCoeffMap map;
+  for (const auto& p : base_to_exponent_map_) {
+    // First decomposes the term p.
+    if (map.empty()) {
+      map = pow(p.first, p.second).DecomposePolynomial(vars);
+    } else {
+      const auto& map_p = pow(p.first, p.second).DecomposePolynomial(vars);
+      Expression::MonomialToCoeffMap map_product;
+      map_product.reserve(map.size() * map_p.size());
+      // Now multiply each term in map, with each term in map_p
+      for (const auto& term_map : map) {
+        for (const auto& term_map_p : map_p) {
+          Expression new_monomial = term_map.first * term_map_p.first;
+          Expression new_coeff = term_map.second * term_map_p.second;
+          auto it = map_product.find(new_monomial);
+          if (it == map_product.end()) {
+            map_product.emplace(new_monomial, new_coeff);
+          } else {
+            it->second += new_coeff;
+          }
+        }
+      }
+      map = map_product;
+    }
+  }
+  // Finally multiply the constant coefficient.
+  for (auto& p : map) {
+    p.second *= constant_;
+  }
   return map;
 }
 
@@ -1100,6 +1134,38 @@ Polynomial<double> ExpressionPow::ToPolynomial() const {
 
 Expression::MonomialToCoeffMap ExpressionPow::DecomposePolynomial(const Variables &vars) const {
   Expression::MonomialToCoeffMap map;
+  const int exponent{
+      static_cast<int>(get_constant_value(get_second_argument()))};
+  if (exponent == 1) {
+    return get_first_argument().DecomposePolynomial(vars);
+  } else if (exponent == 0) {
+    map.emplace(1, 1);
+  } else if (exponent < 0) {
+    throw std::runtime_error("Pow expression has negative exponent, it cannot be decomposed as a polynomial.");
+  } else if (exponent % 2 == 0) {
+    const auto& map1 = pow(get_first_argument(), exponent / 2).DecomposePolynomial(vars);
+    map.reserve(map1.size() * 2);
+    for (auto it1 = map1.begin(); it1 != map1.end(); ++it1) {
+      for (auto it2 = it1; it2 != map1.end(); ++it2) {
+        Expression new_base = it1->first * it2->first;
+        Expression new_coeff = it1->second * it2->second;
+        if (it1 != it2) {
+          new_coeff *= 2;
+        }
+        auto map_it = map.find(new_base);
+        if (map_it == map.end()) {
+          map.emplace(new_base, new_coeff);
+        } else {
+          map_it->second += new_coeff;
+        }
+      }
+    }
+  } else {
+    Expression base = get_first_argument();
+    const Expression e1 = pow(base, exponent / 2);
+    const Expression e2 = pow(base, exponent / 2 + 1);
+    return (e1 * e2).DecomposePolynomial(vars);
+  }
   return map;
 }
 
