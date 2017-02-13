@@ -6,6 +6,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
+    "drake_cc_googletest",
 )
 
 package(
@@ -141,6 +142,15 @@ sh_test(
         "--simulation_sec=0.01",
     ],
     data = [":iiwa_wsg_simulation"],
+)
+
+drake_cc_googletest(
+    name = "iiwa_lcm_test",
+    deps = [
+        ":iiwa_lcm",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework",
+    ],
 )
 
 cpplint()

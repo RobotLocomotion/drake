@@ -7,14 +7,15 @@ if(lcm_FOUND)
       drakeLcmSystem
       drakeRBM
       drakeMultibodyParsers
-      robotlocomotion-lcmtypes-cpp)
+      robotlocomotion-lcmtypes-cpp
+      Eigen3::Eigen)
   drake_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
       iiwa_common.h iiwa_lcm.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm-common
       TARGET drakeKukaIiwaArmCommon
       LIBS -ldrakeKukaIiwaArmCommon
-      REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rbm)
+      REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rbm eigen3)
 
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
   target_link_libraries(run_kuka_iiwa_arm_dynamics
