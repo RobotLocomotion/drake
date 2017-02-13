@@ -54,10 +54,6 @@ size_t Monomial::GetHash() const {
 }
 
 bool Monomial::operator==(const Monomial& m) const {
-  // Both monomials are 1, does not matter if the variables are the same.
-  if (total_degree_ == 0 && m.total_degree() == 0) {
-    return true;
-  }
   return powers_ == m.powers_;
 }
 

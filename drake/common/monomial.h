@@ -27,8 +27,8 @@ constexpr int NChooseK(int n, int k) {
   return (k == 0) ? 1 : (n * NChooseK(n - 1, k - 1)) / k;
 }
 
-/** Represents a monomial, a product of powers of variables with integer
- * exponents. Note that it does not include the coefficient part of a
+/** Represents a monomial, a product of powers of variables with non-negative
+ * integer exponents. Note that it does not include the coefficient part of a
  * monomial. Internally, it is represented by a map from a variable ID to its
  * integer exponent. */
 class Monomial {
