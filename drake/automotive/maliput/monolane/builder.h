@@ -255,6 +255,26 @@ class Connection {
     return d_theta_;
   }
 
+  /// Performs an in-place polarity reversal for this connection.
+  void MakeReversed() {
+    Endpoint new_start = end().reverse();
+    Endpoint new_end = start().reverse();
+    start_ = new_start;
+    end_ = new_end;
+
+    // If we're dealing with an arc, we need to reflect the reversal in the
+    // intermediary parmeters also.
+    if (type_ == kArc) {
+      d_theta_ = -d_theta();
+      // TODO(jadecastro): Wow guys... we really need to put the transforms
+      // somewhere we can call by name.
+      const double alpha = start().xy().heading();
+      const double theta0 = alpha - std::copysign(M_PI / 2., d_theta());
+      cx_ = start().xy().x() - (radius() * std::cos(theta0));
+      cy_ = start().xy().y() - (radius() * std::sin(theta0));
+    }
+  }
+
  private:
   Type type_{};
   std::string id_;
@@ -326,7 +346,7 @@ class Builder {
   /// @p length specifies the length of displacement (in the direction of the
   /// heading of @p start).  @p z_end specifies the elevation characteristics
   /// at the end-point.
-  const Connection* Connect(
+  Connection* Connect(
       const std::string& id,
       const Endpoint& start,
       const double length,
@@ -335,7 +355,7 @@ class Builder {
   /// Connects @p start to an end-point displaced from @p start via an arc.
   /// @p arc specifies the shape of the arc.  @p z_end specifies the
   /// elevation characteristics at the end-point.
-  const Connection* Connect(
+  Connection* Connect(
       const std::string& id,
       const Endpoint& start,
       const ArcOffset& arc,

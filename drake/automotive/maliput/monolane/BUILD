@@ -15,6 +15,7 @@ drake_cc_library(
         ":builder",
         ":lanes",
         ":loader",
+        ":road_section_builder",
     ],
 )
 
@@ -72,6 +73,20 @@ drake_cc_library(
     deps = [
         ":builder",
         "@yaml_cpp//:lib",
+    ],
+)
+
+drake_cc_library(
+    name = "road_section_builder",
+    srcs = [
+        "road_section_builder.cc",
+    ],
+    hdrs = [
+        "road_section_builder.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":builder",
     ],
 )
 
