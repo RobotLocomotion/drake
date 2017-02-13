@@ -46,31 +46,32 @@ class EndlessRoadCarConfig : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  /// wheelbase
+  /// distance between left/right wheels [positive value, meters]
   const T& wheelbase() const { return this->GetAtIndex(K::kWheelbase); }
   void set_wheelbase(const T& wheelbase) {
     this->SetAtIndex(K::kWheelbase, wheelbase);
   }
-  /// max_abs_steering_angle
+  /// maximum absolute front wheel angle (from forward) [positive value,
+  /// radians]
   const T& max_abs_steering_angle() const {
     return this->GetAtIndex(K::kMaxAbsSteeringAngle);
   }
   void set_max_abs_steering_angle(const T& max_abs_steering_angle) {
     this->SetAtIndex(K::kMaxAbsSteeringAngle, max_abs_steering_angle);
   }
-  /// max_velocity
+  /// maximum allowed forward velocity [positive value, m/s]
   const T& max_velocity() const { return this->GetAtIndex(K::kMaxVelocity); }
   void set_max_velocity(const T& max_velocity) {
     this->SetAtIndex(K::kMaxVelocity, max_velocity);
   }
-  /// max_acceleration
+  /// maximum forward acceleration [positive value, m/s^2]
   const T& max_acceleration() const {
     return this->GetAtIndex(K::kMaxAcceleration);
   }
   void set_max_acceleration(const T& max_acceleration) {
     this->SetAtIndex(K::kMaxAcceleration, max_acceleration);
   }
-  /// max_deceleration
+  /// maximum forward deceleration [positive value, m/s^2]
   const T& max_deceleration() const {
     return this->GetAtIndex(K::kMaxDeceleration);
   }

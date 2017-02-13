@@ -7,9 +7,9 @@ struct lcmt_endless_road_car_config_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 
-  double wheelbase;  // wheelbase
-  double max_abs_steering_angle;  // max_abs_steering_angle
-  double max_velocity;  // max_velocity
-  double max_acceleration;  // max_acceleration
-  double max_deceleration;  // max_deceleration
+  double wheelbase;  // distance between left/right wheels [positive value, meters]
+  double max_abs_steering_angle;  // maximum absolute front wheel angle (from forward) [positive value, radians]
+  double max_velocity;  // maximum allowed forward velocity [positive value, m/s]
+  double max_acceleration;  // maximum forward acceleration [positive value, m/s^2]
+  double max_deceleration;  // maximum forward deceleration [positive value, m/s^2]
 }
