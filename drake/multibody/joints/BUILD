@@ -30,7 +30,6 @@ drake_cc_library(
         "revolute_joint.h",
         "roll_pitch_yaw_floating_joint.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/math:geometric_transform",
@@ -48,7 +47,6 @@ drake_cc_library(
     hdrs = [
         "test/joint_compare_to_clone.h",
     ],
-    linkstatic = 1,
     deps = [
         ":joints",
     ],

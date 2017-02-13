@@ -11,7 +11,6 @@ drake_cc_library(
     testonly = 1,
     srcs = ["controlled_spring_mass_system.cc"],
     hdrs = ["controlled_spring_mass_system.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/framework",

@@ -51,6 +51,7 @@ def drake_cc_binary(
         srcs=None,
         deps=None,
         copts=[],
+        linkstatic=1,
         **kwargs):
     """Creates a rule to declare a C++ binary."""
     native.cc_binary(
@@ -59,6 +60,7 @@ def drake_cc_binary(
         srcs=srcs,
         deps=deps,
         copts=_platform_copts(copts),
+        linkstatic=linkstatic,
         **kwargs)
 
 def drake_cc_googletest(

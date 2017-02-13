@@ -27,7 +27,6 @@ drake_cc_library(
         "gen/simple_car_config.h",
         "gen/simple_car_state.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework",
     ],
@@ -47,7 +46,6 @@ drake_cc_library(
         "gen/simple_car_config_translator.h",
         "gen/simple_car_state_translator.h",
     ],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
         "//drake/lcmtypes:automotive",
@@ -60,7 +58,6 @@ drake_cc_library(
     name = "curve2",
     srcs = ["curve2.cc"],
     hdrs = ["curve2.h"],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
     ],
@@ -70,7 +67,6 @@ drake_cc_library(
     name = "linear_car",
     srcs = ["linear_car.cc"],
     hdrs = ["linear_car.h"],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
         "//drake/common:symbolic",
@@ -81,7 +77,6 @@ drake_cc_library(
     name = "idm_planner",
     srcs = ["idm_planner.cc"],
     hdrs = ["idm_planner.h"],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
         "//drake/common:symbolic",
@@ -95,7 +90,6 @@ drake_cc_library(
         "simple_car.h",
         "simple_car_to_euler_floating_joint.h",
     ],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
         "//drake/common:symbolic",
@@ -106,7 +100,6 @@ drake_cc_library(
     name = "single_lane_ego_and_agent",
     srcs = ["single_lane_ego_and_agent.cc"],
     hdrs = ["single_lane_ego_and_agent.h"],
-    linkstatic = 1,
     deps = [
         ":idm_planner",
         ":linear_car",
@@ -118,7 +111,6 @@ drake_cc_library(
     name = "trajectory_car",
     srcs = ["trajectory_car.cc"],
     hdrs = ["trajectory_car.h"],
-    linkstatic = 1,
     deps = [
         ":curve2",
         ":generated_vectors",
@@ -129,7 +121,6 @@ drake_cc_library(
     name = "automotive_simulator",
     srcs = ["automotive_simulator.cc"],
     hdrs = ["automotive_simulator.h"],
-    linkstatic = 1,
     deps = [
         ":generated_translators",
         ":generated_vectors",
