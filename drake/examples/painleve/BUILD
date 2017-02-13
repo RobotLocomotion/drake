@@ -28,6 +28,7 @@ drake_cc_googletest(
     deps = [
         ":painleve",
         "//drake/common",
+        "//drake/common:eigen_matrix_compare",
         "//drake/systems/analysis",
     ],
 )
