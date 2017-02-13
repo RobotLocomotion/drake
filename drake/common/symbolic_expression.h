@@ -12,7 +12,7 @@
 #include <utility>
 
 #include <Eigen/Core>
-#include <Eigen/Sparse>
+#include <Eigen/SparseCore>
 
 #include "drake/common/cond.h"
 #include "drake/common/drake_copyable.h"
@@ -144,6 +144,8 @@ symbolic::Expression can be used as a scalar type of Eigen types.
 */
 class Expression {
  public:
+  typedef std::unordered_map<Expression, Expression, hash_value<Expression>> MonomialToCoeffMap;
+
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Expression)
 
   /** Default constructor. It constructs Zero(). */
@@ -212,7 +214,7 @@ class Expression {
    * @retval monomial_to_coeff_map Map the monomial to the coefficient in each
    * term of the polynomial.
    */
-  std::unordered_map<Expression, Expression> Expression::DecomposePolynomial(const Variables& vars) const;
+  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const;
 
   /**
    * Decompose a polynomial into three parts, such that the polynomial

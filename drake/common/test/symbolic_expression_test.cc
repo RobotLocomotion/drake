@@ -1724,6 +1724,29 @@ TEST_F(SymbolicExpressionTest, ToString) {
   EXPECT_EQ(e2.to_string(), "cos(((pow(y, 2) * z) + pow(x, 2)))");
 }
 
+void CheckMonomialToCoeffMap(const symbolic::Expression& e, const Variables& vars, const Expression::MonomialToCoeffMap& map_expected) {
+  Expression::MonomialToCoeffMap map = e.DecomposePolynomial(vars);
+  EXPECT_EQ(map.size(), map_expected.size());
+  symbolic::Expression e_expected(0);
+  for (const auto& p : map) {
+    const auto it = map_expected.find(p.first);
+    EXPECT_NE(it, map_expected.end());
+    EXPECT_TRUE(p.second.EqualTo(it->second));
+    e_expected += p.first * p.second;
+  }
+  EXPECT_TRUE(e.EqualTo(e_expected));
+}
+TEST_F(SymbolicExpressionTest, DecomposePolynomial) {
+  std::unordered_map<Expression, Expression, hash_value<Expression>> map_expected;
+  map_expected.emplace(x_, 1);
+  CheckMonomialToCoeffMap(x_, {var_x_}, map_expected);
+  CheckMonomialToCoeffMap(x_, {var_x_, var_y_}, map_expected);
+
+  map_expected.clear();
+  map_expected.emplace(1, x_);
+  CheckMonomialToCoeffMap(x_, {var_y_}, map_expected);
+  CheckMonomialToCoeffMap(x_, {var_y_, var_z_}, map_expected);
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

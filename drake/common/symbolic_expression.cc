@@ -152,16 +152,16 @@ Polynomial<double> Expression::ToPolynomial() const {
   return ptr_->ToPolynomial();
 }
 
-std::unordered_map<Expression, Expression> Expression::DecomposePolynomial(const Variables& vars) const {
+Expression::MonomialToCoeffMap Expression::DecomposePolynomial(const Variables& vars) const {
   DRAKE_ASSERT(ptr_ != nullptr);
 
-  const std::unordered_map<internal::Monomial, Expression, hash_value<internal::Monomial>>& monomial_to_coeff_map = ptr_->DecomposePolynomial(vars);
+  const auto& monomial_to_coeff_map = ptr_->DecomposePolynomial(vars);
   const Variables& expr_vars = GetVariables();
   std::unordered_map<Variable::Id, Variable> id_to_var_map;
   for (const Variable& var : expr_vars) {
     id_to_var_map.emplace(var.get_id(), var);
   }
-  std::unordered_map<Expression, Expression> monomial_expression_to_coeff_map;
+  Expression::MonomialToCoeffMap monomial_expression_to_coeff_map;
   monomial_expression_to_coeff_map.reserve(monomial_to_coeff_map.size());
   for (const auto& m : monomial_to_coeff_map) {
     monomial_expression_to_coeff_map.emplace(m.first.ToExpression(id_to_var_map), m.second);

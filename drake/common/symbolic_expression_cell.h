@@ -28,8 +28,9 @@ namespace symbolic {
  * operator<< is not allowed to be a virtual function.
  */
 class ExpressionCell {
-  using MonomialToCoeffMap = std::unordered_map<internal::Monomial, Expression, hash_value<internal::Monomial>>;
  public:
+  typedef std::unordered_map<internal::Monomial, Expression, hash_value<internal::Monomial>> MonomialToCoeffMap;
+
   /** Returns expression kind. */
   ExpressionKind get_kind() const { return kind_; }
   /** Returns hash value. */
