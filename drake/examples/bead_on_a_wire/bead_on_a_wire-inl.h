@@ -31,7 +31,7 @@ BeadOnAWire<T>::BeadOnAWire(BeadOnAWire<T>::CoordinateType type) {
 
 template <class T>
 Eigen::Matrix<typename BeadOnAWire<T>::DScalar, 3, 1>
-  BeadOnAWire<T>::sinusoidal_function(
+  BeadOnAWire<T>::helix_function(
       const typename BeadOnAWire<T>::DScalar& s) {
   using std::cos;
   using std::sin;
@@ -42,7 +42,7 @@ Eigen::Matrix<typename BeadOnAWire<T>::DScalar, 3, 1>
 
 template <class T>
 typename BeadOnAWire<T>::DScalar
-    BeadOnAWire<T>::inverse_sinusoidal_function(
+    BeadOnAWire<T>::inverse_helix_function(
         const Vector3<typename BeadOnAWire<T>::DScalar>& v) {
   using std::atan2;
   return atan2(v(1), v(0));
@@ -255,10 +255,13 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
   }
 }
 
+/// Sets the default state for the bead-on-a-wire system to `s = 0, ds/dt = 0`
+/// for the bead represented in minimal coordinates; for the bead represented
+/// in absolute coordinates, the default state is set to `f(0), ds/dt(0)⋅0 = 0`. 
 template <typename T>
 void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
                                   systems::State<T>* state) const {
-  // Use a consistent default state for the sinusoidal bead-on-the-wire
+  // Use a consistent default state for the helix bead-on-the-wire
   // example.
   const double s = 0.0, s_dot = 1.0;
   VectorX<T> x0;

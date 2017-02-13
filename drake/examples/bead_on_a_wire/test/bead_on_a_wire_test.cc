@@ -70,16 +70,16 @@ TEST_F(BeadOnAWireTest, Parameters) {
   EXPECT_EQ(dut_abs_->get_gravitational_acceleration(), g);
 }
 
-// Tests that sinusoidal parameter function produces the values and
+// Tests that helix parameter function produces the values and
 // derivatives we expect.
-TEST_F(BeadOnAWireTest, Sinusoidal) {
+TEST_F(BeadOnAWireTest, Helix) {
   // Set small tolerance value.
   const double tol = std::numeric_limits<double>::epsilon() * 10.0;
 
   // Compute the value at pi/3.
   BeadOnAWire<double>::DScalar s;
   s = M_PI / 3.0;
-  auto v = dut_abs_->sinusoidal_function(s);
+  auto v = dut_abs_->helix_function(s);
   const double svalue = s.value().value();
   EXPECT_NEAR(v(0).value().value(), std::cos(svalue), tol);
   EXPECT_NEAR(v(1).value().value(), std::sin(svalue), tol);
@@ -88,7 +88,7 @@ TEST_F(BeadOnAWireTest, Sinusoidal) {
   // Compute the derivative at pi/3.
   s.derivatives()(0) = 1.0;
   s.value().derivatives()(0) = 1.0;
-  auto w = dut_abs_->sinusoidal_function(s);
+  auto w = dut_abs_->helix_function(s);
   EXPECT_EQ(w(0).value().derivatives().size(), 1);
   EXPECT_EQ(w(1).value().derivatives().size(), 1);
   EXPECT_EQ(w(2).value().derivatives().size(), 1);
@@ -105,9 +105,9 @@ TEST_F(BeadOnAWireTest, Sinusoidal) {
   EXPECT_NEAR(deriv2z, 0.0, tol);
 }
 
-// Tests that the inverse of the sinusoidal parameter function produces the
+// Tests that the inverse of the helix parameter function produces the
 // values and derivatives we expect.
-TEST_F(BeadOnAWireTest, InverseSinusoidal) {
+TEST_F(BeadOnAWireTest, InverseHelix) {
   // Set small tolerance value.
   const double tol = std::numeric_limits<double>::epsilon() * 10.0;
 
@@ -115,37 +115,37 @@ TEST_F(BeadOnAWireTest, InverseSinusoidal) {
   const double test_value = M_PI / 3.0;
   BeadOnAWire<double>::DScalar s;
   s = test_value;
-  auto v = dut_abs_->sinusoidal_function(s);
+  auto v = dut_abs_->helix_function(s);
   v(0).derivatives().resize(1);
   v(0).derivatives()(0) = 0.0;
   v(1).derivatives().resize(1);
   v(1).derivatives()(0) = 0.0;
   v(2).derivatives().resize(1);
   v(2).derivatives()(0) = 1.0;
-  auto sprime = dut_abs_->inverse_sinusoidal_function(v);
+  auto sprime = dut_abs_->inverse_helix_function(v);
   EXPECT_NEAR(s.value().value(), sprime.value().value(), tol);
 
-  // Compute the derivative of the inverse sinusoidal function.
+  // Compute the derivative of the inverse helix function.
   s.derivatives()(0) = 1.0;
   s.value().derivatives()(0) = 1.0;
-  auto wprime = dut_abs_->inverse_sinusoidal_function(dut_abs_->
-                                                      sinusoidal_function(s));
+  auto wprime = dut_abs_->inverse_helix_function(dut_abs_->
+                                                      helix_function(s));
   const double candidate_value = wprime.value().derivatives()(0);
 
-  // Apply numerical differentiation to the inverse sinusoidal function. We
+  // Apply numerical differentiation to the inverse helix function. We
   // do this by computing the output:
   // f⁻¹(f(s+ds)) - f⁻¹(f(s))
   // ------------------------
   //            ds
   const double ds = std::numeric_limits<double>::epsilon();
-  auto fprime = dut_abs_->inverse_sinusoidal_function(
-      dut_abs_->sinusoidal_function(s + ds));
-  auto f = dut_abs_->inverse_sinusoidal_function(dut_abs_->
-      sinusoidal_function(s));
+  auto fprime = dut_abs_->inverse_helix_function(
+      dut_abs_->helix_function(s + ds));
+  auto f = dut_abs_->inverse_helix_function(dut_abs_->
+      helix_function(s));
   const double num_value = (fprime.value().value() - f.value().value()) / ds;
   EXPECT_NEAR(candidate_value, num_value, tol);
 
-  // Compute the derivative of the inverse sinusoidal function using the
+  // Compute the derivative of the inverse helix function using the
   // velocity.
   const double x = std::cos(test_value);
   const double y = std::sin(test_value);
@@ -153,7 +153,7 @@ TEST_F(BeadOnAWireTest, InverseSinusoidal) {
   const double xdot = 1.0;
   const double ydot = 2.0;
   const double zdot = 3.0;
-  const double inv_sinusoidal_dot = -y / (x * x + y * y) * xdot +
+  const double inv_helix_dot = -y / (x * x + y * y) * xdot +
       x / (x * x + y * y) * ydot;
   Eigen::Matrix<BeadOnAWire<double>::DScalar, 3, 1> xx;
   xx(0).value() = x;
@@ -162,11 +162,11 @@ TEST_F(BeadOnAWireTest, InverseSinusoidal) {
   xx(0).value().derivatives()(0) = xdot;
   xx(1).value().derivatives()(0) = ydot;
   xx(2).value().derivatives()(0) = zdot;
-  auto tprime = dut_abs_->inverse_sinusoidal_function(xx);
-  EXPECT_NEAR(inv_sinusoidal_dot, tprime.value().derivatives()(0), tol);
+  auto tprime = dut_abs_->inverse_helix_function(xx);
+  EXPECT_NEAR(inv_helix_dot, tprime.value().derivatives()(0), tol);
 }
 
-// Tests the constraint function evaluation using the sinusoidal function.
+// Tests the constraint function evaluation using the helix function.
 TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
   // Put the bead directly onto the wire.
   systems::ContinuousState<double> &xc =
@@ -191,7 +191,7 @@ TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
 }
 
 // Tests the evaluation of the time derivative of the constraint functions
-// using the sinusoidal function.
+// using the helix function.
 TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
   // Put the bead directly onto the wire and make its velocity such that
   // it is not instantaneously leaving the wire.

@@ -312,6 +312,9 @@ class System {
   /// allows the set of constraints to be dependent upon the current system
   /// state (as might be the case with a system modeled using piecewise
   /// differential algebraic equations).
+  /// @returns a vector of dimension get_num_constraint_equations(); the
+  ///          zero vector indicates that the algebraic constraints are all
+  ///          satisfied.
   Eigen::VectorXd EvalConstraintEquations(
       const Context<T>& context) const {
     return DoEvalConstraintEquations(context);
@@ -322,6 +325,7 @@ class System {
   /// context. The context allows the set of constraints to be dependent upon
   /// the current system state (as might be the case with a system modeled using
   /// piecewise differential algebraic equations).
+  /// @returns a vector of dimension get_num_constraint_equations().
   Eigen::VectorXd EvalConstraintEquationsDot(
       const Context<T>& context) const {
     return DoEvalConstraintEquationsDot(context);
@@ -330,20 +334,20 @@ class System {
   /// Computes the change in velocity from applying the given constraint forces
   /// to the system at the given context.
   /// @param context the current system state, provision of which also yields
-  ///           the ability of the constraints to be dependent upon the current
-  ///           system state (as might be the case with a piecewise differential
-  ///           algebraic equation).
+  ///        the ability of the constraints to be dependent upon the current
+  ///        system state (as might be the case with a piecewise differential
+  ///        algebraic equation).
   /// @param J a `m × n` constraint Jacobian matrix of the `m` constraint
-  ///          equations `g()` differentiated with respect to the `n`
-  ///          configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
-  ///          the time derivatives of the generalized coordinates of the system
-  ///          are not identical to the generalized velocity, `J` should instead
-  ///          be defined as `∂g/∂q⋅N`, where `N` is the Jacobian matrix
-  ///          (dependent on `q`) of the generalized coordinates with respect
-  ///          to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
-  ///          the generalized velocities).
+  ///        equations `g()` differentiated with respect to the `n`
+  ///        configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
+  ///        the time derivatives of the generalized coordinates of the system
+  ///        are not identical to the generalized velocity, `J` should instead
+  ///        be defined as `∂g/∂q⋅N`, where `N` is the Jacobian matrix
+  ///        (dependent on `q`) of the generalized coordinates with respect
+  ///        to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
+  ///        the generalized velocities).
   /// @param lambda the vector of constraint forces (of same dimension as the
-  ///               number of rows in the Jacobian matrix, @p J)
+  ///        number of rows in the Jacobian matrix, @p J)
   /// @returns a `n` dimensional vector, where `n` is the dimension of the
   ///          quasi-coordinates.
   Eigen::VectorXd
@@ -355,14 +359,16 @@ class System {
   }
 
   /// Computes the norm on constraint error (used as a metric for comparing
-  /// constraint errors).
+  /// errors between the outputs of algebraic equations applied to two
+  /// different state variable instances). This norm need be neither continuous
+  /// nor differentiable.
   /// @throws std::logic_error if the dimension of @p err is not equivalent to
   ///         the output of get_num_constraint_equations().
   double CalcConstraintErrorNorm(const Context<T>& context,
-                                 const Eigen::VectorXd& err) const {
-    if (err.size() != get_num_constraint_equations(context))
+                                 const Eigen::VectorXd& error) const {
+    if (error.size() != get_num_constraint_equations(context))
       throw std::logic_error("Error vector is mis-sized.");
-    return DoCalcConstraintErrorNorm(context, err);
+    return DoCalcConstraintErrorNorm(context, error);
   }
 
   //@}
@@ -1161,11 +1167,13 @@ class System {
   ///          equations `g()` differentiated with respect to the `n`
   ///          configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
   ///          the time derivatives of the generalized coordinates of the system
-  ///          are not identical to the generalized velocity, `J` should instead
-  ///          be defined as `∂g/∂q⋅N`, where `N` is the Jacobian matrix
+  ///          are not identical to the generalized velocity (in general they
+  ///          need not be, e.g., if generalized coordinates use unit
+  ///          unit quaternions to represent 3D orientation), `J` should instead
+  ///          be defined as `∂g/∂q⋅N`, where `N ≡ ∂q/∂ꝗ` is the Jacobian matrix
   ///          (dependent on `q`) of the generalized coordinates with respect
   ///          to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
-  ///          the generalized velocities).
+  ///          the generalized velocities). 
   /// @param lambda the vector of constraint forces (of same dimension as the
   ///               number of rows in the Jacobian matrix, @p J)
   /// @returns the zero vector of dimension of the dimension of the

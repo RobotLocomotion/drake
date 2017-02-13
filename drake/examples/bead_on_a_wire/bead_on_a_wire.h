@@ -19,9 +19,9 @@ namespace bead_on_a_wire {
 /// to simulate.
 ///
 /// The dynamic equations for the bead in minimal coordinates comes from
-/// Lagrangian Dynamics of the "first kind": forming the Lagrangian and
+/// Lagrangian Dynamics of the "second kind": forming the Lagrangian and
 /// using the Euler-Lagrange equation. The potential energy (V) of the bead with
-/// respect to the parametric function f(s) is:
+/// respect to the parametric function f(s) : ℝ → ℝ³ is:
 /// <pre>
 /// -f₃(s)⋅ag
 /// </pre>
@@ -43,7 +43,7 @@ namespace bead_on_a_wire {
 /// df(s)/ds⋅ṡ⋅d²f/ds² + (df(s)/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
 /// </pre>
 /// The dynamic equations for the bead in absolute coordinates comes from the
-/// Lagrangian Dynamics of the "second kind" (i.e., by formulating the problem
+/// Lagrangian Dynamics of the "first kind" (i.e., by formulating the problem
 /// as an Index-3 DAE):
 /// <pre>
 /// d²x/dt² = fg + fext + Jᵀλ
@@ -57,7 +57,8 @@ namespace bead_on_a_wire {
 /// <pre>
 /// g(x) = f(f⁻¹(x)) - x
 /// </pre>
-/// where f⁻¹ : ℝ³ → ℝ maps points in Cartesian space to wire parameters.
+/// where f⁻¹ : ℝ³ → ℝ maps points in Cartesian space to wire parameters (this
+/// class expects that this inverse function may be ill-defined). 
 /// g(x) = 0 will only be satisfied if x corresponds to a point on the wire.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
@@ -106,13 +107,6 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// derivatives).
   explicit BeadOnAWire(CoordinateType type);
 
-  void DoCalcOutput(const systems::Context<T> &context,
-                    systems::SystemOutput<T> *output) const override;
-
-  void DoCalcTimeDerivatives(
-      const systems::Context<T> &context,
-      systems::ContinuousState<T> *derivatives) const override;
-
   /// Sets the acceleration (with respect to the positive y-axis) due to
   /// gravity (i.e., this number should generally be negative).
   void set_gravitational_acceleration(double g) { g_ = g; }
@@ -122,7 +116,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   double get_gravitational_acceleration() const { return g_; }
 
   /// Allows the user to reset the wire parameter function and its inverse
-  /// (which points to sinusoidal_function and inverse_sinusoidal_function by
+  /// (which points to helix_function and inverse_helix_function by
   /// default.
   /// @param f The pointer to a function that takes a wire parameter
   ///          (scalar `s`) as input and outputs a point in 3D as output.
@@ -144,13 +138,21 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///        | cos(s) |
   /// f(s) = | sin(s) |
   ///        | s      |
-  static Eigen::Matrix<DScalar, 3, 1> sinusoidal_function(const DScalar &s);
+  /// </pre>
+  static Eigen::Matrix<DScalar, 3, 1> helix_function(const DScalar &s);
 
   /// Inverse parametric function for the bead on a wire system that uses the
-  /// sinusoidal parametric example function.
-  static DScalar inverse_sinusoidal_function(const Vector3<DScalar> &v);
+  /// helix parametric example function.
+  static DScalar inverse_helix_function(const Vector3<DScalar> &v);
 
  protected:
+  void DoCalcOutput(const systems::Context<T> &context,
+                    systems::SystemOutput<T> *output) const override;
+
+  void DoCalcTimeDerivatives(
+      const systems::Context<T> &context,
+      systems::ContinuousState<T> *derivatives) const override;
+
   void SetDefaultState(const systems::Context<T> &context,
                        systems::State<T> *state) const override;
 
@@ -176,6 +178,8 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// impulses @p lambda.
   /// @param context The current state of the system.
   /// @param lambda The vector of constraint forces.
+  /// @returns a `n` dimensional vector, where `n` is the dimension of the
+  ///          quasi-coordinates.
   Eigen::VectorXd DoCalcVelocityChangeFromConstraintImpulses(
       const systems::Context<T> &context, const Eigen::MatrixXd &J,
       const Eigen::VectorXd &lambda) const override;
@@ -192,7 +196,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   // The wire parameter function. See set_wire_parameter_function() for more
   // information. This pointer is expected to never be null.
   std::function<Eigen::Matrix<DScalar, 3, 1>(const DScalar &)> f_{
-      &sinusoidal_function};
+      &helix_function};
 
   // The inverse of the wire parameter function.
   // This function takes a point in 3D as input and outputs a scalar
@@ -203,7 +207,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   // presumably less efficient methods instead. This pointer is expected to
   // never be null.
   std::function<DScalar(const Eigen::Matrix<DScalar, 3, 1> &)> inv_f_{
-      &inverse_sinusoidal_function};
+      &inverse_helix_function};
 
   // Signed acceleration due to gravity.
   double g_{-9.81};
