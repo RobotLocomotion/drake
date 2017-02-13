@@ -27,15 +27,15 @@ constexpr int NChooseK(int n, int k) {
   return (k == 0) ? 1 : (n * NChooseK(n - 1, k - 1)) / k;
 }
 
-/** Represents a monomial, a product of powers of variables with integer
- * exponents. Note that it does not include the coefficient part of a
+/** Represents a monomial, a product of powers of variables with non-negative
+ * integer exponents. Note that it does not include the coefficient part of a
  * monomial. Internally, it is represented by a map from a variable ID to its
  * integer exponent. */
 class Monomial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Monomial)
-  /** Default constructor. */
-  Monomial() = default;
+  /** Constructs a monomial equal to 1. Namely the total degree is zero. */
+  Monomial();
   /** Constructs a Monomial from @p powers. */
   explicit Monomial(const std::map<Variable::Id, int>& powers);
   /** Constructs a Monomial from @p var and @exponent. */
