@@ -132,7 +132,7 @@ TEST_F(SpatialVectorTest, ShiftOperator) {
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
 }
 
-}
-}  // math
-}  // multibody
-}  // drake
+}  // namespace
+}  // namespace math
+}  // namespace multibody
+}  // namespace drake

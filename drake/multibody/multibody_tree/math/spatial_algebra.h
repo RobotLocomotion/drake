@@ -10,6 +10,7 @@
 ///   Springer Science & Business Media.
 /// Hereafter in this file we'll refer to this book by Jain (2010).
 
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -66,8 +67,7 @@ class SpatialVector {
   /// Const access to the i-th component of this spatial vector.
   /// Bounds are only checked in Debug builds for a zero overhead implementation
   /// in Release builds.
-  const T& operator[](int i) const
-  {
+  const T& operator[](int i) const {
     DRAKE_ASSERT(0 <= i && i < kSpatialVectorSize);
     return V_[i];
   }
@@ -137,7 +137,7 @@ class SpatialVector {
 template <typename T> inline
 std::ostream& operator<<(std::ostream& o, const SpatialVector<T>& V) {
   o << "[" << V[0];
-  for(int i = 1; i < V.size(); ++i) o << ", " << V[i];
+  for (int i = 1; i < V.size(); ++i) o << ", " << V[i];
   o << "]^T";  // The "transpose" symbol.
   return o;
 }
@@ -145,8 +145,7 @@ std::ostream& operator<<(std::ostream& o, const SpatialVector<T>& V) {
 /// Multiplication of a SpatialVector from the left by a scalar.
 template <typename T>
 inline SpatialVector<T> operator*(
-    const T& s, const SpatialVector<T>& V)
-{
+    const T& s, const SpatialVector<T>& V) {
   return SpatialVector<T>(s * V.angular(), s * V.linear());
 }
 
@@ -227,7 +226,8 @@ class ShiftOperator {
   /// only operate on spatial vectors expressed in the same frame `F`.
   /// @param[in] offset_XoYo_F Vector from `Xo` to `Yo` expressed in an implicit
   ///                          frame `F`.
-  ShiftOperator(const Vector3<T>& offset_XoYo_F) : offset_(offset_XoYo_F) {}
+  explicit ShiftOperator(const Vector3<T>& offset_XoYo_F) :
+      offset_(offset_XoYo_F) {}
 
   /// Returns the vector from the origin of frame `X` to the origin of frame `Y`
   /// expressed in the implicit frame `F`.
@@ -267,7 +267,7 @@ class ShiftOperator {
 /// @tparam T The unerlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class ShiftOperatorTranspose {
-public:
+ public:
   /// Constructs the transpose of a given ShiftOperator `phi_XY_F` between two
   /// frames `X` and `Y`, expressed in a third frame `F`.
   explicit ShiftOperatorTranspose(const ShiftOperator<T>& phi_XY_F) :
@@ -316,8 +316,8 @@ inline ShiftOperatorTranspose<T> ShiftOperator<T>::transpose() const {
   return ShiftOperatorTranspose<T>(*this);
 }
 
-/// Given the spatial velocity `V_AB` of a frame `B` measured in a frame `A`, 
-/// compute the spatial velocity of a frame `Q` rigidly moving with `B` 
+/// Given the spatial velocity `V_AB` of a frame `B` measured in a frame `A`,
+/// compute the spatial velocity of a frame `Q` rigidly moving with `B`
 /// but offset by vector `r_BQ`.
 ///
 /// The operation performed, in vector free form, is: <pre>
@@ -337,8 +337,8 @@ inline ShiftOperatorTranspose<T> ShiftOperator<T>::transpose() const {
 ///                      expressed in `E`.
 template <typename T>
 inline SpatialVector<T> operator*(
-    const ShiftOperatorTranspose<T>& phiT_BQ_E, const SpatialVector<T>& V_AB_E)
-{
+    const ShiftOperatorTranspose<T>& phiT_BQ_E,
+    const SpatialVector<T>& V_AB_E) {
   return ShiftOperatorTranspose<T>::ShiftSpatialVelocity(
       V_AB_E, phiT_BQ_E.offset());
 }
