@@ -201,12 +201,14 @@ template <typename T> class ShiftOperatorTranspose;
 /// @f$ ^WF^A = \phi(A,B)\, ^WF^B @f$ about @f$ A @f$ on the same rigid body.
 ///
 /// Some basic group properties of this operator are:
-/// @f{eqnarray*}{
-///   \phi(X,X) &=& \mathcal{I},\quad
-///                 \text{with } \mathcal{I}\text{ the identity operator.}\\
-///   \phi(X,Z) &=& \phi(X,Y) \, \phi(Y,Z)\\
-///   \phi(X,Y)^{-1} &=& \phi(Y,X)
-/// @f}
+// Note: we comment out the multi-line equation with /**/ because otherwise the
+// trailing backlashes trigger the warning: multi-line comment [-Wcomment]
+/** @f{eqnarray*}{
+      \phi(X,X) &=& \mathcal{I},\quad
+                    \text{with } \mathcal{I}\text{ the identity operator.}\\
+      \phi(X,Z) &=& \phi(X,Y) \, \phi(Y,Z)\\
+      \phi(X,Y)^{-1} &=& \phi(Y,X)
+    @f} */
 ///
 /// @see ShiftOperatorTranspose for the dual version of this operator which
 ///      allows transformation of spatial forces.
