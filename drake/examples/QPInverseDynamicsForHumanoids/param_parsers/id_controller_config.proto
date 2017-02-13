@@ -18,7 +18,7 @@ message Vec3 {
 // for more details. This can be used to specify for accelerations in the
 // genearlized coordinates (N dimensional) or for spatial accelerations of
 // tracked bodies (6 dimensional). When used for bodies, the first 3 dimensions
-// of kp kd and weight correspond to the angular components.
+// of kp, kd, and weight correspond to the angular components.
 message AccelerationParam {
     // Name should be a valid group name in the corresponding
     // param_parsers::AliasGroups.

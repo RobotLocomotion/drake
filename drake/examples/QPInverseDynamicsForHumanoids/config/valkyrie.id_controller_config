@@ -1,14 +1,17 @@
 # See id_controller_config.proto for more details about semantics.
 
-# For centroidal_momentum and body_motion, there should be 6 kp kd and weight
-# field to fully specify the parameters, and the first 3 dimensions correspond
-# to the angular components. A single parameter can also be used to specify
-# same value for all the dimensions.
+# For centroidal_momentum and body_motion, there should be 6 kp, kd, and weight
+# fields to fully specify the parameters, and the first 3 dimensions correspond
+# to the angular components. A single parameter can also be used to specify the
+# same value for all dimensions.
 
 name: "valkyrie_manip"
 
 contact_force_basis_weight: 1e-6
 
+# This term regulates the centroidal momentum (linear and angular momentum) of
+# the system towards some desired reference. The first three terms correspond
+# to angular momentum.
 centroidal_momentum {
     name: "centroidal"
     kp: 0
