@@ -7,6 +7,71 @@
 namespace drake {
 namespace systems {
 
+/**
+ * Interface class for a discrete- or continuous-time, time-varying affine
+ * system.
+ *
+ * If time_period > 0.0, then the affine system will have the state update:
+ *   @f[ x(t+h) = A(t) x(t) + B(t) u(t) + f_0(t), @f]
+ * where `h` is the time_period.  If time_period == 0.0, then the system will
+ * have the time derivatives:
+ *   @f[\dot{x}(t) = A(t) x(t) + B(t) u(t) + f_0(t), @f]
+ * where `u` denotes the input vector, `x` denotes the state vector, and
+ * `y` denotes the output vector.
+ *
+ * In both cases, the system will have the output:
+ *   @f[y(t) = C(t) x(t) + D(t) u(t) + y_0(t). @f]
+ *
+ * @tparam T The scalar element type, which must be a valid Eigen scalar.
+ */
+template <typename T>
+class TimeVaryingAffineSystem : public LeafSystem<T> {
+ public:
+  TimeVaryingAffineSystem(int num_states, int num_inputs, int num_outputs,
+                          double time_period = 0.0);
+
+  /// Returns the input port containing the externally applied input.
+  const InputPortDescriptor<T>& get_input_port() const;
+
+  /// Returns the output port containing the output state.
+  const OutputPortDescriptor<T>& get_output_port() const;
+
+  /// @name Methods To Be Implemented by Subclasses
+  ///
+  /// Implementations must define these, and the returned matrices must
+  /// be sized to match the `num_states`, `num_inputs`, and `num_outputs`
+  /// specified in the constructor.
+  /// @{
+  virtual MatrixX<T> A(const T& t) const = 0;
+  virtual MatrixX<T> B(const T& t) const = 0;
+  virtual VectorX<T> f0(const T& t) const = 0;
+  virtual MatrixX<T> C(const T& t) const = 0;
+  virtual MatrixX<T> D(const T& t) const = 0;
+  virtual VectorX<T> y0(const T& t) const = 0;
+  /// @}
+
+  double time_period() const { return time_period_; }
+  int num_states() const { return num_states_; }
+  int num_inputs() const { return num_inputs_; }
+  int num_outputs() const { return num_outputs_; }
+
+ private:
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override;
+
+  void DoCalcDiscreteVariableUpdates(
+      const drake::systems::Context<T>& context,
+      drake::systems::DiscreteState<T>* updates) const override;
+
+  const int num_states_{0};
+  const int num_inputs_{0};
+  const int num_outputs_{0};
+  const double time_period_{0.0};
+};
+
 /// A discrete OR continuous affine system.
 ///
 /// Let `u` denote the input vector, `x` denote the state vector, and
@@ -14,9 +79,9 @@ namespace systems {
 ///
 /// If `time_period > 0.0`, the affine system will have the following
 /// discrete-time state update:
-///   @f[ x[n+1] = A x[n] + B u[n] + f_0, @f]
-///
-/// or if `time_period == 0.0`, the affine system will have the following
+///   @f[ x(t+h) = A x(t) + B u(t) + f_0, @f]
+/// where `h` is the time_period.
+/// If `time_period == 0.0`, the affine system will have the following
 /// continuous-time state update:
 ///   @f[\dot{x} = A x + B u + f_0. @f]
 ///
@@ -37,7 +102,7 @@ namespace systems {
 /// @see LinearSystem
 /// @see MatrixGain
 template <typename T>
-class AffineSystem : public LeafSystem<T> {
+class AffineSystem : public TimeVaryingAffineSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineSystem)
 
@@ -66,20 +131,26 @@ class AffineSystem : public LeafSystem<T> {
   /// matrix `D` is non-zero.
   bool has_any_direct_feedthrough() const override { return !D_.isZero(0.0); }
 
-  /// Returns the input port containing the externally applied input.
-  const InputPortDescriptor<T>& get_input_port() const;
-
-  /// Returns the port containing the output state.
-  const OutputPortDescriptor<T>& get_output_port() const;
-
-  // Helper getter methods.
+  /// @name Helper getter methods.
+  /// @{
   const Eigen::MatrixXd& A() const { return A_; }
   const Eigen::MatrixXd& B() const { return B_; }
   const Eigen::VectorXd& f0() const { return f0_; }
   const Eigen::MatrixXd& C() const { return C_; }
   const Eigen::MatrixXd& D() const { return D_; }
   const Eigen::VectorXd& y0() const { return y0_; }
-  double time_period() const { return time_period_; }
+  /// @}
+
+  /// @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
+  /// methods.
+  /// @{
+  MatrixX<T> A(const T& t) const override { return MatrixX<T>(A_); }
+  MatrixX<T> B(const T& t) const override { return MatrixX<T>(B_); }
+  VectorX<T> f0(const T& t) const override { return VectorX<T>(f0_); }
+  MatrixX<T> C(const T& t) const override { return MatrixX<T>(C_); }
+  MatrixX<T> D(const T& t) const override { return MatrixX<T>(D_); }
+  VectorX<T> y0(const T& t) const override { return VectorX<T>(y0_); }
+  /// @}
 
  private:
   void DoCalcOutput(const Context<T>& context,
@@ -101,60 +172,7 @@ class AffineSystem : public LeafSystem<T> {
   const Eigen::MatrixXd C_;
   const Eigen::MatrixXd D_;
   const Eigen::VectorXd y0_;
-  const int num_inputs_{0};
-  const int num_outputs_{0};
-  const int num_states_{0};
-  const double time_period_{0.0};
 };
 
-/**
- * Interface class for a continuous-time, time-varying affine system.
- *
- * The affine system will have the state update:
- *   @f[\dot{x}(t) = A(t) x(t) + B(t) u(t) + f_0(t), @f]
- * and the output:
- *   @f[y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f]
- * where `u` denotes the input vector, `x` denotes the state vector, and
- * `y` denotes the output vector.
- *
- * @tparam T The scalar element type, which must be a valid Eigen scalar.
- */
-template <typename T>
-class TimeVaryingAffineSystem : public LeafSystem<T> {
- public:
-  TimeVaryingAffineSystem(int num_states, int num_inputs, int num_outputs);
-
-  /// Returns the input port containing the externally applied input.
-  const InputPortDescriptor<T>& get_input_port() const;
-
-  /// Returns the port containing the output state.
-  const OutputPortDescriptor<T>& get_output_port() const;
-
-  // Implementations must define these, and the returned matrices must
-  // be sized to match the num_states, num_inputs, and num_outputs specified
-  // in the constructor.
-  virtual MatrixX<T> A(const T& t) const = 0;
-  virtual MatrixX<T> B(const T& t) const = 0;
-  virtual VectorX<T> f0(const T& t) const = 0;
-  virtual MatrixX<T> C(const T& t) const = 0;
-  virtual MatrixX<T> D(const T& t) const = 0;
-  virtual VectorX<T> y0(const T& t) const = 0;
-
-  // TODO(russt): Consider an interface for discrete-time, time-varying affine
-  // systems that implement, e.g., A(int n) instead of taking the real-valued
-  // time. Perhaps this warrants a separate class.
-
- private:
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
-
-  void DoCalcTimeDerivatives(const Context<T>& context,
-                             ContinuousState<T>* derivatives) const override;
-
- protected:
-  const int num_states_{0};
-  const int num_inputs_{0};
-  const int num_outputs_{0};
-};
 }  // namespace systems
 }  // namespace drake
