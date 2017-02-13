@@ -1195,7 +1195,7 @@ class System {
   }
 
   /// Computes the norm of the constraint error. This default implementation
-  /// computes a Euclidean norm of the error. This norm need be neither 
+  /// computes a Euclidean norm of the error. This norm need be neither
   /// continuous nor differentiable.
   virtual double DoCalcConstraintErrorNorm(const Context<T>& context,
                                  const Eigen::VectorXd& error) const {
