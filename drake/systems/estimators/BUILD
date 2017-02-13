@@ -10,7 +10,6 @@ drake_cc_library(
     name = "kalman_filter",
     srcs = ["kalman_filter.cc"],
     hdrs = ["kalman_filter.h"],
-    linkstatic = 1,
     deps = [
         ":luenberger_observer",
         "//drake/systems/controllers:linear_quadratic_regulator",
@@ -23,7 +22,6 @@ drake_cc_library(
     name = "luenberger_observer",
     srcs = ["luenberger_observer.cc"],
     hdrs = ["luenberger_observer.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework",
     ],

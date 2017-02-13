@@ -10,7 +10,6 @@ drake_cc_library(
     name = "valkyrie_constants",
     srcs = ["valkyrie_constants.cc"],
     hdrs = ["valkyrie_constants.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],

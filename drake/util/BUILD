@@ -17,7 +17,6 @@ drake_cc_library(
         "drakeUtil.h",
     ],
     deprecation = "Consider pitching in by porting the dependencies you need to //drake/math.",
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/math:geometric_transform",
@@ -29,7 +28,6 @@ drake_cc_library(
     name = "lcm_util",
     srcs = ["lcmUtil.cpp"],
     hdrs = ["lcmUtil.h"],
-    linkstatic = 1,
     deps = [
         ":util",
         "//drake/common/trajectories:piecewise_polynomial",

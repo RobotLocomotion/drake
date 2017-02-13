@@ -13,7 +13,6 @@ drake_cc_library(
         "ball.h",
         "ball-inl.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/systems/framework:leaf_system",
@@ -27,7 +26,6 @@ drake_cc_library(
         "bouncing_ball.h",
         "bouncing_ball-inl.h",
     ],
-    linkstatic = 1,
     deps = [
         ":ball",
         "//drake/common",

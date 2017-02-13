@@ -10,7 +10,6 @@ drake_cc_library(
     name = "acrobot",
     srcs = ["acrobot/acrobot.cc"],
     hdrs = ["acrobot/acrobot.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common:extract_double",
         "//drake/multibody:rigid_body_tree",

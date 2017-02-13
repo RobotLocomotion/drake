@@ -19,7 +19,6 @@ drake_cc_library(
         "geometry.h",
         "visual_element.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/thirdParty:spruce",

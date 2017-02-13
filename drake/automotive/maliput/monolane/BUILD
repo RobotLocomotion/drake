@@ -10,7 +10,6 @@ drake_cc_library(
     name = "monolane",
     srcs = [],
     hdrs = [],
-    linkstatic = 1,
     deps = [
         ":builder",
         ":lanes",
@@ -38,7 +37,6 @@ drake_cc_library(
         "road_geometry.h",
         "segment.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/common",
@@ -54,7 +52,6 @@ drake_cc_library(
     hdrs = [
         "builder.h",
     ],
-    linkstatic = 1,
     deps = [
         ":lanes",
     ],
@@ -68,7 +65,6 @@ drake_cc_library(
     hdrs = [
         "loader.h",
     ],
-    linkstatic = 1,
     deps = [
         ":builder",
         "@yaml_cpp//:lib",

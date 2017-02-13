@@ -10,7 +10,6 @@ drake_cc_library(
     name = "binding",
     srcs = [],
     hdrs = ["binding.h"],
-    linkstatic = 1,
     deps = [
         ":decision_variable",
     ],
@@ -20,7 +19,6 @@ drake_cc_library(
     name = "constraint",
     srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
@@ -33,7 +31,6 @@ drake_cc_library(
     name = "decision_variable",
     srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:number_traits",
@@ -45,7 +42,6 @@ drake_cc_library(
     name = "function",
     srcs = [],
     hdrs = ["function.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
@@ -88,7 +84,6 @@ drake_cc_library(
         "nlopt_solver.h",
         "snopt_solver.h",
     ],
-    linkstatic = 1,
     deps = [
         ":binding",
         ":constraint",
@@ -109,7 +104,6 @@ drake_cc_library(
     name = "system_identification",
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
-    linkstatic = 1,
     deps = [
         ":mathematical_program",
         "//drake/common",
@@ -132,7 +126,6 @@ drake_cc_library(
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
     ],
-    linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = [
         ":binding",
@@ -158,7 +151,6 @@ drake_cc_library(
         "//conditions:default": ["no_gurobi.cc"],
     }),
     hdrs = ["gurobi_solver.h"],
-    linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = select({
         "//tools:with_gurobi": [
@@ -182,7 +174,6 @@ drake_cc_library(
         "//conditions:default": ["no_snopt.cc"],
     }),
     hdrs = ["snopt_solver.h"],
-    linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = select({
         "//tools:with_snopt": [
@@ -200,7 +191,6 @@ drake_cc_library(
     name = "ipopt_solver",
     srcs = ["ipopt_solver.cc"],
     hdrs = ["ipopt_solver.h"],
-    linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = [
         ":mathematical_program_api",

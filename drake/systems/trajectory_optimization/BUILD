@@ -16,7 +16,6 @@ drake_cc_library(
         "direct_collocation.h",
         "direct_collocation_constraint.h",
     ],
-    linkstatic = 1,
     deps = [
         ":direct_trajectory_optimization",
         "//drake/math:autodiff",
@@ -27,7 +26,6 @@ drake_cc_library(
     name = "direct_trajectory_optimization",
     srcs = ["direct_trajectory_optimization.cc"],
     hdrs = ["direct_trajectory_optimization.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
