@@ -134,7 +134,7 @@ dof_motion {
 }
 
 # Contact points and normals are specified in the body frame.
-contact {
+default_contact {
     name: "default"
     weight: 1e5
     kd: 8
