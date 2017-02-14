@@ -116,7 +116,7 @@ class AutomotiveSimulator {
 
   /// Sets the RoadGeometry for this simulation.
   /// (This simulation takes ownership of the RoadGeometry*.)
-  /// The provide RoadGeometry will be wrapped with in an InfiniteCircuitRoad.
+  /// The provided RoadGeometry will be wrapped with in an InfiniteCircuitRoad.
   /// @p start specifies at which end of which lane the cicuit shall begin.
   /// @p path specifies the route of the circuit; if @p path is empty, some
   /// default will be constructed.  See maliput::utility::InfiniteCircuitRoad

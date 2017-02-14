@@ -453,7 +453,7 @@ void AutomotiveSimulator<T>::ConnectJointStateSourcesToVisualizer() {
 template <typename T>
 void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   DRAKE_DEMAND(!started_);
-  // TODO(maddog)  This seems like hackery.
+  // TODO(maddog@tri.global)  This seems like hackery.
   // After all the moving parts (boxcars) have been added finally add
   // the static road (if any) to the RBT (otherwise the naive multiplexing
   // gets mucked up?).
@@ -489,8 +489,9 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
       // Every car is visible to the Oracle...
       builder_->Connect(car->get_output_port(0), oracle->get_input_port(i));
       // ...however, only IDM-controlled cars care about Oracle output.
-      // TODO(maddog)  Optimization:  Oracle should not bother to compute
-      //               output for cars which will ignore it.
+      // TODO(maddog@tri.global)  Future Optimization:  Oracle should not
+      //                          bother to compute output for cars which
+      //                          will ignore it.
       switch (car->control_type()) {
         case EndlessRoadCar<T>::kNone: {
           break;  // No input.
@@ -521,8 +522,8 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
     EndlessRoadCarState<T>* const state =
         dynamic_cast<EndlessRoadCarState<T>*>(context_state);
     DRAKE_ASSERT(state);
-    // TODO(maddog)  Is there a better way to copy all the fields?
-    //               (I.e., until lcm_vector_gen.py makes an operator=()....)
+    // TODO(maddog@tri.global)  Is there a better way to copy all the fields?
+    //                (I.e., until lcm_vector_gen.py makes an operator=()....)
     state->set_value(pair.second.get_value());
   }
 
