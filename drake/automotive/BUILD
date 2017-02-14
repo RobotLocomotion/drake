@@ -296,13 +296,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "endless_road_car_state_translator_test",
-    deps = [
-        "//drake/automotive:generated_translators",
-    ],
-)
-
-drake_cc_googletest(
     name = "endless_road_car_test",
     srcs = ["dev/test/endless_road_car_test.cc"],
     deps = [
