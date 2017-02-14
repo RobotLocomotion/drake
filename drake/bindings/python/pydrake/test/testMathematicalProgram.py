@@ -57,8 +57,9 @@ class TestMathematicalProgram(unittest.TestCase):
             constraint = binding.constraint()
             print("constraint", constraint)
             print("variables", binding.variables())
-            self.assertTrue((prog.FindDecisionVariableIndex(binding.variables()[0]) ==
-                             prog.FindDecisionVariableIndex(x[i])))
+            self.assertTrue(
+                (prog.FindDecisionVariableIndex(binding.variables()[0]) ==
+                 prog.FindDecisionVariableIndex(x[i])))
             print("A", constraint.A())
             self.assertTrue(np.allclose(constraint.A(), np.ones(1)))
 
@@ -67,7 +68,6 @@ class TestMathematicalProgram(unittest.TestCase):
 
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
-
 
     def test_eval_binding(self):
         prog = mp.MathematicalProgram()
@@ -80,7 +80,8 @@ class TestMathematicalProgram(unittest.TestCase):
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
         for constraint in constraints:
-            self.assertTrue(np.isclose(prog.EvalBindingAtSolution(constraint), 1))
+            self.assertTrue(
+                np.isclose(prog.EvalBindingAtSolution(constraint), 1))
         self.assertTrue(np.isclose(prog.EvalBindingAtSolution(cost), 2))
 
     def test_matrix_variables(self):
@@ -95,7 +96,6 @@ class TestMathematicalProgram(unittest.TestCase):
             for j in range(2):
                 self.assertAlmostEqual(xval[i, j], 2 * i + j)
                 self.assertEqual(xval[i, j], prog.GetSolution(x[i, j]))
-
 
 
 if __name__ == '__main__':

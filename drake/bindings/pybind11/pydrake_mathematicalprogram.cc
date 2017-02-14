@@ -1,9 +1,10 @@
+#include "drake/bindings/pybind11/pydrake_symbolic_types.h"
+#include "drake/solvers/mathematical_program.h"
+
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 
-#include "drake/bindings/pybind11/pydrake_symbolic_types.h"
-#include "drake/solvers/mathematical_program.h"
 
 namespace py = pybind11;
 
