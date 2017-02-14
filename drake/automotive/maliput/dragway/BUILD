@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_binary", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -25,6 +25,17 @@ drake_cc_library(
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/common",
+    ],
+)
+
+drake_cc_binary(
+    name = "dragway_to_urdf",
+    srcs = ["test/dragway_to_urdf.cc"],
+    deps = [
+        "//drake/automotive/maliput/utility",
+        "//drake/common:text_logging_gflags",
+        ":dragway",
+        "@gflags//:gflags",
     ],
 )
 
