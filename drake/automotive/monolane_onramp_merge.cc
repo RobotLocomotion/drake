@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <iostream>
+#include <memory>
+#include <utility>
 
 #include <Eigen/Geometry>
 
