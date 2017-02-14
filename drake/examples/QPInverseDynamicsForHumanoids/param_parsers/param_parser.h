@@ -122,9 +122,10 @@ std::ostream& operator<<(std::ostream& out, const ContactParam& param);
  * class only works with the gains and weights. The second group needs to be
  * computed by some feedback policy, which outside the scope of this class.
  *
- * This class relies on Protobuf for text parsing. Uninitialized fields will
- * default to 0 for numerical values, and empty string for string values. It is
- * highly recommended that all fields are specified when writing a config file.
+ * This class loads its configuration from text-format protocol buffers.
+ * Uninitialized fields will default to 0 for numerical values, and empty string
+ * for string values. It is highly recommended that all fields are specified
+ * when writing a config file.
  */
 class ParamSet {
  public:
@@ -136,19 +137,17 @@ class ParamSet {
    * Loads parameters from a config file for the inverse dynamics controller.
    * The format of the config file is defined in id_controller_config.proto.
    *
-   * For the `ProtobufMsgContactParam` and
-   * `ProtobufMsgAccelerationParam` (defined in
+   * For the `ContactConfig` and `AccelerationConfig` (defined in
    * id_controller_config.proto), the `name` field should correspond to either
    * a body group or joint group name in the associated
    * RigidBodyTreeAliasGroups. Every member in that group will have the same
    * parameters. A `default` parameter can also be specified for `body_motion`,
-   * `dof_motion` and `contact` for
-   * ProtobufMsgInverseDynamicsControllerParam. It will be returned when
-   * parameters are not explicitly specified. It is recommended to supply the
-   * default parameters.
+   * `dof_motion` and `contact` for InverseDynamicsControllerConfig. It will be
+   * returned when parameters are not explicitly specified. It is recommended
+   * to supply the default parameters.
    *
-   * For ProtobufMsgAccelerationParam, the number of recurrence for `kp`,
-   * `kd` and `weight` can either be 1 or exactly matches the dimension of the
+   * For AccelerationConfig, the number of recurrence for `kp`, `kd` and
+   * `weight` can either be 1 or exactly matches the dimension of the
    * associated parameter. The first case is a simpler way for specifying
    * everything with the same number. For example, when specifying parameters
    * for spatial accelerations, `kp`, `kd` and `weight` need to be 6

@@ -38,7 +38,7 @@ const ParamType& FindParam(
   return *param;
 }
 
-ContactParam ParseContactParam(const ProtobufMsgContactParam& config) {
+ContactParam ParseContactParam(const ContactConfig& config) {
   ContactParam param;
 
   param.name = config.name();
@@ -60,7 +60,7 @@ ContactParam ParseContactParam(const ProtobufMsgContactParam& config) {
 }
 
 DesiredMotionParam ParseDesiredMotionParam(
-    const ProtobufMsgAccelerationParam& config, int size) {
+    const AccelerationConfig& config, int size) {
   DesiredMotionParam param(size);
   param.name = config.name();
 
@@ -100,6 +100,11 @@ DesiredMotionParam ParseDesiredMotionParam(
   return param;
 }
 
+DesiredMotionParam ParseDesiredMotionParam6(
+    const AccelerationConfig& config) {
+  return ParseDesiredMotionParam(config, 6);
+}
+
 // Generates a vector of names for the generalized coordinate. Since q and v
 // can have different dimensions, and we are only interested in the
 // accelerations (vdot), so it is more consistent to use the velocities' names.
@@ -110,6 +115,55 @@ std::string get_dof_name(const RigidBodyTree<T>& robot, int dof_idx) {
   std::string dof_name = robot.get_velocity_name(dof_idx);
   dof_name = dof_name.substr(0, dof_name.size() - 3);
   return dof_name;
+}
+
+template <typename ConfigType, typename ParamType>
+void BuildParamMapForBodyGroups(
+    const ::google::protobuf::RepeatedPtrField<ConfigType>& configs,
+    const RigidBodyTreeAliasGroups<double>& alias_group,
+    ParamType (*ParseParam)(const ConfigType&),
+    std::unordered_map<std::string, ParamType>* param_map) {
+  for (const auto& config : configs) {
+    ParamType param = ParseParam(config);
+    const std::string& group_name = config.name();
+    // Parses the default contact parameter.
+    if (group_name == "default") {
+      // Checks if the default has already been defined.
+      if (param_map->find(param.name) != param_map->end() &&
+          param_map->find(param.name)->second != param) {
+        throw std::runtime_error(
+            "Default param cannot be set to different values.");
+      } else {
+        param_map->emplace("default", param);
+      }
+    } else {
+      // Parses the contact parameter for this body group.
+      if (alias_group.has_body_group(group_name)) {
+        const std::vector<const RigidBody<double>*> bodies =
+            alias_group.get_body_group(group_name);
+        // Makes a contact param for each body in this body group.
+        for (const RigidBody<double>* body : bodies) {
+          param.name = body->get_name();
+
+          auto find_res = param_map->find(param.name);
+          // If this body already has a contact param defined, checks that they
+          // are the same. Throws if they are not.
+          if (find_res != param_map->end()) {
+            if (param != find_res->second) {
+              throw std::runtime_error("Param for " +
+                                       param.name +
+                                       " cannot be set to different values.");
+            }
+          } else {
+            param_map->emplace(param.name, param);
+          }
+        }
+      } else {
+        throw std::runtime_error("Param for unknown body group: " +
+            group_name);
+      }
+    }
+  }
 }
 
 }  // namespace
@@ -139,7 +193,7 @@ std::ostream& operator<<(std::ostream& out, const ContactParam& param) {
 void ParamSet::LoadFromFile(
     const std::string& config_path,
     const RigidBodyTreeAliasGroups<double>& alias_group) {
-  ProtobufMsgInverseDynamicsControllerParam id_configs;
+  InverseDynamicsControllerConfig id_configs;
   int fid = open(config_path.data(), O_RDONLY);
   if (fid < 0) {
     throw std::runtime_error("Cannot open file " + config_path);
@@ -160,95 +214,14 @@ void ParamSet::LoadFromFile(
       ParseDesiredMotionParam(id_configs.centroidal_momentum(), 6);
 
   // Contacts.
-  for (const auto& contact_config : id_configs.contact()) {
-    ContactParam contact_param = ParseContactParam(contact_config);
-    const std::string& group_name = contact_config.name();
-    // Parses the default contact parameter.
-    if (group_name == "default") {
-      // Checks if the default has already been defined.
-      if (contact_params_.find(contact_param.name) != contact_params_.end() &&
-          contact_params_.find(contact_param.name)->second != contact_param) {
-        throw std::runtime_error(
-            "Default contact param cannot be set to different values.");
-      } else {
-        contact_params_.emplace("default", contact_param);
-      }
-    } else {
-      // Parses the contact parameter for this body group.
-      if (alias_group.has_body_group(group_name)) {
-        const std::vector<const RigidBody<double>*> bodies =
-            alias_group.get_body_group(group_name);
-        // Makes a contact param for each body in this body group.
-        for (const RigidBody<double>* body : bodies) {
-          contact_param.name = body->get_name();
-
-          auto find_res = contact_params_.find(contact_param.name);
-          // If this body already has a contact param defined, checks that they
-          // are the same. Throws if they are not.
-          if (find_res != contact_params_.end()) {
-            if (contact_param != find_res->second) {
-              throw std::runtime_error("Contact param for " +
-                                       contact_param.name +
-                                       " cannot be set to different values.");
-            }
-          } else {
-            contact_params_.emplace(contact_param.name, contact_param);
-          }
-        }
-      } else {
-        throw std::runtime_error("Contact param for unknown body group: " +
-            group_name);
-      }
-    }
-  }
+  BuildParamMapForBodyGroups<ContactConfig, ContactParam>(
+      id_configs.contact(), alias_group,
+      ParseContactParam, &contact_params_);
 
   // Body motion.
-  for (const auto& body_motion_config : id_configs.body_motion()) {
-    DesiredMotionParam body_motion_param =
-        ParseDesiredMotionParam(body_motion_config, 6);
-
-    const std::string& group_name = body_motion_config.name();
-    // Parses the default body motion parameter.
-    if (group_name == "default") {
-      // Checks if default has already been defined.
-      if (body_motion_params_.find(body_motion_param.name) !=
-              body_motion_params_.end() &&
-          body_motion_params_.find(body_motion_param.name)->second !=
-              body_motion_param) {
-        throw std::runtime_error(
-            "Default body motion param cannot be set to different values.");
-      } else {
-        body_motion_params_.emplace("default", body_motion_param);
-      }
-    } else {
-      // Parses the body motion parameter for this body group.
-      if (alias_group.has_body_group(group_name)) {
-        const std::vector<const RigidBody<double>*> bodies =
-            alias_group.get_body_group(group_name);
-        // Makes a param entry for each body in this body group.
-        for (const RigidBody<double>* body : bodies) {
-          body_motion_param.name = body->get_name();
-
-          auto find_res = body_motion_params_.find(body_motion_param.name);
-          // If this body already has a body_motion param defined, checks that
-          // they are the same. Throws if they are not.
-          if (find_res != body_motion_params_.end()) {
-            if (body_motion_param != find_res->second) {
-              throw std::runtime_error("Body motion param for " +
-                                       body_motion_param.name +
-                                       " cannot be set to different values.");
-            }
-          } else {
-            body_motion_params_.emplace(body_motion_param.name,
-                                        body_motion_param);
-          }
-        }
-      } else {
-        throw std::runtime_error("Body motion param for unknown body group: " +
-            group_name);
-      }
-    }
-  }
+  BuildParamMapForBodyGroups<AccelerationConfig, DesiredMotionParam>(
+      id_configs.body_motion(), alias_group,
+      ParseDesiredMotionParam6, &body_motion_params_);
 
   // Dof motion.
   const RigidBodyTree<double>& robot = alias_group.get_tree();
