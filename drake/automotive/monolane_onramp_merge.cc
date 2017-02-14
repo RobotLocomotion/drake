@@ -2,13 +2,13 @@
 
 #include <cmath>
 #include <iostream>
+#include <memory>
+#include <utility>
 
 #include <Eigen/Geometry>
 
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic_expression.h"
 
 namespace drake {
 namespace automotive {
@@ -49,8 +49,8 @@ void MonolaneOnrampMerge<T>::BuildOnramp() {
 }
 
 template class MonolaneOnrampMerge<double>;
-template class MonolaneOnrampMerge<TaylorVarXd>;
-template class MonolaneOnrampMerge<symbolic::Expression>;
+// TODO(jadecastro): Bring instantiations online for `TaylorVarXd>` and
+// `symbolic::Expression` types.
 
 }  // namespace automotive
 }  // namespace drake
