@@ -40,7 +40,7 @@ drake_cc_binary(
     ],
     deps = [
         ":make_demo_plan",
-        "//drake/examples/QPInverseDynamicsForHumanoids/system:id_contorlled_iiwa",
+        "//drake/examples/QPInverseDynamicsForHumanoids/system:id_controlled_iiwa",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/rigid_body_plant",

@@ -12,6 +12,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_path.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/kuka_inverse_dynamics_servo.h"
 #include "drake/examples/kuka_iiwa_arm/controlled_kuka/make_demo_plan.h"
@@ -20,6 +21,7 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/single_output_vector_source.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
@@ -36,14 +38,13 @@ namespace kuka_iiwa_arm {
 namespace {
 
 template <typename T>
-class PiecewisePolynomialSource : public SingleOutputVectorSource<T> {
+class PiecewisePolynomialSource : public systems::SingleOutputVectorSource<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PiecewisePolynomialSource)
 
   /**
    * Constructs a PiecewisePolynomialSource that interpolates a given
-   * PiecewisePolynomial and its derivatives up to the order specified by
-   * @p output_derivative_order.
+   * PiecewisePolynomial and its derivatives up to the specified order.
    * @param trajectory Trajectory to be interpolated, and it must have only
    * one column.
    * @param output_derivative_order Highest derivative order, needs to be
@@ -55,7 +56,8 @@ class PiecewisePolynomialSource : public SingleOutputVectorSource<T> {
   PiecewisePolynomialSource(
       const PiecewisePolynomial<T>& trajectory, int output_derivative_order,
       bool set_derivatives_to_zero_when_time_is_past_limits)
-      : SingleOutputVectorSource<T>(trajectory.rows() * (1 + output_derivative_order)),
+      : systems::SingleOutputVectorSource<T>(
+            trajectory.rows() * (1 + output_derivative_order)),
         trajectory_(trajectory),
         clamp_derivatives_(set_derivatives_to_zero_when_time_is_past_limits) {
     DRAKE_DEMAND(trajectory.cols() == 1);
@@ -137,8 +139,8 @@ int DoMain() {
   KukaInverseDynamicsServo* controller =
       builder.AddSystem<KukaInverseDynamicsServo>(model_path, alias_group_path,
                                                   controller_config_path);
-  systems::PiecewisePolynomialSource<double>* trajectory =
-      builder.AddSystem<systems::PiecewisePolynomialSource<double>>(
+  PiecewisePolynomialSource<double>* trajectory =
+      builder.AddSystem<PiecewisePolynomialSource<double>>(
           MakeKukaDemoTrajectory(model_path)->get_piecewise_polynomial(),
           2 /* up to second derivative */,
           true /* clip velocity and acceleration to zero for out of bound t */);

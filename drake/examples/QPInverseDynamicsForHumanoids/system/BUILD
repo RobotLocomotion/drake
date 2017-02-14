@@ -94,7 +94,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "id_contorlled_iiwa",
+    name = "id_controlled_iiwa",
     srcs = [],
     hdrs = ["kuka_inverse_dynamics_servo.h"],
     deps = [
