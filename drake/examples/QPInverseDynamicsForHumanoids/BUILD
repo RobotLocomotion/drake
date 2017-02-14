@@ -101,8 +101,8 @@ drake_cc_googletest(
     name = "valkyrie_balancing_test",
     srcs = ["test/valkyrie_balancing_test.cc"],
     data = [
-        "config/controller.yaml",
         "config/valkyrie.alias_groups",
+        "config/valkyrie.id_controller_config",
         "//drake/examples/Valkyrie:models",
     ],
     tags = [

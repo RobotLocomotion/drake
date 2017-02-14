@@ -107,9 +107,13 @@ void RigidBodyTreeAliasGroups<T>::AddJointGroup(
 
 template <typename T>
 void RigidBodyTreeAliasGroups<T>::LoadFromFile(
-    const std::string& config) {
+    const std::string& file_path) {
   AliasGroups alias_groups;
-  google::protobuf::io::FileInputStream istream(open(config.data(), O_RDONLY));
+  int fid = open(file_path.data(), O_RDONLY);
+  if (fid < 0) {
+    throw std::runtime_error("Cannot open file " + file_path);
+  }
+  google::protobuf::io::FileInputStream istream(fid);
   google::protobuf::TextFormat::Parse(&istream, &alias_groups);
   istream.Close();
 
