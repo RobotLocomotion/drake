@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <iostream>
+#include <memory>
+#include <utility>
 
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
@@ -52,7 +54,7 @@ class RoadSectionBuilder {
 
   /// @p builder is the monolane Builder into which we want to construct a new
   /// road section and @p starting_config is the datum for the new road section.
-  RoadSectionBuilder(std::unique_ptr<Builder> builder)
+  explicit RoadSectionBuilder(std::unique_ptr<Builder> builder)
       : b_(std::move(builder)) {}
 
   RoadSectionBuilder(std::unique_ptr<Builder> builder, Endpoint starting_config)

@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <iostream>
+#include <memory>
+#include <utility>
 
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
@@ -30,17 +32,17 @@ class MonolaneOnrampMerge {
     BuildOnramp();
   }
 
-  MonolaneOnrampMerge(const maliput::monolane::RoadCharacteristics& rc)
+  explicit MonolaneOnrampMerge(const maliput::monolane::RoadCharacteristics& rc)
       : road_(rc) {
     b_.reset(new mono::Builder(road_.lane_bounds, road_.driveable_bounds,
                                kLinearTolerance_, kAngularTolerance_));
     BuildOnramp();
-  };
+  }
 
   /// Produces the resultant RoadGeometry, relinquishing ownership.
   std::unique_ptr<const maliput::api::RoadGeometry> own_road_geometry() {
     return std::move(rg_);
-  };
+  }
 
  private:
   /// Implements the onramp example.
