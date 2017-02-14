@@ -30,18 +30,19 @@ Running the demos
 -----------------
 
 A variety of demos are available.  In general, to run a demo, open a
-terminal and execute commands like this:
-
+terminal and execute commands like the ones shown below. End the demo by closing
+any window, or Ctrl-C in the terminal.  All of the launched programs will be
+closed.
+ 
 ```
 $ cd drake-distro
 $ bazel run drake/automotive:DEMO_NAME_HERE
 ```
 
-End the demo by closing any window, or Ctrl-C in the terminal.  All of the
-launched programs will be closed.
+The following demos are available:
 
  * Basic cars driving around on an open plane:
-   `bazel run drake/automotive:demo`
+   `bazel run drake/automotive:demo_simple_car_and_trajectory_car_on_flat_terrain`
 
    This will show one _ado_ car driving in a fixed trajectory, and one _ego_
    car which can be driven anywhere on the infinite plane.  (See "Driving
@@ -63,6 +64,10 @@ launched programs will be closed.
 
    Same general idea as the `village-demo`, but with a different path for
    cars which includes a merge.
+
+ * A 10-lane dragway with a `TrajectoryCar` traveling down each lane:
+   `bazel run drake/automotive:demo_dragway_with_trajectory_car`
+
 
 Driving the Prius
 -----------------

@@ -101,7 +101,10 @@ if(lcm_FOUND)
       drake-rigid-body-plant)
 
   add_executable(automotive_demo automotive_demo.cc)
-  target_link_libraries(automotive_demo drakeAutomotiveLcm drakeLCMTypes)
+  target_link_libraries(automotive_demo
+      drakeAutomotiveLcm
+      drakeLCMTypes
+      drakeMaliputDragway)
 
   add_executable(car_sim_lcm car_sim_lcm.cc car_sim_lcm_common.cc)
   target_link_libraries(car_sim_lcm
