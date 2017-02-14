@@ -254,8 +254,7 @@ class ParamSet {
   /**
    * Obtains the kp and kd gains for all DoF.
    * @p kp and @p kd will be resized to match the number of DoFs of the
-   * RigidBodyTree in the RigidBodyTreeAliasGroups passed to
-   * LoadFromYAMLConfigFile.
+   * RigidBodyTree in the RigidBodyTreeAliasGroups passed to LoadFromFile().
    *
    * @param[out] kp output.
    * @param[out] kd output.

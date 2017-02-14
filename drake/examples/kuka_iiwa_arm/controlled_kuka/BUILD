@@ -32,7 +32,7 @@ drake_cc_binary(
     srcs = ["kuka_inverse_dynamics_demo.cc"],
     data = [
         ":inverse_dynamics_controller_config/iiwa.alias_groups",
-        ":inverse_dynamics_controller_config/iiwa_id_config.yaml",
+        ":inverse_dynamics_controller_config/iiwa.id_controller_config",
     ],
     tags = [
         "gurobi",

@@ -33,8 +33,7 @@ DiscreteTimePlanEvalSystem::DiscreteTimePlanEvalSystem(
   // KinematicsProperty
   alias_groups_.LoadFromFile(alias_groups_file_name);
 
-  paramset_.LoadFromYAMLConfigFile(YAML::LoadFile(param_file_name),
-                                   alias_groups_);
+  paramset_.LoadFromFile(param_file_name, alias_groups_);
 
   abstract_state_index_qp_input_ = 0;
   abstract_state_index_plan_ = 1;

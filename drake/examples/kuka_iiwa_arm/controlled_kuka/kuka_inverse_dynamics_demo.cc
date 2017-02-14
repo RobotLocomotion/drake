@@ -117,7 +117,7 @@ int DoMain() {
   std::string controller_config_path =
       GetDrakePath() +
       "/examples/kuka_iiwa_arm/controlled_kuka/"
-      "inverse_dynamics_controller_config/iiwa_id_config.yaml";
+      "inverse_dynamics_controller_config/iiwa.id_controller_config";
 
   lcm::DrakeLcm lcm;
 

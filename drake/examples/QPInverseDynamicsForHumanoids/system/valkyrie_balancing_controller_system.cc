@@ -47,7 +47,7 @@ void controller_loop() {
                                     "config/valkyrie.alias_groups";
   std::string controller_config = drake::GetDrakePath() +
                                   "/examples/QPInverseDynamicsForHumanoids/"
-                                  "config/controller.yaml";
+                                  "config/valkyrie.id_controller_config";
 
   RobotStateDecoderSystem* rs_msg_to_rs = builder.AddSystem(
       std::make_unique<RobotStateDecoderSystem>(*robot, alias_groups_config));
