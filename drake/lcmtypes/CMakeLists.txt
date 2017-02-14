@@ -35,6 +35,9 @@ lcm_wrap_types(
   lcmt_desired_dof_motions.lcm
   lcmt_drake_signal.lcm
   lcmt_driving_command_t.lcm
+  lcmt_endless_road_car_config_t.lcm
+  lcmt_endless_road_car_state_t.lcm
+  lcmt_endless_road_oracle_output_t.lcm
   lcmt_euler_floating_joint_state_t.lcm
   lcmt_foot_flag.lcm
   lcmt_force_torque.lcm

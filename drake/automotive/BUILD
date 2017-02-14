@@ -15,6 +15,9 @@ drake_cc_library(
     name = "generated_vectors",
     srcs = [
         "gen/driving_command.cc",
+        "gen/endless_road_car_config.cc",
+        "gen/endless_road_car_state.cc",
+        "gen/endless_road_oracle_output.cc",
         "gen/euler_floating_joint_state.cc",
         "gen/idm_planner_parameters.cc",
         "gen/simple_car_config.cc",
@@ -22,6 +25,9 @@ drake_cc_library(
     ],
     hdrs = [
         "gen/driving_command.h",
+        "gen/endless_road_car_config.h",
+        "gen/endless_road_car_state.h",
+        "gen/endless_road_oracle_output.h",
         "gen/euler_floating_joint_state.h",
         "gen/idm_planner_parameters.h",
         "gen/simple_car_config.h",
@@ -36,12 +42,18 @@ drake_cc_library(
     name = "generated_translators",
     srcs = [
         "gen/driving_command_translator.cc",
+        "gen/endless_road_car_config_translator.cc",
+        "gen/endless_road_car_state_translator.cc",
+        "gen/endless_road_oracle_output_translator.cc",
         "gen/euler_floating_joint_state_translator.cc",
         "gen/simple_car_config_translator.cc",
         "gen/simple_car_state_translator.cc",
     ],
     hdrs = [
         "gen/driving_command_translator.h",
+        "gen/endless_road_car_config_translator.h",
+        "gen/endless_road_car_state_translator.h",
+        "gen/endless_road_oracle_output_translator.h",
         "gen/euler_floating_joint_state_translator.h",
         "gen/simple_car_config_translator.h",
         "gen/simple_car_state_translator.h",
@@ -60,6 +72,36 @@ drake_cc_library(
     hdrs = ["curve2.h"],
     deps = [
         ":generated_vectors",
+    ],
+)
+
+drake_cc_library(
+    name = "endless_road_car",
+    srcs = ["dev/endless_road_car.cc"],
+    hdrs = [
+        "dev/endless_road_car.h",
+        "endless_road_car_to_euler_floating_joint.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":generated_vectors",
+        "//drake/automotive/maliput/api:api",
+        "//drake/automotive/maliput/utility:utility",
+    ],
+)
+
+drake_cc_library(
+    name = "endless_road_oracle",
+    srcs = [
+        "dev/endless_road_oracle.cc",
+        "dev/endless_road_oracle-internal.h",
+    ],
+    hdrs = ["dev/endless_road_oracle.h"],
+    linkstatic = 1,
+    deps = [
+        ":generated_vectors",
+        "//drake/automotive/maliput/api:api",
+        "//drake/automotive/maliput/utility:utility",
     ],
 )
 
@@ -241,6 +283,34 @@ drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//drake/automotive:curve2",
+    ],
+)
+
+drake_cc_googletest(
+    name = "endless_road_car_test",
+    srcs = ["dev/test/endless_road_car_test.cc"],
+    deps = [
+        "//drake/automotive:endless_road_car",
+        "//drake/automotive/maliput/monolane:builder",
+        "//drake/automotive/maliput/utility:utility",
+    ],
+)
+
+drake_cc_googletest(
+    name = "endless_road_oracle_test",
+    srcs = ["dev/test/endless_road_oracle_test.cc"],
+    deps = [
+        "//drake/automotive:endless_road_oracle",
+        "//drake/automotive/maliput/monolane:builder",
+        "//drake/automotive/maliput/utility:utility",
+    ],
+)
+
+drake_cc_googletest(
+    name = "endless_road_car_to_euler_floating_joint_test",
+    deps = [
+        "//drake/automotive:endless_road_car",
+        "//drake/automotive/maliput/monolane:builder",
     ],
 )
 
