@@ -60,6 +60,16 @@ struct PathRecord {
 
 // Record of when/where a car is expected to enter/exit a junction.
 struct TimeBox {
+  TimeBox(size_t car_index_in, PathRecord pr_in,
+          double time_in_in, double time_out_in,
+          double s_in_in, double s_out_in)
+      : car_index(car_index_in),
+        pr(pr_in),
+        time_in(time_in_in),
+        time_out(time_out_in),
+        s_in(s_in_in),
+        s_out(s_out_in) {}
+
   size_t car_index{};
   PathRecord pr;
   double time_in{};

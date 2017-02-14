@@ -110,8 +110,11 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
 
  private:
   struct Accelerations {
-    T forward;
-    T lateral;
+    Accelerations(T forward_in, T lateral_in)
+        : forward(forward_in), lateral(lateral_in) {}
+
+    T forward{};
+    T lateral{};
   };
 
   void ImplCalcOutput(const EndlessRoadCarState<T>&,
