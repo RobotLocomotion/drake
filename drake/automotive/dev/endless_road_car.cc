@@ -1,4 +1,4 @@
-#include "drake/automotive/endless_road_car.h"
+#include "drake/automotive/dev/endless_road_car.h"
 
 #include <algorithm>
 #include <cmath>

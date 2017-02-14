@@ -80,9 +80,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "endless_road_car",
-    srcs = ["endless_road_car.cc"],
+    srcs = ["dev/endless_road_car.cc"],
     hdrs = [
-        "endless_road_car.h",
+        "dev/endless_road_car.h",
         "endless_road_car_to_euler_floating_joint.h",
     ],
     linkstatic = 1,
@@ -304,6 +304,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "endless_road_car_test",
+    srcs = ["dev/test/endless_road_car_test.cc"],
     deps = [
         "//drake/automotive:endless_road_car",
         "//drake/automotive/maliput/monolane:builder",

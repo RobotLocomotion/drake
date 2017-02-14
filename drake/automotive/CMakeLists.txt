@@ -9,7 +9,7 @@ endif()
 add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   create_trajectory_params.cc
   curve2.cc
-  endless_road_car.cc
+  dev/endless_road_car.cc
   dev/endless_road_oracle.cc
   gen/driving_command.cc
   gen/endless_road_car_config.cc
@@ -50,7 +50,6 @@ drake_install_libraries(drakeAutomotive)
 drake_install_headers(
   create_trajectory_params.h
   curve2.h
-  endless_road_car.h
   idm_planner.h
   linear_car.h
   simple_car.h
