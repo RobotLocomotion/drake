@@ -291,7 +291,6 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:monolane_onramp_merge",
         "//drake/automotive/maliput/utility",
-        "//drake/thirdParty:spruce",
     ],
 )
 

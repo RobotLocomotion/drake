@@ -51,10 +51,10 @@ class RoadSectionBuilder {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadSectionBuilder)
 
-  // @p builder is the monolane Builder into which we want to construct a new
-  // road section, @p is_reversed is a boolean indicating that the road will be
-  // constructed in reverse order, and @p starting_config is the datum for the
-  // new road section.
+  /// @p builder is the monolane Builder into which we want to construct a new
+  /// road section, @p is_reversed is a boolean indicating that the road will be
+  /// constructed in reverse order, and @p starting_config is the datum for the
+  /// new road section.
   RoadSectionBuilder(std::unique_ptr<Builder> builder, const bool& is_reversed)
       : is_reversed_(is_reversed), b_(std::move(builder)) {}
 
@@ -81,8 +81,10 @@ class RoadSectionBuilder {
   /// Vanilla version of AddLinearSegment assuming a flat lane primitive.
   void AddLinearPrimitive(const T& length);
 
+  /// Gets the Endpoint at the final end position for the road.
   const Endpoint& get_last_endpoint() { return last_endpoint_; }
 
+  /// Returns ownership of the Builder back to the caller.
   std::unique_ptr<Builder> Finalize() { return std::move(b_); }
 
  private:
