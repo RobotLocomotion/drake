@@ -9,8 +9,9 @@
 #include "drake/automotive/maliput/monolane/road_section_builder.h"
 
 namespace drake {
-namespace maliput {
-namespace monolane {
+namespace automotive {
+
+namespace mono = maliput::monolane;
 
 /// MonolaneOnrampMerge creates a road geometry representative of a lane-merge
 /// scenario.
@@ -20,18 +21,18 @@ class MonolaneOnrampMerge {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MonolaneOnrampMerge)
 
   MonolaneOnrampMerge() {
-    b_.reset(new Builder(road_.lane_bounds, road_.driveable_bounds,
-                         kLinearTolerance_, kAngularTolerance_));
+    b_.reset(new mono::Builder(road_.lane_bounds, road_.driveable_bounds,
+                               kLinearTolerance_, kAngularTolerance_));
     BuildOnramp();
   }
 
-  MonolaneOnrampMerge(const RoadCharacteristics& rc) : road_(rc) {
-    b_.reset(new Builder(road_.lane_bounds, road_.driveable_bounds,
-                         kLinearTolerance_, kAngularTolerance_));
+  MonolaneOnrampMerge(const mono::RoadCharacteristics& rc) : road_(rc) {
+    b_.reset(new mono::Builder(road_.lane_bounds, road_.driveable_bounds,
+                               kLinearTolerance_, kAngularTolerance_));
     BuildOnramp();
   };
 
-  std::unique_ptr<const api::RoadGeometry> own_road_geometry() {
+  std::unique_ptr<const maliput::api::RoadGeometry> own_road_geometry() {
     return std::move(rg_);
   };
 
@@ -40,11 +41,10 @@ class MonolaneOnrampMerge {
   const double kLinearTolerance_ = 0.01;
   const double kAngularTolerance_ = 0.01 * M_PI;
 
-  const RoadCharacteristics road_{};
-  std::unique_ptr<const api::RoadGeometry> rg_;
-  std::unique_ptr<Builder> b_;
+  const mono::RoadCharacteristics road_{};
+  std::unique_ptr<const maliput::api::RoadGeometry> rg_;
+  std::unique_ptr<mono::Builder> b_;
 };
 
-}  // namespace monolane
-}  // namespace maliput
+}  // namespace automotive
 }  // namespace drake

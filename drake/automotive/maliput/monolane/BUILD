@@ -112,6 +112,17 @@ drake_cc_googletest(
     ],
 )
 
+cc_test(
+    name = "road_section_builder_test",
+    size = "small",
+    srcs = ["test/road_section_builder_test.cc"],
+    deps = [
+        ":builder",
+        ":road_section_builder",
+        "@gtest//:main",
+    ],
+)
+
 drake_cc_binary(
     name = "yaml_load",
     testonly = 1,
