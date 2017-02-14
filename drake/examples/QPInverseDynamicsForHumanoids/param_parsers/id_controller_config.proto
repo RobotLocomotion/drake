@@ -80,14 +80,17 @@ message InverseDynamicsControllerConfig {
     AccelerationConfig centroidal_momentum = 2;
 
     // Body acceleration.
-    repeated AccelerationConfig body_motion = 3;
+    AccelerationConfig default_body_motion = 3;
+    repeated AccelerationConfig body_motion = 4;
 
     // Acceleration in the generalized coordinates.
-    repeated AccelerationConfig dof_motion = 4;
+    AccelerationConfig default_dof_motion = 5;
+    repeated AccelerationConfig dof_motion = 6;
 
     // Contact information.
-    repeated ContactConfig contact = 5;
+    ContactConfig default_contact = 7;
+    repeated ContactConfig contact = 8;
 
     // Regularization weight of the contact force basis.
-    double contact_force_basis_weight = 6;
+    double contact_force_basis_weight = 9;
 }

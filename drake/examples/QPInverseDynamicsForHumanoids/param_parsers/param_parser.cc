@@ -126,42 +126,30 @@ void BuildParamMapForBodyGroups(
   for (const auto& config : configs) {
     ParamType param = ParseParam(config);
     const std::string& group_name = config.name();
-    // Parses the default contact parameter.
-    if (group_name == "default") {
-      // Checks if the default has already been defined.
-      if (param_map->find(param.name) != param_map->end() &&
-          param_map->find(param.name)->second != param) {
-        throw std::runtime_error(
-            "Default param cannot be set to different values.");
-      } else {
-        param_map->emplace("default", param);
+    // Parses the contact parameter for this body group.
+    if (alias_group.has_body_group(group_name)) {
+      const std::vector<const RigidBody<double>*> bodies =
+        alias_group.get_body_group(group_name);
+      // Makes a contact param for each body in this body group.
+      for (const RigidBody<double>* body : bodies) {
+        param.name = body->get_name();
+
+        auto find_res = param_map->find(param.name);
+        // If this body already has a contact param defined, checks that they
+        // are the same. Throws if they are not.
+        if (find_res != param_map->end()) {
+          if (param != find_res->second) {
+            throw std::runtime_error("Param for " +
+                param.name +
+                " cannot be set to different values.");
+          }
+        } else {
+          param_map->emplace(param.name, param);
+        }
       }
     } else {
-      // Parses the contact parameter for this body group.
-      if (alias_group.has_body_group(group_name)) {
-        const std::vector<const RigidBody<double>*> bodies =
-            alias_group.get_body_group(group_name);
-        // Makes a contact param for each body in this body group.
-        for (const RigidBody<double>* body : bodies) {
-          param.name = body->get_name();
-
-          auto find_res = param_map->find(param.name);
-          // If this body already has a contact param defined, checks that they
-          // are the same. Throws if they are not.
-          if (find_res != param_map->end()) {
-            if (param != find_res->second) {
-              throw std::runtime_error("Param for " +
-                                       param.name +
-                                       " cannot be set to different values.");
-            }
-          } else {
-            param_map->emplace(param.name, param);
-          }
-        }
-      } else {
-        throw std::runtime_error("Param for unknown body group: " +
-            group_name);
-      }
+      throw std::runtime_error("Param for unknown body group: " +
+          group_name);
     }
   }
 }
@@ -214,48 +202,31 @@ void ParamSet::LoadFromFile(
       ParseDesiredMotionParam(id_configs.centroidal_momentum(), 6);
 
   // Contacts.
+  ContactParam default_contact_param = ParseContactParam(id_configs.default_contact());
+  contact_params_.emplace(default_contact_param.name, default_contact_param);
   BuildParamMapForBodyGroups<ContactConfig, ContactParam>(
       id_configs.contact(), alias_group,
       ParseContactParam, &contact_params_);
 
   // Body motion.
+  DesiredMotionParam default_motion_param = ParseDesiredMotionParam6(id_configs.default_body_motion());
+  body_motion_params_.emplace(default_motion_param.name, default_motion_param);
   BuildParamMapForBodyGroups<AccelerationConfig, DesiredMotionParam>(
       id_configs.body_motion(), alias_group,
       ParseDesiredMotionParam6, &body_motion_params_);
 
   // Dof motion.
   const RigidBodyTree<double>& robot = alias_group.get_tree();
-  bool has_default_dof_motion_param = false;
-  DesiredMotionParam default_dof_motion_param(1);
-  default_dof_motion_param.name = "default";
-
-  // Finds the default param first, and initializes all dof param to the
-  // default. We then overwrite the default values.
-  for (const auto& dof_config : id_configs.dof_motion()) {
-    if (dof_config.name() == "default") {
-      DesiredMotionParam tmp_param = ParseDesiredMotionParam(dof_config, 1);
-      if (!has_default_dof_motion_param) {
-        default_dof_motion_param = tmp_param;
-        has_default_dof_motion_param = true;
-      } else if (tmp_param != default_dof_motion_param) {
-        throw std::runtime_error(
-            "Default dof param cannot be set to different values.");
-      }
-    }
-  }
+  default_motion_param = ParseDesiredMotionParam(id_configs.default_dof_motion(), 1);
 
   // Initializes everything to the default param.
-  dof_motion_params_.resize(robot.get_num_velocities(),
-                            default_dof_motion_param);
+  dof_motion_params_.resize(robot.get_num_velocities(), default_motion_param);
   for (int i = 0; i < robot.get_num_velocities(); ++i) {
     dof_motion_params_[i].name = get_dof_name(robot, i);
   }
 
   DesiredMotionParam single_dof_motion_param(1), group_dof_motion_param;
   for (const auto& dof_config : id_configs.dof_motion()) {
-    // Skips default param.
-    if (dof_config.name() == "default") continue;
-
     const std::string& group_name = dof_config.name();
 
     if (alias_group.has_velocity_group(group_name)) {
@@ -276,7 +247,7 @@ void ParamSet::LoadFromFile(
 
         // Throws if we are trying to overwrite something different than the
         // current value and is not the default value.
-        if (dof_motion_params_.at(dof_idx) != default_dof_motion_param &&
+        if (dof_motion_params_.at(dof_idx) != default_motion_param &&
             dof_motion_params_.at(dof_idx) != single_dof_motion_param) {
           throw std::runtime_error("Dof motion param for " +
                                    single_dof_motion_param.name +

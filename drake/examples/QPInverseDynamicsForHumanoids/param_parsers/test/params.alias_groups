@@ -25,38 +25,6 @@ joint_group {
   member: "rightWristPitch"
 }
 
-joint_group {
-  name: "left_leg"
-  member: "leftHipYaw"
-  member: "leftHipRoll"
-  member: "leftHipPitch"
-  member: "leftKneePitch"
-  member: "leftAnklePitch"
-  member: "leftAnkleRoll"
-}
-
-joint_group {
-  name: "right_leg"
-  member: "rightHipYaw"
-  member: "rightHipRoll"
-  member: "rightHipPitch"
-  member: "rightKneePitch"
-  member: "rightAnklePitch"
-  member: "rightAnkleRoll"
-}
-
-joint_group {
-  name: "neck"
-  member: "lowerNeckPitch"
-}
-
-joint_group {
-  name: "spine"
-  member: "torsoYaw"
-  member: "torsoPitch"
-  member: "torsoRoll"
-}
-
 body_group {
   name: "feet"
   member: "leftFoot"
@@ -76,9 +44,4 @@ body_group {
 body_group {
   name: "pelvis"
   member: "pelvis"
-}
-
-body_group {
-  name: "torso"
-  member: "torso"
 }

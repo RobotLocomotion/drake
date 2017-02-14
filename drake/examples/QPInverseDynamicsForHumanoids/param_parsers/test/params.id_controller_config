@@ -27,7 +27,7 @@ centroidal_momentum {
     weight: 10
 }
 
-body_motion {
+default_body_motion {
     name: "default"
     kp: 0
     kd: 0
@@ -70,7 +70,7 @@ body_motion {
     weight: 0
 }
 
-dof_motion {
+default_dof_motion {
     name: "default"
     kp: 0
     kd: 0
@@ -105,7 +105,7 @@ dof_motion {
     weight: 1
 }
 
-contact {
+default_contact {
     name: "default"
     weight: 1e5
     kd: 8
