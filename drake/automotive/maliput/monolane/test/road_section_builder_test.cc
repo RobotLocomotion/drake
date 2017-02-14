@@ -44,7 +44,7 @@ TEST_F(RoadSectionBuilderTest, CheckDefautAttributes) {
 
   // Construct a road section using the defaults.
   std::unique_ptr<RoadSectionBuilder<double>> rs(
-      new RoadSectionBuilder<double>(std::move(builder_), false));
+      new RoadSectionBuilder<double>(std::move(builder_)));
 
   rs->AddLinearPrimitive(kLinearLength_);
   rs->AddArcPrimitive(kArcLength_, kRadius_, kCCW);
@@ -102,7 +102,7 @@ TEST_F(RoadSectionBuilderTest, CheckNonDefaultAttributes) {
   EndpointZ starting_z{2., 0., 1., 0.};
   Endpoint starting_config{starting_xy, starting_z};
   std::unique_ptr<RoadSectionBuilder<double>> rs(new RoadSectionBuilder<double>(
-      std::move(builder_), false, starting_config));
+      std::move(builder_), starting_config));
 
   rs->AddLinearPrimitive(kLinearLength_);
   rs->AddArcPrimitive(kArcLength_, kRadius_, kCCW);
