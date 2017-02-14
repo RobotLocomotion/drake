@@ -3,6 +3,7 @@
 #include <chrono>
 #include <thread>
 
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace systems {
@@ -60,6 +61,10 @@ void DrakeVisualizer::ReplayCachedSimulation() {
     auto func = PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots);
 
     RunPlaybackLoop(func, breaks[breaks.size() - 1]);
+  } else {
+    drake::log()->warn(
+        "DrakeVisualizer::ReplayCachedSimulation called on instance that wasn't"
+        " initialized to record.");
   }
 }
 
@@ -75,10 +80,9 @@ void DrakeVisualizer::RunPlaybackLoop(
   double sim_time = 0;
   TimePoint prev_time = Clock::now();
   BasicVector<double> data(log_->get_input_size());
-  while (sim_time <= kMaxTime) {
+  while (sim_time < kMaxTime) {
     data.set_value(trajectory.value(sim_time));
 
-    // Evaluate at time
     // Translates the input vector into an array of bytes representing an LCM
     // message.
     std::vector<uint8_t> message_bytes;
@@ -95,6 +99,14 @@ void DrakeVisualizer::RunPlaybackLoop(
     sim_time += (curr_time - prev_time).count();
     prev_time = curr_time;
   }
+
+  // Final evaluation is at the final time stamp, guaranteeing the final state.
+  data.set_value(trajectory.value(kMaxTime));
+  std::vector<uint8_t> message_bytes;
+  draw_message_translator_.Serialize(sim_time, data,
+                                     &message_bytes);
+  lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
+                message_bytes.size());
 }
 
 void DrakeVisualizer::DoPublish(const Context<double>& context) const {
