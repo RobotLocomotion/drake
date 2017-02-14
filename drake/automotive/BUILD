@@ -180,6 +180,7 @@ drake_cc_library(
         ":generated_vectors",
         ":simple_car",
         ":trajectory_car",
+        "//drake/automotive/maliput/api",
         "//drake/automotive/maliput/utility",
         "//drake/lcm",
         "//drake/multibody/parsers",
@@ -203,6 +204,7 @@ drake_cc_binary(
     ],
     deps = [
         ":automotive_simulator",
+        "//drake/automotive/maliput/dragway",
         "//drake/common:text_logging_gflags",
     ],
 )
@@ -230,6 +232,7 @@ drake_cc_binary(
     deps = [
         ":automotive_simulator",
         ":infinite_circuit_road",
+        "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane:loader",
         "//drake/common:text_logging_gflags",
     ],

@@ -141,6 +141,12 @@ class AutomotiveSimulator {
       const maliput::api::LaneEnd& start,
       const std::vector<const maliput::api::Lane*>& path);
 
+  /// Sets the RoadGeometry for this simulation.
+  ///
+  /// @pre Start() has NOT been called.
+  const maliput::api::RoadGeometry* SetRoadGeometry(
+      std::unique_ptr<const maliput::api::RoadGeometry> road);
+
   /// Adds an LCM publisher for the given @p system.
   /// @pre Start() has NOT been called.
   void AddPublisher(const EndlessRoadCar<T>& system, int vehicle_number);
@@ -222,6 +228,11 @@ class AutomotiveSimulator {
   // model instances since each model instance has two entries: (1) its number
   // of position states and (2) its number of velocity states.
   std::vector<int> GetModelJointStateSizes() const;
+
+  // Generates the URDF model of the road network and loads it into the
+  // `RigidBodyTree`. Member variable `road_` must be set prior to calling this
+  // method.
+  void GenerateAndLoadRoadNetworkUrdf();
 
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
