@@ -12,15 +12,15 @@ namespace maliput {
 namespace utility {
 
 void GenerateUrdfFile(const api::RoadGeometry* road_geometry,
-                      const std::string& dirname,
+                      const std::string& dirpath,
                       const std::string& fileroot,
                       const ObjFeatures& features) {
-  GenerateObjFile(road_geometry, dirname, fileroot, features);
+  GenerateObjFile(road_geometry, dirpath, fileroot, features);
 
   const std::string obj_filename = fileroot + ".obj";
   const std::string urdf_filename = fileroot + ".urdf";
 
-  std::ofstream os(dirname + "/" + urdf_filename, std::ios::binary);
+  std::ofstream os(dirpath + "/" + urdf_filename, std::ios::binary);
   fmt::print(os,
              R"X(<?xml version="1.0" ?>
 <robot name="{0}">
