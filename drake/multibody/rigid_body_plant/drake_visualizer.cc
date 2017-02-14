@@ -33,7 +33,7 @@ void DrakeVisualizer::set_publish_period(double period) {
 
 void DrakeVisualizer::ReplayCachedSimulation() {
   if (has_playback_) {
-    // Build piecewise polynomial
+    // Build piecewise polynomial.
     auto times = log_->sample_times();
     // NOTE: The SignalLog can record signal for multiple identical time stamps.
     //  This culls the duplicates as required by the PiecewisePolynomial.
