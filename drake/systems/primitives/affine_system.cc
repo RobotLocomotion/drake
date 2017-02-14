@@ -24,7 +24,7 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(int num_states,
   DRAKE_DEMAND(num_states_ >= 0);
   DRAKE_DEMAND(num_inputs_ >= 0);
   DRAKE_DEMAND(num_outputs_ >= 0);
-  DRAKE_DEMAND(this->time_period() >= 0.0);
+  DRAKE_DEMAND(time_period_ >= 0.0);
 
   // Declare state and input/output ports.
   // Declares the state variables and (potentially) the discrete-time update.
@@ -124,7 +124,7 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
 
   const T t = context.get_time();
 
-  // TODO(russt): consider demanding that t is a multipe of time_period_.
+  // TODO(russt): consider demanding that t is a multiple of time_period_.
   // But this could be non-trivial for non-double T.
 
   VectorX<T> xn = f0(t);
