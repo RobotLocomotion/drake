@@ -120,17 +120,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "piecewise_polynomial_source",
-    srcs = ["piecewise_polynomial_source.cc"],
-    hdrs = ["piecewise_polynomial_source.h"],
-    linkstatic = 1,
-    deps = [
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_library(
     name = "random_source",
     srcs = ["random_source.cc"],
     hdrs = ["random_source.h"],

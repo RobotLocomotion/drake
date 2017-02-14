@@ -20,7 +20,6 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/primitives/piecewise_polynomial_source.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
@@ -35,6 +34,74 @@ using qp_inverse_dynamics::KukaInverseDynamicsServo;
 
 namespace kuka_iiwa_arm {
 namespace {
+
+template <typename T>
+class PiecewisePolynomialSource : public SingleOutputVectorSource<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PiecewisePolynomialSource)
+
+  /**
+   * Constructs a PiecewisePolynomialSource that interpolates a given
+   * PiecewisePolynomial and its derivatives up to the order specified by
+   * @p output_derivative_order.
+   * @param trajectory Trajectory to be interpolated, and it must have only
+   * one column.
+   * @param output_derivative_order Highest derivative order, needs to be
+   * bigger than or equal to 0.
+   * @param set_derivatives_to_zero_when_time_is_past_limits All derivatives
+   * will be zero for interpolating time before the start time or after the
+   * end time of @p trajectory.
+   */
+  PiecewisePolynomialSource(
+      const PiecewisePolynomial<T>& trajectory, int output_derivative_order,
+      bool set_derivatives_to_zero_when_time_is_past_limits)
+      : SingleOutputVectorSource<T>(trajectory.rows() * (1 + output_derivative_order)),
+        trajectory_(trajectory),
+        clamp_derivatives_(set_derivatives_to_zero_when_time_is_past_limits) {
+    DRAKE_DEMAND(trajectory.cols() == 1);
+    DRAKE_DEMAND(output_derivative_order >= 0);
+
+    for (int i = 0; i < output_derivative_order; i++) {
+      if (i == 0)
+        derivatives_.push_back(trajectory_.derivative());
+      else
+        derivatives_.push_back(derivatives_[i - 1].derivative());
+    }
+  }
+
+ protected:
+  /**
+   * Outputs a vector of values evaluated at the context time of the trajectory
+   * and up to its Nth derivatives, where the trajectory and N are passed to the
+   * constructor. The size of the vector is
+   * (1 + output_derivative_order) * rows of the trajectory passed to the
+   * constructor.
+   */
+  void DoCalcVectorOutput(
+      const Context<T>& context,
+      Eigen::VectorBlock<VectorX<T>>* output) const override {
+    int len = trajectory_.rows();
+    output->head(len) = trajectory_.value(context.get_time());
+
+    double time = context.get_time();
+    bool set_zero = clamp_derivatives_ && (time > trajectory_.getEndTime() ||
+        time < trajectory_.getStartTime());
+
+    for (size_t i = 0; i < derivatives_.size(); ++i) {
+      if (set_zero) {
+        output->segment(len * (i + 1), len).setZero();
+      } else {
+        output->segment(len * (i + 1), len) =
+          derivatives_[i].value(context.get_time());
+      }
+    }
+  }
+
+ private:
+  const PiecewisePolynomial<T> trajectory_;
+  const bool clamp_derivatives_;
+  std::vector<PiecewisePolynomial<T>> derivatives_;
+};
 
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);

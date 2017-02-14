@@ -46,7 +46,6 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
-        "//drake/systems/primitives:piecewise_polynomial_source",
         "@gflags//:gflags",
     ],
 )
