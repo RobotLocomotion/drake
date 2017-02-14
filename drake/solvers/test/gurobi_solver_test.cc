@@ -20,11 +20,11 @@ TEST_P(GurobiLinearProgramTest, TestLP) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(GurobiTest, GurobiLinearProgramTest,
-                        ::testing::Combine(
-                            ::testing::ValuesIn(linear_cost_form()),
-                            ::testing::ValuesIn(linear_constraint_form()),
-                            ::testing::ValuesIn(linear_problems())));
+INSTANTIATE_TEST_CASE_P(
+    GurobiTest, GurobiLinearProgramTest,
+    ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
+                       ::testing::ValuesIn(linear_constraint_form()),
+                       ::testing::ValuesIn(linear_problems())));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

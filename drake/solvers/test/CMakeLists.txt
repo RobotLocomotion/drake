@@ -24,10 +24,8 @@ set(drakeOptimizationHeaders
         add_solver_util.h
         optimization_examples.h
         mathematical_program_test_util.h)
-set(drakeOptimizationPrivateHeaders
-        )
 add_library_with_exports(LIB_NAME drakeOptimizationTest
-        SOURCE_FILES ${drakeOptimizationTestSources} ${drakeOptimizationHeaders} ${drakeOptimizationPrivateHeaders})
+        SOURCE_FILES ${drakeOptimizationTestSources} ${drakeOptimizationHeaders})
 target_link_libraries(drakeOptimizationTest
         Eigen3::Eigen
         gflags
