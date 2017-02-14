@@ -122,6 +122,16 @@ class RigidBodyTreeAliasGroups {
   }
 
   /**
+   * Returns the body aliased by @p group_name. The body group referenced by
+   * @p group_name must contain exactly one element.
+   */
+  const RigidBody<T>* get_body(const std::string& group_name) const {
+    const auto& group = get_body_group(group_name);
+    DRAKE_DEMAND(group.size() == 1);
+    return group.front();
+  }
+
+  /**
    * Returns the joint group identified by @p group_name.
    *
    * @throws std::out_of_range if @p group_name is not found.
