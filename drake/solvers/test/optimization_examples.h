@@ -2,6 +2,8 @@
 
 #include <limits>
 #include <memory>
+#include <set>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -24,6 +26,20 @@ enum class ConstraintForm {
   kSymbolic = 2,
   kFormula = 3,
 };
+
+enum class LinearProblems {
+  kLinearFeasibilityProgram = 0,
+  kLinearProgram0 = 1,
+  kLinearProgram1 = 2,
+  kLinearProgram2 = 3,
+  kLinearProgram3 = 4,
+};
+
+std::set<CostForm> linear_cost_form();
+
+std::set<ConstraintForm> linear_constraint_form();
+
+std::vector<LinearProblems> linear_problems();
 
 class LinearProgram {
  public:
@@ -612,9 +628,16 @@ class LinearProgram3 : public LinearProgram {
 };
 
 class LinearProgramTest
-    : public ::testing::TestWithParam<std::shared_ptr<LinearProgram>> {};
+    : public ::testing::TestWithParam<
+          std::tuple<CostForm, ConstraintForm, LinearProblems>> {
+ public:
+  LinearProgramTest();
 
-std::vector<std::shared_ptr<LinearProgram>> GetLinearPrograms();
+  LinearProgram* prob() const {return prob_.get();}
+
+ private:
+  std::unique_ptr<LinearProgram> prob_;
+};
 
 }  // namespace test
 }  // namespace solvers

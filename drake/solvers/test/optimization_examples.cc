@@ -1,6 +1,5 @@
 #include "drake/solvers/test/optimization_examples.h"
 
-#include <set>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
@@ -22,15 +21,21 @@ using drake::symbolic::Expression;
 namespace drake {
 namespace solvers {
 namespace test {
-
-static std::set<CostForm> linear_cost_form() {
-    return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
+std::set<CostForm> linear_cost_form() {
+  return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
 }
 
-static std::set<ConstraintForm> linear_constraint_form() {
+std::set<ConstraintForm> linear_constraint_form() {
   return std::set<ConstraintForm>{ConstraintForm::kNonSymbolic,
                                   ConstraintForm::kSymbolic,
                                   ConstraintForm::kFormula};
+}
+
+std::vector<LinearProblems> linear_problems() {
+  return std::vector<LinearProblems>{
+      LinearProblems::kLinearFeasibilityProgram,
+      LinearProblems::kLinearProgram0, LinearProblems::kLinearProgram1,
+      LinearProblems::kLinearProgram2, LinearProblems::kLinearProgram3};
 }
 
 LinearProgram::LinearProgram(CostForm cost_form, ConstraintForm cnstr_form)
@@ -880,33 +885,33 @@ void LinearProgram3::CheckSolution() const {
                               MatrixCompareType::absolute));
 }
 
-std::vector<std::shared_ptr<LinearProgram>> GetLinearPrograms() {
-  std::vector<std::shared_ptr<LinearProgram>> lin_progs;
-  for (const auto& cnstr_form : linear_constraint_form()) {
-    std::shared_ptr<LinearProgram> prob_feas =
-        std::make_shared<LinearFeasibilityProgram>(cnstr_form);
-    lin_progs.push_back(prob_feas);
-  }
-  for (const auto& cost_form : linear_cost_form()) {
-    for (const auto& cnstr_form : linear_constraint_form()) {
-      std::shared_ptr<LinearProgram> prob0 =
-          std::make_shared<LinearProgram0>(cost_form, cnstr_form);
-      lin_progs.push_back(prob0);
 
-      std::shared_ptr<LinearProgram> prob1 =
-          std::make_shared<LinearProgram1>(cost_form, cnstr_form);
-      lin_progs.push_back(prob1);
-
-      std::shared_ptr<LinearProgram> prob2 =
-          std::make_shared<LinearProgram2>(cost_form, cnstr_form);
-      lin_progs.push_back(prob2);
-
-      std::shared_ptr<LinearProgram> prob3 =
-          std::make_shared<LinearProgram3>(cost_form, cnstr_form);
-      lin_progs.push_back(prob3);
+LinearProgramTest::LinearProgramTest() {
+  auto cost_form = std::get<0>(GetParam());
+  auto cnstr_form = std::get<1>(GetParam());
+  switch (std::get<2>(GetParam())) {
+    case LinearProblems::kLinearFeasibilityProgram : {
+      prob_ = std::make_unique<LinearFeasibilityProgram>(cnstr_form);
+      break;
     }
+    case LinearProblems::kLinearProgram0 : {
+      prob_ = std::make_unique<LinearProgram0>(cost_form, cnstr_form);
+      break;
+    }
+    case LinearProblems::kLinearProgram1 : {
+      prob_ = std::make_unique<LinearProgram1>(cost_form, cnstr_form);
+      break;
+    }
+    case LinearProblems::kLinearProgram2 : {
+      prob_ = std::make_unique<LinearProgram2>(cost_form, cnstr_form);
+      break;
+    }
+    case LinearProblems::kLinearProgram3 : {
+      prob_ = std::make_unique<LinearProgram3>(cost_form, cnstr_form);
+      break;
+    }
+    default : throw std::runtime_error("Un-recognized linear problem.");
   }
-  return lin_progs;
 }
 }  // namespace test
 }  // namespace solvers

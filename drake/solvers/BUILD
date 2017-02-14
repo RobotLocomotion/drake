@@ -123,7 +123,6 @@ drake_cc_library(
     testonly = 1,
     srcs = ["test/add_solver_util.cc"],
     hdrs = ["test/add_solver_util.h"],
-    linkstatic = 1,
     deps = [
         ":mathematical_program",
     ],
@@ -134,7 +133,6 @@ drake_cc_library(
     testonly = 1,
     srcs = ["test/mathematical_program_test_util.cc"],
     hdrs = ["test/mathematical_program_test_util.h"],
-    linkstatic = 1,
     deps = [
         ":mathematical_program",
         "@gtest//:main",
@@ -146,7 +144,6 @@ drake_cc_library(
     testonly = 1,
     srcs = ["test/optimization_examples.cc"],
     hdrs = ["test/optimization_examples.h"],
-    linkstatic = 1,
     deps = [
         ":mathematical_program",
         ":mathematical_program_test_util",
