@@ -8,27 +8,26 @@ namespace drake {
 namespace systems {
 
 /**
- * Interface class for a discrete- or continuous-time, time-varying affine
- * system.
+ * Base class for a discrete- or continuous-time, time-varying affine
+ * system, with potentially time-varying coefficients.
  *
  * If time_period > 0.0, then the affine system will have the state update:
  *   @f[ x(t+h) = A(t) x(t) + B(t) u(t) + f_0(t), @f]
  * where `h` is the time_period.  If time_period == 0.0, then the system will
  * have the time derivatives:
- *   @f[\dot{x}(t) = A(t) x(t) + B(t) u(t) + f_0(t), @f]
- * where `u` denotes the input vector, `x` denotes the state vector, and
- * `y` denotes the output vector.
+ *   @f[ \dot{x}(t) = A(t) x(t) + B(t) u(t) + f_0(t), @f]
+ * where `u` denotes the input vector, `x` denotes the state vector.
  *
  * In both cases, the system will have the output:
- *   @f[y(t) = C(t) x(t) + D(t) u(t) + y_0(t). @f]
+ *   @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f]
+ * where `y` denotes the output vector.
  *
  * @tparam T The scalar element type, which must be a valid Eigen scalar.
  */
 template <typename T>
 class TimeVaryingAffineSystem : public LeafSystem<T> {
  public:
-  TimeVaryingAffineSystem(int num_states, int num_inputs, int num_outputs,
-                          double time_period = 0.0);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeVaryingAffineSystem)
 
   /// Returns the input port containing the externally applied input.
   const InputPortDescriptor<T>& get_input_port() const;
@@ -55,6 +54,10 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   int num_inputs() const { return num_inputs_; }
   int num_outputs() const { return num_outputs_; }
 
+ protected:
+  TimeVaryingAffineSystem(int num_states, int num_inputs, int num_outputs,
+                          double time_period = 0.0);
+
  private:
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
@@ -72,7 +75,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   const double time_period_{0.0};
 };
 
-/// A discrete OR continuous affine system.
+/// A discrete OR continuous affine system (with constant coefficients).
 ///
 /// Let `u` denote the input vector, `x` denote the state vector, and
 /// `y` denote the output vector.
