@@ -13,12 +13,10 @@ namespace {
 
 using Eigen::Vector3d;
 
-// Tests default construction and proper sizes at compile time.
+// Tests default construction and proper size at compile time.
 GTEST_TEST(SpatialVector, SizeAtCompileTime) {
   SpatialVector<double> V;
   EXPECT_EQ(V.size(), 6);
-  EXPECT_EQ(V.angular_size(), 3);
-  EXPECT_EQ(V.linear_size(), 3);
 }
 
 // Construction from two three dimensional vectors.
@@ -32,10 +30,8 @@ GTEST_TEST(SpatialVector, ConstructionFromTwo3DVectors) {
   // Spatial velocity of frame B with respect to A and expressed in A.
   SpatialVector<double> V_AB(w_AB, v_AB);
 
-  // Verify compile-time sizes.
+  // Verify compile-time size.
   EXPECT_EQ(V_AB.size(), 6);
-  EXPECT_EQ(V_AB.angular_size(), 3);
-  EXPECT_EQ(V_AB.linear_size(), 3);
 
   // Comparison to Eigen::NumTraits<double>::epsilon() precision.
   EXPECT_TRUE(V_AB.linear().isApprox(v_AB));

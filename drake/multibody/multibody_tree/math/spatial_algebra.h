@@ -6,8 +6,9 @@
 /// quantities please refer to @ref multibody_spatial_algebra.
 /// We follow some basic conventions and nomenclature used in his book by
 /// Abhinandan Jain:
-///   Jain, A., 2010. Robot and multibody dynamics: analysis and algorithms.
-///   Springer Science & Business Media.
+///   - Jain, A., 2010. Robot and multibody dynamics: analysis and algorithms.
+///     Springer Science & Business Media.
+///
 /// Hereafter in this file we'll refer to this book by Jain (2010).
 
 #include <limits>
@@ -20,46 +21,40 @@
 namespace drake {
 namespace multibody {
 
-/// This class is used to represent physical quantities that can be expressed as
+/// This class is used to represent physical quantities that correspond to
 /// a pair of three dimensional vectors. These include spatial velocities,
-/// spatial accelerations and spatial forces.
+/// spatial accelerations and, spatial forces.
 /// See section @ref multibody_spatial_vectors for a detailed description of the
 /// concept of spatial vectors.
 ///
-/// @tparam T The unerlying scalar type. Must be a valid Eigen scalar.
+/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class SpatialVector {
  public:
   /// Sizes for spatial quantities and its components in three dimensions.
   enum {
     kSpatialVectorSize = 6,
-    kSpatialVectorAngularSize = 3,
-    kSpatialVectorLinearSize = 3
+    kRotationSize = 3,
+    kTranslationSize = 3
   };
   /// The type of the underlying in-memory representation using an Eigen vector.
-  typedef Eigen::Matrix<T, kSpatialVectorSize, 1> CoeffsEigenType;
+  typedef Vector6<T> CoeffsEigenType;
 
-  /// Default constructor leaving numerical entries un-initialized to avoid any
-  /// computational cost.
+  /// Default constructor leaves numerical entries un-initialized to avoid any
+  /// computational cost. This can be a significant cost for large collections
+  /// of spatial vectors.
   SpatialVector() {}
 
   /// SpatialVector constructor from an angular component @p w and a linear
   /// component @p v.
   SpatialVector(const Vector3<T>& w, const Vector3<T>& v) {
-    V_ << w, v;
+    V_.template head<3>() = w;
+    V_.template tail<3>() = v;
   }
 
   /// The total size of the concatenation of the angular and linear components.
   /// In three dimension this is six (6) and it is known at compile time.
   int size() const { return kSpatialVectorSize; }
-
-  /// The size of the angular component.
-  /// In three dimension this is three (3) and it is known at compile time.
-  int angular_size() const { return kSpatialVectorAngularSize; }
-
-  /// The size of the linear component.
-  /// In three dimension this is three (3) and it is known at compile time.
-  int linear_size() const { return kSpatialVectorLinearSize; }
 
   /// Const access to the underlying Eigen vector.
   const CoeffsEigenType& get_coeffs() const { return V_;}
@@ -93,24 +88,24 @@ class SpatialVector {
   /// Const access to the linear component of this spatial vector.
   const Vector3<T>& linear() const {
     return *reinterpret_cast<const Vector3<T>*>(
-        V_.data() + kSpatialVectorAngularSize);
+        V_.data() + kRotationSize);
   }
 
   /// Mutable access to the linear component of this spatial vector.
   Vector3<T>& linear() {
     return *reinterpret_cast<Vector3<T>*>(
-        V_.data() + kSpatialVectorAngularSize);
+        V_.data() + kRotationSize);
   }
 
-  /// Performs the dot product in R^6 of `this` spatial vector with @p other.
+  /// Performs the dot product in ℝ⁶ of `this` spatial vector with @p V.
   T dot(const SpatialVector& V) const {
     return V_.dot(V.V_);
   }
 
-  /// Returns a (const) bare pointer to the unerlying data.
+  /// Returns a (const) bare pointer to the underlying data.
   const T* data() const { return V_.data(); }
 
-  /// Returns a (mutable) bare pointer to the unerlying data.
+  /// Returns a (mutable) bare pointer to the underlying data.
   T* mutable_data() { return V_.data(); }
 
   /// @returns `true` if `other` is within a precision given by @p tolerance.
@@ -125,11 +120,6 @@ class SpatialVector {
 
  private:
   CoeffsEigenType V_;
-
- public:
-#ifndef SWIG
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 /// Insertion operator to write SpatialVectors into a `std::ostream`.
@@ -146,24 +136,23 @@ std::ostream& operator<<(std::ostream& o, const SpatialVector<T>& V) {
 template <typename T>
 inline SpatialVector<T> operator*(
     const T& s, const SpatialVector<T>& V) {
-  return SpatialVector<T>(s * V.angular(), s * V.linear());
+  return SpatialVector<T>(s * V.get_coeffs());
 }
 
 // Forward declaration of the ShiftOperator's transpose.
 template <typename T> class ShiftOperatorTranspose;
 
 /// A class representing the Rigid Body Transformation Matrix as defined in
-/// Section 1.4 of Jain (2010)'s book.
-/// Given a frame @f$ A @f$ that moves with spatial velocity @f$ ^WV^A @f$
-/// measured in a frame @f$ W @f$ and a second frame @f$ B @f$ that **rigidly**
-/// moves with frame @f$ A @f$, the shift operator @f$ \phi(A,B) @f$ is defined
-/// such that the spatial velocity of
-/// frame @f$ B @f$ as measured in this same frame @f$ W @f$ is given by:
-/// @f[
-///   ^WV^B = \phi(A,B)^T \, ^WV^A
-/// @f]
-/// where the superscript @f$ ^T @f$ represents the _transpose_ operation of the
-/// shift operator.
+/// Section 1.4 of Jain (2010)'s book, which we will call a Shift Operator to
+/// avoid confusion with Transforms.
+/// Given a frame `A` that moves with spatial velocity `V_WA` measured in a
+/// frame `W` and a second frame `B` that **rigidly** moves with frame `A`,
+/// the shift operator `S_AB` is defined such that the spatial velocity of
+/// frame `B` as measured in this same frame `W` is given by: <pre>
+///   V_WB = ST_AB * V_WA
+/// </pre>
+/// where the superscript ST_AB represents the _transpose_ of the shift operator
+/// `S_AB`.
 ///
 /// The above example reads in code as:
 /// @code
@@ -190,14 +179,13 @@ template <typename T> class ShiftOperatorTranspose;
 /// With spatial forces defined in @ref multibody_spatial_vectors as the pair of
 /// of three dimensional vectors @f$ \tau @f$ for the torque component and
 /// @f$ f @f$ for the force component, the shift operator relates the
-/// spatial force about a frame @f$ A @f$ on a rigid body with the spatial
-/// force about a frame @f$ B @f$ on the same rigid body as:
-/// @f[
-///   ^WF^A = \phi(A,B)\, ^WF^B
-/// @f]
-/// which implies that the spatial force @f$ ^WF^B @f$ about @f$ B @f$ on a
+/// spatial force about a frame `A` on a rigid body with the spatial
+/// force about a frame `B` on the same rigid body as: <pre>
+///   F_WA = S_AB * F_WB
+/// </pre>
+/// which implies that the spatial force `F_WB` about `B` on a
 /// rigid body is equivalent to the spatial force
-/// @f$ ^WF^A = \phi(A,B)\, ^WF^B @f$ about @f$ A @f$ on the same rigid body.
+/// `F_WA = S_AB * F_WB` about `A` on the same rigid body.
 ///
 /// Some basic group properties of this operator are:
 // Note: we comment out the multi-line equation with /**/ because otherwise the
@@ -212,7 +200,7 @@ template <typename T> class ShiftOperatorTranspose;
 /// @see ShiftOperatorTranspose for the dual version of this operator which
 ///      allows transformation of spatial forces.
 ///
-/// @tparam T The unerlying scalar type. Must be a valid Eigen scalar.
+/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class ShiftOperator {
  public:
@@ -253,18 +241,13 @@ class ShiftOperator {
 
  private:
   Vector3<T> offset_;
-
- public:
-#ifndef SWIG
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 /// This class is the return type for ShiftOperator::transpose().
 /// For a detailed description of the shift operator please refer to the
 /// documentation for the ShiftOperator class.
 ///
-/// @tparam T The unerlying scalar type. Must be a valid Eigen scalar.
+/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class ShiftOperatorTranspose {
  public:
