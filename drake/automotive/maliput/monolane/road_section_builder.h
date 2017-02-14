@@ -60,18 +60,20 @@ class RoadSectionBuilder {
 
   RoadSectionBuilder(std::unique_ptr<Builder> builder, const bool& is_reversed,
                      Endpoint starting_config)
-      : is_reversed_(is_reversed), last_endpoint_(starting_config),
+      : is_reversed_(is_reversed),
+        last_endpoint_(starting_config),
         b_(std::move(builder)) {}
 
   /// Adds an arc segment, with some specified @p arc_length, @p arc_radius, @p
   /// arc_direction, and EndpointZ specifier, @p end_z, of lane
   /// elevation/superelevation at the end of the primitive.
   void AddArcPrimitive(const T& arc_length, const T& arc_radius,
-                     const ArcDirection& arc_direction, const EndpointZ& end_z);
+                       const ArcDirection& arc_direction,
+                       const EndpointZ& end_z);
 
   /// Vanilla version of AddArcSegment assuming a flat lane primitive.
   void AddArcPrimitive(const T& arc_length, const T& arc_radius,
-                     const ArcDirection& arc_direction);
+                       const ArcDirection& arc_direction);
 
   /// Adds a linear segment, with some specified @p length and EndpointZ
   /// specifier, @p end_z, of lane elevation/superelevation at the end of the

@@ -18,9 +18,8 @@ class RoadSectionBuilderTest : public ::testing::Test {
   RoadSectionBuilderTest() {}
 
   void SetUp() {
-    builder_.reset(new Builder(
-        road_.lane_bounds, road_.driveable_bounds, kLinearTolerance_,
-        kAngularTolerance_));
+    builder_.reset(new Builder(road_.lane_bounds, road_.driveable_bounds,
+                               kLinearTolerance_, kAngularTolerance_));
   }
 
  protected:
@@ -55,7 +54,7 @@ TEST_F(RoadSectionBuilderTest, CheckDefautAttributes) {
   EXPECT_NE(nullptr, builder_);
 
   // Verify the resulting RoadGeometry.
-  rg_ = builder_->Build({"example"});
+  rg_ = builder_->Build({"defaults-example"});
   EXPECT_EQ(2, rg_->num_junctions());
   EXPECT_EQ(1, rg_->junction(0)->num_segments());
   EXPECT_EQ(1, rg_->junction(0)->segment(0)->num_lanes());
@@ -102,9 +101,8 @@ TEST_F(RoadSectionBuilderTest, CheckNonDefaultAttributes) {
   EndpointXy starting_xy{1., 4., 3.};
   EndpointZ starting_z{2., 0., 1., 0.};
   Endpoint starting_config{starting_xy, starting_z};
-  std::unique_ptr<RoadSectionBuilder<double>> rs(
-      new RoadSectionBuilder<double>(std::move(builder_), false,
-                                     starting_config));
+  std::unique_ptr<RoadSectionBuilder<double>> rs(new RoadSectionBuilder<double>(
+      std::move(builder_), false, starting_config));
 
   rs->AddLinearPrimitive(kLinearLength_);
   rs->AddArcPrimitive(kArcLength_, kRadius_, kCCW);
@@ -112,7 +110,7 @@ TEST_F(RoadSectionBuilderTest, CheckNonDefaultAttributes) {
   builder_ = rs->Finalize();
 
   // Verify the resulting RoadGeometry.
-  rg_ = builder_->Build({"example"});
+  rg_ = builder_->Build({"non-defaults-example"});
   const api::Lane* initial_lane = rg_->junction(0)->segment(0)->lane(0);
   const api::LanePosition initial_lane_pos{0., 0., 0.};
   const api::GeoPosition initial_geo_pos =

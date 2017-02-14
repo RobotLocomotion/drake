@@ -10,5 +10,6 @@ drake_install_headers(
   lane.h
   line_lane.h
   road_geometry.h
+  road_section_builder.h
   segment.h
   )
