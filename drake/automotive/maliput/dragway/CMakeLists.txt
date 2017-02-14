@@ -18,6 +18,13 @@ drake_install_headers(
   road_geometry.h
   segment.h)
 
+add_executable(dragway_to_urdf dragway_to_urdf.cc)
+target_link_libraries(dragway_to_urdf
+    drakeAutomotive
+    drakeCommon
+    drakeMaliputDragway
+    spruce)
+
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
