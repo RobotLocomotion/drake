@@ -13,8 +13,8 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 RobotStateDecoderSystem::RobotStateDecoderSystem(
-    const RigidBodyTree<double>& robot)
-    : robot_(robot) {
+    const RigidBodyTree<double>& robot, const std::string& alias_group_path)
+    : robot_(robot), alias_group_path_(alias_group_path) {
   input_port_index_lcm_msg_ = DeclareAbstractInputPort().get_index();
   output_port_index_humanoid_status_ = DeclareAbstractOutputPort().get_index();
 }
@@ -48,12 +48,9 @@ RobotStateDecoderSystem::AllocateOutputAbstract(
     const systems::OutputPortDescriptor<double>& descriptor) const {
   DRAKE_DEMAND(descriptor.get_index() == output_port_index_humanoid_status_);
 
-  std::string alias_groups_config =
-      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
-      "config/valkyrie.alias_groups";
   // KinematicsProperty
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(robot_);
-  alias_groups.LoadFromFile(alias_groups_config);
+  alias_groups.LoadFromFile(alias_group_path_);
 
   return systems::AbstractValue::Make<HumanoidStatus>(
       HumanoidStatus(robot_, alias_groups));

@@ -57,6 +57,11 @@ joint_group {
   member: "torsoRoll"
 }
 
+joint_group {
+  name: "back_x"
+  member: "torsoRoll"
+}
+
 body_group {
   name: "feet"
   member: "leftFoot"
