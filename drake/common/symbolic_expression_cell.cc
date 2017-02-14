@@ -1136,6 +1136,9 @@ Expression::MonomialToCoeffMap ExpressionPow::DecomposePolynomial(const Variable
   Expression::MonomialToCoeffMap map;
   const int exponent{
       static_cast<int>(get_constant_value(get_second_argument()))};
+  if (exponent != get_second_argument()) {
+    throw std::runtime_error("ExpressionPow contains non-integer exponent, cannot be decomposed as a polynomial.");
+  }
   if (exponent == 1) {
     return get_first_argument().DecomposePolynomial(vars);
   } else if (exponent == 0) {
@@ -1144,7 +1147,7 @@ Expression::MonomialToCoeffMap ExpressionPow::DecomposePolynomial(const Variable
     throw std::runtime_error("Pow expression has negative exponent, it cannot be decomposed as a polynomial.");
   } else if (exponent % 2 == 0) {
     const auto& map1 = pow(get_first_argument(), exponent / 2).DecomposePolynomial(vars);
-    map.reserve(map1.size() * 2);
+    map.reserve(map1.size() * (map1.size() + 1) / 2);
     for (auto it1 = map1.begin(); it1 != map1.end(); ++it1) {
       for (auto it2 = it1; it2 != map1.end(); ++it2) {
         Expression new_base = it1->first * it2->first;
@@ -1162,9 +1165,21 @@ Expression::MonomialToCoeffMap ExpressionPow::DecomposePolynomial(const Variable
     }
   } else {
     Expression base = get_first_argument();
-    const Expression e1 = pow(base, exponent / 2);
-    const Expression e2 = pow(base, exponent / 2 + 1);
-    return (e1 * e2).DecomposePolynomial(vars);
+    const auto& map1 = pow(base, exponent / 2).DecomposePolynomial(vars);
+    const auto& map2 = pow(base, exponent / 2 + 1).DecomposePolynomial(vars);
+    map.reserve(map1.size() * map2.size());
+    for (const auto& p1 : map1) {
+      for (const auto& p2 : map2) {
+        Expression new_base = p1.first * p2.first;
+        Expression new_coeff = p1.second * p2.second;
+        auto map_it = map.find(new_base);
+        if (map_it == map.end()) {
+          map.emplace(new_base, new_coeff);
+        } else {
+          map_it->second += new_coeff;
+        }
+      }
+    }
   }
   return map;
 }

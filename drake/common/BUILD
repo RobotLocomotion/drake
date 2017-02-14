@@ -426,6 +426,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_expression_decompose_polynomial_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_expression_differentiation_test",
     deps = [
         ":common",
