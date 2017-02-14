@@ -10,7 +10,7 @@ namespace {
 
 namespace mono = maliput::monolane;
 
-/// Tests the soundness of the MonolaneOnrampMerge example generator.
+// Tests the soundness of the MonolaneOnrampMerge example generator.
 GTEST_TEST(MonolaneOnrampMergeTest, TestDefaultAndNonDefaultAttributes) {
   // Create the road with default road characteristics.
   std::unique_ptr<MonolaneOnrampMerge<double>> merge_example_(

@@ -129,7 +129,6 @@ drake_cc_library(
     name = "monolane_onramp_merge",
     srcs = ["monolane_onramp_merge.cc"],
     hdrs = ["monolane_onramp_merge.h"],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
         "//drake/automotive/maliput/api",

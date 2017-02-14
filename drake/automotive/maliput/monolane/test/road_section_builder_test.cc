@@ -18,8 +18,9 @@ class RoadSectionBuilderTest : public ::testing::Test {
   RoadSectionBuilderTest() {}
 
   void SetUp() {
-    builder_.reset(new Builder(road_.lane_bounds, road_.driveable_bounds,
-                               kLinearTolerance_, kAngularTolerance_));
+    builder_ =
+        std::make_unique<Builder>(road_.lane_bounds, road_.driveable_bounds,
+                                  kLinearTolerance_, kAngularTolerance_);
   }
 
  protected:
@@ -101,8 +102,8 @@ TEST_F(RoadSectionBuilderTest, CheckNonDefaultAttributes) {
   EndpointXy starting_xy{1., 4., 3.};
   EndpointZ starting_z{2., 0., 1., 0.};
   Endpoint starting_config{starting_xy, starting_z};
-  std::unique_ptr<RoadSectionBuilder<double>> rs(new RoadSectionBuilder<double>(
-      std::move(builder_), starting_config));
+  std::unique_ptr<RoadSectionBuilder<double>> rs(
+      new RoadSectionBuilder<double>(std::move(builder_), starting_config));
 
   rs->AddLinearPrimitive(kLinearLength_);
   rs->AddArcPrimitive(kArcLength_, kRadius_, kCCW);

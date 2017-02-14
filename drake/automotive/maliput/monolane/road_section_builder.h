@@ -43,7 +43,7 @@ struct RoadCharacteristics {
 /// length and, if an arc lane, the arc's radius and direction.  Optionally, the
 /// user is free to specify elevation/superelevation at the boundary condition
 /// of the primitive.
-
+///
 /// If the @p starting_config is not provided, the road begins at the origin
 /// of the world.  RoadSectionBuilder takes owership of the @p builder upon
 /// construction, releasing back to the caller when Finalize is invoked.
@@ -58,8 +58,7 @@ class RoadSectionBuilder {
       : b_(std::move(builder)) {}
 
   RoadSectionBuilder(std::unique_ptr<Builder> builder, Endpoint starting_config)
-      : last_endpoint_(starting_config),
-        b_(std::move(builder)) {}
+      : last_endpoint_(starting_config), b_(std::move(builder)) {}
 
   /// Adds an arc segment, with some specified @p arc_length, @p arc_radius, @p
   /// arc_direction, and EndpointZ specifier, @p end_z, of lane

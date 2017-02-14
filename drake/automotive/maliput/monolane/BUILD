@@ -80,7 +80,6 @@ drake_cc_library(
     hdrs = [
         "road_section_builder.h",
     ],
-    linkstatic = 1,
     deps = [
         ":builder",
     ],
@@ -112,14 +111,13 @@ drake_cc_googletest(
     ],
 )
 
-cc_test(
+drake_cc_googletest(
     name = "road_section_builder_test",
     size = "small",
     srcs = ["test/road_section_builder_test.cc"],
     deps = [
         ":builder",
         ":road_section_builder",
-        "@gtest//:main",
     ],
 )
 
