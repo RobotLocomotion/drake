@@ -53,13 +53,11 @@ class BeadOnAWireTest : public ::testing::Test {
 
 // Checks output is as expected.
 TEST_F(BeadOnAWireTest, Output) {
-  const systems::ContinuousState<double> &v = *context_abs_->
+  const systems::ContinuousState<double>& v = *context_abs_->
                                                get_continuous_state();
-  std::unique_ptr<systems::SystemOutput<double>> output =
-      dut_abs_->AllocateOutput(*context_abs_);
-  dut_abs_->CalcOutput(*context_abs_, output.get());
+  dut_abs_->CalcOutput(*context_abs_, output_abs_.get());
   for (int i = 0; i < v.size(); ++i)
-    EXPECT_EQ(v[i], output->get_vector_data(0)->get_value()(i));
+    EXPECT_EQ(v[i], output_abs_->get_vector_data(0)->get_value()(i));
 }
 
 // Tests parameter getting and setting.
