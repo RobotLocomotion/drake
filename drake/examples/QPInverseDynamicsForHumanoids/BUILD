@@ -110,6 +110,7 @@ drake_cc_googletest(
         "gurobi",
         "local",
     ],
+    size = "medium",
     deps = [
         ":control_utils",
         ":qp_controller",
