@@ -149,6 +149,8 @@ class QPController {
                   const std::list<int>& idx,
                   drake::solvers::QuadraticConstraint* cost);
 
+  bool HasFloatingBase(const RigidBodyTree<double>& robot) const;
+
   // Zeros out the temporary matrices.
   void SetTempMatricesToZero();
 };

@@ -57,6 +57,15 @@ void QPController::SetTempMatricesToZero() {
   JB_.setZero();
 }
 
+bool QPController::HasFloatingBase(const RigidBodyTree<double>& robot) const {
+  if (robot.get_num_bodies() < 2)
+    return false;
+
+  // TODO(siyuan.feng): find a better to do this, right now all the other math
+  // assumes that the floating base will be the first body.
+  return robot.get_body(1).getJoint().is_floating();
+}
+
 void QPController::ResizeQP(const RigidBodyTree<double>& robot,
                             const QpInput& input) {
   const std::unordered_map<std::string, ContactInformation>& all_contacts =
@@ -160,9 +169,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   vd_ = prog_->NewContinuousVariables(num_vd_, "vd");
   basis_ = prog_->NewContinuousVariables(num_basis_, "basis");
 
-  // TODO(siyuan): have a better way to do check for floating base vs fixed
-  // base.
-  if (robot.get_num_velocities() == robot.get_num_actuators() + 6) {
+  if (HasFloatingBase(robot)) {
     num_dynamics_equations_ = 6;
     has_floating_base_ = true;
   } else {

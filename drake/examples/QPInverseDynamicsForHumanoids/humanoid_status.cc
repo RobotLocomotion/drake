@@ -23,8 +23,11 @@ HumanoidStatus::HumanoidStatus(
     : robot_(&robot), cache_(robot_->CreateKinematicsCache()) {
   time_ = 0;
 
-  std::vector<std::string> body_names = {"pelvis", "torso", "left_foot",
-                                         "right_foot"};
+  // These are humanoid specific special group names, and they do not exsit
+  // for manupulators such as the iiwa arm.
+  const std::vector<std::string> body_names =
+      {"pelvis", "torso", "left_foot", "right_foot"};
+
   for (const auto& name : body_names) {
     if (alias_group.has_body_group(name)) {
       const RigidBody<double>* body = alias_group.get_body(name);
@@ -33,6 +36,7 @@ HumanoidStatus::HumanoidStatus(
     }
   }
 
+  // Only attach foot sensors if this robot has feet.
   if (alias_group.has_body_group("left_foot")) {
     bodies_of_interest_.emplace(
         "left_foot_sensor",

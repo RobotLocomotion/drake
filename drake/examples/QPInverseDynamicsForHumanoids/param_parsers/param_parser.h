@@ -288,6 +288,20 @@ class ParamSet {
    */
   DesiredCentroidalMomentumDot MakeDesiredCentroidalMomentumDot() const;
 
+  /**
+   * Returns a QpInput for the given contacts and tracked bodies using the
+   * parameters hold by this instance. Note that this function only sets the
+   * `weights` and `constraint_types` fields for DesiredBodyMotion and
+   * DesiredDofMotions, the desire accelerations need to be set separately by
+   * some control policy.
+   * @param contact_body_groups, Names of body groups that are in contact.
+   * For each body of each group, a ContactInformation will be populated in the
+   * returned QpInput.
+   * @param tracked_body_groups, Names of body groups that are being tracked.
+   * For each body of each group, a DesiredBodyMotion will be populated in the
+   * returned QpInput.
+   * @return QpInput.
+   */
   QpInput MakeQpInput(
       const std::vector<std::string>& contact_body_groups,
       const std::vector<std::string>& tracked_body_groups,
