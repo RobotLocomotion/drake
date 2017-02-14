@@ -1,6 +1,7 @@
 if(lcm_FOUND)
   add_executable(controlled_kuka_demo
-      controlled_kuka_demo.cc)
+      controlled_kuka_demo.cc
+      make_demo_plan.cc)
   target_link_libraries(controlled_kuka_demo
       drakeKukaIiwaArmCommon
       drakeLcmSystem

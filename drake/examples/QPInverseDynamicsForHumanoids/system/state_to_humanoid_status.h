@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -11,28 +12,25 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * A translator from bot_core::robot_state_t to HumanoidStatus
- *
- * Input: lcm message bot_core::robot_state_t
- * Output: HumanoidStatus
+ * A translator class from state vector to HumanoidStatus.
  */
-class RobotStateDecoderSystem : public systems::LeafSystem<double> {
+class StateToHumanoidStatus : public systems::LeafSystem<double> {
  public:
-  RobotStateDecoderSystem(const RigidBodyTree<double>& robot,
-                          const std::string& alias_group_path);
+  StateToHumanoidStatus(const RigidBodyTree<double>& robot,
+                        const std::string& path);
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
+  std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
+      const systems::Context<double>& context) const override;
 
   /**
    * @return Port for the input: lcm message bot_core::robot_state_t
    */
-  inline const systems::InputPortDescriptor<double>&
-  get_input_port_robot_state_msg() const {
-    return get_input_port(input_port_index_lcm_msg_);
+  inline const systems::InputPortDescriptor<double>& get_input_port_state()
+      const {
+    return get_input_port(input_port_index_state_);
   }
 
   /**
@@ -45,10 +43,10 @@ class RobotStateDecoderSystem : public systems::LeafSystem<double> {
 
  private:
   const RigidBodyTree<double>& robot_;
-  std::string alias_group_path_;
+  const std::string alias_group_path_;
 
-  int input_port_index_lcm_msg_;
-  int output_port_index_humanoid_status_;
+  int input_port_index_state_{0};
+  int output_port_index_humanoid_status_{0};
 };
 
 }  // namespace qp_inverse_dynamics
