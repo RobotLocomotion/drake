@@ -168,6 +168,8 @@ drake_cc_library(
         ":generated_vectors",
         ":simple_car",
         ":trajectory_car",
+        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/utility",
         "//drake/lcm",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
@@ -190,6 +192,8 @@ drake_cc_binary(
     ],
     deps = [
         ":automotive_simulator",
+        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/dragway",
         "//drake/common:text_logging_gflags",
     ],
 )
@@ -232,8 +236,34 @@ java_binary(
 )
 
 py_binary(
-    name = "demo",
+    name = "demo_simple_car_and_trajectory_car",
     srcs = ["automotive_demo.py"],
+    args = [
+        "--demo=0",
+    ],
+    data = [
+        ":automotive_demo",
+        ":lcm-spy",
+        ":steering_command_driver",
+        "@drake_visualizer//:drake-visualizer",
+        "@lcm//:lcm-logger",
+    ],
+    main = "automotive_demo.py",
+    deps = [
+        "@lcm//:lcm-python",
+    ],
+)
+
+py_binary(
+    name = "demo_dragway_with_trajectory_car",
+    srcs = ["automotive_demo.py"],
+    args = [
+        "--demo=1",
+        "--num_lanes=10",
+        "--length=100",
+        "--lane_width=3.7",
+        "--shoulder_width=3.0",
+    ],
     data = [
         ":automotive_demo",
         ":lcm-spy",
