@@ -19,6 +19,7 @@ drake_cc_library(
         "param_parser.h",
     ],
     deps = [
+        ":id_controller_config",
         ":rigid_body_tree_alias_groups",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
         "@yaml_cpp//:lib",
@@ -29,6 +30,13 @@ cc_proto_library(
     name = "alias_groups",
     srcs = [
         "alias_groups.proto",
+    ],
+)
+
+cc_proto_library(
+    name = "id_controller_config",
+    srcs = [
+        "id_controller_config.proto",
     ],
 )
 
@@ -48,7 +56,7 @@ drake_cc_googletest(
     name = "rigid_body_tree_alias_groups_test",
     srcs = ["test/rigid_body_tree_alias_groups_test.cc"],
     data = [
-        "test/full.alias_groups",
+        "test/test.alias_groups",
         "//drake/multibody:test_models",
     ],
     deps = [
@@ -62,8 +70,8 @@ drake_cc_googletest(
     name = "param_parser_test",
     srcs = ["test/param_parser_test.cc"],
     data = [
-        "test/params.yaml",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",
+        "test/params.alias_groups",
+        "test/params.id_controller_config",
         "//drake/examples/Valkyrie:models",
     ],
     deps = [
