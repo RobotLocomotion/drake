@@ -40,8 +40,7 @@ struct RoadCharacteristics {
 /// semantics for each added primitive; the user specifies the primitive's
 /// length and, if an arc lane, the arc's radius and direction.  Optionally, the
 /// user is free to specify elevation/superelevation at the boundary condition
-/// of the primitive.  The user may choose to reverse the direction of the
-/// entire section of road.
+/// of the primitive.
 
 /// If the @p starting_config is not provided, the road begins at the origin
 /// of the world.  RoadSectionBuilder takes owership of the @p builder upon
@@ -52,16 +51,12 @@ class RoadSectionBuilder {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadSectionBuilder)
 
   /// @p builder is the monolane Builder into which we want to construct a new
-  /// road section, @p is_reversed is a boolean indicating that the road will be
-  /// constructed in reverse order, and @p starting_config is the datum for the
-  /// new road section.
-  RoadSectionBuilder(std::unique_ptr<Builder> builder, const bool& is_reversed)
-      : is_reversed_(is_reversed), b_(std::move(builder)) {}
+  /// road section and @p starting_config is the datum for the new road section.
+  RoadSectionBuilder(std::unique_ptr<Builder> builder)
+      : b_(std::move(builder)) {}
 
-  RoadSectionBuilder(std::unique_ptr<Builder> builder, const bool& is_reversed,
-                     Endpoint starting_config)
-      : is_reversed_(is_reversed),
-        last_endpoint_(starting_config),
+  RoadSectionBuilder(std::unique_ptr<Builder> builder, Endpoint starting_config)
+      : last_endpoint_(starting_config),
         b_(std::move(builder)) {}
 
   /// Adds an arc segment, with some specified @p arc_length, @p arc_radius, @p
@@ -90,7 +85,6 @@ class RoadSectionBuilder {
   std::unique_ptr<Builder> Finalize() { return std::move(b_); }
 
  private:
-  const bool is_reversed_{false};
   const EndpointXy origin_xy_{0., 0., 0.};
   const EndpointZ flat_z_{0., 0., 0., 0.};
 

@@ -16,7 +16,7 @@ namespace mono = maliput::monolane;
 /// MonolaneOnrampMerge contains an example lane-merge scenario expressed as a
 /// maliput monolane road geometry.  The intent of this class is to enable easy
 /// creation and modification of road geometries for simulating/analyzing
-/// lane-merge scenarios.
+/// such scenarios.
 template <typename T>
 class MonolaneOnrampMerge {
  public:

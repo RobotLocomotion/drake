@@ -22,12 +22,9 @@ void RoadSectionBuilder<T>::AddArcPrimitive(const T& arc_length,
                                                : -arc_length / arc_radius;
   const ArcOffset& arc{arc_radius, arc_angle};
 
-  Connection* connection =
+  const Connection* connection =
       b_->Connect(std::to_string(id_++), last_endpoint_, arc, end_z);
   last_endpoint_ = connection->end();
-  if (is_reversed_) {
-    connection->MakeReversed();
-  }
 }
 
 template <typename T>
@@ -40,12 +37,9 @@ void RoadSectionBuilder<T>::AddArcPrimitive(const T& arc_length,
 template <typename T>
 void RoadSectionBuilder<T>::AddLinearPrimitive(const T& length,
                                                const EndpointZ& end_z) {
-  Connection* connection =
+  const Connection* connection =
       b_->Connect(std::to_string(id_++), last_endpoint_, length, end_z);
   last_endpoint_ = connection->end();
-  if (is_reversed_) {
-    connection->MakeReversed();
-  }
 }
 
 template <typename T>

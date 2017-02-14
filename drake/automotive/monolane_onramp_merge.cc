@@ -22,7 +22,7 @@ void MonolaneOnrampMerge<T>::BuildOnramp() {
 
   // Construct the pre-merge road.
   std::unique_ptr<mono::RoadSectionBuilder<T>> rs_pre(
-      new mono::RoadSectionBuilder<T>(std::move(b_), false));
+      new mono::RoadSectionBuilder<T>(std::move(b_)));
   rs_pre->AddArcPrimitive(40., 25., mono::kCW);
   rs_pre->AddArcPrimitive(20., 25., mono::kCCW);
   rs_pre->AddArcPrimitive(40., 25., mono::kCW);
@@ -34,14 +34,13 @@ void MonolaneOnrampMerge<T>::BuildOnramp() {
 
   // Construct the post-merge road.
   std::unique_ptr<mono::RoadSectionBuilder<T>> rs_post(
-      new mono::RoadSectionBuilder<T>(std::move(b_), false, endpoint_pre));
+      new mono::RoadSectionBuilder<T>(std::move(b_), endpoint_pre));
   rs_post->AddLinearPrimitive(50.);
   b_ = rs_post->Finalize();
 
   // Construct the on-ramp.
   std::unique_ptr<mono::RoadSectionBuilder<T>> rs_onramp(
-      new mono::RoadSectionBuilder<T>(std::move(b_), true,
-                                      endpoint_pre.reverse()));
+      new mono::RoadSectionBuilder<T>(std::move(b_), endpoint_pre.reverse()));
   rs_onramp->AddArcPrimitive(50., 30, mono::kCCW);
   rs_onramp->AddLinearPrimitive(100.);
   b_ = rs_onramp->Finalize();
