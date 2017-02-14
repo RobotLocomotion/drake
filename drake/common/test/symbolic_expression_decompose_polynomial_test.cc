@@ -270,6 +270,24 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial8) {
 
   CheckDecomposePolynomial8((x_ * x_ + 4 * x_ * y_ + 4 * y_ * y_) * (x_ - 2 * y_), var_x_, var_y_, false);
 }
+
+TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial9) {
+  // Decomposes -x.
+  Expression::MonomialToCoeffMap map_expected1;
+  map_expected1.emplace(x_, -1);
+  CheckMonomialToCoeffMap(-x_, {var_x_}, map_expected1);
+
+  Expression::MonomialToCoeffMap map_expected2;
+  map_expected2.emplace(1, -x_);
+  CheckMonomialToCoeffMap(-x_, {var_y_}, map_expected2);
+}
+
+TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial10) {
+  // Decomposes x^2 * y / (x * y)
+  Expression::MonomialToCoeffMap map_expected1;
+  map_expected1.emplace(x_, 1);
+  CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), {var_x_}, map_expected1, false);
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
