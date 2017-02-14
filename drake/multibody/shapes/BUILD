@@ -25,10 +25,10 @@ drake_cc_library(
     ],
 )
 
-drake_cc_googletest(
-    name = "mesh_triangulate_test",
-    srcs = ["test/mesh_triangulate_test.cc"],
-    data = [
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = [
         "test/colinear_vertex.obj",
         "test/concave_face_bad.obj",
         "test/concave_face_good.obj",
@@ -37,6 +37,14 @@ drake_cc_googletest(
         "test/quad_cube.obj",
         "test/tiny_triangle.obj",
         "test/tri_cube.obj",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_triangulate_test",
+    srcs = ["test/mesh_triangulate_test.cc"],
+    data = [
+        ":test_models",
     ],
     deps = [
         ":shapes",

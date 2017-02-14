@@ -32,8 +32,8 @@ endif ()
 set(lcm_dependent_link_libraries)
 set(lcm_dependent_requires)
 if (lcm_FOUND)
-  set(lcm_dependent_link_libraries drakeLcmSystem)
-  set(lcm_dependent_requires drake-lcm-system2)
+  set(lcm_dependent_link_libraries drakeLcmSystem drakeRenderingLcm)
+  set(lcm_dependent_requires drake-lcm-system2 drake-rendering-lcm)
 endif ()
 
 add_library_with_exports(LIB_NAME drakeRigidBodyPlant SOURCE_FILES
