@@ -18,7 +18,7 @@ namespace mono = maliput::monolane;
 template <typename T>
 void MonolaneOnrampMerge<T>::BuildOnramp() {
   mono::Builder b{road_.lane_bounds, road_.driveable_bounds, kLinearTolerance_,
-        kAngularTolerance_};
+                  kAngularTolerance_};
 
   // Construct the pre-merge road.
   std::unique_ptr<mono::RoadSectionBuilder<T>> rs_pre(

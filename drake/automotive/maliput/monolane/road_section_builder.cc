@@ -18,8 +18,8 @@ void RoadSectionBuilder<T>::AddArcPrimitive(const T& arc_length,
                                             const ArcDirection& arc_direction,
                                             const EndpointZ& end_z) {
   DRAKE_DEMAND(arc_length < 2 * M_PI * arc_radius);
-  const T& arc_angle = (arc_direction == kCCW) ?
-      arc_length / arc_radius : -arc_length / arc_radius;
+  const T& arc_angle = (arc_direction == kCCW) ? arc_length / arc_radius
+                                               : -arc_length / arc_radius;
   const ArcOffset& arc{arc_radius, arc_angle};
 
   Connection* connection =
