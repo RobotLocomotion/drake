@@ -29,11 +29,35 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "drake_visualizer_client",
+    srcs = ["drake_visualizer_client.cc"],
+    hdrs = ["drake_visualizer_client.h"],
+    deps = [
+        "@eigen//:eigen",
+        "//drake/lcmtypes:viewer",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/shapes",
+    ],
+)
+
 drake_cc_googletest(
     name = "pose_aggregator_test",
     deps = [
         ":pose_aggregator",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_visualizer_client_test",
+    data = [
+        "//drake/multibody/shapes:test_models",
+    ],
+    deps = [
+        ":drake_visualizer_client",
+        "//drake/common:drake_path",
+        "//drake/lcmtypes:viewer",
     ],
 )
 
