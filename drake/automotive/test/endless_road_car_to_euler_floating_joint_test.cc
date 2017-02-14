@@ -52,8 +52,7 @@ GTEST_TEST(EndlessRoadCarToEulerFloatingJointTest, BasicTest) {
   value->set_r(kR);
   value->set_heading(0.5 * M_PI);  // pointing due-left along road
   value->set_speed(0.);  // (Speed should not matter.)
-  context->SetInputPort(
-      0, std::make_unique<systems::FreestandingInputPort>(std::move(value)));
+  context->FixInputPort(0, std::move(value));
 
   // Grab a pointer to where the CalcOutput results end up.
   const EulerFloatingJointState<double>* const result =

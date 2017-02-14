@@ -37,12 +37,8 @@ class EndlessRoadCarToEulerFloatingJoint : public systems::LeafSystem<T> {
                             EulerFloatingJointStateIndices::kNumCoordinates);
   }
 
-
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override {
-    DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-    DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-
     typedef systems::VectorBase<T> Base;
     const Base* const input_vector = this->EvalVectorInput(context, 0);
     DRAKE_ASSERT(input_vector != nullptr);
@@ -104,7 +100,7 @@ class EndlessRoadCarToEulerFloatingJoint : public systems::LeafSystem<T> {
   }
 
  private:
-  const maliput::utility::InfiniteCircuitRoad* road_;
+  const maliput::utility::InfiniteCircuitRoad* const road_;
 };
 
 }  // namespace automotive

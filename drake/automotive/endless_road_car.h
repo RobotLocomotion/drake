@@ -9,6 +9,7 @@
 #include "drake/automotive/gen/endless_road_car_config.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/gen/endless_road_oracle_output.h"
+#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -46,8 +47,6 @@ namespace automotive {
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double
-///
-/// They are already available to link against in libdrakeAutomotive.
 ///
 /// @ingroup automotive_systems
 template <typename T>
@@ -111,9 +110,6 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
 
  private:
   struct Accelerations {
-    Accelerations(T _forward, T _lateral)
-        : forward(_forward), lateral(_lateral) {}
-
     T forward;
     T lateral;
   };
@@ -136,7 +132,7 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
                                EndlessRoadCarState<T>*) const;
 
   const std::string id_;
-  const maliput::utility::InfiniteCircuitRoad* road_;
+  const maliput::utility::InfiniteCircuitRoad* const road_;
   const ControlType control_type_;
 };
 

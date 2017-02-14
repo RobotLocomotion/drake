@@ -57,9 +57,6 @@ bool EndlessRoadCar<T>::has_any_direct_feedthrough() const {
 template <typename T>
 void EndlessRoadCar<T>::DoCalcOutput(const systems::Context<T>& context,
                                      systems::SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
@@ -92,8 +89,6 @@ template <typename T>
 void EndlessRoadCar<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-
   // Obtain the parameters.
   const EndlessRoadCarConfig<T>& config =
       this->template GetNumericParameter<EndlessRoadCarConfig>(context, 0);
@@ -118,7 +113,7 @@ void EndlessRoadCar<T>::DoCalcTimeDerivatives(
     switch (control_type_) {
       case kNone: {
         // No inputs; no accelerations.
-        return Accelerations(0., 0.);
+        return Accelerations{0., 0.};
       }
       case kUser: {
         // Obtain the DrivingCommand input.
@@ -214,6 +209,8 @@ EndlessRoadCar<T>::ComputeIdmAccelerations(
   // Current longitudinal velocity
   const double v = state.speed() * cos(state.heading());
 
+  // TODO(maddog@tri.global)  Convene with IdmPlanner and decide on how to
+  //                          de-duplicate this code.
   const double s_star = s_0 + (v * h) + (v * delta_v / 2. / std::sqrt(a * b));
 
   T forward_acceleration =

@@ -56,8 +56,6 @@ namespace automotive {
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double
 ///
-/// They are already available to link against in libdrakeAutomotive.
-///
 /// @ingroup automotive_systems
 template <typename T>
 class EndlessRoadOracle : public systems::LeafSystem<T> {
@@ -87,7 +85,7 @@ class EndlessRoadOracle : public systems::LeafSystem<T> {
       const std::vector<const EndlessRoadCarState<T>*>& car_inputs,
       const std::vector<EndlessRoadOracleOutput<T>*>& oracle_outputs) const;
 
-  const maliput::utility::InfiniteCircuitRoad* road_;
+  const maliput::utility::InfiniteCircuitRoad* const road_;
   const int num_cars_;
 };
 

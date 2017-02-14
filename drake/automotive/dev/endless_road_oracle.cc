@@ -38,9 +38,6 @@ template <typename T>
 void EndlessRoadOracle<T>::DoCalcOutput(
     const systems::Context<T>& context,
     systems::SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-
   // Obtain the inputs.
   std::vector<const EndlessRoadCarState<T>*> car_inputs;
   for (int i = 0; i < num_cars_; ++i) {
@@ -469,7 +466,7 @@ void IndexJunctions(
       //                          for the length of the vehicle, too.
       const double time_in = s_in / speed;
       const double time_out = s_out / speed;
-      const TimeBox time_box {car_index, pr, time_in, time_out, s_in, s_out};
+      const TimeBox time_box{car_index, pr, time_in, time_out, s_in, s_out};
 
       const maliput::api::Junction* junction =
           pr.lane->segment()->junction();

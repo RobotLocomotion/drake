@@ -304,7 +304,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "endless_road_car_test",
-    srcs = ["test/endless_road_car_test.cc"],
     deps = [
         "//drake/automotive:endless_road_car",
         "//drake/automotive/maliput/monolane:builder",
