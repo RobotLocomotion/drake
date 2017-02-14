@@ -29,3 +29,9 @@ if(Bullet_FOUND)
           drakeSystemAnalysis drakeSystemFramework drakeCommon
           drakeSpringMassSystemPlant drakeRigidBodyPlant drakeRBSystem)
 endif()
+
+drake_add_cc_test(half_explicit_DAE1_solver_test)
+target_link_libraries(half_explicit_DAE1_solver_test
+        drakeSystemAnalysis drakeSystemFramework drakeCommon
+        drakeSpringMassSystemPlant)
+
