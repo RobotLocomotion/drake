@@ -70,10 +70,10 @@ struct TimeBox {
         s_in(s_in_in),
         s_out(s_out_in) {}
 
-  size_t car_index{};
-  PathRecord pr;
-  double time_in{};
-  double time_out{};
+  size_t car_index{};  // Index of car to which this TimeBox applies.
+  PathRecord pr;  // PathRecord in effect for entry to the junction.
+  double time_in{};  // Duration from current time until entry.
+  double time_out{};  // Duration from current time until exit.
   double s_in{};   // Distance to entry from current position.
   double s_out{};  // Distance to exit from current position.
 };

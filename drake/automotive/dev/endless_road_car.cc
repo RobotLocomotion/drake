@@ -118,20 +118,20 @@ void EndlessRoadCar<T>::DoCalcTimeDerivatives(
       case kUser: {
         // Obtain the DrivingCommand input.
         const systems::VectorBase<T>* const vector_input =
-        this->EvalVectorInput(context, 0);
+            this->EvalVectorInput(context, 0);
         DRAKE_ASSERT(vector_input);
         const DrivingCommand<T>* const input =
-        dynamic_cast<const DrivingCommand<T>*>(vector_input);
+            dynamic_cast<const DrivingCommand<T>*>(vector_input);
         DRAKE_ASSERT(input);
         return ComputeUserAccelerations(*state, *input, config);
       }
       case kIdm: {
         // Obtain the EndlessRoadOracleOutput input.
         const systems::VectorBase<T>* const vector_input =
-        this->EvalVectorInput(context, 0);
+            this->EvalVectorInput(context, 0);
         DRAKE_ASSERT(vector_input);
         const EndlessRoadOracleOutput<T>* const input =
-        dynamic_cast<const EndlessRoadOracleOutput<T>*>(vector_input);
+            dynamic_cast<const EndlessRoadOracleOutput<T>*>(vector_input);
         DRAKE_ASSERT(input);
         return ComputeIdmAccelerations(*state, *input, config);
       }

@@ -14,13 +14,6 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-
-namespace maliput {
-namespace utility {
-class InfiniteCircuitRoad;
-}
-}
-
 namespace automotive {
 
 /// A non-physical car that operates in LANE-space on an InfiniteCircuitRoad,

@@ -65,10 +65,10 @@ class BaseEndlessRoadCarTest : public ::testing::Test {
   }
 
   void EnsureNegativeSpeedsClamped() {
-    // Per the TODO in ImplCalcOutput, we clamp negative speeds.
-    // (I.e., braking decelerations should cause us to stop, but not go
-    // backwards.)
-    continuous_state()->set_speed(-0.0006);
+    // TODO(maddog@tri.global)  Per the TODO in ImplCalcOutput, we clamp
+    // negative speeds.  (I.e., braking decelerations should cause us to
+    // stop, but not go backwards.)
+    continuous_state()->set_speed(-0.0006);  // some tiny negative value
     dut_->CalcOutput(*context_, output_.get());
     const EndlessRoadCarState<double>* const result =
         dynamic_cast<const EndlessRoadCarState<double>*>(
