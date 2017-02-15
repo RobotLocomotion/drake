@@ -254,8 +254,7 @@ class ParamSet {
   /**
    * Obtains the kp and kd gains for all DoF.
    * @p kp and @p kd will be resized to match the number of DoFs of the
-   * RigidBodyTree in the RigidBodyTreeAliasGroups passed to
-   * LoadFromYAMLConfigFile.
+   * RigidBodyTree in the RigidBodyTreeAliasGroups passed to LoadFromFile().
    *
    * @param[out] kp output.
    * @param[out] kd output.
@@ -288,6 +287,24 @@ class ParamSet {
    * needs to be set separately.
    */
   DesiredCentroidalMomentumDot MakeDesiredCentroidalMomentumDot() const;
+
+  /**
+   * Returns a QpInput for the given contacts and tracked bodies using the
+   * parameters hold by this instance. Note that this function only sets the
+   * `weights` and `constraint_types` fields for DesiredBodyMotion and
+   * DesiredDofMotions, the desire accelerations need to be set separately by
+   * some control policy.
+   * @param contact_body_groups, Names of body groups that are in contact.
+   * For each body of each group, a ContactInformation will be populated in the
+   * returned QpInput.
+   * @param tracked_body_groups, Names of body groups that are being tracked.
+   * For each body of each group, a DesiredBodyMotion will be populated in the
+   * returned QpInput.
+   */
+  QpInput MakeQpInput(
+      const std::vector<std::string>& contact_body_groups,
+      const std::vector<std::string>& tracked_body_groups,
+      const RigidBodyTreeAliasGroups<double>& alias_group) const;
 
   /**
    * Returns the weight for regularizing the basis vectors of contact forces.
