@@ -63,8 +63,6 @@ Expression NegateMultiplication(const Expression& e) {
 
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<ExpressionVar>(var)} {}
-Expression::Expression(const string& name)
-    : ptr_{make_shared<ExpressionVar>(Variable{name})} {}
 Expression::Expression(const double d) : ptr_{make_cell(d)} {}
 Expression::Expression(const shared_ptr<ExpressionCell> ptr) : ptr_{ptr} {}
 

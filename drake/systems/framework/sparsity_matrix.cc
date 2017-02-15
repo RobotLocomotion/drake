@@ -18,7 +18,7 @@ SparsityMatrix::SparsityMatrix(const System<symbolic::Expression>& system)
   if (context_is_abstract_) return;
 
   // Time
-  context_->set_time(symbolic::Expression("t"));
+  context_->set_time(symbolic::Variable("t"));
 
   // Input
   InitializeVectorInputs(system);
@@ -52,7 +52,7 @@ void SparsityMatrix::InitializeVectorInputs(
     for (int j = 0; j < n; ++j) {
       std::ostringstream name;
       name << "u" << i << "_" << j;
-      value->SetAtIndex(j, symbolic::Expression(name.str()));
+      value->SetAtIndex(j, symbolic::Variable(name.str()));
       // Save a copy of the input expression.
       input_expressions_[i].push_back(value->GetAtIndex(j));
     }
@@ -68,7 +68,7 @@ void SparsityMatrix::InitializeContinuousState() {
   for (int i = 0; i < xc.size(); ++i) {
     std::ostringstream name;
     name << "xc" << i;
-    xc[i] = symbolic::Expression(name.str());
+    xc[i] = symbolic::Variable(name.str());
   }
 }
 
@@ -81,7 +81,7 @@ void SparsityMatrix::InitializeDiscreteState() {
     for (int j = 0; j < xdi.size(); ++j) {
       std::ostringstream name;
       name << "xd" << i << "_" << j;
-      xdi[j] = symbolic::Expression(name.str());
+      xdi[j] = symbolic::Variable(name.str());
     }
   }
 }

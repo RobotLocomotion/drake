@@ -150,9 +150,8 @@ class Expression {
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(double d);
   /** Constructs a variable expression from Variable. */
-  explicit Expression(const Variable& var);
-  /** Constructs a variable expression from string @p name. */
-  explicit Expression(const std::string& name);
+  // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
+  Expression(const Variable& var);
   /** Returns expression kind. */
   ExpressionKind get_kind() const;
   /** Returns hash value. */
