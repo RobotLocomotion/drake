@@ -80,7 +80,7 @@ class RotationalInertia {
     I_Bo_F_.diagonal().setConstant(I);
   }
 
-  /// Create a principal axes rotational inertia matrix for wich off-diagonal
+  /// Create a principal axes rotational inertia matrix for which off-diagonal
   /// elements are zero.
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz) {
     SetZero();

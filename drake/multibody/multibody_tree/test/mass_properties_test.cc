@@ -17,9 +17,52 @@ namespace math {
 namespace {
 
 using Eigen::AngleAxisd;
+using Eigen::Matrix3d;
 using Eigen::NumTraits;
 using Eigen::Vector3d;
 using std::sort;
+
+// Test default constructor which leaves all entries initialized to NaN.
+GTEST_TEST(RotationalInertia, DefaultConstructor) {
+  RotationalInertia<double> I;
+  // Verify the underlying Eigen matrix.
+  EXPECT_TRUE(I.get_matrix().array().isNaN().all());
+}
+
+// Test constructor for a diagonal rotational inertia with all elements equal.
+GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
+  const double I0 = 3.14;
+  RotationalInertia<double> I(I0);
+  Vector3d moments_expected;
+  moments_expected.setConstant(I0);
+  Vector3d products_expected = Vector3d::Zero();
+  EXPECT_EQ(I.get_moments(), moments_expected);
+  EXPECT_EQ(I.get_products(), products_expected);
+}
+
+// Test constructor for a principal axes rotational inertia matrix for which
+// off-diagonal elements are zero.
+GTEST_TEST(RotationalInertia, PrincipalAxesConstructor) {
+  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
+  RotationalInertia<double> I(m(0), m(1), m(2));
+  Vector3d moments_expected = m;
+  Vector3d products_expected = Vector3d::Zero();
+  EXPECT_EQ(I.get_moments(), moments_expected);
+  EXPECT_EQ(I.get_products(), products_expected);
+}
+
+// Test constructor for a general rotational inertia matrix with non-zero
+// off-diagonal elements for which the six entires need to be specified.
+GTEST_TEST(RotationalInertia, GeneralConstructor) {
+  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, 0.3, 1.4);  // m for products.
+  RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
+                              p(0), p(1), p(2));/* products of inertia */
+  Vector3d moments_expected = m;
+  Vector3d products_expected = p;
+  EXPECT_EQ(I.get_moments(), moments_expected);
+  EXPECT_EQ(I.get_products(), products_expected);
+}
 
 GTEST_TEST(RotationalInertia, Symmetry) {
   RotationalInertia<double> I(3.14);
