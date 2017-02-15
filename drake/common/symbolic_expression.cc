@@ -9,12 +9,12 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/environment.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression_cell.h"
 #include "drake/common/symbolic_formula.h"
-#include "drake/common/variable.h"
-#include "drake/common/variables.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 
 namespace drake {
 namespace symbolic {
@@ -45,12 +45,24 @@ shared_ptr<ExpressionCell> make_cell(const double d) {
     return make_shared<ExpressionConstant>(d);
   }
 }
+
+// Negates an addition expression.
+// - (E_1 + ... + E_n) => (-E_1 + ... + -E_n)
+Expression NegateAddition(const Expression& e) {
+  DRAKE_ASSERT(is_addition(e));
+  return ExpressionAddFactory{to_addition(e)}.Negate().GetExpression();
+}
+
+// Negates a multiplication expression.
+// - (c0 * E_1 * ... * E_n) => (-c0 * E_1 * ... * E_n)
+Expression NegateMultiplication(const Expression& e) {
+  DRAKE_ASSERT(is_multiplication(e));
+  return ExpressionMulFactory{to_multiplication(e)}.Negate().GetExpression();
+}
 }  // anonymous namespace
 
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<ExpressionVar>(var)} {}
-Expression::Expression(const string& name)
-    : ptr_{make_shared<ExpressionVar>(Variable{name})} {}
 Expression::Expression(const double d) : ptr_{make_cell(d)} {}
 Expression::Expression(const shared_ptr<ExpressionCell> ptr) : ptr_{ptr} {}
 
@@ -139,9 +151,41 @@ Polynomial<double> Expression::ToPolynomial() const {
   return ptr_->ToPolynomial();
 }
 
+int Expression::Degree(const Variables& vars) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  DRAKE_DEMAND(is_polynomial());
+  return ptr_->Degree(vars);
+}
+
+int Expression::Degree() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  DRAKE_DEMAND(is_polynomial());
+  return ptr_->Degree(GetVariables());
+}
+
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->Evaluate(env);
+}
+
+Expression Expression::Substitute(const Variable& var,
+                                  const Expression& e) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return Expression{ptr_->Substitute({{var, e}})};
+}
+
+Expression Expression::Substitute(const Substitution& s) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  if (s.size() > 0) {
+    return Expression{ptr_->Substitute(s)};
+  } else {
+    return *this;
+  }
+}
+
+Expression Expression::Differentiate(const Variable& x) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return Expression{ptr_->Differentiate(x)};
 }
 
 string Expression::to_string() const {
@@ -236,27 +280,22 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
-// Unary minus case: -(E)
 Expression operator-(Expression e) {
   // Simplification: constant folding
   if (is_constant(e)) {
     return Expression{-get_constant_value(e)};
   }
-  // Simplification: -(-(E))  =>  E
-  if (is_unary_minus(e)) {
-    return get_argument(e);
-  }
   // Simplification: push '-' inside over '+'.
   // -(E_1 + ... + E_n) => (-E_1 + ... + -E_n)
   if (is_addition(e)) {
-    return ExpressionAddFactory{to_addition(e)}.Negate().GetExpression();
+    return NegateAddition(e);
   }
   // Simplification: push '-' inside over '*'.
   // -(c0 * E_1 * ... * E_n) => (-c0 * E_1 * ... * E_n)
   if (is_multiplication(e)) {
-    return ExpressionMulFactory{to_multiplication(e)}.Negate().GetExpression();
+    return NegateMultiplication(e);
   }
-  return Expression{make_shared<ExpressionNeg>(e)};
+  return -1 * e;
 }
 
 Expression& Expression::operator--() {
@@ -286,16 +325,52 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   if (is_one(rhs)) {
     return lhs;
   }
-  // Simplification: -1 * x => -x
+  // Simplification: (E1 / E2) * (E3 / E4) => (E1 * E3) / (E2 * E4)
+  if (is_division(lhs) && is_division(rhs)) {
+    lhs = (get_first_argument(lhs) * get_first_argument(rhs)) /
+          (get_second_argument(lhs) * get_second_argument(rhs));
+    return lhs;
+  }
+  // Simplification: lhs * (c / E) => (c * lhs) / E
+  if (is_division(rhs) && is_constant(get_first_argument(rhs))) {
+    lhs = (get_first_argument(rhs) * lhs) / get_second_argument(rhs);
+    return lhs;
+  }
+  // Simplification: (c / E) * rhs => (c * rhs) / E
+  if (is_division(lhs) && is_constant(get_first_argument(lhs))) {
+    lhs = (get_first_argument(lhs) * rhs) / get_second_argument(lhs);
+    return lhs;
+  }
   if (is_neg_one(lhs)) {
-    lhs = -rhs;
-    return lhs;
+    if (is_addition(rhs)) {
+      // Simplification: push '-' inside over '+'.
+      // -1 * (E_1 + ... + E_n) => (-E_1 + ... + -E_n)
+      lhs = NegateAddition(rhs);
+      return lhs;
+    }
+    if (is_multiplication(rhs)) {
+      // Simplification: push '-' inside over '*'.
+      // -1 * (c0 * E_1 * ... * E_n) => (-c0 * E_1 * ... * E_n)
+      lhs = NegateMultiplication(rhs);
+      return lhs;
+    }
   }
-  // Simplification: x * -1 => -x
+
   if (is_neg_one(rhs)) {
-    lhs = -lhs;
-    return lhs;
+    if (is_addition(lhs)) {
+      // Simplification: push '-' inside over '+'.
+      // (E_1 + ... + E_n) * -1 => (-E_1 + ... + -E_n)
+      lhs = NegateAddition(lhs);
+      return lhs;
+    }
+    if (is_multiplication(lhs)) {
+      // Simplification: push '-' inside over '*'.
+      // (c0 * E_1 * ... * E_n) * -1 => (-c0 * E_1 * ... * E_n)
+      lhs = NegateMultiplication(lhs);
+      return lhs;
+    }
   }
+
   // Simplification: 0 * E => 0
   // TODO(soonho-tri): This simplification is not sound since it cancels `E`
   // which might cause 0/0 during evaluation.
@@ -626,7 +701,6 @@ bool is_neg_one(const Expression& e) { return is_constant(e, -1.0); }
 bool is_two(const Expression& e) { return is_constant(e, 2.0); }
 bool is_nan(const Expression& e) { return e.get_kind() == ExpressionKind::NaN; }
 bool is_variable(const Expression& e) { return is_variable(*e.ptr_); }
-bool is_unary_minus(const Expression& e) { return is_unary_minus(*e.ptr_); }
 bool is_addition(const Expression& e) { return is_addition(*e.ptr_); }
 bool is_multiplication(const Expression& e) {
   return is_multiplication(*e.ptr_);
@@ -669,87 +743,65 @@ const Expression& get_second_argument(const Expression& e) {
 double get_constant_in_addition(const Expression& e) {
   return to_addition(e)->get_constant();
 }
-const map<Expression, double>& get_exp_to_coeff_map_in_addition(
+const map<Expression, double>& get_expr_to_coeff_map_in_addition(
     const Expression& e) {
-  return to_addition(e)->get_exp_to_coeff_map();
+  return to_addition(e)->get_expr_to_coeff_map();
 }
 double get_constant_in_multiplication(const Expression& e) {
   return to_multiplication(e)->get_constant();
 }
-const map<Expression, Expression>& get_base_to_exp_map_in_multiplication(
+const map<Expression, Expression>& get_base_to_exponent_map_in_multiplication(
     const Expression& e) {
-  return to_multiplication(e)->get_base_to_exp_map();
+  return to_multiplication(e)->get_base_to_exponent_map();
 }
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator+=(Expression& lhs, const Variable& rhs) {
+  return lhs += Expression{rhs};
+}
+Expression operator+(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} + Expression{rhs};
+}
+Expression operator+(Expression lhs, const Variable& rhs) { return lhs += rhs; }
+Expression operator+(const Variable& lhs, Expression rhs) { return rhs += lhs; }
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator-=(Expression& lhs, const Variable& rhs) {
+  return lhs -= Expression{rhs};
+}
+Expression operator-(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} - Expression{rhs};
+}
+Expression operator-(Expression lhs, const Variable& rhs) { return lhs -= rhs; }
+Expression operator-(const Variable& lhs, const Expression& rhs) {
+  return Expression(lhs) - rhs;
+}
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator*=(Expression& lhs, const Variable& rhs) {
+  return lhs *= Expression{rhs};
+}
+Expression operator*(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} * Expression{rhs};
+}
+Expression operator*(Expression lhs, const Variable& rhs) { return lhs *= rhs; }
+Expression operator*(const Variable& lhs, Expression rhs) { return rhs *= lhs; }
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator/=(Expression& lhs, const Variable& rhs) {
+  return lhs /= Expression{rhs};
+}
+Expression operator/(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} / Expression{rhs};
+}
+Expression operator/(Expression lhs, const Variable& rhs) { return lhs /= rhs; }
+Expression operator/(const Variable& lhs, const Expression& rhs) {
+  return Expression(lhs) / rhs;
+}
+
+Expression operator+(const Variable& var) { return Expression{var}; }
+Expression operator-(const Variable& var) { return -Expression{var}; }
 
 }  // namespace symbolic
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator+=(symbolic::Expression& lhs,
-                                 const Variable& rhs) {
-  return lhs += symbolic::Expression{rhs};
-}
-symbolic::Expression operator+(const Variable& lhs, const Variable& rhs) {
-  return symbolic::Expression{lhs} + symbolic::Expression{rhs};
-}
-symbolic::Expression operator+(symbolic::Expression lhs, const Variable& rhs) {
-  return lhs += rhs;
-}
-symbolic::Expression operator+(const Variable& lhs, symbolic::Expression rhs) {
-  return rhs += lhs;
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator-=(symbolic::Expression& lhs,
-                                 const Variable& rhs) {
-  return lhs -= symbolic::Expression{rhs};
-}
-symbolic::Expression operator-(const Variable& lhs, const Variable& rhs) {
-  return symbolic::Expression{lhs} - symbolic::Expression{rhs};
-}
-symbolic::Expression operator-(symbolic::Expression lhs, const Variable& rhs) {
-  return lhs -= rhs;
-}
-symbolic::Expression operator-(const Variable& lhs,
-                               const symbolic::Expression& rhs) {
-  return symbolic::Expression(lhs) - rhs;
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator*=(symbolic::Expression& lhs,
-                                 const Variable& rhs) {
-  return lhs *= symbolic::Expression{rhs};
-}
-symbolic::Expression operator*(const Variable& lhs, const Variable& rhs) {
-  return symbolic::Expression{lhs} * symbolic::Expression{rhs};
-}
-symbolic::Expression operator*(symbolic::Expression lhs, const Variable& rhs) {
-  return lhs *= rhs;
-}
-symbolic::Expression operator*(const Variable& lhs, symbolic::Expression rhs) {
-  return rhs *= lhs;
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-symbolic::Expression& operator/=(symbolic::Expression& lhs,
-                                 const Variable& rhs) {
-  return lhs /= symbolic::Expression{rhs};
-}
-symbolic::Expression operator/(const Variable& lhs, const Variable& rhs) {
-  return symbolic::Expression{lhs} / symbolic::Expression{rhs};
-}
-symbolic::Expression operator/(symbolic::Expression lhs, const Variable& rhs) {
-  return lhs /= rhs;
-}
-symbolic::Expression operator/(const Variable& lhs,
-                               const symbolic::Expression& rhs) {
-  return symbolic::Expression(lhs) / rhs;
-}
-
-symbolic::Expression operator+(const Variable& var) {
-  return symbolic::Expression{var};
-}
-symbolic::Expression operator-(const Variable& var) {
-  return -symbolic::Expression{var};
-}
 
 }  // namespace drake

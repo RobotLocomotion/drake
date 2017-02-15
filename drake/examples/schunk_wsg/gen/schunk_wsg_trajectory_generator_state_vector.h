@@ -39,7 +39,7 @@ class SchunkWsgTrajectoryGeneratorStateVector : public systems::BasicVector<T> {
 
   SchunkWsgTrajectoryGeneratorStateVector<T>* DoClone() const override {
     auto result = new SchunkWsgTrajectoryGeneratorStateVector;
-    result->SetFromVector(this->CopyToVector());
+    result->set_value(this->get_value());
     return result;
   }
 

@@ -16,11 +16,8 @@
 namespace drake {
 namespace maliput {
 
-namespace api {
-class RoadGeometry;
-}
-
 namespace monolane {
+class RoadGeometry;
 
 /// @class Builder
 /// Convenient builder class which makes it easy to construct a monolane road

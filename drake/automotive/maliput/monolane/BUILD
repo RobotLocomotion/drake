@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_library", "drake_cc_binary")
+load("//tools:drake.bzl", "drake_cc_binary", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -10,7 +10,6 @@ drake_cc_library(
     name = "monolane",
     srcs = [],
     hdrs = [],
-    linkstatic = 1,
     deps = [
         ":builder",
         ":lanes",
@@ -38,7 +37,6 @@ drake_cc_library(
         "road_geometry.h",
         "segment.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/common",
@@ -54,7 +52,6 @@ drake_cc_library(
     hdrs = [
         "builder.h",
     ],
-    linkstatic = 1,
     deps = [
         ":lanes",
     ],
@@ -68,10 +65,9 @@ drake_cc_library(
     hdrs = [
         "loader.h",
     ],
-    linkstatic = 1,
     deps = [
-        "@yaml_cpp//:lib",
         ":builder",
+        "@yaml_cpp//:lib",
     ],
 )
 
@@ -82,22 +78,20 @@ filegroup(
 
 # === test/ ===
 
-cc_test(
+drake_cc_googletest(
     name = "monolane_builder_test",
     size = "small",
     srcs = ["test/monolane_builder_test.cc"],
     deps = [
-        "@gtest//:main",
         ":builder",
     ],
 )
 
-cc_test(
+drake_cc_googletest(
     name = "monolane_lanes_test",
     size = "small",
     srcs = ["test/monolane_lanes_test.cc"],
     deps = [
-        "@gtest//:main",
         ":lanes",
         "//drake/common:eigen_matrix_compare",
     ],

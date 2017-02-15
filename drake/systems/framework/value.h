@@ -29,9 +29,7 @@ class Value;
 /// sensitive code (e.g., inner loops), and the safer version otherwise.
 class AbstractValue {
  public:
-  // TODO(jwnimmer-tri) This should use DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN but
-  // in-tree code is currently using the move operations!  I will fix in a
-  // subsequent PR.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AbstractValue)
 
   AbstractValue() {}
   virtual ~AbstractValue();

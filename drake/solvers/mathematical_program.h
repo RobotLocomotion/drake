@@ -21,7 +21,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
-#include "drake/common/variable.h"
+#include "drake/common/symbolic_variable.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
@@ -1086,6 +1086,8 @@ class MathematicalProgram {
    * linear expression. Throws an exception if
    * 1. @p v(i) is a non-linear expression.
    * 2. @p v(i) is a constant.
+   * @tparam DerivedV An Eigen Matrix type of Expression. A column vector.
+   * @tparam DerivedB An Eigen Matrix type of double. A column vector.
    * @param v v(i) is a linear symbolic expression in the form of
    * <tt> c0 + c1 * x1 + ... + cn * xn </tt> where ci is a constant and @xi is
    * a variable.
@@ -1093,9 +1095,102 @@ class MathematicalProgram {
    * @return The newly added linear equality constraint, together with the
    * bound variables.
    */
-  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
-      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
-      const Eigen::Ref<const Eigen::VectorXd>& b);
+  template <typename DerivedV, typename DerivedB>
+  typename std::enable_if<
+      std::is_base_of<Eigen::MatrixBase<DerivedV>, DerivedV>::value &&
+          std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+          std::is_same<typename DerivedV::Scalar,
+                       symbolic::Expression>::value &&
+          std::is_same<typename DerivedB::Scalar, double>::value &&
+          (DerivedV::ColsAtCompileTime == 1 ||
+           DerivedB::ColsAtCompileTime == 1),
+      Binding<LinearEqualityConstraint>>::type
+  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& v,
+                              const Eigen::MatrixBase<DerivedB>& b) {
+    return DoAddLinearEqualityConstraint(v, b);
+  }
+
+  /**
+   * Adds a linear equality constraint for a matrix of linear expression @p V,
+   * such that V(i, j) = B(i, j). If V is a symmetric matrix, then the user
+   * may only want to constrain the lower triangular part of V.
+   * This function is meant to provide convenience to the user, it incurs
+   * additional copy and memory allocation. For faster speed, add each column
+   * of the matrix equality in a for loop.
+   * @tparam DerivedV An Eigen Matrix type of Expression. The number of columns
+   * at compile time should not be 1.
+   * @tparam DerivedB An Eigen Matrix type of double.
+   * @param V An Eigen Matrix of symbolic expressions. V(i, j) should be a
+   * linear expression.
+   * @param B An Eigen Matrix of doubles.
+   * @param lower_triangle If true, then only the lower triangular part of @p V
+   * is constrained, otherwise the whole matrix V is constrained. @default is
+   * false.
+   * @return The newly added linear equality constraint, together with the
+   * bound variables.
+   */
+  template <typename DerivedV, typename DerivedB>
+  typename std::enable_if<
+      std::is_base_of<Eigen::MatrixBase<DerivedV>, DerivedV>::value &&
+          std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+          std::is_same<typename DerivedV::Scalar,
+                       symbolic::Expression>::value &&
+          std::is_same<typename DerivedB::Scalar, double>::value &&
+          DerivedV::ColsAtCompileTime != 1 && DerivedB::ColsAtCompileTime != 1,
+      Binding<LinearEqualityConstraint>>::type
+  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
+                              const Eigen::MatrixBase<DerivedB>& B,
+                              bool lower_triangle = false) {
+    if (lower_triangle) {
+      DRAKE_DEMAND(V.rows() == V.cols() && B.rows() == B.cols());
+    }
+    DRAKE_DEMAND(V.rows() == B.rows() && V.cols() == B.cols());
+
+    // Form the flatten version of V and B, when lower_triangle = false,
+    // the flatten version is just to concatenate each column of the matrix;
+    // otherwise the flatten version is to concatenate each column of the
+    // lower triangular part of the matrix.
+    const int V_rows = DerivedV::RowsAtCompileTime != Eigen::Dynamic
+                           ? static_cast<int>(DerivedV::RowsAtCompileTime)
+                           : static_cast<int>(DerivedB::RowsAtCompileTime);
+    const int V_cols = DerivedV::ColsAtCompileTime != Eigen::Dynamic
+                           ? static_cast<int>(DerivedV::ColsAtCompileTime)
+                           : static_cast<int>(DerivedB::ColsAtCompileTime);
+
+    if (lower_triangle) {
+      const int V_triangular_size =
+          V_rows != Eigen::Dynamic ? (V_rows + 1) * V_rows / 2 : Eigen::Dynamic;
+      int V_triangular_size_dynamic = V.rows() * (V.rows() + 1) / 2;
+      Eigen::Matrix<symbolic::Expression, V_triangular_size, 1> flat_lower_V(
+          V_triangular_size_dynamic);
+      Eigen::Matrix<double, V_triangular_size, 1> flat_lower_B(
+          V_triangular_size_dynamic);
+      int V_idx = 0;
+      for (int j = 0; j < V.cols(); ++j) {
+        for (int i = j; i < V.rows(); ++i) {
+          flat_lower_V(V_idx) = V(i, j);
+          flat_lower_B(V_idx) = B(i, j);
+          ++V_idx;
+        }
+      }
+      return AddLinearEqualityConstraint(flat_lower_V, flat_lower_B);
+    } else {
+      const int V_size = V_rows != Eigen::Dynamic && V_cols != Eigen::Dynamic
+                             ? V_rows * V_cols
+                             : Eigen::Dynamic;
+      Eigen::Matrix<symbolic::Expression, V_size, 1> flat_V(V.size());
+      Eigen::Matrix<double, V_size, 1> flat_B(V.size());
+      int V_idx = 0;
+      for (int j = 0; j < V.cols(); ++j) {
+        for (int i = 0; i < V.rows(); ++i) {
+          flat_V(V_idx) = V(i, j);
+          flat_B(V_idx) = B(i, j);
+          ++V_idx;
+        }
+      }
+      return AddLinearEqualityConstraint(flat_V, flat_B);
+    }
+  }
 
   /** AddLinearEqualityConstraint
    *
@@ -1110,7 +1205,8 @@ class MathematicalProgram {
    *   Aeq << -1, 2,
    *           1, 1;
    *   Eigen::Vector2d beq(1, 3);
-   *   prog.AddLinearEqualityConstraint(Aeq, beq,{x(2), x(5)});
+   *   prog.AddLinearEqualityConstraint(Aeq, beq, {x.segment<1>(2),
+   *                                    x.segment<1>(5)});
    * @endcode
    * The code above imposes constraints
    * @f[-x(2) + 2x(5) = 1 @f]
@@ -1252,7 +1348,7 @@ class MathematicalProgram {
    * @param var The decision variable.
    */
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      double lb, double ub, const Variable& var) {
+      double lb, double ub, const symbolic::Variable& var) {
     MatrixDecisionVariable<1, 1> var_matrix(var);
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
                                     var_matrix);
@@ -1279,7 +1375,7 @@ class MathematicalProgram {
    */
   template <typename Derived>
   typename std::enable_if<
-      std::is_same<typename Derived::Scalar, Variable>::value &&
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
           Derived::ColsAtCompileTime == 1,
       std::shared_ptr<BoundingBoxConstraint>>::type
   AddBoundingBoxConstraint(double lb, double ub,
@@ -1301,7 +1397,7 @@ class MathematicalProgram {
    */
   template <typename Derived>
   typename std::enable_if<
-      std::is_same<typename Derived::Scalar, Variable>::value &&
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
           Derived::ColsAtCompileTime != 1,
       std::shared_ptr<BoundingBoxConstraint>>::type
   AddBoundingBoxConstraint(double lb, double ub,
@@ -1311,7 +1407,7 @@ class MathematicalProgram {
                 Derived::ColsAtCompileTime != Eigen::Dynamic
             ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime
             : Eigen::Dynamic;
-    Eigen::Matrix<Variable, kSize, 1> flat_vars(vars.size());
+    Eigen::Matrix<symbolic::Variable, kSize, 1> flat_vars(vars.size());
     for (int j = 0; j < vars.cols(); ++j) {
       for (int i = 0; i < vars.rows(); ++i) {
         flat_vars(j * vars.rows() + i) = vars(i, j);
@@ -1681,6 +1777,44 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var);
 
   /**
+   * Adds a positive semidefinite constraint on a symmetric matrix of symbolic
+   * espressions @p e. We create a new symmetric matrix of variables M being
+   * positive semidefinite, with the linear equality constraint e == M.
+   * @tparam Derived An Eigen Matrix of symbolic expressions.
+   * @param e Imposes constraint "e is positive semidefinite".
+   * @pre{1. e is symmetric.
+   *      2. e(i, j) is linear for all i, j
+   *      }
+   * @return The newly added positive semidefinite constraint, with the bound
+   * variable M that are also newly added.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
+      Binding<PositiveSemidefiniteConstraint>>::type
+  AddPositiveSemidefiniteConstraint(const Eigen::MatrixBase<Derived>& e) {
+    DRAKE_DEMAND(e.rows() == e.cols());
+    DRAKE_ASSERT(e == e.transpose());
+    const int e_rows = Derived::RowsAtCompileTime;
+    MatrixDecisionVariable<e_rows, e_rows> M{};
+    if (Derived::RowsAtCompileTime == Eigen::Dynamic) {
+      M = NewSymmetricContinuousVariables(e_rows);
+    } else {
+      M = NewSymmetricContinuousVariables<e_rows>();
+    }
+    // Adds the linear equality constraint that M = e.
+    AddLinearEqualityConstraint(
+        e - M, Eigen::Matrix<double, e_rows, e_rows>::Zero(e.rows(), e.rows()),
+        true);
+    const int M_flat_size =
+        e_rows == Eigen::Dynamic ? Eigen::Dynamic : e_rows * e_rows;
+    const Eigen::Map<Eigen::Matrix<symbolic::Variable, M_flat_size, 1>> M_flat(
+        &M(0, 0), e.size());
+    return Binding<PositiveSemidefiniteConstraint>(
+        AddPositiveSemidefiniteConstraint(M), M_flat);
+  }
+
+  /**
    * Adds a linear matrix inequality constraint to the program.
    */
   void AddConstraint(const Binding<LinearMatrixInequalityConstraint>& binding);
@@ -1795,13 +1929,13 @@ class MathematicalProgram {
    * @param var A decision variable in the program.
    * @param value The value of that decision variable.
    */
-  void SetDecisionVariableValue(const Variable& var, double value);
+  void SetDecisionVariableValue(const symbolic::Variable& var, double value);
 
   /**
    * Set an option for a particular solver.  This interface does not
    * do any verification of solver parameters beyond what an
    * individual solver does for itself.  It does not even verify that
-   * the specifed solver exists.  Use this only when you have
+   * the specified solver exists.  Use this only when you have
    * particular knowledge of what solver is being invoked, and exactly
    * what tuning is required.
    *
@@ -1819,35 +1953,35 @@ class MathematicalProgram {
    * Manual, section 10.2 "Parameter Descriptions"
    * https://www.gurobi.com/documentation/6.5/refman/parameters.html
    */
-  void SetSolverOption(const std::string& solver_name,
+  void SetSolverOption(SolverType solver_type,
                        const std::string& solver_option, double option_value) {
-    solver_options_double_[solver_name][solver_option] = option_value;
+    solver_options_double_[solver_type][solver_option] = option_value;
   }
 
-  void SetSolverOption(const std::string& solver_name,
+  void SetSolverOption(SolverType solver_type,
                        const std::string& solver_option, int option_value) {
-    solver_options_int_[solver_name][solver_option] = option_value;
+    solver_options_int_[solver_type][solver_option] = option_value;
   }
 
-  void SetSolverOption(const std::string& solver_name,
+  void SetSolverOption(SolverType solver_type,
                        const std::string& solver_option,
                        const std::string& option_value) {
-    solver_options_str_[solver_name][solver_option] = option_value;
+    solver_options_str_[solver_type][solver_option] = option_value;
   }
 
   const std::map<std::string, double>& GetSolverOptionsDouble(
-      const std::string& solver_name) {
-    return solver_options_double_[solver_name];
+      SolverType solver_type) {
+    return solver_options_double_[solver_type];
   }
 
   const std::map<std::string, int>& GetSolverOptionsInt(
-      const std::string& solver_name) {
-    return solver_options_int_[solver_name];
+      SolverType solver_type) {
+    return solver_options_int_[solver_type];
   }
 
   const std::map<std::string, std::string>& GetSolverOptionsStr(
-      const std::string& solver_name) {
-    return solver_options_str_[solver_name];
+      SolverType solver_type) {
+    return solver_options_str_[solver_type];
   }
 
   /**
@@ -1857,13 +1991,15 @@ class MathematicalProgram {
    * for debugging, testing, and support of certain legacy
    * APIs.
    */
-  void GetSolverResult(std::string* solver_name, int* solver_result) const {
-    *solver_name = solver_name_;
+  void GetSolverResult(SolverType* solver_type,
+                       int* solver_result) const {
+    *solver_type = solver_type_;
     *solver_result = solver_result_;
   }
 
-  void SetSolverResult(const std::string& solver_name, int solver_result) {
-    solver_name_ = solver_name;
+  void SetSolverResult(SolverType solver_type,
+                       int solver_result) {
+    solver_type_ = solver_type;
     solver_result_ = solver_result;
   }
 
@@ -2002,7 +2138,7 @@ class MathematicalProgram {
   }
 
   /** Returns the type of the decision variable. */
-  VarType DecisionVariableType(const Variable& var) const;
+  VarType DecisionVariableType(const symbolic::Variable& var) const;
 
   /** Getter for the initial guess */
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
@@ -2023,7 +2159,7 @@ class MathematicalProgram {
    * @pre{@p var is a decision variable in the mathematical program, otherwise
    * this function asserts an error.}
    */
-  size_t FindDecisionVariableIndex(const Variable& var) const;
+  size_t FindDecisionVariableIndex(const symbolic::Variable& var) const;
 
   /**
    * Gets the solution of an Eigen matrix of decision variables.
@@ -2034,8 +2170,9 @@ class MathematicalProgram {
   template <typename Derived>
   Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
   GetSolution(const Eigen::MatrixBase<Derived>& var) const {
-    static_assert(std::is_same<typename Derived::Scalar, Variable>::value,
-                  "The input should be an Eigen matrix of Variable object.");
+    static_assert(
+        std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+        "The input should be an Eigen matrix of symbolic variable object.");
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime>
         value(var.rows(), var.cols());
@@ -2052,7 +2189,7 @@ class MathematicalProgram {
   /**
    * Gets the value of a single decision variable.
    */
-  double GetSolution(const Variable& var) const;
+  double GetSolution(const symbolic::Variable& var) const;
 
   /**
    * Evaluate the constraint in the Binding at the solution value.
@@ -2074,14 +2211,14 @@ class MathematicalProgram {
   }
 
   /** Getter for the decision variable with index @p i in the program. */
-  const Variable& decision_variable(int i) const {
+  const symbolic::Variable& decision_variable(int i) const {
     return decision_variables_(i);
   }
 
  private:
   // maps the ID of a symbolic variable to the index of the variable stored in
   // the optimization program.
-  std::unordered_map<Variable::Id, size_t> decision_variable_index_{};
+  std::unordered_map<symbolic::Variable::Id, size_t> decision_variable_index_{};
 
   std::vector<VarType> decision_variable_type_;  // decision_variable_type_[i]
                                                  // stores the type of the
@@ -2115,11 +2252,11 @@ class MathematicalProgram {
   Eigen::VectorXd x_initial_guess_;
   std::vector<double> x_values_;
   std::shared_ptr<SolverData> solver_data_;
-  std::string solver_name_;
+  SolverType solver_type_;
   int solver_result_;
-  std::map<std::string, std::map<std::string, double>> solver_options_double_;
-  std::map<std::string, std::map<std::string, int>> solver_options_int_;
-  std::map<std::string, std::map<std::string, std::string>> solver_options_str_;
+  std::map<SolverType, std::map<std::string, double>> solver_options_double_;
+  std::map<SolverType, std::map<std::string, int>> solver_options_int_;
+  std::map<SolverType, std::map<std::string, std::string>> solver_options_str_;
 
   AttributesSet required_capabilities_{0};
 
@@ -2163,7 +2300,7 @@ class MathematicalProgram {
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      decision_variables_(num_vars_ + i) = Variable(names[i]);
+      decision_variables_(num_vars_ + i) = symbolic::Variable(names[i]);
       const size_t new_var_index = num_vars_ + i;
       decision_variable_index_.insert(std::pair<size_t, size_t>(
           decision_variables_(new_var_index).get_id(), new_var_index));
@@ -2210,12 +2347,13 @@ class MathematicalProgram {
   /*
    * Given a matrix of decision variables, return true if every entry in the
    * matrix is a decision variable in the program; otherwise return false.
-   * @tparam  A Eigen::Matrix type of Variable.
+   * @tparam  A Eigen::Matrix type of symbolic Variable.
    * @param vars A matrix of variable.
    */
   template <typename Derived>
   typename std::enable_if<
-      std::is_same<typename Derived::Scalar, Variable>::value, bool>::type
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      bool>::type
   IsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) {
     for (int i = 0; i < vars.rows(); ++i) {
       for (int j = 0; j < vars.cols(); ++j) {
@@ -2227,6 +2365,10 @@ class MathematicalProgram {
     }
     return true;
   }
+
+  Binding<LinearEqualityConstraint> DoAddLinearEqualityConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::VectorXd>& b);
 };
 }  // namespace solvers
 }  // namespace drake

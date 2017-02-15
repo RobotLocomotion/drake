@@ -57,7 +57,24 @@ $ bazel-bin/drake/automotive/steering_command_driver --mode=one-time --throttle=
 Running the dynamics
 --------------------
 
-Open a new terminal and execute the following:
+The following instructions describe how to run `car_sim_lcm` — a
+dynamics-based simulation of a sedan that approximates a Toyota Prius. The model
+is simplistic; it does not model engine, transmission, or suspension
+dynamics, but it is still useful in terms of illustrating Drake's dynamics-based
+simulation capability. The model consists of four wheels where the front wheels
+are steered using
+[Ackermann steering](https://en.wikipedia.org/wiki/Ackermann_steering_geometry)
+and the rear wheels are fixed to an axle that spans the width of the
+vehicle (they rotate passively). In addition to being steerable, the front
+wheels also have velocity-controlled actuators that enable the vehicle to move
+forward and backward. PID controllers are used to control both the steering
+angle and front wheel rotational velocities. A simple sliding friction model is
+used for the contacts between the wheels and the ground. The input reference
+values for the PID controllers are settable via LCM using
+`lcmt_driving_command_t` messages published on channel "DRIVING_COMMAND". The
+current state of the simulation can be visualized in Drake Visualizer.
+
+To run `car_sim_lcm`, open a new terminal and execute the following commands:
 
 ```
 $ cd drake-distro

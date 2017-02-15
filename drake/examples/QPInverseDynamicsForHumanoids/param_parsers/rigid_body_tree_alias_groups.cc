@@ -1,5 +1,11 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
 
+#include <fcntl.h>
+
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "google/protobuf/text_format.h"
+
 #include <set>
 
 namespace drake {
@@ -17,8 +23,8 @@ namespace {
 // to the existing vector in @p map. This function also guarantees the newly
 // inserted elements do no introduce duplicates.
 template <typename Type>
-void InsertOrMergeVectorWithoutDuplicates(const std::string key,
-    const std::vector<Type>& vec,
+void InsertOrMergeVectorWithoutDuplicates(
+    const std::string& key, const std::vector<Type>& vec,
     std::unordered_map<std::string, std::vector<Type>>* mapping) {
   DRAKE_DEMAND(mapping);
   std::set<Type> inserted;
@@ -45,32 +51,6 @@ void InsertOrMergeVectorWithoutDuplicates(const std::string key,
   }
 }
 
-// Returns a std::vector representation of a YAML::Node. This function tries to
-// cast the node as a std::vector<Type> or as a single Type. If both casts
-// fail, it throws an exception.
-template <typename Type>
-std::vector<Type> ParseYAMLNodeAsVector(const YAML::Node& node) {
-  std::vector<Type> values;
-
-  if (node.IsNull())
-    return values;
-
-  // Tries to cast the YAML node as a vector of strings.
-  try {
-    values = node.as<std::vector<Type>>();
-  } catch (std::runtime_error e) {
-    // If casting to a vector of strings fails, tries to cast it as a single
-    // string.
-    try {
-      values.push_back(node.as<Type>());
-    } catch (std::runtime_error e1) {
-      // Throws if both attempts fail.
-      throw e1;
-    }
-  }
-
-  return values;
-}
 }  // namespace
 
 template <typename T>
@@ -119,35 +99,31 @@ void RigidBodyTreeAliasGroups<T>::AddJointGroup(
     for (int i = v_start; i < v_end; ++i) v_indices.push_back(i);
   }
 
-  InsertOrMergeVectorWithoutDuplicates(
-      group_name, q_indices, &position_groups_);
-  InsertOrMergeVectorWithoutDuplicates(
-      group_name, v_indices, &velocity_groups_);
+  InsertOrMergeVectorWithoutDuplicates(group_name, q_indices,
+                                       &position_groups_);
+  InsertOrMergeVectorWithoutDuplicates(group_name, v_indices,
+                                       &velocity_groups_);
 }
 
 template <typename T>
-void RigidBodyTreeAliasGroups<T>::LoadFromYAMLFile(
-    const YAML::Node& config) {
-  // Parse body groups.
-  YAML::Node body_groups = config[kBodyGroupsKeyword];
-  for (auto group_it = body_groups.begin(); group_it != body_groups.end();
-       ++group_it) {
-    std::string group_name = group_it->first.as<std::string>();
-    std::vector<std::string> body_names =
-        ParseYAMLNodeAsVector<std::string>(group_it->second);
-
-    AddBodyGroup(group_name, body_names);
+void RigidBodyTreeAliasGroups<T>::LoadFromFile(
+    const std::string& file_path) {
+  AliasGroups alias_groups;
+  int fid = open(file_path.data(), O_RDONLY);
+  if (fid < 0) {
+    throw std::runtime_error("Cannot open file " + file_path);
   }
+  google::protobuf::io::FileInputStream istream(fid);
+  google::protobuf::TextFormat::Parse(&istream, &alias_groups);
+  istream.Close();
 
-  // Parse joint groups
-  YAML::Node joint_groups = config[kJointGroupsKeyword];
-  for (auto group_it = joint_groups.begin(); group_it != joint_groups.end();
-       ++group_it) {
-    std::string group_name = group_it->first.as<std::string>();
-    std::vector<std::string> joint_names =
-        ParseYAMLNodeAsVector<std::string>(group_it->second);
-
-    AddJointGroup(group_name, joint_names);
+  for (const auto& group : alias_groups.body_group()) {
+    AddBodyGroup(group.name(), std::vector<std::string>(group.member().begin(),
+                                                        group.member().end()));
+  }
+  for (const auto& group : alias_groups.joint_group()) {
+    AddJointGroup(group.name(), std::vector<std::string>(group.member().begin(),
+                                                         group.member().end()));
   }
 }
 

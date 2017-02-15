@@ -8,7 +8,7 @@ namespace systems {
 namespace sensors {
 
 // TODO(kunimatsu.hashimoto) Implement this.
-RGBDCamera::RGBDCamera() {
+RgbdCamera::RgbdCamera() {
   vtkSmartPointer<vtkRenderer> renderer =
       vtkSmartPointer<vtkRenderer>::New();
 }

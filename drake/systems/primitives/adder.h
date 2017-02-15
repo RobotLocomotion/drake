@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -25,6 +26,8 @@ namespace systems {
 template <typename T>
 class Adder : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Adder)
+
   /// Construct an %Adder System.
   /// @param num_inputs is the number of input ports to be added.
   /// @param size number of elements in each input and output signal.

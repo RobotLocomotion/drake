@@ -13,8 +13,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/common/variable.h"
-#include "drake/common/variables.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 
 namespace drake {
 
@@ -27,18 +27,36 @@ constexpr int NChooseK(int n, int k) {
   return (k == 0) ? 1 : (n * NChooseK(n - 1, k - 1)) / k;
 }
 
-/** Represents a monomial as a map from a variable ID to its exponent. */
+/** Represents a monomial, a product of powers of variables with non-negative
+ * integer exponents. Note that it does not include the coefficient part of a
+ * monomial. Internally, it is represented by a map from a variable ID to its
+ * integer exponent. */
 class Monomial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Monomial)
-  /** Default constructor. */
-  Monomial() = default;
+  /** Constructs a monomial equal to 1. Namely the total degree is zero. */
+  Monomial();
   /** Constructs a Monomial from @p powers. */
   explicit Monomial(const std::map<Variable::Id, int>& powers);
   /** Constructs a Monomial from @p var and @exponent. */
   Monomial(const Variable& var, int exponent);
+
+  /**
+   * Converts an expression to a monomial, if the expression is written as
+   * ∏ᵢpow(xᵢ, kᵢ), otherwise throws a runtime error.
+   * @pre{is_polynomial(e) should be true.}
+   * Note that we cannot handle the case that the expression contains
+   * addition/subtraction yet, namely x*(y+z)-x*z will not be converted to a
+   * monomial.
+   * TODO(hongkai.dai):make sure x*(y+z)-x*z will be converted to a monomial, when
+   * we get "Expression::Expand" function working.
+   */
+  explicit Monomial(const Expression& e);
+
   /** Returns the total degree of this Monomial. */
   int total_degree() const { return total_degree_; }
+  /** Returns hash value. */
+  size_t GetHash() const;
   const std::map<Variable::Id, int>& get_powers() const { return powers_; }
   /** Returns a symbolic expression representing this monomial. Since, this
    * class only includes the ID of a variable, not a variable itself, we need
@@ -46,6 +64,10 @@ class Monomial {
    * this method to build an expression. */
   Expression ToExpression(
       const std::unordered_map<Variable::Id, Variable>& id_to_var_map) const;
+  /** Checks if this monomial and @p m represent the same monomial.
+   * Two monomials are equal iff they contain the same variable ID
+   * raised to the same exponent. */
+  bool operator==(const Monomial& m) const;
 
  private:
   // Computes the total degree of a monomial. This method is used in a
@@ -194,6 +216,7 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
   }
   return basis;
 }
+
 }  // namespace internal
 
 /** Returns a monomial of the form x^2*y^3, it does not have the constant
@@ -202,7 +225,7 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
  *
  * \pre{All exponents in @p map_var_to_exponent are positive integers.}
  */
-Expression Monomial(
+Expression GetMonomial(
     const std::unordered_map<Variable, int, hash_value<Variable>>&
         map_var_to_exponent);
 
@@ -237,5 +260,14 @@ MonomialBasis(const Variables& vars) {
   return internal::ComputeMonomialBasis<internal::NChooseK(n + degree, degree)>(
       vars, degree);
 }
+
 }  // namespace symbolic
+
+/** Computes the hash value of a Monomial. */
+template <>
+struct hash_value<symbolic::internal::Monomial> {
+  size_t operator()(const symbolic::internal::Monomial& m) const {
+    return m.GetHash();
+  }
+};
 }  // namespace drake

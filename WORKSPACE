@@ -7,6 +7,7 @@ workspace(name = "drake")
 
 load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 load("//tools:github.bzl", "github_archive")
+load('@bazel_tools//tools/build_defs/repo:git.bzl', 'git_repository')
 
 pkg_config_package(
     name = "glib",
@@ -119,12 +120,28 @@ github_archive(
     sha256 = "16612244e7585f82228fe27e0629f6b01e7459b7b4ead90447cfb53c48dd86f3",
 )
 
+github_archive(
+    name = "bot_core_lcmtypes",
+    repository = "openhumanoids/bot_core_lcmtypes",
+    commit = "99676541398749c2aab4b5b2c38be77d268085cc",
+    build_file = "tools/bot_core_lcmtypes.BUILD",
+    sha256 = "896fd3edf87c7dfaae378af12d52d233577cc495ae96b5076c48b5b9ca700b4a",
+)
+
+github_archive(
+    name = "robotlocomotion_lcmtypes",
+    repository = "robotlocomotion/lcmtypes",
+    commit = "4bd59a1b62a1eca31a2550b37f356426bc793d67",
+    build_file = "tools/robotlocomotion_lcmtypes.BUILD",
+    sha256 = "d4b7b006ffd8918ecafda050d94c18388d9cd113a8849263bbedc7c488144ed4",
+)
+
 # Necessary for buildifier.
 github_archive(
     name = "io_bazel_rules_go",
     repository = "bazelbuild/rules_go",
-    commit = "0.3.1",
-    sha256 = "b7759f01d29c075db177f688ffb4464aad2b8fbb7017f89a1d3819ce07f1d584",
+    commit = "0.4.0",
+    sha256 = "ef1aa6a368808d3aa18cbe588924f15fb8fac75d80860080355595e75eb9a529",
 )
 
 # Necessary for buildifier.
@@ -164,6 +181,12 @@ gfortran_repository(
     name = "gfortran",
 )
 
+git_repository(
+  name = "snopt",
+  remote = "git@github.com:RobotLocomotion/snopt.git",
+  commit = "d08d0ea5454349d252b2bc355c6d7c7237090a46",
+)
+
 # Python Libraries
 new_http_archive(
     name = "six_archive",
@@ -177,26 +200,14 @@ bind(
     actual = "@six_archive//:six",
 )
 
-# Protocol Buffers
-http_archive(
-    name = 'protobuf_python',
-    url = 'https://github.com/google/protobuf/releases/download/v3.0.0/protobuf-python-3.0.0.tar.gz',
-    sha256 = '6a093cbdb6b40e593c508a03bc9a884239c7bfb377b79d0c0bf43eafe007fb0e',
-    strip_prefix = "protobuf-3.0.0",
-)
-
 github_archive(
-    name = "org_pubref_rules_protobuf",
-    repository = "pubref/rules_protobuf",
-    commit = "v0.7.1",
-    sha256 = "646b39438d8eeba02d9af890dee444c7e4e9d08ae8611bc0e0621257010162db",
+    name = "protobuf",
+    repository = "google/protobuf",
+    commit = "v3.1.0",
+    sha256 = "0a0ae63cbffc274efb573bdde9a253e3f32e458c41261df51c5dbc5ad541e8f7",
 )
 
-load("@org_pubref_rules_protobuf//python:rules.bzl",
-     "py_proto_repositories")
-py_proto_repositories()
-
-# The "@python_headers//:python_headers" target is required by protobuf_python
+# The "@python_headers//:python_headers" target is required by protobuf
 # during "bazel query" but not "bazel build", so a stub is fine.
 new_local_repository(
     name = "python_headers",

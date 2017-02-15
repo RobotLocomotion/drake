@@ -24,8 +24,6 @@ Multiplexer<T>::Multiplexer(std::vector<int> input_sizes)
 template <typename T>
 void Multiplexer<T>::DoCalcOutput(const Context<T>& context,
                                   SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   auto output_vector = System<T>::GetMutableOutputVector(output, 0);
   int output_vector_index{0};
   for (int i = 0; i < this->get_num_input_ports(); ++i) {

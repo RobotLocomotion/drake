@@ -6,11 +6,11 @@
 #include <set>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/environment.h"
+#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula_cell.h"
-#include "drake/common/variable.h"
-#include "drake/common/variables.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 
 namespace drake {
 namespace symbolic {
@@ -76,6 +76,20 @@ bool Formula::Less(const Formula& f) const {
 bool Formula::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->Evaluate(env);
+}
+
+Formula Formula::Substitute(const Variable& var, const Expression& e) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return Formula{ptr_->Substitute({{var, e}})};
+}
+
+Formula Formula::Substitute(const Substitution& s) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  if (s.size() > 0) {
+    return Formula{ptr_->Substitute(s)};
+  } else {
+    return *this;
+  }
 }
 
 string Formula::to_string() const {

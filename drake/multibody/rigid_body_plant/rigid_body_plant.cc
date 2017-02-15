@@ -347,9 +347,6 @@ const InputPortDescriptor<T>&
 template <typename T>
 void RigidBodyPlant<T>::DoCalcOutput(const Context<T>& context,
                                      SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
   // TODO(amcastro-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   const VectorX<T> state_vector =
@@ -401,10 +398,6 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   static_assert(std::is_same<double, T>::value,
                 "Only support templating on double for now");
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-  DRAKE_DEMAND(derivatives != nullptr);
-
-
 
   VectorX<T> u;   // The plant-centric input vector of actuation values.
   u.resize(get_num_actuators());

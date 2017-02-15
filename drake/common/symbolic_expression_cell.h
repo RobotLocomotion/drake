@@ -10,12 +10,12 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/environment.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
-#include "drake/common/variable.h"
-#include "drake/common/variables.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 
 namespace drake {
 namespace symbolic {
@@ -45,10 +45,28 @@ class ExpressionCell {
    *  \pre{is_polynomial() is true.}
    */
   virtual Polynomial<double> ToPolynomial() const = 0;
+
+ /**
+  * Returns the total degrees of the polynomial w.r.t the variables in
+  * @p vars. @see Expression::Degree(const Variables& vars)
+  */
+  virtual int Degree(const Variables& vars) const = 0;
+
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
   virtual double Evaluate(const Environment& env) const = 0;
+  /** Returns an Expression obtained by replacing all occurrences of the
+   * variables in @p s in the current expression cell with the corresponding
+   * expressions in @p s.
+   * @throws std::runtime_error if NaN is detected during substitution.
+   */
+  virtual Expression Substitute(const Substitution& s) const = 0;
+  /** Differentiates this symbolic expression with respect to the variable @p
+   * var.
+   * @throws std::runtime_error if it is not differentiable.
+   */
+  virtual Expression Differentiate(const Variable& x) const = 0;
   /** Outputs string representation of expression into output stream @p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
@@ -149,7 +167,10 @@ class ExpressionVar : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -165,7 +186,10 @@ class ExpressionConstant : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -180,19 +204,11 @@ class ExpressionNaN : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
-};
-
-/** Symbolic expression representing unary minus. */
-class ExpressionNeg : public UnaryExpressionCell {
- public:
-  explicit ExpressionNeg(const Expression& e);
-  Polynomial<double> ToPolynomial() const override;
-  std::ostream& Display(std::ostream& os) const override;
-
- private:
-  double DoEvaluate(double v) const override;
 };
 
 /** Symbolic expression representing an addition which is a sum of products.
@@ -204,7 +220,7 @@ class ExpressionNeg : public UnaryExpressionCell {
  *  where @f$ c_i @f$ is a constant and @f$ e_i @f$ is a symbolic expression.
  *
  * Internally this class maintains a member variable @c constant_ to represent
- * @f$ c_0 @f$ and another member variable @c exp_to_coeff_map_ to represent a
+ * @f$ c_0 @f$ and another member variable @c expr_to_coeff_map_ to represent a
  * mapping from an expression @f$ e_i @f$ to its coefficient @f$ c_i @f$ of
  * double.
  */
@@ -213,18 +229,21 @@ class ExpressionAdd : public ExpressionCell {
   /** Constructs ExpressionAdd from @p constant_term and @term_to_coeff_map.
    */
   ExpressionAdd(double constant,
-                const std::map<Expression, double>& exp_to_coeff_map);
+                const std::map<Expression, double>& expr_to_coeff_map);
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
   /** Returns the constant. */
   double get_constant() const { return constant_; }
   /** Returns map from an expression to its coefficient. */
-  const std::map<Expression, double>& get_exp_to_coeff_map() const {
-    return exp_to_coeff_map_;
+  const std::map<Expression, double>& get_expr_to_coeff_map() const {
+    return expr_to_coeff_map_;
   }
 
  private:
@@ -232,7 +251,7 @@ class ExpressionAdd : public ExpressionCell {
                             const Expression& term) const;
 
   const double constant_{};
-  const std::map<Expression, double> exp_to_coeff_map_;
+  const std::map<Expression, double> expr_to_coeff_map_;
 };
 
 /** Factory class to help build ExpressionAdd expressions. */
@@ -244,9 +263,9 @@ class ExpressionAddFactory {
   ExpressionAddFactory() = default;
 
   /** Constructs ExpressionAddFactory with @p constant and @p
-   * exp_to_coeff_map. */
+   * expr_to_coeff_map. */
   ExpressionAddFactory(double constant,
-                       const std::map<Expression, double>& exp_to_coeff_map);
+                       const std::map<Expression, double>& expr_to_coeff_map);
 
   /** Constructs ExpressionAddFactory from @p ptr. */
   explicit ExpressionAddFactory(std::shared_ptr<const ExpressionAdd> ptr);
@@ -285,12 +304,12 @@ class ExpressionAddFactory {
    * it also performs simplifications to merge the coefficients of common terms.
    */
   void AddTerm(double coeff, const Expression& term);
-  /* Adds exp_to_coeff_map to this factory. It calls AddConstant and AddTerm
+  /* Adds expr_to_coeff_map to this factory. It calls AddConstant and AddTerm
    * methods. */
-  void AddMap(const std::map<Expression, double> exp_to_coeff_map);
+  void AddMap(const std::map<Expression, double> expr_to_coeff_map);
 
   double constant_{0.0};
-  std::map<Expression, double> exp_to_coeff_map_;
+  std::map<Expression, double> expr_to_coeff_map_;
 };
 
 /** Symbolic expression representing a multiplication of powers.
@@ -303,25 +322,28 @@ class ExpressionAddFactory {
  * expressions.
  *
  * Internally this class maintains a member variable @c constant_ representing
- * @f$ c_0 @f$ and another member variable @c base_to_exp_map_ representing
+ * @f$ c_0 @f$ and another member variable @c base_to_exponent_map_ representing
  * a mapping from a base, @f$ b_i @f$ to its exponentiation @f$ e_i @f$.
  */
 class ExpressionMul : public ExpressionCell {
  public:
-  /** Constructs ExpressionMul from @p constant and @p base_to_exp_map. */
+  /** Constructs ExpressionMul from @p constant and @p base_to_exponent_map. */
   ExpressionMul(double constant,
-                const std::map<Expression, Expression>& base_to_exp_map);
+                const std::map<Expression, Expression>& base_to_exponent_map);
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
   /** Returns constant term. */
   double get_constant() const { return constant_; }
   /** Returns map from a term to its coefficient. */
-  const std::map<Expression, Expression>& get_base_to_exp_map() const {
-    return base_to_exp_map_;
+  const std::map<Expression, Expression>& get_base_to_exponent_map() const {
+    return base_to_exponent_map_;
   }
 
  private:
@@ -330,7 +352,7 @@ class ExpressionMul : public ExpressionCell {
                             const Expression& pow) const;
 
   double constant_{};
-  std::map<Expression, Expression> base_to_exp_map_;
+  std::map<Expression, Expression> base_to_exponent_map_;
 };
 
 /** Factory class to help build ExpressionMul expressions. */
@@ -342,9 +364,10 @@ class ExpressionMulFactory {
   ExpressionMulFactory() = default;
 
   /** Constructs ExpressionMulFactory with @p constant and @p
-   * base_to_exp_map. */
-  ExpressionMulFactory(double constant,
-                       const std::map<Expression, Expression>& base_to_exp_map);
+   * base_to_exponent_map. */
+  ExpressionMulFactory(
+      double constant,
+      const std::map<Expression, Expression>& base_to_exponent_map);
 
   /** Constructs ExpressionMulFactory from @p ptr. */
   explicit ExpressionMulFactory(std::shared_ptr<const ExpressionMul> ptr);
@@ -381,12 +404,12 @@ class ExpressionMulFactory {
      it also performs simplifications to merge the exponents of common bases.
   */
   void AddTerm(const Expression& base, const Expression& exponent);
-  /* Adds base_to_exp_map to this factory. It calls AddConstant and AddTerm
+  /* Adds base_to_exponent_map to this factory. It calls AddConstant and AddTerm
    * methods. */
-  void AddMap(const std::map<Expression, Expression> base_to_exp_map);
+  void AddMap(const std::map<Expression, Expression> base_to_exponent_map);
 
   double constant_{1.0};
-  std::map<Expression, Expression> base_to_exp_map_;
+  std::map<Expression, Expression> base_to_exponent_map_;
 };
 
 /** Symbolic expression representing division. */
@@ -394,6 +417,9 @@ class ExpressionDiv : public BinaryExpressionCell {
  public:
   ExpressionDiv(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -405,6 +431,9 @@ class ExpressionLog : public UnaryExpressionCell {
  public:
   explicit ExpressionLog(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression log(const Expression& e);
@@ -420,6 +449,9 @@ class ExpressionAbs : public UnaryExpressionCell {
  public:
   explicit ExpressionAbs(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression abs(const Expression& e);
@@ -434,6 +466,9 @@ class ExpressionExp : public UnaryExpressionCell {
  public:
   explicit ExpressionExp(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -445,6 +480,9 @@ class ExpressionSqrt : public UnaryExpressionCell {
  public:
   explicit ExpressionSqrt(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression sqrt(const Expression& e);
@@ -460,6 +498,9 @@ class ExpressionPow : public BinaryExpressionCell {
  public:
   ExpressionPow(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression pow(const Expression& e1, const Expression& e2);
@@ -476,6 +517,9 @@ class ExpressionSin : public UnaryExpressionCell {
  public:
   explicit ExpressionSin(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -487,6 +531,9 @@ class ExpressionCos : public UnaryExpressionCell {
  public:
   explicit ExpressionCos(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -498,6 +545,9 @@ class ExpressionTan : public UnaryExpressionCell {
  public:
   explicit ExpressionTan(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -509,6 +559,9 @@ class ExpressionAsin : public UnaryExpressionCell {
  public:
   explicit ExpressionAsin(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression asin(const Expression& e);
@@ -524,6 +577,9 @@ class ExpressionAcos : public UnaryExpressionCell {
  public:
   explicit ExpressionAcos(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression acos(const Expression& e);
@@ -539,6 +595,9 @@ class ExpressionAtan : public UnaryExpressionCell {
  public:
   explicit ExpressionAtan(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -551,6 +610,9 @@ class ExpressionAtan2 : public BinaryExpressionCell {
  public:
   ExpressionAtan2(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -562,6 +624,9 @@ class ExpressionSinh : public UnaryExpressionCell {
  public:
   explicit ExpressionSinh(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -573,6 +638,9 @@ class ExpressionCosh : public UnaryExpressionCell {
  public:
   explicit ExpressionCosh(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -584,6 +652,9 @@ class ExpressionTanh : public UnaryExpressionCell {
  public:
   explicit ExpressionTanh(const Expression& e);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -595,6 +666,9 @@ class ExpressionMin : public BinaryExpressionCell {
  public:
   ExpressionMin(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -606,6 +680,9 @@ class ExpressionMax : public BinaryExpressionCell {
  public:
   ExpressionMax(const Expression& e1, const Expression& e2);
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -623,7 +700,10 @@ class ExpressionIfThenElse : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomial<double> ToPolynomial() const override;
+  int Degree(const Variables& vars) const override;
   double Evaluate(const Environment& env) const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   /** Returns the conditional formula. */
@@ -639,127 +719,125 @@ class ExpressionIfThenElse : public ExpressionCell {
   const Expression e_else_;
 };
 
-/** Checks if @p exp_ptr is a constant expression. */
+/** Checks if @p c is a constant expression. */
 bool is_constant(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a variable expression. */
+/** Checks if @p c is a variable expression. */
 bool is_variable(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a unary-minus expression. */
-bool is_unary_minus(const ExpressionCell& c);
-/** Checks if @p exp_ptr is an addition expression. */
+/** Checks if @p c is an addition expression. */
 bool is_addition(const ExpressionCell& c);
-/** Checks if @p exp_ptr is an multiplication expression. */
+/** Checks if @p c is an multiplication expression. */
 bool is_multiplication(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a division expression. */
+/** Checks if @p c is a division expression. */
 bool is_division(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a log expression. */
+/** Checks if @p c is a log expression. */
 bool is_log(const ExpressionCell& c);
-/** Checks if @p exp_ptr is an absolute-value-function expression. */
+/** Checks if @p c is an absolute-value-function expression. */
 bool is_abs(const ExpressionCell& c);
-/** Checks if @p exp_ptr is an exp expression. */
+/** Checks if @p c is an exp expression. */
 bool is_exp(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a square-root expression. */
+/** Checks if @p c is a square-root expression. */
 bool is_sqrt(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a power-function expression. */
+/** Checks if @p c is a power-function expression. */
 bool is_pow(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a sine expression. */
+/** Checks if @p c is a sine expression. */
 bool is_sin(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a cosine expression. */
+/** Checks if @p c is a cosine expression. */
 bool is_cos(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a tangent expression. */
+/** Checks if @p c is a tangent expression. */
 bool is_tan(const ExpressionCell& c);
-/** Checks if @p exp_ptr is an arcsine expression. */
+/** Checks if @p c is an arcsine expression. */
 bool is_asin(const ExpressionCell& c);
-/** Checks if @p exp_ptr is an arccosine expression. */
+/** Checks if @p c is an arccosine expression. */
 bool is_acos(const ExpressionCell& c);
-/** Checks if @p exp_ptr is an arctangent expression. */
+/** Checks if @p c is an arctangent expression. */
 bool is_atan(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a arctangent2  expression. */
+/** Checks if @p c is a arctangent2  expression. */
 bool is_atan2(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a hyperbolic-sine expression. */
+/** Checks if @p c is a hyperbolic-sine expression. */
 bool is_sinh(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a hyperbolic-cosine expression. */
+/** Checks if @p c is a hyperbolic-cosine expression. */
 bool is_cosh(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a hyperbolic-tangent expression. */
+/** Checks if @p c is a hyperbolic-tangent expression. */
 bool is_tanh(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a min expression. */
+/** Checks if @p c is a min expression. */
 bool is_min(const ExpressionCell& c);
-/** Checks if @p exp_ptr is a max expression. */
+/** Checks if @p c is a max expression. */
 bool is_max(const ExpressionCell& c);
-/** Checks if @p exp_ptr is an if-then-else expression. */
+/** Checks if @p c is an if-then-else expression. */
 bool is_if_then_else(const ExpressionCell& c);
 
-/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+/** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
  *  @c shared_ptr<ExpressionConstant>.
- *  \pre{@p *exp_ptr is of @c ExpressionConstant.}
+ *  \pre{@p *expr_ptr is of @c ExpressionConstant.}
  */
 std::shared_ptr<ExpressionConstant> to_constant(
-    const std::shared_ptr<ExpressionCell> exp_ptr);
+    const std::shared_ptr<ExpressionCell> expr_ptr);
 /** Casts @p e of Expression to @c shared_ptr<ExpressionConstant>.
  *  \pre{@p *(e.ptr_) is of @c ExpressionConstant.}
  */
 std::shared_ptr<ExpressionConstant> to_constant(const Expression& e);
 
-/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+/** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
  *  @c shared_ptr<ExpressionVar>.
- *  \pre{@p *exp_ptr is of @c ExpressionVar.}
+ *  \pre{@p *expr_ptr is of @c ExpressionVar.}
  */
 std::shared_ptr<ExpressionVar> to_variable(
-    const std::shared_ptr<ExpressionCell> exp_ptr);
+    const std::shared_ptr<ExpressionCell> expr_ptr);
 /** Casts @p e of Expression to @c shared_ptr<ExpressionVar>.
  *  \pre{@p *(e.ptr_) is of @c ExpressionVar.}
  */
 std::shared_ptr<ExpressionVar> to_variable(const Expression& e);
 
-/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+/** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
  *  @c shared_ptr<UnaryExpressionCell>.
- *  \pre{@c *exp_ptr is of @c UnaryExpressionCell.}
+ *  \pre{@c *expr_ptr is of @c UnaryExpressionCell.}
  */
 std::shared_ptr<UnaryExpressionCell> to_unary(
-    const std::shared_ptr<ExpressionCell> exp_ptr);
+    const std::shared_ptr<ExpressionCell> expr_ptr);
 /** Casts @p e of Expression to @c shared_ptr<UnaryExpressionCell>.
  *  \pre{@c *(e.ptr_) is of @c UnaryExpressionCell.}
  */
 std::shared_ptr<UnaryExpressionCell> to_unary(const Expression& e);
 
-/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+/** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
  *  @c shared_ptr<BinaryExpressionCell>.
- *  \pre{@c *exp_ptr is of @c BinaryExpressionCell.}
+ *  \pre{@c *expr_ptr is of @c BinaryExpressionCell.}
  */
 std::shared_ptr<BinaryExpressionCell> to_binary(
-    const std::shared_ptr<ExpressionCell> exp_ptr);
+    const std::shared_ptr<ExpressionCell> expr_ptr);
 /** Casts @p e of Expression to @c shared_ptr<BinaryExpressionCell>.
  *  \pre{@c *(e.ptr_) is of @c BinaryExpressionCell.}
  */
 std::shared_ptr<BinaryExpressionCell> to_binary(const Expression& e);
 
-/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+/** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
  *  @c shared_ptr<ExpressionAdd>.
- *  \pre{@c *exp_ptr is of @c ExpressionAdd.}
+ *  \pre{@c *expr_ptr is of @c ExpressionAdd.}
  */
 std::shared_ptr<ExpressionAdd> to_addition(
-    const std::shared_ptr<ExpressionCell> exp_ptr);
+    const std::shared_ptr<ExpressionCell> expr_ptr);
 /** Casts @p e of Expression to @c shared_ptr<ExpressionAdd>.
  *  \pre{@c *(e.ptr_) is of @c ExpressionAdd.}
  */
 std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
 
-/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+/** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
  *  @c shared_ptr<ExpressionMul>.
- *  \pre{@c *exp_ptr is of @c ExpressionConstant.}
+ *  \pre{@c *expr_ptr is of @c ExpressionConstant.}
  */
 std::shared_ptr<ExpressionMul> to_multiplication(
-    const std::shared_ptr<ExpressionCell> exp_ptr);
+    const std::shared_ptr<ExpressionCell> expr_ptr);
 /** Casts @p e of Expression to @c shared_ptr<ExpressionMul>.
  *  \pre{@c *(e.ptr_) is of @c ExpressionConstant.}
  */
 std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
 
-/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+/** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
  *  @c shared_ptr<ExpressionIfThenElse>.
- *  \pre{@c *exp_ptr is of @c ExpressionIfThenElse.}
+ *  \pre{@c *expr_ptr is of @c ExpressionIfThenElse.}
  */
 std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
-    const std::shared_ptr<ExpressionCell> exp_ptr);
+    const std::shared_ptr<ExpressionCell> expr_ptr);
 /** Casts @p e of Expression to @c shared_ptr<ExpressionIfThenElse>.
  *  \pre{@c *(e.ptr_) is of @c ExpressionIfThenElse.}
  */

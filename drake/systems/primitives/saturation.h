@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -41,6 +42,8 @@ namespace systems {
 template <typename T>
 class Saturation : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Saturation)
+
   /// Constructs a variable %Saturation system where the upper and lower values
   /// are represented by vectors of identical size and can be supplied via the
   /// max_value_port and min_value_port respectively.

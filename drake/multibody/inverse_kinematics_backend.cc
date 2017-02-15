@@ -41,11 +41,12 @@ namespace systems {
 namespace plants {
 
 int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
-  std::string solver_name;
+  solvers::SolverType solver_type;
   int solver_result = 0;
-  prog.GetSolverResult(&solver_name, &solver_result);
+  prog.GetSolverResult(&solver_type, &solver_result);
 
-  if (solver_name == "SNOPT") {
+  if (solver_type ==
+      solvers::SolverType::kSnopt) {
     // We can return SNOPT results directly.
     return solver_result;
   }
@@ -71,17 +72,18 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
 
 void SetIKSolverOptions(const IKoptions& ikoptions,
                         drake::solvers::MathematicalProgram* prog) {
-  prog->SetSolverOption("SNOPT", "Derivative option", 1);
-  prog->SetSolverOption("SNOPT", "Major optimality tolerance",
-                        ikoptions.getMajorOptimalityTolerance());
-  prog->SetSolverOption("SNOPT", "Major feasibility tolerance",
-                        ikoptions.getMajorFeasibilityTolerance());
-  prog->SetSolverOption("SNOPT", "Superbasics limit",
-                        ikoptions.getSuperbasicsLimit());
-  prog->SetSolverOption("SNOPT", "Major iterations limit",
-                        ikoptions.getMajorIterationsLimit());
-  prog->SetSolverOption("SNOPT", "Iterations limit",
-                        ikoptions.getIterationsLimit());
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Derivative option", 1);
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Major optimality tolerance", ikoptions.getMajorOptimalityTolerance());
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Major feasibility tolerance", ikoptions.getMajorFeasibilityTolerance());
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Superbasics limit", ikoptions.getSuperbasicsLimit());
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Major iterations limit", ikoptions.getMajorIterationsLimit());
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Iterations limit", ikoptions.getIterationsLimit());
 }
 
 void AddSingleTimeLinearPostureConstraint(

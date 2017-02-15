@@ -7,7 +7,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/common/variable.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/test/symbolic_test_util.h"
 
 using std::unordered_map;
 
@@ -15,30 +16,7 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-bool ExprEqual(const Expression& e1, const Expression& e2) {
-  return e1.EqualTo(e2);
-}
-
-// Compare two Eigen::Matrix<Expression> m1 and m2.
-//
-// TODO(soonho): Make CompareMatrices in eigen_matrix_compare.h compatible
-// with Eigen::Matrix<symbolic::Expression> and use that instead of this.
-bool MatrixEqual(const drake::MatrixX<Expression>& m1,
-                 const drake::MatrixX<Expression>& m2) {
-  if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
-    return false;
-  }
-  for (int i{0}; i < m1.rows(); ++i) {
-    for (int j{0}; j < m1.cols(); ++j) {
-      const Expression& e1{m1(i, j)};
-      const Expression& e2{m2(i, j)};
-      if (!e1.EqualTo(e2)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
+using test::ExprEqual;
 
 class MonomialTest : public ::testing::Test {
  protected:
@@ -59,25 +37,47 @@ class MonomialTest : public ::testing::Test {
   }
 };
 
+TEST_F(MonomialTest, MonomialOne) {
+  // Compares monomials all equal to 1, but with different variables.
+  internal::Monomial m1{};
+  internal::Monomial m2({{var_x_.get_id(), 0}});
+  internal::Monomial m3({{var_x_.get_id(), 0}, {var_y_.get_id(), 0}});
+  EXPECT_EQ(m1, m2);
+  EXPECT_EQ(m1, m3);
+  EXPECT_EQ(m2, m3);
+}
+
+TEST_F(MonomialTest, MonomialWithZeroExponent) {
+  // Compares monomials containing zero exponent, such as x^0 * y^2
+  internal::Monomial m1({{var_y_.get_id(), 2}});
+  internal::Monomial m2({{var_x_.get_id(), 0}, {var_y_.get_id(), 2}});
+  EXPECT_EQ(m1, m2);
+  EXPECT_EQ(m2.get_powers().size(), 1);
+  std::map<Variable::Id, int> power_expected;
+  power_expected.emplace(var_y_.get_id(), 2);
+  EXPECT_EQ(m2.get_powers(), power_expected);
+}
+
 TEST_F(MonomialTest, Monomial) {
   // clang-format off
-  EXPECT_PRED2(ExprEqual,
-               Monomial(unordered_map<Variable, int, hash_value<Variable>>{}),
-               Expression{1.0});
+  EXPECT_PRED2(
+      ExprEqual,
+      GetMonomial(unordered_map<Variable, int, hash_value<Variable>>{}),
+      Expression{1.0});
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}}),
                x_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_y_, 1}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_y_, 1}}),
                y_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}, {var_y_, 1}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}, {var_y_, 1}}),
                x_ * y_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 2}, {var_y_, 3}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 2}, {var_y_, 3}}),
                x_ * x_ * y_ * y_ * y_);
 
-  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}),
+  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}),
                pow(x_, 1) * pow(y_, 2) * pow(z_, 3));
   // clang-format on
 }
@@ -91,8 +91,8 @@ TEST_F(MonomialTest, MonomialBasis_x_0) {
   // MonomialBasis({x}, 0)
   expected << Expression{1.0};
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_2) {
@@ -108,8 +108,8 @@ TEST_F(MonomialTest, MonomialBasis_x_2) {
               1.0;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_0) {
@@ -121,8 +121,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_0) {
   // MonomialBasis({x, y}, 0)
   expected << Expression{1.0};
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_1) {
@@ -138,8 +138,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_1) {
               1.0;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_2) {
@@ -158,8 +158,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_2) {
               1.0;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_3) {
@@ -182,8 +182,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_3) {
               1;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_z_2) {
@@ -208,8 +208,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_2) {
               1;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_z_3) {
@@ -243,8 +243,8 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_3) {
               1;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
@@ -293,10 +293,70 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
               1;
   // clang-format on
 
-  EXPECT_PRED2(MatrixEqual, basis1, expected);
-  EXPECT_PRED2(MatrixEqual, basis2, expected);
+  EXPECT_EQ(basis1, expected);
+  EXPECT_EQ(basis2, expected);
 }
 
+// This test shows that we can have a std::unordered_map whose key is of
+// internal::Monomial.
+TEST_F(MonomialTest, UnorderedMapOfMonomial) {
+  unordered_map<internal::Monomial, double, hash_value<internal::Monomial>>
+      monomial_to_coeff_map;
+  internal::Monomial x_3{var_x_, 3};
+  internal::Monomial y_5{var_y_, 5};
+  // Add 2 * x^3
+  monomial_to_coeff_map.emplace(x_3, 2);
+  // Add -7 * y^5
+  monomial_to_coeff_map.emplace(y_5, -7);
+
+  const auto it1 = monomial_to_coeff_map.find(x_3);
+  ASSERT_TRUE(it1 != monomial_to_coeff_map.end());
+  EXPECT_EQ(it1->second, 2);
+
+  const auto it2 = monomial_to_coeff_map.find(y_5);
+  ASSERT_TRUE(it2 != monomial_to_coeff_map.end());
+  EXPECT_EQ(it2->second, -7);
+}
+
+// Converts a constant to monomial.
+TEST_F(MonomialTest, ToMonomial0) {
+  internal::Monomial expected;
+  EXPECT_EQ(internal::Monomial(1), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 0)), expected);
+  EXPECT_THROW(internal::Monomial(2), std::exception);
+}
+
+// Converts expression x to monomial.
+TEST_F(MonomialTest, ToMonomial1) {
+  internal::Monomial expected(var_x_, 1);
+  EXPECT_EQ(internal::Monomial(x_), expected);
+}
+
+// Converts expression x * y to monomial.
+TEST_F(MonomialTest, ToMonomial2) {
+  std::map<Variable::Id, int> powers;
+  powers.emplace(var_x_.get_id(), 1);
+  powers.emplace(var_y_.get_id(), 1);
+  internal::Monomial expected(powers);
+  EXPECT_EQ(internal::Monomial(x_ * y_), expected);
+}
+
+// Converts expression x^3 to monomial.
+TEST_F(MonomialTest, ToMonomial3) {
+  internal::Monomial expected(var_x_, 3);
+  EXPECT_EQ(internal::Monomial(pow(x_, 3)), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 2) * x_), expected);
+}
+
+// Converts expression x^3 * y to monomial.
+TEST_F(MonomialTest, ToMonomial4) {
+  std::map<Variable::Id, int> powers;
+  powers.emplace(var_x_.get_id(), 3);
+  powers.emplace(var_y_.get_id(), 1);
+  internal::Monomial expected(powers);
+  EXPECT_EQ(internal::Monomial(pow(x_, 3) * y_), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 2) * y_ * x_), expected);
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

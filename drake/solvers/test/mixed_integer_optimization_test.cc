@@ -4,6 +4,7 @@
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/test/add_solver_util.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 namespace drake {
@@ -12,8 +13,8 @@ namespace test {
 namespace {
 void GetMixedIntegerLinearProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable("Gurobi", solvers);
-  AddSolverIfAvailable("Mosek", solvers);
+  AddSolverIfAvailable(SolverType::kGurobi, solvers);
+  AddSolverIfAvailable(SolverType::kMosek, solvers);
 }
 }  // namespace
 

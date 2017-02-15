@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "yaml-cpp/yaml.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/alias_groups.pb.h"
 
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -16,7 +16,7 @@ namespace param_parsers {
 /**
  * This class provides a way to create aliases to groups of RigidBody or
  * DrakeJoint objects. The creation of these groups can be done either
- * programmatically or via a YAML file.
+ * programmatically or via an AliasGroups protobuf config file.
  *
  * For example, suppose we have a RigidBodyTree with 6 links named
  * [link0 ~ link5], and 6 joints [base, joint0 ~ joint4]. We can "rename"
@@ -53,51 +53,15 @@ class RigidBodyTreeAliasGroups {
 
   /**
    * Parses body groups and joint groups from a config file.
-   * This function looks for optional top level keywords kBodyGroupsKeyword and
-   * kJointGroupsKeyword in @p config.
-   * An example config file looks like:
-   * <pre>
-   * ...
-   * body_groups:
-   *   body_group_name1:
-   *     [body_name1, body_name2, ...]
-   *   body_group_name2:
-   *     [body_name1, body_name3, ...]
-   *   body_group_name3:
    *
-   *   body_group_name4:
-   *     body_name4
-   *   ...
-   * ...
-   * joint_groups:
-   *   joint_group_name1:
-   *     [joint_name1, joint_name2, ...]
-   *   joint_group_name2:
-   *     [joint_name1, joint_name3, ...]
-   *   joint_group_name3:
-   *
-   *   joint_group_name4:
-   *     joint_name4
-   *   ...
-   * ...
-   * </pre>
-   * body_namei and joint_namei need to match a link's name and joint's
-   * name respectively in the RigidBodyTree provided at construction time.
-   * body_namei and joint_namei can appear in multiple groups. Multiple body
-   * groups with the same group name will be merged, and the same applies to
-   * joint groups. For each group, there will be no duplicated elements.
-   * body_groups or joint_groups can be absent or empty.
-   * The above example shows all valid formats for specifying body and joint
-   * names.
-   *
-   * @param config YAML node specifying joint and body groups.
+   * @param config Path to text-format AliasGroups file.
    *
    * @throws std::logic_error if body_namei or joint_namei cannot be found in
    * the RigidBodyTree provided at construction time.
    * @throws std::runtime_error if joint names or body names cannot be parsed
    * correctly.
    */
-  void LoadFromYAMLFile(const YAML::Node& config);
+  void LoadFromFile(const std::string& path);
 
   /**
    * Creates a body group named @p group_name whose elements have names from
@@ -155,6 +119,16 @@ class RigidBodyTreeAliasGroups {
   const std::vector<const RigidBody<T>*>& get_body_group(
       const std::string& group_name) const {
     return body_groups_.at(group_name);
+  }
+
+  /**
+   * Returns the body aliased by @p group_name. The body group referenced by
+   * @p group_name must contain exactly one element.
+   */
+  const RigidBody<T>* get_body(const std::string& group_name) const {
+    const auto& group = get_body_group(group_name);
+    DRAKE_DEMAND(group.size() == 1);
+    return group.front();
   }
 
   /**

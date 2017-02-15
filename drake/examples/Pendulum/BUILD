@@ -8,7 +8,6 @@ drake_cc_library(
     name = "pendulum_state_vector",
     srcs = ["gen/pendulum_state_vector.cc"],
     hdrs = ["gen/pendulum_state_vector.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework:vector",
     ],
@@ -18,7 +17,6 @@ drake_cc_library(
     name = "pendulum_plant",
     srcs = ["pendulum_plant.cc"],
     hdrs = ["pendulum_plant.h"],
-    linkstatic = 1,
     deps = [
         ":pendulum_state_vector",
         "//drake/systems/framework",
@@ -64,6 +62,14 @@ drake_cc_googletest(
         ":pendulum_swing_up",
         "//drake/common:eigen_matrix_compare",
     ],
+)
+
+filegroup(
+    name = "models",
+    srcs = glob([
+        "Pendulum.urdf",
+    ]),
+    visibility = ["//visibility:public"],
 )
 
 cpplint()

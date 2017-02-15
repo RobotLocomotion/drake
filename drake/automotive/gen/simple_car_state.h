@@ -39,7 +39,7 @@ class SimpleCarState : public systems::BasicVector<T> {
 
   SimpleCarState<T>* DoClone() const override {
     auto result = new SimpleCarState;
-    result->SetFromVector(this->CopyToVector());
+    result->set_value(this->get_value());
     return result;
   }
 

@@ -34,6 +34,7 @@ using std::vector;
 
 using symbolic::Expression;
 using symbolic::Formula;
+using symbolic::Variable;
 
 namespace {
 
@@ -261,9 +262,9 @@ void DecomposeLinearExpression(
   DRAKE_DEMAND(coeffs.cols() == static_cast<int>(map_var_to_index.size()));
   if (is_addition(e)) {
     *constant_term = get_constant_in_addition(e);
-    const std::map<Expression, double>& exp_to_coeff_map{
-        get_exp_to_coeff_map_in_addition(e)};
-    for (const pair<Expression, double>& p : exp_to_coeff_map) {
+    const std::map<Expression, double>& expr_to_coeff_map{
+        get_expr_to_coeff_map_in_addition(e)};
+    for (const pair<Expression, double>& p : expr_to_coeff_map) {
       if (is_variable(p.first)) {
         const Variable& var{get_variable(p.first)};
         const double coeff{p.second};
@@ -278,7 +279,7 @@ void DecomposeLinearExpression(
   } else if (is_multiplication(e)) {
     const double c = get_constant_in_multiplication(e);
     const std::map<Expression, Expression>& map_base_to_exponent =
-        get_base_to_exp_map_in_multiplication(e);
+        get_base_to_exponent_map_in_multiplication(e);
     if (map_base_to_exponent.size() == 1) {
       const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
       if (!is_variable(p.first) || !is_one(p.second)) {
@@ -467,7 +468,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
       // i-th constraint should be lb <= c * var_i <= ub, where c is a constant.
       const double c = get_constant_in_multiplication(e_i);
       const std::map<Expression, Expression>& map_base_to_exponent =
-          get_base_to_exp_map_in_multiplication(e_i);
+          get_base_to_exponent_map_in_multiplication(e_i);
       if (map_base_to_exponent.size() == 1) {
         const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
         if (!is_variable(p.first) || !is_one(p.second)) {
@@ -608,7 +609,7 @@ MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
 }
 
 Binding<LinearEqualityConstraint>
-MathematicalProgram::AddLinearEqualityConstraint(
+MathematicalProgram::DoAddLinearEqualityConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& b) {
   DRAKE_DEMAND(v.rows() == b.rows());

@@ -1,0 +1,16 @@
+element {
+    name: "x"
+    doc: "x"
+}
+element {
+    name: "y"
+    doc: "y"
+}
+element {
+    name: "heading"
+    doc: "heading"
+}
+element {
+    name: "velocity"
+    doc: "velocity"
+}

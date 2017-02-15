@@ -30,7 +30,6 @@ drake_cc_library(
         "inverse_kinematics_backend.h",
         "rigid_body_ik.h",
     ],
-    linkstatic = 1,
     deps = [
         ":rigid_body_constraint",
         ":rigid_body_tree",
@@ -43,7 +42,6 @@ drake_cc_library(
     name = "rigid_body_constraint",
     srcs = ["constraint/rigid_body_constraint.cc"],
     hdrs = ["constraint/rigid_body_constraint.h"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
     ],
@@ -73,7 +71,6 @@ drake_cc_library(
         "rigid_body_loop.h",
         "rigid_body_tree.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common:drake_path",
         "//drake/math:geometric_transform",
@@ -92,7 +89,38 @@ drake_cc_library(
     name = "rigid_body_tree_construction",
     srcs = ["rigid_body_tree_construction.cc"],
     hdrs = ["rigid_body_tree_construction.h"],
-    linkstatic = 1,
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_tree_compare_to_clone",
+    testonly = 1,
+    srcs = ["test/rigid_body_tree/rigid_body_tree_compare_to_clone.cc"],
+    hdrs = ["test/rigid_body_tree/rigid_body_tree_compare_to_clone.h"],
+    deps = [
+        ":rigid_body_actuator_compare_to_clone",
+        ":rigid_body_loop_compare_to_clone",
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_actuator_compare_to_clone",
+    testonly = 1,
+    srcs = ["test/rigid_body_actuator_compare_to_clone.cc"],
+    hdrs = ["test/rigid_body_actuator_compare_to_clone.h"],
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_loop_compare_to_clone",
+    testonly = 1,
+    srcs = ["test/rigid_body_loop_compare_to_clone.cc"],
+    hdrs = ["test/rigid_body_loop_compare_to_clone.h"],
     deps = [
         ":rigid_body_tree",
     ],
@@ -103,12 +131,11 @@ drake_cc_binary(
     name = "benchmark_rigid_body_tree",
     testonly = 1,
     srcs = ["test/benchmark_rigid_body_tree.cc"],
-    linkstatic = 1,
     deps = [
-        "@gtest//:main",
         ":rigid_body_tree",
         "//drake/common:measure_execution",
         "//drake/multibody/parsers",
+        "@gtest//:main",
     ],
 )
 
@@ -117,7 +144,6 @@ drake_cc_binary(
     name = "debug_manipulator_dynamics",
     testonly = 1,
     srcs = ["test/debug_manipulator_dynamics.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
         "//drake/multibody/parsers",
@@ -182,6 +208,27 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "rigid_body_tree_clone_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_clone_test.cc"],
+    data = [
+        ":test_models",
+        "//drake/automotive:models",
+        "//drake/examples/Atlas:models",
+        "//drake/examples/Pendulum:models",
+        "//drake/examples/Valkyrie:models",
+    ],
+    deps = [
+        ":rigid_body_tree_compare_to_clone",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/analysis",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:signal_logger",
+    ],
+)
+
+drake_cc_googletest(
     name = "rigid_body_tree_creation_test",
     srcs = ["test/rigid_body_tree/rigid_body_tree_creation_test.cc"],
     data = glob(["test/rigid_body_tree/*.urdf"]),
@@ -201,7 +248,59 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "test_ik",
+    data = [
+        "//drake/examples/Atlas:models",
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "test_ik_pointwise",
+    data = ["//drake/examples/Atlas:models"],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "test_ik_more_constraints",
+    data = ["//drake/examples/Atlas:models"],
+    tags = ["snopt"],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "test_ik_traj",
+    data = ["//drake/examples/Atlas:models"],
+    tags = ["snopt"],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
     name = "rigid_body_test",
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_body_frame_test",
     deps = [
         ":rigid_body_tree",
     ],
@@ -222,6 +321,7 @@ filegroup(
     name = "models",
     srcs = [
         "models/box.urdf",
+        "models/box_small.urdf",
     ],
 )
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "drake/common/constants.h"
@@ -302,9 +303,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
   bool is_floating() const override { return true; };
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use is_floating().")
-#endif
   bool isFloating() const override { return is_floating(); }
 
   std::string get_position_name(int index) const override;
@@ -314,18 +313,18 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
       std::default_random_engine& generator) const override;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_position_name().")
-#endif
   std::string getPositionName(int index) const override;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_velocity_name().")
-#endif
   std::string getVelocityName(int index) const override;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ protected:
+  std::unique_ptr<DrakeJoint> DoClone() const final;
+  void DoInitializeClone(DrakeJoint* clone) const final {}
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

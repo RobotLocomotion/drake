@@ -3,12 +3,15 @@
 #include <stdexcept>
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
 using Eigen::Vector3d;
 
+using std::make_unique;
+using std::move;
 using std::ostream;
 using std::runtime_error;
 using std::string;
@@ -19,6 +22,113 @@ template <typename T>
 RigidBody<T>::RigidBody() {
   center_of_mass_ = Vector3d::Zero();
   spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
+}
+
+// For an explanation of why these SWIG preprocessor commands are needed, see
+// the comment immediately above the declaration of RigidBody::Clone() in
+// rigid_body.h.
+#ifndef SWIG
+template <typename T>
+std::unique_ptr<RigidBody<T>> RigidBody<T>::Clone() const {
+  auto body = make_unique<RigidBody<T>>();
+  body->set_name(get_name());
+  body->set_model_name(get_model_name());
+  body->set_model_instance_id(get_model_instance_id());
+  body->set_body_index(body_index_);
+  body->set_position_start_index(position_start_index_);
+  body->set_velocity_start_index(velocity_start_index_);
+  body->set_contact_points(contact_points_);
+  body->set_mass(mass_);
+  body->set_center_of_mass(center_of_mass_);
+  body->set_spatial_inertia(spatial_inertia_);
+  return move(body);
+}
+#endif
+
+template <typename T>
+bool RigidBody<T>::CompareToClone(const RigidBody& other) const {
+  if (get_name() != other.get_name()) {
+    drake::log()->debug(
+        "RigidBody::CompareToClone(): name mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_name(),
+        other.get_name());
+    return false;
+  }
+  if (get_model_name() != other.get_model_name()) {
+    drake::log()->debug(
+        "RigidBody::CompareToClone(): model name mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_model_name(),
+        other.get_model_name());
+    return false;
+  }
+  if (get_model_instance_id() != other.get_model_instance_id()) {
+    drake::log()->debug(
+        "RigidBody::CompareToClone(): model instance ID mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_model_instance_id(),
+        other.get_model_instance_id());
+    return false;
+  }
+  if (get_body_index() != other.get_body_index()) {
+    drake::log()->debug(
+        "RigidBody::CompareToClone(): body index mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_body_index(),
+        other.get_body_index());
+    return false;
+  }
+  if (get_position_start_index() != other.get_position_start_index()) {
+    drake::log()->debug(
+        "RigidBody::CompareToClone(): position start index mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_position_start_index(),
+        other.get_position_start_index());
+    return false;
+  }
+  if (get_velocity_start_index() != other.get_velocity_start_index()) {
+    drake::log()->debug(
+        "RigidBody::CompareToClone(): velocity start index mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_velocity_start_index(),
+        other.get_velocity_start_index());
+    return false;
+  }
+  if (get_mass() != other.get_mass()) {
+    drake::log()->debug(
+        "RigidBody::CompareToClone(): mass mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_mass(),
+        other.get_mass());
+    return false;
+  }
+  if (get_center_of_mass() != other.get_center_of_mass()) {
+    drake::log()->debug(
+        "RigidBody::CompareToClone(): center of mass mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_center_of_mass(),
+        other.get_center_of_mass());
+    return false;
+  }
+  if (get_spatial_inertia() != other.get_spatial_inertia()) {
+    drake::log()->debug(
+        "RigidBody::CompareToClone(): spatial inertia mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_spatial_inertia(),
+        other.get_spatial_inertia());
+    return false;
+  }
+  return true;
 }
 
 template <typename T>
