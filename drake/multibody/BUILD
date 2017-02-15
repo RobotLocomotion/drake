@@ -94,6 +94,38 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "rigid_body_tree_compare_to_clone",
+    testonly = 1,
+    srcs = ["test/rigid_body_tree/rigid_body_tree_compare_to_clone.cc"],
+    hdrs = ["test/rigid_body_tree/rigid_body_tree_compare_to_clone.h"],
+    deps = [
+        ":rigid_body_actuator_compare_to_clone",
+        ":rigid_body_loop_compare_to_clone",
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_actuator_compare_to_clone",
+    testonly = 1,
+    srcs = ["test/rigid_body_actuator_compare_to_clone.cc"],
+    hdrs = ["test/rigid_body_actuator_compare_to_clone.h"],
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_loop_compare_to_clone",
+    testonly = 1,
+    srcs = ["test/rigid_body_loop_compare_to_clone.cc"],
+    hdrs = ["test/rigid_body_loop_compare_to_clone.h"],
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
 # TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
 drake_cc_binary(
     name = "benchmark_rigid_body_tree",
@@ -172,6 +204,27 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/math:jacobian",
         "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_body_tree_clone_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_clone_test.cc"],
+    data = [
+        ":test_models",
+        "//drake/automotive:models",
+        "//drake/examples/Atlas:models",
+        "//drake/examples/Pendulum:models",
+        "//drake/examples/Valkyrie:models",
+    ],
+    deps = [
+        ":rigid_body_tree_compare_to_clone",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/analysis",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:signal_logger",
     ],
 )
 
