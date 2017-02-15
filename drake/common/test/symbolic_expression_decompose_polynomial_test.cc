@@ -31,10 +31,8 @@ void CheckMonomialToCoeffMap(const symbolic::Expression& e, const Variables& var
   EXPECT_EQ(map.size(), map_expected.size());
   symbolic::Expression e_expected(0);
   for (const auto& p : map) {
-    std::cout<< p.first << " " << p.second << std::endl;
     const auto it = map_expected.find(p.first);
     EXPECT_NE(it, map_expected.end());
-    std::cout<< p.second << std::endl << it->second << std::endl;
     EXPECT_TRUE(p.second.EqualTo(it->second));
     e_expected += p.first * p.second;
   }
@@ -289,11 +287,35 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial10) {
   // Decomposes x^2 * y / (x * y)
   Expression::MonomialToCoeffMap map_expected1;
   map_expected1.emplace(x_, 1);
-  auto map1 = ((x_ * x_ * y_) / (x_ * y_)).DecomposePolynomial({var_x_});
-  for (const auto& p : map1) {
-    std::cout<< "monomial: " << p.first <<" coeff: " << p.second<< std::endl;
-  }
+  CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), {var_x_}, map_expected1, false);
+
+  Expression::MonomialToCoeffMap map_expected2;
+  // TODO(hongkai.dai) : Currently (pow(x_, 2) / x_).EqualTo(x_) returns false,
+  // revisit this code when we can simplify the division result.
+  map_expected2.emplace(1, pow(x_, 2) / x_);
+  CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), {var_y_}, map_expected2, false);
+
   CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), {var_x_, var_y_}, map_expected1, false);
+}
+
+TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial11) {
+  // Decomposes (3 * x^2 * y^3 + 2 * x^3 * y^2) / (3 * x * y)
+  Expression e = (3 * x_ * x_ * pow(y_, 3) + 2 * pow(x_, 3) * y_ * y_) / (3 * x_ * y_);
+
+  Expression::MonomialToCoeffMap map_expected1;
+  map_expected1.emplace(x_, 3 * pow(y_, 3) / (3 * y_));
+  map_expected1.emplace(x_ * x_, (2 * y_ * y_) / (3 * y_));
+  CheckMonomialToCoeffMap(e, {var_x_}, map_expected1, false);
+
+  Expression::MonomialToCoeffMap map_expected2;
+  map_expected2.emplace(y_ * y_, (3 * x_ * x_) / (3 * x_));
+  map_expected2.emplace(y_, (2 * pow(x_, 3))/(3 * x_));
+  CheckMonomialToCoeffMap(e, {var_y_}, map_expected2, false);
+
+  Expression::MonomialToCoeffMap map_expected3;
+  map_expected3.emplace(x_ * y_ * y_, 1);
+  map_expected3.emplace(x_ * x_ * y_, 2.0 / 3);
+  CheckMonomialToCoeffMap(e, {var_x_, var_y_}, map_expected3, false);
 }
 }  // namespace
 }  // namespace symbolic

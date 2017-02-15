@@ -973,7 +973,7 @@ Expression::MonomialToCoeffMap ExpressionDiv::DecomposePolynomial(const Variable
     for (const auto& var : p1.first.GetVariables()) {
       dividend_variable_id_to_var_map.emplace(var.get_id(), var);
     }
-    map.emplace(dividend_monomial.ToExpression(dividend_variable_id_to_var_map), p1.second / divisor_coeff);
+    map.emplace(division_monomial.ToExpression(dividend_variable_id_to_var_map), p1.second / divisor_coeff);
   }
   return map;
 }
