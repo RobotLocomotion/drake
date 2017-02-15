@@ -21,5 +21,5 @@ install(TARGETS _pydrake_autodiffutils DESTINATION ${PYDRAKE_INSTALL_DIR})
 
 pybind11_add_module(_pydrake_ik pydrake_ik.cc)
 target_link_libraries(_pydrake_ik PRIVATE drakeIK Eigen3::Eigen)
-target_compile_options(_pydrake_autodiffutils PRIVATE "-fvisibility=default")
+target_compile_options(_pydrake_ik PRIVATE "-fvisibility=default")
 install(TARGETS _pydrake_ik DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
