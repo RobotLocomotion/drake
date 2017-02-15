@@ -9,22 +9,30 @@
 namespace drake {
 namespace solvers {
 namespace test {
-class GurobiLinearProgramTest : public LinearProgramTest {
-};
 
-TEST_P(GurobiLinearProgramTest, TestLP) {
+TEST_P(LinearProgramTest, TestLP) {
   GurobiSolver solver;
-  if (solver.available()) {
-    RunSolver(prob()->prog(), solver);
-    prob()->CheckSolution();
-  }
+  prob()->RunProblem(&solver);
 }
 
 INSTANTIATE_TEST_CASE_P(
-    GurobiTest, GurobiLinearProgramTest,
+    GurobiTest, LinearProgramTest,
     ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
+
+
+TEST_P(QuadraticProgramTest, TestQP) {
+  GurobiSolver solver;
+  prob()->RunProblem(&solver);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    GurobiTest, QuadraticProgramTest,
+    ::testing::Combine(::testing::ValuesIn(quadratic_cost_form()),
+                       ::testing::ValuesIn(linear_constraint_form()),
+                       ::testing::ValuesIn(quadratic_problems())));
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
