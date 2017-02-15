@@ -37,6 +37,10 @@ drake_cc_library(
 drake_cc_library(
     name = "cond",
     hdrs = ["cond.h"],
+    srcs = ["cond.cc"],
+    deps = [
+        ":double",
+    ],
 )
 
 drake_cc_library(
@@ -265,6 +269,13 @@ drake_cc_googletest(
     name = "reinit_after_move_test",
     deps = [
         ":reinit_after_move",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cond_test",
+    deps = [
+        ":cond",
     ],
 )
 
