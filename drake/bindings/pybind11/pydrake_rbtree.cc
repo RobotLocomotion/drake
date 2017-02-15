@@ -1,3 +1,4 @@
+#include <iostream>
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
@@ -13,21 +14,40 @@ namespace py = pybind11;
 PYBIND11_PLUGIN(_pydrake_rbtree) {
   py::module m("_pydrake_rbtree", "Bindings for the RigidBodyTree class");
 
+  using drake::multibody::joints::FloatingBaseType;
+
+  py::enum_<FloatingBaseType>(m, "FloatingBaseType")
+    .value("kFixed", FloatingBaseType::kFixed)
+    .value("kRollPitchYaw", FloatingBaseType::kRollPitchYaw)
+    .value("kQuaternion", FloatingBaseType::kQuaternion);
+
   py::class_<RigidBodyTree<double>>(m, "RigidBodyTree")
     .def(py::init<>())
     .def("__init__",
          [](RigidBodyTree<double> &instance,
             const std::string& urdf_filename,
+            FloatingBaseType floating_base_type) {
+          new (&instance) RigidBodyTree<double>();
+          drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+            urdf_filename, floating_base_type, &instance);
+        },
+        py::arg("urdf_filename"),
+        py::arg("floating_base_type") = FloatingBaseType::kRollPitchYaw)
+    .def("__init__",
+         [](RigidBodyTree<double> &instance,
+            const std::string& urdf_filename,
             const std::string& joint_type) {
             // FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2
-            drake::multibody::joints::FloatingBaseType floating_base_type;
-
+            FloatingBaseType floating_base_type;
+            std::cerr << "WARNING: passing joint_type as a string is "
+              << "deprecated. Please pass a FloatingBaseType value such as "
+              << "pydrake.rbtree.FloatingBaseType.kRollPitchYaw" << std::endl;
             if (joint_type == "FIXED") {
-              floating_base_type = drake::multibody::joints::kFixed;
+              floating_base_type = FloatingBaseType::kFixed;
             } else if (joint_type == "ROLLPITCHYAW") {
-              floating_base_type = drake::multibody::joints::kRollPitchYaw;
+              floating_base_type = FloatingBaseType::kRollPitchYaw;
             } else if (joint_type == "QUATERNION") {
-              floating_base_type = drake::multibody::joints::kQuaternion;
+              floating_base_type = FloatingBaseType::kQuaternion;
             } else {
               throw(std::invalid_argument("Joint type not supported"));
             }
@@ -157,14 +177,6 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
         &drake::parsers::urdf::\
           AddModelInstanceFromUrdfStringSearchingInRosPackages);
-
-  py::enum_<drake::multibody::joints::FloatingBaseType>(m, "FloatingBaseType")
-    .value("kFixed", drake::multibody::joints::FloatingBaseType::kFixed)
-    .value("kRollPitchYaw",
-           drake::multibody::joints::FloatingBaseType::kRollPitchYaw)
-    .value("kQuaternion",
-           drake::multibody::joints::FloatingBaseType::kQuaternion);
-
 
   return m.ptr();
 }
