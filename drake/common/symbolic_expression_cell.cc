@@ -1685,6 +1685,21 @@ shared_ptr<ExpressionMul> to_multiplication(const Expression& e) {
   return to_multiplication(e.ptr_);
 }
 
+shared_ptr<ExpressionDiv> to_division(
+    const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_division(*expr_ptr));
+  return static_pointer_cast<ExpressionDiv>(expr_ptr);
+}
+shared_ptr<ExpressionDiv> to_division(const Expression& e) {
+  return to_division(e.ptr_);
+}
+
+shared_ptr<ExpressionPow> to_pow(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_pow(*expr_ptr));
+  return static_pointer_cast<ExpressionPow>(expr_ptr);
+}
+shared_ptr<ExpressionPow> to_pow(const Expression& e) { return to_pow(e.ptr_); }
+
 shared_ptr<ExpressionIfThenElse> to_if_then_else(
     const shared_ptr<ExpressionCell> expr_ptr) {
   DRAKE_ASSERT(is_if_then_else(*expr_ptr));
