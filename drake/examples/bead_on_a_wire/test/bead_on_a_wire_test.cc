@@ -114,12 +114,9 @@ TEST_F(BeadOnAWireTest, InverseHelix) {
   BeadOnAWire<double>::DScalar s;
   s = test_value;
   auto v = dut_abs_->helix_function(s);
-  v(0).derivatives().resize(1);
   v(0).derivatives()(0) = 0.0;
-  v(1).derivatives().resize(1);
   v(1).derivatives()(0) = 0.0;
-  v(2).derivatives().resize(1);
-  v(2).derivatives()(0) = 1.0;
+  v(2).derivatives()(0) = 0.0;
   auto sprime = dut_abs_->inverse_helix_function(v);
   EXPECT_NEAR(s.value().value(), sprime.value().value(), tol);
 

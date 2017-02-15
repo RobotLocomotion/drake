@@ -359,7 +359,7 @@ class System {
                                                    const {
     DRAKE_ASSERT(lambda.size() == get_num_constraint_equations(context));
     DRAKE_ASSERT(J.rows() == get_num_constraint_equations(context));
-    DRAKE_ASSERT(J.cols() == 
+    DRAKE_ASSERT(J.cols() ==
         context.get_continuous_state()->get_generalized_velocity().size());
     return DoCalcVelocityChangeFromConstraintImpulses(context, J, lambda);
   }

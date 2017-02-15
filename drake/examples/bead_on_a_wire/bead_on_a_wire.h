@@ -40,7 +40,7 @@ namespace bead_on_a_wire {
 /// </pre>
 /// where τ is the generalized force on the system. Thus:
 /// <pre>
-/// df(s)/ds⋅ṡ⋅d²f/ds² + (df(s)/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
+/// df(s)/ds⋅ṡ²⋅d²f/ds² + (df(s)/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
 /// </pre>
 /// The dynamic equations for the bead in absolute coordinates comes from the
 /// Lagrangian Dynamics of the "first kind" (i.e., by formulating the problem
@@ -156,30 +156,15 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T> &context,
                        systems::State<T> *state) const override;
 
-  /// Gets the number of constraint equations.
   int do_get_num_constraint_equations(const systems::Context<T> &context) const
                                      override;
 
-  /// Evaluates the constraint equations for a bead in absolute coordinates.
-  /// This method is computationally expensive. To evaluate these equations,
-  /// the method locates the variable s that minimizes the univariate function
-  /// ||f(s) - x||, where x is the location of the bead.
-  /// @warning The solution returned by this approach is not generally a global
-  ///          minimum.
   Eigen::VectorXd DoEvalConstraintEquations(
       const systems::Context<T> &context) const override;
 
-  /// Computes the time derivative of each constraint equation, evaluated at
-  /// the current generalized coordinates and generalized velocity.
   Eigen::VectorXd DoEvalConstraintEquationsDot(
       const systems::Context<T> &context) const override;
 
-  /// Computes the change in generalized velocity from applying constraint
-  /// impulses @p lambda.
-  /// @param context The current state of the system.
-  /// @param lambda The vector of constraint forces.
-  /// @returns a `n` dimensional vector, where `n` is the dimension of the
-  ///          quasi-coordinates.
   Eigen::VectorXd DoCalcVelocityChangeFromConstraintImpulses(
       const systems::Context<T> &context, const Eigen::MatrixXd &J,
       const Eigen::VectorXd &lambda) const override;

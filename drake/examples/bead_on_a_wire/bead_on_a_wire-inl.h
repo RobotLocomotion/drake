@@ -48,6 +48,13 @@ typename BeadOnAWire<T>::DScalar
   return atan2(v(1), v(0));
 }
 
+/// Evaluates the constraint equations for a bead represented in absolute
+/// coordinates (no constraint equations are used for a bead represented in
+/// minimal coordinates). This method is computationally expensive. To evaluate
+/// these equations, the method locates the variable s that minimizes the
+/// univariate function ||f(s) - x||, where x is the location of the bead.
+/// @warning The solution returned by this approach is not generally a global
+///          minimum.
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
     const systems::Context<T>& context) const {
@@ -146,12 +153,19 @@ void BeadOnAWire<T>::DoCalcOutput(const systems::Context<T>& context,
       context.get_continuous_state()->CopyToVector();
 }
 
+/// Gets the number of constraint equations used for dynamics.
 template <class T>
 int BeadOnAWire<T>::do_get_num_constraint_equations(
     const systems::Context<T>& context) const {
   return (coordinate_type_ == kAbsoluteCoordinates) ? 3 : 0;
 }
 
+/// Computes the change in generalized velocity from applying constraint
+/// impulses @p lambda.
+/// @param context The current state of the system.
+/// @param lambda The vector of constraint forces.
+/// @returns a `n` dimensional vector, where `n` is the dimension of the
+///          quasi-coordinates.
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
     const systems::Context<T>& context, const Eigen::MatrixXd& J,
@@ -227,6 +241,12 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
     // df/ds⋅ṡ⋅d²f/ds² + (df/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
     // Implying that:
     // dṡ/dt = (-τ + (df(s)/ds)₃⋅ag - df(s)/ds⋅ṡ⋅d²f/ds²) / (df/ds)²
+    // This derivation was double-checked with the following Mathematica code:
+    // L:= 1/2*(f'[s[t]] * s'[t])^2 + Dot[z, f[s[t]]]*ag
+    // D[1/2*D[f[s[t]], s[t]]*D[s[t], t]^2 + Dot[z, f[s[t]]]*ag, s[t]] -
+    //   D[D[1/2*D[f[s[t]], s[t]]*D[s[t], t]^2 + Dot[z, f[s[t]]]*ag, s'[t]], t]
+    // where L is the definition of the Lagrangian and Dot[z, f[s[t]]] is
+    // equivalent to f₃ (i.e., assuming that z is the unit vector [0 0 1]ᵀ).
     const double ag = get_gravitational_acceleration();
     const Eigen::Vector3d dfds = get_first_derivative(foutput);
     const Eigen::Vector3d d2fds2 = get_second_derivative(foutput);
