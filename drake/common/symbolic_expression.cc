@@ -151,18 +151,6 @@ Polynomial<double> Expression::ToPolynomial() const {
   return ptr_->ToPolynomial();
 }
 
-int Expression::Degree(const Variables& vars) const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  DRAKE_DEMAND(is_polynomial());
-  return ptr_->Degree(vars);
-}
-
-int Expression::Degree() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  DRAKE_DEMAND(is_polynomial());
-  return ptr_->Degree(GetVariables());
-}
-
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->Evaluate(env);
