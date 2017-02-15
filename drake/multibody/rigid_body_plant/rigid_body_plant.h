@@ -132,21 +132,13 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   // TODO(liang.fok) Remove this method once a more advanced contact modeling
   // framework is available.
-#define USE_STRIBECK
-#ifdef USE_STRIBECK
   /// Sets the contact parameters.
   void set_contact_parameters(double penetration_stiffness,
                               double static_friction_coef,
                               double dynamic_friction_coef,
                               double transition_speed,
                               double dissipation);
-#else
-  /// Sets the contact parameters.
-  void set_contact_parameters(double penetration_stiffness,
-                              double penetration_damping,
-                              double friction_coefficient);
 
-#endif
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
   const RigidBodyTree<T>& get_rigid_body_tree() const;
@@ -410,7 +402,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   VectorX<T> EvaluateActuatorInputs(const Context<T>& context) const;
 
  private:
-#ifdef USE_STRIBECK
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point C relative to B (expressed in B).
   //
@@ -446,21 +437,16 @@ class RigidBodyPlant : public LeafSystem<T> {
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where the f'(0) = f'(1) = 0.
   static T step5(T x);
-#endif
+
   std::unique_ptr<const RigidBodyTree<T>> tree_;
 
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
-  T penetration_stiffness_{150.0};  // An arbitrarily large number.
-#ifdef USE_STRIBECK
-  T dissipation_{0.5};  // An arbitrary value.
-  T inv_transition_speed_{1000};  // Inverse of the arbitrary value: 1 mm/sec.
-  T static_friction_coef_{0.5};
-  T dynamic_friction_ceof_{0.7};
-#else
-  T penetration_damping_{penetration_stiffness_ / 10.0};
-  T friction_coefficient_{1.0};
-#endif
+  T penetration_stiffness_{10000.0};  // An arbitrarily large number.
+  T dissipation_{2};  // An arbitrary value.
+  T inv_transition_speed_{0.01};  // Inverse of the arbitrary value: 1 mm/sec.
+  T static_friction_coef_{0.9};
+  T dynamic_friction_ceof_{0.5};
 
   int state_output_port_index_{};
   int kinematics_output_port_index_{};

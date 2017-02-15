@@ -86,12 +86,15 @@ class ToyotaHsrbTests : public ::testing::Test {
     // test to use the Toyota HSRb model. See #4326.
     const string urdf_string = ReadTextFile(GetDrakePath() + kModelFileName);
     const double penetration_stiffness = 4000;
-    const double penetration_damping = 300;
-    const double friction_coefficient = 10;
+    const double penetration_dissipation = 2;
+    const double static_friction_coefficient = 1.0;
+    const double dynamic_friction_coefficient = 0.7;
+    const double slip_speed = 0.01;
 
     plant_and_visualizer_ = BuildPlantAndVisualizerDiagram(
-        urdf_string, penetration_stiffness, penetration_damping,
-        friction_coefficient, &lcm_, &plant_);
+        urdf_string, penetration_stiffness,
+        static_friction_coefficient, dynamic_friction_coefficient,
+        slip_speed, penetration_dissipation, &lcm_, &plant_);
 
     ASSERT_NE(plant_and_visualizer_, nullptr);
     ASSERT_NE(plant_, nullptr);

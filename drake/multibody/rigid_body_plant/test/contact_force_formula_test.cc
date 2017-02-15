@@ -15,8 +15,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-#ifdef USE_STRIBECK
-
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -423,7 +421,6 @@ TEST_F(SlidingSpinContactFormulaTest, SlidingSpinContactTest) {
                               MatrixCompareType::absolute));
 }
 
-#endif  // USE_STRIBECK
 }  // namespace
 }  // namespace systems
 }  // namespace drake

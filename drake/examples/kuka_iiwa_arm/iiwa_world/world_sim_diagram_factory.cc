@@ -49,18 +49,20 @@ namespace kuka_iiwa_arm {
 template <typename T>
 VisualizedPlant<T>::VisualizedPlant(
     std::unique_ptr<RigidBodyTree<T>> rigid_body_tree,
-    double penetration_stiffness, double penetration_damping,
-    double friction_coefficient, lcm::DrakeLcmInterface* lcm) {
+    double penetration_stiffness, double penetration_dissipation,
+    double static_friction_coefficient, double dynamic_friction_coefficient,
+    double v_stiction_tolerance, lcm::DrakeLcmInterface* lcm) {
   DiagramBuilder<T> builder;
 
   rigid_body_plant_ =
       builder.template AddSystem<RigidBodyPlant<T>>(std::move(rigid_body_tree));
 
   DRAKE_DEMAND(rigid_body_plant_ != nullptr);
-#ifndef USE_STRIBECK
-  rigid_body_plant_->set_contact_parameters(
-      penetration_stiffness, penetration_damping, friction_coefficient);
-#endif
+  rigid_body_plant_->set_contact_parameters(penetration_stiffness,
+                                            static_friction_coefficient,
+                                            dynamic_friction_coefficient,
+                                            v_stiction_tolerance,
+                                            penetration_dissipation);
 
   DRAKE_DEMAND(rigid_body_plant_->get_num_actuators() > 0);
 
@@ -130,8 +132,9 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
     std::unique_ptr<RigidBodyTree<T>> world_tree,
     std::unique_ptr<PiecewisePolynomialTrajectory> pp_traj,
     int robot_instance_id, const RigidBodyTree<T>& robot_tree,
-    double penetration_stiffness, double penetration_damping,
-    double friction_coefficient, lcm::DrakeLcmInterface* lcm)
+    double penetration_stiffness, double penetration_dissipation,
+    double static_friction_coefficient, double dynamic_friction_coefficient,
+    double v_stiction_tolerance, lcm::DrakeLcmInterface* lcm)
     : poly_trajectory_(std::move(pp_traj)) {
   DiagramBuilder<T> builder;
 
@@ -146,10 +149,12 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
 
   const auto& plant_output_port = rigid_body_plant_->state_output_port();
 
-#ifndef USE_STRIBECK
-  rigid_body_plant_->set_contact_parameters(
-      penetration_stiffness, penetration_damping, friction_coefficient);
-#endif
+  rigid_body_plant_->set_contact_parameters(penetration_stiffness,
+                                            static_friction_coefficient,
+                                            dynamic_friction_coefficient,
+                                            v_stiction_tolerance,
+                                            penetration_dissipation);
+
   // Creates and adds a DrakeVisualizer publisher.
   drake_visualizer_ = builder.template AddSystem<DrakeVisualizer>(
       rigid_body_plant_->get_rigid_body_tree(), lcm);

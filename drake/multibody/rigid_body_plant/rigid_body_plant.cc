@@ -136,7 +136,6 @@ RigidBodyPlant<T>::~RigidBodyPlant() {}
 
 // TODO(liang.fok) Remove this method once a more advanced contact modeling
 // framework is available.
-#ifdef USE_STRIBECK
 template <typename T>
 void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
                                                double static_friction_coef,
@@ -149,16 +148,6 @@ void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
   static_friction_coef_ = static_friction_coef;
   inv_transition_speed_ = 1.0 / transition_speed;
 }
-#else
-template <typename T>
-void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
-                                               double penetration_damping,
-                                               double friction_coefficient) {
-  penetration_stiffness_ = penetration_stiffness;
-  penetration_damping_ = penetration_damping;
-  friction_coefficient_ = friction_coefficient;
-}
-#endif
 
 template <typename T>
 bool RigidBodyPlant<T>::has_any_direct_feedthrough() const {
@@ -793,7 +782,6 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       // The point of contact in the world frame.
       Vector3<T> p_WC = (p_WAs + p_WBs) * 0.5;
 
-#ifdef USE_STRIBECK
       // The contact point in A's frame.
       Vector3<T> p_AAc = kinsol.get_element(body_a_index)
                              .transform_to_world.inverse(Eigen::Isometry) *
@@ -807,12 +795,6 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
                                                0, false);
       auto JB = tree_->transformPointsJacobian(kinsol, p_BBc, body_b_index,
                                                0, false);
-#else
-      auto JA = tree_->transformPointsJacobian(kinsol, pair.ptA, body_a_index,
-                                               0, false);
-      auto JB = tree_->transformPointsJacobian(kinsol, pair.ptB, body_b_index,
-                                               0, false);
-#endif
       // This normal points *from* element b *to* element A.
       Vector3<T> this_normal = pair.normal;
 
@@ -825,7 +807,6 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       auto v_BA_C = J * kinsol.getV();
 
       {
-#ifdef USE_STRIBECK
         // Normal force:
         // This is the implementation of the Hunt-Crossley contact model
         // Normal force is simply f(x, ẋ) = kx(1 + dẋ) where
@@ -870,20 +851,6 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           fA.template head<2>() << 0, 0;
         }
 
-#else
-        // Spring law for normal force:  fA_normal = -k * phi - b * phidot
-        // and damping for tangential force:  fA_tangent = -b * tangentdot
-        // (bounded by the friction cone).
-        Vector3<T> fA;
-        fA(2) = std::max<T>(-penetration_stiffness_ * pair.distance -
-                                penetration_damping_ * v_BA_C(2),
-                            0.0);
-        fA.head(2) =
-            -std::min<T>(penetration_damping_,
-                         friction_coefficient_ * fA(2) /
-                             (v_BA_C.head(2).norm() + EPSILON)) *
-            v_BA_C.head(2);  // Epsilon avoids divide by zero.
-#endif
         // fB is equal and opposite to fA: fB = -fA.
         // Therefore the generalized forces tau_c due to contact are:
         // tau_c = (R_CW * JA)^T * fA + (R_CW * JB)^T * fB = J^T * fA.
@@ -923,7 +890,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   }
   return contact_force;
 }
-#ifdef USE_STRIBECK
+
 template <typename T>
 VectorX<T> RigidBodyPlant<T>::EvaluateActuatorInputs(
     const Context<T>& context) const {
@@ -987,7 +954,7 @@ T RigidBodyPlant<T>::step5(T x) {
   const T x3 = x * x * x;
   return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
 }
-#endif
+
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyPlant<double>;
 
