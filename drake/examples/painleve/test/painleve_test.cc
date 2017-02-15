@@ -25,7 +25,7 @@ namespace {
 class PainleveDAETest : public ::testing::Test {
  protected:
   void SetUp() override {
-    dut_ = std::make_unique<Painleve<double>>();
+    dut_ = std::make_unique<Painleve<double>>(Painleve<double>::kPiecewiseDAE);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -745,7 +745,7 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
   // Create two Painleve systems.
   const double dt = 1e-1;
   Painleve<double> ts(dt);
-  Painleve<double> pdae;
+  Painleve<double> pdae(Painleve<double>::kPiecewiseDAE);
 
   // Set the coefficient of friction to a small value for both.
   const double mu = 0.01;
@@ -815,7 +815,7 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSticking) {
   // Create two Painleve systems.
   const double dt = 1e-1;
   Painleve<double> ts(dt);
-  Painleve<double> pdae;
+  Painleve<double> pdae(Painleve<double>::kPiecewiseDAE);
 
   // Set the coefficient of friction to a large value for both.
   const double mu = 100.0;

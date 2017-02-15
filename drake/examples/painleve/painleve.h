@@ -53,6 +53,21 @@ namespace painleve {
 template <typename T>
 class Painleve : public systems::LeafSystem<T> {
  public:
+  /// Simulation model and approach for the system.
+  enum SimulationType {
+    /// For simulating the system using rigid contact, Coulomb friction, and
+    /// piecewise differential algebraic equations.
+    kPiecewiseDAE,
+
+    /// For simulating the system using rigid contact, Coulomb friction, and
+    /// a first-order time stepping approach.
+    kTimeStepping,
+
+    /// For simulating the system using compliant contact, Coulomb friction,
+    /// and ordinary differential equations.
+    kCompliant
+  };
+
   /// Possible dynamic modes for the Painleve Paradox rod.
   enum Mode {
     /// Mode is invalid.
@@ -76,9 +91,10 @@ class Painleve : public systems::LeafSystem<T> {
     kStickingTwoContacts
   };
 
-  /// Constructor for the Painleve' Paradox system using a piecewise DAE
-  /// (differential algebraic equation) based approach.
-  Painleve();
+  /// Constructor for the Painleve' Paradox system using either the piecewise
+  /// DAE (differential algebraic equation) based approach or the compliant
+  /// ordinary differential equation based approach.
+  explicit Painleve(SimulationType simulation_type);
 
   /// Constructor for the Painleve' Paradox system using a time stepping
   /// approach.
@@ -97,7 +113,7 @@ class Painleve : public systems::LeafSystem<T> {
   /// @throws std::logic_error if this is not a time stepping system or if
   ///         cfm is set to a negative value.
   void set_cfm(double cfm) {
-    if (!is_time_stepping_system())
+    if (simulation_type_ != kTimeStepping)
       throw std::logic_error("Attempt to set CFM for non-time stepping "
                              "system.");
     if (cfm < 0)
@@ -115,7 +131,7 @@ class Painleve : public systems::LeafSystem<T> {
   /// @throws std::logic_error if this is not a time stepping system or if
   ///         erp is set to a negative value.
   void set_erp(double erp) {
-    if (!is_time_stepping_system())
+    if (simulation_type_ != kTimeStepping)
       throw std::logic_error("Attempt to set ERP for non-time stepping "
                              "system.");
     if (erp < 0 || erp > 1)
@@ -172,8 +188,8 @@ class Painleve : public systems::LeafSystem<T> {
   /// @returns 0 if this is a DAE-based system.
   double get_integration_step_size() const { return dt_; }
 
-  /// Determines whether this is a time stepping system.
-  bool is_time_stepping_system() const { return dt_ > 0.0; }
+  /// Gets the model and simulation type for this system.
+  SimulationType get_simulation_type() const { return simulation_type_; }
 
  protected:
   int get_k(const systems::Context<T>& context) const;
@@ -194,6 +210,10 @@ class Painleve : public systems::LeafSystem<T> {
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
     const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
+  void CalcAccelerationsCompliantContactAndBallistic(
+                                  const systems::Context<T>& context,
+                                  systems::ContinuousState<T>* derivatives)
+                                    const;
   void CalcAccelerationsBallistic(const systems::Context<T>& context,
                                   systems::ContinuousState<T>* derivatives)
                                     const;
@@ -218,6 +238,10 @@ class Painleve : public systems::LeafSystem<T> {
 
   // Solves linear complementarity problems for time stepping.
   solvers::MobyLCPSolver lcp_;
+
+  // The simulation type, currently unable to be changed after object
+  // construction.
+  SimulationType simulation_type_;
 
   double dt_{0.0};          // Integration step-size for time stepping approach.
   double mass_{1.0};        // The mass of the rod.

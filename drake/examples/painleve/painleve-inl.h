@@ -19,11 +19,20 @@ namespace drake {
 namespace painleve {
 
 template <typename T>
-Painleve<T>::Painleve() {
-  // Piecewise DAE approach needs six continuous variables.
+Painleve<T>::Painleve(SimulationType simulation_type) {
+  // Verify that the simulation approach is either piecewise DAE or
+  // compliant ODE.
+  if (simulation_type == Painleve<T>::kTimeStepping)
+    throw std::logic_error("Time stepping approach must be constructed using"
+                               " double argument.");
+
+  // Both approaches need six continuous variables.
   this->DeclareContinuousState(3, 3, 0);
   this->DeclareInputPort(systems::kVectorValued, 3);
   this->DeclareOutputPort(systems::kVectorValued, 6);
+
+  // Set the simulation type.
+  simulation_type_ = simulation_type;
 }
 
 template <typename T>
@@ -39,6 +48,9 @@ Painleve<T>::Painleve(double dt) : dt_(dt) {
   this->DeclareInputPort(systems::kVectorValued, 3);
   this->DeclareDiscreteUpdatePeriodSec(dt);
   this->DeclareOutputPort(systems::kVectorValued, 6);
+
+  // Set the simulation type.
+  simulation_type_ = Painleve<T>::kTimeStepping;
 }
 
 /// Gets the integer variable 'k' used to determine the point of contact
@@ -51,8 +63,8 @@ Painleve<T>::Painleve(double dt) : dt_(dt) {
 ///          the halfspace.
 template <class T>
 int Painleve<T>::get_k(const systems::Context<T>& context) const {
-  if (is_time_stepping_system())
-    throw std::logic_error("'k' is not valid for time stepping systems.");
+  if (simulation_type_ != Painleve<T>::kPiecewiseDAE)
+    throw std::logic_error("'k' is only valid for piecewise DAE approach.");
   const int k = context.template get_abstract_state<int>(1);
   DRAKE_DEMAND(std::abs(k) <= 1);
   return k;
@@ -264,7 +276,7 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
 
   // This method is only used for piecewise DAE integration. The time
   // stepping method implicitly incorporates impact into its model.
-  DRAKE_DEMAND(!is_time_stepping_system());
+  DRAKE_DEMAND(simulation_type_ == Painleve<T>::kPiecewiseDAE);
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -955,6 +967,28 @@ bool Painleve<T>::IsImpacting(const systems::Context<T>& context) const {
   return (cydot < -std::numeric_limits<double>::epsilon());
 }
 
+// Computes the accelerations of the rod center of mass for the rod, both
+// in compliant contact and contact-free.
+template <typename T>
+void Painleve<T>::CalcAccelerationsCompliantContactAndBallistic(
+    const systems::Context<T>& context,
+    systems::ContinuousState<T>* derivatives) const {
+  // Obtain the structure we need to write into.
+  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
+
+  // Get the inputs.
+  const int port_index = 0;
+  const auto input = this->EvalEigenVectorInput(context, port_index);
+
+  // TODO(sherm1): This is where you will compute and add in contact forces.
+
+  // Second three derivative components are acceleration due to gravity,
+  // contact forces, and non-gravitational, non-contact external forces.
+  f->SetAtIndex(3, input(0)/mass_);
+  f->SetAtIndex(4, input(1)/mass_ + get_gravitational_acceleration());
+  f->SetAtIndex(5, input(2)/J_);
+}
+
 // Computes the accelerations of the rod center of mass for the case of
 // ballistic motion.
 template <typename T>
@@ -984,7 +1018,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
   using std::abs;
 
   // Don't compute any derivatives if this is the time stepping system.
-  if (is_time_stepping_system()) {
+  if (simulation_type_ == Painleve<T>::kTimeStepping) {
     DRAKE_ASSERT(derivatives->size() == 0);
     return;
   }
@@ -998,30 +1032,40 @@ void Painleve<T>::DoCalcTimeDerivatives(
   // Obtain the structure we need to write into.
   systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
 
-  // Get the abstract variables that determine the current system mode and
-  // the endpoint in contact.
-  const Mode mode = context.template get_abstract_state<Mode>(0);
-
   // First three derivative components are xdot, ydot, thetadot.
   f->SetAtIndex(0, xdot);
   f->SetAtIndex(1, ydot);
   f->SetAtIndex(2, thetadot);
 
-  // Call the proper derivative function (depending on mode type).
-  switch (mode) {
-    case kBallisticMotion:
-      return CalcAccelerationsBallistic(context, derivatives);
-    case kSlidingSingleContact:
-      return CalcAccelerationsOneContactSliding(context, derivatives);
-    case kStickingSingleContact:
-      return CalcAccelerationsOneContactNoSliding(context, derivatives);
-    case kSlidingTwoContacts:
-      return CalcAccelerationsTwoContact(context, derivatives);
-    case kStickingTwoContacts:
-      return CalcAccelerationsTwoContact(context, derivatives);
+  // Compute the velocity derivatives (accelerations).
+  if (simulation_type_ == Painleve<T>::kCompliant) {
+    return CalcAccelerationsCompliantContactAndBallistic(context, derivatives);
+  } else {
+    // (Piecewise DAE approach follows).
+    // Get the abstract variables that determine the current system mode and
+    // the endpoint in contact.
+    const Mode mode = context.template get_abstract_state<Mode>(0);
 
-    default:
-      DRAKE_ABORT_MSG("Invalid mode detected");
+    // Call the proper derivative function (depending on mode type).
+    switch (mode) {
+      case kBallisticMotion:
+        return CalcAccelerationsBallistic(context,
+                                          derivatives);
+      case kSlidingSingleContact:
+        return CalcAccelerationsOneContactSliding(context,
+                                                  derivatives);
+      case kStickingSingleContact:
+        return CalcAccelerationsOneContactNoSliding(context,
+                                                    derivatives);
+      case kSlidingTwoContacts:
+        return CalcAccelerationsTwoContact(context,
+                                           derivatives);
+      case kStickingTwoContacts:
+        return CalcAccelerationsTwoContact(context,
+                                           derivatives);
+
+      default:DRAKE_ABORT_MSG("Invalid mode detected");
+    }
   }
 }
 
@@ -1029,7 +1073,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
 template <typename T>
 std::unique_ptr<systems::AbstractState> Painleve<T>::
   AllocateAbstractState() const {
-  if (!is_time_stepping_system()) {
+  if (simulation_type_ == Painleve<T>::kPiecewiseDAE) {
     // Piecewise DAE approach needs two abstract variables (one mode and one
     // contact point indicator).
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
@@ -1041,7 +1085,7 @@ std::unique_ptr<systems::AbstractState> Painleve<T>::
     abstract_data.push_back(std::make_unique<systems::Value<int>>(0));
     return std::make_unique<systems::AbstractState>(std::move(abstract_data));
   } else {
-    // Time stepping approach needs no abstract variables.
+    // Time stepping and compliant approaches need no abstract variables.
     return std::make_unique<systems::AbstractState>();
   }
 }
@@ -1053,25 +1097,29 @@ void Painleve<T>::SetDefaultState(const systems::Context<T>& context,
                                   systems::State<T>* state) const {
   using std::sqrt;
 
-  // Initial state corresponds to an inconsistent configuration.
+  // Initial state corresponds to an inconsistent configuration for piecewise
+  // DAE.
   const double half_len = get_rod_length() / 2;
   VectorX<T> x0(6);
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
-  if (!is_time_stepping_system()) {
-    // DAE mode.
+  if (simulation_type_ != Painleve<T>::kTimeStepping) {
+    // Continuous variables.
     state->get_mutable_continuous_state()->SetFromVector(x0);
 
-    // Indicate that the rod is in the single contact sliding mode.
-    state->get_mutable_abstract_state()->get_mutable_abstract_state(0).
-        template GetMutableValue<Painleve<T>::Mode>() =
-            Painleve<T>::kSlidingSingleContact;
+    // Set abstract variables for piecewise DAE approach.
+    if (simulation_type_ == Painleve<T>::kPiecewiseDAE) {
+      // Indicate that the rod is in the single contact sliding mode.
+      state->get_mutable_abstract_state()->get_mutable_abstract_state(0).
+          template GetMutableValue<Painleve<T>::Mode>() =
+          Painleve<T>::kSlidingSingleContact;
 
-    // Determine and set the point of contact.
-    const double theta = x0(2);
-    const int k = (std::sin(theta) > 0) ? -1 : 1;
-    state->get_mutable_abstract_state()->get_mutable_abstract_state(1).
-        template GetMutableValue<int>() = k;
+      // Determine and set the point of contact.
+      const double theta = x0(2);
+      const int k = (std::sin(theta) > 0) ? -1 : 1;
+      state->get_mutable_abstract_state()->get_mutable_abstract_state(1).
+          template GetMutableValue<int>() = k;
+    }
   } else {
     state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->
         SetFromVector(x0);
