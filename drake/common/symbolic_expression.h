@@ -66,6 +66,8 @@ class UnaryExpressionCell;   // In drake/common/symbolic_expression_cell.h
 class BinaryExpressionCell;  // In drake/common/symbolic_expression_cell.h
 class ExpressionAdd;         // In drake/common/symbolic_expression_cell.h
 class ExpressionMul;         // In drake/common/symbolic_expression_cell.h
+class ExpressionDiv;         // In drake/common/symbolic_expression_cell.h
+class ExpressionPow;         // In drake/common/symbolic_expression_cell.h
 class ExpressionIfThenElse;  // In drake/common/symbolic_expression_cell.h
 class Formula;               // In drake/common/symbolic_formula.h
 
@@ -360,6 +362,8 @@ class Expression {
   friend std::shared_ptr<BinaryExpressionCell> to_binary(const Expression& e);
   friend std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
   friend std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
+  friend std::shared_ptr<ExpressionDiv> to_division(const Expression& e);
+  friend std::shared_ptr<ExpressionPow> to_pow(const Expression& e);
   friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
       const Expression& e);
 

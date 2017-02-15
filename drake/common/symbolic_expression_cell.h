@@ -823,14 +823,36 @@ std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
 
 /** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
  *  @c shared_ptr<ExpressionMul>.
- *  \pre{@c *expr_ptr is of @c ExpressionConstant.}
+ *  \pre{@c *expr_ptr is of @c ExpressionMul.}
  */
 std::shared_ptr<ExpressionMul> to_multiplication(
     const std::shared_ptr<ExpressionCell> expr_ptr);
 /** Casts @p e of Expression to @c shared_ptr<ExpressionMul>.
- *  \pre{@c *(e.ptr_) is of @c ExpressionConstant.}
+ *  \pre{@c *(e.ptr_) is of @c ExpressionMul.}
  */
 std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
+
+/** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
+ *  @c shared_ptr<ExpressionDiv>.
+ *  \pre{@c *expr_ptr is of @c ExpressionDiv.}
+ */
+std::shared_ptr<ExpressionDiv> to_division(
+    const std::shared_ptr<ExpressionCell> expr_ptr);
+/** Casts @p e of Expression to @c shared_ptr<ExpressionDiv>.
+ *  \pre{@c *(e.ptr_) is of @c ExpressionDiv.}
+ */
+std::shared_ptr<ExpressionDiv> to_division(const Expression& e);
+
+/** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
+ *  @c shared_ptr<ExpressionPow>.
+ *  \pre{@c *expr_ptr is of @c ExpressionPow.}
+ */
+std::shared_ptr<ExpressionPow> to_pow(
+    const std::shared_ptr<ExpressionCell> expr_ptr);
+/** Casts @p e of Expression to @c shared_ptr<ExpressionPow>.
+ *  \pre{@c *(e.ptr_) is of @c ExpressionPow.}
+ */
+std::shared_ptr<ExpressionPow> to_pow(const Expression& e);
 
 /** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
  *  @c shared_ptr<ExpressionIfThenElse>.
