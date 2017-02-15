@@ -40,10 +40,13 @@ namespace systems {
  * this phase is `lcmt_viewer_draw` and the channel name is
  * "DRAKE_VIEWER_DRAW".
  *
- * The visualizer has an option that allows it to save the state it dispatches
- * for drawing and then replay it at realtime (capped at 60 Hz).  This is useful
- * for immediate review of slow simulations to gain an intuitive understanding
- * at realtime.  See ReplayCachedSimulation().
+ * The visualizer has an option that causes it to save the state it dispatches
+ * for drawing and allows replay of that cached data at wall clock time --
+ * i.e., one second of simulation is played back for every second in the real
+ * world.  The playback *rate* is currently capped at 60 Hz.  This is useful
+ * for immediate review of simulations which evaluate at time rates radically
+ * out of scale with wall clock time, enabling intuitive understanding of the
+ * simulation results.  See ReplayCachedSimulation().
  *
  * @ingroup rigid_body_systems
  */
@@ -64,13 +67,13 @@ class DrakeVisualizer : public LeafSystem<double> {
    * @param[in] lcm A pointer to the object through which LCM messages can be
    * published. This pointer must remain valid for the duration of this object.
    *
-   * @param[in] record_for_playback  If true, the visualizer will cache the
+   * @param[in] enable_playback  If true, the visualizer will cache the
    * input data for playback and ReplayCachedSimulation() will replay that
    * cache data.
    */
   DrakeVisualizer(const RigidBodyTree<double>& tree,
                   drake::lcm::DrakeLcmInterface* lcm,
-                  bool record_for_playback = false);
+                  bool enable_playback = false);
 
   /**
    * Sets the publishing period of this system. See
@@ -88,9 +91,13 @@ class DrakeVisualizer : public LeafSystem<double> {
   //       manifest as a *pause* at the end of the playback before finishing.
   //    3. Optionally force the replay to emit the messages to load the
   //       geometry again.
+  //    4. Specify playback rate.
+  //    5. Add a wall-clock scale factor; e.g., play faster than real time,
+  //       slower than real time, etc.
   /**
    * Cause the visualizer to playback its cached data at realtime.  If it has
-   * not been configured to record/playback, no work is done.
+   * not been configured to record/playback, a warning message will be written
+   * to the log, but otherwise, no work will be done.
    */
   void ReplayCachedSimulation();
 
@@ -130,10 +137,6 @@ class DrakeVisualizer : public LeafSystem<double> {
   // The translator that converts from the RigidBodyTree's generalized state
   // vector to a lcmt_viewer_draw message.
   const ViewerDrawTranslator draw_message_translator_;
-
-  // If true, DrakeVisualizer records the data it "publishes", making it
-  // available for playback.
-  bool has_playback_{false};
 
   // The (optional) log used for recording and playback.
   std::unique_ptr<SignalLog<double>> log_{nullptr};

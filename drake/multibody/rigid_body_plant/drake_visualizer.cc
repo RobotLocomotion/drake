@@ -15,16 +15,15 @@ const int kPortIndex = 0;
 
 DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
                                  drake::lcm::DrakeLcmInterface* lcm,
-                                 bool record_for_playback)
+                                 bool enable_playback)
     : lcm_(lcm),
       load_message_(CreateLoadMessage(tree)),
-      draw_message_translator_(tree),
-      has_playback_(record_for_playback) {
+      draw_message_translator_(tree) {
   set_name("drake_visualizer");
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size);
-  if (has_playback_) log_.reset(new SignalLog<double>(vector_size));
+  if (enable_playback) log_.reset(new SignalLog<double>(vector_size));
 }
 
 void DrakeVisualizer::set_publish_period(double period) {
@@ -32,7 +31,7 @@ void DrakeVisualizer::set_publish_period(double period) {
 }
 
 void DrakeVisualizer::ReplayCachedSimulation() {
-  if (has_playback_) {
+  if (log_ != nullptr) {
     // Build piecewise polynomial
     auto times = log_->sample_times();
     // NOTE: The SignalLog can record signal for multiple identical time stamps.
@@ -63,8 +62,9 @@ void DrakeVisualizer::ReplayCachedSimulation() {
     RunPlaybackLoop(func, breaks[breaks.size() - 1]);
   } else {
     drake::log()->warn(
-        "DrakeVisualizer::ReplayCachedSimulation called on instance that wasn't"
-        " initialized to record.");
+        "DrakeVisualizer::ReplayCachedSimulation() called on instance that "
+        "wasn't initialized to record. Next time, please construct "
+        "DrakeVisualizer with recording enabled.");
   }
 }
 
@@ -100,7 +100,8 @@ void DrakeVisualizer::RunPlaybackLoop(
     prev_time = curr_time;
   }
 
-  // Final evaluation is at the final time stamp, guaranteeing the final state.
+  // Final evaluation is at the final time stamp, guaranteeing the final state
+  // is visualized.
   data.set_value(trajectory.value(kMaxTime));
   std::vector<uint8_t> message_bytes;
   draw_message_translator_.Serialize(sim_time, data,
@@ -124,7 +125,7 @@ void DrakeVisualizer::DoPublish(const Context<double>& context) const {
   // RigidBodyTree.
   const BasicVector<double>* input_vector = EvalVectorInput(context,
                                                             kPortIndex);
-  if (has_playback_) {
+  if (log_ != nullptr) {
     log_->AddData(context.get_time(), input_vector->get_value());
   }
 

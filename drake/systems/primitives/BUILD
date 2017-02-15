@@ -151,7 +151,6 @@ drake_cc_library(
     name = "signal_log",
     srcs = ["signal_log.cc"],
     hdrs = ["signal_log.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework",
     ],
