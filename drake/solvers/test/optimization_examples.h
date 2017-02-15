@@ -27,29 +27,17 @@ enum class ConstraintForm {
   kFormula = 3,
 };
 
-enum class LinearProblems {
-  kLinearFeasibilityProgram = 0,
-  kLinearProgram0 = 1,
-  kLinearProgram1 = 2,
-  kLinearProgram2 = 3,
-  kLinearProgram3 = 4,
-};
-
-std::set<CostForm> linear_cost_form();
-
-std::set<ConstraintForm> linear_constraint_form();
-
-std::vector<LinearProblems> linear_problems();
-
-class LinearProgram {
+class OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptimizationProgram)
 
-  LinearProgram(CostForm cost_form, ConstraintForm cnstr_form);
+  OptimizationProgram(CostForm cost_form, ConstraintForm cnstr_form);
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
   virtual void CheckSolution() const = 0;
+
+  void RunProblem(MathematicalProgramSolverInterface* solver);
 
  private:
   std::unique_ptr<MathematicalProgram> prog_;
@@ -524,7 +512,7 @@ class MinDistanceFromPlaneToOrigin {
 /// -inf <=       x1 - 2x2 <= 3
 ///   -1 <= 0x0+ 0x1 + 0x2 <= 0
 ///           x1 >= 1
-class LinearFeasibilityProgram : public LinearProgram {
+class LinearFeasibilityProgram : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearFeasibilityProgram)
 
@@ -546,7 +534,7 @@ class LinearFeasibilityProgram : public LinearProgram {
 ///      x1 >= 2
 ///      x0 >= 0
 /// The optimal solution is x0 = 1, x1 = 2
-class LinearProgram0 : public LinearProgram {
+class LinearProgram0 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram0)
 
@@ -565,7 +553,7 @@ class LinearProgram0 : public LinearProgram {
 //     0 <= x0 <= 2
 //    -1 <= x1 <= 4
 // The optimal solution is (0, 4)
-class LinearProgram1 : public LinearProgram {
+class LinearProgram1 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram1)
 
@@ -591,7 +579,7 @@ class LinearProgram1 : public LinearProgram {
 //           0 <= x2 <= inf
 //           0 <= x3 <= inf
 // The optimal solution is at (0, 0, 15, 25/3)
-class LinearProgram2 : public LinearProgram {
+class LinearProgram2 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram2)
 
@@ -614,7 +602,7 @@ class LinearProgram2 : public LinearProgram {
 //     7x0 >= 35 - 12x1
 //     x0 >= 0 x1 >= 0 x2 >= 0
 // The optimal solution is at (8, 3, 11)
-class LinearProgram3 : public LinearProgram {
+class LinearProgram3 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram3)
 
@@ -627,16 +615,48 @@ class LinearProgram3 : public LinearProgram {
   Eigen::Vector3d x_expected_;
 };
 
+enum class LinearProblems {
+  kLinearFeasibilityProgram = 0,
+  kLinearProgram0 = 1,
+  kLinearProgram1 = 2,
+  kLinearProgram2 = 3,
+  kLinearProgram3 = 4,
+};
+
 class LinearProgramTest
     : public ::testing::TestWithParam<
           std::tuple<CostForm, ConstraintForm, LinearProblems>> {
  public:
   LinearProgramTest();
 
-  LinearProgram* prob() const {return prob_.get();}
+  OptimizationProgram* prob() const {return prob_.get();}
 
  private:
-  std::unique_ptr<LinearProgram> prob_;
+  std::unique_ptr<OptimizationProgram> prob_;
+};
+
+// Test a simple Quadratic Program.
+// The example is taken from
+// http://cvxopt.org/examples/tutorial/qp.html
+// min 2x1^2 + x2^2 + x1x2 + x1 + x2
+// s.t x1 >= 0
+//     x2 >= 0
+//     x1 + x2 = 1
+class QuadraticProgram0 : public OptimizationProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram0)
+
+  QuadraticProgram0(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<2> x_;
+  Eigen::Vector2d x_expected_;
+};
+
+enum class QuadraticProblems {
+  kQuadraticProgram0 = 0,
 };
 
 /**
@@ -667,6 +687,28 @@ class UnboundedLinearProgramTest0 : public ::testing::Test {
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
 };
+class QuadraticProgramTest
+    : public ::testing::TestWithParam<
+        std::tuple<CostForm, ConstraintForm, QuadraticProblems>> {
+ public:
+  QuadraticProgramTest();
+
+  OptimizationProgram* prob() const {return prob_.get();}
+
+ private:
+  std::unique_ptr<OptimizationProgram> prob_;
+};
+
+
+std::set<CostForm> linear_cost_form();
+
+std::set<CostForm> quadratic_cost_form();
+
+std::set<ConstraintForm> linear_constraint_form();
+
+std::vector<LinearProblems> linear_problems();
+
+std::vector<QuadraticProblems> quadratic_problems();
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
