@@ -321,15 +321,15 @@ TEST_F(MonomialTest, UnorderedMapOfMonomial) {
 // Converts a constant to monomial.
 TEST_F(MonomialTest, ToMonomial0) {
   internal::Monomial expected;
-  EXPECT_EQ(internal::ToMonomial(1), expected);
-  EXPECT_EQ(internal::ToMonomial(pow(x_, 0)), expected);
-  EXPECT_THROW(internal::ToMonomial(2), std::exception);
+  EXPECT_EQ(internal::Monomial(1), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 0)), expected);
+  EXPECT_THROW(internal::Monomial(2), std::exception);
 }
 
 // Converts expression x to monomial.
 TEST_F(MonomialTest, ToMonomial1) {
   internal::Monomial expected(var_x_, 1);
-  EXPECT_EQ(internal::ToMonomial(x_), expected);
+  EXPECT_EQ(internal::Monomial(x_), expected);
 }
 
 // Converts expression x * y to monomial.
@@ -338,14 +338,14 @@ TEST_F(MonomialTest, ToMonomial2) {
   powers.emplace(var_x_.get_id(), 1);
   powers.emplace(var_y_.get_id(), 1);
   internal::Monomial expected(powers);
-  EXPECT_EQ(internal::ToMonomial(x_ * y_), expected);
+  EXPECT_EQ(internal::Monomial(x_ * y_), expected);
 }
 
 // Converts expression x^3 to monomial.
 TEST_F(MonomialTest, ToMonomial3) {
   internal::Monomial expected(var_x_, 3);
-  EXPECT_EQ(internal::ToMonomial(pow(x_, 3)), expected);
-  EXPECT_EQ(internal::ToMonomial(pow(x_, 2) * x_), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 3)), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 2) * x_), expected);
 }
 
 // Converts expression x^3 * y to monomial.
@@ -354,8 +354,8 @@ TEST_F(MonomialTest, ToMonomial4) {
   powers.emplace(var_x_.get_id(), 3);
   powers.emplace(var_y_.get_id(), 1);
   internal::Monomial expected(powers);
-  EXPECT_EQ(internal::ToMonomial(pow(x_, 3) * y_), expected);
-  EXPECT_EQ(internal::ToMonomial(pow(x_, 2) * y_ * x_), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 3) * y_), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 2) * y_ * x_), expected);
 }
 }  // namespace
 }  // namespace symbolic

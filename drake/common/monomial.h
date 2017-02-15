@@ -40,6 +40,19 @@ class Monomial {
   explicit Monomial(const std::map<Variable::Id, int>& powers);
   /** Constructs a Monomial from @p var and @exponent. */
   Monomial(const Variable& var, int exponent);
+
+  /**
+   * Converts an expression to a monomial, if the expression is written as
+   * ∏ᵢpow(xᵢ, kᵢ), otherwise throws a runtime error.
+   * @pre{is_polynomial(e) should be true.}
+   * Note that we cannot handle the case that the expression contains
+   * addition/subtraction yet, namely x*(y+z)-x*z will not be converted to a
+   * monomial.
+   * TODO(hongkai.dai):make sure x*(y+z)-x*z will be converted to a monomial, when
+   * we get "Expression::Expand" function working.
+   */
+  explicit Monomial(const Expression& e);
+
   /** Returns the total degree of this Monomial. */
   int total_degree() const { return total_degree_; }
   /** Returns hash value. */
@@ -203,18 +216,6 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
   }
   return basis;
 }
-
-/**
- * Converts an expression to a monomial, if the expression is written as
- * ∏ᵢpow(xᵢ, kᵢ), otherwise throws a runtime error.
- * @pre{is_polynomial(e) should be true.}
- * Note that we cannot handle the case that the expression contains
- * addition/subtraction yet, namely x*(y+z)-x*z will not be converted to a
- * monomial.
- * TODO(hongkai.dai):make sure x*(y+z)-x*z will be converted to a monomial, when
- * we get "Expression::Expand" function working.
- */
-Monomial ToMonomial(const Expression& e);
 
 }  // namespace internal
 

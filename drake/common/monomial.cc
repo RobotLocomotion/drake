@@ -45,6 +45,11 @@ Monomial::Monomial(const map<Variable::Id, int>& powers)
   }
 }
 
+// Forward declaration.
+map<Variable::Id, int> ToMonomialPower(const Expression& e);
+
+Monomial::Monomial(const Expression& e) : Monomial(ToMonomialPower(e)) {}
+
 size_t Monomial::GetHash() const {
   // To get a hash value for a Monomial, we re-use the hash value for
   // powers_. This is suitable because powers_ is the only independent
@@ -151,10 +156,6 @@ map<Variable::Id, int> ToMonomialPower(const Expression& e) {
   return powers;
 }
 
-Monomial ToMonomial(const Expression& e) {
-  map<Variable::Id, int> powers = ToMonomialPower(e);
-  return Monomial(powers);
-}
 }  // namespace internal
 
 Expression GetMonomial(const unordered_map<Variable, int, hash_value<Variable>>&
