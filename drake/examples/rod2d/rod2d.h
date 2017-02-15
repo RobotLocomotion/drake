@@ -7,7 +7,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace painleve {
+namespace rod2d {
 
 /// Dynamical system representation of a rod contacting a half-space in
 /// two dimensions. This system can be modeling and simulated using one of
@@ -42,7 +42,7 @@ namespace painleve {
 ///         m/s, and rad/s, respectively. Orientation is measured counter-
 ///         clockwise with respect to the x-axis. For simulations using the
 ///         piecewise DAE formulation, one abstract state variable
-///         (of type Painleve::Mode) is used to identify which dynamic mode
+///         (of type Rod2D::Mode) is used to identify which dynamic mode
 ///         the system is in (e.g., ballistic, contacting at one point and
 ///         sliding, etc.) and one abstract state variable (of type int) is used
 ///         to determine which endpoint(s) of the rod contact the halfspace
@@ -58,7 +58,7 @@ namespace painleve {
 /// * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
 ///                    Impact". SIAM Rev., 42(1), 3-39, 2000.
 template <typename T>
-class Painleve : public systems::LeafSystem<T> {
+class Rod2D : public systems::LeafSystem<T> {
  public:
   /// Simulation model and approach for the system.
   enum SimulationType {
@@ -75,7 +75,7 @@ class Painleve : public systems::LeafSystem<T> {
     kCompliant
   };
 
-  /// Possible dynamic modes for the Painleve Paradox rod.
+  /// Possible dynamic modes for the 2D rod.
   enum Mode {
     /// Mode is invalid.
     kInvalid,
@@ -98,17 +98,17 @@ class Painleve : public systems::LeafSystem<T> {
     kStickingTwoContacts
   };
 
-  /// Constructor for the Painleve' Paradox system using either the piecewise
+  /// Constructor for the 2D rod system using either the piecewise
   /// DAE (differential algebraic equation) based approach or the compliant
   /// ordinary differential equation based approach.
-  explicit Painleve(SimulationType simulation_type);
+  explicit Rod2D(SimulationType simulation_type);
 
-  /// Constructor for the Painleve' Paradox system using a time stepping
+  /// Constructor for the 2D rod system using a time stepping
   /// approach.
   /// @param dt The integration step size. This step size cannot be reset
   ///           after construction.
   /// @throws std::logic_error if @p dt is not positive.
-  explicit Painleve(double dt);
+  explicit Rod2D(double dt);
 
   /// Gets the constraint force mixing parameter (CFM, used for time stepping
   /// systems only).
@@ -260,5 +260,5 @@ class Painleve : public systems::LeafSystem<T> {
   double cfm_{1e-8};        // CFM for time stepping systems
 };
 
-}  // namespace painleve
+}  // namespace rod2d
 }  // namespace drake

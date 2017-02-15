@@ -1,0 +1,3 @@
+drake_add_cc_test(rod2d_test)
+target_link_libraries(rod2d_test drakeRod2D drakeSystemAnalysis)
+

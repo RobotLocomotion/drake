@@ -1,4 +1,4 @@
-#include "drake/examples/painleve/painleve.h"
+#include "drake/examples/rod2d/rod2d.h"
 #include "drake/systems/analysis/simulator.h"
 
 #include <memory>
@@ -17,15 +17,15 @@ using drake::systems::Simulator;
 using drake::systems::Context;
 
 namespace drake {
-namespace painleve {
+namespace rod2d {
 namespace {
 
-/// Class for testing the Painleve Paradox example using a piecewise DAE
+/// Class for testing the 2D rod example using a piecewise DAE
 /// approach.
-class PainleveDAETest : public ::testing::Test {
+class Rod2DDAETest : public ::testing::Test {
  protected:
   void SetUp() override {
-    dut_ = std::make_unique<Painleve<double>>(Painleve<double>::kPiecewiseDAE);
+    dut_ = std::make_unique<Rod2D<double>>(Rod2D<double>::kPiecewiseDAE);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -74,8 +74,8 @@ class PainleveDAETest : public ::testing::Test {
     AbstractState* abs_state = context_->get_mutable_state()->
                                  get_mutable_abstract_state();
     abs_state->get_mutable_abstract_state(0).
-      template GetMutableValue<Painleve<double>::Mode>() =
-        Painleve<double>::kSlidingSingleContact;
+      template GetMutableValue<Rod2D<double>::Mode>() =
+        Rod2D<double>::kSlidingSingleContact;
 
     // Determine the point of contact.
     const double theta = xc[2];
@@ -100,8 +100,8 @@ class PainleveDAETest : public ::testing::Test {
     AbstractState* abs_state = context_->get_mutable_state()->
                                  get_mutable_abstract_state();
     abs_state->get_mutable_abstract_state(0).
-      template GetMutableValue<Painleve<double>::Mode>() =
-        Painleve<double>::kBallisticMotion;
+      template GetMutableValue<Rod2D<double>::Mode>() =
+        Rod2D<double>::kBallisticMotion;
 
     // Note: contact point mode is now arbitrary.
   }
@@ -120,8 +120,8 @@ class PainleveDAETest : public ::testing::Test {
     AbstractState* abs_state = context_->get_mutable_state()->
                                  get_mutable_abstract_state();
     abs_state->get_mutable_abstract_state(0).
-      template GetMutableValue<Painleve<double>::Mode>() =
-        Painleve<double>::kSlidingSingleContact;
+      template GetMutableValue<Rod2D<double>::Mode>() =
+        Rod2D<double>::kSlidingSingleContact;
 
     // Determine the point of contact.
     const double theta = xc[2];
@@ -130,14 +130,14 @@ class PainleveDAETest : public ::testing::Test {
       template GetMutableValue<int>() = k;
   }
 
-  std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
+  std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
 };
 
 // Checks that the output port represents the state.
-TEST_F(PainleveDAETest, Output) {
+TEST_F(Rod2DDAETest, Output) {
   const ContinuousState<double>& xc = *context_->get_continuous_state();
   std::unique_ptr<SystemOutput<double>> output =
       dut_->AllocateOutput(*context_);
@@ -148,13 +148,13 @@ TEST_F(PainleveDAETest, Output) {
 
 // Verifies that setting dut to an impacting state actually results in an
 // impacting state.
-TEST_F(PainleveDAETest, ImpactingState) {
+TEST_F(Rod2DDAETest, ImpactingState) {
   SetImpactingState();
   EXPECT_TRUE(dut_->IsImpacting(*context_));
 }
 
 // Tests parameter getting and setting.
-TEST_F(PainleveDAETest, Parameters) {
+TEST_F(Rod2DDAETest, Parameters) {
   // Set parameters to non-default values.
   const double g = -1.0;
   const double mass = 0.125;
@@ -174,7 +174,7 @@ TEST_F(PainleveDAETest, Parameters) {
 }
 
 // Verify that impact handling works as expected.
-TEST_F(PainleveDAETest, ImpactWorks) {
+TEST_F(Rod2DDAETest, ImpactWorks) {
   // Set writable state.
   std::unique_ptr<State<double>> new_state = CloneState();
 
@@ -191,8 +191,8 @@ TEST_F(PainleveDAETest, ImpactWorks) {
   xc[5] = 0.0;
 
   // Set the mode variables.
-  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-      Painleve<double>::kStickingSingleContact;
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+      Rod2D<double>::kStickingSingleContact;
   const double theta = xc[3];
   const int k = (std::sin(theta) > 0) ? -1 : 1;
   context_->template get_mutable_abstract_state<int>(1) = k;
@@ -217,7 +217,7 @@ TEST_F(PainleveDAETest, ImpactWorks) {
 
 // Verify that derivatives match what we expect from a non-inconsistent,
 // ballistic configuration.
-TEST_F(PainleveDAETest, ConsistentDerivativesBallistic) {
+TEST_F(Rod2DDAETest, ConsistentDerivativesBallistic) {
   // Set the initial state to ballistic motion.
   SetBallisticState();
 
@@ -237,13 +237,13 @@ TEST_F(PainleveDAETest, ConsistentDerivativesBallistic) {
   EXPECT_NEAR((*derivatives_)[5], 0.0, tol);   // Zero rotational acceleration.
 
   // Verify the mode is still ballistic.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kBallisticMotion);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kBallisticMotion);
 }
 
 // Verify that derivatives match what we expect from a non-inconsistent
 // contacting configuration.
-TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
+TEST_F(Rod2DDAETest, ConsistentDerivativesContacting) {
   // Set the initial state to sustained contact with zero tangential velocity
   // at the point of contact.
   const double half_len = dut_->get_rod_length() / 2;
@@ -255,8 +255,8 @@ TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
   xc[3] = 0.0;
   xc[4] = 0.0;
   xc[5] = 0.0;
-  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-      Painleve<double>::kStickingSingleContact;
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+      Rod2D<double>::kStickingSingleContact;
 
   // Calculate the derivatives.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
@@ -277,8 +277,8 @@ TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
   // and try again. Derivatives should be exactly the same because no frictional
   // force can be applied.
   xc[3] = -1.0;
-  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-      Painleve<double>::kSlidingSingleContact;
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+      Rod2D<double>::kSlidingSingleContact;
   dut_->set_mu_coulomb(0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR((*derivatives_)[0], xc[3], tol);
@@ -291,7 +291,7 @@ TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
 
 // Verify that derivatives match what we expect from a sticking contact
 // configuration.
-TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
+TEST_F(Rod2DDAETest, DerivativesContactingAndSticking) {
   // Set the initial state to sustained contact with zero tangential velocity
   // at the point of contact and the rod being straight up.
   const double half_len = dut_->get_rod_length() / 2;
@@ -303,8 +303,8 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   xc[3] = 0.0;
   xc[4] = 0.0;
   xc[5] = 0.0;
-  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-      Painleve<double>::kStickingSingleContact;
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+      Rod2D<double>::kStickingSingleContact;
 
   // Set a constant horizontal input force, as if applied at the bottom of
   // the rod.
@@ -347,8 +347,8 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
   EXPECT_GT((*derivatives_)[3], tol);  // horizontal accel. should be nonzero.
 
   // Set the coefficient of friction to zero and try again.
-  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-      Painleve<double>::kStickingSingleContact;
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+      Rod2D<double>::kStickingSingleContact;
   dut_->set_mu_coulomb(0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR((*derivatives_)[0], xc[3], tol);
@@ -365,13 +365,13 @@ TEST_F(PainleveDAETest, DerivativesContactingAndSticking) {
 }
 
 // Verify the inconsistent (Painlevé Paradox) configuration occurs.
-TEST_F(PainleveDAETest, Inconsistent) {
+TEST_F(Rod2DDAETest, Inconsistent) {
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
                std::runtime_error);
 }
 
 // Verify the second inconsistent (Painlevé Paradox) configuration occurs.
-TEST_F(PainleveDAETest, Inconsistent2) {
+TEST_F(Rod2DDAETest, Inconsistent2) {
   SetSecondInitialConfig();
 
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
@@ -380,7 +380,7 @@ TEST_F(PainleveDAETest, Inconsistent2) {
 
 // Verify that the (non-impacting) Painlevé configuration does not result in a
 // state change.
-TEST_F(PainleveDAETest, ImpactNoChange) {
+TEST_F(Rod2DDAETest, ImpactNoChange) {
   // Set state.
   std::unique_ptr<State<double>> new_state = CloneState();
   EXPECT_FALSE(dut_->IsImpacting(*context_));
@@ -393,14 +393,14 @@ TEST_F(PainleveDAETest, ImpactNoChange) {
                               MatrixCompareType::absolute));
 
   // Verify that the mode is still sliding.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kSlidingSingleContact);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kSlidingSingleContact);
 }
 
 // Verify that applying the impact model to an impacting configuration results
 // in a non-impacting configuration. This test exercises the model for the case
 // where impulses that yield tangential sticking lie within the friction cone.
-TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact) {
+TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact) {
   // Set writable state.
   std::unique_ptr<State<double>> new_state = CloneState();
 
@@ -408,10 +408,10 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact) {
   SetImpactingState();
 
   // Verify that the state is in a sliding mode.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kSlidingSingleContact);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kSlidingSingleContact);
 
-  // Set the coefficient of friction to infinite. This forces the Painlevé code
+  // Set the coefficient of friction to infinite. This forces the rod code
   // to go through the first impact path (impulse within the friction cone).
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
@@ -421,8 +421,8 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact) {
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Verify that the state is now in a sticking mode.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kStickingSingleContact);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kStickingSingleContact);
 
   // Do one more impact- there should now be no change.
   dut_->HandleImpact(*context_, new_state.get());
@@ -437,15 +437,15 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact) {
 // Verify that applying an impact model to an impacting state results in a
 // non-impacting state. This test exercises the model for the case
 // where impulses that yield tangential sticking lie outside the friction cone.
-TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact) {
+TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact) {
   // Set the initial state to be impacting.
   SetImpactingState();
 
   // Verify that the state is in a sliding mode.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kSlidingSingleContact);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kSlidingSingleContact);
 
-  // Set the coefficient of friction to zero. This forces the Painlevé code
+  // Set the coefficient of friction to zero. This forces the rod code
   // to go through the second impact path (impulse corresponding to sticking
   // friction post-impact lies outside of the friction cone).
   dut_->set_mu_coulomb(0.0);
@@ -457,8 +457,8 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact) {
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Verify that the state is still in a sliding mode.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kSlidingSingleContact);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kSlidingSingleContact);
 
   // Do one more impact- there should now be no change.
   // Verify that there is no further change from this second impact.
@@ -471,12 +471,12 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact) {
                               MatrixCompareType::absolute));
 
   // Verify that the state is still in a sliding mode.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kSlidingSingleContact);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kSlidingSingleContact);
 }
 
 // Verify that no exceptions thrown for a non-sliding configuration.
-TEST_F(PainleveDAETest, NoSliding) {
+TEST_F(Rod2DDAETest, NoSliding) {
   const double half_len = dut_->get_rod_length() / 2;
   const double r22 = std::sqrt(2) / 2;
   ContinuousState<double>& xc =
@@ -493,8 +493,8 @@ TEST_F(PainleveDAETest, NoSliding) {
   xc[3] = 0.0;
   xc[4] = 0.0;
   xc[5] = 0.0;
-  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-      Painleve<double>::kStickingSingleContact;
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+      Rod2D<double>::kStickingSingleContact;
 
   // Verify no impact.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
@@ -511,7 +511,7 @@ TEST_F(PainleveDAETest, NoSliding) {
 }
 
 // Test multiple (two-point) contact configurations.
-TEST_F(PainleveDAETest, MultiPoint) {
+TEST_F(Rod2DDAETest, MultiPoint) {
   ContinuousState<double>& xc =
       *context_->get_mutable_continuous_state();
 
@@ -523,8 +523,8 @@ TEST_F(PainleveDAETest, MultiPoint) {
   xc[3] = 0.0;
   xc[4] = 0.0;
   xc[5] = 0.0;
-  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-      Painleve<double>::kStickingTwoContacts;
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+      Rod2D<double>::kStickingTwoContacts;
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   for (int i=0; i< derivatives_->size(); ++i)
     EXPECT_NEAR((*derivatives_)[i], 0.0, tol);
@@ -539,8 +539,8 @@ TEST_F(PainleveDAETest, MultiPoint) {
   xc[3] = 1.0;
   xc[4] = 0.0;
   xc[5] = 0.0;
-  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-      Painleve<double>::kSlidingTwoContacts;
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+      Rod2D<double>::kSlidingTwoContacts;
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
                std::logic_error);
 
@@ -550,7 +550,7 @@ TEST_F(PainleveDAETest, MultiPoint) {
 
 // Verify that the Painlevé configuration does not correspond to an impacting
 // state.
-TEST_F(PainleveDAETest, ImpactNoChange2) {
+TEST_F(Rod2DDAETest, ImpactNoChange2) {
   SetSecondInitialConfig();
 
   // Verify no impact.
@@ -569,14 +569,14 @@ TEST_F(PainleveDAETest, ImpactNoChange2) {
 
 // Verify that applying the impact model to an impacting state results
 // in a non-impacting state.
-TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact2) {
+TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact2) {
   // Set writable state.
   std::unique_ptr<State<double>> new_state = CloneState();
 
   // Cause the initial state to be impacting.
   SetImpactingState();
 
-  // Set the coefficient of friction to infinite. This forces the Painlevé code
+  // Set the coefficient of friction to infinite. This forces the rod code
   // to go through the first impact path.
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
@@ -588,8 +588,8 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact2) {
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Verify that the state is now in a sticking mode.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kStickingSingleContact);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kStickingSingleContact);
 
   // Do one more impact- there should now be no change.
   dut_->HandleImpact(*context_, new_state.get());
@@ -604,7 +604,7 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact2) {
 
 // Verify that applying the impact model to an impacting state results in a
 // non-impacting state.
-TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact2) {
+TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact2) {
   // Set writable state.
   std::unique_ptr<State<double>> new_state = CloneState();
 
@@ -612,16 +612,16 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact2) {
   SetImpactingState();
 
   // Verify that the state is still in a sliding configuration.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kSlidingSingleContact);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kSlidingSingleContact);
 
-  // Set the coefficient of friction to zero. This forces the Painlevé code
+  // Set the coefficient of friction to zero. This forces the rod code
   // to go through the second impact path.
   dut_->set_mu_coulomb(0.0);
 
   // Verify that the state is still in a sliding configuration.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kSlidingSingleContact);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kSlidingSingleContact);
 
   // Handle the impact and copy the result to the context.
   dut_->HandleImpact(*context_, new_state.get());
@@ -638,12 +638,12 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact2) {
                               MatrixCompareType::absolute));
 
   // Verify that the state is still in a sliding configuration.
-  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
-            Painleve<double>::kSlidingSingleContact);
+  EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
+            Rod2D<double>::kSlidingSingleContact);
 }
 
 // Verifies that rod in a ballistic state does not correspond to an impact.
-TEST_F(PainleveDAETest, BallisticNoImpact) {
+TEST_F(Rod2DDAETest, BallisticNoImpact) {
   // Set writable state.
   std::unique_ptr<State<double>> new_state = CloneState();
 
@@ -655,20 +655,20 @@ TEST_F(PainleveDAETest, BallisticNoImpact) {
   ContinuousState<double>& xc =
       *context_->get_mutable_continuous_state();
   xc[1] += 10.0;
-  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-      Painleve<double>::kBallisticMotion;
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+      Rod2D<double>::kBallisticMotion;
 
   // Verify that no impact occurs.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 }
 
-/// Class for testing the Painleve Paradox example using a first order time
+/// Class for testing the rod example using a first order time
 /// stepping approach.
-class PainleveTimeSteppingTest : public ::testing::Test {
+class Rod2DTimeSteppingTest : public ::testing::Test {
  protected:
   void SetUp() override {
     const double dt = 1e-2;
-    dut_ = std::make_unique<Painleve<double>>(dt);
+    dut_ = std::make_unique<Rod2D<double>>(dt);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
 
@@ -687,7 +687,8 @@ class PainleveTimeSteppingTest : public ::testing::Test {
   BasicVector<double>* mutable_discrete_state() {
     return context_->get_mutable_discrete_state(0);
   }
-// Sets a secondary initial Painleve configuration.
+
+  // Sets a secondary initial Painleve configuration.
   void SetSecondInitialConfig() {
     // Set the configuration to an inconsistent (Painlevé) type state with
     // the rod at a 135 degree counter-clockwise angle with respect to the
@@ -708,15 +709,15 @@ class PainleveTimeSteppingTest : public ::testing::Test {
     xd[5] = 0.0;
   }
 
-  std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
+  std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
 };
 
-/// Verify that Painleve Paradox system eventually goes to rest using the
+/// Verify that the rod system eventually goes to rest using the
 /// first-order time stepping approach (this tests expected meta behavior).
-TEST_F(PainleveTimeSteppingTest, RodGoesToRest) {
+TEST_F(Rod2DTimeSteppingTest, RodGoesToRest) {
   // Set the initial state to an inconsistent configuration.
   SetSecondInitialConfig();
 
@@ -739,13 +740,13 @@ TEST_F(PainleveTimeSteppingTest, RodGoesToRest) {
 }
 
 // This test checks to see whether a single semi-explicit step of the piecewise
-// DAE based Painleve system is equivalent to a single step of the semi-explicit
+// DAE based rod system is equivalent to a single step of the semi-explicit
 // time stepping based system.
-GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
-  // Create two Painleve systems.
+GTEST_TEST(RodCrossValidationTest, OneStepSolutionSliding) {
+  // Create two rod systems.
   const double dt = 1e-1;
-  Painleve<double> ts(dt);
-  Painleve<double> pdae(Painleve<double>::kPiecewiseDAE);
+  Rod2D<double> ts(dt);
+  Rod2D<double> pdae(Rod2D<double>::kPiecewiseDAE);
 
   // Set the coefficient of friction to a small value for both.
   const double mu = 0.01;
@@ -809,13 +810,13 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
 }
 
 // This test checks to see whether a single semi-explicit step of the piecewise
-// DAE based Painleve system is equivalent to a single step of the semi-explicit
+// DAE based rod system is equivalent to a single step of the semi-explicit
 // time stepping based system for a sticking contact scenario.
-GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSticking) {
-  // Create two Painleve systems.
+GTEST_TEST(RodCrossValidationTest, OneStepSolutionSticking) {
+  // Create two rod systems.
   const double dt = 1e-1;
-  Painleve<double> ts(dt);
-  Painleve<double> pdae(Painleve<double>::kPiecewiseDAE);
+  Rod2D<double> ts(dt);
+  Rod2D<double> pdae(Rod2D<double>::kPiecewiseDAE);
 
   // Set the coefficient of friction to a large value for both.
   const double mu = 100.0;
@@ -842,8 +843,8 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSticking) {
   xc[3] = xd[3] = 0.0;
   xc[4] = xd[4] = 0.0;
   xc[5] = xd[5] = 0.0;
-  context_pdae->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
-      Painleve<double>::kStickingSingleContact;
+  context_pdae->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+      Rod2D<double>::kStickingSingleContact;
 
   // Set constant input forces for both.
   const double x = 1.0;
