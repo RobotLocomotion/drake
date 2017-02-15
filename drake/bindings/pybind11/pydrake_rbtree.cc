@@ -16,6 +16,11 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
 
   using drake::multibody::joints::FloatingBaseType;
 
+  py::enum_<FloatingBaseType>(m, "FloatingBaseType")
+    .value("kFixed", FloatingBaseType::kFixed)
+    .value("kRollPitchYaw", FloatingBaseType::kRollPitchYaw)
+    .value("kQuaternion", FloatingBaseType::kQuaternion);
+
   py::class_<RigidBodyTree<double>>(m, "RigidBodyTree")
     .def(py::init<>())
     .def("__init__",
@@ -172,12 +177,6 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
         &drake::parsers::urdf::\
           AddModelInstanceFromUrdfStringSearchingInRosPackages);
-
-  py::enum_<FloatingBaseType>(m, "FloatingBaseType")
-    .value("kFixed", FloatingBaseType::kFixed)
-    .value("kRollPitchYaw", FloatingBaseType::kRollPitchYaw)
-    .value("kQuaternion", FloatingBaseType::kQuaternion);
-
 
   return m.ptr();
 }
