@@ -117,10 +117,6 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
       drake::multibody::joints::kFixed);
 
   auto plant = std::make_unique<RigidBodyPlant<T>>(tree_builder->Build());
-  // Arbitrary contact parameters.
-#ifndef USE_STRIBECK
-  plant->set_contact_parameters(10000., 100., 10.);
-#endif
   return plant;
 }
 

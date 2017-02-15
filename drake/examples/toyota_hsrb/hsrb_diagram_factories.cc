@@ -37,7 +37,8 @@ namespace toyota_hsrb {
 
 unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
     const string& urdf_string, double penetration_stiffness,
-    double penetration_damping, double friction_coefficient,
+    double penetration_dissipation, double static_friction_coefficient,
+    double dynamic_friction_coefficient, double slip_speed,
     lcm::DrakeLcmInterface* lcm, RigidBodyPlant<double>** plant) {
   DiagramBuilder<double> builder;
   RigidBodyPlant<double>* plant_ptr{nullptr};
@@ -63,10 +64,10 @@ unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
     DRAKE_DEMAND(plant_ptr != nullptr);
 
     // Sets the name and contact parameters.
-#ifndef USE_STRIBECK
-    plant_ptr->set_contact_parameters(
-        penetration_stiffness, penetration_damping, friction_coefficient);
-#endif
+    plant_ptr->set_contact_parameters(penetration_stiffness,
+                                      static_friction_coefficient,
+                                      dynamic_friction_coefficient,
+                                      slip_speed, penetration_dissipation);
   }
 
   const RigidBodyTreed& tree = plant_ptr->get_rigid_body_tree();

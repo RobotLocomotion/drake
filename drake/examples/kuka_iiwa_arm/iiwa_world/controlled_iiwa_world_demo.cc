@@ -138,13 +138,19 @@ int DoMain() {
                                      target_time_vector);
 
   lcm::DrakeLcm lcm;
+  // Contact parameters
+  const double kStiffness = 10000;
+  const double kDissipation = 2.0;
+  const double kStaticFriction = 0.9;
+  const double kDynamicFriction = 0.5;
+  const double kStictionSlipTolerance = 0.01;
   auto demo_plant = std::make_unique<PositionControlledPlantWithRobot<double>>(
       world_sim_tree_builder->Build(), std::move(polynomial_trajectory),
-      robot_model_instance, robot_tree, 3000 /* penetration_stiffness */,
-      10.0 /* penetration_damping */, 10.0 /* contact friction */, &lcm);
+      robot_model_instance, robot_tree, kStiffness, kDissipation,
+      kStaticFriction, kDynamicFriction, kStictionSlipTolerance, &lcm);
 
   auto simulator = std::make_unique<systems::Simulator<double>>(*demo_plant);
-
+  simulator->get_mutable_integrator()->set_maximum_step_size(1e-3);
   auto context = simulator->get_mutable_context();
   demo_plant->SetDefaultState(*context, context->get_mutable_state());
 
