@@ -17,6 +17,31 @@
 namespace drake {
 namespace multibody {
 
+/// This class provides an abstraction for the physical concept of the mass
+/// distribution of a body about a particular point. Given a point, the mass
+/// distribution of a body is generally described by the first three mass
+/// weighted moments about that point. These moments are the mass of the body
+/// or zeroth moment, the center of mass vector or first order moment and
+/// finally the rotational inertia or second order moment.
+/// We choose to use the term **rotational inertia** as used by [Jain 2010] to
+/// disambiguate with the more general concept of **inertia** of a body.
+/// A rotational inertia can be represented by the six scalar elements of a
+/// symmetric 3x3 matrix often referred also as **inertia matrix** or also as
+/// **inertia tensor**. These scalar elements are the measures of the rotational
+/// inertia components on a given frame and therefore this frame needs to be
+/// explicitly stated. These measures have no meaning if a reference frame is
+/// not specified.
+/// For a given point there exists a set of axes, called **principal axes of
+/// inertia** in which the inertia tensor is diagonal. The resulting diagonal
+/// elements are the **principal moments of inertia** about that point.
+///
+/// @note This class does not implement any mechanism to track the frame in
+/// which an inertia is expressed or about what point is computed. Methods and
+/// operators on this class have no means to determine frame consistency through
+/// operations. It is therefore the responsability of users of this class to
+/// keep track of frames in which operations are performed.
+///
+/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class RotationalInertia {
  public:
