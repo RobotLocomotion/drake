@@ -68,8 +68,8 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
   // function.
 
   // Get the position of the bead.
-  const int three_d = 3;
-  Eigen::Matrix<DScalar, 3, 1> x;
+  constexpr int three_d = 3;
+  Eigen::Matrix<DScalar, three_d, 1> x;
   const auto position = context.get_continuous_state()->
       get_generalized_position().CopyToVector();
   for (int i = 0; i < three_d; ++i)
@@ -79,9 +79,9 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
   DScalar s = inv_f_(x);
 
   // Get the output position.
-  Eigen::Matrix<DScalar, 3, 1> fs = f_(s);
-  Eigen::VectorXd xprime(3);
-  for (int i=0; i< three_d; ++i)
+  Eigen::Matrix<DScalar, three_d, 1> fs = f_(s);
+  Eigen::VectorXd xprime(three_d);
+  for (int i = 0; i < three_d; ++i)
     xprime[i] = fs(i).value().value() - x(i).value().value();
 
   return xprime;
@@ -92,6 +92,8 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
     const systems::Context<T>& context) const {
+  constexpr int three_d = 3;
+
   // Return a zero vector if this system is in minimal coordinates.
   if (coordinate_type_ == BeadOnAWire<T>::kMinimalCoordinates)
     return Eigen::VectorXd(0);
@@ -110,16 +112,16 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
 
   // Compute df/dt (f⁻¹(x)). The result will be a vector.
   const auto& xc = context.get_continuous_state()->get_vector();
-  Eigen::Matrix<BeadOnAWire<T>::DScalar, 3, 1> x;
+  Eigen::Matrix<BeadOnAWire<T>::DScalar, three_d, 1> x;
   x(0).value() = xc.GetAtIndex(0);
   x(1).value() = xc.GetAtIndex(1);
   x(2).value() = xc.GetAtIndex(2);
   BeadOnAWire<T>::DScalar sprime = inv_f_(x);
   sprime.derivatives()(0) = 1;
-  const Eigen::Matrix<BeadOnAWire<T>::DScalar, 3, 1> fprime = f_(sprime);
+  const Eigen::Matrix<BeadOnAWire<T>::DScalar, three_d, 1> fprime = f_(sprime);
 
   // Compute df⁻¹/dt (x). This result will be a scalar.
-  Eigen::Matrix<BeadOnAWire<T>::DScalar, 3, 1> xprime;
+  Eigen::Matrix<BeadOnAWire<T>::DScalar, three_d, 1> xprime;
   xprime(0).value() = xc.GetAtIndex(0);
   xprime(1).value() = xc.GetAtIndex(1);
   xprime(2).value() = xc.GetAtIndex(2);
@@ -140,7 +142,7 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
 
 template <typename T>
 void BeadOnAWire<T>::DoCalcOutput(const systems::Context<T>& context,
-                               systems::SystemOutput<T>* output) const {
+                                  systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
@@ -179,8 +181,6 @@ Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
     return Eigen::Matrix<T, 1, 1>(0);
 }
 
-// Gets the first derivative from the parametric function, in Vector3d form,
-// using the output from that parametric function.
 template <class T>
 Eigen::Vector3d BeadOnAWire<T>::get_first_derivative(
     const Eigen::Matrix<DScalar, 3, 1>& m) {
@@ -190,8 +190,6 @@ Eigen::Vector3d BeadOnAWire<T>::get_first_derivative(
   return Eigen::Vector3d(x, y, z);
 }
 
-// Gets the second derivative from the parametric function, in Vector3d form,
-// using the output from that parametric function.
 template <class T>
 Eigen::Vector3d BeadOnAWire<T>::get_second_derivative(
     const Eigen::Matrix<DScalar, 3, 1>& m) {
@@ -289,19 +287,19 @@ void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
     const int state_size = 6;
 
     // Evaluate the wire parameter function at s.
-    DScalar ss;
-    ss.value() = s;
-    ss.derivatives()(0).value() = 1;
-    const Eigen::Matrix<DScalar, 3, 1> q = f_(ss);
+    DScalar sprime;
+    sprime.value() = s;
+    sprime.derivatives()(0).value() = 1;
+    const Eigen::Matrix<DScalar, 3, 1> q = f_(sprime);
 
     // Set x0 appropriately.
     x0.resize(state_size);
     x0 << q(0).value().value(),
           q(1).value().value(),
           q(2).value().value(),
-          q(0).derivatives()(0).value()*s_dot,
-          q(1).derivatives()(0).value()*s_dot,
-          q(2).derivatives()(0).value()*s_dot;
+          q(0).derivatives()(0).value() * s_dot,
+          q(1).derivatives()(0).value() * s_dot,
+          q(2).derivatives()(0).value() * s_dot;
   } else {
     const int state_size = 2;
     x0.resize(state_size);
