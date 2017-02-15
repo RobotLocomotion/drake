@@ -300,7 +300,6 @@ class ParamSet {
    * @param tracked_body_groups, Names of body groups that are being tracked.
    * For each body of each group, a DesiredBodyMotion will be populated in the
    * returned QpInput.
-   * @return QpInput.
    */
   QpInput MakeQpInput(
       const std::vector<std::string>& contact_body_groups,

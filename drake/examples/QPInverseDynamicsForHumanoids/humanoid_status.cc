@@ -117,8 +117,7 @@ void HumanoidStatus::Update() {
           transformSpatialForce(H1, foot_wrench_raw_[i]);
 
       // H2 = transformation from sensor frame to a frame that is aligned with
-      // the
-      // world frame, and is located at the origin of the foot frame.
+      // the world frame, and is located at the origin of the foot frame.
       Isometry3<double> H2;
       H2.linear() =
           foot(i).pose().linear() * kFootToSensorRotationOffset.transpose();

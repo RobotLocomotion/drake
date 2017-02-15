@@ -51,7 +51,7 @@ GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
   VectorX<double> q = VectorX<double>::Zero(robot->get_num_positions());
   VectorX<double> v = VectorX<double>::Zero(robot->get_num_velocities());
 
-  // Sets up a control policy to track q and v with .
+  // Sets up a control policy to track q and v.
   VectorX<double> kp, kd;
   paramset.LookupDesiredDofMotionGains(&kp, &kd);
   VectorSetpoint<double> policy(q, v, VectorX<double>::Zero(q.size()), kp, kd);

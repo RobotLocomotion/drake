@@ -193,7 +193,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // control code. Thus only their dimensions matter during allocation.
 
   // Dynamics
-  if (num_dynamics_equations_) {
+  if (num_dynamics_equations_ > 0) {
     eq_dynamics_ =
         prog_
             ->AddLinearEqualityConstraint(
