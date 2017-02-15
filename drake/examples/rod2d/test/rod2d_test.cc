@@ -885,5 +885,5 @@ GTEST_TEST(RodCrossValidationTest, OneStepSolutionSticking) {
   EXPECT_NEAR(xc[5], xd[5], tol);
 }
 }  // namespace
-}  // namespace painleve
+}  // namespace rod2d 
 }  // namespace drake
