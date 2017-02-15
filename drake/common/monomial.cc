@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -9,6 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_expression_cell.h"
+#include "drake/common/symbolic_expression_visitor.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
 
@@ -21,6 +23,7 @@ using std::ostream;
 using std::ostringstream;
 using std::pair;
 using std::runtime_error;
+using std::shared_ptr;
 using std::unordered_map;
 
 namespace internal {
@@ -158,6 +161,66 @@ map<Variable::Id, int> ToMonomialPower(const Expression& e) {
 }
 
 }  // namespace internal
+
+class DegreeVisitor {
+ public:
+  int Visit(const Expression& e, const Variables& vars) const {
+    return VisitPolynomial<int>(*this, e, vars);
+  }
+
+  int operator()(const shared_ptr<ExpressionVar>& e,
+                 const Variables& vars) const {
+    return vars.include(e->get_variable()) ? 1 : 0;
+  }
+
+  int operator()(const shared_ptr<ExpressionConstant>& e,
+                 const Variables& vars) const {
+    return 0;
+  }
+
+  int operator()(const shared_ptr<ExpressionAdd>& e,
+                 const Variables& vars) const {
+    int degree = 0;
+    for (const auto& p : e->get_expr_to_coeff_map()) {
+      degree = std::max(degree, Visit(p.first, vars));
+    }
+    return degree;
+  }
+
+  int operator()(const shared_ptr<ExpressionMul>& e,
+                 const Variables& vars) const {
+    return accumulate(
+        e->get_base_to_exponent_map().begin(),
+        e->get_base_to_exponent_map().end(), 0,
+        [this, &vars](const int& degree,
+                      const pair<Expression, Expression>& p) {
+          const Expression& base{p.first};
+          const Expression& exponent{p.second};
+          return degree +
+                 Visit(base, vars) *
+                     static_cast<int>(get_constant_value(exponent));
+        });
+  }
+
+  int operator()(const shared_ptr<ExpressionDiv>& e,
+                 const Variables& vars) const {
+    return Visit(e->get_first_argument(), vars) -
+           Visit(e->get_second_argument(), vars);
+  }
+
+  int operator()(const shared_ptr<ExpressionPow>& e,
+                 const Variables& vars) const {
+    const int exponent{
+        static_cast<int>(get_constant_value(e->get_second_argument()))};
+    return Visit(e->get_first_argument(), vars) * exponent;
+  }
+};
+
+int Degree(const Expression& e, const Variables& vars) {
+  return DegreeVisitor().Visit(e, vars);
+}
+
+int Degree(const Expression& e) { return Degree(e, e.GetVariables()); }
 
 Expression GetMonomial(const unordered_map<Variable, int, hash_value<Variable>>&
                            map_var_to_exponent) {
