@@ -231,21 +231,34 @@ class RotationalInertia {
     I_Bo_F_.template triangularView<TriangularViewInUse>() = Matrix3<T>::Zero();
   }
 
-  /// Constructs a RotationalInertia from an Eigen matrix expression.
+  /// Constructs a RotationalInertia from an Eigen matrix expression. The matrix
+  /// expression @p m must be represent a valid 3x3 matrix with the measures for
+  /// a rotational inertia computed about a given point on a given frame. This
+  /// method does not check for the physical validity of the resulting
+  /// rotational inertia for fast constructions. Users can still verify the
+  /// validity of the newly created inertia with IsPhysicallyValid().
   template<typename Derived>
   RotationalInertia(const Eigen::MatrixBase<Derived>& m) : I_Bo_F_(m) {}
 
   /// Assignment operator from a general Eigen expression.
-  // This method allows you to assign Eigen expressions to a RotationalInertia.
+  /// This method allows to assign Eigen expressions to a RotationalInertia.
+  /// The matrix
+  /// expression @p m must be represent a valid 3x3 matrix with the measures for
+  /// a rotational inertia computed about a given point on a given frame. This
+  /// method does not check for the physical validity of the resulting
+  /// rotational inertia for fast constructions. Users can still verify the
+  /// validity of the newly created inertia with IsPhysicallyValid().
   template<typename Derived>
-  RotationalInertia& operator=(const Eigen::MatrixBase<Derived>& EigenMatrix)
+  RotationalInertia& operator=(const Eigen::MatrixBase<Derived>& m)
   {
     // Static asserts that EigenMatrix is of fixed size 3x3.
     EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Derived, 3, 3);
-    I_Bo_F_ = EigenMatrix;
+    this->get_mutable_symmetric_matrix_view() = m;
     return *this;
   }
 
+  /// Returns `true` if any of the elements in this rotational inertia is NaN
+  /// and `false` otherwise.
   bool IsNaN() const {
     using std::isnan;
     for (int i = 0; i < 3; ++i) {
@@ -255,9 +268,16 @@ class RotationalInertia {
         if (isnan(operator()(i, j))) return true;
       }
     }
+    // Another alternative is to use:
+    // get_moments().array().isNaN().any() &&
+    // get_products().array().isNaN().any()
     return false;
   }
 
+  /// For `this` inertia about a given point `P` and expressed in a frame `E`,
+  /// this method computes the principal moments of inertia of `this` rotational
+  /// inertia about the same point `P` and expressed in the same frame `E`.
+  /// @returns `true` if succesful and `false` otherwise.
   bool CalcPrincipalMomentsOfInertia(Vector3<T>* principal_moments) const {
     DRAKE_ASSERT(principal_moments != nullptr);
     // Eigen's SelfAdjointEigenSolver only works with the lower diagonal part
@@ -275,9 +295,13 @@ class RotationalInertia {
   /// rotational inertia.
   /// The chekcs performed are:
   /// - No NaN entries.
-  /// - Non-negative diagonals.
-  /// - Must satisfy triangle inequality.
-  /// - Products of inertia are limited by moments (diagonal entries).
+  /// - Non-negative principal moments.
+  /// - Principal moments must satisfy the triangle inequality:
+  ///   - `Ixx + Iyy >= Izz`
+  ///   - `Ixx + Izz >= Iyy`
+  ///   - `Iyy + Izz >= Ixx`
+  /// @returns `true` for a physically valid rotational inertia passing the
+  ///          above checks and `false` otherwise.
   bool IsPhysicallyValid() const {
     if (IsNaN()) return false;
 
@@ -285,7 +309,7 @@ class RotationalInertia {
     Vector3<T> d;
     if (!CalcPrincipalMomentsOfInertia(&d)) return false;
 
-    // Diagonals must be non-negative.
+    // Principal moments must be non-negative.
     if ((d.array() < T(0)).any() ) return false;
 
     // Checks triangle inequality
@@ -322,27 +346,29 @@ class RotationalInertia {
   }
 
  private:
+  // Utility method used to swap matrix indexes (i, j) depending on the
+  // TriangularViewInUse portion of this inertia. The swap is performed so that
+  // we only use the triangular portion corresponding to TriangularViewInUse.
   static void check_and_swap(int* i, int* j) {
     const bool swap =
         (int(TriangularViewInUse) == int(Eigen::Upper) && *i > *j) ||
         (int(TriangularViewInUse) == int(Eigen::Lower) && *i < *j);
     if (swap) std::swap(*i , *j);
   }
+
   // Inertia matrix about frame B's origin Bo expressed in frame F.
   // Frame F and origin Bo are implicit here, RotationalInertia only keeps track
   // of the inertia measures in this frame F. Users are responsible for keeping 
   // track of the frame in which a particular inertia is expressed in.
   // Initially set to NaN to aid finding when by mistake we use the strictly
-  // lower part of the matrix. Only the upper part should be used.
+  // TriangularViewNotInUse portion of the matrix. Only the TriangularViewInUse
+  // portion should be used.
   Matrix3<T> I_Bo_F_{Matrix3<T>::Constant(std::numeric_limits<
       typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
-
- public:
-#ifndef SWIG
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
+/// Multiplication of a RotationalInertia @p I_Bo_F from the left by a
+/// scalar @p s.
 template <typename T>
 inline RotationalInertia<T> operator*(
     const T& s, const RotationalInertia<T>& I_Bo_F) {
@@ -351,6 +377,8 @@ inline RotationalInertia<T> operator*(
   return sxI;
 }
 
+/// Insertion operator to write RotationalInertia's into a `std::ostream`.
+/// Especially useful for debugging.
 template <typename T> inline
 std::ostream& operator<<(std::ostream& o,
                          const RotationalInertia<T>& I) {
