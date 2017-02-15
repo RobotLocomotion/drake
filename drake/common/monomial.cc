@@ -45,6 +45,11 @@ Monomial::Monomial(const map<Variable::Id, int>& powers)
   }
 }
 
+// Forward declaration.
+map<Variable::Id, int> ToMonomialPower(const Expression& e);
+
+Monomial::Monomial(const Expression& e) : Monomial(ToMonomialPower(e)) {}
+
 size_t Monomial::GetHash() const {
   // To get a hash value for a Monomial, we re-use the hash value for
   // powers_. This is suitable because powers_ is the only independent
@@ -110,6 +115,48 @@ Monomial operator*(const Monomial& m1, const Monomial& m2) {
   }
   return Monomial{powers};
 }
+
+map<Variable::Id, int> ToMonomialPower(const Expression& e) {
+  DRAKE_DEMAND(e.is_polynomial());
+  map<Variable::Id, int> powers;
+  if (is_one(e)) {  // This block is deliberately left empty.
+  } else if (is_constant(e)) {
+    throw runtime_error(
+        "A constant not equal to to 1, this is not a monomial.");
+  } else if (is_variable(e)) {
+    powers.emplace(get_variable(e).get_id(), 1);
+  } else if (is_pow(e)) {
+    const auto& exponent = get_second_argument(e);
+    if (!is_constant(exponent)) {
+      throw runtime_error("The exponent is not a constant.");
+    }
+    auto exponent_val = get_constant_value(exponent);
+    powers = ToMonomialPower(get_first_argument(e));
+    // pow( pow(xᵢ, kᵢ), n) = pow(xᵢ, kᵢ * n)
+    for (auto& p : powers) {
+      p.second *= exponent_val;
+    }
+  } else if (is_multiplication(e)) {
+    if (!is_one(get_constant_in_multiplication(e))) {
+      throw runtime_error("The constant in the multiplication is not 1.");
+    }
+    for (const auto& p : get_base_to_exponent_map_in_multiplication(e)) {
+      map<Variable::Id, int> p_powers = ToMonomialPower(pow(p.first, p.second));
+      for (const auto& q : p_powers) {
+        auto it = powers.find(q.first);
+        if (it == powers.end()) {
+          powers.emplace(q.first, q.second);
+        } else {
+          it->second += q.second;
+        }
+      }
+    }
+  } else {
+    throw runtime_error("This expression cannot be converted to a monomial.");
+  }
+  return powers;
+}
+
 }  // namespace internal
 
 Expression GetMonomial(const unordered_map<Variable, int, hash_value<Variable>>&
