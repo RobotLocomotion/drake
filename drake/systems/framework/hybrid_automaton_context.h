@@ -60,7 +60,17 @@ class ModalSubsystem {
   typedef int ModeId;
   typedef int PortId;
 
-  // Constructor
+  /// Constructor.
+  /// - @p mode_id is an identifier for the mode.
+  /// - @p system is a System, the memory of which is shared with the caller.
+  /// - @p invariant is a symbolic::Expression containing Invar(·) in terms of
+  ///   the continuous and discrete system states.
+  /// - @p initial_conditions is a symbolic::Expression containing Init(·) in
+  ///   terms of the continuous and discrete system states.
+  /// - @p input_port_ids is a subset of the input ports exposed as inputs of
+  ///   the HA.
+  /// - @p output_port_ids is a subset of the output ports exposed as outputs of
+  ///   the HA.
   ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system,
                  std::vector<symbolic::Expression> invariant,
                  std::vector<symbolic::Expression> initial_conditions,
@@ -72,6 +82,7 @@ class ModalSubsystem {
         initial_conditions_(initial_conditions),
         input_port_ids_(input_port_ids),
         output_port_ids_(output_port_ids) {
+    CheckPortsAreValid();
     CreateSymbolicStatesAndInputs();
   }
 
@@ -82,13 +93,20 @@ class ModalSubsystem {
         system_(move(system)),
         input_port_ids_(input_port_ids),
         output_port_ids_(output_port_ids) {
-    CreateSymbolicStatesAndInputs();
+    ModalSubsystem(mode_id_, system_, {}, {}, input_port_ids_,
+                   output_port_ids_);
   }
 
   ModalSubsystem(ModeId mode_id, shared_ptr<System<T>> system)
       : mode_id_(mode_id), system_(move(system)) {
-    CreateSymbolicStatesAndInputs();
-    PopulateDefaultPorts();
+    // Populates the input and output ports with the full complement of system
+    // inputs and outputs.
+    std::vector<PortId> input_port_ids{system_->get_num_input_ports()};
+    std::iota(std::begin(input_port_ids), std::end(input_port_ids), 0);
+    std::vector<PortId> output_port_ids{system_->get_num_output_ports()};
+    std::iota(std::begin(output_port_ids), std::end(output_port_ids), 0);
+
+    ModalSubsystem(mode_id_, system_, {}, {}, input_port_ids, output_port_ids);
   }
 
   /// Accessors for the underlying data.
@@ -163,7 +181,13 @@ class ModalSubsystem {
   }
 
  private:
-  // Create symbolic variables based on the expected context for this subsystem.
+  // Checks that we are providing sane port ids.
+  void CheckPortsAreValid() {
+    DRAKE_DEMAND();
+  }
+
+  // Creates symbolic variables based on the expected context for this
+  // subsystem.
   void CreateSymbolicStatesAndInputs() {
     // Create a temporary context to extract the needed dimensions.
     unique_ptr<Context<T>> context = system_->AllocateContext();
@@ -193,15 +217,6 @@ class ModalSubsystem {
     }
     sym.emplace_back(row);
     symbolic_variables_.insert(std::make_pair(variable_type, sym));
-  }
-
-  // Populates the input and output ports with the full complement of system
-  // inputs and outputs.
-  void PopulateDefaultPorts() {
-    input_port_ids_.resize(system_->get_num_input_ports());
-    std::iota(std::begin(input_port_ids_), std::end(input_port_ids_), 0);
-    output_port_ids_.resize(system_->get_num_output_ports());
-    std::iota(std::begin(output_port_ids_), std::end(output_port_ids_), 0);
   }
 
   // An identifier for this mode.
