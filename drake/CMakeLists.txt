@@ -173,7 +173,6 @@ if(Matlab_FOUND)
 endif()
 add_subdirectory(examples)
 
-message("Numpy found: ${NUMPY_FOUND}")
 if(pybind11_FOUND AND NOT DISABLE_PYTHON AND NUMPY_FOUND)
   if (NUMPY_VERSION VERSION_LESS 1.7)
     message(WARNING "Python bindings are disabled because numpy version is less than 1.7")
