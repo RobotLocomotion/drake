@@ -121,4 +121,26 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "iiwa_inverse_dynamics_test",
+    srcs = ["test/iiwa_inverse_dynamics_test.cc"],
+    data = [
+        "config/iiwa.alias_groups",
+        "config/iiwa.id_controller_config",
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    deps = [
+        ":control_utils",
+        ":qp_controller",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/multibody/parsers",
+    ],
+)
+
 cpplint()
