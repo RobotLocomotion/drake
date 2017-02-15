@@ -119,9 +119,10 @@ Monomial operator*(const Monomial& m1, const Monomial& m2) {
 map<Variable::Id, int> ToMonomialPower(const Expression& e) {
   DRAKE_DEMAND(e.is_polynomial());
   map<Variable::Id, int> powers;
-  if (is_one(e)) { // This block is deliberately left empty.
+  if (is_one(e)) {  // This block is deliberately left empty.
   } else if (is_constant(e)) {
-    throw runtime_error("A constant not equal to to 1, this is not a monomial.");
+    throw runtime_error(
+        "A constant not equal to to 1, this is not a monomial.");
   } else if (is_variable(e)) {
     powers.emplace(get_variable(e).get_id(), 1);
   } else if (is_pow(e)) {
