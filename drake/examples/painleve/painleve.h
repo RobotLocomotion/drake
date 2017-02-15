@@ -9,12 +9,18 @@
 namespace drake {
 namespace painleve {
 
-/// Dynamical system representation of the Painleve' Paradox problem, taken
-/// from [Stewart 2000]. The Painleve Paradox consists of a rod contacting
-/// a planar surface *without impact* and subject to sliding Coulomb friction.
-/// The problem is well known to correspond to an *inconsistent rigid contact
-/// configuration*, where impulsive forces are necessary to resolve the
-/// problem.
+/// Dynamical system representation of a rod contacting a half-space in
+/// two dimensions. This system can be modeling and simulated using one of
+/// three models: a pseudo-rigid model (the rod is rigid, but contact between
+/// the rod and the half-space is modeled as compliant), a fully rigid model
+/// simulated with piecewise differential algebraic equations, and a fully
+/// rigid model simulated using a first-order time stepping approach. The rod
+/// state is initialized to the configuration that corresponds to the
+/// Painleve' Paradox problem, described in [Stewart 2000]. The paradox consists
+/// of a rod contacting a planar surface *without impact* and subject to sliding
+/// Coulomb friction. The problem is well known to correspond to an
+/// *inconsistent rigid contact configuration*, where impulsive forces are
+/// necessary to resolve the problem.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.
@@ -34,7 +40,8 @@ namespace painleve {
 ///         index 2), and planar linear velocity (state indices 3 and 4) and
 ///         scalar angular velocity (state index 5) in units of m, radians,
 ///         m/s, and rad/s, respectively. Orientation is measured counter-
-///         clockwise with respect to the x-axis. One abstract state variable
+///         clockwise with respect to the x-axis. For simulations using the
+///         piecewise DAE formulation, one abstract state variable
 ///         (of type Painleve::Mode) is used to identify which dynamic mode
 ///         the system is in (e.g., ballistic, contacting at one point and
 ///         sliding, etc.) and one abstract state variable (of type int) is used
