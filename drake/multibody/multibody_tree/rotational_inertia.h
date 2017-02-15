@@ -46,6 +46,10 @@ template <typename T>
 class RotationalInertia {
  public:
   enum {
+    // This class internally uses a full 3x3 Eigen matrix to store the six
+    // elements that are needed to represent it. However, only one triangular
+    // portion is used leaving redundant elements set to NaN so that operations
+    // using them fail fast allowing to quickly detect bugs.
     // By default RotationalInertia only works on the lower part of the
     // underlying Eigen matrix.
     // There is no strong reason for this particular choice.
@@ -58,11 +62,11 @@ class RotationalInertia {
     TriangularViewNotInUse = Eigen::StrictlyUpper
   };
 
-  /// Default RotationalInertia constructor. Everything is left initialiezed to
-  /// NaN for a quick detection of un-initialized values.
+  /// Default RotationalInertia constructor. All entries are set to NaN for a
+  /// quick detection of un-initialized values.
   RotationalInertia() {}
 
-  // Default copy constructor and copy assignment.
+  /// Default copy constructor and copy assignment.
   RotationalInertia(const RotationalInertia<T>& other) = default;
   RotationalInertia& operator=(const RotationalInertia<T>& other) = default;
 
@@ -70,7 +74,7 @@ class RotationalInertia {
   /// equal to @p I and zero products of inertia.
   /// As examples, consider the moments of inertia taken about their geometric
   /// center for a sphere or a cube.
-  /// @see RotationalInertia::SolidSphere() and RotationalInertia::cube().
+  /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube().
   RotationalInertia(const T& I) {
     SetZero();
     I_Bo_F_.diagonal().setConstant(I);
@@ -84,7 +88,8 @@ class RotationalInertia {
   }
 
   /// Creates a general rotational inertia matrix with non-zero off-diagonal
-  /// elements.
+  /// elements where the six components of the rotational intertia on a given
+  /// frame `E` need to be provided.
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
                     const T& Ixy, const T& Ixz, const T& Iyz) {
     // The TriangularViewNotInUse is left initialized to NaN.
@@ -94,41 +99,69 @@ class RotationalInertia {
     Iref(0, 1) = Ixy; Iref(0, 2) = Ixz; Iref(1, 2) = Iyz;
   }
 
+  /// For consistency with Eigen's API this method returns the number of rows
+  /// in the inertia matrix.
   int rows() const { return 3;}
 
+  /// For consistency with Eigen's API this method returns the number of columns
+  /// in the inertia matrix.
   int cols() const { return 3;}
 
+  /// Returns a three-dimensional vector containing the diagonal elements of
+  /// this rotational inertia.
+  /// @returns The principal moments of inertia as the vector
+  ///          `moments = [Ixx, Iyy, Izz]`.
   Vector3<T> get_moments() const { return I_Bo_F_.diagonal(); }
 
+  /// Returns a three-dimensional vector containing the products of inertia of
+  /// this rotational inertia.
+  /// @returns The products of inertia as the vector
+  ///          `products = [Ixy, Ixz, Iyz]`.
   Vector3<T> get_products() const {
     // Let operator(int ,int) decide what portion (upper/lower) to use.
     const auto& Iref = *this;
     return Vector3<T>(Iref(0,1), Iref(0,2), Iref(1,2));
   }
 
+  /// Mutable access to the `(i, j)` element of this rotational inertia.
+  /// This operator performs checks on the pair `(i, j)` to determine the
+  /// appropriate mapping to the internal in-memory representation of a
+  /// symmetric rotational inertia. Therefore this accessor is not meant for
+  /// speed but rather as a convinience method. Users should use supplied
+  /// built-in operations for fast compuations.
   T& operator()(int i, int j) {
     // Overwrites local copies of i and j.
     check_and_swap(&i, &j);
     return I_Bo_F_(i, j);
   }
 
+  /// Const access to the `(i, j)` element of this rotational inertia.
+  /// This operator performs checks on the pair `(i, j)` to determine the
+  /// appropriate mapping to the internal in-memory representation of a
+  /// symmetric rotational inertia. Therefore this accessor is not meant for
+  /// speed but rather as a convinience method. Users should use supplied
+  /// built-in operations for fast compuations.
   const T& operator()(int i, int j) const {
     // Overwrites local copies of i and j.
     check_and_swap(&i, &j);
     return I_Bo_F_(i, j);
   }
 
-  /// Returns a view to the symmetric part of the matrix in use by
-  /// RotationalInertia.
+  /// Returns a const Eigen view expression to the symmetric part of the matrix
+  /// in use by this RotationalInertia. Most users won't call this method.
+  /// This method is generally used in the implementation of class methods and
+  /// it's only useful to users for debugging.
   const Eigen::SelfAdjointView<const Matrix3<T>, TriangularViewInUse>
   get_symmetric_matrix_view() const {
     return I_Bo_F_.template selfadjointView<TriangularViewInUse>();
   }
 
-  /// Returns a view to the symmetric part of the matrix in use by
-  /// RotationalInertia.
+  /// Returns a mutable Eigen view expression to the symmetric part of the
+  /// matrix in use by RotationalInertia. Most users won't call this method.
+  /// This method is generally used in the implementation of class methods and
+  /// it's only useful to users for debugging.
   // Note: operator=() is not defined for Eigen::SelfAdjointView and therefore
-  // we prefer to return a TriangularView here.
+  // we need to return a TriangularView here.
   Eigen::TriangularView<Matrix3<T>, TriangularViewInUse>
   get_mutable_symmetric_matrix_view() {
     return I_Bo_F_.template triangularView<TriangularViewInUse>();
@@ -138,16 +171,25 @@ class RotationalInertia {
   /// since RotationalInertia only uses the
   /// RotationalInertia::TriangularViewInUse portion of this
   /// matrix, the RotationalInertia::TriangularViewNotInUse part will be set to
-  /// have NaN entries.
+  /// have NaN entries. Most users won't call this method. This method is
+  /// generally used in the implementation of class methods and
+  /// it's only useful to users for debugging.
   const Matrix3<T>& get_matrix() const { return I_Bo_F_; }
 
   /// Get a copy to a full Matrix3 representation for this rotational inertia
   /// including both lower and upper triangular parts.
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
-  bool IsApprox(const RotationalInertia& M_Bo_F, double tolerance) {
-    return get_moments().isApprox(M_Bo_F.get_moments(), tolerance) &&
-           get_products().isApprox(M_Bo_F.get_products(), tolerance);
+  /// @returns `true` if `other` is within the specified @p precision.
+  /// The comparison is performed using the fuzzy comparison provided by Eigen's
+  /// method isApprox() returning `true` if: <pre>
+  ///   get_moments().isApprox(other.get_moments(), precision) &&
+  ///   get_products().isApprox(other.get_products(), precision);
+  /// </pre>
+  bool IsApprox(const RotationalInertia& other,
+                double precision = Eigen::NumTraits<T>::epsilon()) {
+    return get_moments().isApprox(other.get_moments(), precision) &&
+           get_products().isApprox(other.get_products(), precision);
   }
 
   /// Adds rotational inertia @p `I_Bo_F` to this rotational inertia. This
@@ -160,9 +202,9 @@ class RotationalInertia {
     return *this;
   }
 
-  /// Computes the product from the right between this inertia with the
+  /// Computes the product from the right between this rotational inertia with
   /// vector @p w.
-  /// This inertia and vector @p w must be expressed in the same frame.
+  /// This inertia and vector @p w must both be expressed in the same frame.
   /// @param[in] w Vector to multiply from the right.
   /// @returns The product from the right of `this` inertia with @p w.
   Vector3<T> operator*(const Vector3<T>& w) const
@@ -172,18 +214,20 @@ class RotationalInertia {
 
   /// Sets this inertia to have NaN entries. Typically used to quickly detect
   /// uninitialized values since NaN will trigger a chain of invalid
-  /// computations that then can be tracked to the source.
+  /// computations that can then be tracked to the source.
   void SetToNaN() {
     I_Bo_F_.setConstant(std::numeric_limits<
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
+  /// Sets this rotational inertia to have zero entries. This results in a
+  /// non-physical inertia that could only mathematically correspond to the mass
+  /// distribution of a point. However this method is useful when performing
+  /// initializations for a given computation.
   void SetZero() {
-    //I_Bo_F_.setConstant(std::numeric_limits<
-    //    typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
-    // RotationalInertia only works with the upper-triangular portion of the
-    // underlying Eigen matrix. The lower part is set to NaN to quickly detect
-    // when the lower part is mistakenly used.
+    // The part corresponding to RotationalInertia::TriangularViewNotInUse still
+    // is left initialized to NaN to quickly detect if this part is
+    // mistakenly used.
     I_Bo_F_.template triangularView<TriangularViewInUse>() = Matrix3<T>::Zero();
   }
 
