@@ -945,43 +945,35 @@ Expression::MonomialToCoeffMap ExpressionDiv::DecomposePolynomial(const Variable
   if (map2.size() != 1) {
     throw std::runtime_error("The divisor is not a monomial. The Div expression cannot be decomposed as a polynomial.");
   }
-  const Expression& divisor_monomial = map2.begin()->first;
+  const Variables& divisor_variables = map2.begin()->first.GetVariables();
+  const auto& divisor_monomial = internal::ToMonomial(map2.begin()->first);
+  const auto& divisor_monomial_powers = divisor_monomial.get_powers();
   const Expression& divisor_coeff = map2.begin()->second;
   Expression::MonomialToCoeffMap map;
   map.reserve(map1.size());
-  for (const auto& p : map1) {
-    // Determines if p.first / divisor_monomial is a monomial.
-    const Variables& divisor_variables = divisor_monomial.GetVariables();
-    const Variables& p_variables = p.first.GetVariables();
-    if (divisor_variables.IsSubsetOf(p_variables)) {
-      std::cout<<divisor_monomial<<std::endl;
-      DRAKE_DEMAND(is_multiplication(divisor_monomial));
-      DRAKE_DEMAND(is_multiplication(p.first));
-      const auto& map_base_to_exponent_divisor = get_base_to_exponent_map_in_multiplication(divisor_monomial);
-      const auto& map_base_to_exponent_dividend = get_base_to_exponent_map_in_multiplication(p.first);
-
-      std::map<Expression, Expression> map_base_to_exponenet_division = map_base_to_exponent_dividend;
-      for (const auto& p_divisor : map_base_to_exponent_divisor) {
-        auto it = map_base_to_exponenet_division.find(p_divisor.first);
-        if (it == map_base_to_exponenet_division.end()) {
-          throw std::runtime_error("Cannot find a divisor variable in the dividend.");
-        }
-        DRAKE_DEMAND(is_constant(p_divisor.second));
-        int divisor_exponent = static_cast<int>(get_constant_value(p_divisor.second));
-        DRAKE_DEMAND(is_constant(it->second));
-        int dividend_exponent = static_cast<int>(get_constant_value(it->second));
-        int division_exponent = dividend_exponent - divisor_exponent;
-        if (division_exponent < 0) {
-          throw std::runtime_error("The divisor has larger exponent than the dividend. The division result is not a monomial.");
-        }
-        if (division_exponent > 0) {
-          it->second = division_exponent;
-        }
+  for (const auto& p1 : map1) {
+    // For each monomial in the dividend, compute the division from the
+    // dividend monomial by the divisor monomial.
+    const internal::Monomial& dividend_monomial = internal::ToMonomial(p1.first);
+    std::map<Variable::Id, int> division_monomial_powers = dividend_monomial.get_powers();
+    for (const auto& p_divisor : divisor_monomial_powers) {
+      // The variable in divisor has to appear in the dividend.
+      auto it = division_monomial_powers.find(p_divisor.first);
+      if (it == division_monomial_powers.end()) {
+        throw std::runtime_error("The variable in the divisor is not in the dividend.");
+      } else {
+        // xⁿ / xᵐ = xⁿ⁻ᵐ
+        it->second -= p_divisor.second;
       }
-      map.emplace(ExpressionMulFactory(1, map_base_to_exponenet_division).GetExpression(), p.second / divisor_coeff);
-    } else {
-      throw std::runtime_error("The divisor contains variables not included in the dividend, the Div expression cannot be decomposed as s polynomial.");
     }
+    internal::Monomial division_monomial(division_monomial_powers);
+
+    // Now gets the map from the variable ID to variable.
+    std::unordered_map<Variable::Id, Variable> dividend_variable_id_to_var_map;
+    for (const auto& var : p1.first.GetVariables()) {
+      dividend_variable_id_to_var_map.emplace(var.get_id(), var);
+    }
+    map.emplace(dividend_monomial.ToExpression(dividend_variable_id_to_var_map), p1.second / divisor_coeff);
   }
   return map;
 }

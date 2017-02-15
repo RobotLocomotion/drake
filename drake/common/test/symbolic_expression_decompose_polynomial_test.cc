@@ -3,7 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/hash.h"
-
+#include "drake/common/monomial.h"
 namespace drake {
 namespace symbolic {
 namespace {
@@ -31,8 +31,10 @@ void CheckMonomialToCoeffMap(const symbolic::Expression& e, const Variables& var
   EXPECT_EQ(map.size(), map_expected.size());
   symbolic::Expression e_expected(0);
   for (const auto& p : map) {
+    std::cout<< p.first << " " << p.second << std::endl;
     const auto it = map_expected.find(p.first);
     EXPECT_NE(it, map_expected.end());
+    std::cout<< p.second << std::endl << it->second << std::endl;
     EXPECT_TRUE(p.second.EqualTo(it->second));
     e_expected += p.first * p.second;
   }
@@ -282,11 +284,16 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial9) {
   CheckMonomialToCoeffMap(-x_, {var_y_}, map_expected2);
 }
 
+
 TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial10) {
   // Decomposes x^2 * y / (x * y)
   Expression::MonomialToCoeffMap map_expected1;
   map_expected1.emplace(x_, 1);
-  CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), {var_x_}, map_expected1, false);
+  auto map1 = ((x_ * x_ * y_) / (x_ * y_)).DecomposePolynomial({var_x_});
+  for (const auto& p : map1) {
+    std::cout<< "monomial: " << p.first <<" coeff: " << p.second<< std::endl;
+  }
+  CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), {var_x_, var_y_}, map_expected1, false);
 }
 }  // namespace
 }  // namespace symbolic
