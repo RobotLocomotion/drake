@@ -657,6 +657,29 @@ class QuadraticProgram0 : public OptimizationProgram {
 
 enum class QuadraticProblems {
   kQuadraticProgram0 = 0,
+  kQuadraticProgram1 = 1,
+};
+
+/// Adapt from the simple test on the Gurobi documentation.
+//  min    x^2 + x*y + y^2 + y*z + z^2 + 2 x
+//  subj to 4 <=   x + 2 y + 3 z <= inf
+//       -inf <=  -x -   y       <= -1
+//        -20 <=         y + 2 z <= 100
+//       -inf <=   x +   y + 2 z <= inf
+//               3 x +   y + 3 z  = 3
+//                 x, y, z >= 0
+//   The optimal solution is (0, 1, 2/3)
+class QuadraticProgram1 : public OptimizationProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram1)
+
+  QuadraticProgram1(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<3> x_;
+  Eigen::Vector3d x_expected_;
 };
 
 /**

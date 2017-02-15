@@ -44,7 +44,7 @@ std::set<CostForm> quadratic_cost_form() {
 
 std::vector<QuadraticProblems> quadratic_problems() {
   return std::vector<QuadraticProblems>{
-      QuadraticProblems::kQuadraticProgram0};
+      QuadraticProblems::kQuadraticProgram0, QuadraticProblems::kQuadraticProgram1};
 }
 
 OptimizationProgram::OptimizationProgram(CostForm cost_form, ConstraintForm cnstr_form)
@@ -995,12 +995,83 @@ void QuadraticProgram0::CheckSolution() const {
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8, MatrixCompareType::absolute));
 }
 
+QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
+                                     ConstraintForm cnstr_form)
+    : OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_(0, 1, 2.0 / 3){
+  x_ = prog()->NewContinuousVariables<3>();
+  switch (cost_form) {
+    case CostForm::kNonSymbolic : {
+      Matrix3d Q = 2 * Matrix3d::Identity();
+      Q(0, 1) = 1;
+      Q(1, 2) = 1;
+      Q(1, 0) = 1;
+      Q(2, 1) = 1;
+      Vector3d b{};
+      b << 2.0, 0.0, 0.0;
+      prog()->AddQuadraticCost(Q, b, x_);
+      break;
+    }
+    default : throw std::runtime_error("Unsupported cost form.");
+  }
+  Vector4d b_lb(4, -numeric_limits<double>::infinity(), -20,
+                -numeric_limits<double>::infinity());
+  Vector4d b_ub(numeric_limits<double>::infinity(), -1, 100,
+                numeric_limits<double>::infinity());
+  switch (cnstr_form) {
+    case ConstraintForm::kNonSymbolic : {
+      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_);
+      Eigen::Matrix<double, 4, 3> A1;
+      A1 << 1, 2, 3, -1, -1, 0, 0, 1, 2, 1, 1, 2;
+
+      prog()->AddLinearConstraint(A1, b_lb, b_ub, x_);
+      // This test also handles linear equality constraint
+      prog()->AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3), 3, x_);
+      break;
+    }
+    case ConstraintForm::kSymbolic : {
+      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_);
+      Vector4<Expression> expr;
+      // clang-format off
+      expr << x_(0) + 2 * x_(1) + 3 * x_(2),
+              -x_(0) - x_(1),
+              x_(1) + 2 * x_(2),
+              x_(0) + x_(1) + 2 * x_(2);
+      // clang-format on
+      prog()->AddLinearConstraint(expr, b_lb, b_ub);
+      prog()->AddLinearEqualityConstraint(3 * x_(0) + x_(1) + 3 * x_(2), 3);
+      break;
+    }
+    case ConstraintForm::kFormula : {
+      for (int i = 0; i < 3; ++i) {
+        prog()->AddLinearConstraint(x_(i) >= 0);
+      }
+      prog()->AddLinearConstraint(x_(0) + 2 * x_(1) + 3 * x_(2) >= 4);
+      prog()->AddLinearConstraint(-x_(0) - x_(1) <= -1);
+      prog()->AddLinearConstraint(x_(1) + 2 * x_(2), -20, 100);
+      // TODO(hongkai.dai): Uncoment the next line, when we resolves the error with
+      // infinity on the right handside of a formula.
+      // prog()->AddLinearConstraint(x_(0) + x_(1) + 2 * x_(2) <= numeric_limits<double>::infinity());
+      prog()->AddLinearConstraint(3 * x_(0) + x_(1) + 3 * x_(2) == 3);
+      break;
+    }
+    default : throw std::runtime_error("Unsupported constraint form.");
+  }
+}
+
+void QuadraticProgram1::CheckSolution() const {
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8, MatrixCompareType::absolute));
+}
+
 QuadraticProgramTest::QuadraticProgramTest() {
   auto cost_form = std::get<0>(GetParam());
   auto cnstr_form = std::get<1>(GetParam());
   switch (std::get<2>(GetParam())) {
     case QuadraticProblems::kQuadraticProgram0 : {
       prob_ = std::make_unique<QuadraticProgram0>(cost_form, cnstr_form);
+      break;
+    }
+    case QuadraticProblems::kQuadraticProgram1 : {
+      prob_ = std::make_unique<QuadraticProgram1>(cost_form, cnstr_form);
       break;
     }
     default : throw std::runtime_error("Un-recognized quadratic problem.");

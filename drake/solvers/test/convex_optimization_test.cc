@@ -39,111 +39,6 @@ void GetSemidefiniteProgramSolvers(
   AddSolverIfAvailable(SolverType::kMosek, solvers);
 }
 
-/////////////////////////////////////////
-/////////// Quadratic Program ///////////
-/////////////////////////////////////////
-
-// Test a simple Quadratic Program.
-// The example is taken from
-// http://cvxopt.org/examples/tutorial/qp.html
-// min 2x1^2 + x2^2 + x1x2 + x1 + x2
-// s.t x1 >= 0
-//     x2 >= 0
-//     x1 + x2 = 1
-void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>();
-
-  // Deliberately add the cost as the sum of a quadratic cost
-  // 2x1^2 + x2^2 + x1x2 + x1
-  // add a linear cost
-  // x2
-  Matrix2d Q;
-  // The quadratic cost is 0.5*x'*Q*x+b'*x.
-  Q << 4, 2, 0, 2;
-  Vector2d b(1, 0);
-  prog.AddQuadraticCost(Q, b, x);
-  prog.AddLinearCost(drake::Vector1d(1.0), x.segment<1>(1));
-
-  // Deliberately add two bounding box constraints
-  // (x1, x2) >= (0, 0)
-  // and
-  // x2 >= -1
-  // to test multiple bounding box constraints.
-  prog.AddBoundingBoxConstraint(
-      Vector2d(0, 0),
-      Vector2d::Constant(std::numeric_limits<double>::infinity()), x);
-  prog.AddBoundingBoxConstraint(-1, std::numeric_limits<double>::infinity(),
-                                x(1));
-
-  prog.AddLinearEqualityConstraint(RowVector2d(1, 1), 1, x);
-
-  if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Vector2d::Zero());
-  }
-  RunSolver(&prog, solver);
-
-  Vector2d x_expected(0.25, 0.75);
-  const auto& x_value = prog.GetSolution(x);
-  EXPECT_TRUE(
-      CompareMatrices(x_value, x_expected, 1E-8, MatrixCompareType::absolute));
-}
-
-/// Adapt from the simple test on the Gurobi documentation.
-//  min    x^2 + x*y + y^2 + y*z + z^2 + 2 x
-//  subj to 4 <=   x + 2 y + 3 z <= inf
-//       -inf <=  -x -   y       <= -1
-//        -20 <=         y + 2 z <= 100
-//       -inf <=   x +   y + 2 z <= inf
-//               3 x +   y + 3 z  = 3
-//                 x, y, z >= 0
-//   The optimal solution is (0, 1, 2/3)
-void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables(3);
-
-  Matrix3d Q = 2 * Matrix3d::Identity();
-  Q(0, 1) = 1;
-  Q(1, 2) = 1;
-  Q(1, 0) = 1;
-  Q(2, 1) = 1;
-  Vector3d b{};
-  b << 2.0, 0.0, 0.0;
-  prog.AddQuadraticCost(Q, b, x);
-
-  prog.AddBoundingBoxConstraint(
-      Eigen::MatrixXd::Zero(3, 1),
-      Eigen::MatrixXd::Constant(3, 1, std::numeric_limits<double>::infinity()),
-      x);
-
-  // This test handles the case that in one LinearConstraint,
-  // some rows have active upper bounds;
-  // some rows have active lower bounds;
-  // some rows have both bounds;
-  // some rows have none.
-  Eigen::Matrix<double, 4, 3> A1;
-  A1 << 1, 2, 3, -1, -1, 0, 0, 1, 2, 1, 1, 2;
-  Vector4d b_lb(4, -std::numeric_limits<double>::infinity(), -20,
-                       -std::numeric_limits<double>::infinity());
-  Vector4d b_ub(std::numeric_limits<double>::infinity(), -1, 100,
-                       std::numeric_limits<double>::infinity());
-  prog.AddLinearConstraint(A1, b_lb, b_ub, x);
-  // This test also handles linear equality constraint
-  prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3), 3, x);
-
-  if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Vector3d::Zero());
-  }
-  RunSolver(&prog, solver);
-
-  Vector3d expected{};
-  expected << 0, 1, 2.0 / 3.0;
-
-  const auto& x_value = prog.GetSolution(x);
-  EXPECT_TRUE(
-      CompareMatrices(x_value, expected, 1e-8, MatrixCompareType::absolute));
-}
-
 // Closed form (exact) solution test of QP problem.
 // Note that for any Positive Semi Definite matrix Q :
 // min 0.5x'Qx + bx = -Q^(-1) * b
@@ -766,15 +661,6 @@ void TestFindSpringEquilibrium(
 }
 }  // namespace
 
-
-GTEST_TEST(TestQP, TestQuadraticProgram0) {
-  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
-  GetQuadraticProgramSolvers(&solvers);
-  for (const auto& solver : solvers) {
-    TestQuadraticProgram0(*solver);
-  }
-}
-
 GTEST_TEST(TestQP, TestL2NormCost) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -808,14 +694,6 @@ GTEST_TEST(TestQP, TestL2NormCost) {
     // issue #3500.
 
     x0 += Eigen::Vector2d::Constant(2);
-  }
-}
-
-GTEST_TEST(TestQP, TestQuadraticProgram1) {
-  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
-  GetQuadraticProgramSolvers(&solvers);
-  for (const auto& solver : solvers) {
-    TestQuadraticProgram1(*solver);
   }
 }
 
