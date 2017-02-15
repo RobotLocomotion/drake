@@ -323,7 +323,7 @@ TEST_F(MonomialTest, ToMonomial0) {
   internal::Monomial expected;
   EXPECT_EQ(internal::ToMonomial(1), expected);
   EXPECT_EQ(internal::ToMonomial(pow(x_, 0)), expected);
-  EXPECT_THROW(internal::ToMonomial(2), std::exception);
+  EXPECT_THROW(internal::ToMonomial(2), std::runtime_error);
 }
 
 // Converts expression x to monomial.
@@ -356,6 +356,17 @@ TEST_F(MonomialTest, ToMonomial4) {
   internal::Monomial expected(powers);
   EXPECT_EQ(internal::ToMonomial(pow(x_, 3) * y_), expected);
   EXPECT_EQ(internal::ToMonomial(pow(x_, 2) * y_ * x_), expected);
+}
+
+TEST_F(MonomialTest, ToMonomial5) {
+  internal::Monomial expected{{{var_x_.get_id(), 4}, {var_y_.get_id(), 4}}};
+  EXPECT_EQ(internal::ToMonomial(pow(x_ * y_, 2) * pow(x_, 2) * pow(y_, 2)),
+            expected);
+}
+
+TEST_F(MonomialTest, ToMonomialError) {
+  EXPECT_THROW(internal::ToMonomial(x_ + 2), std::runtime_error);
+  EXPECT_THROW(internal::ToMonomial(2 * x_), std::runtime_error);
 }
 }  // namespace
 }  // namespace symbolic
