@@ -3,13 +3,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
-#include "drake/multibody/multibody_tree/unit_inertia.h"
-
-#include <algorithm>
-#include <iostream>
-#include <sstream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-#define PRINT_VARn(x) std::cout <<  #x ":\n" << x << std::endl;
 
 namespace drake {
 namespace multibody {
@@ -173,17 +166,18 @@ GTEST_TEST(RotationalInertia, Symmetry) {
 // Test we can take a rotational inertia expressed in a frame R and express it
 // in another frame F.
 GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
-  const double radius = 0.1;
-  const double length = 1.0;
   // Rod frame R located at the rod's geometric center, oriented along its
   // principal axes and z-axis along the rod's axial direction.
   // Inertia computed about Ro and expressed in R.
-  RotationalInertia<double> I_Ro_R =
-      UnitInertia<double>::SolidRod(radius, length);
+  const double radius = 0.1;
+  const double length = 1.0;
+
   // Momentum about its axis aligned with R's z-axis.
-  const double Irr = I_Ro_R(2, 2);
+  const double Irr = radius * radius / 2.0;
   // Moment of inertia about an axis perpendicular to the rod's axis.
-  const double Iperp = I_Ro_R(0, 0);
+  const double Iperp = length * length / 12.0;
+
+  RotationalInertia<double> I_Ro_R(Iperp, Iperp, Irr);
 
   // Rotation of +90 degrees about x.
   Matrix3<double> R_FR =
@@ -206,13 +200,16 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
 // computes the principal moments of inertia of a general rotational inertia
 // by solving an eigenvalue problem.
 GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
-  const double L1 = 3.0;
-  const double L2 = 1.0;
-  const double L3 = 5.0;
+  const double Lx = 3.0;
+  const double Ly = 1.0;
+  const double Lz = 5.0;
 
-  // Rotational inertia of a cube computed about its center of mass.
-  const RotationalInertia<double>& I_Bc_W =
-      UnitInertia<double>::SolidBox(L1, L2, L3);
+  // Rotational inertia of a box computed about its center of mass.
+  const double Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
+  RotationalInertia<double> I_Bc_W(
+      (Ly2 + Lz2) / 12.0,
+      (Lx2 + Lz2) / 12.0,
+      (Lx2 + Ly2) / 12.0);
 
   // Define a new frame Q by rotating +20 degrees about x and another +20
   // degrees about z.
@@ -276,70 +273,6 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   EXPECT_EQ(Ib.get_moments(), 3.0 * m);
   EXPECT_EQ(Ib.get_products(), 3.0 * p);
 }
-
-// Add a simple test for the RotationalInertia+= operator
-#if 0
-GTEST_TEST(SpatialInertia, PlusEqualOperator) {
-  const double L = 2.0;
-  // Rod frame R located at the rod's geometric center and oriented along its
-  // principal axes.
-  // Inertia computed about Ro and expressed in R.
-
-  // Spatial inertia computed about the origin for a cube with sides of
-  // length 2.0 centered at x = 1.0. Expressed in world frame.
-  const double mass_right = 1.5;
-  SpatialInertia<double> MRightBox_Wo_W(
-      mass_right,
-      Vector3d::Zero(),
-      UnitInertia<double>::SolidCube(L));
-  MRightBox_Wo_W.ShiftInPlace(-Vector3d::UnitX());
-  // Check if after transformation this still is a physically valid inertia.
-  EXPECT_TRUE(MRightBox_Wo_W.IsPhysicallyValid());
-
-  PRINT_VARn(MRightBox_Wo_W);
-
-  // Spatial inertia computed about the origin for a cube with sides of
-  // length 2.0 centered at x = -1.0. Expressed in world frame.
-  const double mass_left = 0.5;
-  SpatialInertia<double> MLeftBox_Wo_W(
-      mass_left,
-      Vector3d::Zero(),
-      UnitInertia<double>::SolidCube(L));
-  MLeftBox_Wo_W.ShiftInPlace(Vector3d::UnitX());
-  // Check if after transformation this still is a physically valid inertia.
-  EXPECT_TRUE(MLeftBox_Wo_W.IsPhysicallyValid());
-
-  PRINT_VARn(MLeftBox_Wo_W);
-
-  // Spatial inertia of a prism with a squared transverse area of size
-  // 2.0 x 2.0 and length 4.0.
-  // This is computed by adding the above spatial inertias.
-  // Notice that the origina and the expressed-in frame is the same as in the
-  // two individual components.
-  SpatialInertia<double> MPrism_Wo_W(MLeftBox_Wo_W);
-  MPrism_Wo_W += MRightBox_Wo_W;
-  EXPECT_TRUE(MPrism_Wo_W.IsPhysicallyValid());
-
-  PRINT_VARn(MPrism_Wo_W);
-
-  // Check that the compound inertia corresponds to that of a larger box of
-  // length 4.0.
-  const double mass = mass_left + mass_right;
-  const Vector3d com(
-      (mass_left * MLeftBox_Wo_W.get_com() +
-       mass_right * MRightBox_Wo_W.get_com()) / mass);
-  SpatialInertia<double> MExpected_Wo_W(
-      mass,
-      com,
-      UnitInertia<double>::SolidBox(2 * L, L, L));
-  // Check if after transformation this still is a physically valid inertia.
-  EXPECT_TRUE(MExpected_Wo_W.IsPhysicallyValid());
-
-  PRINT_VARn(MExpected_Wo_W);
-
-  EXPECT_TRUE(MPrism_Wo_W.IsApprox(MExpected_Wo_W));
-}
-#endif
 
 }
 }  // math
