@@ -3,8 +3,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
-#include "drake/solvers/test/optimization_examples.h"
+#include "drake/solvers/test/quadratic_program_examples.h"
 
 namespace drake {
 namespace solvers {
