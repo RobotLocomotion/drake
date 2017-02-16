@@ -72,15 +72,12 @@ PidControlledSystem<T>::ConnectController(
     std::unique_ptr<MatrixGain<T>> feedback_selector, const VectorX<T>& Kp,
     const VectorX<T>& Ki, const VectorX<T>& Kd, DiagramBuilder<T>* builder) {
 
-  const int num_effort_commands = plant_input.size();
-
   auto controller = builder->template AddSystem<PidController<T>>(
       std::move(feedback_selector),
-      plant_output.size(), num_effort_commands,
       Kp, Ki, Kd);
 
   auto plant_input_adder =
-      builder->template AddSystem<Adder<T>>(2, num_effort_commands);
+      builder->template AddSystem<Adder<T>>(2, plant_input.size());
 
   builder->Connect(plant_output, controller->get_measured_state_input_port());
 

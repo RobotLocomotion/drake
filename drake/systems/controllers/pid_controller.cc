@@ -224,28 +224,43 @@ void PidControllerInternal<T>::set_integral_value(
 }
 
 template <typename T>
+PidController<T>::PidController(
+    const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd) {
+  ConnectPorts(nullptr, kp, ki, kd);
+}
+
+template <typename T>
+PidController<T>::PidController(
+    std::unique_ptr<MatrixGain<T>> feedback_selector,
+    const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd) {
+  ConnectPorts(std::move(feedback_selector), kp, ki, kd);
+}
+
+template <typename T>
 void PidController<T>::ConnectPorts(
     std::unique_ptr<MatrixGain<T>> feedback_selector,
-    int state_dim, int control_dim,
     const VectorX<T>& kp, const VectorX<T>& ki,
     const VectorX<T>& kd) {
+  DRAKE_DEMAND(kp.size() == kd.size());
+  DRAKE_DEMAND(ki.size() == kd.size());
+
   DiagramBuilder<T> builder;
 
   if (feedback_selector == nullptr) {
     // No feedback selector was provided. Create a GainMatrix containing an
     // identity matrix, which results in every element of the plant's output
     // port zero being used as the feedback signal to the PID controller.
-    feedback_selector = std::make_unique<MatrixGain<T>>(state_dim);
+    feedback_selector = std::make_unique<MatrixGain<T>>(2 * kp.size());
   }
   auto feedback_selector_p =
     builder.template AddSystem(std::move(feedback_selector));
 
-  DRAKE_ASSERT(state_dim == feedback_selector_p->get_input_port().size());
+  DRAKE_DEMAND(2 * kp.size() == feedback_selector_p->get_output_port().size());
 
-  const int num_effort_commands = control_dim;
+  const int num_effort_commands = kp.size();
   const int num_states = num_effort_commands * 2;
 
-  DRAKE_ASSERT(feedback_selector_p->get_output_port().size() == num_states);
+  DRAKE_DEMAND(feedback_selector_p->get_output_port().size() == num_states);
 
   auto state_minus_target =
     builder.template AddSystem<Adder<T>>(2, num_states);
@@ -327,6 +342,8 @@ void PidController<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   Context<T>* integrator_context =
       Diagram<T>::GetMutableSubsystemContext(context, controller_);
+  // TODO(siyuanfeng): need to get rid of the - once we switch the integrator
+  // to be int(q_d - q), right not it's (q - q_d).
   controller_->set_integral_value(integrator_context, -value);
 }
 

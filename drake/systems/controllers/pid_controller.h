@@ -16,25 +16,48 @@
 namespace drake {
 namespace systems {
 
+// TODO(siyuanfeng): Need to redo the PID controller, then this would go away.
 template <typename T>
 class PidControllerInternal;
 
+/**
+ * Implements the PID controller. Given state `(q, v)`, desired state
+ * `(q_d, v_d)`, the output of this controller is
+ * <pre>
+ * y = kp * (q_d - q) + kd * (v_d - v) + ki * integral(q_d - q, dt),
+ * </pre>
+ * where `integral(q_d - q, dt)` is the integrated position error.
+ */
 template <typename T>
 class PidController : public Controller<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 
-  PidController(int state_dim, int control_dim,
-      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd) {
-    ConnectPorts(nullptr, state_dim, control_dim, kp, ki, kd);
-  }
+  /**
+   * Constructs a PID controller. Assumes that @p kp, @p ki and @p kd have the
+   * same size, the actual and desired state inputs will have the size of
+   * 2 * @p kp's size, and the control output will have @p kp's size.
+   * @param kp, P gain.
+   * @param ki, I gain.
+   * @param kd, D gain.
+   */
+  PidController(
+      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
 
+  /**
+   * Constructs a PID controller where some of the input states may not
+   * controled. Assumes that @p kp, @p ki and @p kd have the same size. The
+   * actual and desired state inputs's size and the control output's size need
+   * to match @p feedback_selector.
+   * @param feedback_selector, The selection matrix indicating controlled
+   * states, whose size should be 2 * @p kp's size by the size of the full
+   * state.
+   * @param kp, P gain.
+   * @param ki, I gain.
+   * @param kd, D gain.
+   */
   PidController(std::unique_ptr<MatrixGain<T>> feedback_selector,
-      int state_dim, int control_dim,
-      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd) {
-    ConnectPorts(std::move(feedback_selector),
-                 state_dim, control_dim, kp, ki, kd);
-  }
+      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
 
   /// Returns the proportional gain constant. This method should only be called
   /// if the proportional gain can be represented as a scalar value, i.e., every
@@ -79,10 +102,10 @@ class PidController : public Controller<T> {
 
  private:
   void ConnectPorts(std::unique_ptr<MatrixGain<T>> feedback_selector,
-                    int state_dim, int control_dim,
                     const VectorX<T>& kp, const VectorX<T>& ki,
                     const VectorX<T>& kd);
 
+  // TODO(siyuanfeng): Need to redo the PID controller, then this would go away.
   PidControllerInternal<T>* controller_;
 };
 

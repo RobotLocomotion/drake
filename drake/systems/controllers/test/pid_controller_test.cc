@@ -39,7 +39,7 @@ class PidControllerTest : public ::testing::Test {
   const VectorX<double> ki_{VectorX<double>::Ones(port_size_) * 3.0};
   const VectorX<double> kd_{VectorX<double>::Ones(port_size_) * 1.0};
 
-  PidController<double> controller_{port_size_ * 2, port_size_, kp_, ki_, kd_};
+  PidController<double> controller_{kp_, ki_, kd_};
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
@@ -63,7 +63,7 @@ TEST_F(PidControllerTest, GetterVectors) {
   const Eigen::Vector2d kp{1.0, 2.0};
   const Eigen::Vector2d ki{1.0, 2.0};
   const Eigen::Vector2d kd{1.0, 2.0};
-  PidController<double> controller{2 * 2, 2, kp, ki, kd};
+  PidController<double> controller{kp, ki, kd};
 
   EXPECT_NO_THROW(controller.get_Kp_vector());
   EXPECT_NO_THROW(controller.get_Ki_vector());
@@ -118,6 +118,8 @@ TEST_F(PidControllerTest, CalcTimeDerivatives) {
 
   // The only state in the PID controller_ is the integral of the input signal.
   // Therefore the time derivative of the state equals the input error signal.
+  // TODO(siyuanfeng): need to get rid of the - once we switch the integrator
+  // to be int(q_d - q), right not it's (q - q_d). so the derivative is flipped.
   EXPECT_EQ(error_signal_, -derivatives_->CopyToVector());
 }
 

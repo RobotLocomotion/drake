@@ -12,11 +12,30 @@
 namespace drake {
 namespace systems {
 
+/**
+ * Interface for model based feedback controllers. This class needs to be
+ * extended by concrete implementations. This class also maintains an instance
+ * of a RigidBodyTree, which is used for control.
+ */
 template<typename T>
 class ModelBasedController : public Controller<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelBasedController)
 
+  /**
+   * Returns a constant reference to the RigidBodyTree used for control.
+   */
+  const RigidBodyTree<T>& get_robot_for_control() const {
+    return *robot_for_control_;
+  }
+
+ protected:
+  /**
+   * Constructs the controller that instantiates a RigidBodyTree directly
+   * from a model file.
+   * @param model_path Path to the model file.
+   * @param world_offset X_WB, where B is the base frame of the model.
+   */
   ModelBasedController(const std::string& model_path,
       std::shared_ptr<RigidBodyFrame<double>> world_offset) {
     robot_for_control_ = std::make_unique<RigidBodyTree<T>>();
@@ -25,19 +44,22 @@ class ModelBasedController : public Controller<T> {
         robot_for_control_.get());
   }
 
+  /**
+   * Constructs the controller that clones a given RigidBodyTree.
+   * @param robot Reference to the RigidBodyTree to be cloned.
+   */
   explicit ModelBasedController(const RigidBodyTree<T>& robot) {
     robot_for_control_ = robot.Clone();
   }
 
+  /*
+   * Constructs the controller that takes ownership of a given RigidBodyTree
+   * unique pointer.
+   * @param robot unique pointer whose ownership will be transfered to this
+   * instance.
+   */
   explicit ModelBasedController(std::unique_ptr<RigidBodyTree<T>> robot)
       : robot_for_control_(std::move(robot)) {}
-
-  const RigidBodyTree<T>& get_robot_for_control() const {
-    return *robot_for_control_;
-  }
-
- protected:
-  ModelBasedController() {}
 
  private:
   std::unique_ptr<RigidBodyTree<T>> robot_for_control_{nullptr};

@@ -18,18 +18,19 @@ void PidWithGravityCompensator<T>::SetUp(
   this->set_name("PidWithGravityCompensator");
 
   const RigidBodyTree<T>& robot = this->get_robot_for_control();
+  DRAKE_DEMAND(robot.get_num_positions() == kp.size());
+  DRAKE_DEMAND(robot.get_num_positions() == robot.get_num_velocities());
+  DRAKE_DEMAND(robot.get_num_positions() == robot.get_num_actuators());
 
   // Adds a PID.
-  int state_dim = robot.get_num_positions() + robot.get_num_velocities();
-  int control_dim = robot.get_num_velocities();
-  auto pid = builder.template AddSystem<PidController<T>>(
-      state_dim, control_dim, kp, ki, kd);
+  auto pid = builder.template AddSystem<PidController<T>>(kp, ki, kd);
 
   // Adds a gravity compensator.
   auto grav_comp = builder.template AddSystem<GravityCompensator<T>>(robot);
 
   // Adds a adder to do PID + gravity compensation.
-  auto adder = builder.template AddSystem<Adder<T>>(2, control_dim);
+  auto adder =
+      builder.template AddSystem<Adder<T>>(2, robot.get_num_actuators());
 
   // Splits state into q for gravity compensator.
   auto pass_through = builder.template AddSystem<PassThrough<T>>(

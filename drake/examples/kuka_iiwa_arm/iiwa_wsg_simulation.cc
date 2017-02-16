@@ -207,8 +207,6 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     auto wsg_controller =
         builder.template AddSystem<systems::PidController<T>>(
             std::move(feedback_selector),
-            2, /* num states */
-            1, /* num control */
             wsg_v * wsg_kp, wsg_v * wsg_ki, wsg_v * wsg_kd);
 
     // Connects WSG and controller.
