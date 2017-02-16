@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <c++/5/random>
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_assert.h"
@@ -57,6 +58,14 @@ void testIntegralAndDerivative() {
               .EvaluateUnivariate(integral.getDuration(i)),
               integral.getPolynomial(i + 1).EvaluateUnivariate(0.0));
   }
+
+  // compare different ways to specify derivative order
+  EXPECT_TRUE(CompareMatrices(piecewise.derivative(1).value(segment_times[1]),
+                              piecewise.value(segment_times[1], 1), 1e-10,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(piecewise.derivative(2).value(segment_times[2]),
+                              piecewise.value(segment_times[2], 2), 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 template <typename CoefficientType>

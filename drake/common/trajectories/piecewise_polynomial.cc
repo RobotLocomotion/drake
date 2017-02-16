@@ -101,8 +101,8 @@ double PiecewisePolynomial<CoefficientType>::scalarValue(double t,
 }
 
 template <typename CoefficientType>
-drake::MatrixX<double>
-PiecewisePolynomial<CoefficientType>::value(double t) const {
+drake::MatrixX<double> PiecewisePolynomial<CoefficientType>::value(
+    double t, int derivative_order) const {
   int segment_index = getSegmentIndex(t);
   t = std::min(std::max(t, getStartTime()), getEndTime());
   Eigen::Matrix<double, PolynomialMatrix::RowsAtCompileTime,
@@ -110,7 +110,8 @@ PiecewisePolynomial<CoefficientType>::value(double t) const {
       ret(rows(), cols());
   for (Eigen::Index row = 0; row < rows(); row++) {
     for (Eigen::Index col = 0; col < cols(); col++) {
-      ret(row, col) = segmentValueAtGlobalAbscissa(segment_index, t, row, col);
+      ret(row, col) = segmentValueAtGlobalAbscissa(segment_index, t, row, col,
+                                                   derivative_order);
     }
   }
   return ret;
@@ -299,9 +300,13 @@ PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
 
 template <typename CoefficientType>
 double PiecewisePolynomial<CoefficientType>::segmentValueAtGlobalAbscissa(
-    int segment_index, double t, Eigen::Index row, Eigen::Index col) const {
-  return polynomials_[segment_index](row, col).EvaluateUnivariate(
-      t - getStartTime(segment_index));
+    int segment_index, double t, Eigen::Index row, Eigen::Index col,
+    int derivative_order) const {
+  PolynomialType polynomial(polynomials_[segment_index](row, col));
+  if (derivative_order > 0) {
+    polynomial = polynomial.Derivative(derivative_order);
+  }
+  return polynomial.EvaluateUnivariate(t - getStartTime(segment_index));
 }
 
 template <typename CoefficientType>
