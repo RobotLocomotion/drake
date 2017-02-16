@@ -101,9 +101,33 @@ drake_cc_googletest(
     name = "valkyrie_balancing_test",
     srcs = ["test/valkyrie_balancing_test.cc"],
     data = [
-        "config/controller.yaml",
         "config/valkyrie.alias_groups",
+        "config/valkyrie.id_controller_config",
         "//drake/examples/Valkyrie:models",
+    ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    size = "medium",
+    deps = [
+        ":control_utils",
+        ":qp_controller",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/examples/Valkyrie:valkyrie_constants",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_inverse_dynamics_test",
+    srcs = ["test/iiwa_inverse_dynamics_test.cc"],
+    data = [
+        "config/iiwa.alias_groups",
+        "config/iiwa.id_controller_config",
+        "//drake/examples/kuka_iiwa_arm:models",
     ],
     tags = [
         "exclusive",
@@ -115,7 +139,6 @@ drake_cc_googletest(
         ":qp_controller",
         "//drake/common:eigen_matrix_compare",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
     ],
 )

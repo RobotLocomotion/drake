@@ -71,6 +71,8 @@ class QPController {
   std::vector<Vector6<double>> body_Jdv_;
 
   // These determines the size of the QP. These are set in ResizeQP
+  bool has_floating_base_{true};
+  int num_dynamics_equations_{6};
   int num_contact_body_{0};
   int num_vd_{0};
   int num_point_force_{0};
@@ -146,6 +148,8 @@ class QPController {
                   const Eigen::MatrixBase<DerivedW>& weights,
                   const std::list<int>& idx,
                   drake::solvers::QuadraticConstraint* cost);
+
+  bool HasFloatingBase(const RigidBodyTree<double>& robot) const;
 
   // Zeros out the temporary matrices.
   void SetTempMatricesToZero();

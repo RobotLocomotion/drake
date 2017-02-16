@@ -57,6 +57,15 @@ void QPController::SetTempMatricesToZero() {
   JB_.setZero();
 }
 
+bool QPController::HasFloatingBase(const RigidBodyTree<double>& robot) const {
+  if (robot.get_num_bodies() < 2)
+    return false;
+
+  // TODO(siyuan.feng): find a better to do this, right now all the other math
+  // assumes that the floating base will be the first body.
+  return robot.get_body(1).getJoint().is_floating();
+}
+
 void QPController::ResizeQP(const RigidBodyTree<double>& robot,
                             const QpInput& input) {
   const std::unordered_map<std::string, ContactInformation>& all_contacts =
@@ -160,13 +169,21 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   vd_ = prog_->NewContinuousVariables(num_vd_, "vd");
   basis_ = prog_->NewContinuousVariables(num_basis_, "basis");
 
+  if (HasFloatingBase(robot)) {
+    num_dynamics_equations_ = 6;
+    has_floating_base_ = true;
+  } else {
+    num_dynamics_equations_ = 0;
+    has_floating_base_ = false;
+  }
+
   // Allocate various matrices and vectors.
   stacked_contact_jacobians_.resize(3 * num_point_force_, num_vd_);
   basis_to_force_matrix_.resize(3 * num_point_force_, num_basis_);
   stacked_contact_jacobians_dot_times_v_.resize(3 * num_point_force_);
   stacked_contact_velocities_.resize(3 * num_point_force_);
   torque_linear_.resize(num_torque_, num_variable_);
-  dynamics_linear_.resize(6, num_variable_);
+  dynamics_linear_.resize(num_dynamics_equations_, num_variable_);
   tmp_vd_vec_.resize(num_vd_);
   tmp_vd_mat_.resize(num_vd_, num_vd_);
 
@@ -176,12 +193,18 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // control code. Thus only their dimensions matter during allocation.
 
   // Dynamics
-  eq_dynamics_ =
-      prog_
-          ->AddLinearEqualityConstraint(MatrixX<double>::Zero(6, num_variable_),
-                                        Vector6<double>::Zero(), {vd_, basis_})
-          .get();
-  eq_dynamics_->set_description("dynamics eq");
+  if (num_dynamics_equations_ > 0) {
+    eq_dynamics_ =
+        prog_
+            ->AddLinearEqualityConstraint(
+                MatrixX<double>::Zero(num_dynamics_equations_, num_variable_),
+                VectorX<double>::Zero(num_dynamics_equations_), {vd_, basis_})
+            .get();
+
+    eq_dynamics_->set_description("dynamics eq");
+  } else {
+    eq_dynamics_ = nullptr;
+  }
 
   // Contact constraints, 3 rows per contact point
   eq_contacts_.resize(num_contact_as_eq_);
@@ -199,8 +222,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
               ->AddLinearEqualityConstraint(
                   MatrixX<double>::Zero(3 * contact.num_contact_points(),
                                         num_vd_),
-                  VectorX<double>::Zero(3 * contact.num_contact_points()),
-                  vd_)
+                  VectorX<double>::Zero(3 * contact.num_contact_points()), vd_)
               .get();
     }
   }
@@ -248,8 +270,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     // Dimension doesn't matter for equality constraints,
     // will be reset when updating the constraint.
     eq_cen_mom_dot_ =
-        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_)
-            .get();
+        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_).get();
     eq_cen_mom_dot_->set_description("centroidal momentum change eq");
   } else {
     eq_cen_mom_dot_ = nullptr;
@@ -268,8 +289,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     // Dimension doesn't matter for equality constraints,
     // will be reset when updating the constraint.
     eq_body_motion_[i] =
-        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_)
-            .get();
+        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_).get();
   }
 
   // Set up cost / eq constraints for dof motion.
@@ -284,8 +304,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     // Dimension doesn't matter for equality constraints,
     // will be reset when updating the constraint.
     eq_dof_motion_ =
-        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_)
-            .get();
+        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_).get();
     eq_dof_motion_->set_description("vd eq");
   } else {
     eq_dof_motion_ = nullptr;
@@ -399,16 +418,20 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
   ////////////////////////////////////////////////////////////////////
   // Equality constraints:
   // Equations of motion part, 6 rows
-  for (int i = 0; i < num_vd_; ++i) {
-    dynamics_linear_.block(0, prog_->FindDecisionVariableIndex(vd_(i)), 6, 1) =
-        rs.M().topRows(6).col(i);
+  if (eq_dynamics_) {
+    for (int i = 0; i < num_vd_; ++i) {
+      dynamics_linear_.block(0, prog_->FindDecisionVariableIndex(vd_(i)),
+                             num_dynamics_equations_, 1) =
+          rs.M().block(0, i, num_dynamics_equations_, 1);
+    }
+    for (int i = 0; i < num_basis_; ++i) {
+      dynamics_linear_.block(0, prog_->FindDecisionVariableIndex(basis_(i)),
+                             num_dynamics_equations_, 1) =
+          -JB_.block(0, i, num_dynamics_equations_, 1);
+    }
+    dynamics_constant_ = -rs.bias_term().head(num_dynamics_equations_);
+    eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
   }
-  for (int i = 0; i < num_basis_; ++i) {
-    dynamics_linear_.block(0, prog_->FindDecisionVariableIndex(basis_(i)), 6,
-                           1) = -JB_.topRows(6).col(i);
-  }
-  dynamics_constant_ = -rs.bias_term().head<6>();
-  eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
 
   // Contact constraints, 3 rows per contact point
   rowIdx = 0;
@@ -495,9 +518,8 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
   cost_ctr = eq_ctr = 0;
   for (const auto& pair : input.desired_body_motions()) {
     const DesiredBodyMotion& body_motion_d = pair.second;
-    body_J_[body_ctr] =
-        rs.robot().CalcBodySpatialVelocityJacobianInWorldFrame(rs.cache(),
-            body_motion_d.body());
+    body_J_[body_ctr] = rs.robot().CalcBodySpatialVelocityJacobianInWorldFrame(
+        rs.cache(), body_motion_d.body());
     body_Jdv_[body_ctr] =
         rs.robot().CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
             rs.cache(), body_motion_d.body());
@@ -618,6 +640,19 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
   const auto& basis_value = prog_->GetSolution(basis_);
   point_forces_ = basis_to_force_matrix_ * basis_value;
 
+  // Remove old contacts that are not in input anymore.
+  std::list<std::string> old_contacts;
+  for (const auto& contact_pair : output->resolved_contacts()) {
+    // this contact doesn't exist anymore.
+    if (input.contact_information().find(contact_pair.first) ==
+        input.contact_information().end()) {
+      old_contacts.push_back(contact_pair.first);
+    }
+  }
+  for (const auto& old_contact : old_contacts) {
+    output->mutable_resolved_contacts().erase(old_contact);
+  }
+
   const auto& vd_value = prog_->GetSolution(vd_);
   for (const auto& contact_pair : input.contact_information()) {
     const ContactInformation& contact = contact_pair.second;
@@ -661,8 +696,8 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
 
     // Compute acceleration for contact body.
     Matrix6X<double> J_body =
-        rs.robot().CalcBodySpatialVelocityJacobianInWorldFrame(rs.cache(),
-            resolved_contact.body());
+        rs.robot().CalcBodySpatialVelocityJacobianInWorldFrame(
+            rs.cache(), resolved_contact.body());
     Vector6<double> Jdv_body =
         rs.robot().CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
             rs.cache(), resolved_contact.body());
@@ -704,21 +739,23 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
   ////////////////////////////////////////////////////////////////////
   // Sanity check:
   // Net external wrench = centroidal_matrix * vd + centroidal_matrix_dot * v
-  Vector6<double> Ld = rs.centroidal_momentum_matrix() * output->vd() +
-                       rs.centroidal_momentum_matrix_dot_times_v();
-  Vector6<double> net_wrench = rs.robot().getMass() * rs.robot().a_grav;
-  for (const auto& resolved_contact_pair : output->resolved_contacts()) {
-    const ResolvedContact& resolved_contact = resolved_contact_pair.second;
-    const Vector6<double>& contact_wrench =
-        resolved_contact.equivalent_wrench();
-    const Vector3<double>& ref_point = resolved_contact.reference_point();
-    net_wrench += contact_wrench;
-    net_wrench.head<3>() +=
-        (ref_point - rs.com()).cross(contact_wrench.tail<3>());
-  }
-  if (!(net_wrench - Ld).isZero(1e-5)) {
-    std::cerr << "change in centroidal momentum != net external wrench\n";
-    return -1;
+  if (has_floating_base_) {
+    Vector6<double> Ld = rs.centroidal_momentum_matrix() * output->vd() +
+                         rs.centroidal_momentum_matrix_dot_times_v();
+    Vector6<double> net_wrench = rs.robot().getMass() * rs.robot().a_grav;
+    for (const auto& resolved_contact_pair : output->resolved_contacts()) {
+      const ResolvedContact& resolved_contact = resolved_contact_pair.second;
+      const Vector6<double>& contact_wrench =
+          resolved_contact.equivalent_wrench();
+      const Vector3<double>& ref_point = resolved_contact.reference_point();
+      net_wrench += contact_wrench;
+      net_wrench.head<3>() +=
+          (ref_point - rs.com()).cross(contact_wrench.tail<3>());
+    }
+    if (!(net_wrench - Ld).isZero(1e-5)) {
+      std::cerr << "change in centroidal momentum != net external wrench\n";
+      return -1;
+    }
   }
 
   if (!output->is_valid(rs.robot().get_num_velocities())) {

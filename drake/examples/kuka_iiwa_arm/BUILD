@@ -8,7 +8,9 @@ load(
     "drake_cc_binary",
 )
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = [":__subpackages__"],
+)
 
 filegroup(
     name = "models",
@@ -18,6 +20,7 @@ filegroup(
         "**/*.urdf",
         "**/*.xml",
     ]),
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(

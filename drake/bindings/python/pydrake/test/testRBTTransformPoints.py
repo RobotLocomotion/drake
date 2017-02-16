@@ -20,8 +20,9 @@ class TestRBMForwardKin(unittest.TestCase):
         self.assertTrue(np.allclose(p, np.zeros((3, 1))))
 
     def test_gradient(self):
-        r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
-                                         "examples/Pendulum/Pendulum.urdf"))
+        r = pydrake.rbtree.RigidBodyTree(
+            os.path.join(pydrake.getDrakePath(), "examples/Pendulum/Pendulum.urdf"),
+            pydrake.rbtree.FloatingBaseType.kRollPitchYaw)
 
         def do_transform(q):
             kinsol = r.doKinematics(q)
