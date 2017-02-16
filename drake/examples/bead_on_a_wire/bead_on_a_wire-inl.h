@@ -50,11 +50,7 @@ typename BeadOnAWire<T>::DScalar
 
 /// Evaluates the constraint equations for a bead represented in absolute
 /// coordinates (no constraint equations are used for a bead represented in
-/// minimal coordinates). This method is computationally expensive. To evaluate
-/// these equations, the method locates the variable s that minimizes the
-/// univariate function ||f(s) - x||, where x is the location of the bead.
-/// @warning The solution returned by this approach is not generally a global
-///          minimum.
+/// minimal coordinates). 
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
     const systems::Context<T>& context) const {
@@ -172,6 +168,10 @@ template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
     const systems::Context<T>& context, const Eigen::MatrixXd& J,
     const Eigen::VectorXd& lambda) const {
+
+  // TODO(edrumwri): Test this method as soon as DAE solver is available,
+  //                 (necessarily removing abort() first).
+  DRAKE_ABORT_MSG("This method requires testing.");
 
   // The bead on the wire is unit mass, so the velocity change is equal to
   // simply Jᵀλ
