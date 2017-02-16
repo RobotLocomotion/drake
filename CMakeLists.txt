@@ -28,7 +28,6 @@ drake_add_external(qt_property_browser CMAKE QT)
 drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE MATLAB)
-drake_add_external(swigmake PUBLIC CMAKE MATLAB PYTHON)
 drake_add_external(xfoil PUBLIC CMAKE FORTRAN)
 drake_add_external(yalmip PUBLIC CMAKE MATLAB)
 
@@ -175,12 +174,6 @@ drake_add_external(fcl PUBLIC CMAKE
   CMAKE_ARGS -DFCL_BUILD_TESTS=OFF
   DEPENDS ccd eigen octomap)
 
-# swig_matlab
-drake_add_external(swig_matlab PUBLIC AUTOTOOLS
-  PATCH_COMMAND ./autogen.sh
-  AUTOTOOLS_CONFIGURE_ARGS
-    --without-alllang)
-
 # textbook
 drake_add_external(textbook PUBLIC CMAKE MATLAB PYTHON
   CMAKE_ARGS -DBUILD_TESTING=${Matlab_FOUND}
@@ -284,8 +277,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_SNOPT:BOOL=${WITH_SNOPT}
     -DWITH_SPDLOG:BOOL=${WITH_SPDLOG}
     -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
-    -DWITH_SWIG:BOOL=${WITH_SWIG_MATLAB}   # TODO(jamiesnape): Fix naming inconsistency
-    -DWITH_SWIGMAKE:BOOL=${WITH_SWIGMAKE}
     -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
@@ -321,8 +312,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     snopt
     spdlog
     spotless
-    swig_matlab
-    swigmake
     textbook
     vtk
     xfoil

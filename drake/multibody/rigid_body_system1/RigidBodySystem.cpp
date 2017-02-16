@@ -77,9 +77,7 @@ int RigidBodySystem::get_num_positions() const {
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
 DRAKE_DEPRECATED("Please use get_num_positions().")
-#endif
 int RigidBodySystem::number_of_positions() const { return get_num_positions(); }
 
 int RigidBodySystem::get_num_velocities() const {
@@ -87,9 +85,7 @@ int RigidBodySystem::get_num_velocities() const {
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
 DRAKE_DEPRECATED("Please use get_num_velocities().")
-#endif
 int RigidBodySystem::number_of_velocities() const {
   return get_num_velocities();
 }

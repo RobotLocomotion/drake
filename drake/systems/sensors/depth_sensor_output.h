@@ -59,6 +59,9 @@ class DepthSensorOutput : public BasicVector<T> {
 
   //@}
 
+ protected:
+  DepthSensorOutput* DoClone() const override;
+
  private:
   const DepthSensorSpecification& spec_;
 };

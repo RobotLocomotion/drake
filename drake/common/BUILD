@@ -27,7 +27,6 @@ drake_cc_library(
         "never_destroyed.h",
         "text_logging.h",
     ],
-    linkstatic = 1,
     deps = [
         "@eigen//:eigen",
         "@spdlog//:spdlog",
@@ -38,19 +37,20 @@ drake_cc_library(
 drake_cc_library(
     name = "cond",
     hdrs = ["cond.h"],
-    linkstatic = 1,
+    srcs = ["cond.cc"],
+    deps = [
+        ":double",
+    ],
 )
 
 drake_cc_library(
     name = "dummy_value",
     hdrs = ["dummy_value.h"],
-    linkstatic = 1,
 )
 
 drake_cc_library(
     name = "number_traits",
     hdrs = ["number_traits.h"],
-    linkstatic = 1,
 )
 
 # Drake's specific ScalarType-providing libraries.
@@ -58,7 +58,6 @@ drake_cc_library(
     name = "double",
     srcs = ["double_overloads.cc"],
     hdrs = ["double_overloads.h"],
-    linkstatic = 1,
 )
 
 drake_cc_library(
@@ -67,7 +66,6 @@ drake_cc_library(
         "autodiff_overloads.h",
         "eigen_autodiff_types.h",
     ],
-    linkstatic = 1,
     deps = [
         ":common",
         ":cond",
@@ -78,7 +76,6 @@ drake_cc_library(
 drake_cc_library(
     name = "extract_double",
     hdrs = ["extract_double.h"],
-    linkstatic = 1,
     deps = [
         ":common",
         ":nice_type_name",
@@ -90,7 +87,6 @@ drake_cc_library(
     name = "functional_form",
     srcs = ["functional_form.cc"],
     hdrs = ["functional_form.h"],
-    linkstatic = 1,
     deps = [
         ":common",
         ":dummy_value",
@@ -104,7 +100,6 @@ drake_cc_library(
         "polynomial.h",
         "trig_poly.h",
     ],
-    linkstatic = 1,
     deps = [
         ":autodiff",
         ":common",
@@ -123,6 +118,7 @@ drake_cc_library(
         "symbolic_formula_cell.h",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
+        "symbolic_expression_visitor.cc",
     ],
     hdrs = [
         "hash.h",
@@ -131,8 +127,8 @@ drake_cc_library(
         "symbolic_formula.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
+        "symbolic_expression_visitor.h",
     ],
-    linkstatic = 1,
     deps = [
         ":common",
         ":cond",
@@ -161,7 +157,6 @@ drake_cc_library(
     # testonly = 1,
     srcs = ["drake_path.cc"],
     hdrs = ["drake_path.h"],
-    linkstatic = 1,
     deps = [
         ":common",
     ],
@@ -187,7 +182,6 @@ drake_cc_library(
     name = "eigen_matrix_compare",
     testonly = 1,
     hdrs = ["eigen_matrix_compare.h"],
-    linkstatic = 1,
     deps = [
         ":common",
     ],
@@ -196,7 +190,6 @@ drake_cc_library(
 drake_cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
-    linkstatic = 1,
     deps = [
         ":common",
     ],
@@ -206,7 +199,6 @@ drake_cc_library(
     name = "monomial",
     srcs = ["monomial.cc"],
     hdrs = ["monomial.h"],
-    linkstatic = 1,
     deps = [
         ":common",
         ":symbolic",
@@ -217,16 +209,19 @@ drake_cc_library(
     name = "nice_type_name",
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
-    linkstatic = 1,
     deps = [
         ":common",
     ],
+)
+drake_cc_library(
+    name = "reinit_after_move",
+    hdrs = ["reinit_after_move.h"],
+    linkstatic = 1,
 )
 
 drake_cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],
-    linkstatic = 1,
     deps = [
         ":common",
     ],
@@ -239,7 +234,6 @@ drake_cc_library(
     # out what's going on.  Definitely don't let "-pthread" get copy-pasta'd
     # throughout our code.
     linkopts = ["-pthread"],
-    linkstatic = 1,
     deps = [
         ":common",
         "@gflags//:gflags",
@@ -252,7 +246,6 @@ drake_cc_library(
     name = "random_polynomial_matrix",
     testonly = 1,
     hdrs = ["test/random_polynomial_matrix.h"],
-    linkstatic = 1,
     deps = [
         ":polynomial",
     ],
@@ -262,7 +255,6 @@ drake_cc_library(
     name = "measure_execution",
     testonly = 1,
     hdrs = ["test/measure_execution.h"],
-    linkstatic = 1,
 )
 
 drake_cc_googletest(
@@ -272,6 +264,20 @@ drake_cc_googletest(
         ":common",
         ":eigen_matrix_compare",
         ":extract_double",
+    ],
+)
+
+drake_cc_googletest(
+    name = "reinit_after_move_test",
+    deps = [
+        ":reinit_after_move",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cond_test",
+    deps = [
+        ":cond",
     ],
 )
 

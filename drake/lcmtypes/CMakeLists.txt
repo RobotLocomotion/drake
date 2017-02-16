@@ -28,11 +28,16 @@ lcm_wrap_types(
   lcmt_body_wrench_data.lcm
   lcmt_constrained_values.lcm
   lcmt_contact_information.lcm
+  lcmt_contact_info_for_viz.lcm
+  lcmt_contact_results_for_viz.lcm
   lcmt_desired_body_motion.lcm
   lcmt_desired_centroidal_momentum_dot.lcm
   lcmt_desired_dof_motions.lcm
   lcmt_drake_signal.lcm
   lcmt_driving_command_t.lcm
+  lcmt_endless_road_car_config_t.lcm
+  lcmt_endless_road_car_state_t.lcm
+  lcmt_endless_road_oracle_output_t.lcm
   lcmt_euler_floating_joint_state_t.lcm
   lcmt_foot_flag.lcm
   lcmt_force_torque.lcm

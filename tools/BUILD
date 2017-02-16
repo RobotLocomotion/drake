@@ -46,16 +46,41 @@ alias(
 cc_toolchain_suite(
     name = "default-toolchain",
     toolchains = {
-        "darwin|compiler": "cc_toolchain_mac",
+        "darwin|compiler": "cc_toolchain_apple",
         "k8|clang-3.9": "cc_toolchain_linux",
         "k8|gcc-4.9": "cc_toolchain_linux",
         "k8|gcc-5": "cc_toolchain_linux",
     },
 )
 
+sh_binary(
+    name = "complain_about_ccache",
+    srcs = ["complain_about_ccache.sh"],
+    visibility = ["//visibility:private"],
+)
+
+# This genrule will fail loudly if ccache is on the path.
+genrule(
+    name = "ccache_is_bad",
+    srcs = [],
+    outs = ["ccache.txt"],
+    cmd = "$(location :complain_about_ccache) | tee $(@)",
+    tools = [":complain_about_ccache"],
+    visibility = ["//visibility:private"],
+)
+
 filegroup(
     name = "empty",
     srcs = [],
+    visibility = ["//visibility:private"],
+)
+
+# This filegroup contains the files on which every toolchain component should
+# always depend, regardless of platform. It is a useful place for the outputs
+# of genrules that check preconditions for the entire build.
+filegroup(
+    name = "universal_toolchain_deps",
+    srcs = ["ccache.txt"],
     visibility = ["//visibility:private"],
 )
 
@@ -66,35 +91,57 @@ filegroup(
     visibility = ["//visibility:private"],
 )
 
+filegroup(
+    name = "apple_toolchain_deps",
+    srcs = [
+        ":osx_cc_wrapper",
+        ":universal_toolchain_deps",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "linux_toolchain_deps",
+    srcs = [
+        ":universal_toolchain_deps",
+    ],
+    visibility = ["//visibility:private"],
+)
+
 cc_toolchain(
     name = "cc_toolchain_linux",
-    all_files = ":empty",
-    compiler_files = ":empty",
+    all_files = ":linux_toolchain_deps",
+    compiler_files = ":linux_toolchain_deps",
     cpu = "k8",
-    dwp_files = ":empty",
+    dwp_files = ":linux_toolchain_deps",
     dynamic_runtime_libs = [":empty"],
-    linker_files = ":empty",
-    objcopy_files = ":empty",
+    linker_files = ":linux_toolchain_deps",
+    objcopy_files = ":linux_toolchain_deps",
     static_runtime_libs = [":empty"],
-    strip_files = ":empty",
+    strip_files = ":linux_toolchain_deps",
     supports_param_files = 0,
 )
 
 cc_toolchain(
-    name = "cc_toolchain_mac",
-    all_files = ":osx_cc_wrapper",
-    compiler_files = ":osx_cc_wrapper",
+    name = "cc_toolchain_apple",
+    all_files = ":apple_toolchain_deps",
+    compiler_files = ":apple_toolchain_deps",
     cpu = "darwin",
-    dwp_files = ":empty",
+    dwp_files = ":apple_toolchain_deps",
     dynamic_runtime_libs = [":empty"],
-    linker_files = ":osx_cc_wrapper",
-    objcopy_files = ":empty",
+    linker_files = ":apple_toolchain_deps",
+    objcopy_files = ":apple_toolchain_deps",
     static_runtime_libs = [":empty"],
-    strip_files = ":empty",
+    strip_files = ":apple_toolchain_deps",
     supports_param_files = 0,
 )
 
 # === config_setting rules ===
+
+config_setting(
+    name = "debug",
+    values = {"compilation_mode": "dbg"},
+)
 
 config_setting(
     name = "with_gurobi",

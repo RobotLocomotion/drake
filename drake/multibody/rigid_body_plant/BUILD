@@ -28,11 +28,25 @@ drake_cc_library(
         "point_contact_detail.h",
         "rigid_body_plant.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_results_to_lcm",
+    srcs = [
+        "contact_results_to_lcm.cc",
+    ],
+    hdrs = [
+        "contact_results_to_lcm.h",
+    ],
+    deps = [
+        ":rigid_body_plant",
+        "//drake/lcmtypes:contact_info_for_viz",
+        "//drake/lcmtypes:contact_results_for_viz",
     ],
 )
 
@@ -44,7 +58,6 @@ drake_cc_library(
     hdrs = [
         "rigid_body_plant_that_publishes_xdot.h",
     ],
-    linkstatic = 1,
     deps = [
         ":rigid_body_plant",
         "//drake/lcm",
@@ -62,11 +75,12 @@ drake_cc_library(
         "drake_visualizer.h",
         "viewer_draw_translator.h",
     ],
-    linkstatic = 1,
     deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
         "//drake/lcmtypes:viewer",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/lcm",
+        "//drake/systems/primitives:signal_log"
     ],
 )
 

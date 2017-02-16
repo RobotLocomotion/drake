@@ -131,9 +131,6 @@ std::unique_ptr<BasicVector<double>> DepthSensor::AllocateOutputVector(
 
 void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
                                systems::SystemOutput<double>* output) const {
-  DRAKE_ASSERT_VOID(System<double>::CheckValidContext(context));
-  DRAKE_ASSERT_VOID(System<double>::CheckValidOutput(output));
-
   VectorXd u = this->EvalEigenVectorInput(context, 0);
   auto q = u.head(tree_.get_num_positions());
   KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);

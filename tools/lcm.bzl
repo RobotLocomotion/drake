@@ -81,6 +81,7 @@ def lcm_cc_library(
         lcm_srcs=None,
         lcm_package=None,
         lcm_structs=None,
+        linkstatic=1,
         **kwargs):
     """Declares a cc_library on message classes generated from `*.lcm` files.
 
@@ -96,6 +97,9 @@ def lcm_cc_library(
     structs per file, then the parameter is required and must list every
     `struct ...;` declared by lcm_srcs.
 
+    By default, we produce only static libraries, to reduce compilation time
+    on all platforms, and to avoid mysterious dyld errors on OS X. This default
+    could be revisited if binary size becomes a concern.
     """
     if not lcm_srcs:
         fail("lcm_srcs is required")
@@ -117,6 +121,7 @@ def lcm_cc_library(
         hdrs=outs,
         deps=deps,
         includes=includes,
+        linkstatic=linkstatic,
         **kwargs)
 
 def lcm_py_library(

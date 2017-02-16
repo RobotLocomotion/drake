@@ -67,9 +67,7 @@ class KinematicsCacheElement {
   int get_num_velocities() const { return static_cast<int>(v_to_qdot.cols()); }
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 template <typename T>
@@ -170,24 +168,18 @@ class KinematicsCache {
   int get_num_positions() const;
 
 // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_positions().")
-#endif
   int getNumPositions() const;
 
   int get_num_velocities() const;
 
 // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_velocities().")
-#endif
   int getNumVelocities() const;
 
  private:
   void invalidate();
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };

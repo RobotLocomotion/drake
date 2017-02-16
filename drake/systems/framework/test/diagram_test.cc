@@ -508,7 +508,6 @@ class PublishingSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoPublish(const Context<double>& context) const override {
-    CheckValidContext(context);
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
 

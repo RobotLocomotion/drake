@@ -27,19 +27,32 @@ constexpr int NChooseK(int n, int k) {
   return (k == 0) ? 1 : (n * NChooseK(n - 1, k - 1)) / k;
 }
 
-/** Represents a monomial, a product of powers of variables with integer
- * exponents. Note that it does not include the coefficient part of a
+/** Represents a monomial, a product of powers of variables with non-negative
+ * integer exponents. Note that it does not include the coefficient part of a
  * monomial. Internally, it is represented by a map from a variable ID to its
  * integer exponent. */
 class Monomial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Monomial)
-  /** Default constructor. */
-  Monomial() = default;
+  /** Constructs a monomial equal to 1. Namely the total degree is zero. */
+  Monomial();
   /** Constructs a Monomial from @p powers. */
   explicit Monomial(const std::map<Variable::Id, int>& powers);
   /** Constructs a Monomial from @p var and @exponent. */
   Monomial(const Variable& var, int exponent);
+
+  /**
+   * Converts an expression to a monomial, if the expression is written as
+   * ∏ᵢpow(xᵢ, kᵢ), otherwise throws a runtime error.
+   * @pre{is_polynomial(e) should be true.}
+   * Note that we cannot handle the case that the expression contains
+   * addition/subtraction yet, namely x*(y+z)-x*z will not be converted to a
+   * monomial.
+   * TODO(hongkai.dai):make sure x*(y+z)-x*z will be converted to a monomial, when
+   * we get "Expression::Expand" function working.
+   */
+  explicit Monomial(const Expression& e);
+
   /** Returns the total degree of this Monomial. */
   int total_degree() const { return total_degree_; }
   /** Returns hash value. */
@@ -203,7 +216,31 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
   }
   return basis;
 }
+
 }  // namespace internal
+
+/**
+ * Returns the total degrees of the polynomial @p e w.r.t the variables in @p
+ * vars. For example, the total degree of
+ * e = x^2*y + 2 * x*y*z^3 + x * z^2
+ * w.r.t (x, y) is 3 (from x^2 * y)
+ * w.r.t (x, z) is 4 (from x*y*z^3)
+ * w.r.t (z)    is 3 (from x*y*z^3)
+ * Throws a runtime error if e.is_polynomial() is false.
+ * @param vars A set of variables.
+ * @return The total degree.
+ */
+int Degree(const Expression& e, const Variables& var);
+
+/**
+ * Returns the total degress of all the variables in the polynomial @p e.
+ * For example, the total degree of
+ * x^2*y + 2*x*y*z^3 + x*z^2
+ * is 5, from x*y*z^3
+ * Throws a runtime error is e.is_polynomial() is false.
+ * @return The total degree.
+ */
+int Degree(const Expression& e);
 
 /** Returns a monomial of the form x^2*y^3, it does not have the constant
  * factor. To generate a monomial x^2*y^3, @p map_var_to_exponent contains the
@@ -246,6 +283,7 @@ MonomialBasis(const Variables& vars) {
   return internal::ComputeMonomialBasis<internal::NChooseK(n + degree, degree)>(
       vars, degree);
 }
+
 }  // namespace symbolic
 
 /** Computes the hash value of a Monomial. */
@@ -255,5 +293,4 @@ struct hash_value<symbolic::internal::Monomial> {
     return m.GetHash();
   }
 };
-
 }  // namespace drake

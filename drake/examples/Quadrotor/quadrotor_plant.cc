@@ -47,8 +47,6 @@ template <typename T>
 void QuadrotorPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T> &context,
     systems::ContinuousState<T> *derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-
   VectorX<T> state = context.get_continuous_state_vector().CopyToVector();
 
   VectorX<T> u = this->EvalVectorInput(context, 0)->get_value();

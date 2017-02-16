@@ -37,6 +37,27 @@ class MonomialTest : public ::testing::Test {
   }
 };
 
+TEST_F(MonomialTest, MonomialOne) {
+  // Compares monomials all equal to 1, but with different variables.
+  internal::Monomial m1{};
+  internal::Monomial m2({{var_x_.get_id(), 0}});
+  internal::Monomial m3({{var_x_.get_id(), 0}, {var_y_.get_id(), 0}});
+  EXPECT_EQ(m1, m2);
+  EXPECT_EQ(m1, m3);
+  EXPECT_EQ(m2, m3);
+}
+
+TEST_F(MonomialTest, MonomialWithZeroExponent) {
+  // Compares monomials containing zero exponent, such as x^0 * y^2
+  internal::Monomial m1({{var_y_.get_id(), 2}});
+  internal::Monomial m2({{var_x_.get_id(), 0}, {var_y_.get_id(), 2}});
+  EXPECT_EQ(m1, m2);
+  EXPECT_EQ(m2.get_powers().size(), 1);
+  std::map<Variable::Id, int> power_expected;
+  power_expected.emplace(var_y_.get_id(), 2);
+  EXPECT_EQ(m2.get_powers(), power_expected);
+}
+
 TEST_F(MonomialTest, Monomial) {
   // clang-format off
   EXPECT_PRED2(
@@ -295,6 +316,145 @@ TEST_F(MonomialTest, UnorderedMapOfMonomial) {
   const auto it2 = monomial_to_coeff_map.find(y_5);
   ASSERT_TRUE(it2 != monomial_to_coeff_map.end());
   EXPECT_EQ(it2->second, -7);
+}
+
+// Converts a constant to monomial.
+TEST_F(MonomialTest, ToMonomial0) {
+  internal::Monomial expected;
+  EXPECT_EQ(internal::Monomial(1), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 0)), expected);
+  EXPECT_THROW(internal::Monomial(2), std::exception);
+}
+
+// Converts expression x to monomial.
+TEST_F(MonomialTest, ToMonomial1) {
+  internal::Monomial expected(var_x_, 1);
+  EXPECT_EQ(internal::Monomial(x_), expected);
+}
+
+// Converts expression x * y to monomial.
+TEST_F(MonomialTest, ToMonomial2) {
+  std::map<Variable::Id, int> powers;
+  powers.emplace(var_x_.get_id(), 1);
+  powers.emplace(var_y_.get_id(), 1);
+  internal::Monomial expected(powers);
+  EXPECT_EQ(internal::Monomial(x_ * y_), expected);
+}
+
+// Converts expression x^3 to monomial.
+TEST_F(MonomialTest, ToMonomial3) {
+  internal::Monomial expected(var_x_, 3);
+  EXPECT_EQ(internal::Monomial(pow(x_, 3)), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 2) * x_), expected);
+}
+
+// Converts expression x^3 * y to monomial.
+TEST_F(MonomialTest, ToMonomial4) {
+  std::map<Variable::Id, int> powers;
+  powers.emplace(var_x_.get_id(), 3);
+  powers.emplace(var_y_.get_id(), 1);
+  internal::Monomial expected(powers);
+  EXPECT_EQ(internal::Monomial(pow(x_, 3) * y_), expected);
+  EXPECT_EQ(internal::Monomial(pow(x_, 2) * y_ * x_), expected);
+}
+
+TEST_F(MonomialTest, Degree) {
+  const Expression e0{42.0};
+  EXPECT_EQ(Degree(e0, {var_x_, var_y_}), 0);
+  EXPECT_EQ(Degree(e0), 0);
+
+  const Expression e1{pow(x_, 2)};
+  EXPECT_EQ(Degree(e1, {var_x_}), 2);
+  EXPECT_EQ(Degree(e1, {var_y_}), 0);
+  EXPECT_EQ(Degree(e1, {var_x_, var_y_}), 2);
+  EXPECT_EQ(Degree(e1), 2);
+
+  const Expression e2{pow(x_, 2) * pow(y_, 3)};
+  EXPECT_EQ(Degree(e2, {var_x_}), 2);
+  EXPECT_EQ(Degree(e2, {var_y_}), 3);
+  EXPECT_EQ(Degree(e2, {var_z_}), 0);
+  EXPECT_EQ(Degree(e2, {var_x_, var_y_}), 5);
+  EXPECT_EQ(Degree(e2, {var_x_, var_z_}), 2);
+  EXPECT_EQ(Degree(e2, {var_y_, var_z_}), 3);
+  EXPECT_EQ(Degree(e2, {var_x_, var_y_, var_z_}), 5);
+  EXPECT_EQ(Degree(e2), 5);
+
+  const Expression e3{3 + x_ + y_ + z_};
+  EXPECT_EQ(Degree(e3, {var_x_}), 1);
+  EXPECT_EQ(Degree(e3, {var_y_}), 1);
+  EXPECT_EQ(Degree(e3, {var_z_}), 1);
+  EXPECT_EQ(Degree(e3, {var_x_, var_y_}), 1);
+  EXPECT_EQ(Degree(e3, {var_x_, var_y_, var_z_}), 1);
+  EXPECT_EQ(Degree(e3), 1);
+
+  const Expression e4{1 + pow(x_, 2) + pow(y_, 3)};
+  EXPECT_EQ(Degree(e4, {var_x_}), 2);
+  EXPECT_EQ(Degree(e4, {var_y_}), 3);
+  EXPECT_EQ(Degree(e4, {var_x_, var_y_}), 3);
+  EXPECT_EQ(Degree(e4, {var_x_, var_z_}), 2);
+  EXPECT_EQ(Degree(e4, {var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(Degree(e4), 3);
+
+  const Expression e5{1 + pow(x_, 2) * y_ + x_ * y_ * y_ * z_};
+  EXPECT_EQ(Degree(e5, {var_x_}), 2);
+  EXPECT_EQ(Degree(e5, {var_y_}), 2);
+  EXPECT_EQ(Degree(e5, {var_z_}), 1);
+  EXPECT_EQ(Degree(e5, {var_x_, var_y_}), 3);
+  EXPECT_EQ(Degree(e5, {var_x_, var_z_}), 2);
+  EXPECT_EQ(Degree(e5, {var_y_, var_z_}), 3);
+  EXPECT_EQ(Degree(e5, {var_x_, var_y_, var_z_}), 4);
+  EXPECT_EQ(Degree(e5), 4);
+
+  const Expression e6{pow(x_ + y_ + z_, 3)};
+  EXPECT_EQ(Degree(e6, {var_x_}), 3);
+  EXPECT_EQ(Degree(e6, {var_y_}), 3);
+  EXPECT_EQ(Degree(e6, {var_z_}), 3);
+  EXPECT_EQ(Degree(e6, {var_x_, var_y_}), 3);
+  EXPECT_EQ(Degree(e6, {var_x_, var_z_}), 3);
+  EXPECT_EQ(Degree(e6, {var_y_, var_z_}), 3);
+  EXPECT_EQ(Degree(e6, {var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(Degree(e6), 3);
+
+  const Expression e7{pow(x_ + x_ * y_ * y_, 2) * y_ +
+                      pow(x_ + pow(y_ + x_ * z_, 2), 3)};
+  EXPECT_EQ(Degree(e7, {var_x_}), 6);
+  EXPECT_EQ(Degree(e7, {var_y_}), 6);
+  EXPECT_EQ(Degree(e7, {var_z_}), 6);
+  EXPECT_EQ(Degree(e7, {var_x_, var_y_}), 7);
+  EXPECT_EQ(Degree(e7, {var_x_, var_z_}), 12);
+  EXPECT_EQ(Degree(e7, {var_y_, var_z_}), 6);
+  EXPECT_EQ(Degree(e7, {var_x_, var_y_, var_z_}), 12);
+  EXPECT_EQ(Degree(e7), 12);
+
+  const Expression e8{pow(x_ + y_ + z_, 3) / 10};
+  EXPECT_EQ(Degree(e8, {var_x_}), 3);
+  EXPECT_EQ(Degree(e8, {var_y_}), 3);
+  EXPECT_EQ(Degree(e8, {var_z_}), 3);
+  EXPECT_EQ(Degree(e8, {var_x_, var_y_}), 3);
+  EXPECT_EQ(Degree(e8, {var_x_, var_z_}), 3);
+  EXPECT_EQ(Degree(e8, {var_y_, var_z_}), 3);
+  EXPECT_EQ(Degree(e8, {var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(Degree(e8), 3);
+
+  const Expression e9{-pow(y_, 3)};
+  EXPECT_EQ(Degree(e9, {var_x_}), 0);
+  EXPECT_EQ(Degree(e9, {var_y_}), 3);
+  EXPECT_EQ(Degree(e9, {var_z_}), 0);
+  EXPECT_EQ(Degree(e9, {var_x_, var_y_}), 3);
+  EXPECT_EQ(Degree(e9, {var_x_, var_z_}), 0);
+  EXPECT_EQ(Degree(e9, {var_y_, var_z_}), 3);
+  EXPECT_EQ(Degree(e9, {var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(Degree(e9), 3);
+
+  const Expression e10{pow(pow(x_, 3), 1.0 / 3)};
+  EXPECT_EQ(Degree(e10, {var_x_}), 1);
+  EXPECT_EQ(Degree(e10, {var_y_}), 0);
+  EXPECT_EQ(Degree(e10, {var_z_}), 0);
+  EXPECT_EQ(Degree(e10, {var_x_, var_y_}), 1);
+  EXPECT_EQ(Degree(e10, {var_x_, var_z_}), 1);
+  EXPECT_EQ(Degree(e10, {var_y_, var_z_}), 0);
+  EXPECT_EQ(Degree(e10, {var_x_, var_y_, var_z_}), 1);
+  EXPECT_EQ(Degree(e10), 1);
 }
 
 }  // namespace

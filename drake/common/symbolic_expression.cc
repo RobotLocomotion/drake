@@ -63,8 +63,6 @@ Expression NegateMultiplication(const Expression& e) {
 
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<ExpressionVar>(var)} {}
-Expression::Expression(const string& name)
-    : ptr_{make_shared<ExpressionVar>(Variable{name})} {}
 Expression::Expression(const double d) : ptr_{make_cell(d)} {}
 Expression::Expression(const shared_ptr<ExpressionCell> ptr) : ptr_{ptr} {}
 
@@ -151,18 +149,6 @@ bool Expression::is_polynomial() const {
 Polynomial<double> Expression::ToPolynomial() const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->ToPolynomial();
-}
-
-int Expression::Degree(const Variables& vars) const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  DRAKE_DEMAND(is_polynomial());
-  return ptr_->Degree(vars);
-}
-
-int Expression::Degree() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  DRAKE_DEMAND(is_polynomial());
-  return ptr_->Degree(GetVariables());
 }
 
 double Expression::Evaluate(const Environment& env) const {

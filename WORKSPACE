@@ -184,7 +184,7 @@ gfortran_repository(
 git_repository(
   name = "snopt",
   remote = "git@github.com:RobotLocomotion/snopt.git",
-  commit = "9f8c7972fa257d2341ecefcf58617e11b9ebb504",
+  commit = "d08d0ea5454349d252b2bc355c6d7c7237090a46",
 )
 
 # Python Libraries
