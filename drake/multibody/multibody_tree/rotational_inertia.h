@@ -20,16 +20,16 @@ namespace multibody {
 /// distribution of a body about a particular point. Given a point, the mass
 /// distribution of a body is generally described by the first three mass
 /// weighted moments about that point. These moments are the mass of the body
-/// or zeroth moment, the center of mass vector or first order moment and
-/// finally the rotational inertia or second order moment.
+/// (or zeroth moment), the center of mass vector (or first order moment) and
+/// finally the rotational inertia (or second order moment).
 /// We choose to use the term **rotational inertia** as used by [Jain 2010] to
-/// disambiguate with the more general concept of **inertia** of a body.
+/// distinguish from the more general concept of **inertia** of a body.
 /// A rotational inertia can be represented by the six scalar elements of a
-/// symmetric 3x3 matrix often referred also as **inertia matrix** or also as
-/// **inertia tensor**. These scalar elements are the measures of the rotational
-/// inertia components on a given frame and therefore this frame needs to be
-/// explicitly stated. These measures have no meaning if a reference frame is
-/// not specified.
+/// symmetric 3x3 matrix often referred also as **the inertia matrix** or also
+/// as **the inertia tensor**. These scalar elements are the numerical values of
+/// the rotational inertia components measured on a given frame and therefore
+/// this frame needs to be explicitly stated. These scalar elements have no
+/// meaning if a reference frame is not specified.
 /// For a given point there exists a set of axes, called **principal axes of
 /// inertia** in which the inertia tensor is diagonal. The resulting diagonal
 /// elements are the **principal moments of inertia** about that point.
@@ -48,13 +48,13 @@ class RotationalInertia {
     // This class internally uses a full 3x3 Eigen matrix to store the six
     // elements that are needed to represent it. However, only one triangular
     // portion is used leaving redundant elements set to NaN so that operations
-    // using them fail fast allowing to quickly detect bugs.
+    // using them fail fast, allowing fast bug detection.
     // By default RotationalInertia only works on the lower part of the
     // underlying Eigen matrix.
-    // There is no strong reason for this particular choice.
-    // It was observed however that Eigen sometimes uses the lower part of a
-    // symmetric dense matrix. See Eigen::SelfAdjointEigenSolver. This is used
-    // by RotationalInertia::CalcPrincipalMomentsOfInertia().
+    // This particular choice is arbitrary. However, it was observed however
+    // that Eigen sometimes uses the lower part of a symmetric dense matrix.
+    // See Eigen::SelfAdjointEigenSolver. This is used by
+    // RotationalInertia::CalcPrincipalMomentsOfInertia().
     TriangularViewInUse = Eigen::Lower,
     // The strictly lower part is set to NaN to quickly detect when used by
     // error.
