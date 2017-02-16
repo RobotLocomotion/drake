@@ -5,13 +5,15 @@
 // Most users should only include that file, not this one.
 // For background, see http://drake.mit.edu/cxx_inl.html.
 
+#include "drake/examples/rod2d/rod2d.h"
+
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <vector>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/rod2d/rod2d.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/value.h"
 
@@ -70,18 +72,24 @@ int Rod2D<T>::get_k(const systems::Context<T>& context) const {
   return k;
 }
 
-// Utility method for determining the rod endpoint, given the endpoint
-// k = { -1, 0, 1 }.
 template <class T>
-std::pair<T, T> Rod2D<T>::CalcRodEndpoint(const T& x,
-                                             const T& y,
-                                             const int k,
-                                             const T& ctheta,
-                                             const T& stheta,
-                                             const double half_rod_len) {
+Vector2<T> Rod2D<T>::CalcRodEndpoint(const T& x, const T& y, const int k,
+                                        const T& ctheta, const T& stheta,
+                                        const double half_rod_len) {
   const T cx = x + k * ctheta * half_rod_len;
   const T cy = y + k * stheta * half_rod_len;
-  return std::make_pair(cx, cy);
+  return Vector2<T>(cx, cy);
+}
+
+template <class T>
+Vector2<T> Rod2D<T>::CalcCoincidentRodPointVelocity(
+    const Vector2<T>& p_WRo, const Vector2<T>& v_WRo,
+    const T& w_WR,  // aka thetadot
+    const Vector2<T>& p_WC) {
+  const Vector2<T> p_RoC_W = p_WC - p_WRo;  // Vector from R origin to C, in W.
+  // This is w x r but in 2d.
+  const Vector2<T> v_WRc = v_WRo + w_WR * Vector2<T>(-p_RoC_W[1], p_RoC_W[0]);
+  return v_WRc;
 }
 
 template <typename T>
@@ -97,7 +105,7 @@ void Rod2D<T>::DoCalcOutput(const systems::Context<T>& context,
       context.get_continuous_state()->CopyToVector();
 }
 
-/// Integrates the rod example forward in time using a
+/// Integrates the Rod 2D example forward in time using a
 /// half-explicit time stepping scheme.
 template <class T>
 void Rod2D<T>::DoCalcDiscreteVariableUpdates(
@@ -325,10 +333,10 @@ void Rod2D<T>::HandleImpact(const systems::Context<T>& context,
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
   const double half_rod_length = rod_length_ / 2;
-  const std::pair<T, T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
-                                                 half_rod_length);
-  const T cx = c.first;
-  const T cy = c.second;
+  const Vector2<T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
+                                       half_rod_length);
+  const T cx = c[0];
+  const T cy = c[1];
 
   // Compute the impulses such that the tangential velocity post-collision
   // is zero.
@@ -678,6 +686,126 @@ Vector2<T> Rod2D<T>::CalcStickingContactForces(
   return Vector2<T>(fN, fF);
 }
 
+// Input x goes from 0 to 1; output goes 0 to 1 but smoothed with an S-shaped
+// quintic with two zero derivatives at either end.
+template <class T>
+T Rod2D<T>::step5(const T& x) {
+  DRAKE_ASSERT(0 <= x && x <= 1);
+  const T x3 = x * x * x;
+  return x3 * (10 + x * (6 * x - 15));  // 10x^3-15x^4+6x^5
+}
+
+// This function models Stribeck dry friction as a C2 quintic spline with 3
+// segments that is used to calculate an effective coefficient of friction:
+//     mu_stribeck =
+//      (a) v=0..1: smooth interpolation from 0 to mu_s
+//      (b) v=1..3: smooth interp from mu_s down to mu_d (Stribeck)
+//      (c) v=3..Inf mu_d
+//
+// CAUTION: v must be dimensionless in multiples of the stiction slip velocity
+// tolerance.
+//
+// mu_stribeck is zero at v=0 with 1st deriv (slope) zero
+// and 2nd deriv (curvature) 0. At large velocities v>>0 the value is
+// mu_d, again with zero slope and curvature. We want mu(v) to be c2
+// continuous, so mu_wet(v) must have zero slope and curvature at v==0 and
+// at v==3 where it takes on a constant value ud.
+//
+// Curve looks like this:
+//
+//     us     ***
+//           *    *
+//           *     *
+//           *      *
+//     ud    *        *  *    *    *    * slope = 0 at Inf
+//          *
+//          *
+//         *
+//  0  * *____| slope = 0 at 0
+//
+//     |      |           |
+//   v=0      1           3
+//
+// This calculates a composite coefficient of friction that you should use
+// to scale the normal force to produce the friction force.
+template <class T>
+T Rod2D<T>::CalcMuStribeck(const T& us, const T& ud, const T& v) {
+  T mu_dry;
+  if (v >= 3)
+    mu_dry = ud;  // sliding
+  else if (v >= 1)
+    mu_dry = us - (us - ud) * step5((v - 1) / 2);  // Stribeck
+  else
+    mu_dry = us * step5(v);  // 0 <= v < 1 (stiction)
+  return mu_dry;
+}
+
+// Finds the locations of the two rod endpoints and generates contact forces
+// there using a linear stiffness model, Hunt and Crossley normal dissipation,
+// and a Stribeck friction model. Note that we are attributing all the
+// compliance to the *ground*, not the *rod*, so that forces will be applied
+// to the same points of the rod as is done in the rigid contact models. That
+// makes comparison of the models easier.
+//
+// For each end point, let h be the penetration depth (in the -y direction) and
+// v the slip speed along x. Then
+//   fK =  k*h                   normal force due to stiffness
+//   fD =  fK*d*hdot             normal force due to dissipation
+//   fN =  max(fK + fD, 0)       total normal force
+//   fF = -mu(|v|)*fN*sign(v)    friction force
+//   f  = fN + fF                total force
+//
+// Here mu(v) is a Stribeck function that is zero at zero slip velocity, and
+// reaches a maximum mu_s at the stiction velocity tolerance.
+template <class T>
+Vector3<T> Rod2D<T>::CalcCompliantContactForces(
+    const systems::Context<T>& context) const {
+  using std::abs;
+  using std::max;
+
+  // Get the necessary parts of the state.
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const Vector2<T> p_WRo(state.GetAtIndex(0), state.GetAtIndex(1));
+  const T theta = state.GetAtIndex(2);
+  const Vector2<T> v_WRo(state.GetAtIndex(3), state.GetAtIndex(4));
+  const T w_WR(state.GetAtIndex(5));
+
+  const double half_rod_length = rod_length_ / 2;
+  const T ctheta = cos(theta);
+  const T stheta = sin(theta);
+
+  // Find left and right end point locations.
+  Vector2<T> p_WP[2] = {
+      CalcRodEndpoint(p_WRo[0], p_WRo[1], -1, ctheta, stheta, half_rod_length),
+      CalcRodEndpoint(p_WRo[0], p_WRo[1], 1, ctheta, stheta, half_rod_length)};
+
+  Vector3<T> f_contact(0, 0, 0);  // Accumulate contact forces here.
+  for (int i = 0; i < 2; ++i) {
+    const Vector2<T>& p_WC = p_WP[i];
+    const Vector2<T> p_RC_W = p_WC - p_WRo;
+
+    // Calculate penetration depth; negative means separated.
+    const T h = -p_WC[1];
+    if (h > 0) {  // This point is in contact.
+      const Vector2<T> pdot =
+          CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR, p_WC);
+      const T hdot = -pdot[1];  // penetration depth in -y
+      const T v = pdot[0];      // slip velocity in +x
+      const int sign_v = v < 0 ? -1 : 1;
+      const T fK = get_stiffness() * h;
+      const T fD = fK * get_dissipation() * hdot;
+      const T fN = max(fK + fD, T(0));
+      const T mu = CalcMuStribeck(get_mu_static(), get_mu_coulomb(),
+                                  abs(v) / get_stiction_velocity_tolerance());
+      const T fF = -mu * fN * T(sign_v);
+      const Vector2<T> f(fF, fN);
+      const T tau = p_RC_W[0] * f[1] - p_RC_W[1] * f[0];  // r X f
+      f_contact += Vector3<T>(fF, fN, tau);
+    }
+  }
+  return f_contact;
+}
+
 // Computes the accelerations of the rod center of mass for the case of the rod
 // contacting the surface at exactly one point and with sliding velocity.
 template <class T>
@@ -710,10 +838,10 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   const int k = get_k(context);
 
   // Determine the point of contact (cx, cy).
-  const std::pair<T, T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
-                                                 half_rod_length);
-  const T cx = c.first;
-  const T cy = c.second;
+  const Vector2<T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
+                                       half_rod_length);
+  const T cx = c[0];
+  const T cy = c[1];
 
   // Compute the horizontal velocity at the point of contact.
   const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
@@ -818,10 +946,10 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const std::pair<T, T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
-                                                 half_rod_length);
-  const T cx = c.first;
-  const T cy = c.second;
+  const Vector2<T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
+                                       half_rod_length);
+  const T cx = c[0];
+  const T cy = c[1];
 
   // Compute the contact forces, assuming sticking contact.
   Vector2<T> cf = CalcStickingContactForces(context);
@@ -974,19 +1102,22 @@ void Rod2D<T>::CalcAccelerationsCompliantContactAndBallistic(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   // Obtain the structure we need to write into.
-  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
+  systems::VectorBase<T>* const vdot = derivatives->get_mutable_vector();
 
   // Get the inputs.
   const int port_index = 0;
-  const auto input = this->EvalEigenVectorInput(context, port_index);
+  const auto f_input = this->EvalEigenVectorInput(context, port_index);
 
-  // TODO(sherm1): This is where you will compute and add in contact forces.
+  // Calculate contact forces.
+
+  const Vector3<T> f_contact = CalcCompliantContactForces(context);
+  const Vector3<T> f_total = f_contact + f_input;
 
   // Second three derivative components are acceleration due to gravity,
   // contact forces, and non-gravitational, non-contact external forces.
-  f->SetAtIndex(3, input(0)/mass_);
-  f->SetAtIndex(4, input(1)/mass_ + get_gravitational_acceleration());
-  f->SetAtIndex(5, input(2)/J_);
+  vdot->SetAtIndex(3, f_total[0]/mass_);
+  vdot->SetAtIndex(4, f_total[1]/mass_ + get_gravitational_acceleration());
+  vdot->SetAtIndex(5, f_total[2]/J_);
 }
 
 // Computes the accelerations of the rod center of mass for the case of
@@ -996,17 +1127,17 @@ void Rod2D<T>::CalcAccelerationsBallistic(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   // Obtain the structure we need to write into.
-  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
+  systems::VectorBase<T>* const vdot = derivatives->get_mutable_vector();
 
   // Get the inputs.
   const int port_index = 0;
-  const auto input = this->EvalEigenVectorInput(context, port_index);
+  const auto f_input = this->EvalEigenVectorInput(context, port_index);
 
   // Second three derivative components are acceleration due to gravity and
   // external forces.
-  f->SetAtIndex(3, input(0)/mass_);
-  f->SetAtIndex(4, input(1)/mass_ + get_gravitational_acceleration());
-  f->SetAtIndex(5, input(2)/J_);
+  vdot->SetAtIndex(3, f_input(0)/mass_);
+  vdot->SetAtIndex(4, f_input(1)/mass_ + get_gravitational_acceleration());
+  vdot->SetAtIndex(5, f_input(2)/J_);
 }
 
 template <typename T>

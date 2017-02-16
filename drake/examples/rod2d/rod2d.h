@@ -16,7 +16,7 @@ namespace rod2d {
 /// simulated with piecewise differential algebraic equations, and a fully
 /// rigid model simulated using a first-order time stepping approach. The rod
 /// state is initialized to the configuration that corresponds to the
-/// Painleve' Paradox problem, described in [Stewart 2000]. The paradox consists
+/// Painlevé Paradox problem, described in [Stewart 2000]. The paradox consists
 /// of a rod contacting a planar surface *without impact* and subject to sliding
 /// Coulomb friction. The problem is well known to correspond to an
 /// *inconsistent rigid contact configuration*, where impulsive forces are
@@ -183,6 +183,45 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Sets the rod moment of inertia.
   void set_rod_moment_of_inertia(double J) { J_ = J; }
 
+  /// Get compliant contact normal stiffness in N/m.
+  double get_stiffness() const { return stiffness_; }
+
+  /// Set compliant contact normal stiffness in N/m (>= 0).
+  void set_stiffness(double stiffness) {
+    DRAKE_DEMAND(stiffness >= 0);
+    stiffness_ = stiffness;
+  }
+
+  /// Get compliant contact normal dissipation in 1/v (s/m).
+  double get_dissipation() const { return dissipation_; }
+
+  /// Set compliant contact normal dissipation in 1/v (s/m, >= 0).
+  void set_dissipation(double dissipation) {
+    DRAKE_DEMAND(dissipation >= 0);
+    dissipation_ = dissipation;
+  }
+
+  /// Get compliant contact static friction (stiction) coefficient `μ_s`.
+  double get_mu_static() const { return mu_s_; }
+
+  /// Set compliant contact stiction coefficent (>= mu_coulomb).
+  void set_mu_static(double mu_static) {
+    DRAKE_DEMAND(mu_static >= mu_);
+    mu_s_ = mu_static;
+  }
+
+  /// Get the stiction velocity tolerance (m/s).
+  double get_stiction_velocity_tolerance() const {return v_stick_tol_;}
+
+  /// Set the stiction velocity tolerance (m/s). This is the maximum slip
+  /// velocity that we are willing to consider as sticking. For a given normal
+  /// force N this is the velocity at which the friction force will be largest,
+  /// at `μ_s*N` where `μ_s` is the static coefficient of friction.
+  void set_stiction_velocity_tolerance(double v_stick_tol) {
+    DRAKE_DEMAND(v_stick_tol > 0);
+    v_stick_tol_ = v_stick_tol;
+  }
+
   /// Checks whether the system is in an impacting state, meaning that the
   /// relative velocity along the contact normal between the rod and the
   /// halfspace is such that the rod will begin interpenetrating the halfspace
@@ -197,6 +236,13 @@ class Rod2D : public systems::LeafSystem<T> {
 
   /// Gets the model and simulation type for this system.
   SimulationType get_simulation_type() const { return simulation_type_; }
+
+  /// Return net contact forces as F_Ro_W=(fx,fy,tau) where f_Ro_W=(fx,fy) is
+  /// applied at the rod origin Ro, and m_R=tau is the moment due to the
+  /// contact forces actually being applied elsewhere. This may result from
+  /// one or more contact points.
+  Vector3<T> CalcCompliantContactForces(
+      const systems::Context<T>& context) const;
 
  protected:
   int get_k(const systems::Context<T>& context) const;
@@ -239,9 +285,28 @@ class Rod2D : public systems::LeafSystem<T> {
                         const T& xc, const T& yc) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
-  static std::pair<T, T> CalcRodEndpoint(const T& x, const T& y, const int k,
-                                         const T& ctheta, const T& stheta,
-                                         const double half_rod_len);
+
+
+  // Utility method for determining the World frame location of one of three
+  // points on the rod whose origin is Ro. Let r be the half-length of the rod.
+  // Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
+  static Vector2<T> CalcRodEndpoint(const T& x, const T& y, const int k,
+                                    const T& ctheta, const T& stheta,
+                                    const double half_rod_len);
+
+  // Given a location p_WC of a point C in the World frame, define the point Rc
+  // of the rod that is coincident with C, and report Rc's World frame velocity
+  // v_WRc. We're given p_WRo=(x,y) and V_WRo=(v_WRo,w_WR)=(xdot,ydot,thetadot).
+  static Vector2<T> CalcCoincidentRodPointVelocity(
+      const Vector2<T>& p_WRo, const Vector2<T>& v_WRo,
+      const T& w_WR,  // aka thetadot
+      const Vector2<T>& p_WC);
+
+  // Quintic step function approximation used by Stribeck friction model.
+  static T step5(const T& x);
+
+  // Friction model used in compliant contact.
+  static T CalcMuStribeck(const T& us, const T& ud, const T& v);
 
   // Solves linear complementarity problems for time stepping.
   solvers::MobyLCPSolver lcp_;
@@ -251,13 +316,19 @@ class Rod2D : public systems::LeafSystem<T> {
   SimulationType simulation_type_;
 
   double dt_{0.0};          // Integration step-size for time stepping approach.
-  double mass_{1.0};        // The mass of the rod.
-  double rod_length_{1.0};  // The length of the rod.
-  double mu_{1000.0};       // The coefficient of friction.
-  double g_{-9.81};         // The acceleration due to gravity.
+  double mass_{1.0};        // The mass of the rod (kg).
+  double rod_length_{1.0};  // The length of the rod (m).
+  double mu_{1000.0};       // The (dynamic) coefficient of friction.
+  double g_{-9.81};         // The acceleration due to gravity (in y direction).
   double J_{1.0};           // The moment of the inertia of the rod.
-  double erp_{0.8};         // ERP for time stepping systems
-  double cfm_{1e-8};        // CFM for time stepping systems
+  double erp_{0.8};         // ERP for time stepping systems.
+  double cfm_{1e-8};        // CFM for time stepping systems.
+
+  // Compliant contact parameters.
+  double stiffness_{10000};   // Normal stiffness of the ground plane (N/m).
+  double dissipation_{1};     // Dissipation factor in 1/v (s/m).
+  double mu_s_{mu_};          // Static coefficient of friction (>= mu).
+  double v_stick_tol_{1e-3};  // Velocity below which we are in stiction.
 };
 
 }  // namespace rod2d
