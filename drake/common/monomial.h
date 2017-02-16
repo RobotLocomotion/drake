@@ -6,6 +6,7 @@
 #include <ostream>
 #include <set>
 #include <unordered_map>
+#include <utility>
 
 #include <Eigen/Core>
 
@@ -34,10 +35,13 @@ constexpr int NChooseK(int n, int k) {
 class Monomial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Monomial)
+
   /** Constructs a monomial equal to 1. Namely the total degree is zero. */
   Monomial();
+
   /** Constructs a Monomial from @p powers. */
   explicit Monomial(const std::map<Variable::Id, int>& powers);
+
   /** Constructs a Monomial from @p var and @exponent. */
   Monomial(const Variable& var, int exponent);
 
@@ -48,22 +52,35 @@ class Monomial {
    * Note that we cannot handle the case that the expression contains
    * addition/subtraction yet, namely x*(y+z)-x*z will not be converted to a
    * monomial.
-   * TODO(hongkai.dai):make sure x*(y+z)-x*z will be converted to a monomial, when
-   * we get "Expression::Expand" function working.
+   * TODO(hongkai.dai):make sure x*(y+z)-x*z will be converted to a monomial,
+   * when we get "Expression::Expand" function working.
    */
   explicit Monomial(const Expression& e);
 
   /** Returns the total degree of this Monomial. */
   int total_degree() const { return total_degree_; }
+
   /** Returns hash value. */
   size_t GetHash() const;
+
+  /** Returns the internal representation of Monomial, the map from a base
+   * (Variable ID) to its exponent (int).*/
   const std::map<Variable::Id, int>& get_powers() const { return powers_; }
+
+  /** Evaluates under a given environment. */
+  double Evaluate(const std::unordered_map<Variable::Id, double>& env) const;
+
+  /** Substitutes using a given environment. */
+  std::pair<double, Monomial> Substitute(
+      const std::unordered_map<Variable::Id, double>& env) const;
+
   /** Returns a symbolic expression representing this monomial. Since, this
    * class only includes the ID of a variable, not a variable itself, we need
    * @id_to_var_map, a map from a variable ID to a variable as an argument of
    * this method to build an expression. */
   Expression ToExpression(
       const std::unordered_map<Variable::Id, Variable>& id_to_var_map) const;
+
   /** Checks if this monomial and @p m represent the same monomial.
    * Two monomials are equal iff they contain the same variable ID
    * raised to the same exponent. */
