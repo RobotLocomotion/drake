@@ -39,99 +39,6 @@ void GetSemidefiniteProgramSolvers(
   AddSolverIfAvailable(SolverType::kMosek, solvers);
 }
 
-// Closed form (exact) solution test of QP problem.
-// Note that for any Positive Semi Definite matrix Q :
-// min 0.5x'Qx + bx = -Q^(-1) * b
-// The values were chosen at random but were hardcoded
-// to enable test reproducibility.
-// The test also verifies the quadratic program works when
-// matrix Q has off-diagonal terms.
-void TestQuadraticProgram2(const MathematicalProgramSolverInterface& solver) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<5>();
-  Eigen::MatrixXd Q = Eigen::MatrixXd::Constant(5, 5, 0.0);
-  Eigen::VectorXd Qdiag = Eigen::VectorXd::Constant(5, 0.0);
-  Qdiag << 5.5, 6.5, 6.0, 5.3, 7.5;
-  Q = Qdiag.asDiagonal();
-  Q(2, 3) = 0.2;
-
-  Eigen::VectorXd b = Eigen::VectorXd::Constant(5, 0.0);
-
-  b << 3.2, 1.3, 5.6, 9.0, 1.2;
-
-  prog.AddQuadraticCost(Q, b, x);
-
-  if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Eigen::Matrix<double, 5, 1>::Zero());
-  }
-  RunSolver(&prog, solver);
-
-  // Exact solution.
-  Eigen::MatrixXd Q_symmetric = 0.5 * (Q + Q.transpose());
-  Eigen::VectorXd expected = -Q_symmetric.colPivHouseholderQr().solve(b);
-
-  const auto& x_value = prog.GetSolution(x);
-  EXPECT_TRUE(
-      CompareMatrices(x_value, expected, 1e-6, MatrixCompareType::absolute));
-}
-
-// Closed form (exact) solution test of QP problem.
-// Added as multiple QP cost terms
-// Note that for any Positive Semi Definite matrix Q :
-// min 0.5x'Qx + bx = -Q^(-1) * b
-// The values were chosen at random but were hardcoded
-// to enable test reproducibility.
-// We impose the cost
-//   0.5 * x.head<4>()'*Q1 * x.head<4>() + b1'*x.head<4>()
-// + 0.5 * x.tail<4>()'*Q2 * x.tail<4>() + b2'*x.tail<4>()
-// This is to test that we can add multiple costs for the same variables (in
-// this case, the quadratic costs on x(2), x(3) are added for twice).
-void TestQuadraticProgram3(const MathematicalProgramSolverInterface& solver) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<6>();
-  Eigen::MatrixXd Q1 = Eigen::MatrixXd::Constant(4, 4, 0.0);
-  Eigen::VectorXd Q1diag = Eigen::VectorXd::Constant(4, 0.0);
-  Q1diag << 5.5, 6.5, 6.0, 7.0;
-  Q1 = Q1diag.asDiagonal();
-  Q1(1, 2) = 0.1;
-
-  Eigen::MatrixXd Q2 = Eigen::MatrixXd::Constant(4, 4, 0.0);
-  Eigen::VectorXd Q2diag = Eigen::VectorXd::Constant(4, 0.0);
-  Q2diag << 7.0, 2.2, 1.1, 1.3;
-  Q2 = Q2diag.asDiagonal();
-  Q2(0, 2) = -0.02;
-
-  Eigen::VectorXd b1 = Eigen::VectorXd::Constant(4, 0.0);
-  b1 << 3.1, -1.4, -5.6, 0.6;
-  Eigen::VectorXd b2 = Eigen::VectorXd::Constant(4, 0.0);
-  b2 << 2.3, -5.8, 6.7, 2.3;
-
-  prog.AddQuadraticCost(Q1, b1, {x.block(0, 0, 2, 1), x.block(2, 0, 2, 1)});
-  prog.AddQuadraticCost(Q2, b2, {x.block(2, 0, 2, 1), x.block(4, 0, 2, 1)});
-
-  Eigen::MatrixXd Q = Eigen::MatrixXd::Constant(6, 6, 0.0);
-  Q.topLeftCorner(4, 4) = Q1;
-  Q.bottomRightCorner(4, 4) += Q2;
-  Eigen::MatrixXd Q_transpose = Q;
-  Q_transpose.transposeInPlace();
-  Q = 0.5 * (Q + Q_transpose);
-
-  Eigen::VectorXd b = Eigen::VectorXd::Constant(6, 0.0);
-  b.topRows(4) = b1;
-  b.bottomRows(4) += b2;
-
-  // Exact solution.
-  Eigen::VectorXd expected = -Q.ldlt().solve(b);
-
-  if (solver.solver_type() == SolverType::kSnopt) {
-    prog.SetInitialGuessForAllVariables(Eigen::Matrix<double, 6, 1>::Zero());
-  }
-  RunSolver(&prog, solver);
-  const auto& x_value = prog.GetSolution(x);
-  EXPECT_TRUE(
-      CompareMatrices(x_value, expected, 1e-8, MatrixCompareType::absolute));
-}
-
 // Test the simple QP
 // min x(0)^2 + x(1)^2 + 2 * x(2)^2
 // s.t x(0) +   x(1) = 1
@@ -694,22 +601,6 @@ GTEST_TEST(TestQP, TestL2NormCost) {
     // issue #3500.
 
     x0 += Eigen::Vector2d::Constant(2);
-  }
-}
-
-GTEST_TEST(TestQP, TestQuadraticProgram2) {
-  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
-  GetQuadraticProgramSolvers(&solvers);
-  for (const auto& solver : solvers) {
-    TestQuadraticProgram2(*solver);
-  }
-}
-
-GTEST_TEST(TestQP, TestQuadraticProgram3) {
-  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
-  GetQuadraticProgramSolvers(&solvers);
-  for (const auto& solver : solvers) {
-    TestQuadraticProgram3(*solver);
   }
 }
 
