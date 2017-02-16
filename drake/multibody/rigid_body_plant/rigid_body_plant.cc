@@ -140,13 +140,13 @@ template <typename T>
 void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
                                                double static_friction_coef,
                                                double dynamic_friction_coef,
-                                               double transition_speed,
+                                               double v_stiction_tolerance,
                                                double dissipation) {
   penetration_stiffness_ = penetration_stiffness;
   dissipation_ = dissipation;
   dynamic_friction_ceof_ = dynamic_friction_coef;
   static_friction_coef_ = static_friction_coef;
-  inv_transition_speed_ = 1.0 / transition_speed;
+  inv_v_stiction_tolerance_ = 1.0 / v_stiction_tolerance;
 }
 
 template <typename T>
@@ -773,10 +773,10 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
 
       int body_a_index = pair.elementA->get_body()->get_body_index();
       int body_b_index = pair.elementB->get_body()->get_body_index();
-      // The point on A's surface (As) in the world frame (W).
+      // The reported point on A's surface (As) in the world frame (W).
       Vector3<T> p_WAs =
           kinsol.get_element(body_a_index).transform_to_world * pair.ptA;
-      // The point on B's surface (Bs) in the world frame (W).
+      // The reported point on B's surface (Bs) in the world frame (W).
       Vector3<T> p_WBs =
           kinsol.get_element(body_b_index).transform_to_world * pair.ptB;
       // The point of contact in the world frame.
@@ -795,7 +795,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
                                                0, false);
       auto JB = tree_->transformPointsJacobian(kinsol, p_BBc, body_b_index,
                                                0, false);
-      // This normal points *from* element b *to* element A.
+      // This normal points *from* element B *to* element A.
       Vector3<T> this_normal = pair.normal;
 
       // R_WC is a left-multiplied rotation matrix to transform a vector from
@@ -807,11 +807,14 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       auto v_BA_C = J * kinsol.getV();
 
       {
+        // TODO(SeanCurtis-TRI): Move this documentation to the larger doxygen
+        // discussion and simply reference it here.
+
         // Normal force:
         // This is the implementation of the Hunt-Crossley contact model
         // Normal force is simply f(x, ẋ) = kx(1 + dẋ) where
         //    x: is the *penetration depth*.
-        //    ẋ: is the rate of change of penetration, ẋ > 0 -> increased
+        //    ẋ: is the rate of change of penetration, ẋ > 0 --> increasing
         //        penetration.
         //    k: penetration stiffness, k > 0
         //    d: dissipation factor, d > 0
@@ -832,7 +835,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
 
         double damping = 1.0 + dissipation_ * x_dot;
         // No normal force implies no contact force.  Simply move to the next
-        // contact.
+        // reported contact.
         if (damping <= 0) continue;
         Vector3<T> fA;
         fA(2) = penetration_stiffness_ * x * damping;
@@ -840,7 +843,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         auto slip_vector = v_BA_C.template head<2>();
         T slip_speed_squared = slip_vector.squaredNorm();
         // Consider a value value indistinguishable from zero if it is smaller
-        // then 1e-14.  This allows me to compare the square of that value.
+        // then 1e-14 and test against that value squared.
         const T kNonZeroSqd = T(1e-14 * 1e-14);
         if (slip_speed_squared > kNonZeroSqd) {
           T slip_speed = std::sqrt(slip_speed_squared);
@@ -934,9 +937,10 @@ VectorX<T> RigidBodyPlant<T>::EvaluateActuatorInputs(
   return u;
 }
 
-T RigidBodyPlant<T>::ComputeFrictionCoefficient(T v_tangent_BC) const {
-  DRAKE_ASSERT(v_tangent_BC >= 0);
-  T v = v_tangent_BC * inv_transition_speed_;
+template <typename T>
+T RigidBodyPlant<T>::ComputeFrictionCoefficient(T v_tangent_BAc) const {
+  DRAKE_ASSERT(v_tangent_BAc >= 0);
+  T v = v_tangent_BAc * inv_v_stiction_tolerance_;
   if (v >= 3) {
     return dynamic_friction_ceof_;
   } else if (v >= 1) {

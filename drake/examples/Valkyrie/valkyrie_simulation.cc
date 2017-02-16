@@ -1,5 +1,4 @@
 #include <memory>
-#include <drake/systems/analysis/semi_explicit_euler_integrator.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
@@ -56,10 +55,15 @@ int main(int argc, const char** argv) {
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
-  // Contact parameters set arbitrarily.
 
-    //                         k       us   ud    v     d
-  plant.set_contact_parameters(100000, 0.9, 0.5, 0.01, 5.0);
+  // Contact parameters
+  const double kStiffness = 100000;
+  const double kStaticFriction = 0.9;
+  const double kDynamicFriction = 0.5;
+  const double kStictionSlipTolerance = 0.01;
+  const double kDissipation = 5.0;
+  plant.set_contact_parameters(kStiffness, kStaticFriction, kDynamicFriction,
+                               kStictionSlipTolerance, kDissipation);
   const auto& tree = plant.get_rigid_body_tree();
 
   // RigidBodyActuators.

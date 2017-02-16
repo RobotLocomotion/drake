@@ -82,7 +82,13 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   ASSERT_EQ(plant->get_num_model_instances(), 3);
 
   // Arbitrary contact parameters.
-  plant->set_contact_parameters(10000, 0.9, 0.5, 0.001, 2.0);
+  const double kStiffness = 10000;
+  const double kStaticFriction = 0.9;
+  const double kDynamicFriction = 0.5;
+  const double kStictionSlipTolerance = 0.001;
+  const double kDissipation = 2;
+  plant->set_contact_parameters(kStiffness, kStaticFriction, kDynamicFriction,
+                                kStictionSlipTolerance, kDissipation);
 
   // Build a trajectory and PID controller for the lifting joint.
   const auto& lifting_input_port =

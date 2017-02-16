@@ -89,12 +89,12 @@ class ToyotaHsrbTests : public ::testing::Test {
     const double penetration_dissipation = 2;
     const double static_friction_coefficient = 1.0;
     const double dynamic_friction_coefficient = 0.7;
-    const double slip_speed = 0.01;
+    const double v_stiction_tolerance = 0.01;
 
     plant_and_visualizer_ = BuildPlantAndVisualizerDiagram(
         urdf_string, penetration_stiffness,
         static_friction_coefficient, dynamic_friction_coefficient,
-        slip_speed, penetration_dissipation, &lcm_, &plant_);
+        v_stiction_tolerance, penetration_dissipation, &lcm_, &plant_);
 
     ASSERT_NE(plant_and_visualizer_, nullptr);
     ASSERT_NE(plant_, nullptr);

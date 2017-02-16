@@ -130,13 +130,13 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   ~RigidBodyPlant() override;
 
-  // TODO(liang.fok) Remove this method once a more advanced contact modeling
-  // framework is available.
+  // TODO(SeanCurtis-TRI): Link to documentation explaining these parameters
+  // in detail.  To come in a subsequent PR.
   /// Sets the contact parameters.
   void set_contact_parameters(double penetration_stiffness,
                               double static_friction_coef,
                               double dynamic_friction_coef,
-                              double transition_speed,
+                              double v_stiction_tolerance,
                               double dissipation);
 
   /// Returns a constant reference to the multibody dynamics model
@@ -403,17 +403,16 @@ class RigidBodyPlant : public LeafSystem<T> {
 
  private:
   // Computes the friction coefficient based on the relative tangential
-  // *speed* of the contact point C relative to B (expressed in B).
+  // *speed* of the contact point on Ac relative to B (expressed in B), v_BAc.
   //
   // Specifically, this creates a velocity-dependent coefficient of friction
-  // based a stribeck curve using values of static (us) and dynamic friction
-  // (ud). The input slip speed is transformed to be a dimensionless multiple
-  // of a *transition speed*, v.
+  // based a Stribeck curve using values of static (us) and dynamic (ud)
+  // coefficients of friction.  The input relative speed, is transformed to be a
+  // dimensionless multiple of a *stiction tolerance speed*, v.
   //
-  // The curve is a quintic spline in v with three meaningful segments (given
-  // v >= 0):
+  // The curve is a piecewise smooth curve with three intervals (given v >= 0):
   //  (a) v=0..1: smooth interpolation from 0 to us
-  //  (b) v=1..2: smooth interpolation from us to ud (stribeck)
+  //  (b) v=1..3: smooth interpolation from us to ud
   //  (c) v=3..inf: ud
   //
   // Graph looks like this:
@@ -430,9 +429,9 @@ class RigidBodyPlant : public LeafSystem<T> {
   //    |  *
   //    |*____________________
   //    0     1     2     3
-  //             v
+  //        multiple of v
   //
-  T ComputeFrictionCoefficient(T v_tangent_BC) const;
+  T ComputeFrictionCoefficient(T v_tangent_BAc) const;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where the f'(0) = f'(1) = 0.
@@ -444,7 +443,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
   T penetration_stiffness_{10000.0};  // An arbitrarily large number.
   T dissipation_{2};  // An arbitrary value.
-  T inv_transition_speed_{0.01};  // Inverse of the arbitrary value: 1 mm/sec.
+  T inv_v_stiction_tolerance_{100};  // Inverse of the arbitrary value: 1 cm/s.
   T static_friction_coef_{0.9};
   T dynamic_friction_ceof_{0.5};
 

@@ -8,7 +8,7 @@
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 
 // This tests the *formula* for generating forces from contact. The current
-// models use a continuous stribeck function which models static and dynamic
+// models use a continuous Stribeck function which models static and dynamic
 // friction.
 
 namespace drake {
@@ -63,7 +63,7 @@ class ContactFormulaTest : public ::testing::Test {
 
     SetContactParameters();
     plant_->set_contact_parameters(stiffness_, static_friction_,
-                                   dynamic_friction_, transition_speed_,
+                                   dynamic_friction_, v_stiction_tolerance_,
                                    dissipation_);
 
     plant_->CalcOutput(*context_.get(), output_.get());
@@ -78,7 +78,7 @@ class ContactFormulaTest : public ::testing::Test {
     stiffness_ = 10000;
     static_friction_ = 0.7;
     dynamic_friction_ = 0.5;
-    transition_speed_ = 0.01;
+    v_stiction_tolerance_ = 0.01;
     dissipation_ = 0.5;
   }
 
@@ -103,7 +103,7 @@ class ContactFormulaTest : public ::testing::Test {
   }
 
   // Add a sphere with default radius, placed at the given position.
-  //  Returns a raw pointer so that tests can use it for result validation.
+  // Returns a raw pointer so that tests can use it for result validation.
   RigidBody<double>* AddSphere(const Vector3d& pos, const std::string& name) {
     RigidBody<double>* body;
     tree_->add_rigid_body(
@@ -140,7 +140,7 @@ class ContactFormulaTest : public ::testing::Test {
   double stiffness_ = 10000;
   double static_friction_ = 0.7;
   double dynamic_friction_ = 0.5;
-  double transition_speed_ = 0.01;
+  double v_stiction_tolerance_ = 0.01;
   double dissipation_ = 0.5;
 
   const double kTolerance = Eigen::NumTraits<double>::dummy_precision();
@@ -198,7 +198,9 @@ TEST_F(ConvergingContactFormulaTest, ConvergingContactTest) {
 }
 
 // This class provides a relative velocity in the normal direction which should
-// engage the dissipation term. The velocity leads to *shallower* penetration.
+// engage the dissipation term. The velocity leads to *shallower* penetration,
+// i.e., the spheres are diverging.  However, the diverging velocity is small
+// enough that a repulsive force is still generated.
 class DivergingContactFormulaTest : public ContactFormulaTest {
  protected:
   Vector6d get_v_WS2() override {
@@ -208,12 +210,14 @@ class DivergingContactFormulaTest : public ContactFormulaTest {
   }
 
   // The speed (m/s) at which they are *separating* (as indicated by positive
-  // value.)
-  const double kNormalVelocity = 1.f;
+  // value.)  Its magnitude is less than 1/d so it will produce a repulsive
+  // force.
+  const double kNormalVelocity = 1 / dissipation_ / 2;
 };
 
 // Tests the case where the collision has a non-zero relative velocity in the
-// contact normal direction.  The force will be wholly
+// direction opposite the contact normal. This reduces the normal force but
+// it is still repulsive.
 TEST_F(DivergingContactFormulaTest, DivergingContactTest) {
   EXPECT_EQ(contacts_.get_num_contacts(), 1);
   // A non-zero relative velocity in the normal direction will change the force.
@@ -254,30 +258,32 @@ class SuctionContactFormulaTest : public ContactFormulaTest {
 };
 
 // This tests the case where there is a separating relative velocity beyond
-// the threshold of the Hunt-Crossley model, producing a *zero* force.
+// the threshold of the Hunt-Crossley model, producing no forces.
 TEST_F(SuctionContactFormulaTest, SuctionContactTest) {
   EXPECT_EQ(contacts_.get_num_contacts(), 0);
 }
 
-// This class tests the stiction force -- the first interval of the stribeck
+// This class tests the stiction force -- the first interval of the Stribeck
 // function (where the relative tangential velocity lies below the
-// transition slip speed.
+// stiction speed tolerance.  It uses a relative *linear* velocity.
 class StictionContactFormulaTest : public ContactFormulaTest {
  protected:
   Vector6d get_v_WS2() override {
     Vector6d vec;
+    // Linear velocity in the +y direction.
     vec << 0., 0., 0., 0., kTangentSpeed, 0.;
     return vec;
   }
 
   // Tangent speed *is* the relative speed. By picking a speed that is half of
-  // the transition speed, the quintic interpolating function yields 0.5
+  // the stiction speed tolerance, the quintic interpolating function yields 0.5
   // (making for a simple evaluation in testing.)
-  const double kTangentSpeed = transition_speed_ / 2;
+  const double kTangentSpeed = v_stiction_tolerance_ / 2;
 };
 
-// Confirms that a slight tangential force (below the transition velocity)
-// produces the correct tangential force.
+// Confirms that a slight tangential relative velocity produces the correct
+// tangential force.  The relative velocity is due to linear motion and the
+// magnitude falls below the stiction speed tolerance.
 TEST_F(StictionContactFormulaTest, StictionContactTest) {
   EXPECT_EQ(contacts_.get_num_contacts(), 1);
 
@@ -301,8 +307,8 @@ TEST_F(StictionContactFormulaTest, StictionContactTest) {
 }
 
 // This class tests the transition from stiction to sliding friction. The
-// slip velocity lies in the range between the transition speed and three times
-// the transition speed.
+// relative speed is two times the stiction speed threshold, putting it in the
+// middle of the second interval of the Stribeck function.
 class TransitionContactFormulaTest : public ContactFormulaTest {
  protected:
   Vector6d get_v_WS2() override {
@@ -311,10 +317,10 @@ class TransitionContactFormulaTest : public ContactFormulaTest {
     return vec;
   }
 
-  // Tangent speed *is* the relative speed. Two times the transition speed will
-  // produce a coefficient of friction that is the average of the dynamic
-  // and static coefficients of friction.
-  const double kTangentSpeed = transition_speed_ * 2;
+  // Tangent speed *is* the relative speed. Two times the stiction speed
+  // tolerance will produce a coefficient of friction that is the average of the
+  // dynamic and static coefficients of friction.
+  const double kTangentSpeed = v_stiction_tolerance_ * 2;
 };
 
 // Confirms that a slight tangential force (between 1 and 3X the transition
@@ -325,8 +331,8 @@ TEST_F(TransitionContactFormulaTest, TransitionContactTest) {
   // The normal component is simply the undamped case (zero relative velocity
   // in the normal direction).
   double expected_normal_magnitude = kPenetrationDepth * stiffness_;
-  // In the second interval (slip speed = 2 * transition speed) the coefficient
-  // of friction is the average of dynamic and static coefficients.
+  // In the second interval (relative speed = 2 * transition speed) the
+  // coefficient of friction is the average of dynamic and static coefficients.
   double expected_mu = (dynamic_friction_ + static_friction_) * 0.5;
   double expected_tangent_magnitude = expected_mu * expected_normal_magnitude;
   const auto info = contacts_.get_contact_info(0);
@@ -342,7 +348,7 @@ TEST_F(TransitionContactFormulaTest, TransitionContactTest) {
 }
 
 // This class tests the friction force for when the relative velocity is clearly
-// in the sliding regime (i.e., slip speed > 3 * transition speed).
+// in the sliding regime (i.e., relative speed > 3 * stiction speed tolerance.
 class SlidingContactFormulaTest : public ContactFormulaTest {
  protected:
   Vector6d get_v_WS2() override {
@@ -353,7 +359,7 @@ class SlidingContactFormulaTest : public ContactFormulaTest {
 
   // Tangent speed *is* the relative speed. In the sliding regime, the
   // coefficient of friction is just the dynanmic coefficient of friction.
-  const double kTangentSpeed = transition_speed_ * 5;
+  const double kTangentSpeed = v_stiction_tolerance_ * 5;
 };
 
 // Confirms that a slight tangential force (between 1 and 3X the transition
@@ -364,8 +370,8 @@ TEST_F(SlidingContactFormulaTest, SlidingContactTest) {
   // The normal component is simply the undamped case (zero relative velocity
   // in the normal direction).
   double expected_normal_magnitude = kPenetrationDepth * stiffness_;
-  // In the final interval (slip speed > 3 * transition speed) the coefficient
-  // of friction is the dynamic coefficients.
+  // In the final interval (relative speed > 3 * transition speed) the
+  // coefficient of friction is the dynamic coefficient.
   double expected_mu = dynamic_friction_;
   double expected_tangent_magnitude = expected_mu * expected_normal_magnitude;
   const auto info = contacts_.get_contact_info(0);
@@ -380,8 +386,8 @@ TEST_F(SlidingContactFormulaTest, SlidingContactTest) {
                               MatrixCompareType::absolute));
 }
 
-// This class confirms that relative velocity due to spin produces the
-// correct frictional force.
+// This class confirms that relative velocity due to angular velocity produces
+// the correct frictional force.
 class SlidingSpinContactFormulaTest : public ContactFormulaTest {
  protected:
   Vector6d get_v_WS2() override {
@@ -390,11 +396,12 @@ class SlidingSpinContactFormulaTest : public ContactFormulaTest {
     return vec;
   }
 
-  // The contact is at a distance of radius - 1/2 penetration depth. I want
-  // that point to have a *linear* velocity of 5 * transition speed (in the +y
-  // direction). This is the angular velocity that provides it.
+  // The contact is at a distance of radius - 1/2 penetration depth to the
+  // sphere center. I want that point to have a *linear* velocity of 5 *
+  // stiction speed tolerance (in the +y direction). This is the angular
+  // speed that provides it.
   const double kZAngularSpeed =
-      -0.5 * transition_speed_ / (kRadius - kPenetrationDepth * 0.5);
+      -0.5 * v_stiction_tolerance_ / (kRadius - kPenetrationDepth * 0.5);
 };
 
 // Confirms that a slight tangential force (between 1 and 3X the transition
