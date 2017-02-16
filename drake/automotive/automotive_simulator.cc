@@ -185,6 +185,16 @@ AutomotiveSimulator<T>::SetRoadGeometry(
   endless_road_ = std::make_unique<maliput::utility::InfiniteCircuitRoad>(
       maliput::api::RoadGeometryId({"ForeverRoad"}),
       road_.get(), start, path);
+
+  maliput::utility::GenerateUrdfFile(road_.get(),
+                                     "/tmp", road_->id().id,
+                                     maliput::utility::ObjFeatures());
+  std::string urdf_filepath = std::string("/tmp/") + road_->id().id + ".urdf";
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      urdf_filepath,
+      drake::multibody::joints::kFixed,
+      rigid_body_tree_.get());
+
   return endless_road_.get();
 }
 
@@ -449,20 +459,6 @@ void AutomotiveSimulator<T>::ConnectJointStateSourcesToVisualizer() {
 template <typename T>
 void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   DRAKE_DEMAND(!started_);
-  // TODO(maddog@tri.global)  This seems like hackery.
-  // After all the moving parts (boxcars) have been added finally add
-  // the static road (if any) to the RBT (otherwise the naive multiplexing
-  // gets mucked up?).
-  if (road_) {
-    maliput::utility::GenerateUrdfFile(road_.get(),
-                                       "/tmp", road_->id().id,
-                                       maliput::utility::ObjFeatures());
-    std::string urdf_filepath = std::string("/tmp/") + road_->id().id + ".urdf";
-    parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-        urdf_filepath, rigid_body_tree_.get());
-    // NB: The road doesn't move, so we don't need to connect anything
-    // to its joint.
-  }
 
   // By this time, all model instances should have been added to the tree.
   // While the parsers have already called `compile()` on the `RigidBodyTree`,
