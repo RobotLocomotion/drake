@@ -19,10 +19,14 @@ target_link_libraries(constraint_test drakeOptimization drakeCommon)
 set(drakeOptimizationTestSources
         add_solver_util.cc
         optimization_examples.cc
+        linear_program_examples.cc
+        quadratic_program_examples.cc
         mathematical_program_test_util.cc)
 set(drakeOptimizationHeaders
         add_solver_util.h
         optimization_examples.h
+        linear_program_examples.h
+        quadratic_program_examples.h
         mathematical_program_test_util.h)
 add_library_with_exports(LIB_NAME drakeOptimizationTest
         SOURCE_FILES ${drakeOptimizationTestSources} ${drakeOptimizationHeaders})
