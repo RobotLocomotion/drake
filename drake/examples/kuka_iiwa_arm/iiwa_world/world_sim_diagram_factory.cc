@@ -172,7 +172,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
 
   // Connect robot (not the entire plant) and controller
   builder.Connect(robot_output_port,
-                  controller_->get_measured_state_input_port());
+                  controller_->get_estimated_state_input_port());
   builder.Connect(controller_->get_control_output_port(),
                   robot_input_port);
 

@@ -51,9 +51,9 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   builder.Connect(demux->get_output_port(1),
                   mux->get_input_port(1));
 
-  // Connects the measured state to PID.
+  // Connects the estimated state to PID.
   builder.Connect(mux->get_output_port(0),
-                  controller_->get_measured_state_input_port());
+                  controller_->get_estimated_state_input_port());
 
   // Connects the desired state to PID.
   builder.Connect(target_->get_output_port(),

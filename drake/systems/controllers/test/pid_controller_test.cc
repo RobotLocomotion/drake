@@ -43,7 +43,7 @@ class PidControllerTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
-  // Error = measured - desired.
+  // Error = estimated - desired.
   Vector3d error_signal_{1.0, 2.0, 3.0};
   Vector3d error_rate_signal_{1.3, 0.9, 3.14};
 };

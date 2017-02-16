@@ -49,14 +49,14 @@ void PidWithGravityCompensator<T>::SetUp(const VectorX<T>& kp,
 
   // Connects state to PID.
   builder.Connect(pass_through->get_output_port(0),
-                  pid->get_measured_state_input_port());
+                  pid->get_estimated_state_input_port());
 
   // Create an adder to sum the provided input with the output of the
   // controller.
   builder.Connect(pid->get_control_output_port(), adder->get_input_port(0));
   builder.Connect(grav_comp->get_output_port(0), adder->get_input_port(1));
 
-  // Exposes measured state input port.
+  // Exposes estimated state input port.
   builder.ExportInput(pass_through->get_input_port(0));
 
   // Exposes PID's reference state input port.

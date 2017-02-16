@@ -17,9 +17,9 @@ class StateFeedbackController : public Diagram<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateFeedbackController)
 
   /**
-   * Returns the input port for the actual state.
+   * Returns the input port for the estimated state.
    */
-  const InputPortDescriptor<T>& get_measured_state_input_port() const {
+  const InputPortDescriptor<T>& get_estimated_state_input_port() const {
     return Diagram<T>::get_input_port(0);
   }
 

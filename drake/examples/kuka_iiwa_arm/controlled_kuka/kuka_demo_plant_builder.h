@@ -91,7 +91,7 @@ class KukaDemo : public systems::Diagram<T> {
 
     // Connects RBP state to the controller.
     builder.Connect(plant_->state_output_port(),
-                    controller_->get_measured_state_input_port());
+                    controller_->get_estimated_state_input_port());
 
     // Connects controller's output to RBP.
     builder.Connect(controller_->get_control_output_port(),

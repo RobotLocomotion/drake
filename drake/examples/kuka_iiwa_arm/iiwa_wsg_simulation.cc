@@ -165,7 +165,7 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
 
     // Connect iiwa controller and robot.
     builder.Connect(iiwa_output_port,
-                    iiwa_controller->get_measured_state_input_port());
+                    iiwa_controller->get_estimated_state_input_port());
     builder.Connect(iiwa_controller->get_control_output_port(),
                     iiwa_input_port);
 
@@ -211,7 +211,7 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
 
     // Connects WSG and controller.
     builder.Connect(wsg_output_port,
-                    wsg_controller->get_measured_state_input_port());
+                    wsg_controller->get_estimated_state_input_port());
     builder.Connect(wsg_controller->get_control_output_port(), wsg_input_port);
 
     //  Export wsg's desired state input, and state output.

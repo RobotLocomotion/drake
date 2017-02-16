@@ -86,7 +86,7 @@ class SimulatedKuka : public systems::Diagram<T> {
 
     // Connect plant and controller
     builder.Connect(plant_->state_output_port(),
-                    controller_->get_measured_state_input_port());
+                    controller_->get_estimated_state_input_port());
     builder.Connect(controller_->get_control_output_port(),
                     plant_->actuator_command_input_port());
 
