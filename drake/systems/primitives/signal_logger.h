@@ -7,6 +7,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/primitives/signal_log.h"
 
 namespace drake {
 namespace systems {
@@ -34,13 +35,13 @@ class SignalLogger : public LeafSystem<T> {
 
   /// Access the (simulation) time of the logged data.
   Eigen::VectorBlock<const VectorX<T>> sample_times() const {
-    return const_cast<const VectorX<T>&>(sample_times_).head(num_samples_);
+    return log_.sample_times();
   }
 
   /// Access the logged data.
   Eigen::Block<const MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> data()
       const {
-    return const_cast<const MatrixX<T>&>(data_).leftCols(num_samples_);
+    return log_.data();
   }
 
  private:
@@ -51,12 +52,7 @@ class SignalLogger : public LeafSystem<T> {
   // Logging is done in this method.
   void DoPublish(const Context<T>& context) const override;
 
-  const int batch_allocation_size_{1000};
-
-  // Use mutable variables to hold the logged data.
-  mutable int num_samples_{0};
-  mutable VectorX<T> sample_times_;
-  mutable MatrixX<T> data_;
+  mutable SignalLog<T> log_;
 };
 
 }  // namespace systems
