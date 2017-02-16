@@ -211,14 +211,14 @@ static BeadOnAWire<double>::DScalar inverse_horz_line_function(
   return (v(1)+v(0))/2;
 }
 
-// A parametric wire function that allows the bead to along the z-axis. 
+// A parametric wire function that allows the bead to along the z-axis.
 static Eigen::Matrix<BeadOnAWire<double>::DScalar, 3, 1>
   vert_line_function(const BeadOnAWire<double>::DScalar& s) {
   return Vector3<BeadOnAWire<double>::DScalar>(s*0, s*0, s);
 }
 
 // The inverse of the parametric wire function that allows the bead to along
-// the z-axis. 
+// the z-axis.
 static BeadOnAWire<double>::DScalar inverse_vert_line_function(
         const Vector3<BeadOnAWire<double>::DScalar>& v) {
   return v(2);

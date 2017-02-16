@@ -50,7 +50,7 @@ typename BeadOnAWire<T>::DScalar
 
 /// Evaluates the constraint equations for a bead represented in absolute
 /// coordinates (no constraint equations are used for a bead represented in
-/// minimal coordinates). 
+/// minimal coordinates).
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
     const systems::Context<T>& context) const {
