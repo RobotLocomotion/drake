@@ -18,6 +18,7 @@ namespace drake {
 namespace symbolic {
 
 using std::accumulate;
+using std::make_pair;
 using std::map;
 using std::ostream;
 using std::ostringstream;
@@ -63,6 +64,36 @@ size_t Monomial::GetHash() const {
 
 bool Monomial::operator==(const Monomial& m) const {
   return powers_ == m.powers_;
+}
+
+double Monomial::Evaluate(
+    const unordered_map<Variable::Id, double>& env) const {
+  return accumulate(powers_.begin(), powers_.end(), 1.0,
+                    [&env](const double v, const pair<Variable::Id, int>& p) {
+                      const Variable::Id& var_id{p.first};
+                      const double base{env.at(var_id)};
+                      const int exponent{p.second};
+                      return v * std::pow(base, exponent);
+                    });
+}
+
+pair<double, Monomial> Monomial::Substitute(
+    const unordered_map<Variable::Id, double>& env) const {
+  double coeff{1.0};
+  map<Variable::Id, int> new_powers;
+
+  for (const pair<Variable::Id, int>& p : powers_) {
+    const Variable::Id& var_id{p.first};
+    const int exponent{p.second};
+    const auto it = env.find(var_id);
+    if (it != env.end()) {
+      const double base{it->second};
+      coeff *= std::pow(base, exponent);
+    } else {
+      new_powers.insert(p);
+    }
+  }
+  return make_pair(coeff, Monomial(new_powers));
 }
 
 Expression Monomial::ToExpression(
