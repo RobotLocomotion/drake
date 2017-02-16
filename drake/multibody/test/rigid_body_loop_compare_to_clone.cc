@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/text_logging.h"
+#include "drake/multibody/test/rigid_body_frame_compare_to_clone.h"
 
 namespace drake {
 namespace multibody {
@@ -11,11 +12,11 @@ namespace rigid_body_loop {
 
 bool CompareToClone(const RigidBodyLoop<double>& original,
                   const RigidBodyLoop<double>& other) {
-  if (!original.frameA_->CompareToClone(*other.frameA_)) {
+  if (!rigid_body_frame::CompareToClone(*original.frameA_, *other.frameA_)) {
     drake::log()->debug("CompareToClone(RigidBodyLoop): FrameA mismatch.");
     return false;
   }
-  if (!original.frameB_->CompareToClone(*other.frameB_)) {
+  if (!rigid_body_frame::CompareToClone(*original.frameB_, *other.frameB_)) {
     drake::log()->debug("CompareToClone(RigidBodyLoop): FrameB mismatch.");
     return false;
   }
