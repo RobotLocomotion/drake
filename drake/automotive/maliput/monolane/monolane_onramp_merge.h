@@ -39,6 +39,22 @@ struct RoadCharacteristics {
 /// maliput monolane road geometry.  The intent of this class is to enable easy
 /// creation and modification of road geometries for simulating/analyzing
 /// such scenarios.
+///
+/// Implements the following onramp example, where each road lane is composed
+/// of sequences of linear and arc primitives:
+///
+/// <pre>
+///           pre-merge      post-merge
+///             road           road
+///        |------>-------+------>-------|
+///                      /
+///                     /
+///            onramp  /
+///                   ^
+///                   |
+///                   |
+///                   -
+/// <\pre>
 template <typename T>
 class MonolaneOnrampMerge {
  public:

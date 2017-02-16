@@ -4,6 +4,9 @@ target_link_libraries(monolane_lanes_test drakeAutomotive)
 drake_add_cc_test(monolane_builder_test)
 target_link_libraries(monolane_builder_test drakeAutomotive)
 
+drake_add_cc_test(monolane_onramp_merge_test)
+target_link_libraries(monolane_onramp_merge_test drakeAutomotive)
+
 add_executable(yaml_load yaml_load.cc)
 target_link_libraries(yaml_load drakeAutomotive yaml-cpp)
 if(PYTHON_EXECUTABLE)

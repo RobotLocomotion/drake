@@ -1,4 +1,4 @@
-#include "drake/automotive/monolane_onramp_merge.h"
+#include "drake/automotive/maliput/monolane/monolane_onramp_merge.h"
 
 #include <memory>
 

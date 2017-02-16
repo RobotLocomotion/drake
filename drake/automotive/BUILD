@@ -126,17 +126,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "monolane_onramp_merge",
-    srcs = ["monolane_onramp_merge.cc"],
-    hdrs = ["monolane_onramp_merge.h"],
-    deps = [
-        ":generated_vectors",
-        "//drake/automotive/maliput/api",
-        "//drake/automotive/maliput/monolane",
-    ],
-)
-
-drake_cc_library(
     name = "simple_car",
     srcs = ["simple_car.cc"],
     hdrs = [
@@ -343,14 +332,6 @@ drake_cc_googletest(
     name = "linear_car_test",
     deps = [
         "//drake/automotive:linear_car",
-    ],
-)
-
-drake_cc_googletest(
-    name = "monolane_onramp_merge_test",
-    deps = [
-        "//drake/automotive:monolane_onramp_merge",
-        "//drake/automotive/maliput/utility",
     ],
 )
 

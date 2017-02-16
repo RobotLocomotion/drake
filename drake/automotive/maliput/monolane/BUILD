@@ -71,6 +71,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "monolane_onramp_merge",
+    srcs = ["monolane_onramp_merge.cc"],
+    hdrs = ["monolane_onramp_merge.h"],
+    deps = [
+        "//drake/automotive/maliput/api",
+        ":monolane",
+    ],
+)
+
 filegroup(
     name = "yamls",
     srcs = glob(["*.yaml"]),
@@ -94,6 +104,14 @@ drake_cc_googletest(
     deps = [
         ":lanes",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "monolane_onramp_merge_test",
+    deps = [
+        ":monolane_onramp_merge",
+        "//drake/automotive/maliput/utility",
     ],
 )
 
