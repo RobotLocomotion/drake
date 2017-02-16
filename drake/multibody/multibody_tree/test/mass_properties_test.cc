@@ -64,47 +64,82 @@ GTEST_TEST(RotationalInertia, GeneralConstructor) {
   EXPECT_EQ(I.get_products(), products_expected);
 }
 
-GTEST_TEST(RotationalInertia, Symmetry) {
-  RotationalInertia<double> I(3.14);
-  //PRINT_VARn(I);
-  (void)I;
-  std::cout << I(0,0) << std::endl;
-  std::cout << I(0,2) << std::endl;
-  std::cout << I(2,0) << std::endl;
-  std::cout << I(1,1) << std::endl;
-  std::cout << std::endl;
+// Test access by (i, j) indexes.
+GTEST_TEST(RotationalInertia, AccessByIndexes) {
+  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, 0.3, 1.4);  // m for products.
+  RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
+                              p(0), p(1), p(2));/* products of inertia */
 
-  //I(0,2) = -1.0;
+  // Diagonal elements.
+  EXPECT_EQ(I(0, 0), m(0));
+  EXPECT_EQ(I(1, 1), m(1));
+  EXPECT_EQ(I(2, 2), m(2));
+
+  // Off diagonal elements.
+  EXPECT_EQ(I(0, 1), p(0));
+  EXPECT_EQ(I(0, 2), p(1));
+  EXPECT_EQ(I(1, 2), p(2));
+
+  // And their symmetric counterparts.
+  EXPECT_EQ(I(1, 0), p(0));
+  EXPECT_EQ(I(2, 0), p(1));
+  EXPECT_EQ(I(2, 1), p(2));
+
+  // Test mutable access.
+  // This should have the effect of setting both (2, 0) and (0, 2) even when
+  // only one element in memory is being accessed.
   I(2,0) = -1.0;
-  std::cout << I(0,0) << std::endl;
-  std::cout << I(0,2) << std::endl;
-  std::cout << I(2,0) << std::endl;
-  std::cout << I(1,1) << std::endl;
-
-
-  PRINT_VARn(I);
-
-  PRINT_VARn(I.get_matrix());
-
-  PRINT_VARn(I.CopyToFullMatrix3());
-
-  Matrix3<double> m = I.get_symmetric_matrix_view();
-  PRINT_VARn(m);
-
-  PRINT_VARn(I.get_moments());
-
-  // In particular the use of get_products() tests the proper behavior of
-  // operator(i,j) regardless of the in-memory representation.
-  // Replace by EXPECT_EQ's on the values.
-  PRINT_VARn(I.get_products());
-  //std::cout << I.get_matrix();
+  EXPECT_EQ(I(0, 0), m(0));
+  EXPECT_EQ(I(1, 1), m(1));
+  EXPECT_EQ(I(2, 2), m(2));
+  EXPECT_EQ(I(0, 1), p(0));
+  EXPECT_EQ(I(0, 2), -1.0);
+  EXPECT_EQ(I(1, 2), p(2));
+  EXPECT_EQ(I(1, 0), p(0));
+  EXPECT_EQ(I(2, 0), -1.0);
+  EXPECT_EQ(I(2, 1), p(2));
 }
 
+// Tests that even when the underlying dense Eigen representation holds NaN
+// entries for unused entries, the RotationalInertia behaves as a symmetric
+// matrix.
+GTEST_TEST(RotationalInertia, Symmetry) {
+  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, 0.3, 1.4);  // m for products.
+  RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
+                              p(0), p(1), p(2));/* products of inertia */
+
+  // Test that the underlying Eigen representation effectively has NaN entries.
+  EXPECT_TRUE(I.get_matrix().array().isNaN().any());
+
+  // Tests however that the copy to a full Matrix3 object is well defined and
+  // leads to a symmetric matrix.
+  Matrix3d Imatrix = I.CopyToFullMatrix3();
+  EXPECT_FALSE(Imatrix.array().isNaN().any()); // no entry is NaN.
+  EXPECT_EQ(Imatrix(0, 0), m(0));
+  EXPECT_EQ(Imatrix(1, 1), m(1));
+  EXPECT_EQ(Imatrix(2, 2), m(2));
+  EXPECT_EQ(Imatrix(0, 1), p(0));
+  EXPECT_EQ(Imatrix(0, 2), p(1));
+  EXPECT_EQ(Imatrix(1, 2), p(2));
+  EXPECT_EQ(Imatrix(1, 0), p(0));
+  EXPECT_EQ(Imatrix(2, 0), p(1));
+  EXPECT_EQ(Imatrix(2, 1), p(2));
+
+  // Test that the return from get_symmetric_matrix_view() can be copied to a
+  // full matrix with all valide entries.
+  Matrix3<double> MatView = I.get_symmetric_matrix_view();
+  EXPECT_EQ(MatView, Imatrix);
+}
+
+// Test we can take a rotational inertia expressed in a frame R and express it
+// in another frame F.
 GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
   const double radius = 0.1;
   const double length = 1.0;
-  // Rod frame R located at the rod's geometric center and oriented along its
-  // principal axes.
+  // Rod frame R located at the rod's geometric center, oriented along its
+  // principal axes and z-axis along the rod's axial direction.
   // Inertia computed about Ro and expressed in R.
   RotationalInertia<double> I_Ro_R =
       UnitInertia<double>::SolidRod(radius, length);
@@ -113,27 +148,21 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
   // Moment of inertia about an axis perpendicular to the rod's axis.
   const double Iperp = I_Ro_R(0, 0);
 
-  PRINT_VARn(I_Ro_R);
-
-  // Re-express on a frame F obtained by rotating R +90 degrees about x.
+  // Rotation of +90 degrees about x.
   Matrix3<double> R_FR =
       AngleAxisd(M_PI_2, Vector3d::UnitX()).toRotationMatrix();
-  PRINT_VARn(R_FR);
 
+  // Re-express in frame F using the above rotation.
   RotationalInertia<double> I_Ro_F = I_Ro_R.ReExpress(R_FR);
 
-  PRINT_VARn(I_Ro_F.get_matrix());
-
-  // Now the R's z-axis is oriented along F's y-axis.
+  // Verify that now R's z-axis is oriented along F's y-axis.
   EXPECT_NEAR(I_Ro_F(0, 0), Iperp, Eigen::NumTraits<double>::epsilon());
   EXPECT_NEAR(I_Ro_F(1, 1), Irr, Eigen::NumTraits<double>::epsilon());
   EXPECT_NEAR(I_Ro_F(2, 2), Iperp, Eigen::NumTraits<double>::epsilon());
 
-  PRINT_VARn(I_Ro_F);
-
-  // Check if after transformation this still is a physically valid inertia.
+  // While at it, check if after transformation this still is a physically
+  // valid inertia.
   EXPECT_TRUE(I_Ro_F.IsPhysicallyValid());
-
 }
 
 GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
