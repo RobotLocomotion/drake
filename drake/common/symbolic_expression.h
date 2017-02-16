@@ -66,6 +66,8 @@ class UnaryExpressionCell;   // In drake/common/symbolic_expression_cell.h
 class BinaryExpressionCell;  // In drake/common/symbolic_expression_cell.h
 class ExpressionAdd;         // In drake/common/symbolic_expression_cell.h
 class ExpressionMul;         // In drake/common/symbolic_expression_cell.h
+class ExpressionDiv;         // In drake/common/symbolic_expression_cell.h
+class ExpressionPow;         // In drake/common/symbolic_expression_cell.h
 class ExpressionIfThenElse;  // In drake/common/symbolic_expression_cell.h
 class Formula;               // In drake/common/symbolic_formula.h
 
@@ -175,28 +177,6 @@ class Expression {
    */
   Polynomial<double> ToPolynomial() const;
 
- /**
-  * Returns the total degrees of the polynomial w.r.t the variables in
-  * @p vars. For example, the total degree of
-  * e = x^2*y + 2 * x*y*z^3 + x * z^2
-  * w.r.t (x, y) is 3 (from x^2 * y)
-  * w.r.t (x, z) is 4 (from x*y*z^3)
-  * w.r.t (z)    is 3 (from x*y*z^3)
-  * Throws a runtime error if is_polynomial() is false.
-  * @param vars A set of variables.
-  * @return The total degree.
-  */
-  int Degree(const Variables& vars) const;
-
-  /**
-   * Returns the total degress of all the variables in the polynomial.
-   * For example, the total degree of
-   * x^2*y + 2*x*y*z^3 + x*z^2
-   * is 5, from x*y*z^3
-   * Throws a runtime error is is_polynomial() is false.
-   * @return The total degree.
-   */
-  int Degree() const;
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
@@ -360,6 +340,8 @@ class Expression {
   friend std::shared_ptr<BinaryExpressionCell> to_binary(const Expression& e);
   friend std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
   friend std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
+  friend std::shared_ptr<ExpressionDiv> to_division(const Expression& e);
+  friend std::shared_ptr<ExpressionPow> to_pow(const Expression& e);
   friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
       const Expression& e);
 
