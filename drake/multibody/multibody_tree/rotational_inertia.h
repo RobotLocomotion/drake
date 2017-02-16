@@ -1,18 +1,17 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
+#include <iostream>
+#include <limits>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 
 #include <Eigen/Eigenvalues>
-
-#include <iostream>
-#include <sstream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-#define PRINT_VARn(x) std::cout <<  #x ":\n" << x << std::endl;
 
 namespace drake {
 namespace multibody {
@@ -75,7 +74,7 @@ class RotationalInertia {
   /// As examples, consider the moments of inertia taken about their geometric
   /// center for a sphere or a cube.
   /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube().
-  RotationalInertia(const T& I) {
+  explicit RotationalInertia(const T& I) {
     SetZero();
     I_Bo_F_.diagonal().setConstant(I);
   }
@@ -120,7 +119,7 @@ class RotationalInertia {
   Vector3<T> get_products() const {
     // Let operator(int ,int) decide what portion (upper/lower) to use.
     const auto& Iref = *this;
-    return Vector3<T>(Iref(0,1), Iref(0,2), Iref(1,2));
+    return Vector3<T>(Iref(0, 1), Iref(0, 2), Iref(1, 2));
   }
 
   /// Mutable access to the `(i, j)` element of this rotational inertia.
@@ -207,8 +206,7 @@ class RotationalInertia {
   /// This inertia and vector @p w must both be expressed in the same frame.
   /// @param[in] w Vector to multiply from the right.
   /// @returns The product from the right of `this` inertia with @p w.
-  Vector3<T> operator*(const Vector3<T>& w) const
-  {
+  Vector3<T> operator*(const Vector3<T>& w) const {
     return Vector3<T>(get_symmetric_matrix_view() * w);
   }
 
@@ -238,7 +236,8 @@ class RotationalInertia {
   /// rotational inertia for fast constructions. Users can still verify the
   /// validity of the newly created inertia with IsPhysicallyValid().
   template<typename Derived>
-  RotationalInertia(const Eigen::MatrixBase<Derived>& m) : I_Bo_F_(m) {}
+  explicit RotationalInertia(const Eigen::MatrixBase<Derived>& m) :
+      I_Bo_F_(m) {}
 
   /// Assignment operator from a general Eigen expression.
   /// This method allows to assign Eigen expressions to a RotationalInertia.
@@ -249,8 +248,7 @@ class RotationalInertia {
   /// rotational inertia for fast constructions. Users can still verify the
   /// validity of the newly created inertia with IsPhysicallyValid().
   template<typename Derived>
-  RotationalInertia& operator=(const Eigen::MatrixBase<Derived>& m)
-  {
+  RotationalInertia& operator=(const Eigen::MatrixBase<Derived>& m) {
     // Static asserts that EigenMatrix is of fixed size 3x3.
     EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Derived, 3, 3);
     this->get_mutable_symmetric_matrix_view() = m;
@@ -353,14 +351,16 @@ class RotationalInertia {
   // we only use the triangular portion corresponding to TriangularViewInUse.
   static void check_and_swap(int* i, int* j) {
     const bool swap =
-        (int(TriangularViewInUse) == int(Eigen::Upper) && *i > *j) ||
-        (int(TriangularViewInUse) == int(Eigen::Lower) && *i < *j);
+        (static_cast<int>(TriangularViewInUse) == static_cast<int>(Eigen::Upper)
+            && *i > *j) ||
+        (static_cast<int>(TriangularViewInUse) == static_cast<int>(Eigen::Lower)
+            && *i < *j);
     if (swap) std::swap(*i , *j);
   }
 
   // Inertia matrix about frame B's origin Bo expressed in frame F.
   // Frame F and origin Bo are implicit here, RotationalInertia only keeps track
-  // of the inertia measures in this frame F. Users are responsible for keeping 
+  // of the inertia measures in this frame F. Users are responsible for keeping
   // track of the frame in which a particular inertia is expressed in.
   // Initially set to NaN to aid finding when by mistake we use the strictly
   // TriangularViewNotInUse portion of the matrix. Only the TriangularViewInUse
@@ -391,24 +391,24 @@ std::ostream& operator<<(std::ostream& o,
   int width = 0;
   std::streamsize old_precision = 0;
   std::ios_base::fmtflags old_flags = o.flags();
-  if(precision) {
+  if (precision) {
     old_precision = o.precision(precision);
     o << std::fixed;
   }
 
   // Computes largest width so that we can align columns for a prettier format.
   // Idea taken from: Eigen::internal::print_matrix() in Eigen/src/Core/IO.h
-  for(int j = 0; j < I.cols(); ++j) {
+  for (int j = 0; j < I.cols(); ++j) {
     for (int i = 0; i < I.rows(); ++i) {
       std::stringstream sstr;
       sstr.copyfmt(o);
       sstr << I(i, j);
-      width = std::max<int>(width, int(sstr.str().length()));
+      width = std::max<int>(width, static_cast<int>(sstr.str().length()));
     }
   }
 
   // Outputs to stream.
-  for(int i = 0; i < I.rows(); ++i) {
+  for (int i = 0; i < I.rows(); ++i) {
     o << "[";
     if (width) o.width(width);
     o << I(i, 0);
@@ -419,7 +419,7 @@ std::ostream& operator<<(std::ostream& o,
     }
     o << "]" << std::endl;
   }
-  if(precision) {
+  if (precision) {
     o.precision(old_precision);
     o.flags(old_flags);
   }
