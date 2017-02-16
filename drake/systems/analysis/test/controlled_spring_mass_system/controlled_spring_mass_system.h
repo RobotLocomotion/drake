@@ -6,10 +6,7 @@
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
-#include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/demultiplexer.h"
-#include "drake/systems/primitives/gain.h"
 
 namespace drake {
 namespace systems {
@@ -69,11 +66,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   // These are references into the Diagram; no ownership implied.
   SpringMassSystem<T>* plant_;
   PidController<T>* controller_;
-  Demultiplexer<T>* demux_;
-  Gain<T>* pid_inverter_;
-  Gain<T>* target_inverter_;
   ConstantVectorSource<T>* target_;
-  Adder<T>* state_minus_target_;
 };
 
 }  // namespace systems

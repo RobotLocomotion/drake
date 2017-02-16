@@ -8,8 +8,7 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/gravity_compensator.h"
-#include "drake/systems/controllers/pid_controlled_system.h"
+#include "drake/systems/controllers/pid_with_gravity_compensator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -81,10 +80,10 @@ class PositionControlledPlantWithRobot : public systems::Diagram<T> {
 
  private:
   systems::Multiplexer<T>* input_mux_{nullptr};
-  systems::GravityCompensator<T>* gravity_compensator_{nullptr};
   systems::TrajectorySource<T>* desired_plan_{nullptr};
   systems::DrakeVisualizer* drake_visualizer_{nullptr};
   systems::RigidBodyPlant<T>* rigid_body_plant_{nullptr};
+  systems::PidWithGravityCompensator<T>* controller_{nullptr};
   std::unique_ptr<const PiecewisePolynomialTrajectory> poly_trajectory_;
 };
 

@@ -1,5 +1,8 @@
 #include "drake/systems/primitives/multiplexer.h"
 
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/eigen_autodiff_types.h"
+
 #include <functional>
 #include <numeric>
 
@@ -35,6 +38,7 @@ void Multiplexer<T>::DoCalcOutput(const Context<T>& context,
 }
 
 template class Multiplexer<double>;
+template class Multiplexer<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

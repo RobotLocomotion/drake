@@ -23,14 +23,14 @@ class PidControllerTest : public ::testing::Test {
     output_ = controller_.AllocateOutput(*context_);
     derivatives_ = controller_.AllocateTimeDerivatives();
 
-    // Error signal input port.
-    auto vec0 = std::make_unique<BasicVector<double>>(port_size_);
-    vec0->get_mutable_value() << error_signal_;
+    // State:
+    auto vec0 = std::make_unique<BasicVector<double>>(port_size_ * 2);
+    vec0->get_mutable_value().setZero();
     context_->FixInputPort(0, std::move(vec0));
 
-    // Error signal rate input port.
-    auto vec1 = std::make_unique<BasicVector<double>>(port_size_);
-    vec1->get_mutable_value() << error_rate_signal_;
+    // Desired state:
+    auto vec1 = std::make_unique<BasicVector<double>>(port_size_ * 2);
+    vec1->get_mutable_value() << error_signal_, error_rate_signal_;
     context_->FixInputPort(1, std::move(vec1));
   }
 
@@ -39,10 +39,11 @@ class PidControllerTest : public ::testing::Test {
   const VectorX<double> ki_{VectorX<double>::Ones(port_size_) * 3.0};
   const VectorX<double> kd_{VectorX<double>::Ones(port_size_) * 1.0};
 
-  PidController<double> controller_{kp_, ki_, kd_};
+  PidController<double> controller_{port_size_ * 2, port_size_, kp_, ki_, kd_};
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
+  // Error = measured - desired.
   Vector3d error_signal_{1.0, 2.0, 3.0};
   Vector3d error_rate_signal_{1.3, 0.9, 3.14};
 };
@@ -62,7 +63,7 @@ TEST_F(PidControllerTest, GetterVectors) {
   const Eigen::Vector2d kp{1.0, 2.0};
   const Eigen::Vector2d ki{1.0, 2.0};
   const Eigen::Vector2d kd{1.0, 2.0};
-  PidController<double> controller{kp, ki, kd};
+  PidController<double> controller{2 * 2, 2, kp, ki, kd};
 
   EXPECT_NO_THROW(controller.get_Kp_vector());
   EXPECT_NO_THROW(controller.get_Ki_vector());
@@ -117,7 +118,7 @@ TEST_F(PidControllerTest, CalcTimeDerivatives) {
 
   // The only state in the PID controller_ is the integral of the input signal.
   // Therefore the time derivative of the state equals the input error signal.
-  EXPECT_EQ(error_signal_, derivatives_->CopyToVector());
+  EXPECT_EQ(error_signal_, -derivatives_->CopyToVector());
 }
 
 }  // namespace

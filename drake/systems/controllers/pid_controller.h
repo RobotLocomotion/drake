@@ -1,61 +1,40 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/systems/controllers/controller_base.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/pass_through.h"
+#include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
 namespace systems {
 
-/// A PID controller system. Given an error signal `e` and its time derivative
-/// `edot` the output of this sytem is
-/// <pre>
-///     y = Kp * e + Ki integ(e,dt) + Kd * edot
-/// </pre>
-/// where `integ(e,dt)` is the time integral of `e`.
-/// A PID controller directly feedthroughs the error signal to the output when
-/// the proportional constant is non-zero. It feeds through the rate of change
-/// of the error signal when the derivative constant is non-zero.
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
-/// @ingroup primitive_systems
 template <typename T>
-class PidController : public Diagram<T> {
+class PidControllerInternal;
+
+template <typename T>
+class PidController : public Controller<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 
-  /// Constructs a %PidController system where all of the gains are the same
-  /// value.
-  ///
-  /// @param Kp the proportional constant.
-  /// @param Ki the integral constant.
-  /// @param Kd the derivative constant.
-  /// @param size number of elements in the signal to be processed.
-  PidController(const T& Kp, const T& Ki, const T& Kd, int size);
+  PidController(int state_dim, int control_dim,
+      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd) {
+    ConnectPorts(nullptr, state_dim, control_dim, kp, ki, kd);
+  }
 
-  /// Constructs a %PidController system where each gain can have a different
-  /// value.
-  ///
-  /// @param Kp the vector of proportional gain constants.
-  /// @param Ki the vector of integral gain constants.
-  /// @param Kd the vector of derivative gain constants.
-  PidController(const VectorX<T>& Kp, const VectorX<T>& Ki,
-                const VectorX<T>& Kd);
-
-  ~PidController() override {}
+  PidController(std::unique_ptr<MatrixGain<T>> feedback_selector,
+      int state_dim, int control_dim,
+      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd) {
+    ConnectPorts(std::move(feedback_selector),
+                 state_dim, control_dim, kp, ki, kd);
+  }
 
   /// Returns the proportional gain constant. This method should only be called
   /// if the proportional gain can be represented as a scalar value, i.e., every
@@ -93,27 +72,18 @@ class PidController : public Diagram<T> {
   /// of the error signal when the derivative constant is non-zero.
   bool has_any_direct_feedthrough() const override;
 
-  /// Sets the integral of the %PidController to @p value.
+  /// Sets the integral of the %PidControllerInternal to @p value.
   /// @p value must be a column vector of the appropriate size.
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
-  /// Returns the input port to the error signal.
-  const InputPortDescriptor<T>& get_error_port() const;
-
-  /// Returns the input port to the time derivative or rate of the error signal.
-  const InputPortDescriptor<T>& get_error_derivative_port() const;
-
-  /// Returns the output port to the control output.
-  const OutputPortDescriptor<T>& get_control_output_port() const;
-
  private:
-  Adder<T>* adder_ = nullptr;
-  Integrator<T>* integrator_ = nullptr;
-  PassThrough<T>* pass_through_ = nullptr;
-  Gain<T>* proportional_gain_ = nullptr;
-  Gain<T>* integral_gain_ = nullptr;
-  Gain<T>* derivative_gain_ = nullptr;
+  void ConnectPorts(std::unique_ptr<MatrixGain<T>> feedback_selector,
+                    int state_dim, int control_dim,
+                    const VectorX<T>& kp, const VectorX<T>& ki,
+                    const VectorX<T>& kd);
+
+  PidControllerInternal<T>* controller_;
 };
 
 }  // namespace systems
