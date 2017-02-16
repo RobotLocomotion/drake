@@ -1,4 +1,3 @@
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -12,6 +11,7 @@
 #include "drake/automotive/maliput/monolane/loader.h"
 #include "drake/automotive/maliput/utility/generate_obj.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/text_logging_gflags.h"
 
 // "Ego car" in this instance means "controlled by something smarter than
@@ -43,7 +43,9 @@ DEFINE_string(road_path, "",
               "indicating at which end of the first lane to begin the "
               "circuit.  If the string is empty, a default path will "
               "be selected.");
-DEFINE_bool(use_idm, false, "Use IDM to control ado cars on roads.");
+DEFINE_bool(use_idm, false,
+            "Use IDM to control ado cars on roads.  "
+            "(Otherwise, simply use constant velocity.)");
 
 namespace drake {
 namespace automotive {
@@ -63,7 +65,7 @@ const maliput::api::Lane* FindLaneByIdOrDie(
       }
     }
   }
-  std::cerr << "ERROR:  No lane named '" << id << "'." << std::endl;
+  drake::log()->error("No lane named '{}'.", id);
   std::exit(1);
 }
 
@@ -117,8 +119,7 @@ int main(int argc, char* argv[]) {
     // User-controlled vehicles are SimpleCars.
     for (const std::string& name : ego_car_names) {
       const std::string& channel_name = MakeChannelName(name);
-      std::cout << "Adding ego car subscribed to "
-                << channel_name << "." << std::endl;
+      drake::log()->info("Adding ego car subscribed to {}.", channel_name);
       simulator->AddSimpleCarFromSdf(kSdfFile, name, channel_name);
     }
 
@@ -134,7 +135,7 @@ int main(int argc, char* argv[]) {
   } else {
     // A road description has been specified.  All vehicles will be constrained
     // to drive on the specified road surface.
-    std::cerr << "building road from " << FLAGS_road_file << std::endl;
+    drake::log()->info("building road from {}", FLAGS_road_file);
     auto base_road = maliput::monolane::LoadFile(FLAGS_road_file);
 
     maliput::api::LaneEnd start(
@@ -150,8 +151,7 @@ int main(int argc, char* argv[]) {
       std::getline(ss, end, ':');
       std::getline(ss, lane_id, ',');
       if ((end != "start") && (end != "end")) {
-        std::cerr << "ERROR:  road_path must start with 'start:' or 'end:'."
-                  << std::endl;
+        drake::log()->error("road_path must start with 'start:' or 'end:'.");
         return 1;
       }
       start = maliput::api::LaneEnd(
@@ -169,24 +169,30 @@ int main(int argc, char* argv[]) {
 
     // User-controlled vehicles are EndlessRoadCars with DrivingCommand input.
     for (size_t i = 0; i < ego_car_names.size(); ++i) {
-      const double kConstantSpeed = 10.0;
-      const double kLateralOffsetUnit = -2.0;
-
-      const double longitudinal_start =
+      const double kInitialSpeed = 10.0;  // m/s
+      const int kNumSideBySide = 2;
+      const double kLateralSpacing = 4.;  // meters between vehicles
+      EndlessRoadCarState<double> initial_state;
+      // Set s to distribute vehicles in the last half of the circuit
+      // (away from ado cars, which are in the first half of the circuit).
+      initial_state.set_s(
           endless_road->lane()->cycle_length() *
-          ((1.0 * (i / 2) / ego_car_names.size()) + 0.5);
-      const double lateral_offset =
-          (((i % 2) * 2.0) - 1.0) * kLateralOffsetUnit;
+          (0.5 + (0.5 * (i / kNumSideBySide) / ego_car_names.size())));
+      initial_state.set_r(
+          ((i % kNumSideBySide) * kLateralSpacing)
+          - ((kNumSideBySide - 1) * kLateralSpacing * 0.5));
+      initial_state.set_speed(kInitialSpeed);
+      initial_state.set_heading(0.);  // straight ahead
       const std::string& given_name = ego_car_names[i];
       const std::string& model_name =
           given_name.empty() ? ("User-" + std::to_string(i)) : given_name;
       const std::string& channel_name = MakeChannelName(given_name);
-      std::cout << "Adding ego car '" << model_name << "' subscribed to "
-                << channel_name << "." << std::endl;
+      drake::log()->info("Adding ego car '{}' subscribed to {}.",
+                         model_name, channel_name);
       simulator->AddEndlessRoadCar(
           model_name,
           kSdfFile,
-          longitudinal_start, lateral_offset, kConstantSpeed,
+          initial_state,
           EndlessRoadCar<double>::kUser, channel_name);
     }
 
@@ -194,30 +200,41 @@ int main(int argc, char* argv[]) {
     // of merging/intersecting vehicles) or dumb ("drive at a constant
     // LANE-space velocity").
     if (FLAGS_use_idm) {
-      const double kInitialSpeed = 30.0;
-      const double kLateralOffsetUnit = 0.0;
+      const double kInitialSpeed = 30.0;  // m/s
       for (int i = 0; i < FLAGS_num_ado_car; ++i) {
-        const double longitudinal_start =
-            endless_road->lane()->cycle_length() * i / FLAGS_num_ado_car / 2.;
-        const double lateral_offset = kLateralOffsetUnit;
+        EndlessRoadCarState<double> initial_state;
+        // Set s to distribute vehicles in the first half of the circuit
+        // (away from ego cars, which are in the last half of the circuit).
+        initial_state.set_s(
+            endless_road->lane()->cycle_length() * i / FLAGS_num_ado_car / 2.);
+        initial_state.set_r(0.);  // on the centerline
+        initial_state.set_speed(kInitialSpeed);
+        initial_state.set_heading(0.);  // straight ahead
         simulator->AddEndlessRoadCar(
             "IDM-" + std::to_string(i),
             kSdfFile,
-            longitudinal_start, lateral_offset, kInitialSpeed,
+            initial_state,
             EndlessRoadCar<double>::kIdm, "");
       }
     } else {
-      const double kConstantSpeed = 10.0;
-      const double kLateralOffsetUnit = -2.0;
+      const double kConstantSpeed = 10.0;  // m/s
+      const int kNumSideBySide = 2;
+      const double kLateralSpacing = 4.;  // meters between vehicles
       for (int i = 0; i < FLAGS_num_ado_car; ++i) {
-        const double longitudinal_start =
-            endless_road->lane()->cycle_length() * (i / 2) / FLAGS_num_ado_car;
-        const double lateral_offset =
-            (((i % 2) * 2) - 1) * kLateralOffsetUnit;
+        EndlessRoadCarState<double> initial_state;
+        // Set s to distribute vehicles in the first half of the circuit
+        // (away from ego cars, which are in the last half of the circuit).
+        initial_state.set_s(endless_road->lane()->cycle_length()
+                            * (i / kNumSideBySide) / FLAGS_num_ado_car / 2.);
+        initial_state.set_r(
+            ((i % kNumSideBySide) * kLateralSpacing)
+            - ((kNumSideBySide - 1) * kLateralSpacing * 0.5));
+        initial_state.set_speed(kConstantSpeed);
+        initial_state.set_heading(0.);  // straight ahead
         simulator->AddEndlessRoadCar(
             "CV-" + std::to_string(i),
             kSdfFile,
-            longitudinal_start, lateral_offset, kConstantSpeed,
+            initial_state,
             EndlessRoadCar<double>::kNone, "");
       }
     }

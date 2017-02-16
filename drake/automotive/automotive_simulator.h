@@ -8,6 +8,7 @@
 
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/dev/endless_road_car.h"
+#include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/endless_road_car_to_euler_floating_joint.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/utility/infinite_circuit_road.h"
@@ -100,17 +101,26 @@ class AutomotiveSimulator {
 
   /// Adds an EndlessRoadCar system to this simulation, including its
   /// EulerFloatingJoint output.
-  /// @param model_name  If non-empty, and if @p control_type is kUser, then
-  ///                    the car model will be labeled with this name.
+  ///
+  /// @param id  ID string for the car instance
+  /// @param sdf_filename The name of the SDF file to load as the
+  ///    visualization for the simple car. This file must contain one
+  ///    free-floating model of a vehicle (i.e., a model that's not connected
+  ///    to the world). A floating joint of type
+  ///    multibody::joints::kRollPitchYaw is added to connect the vehicle
+  ///    model to the world.
+  /// @param initial_state  Initial state of the car at start of simulation.
+  /// @param control_type  The controller type; see EndlessRoadCar.
   /// @param channel_name  If @p control_type is kUser, then this must be
   ///                      non-empty and the car will subscribe to a channel
   ///                      with this name to receive commands.
+  ///
   /// @pre Start() has NOT been called.
   /// @pre SetRoadGeometry() HAS been called.
   int AddEndlessRoadCar(
       const std::string& id,
       const std::string& sdf_filename,
-      double longitudinal_start, double lateral_offset, double speed,
+      const EndlessRoadCarState<T>& initial_state,
       typename EndlessRoadCar<T>::ControlType control_type,
       const std::string& channel_name);
 

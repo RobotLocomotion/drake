@@ -128,9 +128,7 @@ template <typename T>
 int AutomotiveSimulator<T>::AddEndlessRoadCar(
     const std::string& id,
     const std::string& sdf_filename,
-    double longitudinal_start,
-    double lateral_offset,
-    double speed,
+    const EndlessRoadCarState<T>& initial_state,
     typename EndlessRoadCar<T>::ControlType control_type,
     const std::string& channel_name) {
   DRAKE_DEMAND(!started_);
@@ -145,11 +143,9 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
 
   // Save the desired initial state in order to initialize the Simulator later,
   // when we have a Simulator to initialize.
-  EndlessRoadCarState<T>& initial_state = endless_road_cars_[endless_road_car];
-  initial_state.set_s(longitudinal_start);
-  initial_state.set_r(lateral_offset);
-  initial_state.set_speed(speed);
-  initial_state.set_heading(0.);
+  // TODO(maddog@tri.global)  Is there a better way to copy all the fields?
+  //                (I.e., until lcm_vector_gen.py makes an operator=()....)
+  endless_road_cars_[endless_road_car].set_value(initial_state.get_value());
 
   switch (control_type) {
     case EndlessRoadCar<T>::kNone: {
@@ -462,8 +458,8 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
                                        "/tmp", road_->id().id,
                                        maliput::utility::ObjFeatures());
     std::string urdf_filepath = std::string("/tmp/") + road_->id().id + ".urdf";
-    parsers::urdf::AddModelInstanceFromUrdfFile(urdf_filepath,
-                                                rigid_body_tree_.get());
+    parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+        urdf_filepath, rigid_body_tree_.get());
     // NB: The road doesn't move, so we don't need to connect anything
     // to its joint.
   }
