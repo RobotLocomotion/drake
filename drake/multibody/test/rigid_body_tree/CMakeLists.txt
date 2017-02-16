@@ -38,6 +38,8 @@ add_library_with_exports(LIB_NAME drakeRigidBodyTreeCompareToClone SOURCE_FILES
 target_link_libraries(drakeRigidBodyTreeCompareToClone
     drakeRBM
     drakeRigidBodyActuatorCompareToClone
+    drakeRigidBodyCompareToClone
+    drakeRigidBodyFrameCompareToClone
     drakeRigidBodyLoopCompareToClone)
 
 drake_add_cc_test(NAME rigid_body_tree_creation_test SIZE medium)

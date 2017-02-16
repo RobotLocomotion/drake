@@ -80,14 +80,6 @@ class RigidBodyFrame {
 #endif
 
   /**
-   * Compares this %RigidBodyFrame with a clone. Since this method is intended
-   * to compare a clone, an *exact* match is performed. This method will only
-   * return `true` if the provided `other` %RigidBodyFrame is exactly the same
-   * as this %RigidBodyFrame.
-   */
-  bool CompareToClone(const RigidBodyFrame& other) const;
-
-  /**
    * Returns the ID of the model instance to which this rigid body frame
    * belongs.
    */

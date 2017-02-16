@@ -48,12 +48,6 @@ class RigidBody {
   std::unique_ptr<RigidBody<T>> Clone() const;
 #endif
 
-  /// Compares this %RigidBody with a clone. Since this method is intended to
-  /// compare a clone, an *exact* match is performed. This method will only
-  /// return `true` if the provided `other` %RigidBody is exactly the same as
-  /// this %RigidBody.
-  virtual bool CompareToClone(const RigidBody& other) const;
-
   /**
    * Returns the name of this rigid body.
    */
