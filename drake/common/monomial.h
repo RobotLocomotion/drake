@@ -294,3 +294,36 @@ struct hash_value<symbolic::internal::Monomial> {
   }
 };
 }  // namespace drake
+
+namespace drake {
+namespace symbolic {
+namespace internal {
+typedef std::unordered_map<symbolic::internal::Monomial, symbolic::Expression, hash_value<symbolic::internal::Monomial>> MonomialToCoefficientMap;
+/**
+ * Decomposes a polynomial into monomials, with respect to a specified set of variables.
+ * A polynomial can be represented as
+ * ∑ᵢ c(i) * m(i)
+ * where m(i) is a monomial in the specified set of variables, and c(i) is the corresponding coefficient,
+ * Note the coefficient will include any constants and symbols not in the set of variables.
+ * <pre>
+ * Example:
+ * For polynomial e1 = 2x²y + 3xy²z + 4z
+ * e1.Decompose({x,y,z}) will return the map
+ * map[x²y] = 2
+ * map[xy²z] = 3
+ * map[z] = 4
+ * on the other hand, e1.Decompose({x,y}) (notice z is not included in the input argument) will return the map
+ * map[x²y] = 2
+ * map[xy²] = 3z
+ * map[1] = 4z
+ * </pre>
+ * @pre{The expression is a polynomial of the specified set of variables,
+ * otherwise returns a runtime error.}
+ * @vars The variables whole monomials will be considered in the decomposition.
+ * @retval monomial_to_coeff_map Map the monomial to the coefficient in each
+ * term of the polynomial.
+ */
+MonomialToCoefficientMap DecomposePolynomial(const Expression& e, const Variables& vars);
+}  // namespace internal
+}  // namespace symbolic
+}  // namespace drake

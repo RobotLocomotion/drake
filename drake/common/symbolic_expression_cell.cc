@@ -946,7 +946,7 @@ Expression::MonomialToCoeffMap ExpressionDiv::DecomposePolynomial(const Variable
     throw std::runtime_error("The divisor is not a monomial. The Div expression cannot be decomposed as a polynomial.");
   }
   const Variables& divisor_variables = map2.begin()->first.GetVariables();
-  const auto& divisor_monomial = internal::ToMonomial(map2.begin()->first);
+  const internal::Monomial divisor_monomial(map2.begin()->first);
   const auto& divisor_monomial_powers = divisor_monomial.get_powers();
   const Expression& divisor_coeff = map2.begin()->second;
   Expression::MonomialToCoeffMap map;
@@ -954,7 +954,7 @@ Expression::MonomialToCoeffMap ExpressionDiv::DecomposePolynomial(const Variable
   for (const auto& p1 : map1) {
     // For each monomial in the dividend, compute the division from the
     // dividend monomial by the divisor monomial.
-    const internal::Monomial& dividend_monomial = internal::ToMonomial(p1.first);
+    const internal::Monomial dividend_monomial(p1.first);
     std::map<Variable::Id, int> division_monomial_powers = dividend_monomial.get_powers();
     for (const auto& p_divisor : divisor_monomial_powers) {
       // The variable in divisor has to appear in the dividend.

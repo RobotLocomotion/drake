@@ -47,12 +47,6 @@ class ExpressionCell {
    */
   virtual Polynomial<double> ToPolynomial() const = 0;
 
- /**
-  * Returns the total degrees of the polynomial w.r.t the variables in
-  * @p vars. @see Expression::Degree(const Variables& vars)
-  */
-  virtual int Degree(const Variables& vars) const = 0;
-
   /**
    * Decompose the polynomial into monomials with respect to the specified set of variables.
    * @param vars The set of variables.

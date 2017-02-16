@@ -159,7 +159,87 @@ map<Variable::Id, int> ToMonomialPower(const Expression& e) {
   }
   return powers;
 }
+class DecomposePolynomialVisitor {
+ public:
+  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionVar>& e, const Variables& vars) const {
+    MonomialToCoefficientMap map;
+    map.reserve(1);
+    if (vars.include(e->get_variable())) {
+      map.emplace(e->get_variable().get_id(), 1);
+    } else {
+      map.emplace(1, e->get_variable().get_id());
+    }
+    return map;
+  }
 
+  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionConstant>& e, const Variables& vars) const {
+    MonomialToCoefficientMap map;
+    map.emplace(1, e->get_value());
+    return map;
+  }
+
+  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionAdd>& e, const Variables& vars) {
+    MonomialToCoefficientMap map;
+    double e_constant = e->get_constant();
+    if ( e_constant != 0) {
+      map.emplace(1, e_constant);
+    }
+    // For an expression 2*(3*x*y+4*x) + 4*y.
+    // expr_to_coeff_map_[3*x*y+4*x] = 2
+    // expr_to_coeff_map_[y] = 4
+    for (const auto& p : e->get_expr_to_coeff_map()) {
+      // For expr_to_coeff_map_[3*x*y+4*x] = 2
+      // map_p[x*y] = 3
+      // map_p[x] = 4
+      const auto& map_p = DecomposePolynomial(p.first, vars);
+      map.reserve(map.size() + map_p.size());
+      for (const auto& map_p_pair : map_p) {
+        auto it = map.find(map_p_pair.first);
+        // a * (b * monomial) = (a * b) * monomial.
+        if (it != map.end()) {
+          it->second += map_p_pair.second * p.second;
+        } else {
+          map.emplace(map_p_pair.first, map_p_pair.second * p.second);
+        }
+      }
+    }
+    return map;
+  }
+
+  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionMul> e, const Variables& vars) {
+    MonomialToCoefficientMap map;
+    auto constant = e->get_constant();
+    // We do divide and conquer here.
+    // for an expression e = pow(e₁, p₁) * pow(e₂, p₂) * ... * pow(eₖ, pₖ)
+    // First decomposes the first ⌊k/2⌋ products, then decomposes the last
+    // ⌈k/2⌉ products, so as to write e as the product of two polynomials
+    // e = (c₀ + c₁ * pow(x, k₁) + ... + cₙ * pow(x, kₙ)) *
+    //     (d₀ + d₁ * pow(x, k₁) + ... + dₘ * pow(x, kₘ))
+    // Finally multiply the term cᵢ * pow(x, kᵢ) with the term dⱼ * pow(x, kⱼ)
+    // to get each monomial in the product.
+    const auto& base_to_exponent_map = e->get_base_to_exponent_map();
+    // Base case, only one term in the product
+    if (base_to_exponent_map.size() == 1) {
+      if (is_zero(base_to_exponent_map.begin()->second)) {
+        map.emplace(1, constant);
+        return map;
+      } else {
+        map = DecomposePolynomial(pow(base_to_exponent_map.begin()->first, base_to_exponent_map.begin()->second), vars);
+        for (const auto& p : map) {
+          p.second *= constant;
+        }
+        return map;
+      }
+    } else {
+      // Divide the base_to_exponent_map to two halves.
+
+    }
+  }
+};
+
+MonomialToCoefficientMap DecomposePolynomial(const Expression& e, const Variables& vars) {
+  return VisitPolynomial<MonomialToCoefficientMap>(DecomposePolynomialVisitor(), e, vars);
+}
 }  // namespace internal
 
 class DegreeVisitor {
