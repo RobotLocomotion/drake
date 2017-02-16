@@ -61,7 +61,19 @@ class MonolaneOnrampMerge {
   }
 
  private:
-  /// Implements the onramp example.
+  /// Implements the following onramp example, where each road lane is composed
+  /// of sequences of linear and arc primitives:
+  ///
+  ///           pre-merge     post-merge
+  ///             road          road
+  ///        |------>-------+---->-------|
+  ///                      /
+  ///                     /
+  ///            onramp  /
+  ///                   ^
+  ///                   |
+  ///                   |
+  ///                   -
   void BuildOnramp();
 
   /// Tolerances for monolane's Builder.
