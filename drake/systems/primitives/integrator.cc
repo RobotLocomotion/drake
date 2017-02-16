@@ -32,14 +32,6 @@ void Integrator<T>::set_integral_value(
   state_vector->SetFromVector(value);
 }
 
-// TODO(amcastro-tri): we should be able to express that initial conditions
-// feed through an integrator but the dynamic signal during simulation does
-// not.
-template <typename T>
-bool Integrator<T>::has_any_direct_feedthrough() const {
-  return false;
-}
-
 template <typename T>
 std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateContinuousState()
     const {
