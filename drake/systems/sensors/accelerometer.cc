@@ -139,13 +139,6 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   output_vector->SetFromVector(a_WF_F);
 }
 
-std::ostream& operator<<(std::ostream& out, const Accelerometer& sensor) {
-  out << "Accelerometer:\n"
-      << "  - name = " << sensor.get_name() << "\n"
-      << "  - frame = " << sensor.get_frame().get_name() << "\n";
-  return out;
-}
-
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
