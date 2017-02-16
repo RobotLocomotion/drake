@@ -50,9 +50,9 @@
     "iiwa_joint_7"
   ],
 
+  "planningMode" : "pydrake",
   "fixedPointFile" : "kuka_iiwa_fp.csv",
   "postureDatabaseFile" : "stored_poses.json",
-
 
   "handCombinations": [],
   "userConfig" : ["fixedBaseArm"],

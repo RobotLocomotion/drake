@@ -118,6 +118,7 @@ drake_cc_library(
         "symbolic_formula_cell.h",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
+        "symbolic_expression_visitor.cc",
     ],
     hdrs = [
         "hash.h",
@@ -126,6 +127,7 @@ drake_cc_library(
         "symbolic_formula.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
+        "symbolic_expression_visitor.h",
     ],
     deps = [
         ":common",
