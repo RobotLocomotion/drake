@@ -23,10 +23,38 @@ using Eigen::Vector3d;
 using std::sort;
 
 // Test default constructor which leaves all entries initialized to NaN.
+// Also test the implementation of IsNaN().
 GTEST_TEST(RotationalInertia, DefaultConstructor) {
   RotationalInertia<double> I;
   // Verify the underlying Eigen matrix.
   EXPECT_TRUE(I.get_matrix().array().isNaN().all());
+  EXPECT_TRUE(I.IsNaN());
+}
+
+// Test construction and assignment from any Eigen matrix expression.
+GTEST_TEST(RotationalInertia, ConstructorFromEigenExpression) {
+  Eigen::RowVector3d row(1.0, 2.0, 0.5);
+  Eigen::Matrix<double, 4, 3> M;
+  M << row, 2.0 * row, 0.5 *row, 0.1 * row;
+
+  // Construction from a Matrix3.
+  Matrix3d ma = M.block<3, 3>(0, 0);
+  RotationalInertia<double> Ia(ma);
+  EXPECT_EQ(Ia.CopyToFullMatrix3(), ma);
+
+  // Assign a Matrix3.
+  Matrix3d mm = M.block<3, 3>(1, 0);
+  mm = (mm + mm.transpose()).eval();  // make it symmetric.
+  Ia = mm;
+  EXPECT_EQ(Ia.CopyToFullMatrix3(), mm);
+
+  // Construction from an Eigen block, a more interesting Eigen expression.
+  RotationalInertia<double> Ib(M.block<3, 3>(0, 0));
+  EXPECT_EQ(Ib.CopyToFullMatrix3(), ma);
+
+  // Assign an Eigen expression.
+  Ib = M.block<3, 3>(1, 0) + M.block<3, 3>(1, 0).transpose();
+  EXPECT_EQ(Ib.CopyToFullMatrix3(), mm);
 }
 
 // Test constructor for a diagonal rotational inertia with all elements equal.
@@ -53,6 +81,7 @@ GTEST_TEST(RotationalInertia, PrincipalAxesConstructor) {
 
 // Test constructor for a general rotational inertia matrix with non-zero
 // off-diagonal elements for which the six entires need to be specified.
+// Also test SetZero() and SetNaN methods.
 GTEST_TEST(RotationalInertia, GeneralConstructor) {
   const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
   const Vector3d p(0.1, 0.3, 1.4);  // m for products.
@@ -62,6 +91,14 @@ GTEST_TEST(RotationalInertia, GeneralConstructor) {
   Vector3d products_expected = p;
   EXPECT_EQ(I.get_moments(), moments_expected);
   EXPECT_EQ(I.get_products(), products_expected);
+
+  // Test SetZero().
+  I.SetZero();
+  EXPECT_TRUE((I.CopyToFullMatrix3().array() == 0).all());
+
+  // Test SetToNaN().
+  I.SetToNaN();
+  EXPECT_TRUE(I.CopyToFullMatrix3().array().isNaN().all());
 }
 
 // Test access by (i, j) indexes.
@@ -191,7 +228,7 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
 
   // Verify that indeed this inertia in frame Q contains non-zero diagonal
   // elements.
-  EXPECT_TRUE((I_Bc_Q.get_matrix().array().abs() > 0.1).all());
+  EXPECT_TRUE((I_Bc_Q.CopyToFullMatrix3().array().abs() > 0.1).all());
 
   // Compute the principal moments of I_Bc_Q.
   Vector3d principal_moments;
