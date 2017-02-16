@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/controllers/controller_base.h"
+#include "drake/systems/controllers/state_feedback_controller_base.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/adder.h"
@@ -29,7 +29,7 @@ class PidControllerInternal;
  * where `integral(q_d - q, dt)` is the integrated position error.
  */
 template <typename T>
-class PidController : public Controller<T> {
+class PidController : public StateFeedbackController<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 

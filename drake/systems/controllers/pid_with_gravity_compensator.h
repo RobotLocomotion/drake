@@ -10,8 +10,8 @@ namespace drake {
 namespace systems {
 
 /**
- * A controller whose output is the sum of a PID controller and a gravity
- * compensator.
+ * A state feedback controller whose output is the sum of a PID controller
+ * and a gravity compensator.
  */
 template<typename T>
 class PidWithGravityCompensator : public ModelBasedController<T> {
@@ -20,7 +20,8 @@ class PidWithGravityCompensator : public ModelBasedController<T> {
 
   /**
    * Constructs the controller that instantiates a RigidBodyTree directly
-   * from a model file.
+   * from a model file. Assumes the model is connected to the world with a
+   * multibody::joints::kFixed joint.
    * @param model_path Path to the model file.
    * @param world_offset X_WB, where B is the base frame of the model.
    */

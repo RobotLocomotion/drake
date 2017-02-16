@@ -7,14 +7,14 @@ namespace drake {
 namespace systems {
 
 /**
- * Interface for feedback controllers. This class needs to be extended by
+ * Interface for state feedback controllers. This class needs to be extended by
  * concrete implementations. It provides named accessors to actual and desired
  * state input ports and control output port.
  */
 template<typename T>
-class Controller : public Diagram<T> {
+class StateFeedbackController : public Diagram<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Controller)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateFeedbackController)
 
   /**
    * Returns the input port for the actual state.
@@ -38,7 +38,7 @@ class Controller : public Diagram<T> {
   }
 
  protected:
-  Controller() {}
+  StateFeedbackController() {}
 };
 
 }  // namespace systems

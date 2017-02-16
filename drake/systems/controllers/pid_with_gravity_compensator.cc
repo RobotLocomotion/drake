@@ -3,17 +3,18 @@
 #include <memory>
 #include <utility>
 
-#include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/controllers/gravity_compensator.h"
+#include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/demultiplexer.h"
 
 namespace drake {
 namespace systems {
 
-template<typename T>
-void PidWithGravityCompensator<T>::SetUp(
-    const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd) {
+template <typename T>
+void PidWithGravityCompensator<T>::SetUp(const VectorX<T>& kp,
+                                         const VectorX<T>& ki,
+                                         const VectorX<T>& kd) {
   DiagramBuilder<T> builder;
   this->set_name("PidWithGravityCompensator");
 
@@ -42,20 +43,18 @@ void PidWithGravityCompensator<T>::SetUp(
 
   // Splits q from state, and connects it to gravity compensator.
   builder.Connect(pass_through->get_output_port(0),
-      rbp_state_demux->get_input_port(0));
+                  rbp_state_demux->get_input_port(0));
   builder.Connect(rbp_state_demux->get_output_port(0),
-      grav_comp->get_input_port(0));
+                  grav_comp->get_input_port(0));
 
   // Connects state to PID.
   builder.Connect(pass_through->get_output_port(0),
-      pid->get_measured_state_input_port());
+                  pid->get_measured_state_input_port());
 
   // Create an adder to sum the provided input with the output of the
   // controller.
-  builder.Connect(pid->get_control_output_port(),
-                  adder->get_input_port(0));
-  builder.Connect(grav_comp->get_output_port(0),
-                  adder->get_input_port(1));
+  builder.Connect(pid->get_control_output_port(), adder->get_input_port(0));
+  builder.Connect(grav_comp->get_output_port(0), adder->get_input_port(1));
 
   // Exposes measured state input port.
   builder.ExportInput(pass_through->get_input_port(0));
@@ -69,27 +68,28 @@ void PidWithGravityCompensator<T>::SetUp(
   builder.BuildInto(this);
 }
 
-template<typename T>
+template <typename T>
 PidWithGravityCompensator<T>::PidWithGravityCompensator(
     const std::string& model_path,
-    std::shared_ptr<RigidBodyFrame<double>> world_offset,
-    const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd)
-    : ModelBasedController<T>(model_path, world_offset) {
+    std::shared_ptr<RigidBodyFrame<double>> world_offset, const VectorX<T>& kp,
+    const VectorX<T>& ki, const VectorX<T>& kd)
+    : ModelBasedController<T>(model_path, world_offset,
+                              multibody::joints::kFixed) {
   SetUp(kp, ki, kd);
 }
 
-template<typename T>
+template <typename T>
 PidWithGravityCompensator<T>::PidWithGravityCompensator(
-    const RigidBodyTree<T>& robot,
-    const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd)
+    const RigidBodyTree<T>& robot, const VectorX<T>& kp, const VectorX<T>& ki,
+    const VectorX<T>& kd)
     : ModelBasedController<T>(robot) {
   SetUp(kp, ki, kd);
 }
 
-template<typename T>
+template <typename T>
 PidWithGravityCompensator<T>::PidWithGravityCompensator(
-    std::unique_ptr<RigidBodyTree<T>> robot,
-    const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd)
+    std::unique_ptr<RigidBodyTree<T>> robot, const VectorX<T>& kp,
+    const VectorX<T>& ki, const VectorX<T>& kd)
     : ModelBasedController<T>(std::move(robot)) {
   SetUp(kp, ki, kd);
 }

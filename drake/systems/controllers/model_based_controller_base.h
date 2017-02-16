@@ -5,20 +5,21 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/controllers/controller_base.h"
+#include "drake/systems/controllers/state_feedback_controller_base.h"
 
 namespace drake {
 namespace systems {
 
 /**
- * Interface for model based feedback controllers. This class needs to be
- * extended by concrete implementations. This class also maintains an instance
- * of a RigidBodyTree, which is used for control.
+ * Interface for model based state feedback controllers. This class needs to be
+ * extended by concrete implementations. This class maintains an instance of a
+ * RigidBodyTree, which is used for control.
  */
-template<typename T>
-class ModelBasedController : public Controller<T> {
+template <typename T>
+class ModelBasedController : public StateFeedbackController<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelBasedController)
 
@@ -35,13 +36,16 @@ class ModelBasedController : public Controller<T> {
    * from a model file.
    * @param model_path Path to the model file.
    * @param world_offset X_WB, where B is the base frame of the model.
+   * @param floating_base_type, Type of the joint between model's base link
+   * and the world. Defaults to multibody::joints::kFixed.
    */
   ModelBasedController(const std::string& model_path,
-      std::shared_ptr<RigidBodyFrame<double>> world_offset) {
+                       std::shared_ptr<RigidBodyFrame<double>> world_offset,
+                       const multibody::joints::FloatingBaseType
+                           floating_base_type = multibody::joints::kFixed) {
     robot_for_control_ = std::make_unique<RigidBodyTree<T>>();
     parsers::urdf::AddModelInstanceFromUrdfFile(
-        model_path, multibody::joints::kFixed, world_offset,
-        robot_for_control_.get());
+        model_path, floating_base_type, world_offset, robot_for_control_.get());
   }
 
   /**

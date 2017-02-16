@@ -85,7 +85,7 @@ set(system2_sources
   pid_controller.cc
   pid_with_gravity_compensator.cc)
 set(system2_installed_headers
-  controller_base.h
+  state_feedback_controller_base.h
   model_based_controller_base.h
   gravity_compensator.h
   pid_controlled_system.h

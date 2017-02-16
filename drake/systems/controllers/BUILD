@@ -7,8 +7,8 @@ load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "controller_base",
-    hdrs = ["controller_base.h"],
+    name = "state_feedback_controller_base",
+    hdrs = ["state_feedback_controller_base.h"],
     deps = [
         "//drake/systems/framework",
     ],
@@ -18,7 +18,7 @@ drake_cc_library(
     name = "model_based_controller_base",
     hdrs = ["model_based_controller_base.h"],
     deps = [
-        ":controller_base",
+        ":state_feedback_controller_base",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
     ],
@@ -52,7 +52,7 @@ drake_cc_library(
     srcs = ["pid_controller.cc"],
     hdrs = ["pid_controller.h"],
     deps = [
-        ":controller_base",
+        ":state_feedback_controller_base",
         "//drake/systems/framework",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:gain",
