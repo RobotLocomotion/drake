@@ -6,6 +6,24 @@ package(default_visibility = ["//visibility:public"])
 load("//tools:lcm.bzl", "lcm_cc_library", "lcm_java_library", "lcm_py_library")
 
 lcm_cc_library(
+    name = "acrobot_u",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_acrobot_u.lcm"],
+)
+
+lcm_cc_library(
+    name = "acrobot_x",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_acrobot_x.lcm"],
+)
+
+lcm_cc_library(
+    name = "acrobot_y",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_acrobot_y.lcm"],
+)
+
+lcm_cc_library(
     name = "body_acceleration",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_body_acceleration.lcm"],
