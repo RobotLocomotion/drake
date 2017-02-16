@@ -119,7 +119,7 @@ GTEST_TEST(RotationalInertia, AccessByIndexes) {
   // Test mutable access.
   // This should have the effect of setting both (2, 0) and (0, 2) even when
   // only one element in memory is being accessed.
-  I(2,0) = -1.0;
+  I(2, 0) = -1.0;
   EXPECT_EQ(I(0, 0), m(0));
   EXPECT_EQ(I(1, 1), m(1));
   EXPECT_EQ(I(2, 2), m(2));
@@ -146,7 +146,7 @@ GTEST_TEST(RotationalInertia, Symmetry) {
   // Tests however that the copy to a full Matrix3 object is well defined and
   // leads to a symmetric matrix.
   Matrix3d Imatrix = I.CopyToFullMatrix3();
-  EXPECT_FALSE(Imatrix.array().isNaN().any()); // no entry is NaN.
+  EXPECT_FALSE(Imatrix.array().isNaN().any());  // no entry is NaN.
   EXPECT_EQ(Imatrix(0, 0), m(0));
   EXPECT_EQ(Imatrix(1, 1), m(1));
   EXPECT_EQ(Imatrix(2, 2), m(2));
@@ -274,7 +274,7 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   EXPECT_EQ(Ib.get_products(), 3.0 * p);
 }
 
-}
-}  // math
-}  // multibody
-}  // drake
+}  // namespace
+}  // namespace math
+}  // namespace multibody
+}  // namespace drake
