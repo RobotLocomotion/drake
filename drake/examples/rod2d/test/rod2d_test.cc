@@ -416,7 +416,7 @@ TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact) {
   EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
             Rod2D<double>::kSlidingSingleContact);
 
-  // Set the coefficient of friction to infinite. This forces the Painlevé code
+  // Set the coefficient of friction to infinite. This forces the rod code
   // to go through the first impact path (impulse within the friction cone).
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
@@ -450,7 +450,7 @@ TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact) {
   EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
             Rod2D<double>::kSlidingSingleContact);
 
-  // Set the coefficient of friction to zero. This forces the Painlevé code
+  // Set the coefficient of friction to zero. This forces the rod code
   // to go through the second impact path (impulse corresponding to sticking
   // friction post-impact lies outside of the friction cone).
   dut_->set_mu_coulomb(0.0);
@@ -581,7 +581,7 @@ TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact2) {
   // Cause the initial state to be impacting.
   SetImpactingState();
 
-  // Set the coefficient of friction to infinite. This forces the Painlevé code
+  // Set the coefficient of friction to infinite. This forces the rod code
   // to go through the first impact path.
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
@@ -620,7 +620,7 @@ TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact2) {
   EXPECT_EQ(context_->template get_abstract_state<Rod2D<double>::Mode>(0),
             Rod2D<double>::kSlidingSingleContact);
 
-  // Set the coefficient of friction to zero. This forces the Painlevé code
+  // Set the coefficient of friction to zero. This forces the rod code
   // to go through the second impact path.
   dut_->set_mu_coulomb(0.0);
 
