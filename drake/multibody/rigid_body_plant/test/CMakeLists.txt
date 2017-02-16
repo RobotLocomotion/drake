@@ -4,12 +4,6 @@ if(Bullet_FOUND)
       drakeMultibodyParsers
       drakeRigidBodyPlant)
 
-  drake_add_cc_test(rigid_body_plant_system1_test)
-  target_link_libraries(rigid_body_plant_system1_test
-    drakeMultibodyParsers
-    drakeRBSystem
-    drakeRigidBodyPlant)
-
   drake_add_cc_test(compute_contact_result_test)
   target_link_libraries(compute_contact_result_test
       drakeRigidBodyPlant
