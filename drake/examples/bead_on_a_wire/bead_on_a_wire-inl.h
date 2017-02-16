@@ -48,6 +48,13 @@ typename BeadOnAWire<T>::DScalar
   return atan2(v(1), v(0));
 }
 
+/// Evaluates the constraint equations for a bead represented in absolute
+/// coordinates (no constraint equations are used for a bead represented in
+/// minimal coordinates). This method is computationally expensive. To evaluate
+/// these equations, the method locates the variable s that minimizes the
+/// univariate function ||f(s) - x||, where x is the location of the bead.
+/// @warning The solution returned by this approach is not generally a global
+///          minimum.
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
     const systems::Context<T>& context) const {
@@ -61,8 +68,8 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
   // function.
 
   // Get the position of the bead.
-  const int three_d = 3;
-  Eigen::Matrix<DScalar, 3, 1> x;
+  constexpr int three_d = 3;
+  Eigen::Matrix<DScalar, three_d, 1> x;
   const auto position = context.get_continuous_state()->
       get_generalized_position().CopyToVector();
   for (int i = 0; i < three_d; ++i)
@@ -72,9 +79,9 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
   DScalar s = inv_f_(x);
 
   // Get the output position.
-  Eigen::Matrix<DScalar, 3, 1> fs = f_(s);
-  Eigen::VectorXd xprime(3);
-  for (int i=0; i< three_d; ++i)
+  Eigen::Matrix<DScalar, three_d, 1> fs = f_(s);
+  Eigen::VectorXd xprime(three_d);
+  for (int i = 0; i < three_d; ++i)
     xprime[i] = fs(i).value().value() - x(i).value().value();
 
   return xprime;
@@ -85,6 +92,8 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
     const systems::Context<T>& context) const {
+  constexpr int three_d = 3;
+
   // Return a zero vector if this system is in minimal coordinates.
   if (coordinate_type_ == BeadOnAWire<T>::kMinimalCoordinates)
     return Eigen::VectorXd(0);
@@ -103,16 +112,16 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
 
   // Compute df/dt (f⁻¹(x)). The result will be a vector.
   const auto& xc = context.get_continuous_state()->get_vector();
-  Eigen::Matrix<BeadOnAWire<T>::DScalar, 3, 1> x;
+  Eigen::Matrix<BeadOnAWire<T>::DScalar, three_d, 1> x;
   x(0).value() = xc.GetAtIndex(0);
   x(1).value() = xc.GetAtIndex(1);
   x(2).value() = xc.GetAtIndex(2);
   BeadOnAWire<T>::DScalar sprime = inv_f_(x);
   sprime.derivatives()(0) = 1;
-  const Eigen::Matrix<BeadOnAWire<T>::DScalar, 3, 1> fprime = f_(sprime);
+  const Eigen::Matrix<BeadOnAWire<T>::DScalar, three_d, 1> fprime = f_(sprime);
 
   // Compute df⁻¹/dt (x). This result will be a scalar.
-  Eigen::Matrix<BeadOnAWire<T>::DScalar, 3, 1> xprime;
+  Eigen::Matrix<BeadOnAWire<T>::DScalar, three_d, 1> xprime;
   xprime(0).value() = xc.GetAtIndex(0);
   xprime(1).value() = xc.GetAtIndex(1);
   xprime(2).value() = xc.GetAtIndex(2);
@@ -133,7 +142,7 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
 
 template <typename T>
 void BeadOnAWire<T>::DoCalcOutput(const systems::Context<T>& context,
-                               systems::SystemOutput<T>* output) const {
+                                  systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
@@ -146,12 +155,19 @@ void BeadOnAWire<T>::DoCalcOutput(const systems::Context<T>& context,
       context.get_continuous_state()->CopyToVector();
 }
 
+/// Gets the number of constraint equations used for dynamics.
 template <class T>
 int BeadOnAWire<T>::do_get_num_constraint_equations(
     const systems::Context<T>& context) const {
   return (coordinate_type_ == kAbsoluteCoordinates) ? 3 : 0;
 }
 
+/// Computes the change in generalized velocity from applying constraint
+/// impulses @p lambda.
+/// @param context The current state of the system.
+/// @param lambda The vector of constraint forces.
+/// @returns a `n` dimensional vector, where `n` is the dimension of the
+///          quasi-coordinates.
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
     const systems::Context<T>& context, const Eigen::MatrixXd& J,
@@ -165,8 +181,6 @@ Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
     return Eigen::Matrix<T, 1, 1>(0);
 }
 
-// Gets the first derivative from the parametric function, in Vector3d form,
-// using the output from that parametric function.
 template <class T>
 Eigen::Vector3d BeadOnAWire<T>::get_first_derivative(
     const Eigen::Matrix<DScalar, 3, 1>& m) {
@@ -176,8 +190,6 @@ Eigen::Vector3d BeadOnAWire<T>::get_first_derivative(
   return Eigen::Vector3d(x, y, z);
 }
 
-// Gets the second derivative from the parametric function, in Vector3d form,
-// using the output from that parametric function.
 template <class T>
 Eigen::Vector3d BeadOnAWire<T>::get_second_derivative(
     const Eigen::Matrix<DScalar, 3, 1>& m) {
@@ -224,9 +236,15 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
 
     // From the description in the header file, the dynamics of the bead in
     // minimal coordinates is:
-    // df/ds⋅ṡ⋅d²f/ds² + (df/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
+    // df/ds⋅ṡ²⋅d²f/ds² + (df/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
     // Implying that:
-    // dṡ/dt = (-τ + (df(s)/ds)₃⋅ag - df(s)/ds⋅ṡ⋅d²f/ds²) / (df/ds)²
+    // dṡ/dt = (-τ + (df(s)/ds)₃⋅ag - df(s)/ds⋅ṡ²⋅d²f/ds²) / (df/ds)²
+    // This derivation was double-checked with the following Mathematica code:
+    // L:= 1/2*(f'[s[t]] * s'[t])^2 + Dot[z, f[s[t]]]*ag
+    // D[1/2*D[f[s[t]], s[t]]*D[s[t], t]^2 + Dot[z, f[s[t]]]*ag, s[t]] -
+    //   D[D[1/2*D[f[s[t]], s[t]]*D[s[t], t]^2 + Dot[z, f[s[t]]]*ag, s'[t]], t]
+    // where L is the definition of the Lagrangian and Dot[z, f[s[t]]] is
+    // equivalent to f₃ (i.e., assuming that z is the unit vector [0 0 1]ᵀ).
     const double ag = get_gravitational_acceleration();
     const Eigen::Vector3d dfds = get_first_derivative(foutput);
     const Eigen::Vector3d d2fds2 = get_second_derivative(foutput);
@@ -269,19 +287,19 @@ void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
     const int state_size = 6;
 
     // Evaluate the wire parameter function at s.
-    DScalar ss;
-    ss.value() = s;
-    ss.derivatives()(0).value() = 1;
-    const Eigen::Matrix<DScalar, 3, 1> q = f_(ss);
+    DScalar sprime;
+    sprime.value() = s;
+    sprime.derivatives()(0).value() = 1;
+    const Eigen::Matrix<DScalar, 3, 1> q = f_(sprime);
 
     // Set x0 appropriately.
     x0.resize(state_size);
     x0 << q(0).value().value(),
           q(1).value().value(),
           q(2).value().value(),
-          q(0).derivatives()(0).value()*s_dot,
-          q(1).derivatives()(0).value()*s_dot,
-          q(2).derivatives()(0).value()*s_dot;
+          q(0).derivatives()(0).value() * s_dot,
+          q(1).derivatives()(0).value() * s_dot,
+          q(2).derivatives()(0).value() * s_dot;
   } else {
     const int state_size = 2;
     x0.resize(state_size);

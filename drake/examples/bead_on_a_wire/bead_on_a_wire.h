@@ -40,7 +40,7 @@ namespace bead_on_a_wire {
 /// </pre>
 /// where τ is the generalized force on the system. Thus:
 /// <pre>
-/// df(s)/ds⋅ṡ⋅d²f/ds² + (df(s)/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
+/// df(s)/ds⋅ṡ²⋅d²f/ds² + (df(s)/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
 /// </pre>
 /// The dynamic equations for the bead in absolute coordinates comes from the
 /// Lagrangian Dynamics of the "first kind" (i.e., by formulating the problem
@@ -87,10 +87,18 @@ template <typename T>
 class BeadOnAWire : public systems::LeafSystem<T> {
  public:
   /// AutoDiff scalar used for constraint function automatic differentiation.
+  /// The constraint function maps from an arc length (s) to a point in
+  /// three-dimensional Cartesian space. This type represents the input
+  /// variable s and- on return from that constraint function- would hold the
+  /// first derivative of the constraint function computed with respect to s.
   typedef Eigen::AutoDiffScalar<drake::Vector1d> AScalar;
 
   /// AutoDiff scalar used for computing the second derivative of the constraint
-  /// function using automatic differentiation.
+  /// function using automatic differentiation. The constraint function maps
+  /// from an arc length (s) to a point in three-dimensional Cartesian space.
+  /// This type represents the input variable s and- on return from that
+  /// constraint function- would hold the second derivative of the constraint
+  /// function computed with respect to s.
   typedef Eigen::AutoDiffScalar<Eigen::Matrix<AScalar, 1, 1>> DScalar;
 
   /// The type of coordinate representation to use for kinematics and dynamics.
@@ -145,6 +153,18 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// helix parametric example function.
   static DScalar inverse_helix_function(const Vector3<DScalar> &v);
 
+  /// Gets the first derivative from the parametric function, in Vector3d form,
+  /// using the output from that parametric function.
+  /// @param m the output from the parametric wire function.
+  static Eigen::Vector3d get_first_derivative(
+      const Eigen::Matrix<DScalar, 3, 1>& m);
+
+  /// Gets the second derivative from the parametric function, in Vector3d form,
+  /// using the output from that parametric function.
+  /// @param m the output from the parametric wire function.
+  static Eigen::Vector3d get_second_derivative(
+      const Eigen::Matrix<DScalar, 3, 1>& m);
+
  protected:
   void DoCalcOutput(const systems::Context<T> &context,
                     systems::SystemOutput<T> *output) const override;
@@ -156,40 +176,20 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T> &context,
                        systems::State<T> *state) const override;
 
-  /// Gets the number of constraint equations.
   int do_get_num_constraint_equations(const systems::Context<T> &context) const
                                      override;
 
-  /// Evaluates the constraint equations for a bead in absolute coordinates.
-  /// This method is computationally expensive. To evaluate these equations,
-  /// the method locates the variable s that minimizes the univariate function
-  /// ||f(s) - x||, where x is the location of the bead.
-  /// @warning The solution returned by this approach is not generally a global
-  ///          minimum.
   Eigen::VectorXd DoEvalConstraintEquations(
       const systems::Context<T> &context) const override;
 
-  /// Computes the time derivative of each constraint equation, evaluated at
-  /// the current generalized coordinates and generalized velocity.
   Eigen::VectorXd DoEvalConstraintEquationsDot(
       const systems::Context<T> &context) const override;
 
-  /// Computes the change in generalized velocity from applying constraint
-  /// impulses @p lambda.
-  /// @param context The current state of the system.
-  /// @param lambda The vector of constraint forces.
-  /// @returns a `n` dimensional vector, where `n` is the dimension of the
-  ///          quasi-coordinates.
   Eigen::VectorXd DoCalcVelocityChangeFromConstraintImpulses(
       const systems::Context<T> &context, const Eigen::MatrixXd &J,
       const Eigen::VectorXd &lambda) const override;
 
  private:
-  static Eigen::Vector3d get_first_derivative(
-      const Eigen::Matrix<DScalar, 3, 1>& m);
-  static Eigen::Vector3d get_second_derivative(
-      const Eigen::Matrix<DScalar, 3, 1>& m);
-
   // The coordinate representation used for kinematics and dynamics.
   CoordinateType coordinate_type_;
 

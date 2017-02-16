@@ -359,7 +359,7 @@ class System {
                                                    const {
     DRAKE_ASSERT(lambda.size() == get_num_constraint_equations(context));
     DRAKE_ASSERT(J.rows() == get_num_constraint_equations(context));
-    DRAKE_ASSERT(J.cols() == 
+    DRAKE_ASSERT(J.cols() ==
         context.get_continuous_state()->get_generalized_velocity().size());
     return DoCalcVelocityChangeFromConstraintImpulses(context, J, lambda);
   }
@@ -1132,7 +1132,9 @@ class System {
   /// Gets the number of constraint equations for this system from the given
   /// context. The context is supplied in case the number of constraints is
   /// dependent upon the current state (as might be the case with a piecewise
-  /// differential algebraic equation).
+  /// differential algebraic equation). Derived classes can override this
+  /// function, which is called by get_num_constraint_equations().
+  /// @sa get_num_constraint_equations() for parameter documentation.
   /// @returns zero by default
   virtual int do_get_num_constraint_equations(const Context<T>& context) const {
     return 0;
@@ -1143,7 +1145,9 @@ class System {
   /// allows the set of constraints to be dependent upon the current
   /// system state (as might be the case with a piecewise differential algebraic
   /// equation). The default implementation of this function returns a
-  /// zero-dimensional vector.
+  /// zero-dimensional vector. Derived classes can override this function,
+  /// which is called by EvalConstraintEquations().
+  /// @sa EvalConstraintEquations() for parameter documentation.
   /// @returns a vector of dimension get_num_constraint_equations(); the
   ///          zero vector indicates that the algebraic constraints are all
   ///          satisfied.
@@ -1158,8 +1162,10 @@ class System {
   /// context.  The context allows the set of constraints to be dependent upon
   /// the current system state (as might be the case with a piecewise
   /// differential algebraic equation). The default implementation of this
-  /// function returns a zero-dimensional vector.
+  /// function returns a zero-dimensional vector. Derived classes can override
+  /// this function, which is called by EvalConstraintEquationsDot().
   /// @returns a vector of dimension get_num_constraint_equations().
+  /// @sa EvalConstraintEquationsDot() for parameter documentation.
   virtual Eigen::VectorXd DoEvalConstraintEquationsDot(
         const Context<T>& context) const {
     DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
@@ -1167,26 +1173,12 @@ class System {
   }
 
   /// Computes the change in velocity from applying the given constraint forces
-  /// to the system at the given context.
-  /// @param context the current system state, provision of which also yields
-  ///           the ability of the constraints to be dependent upon the current
-  ///           system state (as might be the case with a piecewise differential
-  ///           algebraic equation).
-  /// @param J a m × n constraint Jacobian matrix of the `m` constraint
-  ///          equations `g()` differentiated with respect to the `n`
-  ///          configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
-  ///          the time derivatives of the generalized coordinates of the system
-  ///          are not identical to the generalized velocity (in general they
-  ///          need not be, e.g., if generalized coordinates use unit
-  ///          unit quaternions to represent 3D orientation), `J` should instead
-  ///          be defined as `∂g/∂q⋅N`, where `N ≡ ∂q/∂ꝗ` is the Jacobian matrix
-  ///          (dependent on `q`) of the generalized coordinates with respect
-  ///          to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
-  ///          the generalized velocities).
-  /// @param lambda the vector of constraint forces (of same dimension as the
-  ///               number of rows in the Jacobian matrix, @p J)
+  /// to the system at the given context. Derived classes can override this
+  /// function, which is called by CalcVelocityChangeFromConstraintImpulses().
   /// @returns the zero vector of dimension of the dimension of the
   ///          quasi-coordinates, by default.
+  /// @sa CalcVelocityChangeFromConstraintImpulses() for parameter
+  ///     documentation.
   virtual Eigen::VectorXd
     DoCalcVelocityChangeFromConstraintImpulses(const Context<T>& context,
                                                const Eigen::MatrixXd& J,
@@ -1198,8 +1190,10 @@ class System {
   }
 
   /// Computes the norm of the constraint error. This default implementation
-  /// computes a Euclidean norm of the error. This norm need be neither
-  /// continuous nor differentiable.
+  /// computes a Euclidean norm of the error. Derived classes can override this
+  /// function, which is called by CalcConstraintErrorNorm(). This norm need be
+  /// neither continuous nor differentiable.
+  /// @sa CalcConstraintErrorNorm() for parameter documentation.
   virtual double DoCalcConstraintErrorNorm(const Context<T>& context,
                                            const Eigen::VectorXd& error) const {
     return error.norm();

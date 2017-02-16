@@ -86,21 +86,16 @@ TEST_F(BeadOnAWireTest, Helix) {
   // Compute the derivative at pi/3.
   s.derivatives()(0) = 1.0;
   s.value().derivatives()(0) = 1.0;
-  auto w = dut_abs_->helix_function(s);
-  EXPECT_EQ(w(0).value().derivatives().size(), 1);
-  EXPECT_EQ(w(1).value().derivatives().size(), 1);
-  EXPECT_EQ(w(2).value().derivatives().size(), 1);
-  EXPECT_NEAR(w(0).value().derivatives()(0), -std::sin(svalue), tol);
-  EXPECT_NEAR(w(1).value().derivatives()(0), std::cos(svalue), tol);
-  EXPECT_NEAR(w(2).value().derivatives()(0), 1.0, tol);
+  const auto w = dut_abs_->get_first_derivative(dut_abs_->helix_function(s));
+  EXPECT_NEAR(w(0), -std::sin(svalue), tol);
+  EXPECT_NEAR(w(1), std::cos(svalue), tol);
+  EXPECT_NEAR(w(2), 1.0, tol);
 
   // Compute the second derivative at pi/3.
-  const double deriv2x = w(0).derivatives()(0).derivatives()(0);
-  const double deriv2y = w(1).derivatives()(0).derivatives()(0);
-  const double deriv2z = w(2).derivatives()(0).derivatives()(0);
-  EXPECT_NEAR(deriv2x, -std::cos(svalue), tol);
-  EXPECT_NEAR(deriv2y, -std::sin(svalue), tol);
-  EXPECT_NEAR(deriv2z, 0.0, tol);
+  const auto w2 = dut_abs_->get_second_derivative(dut_abs_->helix_function(s));
+  EXPECT_NEAR(w2(0), -std::cos(svalue), tol);
+  EXPECT_NEAR(w2(1), -std::sin(svalue), tol);
+  EXPECT_NEAR(w2(2), 0.0, tol);
 }
 
 // Tests that the inverse of the helix parameter function produces the
@@ -114,12 +109,6 @@ TEST_F(BeadOnAWireTest, InverseHelix) {
   BeadOnAWire<double>::DScalar s;
   s = test_value;
   auto v = dut_abs_->helix_function(s);
-  v(0).derivatives().resize(1);
-  v(0).derivatives()(0) = 0.0;
-  v(1).derivatives().resize(1);
-  v(1).derivatives()(0) = 0.0;
-  v(2).derivatives().resize(1);
-  v(2).derivatives()(0) = 1.0;
   auto sprime = dut_abs_->inverse_helix_function(v);
   EXPECT_NEAR(s.value().value(), sprime.value().value(), tol);
 
