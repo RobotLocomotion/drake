@@ -6,7 +6,9 @@
 #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 namespace systems {

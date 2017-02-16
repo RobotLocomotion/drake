@@ -7,10 +7,6 @@
 #include "drake/systems/controllers/state_feedback_controller_base.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/primitives/adder.h"
-#include "drake/systems/primitives/gain.h"
-#include "drake/systems/primitives/integrator.h"
-#include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
@@ -95,7 +91,7 @@ class PidController : public StateFeedbackController<T> {
   /// of the error signal when the derivative constant is non-zero.
   bool has_any_direct_feedthrough() const override;
 
-  /// Sets the integral of the %PidControllerInternal to @p value.
+  /// Sets the integral part of the PidController to @p value.
   /// @p value must be a column vector of the appropriate size.
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
