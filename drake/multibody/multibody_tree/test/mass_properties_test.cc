@@ -165,16 +165,20 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
   EXPECT_TRUE(I_Ro_F.IsPhysicallyValid());
 }
 
+// Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() that
+// computes the principal moments of inertia of a general rotational inertia
+// by solving an eigenvalue problem.
 GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
   const double L1 = 3.0;
   const double L2 = 1.0;
   const double L3 = 5.0;
 
-  // Rotational inertia computed about the center of mass of the cube.
+  // Rotational inertia of a cube computed about its center of mass.
   const RotationalInertia<double>& I_Bc_W =
       UnitInertia<double>::SolidBox(L1, L2, L3);
 
-  // Define a new frame Q by rotating +20 degrees about x and then z.
+  // Define a new frame Q by rotating +20 degrees about x and another +20
+  // degrees about z.
   const double angle = 20 * M_PI / 180.0;
   Matrix3<double> R_WQ =
       (AngleAxisd(angle, Vector3d::UnitZ()) *
@@ -185,20 +189,25 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
   // far away from being diagonal or diagonalizable in any trivial way.
   RotationalInertia<double> I_Bc_Q = I_Bc_W.ReExpress(R_WQ);
 
-  // Compute the principal moments.
+  // Verify that indeed this inertia in frame Q contains non-zero diagonal
+  // elements.
+  EXPECT_TRUE((I_Bc_Q.get_matrix().array().abs() > 0.1).all());
+
+  // Compute the principal moments of I_Bc_Q.
   Vector3d principal_moments;
+  // This method returns true on success.
   EXPECT_TRUE(I_Bc_Q.CalcPrincipalMomentsOfInertia(
       &principal_moments));
-  PRINT_VARn(principal_moments);
 
   // The expected moments are those originally computed in I_Bc_W, though the
   // return from RotationalInertia::CalcPrincipalMomentsOfInertia() is sorted
-  // in ascending order. Therefore reorder to perform comparison.
+  // in ascending order. Therefore reorder before performing the comparison.
   Vector3d expected_principal_moments = I_Bc_W.get_moments();
   std::sort(expected_principal_moments.data(),
             expected_principal_moments.data() +
                 expected_principal_moments.size());
-  PRINT_VAR(expected_principal_moments.transpose());
+
+  // Verify against the expected value.
   EXPECT_TRUE(expected_principal_moments.isApprox(
       principal_moments, NumTraits<double>::epsilon()));
 }

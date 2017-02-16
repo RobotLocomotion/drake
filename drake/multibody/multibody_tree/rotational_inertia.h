@@ -277,6 +277,8 @@ class RotationalInertia {
   /// For `this` inertia about a given point `P` and expressed in a frame `E`,
   /// this method computes the principal moments of inertia of `this` rotational
   /// inertia about the same point `P` and expressed in the same frame `E`.
+  /// The computed principal moments are placed into @p principal_moments sorted
+  /// in ascending order.
   /// @returns `true` if succesful and `false` otherwise.
   bool CalcPrincipalMomentsOfInertia(Vector3<T>* principal_moments) const {
     DRAKE_ASSERT(principal_moments != nullptr);
