@@ -37,7 +37,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// Creates a general unit inertia matrix with non-zero off-diagonal
   /// elements.
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz,
-                    const T& Ixy, const T& Ixz, const T& Iyz) :
+              const T& Ixy, const T& Ixz, const T& Iyz) :
       RotationalInertia<T>(Ixx, Iyy, Izz, Ixy, Ixz, Iyz) {}
 
   /// Constructs a UnitInertia from an Eigen matrix expression.

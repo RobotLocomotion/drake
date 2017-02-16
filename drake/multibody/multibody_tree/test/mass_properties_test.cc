@@ -67,7 +67,7 @@ GTEST_TEST(RotationalInertia, GeneralConstructor) {
 // Test access by (i, j) indexes.
 GTEST_TEST(RotationalInertia, AccessByIndexes) {
   const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, 0.3, 1.4);  // m for products.
+  const Vector3d p(0.1, 0.3, 1.4);  // p for products.
   RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
                               p(0), p(1), p(2));/* products of inertia */
 
@@ -106,7 +106,7 @@ GTEST_TEST(RotationalInertia, AccessByIndexes) {
 // matrix.
 GTEST_TEST(RotationalInertia, Symmetry) {
   const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, 0.3, 1.4);  // m for products.
+  const Vector3d p(0.1, 0.3, 1.4);  // p for products.
   RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
                               p(0), p(1), p(2));/* products of inertia */
 
@@ -210,6 +210,34 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
   // Verify against the expected value.
   EXPECT_TRUE(expected_principal_moments.isApprox(
       principal_moments, NumTraits<double>::epsilon()));
+}
+
+// Test the correctness of multiplication with a scalar from the left.
+GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
+  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, 0.3, 1.4);  // p for products.
+  RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
+                              p(0), p(1), p(2));/* products of inertia */
+  const double scalar = 3.0;
+  RotationalInertia<double> sxI = scalar * I;
+  EXPECT_EQ(sxI.get_moments(), scalar * m);
+  EXPECT_EQ(sxI.get_products(), scalar * p);
+}
+
+// Test the correctness of operator+=().
+GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
+  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, 0.3, 1.4);  // p for products.
+  RotationalInertia<double> Ia(m(0), m(1), m(2), /* moments of inertia */
+                               p(0), p(1), p(2));/* products of inertia */
+  // A second inertia.
+  RotationalInertia<double> Ib = 2.0 * Ia;
+
+  // Use of operator+=() results in: Ib = Ib + Ia.
+  Ib += Ia;
+
+  EXPECT_EQ(Ib.get_moments(), 3.0 * m);
+  EXPECT_EQ(Ib.get_products(), 3.0 * p);
 }
 
 // Add a simple test for the RotationalInertia+= operator
