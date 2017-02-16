@@ -236,9 +236,9 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
 
     // From the description in the header file, the dynamics of the bead in
     // minimal coordinates is:
-    // df/ds⋅ṡ⋅d²f/ds² + (df/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
+    // df/ds⋅ṡ²⋅d²f/ds² + (df/ds)₃⋅ag - (df/ds)²⋅dṡ/dt = τ
     // Implying that:
-    // dṡ/dt = (-τ + (df(s)/ds)₃⋅ag - df(s)/ds⋅ṡ⋅d²f/ds²) / (df/ds)²
+    // dṡ/dt = (-τ + (df(s)/ds)₃⋅ag - df(s)/ds⋅ṡ²⋅d²f/ds²) / (df/ds)²
     // This derivation was double-checked with the following Mathematica code:
     // L:= 1/2*(f'[s[t]] * s'[t])^2 + Dot[z, f[s[t]]]*ag
     // D[1/2*D[f[s[t]], s[t]]*D[s[t], t]^2 + Dot[z, f[s[t]]]*ag, s[t]] -
