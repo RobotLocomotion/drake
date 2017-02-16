@@ -1160,8 +1160,7 @@ class System {
   /// differential algebraic equation). The default implementation of this
   /// function returns a zero-dimensional vector.
   /// @returns a vector of dimension get_num_constraint_equations().
-  virtual Eigen::VectorXd
-      DoEvalConstraintEquationsDot(
+  virtual Eigen::VectorXd DoEvalConstraintEquationsDot(
         const Context<T>& context) const {
     DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
     return Eigen::VectorXd();
@@ -1202,7 +1201,7 @@ class System {
   /// computes a Euclidean norm of the error. This norm need be neither
   /// continuous nor differentiable.
   virtual double DoCalcConstraintErrorNorm(const Context<T>& context,
-                                 const Eigen::VectorXd& error) const {
+                                           const Eigen::VectorXd& error) const {
     return error.norm();
   }
 

@@ -260,7 +260,7 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
 /// in absolute coordinates, the default state is set to `f(0), ds/dt(0)⋅0 = 0`.
 template <typename T>
 void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
-                                  systems::State<T>* state) const {
+                                     systems::State<T>* state) const {
   // Use a consistent default state for the helix bead-on-the-wire
   // example.
   const double s = 0.0, s_dot = 1.0;
