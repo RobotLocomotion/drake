@@ -1,11 +1,8 @@
 #include "drake/automotive/monolane_onramp_merge.h"
 
 #include <cmath>
-#include <iostream>
 #include <memory>
 #include <utility>
-
-#include <Eigen/Geometry>
 
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
@@ -17,35 +14,34 @@ namespace mono = maliput::monolane;
 
 template <typename T>
 void MonolaneOnrampMerge<T>::BuildOnramp() {
-  mono::Builder b{road_.lane_bounds, road_.driveable_bounds, kLinearTolerance_,
-                  kAngularTolerance_};
+  // Initialize the road from the origin.
+  const mono::EndpointXy origin_xy{0., 0., 0.};
+  const mono::EndpointZ flat_z{0., 0., 0., 0.};
+  mono::Endpoint road_origin{origin_xy, flat_z};
 
   // Construct the pre-merge road.
-  std::unique_ptr<mono::RoadSectionBuilder<T>> rs_pre(
-      new mono::RoadSectionBuilder<T>(std::move(b_)));
-  rs_pre->AddArcPrimitive(40., 25., mono::kCW);
-  rs_pre->AddArcPrimitive(20., 25., mono::kCCW);
-  rs_pre->AddArcPrimitive(40., 25., mono::kCW);
-  rs_pre->AddArcPrimitive(20., 25., mono::kCCW);
-  rs_pre->AddArcPrimitive(40., 25., mono::kCW);
-  rs_pre->AddArcPrimitive(20., 25., mono::kCCW);
-  const mono::Endpoint endpoint_pre = rs_pre->get_last_endpoint();
-  b_ = rs_pre->Finalize();
+  auto pre0 = rb_->Connect("pre0", road_origin,
+                           mono::ArcOffset(25., -40. / 25.), flat_z);
+  auto pre1 = rb_->Connect("pre1", pre0->end(),
+                          mono::ArcOffset(25., 40. / 25.), flat_z);
+  auto pre2 = rb_->Connect("pre2", pre1->end(),
+                          mono::ArcOffset(25., -40. / 25.), flat_z);
+  auto pre3 = rb_->Connect("pre3", pre2->end(),
+                          mono::ArcOffset(25., 40. / 25.), flat_z);
+  auto pre4 = rb_->Connect("pre4", pre3->end(),
+                          mono::ArcOffset(25., -40. / 25.), flat_z);
+  auto pre5 = rb_->Connect("pre5", pre4->end(),
+                          mono::ArcOffset(25., 40. / 25.), flat_z);
 
   // Construct the post-merge road.
-  std::unique_ptr<mono::RoadSectionBuilder<T>> rs_post(
-      new mono::RoadSectionBuilder<T>(std::move(b_), endpoint_pre));
-  rs_post->AddLinearPrimitive(50.);
-  b_ = rs_post->Finalize();
+  rb_->Connect("post0", pre5->end(), 50., flat_z);
 
-  // Construct the on-ramp.
-  std::unique_ptr<mono::RoadSectionBuilder<T>> rs_onramp(
-      new mono::RoadSectionBuilder<T>(std::move(b_), endpoint_pre.reverse()));
-  rs_onramp->AddArcPrimitive(50., 30, mono::kCCW);
-  rs_onramp->AddLinearPrimitive(100.);
-  b_ = rs_onramp->Finalize();
+  // Construct the on-ramp (starting at merge junction and working backwards).
+  auto onramp1 = rb_->Connect("onramp1", pre5->end(),
+                             mono::ArcOffset(30., 50. / 30.), flat_z);
+  rb_->Connect("onramp0", onramp1->end(), 100., flat_z);
 
-  rg_ = b_->Build({"monolane-merge-example"});
+  rg_ = rb_->Build({"monolane-merge-example"});
 }
 
 template class MonolaneOnrampMerge<double>;

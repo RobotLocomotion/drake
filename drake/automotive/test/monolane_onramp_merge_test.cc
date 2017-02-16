@@ -13,22 +13,22 @@ namespace mono = maliput::monolane;
 // Tests the soundness of the MonolaneOnrampMerge example generator.
 GTEST_TEST(MonolaneOnrampMergeTest, TestDefaultAndNonDefaultAttributes) {
   // Create the road with default road characteristics.
-  std::unique_ptr<MonolaneOnrampMerge<double>> merge_example_(
+  std::unique_ptr<MonolaneOnrampMerge<double>> merge_example(
       new MonolaneOnrampMerge<double>);
-  std::unique_ptr<const maliput::api::RoadGeometry> rg_ =
-      merge_example_->own_road_geometry();
-  EXPECT_NE(nullptr, rg_);
+  std::unique_ptr<const maliput::api::RoadGeometry> rg =
+      merge_example->own_road_geometry();
+  EXPECT_NE(nullptr, rg);
 
   // Initialize non-trivial road characteristics.
-  const mono::RoadCharacteristics new_road{6.3, 9.3};
-  std::unique_ptr<MonolaneOnrampMerge<double>> new_merge_example_(
+  const RoadCharacteristics new_road{6.3, 9.3};
+  std::unique_ptr<MonolaneOnrampMerge<double>> new_merge_example(
       new MonolaneOnrampMerge<double>(new_road));
-  std::unique_ptr<const maliput::api::RoadGeometry> new_rg_ =
-      new_merge_example_->own_road_geometry();
-  EXPECT_NE(nullptr, new_rg_);
+  std::unique_ptr<const maliput::api::RoadGeometry> new_rg =
+      new_merge_example->own_road_geometry();
+  EXPECT_NE(nullptr, new_rg);
 
-  EXPECT_EQ(new_rg_->id().id, "monolane-merge-example");
-  EXPECT_EQ(new_rg_->num_junctions(), 9);
+  EXPECT_EQ(new_rg->id().id, "monolane-merge-example");
+  EXPECT_EQ(new_rg->num_junctions(), 9);
 }
 
 }  // namespace

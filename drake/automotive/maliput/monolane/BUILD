@@ -14,7 +14,6 @@ drake_cc_library(
         ":builder",
         ":lanes",
         ":loader",
-        ":road_section_builder",
     ],
 )
 
@@ -72,19 +71,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "road_section_builder",
-    srcs = [
-        "road_section_builder.cc",
-    ],
-    hdrs = [
-        "road_section_builder.h",
-    ],
-    deps = [
-        ":builder",
-    ],
-)
-
 filegroup(
     name = "yamls",
     srcs = glob(["*.yaml"]),
@@ -108,16 +94,6 @@ drake_cc_googletest(
     deps = [
         ":lanes",
         "//drake/common:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "road_section_builder_test",
-    size = "small",
-    srcs = ["test/road_section_builder_test.cc"],
-    deps = [
-        ":builder",
-        ":road_section_builder",
     ],
 )
 
