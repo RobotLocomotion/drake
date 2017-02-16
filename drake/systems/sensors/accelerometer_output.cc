@@ -1,9 +1,5 @@
 #include "drake/systems/sensors/accelerometer_output.h"
 
-#include <cmath>
-
-#include "drake/systems/sensors/accelerometer.h"
-
 namespace drake {
 namespace systems {
 namespace sensors {
