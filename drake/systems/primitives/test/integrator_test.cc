@@ -88,7 +88,7 @@ TEST_F(IntegratorTest, Derivatives) {
 
 // Asserts that integrators do not have any direct feedthrough inputs.
 TEST_F(IntegratorTest, IntegratorIsNotDirectFeedthrough) {
-  EXPECT_FALSE(integrator_->has_any_direct_feedthrough());
+  EXPECT_FALSE(integrator_->HasAnyDirectFeedthrough());
 }
 
 class SymbolicIntegratorTest : public IntegratorTest {
