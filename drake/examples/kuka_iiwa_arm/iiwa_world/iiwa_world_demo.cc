@@ -72,9 +72,9 @@ int DoMain() {
   lcm::DrakeLcm lcm;
 
   // Contact parameters
-  const double kStiffness = 10000; // 4500
+  const double kStiffness = 10000;
   const double kDissipation = 2.0;
-  const double kStaticFriction = 0.9; // 1
+  const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
   const double kStictionSlipTolerance = 0.01;
   auto visualized_plant = std::make_unique<VisualizedPlant<double>>(

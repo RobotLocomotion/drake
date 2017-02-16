@@ -32,11 +32,15 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   DiagramBuilder<double> builder;
   // Instantiates a RigidBodyPlant to simulate the model.
   auto plant = make_unique<RigidBodyPlant<double>>(move(tree));
-  plant->set_contact_parameters(500000 /* stiffness */,
-                                10 /* static friction coefficient */,
-                                5 /* dynamic friction coefficient */,
-                                0.001 /* transition speed */,
-                                2.0 /* dissipation */);
+
+  // Contact parameters
+  const double kStiffness = 500000;
+  const double kStaticFriction = 10;
+  const double kDynamicFriction = 5;
+  const double kStictionSlipTolerance = 0.001;
+  const double kDissipation = 2;
+  plant->set_contact_parameters(kStiffness, kStaticFriction, kDynamicFriction,
+                                kStictionSlipTolerance, kDissipation);
 
   // Instantiates a PID controller for controlling the actuators in the
   // RigidBodyPlant. The vector order is [steering, left wheel, right wheel].

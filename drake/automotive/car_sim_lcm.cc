@@ -34,8 +34,8 @@ namespace drake {
 
 using lcm::DrakeLcm;
 using parsers::sdf::AddModelInstancesFromSdfFile;
-using systems::SemiExplicitEulerIntegrator;
 using systems::Diagram;
+using systems::SemiExplicitEulerIntegrator;
 using systems::Simulator;
 
 namespace automotive {
