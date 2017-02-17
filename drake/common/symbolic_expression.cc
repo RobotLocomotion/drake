@@ -152,12 +152,6 @@ Polynomial<double> Expression::ToPolynomial() const {
   return ptr_->ToPolynomial();
 }
 
-Expression::MonomialToCoeffMap Expression::DecomposePolynomial(const Variables& vars) const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->DecomposePolynomial(vars);
-}
-
-
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->Evaluate(env);

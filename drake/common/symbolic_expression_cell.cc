@@ -212,23 +212,6 @@ Polynomial<double> ExpressionVar::ToPolynomial() const {
   return Polynomial<double>(1.0, var_.get_id());
 }
 
-Expression::MonomialToCoeffMap ExpressionVar::DecomposePolynomial(
-    const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  map.reserve(1);
-  Expression m{};
-  Expression coeff{};
-  if (vars.include(var_)) {
-    m = Expression(var_);
-    coeff = Expression(1);
-  } else {
-    m = Expression(1);
-    coeff = Expression(var_);
-  }
-  map.emplace(m, coeff);
-  return map;
-}
-
 double ExpressionVar::Evaluate(const Environment& env) const {
   Environment::const_iterator const it{env.find(var_)};
   if (it != env.cend()) {
@@ -286,12 +269,6 @@ Polynomial<double> ExpressionConstant::ToPolynomial() const {
   return Polynomial<double>(v_);
 }
 
-Expression::MonomialToCoeffMap ExpressionConstant::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  map.emplace(1, v_);
-  return map;
-}
-
 double ExpressionConstant::Evaluate(const Environment& env) const {
   DRAKE_DEMAND(!std::isnan(v_));
   return v_;
@@ -335,10 +312,6 @@ bool ExpressionNaN::Less(const ExpressionCell& e) const {
 
 Polynomial<double> ExpressionNaN::ToPolynomial() const {
   throw runtime_error("NaN is detected while converting to Polynomial.");
-}
-
-Expression::MonomialToCoeffMap ExpressionNaN::DecomposePolynomial(const Variables &vars) const {
-  throw runtime_error("NaN is detected while decomposing a polynomial.");
 }
 
 double ExpressionNaN::Evaluate(const Environment& env) const {
@@ -429,32 +402,6 @@ Polynomial<double> ExpressionAdd::ToPolynomial() const {
                        const pair<Expression, double>& p) {
                       return polynomial + p.first.ToPolynomial() * p.second;
                     });
-}
-
-Expression::MonomialToCoeffMap ExpressionAdd::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  if (constant_ != 0) {
-    map.emplace(1, constant_);
-  }
-  // For an expression 2*(3*x*y+4*x) + 4*y.
-  // expr_to_coeff_map_[3*x*y+4*x] = 2
-  // expr_to_coeff_map_[y] = 4
-  for (const auto& p : expr_to_coeff_map_) {
-    // For expr_to_coeff_map_[3*x*y+4*x] = 2
-    // map_p[x*y] = 3
-    // map_p[x] = 4
-    const auto& map_p = p.first.DecomposePolynomial(vars);
-    map.reserve(map.size() + map_p.size());
-    for (const auto& map_p_pair : map_p) {
-      auto it = map.find(map_p_pair.first);
-      if (it != map.end()) {
-        it->second += map_p_pair.second * p.second;
-      } else {
-        map.emplace(map_p_pair.first, map_p_pair.second * p.second);
-      }
-    }
-  }
-  return map;
 }
 
 double ExpressionAdd::Evaluate(const Environment& env) const {
@@ -703,39 +650,6 @@ Polynomial<double> ExpressionMul::ToPolynomial() const {
       });
 }
 
-Expression::MonomialToCoeffMap ExpressionMul::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  for (const auto& p : base_to_exponent_map_) {
-    // First decomposes the term p.
-    if (map.empty()) {
-      map = pow(p.first, p.second).DecomposePolynomial(vars);
-    } else {
-      const auto& map_p = pow(p.first, p.second).DecomposePolynomial(vars);
-      Expression::MonomialToCoeffMap map_product;
-      map_product.reserve(map.size() * map_p.size());
-      // Now multiply each term in map, with each term in map_p
-      for (const auto& term_map : map) {
-        for (const auto& term_map_p : map_p) {
-          Expression new_monomial = term_map.first * term_map_p.first;
-          Expression new_coeff = term_map.second * term_map_p.second;
-          auto it = map_product.find(new_monomial);
-          if (it == map_product.end()) {
-            map_product.emplace(new_monomial, new_coeff);
-          } else {
-            it->second += new_coeff;
-          }
-        }
-      }
-      map = map_product;
-    }
-  }
-  // Finally multiply the constant coefficient.
-  for (auto& p : map) {
-    p.second *= constant_;
-  }
-  return map;
-}
-
 double ExpressionMul::Evaluate(const Environment& env) const {
   return accumulate(
       base_to_exponent_map_.begin(), base_to_exponent_map_.end(), constant_,
@@ -938,46 +852,6 @@ Polynomial<double> ExpressionDiv::ToPolynomial() const {
          get_constant_value(get_second_argument());
 }
 
-Expression::MonomialToCoeffMap ExpressionDiv::DecomposePolynomial(const Variables &vars) const {
-  // Currently I can only handle the case of a polynomial dividing a monomial.
-  const auto& map1 = get_first_argument().DecomposePolynomial(vars);
-  const auto& map2 = get_second_argument().DecomposePolynomial(vars);
-  if (map2.size() != 1) {
-    throw std::runtime_error("The divisor is not a monomial. The Div expression cannot be decomposed as a polynomial.");
-  }
-  const Variables& divisor_variables = map2.begin()->first.GetVariables();
-  const internal::Monomial divisor_monomial(map2.begin()->first);
-  const auto& divisor_monomial_powers = divisor_monomial.get_powers();
-  const Expression& divisor_coeff = map2.begin()->second;
-  Expression::MonomialToCoeffMap map;
-  map.reserve(map1.size());
-  for (const auto& p1 : map1) {
-    // For each monomial in the dividend, compute the division from the
-    // dividend monomial by the divisor monomial.
-    const internal::Monomial dividend_monomial(p1.first);
-    std::map<Variable::Id, int> division_monomial_powers = dividend_monomial.get_powers();
-    for (const auto& p_divisor : divisor_monomial_powers) {
-      // The variable in divisor has to appear in the dividend.
-      auto it = division_monomial_powers.find(p_divisor.first);
-      if (it == division_monomial_powers.end()) {
-        throw std::runtime_error("The variable in the divisor is not in the dividend.");
-      } else {
-        // xⁿ / xᵐ = xⁿ⁻ᵐ
-        it->second -= p_divisor.second;
-      }
-    }
-    internal::Monomial division_monomial(division_monomial_powers);
-
-    // Now gets the map from the variable ID to variable.
-    std::unordered_map<Variable::Id, Variable> dividend_variable_id_to_var_map;
-    for (const auto& var : p1.first.GetVariables()) {
-      dividend_variable_id_to_var_map.emplace(var.get_id(), var);
-    }
-    map.emplace(division_monomial.ToExpression(dividend_variable_id_to_var_map), p1.second / divisor_coeff);
-  }
-  return map;
-}
-
 Expression ExpressionDiv::Substitute(const Substitution& s) const {
   return get_first_argument().Substitute(s) /
          get_second_argument().Substitute(s);
@@ -1021,11 +895,6 @@ Polynomial<double> ExpressionLog::ToPolynomial() const {
   throw runtime_error("Log expression is not polynomial-convertible.");
 }
 
-Expression::MonomialToCoeffMap ExpressionLog::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
-}
-
 Expression ExpressionLog::Substitute(const Substitution& s) const {
   return log(get_argument().Substitute(s));
 }
@@ -1050,11 +919,6 @@ ExpressionAbs::ExpressionAbs(const Expression& e)
 
 Polynomial<double> ExpressionAbs::ToPolynomial() const {
   throw runtime_error("Abs expression is not polynomial-convertible.");
-}
-
-Expression::MonomialToCoeffMap ExpressionAbs::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
 }
 
 Expression ExpressionAbs::Substitute(const Substitution& s) const {
@@ -1082,11 +946,6 @@ ExpressionExp::ExpressionExp(const Expression& e)
 
 Polynomial<double> ExpressionExp::ToPolynomial() const {
   throw runtime_error("Exp expression is not polynomial-convertible.");
-}
-
-Expression::MonomialToCoeffMap ExpressionExp::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
 }
 
 Expression ExpressionExp::Substitute(const Substitution& s) const {
@@ -1119,11 +978,6 @@ void ExpressionSqrt::check_domain(const double v) {
 
 Polynomial<double> ExpressionSqrt::ToPolynomial() const {
   throw runtime_error("Sqrt expression is not polynomial-convertible.");
-}
-
-Expression::MonomialToCoeffMap ExpressionSqrt::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
 }
 
 Expression ExpressionSqrt::Substitute(const Substitution& s) const {
@@ -1167,58 +1021,6 @@ Polynomial<double> ExpressionPow::ToPolynomial() const {
   return pow(get_first_argument().ToPolynomial(), exponent);
 }
 
-Expression::MonomialToCoeffMap ExpressionPow::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  const int exponent{
-      static_cast<int>(get_constant_value(get_second_argument()))};
-  if (exponent != get_second_argument()) {
-    throw std::runtime_error("ExpressionPow contains non-integer exponent, cannot be decomposed as a polynomial.");
-  }
-  if (exponent == 1) {
-    return get_first_argument().DecomposePolynomial(vars);
-  } else if (exponent == 0) {
-    map.emplace(1, 1);
-  } else if (exponent < 0) {
-    throw std::runtime_error("Pow expression has negative exponent, it cannot be decomposed as a polynomial.");
-  } else if (exponent % 2 == 0) {
-    const auto& map1 = pow(get_first_argument(), exponent / 2).DecomposePolynomial(vars);
-    map.reserve(map1.size() * (map1.size() + 1) / 2);
-    for (auto it1 = map1.begin(); it1 != map1.end(); ++it1) {
-      for (auto it2 = it1; it2 != map1.end(); ++it2) {
-        Expression new_base = it1->first * it2->first;
-        Expression new_coeff = it1->second * it2->second;
-        if (it1 != it2) {
-          new_coeff *= 2;
-        }
-        auto map_it = map.find(new_base);
-        if (map_it == map.end()) {
-          map.emplace(new_base, new_coeff);
-        } else {
-          map_it->second += new_coeff;
-        }
-      }
-    }
-  } else {
-    Expression base = get_first_argument();
-    const auto& map1 = pow(base, exponent / 2).DecomposePolynomial(vars);
-    const auto& map2 = pow(base, exponent / 2 + 1).DecomposePolynomial(vars);
-    map.reserve(map1.size() * map2.size());
-    for (const auto& p1 : map1) {
-      for (const auto& p2 : map2) {
-        Expression new_base = p1.first * p2.first;
-        Expression new_coeff = p1.second * p2.second;
-        auto map_it = map.find(new_base);
-        if (map_it == map.end()) {
-          map.emplace(new_base, new_coeff);
-        } else {
-          map_it->second += new_coeff;
-        }
-      }
-    }
-  }
-  return map;
-}
-
 Expression ExpressionPow::Substitute(const Substitution& s) const {
   return pow(get_first_argument().Substitute(s),
              get_second_argument().Substitute(s));
@@ -1245,11 +1047,6 @@ Polynomial<double> ExpressionSin::ToPolynomial() const {
   throw runtime_error("Sin expression is not polynomial-convertible.");
 }
 
-Expression::MonomialToCoeffMap ExpressionSin::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
-}
-
 Expression ExpressionSin::Substitute(const Substitution& s) const {
   return sin(get_argument().Substitute(s));
 }
@@ -1273,11 +1070,6 @@ Polynomial<double> ExpressionCos::ToPolynomial() const {
   throw runtime_error("Cos expression is not polynomial-convertible.");
 }
 
-Expression::MonomialToCoeffMap ExpressionCos::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
-}
-
 Expression ExpressionCos::Substitute(const Substitution& s) const {
   return cos(get_argument().Substitute(s));
 }
@@ -1299,11 +1091,6 @@ ExpressionTan::ExpressionTan(const Expression& e)
 
 Polynomial<double> ExpressionTan::ToPolynomial() const {
   throw runtime_error("Tan expression is not polynomial-convertible.");
-}
-
-Expression::MonomialToCoeffMap ExpressionTan::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
 }
 
 Expression ExpressionTan::Substitute(const Substitution& s) const {
@@ -1336,11 +1123,6 @@ void ExpressionAsin::check_domain(const double v) {
 
 Polynomial<double> ExpressionAsin::ToPolynomial() const {
   throw runtime_error("Asin expression is not polynomial-convertible.");
-}
-
-Expression::MonomialToCoeffMap ExpressionAsin::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
 }
 
 Expression ExpressionAsin::Substitute(const Substitution& s) const {
@@ -1378,11 +1160,6 @@ Polynomial<double> ExpressionAcos::ToPolynomial() const {
   throw runtime_error("Acos expression is not polynomial-convertible.");
 }
 
-Expression::MonomialToCoeffMap ExpressionAcos::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
-}
-
 Expression ExpressionAcos::Substitute(const Substitution& s) const {
   return acos(get_argument().Substitute(s));
 }
@@ -1409,11 +1186,6 @@ Polynomial<double> ExpressionAtan::ToPolynomial() const {
   throw runtime_error("Atan expression is not polynomial-convertible.");
 }
 
-Expression::MonomialToCoeffMap ExpressionAtan::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
-}
-
 Expression ExpressionAtan::Substitute(const Substitution& s) const {
   return atan(get_argument().Substitute(s));
 }
@@ -1435,11 +1207,6 @@ ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
 
 Polynomial<double> ExpressionAtan2::ToPolynomial() const {
   throw runtime_error("Atan2 expression is not polynomial-convertible.");
-}
-
-Expression::MonomialToCoeffMap ExpressionAtan2::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
 }
 
 Expression ExpressionAtan2::Substitute(const Substitution& s) const {
@@ -1471,11 +1238,6 @@ Polynomial<double> ExpressionSinh::ToPolynomial() const {
   throw runtime_error("Sinh expression is not polynomial-convertible.");
 }
 
-Expression::MonomialToCoeffMap ExpressionSinh::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
-}
-
 Expression ExpressionSinh::Substitute(const Substitution& s) const {
   return sinh(get_argument().Substitute(s));
 }
@@ -1497,11 +1259,6 @@ ExpressionCosh::ExpressionCosh(const Expression& e)
 
 Polynomial<double> ExpressionCosh::ToPolynomial() const {
   throw runtime_error("Cosh expression is not polynomial-convertible.");
-}
-
-Expression::MonomialToCoeffMap ExpressionCosh::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
 }
 
 Expression ExpressionCosh::Substitute(const Substitution& s) const {
@@ -1527,11 +1284,6 @@ Polynomial<double> ExpressionTanh::ToPolynomial() const {
   throw runtime_error("Tanh expression is not polynomial-convertible.");
 }
 
-Expression::MonomialToCoeffMap ExpressionTanh::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
-}
-
 Expression ExpressionTanh::Substitute(const Substitution& s) const {
   return tanh(get_argument().Substitute(s));
 }
@@ -1553,11 +1305,6 @@ ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
 
 Polynomial<double> ExpressionMin::ToPolynomial() const {
   throw runtime_error("Min expression is not polynomial-convertible.");
-}
-
-Expression::MonomialToCoeffMap ExpressionMin::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
 }
 
 Expression ExpressionMin::Substitute(const Substitution& s) const {
@@ -1589,11 +1336,6 @@ ExpressionMax::ExpressionMax(const Expression& e1, const Expression& e2)
 
 Polynomial<double> ExpressionMax::ToPolynomial() const {
   throw runtime_error("Max expression is not polynomial-convertible.");
-}
-
-Expression::MonomialToCoeffMap ExpressionMax::DecomposePolynomial(const Variables &vars) const {
-  Expression::MonomialToCoeffMap map;
-  return map;
 }
 
 Expression ExpressionMax::Substitute(const Substitution& s) const {
@@ -1671,10 +1413,6 @@ bool ExpressionIfThenElse::Less(const ExpressionCell& e) const {
 
 Polynomial<double> ExpressionIfThenElse::ToPolynomial() const {
   throw runtime_error("IfThenElse expression is not polynomial-convertible.");
-}
-
-Expression::MonomialToCoeffMap ExpressionIfThenElse::DecomposePolynomial(const Variables &vars) const {
-  throw runtime_error("IfThenElse expression cannot be decomposed as a polynomial.");
 }
 
 double ExpressionIfThenElse::Evaluate(const Environment& env) const {

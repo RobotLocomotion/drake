@@ -144,8 +144,6 @@ symbolic::Expression can be used as a scalar type of Eigen types.
 */
 class Expression {
  public:
-  typedef std::unordered_map<Expression, Expression, hash_value<Expression>> MonomialToCoeffMap;
-
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Expression)
 
   /** Default constructor. It constructs Zero(). */
@@ -189,35 +187,6 @@ class Expression {
    * @return The total degree.
    */
   int Degree() const;
-
-
-  MonomialToCoeffMap DecomposePolynomial(const Variables& vars) const;
-
-  /**
-   * Decompose a polynomial into three parts, such that the polynomial
-   * can be represented as
-   * <!-->
-   * ∑ᵢ coeffs(i) * ∏ⱼpower(vars(j), exponent(i, j))
-   * <-->
-   * \f[
-   * \sum_i c_i \prod_j v_j^{e_{i,j}}
-   * \f]
-   * where \f$c_i=coeffs(i), v_j=vars(j), e_{i,j} = exponent(i, j)\f$.
-   * For example, for a polynomial \f$ x^2y^3 + 3xy^2z^3\f$, after
-   * decomposition, the result is
-   * coeffs = [1 3]
-   * exponent = [2 3 0]
-   *            [1 2 3]
-   * vars = [x y z]
-   * @pre{The expression is a polynomial, namely is_polynomial() == True.
-   * Otherwise throws a runtime error.}
-   * @param coeffs The coefficients of each monomials.
-   * @param exponent The number of rows in @p exponent equals to the length
-   * of @p coeffs. The number of columns in @p exponent equals to the length of
-   * @p vars.
-   * @param vars The variables in the polynomial.
-   */
-  void DecomposePolynomial(Eigen::RowVectorXd* coeffs, Eigen::SparseMatrix<int>* exponent, Eigen::Matrix<Variable, Eigen::Dynamic, 1>* vars) const;
 
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
