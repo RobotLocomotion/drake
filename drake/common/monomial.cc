@@ -168,8 +168,6 @@ class DecomposePolynomialVisitor {
 
   MonomialToCoefficientMapInternal operator()(
       const shared_ptr<ExpressionVar>& e, const Variables& vars) const {
-    MonomialToCoefficientMapInternal map;
-    map.reserve(1);
     if (vars.include(e->get_variable())) {
       return MonomialToCoefficientMapInternal(
           {{Monomial(e->get_variable(), 1), 1}});
