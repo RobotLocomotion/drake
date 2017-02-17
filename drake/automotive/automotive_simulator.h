@@ -66,8 +66,8 @@ class AutomotiveSimulator {
   /// model of a vehicle (i.e., a model that's not connected to the world). A
   /// floating joint of type multibody::joints::kRollPitchYaw is added to
   /// connect the vehicle model to the world.
-  /// @param model_name  If non-empty, the car model will be labeled with this
-  ///                    name.
+  /// @param model_name  If this is non-empty, the car's model will be labeled
+  ///                    with this name.
   /// @param channel_name  The simple car will subscribe to a channel
   ///                      with this name to receive commands.  Must be
   ///                      non-empty.
@@ -125,16 +125,19 @@ class AutomotiveSimulator {
       const std::string& channel_name);
 
   /// Sets the RoadGeometry for this simulation.
-  /// (This simulation takes ownership of the RoadGeometry*.)
+  ///
   /// The provided RoadGeometry will be wrapped with in an InfiniteCircuitRoad.
   /// @p start specifies at which end of which lane the cicuit shall begin.
   /// @p path specifies the route of the circuit; if @p path is empty, some
   /// default will be constructed.  See maliput::utility::InfiniteCircuitRoad
   /// for details.
   ///
+  /// @p start and @p path provide pointers to objects owned by @p road, so
+  /// their lifetime requirements are dictated by @p road.
+  ///
   /// @pre Start() has NOT been called.
   const maliput::utility::InfiniteCircuitRoad* SetRoadGeometry(
-      std::unique_ptr<const maliput::api::RoadGeometry>* road,
+      std::unique_ptr<const maliput::api::RoadGeometry> road,
       const maliput::api::LaneEnd& start,
       const std::vector<const maliput::api::Lane*>& path);
 
@@ -198,9 +201,10 @@ class AutomotiveSimulator {
  private:
   int allocate_vehicle_number();
   int AddSdfModel(const std::string& sdf_filename,
-                  const SimpleCarToEulerFloatingJoint<T>*);
+                  const SimpleCarToEulerFloatingJoint<T>* coord_transform,
+                  const std::string& model_name);
   int AddSdfModel(const std::string& sdf_filename,
-                  const EndlessRoadCarToEulerFloatingJoint<T>*,
+                  const EndlessRoadCarToEulerFloatingJoint<T>* coord_transform,
                   const std::string& model_name);
 
   // Connects the systems that output the pose of each vehicle to the

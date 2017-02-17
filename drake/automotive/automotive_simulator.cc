@@ -89,18 +89,7 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
   builder_->Connect(*simple_car, *coord_transform);
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  int model_instance_id = AddSdfModel(sdf_filename, coord_transform);
-
-  if (!model_name.empty()) {
-    // TODO(russt): Set the model_name instead, once
-    // https://github.com/RobotLocomotion/drake/issues/3053 is resolved.
-    // For now, only the body names show up in the drake visualizer.
-    const std::vector<int>& body_indices =
-        rigid_body_tree_->FindBaseBodies(model_instance_id);
-    DRAKE_DEMAND(body_indices.size() == 1);
-    rigid_body_tree_->bodies[body_indices.at(0)]->set_name(model_name);
-  }
-  return model_instance_id;
+  return AddSdfModel(sdf_filename, coord_transform, model_name);
 }
 
 template <typename T>
@@ -120,7 +109,7 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
   builder_->Connect(*trajectory_car, *coord_transform);
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_filename, coord_transform);
+  return AddSdfModel(sdf_filename, coord_transform, ""/*model_name*/);
 }
 
 
@@ -132,7 +121,7 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
     typename EndlessRoadCar<T>::ControlType control_type,
     const std::string& channel_name) {
   DRAKE_DEMAND(!started_);
-  DRAKE_DEMAND((bool)endless_road_);
+  DRAKE_DEMAND(endless_road_ != nullptr);
   const int vehicle_number = allocate_vehicle_number();
 
   auto endless_road_car = builder_->template AddSystem<EndlessRoadCar<T>>(
@@ -143,8 +132,6 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
 
   // Save the desired initial state in order to initialize the Simulator later,
   // when we have a Simulator to initialize.
-  // TODO(maddog@tri.global)  Is there a better way to copy all the fields?
-  //                (I.e., until lcm_vector_gen.py makes an operator=()....)
   endless_road_cars_[endless_road_car].set_value(initial_state.get_value());
 
   switch (control_type) {
@@ -177,11 +164,11 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
 template <typename T>
 const maliput::utility::InfiniteCircuitRoad*
 AutomotiveSimulator<T>::SetRoadGeometry(
-    std::unique_ptr<const maliput::api::RoadGeometry>* road,
+    std::unique_ptr<const maliput::api::RoadGeometry> road,
     const maliput::api::LaneEnd& start,
     const std::vector<const maliput::api::Lane*>& path) {
   DRAKE_DEMAND(!started_);
-  road_ = std::move(*road);
+  road_ = std::move(road);
   endless_road_ = std::make_unique<maliput::utility::InfiniteCircuitRoad>(
       maliput::api::RoadGeometryId({"ForeverRoad"}),
       road_.get(), start, path);
@@ -199,37 +186,22 @@ AutomotiveSimulator<T>::SetRoadGeometry(
 }
 
 
+namespace {
 template <typename T>
-int AutomotiveSimulator<T>::AddSdfModel(
+int LoadSdfModel(
     const std::string& sdf_filename,
-    const SimpleCarToEulerFloatingJoint<T>* coord_transform) {
+    const systems::LeafSystem<T>* coord_transform,
+    const std::string& model_name,
+    RigidBodyTree<T>* rigid_body_tree,
+    std::vector<std::pair<int, const systems::System<T>*>
+        >* rigid_body_tree_publisher_inputs) {
   const parsers::ModelInstanceIdTable table =
       parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-          sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
-
+          sdf_filename, kRollPitchYaw, rigid_body_tree);
   // TODO(liang.fok): Add support for SDF files containing more than one model.
   DRAKE_DEMAND(table.size() == 1);
-
   const int model_instance_id = table.begin()->second;
-  rigid_body_tree_publisher_inputs_.push_back(
-      std::make_pair(model_instance_id, coord_transform));
-  return model_instance_id;
-}
-
-template <typename T>
-int AutomotiveSimulator<T>::AddSdfModel(
-    const std::string& sdf_filename,
-    const EndlessRoadCarToEulerFloatingJoint<T>* coord_transform,
-    const std::string& model_name) {
-  const parsers::ModelInstanceIdTable table =
-      parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-          sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
-
-  // TODO(liang.fok): Add support for SDF files containing more than one model.
-  DRAKE_DEMAND(table.size() == 1);
-
-  const int model_instance_id = table.begin()->second;
-  rigid_body_tree_publisher_inputs_.push_back(
+  rigid_body_tree_publisher_inputs->push_back(
       std::make_pair(model_instance_id, coord_transform));
 
   if (!model_name.empty()) {
@@ -237,12 +209,34 @@ int AutomotiveSimulator<T>::AddSdfModel(
     // https://github.com/RobotLocomotion/drake/issues/3053 is resolved.
     // For now, only the body names show up in the drake visualizer.
     const std::vector<int>& body_indices =
-        rigid_body_tree_->FindBaseBodies(model_instance_id);
+        rigid_body_tree->FindBaseBodies(model_instance_id);
     DRAKE_DEMAND(body_indices.size() == 1);
-    rigid_body_tree_->bodies[body_indices.at(0)]->set_name(model_name);
+    rigid_body_tree->bodies[body_indices.at(0)]->set_name(model_name);
   }
 
   return model_instance_id;
+}
+}  // namespace
+
+
+template <typename T>
+int AutomotiveSimulator<T>::AddSdfModel(
+    const std::string& sdf_filename,
+    const SimpleCarToEulerFloatingJoint<T>* coord_transform,
+    const std::string& model_name) {
+  return LoadSdfModel(sdf_filename, coord_transform, model_name,
+                      rigid_body_tree_.get(),
+                      &rigid_body_tree_publisher_inputs_);
+}
+
+template <typename T>
+int AutomotiveSimulator<T>::AddSdfModel(
+    const std::string& sdf_filename,
+    const EndlessRoadCarToEulerFloatingJoint<T>* coord_transform,
+    const std::string& model_name) {
+  return LoadSdfModel(sdf_filename, coord_transform, model_name,
+                      rigid_body_tree_.get(),
+                      &rigid_body_tree_publisher_inputs_);
 }
 
 template <typename T>
@@ -506,16 +500,17 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
 
   // Initialize the state of the EndlessRoadCars.
   for (auto& pair : endless_road_cars_) {
+    EndlessRoadCar<T>* const car = pair.first;
+    const EndlessRoadCarState<T>& initial_state = pair.second;
+
     systems::VectorBase<T>* context_state =
         diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(),
-                                             pair.first)
+                                             car)
         ->get_mutable_continuous_state()->get_mutable_vector();
     EndlessRoadCarState<T>* const state =
         dynamic_cast<EndlessRoadCarState<T>*>(context_state);
     DRAKE_ASSERT(state);
-    // TODO(maddog@tri.global)  Is there a better way to copy all the fields?
-    //                (I.e., until lcm_vector_gen.py makes an operator=()....)
-    state->set_value(pair.second.get_value());
+    state->set_value(initial_state.get_value());
   }
 
   lcm_->StartReceiveThread();

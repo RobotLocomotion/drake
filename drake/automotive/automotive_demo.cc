@@ -66,7 +66,7 @@ const maliput::api::Lane* FindLaneByIdOrDie(
     }
   }
   drake::log()->error("No lane named '{}'.", id);
-  std::exit(1);
+  DRAKE_ABORT();
 }
 
 
@@ -143,6 +143,8 @@ int main(int argc, char* argv[]) {
         maliput::api::LaneEnd::kStart);
     std::vector<const maliput::api::Lane*> path;
 
+    // If the user has specified an explicit path, parse it into `path`,
+    // otherwise leave `path` empty.
     if (!FLAGS_road_path.empty()) {
       std::string end;
       std::string lane_id;
@@ -165,7 +167,7 @@ int main(int argc, char* argv[]) {
     }
 
     const maliput::utility::InfiniteCircuitRoad* const endless_road =
-        simulator->SetRoadGeometry(&base_road, start, path);
+        simulator->SetRoadGeometry(std::move(base_road), start, path);
 
     // User-controlled vehicles are EndlessRoadCars with DrivingCommand input.
     for (size_t i = 0; i < ego_car_names.size(); ++i) {
