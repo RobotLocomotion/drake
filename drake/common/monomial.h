@@ -292,7 +292,7 @@ typedef std::unordered_map<Expression, Expression, hash_value<Expression>>
  * A polynomial can be represented as
  * ∑ᵢ c(i) * m(i)
  * where m(i) is a monomial in the specified set of variables, and c(i) is the
- * corresponding coefficient,
+ * corresponding coefficient.
  * Note the coefficient will include any constants and symbols not in the set of
  * variables.
  * <pre>
@@ -308,11 +308,11 @@ typedef std::unordered_map<Expression, Expression, hash_value<Expression>>
  * map[xy²] = 3z
  * map[1] = 4z
  * </pre>
- * @pre{The expression is a polynomial of the specified set of variables,
- * otherwise returns a runtime error.}
+ * @pre{e.is_polynomial() returns true}
  * @param e The polynomial to be decomposed. Throw a runtime error if `e` is not
  * a polynomial.
- * @param vars The variables whose monomials will be considered in the decomposition.
+ * @param vars The variables whose monomials will be considered in the
+ * decomposition.
  * @retval monomial_to_coeff_map Map the monomial to the coefficient in each
  * term of the polynomial.
  */
