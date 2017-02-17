@@ -26,18 +26,30 @@ In this case, the automotive demo must be run with the ``--no-visualizer``
 switch, and you will have to manually launch some other build of the
 ``drake-visualizer``.
 
-Running the demo
-----------------
+Running the demos
+-----------------
 
-To run the demo, open a terminal and execute the following commands:
-
+A variety of demos are available.  In general, to run a demo, open a
+terminal and execute commands like the ones shown below. End the demo by closing
+any window, or Ctrl-C in the terminal.  All of the launched programs will be
+closed.
+ 
 ```
 $ cd drake-distro
-$ bazel run drake/automotive:demo
+$ bazel run drake/automotive:DEMO_NAME_HERE
 ```
 
-End the demo by closing any window, or Ctrl-C in the terminal.  All of the
-launched programs will be closed.
+The following demos are available:
+ 
+  * Basic cars driving around on an open plane:
+    `bazel run drake/automotive:demo_simple_car_and_trajectory_car`
+ 
+    This will show one _ado_ car driving in a fixed trajectory, and one _ego_
+    car which can be driven anywhere on the infinite plane.  (See "Driving
+    the Prius" below to make it go.)
+
+  * A 10-lane dragway with a `TrajectoryCar` traveling down each lane:
+    `bazel run drake/automotive:demo_dragway_with_trajectory_car`
 
 Driving the Prius
 -----------------

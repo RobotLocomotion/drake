@@ -3,6 +3,7 @@
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
+#include "drake/automotive/maliput/utility/generate_urdf.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
@@ -23,9 +24,11 @@
 #include "drake/systems/primitives/multiplexer.h"
 
 namespace drake {
-namespace automotive {
 
-using drake::multibody::joints::kRollPitchYaw;
+using multibody::joints::kFixed;
+using multibody::joints::kRollPitchYaw;
+
+namespace automotive {
 
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator()
@@ -113,6 +116,14 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
   return AddSdfModel(sdf_filename, coord_transform);
+}
+
+template <typename T>
+const maliput::api::RoadGeometry* AutomotiveSimulator<T>::SetRoadGeometry(
+    std::unique_ptr<const maliput::api::RoadGeometry>* road) {
+  DRAKE_DEMAND(!started_);
+  road_ = std::move(*road);
+  return road_.get();
 }
 
 template <typename T>
@@ -321,6 +332,17 @@ void AutomotiveSimulator<T>::ConnectJointStateSourcesToVisualizer() {
 template <typename T>
 void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   DRAKE_DEMAND(!started_);
+  if (road_) {
+    maliput::utility::GenerateUrdfFile(road_.get(),
+                                       "/tmp", road_->id().id,
+                                       maliput::utility::ObjFeatures());
+    std::string urdf_filepath = std::string("/tmp/") + road_->id().id + ".urdf";
+    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+        urdf_filepath, kFixed, rigid_body_tree_.get());
+    // NB: The road doesn't move, so we don't need to connect anything
+    // to its joint.
+  }
+
   // By this time, all model instances should have been added to the tree.
   // While the parsers have already called `compile()` on the `RigidBodyTree`,
   // in an abundance of caution, the following line calls `compile()` again.
