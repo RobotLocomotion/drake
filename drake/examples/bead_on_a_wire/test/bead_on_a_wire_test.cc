@@ -158,51 +158,6 @@ TEST_F(BeadOnAWireTest, InverseHelix) {
   EXPECT_NEAR(inv_helix_dot, tprime, tol);
 }
 
-// Tests the constraint function evaluation using the helix function.
-TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
-  // Put the bead directly onto the wire.
-  systems::ContinuousState<double> &xc =
-      *context_abs_->get_mutable_continuous_state();
-  const double s = 1.0;
-  xc[0] = std::cos(s);
-  xc[1] = std::sin(s);
-  xc[2] = s;
-
-  // Verify that the constraint error is effectively zero.
-  const double tol = std::numeric_limits<double>::epsilon() * 10;
-  EXPECT_NEAR(dut_abs_->EvalConstraintEquations(*context_abs_).norm(),
-              0.0, tol);
-
-  // Move the bead off of the wire and verify limit on expected error.
-  const double err = 1.0;
-  xc[0] += err;
-  EXPECT_LE(dut_abs_->EvalConstraintEquations(*context_abs_).norm(), 1.0);
-  xc[0] = std::cos(s);
-  xc[1] += err;
-  EXPECT_LE(dut_abs_->EvalConstraintEquations(*context_abs_).norm(), 1.0);
-}
-
-// Tests the evaluation of the time derivative of the constraint functions
-// using the helix function.
-TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
-  // Put the bead directly onto the wire and make its velocity such that
-  // it is not instantaneously leaving the wire.
-  systems::ContinuousState<double> &xc =
-      *context_abs_->get_mutable_continuous_state();
-  const double s = 1.0;
-  xc[0] = std::cos(s);
-  xc[1] = std::sin(s);
-  xc[2] = s;
-  xc[3] = -std::sin(s);
-  xc[4] = std::cos(s);
-  xc[5] = 1.0;
-
-  // Verify that the constraint error is effectively zero.
-  const double tol = std::numeric_limits<double>::epsilon() * 10;
-  EXPECT_NEAR(dut_abs_->EvalConstraintEquationsDot(*context_abs_).norm(),
-              0.0, tol);
-}
-
 // A parametric wire function that allows the bead to move along x² - y² = 0
 // (which is orthogonal to gravity).
 static Eigen::Matrix<BeadOnAWire<double>::DScalar, 3, 1>
@@ -230,6 +185,54 @@ static Eigen::Matrix<BeadOnAWire<double>::DScalar, 3, 1>
 static BeadOnAWire<double>::DScalar inverse_vert_line_function(
         const Vector3<BeadOnAWire<double>::DScalar>& v) {
   return v(2);
+}
+
+
+// Tests the constraint function evaluation using the helix function.
+TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
+  // Use the vertical wire function, which allows us to determine error
+  // precisely.
+  dut_abs_->reset_wire_parameter_functions(&vert_line_function,
+                                           &inverse_vert_line_function);
+
+  // Put the bead directly onto the wire.
+  systems::ContinuousState<double> &xc =
+      *context_abs_->get_mutable_continuous_state();
+  const double s = 1.0;
+  xc[0] = 0.0;
+  xc[1] = 0.0;
+  xc[2] = s;
+
+  // Verify that the constraint error is effectively zero.
+  const double tol = std::numeric_limits<double>::epsilon() * 10;
+  EXPECT_NEAR(dut_abs_->EvalConstraintEquations(*context_abs_).norm(),
+              0.0, tol);
+
+  // Move the bead off of the wire and verify the expected error.
+  const double err = 1.0;
+  xc[0] += err;
+  EXPECT_LE(dut_abs_->EvalConstraintEquations(*context_abs_).norm() - err, tol);
+}
+
+// Tests the evaluation of the time derivative of the constraint functions
+// using the helix function.
+TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
+  // Put the bead directly onto the wire and make its velocity such that
+  // it is not instantaneously leaving the wire.
+  systems::ContinuousState<double> &xc =
+      *context_abs_->get_mutable_continuous_state();
+  const double s = 1.0;
+  xc[0] = std::cos(s);
+  xc[1] = std::sin(s);
+  xc[2] = s;
+  xc[3] = -std::sin(s);
+  xc[4] = std::cos(s);
+  xc[5] = 1.0;
+
+  // Verify that the constraint error is effectively zero.
+  const double tol = std::numeric_limits<double>::epsilon() * 10;
+  EXPECT_NEAR(dut_abs_->EvalConstraintEquationsDot(*context_abs_).norm(),
+              0.0, tol);
 }
 
 // Verify that the minimal coordinate dynamics computations are reasonable.
