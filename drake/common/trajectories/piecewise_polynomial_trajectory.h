@@ -28,7 +28,6 @@ class PiecewisePolynomialTrajectory : public Trajectory {
    * PiecewisePolynomial.
    */
   drake::MatrixX<double> value(double t) const override {
-    DRAKE_DEMAND(pp_.value(t).cols() == 1);
     return pp_.value(t);
   }
 
