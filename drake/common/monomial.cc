@@ -161,23 +161,27 @@ map<Variable::Id, int> ToMonomialPower(const Expression& e) {
 }
 class DecomposePolynomialVisitor {
  public:
+  MonomialToCoefficientMapInternal Visit(const Expression& e,
+                                         const Variables& vars) const {
+    return VisitPolynomial<MonomialToCoefficientMapInternal>(*this, e, vars);
+  }
+
   MonomialToCoefficientMapInternal operator()(
       const shared_ptr<ExpressionVar>& e, const Variables& vars) const {
     MonomialToCoefficientMapInternal map;
     map.reserve(1);
     if (vars.include(e->get_variable())) {
-      map.emplace(Monomial(e->get_variable(), 1), 1);
+      return MonomialToCoefficientMapInternal(
+          {{Monomial(e->get_variable(), 1), 1}});
     } else {
-      map.emplace(Monomial(), e->get_variable());
+      return MonomialToCoefficientMapInternal(
+          {{Monomial(), Expression(e->get_variable())}});
     }
-    return map;
   }
 
   MonomialToCoefficientMapInternal operator()(
       const shared_ptr<ExpressionConstant>& e, const Variables& vars) const {
-    MonomialToCoefficientMapInternal map;
-    map.emplace(Monomial(), e->get_value());
-    return map;
+    return MonomialToCoefficientMapInternal({{Monomial(), e->get_value()}});
   }
 
   MonomialToCoefficientMapInternal operator()(
@@ -194,7 +198,7 @@ class DecomposePolynomialVisitor {
       // For expr_to_coeff_map_[3*x*y+4*x] = 2
       // map_p[x*y] = 3
       // map_p[x] = 4
-      const auto& map_p = DecomposePolynomialInternal(p.first, vars);
+      const auto& map_p = Visit(p.first, vars);
       map.reserve(map.size() + map_p.size());
       for (const auto& map_p_pair : map_p) {
         auto it = map.find(map_p_pair.first);
@@ -236,10 +240,9 @@ class DecomposePolynomialVisitor {
     const auto& base_to_exponent_map = e->get_base_to_exponent_map();
     for (const auto& p : base_to_exponent_map) {
       if (map.empty()) {
-        map = DecomposePolynomialInternal(pow(p.first, p.second), vars);
+        map = Visit(pow(p.first, p.second), vars);
       } else {
-        const auto& map_p =
-            DecomposePolynomialInternal(pow(p.first, p.second), vars);
+        const auto& map_p = Visit(pow(p.first, p.second), vars);
         MonomialToCoefficientMapInternal map_product;
         map_product.reserve(map.size() * map_p.size());
         // Now multiply each term in map, with each term in map_p.
@@ -284,7 +287,7 @@ class DecomposePolynomialVisitor {
           "as a polynomial.");
     }
     if (exponent == 1) {
-      return DecomposePolynomialInternal(e->get_first_argument(), vars);
+      return Visit(e->get_first_argument(), vars);
     } else if (exponent == 0) {
       map.emplace(Monomial(), 1);
     } else if (exponent < 0) {
@@ -294,7 +297,7 @@ class DecomposePolynomialVisitor {
     } else if (exponent % 2 == 0) {
       // compute the square of a polynomial (c₀ + c₁ * pow(x, k₁) + ... + cₙ *
       // pow(x, kₙ))
-      const auto& map1 = DecomposePolynomialInternal(
+      const auto& map1 = Visit(
           pow(e->get_first_argument(), exponent / 2), vars);
       map.reserve(map1.size() * (map1.size() + 1) / 2);
       for (auto it1 = map1.begin(); it1 != map1.end(); ++it1) {
@@ -314,9 +317,9 @@ class DecomposePolynomialVisitor {
         }
       }
     } else {
-      const auto& map1 = DecomposePolynomialInternal(
+      const auto& map1 = Visit(
           pow(e->get_first_argument(), exponent / 2), vars);
-      const auto& map2 = DecomposePolynomialInternal(
+      const auto& map2 = Visit(
           pow(e->get_first_argument(), exponent / 2 + 1), vars);
       map.reserve(map1.size() * map2.size());
       for (const auto& p1 : map1) {
@@ -339,9 +342,9 @@ class DecomposePolynomialVisitor {
                                               const Variables& vars) const {
     // Currently we can only handle the case of a monomial as the divisor.
     const auto& map1 =
-        DecomposePolynomialInternal(e->get_first_argument(), vars);
+        Visit(e->get_first_argument(), vars);
     const auto& map2 =
-        DecomposePolynomialInternal(e->get_second_argument(), vars);
+        Visit(e->get_second_argument(), vars);
     if (map2.size() != 1) {
       throw std::runtime_error(
           "The divisor is not a monomial. The Div expression cannot be "
@@ -379,8 +382,7 @@ class DecomposePolynomialVisitor {
 
 MonomialToCoefficientMapInternal DecomposePolynomialInternal(
     const Expression& e, const Variables& vars) {
-  return VisitPolynomial<MonomialToCoefficientMapInternal>(
-      DecomposePolynomialVisitor(), e, vars);
+  return DecomposePolynomialVisitor().Visit(e, vars);
 }
 }  // namespace internal
 

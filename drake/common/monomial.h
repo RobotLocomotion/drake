@@ -287,8 +287,8 @@ MonomialBasis(const Variables& vars) {
 typedef std::unordered_map<Expression, Expression, hash_value<Expression>>
     MonomialToCoefficientMap;
 /**
- * Decomposes a polynomial into monomials, with respect to a specified set of
- * variables.
+ * Decomposes a polynomial `e` into monomials, with respect to a specified set
+ * of variables `vars`.
  * A polynomial can be represented as
  * ∑ᵢ c(i) * m(i)
  * where m(i) is a monomial in the specified set of variables, and c(i) is the
@@ -310,7 +310,9 @@ typedef std::unordered_map<Expression, Expression, hash_value<Expression>>
  * </pre>
  * @pre{The expression is a polynomial of the specified set of variables,
  * otherwise returns a runtime error.}
- * @vars The variables whole monomials will be considered in the decomposition.
+ * @param e The polynomial to be decomposed. Throw a runtime error if `e` is not
+ * a polynomial.
+ * @param vars The variables whose monomials will be considered in the decomposition.
  * @retval monomial_to_coeff_map Map the monomial to the coefficient in each
  * term of the polynomial.
  */

@@ -1723,6 +1723,7 @@ TEST_F(SymbolicExpressionTest, ToString) {
   EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
   EXPECT_EQ(e2.to_string(), "cos(((pow(y, 2) * z) + pow(x, 2)))");
 }
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
