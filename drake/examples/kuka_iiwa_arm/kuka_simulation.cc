@@ -84,13 +84,13 @@ class SimulatedKuka : public systems::Diagram<T> {
         builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
             plant_->get_rigid_body_tree(), kp, ki, kd);
 
-    // Connect plant and controller
+    // Connects plant and controller.
     builder.Connect(plant_->state_output_port(),
                     controller_->get_estimated_state_input_port());
     builder.Connect(controller_->get_control_output_port(),
                     plant_->actuator_command_input_port());
 
-    // Expose desired state input port.
+    // Exposes desired state input port.
     builder.ExportInput(controller_->get_desired_state_input_port());
     builder.ExportOutput(plant_->state_output_port());
     builder.BuildInto(this);

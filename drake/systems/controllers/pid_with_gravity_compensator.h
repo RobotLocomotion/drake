@@ -41,7 +41,7 @@ class PidWithGravityCompensator : public ModelBasedController<T> {
   PidWithGravityCompensator(const RigidBodyTree<T>& robot,
       const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
 
-  /*
+  /**
    * Constructs the controller that takes ownership of a given RigidBodyTree
    * unique pointer.
    * @param robot unique pointer whose ownership will be transfered to this

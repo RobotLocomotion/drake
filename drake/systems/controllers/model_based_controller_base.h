@@ -56,7 +56,7 @@ class ModelBasedController : public StateFeedbackController<T> {
     robot_for_control_ = robot.Clone();
   }
 
-  /*
+  /**
    * Constructs the controller that takes ownership of a given RigidBodyTree
    * unique pointer.
    * @param robot unique pointer whose ownership will be transfered to this
