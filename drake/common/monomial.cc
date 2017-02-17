@@ -161,28 +161,28 @@ map<Variable::Id, int> ToMonomialPower(const Expression& e) {
 }
 class DecomposePolynomialVisitor {
  public:
-  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionVar>& e, const Variables& vars) const {
-    MonomialToCoefficientMap map;
+  MonomialToCoefficientMapInternal operator()(const shared_ptr<ExpressionVar>& e, const Variables& vars) const {
+    MonomialToCoefficientMapInternal map;
     map.reserve(1);
     if (vars.include(e->get_variable())) {
-      map.emplace(e->get_variable().get_id(), 1);
+      map.emplace(Monomial(e->get_variable(), 1), 1);
     } else {
-      map.emplace(1, e->get_variable().get_id());
+      map.emplace(Monomial(), e->get_variable());
     }
     return map;
   }
 
-  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionConstant>& e, const Variables& vars) const {
-    MonomialToCoefficientMap map;
-    map.emplace(1, e->get_value());
+  MonomialToCoefficientMapInternal operator()(const shared_ptr<ExpressionConstant>& e, const Variables& vars) const {
+    MonomialToCoefficientMapInternal map;
+    map.emplace(Monomial(), e->get_value());
     return map;
   }
 
-  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionAdd>& e, const Variables& vars) {
-    MonomialToCoefficientMap map;
+  MonomialToCoefficientMapInternal operator()(const shared_ptr<ExpressionAdd>& e, const Variables& vars) const {
+    MonomialToCoefficientMapInternal map;
     double e_constant = e->get_constant();
     if ( e_constant != 0) {
-      map.emplace(1, e_constant);
+      map.emplace(Monomial(), e_constant);
     }
     // For an expression 2*(3*x*y+4*x) + 4*y.
     // expr_to_coeff_map_[3*x*y+4*x] = 2
@@ -191,7 +191,7 @@ class DecomposePolynomialVisitor {
       // For expr_to_coeff_map_[3*x*y+4*x] = 2
       // map_p[x*y] = 3
       // map_p[x] = 4
-      const auto& map_p = DecomposePolynomial(p.first, vars);
+      const auto& map_p = DecomposePolynomialInternal(p.first, vars);
       map.reserve(map.size() + map_p.size());
       for (const auto& map_p_pair : map_p) {
         auto it = map.find(map_p_pair.first);
@@ -206,10 +206,19 @@ class DecomposePolynomialVisitor {
     return map;
   }
 
-  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionMul> e, const Variables& vars) {
-    MonomialToCoefficientMap map;
-    auto constant = e->get_constant();
-    // We do divide and conquer here.
+  MonomialToCoefficientMapInternal operator()(const shared_ptr<ExpressionMul> e, const Variables& vars) const {
+    MonomialToCoefficientMapInternal map;
+    // We iterate through base_to_exponent_map
+    // Suppose e = pow(e₁, p₁) * pow(e₂, p₂) * ... * pow(eₖ, pₖ)
+    // We first decompose the first k-1 products
+    // pow(e₁, p₁) * pow(e₂, p₂) * ... * pow(eₖ₋₁, pₖ₋₁) as a polynomial
+    // (c₀ + c₁ * pow(x, k₁) + ... + cₙ * pow(x, kₙ))
+    // and the last term pow(eₖ, pₖ) as another polynomial
+    // (d₀ + d₁ * pow(x, k₁) + ... + dₘ * pow(x, kₘ))
+    // And then multiply the term cᵢ * pow(x, kᵢ) with the term dⱼ * pow(x, kⱼ)
+    // to get each monomial in the product.
+    // TODO(hongkai.dai):
+    // Alternatively, we can do divide and conquer here.
     // for an expression e = pow(e₁, p₁) * pow(e₂, p₂) * ... * pow(eₖ, pₖ)
     // First decomposes the first ⌊k/2⌋ products, then decomposes the last
     // ⌈k/2⌉ products, so as to write e as the product of two polynomials
@@ -217,28 +226,137 @@ class DecomposePolynomialVisitor {
     //     (d₀ + d₁ * pow(x, k₁) + ... + dₘ * pow(x, kₘ))
     // Finally multiply the term cᵢ * pow(x, kᵢ) with the term dⱼ * pow(x, kⱼ)
     // to get each monomial in the product.
+    // The divide and conquer approach requires splitting the map
+    // base_to_exponent_map to two halves, which can be inefficient, so we do
+    // not implement this approach.
     const auto& base_to_exponent_map = e->get_base_to_exponent_map();
-    // Base case, only one term in the product
-    if (base_to_exponent_map.size() == 1) {
-      if (is_zero(base_to_exponent_map.begin()->second)) {
-        map.emplace(1, constant);
-        return map;
+    for (const auto& p : base_to_exponent_map) {
+      if (map.empty()) {
+        map = DecomposePolynomialInternal(pow(p.first, p.second), vars);
       } else {
-        map = DecomposePolynomial(pow(base_to_exponent_map.begin()->first, base_to_exponent_map.begin()->second), vars);
-        for (const auto& p : map) {
-          p.second *= constant;
+        const auto& map_p = DecomposePolynomialInternal(pow(p.first, p.second),vars);
+        MonomialToCoefficientMapInternal map_product;
+        map_product.reserve(map.size() * map_p.size());
+        // Now multiply each term in map, with each term in map_p.
+        for (const auto& term_map : map) {
+          for (const auto& term_map_p : map_p) {
+            Monomial new_monomial = term_map.first * term_map_p.first;
+            Expression new_coeff = term_map.second * term_map_p.second;
+            auto it = map_product.find(new_monomial);
+            if (it == map_product.end()) {
+              map_product.emplace(new_monomial, new_coeff);
+            } else {
+              it->second += new_coeff;
+            }
+          }
         }
-        return map;
+        map = map_product;
+      }
+    }
+    // Finally multiply the constant coefficient.
+    for (auto& p : map) {
+      p.second *= e->get_constant();
+    }
+    return map;
+  }
+
+  MonomialToCoefficientMapInternal operator()(const shared_ptr<ExpressionPow>& e, const Variables& vars) const {
+    // We use a divide and conquer approach here
+    // pow(e, p) can be computed as pow(e, ⌊p/2⌋) * pow(e, ⌈p/2⌉)
+    // We can decompose the first term as a polynomial
+    // (c₀ + c₁ * pow(x, k₁) + ... + cₙ * pow(x, kₙ))
+    // and the second term as another polynomial
+    // (d₀ + d₁ * pow(x, k₁) + ... + dₘ * pow(x, kₘ))
+    // We then multiply the term cᵢ * pow(x, kᵢ) with the term dⱼ * pow(x, kⱼ)
+    // to get each monomial in the product.
+    MonomialToCoefficientMapInternal map;
+    const int exponent{static_cast<int>(get_constant_value(e->get_second_argument()))};
+    if (exponent != e->get_second_argument()) {
+      throw std::runtime_error("ExpressionPow contains non-integer exponent, cannot be decomposed as a polynomial.");
+    }
+    if (exponent == 1) {
+      return DecomposePolynomialInternal(e->get_first_argument(), vars);
+    } else if (exponent == 0) {
+      map.emplace(Monomial(), 1);
+    } else if (exponent < 0) {
+      throw std::runtime_error("Pow expression has negative exponent, it cannot be decomposed as a polynomial.");
+    } else if (exponent % 2 == 0) {
+      // compute the square of a polynomial (c₀ + c₁ * pow(x, k₁) + ... + cₙ * pow(x, kₙ))
+      const auto& map1 = DecomposePolynomialInternal(pow(e->get_first_argument(), exponent / 2), vars);
+      map.reserve(map1.size() * (map1.size() + 1) / 2);
+      for (auto it1 = map1.begin(); it1 != map1.end(); ++it1) {
+        for (auto it2 = it1; it2 != map1.end(); ++it2) {
+          Monomial new_monomial = it1->first * it2->first;
+          Expression new_coeff = it1->second * it2->second;
+          if (it1 != it2) {
+            // Two cross terms.
+            new_coeff *= 2;
+          }
+          auto map_it = map.find(new_monomial);
+          if (map_it == map.end()) {
+            map.emplace(new_monomial, new_coeff);
+          } else {
+            map_it->second += new_coeff;
+          }
+        }
       }
     } else {
-      // Divide the base_to_exponent_map to two halves.
-
+      const auto& map1 = DecomposePolynomialInternal(pow(e->get_first_argument(), exponent / 2), vars);
+      const auto& map2 = DecomposePolynomialInternal(pow(e->get_first_argument(), exponent / 2 + 1), vars);
+      map.reserve(map1.size() * map2.size());
+      for (const auto& p1 : map1) {
+        for (const auto& p2 : map2) {
+          Monomial new_monomial = p1.first * p2.first;
+          Expression new_coeff = p1.second * p2.second;
+          auto map_it = map.find(new_monomial);
+          if (map_it == map.end()) {
+            map.emplace(new_monomial, new_coeff);
+          } else {
+            map_it->second += new_coeff;
+          }
+        }
+      }
     }
+    return map;
+  }
+
+  MonomialToCoefficientMapInternal operator()(const shared_ptr<ExpressionDiv> e, const Variables& vars) const {
+    // Currently we can only handle the case of a monomial as the divisor.
+    const auto& map1 = DecomposePolynomialInternal(e->get_first_argument(), vars);
+    const auto& map2 = DecomposePolynomialInternal(e->get_second_argument(), vars);
+    if (map2.size() != 1) {
+      throw std::runtime_error("The divisor is not a monomial. The Div expression cannot be decomposed as a polynomial.");
+    }
+    const auto& divisor_monomial = map2.begin()->first;
+    const auto& divisor_monomial_powers = divisor_monomial.get_powers();
+    const Expression& divisor_coeff = map2.begin()->second;
+    MonomialToCoefficientMapInternal map;
+    map.reserve(map1.size());
+    for (const auto& p1 : map1) {
+      // For each monomial in the dividend, compute the division from the
+      // dividend monomial by the divisor monomial.
+      const internal::Monomial dividend_monomial(p1.first);
+      std::map<Variable::Id, int> division_monomial_powers = dividend_monomial.get_powers();
+      for (const auto& p_divisor : divisor_monomial_powers) {
+        // The variable in divisor has to appear in the dividend.
+        auto it = division_monomial_powers.find(p_divisor.first);
+        if (it == division_monomial_powers.end()) {
+          throw std::runtime_error("The variable in the divisor is not in the dividend.");
+        } else {
+          // xⁿ / xᵐ = xⁿ⁻ᵐ
+          it->second -= p_divisor.second;
+        }
+      }
+      Monomial division_monomial(division_monomial_powers);
+
+      map.emplace(division_monomial, p1.second / divisor_coeff);
+    }
+    return map;
   }
 };
 
-MonomialToCoefficientMap DecomposePolynomial(const Expression& e, const Variables& vars) {
-  return VisitPolynomial<MonomialToCoefficientMap>(DecomposePolynomialVisitor(), e, vars);
+MonomialToCoefficientMapInternal DecomposePolynomialInternal(const Expression& e, const Variables& vars) {
+  return VisitPolynomial<MonomialToCoefficientMapInternal>(DecomposePolynomialVisitor(), e, vars);
 }
 }  // namespace internal
 
@@ -316,5 +434,20 @@ Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
     const Variables& vars, const int degree) {
   return internal::ComputeMonomialBasis<Eigen::Dynamic>(vars, degree);
 }
+
+MonomialToCoefficientMap DecomposePolynomial(const Expression& e, const Variables& vars) {
+  const auto& map_internal = internal::DecomposePolynomialInternal(e, vars);
+  std::unordered_map<Variable::Id, Variable> map_id_to_var;
+  map_id_to_var.reserve(vars.size());
+  for (const auto& v : vars) {
+    map_id_to_var.emplace(v.get_id(), v);
+  }
+  MonomialToCoefficientMap map;
+  map.reserve(map_internal.size());
+  for (const auto& p : map_internal) {
+    map.emplace(p.first.ToExpression(map_id_to_var), p.second);
+  }
+  return map;
+};
 }  // namespace symbolic
 }  // namespace drake

@@ -284,21 +284,7 @@ MonomialBasis(const Variables& vars) {
       vars, degree);
 }
 
-}  // namespace symbolic
-
-/** Computes the hash value of a Monomial. */
-template <>
-struct hash_value<symbolic::internal::Monomial> {
-  size_t operator()(const symbolic::internal::Monomial& m) const {
-    return m.GetHash();
-  }
-};
-}  // namespace drake
-
-namespace drake {
-namespace symbolic {
-namespace internal {
-typedef std::unordered_map<symbolic::internal::Monomial, symbolic::Expression, hash_value<symbolic::internal::Monomial>> MonomialToCoefficientMap;
+typedef std::unordered_map<Expression, Expression, hash_value<Expression>> MonomialToCoefficientMap;
 /**
  * Decomposes a polynomial into monomials, with respect to a specified set of variables.
  * A polynomial can be represented as
@@ -324,6 +310,22 @@ typedef std::unordered_map<symbolic::internal::Monomial, symbolic::Expression, h
  * term of the polynomial.
  */
 MonomialToCoefficientMap DecomposePolynomial(const Expression& e, const Variables& vars);
+}  // namespace symbolic
+
+/** Computes the hash value of a Monomial. */
+template <>
+struct hash_value<symbolic::internal::Monomial> {
+  size_t operator()(const symbolic::internal::Monomial& m) const {
+    return m.GetHash();
+  }
+};
+}  // namespace drake
+
+namespace drake {
+namespace symbolic {
+namespace internal {
+typedef std::unordered_map<symbolic::internal::Monomial, symbolic::Expression, hash_value<symbolic::internal::Monomial>> MonomialToCoefficientMapInternal;
+MonomialToCoefficientMapInternal DecomposePolynomialInternal(const Expression& e, const Variables& vars);
 }  // namespace internal
 }  // namespace symbolic
 }  // namespace drake

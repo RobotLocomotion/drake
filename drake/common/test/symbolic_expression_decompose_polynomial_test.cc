@@ -26,8 +26,8 @@ class SymbolicExpressionDecomposePolynomialTest : public ::testing::Test {
 // TODO(hongkai.dai) : Expression::EqualTo only checks structural equality. When
 // we can compare two expressions reliably beyond structural equality, then
 // always set `check_expression_equal` to true.
-void CheckMonomialToCoeffMap(const symbolic::Expression& e, const Variables& vars, const Expression::MonomialToCoeffMap& map_expected, bool check_expression_equal = true) {
-  Expression::MonomialToCoeffMap map = e.DecomposePolynomial(vars);
+void CheckMonomialToCoeffMap(const symbolic::Expression& e, const Variables& vars, const MonomialToCoefficientMap& map_expected, bool check_expression_equal = true) {
+  const auto& map = DecomposePolynomial(e, vars);
   EXPECT_EQ(map.size(), map_expected.size());
   symbolic::Expression e_expected(0);
   for (const auto& p : map) {
@@ -42,21 +42,21 @@ void CheckMonomialToCoeffMap(const symbolic::Expression& e, const Variables& var
 }
 
 TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial0) {
-  Expression::MonomialToCoeffMap map_expected;
+  MonomialToCoefficientMap map_expected;
   map_expected.emplace(x_, 1);
   CheckMonomialToCoeffMap(x_, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(x_, {var_x_, var_y_}, map_expected);
 }
 
 TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial1) {
-  Expression::MonomialToCoeffMap map_expected;
+  MonomialToCoefficientMap map_expected;
   map_expected.emplace(1, x_);
   CheckMonomialToCoeffMap(x_, {var_y_}, map_expected);
   CheckMonomialToCoeffMap(x_, {var_y_, var_z_}, map_expected);
 }
 
 TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial2) {
-  Expression::MonomialToCoeffMap map_expected;
+  MonomialToCoefficientMap map_expected;
   map_expected.emplace(1, 2);
   CheckMonomialToCoeffMap(2, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(2, {var_x_, var_y_}, map_expected);
@@ -68,8 +68,8 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial2) {
 }
 
 TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial3) {
-  Expression::MonomialToCoeffMap map_expected1;
-  Expression::MonomialToCoeffMap map_expected2;
+  MonomialToCoefficientMap map_expected1;
+  MonomialToCoefficientMap map_expected2;
   map_expected1.emplace(x_, 1);
   map_expected1.emplace(1, y_);
   map_expected2.emplace(x_, 1);
@@ -97,12 +97,12 @@ void CheckDecomposePolynomial4(const Expression &e,
   // Decompose 2 * x * x
   EXPECT_TRUE(e.EqualTo(2 * x * x));
 
-  Expression::MonomialToCoeffMap map_expected1;
+  MonomialToCoefficientMap map_expected1;
   map_expected1.emplace(x * x, 2);
   CheckMonomialToCoeffMap(e, {x}, map_expected1);
   CheckMonomialToCoeffMap(e, {x, y}, map_expected1);
 
-  Expression::MonomialToCoeffMap map_expected2;
+  MonomialToCoefficientMap map_expected2;
   map_expected2.emplace(1, 2 * x * x);
   CheckMonomialToCoeffMap(e, {y}, map_expected2);
 }
@@ -124,15 +124,15 @@ void CheckDecomposePolynomial5(const Expression &e,
   // Decompose 6 * x * y
   EXPECT_TRUE(e.EqualTo(6 * x * y));
 
-  Expression::MonomialToCoeffMap map_expected1;
+  MonomialToCoefficientMap map_expected1;
   map_expected1.emplace(x * y, 6);
   CheckMonomialToCoeffMap(e, {x, y}, map_expected1);
 
-  Expression::MonomialToCoeffMap map_expected2;
+  MonomialToCoefficientMap map_expected2;
   map_expected2.emplace(Expression(x), 6 * Expression(y));
   CheckMonomialToCoeffMap(e, {x}, map_expected2);
 
-  Expression::MonomialToCoeffMap map_expected3;
+  MonomialToCoefficientMap map_expected3;
   map_expected3.emplace(Expression(y), 6 * Expression(x));
   CheckMonomialToCoeffMap(e, {y}, map_expected3);
 }
@@ -155,41 +155,41 @@ void CheckDecomposePolynomial6(const Expression& e, const Variable& x, const Var
     EXPECT_TRUE(e.EqualTo(e_expected));
   }
 
-  Expression::MonomialToCoeffMap map_expected1;
+  MonomialToCoefficientMap map_expected1;
   map_expected1.emplace(x * x, 3 * y);
   map_expected1.emplace(1, 4 * pow(+y, 3) * z + 2);
   CheckMonomialToCoeffMap(e, {x}, map_expected1, check_expression_equal);
 
-  Expression::MonomialToCoeffMap map_expected2;
+  MonomialToCoefficientMap map_expected2;
   map_expected2.emplace(+y, 3 * x * x);
   map_expected2.emplace(pow(+y, 3), 4 * z);
   map_expected2.emplace(1, 2);
   CheckMonomialToCoeffMap(e, {y}, map_expected2, check_expression_equal);
 
-  Expression::MonomialToCoeffMap map_expected3;
+  MonomialToCoefficientMap map_expected3;
   map_expected3.emplace(+z, 4 * pow(+y, 3));
   map_expected3.emplace(1, 3 * x * x *y + 2);
   CheckMonomialToCoeffMap(e, {z}, map_expected3, check_expression_equal);
 
-  Expression::MonomialToCoeffMap map_expected4;
+  MonomialToCoefficientMap map_expected4;
   map_expected4.emplace(x * x * y, 3);
   map_expected4.emplace(pow(+y, 3), 4 * z);
   map_expected4.emplace(1, 2);
   CheckMonomialToCoeffMap(e, {x, y}, map_expected4, check_expression_equal);
 
-  Expression::MonomialToCoeffMap map_expected5;
+  MonomialToCoefficientMap map_expected5;
   map_expected5.emplace(x * x, 3 * y);
   map_expected5.emplace(+z, 4 * pow(+y, 3));
   map_expected5.emplace(1, 2);
   CheckMonomialToCoeffMap(e, {x, z}, map_expected5, check_expression_equal);
 
-  Expression::MonomialToCoeffMap map_expected6;
+  MonomialToCoefficientMap map_expected6;
   map_expected6.emplace(+y, 3 * x * x);
   map_expected6.emplace(pow(+y, 3) * z, 4);
   map_expected6.emplace(1, 2);
   CheckMonomialToCoeffMap(e, {y, z}, map_expected6, check_expression_equal);
 
-  Expression::MonomialToCoeffMap map_expected7;
+  MonomialToCoefficientMap map_expected7;
   map_expected7.emplace(x * x * y, 3);
   map_expected7.emplace(pow(+y, 3) * z, 4);
   map_expected7.emplace(1, 2);
@@ -207,15 +207,15 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial6) {
 void CheckDecomposePolynomial7(const Expression& e, const Variable& x, const Variable& y) {
   EXPECT_TRUE(e.EqualTo(6 * pow(+x, 3) * y * y));
 
-  Expression::MonomialToCoeffMap map_expected1;
+  MonomialToCoefficientMap map_expected1;
   map_expected1.emplace(pow(+x, 3), 6 * y * y);
   CheckMonomialToCoeffMap(e, {x}, map_expected1);
 
-  Expression::MonomialToCoeffMap map_expected2;
+  MonomialToCoefficientMap map_expected2;
   map_expected2.emplace(pow(+y, 2), 6 * pow(+x, 3));
   CheckMonomialToCoeffMap(e, {y}, map_expected2);
 
-  Expression::MonomialToCoeffMap map_expected3;
+  MonomialToCoefficientMap map_expected3;
   map_expected3.emplace(pow(+x, 3) * pow(+y, 2), 6);
   CheckMonomialToCoeffMap(e, {x, y}, map_expected3);
 }
@@ -239,21 +239,21 @@ void CheckDecomposePolynomial8(const Expression& e, const Variable& x, const Var
     EXPECT_TRUE(e.EqualTo(pow(+x, 3) - 4 * x * y * y + 2 * x * x * y - 8 * pow(+y, 3)));
   }
 
-  Expression::MonomialToCoeffMap map_expected1;
+  MonomialToCoefficientMap map_expected1;
   map_expected1.emplace(pow(+x, 3), 1);
   map_expected1.emplace(pow(+x, 2), 2 * y);
   map_expected1.emplace(+x, -4 * y * y);
   map_expected1.emplace(1, -8 * pow(+y, 3));
   CheckMonomialToCoeffMap(e, {x}, map_expected1, check_expression_equal);
 
-  Expression::MonomialToCoeffMap map_expected2;
+  MonomialToCoefficientMap map_expected2;
   map_expected2.emplace(pow(+y, 3), -8);
   map_expected2.emplace(y * y, -4 * x);
   map_expected2.emplace(+y, 2 * x * x);
   map_expected2.emplace(1, pow(+x, 3));
   CheckMonomialToCoeffMap(e, {y}, map_expected2, check_expression_equal);
 
-  Expression::MonomialToCoeffMap map_expected3;
+  MonomialToCoefficientMap map_expected3;
   map_expected3.emplace(pow(+x, 3), 1);
   map_expected3.emplace(x * y * y, -4);
   map_expected3.emplace(x * x * y, 2);
@@ -273,23 +273,52 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial8) {
 
 TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial9) {
   // Decomposes -x.
-  Expression::MonomialToCoeffMap map_expected1;
+  MonomialToCoefficientMap map_expected1;
   map_expected1.emplace(x_, -1);
   CheckMonomialToCoeffMap(-x_, {var_x_}, map_expected1);
 
-  Expression::MonomialToCoeffMap map_expected2;
+  MonomialToCoefficientMap map_expected2;
   map_expected2.emplace(1, -x_);
   CheckMonomialToCoeffMap(-x_, {var_y_}, map_expected2);
 }
 
+TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial10) {
+  // Decomposes (x + y + 1)^4
+  Expression e = pow(x_ + y_ + 1, 4);
+  MonomialToCoefficientMap map_expected1;
+  map_expected1.emplace(pow(x_, 4), 1);
+  map_expected1.emplace(pow(x_, 3), 4 * (y_ + 1));
+  map_expected1.emplace(pow(x_, 2), 6 * pow(y_ + 1, 2));
+  map_expected1.emplace(x_, 4 * pow(y_ + 1, 3));
+  map_expected1.emplace(1, pow(y_ + 1, 4));
+  CheckMonomialToCoeffMap(e, {var_x_}, map_expected1, false);
 
+  MonomialToCoefficientMap map_expected2;
+  map_expected2.emplace(pow(x_, 4), 1);
+  map_expected2.emplace(pow(x_, 3) * y_, 4);
+  map_expected2.emplace(pow(x_, 2) * pow(y_, 2), 6);
+  map_expected2.emplace(x_ * pow(y_, 3), 4);
+  map_expected2.emplace(pow(y_, 4), 1);
+  map_expected2.emplace(pow(x_, 3), 4);
+  map_expected2.emplace(pow(x_, 2) * y_, 12);
+  map_expected2.emplace(x_ * pow(y_, 2), 12);
+  map_expected2.emplace(pow(y_, 3), 4);
+  map_expected2.emplace(pow(x_, 2), 6);
+  map_expected2.emplace(x_ * y_, 12);
+  map_expected2.emplace(pow(y_, 2), 6);
+  map_expected2.emplace(x_, 4);
+  map_expected2.emplace(y_, 4);
+  map_expected2.emplace(1, 1);
+  CheckMonomialToCoeffMap(e, {var_x_, var_y_}, map_expected2, false);
+}
+/*
 TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial10) {
   // Decomposes x^2 * y / (x * y)
-  Expression::MonomialToCoeffMap map_expected1;
+  MonomialToCoefficientMap map_expected1;
   map_expected1.emplace(x_, 1);
   CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), {var_x_}, map_expected1, false);
 
-  Expression::MonomialToCoeffMap map_expected2;
+  MonomialToCoefficientMap map_expected2;
   // TODO(hongkai.dai) : Currently (pow(x_, 2) / x_).EqualTo(x_) returns false,
   // revisit this code when we can simplify the division result.
   map_expected2.emplace(1, pow(x_, 2) / x_);
@@ -302,21 +331,21 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial11) {
   // Decomposes (3 * x^2 * y^3 + 2 * x^3 * y^2) / (3 * x * y)
   Expression e = (3 * x_ * x_ * pow(y_, 3) + 2 * pow(x_, 3) * y_ * y_) / (3 * x_ * y_);
 
-  Expression::MonomialToCoeffMap map_expected1;
+  MonomialToCoefficientMap map_expected1;
   map_expected1.emplace(x_, 3 * pow(y_, 3) / (3 * y_));
   map_expected1.emplace(x_ * x_, (2 * y_ * y_) / (3 * y_));
   CheckMonomialToCoeffMap(e, {var_x_}, map_expected1, false);
 
-  Expression::MonomialToCoeffMap map_expected2;
+  MonomialToCoefficientMap map_expected2;
   map_expected2.emplace(y_ * y_, (3 * x_ * x_) / (3 * x_));
   map_expected2.emplace(y_, (2 * pow(x_, 3))/(3 * x_));
   CheckMonomialToCoeffMap(e, {var_y_}, map_expected2, false);
 
-  Expression::MonomialToCoeffMap map_expected3;
+  MonomialToCoefficientMap map_expected3;
   map_expected3.emplace(x_ * y_ * y_, 1);
   map_expected3.emplace(x_ * x_ * y_, 2.0 / 3);
   CheckMonomialToCoeffMap(e, {var_x_, var_y_}, map_expected3, false);
-}
+}*/
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
