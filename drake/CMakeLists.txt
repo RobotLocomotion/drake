@@ -181,10 +181,6 @@ if(pybind11_FOUND AND NOT DISABLE_PYTHON AND NUMPY_FOUND)
   endif()
 endif()
 
-if(BUILD_TESTING)
-  add_subdirectory(regtests)
-endif()
-
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)
 
 if(ENABLE_DOCUMENTATION)
