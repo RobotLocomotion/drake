@@ -1,7 +1,7 @@
 #include "drake/systems/sensors/vtk_util.h"
 
-#include <limits>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -79,7 +79,7 @@ TEST_F(PointsCorrespondenceTest, PlaneCreationTest) {
   }
 }
 
-// Verifies whether conversion is correct.
+// Verifies whether the conversion is correct.
 GTEST_TEST(ConvertToVtkTransformTest, ConversionTest) {
   const Eigen::Isometry3d expected(
       (Eigen::Translation3d(1., 2., 3.) *

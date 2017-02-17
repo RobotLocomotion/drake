@@ -28,7 +28,7 @@ vtkSmartPointer<vtkTransform> VtkUtil::ConvertToVtkTransform(
   vtkNew<vtkMatrix4x4> vtk_mat;
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
-      vtk_mat->SetElement(i, j, transform.matrix()(i,j));
+      vtk_mat->SetElement(i, j, transform.matrix()(i, j));
     }
   }
 
