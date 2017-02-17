@@ -1,10 +1,9 @@
 #pragma once
 
-#include <Eigen/Dense>
-
 #include <vtkPlaneSource.h>
 #include <vtkSmartPointer.h>
 #include <vtkTransform.h>
+#include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
 
@@ -15,6 +14,7 @@ namespace sensors {
 /// Utility class for the VTK library.
 class VtkUtil {
  public:
+  VtkUtil() = delete;
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VtkUtil)
 
   /// Creates a square plane of the given size.  The plane's z axis is its

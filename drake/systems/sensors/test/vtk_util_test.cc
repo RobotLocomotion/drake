@@ -2,15 +2,12 @@
 
 #include <cmath>
 #include <limits>
-#include <vector>
-
-#include <Eigen/Dense>
 
 #include "gtest/gtest.h"
-
 #include <vtkCellData.h>
 #include <vtkPlaneSource.h>
 #include <vtkSmartPointer.h>
+#include <Eigen/Dense>
 
 namespace drake {
 namespace systems {
@@ -29,53 +26,24 @@ struct Point {
 };
 
 const Point kExpectedPointSet[kNumPoints] = {
-  Point{ kHalfSize,  kHalfSize, 0.},
-  Point{ kHalfSize, -kHalfSize, 0.},
+  Point{-kHalfSize, -kHalfSize, 0.},
   Point{-kHalfSize,  kHalfSize, 0.},
-  Point{-kHalfSize, -kHalfSize, 0.}
+  Point{ kHalfSize, -kHalfSize, 0.},
+  Point{ kHalfSize,  kHalfSize, 0.}
 };
 
-
-class PointsCorrespondenceTest : public ::testing::Test {
- public:
-  PointsCorrespondenceTest() {
-    for (auto point : kExpectedPointSet) {
-      point_set_.push_back(point);
-    }
-  }
-
-  void SetUp() {}
-
-  bool MatchAndRemovePoint(double point[3]) {
-    bool matched = false;
-    for (auto it = point_set_.begin(); it != point_set_.end(); ++it) {
-      const auto& a_point = *it;
-      if ((std::abs(a_point.x - point[0]) < kTolerance) &&
-          (std::abs(a_point.y - point[1]) < kTolerance) &&
-          (std::abs(a_point.z - point[2]) < kTolerance)) {
-        matched = true;
-        point_set_.erase(it);
-        break;
-      }
-    }
-    return matched;
-  }
-
- private:
-  std::vector<Point> point_set_;
-};
-
-// Verifies whether the created plane has the expected set of 3D points.
-TEST_F(PointsCorrespondenceTest, PlaneCreationTest) {
+GTEST_TEST(PointsCorrespondenceTest, PlaneCreationTest) {
   vtkSmartPointer<vtkPlaneSource> dut =
       VtkUtil::CreateSquarePlane(kSize);
 
   EXPECT_EQ(kNumPoints, dut->GetOutput()->GetPoints()->GetNumberOfPoints());
-
   for (int i = 0; i < kNumPoints; ++i) {
     double dut_point[3];
     dut->GetOutput()->GetPoints()->GetPoint(i, dut_point);
-    EXPECT_TRUE(MatchAndRemovePoint(dut_point));
+
+    EXPECT_EQ(kExpectedPointSet[i].x, dut_point[0]);
+    EXPECT_EQ(kExpectedPointSet[i].y, dut_point[1]);
+    EXPECT_EQ(kExpectedPointSet[i].z, dut_point[2]);
   }
 }
 
