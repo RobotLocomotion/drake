@@ -16,7 +16,7 @@ GTEST_TEST(MonolaneOnrampMergeTest, TestDefaultAndNonDefaultAttributes) {
   std::unique_ptr<MonolaneOnrampMerge<double>> merge_example(
       new MonolaneOnrampMerge<double>);
   std::unique_ptr<const maliput::api::RoadGeometry> rg =
-      merge_example->own_road_geometry();
+      merge_example->BuildOnramp();
   EXPECT_NE(nullptr, rg);
 
   // Initialize non-trivial road characteristics.
@@ -24,7 +24,7 @@ GTEST_TEST(MonolaneOnrampMergeTest, TestDefaultAndNonDefaultAttributes) {
   std::unique_ptr<MonolaneOnrampMerge<double>> new_merge_example(
       new MonolaneOnrampMerge<double>(new_road));
   std::unique_ptr<const maliput::api::RoadGeometry> new_rg =
-      new_merge_example->own_road_geometry();
+      new_merge_example->BuildOnramp();
   EXPECT_NE(nullptr, new_rg);
 
   EXPECT_EQ(new_rg->id().id, "monolane-merge-example");

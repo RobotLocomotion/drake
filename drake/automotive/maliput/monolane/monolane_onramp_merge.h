@@ -2,10 +2,6 @@
 
 #include <cmath>
 #include <memory>
-#include <utility>
-
-#include <iostream>
-
 
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
@@ -22,11 +18,11 @@ struct RoadCharacteristics {
   /// Constructor for using default road geometries.
   RoadCharacteristics() = default;
 
-  /// Constructor for custom-set road geometries.
+  /// Constructor for custom road geometries.
   RoadCharacteristics(const double lw, const double dw)
       : lane_width(lw), driveable_width(dw) {}
 
-  // Default parameters.
+  // Default settings.
   const double lane_width{4.};
   const double driveable_width{8.};
 
@@ -54,38 +50,31 @@ struct RoadCharacteristics {
 ///                   |
 ///                   |
 ///                   -
-/// <\pre>
+/// </pre>
 template <typename T>
 class MonolaneOnrampMerge {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MonolaneOnrampMerge)
 
-  /// Constructor for the example.  Optionally, the user may supply @p rc, a
+  /// Constructor for the example.  The user supplies @p rc, a
   /// RoadCharacteristics structure that aggregates the road boundary data.
   explicit MonolaneOnrampMerge(const RoadCharacteristics& rc) {
     rb_.reset(new mono::Builder(rc.lane_bounds, rc.driveable_bounds,
                                 kLinearTolerance_, kAngularTolerance_));
-    BuildOnramp();
   }
 
+  /// Constructor for the example, using default RoadCharacteristics settings.
   MonolaneOnrampMerge() : MonolaneOnrampMerge(RoadCharacteristics{}) {}
 
-  /// Produces the resultant RoadGeometry, relinquishing ownership.
-  std::unique_ptr<const maliput::api::RoadGeometry> own_road_geometry() {
-    DRAKE_DEMAND(nullptr != rg_);
-    return std::move(rg_);
-  }
+  /// Implements the onramp example.
+  std::unique_ptr<const maliput::api::RoadGeometry> BuildOnramp();
 
  private:
-  /// Implements the onramp example.
-  void BuildOnramp();
 
   /// Tolerances for monolane's Builder.
-  double thing_{0.};
   const double kLinearTolerance_ = 0.01;
   const double kAngularTolerance_ = 0.01 * M_PI;
 
-  std::unique_ptr<const maliput::api::RoadGeometry> rg_;
   std::unique_ptr<mono::Builder> rb_;
 };
 
