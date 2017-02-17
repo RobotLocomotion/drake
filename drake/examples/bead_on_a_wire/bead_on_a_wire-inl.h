@@ -131,7 +131,7 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
                           xc.GetAtIndex(5));
 
   // Compute the result.
-  Eigen::VectorXd result = get_first_derivative(fprime)*dinvf_dt - v;
+  Eigen::VectorXd result = get_pfunction_first_derivative(fprime)*dinvf_dt - v;
 
   return result;
 }
@@ -182,7 +182,31 @@ Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
 }
 
 template <class T>
-Eigen::Vector3d BeadOnAWire<T>::get_first_derivative(
+double BeadOnAWire<T>::get_inv_pfunction_output(const DScalar& m) {
+  return m.value().value();
+}
+
+template <class T>
+double BeadOnAWire<T>::get_inv_pfunction_first_derivative(const DScalar& m) {
+  return m.value().derivatives()(0);
+}
+
+template <class T>
+double BeadOnAWire<T>::get_inv_pfunction_second_derivative(const DScalar& m) {
+  return m.derivatives()(0).derivatives()(0);
+}
+
+template <class T>
+Eigen::Vector3d BeadOnAWire<T>::get_pfunction_output(
+    const Eigen::Matrix<DScalar, 3, 1>& m) {
+  const double x = m(0).value().value();
+  const double y = m(1).value().value();
+  const double z = m(2).value().value();
+  return Eigen::Vector3d(x, y, z);
+}
+
+template <class T>
+Eigen::Vector3d BeadOnAWire<T>::get_pfunction_first_derivative(
     const Eigen::Matrix<DScalar, 3, 1>& m) {
   const double x = m(0).derivatives()(0).value();
   const double y = m(1).derivatives()(0).value();
@@ -191,7 +215,7 @@ Eigen::Vector3d BeadOnAWire<T>::get_first_derivative(
 }
 
 template <class T>
-Eigen::Vector3d BeadOnAWire<T>::get_second_derivative(
+Eigen::Vector3d BeadOnAWire<T>::get_pfunction_second_derivative(
     const Eigen::Matrix<DScalar, 3, 1>& m) {
   const double x = m(0).derivatives()(0).derivatives()(0);
   const double y = m(1).derivatives()(0).derivatives()(0);
@@ -241,14 +265,13 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
     // dṡ/dt = (-τ + (df(s)/ds)₃⋅ag - df(s)/ds⋅ṡ²⋅d²f/ds²) / (df/ds)²
     // This derivation was double-checked with the following Mathematica code:
     // L:= 1/2*(f'[s[t]] * s'[t])^2 + Dot[z, f[s[t]]]*ag
-    // D[1/2*D[f[s[t]], s[t]]*D[s[t], t]^2 + Dot[z, f[s[t]]]*ag, s[t]] -
-    //   D[D[1/2*D[f[s[t]], s[t]]*D[s[t], t]^2 + Dot[z, f[s[t]]]*ag, s'[t]], t]
+    // Solve[D[L, s[t]] - D[D[L, s'[t]], t] == tau, s''[t]]
     // where L is the definition of the Lagrangian and Dot[z, f[s[t]]] is
     // equivalent to f₃ (i.e., assuming that z is the unit vector [0 0 1]ᵀ).
     const double ag = get_gravitational_acceleration();
-    const Eigen::Vector3d dfds = get_first_derivative(foutput);
-    const Eigen::Vector3d d2fds2 = get_second_derivative(foutput);
-    const double s_ddot = (-tau + dfds(2)*ag - dfds.dot(d2fds2)*s_dot*s_dot) /
+    const Eigen::Vector3d dfds = get_pfunction_first_derivative(foutput);
+    const Eigen::Vector3d d2fds2 = get_pfunction_second_derivative(foutput);
+    const double s_ddot = (tau + dfds(2)*ag - dfds.dot(d2fds2)*s_dot*s_dot) /
                           dfds.dot(dfds);
 
     // Set derivative.
@@ -281,7 +304,7 @@ void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
                                      systems::State<T>* state) const {
   // Use a consistent default state for the helix bead-on-the-wire
   // example.
-  const double s = 0.0, s_dot = 1.0;
+  const double s = 1.0, s_dot = 1.0;
   VectorX<T> x0;
   if (coordinate_type_ == BeadOnAWire<T>::kAbsoluteCoordinates) {
     const int state_size = 6;

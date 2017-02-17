@@ -153,17 +153,37 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// helix parametric example function.
   static DScalar inverse_helix_function(const Vector3<DScalar> &v);
 
+  /// Gets the output from the parametric function in Vector3d form.
+  /// @param m the output from the parametric wire function.
+  static Eigen::Vector3d get_pfunction_output(
+      const Eigen::Matrix<DScalar, 3, 1>& m);
+
   /// Gets the first derivative from the parametric function, in Vector3d form,
   /// using the output from that parametric function.
   /// @param m the output from the parametric wire function.
-  static Eigen::Vector3d get_first_derivative(
+  static Eigen::Vector3d get_pfunction_first_derivative(
       const Eigen::Matrix<DScalar, 3, 1>& m);
 
   /// Gets the second derivative from the parametric function, in Vector3d form,
   /// using the output from that parametric function.
   /// @param m the output from the parametric wire function.
-  static Eigen::Vector3d get_second_derivative(
+  static Eigen::Vector3d get_pfunction_second_derivative(
       const Eigen::Matrix<DScalar, 3, 1>& m);
+
+  /// Gets the output from the inverse parametric function as a double, using
+  /// the output from that inverse parametric function.
+  /// @param m the output from the inverse parametric wire function.
+  static double get_inv_pfunction_output(const DScalar& m);
+
+  /// Gets the first derivative from the inverse parametric function as a
+  /// double, using the output from that inverse parametric function.
+  /// @param m the output from the inverse parametric wire function.
+  static double get_inv_pfunction_first_derivative(const DScalar& m);
+
+  /// Gets the second derivative from the inverse parametric function as a
+  /// double, using the output from that inverse parametric function.
+  /// @param m the output from the inverse parametric wire function.
+  static double get_inv_pfunction_second_derivative(const DScalar& m);
 
  protected:
   void DoCalcOutput(const systems::Context<T> &context,
