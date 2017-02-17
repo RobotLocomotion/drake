@@ -198,6 +198,11 @@ class Expression {
    */
   double Evaluate(const Environment& env = Environment{}) const;
 
+  /** Returns the expanded expression.
+   * @throws std::runtime_error if NaN is detected during expansion.
+   */
+  Expression Expand() const;
+
   /** Returns a copy of this expression replacing all occurrences of @p var
    * with @p e.
    * @throws std::runtime_error if NaN is detected during substitution.

@@ -156,10 +156,15 @@ double Expression::Evaluate(const Environment& env) const {
   return ptr_->Evaluate(env);
 }
 
+Expression Expression::Expand() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->Expand();
+}
+
 Expression Expression::Substitute(const Variable& var,
                                   const Expression& e) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return Expression{ptr_->Substitute({{var, e}})};
+  return ptr_->Substitute({{var, e}});
 }
 
 Expression Expression::Substitute(const Substitution& s) const {
