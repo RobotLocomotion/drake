@@ -1,5 +1,6 @@
 #include "drake/systems/sensors/rgbd_camera.h"
 
+#include <cmath>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -30,7 +31,7 @@ namespace {
 const double kTolerance = 1e-12;
 
 const double kFrameRate = 30.;
-const double kFovY = 0.78539816339744828;  // 45.0 degrees
+const double kFovY = M_PI_4;
 const bool kShowWindow = false;
 
 class RgbdCameraTest : public ::testing::Test {
@@ -139,7 +140,6 @@ class RenderingSim : public systems::Diagram<double> {
   RgbdCamera* rgbd_camera_;
 };
 
-const double kHalfPi = 1.5707963267948966;
 
 // Verifies rendered terrain.
 GTEST_TEST(RenderingTest, TerrainRenderingTest) {
@@ -149,7 +149,7 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
   const std::string sdf("/systems/sensors/test/box.sdf");
   diagram.Init(GetDrakePath() + sdf,
                Eigen::Vector3d(0., 0., 4.999),
-               Eigen::Vector3d(0., kHalfPi, 0.));
+               Eigen::Vector3d(0., M_PI_2, 0.));
 
   std::unique_ptr<systems::Context<double>> context =
       diagram.CreateDefaultContext();
