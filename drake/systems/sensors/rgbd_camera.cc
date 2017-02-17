@@ -39,7 +39,6 @@ namespace drake {
 namespace systems {
 namespace sensors {
 namespace {
-const double kHalfPi = 1.5707963267948966;
 
 const int kColorImageChannel = 4;
 const int kDepthImageChannel = 1;
