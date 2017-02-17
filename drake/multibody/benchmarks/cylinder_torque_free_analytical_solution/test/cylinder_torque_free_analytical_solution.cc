@@ -70,7 +70,7 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t,
   const double wz0 = w_NB_B_initial[2];
 
   // Intermediate calculations for quaternion solution.
-  const double p = std::sqrt(wx0 * wx0 + wy0 * wy0 + (wz0 * J / I) * (wz0 * J / I));
+  const double p = std::sqrt(wx0*wx0 + wy0*wy0 + (wz0 * J / I) * (wz0 * J / I));
   const double s = (I - J) / I * wz0;
   const double coef = wz0 * (J / (I * p));
   const double spt2 = std::sin(p * t / 2);
@@ -167,7 +167,7 @@ std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
 
   // Analytical solution for time-derivative quaternion in B.
   const Vector4d quatDt =
-  math::CalculateQuaternionDtFromAngularVelocityExpressedInB( quat_NB, w_NB_B);
+  math::CalculateQuaternionDtFromAngularVelocityExpressedInB(quat_NB, w_NB_B);
 
   // Create a tuple to package for returning.
   std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d> returned_tuple;
