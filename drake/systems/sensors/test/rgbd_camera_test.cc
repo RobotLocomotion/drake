@@ -1,12 +1,9 @@
 #include "drake/systems/sensors/rgbd_camera.h"
 
 #include <cmath>
-#include <fstream>
-#include <sstream>
 #include <stdexcept>
 
 #include "gtest/gtest.h"
-
 #include <Eigen/Dense>
 
 #include "drake/common/drake_path.h"
@@ -19,7 +16,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
@@ -36,21 +32,10 @@ const bool kShowWindow = false;
 
 class RgbdCameraTest : public ::testing::Test {
  public:
-  RgbdCameraTest () : dut_("rgbd_camera", RigidBodyTree<double>(),
-                           Eigen::Vector3d(1., 2., 3.),
-                           Eigen::Vector3d(0.1, 0.2, 0.3),
-                           kFrameRate, kFovY,  kShowWindow) {
-  }
-
-  static void CompareIsometry3d(const Eigen::Isometry3d& mat1,
-                                const Eigen::Isometry3d& mat2,
-                                double tolerance) {
-    for (int i = 0; i < 4; ++i) {
-      for (int j = 0; j < 4; ++j) {
-        EXPECT_NEAR(mat1(i, j), mat2(i, j), tolerance);
-      }
-    }
-  }
+  RgbdCameraTest() : dut_("rgbd_camera", RigidBodyTree<double>(),
+                          Eigen::Vector3d(1., 2., 3.),
+                          Eigen::Vector3d(0.1, 0.2, 0.3),
+                          kFrameRate, kFovY,  kShowWindow) {}
 
   void SetUp() {}
 
@@ -89,7 +74,7 @@ TEST_F(RgbdCameraTest, InitialCameraBasePoseTest) {
       -0.1986693307950,  0.0978433950072,  0.9751703272018, 3.,
       0., 0., 0., 1.).finished());
 
-  CompareIsometry3d(expected, dut_.get_base_pose(), kTolerance);
+  CompareMatrices(expected.matrix(), dut_.get_base_pose().matrix(), kTolerance);
 }
 
 TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
@@ -101,8 +86,10 @@ TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
       0., 0., 1., 0.,
       0., 0., 0., 1.).finished());
 
-  CompareIsometry3d(expected, dut_.get_color_camera_pose(), kTolerance);
-  CompareIsometry3d(expected, dut_.get_depth_camera_pose(), kTolerance);
+  CompareMatrices(expected.matrix(), dut_.get_color_camera_pose().matrix(),
+                  kTolerance);
+  CompareMatrices(expected.matrix(), dut_.get_depth_camera_pose().matrix(),
+                  kTolerance);
 }
 
 class RenderingSim : public systems::Diagram<double> {
@@ -166,14 +153,13 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
     systems::AbstractValue* mutable_data = output->GetMutableData(0);
     systems::AbstractValue* mutable_data_d = output->GetMutableData(1);
     auto color_image =
-        mutable_data->GetMutableValue<drake::systems::sensors::Image<uint8_t>>();
+        mutable_data->GetMutableValue<sensors::Image<uint8_t>>();
     auto depth_image =
-        mutable_data_d->GetMutableValue<drake::systems::sensors::Image<float>>();
+        mutable_data_d->GetMutableValue<sensors::Image<float>>();
 
     // Verifies in a sampling way (32 x 24 sampling points instead of 640 x 480)
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
-
         if (time < 1. / kFrameRate) {
           // Before the first rendering, all the image values should be zero.
           ASSERT_EQ(color_image.at(u, v)[0], 0u);

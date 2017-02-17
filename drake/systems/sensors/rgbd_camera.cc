@@ -5,8 +5,6 @@
 #include <stdexcept>
 #include <string>
 
-#include <Eigen/Dense>
-
 #include <vtkActor.h>
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
@@ -25,6 +23,7 @@
 #include <vtkSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkWindowToImageFilter.h>
+#include <Eigen/Dense>
 
 #include "drake/math/roll_pitch_yaw_using_quaternion.h"
 #include "drake/systems/sensors/camera_info.h"
@@ -81,7 +80,7 @@ std::string RemoveFileExtention(const std::string& filepath) {
 
 class RgbdCamera::Impl {
  public:
-  Impl(const RigidBodyTree<double>& tree,const RigidBodyFrame<double>& frame,
+  Impl(const RigidBodyTree<double>& tree, const RigidBodyFrame<double>& frame,
        double fov_y, bool show_window);
 
   Impl(const RigidBodyTree<double>& tree, const Eigen::Vector3d& position,
@@ -376,7 +375,7 @@ void RgbdCamera::Impl::DoCalcOutput(
       const int height_reversed = height - v - 1;  // Makes image upside down
 
       // Color image
-      void* color_ptr = color_buffer_->GetOutput()->GetScalarPointer(u,v,0);
+      void* color_ptr = color_buffer_->GetOutput()->GetScalarPointer(u, v, 0);
       // Converts RGBA to BGRA
       image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
       image.at(u, height_reversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
@@ -385,7 +384,7 @@ void RgbdCamera::Impl::DoCalcOutput(
 
       // Depth image
       float depth_buffer_value = *static_cast<float*>(
-          depth_buffer_->GetOutput()->GetScalarPointer(u,v,0));
+          depth_buffer_->GetOutput()->GetScalarPointer(u, v, 0));
       // When the depth is either closer than kClippingPlaneNear or further than
       // kClippingPlaneFar, `depth_value` becomes `1.f`.
       if (depth_buffer_value == 1.f) {

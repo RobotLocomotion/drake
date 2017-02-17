@@ -1,6 +1,8 @@
 #pragma once
 
 #include <limits>
+#include <memory>
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -118,7 +120,7 @@ class RgbdCamera : public LeafSystem<double> {
   const Eigen::Isometry3d& get_depth_camera_pose() const;
 
   /// Returns the frame rate in Hz.
-  double get_frame_rate() const { return 1. / frame_interval_; };
+  double get_frame_rate() const { return 1. / frame_interval_; }
 
   /// Returns the RigidBodyTree that this sensor is sensing.
   const RigidBodyTree<double>& get_tree() const;
