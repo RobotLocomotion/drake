@@ -320,6 +320,31 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial10) {
   CheckMonomialToCoeffMap(e, {var_x_, var_y_}, map_expected2, false);
 }
 
+TEST_F(DecomposePolynomialTest, DecomposePolynomial11) {
+  // Decomposes (x + y + 1)^3
+  Expression e = pow(x_ + y_ + 1, 3);
+  MonomialToCoefficientMap map_expected1;
+  map_expected1.emplace(pow(x_, 3), 1);
+  // TODO(hongkai.dai): change this to 3 * (y_ + 1) when Expand() method
+  // is available.
+  map_expected1.emplace(pow(x_, 2), 1 + y_ + 2 * (y_ + 1));
+  map_expected1.emplace(x_, 3 * pow(y_ + 1, 2));
+  map_expected1.emplace(1, pow(y_ + 1, 3));
+  CheckMonomialToCoeffMap(e, {var_x_}, map_expected1, false);
+
+  MonomialToCoefficientMap map_expected2;
+  map_expected2.emplace(pow(x_, 3), 1);
+  map_expected2.emplace(pow(x_, 2) * y_, 3);
+  map_expected2.emplace(x_ * pow(y_, 2), 3);
+  map_expected2.emplace(pow(y_, 3), 1);
+  map_expected2.emplace(pow(x_, 2), 3);
+  map_expected2.emplace(x_ * y_, 6);
+  map_expected2.emplace(pow(y_, 2), 3);
+  map_expected2.emplace(x_, 3);
+  map_expected2.emplace(y_, 3);
+  map_expected2.emplace(1, 1);
+  CheckMonomialToCoeffMap(e, {var_x_, var_y_}, map_expected2, false);
+}
 // TODO(hongkai.dai): enable the following tests, when ((x^2 * y +
 // x^3)/(x^2)).is_polynomial() returns true.
 

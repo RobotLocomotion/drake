@@ -159,6 +159,36 @@ map<Variable::Id, int> ToMonomialPower(const Expression& e) {
   }
   return powers;
 }
+
+/**
+ * For a polynomial e = c₀ + c₁ * pow(x, k₁) + ... + cₙ * pow(x, kₙ), compute
+ * the square of the polynomial.
+ * @param map maps the monomial in the input polynomial to its coefficient.
+ * @return maps the monomial in the output polynomial to its coefficient.
+ */
+MonomialToCoefficientMapInternal PolynomialSqaure(
+    const MonomialToCoefficientMapInternal& map) {
+  MonomialToCoefficientMapInternal map_square;
+  map_square.reserve(map.size() * (map.size() + 1));
+  for (auto it1 = map.begin(); it1 != map.end(); ++it1) {
+    for (auto it2 = it1; it2 != map.end(); ++it2) {
+      Monomial new_monomial = it1->first * it2->first;
+      Expression new_coeff = it1->second * it2->second;
+      if (it1 != it2) {
+        // Two cross terms.
+        new_coeff *= 2;
+      }
+      auto map_it = map_square.find(new_monomial);
+      if (map_it == map_square.end()) {
+        map_square.emplace(new_monomial, new_coeff);
+      } else {
+        map_it->second += new_coeff;
+      }
+    }
+  }
+  return map_square;
+}
+
 class DecomposePolynomialVisitor {
  public:
   MonomialToCoefficientMapInternal Visit(const Expression& e,
@@ -279,11 +309,6 @@ class DecomposePolynomialVisitor {
     MonomialToCoefficientMapInternal map;
     const int exponent{
         static_cast<int>(get_constant_value(e->get_second_argument()))};
-    if (exponent != e->get_second_argument()) {
-      throw std::runtime_error(
-          "ExpressionPow contains non-integer exponent, cannot be decomposed "
-          "as a polynomial.");
-    }
     if (exponent == 1) {
       return Visit(e->get_first_argument(), vars);
     } else if (exponent % 2 == 0) {
@@ -291,30 +316,18 @@ class DecomposePolynomialVisitor {
       // pow(x, kₙ))
       const auto& map1 = Visit(
           pow(e->get_first_argument(), exponent / 2), vars);
-      map.reserve(map1.size() * (map1.size() + 1) / 2);
-      for (auto it1 = map1.begin(); it1 != map1.end(); ++it1) {
-        for (auto it2 = it1; it2 != map1.end(); ++it2) {
-          Monomial new_monomial = it1->first * it2->first;
-          Expression new_coeff = it1->second * it2->second;
-          if (it1 != it2) {
-            // Two cross terms.
-            new_coeff *= 2;
-          }
-          auto map_it = map.find(new_monomial);
-          if (map_it == map.end()) {
-            map.emplace(new_monomial, new_coeff);
-          } else {
-            map_it->second += new_coeff;
-          }
-        }
-      }
+      map = PolynomialSqaure(map1);
     } else {
+      // For expression pow(e, k) with odd exponent k, compute
+      // e1 = pow(e, ⌊k/2⌋) first, and then compute the square of e1, finally
+      // multiply the squared result with e.
       const auto& map1 = Visit(
           pow(e->get_first_argument(), exponent / 2), vars);
+      const auto& map1_square = PolynomialSqaure(map1);
       const auto& map2 = Visit(
-          pow(e->get_first_argument(), exponent / 2 + 1), vars);
-      map.reserve(map1.size() * map2.size());
-      for (const auto& p1 : map1) {
+          e->get_first_argument(), vars);
+      map.reserve(map1_square.size() * map2.size());
+      for (const auto& p1 : map1_square) {
         for (const auto& p2 : map2) {
           Monomial new_monomial = p1.first * p2.first;
           Expression new_coeff = p1.second * p2.second;
@@ -374,6 +387,7 @@ class DecomposePolynomialVisitor {
 
 MonomialToCoefficientMapInternal DecomposePolynomialInternal(
     const Expression& e, const Variables& vars) {
+  DRAKE_DEMAND(e.is_polynomial());
   return DecomposePolynomialVisitor().Visit(e, vars);
 }
 }  // namespace internal
