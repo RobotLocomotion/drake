@@ -1581,11 +1581,123 @@ shared_ptr<ExpressionDiv> to_division(const Expression& e) {
   return to_division(e.ptr_);
 }
 
+shared_ptr<ExpressionLog> to_log(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_log(*expr_ptr));
+  return static_pointer_cast<ExpressionLog>(expr_ptr);
+}
+shared_ptr<ExpressionLog> to_log(const Expression& e) { return to_log(e.ptr_); }
+
+shared_ptr<ExpressionAbs> to_abs(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_abs(*expr_ptr));
+  return static_pointer_cast<ExpressionAbs>(expr_ptr);
+}
+shared_ptr<ExpressionAbs> to_abs(const Expression& e) { return to_abs(e.ptr_); }
+
+shared_ptr<ExpressionExp> to_exp(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_exp(*expr_ptr));
+  return static_pointer_cast<ExpressionExp>(expr_ptr);
+}
+shared_ptr<ExpressionExp> to_exp(const Expression& e) { return to_exp(e.ptr_); }
+
+shared_ptr<ExpressionSqrt> to_sqrt(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_sqrt(*expr_ptr));
+  return static_pointer_cast<ExpressionSqrt>(expr_ptr);
+}
+shared_ptr<ExpressionSqrt> to_sqrt(const Expression& e) {
+  return to_sqrt(e.ptr_);
+}
 shared_ptr<ExpressionPow> to_pow(const shared_ptr<ExpressionCell> expr_ptr) {
   DRAKE_ASSERT(is_pow(*expr_ptr));
   return static_pointer_cast<ExpressionPow>(expr_ptr);
 }
 shared_ptr<ExpressionPow> to_pow(const Expression& e) { return to_pow(e.ptr_); }
+
+shared_ptr<ExpressionSin> to_sin(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_sin(*expr_ptr));
+  return static_pointer_cast<ExpressionSin>(expr_ptr);
+}
+shared_ptr<ExpressionSin> to_sin(const Expression& e) { return to_sin(e.ptr_); }
+
+shared_ptr<ExpressionCos> to_cos(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_cos(*expr_ptr));
+  return static_pointer_cast<ExpressionCos>(expr_ptr);
+}
+shared_ptr<ExpressionCos> to_cos(const Expression& e) { return to_cos(e.ptr_); }
+
+shared_ptr<ExpressionTan> to_tan(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_tan(*expr_ptr));
+  return static_pointer_cast<ExpressionTan>(expr_ptr);
+}
+shared_ptr<ExpressionTan> to_tan(const Expression& e) { return to_tan(e.ptr_); }
+
+shared_ptr<ExpressionAsin> to_asin(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_asin(*expr_ptr));
+  return static_pointer_cast<ExpressionAsin>(expr_ptr);
+}
+shared_ptr<ExpressionAsin> to_asin(const Expression& e) {
+  return to_asin(e.ptr_);
+}
+
+shared_ptr<ExpressionAcos> to_acos(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_acos(*expr_ptr));
+  return static_pointer_cast<ExpressionAcos>(expr_ptr);
+}
+shared_ptr<ExpressionAcos> to_acos(const Expression& e) {
+  return to_acos(e.ptr_);
+}
+
+shared_ptr<ExpressionAtan> to_atan(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_atan(*expr_ptr));
+  return static_pointer_cast<ExpressionAtan>(expr_ptr);
+}
+shared_ptr<ExpressionAtan> to_atan(const Expression& e) {
+  return to_atan(e.ptr_);
+}
+
+shared_ptr<ExpressionAtan2> to_atan2(
+    const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_atan2(*expr_ptr));
+  return static_pointer_cast<ExpressionAtan2>(expr_ptr);
+}
+shared_ptr<ExpressionAtan2> to_atan2(const Expression& e) {
+  return to_atan2(e.ptr_);
+}
+
+shared_ptr<ExpressionSinh> to_sinh(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_sinh(*expr_ptr));
+  return static_pointer_cast<ExpressionSinh>(expr_ptr);
+}
+shared_ptr<ExpressionSinh> to_sinh(const Expression& e) {
+  return to_sinh(e.ptr_);
+}
+
+shared_ptr<ExpressionCosh> to_cosh(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_cosh(*expr_ptr));
+  return static_pointer_cast<ExpressionCosh>(expr_ptr);
+}
+shared_ptr<ExpressionCosh> to_cosh(const Expression& e) {
+  return to_cosh(e.ptr_);
+}
+
+shared_ptr<ExpressionTanh> to_tanh(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_tanh(*expr_ptr));
+  return static_pointer_cast<ExpressionTanh>(expr_ptr);
+}
+shared_ptr<ExpressionTanh> to_tanh(const Expression& e) {
+  return to_tanh(e.ptr_);
+}
+
+shared_ptr<ExpressionMin> to_min(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_min(*expr_ptr));
+  return static_pointer_cast<ExpressionMin>(expr_ptr);
+}
+shared_ptr<ExpressionMin> to_min(const Expression& e) { return to_min(e.ptr_); }
+
+shared_ptr<ExpressionMax> to_max(const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_max(*expr_ptr));
+  return static_pointer_cast<ExpressionMax>(expr_ptr);
+}
+shared_ptr<ExpressionMax> to_max(const Expression& e) { return to_max(e.ptr_); }
 
 shared_ptr<ExpressionIfThenElse> to_if_then_else(
     const shared_ptr<ExpressionCell> expr_ptr) {
