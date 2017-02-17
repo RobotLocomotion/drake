@@ -82,15 +82,20 @@ drake_install_pkg_config_file(drake-zmp-util
 set(system2_sources
   gravity_compensator.cc
   pid_controlled_system.cc
-  pid_controller.cc)
+  pid_controller.cc
+  pid_with_gravity_compensator.cc)
 set(system2_installed_headers
   gravity_compensator.h
+  model_based_controller_base.h
   pid_controlled_system.h
-  pid_controller.h)
+  pid_controller.h
+  pid_with_gravity_compensator.h
+  state_feedback_controller_base.h)
 add_library_with_exports(LIB_NAME drakeSystemControllers
     SOURCE_FILES ${system2_sources} ${system2_installed_headers})
 target_link_libraries(drakeSystemControllers
     drakeCommon
+    drakeMultibodyParsers
     drakeRBM
     drakeSystemFramework
     drakeSystemPrimitives)

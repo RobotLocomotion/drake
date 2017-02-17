@@ -125,7 +125,7 @@ int DoMain() {
       Eigen::Vector3d(-0.05, 0, 0.5));
 
   // Way point time vectors were hand crafted to obtain a nice demo.
-  vector<double> target_time_vector = {1.0, 1.75, 2.25, 3.0, 3.75};
+  vector<double> target_time_vector = {1, 2, 3, 4, 5};
 
   // Initializes a robot tree for use in the inverse kinematics and
   // in the gravity compensation control.
