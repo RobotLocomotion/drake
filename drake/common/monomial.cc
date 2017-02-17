@@ -286,12 +286,6 @@ class DecomposePolynomialVisitor {
     }
     if (exponent == 1) {
       return Visit(e->get_first_argument(), vars);
-    } else if (exponent == 0) {
-      map.emplace(Monomial(), 1);
-    } else if (exponent < 0) {
-      throw std::runtime_error(
-          "Pow expression has negative exponent, it cannot be decomposed as a "
-          "polynomial.");
     } else if (exponent % 2 == 0) {
       // compute the square of a polynomial (c₀ + c₁ * pow(x, k₁) + ... + cₙ *
       // pow(x, kₙ))
