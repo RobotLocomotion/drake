@@ -1,7 +1,9 @@
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include <Eigen/Core>
 
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
 using Eigen::MatrixXd;
@@ -49,6 +51,11 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   EXPECT_EQ(kPpTrajFromVec.value(8)(0), y2.EvaluateUnivariate(8 - 7));
   EXPECT_EQ(kPpTrajFromVec.value(8.9)(0), y2.EvaluateUnivariate(8.9 - 7));
 
+  // Test derivative()
+  EXPECT_TRUE(CompareMatrices(kPpFromVec.derivative(1).value(1),
+                              kPpTrajFromVec.derivative(1, 1), 1e-10,
+                              MatrixCompareType::absolute));
+
   // Test: construct a PiecewisePolynomialTrajectory from a PP matrix.
 
   // Construct a matrix of polynomials.
@@ -70,6 +77,11 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   EXPECT_EQ(kPpTrajFromPpMatrix.value(1)(2), 2);  // y2 = 2 * y
   EXPECT_EQ(kPpTrajFromPpMatrix.value(2)(2), 4);
   EXPECT_EQ(kPpTrajFromPpMatrix.value(3)(2), 6);
+
+  // Test derivative()
+  EXPECT_TRUE(CompareMatrices(kPpFromMatrix.derivative(1).value(1),
+                              kPpTrajFromPpMatrix.derivative(1, 1), 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace

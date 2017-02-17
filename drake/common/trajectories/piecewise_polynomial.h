@@ -236,7 +236,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
   * Evaluates a derivative of the PiecewisePolynomial at the given time \p t.
   *
   * @param t The time at which to evaluate.
-  * @param derivative_order If zero, then take the value of the
+  * @param derivative_order If zero, return the value of the
   * PiecewisePolynomial. Otherwise, take the derivative this many times before
   * evaluating.
   * @return The matrix of evaluated values.

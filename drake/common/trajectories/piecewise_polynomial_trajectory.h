@@ -27,9 +27,24 @@ class PiecewisePolynomialTrajectory : public Trajectory {
    * @return a CoefficientMatrix that is the value of the wrapped
    * PiecewisePolynomial.
    */
-  PiecewisePolynomial<double>::CoefficientMatrix value(
-      double t) const override {
+  drake::MatrixX<double> value(double t) const override {
+    DRAKE_DEMAND(pp_.value(t).cols() == 1);
     return pp_.value(t);
+  }
+
+  /**
+   * Evaluates a derivative of the PiecewisePolynomialTrajectory at the given
+   * time \p t.
+   *
+   * @param t The time at which to evaluate.
+   * @param derivative_order If zero, return the value of the
+   * Trajectory. Otherwise, take the derivative this many times before
+   * evaluating.
+   * @return The matrix of evaluated values.
+   */
+  drake::MatrixX<double> derivative(double t,
+                                    int derivative_order = 1) const override {
+    return pp_.derivative(t, derivative_order);
   }
 
   /**
