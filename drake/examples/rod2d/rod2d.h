@@ -326,6 +326,11 @@ class Rod2D : public systems::LeafSystem<T> {
       const T& w_WR,  // aka thetadot
       const Vector2<T>& p_WC);
 
+  // 2D cross product returns a scalar.
+  static T cross2(const Vector2<T>& a, const Vector2<T>& b) {
+    return a[0]*b[1] - b[0]*a[1];
+  }
+
   // Quintic step function approximation used by Stribeck friction model.
   static T step5(const T& x);
 
