@@ -66,7 +66,8 @@ if(lcm_FOUND)
     drakeRigidBodyPlant
     drakeSchunkWsg
     drakeSystemAnalysis
-    drakeSystemControllers)
+    drakeSystemControllers
+    robotlocomotion-lcmtypes-cpp)
   drake_add_test(
       NAME iiwa_wsg_simulation COMMAND iiwa_wsg_simulation -simulation_sec 0.01)
 
