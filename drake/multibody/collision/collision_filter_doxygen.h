@@ -18,22 +18,22 @@ Next topic: @ref collision_filter_concepts
 /** @defgroup collision_filter_concepts Collision Filter Concepts
 @ingroup collision_concepts
 
-Collision filters are a purely *non-physical* concept.  It is about
+Collision filters are a purely _non-physical_ concept.  They are about
 computational efficiency or accommodating models which rely on approximations
 of physical quantities which might otherwise interfere with a meaningful
 interpretation of the results of geometric computations.
 
-For example, take a robot arm.  The components of the arm consist of intricately
-designed surfaces. In general, the more complex a surface is, the more complex
-the algorithms are for evaluating properties for those surfaces. So, rather than
+For example, consider a robot arm.  The components of the arm can consist of
+intricate surfaces. In general, the more complex a surface is, the more complex
+the algorithms are for evaluating properties of those surfaces. Rather than
 including the exact surface representation for the links in the robot arm, we
 replace them with simpler approximations. We may pay a cost with this
 simplification. The approximations are generally conservative and coarser than
 the actual robot arm surfaces.  With these approximations, it is possible for
-two links in the arm to *report* collision even if the actual links wouldn't
-be in collision at the same configuration.  This is *particularly* likely for
+two links in the arm to _report_ collision even if the actual links wouldn't
+be in collision at the same configuration.  This is _particularly_ likely for
 links connected by a common joint.  In this case, reported collisions would be
-meaningless and it would be best if we simply *filtered* them out.
+meaningless and it would be best if we simply _filtered_ them out.
 
 Alternatively, consider using filters as an optimization process. We may only
 be focused on a single aspect of the robot, e.g., foot-step planning.  As such,
@@ -51,41 +51,48 @@ are @ref collision_filter_mapping "related but complementary".
 Before looking at the details of the collision filter mechanisms, there are a
 few key principles to make note of.
 
- <!-- TODO: Change this with the advent of GeometryWorld to reflect current
- state -->
+ <!-- TODO(SeanCurtis-TRI): Change this with the advent of GeometryWorld to
+ reflect current state -->
 \section collision_elements Collision Elements
 
-_Collision Elements_ are the basis for performing geometric queries. A collision
-element is comprised of a transform and a geometric shape.  The shape can be
-any of a number supported primitives (e.g., sphere, box, triangular mesh, etc.).
-The transform moves the shape from its canonical space to its *parent's* space.
-A collision element's parent is a rigid body.
+_Collision Elements_ are the basis for performing geometric collision queries.
+Each body has _zero_ or more collision elements associated with (or _fixed_ to)
+it.  If there is no collision element associated with a body, then that body is
+effectively invisible with respect to contact.  On the other hand, a rigid body
+can have multiple collision elements -- a common solution for representing
+complex real-world shapes with a union of computationally efficient, simple
+shapes.
 
-Each body has *zero* or more collision elements associated with it.  If there is
-no collision element  associated with a body, then that body is effectively
-invisible with respect to contact.  However, a rigid body can have multiple
-collision elements as children.
+A collision element is comprised of a geometric shape and a transform.  The
+shape can be one of a number of supported primitives (e.g., sphere, box,
+triangular mesh, etc.).
 
-One can think and talk about "colliding bodies".  In implementation, that would
-be true, if and only if at least one child collision element in each body is
-colliding.  Similarly, the abstraction can be taken up to the *model* leve.
-A model would be a sub-tree of rigid bodies.  Model A can be said to be
-colliding with model B if there is a body in A that is colliding with a body in
-B.
+The collision element's geometric shape is defined with respect to its own local
+frame `E` (e.g., a cylinder could be centered on `E`'s origin and the axis of
+the cylinder could be aligned with `E`'s y-axis).  The body to which the
+collision element belongs has a body frame `B`.  The collision element has a
+transform, `X_BE`, which positions the `E` frame (and, therefore, the geometric
+shape) with respect to the `B` frame.
 
-NOTE: collision elements are independent of geometry used for other purposes,
-such as visualization or even sensor simulation.
+Although collisions are defined strictly in terms of collision elements, it is
+often convenient to speak about colliding _bodies_ `A` and `B` as shorthand for
+some collision element fixed to `A` colliding with some collision element fixed
+to `B`. Similarly, a model is a collection of bodies and we can speak of
+colliding _models_ `M` and `N` as shorthand meaning that some body in `M` is
+colliding with some body in `N`.
+
+NOTE: collision elements do not necessarily have anything to do with geometry
+used for other purposes, such as visualization or sensor simulation.
 
 \section collision_queries Collision Queries and Filtering
 
-Fundamentally, all collisions consist of pairs of collision elements (we assume
-that a collision element *cannot* collide with itself.)  That means, collision
-filtering is about *pairs* of collision elements. It is not meaningful to talk
-about filtering a single collision element. If the *intent* is to suggest that
-that single element should not be considered in *any* collisions, we are
-implicitly referring to filtering out all *pairs* of collision elements which
-include that element.  (Alternatively, one could simply omit the collision
-element in the first place.)
+Fundamentally, all collisions consist of _pairs_ of collision elements.
+Therefore, collision filtering similarly involves _pairs_ of collision elements.
+It is not meaningful to talk about filtering a single collision element. If the
+_intent_ is to eliminate that single element from consideration in *any*
+collisions, we are implicitly referring to filtering out all *pairs* of
+collision elements which include that element.  (Alternatively, one could simply
+omit the collision element in the first place.)
 
 \section collision_graph Collision Filters and Graphs
 
@@ -94,8 +101,11 @@ We define a graph `G = {V, E}` where:
 
   - `V = {v₁, v₂, ..., vₙ}` is the set of graph vertices.  There is one graph
   vertex for each collision element in the simulation.
-  - 'E = {e₁, e₂, ..., eₘ}' is the set of graph edges.  The edge eᵢⱼ exists if
-  the pair of collision elements (vᵢ, vⱼ) is a filtered pair.
+  - `E = {e₁, e₂, ..., eₘ}` is the set of graph edges.  The edge eᵢⱼ exists if
+  the pair of collision elements (vᵢ, vⱼ) is a _filtered_ pair.
+
+This representation is particularly helpful in discussing @ref collision_clique
+and in comparing @ref collision_clique with @ref collision_filter_group.
 
 Next topic: @ref collision_clique
 **/
@@ -105,14 +115,14 @@ Next topic: @ref collision_clique
 
 \section clique_principle  The Principle
 
-Collision cliques filter collisions by defining a group (or *clique*) of
+Collision cliques filter collisions by defining a group (or _clique_) of
 collision elements. Membership in a clique precludes collision with any other
 member of that same clique.
-The underlying idea of collision cliques is that of the mathematical
-<a href="https://en.wikipedia.org/wiki/Clique_(graph_theory)">clique</a>. This
-mathematical concept applies very naturally to the graph-based discussion of
-collision filtering.  A clique in a graph is, loosely, a completely connected
-subgraph; there is an edge between each of the nodes in the graph. For
+The underlying idea of collision cliques is that of the
+<a href="https://en.wikipedia.org/wiki/Clique_(graph_theory)">mathematical clique</a>.
+This mathematical concept applies very naturally to the graph-based discussion
+of collision filtering.  A clique in a graph is, loosely, a completely connected
+subgraph; there is an edge between each of the nodes in the subgraph. For
 collision filtering, that implies that all of the pairs that can be created
 from combinations of the clique members are filtered out.
 
@@ -127,26 +137,44 @@ In Drake, cliques are represented as integer identifiers. Each collision element
 tracks the set of cliques to which it belongs. When a pair of collision elements
 are considered for collision computation, their two sets of cliques are
 intersected; a non-empty resultant set means that this pair is filtered.
-The cost of the intersection is O(n + m), where the two elements belong to
-n and m different cliques, respectively.
+The cost of the intersection is `O(n + m)`, where the two elements belong to
+`n` and `m` different cliques, respectively. This is the worst case. In
+principle, it would come up whenever the pair of collision elements are _not_
+filtered by a clique.  In practice, this cost is mitigated as follows:
+
+    <!-- TODO(SeanCurtis-TRI): Confirm that this is still true for FCL -->
+   -# Clique comparisons are only evaluated when the underlying bounding
+     volume hierarchy (BVH) is restructured.  In most cases, only a small, local
+     portion of the BVH is restructured at any time, reducing the number of
+     actual clique tests done.
+   -# The representation of the clique sets to which a collision element belongs
+     provides opportunities to short-circuit the full `O(n + m)` test in common
+     cases.
 
 Drake automatically applies cliques in two different cases:
-    -# If a body has multiple child collision elements, all of those elements
-    are put into the same click.
-    -# The collision elements of two bodies are all put into the same click if:
-       -# the bodies are *adjacent* (one is the parent of the other in the
+    -# If a body has multiple collision elements, all of those elements
+    are put into the same clique.
+    -# The collision elements of two bodies are all put into the same clique if:
+       -# the bodies are _adjacent_ (one is the parent of the other in the
        tree), and
-       -# the joint connecting them is *not* a floating joint.
+       -# the joint connecting them is _not_ a floating joint.
 
 There are several implications of this:
     -# A body that is represented by multiple, overlapping collision elements
-    will *not* report meaningless collisions between those elements.
-    -# Collisions between adjacent bodies will *not* provide constraints on the
+    will _not_ report meaningless collisions between those elements.
+    -# Collisions between adjacent bodies will _not_ provide constraints on the
     valid range of joint motion.  These constraints will have to act directly
     on the joint state value.
 
-@warning There is currently no interface for manipulating cliques
+@note These heuristics _may_ lead to important collision element pairs
+being filtered. There is currently no interface for manipulating cliques
 programmatically. This will be implemented when the use case becomes clear.
+However, there is a workaround. As an example, consider two adjacent bodies, `A`
+and `B`. Their collision elements will automatically be put into a common clique.
+However, we may want collisions between element `E` on `B` and collision
+elements on `A` to _not_ be filtered. We can create a massless body `Z` to
+hold `E` and use a weld (fixed) joint to attach `Z` to `B`. `Z` will not be
+adjacent to A, so `E` will interact with `A`'s elements.
 
 Next topic: @ref collision_filter_group
 **/
@@ -156,19 +184,16 @@ Next topic: @ref collision_filter_group
 
 \section cfg_principle  The Principle
 
-Collision filter groups represent collision filtering by defining groups of
-collision elements.  That *group* then defines "ignore" relationships with
-other groups.  A collision element's membership to a group does not guarantee
-that that element will be included in *any* filtered pairs. To be filtered,
-it must:
+A collision filter group represents collision filtering by defining a collection
+of collision elements.  That _group_ then defines "ignore" relationships with
+other groups.  A collision element's membership in a group does not guarantee
+inclusion in _any_ filtered collision pairs.  To be filtered, it must:
    -# Appear in at least one collision filter group, and
-   -# Be flagged as an "ignore" group by *another* collision filter group with
-   at least one member that is *not* the collision element in question.
+   -# That group must an "ignore" group for _another_ collision filter group with
+   at least one member that is _not_ the collision element in question.
 
-The collision filter can easily be used to represent a
-@ref clique_principle "clique"; simply add all of the collision elements to a
-single group and have that group ignore itself.  But collision filter groups'
-best strength arises from thinking about *classes* of collision elements. It
+A collision-filter-group-based filtering system's unique benefit
+arises from thinking about _classes_ of collision elements. It
 serves as a short hand for communicating that no collision element in one class
 can collide with elements belonging to another class. Each unique collision
 filter group defines such a class.
@@ -176,24 +201,25 @@ filter group defines such a class.
 This can be used to indicate that two different models cannot collide. Simply
 create two collision filter groups, assigning all of the collision elements of
 one model to the first group, and all elements of the second model to the second
-group.  Set either group to *ignore* the other (or both, redundancy doesn't
-hurt.)
+group.  Set either group to _ignore_ the other (or both, redundancy doesn't
+hurt).
 
 \section cfg_impl The Implementation
 
-Collision filter groups are implemented as a pair of fixed-width bitmasks. Each
+Collision filter groups are implemented as a pair of fixed-width bitmasks,
+stored with each collision element. Each
 collision filter group corresponds to a single bit.  One bitmask represents the
 set of groups a collision element belongs to.  The second represents the groups
-that this collision element *ignores*.  When a pair of collision elements are
+that this collision element _ignores_.  When a pair of collision elements are
 considered for collision, the membership mask of each is ANDed with the
 ignore mask of the other.  If either operations produces a non-zero result, the
 pair is filtered.  The cost of the comparison is constant, but related to the
-bitmask width 
+bitmask width.
 
 The width is defined at compile time and is defined by
 DrakeCollision::kMaxNumCollisionFilterGroups. The fixed width is a performance
 optimization but it means that there is a finite number of collision filter
-groups available in the system. Each RigidBodyTree instance has its *own*
+groups available in the system. Each RigidBodyTree instance has its _own_
 space of collision filter group identifiers.
 <!-- TODO(SeanCurtis-TRI): This will have to be handled carefully in Geometry
  World. Each source of collision elements will get its own space of filters.
@@ -211,16 +237,20 @@ follows:
     </collision_filter_group>
 </pre>
 
-This XML-snippet declares a collision filter group named `group1`. It has
-two members, `body1` and `body2`.  It ignores two groups: `group2` and
-`group3`.  It is not considered an error to ignore a non-existing group, but
-it is considered an error to reference a link that hasn't been defined.
+This XML-snippet illustrates the syntax for declaring a collision filter group.
+It declares a collision filter group named `group1`. It has
+two members, `body1` and `body2` (although it could have any number of links).
+This is short-hand for communicating that the _collision elements_ of `body1`
+and `body2` belong to `group1`. Furthermore, `group1` ignores two groups:
+`group2` and `group3`.  It is not considered an error to ignore a non-existing
+group, but it is considered an error to reference a link that hasn't been
+defined.
 
 By default, all elements belong to a common, universal group which corresponds
-to bit zero. A collision element can be rendered "invisible" by having it
-ignore this universal group.
+to bit zero. A collision element can be rendered "invisible" by assigning it
+to a group that ignores this universal group.
 
-@warning Beyond instantiating the collision filter groups from parsing a URDF
+@note Beyond instantiating the collision filter groups from parsing a URDF
 file, there is currently no interface for programmatically altering group
 membership or ignore relationships.
 
@@ -233,23 +263,29 @@ Next topic: @ref collision_filter_mapping
 In principle, @ref collision_clique "collision cliques" and
 @ref collision_filter_group "collision filter groups" are equivalent
 implementations of filtering.  In theory, there is no filtering scenario that
-can be represented by one that *cannot* be represented by the other. This
-might suggest that a single representation is sufficient.  However, in practice
-this proves not to be true.  Each representation has its particular strengths
+can be represented by one that _cannot_ be represented by the other. This
+might suggest that a single representation is sufficient.  For example,
+collision filter groups can easily be used to represent cliques; simply add all
+of the clique's collision elements to a single group and have that group
+ignore itself.
+
+However, in practice the _implementation_ of the two filtering mechanisms
+introduces differences.  Each representation has its particular strengths
 and weaknesses.  The two mechanisms work well in concert to implement an
 overall collision filtering policy.
 
 This can best be illustrated through several examples of mapping filtering
 scenarios to the two representations.
 
-@section grp_clique_ex1 Example 1: Adjacent links
+@section grp_clique_ex1 Example 1: Adjacent Links
 
 In the discussion of @ref collision_clique "collision cliques", we have seen
 that we want to filter collisions between collision elements that belong to
-*adjacent* bodies.
+_adjacent_ bodies.
 
 <b>Collision Cliques</b> As previously indicated, we can simply instantiate a
-unique clique identifier and assign it to each of the collision elements.
+unique clique identifier and assign it to all of the two bodies` collision
+elements.
 
 <b>Collision Filter Groups</b> The simplest way to implement this using
 collision filter groups is to create a new group which ignores itself and
@@ -257,38 +293,40 @@ make all of the collision elements of both bodies members of that group.
 
 <b>Comparision</b> Both representations offer a straightforward implementation.
 However, because of the fixed-width bitmask, we have a finite number of
-collision filter groups. For a *single* robot with `k` links, we would need, on
-the average `k - 1` groups to handle this case.  If we extend this to multiple
+collision filter groups. For a _single_ robot with `k` links, we would need, on
+the average, `k - 1` groups to handle this case.  If we extend this to multiple
 instances of that robot, we can easily consume the majority of the available
 collision filter groups, just in accounting for link adjacency.
 
 <b>Verdict</b> Prefer cliques.
 
-@section grp_clique_ex2 Example 2: Disallow model self collision
+@section grp_clique_ex2 Example 2: Disallow Model Self-collision
 
 In this case, we want to implement the @ref collision_filter_file_semantics
 "sdf semantics" and turn off self collision for the whole robot.
 
-<b>Collision Cliques</b> Same as @ref grp_clique_ex1 "before".  Create a unique
-clique identifier and assign all collision elements in the model to that clique.
+<b>Collision Cliques</b> Similar to @ref grp_clique_ex1 "example 1".  Create a
+unique clique identifier and assign all collision elements in the _model_ to
+that clique.
 
-<b>Collision Filter Groups</b> Again, same as @ref grp_clique_ex1 "before".
-Assign all elements to a unique group that ignores itself.
+<b>Collision Filter Groups</b> Again, same as @ref grp_clique_ex1 "example 1".
+Assign all collision elements in the _model_ to a unique group that ignores
+itself.
 
 <b>Comparison</b> This scenario is very similar to the one before.  Both cases
-deal with a *clique*, in the mathematical sense.  A set of collision elements
+deal with a _clique_, in the mathematical sense.  A set of collision elements
 where all pair-wise combinations of elements are filtered.  It is unsurprising
 that there is an obvious mapping between these cases and the clique filtering
 mechanism.
 
 <b>Verdict</b> For the same reasons as before, collision cliques are preferred.
 
-@section grp_clique_ex3 Example 3: URDF `<collision_filter_group>` Tag Specifies Two Non-colliding Groups
+@section grp_clique_ex3 Example 3: URDF Specifies Two Non-colliding Groups
 
-In this case, the filtering policy is not *automatic*. It is specified by
+In this case, the filtering policy is not _automatic_. It is specified by
 definitions of groups in a URDF file.  In this case, we'll deal with a
 theoretical file with two groups (assuming all bodies/links have been
-properly defined prior to this XML snipped).
+properly defined prior to this XML snippet).
 
 <pre>
     <collision_filter_group name="groupA">
@@ -303,18 +341,18 @@ properly defined prior to this XML snipped).
     </collision_filter_group>
 </pre>
 
-The filtering implications of these groups is that we filter collision between
-the bodies (1, 3), (1, 4), (2, 3), and (2, 4) (the cartesian product of the
-two groups).
+The filtering implications of these groups is that we filter collisions between
+all the collision elements of the bodies (1, 3), (1, 4), (2, 3), and (2, 4)
+(i.e., the Cartesian product of the two groups).
 
 <b>Collision Cliques</b> There is a simple mapping from these groups to cliques.
 For each member in `groupA`, create a clique id and assign it to that member
-and *all* the members in `groupB`.  We are essentially implementing the
-cartesian coordinates.  This greedy approach will instantiate `N` different
+and _all_ the members in `groupB`.  We are essentially implementing the
+Cartesian product.  This greedy approach will instantiate `N` different
 cliques (where `N = |groupA|`).  And the number of cliques that each member of
 of `groupB` has will increase by that same number `N`.  Remember that the
 evaluation of cliques for filtering is linear in the number of cliques to which
-a body belongs.
+a collision element belongs.
 
 Ideally, we would want to reduce the number of cliques to which a body belongs.
 To do so, we would have to look at the full graph of vertices and edges. The
@@ -323,9 +361,23 @@ optimal number of cliques is related to finding the
 cliques</a> of the graph. This is known to be an NP-complete problem.
 
 <b>Collision Filter Groups</b> The collision filter implementation of this is
-straightforward and obvious and requires no elaboration.
+straightforward. Two groups are created (we'll call them `A` and `B`). The
+collision elements of `body1` and `body2` are assigned to `A`. The collision
+elements of `body3` and `body4` are assigned to `B`. `A` is set to ignore `B`
+and vice versa.  This would be represented by the following bitmasks:
 
-<b>Comparision</b> Collision filtering based on *classes* of bodies fits
+Group  |  Bitmask Type | Bitmask Value
+-------|---------------|--------------
+ `A`   |  membership   |  `0...0011`
+ `A`   |  ignore       |  `0...0100`
+ `B`   |  membership   |  `0...0101`
+ `B`   |  ignore       |  `0...0010`
+
+In this representation, the right-most bit is the low-order bit.  Remember that
+all elements belong to the universal group (bit 0). It should be clear that
+`groupA` and `groupB` were assigned to bits 1 and 2, respectively.
+
+<b>Comparision</b> Collision filtering based on _classes_ of bodies fits
 naturally with the collision filter group model.  Its representation is compact
 and its runtime cost remains unchanged.  The efficacy of the clique approach
 depends on the size of the groups and, handled greedily, could lead to an
@@ -337,8 +389,8 @@ These relative strengths and weaknesses are the reasons we maintain both systems
 simultaneously.  Collision cliques provide an (in practice) unbounded set of
 filter parameters and are well suited for mutually exclusive sets of bodies.
 Collision filter groups offer a compact representation with O(1) computation
-costs and are ideally suited for excluding large sets of of bodies from
-collsion computation.
+costs and are ideally suited for excluding large classes of bodies from
+collision computation.
 
 Next topic: @ref collision_filter_file_semantics
 **/
@@ -348,11 +400,11 @@ Next topic: @ref collision_filter_file_semantics
 
 @section collision_filter_sdf_semantics SDF File Collision Semantics
 
- @todo Document the SDF collision filter semantics.
+ @note This section is incomplete.
 
 @section collision_filter_urdf_semantics URDF File Collision Semantics
 
- @todo Document the URDF collision filtering semantics.
+ @note This section is incomplete.
 
  Next topic: @ref collision_filter_future
 **/
@@ -360,11 +412,11 @@ Next topic: @ref collision_filter_file_semantics
 /** @defgroup collision_filter_future Future Collision Filter Features
  @ingroup collision_filter_concepts
 
-   - High-level filtering semantics (Specify colliding/non-colliding state using
+   - High-level filtering semantics: specify colliding/non-colliding state using
    high level abstractions: tree, model, body, body collection, collision
    element.
    - The ability to abstractly specify filtering semantics independent of
-   representation based on a series of refining *rules*.  e.g.,
+   representation based on a series of refining _rules_.  e.g.,
       - `SetNoSelfCollision(tree);`
          `//` nothing in the tree collides with itself.
       - `SetNoCollisions(tree1, tree2);`
