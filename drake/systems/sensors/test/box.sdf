@@ -1,7 +1,8 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
   <model name='foo'>
-    <!-- This `-10` is not to be rendered. -->
+    <!-- This box is placed 10 m underground and is thus expected to not be
+    visible. -->
     <pose>0 0 -10 0 0 0</pose>
     <link name='link'>
       <pose>0 0 0 0 0 0</pose>

@@ -23,7 +23,8 @@ namespace systems {
 namespace sensors {
 namespace {
 
-// This is because there is a precision difference between Ubuntu and Mac.
+// The following tolerance is used due to a precision difference between Ubuntu
+// Linux and Macintosh OSX.
 const double kTolerance = 1e-12;
 
 const double kFovY = M_PI_4;
@@ -62,7 +63,7 @@ TEST_F(RgbdCameraTest, InstantiateTest) {
   Verify(dut_.depth_camera_info());
 }
 
-// Veryfies the initial camera base pose.
+// Verifies the initial camera base pose.
 TEST_F(RgbdCameraTest, InitialCameraBasePoseTest) {
   // This is calculated by hand.
   const Eigen::Isometry3d expected((
@@ -129,8 +130,8 @@ class RenderingSim : public systems::Diagram<double> {
 // Verifies rendered terrain.
 GTEST_TEST(RenderingTest, TerrainRenderingTest) {
   RenderingSim diagram;
-  // This sdf includes a box which is located under the flat terrain, so only
-  // the terrain is visible.
+  // The following SDF includes a box that is located under the flat terrain.
+  // Thus, only the terrain is visible to the RGBD camera.
   const std::string sdf("/systems/sensors/test/box.sdf");
   diagram.Init(GetDrakePath() + sdf,
                Eigen::Vector3d(0., 0., 4.999),
@@ -155,7 +156,8 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
     auto depth_image =
         mutable_data_d->GetMutableValue<sensors::Image<float>>();
 
-    // Verifies in a sampling way (32 x 24 sampling points instead of 640 x 480)
+    // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
+    // assumption is any defects will be detected by sampling this amount.
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
         ASSERT_NEAR(color_image.at(u, v)[0], 204u, 1.);
@@ -170,10 +172,10 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
   }
 }
 
-// Verifies the exception is thrown if a link has more than two visuals.
+// Verifies an exception is thrown if a link has more than two visuals.
 GTEST_TEST(RenderingTest, MultipleVisualsTest) {
   RenderingSim diagram;
-  // This sdf includes a link that has more than two visuals.
+  // The following SDF includes a link that has more than two visuals.
   const std::string sdf("/systems/sensors/test/bad.sdf");
   EXPECT_THROW(diagram.Init(GetDrakePath() + sdf,
                             Eigen::Vector3d(0., 0., 1.),
