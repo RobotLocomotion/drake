@@ -11,28 +11,28 @@
           <pose>0 0 0 0 0 0</pose>
           <geometry>
             <box>
-	      <size>1. 1. 1.</size>
+              <size>1. 1. 1.</size>
             </box>
           </geometry>
           <material/>
         </visual>
-	<!-- Multiple visuals are not supported. -->
+        <!-- Multiple visuals are not supported. -->
         <visual name='bar'>
           <pose>0 0 0 0 0 0</pose>
           <geometry>
             <box>
-	      <size>1. 1. 1.</size>
+              <size>1. 1. 1.</size>
             </box>
           </geometry>
           <material/>
         </visual>
-	<collision name='foo'>
+        <collision name='foo'>
           <geometry>
             <box>
-	      <size>1. 1. 1.</size>
+              <size>1. 1. 1.</size>
             </box>
           </geometry>
-	</collision>
+        </collision>
     </link>
     <static>1</static>
   </model>
