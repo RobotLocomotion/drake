@@ -134,7 +134,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///         always be set).
   void reset_wire_parameter_functions(
         std::function<Eigen::Matrix<ArcLength, 3, 1>(const ArcLength&)> f,
-        std::function<ArcLength(const Eigen::Matrix<ArcLength, 3, 1>&) inv_f) {
+        std::function<ArcLength(const Eigen::Matrix<ArcLength, 3, 1>&)> inv_f) {
     if (!f || !inv_f) throw std::logic_error("Function must be non-null.");
     f_ = f;
     inv_f_ = inv_f;
