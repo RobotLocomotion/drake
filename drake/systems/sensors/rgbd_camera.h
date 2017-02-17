@@ -70,7 +70,6 @@ class RgbdCamera : public LeafSystem<double> {
   /// @param position 3D position of RgbdCamera in the world coordinate system.
   /// @param orientation 3D orientation of RgbdCamera by roll-pitch-yaw in the
   /// world coordinate system.
-  /// @param frame_rate The frame rate of the RgbdCamera in Hz.
   /// @param fov_y The vertical field of view for RgbdCamera.
   /// @param show_window The flag to show visible window.  If this is false,
   /// offscreen rendering is executed.
@@ -78,7 +77,6 @@ class RgbdCamera : public LeafSystem<double> {
              const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
              const Eigen::Vector3d& orientation,
-             double frame_rate,
              double fov_y,
              bool show_window);
 
@@ -91,14 +89,12 @@ class RgbdCamera : public LeafSystem<double> {
   /// the world.  This parameter is aliased by a class member variable. Thus,
   /// its life span must exceed that of this class's instance.
   /// @param frame The frame in RigidBodyTree to which this camera is attached.
-  /// @param frame_rate The frame rate of the RgbdCamera in Hz.
   /// @param fov_y The vertical field of view for RgbdCamera.
   /// @param show_window The flag to show visible window.  If this is false,
   /// offscreen rendering is executed.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const RigidBodyFrame<double>& frame,
-             double frame_rate,
              double fov_y,
              bool show_window);
 
@@ -119,9 +115,6 @@ class RgbdCamera : public LeafSystem<double> {
   /// Returns the depth camera pose in the camera base coordinate system.
   const Eigen::Isometry3d& get_depth_camera_pose() const;
 
-  /// Returns the frame rate in Hz.
-  double get_frame_rate() const { return 1. / frame_interval_; }
-
   /// Returns the RigidBodyTree that this sensor is sensing.
   const RigidBodyTree<double>& get_tree() const;
 
@@ -140,9 +133,6 @@ class RgbdCamera : public LeafSystem<double> {
   std::unique_ptr<Impl> impl_;
 
   int input_port_index_{};
-  const double frame_interval_{};
-  // For the time step calculation in const member function
-  mutable double previous_output_time_{0.};
 };
 
 }  // namespace sensors

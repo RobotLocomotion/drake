@@ -311,7 +311,6 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
                                  kPlaneColor[1],
                                  kPlaneColor[2]);
 
-
   actor->SetUserTransform(transform);
   renderer_->AddActor(actor.GetPointer());
 }
@@ -408,12 +407,10 @@ RgbdCamera::RgbdCamera(const std::string& name,
                        const RigidBodyTree<double>& tree,
                        const Eigen::Vector3d& position,
                        const Eigen::Vector3d& orientation,
-                       double frame_rate,
                        double fov_y,
                        bool show_window)
     : impl_(new RgbdCamera::Impl(tree, position, orientation, fov_y,
-                                 show_window)),
-      frame_interval_(1. / frame_rate) {
+                                 show_window)) {
   set_name(name);
   const int vec_num =  tree.get_num_positions() + tree.get_num_velocities();
   input_port_index_ = this->DeclareInputPort(
@@ -426,11 +423,9 @@ RgbdCamera::RgbdCamera(const std::string& name,
 RgbdCamera::RgbdCamera(const std::string& name,
                        const RigidBodyTree<double>& tree,
                        const RigidBodyFrame<double>& frame,
-                       double frame_rate,
                        double fov_y,
                        bool show_window)
-    : impl_(new RgbdCamera::Impl(tree, frame, fov_y, show_window)),
-      frame_interval_(1. / frame_rate) {
+    : impl_(new RgbdCamera::Impl(tree, frame, fov_y, show_window)) {
   set_name(name);
   const int vec_num =  tree.get_num_positions() + tree.get_num_velocities();
   input_port_index_ = this->DeclareInputPort(
@@ -485,18 +480,10 @@ std::unique_ptr<SystemOutput<double>> RgbdCamera::AllocateOutput(
 
 void RgbdCamera::DoCalcOutput(const systems::Context<double>& context,
                               systems::SystemOutput<double>* output) const {
-  const double current_time = context.get_time();
-  if (current_time == 0. ||
-      (current_time - previous_output_time_ < frame_interval_)) {
-    return;
-  }
-
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, input_port_index_);
 
   impl_->DoCalcOutput(*input_vector, output);
-
-  previous_output_time_ = current_time;
 }
 
 }  // namespace sensors
