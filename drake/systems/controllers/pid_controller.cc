@@ -17,9 +17,9 @@ namespace systems {
 /// A PID controller system. Given an error signal `e` and its time derivative
 /// `edot` the output of this sytem is
 /// <pre>
-///     y = Kp * e + Ki integ(e,dt) + Kd * edot
+///     y = Kp * e + Ki integral(e,dt) + Kd * edot
 /// </pre>
-/// where `integ(e,dt)` is the time integral of `e`.
+/// where `integral(e,dt)` is the time integral of `e`.
 /// A PID controller directly feedthroughs the error signal to the output when
 /// the proportional constant is non-zero. It feeds through the rate of change
 /// of the error signal when the derivative constant is non-zero.
@@ -44,7 +44,7 @@ class PidControllerInternal : public Diagram<T> {
   /// @param Kp the proportional constant.
   /// @param Ki the integral constant.
   /// @param Kd the derivative constant.
-  /// @param size number of elements in the signal to be processed.
+  /// @param size number of elements in the error signal to be processed.
   PidControllerInternal(const T& Kp, const T& Ki, const T& Kd, int size);
 
   /// Constructs a %PidControllerInternal system where each gain can have a
@@ -63,21 +63,21 @@ class PidControllerInternal : public Diagram<T> {
   /// element in the proportional gain vector is the same. It will throw a
   /// `std::runtime_error` if the proportional gain cannot be represented as a
   /// scalar value.
-  const T& get_Kp() const;
+  const T& get_Kp_singleton() const;
 
   /// Returns the integral gain constant. This method should only be called if
   /// the integral gain can be represented as a scalar value, i.e., every
   /// element in the integral gain vector is the same. It will throw a
   /// `std::runtime_error` if the integral gain cannot be represented as a
   /// scalar value.
-  const T& get_Ki() const;
+  const T& get_Ki_singleton() const;
 
   /// Returns the derivative gain constant. This method should only be called if
   /// the derivative gain can be represented as a scalar value, i.e., every
   /// element in the derivative gain vector is the same. It will throw a
   /// `std::runtime_error` if the derivative gain cannot be represented as a
   /// scalar value.
-  const T& get_Kd() const;
+  const T& get_Kd_singleton() const;
 
   /// Returns the proportional vector constant.
   const VectorX<T>& get_Kp_vector() const;
@@ -167,17 +167,17 @@ PidControllerInternal<T>::PidControllerInternal(
 }
 
 template <typename T>
-const T& PidControllerInternal<T>::get_Kp() const {
+const T& PidControllerInternal<T>::get_Kp_singleton() const {
   return proportional_gain_->get_gain();
 }
 
 template <typename T>
-const T& PidControllerInternal<T>::get_Ki() const {
+const T& PidControllerInternal<T>::get_Ki_singleton() const {
   return integral_gain_->get_gain();
 }
 
 template <typename T>
-const T& PidControllerInternal<T>::get_Kd() const {
+const T& PidControllerInternal<T>::get_Kd_singleton() const {
   return derivative_gain_->get_gain();
 }
 
@@ -312,18 +312,18 @@ void PidController<T>::ConnectPorts(
 }
 
 template <typename T>
-const T& PidController<T>::get_Kp() const {
-  return controller_->get_Kp();
+const T& PidController<T>::get_Kp_singleton() const {
+  return controller_->get_Kp_singleton();
 }
 
 template <typename T>
-const T& PidController<T>::get_Ki() const {
-  return controller_->get_Ki();
+const T& PidController<T>::get_Ki_singleton() const {
+  return controller_->get_Ki_singleton();
 }
 
 template <typename T>
-const T& PidController<T>::get_Kd() const {
-  return controller_->get_Kd();
+const T& PidController<T>::get_Kd_singleton() const {
+  return controller_->get_Kd_singleton();
 }
 
 template <typename T>
@@ -347,7 +347,7 @@ void PidController<T>::set_integral_value(
   Context<T>* integrator_context =
       Diagram<T>::GetMutableSubsystemContext(context, controller_);
   // TODO(siyuanfeng): need to get rid of the - once we switch the integrator
-  // to be int(q_d - q), right not it's (q - q_d).
+  // to be int(q_d - q), right now it's (q - q_d).
   controller_->set_integral_value(integrator_context, -value);
 }
 

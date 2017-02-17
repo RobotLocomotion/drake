@@ -16,6 +16,9 @@ namespace systems {
 template <typename T>
 class PidControllerInternal;
 
+// TODO(siyuanfeng): Lift the assumption that q and v have the same dimension.
+// TODO(siyuanfeng): Generalize "q_d - q", e.g. for rotation.
+
 /**
  * Implements the PID controller. Given state `(q, v)`, desired state
  * `(q_d, v_d)`, the output of this controller is
@@ -23,6 +26,8 @@ class PidControllerInternal;
  * y = kp * (q_d - q) + kd * (v_d - v) + ki * integral(q_d - q, dt),
  * </pre>
  * where `integral(q_d - q, dt)` is the integrated position error.
+ *
+ * Note that this class assumes q and v have the same dimension.
  */
 template <typename T>
 class PidController : public StateFeedbackController<T> {
@@ -41,9 +46,9 @@ class PidController : public StateFeedbackController<T> {
       const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
 
   /**
-   * Constructs a PID controller where some of the input states may not
-   * controled. Assumes that @p kp, @p ki and @p kd have the same size. The
-   * actual and desired state inputs's size and the control output's size need
+   * Constructs a PID controller where some of the input states may not be
+   * controlled. Assumes that @p kp, @p ki and @p kd have the same size. The
+   * actual and desired state input's size and the control output's size need
    * to match @p feedback_selector.
    * @param feedback_selector, The selection matrix indicating controlled
    * states, whose size should be 2 * @p kp's size by the size of the full
@@ -60,21 +65,21 @@ class PidController : public StateFeedbackController<T> {
   /// element in the proportional gain vector is the same. It will throw a
   /// `std::runtime_error` if the proportional gain cannot be represented as a
   /// scalar value.
-  const T& get_Kp() const;
+  const T& get_Kp_singleton() const;
 
   /// Returns the integral gain constant. This method should only be called if
   /// the integral gain can be represented as a scalar value, i.e., every
   /// element in the integral gain vector is the same. It will throw a
   /// `std::runtime_error` if the integral gain cannot be represented as a
   /// scalar value.
-  const T& get_Ki() const;
+  const T& get_Ki_singleton() const;
 
   /// Returns the derivative gain constant. This method should only be called if
   /// the derivative gain can be represented as a scalar value, i.e., every
   /// element in the derivative gain vector is the same. It will throw a
   /// `std::runtime_error` if the derivative gain cannot be represented as a
   /// scalar value.
-  const T& get_Kd() const;
+  const T& get_Kd_singleton() const;
 
   /// Returns the proportional vector constant.
   const VectorX<T>& get_Kp_vector() const;

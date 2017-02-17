@@ -9,9 +9,14 @@
 namespace drake {
 namespace systems {
 
+// TODO(siyuan.feng): Lift the assumptions.
+
 /**
  * A state feedback controller whose output is the sum of a PID controller
  * and a gravity compensator.
+ *
+ * Note that this class assumes the robot is fully actuated, its position
+ * and velocity have the same dimension, and it does not have a floating base.
  */
 template<typename T>
 class PidWithGravityCompensator : public ModelBasedController<T> {

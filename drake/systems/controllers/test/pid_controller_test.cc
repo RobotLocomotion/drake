@@ -54,9 +54,9 @@ TEST_F(PidControllerTest, Getters) {
   ASSERT_EQ(ki_, controller_.get_Ki_vector());
   ASSERT_EQ(kd_, controller_.get_Kd_vector());
 
-  EXPECT_NO_THROW(controller_.get_Kp());
-  EXPECT_NO_THROW(controller_.get_Ki());
-  EXPECT_NO_THROW(controller_.get_Kd());
+  EXPECT_NO_THROW(controller_.get_Kp_singleton());
+  EXPECT_NO_THROW(controller_.get_Ki_singleton());
+  EXPECT_NO_THROW(controller_.get_Kd_singleton());
 }
 
 TEST_F(PidControllerTest, GetterVectors) {
@@ -73,9 +73,9 @@ TEST_F(PidControllerTest, GetterVectors) {
   ASSERT_EQ(ki, controller.get_Ki_vector());
   ASSERT_EQ(kd, controller.get_Kd_vector());
 
-  EXPECT_DEATH(controller.get_Kp(), ".*");
-  EXPECT_DEATH(controller.get_Ki(), ".*");
-  EXPECT_DEATH(controller.get_Kd(), ".*");
+  EXPECT_DEATH(controller.get_Kp_singleton(), ".*");
+  EXPECT_DEATH(controller.get_Ki_singleton(), ".*");
+  EXPECT_DEATH(controller.get_Kd_singleton(), ".*");
 }
 
 // Evaluates the output and asserts correctness.
