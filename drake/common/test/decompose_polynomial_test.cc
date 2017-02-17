@@ -9,7 +9,7 @@ namespace symbolic {
 namespace {
 
 // Provides common variables that are used by the following tests.
-class SymbolicExpressionDecomposePolynomialTest : public ::testing::Test {
+class DecomposePolynomialTest : public ::testing::Test {
  protected:
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
@@ -41,21 +41,21 @@ void CheckMonomialToCoeffMap(const symbolic::Expression& e, const Variables& var
   }
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial0) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial0) {
   MonomialToCoefficientMap map_expected;
   map_expected.emplace(x_, 1);
   CheckMonomialToCoeffMap(x_, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(x_, {var_x_, var_y_}, map_expected);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial1) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial1) {
   MonomialToCoefficientMap map_expected;
   map_expected.emplace(1, x_);
   CheckMonomialToCoeffMap(x_, {var_y_}, map_expected);
   CheckMonomialToCoeffMap(x_, {var_y_, var_z_}, map_expected);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial2) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial2) {
   MonomialToCoefficientMap map_expected;
   map_expected.emplace(1, 2);
   CheckMonomialToCoeffMap(2, {var_x_}, map_expected);
@@ -67,7 +67,7 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial2) {
   CheckMonomialToCoeffMap(3.14159, {var_x_, var_y_}, map_expected);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial3) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial3) {
   MonomialToCoefficientMap map_expected1;
   MonomialToCoefficientMap map_expected2;
   map_expected1.emplace(x_, 1);
@@ -107,7 +107,7 @@ void CheckDecomposePolynomial4(const Expression &e,
   CheckMonomialToCoeffMap(e, {y}, map_expected2);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial4) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial4) {
   // Decompose 2 * x * x
   CheckDecomposePolynomial4(2 * x_ * x_, var_x_, var_y_);
 
@@ -137,7 +137,7 @@ void CheckDecomposePolynomial5(const Expression &e,
   CheckMonomialToCoeffMap(e, {y}, map_expected3);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial5) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial5) {
   CheckDecomposePolynomial5(6 * x_ * y_, var_x_, var_y_);
 
   CheckDecomposePolynomial5(6 * (x_ * y_), var_x_, var_y_);
@@ -196,7 +196,7 @@ void CheckDecomposePolynomial6(const Expression& e, const Variable& x, const Var
   CheckMonomialToCoeffMap(e, {x, y, z}, map_expected7, check_expression_equal);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial6) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial6) {
   CheckDecomposePolynomial6(3 * x_ * x_ * y_ + 4 * pow(y_, 3) * z_ + 2, var_x_, var_y_, var_z_);
 
   // (x * (y + z)).EqualTo(x*y + x*z) returns false because structurally they are different,
@@ -220,7 +220,7 @@ void CheckDecomposePolynomial7(const Expression& e, const Variable& x, const Var
   CheckMonomialToCoeffMap(e, {x, y}, map_expected3);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial7) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial7) {
   // Decomposes 6 * x^3 * y^2
   CheckDecomposePolynomial7(6 * pow(x_, 3) * pow(y_, 2), var_x_, var_y_);
 
@@ -261,7 +261,7 @@ void CheckDecomposePolynomial8(const Expression& e, const Variable& x, const Var
   CheckMonomialToCoeffMap(e, {x, y}, map_expected3, check_expression_equal);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial8) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial8) {
   CheckDecomposePolynomial8(pow(x_, 3) - 4 * x_ * y_ * y_ + 2 * x_ * x_ * y_ - 8 * pow(y_, 3), var_x_, var_y_);
 
   CheckDecomposePolynomial8(pow(x_ + 2 * y_, 2) * (x_ - 2 * y_), var_x_, var_y_, false);
@@ -271,7 +271,7 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial8) {
   CheckDecomposePolynomial8((x_ * x_ + 4 * x_ * y_ + 4 * y_ * y_) * (x_ - 2 * y_), var_x_, var_y_, false);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial9) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial9) {
   // Decomposes -x.
   MonomialToCoefficientMap map_expected1;
   map_expected1.emplace(x_, -1);
@@ -282,7 +282,7 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial9) {
   CheckMonomialToCoeffMap(-x_, {var_y_}, map_expected2);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial10) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial10) {
   // Decomposes (x + y + 1)^4
   Expression e = pow(x_ + y_ + 1, 4);
   MonomialToCoefficientMap map_expected1;
@@ -311,8 +311,11 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial10) {
   map_expected2.emplace(1, 1);
   CheckMonomialToCoeffMap(e, {var_x_, var_y_}, map_expected2, false);
 }
+
+// TODO(hongkai.dai): enable the following tests, when ((x^2 * y + x^3)/(x^2)).is_polynomial() returns true.
+
 /*
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial10) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial10) {
   // Decomposes x^2 * y / (x * y)
   MonomialToCoefficientMap map_expected1;
   map_expected1.emplace(x_, 1);
@@ -327,7 +330,7 @@ TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial10) {
   CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), {var_x_, var_y_}, map_expected1, false);
 }
 
-TEST_F(SymbolicExpressionDecomposePolynomialTest, DecomposePolynomial11) {
+TEST_F(DecomposePolynomialTest, DecomposePolynomial11) {
   // Decomposes (3 * x^2 * y^3 + 2 * x^3 * y^2) / (3 * x * y)
   Expression e = (3 * x_ * x_ * pow(y_, 3) + 2 * pow(x_, 3) * y_ * y_) / (3 * x_ * y_);
 

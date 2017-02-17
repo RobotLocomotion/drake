@@ -282,6 +282,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "decompose_polynomial_test",
+    deps = [
+        ":common",
+        ":monomial",
+        ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
     name = "double_overloads_test",
     deps = [
         ":common",
@@ -422,14 +431,6 @@ drake_cc_googletest(
         ":common",
         ":symbolic",
         ":symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_decompose_polynomial_test",
-    deps = [
-        ":common",
-        ":symbolic",
     ],
 )
 

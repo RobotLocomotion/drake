@@ -449,5 +449,9 @@ MonomialToCoefficientMap DecomposePolynomial(const Expression& e, const Variable
   }
   return map;
 };
+
+MonomialToCoefficientMap DecomposePolynomial(const Expression& e) {
+  return DecomposePolynomial(e, e.GetVariables());
+}
 }  // namespace symbolic
 }  // namespace drake

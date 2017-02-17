@@ -9,7 +9,6 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/monomial.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression_cell.h"

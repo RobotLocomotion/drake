@@ -294,11 +294,11 @@ typedef std::unordered_map<Expression, Expression, hash_value<Expression>> Monom
  * <pre>
  * Example:
  * For polynomial e1 = 2x²y + 3xy²z + 4z
- * e1.Decompose({x,y,z}) will return the map
+ * Decompose(e1, {x,y,z}) will return the map
  * map[x²y] = 2
  * map[xy²z] = 3
  * map[z] = 4
- * on the other hand, e1.Decompose({x,y}) (notice z is not included in the input argument) will return the map
+ * on the other hand, Decompose(e1, {x,y}) (notice z is not included in the input argument) will return the map
  * map[x²y] = 2
  * map[xy²] = 3z
  * map[1] = 4z
@@ -310,6 +310,21 @@ typedef std::unordered_map<Expression, Expression, hash_value<Expression>> Monom
  * term of the polynomial.
  */
 MonomialToCoefficientMap DecomposePolynomial(const Expression& e, const Variables& vars);
+
+/**
+ * Decomposes a polynomial as the summation of coefficients multiply monomials,
+ * w.r.t all variables in the polynomial.
+ * For polynomial e1 = 2x²y + 3xy²z + 4z
+ * Decompose(e1, {x,y,z}) will return the map
+ * map[x²y] = 2
+ * map[xy²z] = 3
+ * map[z] = 4
+ * @param e A polynomial. Throws a runtime error if `e` is not a polynomial.
+ * @pre{e.is_polynomial() returns true.}
+ * @return map. The key of the map is the monomial, with the value being the
+ * coefficient.
+ */
+MonomialToCoefficientMap DecomposePolynomial(const Expression& e);
 }  // namespace symbolic
 
 /** Computes the hash value of a Monomial. */
