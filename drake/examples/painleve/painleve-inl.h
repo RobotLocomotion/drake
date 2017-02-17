@@ -16,6 +16,7 @@
 #include "drake/systems/framework/value.h"
 
 namespace drake {
+namespace examples {
 namespace painleve {
 
 template <typename T>
@@ -1079,4 +1080,5 @@ void Painleve<T>::SetDefaultState(const systems::Context<T>& context,
 }
 
 }  // namespace painleve
+}  // namespace examples
 }  // namespace drake

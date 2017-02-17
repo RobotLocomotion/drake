@@ -7,6 +7,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
+namespace examples {
 namespace painleve {
 
 /// Dynamical system representation of the Painleve' Paradox problem, taken
@@ -230,4 +231,5 @@ class Painleve : public systems::LeafSystem<T> {
 };
 
 }  // namespace painleve
+}  // namespace examples
 }  // namespace drake
