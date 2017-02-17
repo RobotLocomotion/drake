@@ -284,13 +284,17 @@ MonomialBasis(const Variables& vars) {
       vars, degree);
 }
 
-typedef std::unordered_map<Expression, Expression, hash_value<Expression>> MonomialToCoefficientMap;
+typedef std::unordered_map<Expression, Expression, hash_value<Expression>>
+    MonomialToCoefficientMap;
 /**
- * Decomposes a polynomial into monomials, with respect to a specified set of variables.
+ * Decomposes a polynomial into monomials, with respect to a specified set of
+ * variables.
  * A polynomial can be represented as
  * ∑ᵢ c(i) * m(i)
- * where m(i) is a monomial in the specified set of variables, and c(i) is the corresponding coefficient,
- * Note the coefficient will include any constants and symbols not in the set of variables.
+ * where m(i) is a monomial in the specified set of variables, and c(i) is the
+ * corresponding coefficient,
+ * Note the coefficient will include any constants and symbols not in the set of
+ * variables.
  * <pre>
  * Example:
  * For polynomial e1 = 2x²y + 3xy²z + 4z
@@ -298,7 +302,8 @@ typedef std::unordered_map<Expression, Expression, hash_value<Expression>> Monom
  * map[x²y] = 2
  * map[xy²z] = 3
  * map[z] = 4
- * on the other hand, Decompose(e1, {x,y}) (notice z is not included in the input argument) will return the map
+ * on the other hand, Decompose(e1, {x,y}) (notice z is not included in the
+ * input argument) will return the map
  * map[x²y] = 2
  * map[xy²] = 3z
  * map[1] = 4z
@@ -309,7 +314,8 @@ typedef std::unordered_map<Expression, Expression, hash_value<Expression>> Monom
  * @retval monomial_to_coeff_map Map the monomial to the coefficient in each
  * term of the polynomial.
  */
-MonomialToCoefficientMap DecomposePolynomial(const Expression& e, const Variables& vars);
+MonomialToCoefficientMap DecomposePolynomial(const Expression& e,
+                                             const Variables& vars);
 
 /**
  * Decomposes a polynomial as the summation of coefficients multiply monomials,
@@ -339,8 +345,15 @@ struct hash_value<symbolic::internal::Monomial> {
 namespace drake {
 namespace symbolic {
 namespace internal {
-typedef std::unordered_map<symbolic::internal::Monomial, symbolic::Expression, hash_value<symbolic::internal::Monomial>> MonomialToCoefficientMapInternal;
-MonomialToCoefficientMapInternal DecomposePolynomialInternal(const Expression& e, const Variables& vars);
+/* Internally we use internal::Monomial to represent a monomial, rather than
+ * using an Expression object
+ */
+typedef std::unordered_map<Monomial, Expression, hash_value<Monomial>>
+    MonomialToCoefficientMapInternal;
+
+/* Decompose a polynomial. @see DecomposePolynomial. */
+MonomialToCoefficientMapInternal DecomposePolynomialInternal(
+    const Expression& e, const Variables& vars);
 }  // namespace internal
 }  // namespace symbolic
 }  // namespace drake
