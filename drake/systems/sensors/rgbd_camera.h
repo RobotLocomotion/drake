@@ -101,22 +101,22 @@ class RgbdCamera : public LeafSystem<double> {
   ~RgbdCamera();
 
   /// Reterns the color camera info.
-  const CameraInfo& get_color_camera_info() const;
+  const CameraInfo& color_camera_info() const;
 
   /// Reterns the depth camera info.
-  const CameraInfo& get_depth_camera_info() const;
+  const CameraInfo& depth_camera_info() const;
 
   /// Returns the camera base pose in the world coordinate system.
-  const Eigen::Isometry3d& get_base_pose() const;
+  const Eigen::Isometry3d& base_pose() const;
 
   /// Returns the color camera pose in the camera base coordinate system.
-  const Eigen::Isometry3d& get_color_camera_pose() const;
+  const Eigen::Isometry3d& color_camera_pose() const;
 
   /// Returns the depth camera pose in the camera base coordinate system.
-  const Eigen::Isometry3d& get_depth_camera_pose() const;
+  const Eigen::Isometry3d& depth_camera_pose() const;
 
   /// Returns the RigidBodyTree that this sensor is sensing.
-  const RigidBodyTree<double>& get_tree() const;
+  const RigidBodyTree<double>& tree() const;
 
   /// Allocates the output vector. See this class' description for details of
   /// this output vector.
