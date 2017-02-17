@@ -26,18 +26,43 @@ In this case, the automotive demo must be run with the ``--no-visualizer``
 switch, and you will have to manually launch some other build of the
 ``drake-visualizer``.
 
-Running the demo
-----------------
+Running the demos
+-----------------
 
-To run the demo, open a terminal and execute the following commands:
+A variety of demos are available.  In general, to run a demo, open a
+terminal and execute commands like this:
 
 ```
 $ cd drake-distro
-$ bazel run drake/automotive:demo
+$ bazel run drake/automotive:DEMO_NAME_HERE
 ```
 
 End the demo by closing any window, or Ctrl-C in the terminal.  All of the
 launched programs will be closed.
+
+ * Basic cars driving around on an open plane:
+   `bazel run drake/automotive:demo`
+
+   This will show one _ado_ car driving in a fixed trajectory, and one _ego_
+   car which can be driven anywhere on the infinite plane.  (See "Driving
+   the Prius" below to make it go.)
+
+ * Original "Maliput Village" demo, showing behavior at intersections:
+   `bazel run drake/automotive:village-demo`
+
+   This will show 15 _ado_ cars driving on a fixed, but self-intersecting,
+   path through the "Maliput Village" road network.  One can add a driveable
+   _ego_ car as well, by adding an extra argument:
+   `bazel run drake/automotive:village-demo -- -use_ego_car=true`
+   The _ego_ car is constrained to drive on the same route as the _ado_ cars,
+   though its velocity and heading along that route can be controlled by the
+   user.
+
+ * "Maliput Village" demo showing merging behavior:
+   `bazel run drake/automotive:merging-demo`
+
+   Same general idea as the `village-demo`, but with a different path for
+   cars which includes a merge.
 
 Driving the Prius
 -----------------
