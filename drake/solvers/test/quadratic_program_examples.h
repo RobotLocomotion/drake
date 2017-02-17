@@ -10,6 +10,7 @@ enum class QuadraticProblems {
   kQuadraticProgram1 = 1,
   kQuadraticProgram2 = 2,
   kQuadraticProgram3 = 3,
+  kQardraticProgram4 = 4,
 };
 
 class QuadraticProgramTest
@@ -111,6 +112,14 @@ class QuadraticProgram3 : public OptimizationProgram {
   VectorDecisionVariable<6> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
+
+// Test the simple QP
+// min x(0)^2 + x(1)^2 + 2 * x(2)^2
+// s.t x(0) +   x(1) = 1
+//     x(0) + 2*x(2) = 2
+// The optimal solution should be
+// x(0) = 4/5, x(1) = 1/5, x(2) = 3/5
+class QuadraticProgram
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
