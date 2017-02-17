@@ -26,7 +26,6 @@ namespace {
 // This is because there is a precision difference between Ubuntu and Mac.
 const double kTolerance = 1e-12;
 
-const double kFrameRate = 30.;
 const double kFovY = M_PI_4;
 const bool kShowWindow = false;
 
@@ -35,7 +34,7 @@ class RgbdCameraTest : public ::testing::Test {
   RgbdCameraTest() : dut_("rgbd_camera", RigidBodyTree<double>(),
                           Eigen::Vector3d(1., 2., 3.),
                           Eigen::Vector3d(0.1, 0.2, 0.3),
-                          kFrameRate, kFovY,  kShowWindow) {}
+                          kFovY,  kShowWindow) {}
 
   void SetUp() {}
 
@@ -59,7 +58,6 @@ class RgbdCameraTest : public ::testing::Test {
 };
 
 TEST_F(RgbdCameraTest, InstantiateTest) {
-  EXPECT_NEAR(kFrameRate, dut_.get_frame_rate(), kTolerance);
   Verify(dut_.get_color_camera_info());
   Verify(dut_.get_depth_camera_info());
 }
@@ -113,7 +111,7 @@ class RenderingSim : public systems::Diagram<double> {
                                    1.0);  // Friction coefficient
     rgbd_camera_ = builder.AddSystem<RgbdCamera>(
         "rgbd_camera", plant_->get_rigid_body_tree(),
-        position, orientation, kFrameRate, kFovY, kShowWindow);
+        position, orientation, kFovY, kShowWindow);
 
     builder.Connect(plant_->get_output_port(0),
                     rgbd_camera_->get_input_port(0));
@@ -145,8 +143,8 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
   systems::Simulator<double> simulator(diagram, std::move(context));
   simulator.Initialize();
 
-  const double duration = 0.05;
-  for (double time = 0.; time < duration ; time += 0.02) {
+  const double duration = 0.03;
+  for (double time = 0.; time < duration ; time += 0.01) {
     simulator.StepTo(time);
     diagram.CalcOutput(simulator.get_context(), output.get());
 
@@ -160,24 +158,13 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
     // Verifies in a sampling way (32 x 24 sampling points instead of 640 x 480)
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
-        if (time < 1. / kFrameRate) {
-          // Before the first rendering, all the image values should be zero.
-          ASSERT_EQ(color_image.at(u, v)[0], 0u);
-          ASSERT_EQ(color_image.at(u, v)[1], 0u);
-          ASSERT_EQ(color_image.at(u, v)[2], 0u);
-          ASSERT_EQ(color_image.at(u, v)[3], 0);
+        ASSERT_NEAR(color_image.at(u, v)[0], 204u, 1.);
+        ASSERT_NEAR(color_image.at(u, v)[1], 229u, 1.);
+        ASSERT_NEAR(color_image.at(u, v)[2], 255u, 1.);
+        ASSERT_NEAR(color_image.at(u, v)[3], 255u, 1.);
 
-          ASSERT_EQ(depth_image.at(u, v)[0], 0.f);
-        } else {
-          // After the first rendering, the images have meaningful values.
-          ASSERT_NEAR(color_image.at(u, v)[0], 204u, 1.);
-          ASSERT_NEAR(color_image.at(u, v)[1], 229u, 1.);
-          ASSERT_NEAR(color_image.at(u, v)[2], 255u, 1.);
-          ASSERT_NEAR(color_image.at(u, v)[3], 255u, 1.);
-
-          // Assuming depth value provides 0.1mm precision.
-          ASSERT_NEAR(depth_image.at(u, v)[0], 4.999f, 1e-4);
-        }
+        // Assuming depth value provides 0.1mm precision.
+        ASSERT_NEAR(depth_image.at(u, v)[0], 4.999f, 1e-4);
       }
     }
   }
