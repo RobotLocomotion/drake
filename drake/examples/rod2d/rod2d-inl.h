@@ -29,7 +29,7 @@ Rod2D<T>::Rod2D(SimulationType simulation_type) {
                                " double argument.");
 
   // Both approaches need six continuous variables.
-  this->DeclareContinuousState(3, 3, 0);
+  this->DeclareContinuousState(3, 3, 0);  // q, v, z
   this->DeclareInputPort(systems::kVectorValued, 3);
   this->DeclareOutputPort(systems::kVectorValued, 6);
 
@@ -43,12 +43,12 @@ Rod2D<T>::Rod2D(double dt) : dt_(dt) {
   if (dt_ <= 0.0)
     throw std::logic_error("Time stepping system must be constructed using "
                                "positive integration step.");
+  this->DeclareDiscreteUpdatePeriodSec(dt);
 
   // Time stepping approach requires three position variables and
-  // three velocity variables.
+  // three velocity variables, all discrete.
   this->DeclareDiscreteState(6);
   this->DeclareInputPort(systems::kVectorValued, 3);
-  this->DeclareDiscreteUpdatePeriodSec(dt);
   this->DeclareOutputPort(systems::kVectorValued, 6);
 
   // Set the simulation type.
@@ -74,8 +74,8 @@ int Rod2D<T>::get_k(const systems::Context<T>& context) const {
 
 template <class T>
 Vector2<T> Rod2D<T>::CalcRodEndpoint(const T& x, const T& y, const int k,
-                                        const T& ctheta, const T& stheta,
-                                        const double half_rod_len) {
+                                     const T& ctheta, const T& stheta,
+                                     const double half_rod_len) {
   const T cx = x + k * ctheta * half_rod_len;
   const T cy = y + k * stheta * half_rod_len;
   return Vector2<T>(cx, cy);
@@ -139,7 +139,6 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   const T ctheta = cos(theta);
   const int k1 = -1.0;
   const int k2 = 1.0;
-  const T half_rod_length = rod_length_ / 2;
 
   // Three generalized coordinates / velocities.
   const int ngc = 3;
@@ -154,10 +153,10 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   const int nc = 2;
 
   // The two contact points are (xep1, yep1) and (xep2, yep2).
-  const T xep1 = x + k1 * ctheta * half_rod_length;
-  const T yep1 = y + k1 * stheta * half_rod_length;
-  const T xep2 = x + k2 * ctheta * half_rod_length;
-  const T yep2 = y + k2 * stheta * half_rod_length;
+  const T xep1 = x + k1 * ctheta * half_length_;
+  const T yep1 = y + k1 * stheta * half_length_;
+  const T xep2 = x + k2 * ctheta * half_length_;
+  const T yep2 = y + k2 * stheta * half_length_;
 
   // Total number of friction directions = number of friction directions
   // per contact * number of contacts. Because this problem is two dimensional,
@@ -332,9 +331,7 @@ void Rod2D<T>::HandleImpact(const systems::Context<T>& context,
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
-  const double half_rod_length = rod_length_ / 2;
-  const Vector2<T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
-                                       half_rod_length);
+  const Vector2<T> c = CalcRodEndpoint(x, y, k, ctheta, stheta, half_length_);
   const T cx = c[0];
   const T cy = c[1];
 
@@ -375,7 +372,7 @@ void Rod2D<T>::HandleImpact(const systems::Context<T>& context,
   // Verify that the post-impact velocity is non-negative (to allowable floating
   // point error).
   DRAKE_DEMAND((ydot + delta_ydot) +
-                   k * ctheta * half_rod_length * (thetadot + delta_thetadot) >
+                   k * ctheta * half_length_ * (thetadot + delta_thetadot) >
                -std::numeric_limits<double>::epsilon() * 10);
 
   // Update the velocity.
@@ -442,15 +439,14 @@ Vector2<T> Rod2D<T>::CalcFConeImpactImpulse(
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
-  const double half_rod_length = rod_length_ / 2;
-  const T cy = y + k * stheta * half_rod_length;
+  const T cy = y + k * stheta * half_length_;
   const double mu = mu_;
   const double J = J_;
   const double mass = mass_;
-  const double r = rod_length_;
+  const double r = 2 * half_length_;
 
   // Compute the impulses.
-  const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
+  const T cxdot = xdot - k * stheta * half_length_ * thetadot;
   const int sgn_cxdot = (cxdot > 0) ? 1 : -1;
   const T fN = (J * mass * (-(r * k * ctheta * thetadot) / 2 - ydot)) /
       (J + (r * k * mass * mu * (-y + cy) * ctheta * sgn_cxdot) / 2 -
@@ -516,11 +512,10 @@ Vector2<T> Rod2D<T>::CalcStickingImpactImpulse(
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
-  const double half_rod_length = rod_length_ / 2;
-  const T cy = y + k * stheta * half_rod_length;
+  const T cy = y + k * stheta * half_length_;
 
   // Compute the impulses.
-  const double r = rod_length_;
+  const double r = 2 * half_length_;
   const double mass = mass_;
   const double J = J_;
   const T fN = (2 * (-(r * J * k * mass * ctheta * thetadot) +
@@ -583,26 +578,25 @@ void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
 
   // Get constants for checking accelerations.
   const double mu = mu_;
-  const double r = rod_length_;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = get_k(context);
+  const double h = half_length_;
 
   // Verify that the vertical acceleration at the point of contact is zero
   // (i.e., cyddot = 0).
   const T cyddot =
-      yddot +
-          r * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
-  DRAKE_DEMAND(abs(cyddot) < std::numeric_limits<double>::epsilon() * 10);
+      yddot + h * k * (ctheta * thetaddot - stheta * thetadot * thetadot);
+
+  DRAKE_DEMAND(abs(cyddot) < 10 * std::numeric_limits<double>::epsilon());
 
   // If the force is within the friction cone, verify that the horizontal
   // acceleration at the point of contact is zero (i.e., cxddot = 0).
   if (fN * mu > abs(fF)) {
     const T cxddot =
-        xddot +
-            r * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
+        xddot + h * k * (-stheta * thetaddot - ctheta * thetadot * thetadot);
 
-    DRAKE_DEMAND(abs(cxddot) < std::numeric_limits<double>::epsilon() * 10);
+    DRAKE_DEMAND(abs(cxddot) < 10 * std::numeric_limits<double>::epsilon());
   }
 }
 
@@ -658,7 +652,7 @@ Vector2<T> Rod2D<T>::CalcStickingContactForces(
 
   // Set named Mathematica constants.
   const double mass = mass_;
-  const double r = rod_length_;
+  const double r = 2 * half_length_;
   const double g = get_gravitational_acceleration();
   const double J = J_;
   const double fX = input(0);
@@ -770,14 +764,13 @@ Vector3<T> Rod2D<T>::CalcCompliantContactForces(
   const Vector2<T> v_WRo(state.GetAtIndex(3), state.GetAtIndex(4));
   const T w_WR(state.GetAtIndex(5));
 
-  const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
 
   // Find left and right end point locations.
   Vector2<T> p_WP[2] = {
-      CalcRodEndpoint(p_WRo[0], p_WRo[1], -1, ctheta, stheta, half_rod_length),
-      CalcRodEndpoint(p_WRo[0], p_WRo[1], 1, ctheta, stheta, half_rod_length)};
+      CalcRodEndpoint(p_WRo[0], p_WRo[1], -1, ctheta, stheta, half_length_),
+      CalcRodEndpoint(p_WRo[0], p_WRo[1], 1, ctheta, stheta, half_length_)};
 
   Vector3<T> f_contact(0, 0, 0);  // Accumulate contact forces here.
   for (int i = 0; i < 2; ++i) {
@@ -832,24 +825,23 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   //            | sin(theta)  cos(theta) |
   // and r is designated as the rod length. Thus, the heights of
   // the rod endpoints are y + sin(theta)*r/2 and y - sin(theta)*r/2.
-  const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = get_k(context);
 
   // Determine the point of contact (cx, cy).
   const Vector2<T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
-                                       half_rod_length);
+                                       half_length_);
   const T cx = c[0];
   const T cy = c[1];
 
   // Compute the horizontal velocity at the point of contact.
-  const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
+  const T cxdot = xdot - k * stheta * half_length_ * thetadot;
 
   // Compute the normal acceleration at the point of contact (cy_ddot),
   // *assuming zero contact force*.
   T cyddot = get_gravitational_acceleration() -
-      k * half_rod_length * stheta * thetadot * thetadot;
+      k * half_length_ * stheta * thetadot * thetadot;
 
   // Get the inputs.
   const int port_index = 0;
@@ -890,7 +882,7 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   const double mu = mu_;
   const int sgn_cxdot = (cxdot > 0) ? 1 : -1;
   const double g = get_gravitational_acceleration();
-  const double r = rod_length_;
+  const double r = 2 * half_length_;
   const T fN = -((2 * (2 * J * (fY + g * mass) + k * mass * r * tau * ctheta -
        J * k * mass * r * stheta * thetadot * thetadot))/
        (4 * J + k * k * mass * r * r * ctheta * ctheta +
@@ -943,11 +935,10 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
 
   // Get the contact point.
   const int k = get_k(context);
-  const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const Vector2<T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
-                                       half_rod_length);
+                                       half_length_);
   const T cx = c[0];
   const T cy = c[1];
 
@@ -972,7 +963,7 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
   if (abs(fF) > mu * fN) {
     // Set named Mathematica constants.
     const double mass = get_rod_mass();
-    const double r = get_rod_length();
+    const double r = 2 * get_rod_half_length();
     const double J = get_rod_moment_of_inertia();
     const double g = get_gravitational_acceleration();
 
@@ -1078,21 +1069,19 @@ bool Rod2D<T>::IsImpacting(const systems::Context<T>& context) const {
   const T& thetadot = state.GetAtIndex(5);
 
   // Get the height of the lower rod endpoint.
-  const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : (stheta < 0) ? 1 : 0;
-  const T cy = y + k * stheta * half_rod_length;
+  const T cy = y + k * stheta * half_length_;
 
   // If rod endpoint is not touching, there is no impact.
-  if (cy >= std::numeric_limits<double>::epsilon())
-    return false;
+  if (cy >= 10 * std::numeric_limits<double>::epsilon()) return false;
 
   // Compute the velocity at the point of contact.
-  const T cydot = ydot + k * ctheta * half_rod_length * thetadot;
+  const T cydot = ydot + k * ctheta * half_length_ * thetadot;
 
   // Verify that the rod is not impacting.
-  return (cydot < -std::numeric_limits<double>::epsilon());
+  return (cydot < -10 * std::numeric_limits<double>::epsilon());
 }
 
 // Computes the accelerations of the rod center of mass for the rod, both
@@ -1109,7 +1098,6 @@ void Rod2D<T>::CalcAccelerationsCompliantContactAndBallistic(
   const auto f_input = this->EvalEigenVectorInput(context, port_index);
 
   // Calculate contact forces.
-
   const Vector3<T> f_contact = CalcCompliantContactForces(context);
   const Vector3<T> f_total = f_contact + f_input;
 
@@ -1230,7 +1218,7 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
 
   // Initial state corresponds to an inconsistent configuration for piecewise
   // DAE.
-  const double half_len = get_rod_length() / 2;
+  const double half_len = get_rod_half_length();
   VectorX<T> x0(6);
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.

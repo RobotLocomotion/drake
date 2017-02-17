@@ -10,12 +10,36 @@ namespace drake {
 namespace rod2d {
 
 /// Dynamical system representation of a rod contacting a half-space in
-/// two dimensions. This system can be modeling and simulated using one of
-/// three models: a pseudo-rigid model (the rod is rigid, but contact between
-/// the rod and the half-space is modeled as compliant), a fully rigid model
-/// simulated with piecewise differential algebraic equations, and a fully
-/// rigid model simulated using a first-order time stepping approach. The rod
-/// state is initialized to the configuration that corresponds to the
+/// two dimensions.
+///
+/// The rod's coordinate frame R is placed at the rod's center point Ro, which
+/// is also its center of mass Rcm. R's planar pose is given by a planar
+/// transform X_WR=(x,y,θ). When X_WR=0 (identity transform), R is coincident
+/// with the World frame W, and aligned horizontally as shown: <pre>
+///
+///    +Wy                             +Ry
+///     |                               |
+///     |                               |<---- h ----->
+///     |                 ==============|==============
+///   Wo*-----> +Wx    Rl*            Ro*-----> +Rx    *Rr
+///                       =============================
+///    World frame                 Rod R, θ=0
+/// </pre>
+/// θ is the angle between Rx and Wx, measured using the right hand rule about
+/// Wz (out of the screen), that is, counterclockwise. The rod has half-length
+/// h, and "left" and "right" endpoints `Rl=Ro-h*Rx` and `Rr=Ro+h*Rx` at which
+/// it can contact the halfspace whose surface is at Wy=0.
+///
+/// This system can be modeling and simulated using one of three models:
+/// - a compliant contact model (the rod is rigid, but contact between
+///   the rod and the half-space is modeled as compliant) simulated using
+///   ordinary differential equations (ODEs),
+/// - a fully rigid model simulated with piecewise differential algebraic
+///   equations (DAEs), and
+/// - a fully rigid model simulated as a discrete system using a first-order
+///   time stepping approach.
+///
+/// The rod state is initialized to the configuration that corresponds to the
 /// Painlevé Paradox problem, described in [Stewart 2000]. The paradox consists
 /// of a rod contacting a planar surface *without impact* and subject to sliding
 /// Coulomb friction. The problem is well known to correspond to an
@@ -46,9 +70,9 @@ namespace rod2d {
 ///         the system is in (e.g., ballistic, contacting at one point and
 ///         sliding, etc.) and one abstract state variable (of type int) is used
 ///         to determine which endpoint(s) of the rod contact the halfspace
-///         (k=-1 indicates the bottom of the rod when theta = pi/2, k=+1
-///         indicates the top of the rod when theta = pi/2, and k=0 indicates
-///         both endpoints of the rod are contacting the halfspace).
+///         (k=-1 indicates the left endpoint Rl, k=+1 indicates the right
+///         endpoint Rr, and k=0 indicates that both endpoints of the rod are
+///         contacting the halfspace).
 ///
 /// Outputs: planar position (state indices 0 and 1) and orientation (state
 ///          index 2), and planar linear velocity (state indices 3 and 4) and
@@ -171,11 +195,11 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Sets the mass of the rod.
   void set_rod_mass(double mass) { mass_ = mass; }
 
-  /// Gets the length of the rod.
-  double get_rod_length() const { return rod_length_; }
+  /// Gets the half-length h of the rod.
+  double get_rod_half_length() const { return half_length_; }
 
-  /// Sets the length of the rod.
-  void set_rod_length(double rod_length) { rod_length_ = rod_length; }
+  /// Sets the half-length h of the rod.
+  void set_rod_half_length(double half_length) { half_length_ = half_length; }
 
   /// Gets the rod moment of inertia.
   double get_rod_moment_of_inertia() const { return J_; }
@@ -315,12 +339,12 @@ class Rod2D : public systems::LeafSystem<T> {
   // construction.
   SimulationType simulation_type_;
 
-  double dt_{0.0};          // Integration step-size for time stepping approach.
-  double mass_{1.0};        // The mass of the rod (kg).
-  double rod_length_{1.0};  // The length of the rod (m).
-  double mu_{1000.0};       // The (dynamic) coefficient of friction.
+  double dt_{0.};           // Integration step-size for time stepping approach.
+  double mass_{1.};         // The mass of the rod (kg).
+  double half_length_{1.};  // The length of the rod (m).
+  double mu_{1000.};        // The (dynamic) coefficient of friction.
   double g_{-9.81};         // The acceleration due to gravity (in y direction).
-  double J_{1.0};           // The moment of the inertia of the rod.
+  double J_{1.};            // The moment of the inertia of the rod.
   double erp_{0.8};         // ERP for time stepping systems.
   double cfm_{1e-8};        // CFM for time stepping systems.
 
