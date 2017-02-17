@@ -183,6 +183,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "quaternion_test",
+    deps = [
+        ":geometric_transform",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "rotation_matrix_test",
     deps = [
         ":geometric_transform",

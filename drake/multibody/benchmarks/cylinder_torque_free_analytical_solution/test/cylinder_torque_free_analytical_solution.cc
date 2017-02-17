@@ -30,501 +30,6 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 using Eigen::Quaterniond;
 
-/**
- * This function tests whether a quaternion in its "canonical form" meaning that
- * for a quaternion [e0, e1, e2, e3], its 0th term is inherently non-negative.
- * @param quat Quaternion e0, e1, e2, e3 that relates two right-handed
- *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
- *   Note: quat is analogous to the rotation matrix R_AB.
- * @return True if quat.w() is positive (in canonical form), otherwise false.
- */
-template<typename T>
-bool IsQuaternionInCanonicalForm(const Eigen::Quaternion<T>& quat) {
-  return quat.w() >= 0.0;
-}
-
-
-// This function tests whether a quaternion is in canonical form, which for a
-// quaternion [e0, e1, e2, e3], it tests whether the e0 term is non-negative.
-GTEST_TEST(IsQuaternionInCanonicalFormTest, testA) {
-  const double half_angle = M_PI/6;
-  const double sin_half_angle = std::sin(half_angle);
-  const double x = 0.3, y = 0.7, z = std::sqrt(1.0 - (x*x + y*y));
-  const double e0 = std::cos(half_angle);
-  const double e1 = sin_half_angle * x;
-  const double e2 = sin_half_angle * y;
-  const double e3 = sin_half_angle * z;
-  const Eigen::Quaterniond a(+e0, +e1, +e2, +e3);
-  const Eigen::Quaterniond b(-e0, -e1, -e2, -e3);
-  EXPECT_TRUE(IsQuaternionInCanonicalForm(a));
-  EXPECT_FALSE(IsQuaternionInCanonicalForm(b));
-}
-
-
-/**
- * This function returns a quaternion in its "canonical form" meaning that it
- * returns a quaternion [e0, e1, e2, e3] with a non-negative e0.
- * @param quat Quaternion [e0, e1, e2, e3] that relates two right-handed
- *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
- *   Note: quat is analogous to the rotation matrix R_AB.
- * @return Canonical form of quat, which means that either the original quat
- *   is returned or a quaternion representing the same orientation but with
- *   negated [e0, e1, e2, e3], to ensure a positive e0 in returned quaternion.
- */
-template<typename T>
-Eigen::Quaternion<T> QuaternionToCanonicalForm(
-                     const Eigen::Quaternion<T>& quat ) {
-  return IsQuaternionInCanonicalForm(quat) ? quat :
-         Eigen::Quaternion<T>(-quat.w(), -quat.x(), -quat.y(), -quat.z());
-}
-
-
-// This function tests conversion of a quaternion to its canonical form, meaning
-// it tests conversion to a quaternion [e0, e1, e2, e3] with non-negative e0.
-GTEST_TEST(QuaternionToCanonicalFormTest, testA) {
-  const double half_angle = M_PI/6;
-  const double sin_half_angle = std::sin(half_angle);
-  const double x = 0.3, y = 0.7, z = std::sqrt(1.0 - (x*x + y*y));
-  const double e0 = std::cos(half_angle);
-  const double e1 = sin_half_angle * x;
-  const double e2 = sin_half_angle * y;
-  const double e3 = sin_half_angle * z;
-  const Eigen::Quaterniond a(+e0, +e1, +e2, +e3);
-  const Eigen::Quaterniond b(-e0, -e1, -e2, -e3);
-  const Eigen::Quaterniond a_canonical = QuaternionToCanonicalForm(a);
-  const Eigen::Quaterniond b_canonical = QuaternionToCanonicalForm(b);
-  EXPECT_TRUE(a_canonical.isApprox(a));
-  EXPECT_FALSE(b_canonical.isApprox(b));
-}
-
-/**
- * This function tests whether the canonical form of one quaternion is equal to
- * the canonical form of another quaternion, which is useful for testing whether
- * two quaternions represent the same orientation.
- * @param quat1 Quaternion e0, e1, e2, e3 that relates two right-handed
- *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
- *   Note: quat is analogous to the rotation matrix R_AB.
-  * @param quat2 Quaternion e0, e1, e2, e3 that relates two right-handed
- *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
- *   Note: quat is analogous to the rotation matrix R_AB.*
- * @return True if quat.w() is positive (in canonical form), otherwise false.
- */
-template<typename T>
-bool AreQuaternionsApproximatlyEqualInCanonicalForm(
-     const Eigen::Quaternion<T>& quat1,
-     const Eigen::Quaternion<T>& quat2,
-     const T tolerance) {
-  const Eigen::Quaternion<T> quat1_canonical = QuaternionToCanonicalForm(quat1);
-  const Eigen::Quaternion<T> quat2_canonical = QuaternionToCanonicalForm(quat2);
-  return quat1_canonical.isApprox(quat2_canonical, tolerance);
-}
-
-
-// This function tests whether a quaternion is in canonical form, which for a
-// quaternion [e0, e1, e2, e3], it tests whether the e0 term is non-negative.
-GTEST_TEST(AreQuaternionsApproximatlyEqualInCanonicalFormTest, testA) {
-  const double half_angle = M_PI/6;
-  const double sin_half_angle_a = std::sin(half_angle);
-  const double x = 0.3, y = 0.7, z = std::sqrt(1.0 - (x*x + y*y));
-  const double e0a = std::cos(half_angle);
-  const double e1a = sin_half_angle_a * x;
-  const double e2a = sin_half_angle_a * y;
-  const double e3a = sin_half_angle_a * z;
-  const Eigen::Quaterniond a(+e0a, +e1a, +e2a, +e3a);
-  const Eigen::Quaterniond b(-e0a, -e1a, -e2a, -e3a);
-  const double sin_half_angle_c = std::sin(0.99*half_angle);
-  const double e0c = std::cos(0.99*half_angle);
-  const double e1c = sin_half_angle_c * x;
-  const double e2c = sin_half_angle_c * y;
-  const double e3c = sin_half_angle_c * z;
-  const Eigen::Quaterniond c(+e0c, +e1c, +e2c, +e3c);
-  const double epsilon = std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(AreQuaternionsApproximatlyEqualInCanonicalForm(a, b, 8*epsilon));
-  EXPECT_FALSE(AreQuaternionsApproximatlyEqualInCanonicalForm(a, c, 0.001));
-}
-
-/** This function calculates a quaternion's time-derivative from its quaternion
- * and angular velocity. Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
- * @param quat_AB Quaternion e0, e1, e2, e3 that relates two right-handed
- *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
- *   Note: quat_AB is analogous to the rotation matrix R_AB.
- * @param w_AB_B  B's angular velocity in A, expressed in B.
- * @retval quatDt time-derivative of quat_AB, i.e., [e0', e1', e2', e3'].
- *
- * @note To avoid dependence on Eigen's internal ordering of elements in its
- * Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
- * Return value `quatDt` *does* have a specific order as defined above.
- *
- * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
- *   (With P. W. Likins and D. A. Levinson).  Available for free .pdf download:
- *   https://ecommons.cornell.edu/handle/1813/637
- */
-// TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
-// TODO(mitiguy and Dai)  Create QuaternionDt class and update Doxygen.
-template<typename T>
-Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
-           const Eigen::Quaternion<T>& quat_AB,  const Vector3<T>& w_AB_B ) {
-  const T e0 = quat_AB.w(),  e1 = quat_AB.x(),
-          e2 = quat_AB.y(),  e3 = quat_AB.z();
-  const T wx = w_AB_B[0], wy = w_AB_B[1], wz = w_AB_B[2];
-
-  const T e0Dt = 0.5*(-e1*wx - e2*wy - e3*wz);
-  const T e1Dt = 0.5 *(e0*wx - e3*wy + e2*wz);
-  const T e2Dt = 0.5 *(e3*wx + e0*wy - e1*wz);
-  const T e3Dt = 0.5*(-e2*wx + e1*wy + e0*wz);
-
-  return Vector4<T>(e0Dt, e1Dt, e2Dt, e3Dt);
-}
-
-
-// This function tests CalculateQuaternionDtFromAngularVelocityExpressedInB.
-GTEST_TEST(CalculateQuaternionDtFromAngularVelocityExpressedInBTest, testA) {
-  const double half_angle = M_PI/6;
-  const double sin_half_angle = std::sin(half_angle);
-  const double x = 0.3, y = 0.7, z = std::sqrt(1.0 - (x*x + y*y));
-
-  // For convenience, locally typedef Vector7d and AutoDiff7d.
-  using Vector7d = Eigen::Matrix<double, 7, 1>;
-  using AutoDiff7d = Eigen::AutoDiffScalar<Vector7d>;
-
-  // Initialize each variable that is to be regarded as an independent variable
-  // (for purposes of partial differentiation) with its numerical value (i.e.,
-  // (where the function and its nth derivatives are to be evaluated) and the
-  // appropriate entry for it in the 7d array.
-  const AutoDiff7d e0(std::cos(half_angle), 7, 0);
-  const AutoDiff7d e1(sin_half_angle * x,   7, 1);
-  const AutoDiff7d e2(sin_half_angle * y,   7, 2);
-  const AutoDiff7d e3(sin_half_angle * z,   7, 3);
-  const AutoDiff7d wx(2.1,                  7, 4);
-  const AutoDiff7d wy(-3.4,                 7, 5);
-  const AutoDiff7d wz(5.3,                  7, 6);
-  const Eigen::Quaternion<AutoDiff7d> quat(e0,  e1,  e2,  e3);
-  const drake::Vector3<AutoDiff7d> w_B(wx, wy, wz);
-  const drake::Vector4<AutoDiff7d> quatDt =
-      CalculateQuaternionDtFromAngularVelocityExpressedInB(quat, w_B);
-
-  // Verify Drake's quatDt versus MotionGenesis (MG) results.
-  const Eigen::Vector4d quatDt_MG(-0.4211981425390414,  2.387689633338328,
-                                  -1.529504299767133,   1.672467320028763);
-  const Eigen::Vector4d quatDt_numerical = math::autoDiffToValueMatrix(quatDt);
-  const double epsilon = std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(quatDt_numerical, quatDt_MG, 8*epsilon));
-
-  // Test Drake partials of quatDt with respect to [e0, e1, e2, e3, wx, wy, wz].
-  const Vector7d e0Dt_partials = quatDt(0).derivatives();
-  const Vector7d e1Dt_partials = quatDt(1).derivatives();
-  const Vector7d e2Dt_partials = quatDt(2).derivatives();
-  const Vector7d e3Dt_partials = quatDt(3).derivatives();
-
-  // MotionGenesis was used to calculate and evaluate same partial derivatives.
-  Vector7d e0Dt_partial_MG, e1Dt_partial_MG, e2Dt_partial_MG, e3Dt_partial_MG;
-  e0Dt_partial_MG.head<4>() <<  0,    -1.05,  1.7,  -2.65;
-  e1Dt_partial_MG.head<4>() <<  1.05,  0,     2.65,  1.7;
-  e2Dt_partial_MG.head<4>() << -1.7,  -2.65,  0,     1.05;
-  e3Dt_partial_MG.head<4>() <<  2.65, -1.7,  -1.05,  0;
-  e0Dt_partial_MG.tail<3>() << -0.075,              -0.175,
-                               -0.1620185174601965;
-  e1Dt_partial_MG.tail<3>() <<  0.4330127018922194, -0.1620185174601965,  0.175;
-  e2Dt_partial_MG.tail<3>() <<  0.1620185174601965,  0.4330127018922194, -0.075;
-  e3Dt_partial_MG.tail<3>() << -0.175,               0.075,
-                                0.4330127018922194;
-
-  // Verify Drake's partials are nearly identical to exact values.
-  EXPECT_TRUE(CompareMatrices(e0Dt_partials, e0Dt_partial_MG, 8*epsilon));
-  EXPECT_TRUE(CompareMatrices(e1Dt_partials, e1Dt_partial_MG, 8*epsilon));
-  EXPECT_TRUE(CompareMatrices(e2Dt_partials, e2Dt_partial_MG, 8*epsilon));
-  EXPECT_TRUE(CompareMatrices(e3Dt_partials, e3Dt_partial_MG, 8*epsilon));
-}
-
-
-/** This function calculates angular velocity from a quaternion and its time-
- * derivative. Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
- * @param quat_AB  Quaternion e0, e1, e2, e3 that relates two right-handed
- *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
- *   Note: quat_AB is analogous to the rotation matrix R_AB.
- * @param quatDt  time-derivative of `quat_AB`, i.e. [e0', e1', e2', e3'].
- * @retval w_AB_B  B's angular velocity in A, expressed in B.
- *
- * @note To avoid dependence on Eigen's internal ordering of elements in its
- * Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
- * Parameter `quatDt` *does* have a specific order as defined above.
- *
- * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
- *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
- *   https://ecommons.cornell.edu/handle/1813/637
- */
-// TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
-// TODO(mitiguy and Dai)  Create QuaternionDt class and update Doxygen.
-template <typename T>
-Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDt(
-    const Eigen::Quaternion<T>& quat_AB, const Vector4<T>& quatDt) {
-  const T e0 = quat_AB.w(), e1 = quat_AB.x(),
-          e2 = quat_AB.y(), e3 = quat_AB.z();
-  const T e0Dt = quatDt[0], e1Dt = quatDt[1],
-          e2Dt = quatDt[2], e3Dt = quatDt[3];
-
-  const T wx = 2*(-e1*e0Dt + e0*e1Dt + e3*e2Dt - e2*e3Dt);
-  const T wy = 2*(-e2*e0Dt - e3*e1Dt + e0*e2Dt + e1*e3Dt);
-  const T wz = 2*(-e3*e0Dt + e2*e1Dt - e1*e2Dt + e0*e3Dt);
-
-  return Vector3<T>(wx, wy, wz);
-}
-
-
-// This function tests CalculateQuaternionDtFromAngularVelocityExpressedInB.
-GTEST_TEST(CalculateAngularVelocityExpressedInBFromQuaternionDtTest, testA) {
-  const double half_angle = M_PI/6;
-  const double sin_half_angle = std::sin(half_angle);
-  const double x = 0.3, y = 0.7, z = std::sqrt(1.0 - (x*x + y*y));
-
-  // For convenience, locally typedef Vector7d and AutoDiff7d.
-  using Vector8d = Eigen::Matrix<double, 8, 1>;
-  using AutoDiff8d = Eigen::AutoDiffScalar<Vector8d>;
-
-  // Initialize each variable that is to be regarded as an independent variable
-  // (for purposes of partial differentiation) with its numerical value (i.e.,
-  // (where the function and its nth derivatives are to be evaluated) and the
-  // appropriate entry for it in the 7d array.
-  const AutoDiff8d e0(std::cos(half_angle),  8, 0);
-  const AutoDiff8d e1(sin_half_angle * x,    8, 1);
-  const AutoDiff8d e2(sin_half_angle * y,    8, 2);
-  const AutoDiff8d e3(sin_half_angle * z,    8, 3);
-  const AutoDiff8d e0Dt(-0.4211981425390414, 8, 4);
-  const AutoDiff8d e1Dt(+2.387689633338328,  8, 5);
-  const AutoDiff8d e2Dt(-1.529504299767133,  8, 6);
-  const AutoDiff8d e3Dt(+1.672467320028763,  8, 7);
-  const Eigen::Quaternion<AutoDiff8d> quat(e0,  e1,  e2,  e3);
-  const drake::Vector4<AutoDiff8d> quatDt(e0Dt, e1Dt, e2Dt, e3Dt);
-  const drake::Vector3<AutoDiff8d> w_B =
-      CalculateAngularVelocityExpressedInBFromQuaternionDt(quat, quatDt);
-
-  // Verify Drake's w_B versus exact results.
-  const Eigen::Vector3d w_B_exact(2.1, -3.4, 5.3);
-  const Eigen::Vector3d w_B_numerical = math::autoDiffToValueMatrix(w_B);
-  const double epsilon = std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(w_B_numerical, w_B_exact, 8*epsilon));
-}
-
-
-/** This function calculates how well a quaternion and its time-derivative
- * satisfy the quaternion time-derivative constraint specified in [Kane, 1983]
- * Section 1.13, equations 12-13, page 59.  For a quaternion [e0, e1, e2, e3],
- * the quaternion must satisfy:  e0^2 + e1^2 + e2^2 + e3^2 = 1,   hence its
- * time-derivative must satisfy:  2*(e0*e0' + e1*e1' + e2*e2' + e3*e3') = 0.
- * @param quat  Quaternion e0, e1, e2, e3 that relates two right-handed
- *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
- *   Note: A quaternion like quat_AB is analogous to the rotation matrix R_AB.
- * @param quatDt  time-derivative of `quat`, i.e., [e0', e1', e2', e3'].
- * @retval value of constraint - should be near 0 (may be positive or negative).
- *
- * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
- *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
- *   https://ecommons.cornell.edu/handle/1813/637
- */
-// TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
-template <typename T>
-T CalculateQuaternionDtConstraintViolation(const Eigen::Quaternion<T>& quat,
-                                           const Vector4<T>& quatDt) {
-  const T e0 = quat.w(), e1 = quat.x(), e2 = quat.y(), e3 = quat.z();
-  const T e0Dt = quatDt[0], e1Dt = quatDt[1],
-          e2Dt = quatDt[2], e3Dt = quatDt[3];
-  return 2.0 * (e0*e0Dt + e1*e1Dt + e2*e2Dt + e3*e3Dt);
-}
-
-
-// This function tests CalculateQuaternionDtConstraintViolation.
-GTEST_TEST(CalculateQuaternionDtConstraintViolationTest, testA) {
-  const double half_angle = M_PI/6;
-  const double sin_half_angle = std::sin(half_angle);
-  const double x = 0.3, y = 0.7, z = std::sqrt(1.0 - (x*x + y*y));
-
-  // For convenience, locally typedef Vector7d and AutoDiff7d.
-  using Vector8d = Eigen::Matrix<double, 8, 1>;
-  using AutoDiff8d = Eigen::AutoDiffScalar<Vector8d>;
-
-  // Initialize each variable that is to be regarded as an independent variable
-  // (for purposes of partial differentiation) with its numerical value (i.e.,
-  // (where the function and its nth derivatives are to be evaluated) and the
-  // appropriate entry for it in the 7d array.
-  const AutoDiff8d e0(std::cos(half_angle),  8, 0);
-  const AutoDiff8d e1(sin_half_angle * x,    8, 1);
-  const AutoDiff8d e2(sin_half_angle * y,    8, 2);
-  const AutoDiff8d e3(sin_half_angle * z,    8, 3);
-  const AutoDiff8d e0Dt(-0.4211981425390414, 8, 4);
-  const AutoDiff8d e1Dt(+2.387689633338328,  8, 5);
-  const AutoDiff8d e2Dt(-1.529504299767133,  8, 6);
-  const AutoDiff8d e3Dt(+1.672467320028763,  8, 7);
-  const Eigen::Quaternion<AutoDiff8d> quat(e0,  e1,  e2,  e3);
-  const drake::Vector4<AutoDiff8d> quatDt(e0Dt, e1Dt, e2Dt, e3Dt);
-  const drake::Vector4<AutoDiff8d> quatDt_b(quatDt[0], quatDt[1], quatDt[2],
-                                       0.99*quatDt[3]);
-  const AutoDiff8d a = CalculateQuaternionDtConstraintViolation(quat, quatDt);
-  const AutoDiff8d b = CalculateQuaternionDtConstraintViolation(quat, quatDt_b);
-  const double a_value = a.value();
-  const double b_value = b.value();
-
-  // For the given numbers, a_value should be near zero, whereas b_value is not.
-  const double epsilon = std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(std::abs(a_value) <=  8*epsilon);
-  EXPECT_TRUE(std::abs(b_value) >=  0.01);
-}
-
-
-/** This function tests if a quaternion and its time-derivative satisfy the
- * quaternion and its time-derivative constraint specified in [Kane, 1983]
- * Section 1.13, equations 12-13, page 59.  For a quaternion [e0, e1, e2, e3],
- * the quaternion must satisfy:  e0^2 + e1^2 + e2^2 + e3^2 = 1,   hence its
- * time-derivative must satisfy:  2*(e0*e0' + e1*e1' + e2*e2' + e3*e3') = 0.
- * @param quat  Quaternion e0, e1, e2, e3 that relates two right-handed
- *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
- *   Note: A quaternion like quat_AB is analogous to the rotation matrix R_AB.
- * @param quatDt  time-derivative of `quat`, i.e., [e0', e1', e2', e3'].
- * @param tolerance Tolerance required to match results.
- * @returns true if both of the following constraints are satisfied:
- * a) e0^2 + e1^2 + e3^2 + e3^2 - 1 = 0,  to within tolerance.
- * b) 2*(e0*e0' + e1*e1' + e2*e2' + e3*e3') = 0   to within tolerance.
- *
- * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
- *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
- *   https://ecommons.cornell.edu/handle/1813/637
- */
-// TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
-template <typename T>
-bool IsBothQuaternionAndQuaternionDtOK(const Eigen::Quaternion<T>& quat,
-                                       const Vector4<T>& quatDt,
-                                       const double tolerance) {
-  using std::abs;
-
-  // For an accurate test, the quaternion should be reasonably accurate.
-  const T quat_norm_error = abs(1.0 - quat.norm());
-  const bool is_good_quat_norm = (quat_norm_error <= tolerance);
-  if ( is_good_quat_norm == false ) return false;
-
-  const T quatDt_test =
-               CalculateQuaternionDtConstraintViolation(quat, quatDt);
-  return abs(quatDt_test) <= tolerance;
-}
-
-
-// This function tests CalculateQuaternionDtConstraintViolation.
-GTEST_TEST(IsBothQuaternionAndQuaternionDtOK, testA) {
-  const double half_angle = M_PI/6;
-  const double sin_half_angle = std::sin(half_angle);
-  const double x = 0.3, y = 0.7, z = std::sqrt(1.0 - (x*x + y*y));
-
-  // For convenience, locally typedef Vector7d and AutoDiff7d.
-  using Vector8d = Eigen::Matrix<double, 8, 1>;
-  using AutoDiff8d = Eigen::AutoDiffScalar<Vector8d>;
-
-  // Initialize each variable that is to be regarded as an independent variable
-  // (for purposes of partial differentiation) with its numerical value (i.e.,
-  // (where the function and its nth derivatives are to be evaluated) and the
-  // appropriate entry for it in the 7d array.
-  const AutoDiff8d e0(std::cos(half_angle),  8, 0);
-  const AutoDiff8d e1(sin_half_angle * x,    8, 1);
-  const AutoDiff8d e2(sin_half_angle * y,    8, 2);
-  const AutoDiff8d e3(sin_half_angle * z,    8, 3);
-  const AutoDiff8d e0Dt(-0.4211981425390414, 8, 4);
-  const AutoDiff8d e1Dt(+2.387689633338328,  8, 5);
-  const AutoDiff8d e2Dt(-1.529504299767133,  8, 6);
-  const AutoDiff8d e3Dt(+1.672467320028763,  8, 7);
-  const Eigen::Quaternion<AutoDiff8d> quat(e0,  e1,  e2,  e3);
-  const drake::Vector4<AutoDiff8d> quatDt(e0Dt, e1Dt, e2Dt, e3Dt);
-  const drake::Vector4<AutoDiff8d> quatDt_b(quatDt[0], quatDt[1], quatDt[2],
-                                       0.99*quatDt[3]);
-
-  const double epsilon = std::numeric_limits<double>::epsilon();
-  const bool a = IsBothQuaternionAndQuaternionDtOK(quat, quatDt,   8*epsilon);
-  const bool b = IsBothQuaternionAndQuaternionDtOK(quat, quatDt_b, 0.01);
-  EXPECT_TRUE(a);
-  EXPECT_FALSE(b);
-}
-
-
-//-----------------------------------------------------------------------------
-// TODO(Mitiguy) Remove function unless useful for more than Evan's PR# 4604.
-// If more generally useful, create Doxygen for this function.
-//-----------------------------------------------------------------------------
-void  TestMapVelocityToQDot(
-    const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-    const drake::systems::Context<double>& context,
-    const Vector3d& w_NB_B_exact,
-    const Vector3d& v_NBo_B_exact,
-    const Vector4d& quatDt_NB_exact,
-    const Vector3d& xyzDt_exact,
-    const double tolerance) {
-
-  // Form matrix of motion variables.
-  Eigen::VectorXd motion_variables(6);
-  motion_variables << w_NB_B_exact, v_NBo_B_exact;
-
-  // Test whether MapVelocityToQDot accurately converts motion variables to
-  // time-derivatives of coordinates.
-  systems::BasicVector<double> coordinatesDt_from_map(7);
-  rigid_body_plant.MapVelocityToQDot(context, motion_variables,
-                                     &coordinatesDt_from_map);
-  const double xDt_map = coordinatesDt_from_map[0];
-  const double yDt_map = coordinatesDt_from_map[1];
-  const double zDt_map = coordinatesDt_from_map[2];
-  const double e0Dt_map = coordinatesDt_from_map[3];
-  const double e1Dt_map = coordinatesDt_from_map[4];
-  const double e2Dt_map = coordinatesDt_from_map[5];
-  const double e3Dt_map = coordinatesDt_from_map[6];
-  const Vector3d xyzDt_map(xDt_map, yDt_map, zDt_map);
-  const Vector4d quatDt_map(e0Dt_map, e1Dt_map, e2Dt_map, e3Dt_map);
-#if 0  // TODO(mitiguy) Remove these debug statements.
-  std::cout << "\n\n--------------------------------------------------";
-  std::cout << "\n----------- Test: MapVelocityToQDot --------------";
-  std::cout << "\n--------------------------------------------------";
-  std::cout << "\nquatDt_map =      \n" << quatDt_map;
-  std::cout << "\nquatDt_NB_exact = \n" << quatDt_NB_exact;
-  std::cout << "\n\nxyzDt_map=      \n" << xyzDt_map;
-  std::cout << "\nxyzDt_exact =     \n" << xyzDt_exact;
-  std::cout << "\n--------------------------------------------------\n";
-#endif
-
-  EXPECT_TRUE(CompareMatrices(xyzDt_map,      xyzDt_exact, tolerance));
-  EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_NB_exact, tolerance));
-}
-
-//-----------------------------------------------------------------------------
-// TODO(Mitiguy) Remove function unless useful for more than Evan's PR# 4604.
-// If more generally useful, create Doxygen for this function.
-//-----------------------------------------------------------------------------
-void  TestMapQDotToVelocity(
-    const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-    const drake::systems::Context<double>& context,
-    const Vector4d& quatDt_NB_exact,
-    const Vector3d& xyzDt_exact,
-    const Vector3d& w_NB_B_exact,
-    const Vector3d& v_NBo_B_exact,
-    const double tolerance) {
-
-  // Form matrix of time-derivative of coordinates.
-  Eigen::VectorXd coordinatesDt(7);
-  coordinatesDt << xyzDt_exact, quatDt_NB_exact;
-
-  // Test whether MapQDotToVelocity accurately converts time-derivative of
-  // coordinates to motion variables.
-  systems::BasicVector<double> wv_from_map(6);
-  rigid_body_plant.MapQDotToVelocity(context, coordinatesDt, &wv_from_map);
-  const Vector3d w_map(wv_from_map[0], wv_from_map[1], wv_from_map[2]);
-  const Vector3d v_map(wv_from_map[3], wv_from_map[4], wv_from_map[5]);
-#if 0  // TODO(mitiguy) Remove these debug statements.
-  std::cout << "\n\n--------------------------------------------------";
-  std::cout << "\n----------- Test: MapQDotToVelocity --------------";
-  std::cout << "\n--------------------------------------------------";
-  std::cout << "\nw_map         = \n" << w_map;
-  std::cout << "\nw_NB_B_exact  = \n" << w_NB_B_exact;
-  std::cout << "\n\nv from map  = \n" << v_map;
-  std::cout << "\nv_NBo_B_exact = \n" << v_NBo_B_exact;
-  std::cout << "\n--------------------------------------------------\n";
-#endif
-
-  EXPECT_TRUE(CompareMatrices(w_map,  w_NB_B_exact, tolerance));
-  EXPECT_TRUE(CompareMatrices(v_map, v_NBo_B_exact, tolerance));
-}
-
 
 /**
  * Calculates exact solutions for quaternion, angular velocity, and angular
@@ -555,10 +60,6 @@ void  TestMapQDotToVelocity(
 std::tuple<Quaterniond, Vector3d, Vector3d>
 CalculateExactRotationalSolutionABInitiallyAligned(const double t,
                                  const Vector3d& w_NB_B_initial) {
-  using std::sin;
-  using std::cos;
-  using std::sqrt;
-
   // Constant values of moments of inertia.
   const double I = 0.04;
   const double J = 0.02;
@@ -569,13 +70,13 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t,
   const double wz0 = w_NB_B_initial[2];
 
   // Intermediate calculations for quaternion solution.
-  const double p = sqrt(wx0 * wx0 + wy0 * wy0 + (wz0 * J / I) * (wz0 * J / I));
+  const double p = std::sqrt(wx0 * wx0 + wy0 * wy0 + (wz0 * J / I) * (wz0 * J / I));
   const double s = (I - J) / I * wz0;
   const double coef = wz0 * (J / (I * p));
-  const double spt2 = sin(p * t / 2);
-  const double cpt2 = cos(p * t / 2);
-  const double sst2 = sin(s * t / 2);
-  const double cst2 = cos(s * t / 2);
+  const double spt2 = std::sin(p * t / 2);
+  const double cpt2 = std::cos(p * t / 2);
+  const double sst2 = std::sin(s * t / 2);
+  const double cst2 = std::cos(s * t / 2);
 
   // Kane's analytical solution is for quaternion quat_AB that relates A to B,
   // where A is a set Ax, Ay, Az of right-handed orthogonal unit vectors which
@@ -590,8 +91,8 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t,
   const Quaterniond quat_AB(eAB0, eAB1, eAB2, eAB3);
 
   // Analytical solution for wx(t), wy(t), wz(t).
-  const double wx =  wx0 * cos(s * t) + wy0 * sin(s * t);
-  const double wy = -wx0 * sin(s * t) + wy0 * cos(s * t);
+  const double wx =  wx0 * std::cos(s * t) + wy0 * std::sin(s * t);
+  const double wy = -wx0 * std::sin(s * t) + wy0 * std::cos(s * t);
   const double wz =  wz0;
 
   // Analytical solution for time-derivatives of wx, wy, wz.
@@ -665,8 +166,8 @@ std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
   const Quaterniond quat_NB = quat_NA * quat_AB;
 
   // Analytical solution for time-derivative quaternion in B.
-  const Vector4d quatDt = CalculateQuaternionDtFromAngularVelocityExpressedInB(
-                          quat_NB, w_NB_B);
+  const Vector4d quatDt =
+  math::CalculateQuaternionDtFromAngularVelocityExpressedInB( quat_NB, w_NB_B);
 
   // Create a tuple to package for returning.
   std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d> returned_tuple;
@@ -819,11 +320,11 @@ std::tuple<Vector3d, Vector3d, Vector3d>
   // Since more than one quaternion is associated with the same orientation,
   // compare Drake's canonical quaternion with exact canonical quaternion.
   const Quaterniond quatd_NB_drake = math::quat2eigenQuaternion(quat_NB_drake);
-  const bool is_ok_quat = AreQuaternionsApproximatlyEqualInCanonicalForm(
+  const bool is_ok_quat = math::AreQuaternionsApproximatlyEqualInCanonicalForm(
                           quatd_NB_exact, quatd_NB_drake, tolerance);
   EXPECT_TRUE(is_ok_quat);
 
-  // Convert quaternions to rotation matrix and compare rotation matrices.
+  // Convert quaternions to rotation matrix (also compare rotation matrices).
   Vector4d quat_NB_exact;
   quat_NB_exact << quatd_NB_exact.w(), quatd_NB_exact.x(),
                    quatd_NB_exact.y(), quatd_NB_exact.z();
@@ -841,27 +342,6 @@ std::tuple<Vector3d, Vector3d, Vector3d>
   const Vector3d w_cross_v_exact = w_NB_B_exact.cross(v_NBo_B_exact);
   const Vector3d vDt_NBo_B_exact = R_BN_exact * xyzDDt_exact - w_cross_v_exact;
 
-#if 0  // TODO(mitiguy) Remove these debug statements.
-  std::cout << "\n\n quat_NB_drake\n"   << quat_NB_drake;
-  std::cout << "\n quat_NB_exact\n"     << quat_NB_exact;
-  std::cout << "\n\n quatDt_drake\n"    << quatDt_NB_drake;
-  std::cout << "\n quatDt_NB_exact\n"   << quatDt_NB_exact;
-  std::cout << "\n\n w_NB_B_drake\n"    << w_NB_B_drake;
-  std::cout << "\n w_NB_B_exact\n"      << w_NB_B_exact;
-  std::cout << "\n\n wDt_NB_B_drake\n"  << wDt_NB_B_drake;
-  std::cout << "\n wDt_NB_B_exact\n"    << wDt_NB_B_exact;
-  std::cout << "\n\n xyz_drake\n"       << xyz_drake;
-  std::cout << "\n xyz_exact\n"         << xyz_exact;
-  std::cout << "\n\n xyzDt_drake\n"     << xyzDt_drake;
-  std::cout << "\n xyzDt_exact\n"       << xyzDt_exact;
-  std::cout << "\n\n xyzDDt_drake\n"    << xyzDDt_drake;
-  std::cout << "\n xyzDDt_exact\n"      << xyzDDt_exact;
-  std::cout << "\n\n v_NBo_B_drake\n"   << v_NBo_B_drake;
-  std::cout << "\n v_NBo_B_exact\n"     << v_NBo_B_exact;
-  std::cout << "\n\n vDt_NBo_B_drake\n" << vDt_NBo_B_drake;
-  std::cout << "\n vDt_NBo_B_exact\n"   << vDt_NBo_B_exact << "\n\n";
-#endif
-
   // Compare Drake and exact results.
   // TODO(mitiguy) Investigate why big factor (1600) needed to test wDt_NB_B.
   EXPECT_TRUE(CompareMatrices(w_NB_B_drake,       w_NB_B_exact,     tolerance));
@@ -876,28 +356,17 @@ std::tuple<Vector3d, Vector3d, Vector3d>
   // Ensure time-derivative of Drake's quaternion satifies quarternionDt test.
   // Since more than one time-derivative of a quaternion is associated with the
   // same angular velocity, convert to angular velocity to compare results.
-  EXPECT_TRUE(IsBothQuaternionAndQuaternionDtOK(quatd_NB_drake,
+  EXPECT_TRUE(math::IsBothQuaternionAndQuaternionDtOK(quatd_NB_drake,
                                                 quatDt_NB_drake, 16*tolerance));
   const Vector3d w_from_quatDt_drake =
-      CalculateAngularVelocityExpressedInBFromQuaternionDt(
+      math::CalculateAngularVelocityExpressedInBFromQuaternionDt(
           quatd_NB_drake, quatDt_NB_drake);
 
-
   const Vector3d w_from_quatDt_exact =
-      CalculateAngularVelocityExpressedInBFromQuaternionDt(
+      math::CalculateAngularVelocityExpressedInBFromQuaternionDt(
           quatd_NB_exact, quatDt_NB_exact);
   EXPECT_TRUE(CompareMatrices(w_from_quatDt_drake, w_NB_B_drake, tolerance));
   EXPECT_TRUE(CompareMatrices(w_from_quatDt_exact, w_NB_B_exact, tolerance));
-
-
-  //--------------------------------------------------------------
-  // EXTRA: Test MapQDotToVelocity and MapVelocityToQDot for Evan's PR #4604.
-  //--------------------------------------------------------------
-  TestMapVelocityToQDot(rigid_body_plant, context, w_NB_B_exact, v_NBo_B_exact,
-                        quatDt_NB_exact, xyzDt_exact, tolerance);
-
-  TestMapQDotToVelocity(rigid_body_plant, context, quatDt_NB_exact, xyzDt_exact,
-                        w_NB_B_exact, v_NBo_B_exact, tolerance);
 }
 
 
@@ -941,7 +410,7 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
     do {
       if ( t + dt > t_final ) dt = t_final - t;
       rk3.StepOnceAtMost(dt, dt, dt);    // Step forward by dt.
-      t += dt;                           // or t = context->get_time();
+      t += dt;                           // Increment time by dt.
     } while ( t < t_final_minus_epsilon );
   }
 }
@@ -972,8 +441,8 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
  *    Initial values of Bx, By, Bz measures of Bo's velocity in N, where Bo is
  *    Bcm.  Note: These values are not (in general) x', y', z' (i.e., these
  *    values are not time-derivatives of x, y,z).
- * @param[in] should_numerically_integrate_one_second
- *    True if also simulate 1 second and check accuracy of simulation results.
+ * @param[in] should_numerically_integrate
+ *    True if also simulate x seconds and check accuracy of simulation results.
  */
 void  TestDrakeSolutionForSpecificInitialValue(
     const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
@@ -983,7 +452,7 @@ void  TestDrakeSolutionForSpecificInitialValue(
     const Vector3d& w_NB_B_initial,
     const Vector3d& xyz_initial,
     const Vector3d& v_NBo_B_initial,
-    const bool should_numerically_integrate_one_second) {
+    const bool should_numerically_integrate) {
   DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL);
 
   // Get the state portion of the Context. State has unusual order/mearning.
@@ -1006,7 +475,6 @@ void  TestDrakeSolutionForSpecificInitialValue(
   //   New York, 1985 (with D. A. Levinson).  Available for free .pdf download:
   //  https://ecommons.cornell.edu/handle/1813/637
   //
-  // TODO(mitiguy) Update comment/code when GitHub issue #4398 is fixed.
   // Concatenate these 4 Eigen column matrices into one Eigen column matrix.
   // Note: The state has a weird order (see previous comment).
   // Set state portion of Context from initial state.
@@ -1034,10 +502,12 @@ void  TestDrakeSolutionForSpecificInitialValue(
                       quat_NB_initial, w_NB_B_initial,
                       xyz_initial, v_NBo_B_initial, 50 * epsilon);
 
-  // Maybe numerically integrate with one of Drake's numerical integrators.
-  if ( should_numerically_integrate_one_second ) {
+  // Maybe numerically integrate.
+  if ( should_numerically_integrate ) {
     const double dt = 0.2, t_final = 10.0;
     const double maximum_absolute_error_per_integration_step = 1.0E-6;
+
+    // Integrate forward, checking results frequently.
     IntegrateForwardWithVariableStepRungeKutta3(rigid_body_plant, context,
                  dt, t_final, maximum_absolute_error_per_integration_step);
 
@@ -1045,9 +515,9 @@ void  TestDrakeSolutionForSpecificInitialValue(
     // accuracy at t = t_final versus exact analytical (closed-form) solution.
     const double tolerance = maximum_absolute_error_per_integration_step;
     TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
-                        rigid_body_plant, *context, stateDt_drake,
-                        quat_NB_initial, w_NB_B_initial,
-                        xyz_initial, v_NBo_B_initial, tolerance);
+                                     rigid_body_plant, *context, stateDt_drake,
+                                     quat_NB_initial, w_NB_B_initial,
+                                     xyz_initial, v_NBo_B_initial, tolerance);
   }
 }
 
@@ -1126,7 +596,6 @@ void  TestDrakeSolutionForVariousInitialValues(
  *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
  *   https://ecommons.cornell.edu/handle/1813/637
  */
-// Test Drake solution versus closed-form analytical solution.
 GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Create path to .urdf file containing mass/inertia and geometry properties.
   const std::string urdf_name = "uniform_solid_cylinder.urdf";
@@ -1164,6 +633,8 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   TestDrakeSolutionForVariousInitialValues(rigid_body_plant, context.get(),
                                            stateDt_drake.get());
 }
+
+
 
 }  // namespace cylinder_torque_free_analytical_solution
 }  // namespace benchmarks
