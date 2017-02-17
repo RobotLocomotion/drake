@@ -2,21 +2,14 @@
 
 #include <Eigen/Dense>
 
-#include <vtkCellData.h>
 #include <vtkNew.h>
 #include <vtkPlaneSource.h>
 #include <vtkSmartPointer.h>
 #include <vtkTransform.h>
-#include <vtkUnsignedCharArray.h>
-
-#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
-namespace {
-const double kRadToDeg = 57.29577951308232;
-}  // namespace
 
 vtkSmartPointer<vtkPlaneSource> VtkUtil::CreateSquarePlane(double size) {
   vtkSmartPointer<vtkPlaneSource> plane =
@@ -32,15 +25,16 @@ vtkSmartPointer<vtkPlaneSource> VtkUtil::CreateSquarePlane(double size) {
 
 vtkSmartPointer<vtkTransform> VtkUtil::ConvertToVtkTransform(
     const Eigen::Isometry3d& transform) {
-  auto position = transform.translation();
-  auto axis_angle = drake::math::rotmat2axis(transform.linear());
+  vtkNew<vtkMatrix4x4> vtk_mat;
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      vtk_mat->SetElement(i, j, transform.matrix()(i,j));
+    }
+  }
 
   vtkSmartPointer<vtkTransform> vtk_transform =
       vtkSmartPointer<vtkTransform>::New();
-  // The order must be Translate first, and then RotateWXYZ.
-  vtk_transform->Translate(position[0], position[1], position[2]);
-  vtk_transform->RotateWXYZ(axis_angle[3] * kRadToDeg,
-                            axis_angle[0], axis_angle[1], axis_angle[2]);
+  vtk_transform->SetMatrix(vtk_mat.GetPointer());
 
   return vtk_transform;
 }
