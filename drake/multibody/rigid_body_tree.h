@@ -113,20 +113,11 @@ class RigidBodyTree {
 
   virtual ~RigidBodyTree();
 
-  // The following preprocessor condition is necessary because wrapping method
-  // Clone() in SWIG causes the following build error to occur:
-  //
-  //     "call to implicitly-deleted copy constructor"
-  //
-  // Unfortunately, adding "%ignore RigidBodyTree<double>::Clone()" to
-  // drake-distro/drake/bindings/swig/rbtree.i does not work.
-#ifndef SWIG
   /**
    * Returns a deep clone of this RigidBodyTree<double>. Currently, everything
    * *except* for collision and visual elements are cloned.
    */
   std::unique_ptr<RigidBodyTree<double>> Clone() const;
-#endif
 
   /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is

@@ -19,10 +19,6 @@ RigidBodyFrame<T>::RigidBodyFrame(const std::string& name, RigidBody<T>* body,
   transform_to_body_.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 }
 
-// For an explanation of why these SWIG preprocessor commands are needed, see
-// the comment immediately above the declaration of RigidBodyFrame::Clone() in
-// rigid_body_frame.h.
-#ifndef SWIG
 template <typename T>
 std::shared_ptr<RigidBodyFrame<T>> RigidBodyFrame<T>::Clone(RigidBody<T>* body)
     const {
@@ -33,7 +29,6 @@ std::shared_ptr<RigidBodyFrame<T>> RigidBodyFrame<T>::Clone(RigidBody<T>* body)
   frame->set_frame_index(frame_index_);
   return move(frame);
 }
-#endif
 
 template <typename T>
 int RigidBodyFrame<T>::get_model_instance_id() const {

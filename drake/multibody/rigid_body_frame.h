@@ -58,14 +58,6 @@ class RigidBodyFrame {
   RigidBodyFrame()
       : RigidBodyFrame("", nullptr, Eigen::Isometry3d::Identity()) {}
 
-  // The following preprocessor condition is necessary because wrapping method
-  // Clone() in SWIG causes the following build error to occur:
-  //
-  //     "call to implicitly-deleted copy constructor"
-  //
-  // Unfortunately, adding "%ignore RigidBodyFrame<double>::Clone()" to
-  // drake-distro/drake/bindings/swig/rbtree.i does not work.
-#ifndef SWIG
   // TODO(liang.fok) Update this to return a unique_ptr. This is related to
   // #3093.
   /**
@@ -77,7 +69,6 @@ class RigidBodyFrame {
    * This pointer must remain valid for the duration of the clone's lifetime.
    */
   virtual std::shared_ptr<RigidBodyFrame<T>> Clone(RigidBody<T>* body) const;
-#endif
 
   /**
    * Returns the ID of the model instance to which this rigid body frame

@@ -24,10 +24,6 @@ RigidBody<T>::RigidBody() {
   spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
 }
 
-// For an explanation of why these SWIG preprocessor commands are needed, see
-// the comment immediately above the declaration of RigidBody::Clone() in
-// rigid_body.h.
-#ifndef SWIG
 template <typename T>
 std::unique_ptr<RigidBody<T>> RigidBody<T>::Clone() const {
   auto body = make_unique<RigidBody<T>>();
@@ -43,7 +39,6 @@ std::unique_ptr<RigidBody<T>> RigidBody<T>::Clone() const {
   body->set_spatial_inertia(spatial_inertia_);
   return move(body);
 }
-#endif
 
 template <typename T>
 const std::string& RigidBody<T>::get_name() const { return name_; }
