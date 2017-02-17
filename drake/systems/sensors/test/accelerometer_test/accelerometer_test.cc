@@ -33,25 +33,6 @@ namespace {
 
 const char* const kSensorName = "foo sensor";
 
-// Tests Accelerometer's various accessor and streaming to-string methods.
-GTEST_TEST(TestAccelerometer, AccessorsAndToStringTest) {
-  auto tree = make_unique<RigidBodyTree<double>>();
-  RigidBodyFrame<double> frame("foo frame", &tree->world(),
-                               Eigen::Isometry3d::Identity());
-
-  // Defines the Device Under Test (DUT).
-  Accelerometer dut(kSensorName, frame, *tree);
-
-  stringstream string_buffer;
-  string_buffer << dut;
-  const string dut_string = string_buffer.str();
-
-  EXPECT_NE(dut_string.find("Accelerometer:"), string::npos);
-  EXPECT_NE(dut_string.find("name ="), string::npos);
-  EXPECT_NE(dut_string.find("frame ="), string::npos);
-  EXPECT_EQ(std::count(dut_string.begin(), dut_string.end(), '\n'), 3);
-}
-
 // Attaches an accelerometer to a box that's falling due to gravity. The
 // provided `xyz` and `rpy` parameters specify the transformation between the
 // sensing frame and the frame of the rigid body to which the accelerometer is
