@@ -88,21 +88,21 @@ class RgbdCamera::Impl {
 
   ~Impl() {}
 
-  const Eigen::Isometry3d& get_base_pose() const { return world_to_base_; }
+  const Eigen::Isometry3d& base_pose() const { return world_to_base_; }
 
-  const Eigen::Isometry3d& get_color_camera_pose() const {
+  const Eigen::Isometry3d& color_camera_pose() const {
     return base_to_color_camera_;
   }
 
-  const Eigen::Isometry3d& get_depth_camera_pose() const {
+  const Eigen::Isometry3d& depth_camera_pose() const {
     return base_to_depth_camera_;
   }
 
-  const CameraInfo& get_color_camera_info() const { return color_camera_info_; }
+  const CameraInfo& color_camera_info() const { return color_camera_info_; }
 
-  const CameraInfo& get_depth_camera_info() const { return depth_camera_info_; }
+  const CameraInfo& depth_camera_info() const { return depth_camera_info_; }
 
-  const RigidBodyTree<double>& get_tree() const { return tree_; }
+  const RigidBodyTree<double>& tree() const { return tree_; }
 
   void DoCalcOutput(const BasicVector<double>& input_vector,
                     systems::SystemOutput<double>* output) const;
@@ -437,28 +437,28 @@ RgbdCamera::RgbdCamera(const std::string& name,
 
 RgbdCamera::~RgbdCamera() {}
 
-const CameraInfo& RgbdCamera::get_color_camera_info() const {
-  return impl_->get_color_camera_info();
+const CameraInfo& RgbdCamera::color_camera_info() const {
+  return impl_->color_camera_info();
 }
 
-const CameraInfo& RgbdCamera::get_depth_camera_info() const {
-  return impl_->get_depth_camera_info();
+const CameraInfo& RgbdCamera::depth_camera_info() const {
+  return impl_->depth_camera_info();
 }
 
-const Eigen::Isometry3d& RgbdCamera::get_base_pose() const {
-  return impl_->get_base_pose();
+const Eigen::Isometry3d& RgbdCamera::base_pose() const {
+  return impl_->base_pose();
 }
 
-const Eigen::Isometry3d& RgbdCamera::get_color_camera_pose() const {
-  return impl_->get_color_camera_pose();
+const Eigen::Isometry3d& RgbdCamera::color_camera_pose() const {
+  return impl_->color_camera_pose();
 }
 
-const Eigen::Isometry3d& RgbdCamera::get_depth_camera_pose() const {
-  return impl_->get_depth_camera_pose();
+const Eigen::Isometry3d& RgbdCamera::depth_camera_pose() const {
+  return impl_->depth_camera_pose();
 }
 
-const RigidBodyTree<double>& RgbdCamera::get_tree() const {
-  return impl_->get_tree();
+const RigidBodyTree<double>& RgbdCamera::tree() const {
+  return impl_->tree();
 }
 
 std::unique_ptr<SystemOutput<double>> RgbdCamera::AllocateOutput(

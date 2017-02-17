@@ -58,8 +58,8 @@ class RgbdCameraTest : public ::testing::Test {
 };
 
 TEST_F(RgbdCameraTest, InstantiateTest) {
-  Verify(dut_.get_color_camera_info());
-  Verify(dut_.get_depth_camera_info());
+  Verify(dut_.color_camera_info());
+  Verify(dut_.depth_camera_info());
 }
 
 // Veryfies the initial camera base pose.
@@ -72,7 +72,7 @@ TEST_F(RgbdCameraTest, InitialCameraBasePoseTest) {
       -0.1986693307950,  0.0978433950072,  0.9751703272018, 3.,
       0., 0., 0., 1.).finished());
 
-  CompareMatrices(expected.matrix(), dut_.get_base_pose().matrix(), kTolerance);
+  CompareMatrices(expected.matrix(), dut_.base_pose().matrix(), kTolerance);
 }
 
 TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
@@ -84,9 +84,9 @@ TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
       0., 0., 1., 0.,
       0., 0., 0., 1.).finished());
 
-  CompareMatrices(expected.matrix(), dut_.get_color_camera_pose().matrix(),
+  CompareMatrices(expected.matrix(), dut_.color_camera_pose().matrix(),
                   kTolerance);
-  CompareMatrices(expected.matrix(), dut_.get_depth_camera_pose().matrix(),
+  CompareMatrices(expected.matrix(), dut_.depth_camera_pose().matrix(),
                   kTolerance);
 }
 
