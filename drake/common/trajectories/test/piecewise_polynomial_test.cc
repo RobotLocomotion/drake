@@ -3,7 +3,6 @@
 #include <vector>
 
 #include <Eigen/Core>
-#include <c++/5/random>
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_assert.h"
