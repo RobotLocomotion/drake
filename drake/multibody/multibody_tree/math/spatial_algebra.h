@@ -4,12 +4,12 @@
 /// This file defines the basic set of abstractions to perform mathematical
 /// operations between spatial quantities. For an introduction on spatial
 /// quantities please refer to @ref multibody_spatial_algebra.
-/// We follow some basic conventions and nomenclature used in his book by
-/// Abhinandan Jain:
+/// We follow some basic conventions and nomenclature used in the following
+/// book by:
 ///   - Jain, A., 2010. Robot and multibody dynamics: analysis and algorithms.
 ///     Springer Science & Business Media.
 ///
-/// Hereafter in this file we'll refer to this book by Jain (2010).
+/// Hereafter in this file we'll refer to this book by [Jain, 2010].
 
 #include <limits>
 #include <memory>
@@ -53,7 +53,7 @@ class SpatialVector {
   }
 
   /// The total size of the concatenation of the angular and linear components.
-  /// In three dimension this is six (6) and it is known at compile time.
+  /// In three dimensions this is six (6) and it is known at compile time.
   int size() const { return kSpatialVectorSize; }
 
   /// Const access to the underlying Eigen vector.
@@ -143,7 +143,7 @@ inline SpatialVector<T> operator*(
 template <typename T> class ShiftOperatorTranspose;
 
 /// A class representing the Rigid Body Transformation Matrix as defined in
-/// Section 1.4 of Jain (2010)'s book, which we will call a Shift Operator to
+/// Section 1.4 of [Jain, 2010]'s book, which we will call a Shift Operator to
 /// avoid confusion with Transforms.
 /// Given a frame `A` that moves with spatial velocity `V_WA` measured in a
 /// frame `W` and a second frame `B` that **rigidly** moves with frame `A`,
@@ -167,14 +167,15 @@ template <typename T> class ShiftOperatorTranspose;
 /// SpatialVector<T> V_WB_E = ShiftOperator(p_AB_E).transpose() * V_WA_E;
 /// @endcode
 ///
-/// Notice we are using the monogram notation introduced in
-/// @ref multibody_notation_basics which allows us to write unambiguous
-/// expressions in text code. In addition, when needed, we are explicit about
-/// the frame these quantities are expressed in.
+/// Notice that we are using the monogram notation introduced in
+/// @ref multibody_notation_basics, which allows us to write unambiguous
+/// expressions in source code using simple ASCII. In addition we are explicit
+/// about the frame these quantities are expressed in when it's not the same
+/// frame in which the spatial quantity is measured.
 ///
-/// @note This class does not implement any mechanism to check the consistency
-/// between the frames in which the shift operator itself and the spatial
-/// vectors it applies to are described.
+/// @note This class does not track the frame in which the shift operator is
+/// defined. Therefore it is the responsability of clients of this class to keep
+/// track of this frame.
 ///
 /// With spatial forces defined in @ref multibody_spatial_vectors as the pair of
 /// of three dimensional vectors @f$ \tau @f$ for the torque component and
@@ -187,15 +188,11 @@ template <typename T> class ShiftOperatorTranspose;
 /// rigid body is equivalent to the spatial force
 /// `F_WA = S_AB * F_WB` about `A` on the same rigid body.
 ///
-/// Some basic group properties of this operator are:
-// Note: we comment out the multi-line equation with /**/ because otherwise the
-// trailing backlashes trigger the warning: multi-line comment [-Wcomment]
-/** @f{eqnarray*}{
-      \phi(X,X) &=& \mathcal{I},\quad
-                    \text{with } \mathcal{I}\text{ the identity operator.}\\
-      \phi(X,Z) &=& \phi(X,Y) \, \phi(Y,Z)\\
-      \phi(X,Y)^{-1} &=& \phi(Y,X)
-    @f} */
+/// Some basic group properties of this operator are: <pre>
+///   S_XX   = Id, with Id the identity operator.
+///   S_XZ   = S_XY * S_YZ
+///   S_XY⁻¹ = S_YX
+/// </pre>
 ///
 /// @see ShiftOperatorTranspose for the dual version of this operator which
 ///      allows transformation of spatial forces.
@@ -204,28 +201,35 @@ template <typename T> class ShiftOperatorTranspose;
 template <typename T>
 class ShiftOperator {
  public:
-  /// Default constructor leaves the offset uninitialized resulting in a zero
-  /// cost operation.
-  ShiftOperator() {}
+  /// Default constructor. In Release builds the operator's offset is left
+  /// uninitialized resulting in a zero cost operation. However in Debug builds
+  /// the operator's offset is set to NaN so that operations using this
+  /// uninitialized operator fail fast, allowing fast bug detection.
+  ShiftOperator() {
+    DRAKE_ASSERT_VOID(SetToNaN());
+  }
 
   /// Constructs a rigid body transformation operator between a pair of frames
   /// `X` and `Y` given a vector @p offset_XoYo_F from `Xo` to `Yo`.
   /// For a vector @p offset_XoYo_F expressed in a frame `F`, this operator can
   /// only operate on spatial vectors expressed in the same frame `F`.
-  /// @param[in] offset_XoYo_F Vector from `Xo` to `Yo` expressed in an implicit
-  ///                          frame `F`.
+  /// @param[in] offset_XoYo_F Vector from `Xo` to `Yo` expressed in frame `F`.
   explicit ShiftOperator(const Vector3<T>& offset_XoYo_F) :
       offset_(offset_XoYo_F) {}
 
   /// Returns the vector from the origin of frame `X` to the origin of frame `Y`
-  /// expressed in the implicit frame `F`.
+  /// expressed in the frame `F` in which this shift operator is expressed.
   const Vector3<T>& offset() const { return offset_; }
 
-  /// Returns the transpose of this operator which allows to transform spatial
+  /// Returns the transpose of this operator which allows transforming spatial
   /// velocities between two frames rigidly attached to each other.
   ShiftOperatorTranspose<T> transpose() const;
 
   /// Creates a %ShiftOperator initialized with a NaN offset vector.
+  /// Typically used to quickly detect uninitialized values since NaN will
+  /// trigger a chain of invalid computations that can then be tracked back
+  /// to the source.
+  /// @see SetToNaN().
   static ShiftOperator<T> NaN() {
     return ShiftOperator<T>(Vector3<T>::Constant(std::numeric_limits<
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN()));
@@ -251,13 +255,13 @@ class ShiftOperator {
 template <typename T>
 class ShiftOperatorTranspose {
  public:
-  /// Constructs the transpose of a given ShiftOperator `phi_XY_F` between two
+  /// Constructs the transpose of a given ShiftOperator `S_XY_F` between two
   /// frames `X` and `Y`, expressed in a third frame `F`.
   explicit ShiftOperatorTranspose(const ShiftOperator<T>& phi_XY_F) :
       phi_(phi_XY_F) {}
 
   /// Returns the vector from the origin of frame `X` to the origin of frame `Y`
-  /// expressed in the implicit frame `F`.
+  /// expressed in the frame `F` in which this operator is expressed.
   const Vector3<T>& offset() const { return phi_.offset(); }
 
   /// Given the spatial velocity `V_AB` of a frame `B` measured in a frame
@@ -304,15 +308,15 @@ inline ShiftOperatorTranspose<T> ShiftOperator<T>::transpose() const {
 /// but offset by vector `r_BQ`.
 ///
 /// The operation performed, in vector free form, is: <pre>
-///   V_AQ = phiT_BQ * V_AB
+///   V_AQ = S_BQ * V_AB
 /// </pre>
-/// where `phiT_BQ` is the transpose of the ShiftOperator `phi_BQ`.
+/// where `ST_BQ` is the transpose of the ShiftOperator `S_BQ`.
 ///
 /// All quantities above must be expressed in a common frame `E` i.e: <pre>
-///   V_AQ_E = phi_BQ_E^T * V_AB_E
+///   V_AQ_E = S_BQ_E^T * V_AB_E
 /// </pre>
 ///
-/// @param[in] phiT_BQ_E Transpose of the shift operator from frame `B` to `Q`
+/// @param[in] ST_BQ_E Transpose of the shift operator from frame `B` to `Q`
 ///                      expressed in a frame `E`.
 /// @param[in] V_AB_E    The spatial velocity of frame `B` measured in `A`
 ///                      and expressed in `E`.
