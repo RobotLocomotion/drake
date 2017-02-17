@@ -38,9 +38,9 @@ class PidController : public StateFeedbackController<T> {
    * Constructs a PID controller. Assumes that @p kp, @p ki and @p kd have the
    * same size, the actual and desired state inputs will have the size of
    * 2 * @p kp's size, and the control output will have @p kp's size.
-   * @param kp, P gain.
-   * @param ki, I gain.
-   * @param kd, D gain.
+   * @param kp P gain.
+   * @param ki I gain.
+   * @param kd D gain.
    */
   PidController(
       const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
@@ -53,9 +53,9 @@ class PidController : public StateFeedbackController<T> {
    * @param feedback_selector, The selection matrix indicating controlled
    * states, whose size should be 2 * @p kp's size by the size of the full
    * state.
-   * @param kp, P gain.
-   * @param ki, I gain.
-   * @param kd, D gain.
+   * @param kp P gain.
+   * @param ki I gain.
+   * @param kd D gain.
    */
   PidController(std::unique_ptr<MatrixGain<T>> feedback_selector,
       const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);

@@ -36,7 +36,7 @@ class ModelBasedController : public StateFeedbackController<T> {
    * from a model file.
    * @param model_path Path to the model file.
    * @param world_offset X_WB, where B is the base frame of the model.
-   * @param floating_base_type, Type of the joint between model's base link
+   * @param floating_base_type Type of the joint between model's base link
    * and the world. Defaults to multibody::joints::kFixed.
    */
   ModelBasedController(const std::string& model_path,
@@ -59,7 +59,7 @@ class ModelBasedController : public StateFeedbackController<T> {
   /**
    * Constructs the controller that takes ownership of a given RigidBodyTree
    * unique pointer.
-   * @param robot unique pointer whose ownership will be transfered to this
+   * @param robot Unique pointer whose ownership will be transfered to this
    * instance.
    */
   explicit ModelBasedController(std::unique_ptr<RigidBodyTree<T>> robot)
