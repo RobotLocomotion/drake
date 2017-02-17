@@ -101,7 +101,13 @@ double PiecewisePolynomial<CoefficientType>::scalarValue(double t,
 }
 
 template <typename CoefficientType>
-drake::MatrixX<double> PiecewisePolynomial<CoefficientType>::value(
+drake::MatrixX<double>
+PiecewisePolynomial<CoefficientType>::value(double t) const {
+  return derivative(t, 0);
+}
+
+template <typename CoefficientType>
+drake::MatrixX<double> PiecewisePolynomial<CoefficientType>::derivative(
     double t, int derivative_order) const {
   int segment_index = getSegmentIndex(t);
   t = std::min(std::max(t, getStartTime()), getEndTime());

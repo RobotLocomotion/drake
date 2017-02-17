@@ -227,13 +227,21 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
   /**
    * Evaluates the PiecewisePolynomial at the given time \p t.
    *
-   * @param t  The time at which to evaluate the PiecewisePolynomial.
-   * @param derivative_order If zero, this argument has no effect. Otherwise, take
-   * the derivative of the PiecewisePolynomial this many times before
-   * evaluating.
+   * @param t The time at which to evaluate the PiecewisePolynomial.
    * @return The matrix of evaluated values.
    */
-  drake::MatrixX<double> value(double t, int derivative_order = 0) const;
+  drake::MatrixX<double> value(double t) const;
+
+ /**
+  * Evaluates a derivative of the PiecewisePolynomial at the given time \p t.
+  *
+  * @param t The time at which to evaluate.
+  * @param derivative_order If zero, then take the value of the
+  * PiecewisePolynomial. Otherwise, take the derivative this many times before
+  * evaluating.
+  * @return The matrix of evaluated values.
+  */
+  drake::MatrixX<double> derivative(double t, int derivative_order = 1) const;
 
   const PolynomialMatrix& getPolynomialMatrix(int segment_index) const;
 
