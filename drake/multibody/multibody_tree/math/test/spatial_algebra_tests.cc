@@ -40,7 +40,8 @@ GTEST_TEST(SpatialVector, ConstructionFromTwo3DVectors) {
 
 class SpatialVectorTest : public ::testing::Test {
  protected:
-  // Linear velocity of a frame Y measured in X and expressed in A.
+  // Linear velocity of a frame Y measured in frame X and expressed in a third
+  // frame A.
   Vector3d v_XY_A_{1, 2, 0};
 
   // Angular velocity of a frame Y measured in X and expressed in A.
