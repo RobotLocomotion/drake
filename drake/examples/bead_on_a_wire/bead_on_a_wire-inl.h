@@ -30,20 +30,20 @@ BeadOnAWire<T>::BeadOnAWire(BeadOnAWire<T>::CoordinateType type) {
 }
 
 template <class T>
-Eigen::Matrix<typename BeadOnAWire<T>::DScalar, 3, 1>
+Eigen::Matrix<typename BeadOnAWire<T>::ArcLength, 3, 1>
   BeadOnAWire<T>::helix_function(
-      const typename BeadOnAWire<T>::DScalar& s) {
+      const typename BeadOnAWire<T>::ArcLength& s) {
   using std::cos;
   using std::sin;
-  return Vector3<BeadOnAWire<T>::DScalar>(cos(s),
+  return Vector3<BeadOnAWire<T>::ArcLength>(cos(s),
                                           sin(s),
                                           s);
 }
 
 template <class T>
-typename BeadOnAWire<T>::DScalar
+typename BeadOnAWire<T>::ArcLength
     BeadOnAWire<T>::inverse_helix_function(
-        const Vector3<typename BeadOnAWire<T>::DScalar>& v) {
+        const Vector3<typename BeadOnAWire<T>::ArcLength>& v) {
   using std::atan2;
   return atan2(v(1), v(0));
 }
@@ -65,17 +65,17 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
 
   // Get the position of the bead.
   constexpr int three_d = 3;
-  Eigen::Matrix<DScalar, three_d, 1> x;
+  Eigen::Matrix<ArcLength, three_d, 1> x;
   const auto position = context.get_continuous_state()->
       get_generalized_position().CopyToVector();
   for (int i = 0; i < three_d; ++i)
     x(i).value() = position[i];
 
   // Call the inverse function.
-  DScalar s = inv_f_(x);
+  ArcLength s = inv_f_(x);
 
   // Get the output position.
-  Eigen::Matrix<DScalar, three_d, 1> fs = f_(s);
+  Eigen::Matrix<ArcLength, three_d, 1> fs = f_(s);
   Eigen::VectorXd xprime(three_d);
   for (int i = 0; i < three_d; ++i)
     xprime[i] = fs(i).value().value() - x(i).value().value();
@@ -108,16 +108,17 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
 
   // Compute df/dt (f⁻¹(x)). The result will be a vector.
   const auto& xc = context.get_continuous_state()->get_vector();
-  Eigen::Matrix<BeadOnAWire<T>::DScalar, three_d, 1> x;
+  Eigen::Matrix<BeadOnAWire<T>::ArcLength, three_d, 1> x;
   x(0).value() = xc.GetAtIndex(0);
   x(1).value() = xc.GetAtIndex(1);
   x(2).value() = xc.GetAtIndex(2);
-  BeadOnAWire<T>::DScalar sprime = inv_f_(x);
+  BeadOnAWire<T>::ArcLength sprime = inv_f_(x);
   sprime.derivatives()(0) = 1;
-  const Eigen::Matrix<BeadOnAWire<T>::DScalar, three_d, 1> fprime = f_(sprime);
+  const Eigen::Matrix<BeadOnAWire<T>::ArcLength, three_d, 1> fprime =
+      f_(sprime);
 
   // Compute df⁻¹/dt (x). This result will be a scalar.
-  Eigen::Matrix<BeadOnAWire<T>::DScalar, three_d, 1> xprime;
+  Eigen::Matrix<BeadOnAWire<T>::ArcLength, three_d, 1> xprime;
   xprime(0).value() = xc.GetAtIndex(0);
   xprime(1).value() = xc.GetAtIndex(1);
   xprime(2).value() = xc.GetAtIndex(2);
@@ -182,23 +183,23 @@ Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
 }
 
 template <class T>
-double BeadOnAWire<T>::get_inv_pfunction_output(const DScalar& m) {
+double BeadOnAWire<T>::get_inv_pfunction_output(const ArcLength& m) {
   return m.value().value();
 }
 
 template <class T>
-double BeadOnAWire<T>::get_inv_pfunction_first_derivative(const DScalar& m) {
+double BeadOnAWire<T>::get_inv_pfunction_first_derivative(const ArcLength& m) {
   return m.value().derivatives()(0);
 }
 
 template <class T>
-double BeadOnAWire<T>::get_inv_pfunction_second_derivative(const DScalar& m) {
+double BeadOnAWire<T>::get_inv_pfunction_second_derivative(const ArcLength& m) {
   return m.derivatives()(0).derivatives()(0);
 }
 
 template <class T>
 Eigen::Vector3d BeadOnAWire<T>::get_pfunction_output(
-    const Eigen::Matrix<DScalar, 3, 1>& m) {
+    const Eigen::Matrix<ArcLength, 3, 1>& m) {
   const double x = m(0).value().value();
   const double y = m(1).value().value();
   const double z = m(2).value().value();
@@ -207,7 +208,7 @@ Eigen::Vector3d BeadOnAWire<T>::get_pfunction_output(
 
 template <class T>
 Eigen::Vector3d BeadOnAWire<T>::get_pfunction_first_derivative(
-    const Eigen::Matrix<DScalar, 3, 1>& m) {
+    const Eigen::Matrix<ArcLength, 3, 1>& m) {
   const double x = m(0).derivatives()(0).value();
   const double y = m(1).derivatives()(0).value();
   const double z = m(2).derivatives()(0).value();
@@ -216,7 +217,7 @@ Eigen::Vector3d BeadOnAWire<T>::get_pfunction_first_derivative(
 
 template <class T>
 Eigen::Vector3d BeadOnAWire<T>::get_pfunction_second_derivative(
-    const Eigen::Matrix<DScalar, 3, 1>& m) {
+    const Eigen::Matrix<ArcLength, 3, 1>& m) {
   const double x = m(0).derivatives()(0).derivatives()(0);
   const double y = m(1).derivatives()(0).derivatives()(0);
   const double z = m(2).derivatives()(0).derivatives()(0);
@@ -252,11 +253,11 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
     const double tau = input(0);
 
     // Compute derivatives.
-    DScalar s_in;
+    ArcLength s_in;
     s_in.value().value() = s;
     s_in.derivatives()(0) = 1;
     s_in.value().derivatives()(0) = 1;
-    Eigen::Matrix<DScalar, 3, 1> foutput = f_(s_in);
+    Eigen::Matrix<ArcLength, 3, 1> foutput = f_(s_in);
 
     // From the description in the header file, the dynamics of the bead in
     // minimal coordinates is:
@@ -310,10 +311,10 @@ void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
     const int state_size = 6;
 
     // Evaluate the wire parameter function at s.
-    DScalar sprime;
+    ArcLength sprime;
     sprime.value() = s;
     sprime.derivatives()(0).value() = 1;
-    const Eigen::Matrix<DScalar, 3, 1> q = f_(sprime);
+    const Eigen::Matrix<ArcLength, 3, 1> q = f_(sprime);
 
     // Set x0 appropriately.
     x0.resize(state_size);

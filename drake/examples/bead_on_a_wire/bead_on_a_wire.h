@@ -99,7 +99,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// This type represents the input variable s and- on return from that
   /// constraint function- would hold the second derivative of the constraint
   /// function computed with respect to s.
-  typedef Eigen::AutoDiffScalar<Eigen::Matrix<AScalar, 1, 1>> DScalar;
+  typedef Eigen::AutoDiffScalar<Eigen::Matrix<AScalar, 1, 1>> ArcLength;
 
   /// The type of coordinate representation to use for kinematics and dynamics.
   enum CoordinateType {
@@ -133,8 +133,8 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// @throws std::logic_error if f or inv_f is a nullptr (the functions must
   ///         always be set).
   void reset_wire_parameter_functions(
-        std::function<Eigen::Matrix<DScalar, 3, 1>(const DScalar &)> f,
-        std::function<DScalar(const Eigen::Matrix<DScalar, 3, 1> &)> inv_f) {
+        std::function<Eigen::Matrix<ArcLength, 3, 1>(const ArcLength&)> f,
+        std::function<ArcLength(const Eigen::Matrix<ArcLength, 3, 1>&) inv_f) {
     if (!f || !inv_f) throw std::logic_error("Function must be non-null.");
     f_ = f;
     inv_f_ = inv_f;
@@ -147,43 +147,43 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// f(s) = | sin(s) |
   ///        | s      |
   /// </pre>
-  static Eigen::Matrix<DScalar, 3, 1> helix_function(const DScalar &s);
+  static Eigen::Matrix<ArcLength, 3, 1> helix_function(const ArcLength &s);
 
   /// Inverse parametric function for the bead on a wire system that uses the
   /// helix parametric example function.
-  static DScalar inverse_helix_function(const Vector3<DScalar> &v);
+  static ArcLength inverse_helix_function(const Vector3<ArcLength> &v);
 
   /// Gets the output from the parametric function in Vector3d form.
   /// @param m the output from the parametric wire function.
   static Eigen::Vector3d get_pfunction_output(
-      const Eigen::Matrix<DScalar, 3, 1>& m);
+      const Eigen::Matrix<ArcLength, 3, 1>& m);
 
   /// Gets the first derivative from the parametric function, in Vector3d form,
   /// using the output from that parametric function.
   /// @param m the output from the parametric wire function.
   static Eigen::Vector3d get_pfunction_first_derivative(
-      const Eigen::Matrix<DScalar, 3, 1>& m);
+      const Eigen::Matrix<ArcLength, 3, 1>& m);
 
   /// Gets the second derivative from the parametric function, in Vector3d form,
   /// using the output from that parametric function.
   /// @param m the output from the parametric wire function.
   static Eigen::Vector3d get_pfunction_second_derivative(
-      const Eigen::Matrix<DScalar, 3, 1>& m);
+      const Eigen::Matrix<ArcLength, 3, 1>& m);
 
   /// Gets the output from the inverse parametric function as a double, using
   /// the output from that inverse parametric function.
   /// @param m the output from the inverse parametric wire function.
-  static double get_inv_pfunction_output(const DScalar& m);
+  static double get_inv_pfunction_output(const ArcLength& m);
 
   /// Gets the first derivative from the inverse parametric function as a
   /// double, using the output from that inverse parametric function.
   /// @param m the output from the inverse parametric wire function.
-  static double get_inv_pfunction_first_derivative(const DScalar& m);
+  static double get_inv_pfunction_first_derivative(const ArcLength& m);
 
   /// Gets the second derivative from the inverse parametric function as a
   /// double, using the output from that inverse parametric function.
   /// @param m the output from the inverse parametric wire function.
-  static double get_inv_pfunction_second_derivative(const DScalar& m);
+  static double get_inv_pfunction_second_derivative(const ArcLength& m);
 
  protected:
   void DoCalcOutput(const systems::Context<T> &context,
@@ -215,7 +215,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
 
   // The wire parameter function. See set_wire_parameter_function() for more
   // information. This pointer is expected to never be null.
-  std::function<Eigen::Matrix<DScalar, 3, 1>(const DScalar &)> f_{
+  std::function<Eigen::Matrix<ArcLength, 3, 1>(const ArcLength &)> f_{
       &helix_function};
 
   // The inverse of the wire parameter function.
@@ -226,7 +226,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   // function is null, EvaluateConstraintEquations() will use generic,
   // presumably less efficient methods instead. This pointer is expected to
   // never be null.
-  std::function<DScalar(const Eigen::Matrix<DScalar, 3, 1> &)> inv_f_{
+  std::function<ArcLength(const Eigen::Matrix<ArcLength, 3, 1> &)> inv_f_{
       &inverse_helix_function};
 
   // Signed acceleration due to gravity.

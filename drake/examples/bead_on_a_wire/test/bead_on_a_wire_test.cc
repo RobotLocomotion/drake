@@ -75,7 +75,7 @@ TEST_F(BeadOnAWireTest, Helix) {
   const double tol = std::numeric_limits<double>::epsilon() * 10.0;
 
   // Compute the value at pi/3.
-  BeadOnAWire<double>::DScalar s;
+  BeadOnAWire<double>::ArcLength s;
   s = M_PI / 3.0;
   auto v = dut_abs_->get_pfunction_output(dut_abs_->helix_function(s));
   const double svalue = s.value().value();
@@ -108,7 +108,7 @@ TEST_F(BeadOnAWireTest, InverseHelix) {
 
   // Compute the value at pi/3.
   const double test_value = M_PI / 3.0;
-  BeadOnAWire<double>::DScalar s;
+  BeadOnAWire<double>::ArcLength s;
   s = test_value;
   auto v = dut_abs_->helix_function(s);
   auto sprime = dut_abs_->inverse_helix_function(v);
@@ -146,7 +146,7 @@ TEST_F(BeadOnAWireTest, InverseHelix) {
   const double zdot = 3.0;
   const double inv_helix_dot = -y / (x * x + y * y) * xdot +
       x / (x * x + y * y) * ydot;
-  Eigen::Matrix<BeadOnAWire<double>::DScalar, 3, 1> xx;
+  Eigen::Matrix<BeadOnAWire<double>::ArcLength, 3, 1> xx;
   xx(0).value() = x;
   xx(1).value() = y;
   xx(2).value() = z;
@@ -160,30 +160,30 @@ TEST_F(BeadOnAWireTest, InverseHelix) {
 
 // A parametric wire function that allows the bead to move along x² - y² = 0
 // (which is orthogonal to gravity).
-static Eigen::Matrix<BeadOnAWire<double>::DScalar, 3, 1>
-  horz_line_function(const BeadOnAWire<double>::DScalar& s) {
-  return Vector3<BeadOnAWire<double>::DScalar>(s*s, s*s, s*0);
+static Eigen::Matrix<BeadOnAWire<double>::ArcLength, 3, 1>
+  horz_line_function(const BeadOnAWire<double>::ArcLength& s) {
+  return Vector3<BeadOnAWire<double>::ArcLength>(s*s, s*s, s*0);
 }
 
 // The inverse of the parametric wire function that allows the bead to move
 // along x² - y² = 0 (which is orthogonal to gravity).
-static BeadOnAWire<double>::DScalar inverse_horz_line_function(
-        const Vector3<BeadOnAWire<double>::DScalar>& v) {
+static BeadOnAWire<double>::ArcLength inverse_horz_line_function(
+        const Vector3<BeadOnAWire<double>::ArcLength>& v) {
   using std::sqrt;
   return (sqrt(v(1))+sqrt(v(0)))/2;
 }
 
 // A parametric wire function that allows the bead to along the z-axis (i.e.,
 // parallel to gravity).
-static Eigen::Matrix<BeadOnAWire<double>::DScalar, 3, 1>
-  vert_line_function(const BeadOnAWire<double>::DScalar& s) {
-  return Vector3<BeadOnAWire<double>::DScalar>(s*0, s*0, s);
+static Eigen::Matrix<BeadOnAWire<double>::ArcLength, 3, 1>
+  vert_line_function(const BeadOnAWire<double>::ArcLength& s) {
+  return Vector3<BeadOnAWire<double>::ArcLength>(s*0, s*0, s);
 }
 
 // The inverse of the parametric wire function that allows the bead to along
 // the z-axis.
-static BeadOnAWire<double>::DScalar inverse_vert_line_function(
-        const Vector3<BeadOnAWire<double>::DScalar>& v) {
+static BeadOnAWire<double>::ArcLength inverse_vert_line_function(
+        const Vector3<BeadOnAWire<double>::ArcLength>& v) {
   return v(2);
 }
 
