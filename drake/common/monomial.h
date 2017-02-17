@@ -348,7 +348,7 @@ namespace drake {
 namespace symbolic {
 namespace internal {
 /* Internally we use internal::Monomial to represent a monomial, rather than
- * using an Expression object
+ * using an Expression object.
  */
 typedef std::unordered_map<Monomial, Expression, hash_value<Monomial>>
     MonomialToCoefficientMapInternal;
