@@ -75,7 +75,7 @@ std::string RemoveFileExtention(const std::string& filepath) {
   return filepath.substr(0, last_dot);
 }
 
-}  // anonymous namespace
+}  // namespace
 
 
 class RgbdCamera::Impl {

@@ -15,23 +15,23 @@
 namespace drake {
 namespace systems {
 namespace sensors {
-/// The rgbd camera model to provide both rgb and depth images. The image
-/// resolution is fixed at VGA (640x480) for both rgb and depth cameras.
-/// The depth sensing range is also fixed to be from 0.5m at minimum to 5.0m at
-/// maximum. The rgbd camera's base coordinate system is defined to be x-forward
-/// , y-left, z-up and the origin of the rgb camera's coordinate system is
-/// +0.02m offset in the base coordinate system's y axis.  The depth camera's
-/// coordinate system is the same as the one of the rgb camera coordinate
-/// system, so user can regard the depth image as "registered depth image" to
-/// the rgb image.  No disparity is considered.
+/// The RGBD camera model provides both RGB and depth images. The image
+/// resolution is fixed at VGA resolution (640x480) for both RGB and depth
+/// cameras. The depth sensing range is 0.5 m to 5.0 m. The RGBD camera's base
+/// coordinate system is defined to be x-forward, y-left, and z-up. The origin
+/// of the RGB camera's coordinate system is +0.02 m offset in the base
+/// coordinate system's y axis.  The depth camera's coordinate system is the
+/// same as the RGB camera's coordinate system, so the user can regard the depth
+/// image to be a "registered depth image" for the RGB image.  No disparity is
+/// considered.
 ///
 /// Output image format:
-///   - The rgb image has four channel in the order of blue, green, red and
-///     alpha, and each channel is represented with uint8_t.
-///   - The depth image has a depth channel represented with float.  The value
+///   - The RGB image has four channels in the following order: blue, green
+///     red, alpha. Each channel is represented by a uint8_t.
+///   - The depth image has a depth channel represented by a float. The value
 ///     stored in the depth channel holds *the Z value in the camera coordinate
-///     system.*  Note that this is different from range data used by laser
-///     range finder in which the depth value represents the distance from the
+///     system.*  Note that this is different from the range data used by laser
+///     range finders in which the depth value represents the distance from the
 ///     sensor origin to the object surface.
 ///
 // TODO(kunimatsu-tri) Add support for the image publish capability.
@@ -61,7 +61,7 @@ class RgbdCamera : public LeafSystem<double> {
 
   /// A constructor for %RgbdCamera
   ///
-  /// @param name The name of the rgbd camera.  This can be any value, but
+  /// @param name The name of the RGBD camera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
   /// model instance.
   /// @param tree The RigidBodyTree containing the geometric configuration of
@@ -82,7 +82,7 @@ class RgbdCamera : public LeafSystem<double> {
 
   /// A constructor for %RgbdCamera
   ///
-  /// @param name The name of the rgbd camera.  This can be any value, but
+  /// @param name The name of the RGBD camera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
   /// model instance.
   /// @param tree The RigidBodyTree containing the geometric configuration of
@@ -115,16 +115,18 @@ class RgbdCamera : public LeafSystem<double> {
   /// Returns the depth camera pose in the camera base coordinate system.
   const Eigen::Isometry3d& depth_camera_pose() const;
 
-  /// Returns the RigidBodyTree that this sensor is sensing.
+  /// Returns the RigidBodyTree within the RigidBodyPlant that this sensor is
+  /// sensing.
   const RigidBodyTree<double>& tree() const;
 
-  /// Allocates the output vector. See this class' description for details of
+  /// Allocates the output vector. See this class's description for details of
   /// this output vector.
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
     const Context<double>& context) const override;
 
  protected:
-  /// Update all the model frames for renderer and outputs the rendered images.
+  /// Updates all the model frames for the renderer and outputs the rendered
+  /// images.
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
