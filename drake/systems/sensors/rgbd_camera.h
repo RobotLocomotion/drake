@@ -110,13 +110,13 @@ class RgbdCamera : public LeafSystem<double> {
   /// Returns the camera base pose in the world coordinate system.
   const Eigen::Isometry3d& base_pose() const;
 
-  /// Returns the pose of color camera's optical coordinate system in the camera
-  /// base coordinate system.
-  const Eigen::Isometry3d& color_camera_pose() const;
+  /// Returns the pose of color camera's optical coordinate system in the world
+  /// coordinate system.
+  const Eigen::Isometry3d& color_camera_optical_pose() const;
 
-  /// Returns the pose of depth camera's optical coordinate system in the camera
-  /// base coordinate system.
-  const Eigen::Isometry3d& depth_camera_pose() const;
+  /// Returns the pose of depth camera's optical coordinate system in the world
+  /// coordinate system.
+  const Eigen::Isometry3d& depth_camera_optical_pose() const;
 
   /// Returns the RigidBodyTree within the RigidBodyPlant that this sensor is
   /// sensing.

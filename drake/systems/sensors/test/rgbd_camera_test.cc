@@ -73,22 +73,27 @@ TEST_F(RgbdCameraTest, InitialCameraBasePoseTest) {
       -0.1986693307950,  0.0978433950072,  0.9751703272018, 3.,
       0., 0., 0., 1.).finished());
 
-  CompareMatrices(expected.matrix(), dut_.base_pose().matrix(), kTolerance);
+  EXPECT_TRUE(CompareMatrices(expected.matrix(),
+                              dut_.base_pose().matrix(), kTolerance));
 }
 
 TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
   // This is calculated by hand.
-  const Eigen::Isometry3d expected((
+  const Eigen::Isometry3d expected_base_to_optical((
       Eigen::Matrix4d() <<
-      1., 0., 0., 0.,
-      0., 1., 0., 0.02,
-      0., 0., 1., 0.,
-      0., 0., 0., 1.).finished());
+       0.,  0., 1., 0.,
+      -1.,  0., 0., 0.02,
+       0., -1., 0., 0.,
+       0.,  0., 0., 1.).finished());
 
-  CompareMatrices(expected.matrix(), dut_.color_camera_pose().matrix(),
-                  kTolerance);
-  CompareMatrices(expected.matrix(), dut_.depth_camera_pose().matrix(),
-                  kTolerance);
+  EXPECT_TRUE(CompareMatrices(expected_base_to_optical.matrix(),
+                              dut_.base_pose().inverse().matrix() *
+                              dut_.color_camera_optical_pose().matrix(),
+                              kTolerance));
+  EXPECT_TRUE(CompareMatrices(expected_base_to_optical.matrix(),
+                              dut_.base_pose().inverse().matrix() *
+                              dut_.depth_camera_optical_pose().matrix(),
+                              kTolerance));
 }
 
 class RenderingSim : public systems::Diagram<double> {

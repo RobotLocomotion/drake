@@ -90,12 +90,12 @@ class RgbdCamera::Impl {
 
   const Eigen::Isometry3d& base_pose() const { return world_to_base_; }
 
-  const Eigen::Isometry3d& color_camera_pose() const {
-    return base_to_color_camera_;
+  const Eigen::Isometry3d& color_camera_optical_pose() const {
+    return world_to_color_optical_;
   }
 
-  const Eigen::Isometry3d& depth_camera_pose() const {
-    return base_to_depth_camera_;
+  const Eigen::Isometry3d& depth_camera_optical_pose() const {
+    return world_to_depth_optical_;
   }
 
   const CameraInfo& color_camera_info() const { return color_camera_info_; }
@@ -118,8 +118,10 @@ class RgbdCamera::Impl {
   const CameraInfo color_camera_info_;
   const CameraInfo depth_camera_info_;
   Eigen::Isometry3d world_to_base_;
-  const Eigen::Isometry3d base_to_color_camera_;
-  const Eigen::Isometry3d base_to_depth_camera_;
+  Eigen::Isometry3d world_to_color_optical_;
+  Eigen::Isometry3d world_to_depth_optical_;
+  const Eigen::Isometry3d base_to_color_optical_;
+  const Eigen::Isometry3d base_to_depth_optical_;
 
   std::map<int, vtkSmartPointer<vtkActor>> id_object_pairs_;
   vtkNew<vtkRenderer> renderer_;
@@ -140,11 +142,17 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
       // Color camera's origin is offset by 0.02m on Y axis in the camera base
       // coordinate system.
       // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
-      base_to_color_camera_(Eigen::Translation3d(0., 0.02, 0.)),
+      base_to_color_optical_(
+          Eigen::Translation3d(0., 0.02, 0.) *
+          (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
+	   Eigen::AngleAxisd( M_PI_2, Eigen::Vector3d::UnitY()))),
       // Depth camera's origin is offset by 0.02m on Y axis in the camera base
       // coordinate system.
       // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
-      base_to_depth_camera_(Eigen::Translation3d(0., 0.02, 0.)) {
+      base_to_depth_optical_(
+          Eigen::Translation3d(0., 0.02, 0.) *
+          (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd( M_PI_2, Eigen::Vector3d::UnitY()))) {
   if (!show_window) {
     render_window_->SetOffScreenRendering(1);
   }
@@ -156,12 +164,15 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   world_to_base_.translation() = Eigen::Vector3d(
       position[0], position[1], position[2]);
 
+  world_to_color_optical_ = world_to_base_ * base_to_color_optical_;
+  world_to_depth_optical_ = world_to_base_ * base_to_depth_optical_;
+
   CreateRenderingWorld();
 
   vtkNew<vtkCamera> camera;
   camera->SetPosition(0., 0., 0.);
-  camera->SetFocalPoint(1., 0., 0.);
-  camera->SetViewUp(0., 0, 1.);
+  camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward
+  camera->SetViewUp(0., -1, 0.);  // Sets y-down
   camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
 
   renderer_->SetActiveCamera(camera.GetPointer());
@@ -195,7 +206,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
 }
 
 void RgbdCamera::Impl::CreateRenderingWorld() {
-  auto camera_to_world =  (world_to_base_ * base_to_color_camera_).inverse();
+  auto camera_to_world = world_to_color_optical_.inverse();
 
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == "world") {
@@ -323,7 +334,7 @@ void RgbdCamera::Impl::UpdateModelPoses(
   KinematicsCache<double> cache = tree_.doKinematics(q);
 
   // TODO(kunimatsu-tri) Update camera frame here and the flat terrain too.
-  auto camera_to_world =  (world_to_base_ * base_to_color_camera_).inverse();
+  auto camera_to_world = world_to_color_optical_.inverse();
 
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == "world") {
@@ -449,12 +460,12 @@ const Eigen::Isometry3d& RgbdCamera::base_pose() const {
   return impl_->base_pose();
 }
 
-const Eigen::Isometry3d& RgbdCamera::color_camera_pose() const {
-  return impl_->color_camera_pose();
+const Eigen::Isometry3d& RgbdCamera::color_camera_optical_pose() const {
+  return impl_->color_camera_optical_pose();
 }
 
-const Eigen::Isometry3d& RgbdCamera::depth_camera_pose() const {
-  return impl_->depth_camera_pose();
+const Eigen::Isometry3d& RgbdCamera::depth_camera_optical_pose() const {
+  return impl_->depth_camera_optical_pose();
 }
 
 const RigidBodyTree<double>& RgbdCamera::tree() const {
