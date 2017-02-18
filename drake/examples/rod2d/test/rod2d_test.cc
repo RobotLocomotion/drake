@@ -969,9 +969,11 @@ class Rod2DCompliantTest : public ::testing::Test {
     set_velocity(1, 2, 3);
   }
 
-  // Sets the rod to a vertical position in which one or both endpoints are
-  // penetrating the ground and the velocity is zero.
-  // k=-1,0,1 -> left, both, right
+  // Sets the rod to a perfectly vertical position in which either the left or
+  // right endpoint is contacting, or a perfectly horizontal position in which
+  // both endpoints are contacting. In all cases the penetration depth into the
+  // halfplane is set to 1 cm, and the rod velocity is set to zero.
+  // k=-1,0,1 -> left, both, right.
   void SetContactingState(int k) {
     DRAKE_DEMAND(-1 <= k && k <= 1);
     const double half_len = dut_->get_rod_half_length();
@@ -988,6 +990,9 @@ class Rod2DCompliantTest : public ::testing::Test {
 
 /// Verify that the compliant contact resists penetration.
 TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
+  // We expect only roundoff errors, scaled by force magnitude (~1e-14).
+  const double kTightTol = 50 * std::numeric_limits<double>::epsilon();
+
   SetContactingState(-1);  // left
 
   Vector3d F_Ro_W_left = dut_->CalcCompliantContactForces(*context_);
@@ -1003,14 +1008,19 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
   // extract just the contact contribution. It should point up!
   const double a_contact = xcd[4] - dut_->get_gravitational_acceleration();
 
-  EXPECT_NEAR(xcd[3], 0, 1e-14);
-  EXPECT_GT(a_contact, 1.);  // + y acceleration
-  EXPECT_NEAR(xcd[5], 0, 1e-14);
+  // Vertical acceleration is >> 1; just checking for correct sign. Rod is
+  // vertical so horizontal and angular accelerations are zero.
+  EXPECT_NEAR(xcd[3], 0, kTightTol);  // no x acceleration
+  EXPECT_GT(a_contact, 1.);           // + y acceleration
+  EXPECT_NEAR(xcd[5], 0, kTightTol);  // no angular acceleration
 
-  // Now add some downward velocity; that should increase the force.
+  // Now add some downward velocity; that should *increase* the force we
+  // calculated above from just penetration. We're checking that the sign is
+  // correct by making the penetration rate large enough to at least double
+  // the overall force.
   set_velocity(0, -10, 0);
   Vector3d F_Ro_W_ldown = dut_->CalcCompliantContactForces(*context_);
-  EXPECT_GT(F_Ro_W_ldown[1], 2*F_Ro_W_left[1]);
+  EXPECT_GT(F_Ro_W_ldown[1], 2*F_Ro_W_left[1]);  // Did it double?
 
   // An extreme upwards velocity should be a "pull out" situation resulting
   // in (exactly) zero force rather than a negative force.
@@ -1023,7 +1033,7 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
   set_velocity(-10, 0, 0);
   Vector3d F_Ro_W_nx = dut_->CalcCompliantContactForces(*context_);
   EXPECT_GT(F_Ro_W_nx[0], 1.);
-  EXPECT_NEAR(F_Ro_W_nx[1], F_Ro_W_left[1], 1e-14);
+  EXPECT_NEAR(F_Ro_W_nx[1], F_Ro_W_left[1], kTightTol);
   EXPECT_GT(F_Ro_W_nx[2], 1.);
 
   // Sliding +x should produce a -x friction force and a negative torque;
@@ -1031,19 +1041,19 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
   set_velocity(10, 0, 0);
   Vector3d F_Ro_W_px = dut_->CalcCompliantContactForces(*context_);
   EXPECT_LT(F_Ro_W_px[0], -1.);
-  EXPECT_NEAR(F_Ro_W_px[1], F_Ro_W_left[1], 1e-14);
+  EXPECT_NEAR(F_Ro_W_px[1], F_Ro_W_left[1], kTightTol);
   EXPECT_LT(F_Ro_W_px[2], -1.);
 
 
   SetContactingState(1);  // Right should behave same as left.
   Vector3d F_Ro_W_right = dut_->CalcCompliantContactForces(*context_);
-  EXPECT_TRUE(F_Ro_W_right.isApprox(F_Ro_W_left, 1e-14));
+  EXPECT_TRUE(F_Ro_W_right.isApprox(F_Ro_W_left, kTightTol));
 
   // With both ends in contact the force should double and there should
   // be zero moment.
   SetContactingState(0);
   Vector3d F_Ro_W_both = dut_->CalcCompliantContactForces(*context_);
-  EXPECT_TRUE(F_Ro_W_both.isApprox(F_Ro_W_left+F_Ro_W_right, 1e-14));
+  EXPECT_TRUE(F_Ro_W_both.isApprox(F_Ro_W_left+F_Ro_W_right, kTightTol));
 }
 
 }  // namespace

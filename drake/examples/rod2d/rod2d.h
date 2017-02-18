@@ -9,78 +9,142 @@
 namespace drake {
 namespace rod2d {
 
-/// Dynamical system representation of a rod contacting a half-space in
-/// two dimensions.
-///
-/// The rod's coordinate frame R is placed at the rod's center point Ro, which
-/// is also its center of mass Rcm. R's planar pose is given by a planar
-/// transform X_WR=(x,y,θ). When X_WR=0 (identity transform), R is coincident
-/// with the World frame W, and aligned horizontally as shown: <pre>
-///
-///    +Wy                             +Ry
-///     |                               |
-///     |                               |<---- h ----->
-///     |                 ==============|==============
-///   Wo*-----> +Wx    Rl*            Ro*-----> +Rx    *Rr
-///                       =============================
-///    World frame                 Rod R, θ=0
-/// </pre>
-/// θ is the angle between Rx and Wx, measured using the right hand rule about
-/// Wz (out of the screen), that is, counterclockwise. The rod has half-length
-/// h, and "left" and "right" endpoints `Rl=Ro-h*Rx` and `Rr=Ro+h*Rx` at which
-/// it can contact the halfspace whose surface is at Wy=0.
-///
-/// This system can be modeling and simulated using one of three models:
-/// - a compliant contact model (the rod is rigid, but contact between
-///   the rod and the half-space is modeled as compliant) simulated using
-///   ordinary differential equations (ODEs),
-/// - a fully rigid model simulated with piecewise differential algebraic
-///   equations (DAEs), and
-/// - a fully rigid model simulated as a discrete system using a first-order
-///   time stepping approach.
-///
-/// The rod state is initialized to the configuration that corresponds to the
-/// Painlevé Paradox problem, described in [Stewart 2000]. The paradox consists
-/// of a rod contacting a planar surface *without impact* and subject to sliding
-/// Coulomb friction. The problem is well known to correspond to an
-/// *inconsistent rigid contact configuration*, where impulsive forces are
-/// necessary to resolve the problem.
-///
-/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to http://drake.mit.edu/cxx_inl.html.
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following scalar types @p T are provided:
-/// - double
-///
-/// They are already available to link against in the containing library.
-///
-/// Inputs: planar force (two-dimensional) and torque (scalar), which are
-///         arbitrary "external" forces (expressed in the world frame) applied
-///         at the center-of-mass of the rod.
-///
-/// States: planar position (state indices 0 and 1) and orientation (state
-///         index 2), and planar linear velocity (state indices 3 and 4) and
-///         scalar angular velocity (state index 5) in units of m, radians,
-///         m/s, and rad/s, respectively. Orientation is measured counter-
-///         clockwise with respect to the x-axis. For simulations using the
-///         piecewise DAE formulation, one abstract state variable
-///         (of type Rod2D::Mode) is used to identify which dynamic mode
-///         the system is in (e.g., ballistic, contacting at one point and
-///         sliding, etc.) and one abstract state variable (of type int) is used
-///         to determine which endpoint(s) of the rod contact the halfspace
-///         (k=-1 indicates the left endpoint Rl, k=+1 indicates the right
-///         endpoint Rr, and k=0 indicates that both endpoints of the rod are
-///         contacting the halfspace).
-///
-/// Outputs: planar position (state indices 0 and 1) and orientation (state
-///          index 2), and planar linear velocity (state indices 3 and 4) and
-///          scalar angular velocity (state index 5) in units of m, radians,
-///          m/s, and rad/s, respectively.
-///
-/// * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
-///                    Impact". SIAM Rev., 42(1), 3-39, 2000.
+/** Dynamical system representation of a rod contacting a half-space in
+two dimensions.
+
+<h3>Notation</h3>
+In the discussion below and in code comments, we will use the 2D analog of our
+standard multibody notation as described in detail here:
+@ref multibody_notation.
+<!-- http://drake.mit.edu/doxygen_cxx/group__multibody__notation.html -->
+
+For a quick summary and translation to 2D:
+ - We use capital letters to represent bodies and coordinate frames. Frame F has
+   an origin point Fo, and a basis formed by orthogonal unit vector axes Fx and
+   Fy, with an implicit `Fz=Fx × Fy` always out of the screen for a 2D system.
+   The inertial frame World is W, and the rod frame is R.
+ - We also use capitals to represent points, and we allow a frame name F to be
+   used in a point context to represent its origin Fo.
+ - We use `p_CD` to represent the position vector from point C to point D.
+ - If we need to be explicit about the expressed-in frame F for any quantity, we
+   add the suffix `_F` to its symbol. So the position vector from C to D,
+   expressed in W, is `p_CD_W`.
+ - R_AB is the rotation matrix giving frame B's orientation in frame A.
+ - X_AB is the transform matrix giving frame B's pose in frame A, combining both
+   a rotation and a position vector.
+
+In 2D, with frames A and B the above quantities are (conceptually): <pre>
+    p_AB = Bo-Ao = [x]      R_AB=[ cθ -sθ ]       X_AB=[ R_AB p_AB ]
+                   [y]₂ₓ₁        [ sθ  cθ ]₂ₓ₂         [ 0  0   1  ]₃ₓ₃
+</pre>
+where x,y are B's Cartesian coordinates in the A frame, and θ is the
+counterclockwise angle from Ax to Bx, measured about Az (and Bz). In practice,
+2D rotations are represented just by the scalar angle θ, and 2D transforms are
+represented by (x,y,θ).
+
+We use v for translational velocity of a point and w (ω) for rotational
+velocity of a frame. The symbols are:
+ - `v_AP` is point P's velocity in frame A, expressed in frame A if no
+   other frame is given as a suffix.
+ - `w_AB` is frame B's angular velocity in frame A, expressed in frame A
+   if no other frame is given as a suffix.
+ - `V_AB` is frame B's "spatial" velocity in A, meaning `v_ABo` and `w_AB`.
+   (We'll use "spatial" here even though the motion is planar.)
+
+These quantities are conceptually: <pre>
+    v_AB = [vx]      w_AB=[0]       V_AB=[ w_AB ]
+           [vy]           [0]            [ v_AB ]₆ₓ₁
+           [ 0]₃ₓ₁        [ω]₃ₓ₁
+</pre>
+but in 2D we represent translational velocity with just (vx,vy), angular
+velocity with just the scalar w=ω=@f$\dot{\theta}@f$ (that is, d/dt θ), and
+spatial velocity as (vx,vy,ω).
+
+Forces f and torques τ are represented similarly:
+ - `f_P` is an in-plane force applied to a point P fixed to some rigid body.
+ - `t_A` is an in-plane torque applied to frame A (meaning it is about Az).
+ - `F_A` is a "spatial" force including both `f_Ao` and `t_A`.
+
+The above symbols can be suffixed with an expressed-in frame if the frame is
+not already obvious, so `F_A_W` is a spatial force applied to frame A (at Ao)
+but expressed in W. These quantities are conceptually: <pre>
+    f_A = [fx]      t_A=[0]       F_A=[ t_A ]
+          [fy]          [0]           [ f_A ]₆ₓ₁
+          [ 0]₃ₓ₁       [τ]₃ₓ₁
+</pre>
+but in 2D we represent translational force with just (fx,fy), torque with just
+the scalar t=τ, and spatial force as (fx,fy,τ).
+
+<h3>The 2D rod model</h3>
+The rod's coordinate frame R is placed at the rod's center point Ro, which
+is also its center of mass Rcm. R's planar pose is given by a planar
+transform X_WR=(x,y,θ). When X_WR=0 (identity transform), R is coincident
+with the World frame W, and aligned horizontally as shown: <pre>
+
+       +Wy                                  +Ry
+        |                                    |
+        |                                    |<---- h ----->
+        |                      ==============|==============
+      Wo*-----> +Wx         Rl*            Ro*-----> +Rx    *Rr
+                               =============================
+       World frame                      Rod R, θ=0
+</pre>
+θ is the angle between Rx and Wx, measured using the right hand rule about
+Wz (out of the screen), that is, counterclockwise. The rod has half-length
+h, and "left" and "right" endpoints `Rl=Ro-h*Rx` and `Rr=Ro+h*Rx` at which
+it can contact the halfspace whose surface is at Wy=0.
+
+This system can be simulated using one of three models:
+- a compliant contact model (the rod is rigid, but contact between
+  the rod and the half-space is modeled as compliant) simulated using
+  ordinary differential equations (ODEs),
+- a fully rigid model simulated with piecewise differential algebraic
+  equations (DAEs), and
+- a fully rigid model simulated as a discrete system using a first-order
+  time stepping approach.
+
+The rod state is initialized to the configuration that corresponds to the
+Painlevé Paradox problem, described in [Stewart 2000]. The paradox consists
+of a rod contacting a planar surface *without impact* and subject to sliding
+Coulomb friction. The problem is well known to correspond to an
+*inconsistent rigid contact configuration*, where impulsive forces are
+necessary to resolve the problem.
+
+This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
+this class, please refer to http://drake.mit.edu/cxx_inl.html.
+
+@tparam T The vector element type, which must be a valid Eigen scalar.
+
+Instantiated templates for the following scalar types @p T are provided:
+- double
+
+They are already available to link against in the containing library.
+
+Inputs: planar force (two-dimensional) and torque (scalar), which are
+        arbitrary "external" forces (expressed in the world frame) applied
+        at the center-of-mass of the rod.
+
+States: planar position (state indices 0 and 1) and orientation (state
+        index 2), and planar linear velocity (state indices 3 and 4) and
+        scalar angular velocity (state index 5) in units of m, radians,
+        m/s, and rad/s, respectively. Orientation is measured counter-
+        clockwise with respect to the x-axis. For simulations using the
+        piecewise DAE formulation, one abstract state variable
+        (of type Rod2D::Mode) is used to identify which dynamic mode
+        the system is in (e.g., ballistic, contacting at one point and
+        sliding, etc.) and one abstract state variable (of type int) is used
+        to determine which endpoint(s) of the rod contact the halfspace
+        (k=-1 indicates the left endpoint Rl, k=+1 indicates the right
+        endpoint Rr, and k=0 indicates that both endpoints of the rod are
+        contacting the halfspace).
+
+Outputs: planar position (state indices 0 and 1) and orientation (state
+         index 2), and planar linear velocity (state indices 3 and 4) and
+         scalar angular velocity (state index 5) in units of m, radians,
+         m/s, and rad/s, respectively.
+
+- [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
+                   Impact". SIAM Rev., 42(1), 3-39, 2000. **/
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:
@@ -210,16 +274,18 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Get compliant contact normal stiffness in N/m.
   double get_stiffness() const { return stiffness_; }
 
-  /// Set compliant contact normal stiffness in N/m (>= 0).
+  /// Set compliant contact normal stiffness in N/m (>= 0). This has no effect
+  /// if the rod model is not compliant.
   void set_stiffness(double stiffness) {
     DRAKE_DEMAND(stiffness >= 0);
     stiffness_ = stiffness;
   }
 
-  /// Get compliant contact normal dissipation in 1/v (s/m).
+  /// Get compliant contact normal dissipation in 1/velocity (s/m).
   double get_dissipation() const { return dissipation_; }
 
-  /// Set compliant contact normal dissipation in 1/v (s/m, >= 0).
+  /// Set compliant contact normal dissipation in 1/velocity (s/m, >= 0). This
+  /// has no effect if the rod model is not compliant.
   void set_dissipation(double dissipation) {
     DRAKE_DEMAND(dissipation >= 0);
     dissipation_ = dissipation;
@@ -228,20 +294,22 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Get compliant contact static friction (stiction) coefficient `μ_s`.
   double get_mu_static() const { return mu_s_; }
 
-  /// Set compliant contact stiction coefficent (>= mu_coulomb).
+  /// Set compliant contact stiction coefficent (>= mu_coulomb). This has no
+  /// effect if the rod model is not compliant.
   void set_mu_static(double mu_static) {
     DRAKE_DEMAND(mu_static >= mu_);
     mu_s_ = mu_static;
   }
 
-  /// Get the stiction velocity tolerance (m/s).
-  double get_stiction_velocity_tolerance() const {return v_stick_tol_;}
+  /// Get the stiction speed tolerance (m/s).
+  double get_stiction_speed_tolerance() const {return v_stick_tol_;}
 
-  /// Set the stiction velocity tolerance (m/s). This is the maximum slip
-  /// velocity that we are willing to consider as sticking. For a given normal
-  /// force N this is the velocity at which the friction force will be largest,
-  /// at `μ_s*N` where `μ_s` is the static coefficient of friction.
-  void set_stiction_velocity_tolerance(double v_stick_tol) {
+  /// Set the stiction speed tolerance (m/s). This is the maximum slip
+  /// speed that we are willing to consider as sticking. For a given normal
+  /// force N this is the speed at which the friction force will be largest,
+  /// at `μ_s*N` where `μ_s` is the static coefficient of friction. This has no
+  /// effect if the rod model is not compliant.
+  void set_stiction_speed_tolerance(double v_stick_tol) {
     DRAKE_DEMAND(v_stick_tol > 0);
     v_stick_tol_ = v_stick_tol;
   }
@@ -261,10 +329,11 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Gets the model and simulation type for this system.
   SimulationType get_simulation_type() const { return simulation_type_; }
 
-  /// Return net contact forces as F_Ro_W=(fx,fy,tau) where f_Ro_W=(fx,fy) is
-  /// applied at the rod origin Ro, and m_R=tau is the moment due to the
-  /// contact forces actually being applied elsewhere. This may result from
-  /// one or more contact points.
+  /// Return net contact forces as a spatial force F_Ro_W=(fx,fy,τ) where
+  /// translational force f_Ro_W=(fx,fy) is applied at the rod origin Ro,
+  /// and torque t_R=τ is the moment due to the contact forces actually being
+  /// applied elsewhere. The returned spatial force may be the resultant of
+  /// multiple active contact points.
   Vector3<T> CalcCompliantContactForces(
       const systems::Context<T>& context) const;
 
@@ -326,9 +395,16 @@ class Rod2D : public systems::LeafSystem<T> {
       const T& w_WR,  // aka thetadot
       const Vector2<T>& p_WC);
 
-  // 2D cross product returns a scalar.
+  // 2D cross product returns a scalar. This is the z component of the 3D
+  // cross product [ax ay 0] × [bx by 0]; the x,y components are zero.
   static T cross2(const Vector2<T>& a, const Vector2<T>& b) {
     return a[0]*b[1] - b[0]*a[1];
+  }
+
+  // Calculates the cross product [0 0 ω] × [rx ry 0] and return the first
+  // two elements of the result (the z component is zero).
+  static Vector2<T> w_cross_r(const T& w, const Vector2<T>& r) {
+    return w * Vector2<T>(-r[1], r[0]);
   }
 
   // Quintic step function approximation used by Stribeck friction model.
@@ -344,6 +420,8 @@ class Rod2D : public systems::LeafSystem<T> {
   // construction.
   SimulationType simulation_type_;
 
+  // TODO(edrumwri,sherm1) Document these defaults once they stabilize.
+
   double dt_{0.};           // Integration step-size for time stepping approach.
   double mass_{1.};         // The mass of the rod (kg).
   double half_length_{1.};  // The length of the rod (m).
@@ -355,9 +433,9 @@ class Rod2D : public systems::LeafSystem<T> {
 
   // Compliant contact parameters.
   double stiffness_{10000};   // Normal stiffness of the ground plane (N/m).
-  double dissipation_{1};     // Dissipation factor in 1/v (s/m).
+  double dissipation_{1};     // Dissipation factor in 1/velocity (s/m).
   double mu_s_{mu_};          // Static coefficient of friction (>= mu).
-  double v_stick_tol_{1e-3};  // Velocity below which we are in stiction.
+  double v_stick_tol_{1e-3};  // Slip speed below which we are in stiction.
 };
 
 }  // namespace rod2d
