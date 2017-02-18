@@ -1,6 +1,6 @@
-#include "drake/automotive/maliput/monolane/monolane_onramp_merge.h"
+#include "drake/automotive/monolane_onramp_merge.h"
 
-#include "drake/automotive/maliput/monolane/road_geometry.h"
+#include "drake/automotive/maliput/api/road_geometry.h"
 
 namespace drake {
 namespace automotive {

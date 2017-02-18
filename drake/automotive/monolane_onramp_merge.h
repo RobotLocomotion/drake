@@ -22,7 +22,7 @@ struct RoadCharacteristics {
   RoadCharacteristics(const double lw, const double dw)
       : lane_width(lw), driveable_width(dw) {}
 
-  // Default settings.
+  // Default settings for lane width and driveable width.
   const double lane_width{4.};
   const double driveable_width{8.};
 
@@ -70,7 +70,6 @@ class MonolaneOnrampMerge {
   std::unique_ptr<const maliput::api::RoadGeometry> BuildOnramp();
 
  private:
-
   /// Tolerances for monolane's Builder.
   const double kLinearTolerance_ = 0.01;
   const double kAngularTolerance_ = 0.01 * M_PI;
