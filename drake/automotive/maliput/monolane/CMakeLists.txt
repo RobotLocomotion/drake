@@ -9,7 +9,6 @@ drake_install_headers(
   junction.h
   lane.h
   line_lane.h
-  monolane_onramp_merge.h
   road_geometry.h
   segment.h
   )

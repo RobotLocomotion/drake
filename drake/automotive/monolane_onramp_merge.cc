@@ -1,6 +1,6 @@
-#include "drake/automotive/maliput/monolane/monolane_onramp_merge.h"
+#include "drake/automotive/monolane_onramp_merge.h"
 
-#include "drake/automotive/maliput/monolane/road_geometry.h"
+#include "drake/automotive/maliput/api/road_geometry.h"
 
 namespace drake {
 namespace automotive {
@@ -49,6 +49,9 @@ MonolaneOnrampMerge<T>::BuildOnramp() {
       "onramp1", pre5->end(),
       mono::ArcOffset(kOnrampArcLength, kOnrampArcRadius / kOnrampArcLength),
       kFlatZ);
+
+  // Group the overlapping connections.
+  rb_->MakeGroup("merge-point", {pre5, onramp1});
 
   rb_->Connect("onramp0", onramp1->end(), kOnrampLinearLength, kFlatZ);
 
