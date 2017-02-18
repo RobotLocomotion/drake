@@ -19,20 +19,21 @@ namespace sensors {
 /// resolution is fixed at VGA resolution (640x480) for both RGB and depth
 /// cameras. The depth sensing range is 0.5 m to 5.0 m. The RGBD camera's base
 /// coordinate system is defined to be x-forward, y-left, and z-up. The origin
-/// of the RGB camera's coordinate system is +0.02 m offset in the base
-/// coordinate system's y axis.  The depth camera's coordinate system is the
-/// same as the RGB camera's coordinate system, so the user can regard the depth
-/// image to be a "registered depth image" for the RGB image.  No disparity is
-/// considered.
+/// of the RGB camera's optical coordinate system is +0.02 m offset in the base
+/// coordinate system's y axis.  The depth camera's optical coordinate system is
+/// the same as the RGB camera's optical coordinate system, so the user can
+/// regard the depth image to be a "registered depth image" for the RGB image.
+/// No disparity is considered.  For the camera optical coordinate systems's
+/// orientation, refer to CameraInfo's documentation.
 ///
 /// Output image format:
 ///   - The RGB image has four channels in the following order: blue, green
 ///     red, alpha. Each channel is represented by a uint8_t.
 ///   - The depth image has a depth channel represented by a float. The value
-///     stored in the depth channel holds *the Z value in the camera coordinate
-///     system.*  Note that this is different from the range data used by laser
-///     range finders in which the depth value represents the distance from the
-///     sensor origin to the object surface.
+///     stored in the depth channel holds *the Z value in the camera optical
+///     coordinate system.*  Note that this is different from the range data
+///     used by laser range finders in which the depth value represents the
+///     distance from the sensor origin to the object surface.
 ///
 // TODO(kunimatsu-tri) Add support for the image publish capability.
 class RgbdCamera : public LeafSystem<double> {
@@ -109,10 +110,12 @@ class RgbdCamera : public LeafSystem<double> {
   /// Returns the camera base pose in the world coordinate system.
   const Eigen::Isometry3d& base_pose() const;
 
-  /// Returns the color camera pose in the camera base coordinate system.
+  /// Returns the pose of color camera's optical coordinate system in the camera
+  /// base coordinate system.
   const Eigen::Isometry3d& color_camera_pose() const;
 
-  /// Returns the depth camera pose in the camera base coordinate system.
+  /// Returns the pose of depth camera's optical coordinate system in the camera
+  /// base coordinate system.
   const Eigen::Isometry3d& depth_camera_pose() const;
 
   /// Returns the RigidBodyTree within the RigidBodyPlant that this sensor is
