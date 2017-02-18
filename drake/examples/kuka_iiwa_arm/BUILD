@@ -31,6 +31,7 @@ drake_cc_library(
     hdrs = [
         "iiwa_common.h",
     ],
+    data = ["//drake/examples/kuka_iiwa_arm:models"],
     deps = [
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/multibody:inverse_kinematics",

@@ -43,6 +43,18 @@ drake_cc_library(
 )
 
 drake_cc_binary(
+    name = "iiwa_world_demo",
+    srcs = ["iiwa_world_demo.cc"],
+    deps = [
+        ":world_sim_diagram_factory",
+        ":world_sim_tree_builder",
+        "//drake/common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "@gflags//:gflags",
+    ],
+)
+
+drake_cc_binary(
     name = "controlled_iiwa_world_demo",
     srcs = ["controlled_iiwa_world_demo.cc"],
     deps = [
