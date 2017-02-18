@@ -8,7 +8,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
 #include "drake/examples/Acrobot/acrobot_swing_up.h"
 #include "drake/lcm/drake_lcm.h"
@@ -20,7 +19,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
-#include "drake/util/drakeAppUtil.h"
 
 using drake::solvers::SolutionResult;
 

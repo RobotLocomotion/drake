@@ -26,6 +26,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "acrobot_lcm",
+    srcs = ["acrobot_lcm.cc"],
+    hdrs = ["acrobot_lcm.h"],
+    deps = [
+        ":acrobot_state_vector",
+        "//drake/lcmtypes:acrobot",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/framework:vector"
+    ],
+)
+
+drake_cc_library(
+    name = "acrobot_swing_up",
+    srcs = ["acrobot_swing_up.cc"],
+    hdrs = ["acrobot_swing_up.h"],
+    deps = [
+        ":acrobot_plant",
+        "//drake/systems/trajectory_optimization:direct_collocation",
+    ],
+)
+
+drake_cc_library(
     name = "acrobot_plant",
     srcs = ["acrobot_plant.cc"],
     hdrs = ["acrobot_plant.h"],
@@ -54,5 +76,52 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "acrobot_run_swing_up_traj_optimization",
+    srcs = ["acrobot_run_swing_up_traj_optimization.cc"],
+    deps = [
+        ":acrobot_plant",
+        ":acrobot_swing_up",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/primitives:trajectory_source",
+        "//drake/systems/analysis",
+        "//drake/systems/controllers:linear_quadratic_regulator",
+        "//drake/lcm:lcm",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "@gflags//:gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "acrobot_spong_controller_w_lcm",
+    srcs = ["acrobot_spong_controller_w_lcm.cc",
+            "acrobot_spong_controller.h"
+    ],
+    deps = [
+        ":acrobot_plant",
+        ":acrobot_lcm",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/analysis",
+        "//drake/systems/controllers:linear_quadratic_regulator",
+        "//drake/lcm:lcm",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+    ],
+)
+
+drake_cc_binary(
+    name = "acrobot_plant_w_lcm",
+    srcs = ["acrobot_plant_w_lcm.cc"],
+    deps = [
+        ":acrobot_plant",
+        ":acrobot_lcm",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/analysis",
+        "//drake/systems/controllers:linear_quadratic_regulator",
+        "//drake/lcm:lcm",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "@gflags//:gflags",
+    ],
+)
 
 cpplint()

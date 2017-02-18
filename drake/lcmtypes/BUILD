@@ -6,21 +6,12 @@ package(default_visibility = ["//visibility:public"])
 load("//tools:lcm.bzl", "lcm_cc_library", "lcm_java_library", "lcm_py_library")
 
 lcm_cc_library(
-    name = "acrobot_u",
+    name = "acrobot",
     lcm_package = "drake",
-    lcm_srcs = ["lcmt_acrobot_u.lcm"],
-)
-
-lcm_cc_library(
-    name = "acrobot_x",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_acrobot_x.lcm"],
-)
-
-lcm_cc_library(
-    name = "acrobot_y",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_acrobot_y.lcm"],
+    lcm_srcs = ["lcmt_acrobot_u.lcm",
+                "lcmt_acrobot_x.lcm",
+                "lcmt_acrobot_y.lcm",
+    ],
 )
 
 lcm_cc_library(
