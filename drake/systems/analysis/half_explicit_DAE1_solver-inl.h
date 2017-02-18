@@ -259,7 +259,7 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
   //                  where n is the generalized velocity dimension, and m
   //                  is the number of algebraic equations. Just doing a series
   //                  of Cholesky factorizations might prove to be generally
-  //                  faster (albeit, expected to be less accurate). 
+  //                  faster (albeit, expected to be less accurate).
   chol_.compute(JiMJT);
   DRAKE_DEMAND(chol_.info() != Eigen::ComputationInfo::InvalidInput);
   if (chol_.info() != Eigen::ComputationInfo::Success) {

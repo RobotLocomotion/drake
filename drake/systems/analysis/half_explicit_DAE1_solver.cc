@@ -8,7 +8,6 @@ template class HalfExplicitDAE1Solver<double>;
 }  // namespace drake
 
 // TODO(edrumwri): correct compile bug from uncommenting line below.
-// template class
-// drake::systems::HalfExplicitDAE1Solver<
-// Eigen::AutoDiffScalar<drake::Vector1d>>;
+template class
+drake::systems::HalfExplicitDAE1Solver<Eigen::AutoDiffScalar<drake::Vector1d>>;
 
