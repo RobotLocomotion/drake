@@ -145,14 +145,14 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
       base_to_color_optical_(
           Eigen::Translation3d(0., 0.02, 0.) *
           (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
-	   Eigen::AngleAxisd( M_PI_2, Eigen::Vector3d::UnitY()))),
+           Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))),
       // Depth camera's origin is offset by 0.02m on Y axis in the camera base
       // coordinate system.
       // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
       base_to_depth_optical_(
           Eigen::Translation3d(0., 0.02, 0.) *
           (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
-           Eigen::AngleAxisd( M_PI_2, Eigen::Vector3d::UnitY()))) {
+           Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))) {
   if (!show_window) {
     render_window_->SetOffScreenRendering(1);
   }
