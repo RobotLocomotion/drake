@@ -85,8 +85,8 @@ drake_cc_library(
     linkstatic = 1,
     deps = [
         ":generated_vectors",
-        "//drake/automotive/maliput/api:api",
-        "//drake/automotive/maliput/utility:utility",
+        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/utility",
     ],
 )
 
@@ -100,8 +100,8 @@ drake_cc_library(
     linkstatic = 1,
     deps = [
         ":generated_vectors",
-        "//drake/automotive/maliput/api:api",
-        "//drake/automotive/maliput/utility:utility",
+        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/utility",
     ],
 )
 
@@ -409,7 +409,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:endless_road_car",
         "//drake/automotive/maliput/monolane:builder",
-        "//drake/automotive/maliput/utility:utility",
+        "//drake/automotive/maliput/utility",
     ],
 )
 
@@ -419,7 +419,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:endless_road_oracle",
         "//drake/automotive/maliput/monolane:builder",
-        "//drake/automotive/maliput/utility:utility",
+        "//drake/automotive/maliput/utility",
     ],
 )
 

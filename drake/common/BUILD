@@ -36,8 +36,8 @@ drake_cc_library(
 # Specific traits and operators that are relevant to all ScalarTypes.
 drake_cc_library(
     name = "cond",
-    hdrs = ["cond.h"],
     srcs = ["cond.cc"],
+    hdrs = ["cond.h"],
     deps = [
         ":double",
     ],
@@ -113,21 +113,21 @@ drake_cc_library(
         "symbolic_expression.cc",
         "symbolic_expression_cell.cc",
         "symbolic_expression_cell.h",
+        "symbolic_expression_visitor.cc",
         "symbolic_formula.cc",
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
-        "symbolic_expression_visitor.cc",
     ],
     hdrs = [
         "hash.h",
         "symbolic_environment.h",
         "symbolic_expression.h",
+        "symbolic_expression_visitor.h",
         "symbolic_formula.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
-        "symbolic_expression_visitor.h",
     ],
     deps = [
         ":common",
@@ -213,6 +213,7 @@ drake_cc_library(
         ":common",
     ],
 )
+
 drake_cc_library(
     name = "reinit_after_move",
     hdrs = ["reinit_after_move.h"],
