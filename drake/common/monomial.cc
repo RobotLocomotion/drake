@@ -214,6 +214,8 @@ MonomialToCoefficientMapInternal PolynomialSqaure(
 
 class DecomposePolynomialVisitor {
  public:
+  // `vars` is a const set of variables, that will not be changed. It stays
+  // the same during visiting each type of symbolic expressions.
   MonomialToCoefficientMapInternal Visit(const Expression& e,
                                          const Variables& vars) const {
     return VisitPolynomial<MonomialToCoefficientMapInternal>(*this, e, vars);
