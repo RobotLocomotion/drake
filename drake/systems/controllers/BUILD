@@ -55,12 +55,12 @@ drake_cc_library(
         ":state_feedback_controller_base",
         "//drake/systems/framework",
         "//drake/systems/primitives:adder",
+        "//drake/systems/primitives:demultiplexer",
         "//drake/systems/primitives:gain",
         "//drake/systems/primitives:integrator",
+        "//drake/systems/primitives:matrix_gain",
         "//drake/systems/primitives:pass_through",
         "//drake/systems/primitives:saturation",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:matrix_gain",
     ],
 )
 

@@ -18,8 +18,8 @@ drake_cc_library(
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:multiplexer",
         "//drake/systems/primitives:gain",
+        "//drake/systems/primitives:multiplexer",
     ],
 )
 

@@ -32,11 +32,11 @@ drake_cc_binary(
     name = "dragway_to_urdf",
     srcs = ["dragway_to_urdf.cc"],
     deps = [
+        ":dragway",
         "//drake/automotive/maliput/utility",
         "//drake/common",
         "//drake/common:text_logging_gflags",
         "//drake/thirdParty:spruce",
-        ":dragway",
         "@gflags//:gflags",
     ],
 )

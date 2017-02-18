@@ -99,6 +99,7 @@ IPOPT_LIBS = [
 # on OS X and on Linux, and Bazel genrules don't allow platform-dependent outs.
 # https://github.com/bazelbuild/bazel/issues/281
 HALF_THE_CORES = "$$[($$(getconf _NPROCESSORS_ONLN)+1)/2]"
+
 BUILD_IPOPT_CMD = (
     CDEXEC + " `pwd`/external/ipopt/configure --enable-shared=no 2> /dev/null" +
     " && " + CDEXEC + " make -j " + HALF_THE_CORES + "  2> /dev/null" +
