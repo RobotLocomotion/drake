@@ -189,7 +189,7 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     // Computes the lumped inertia for the gripper.
     Matrix6<T> lumped_gripper_inertia_W =
         world_tree.LumpedSpatialInertiaInWorldFrame(
-            world_cache, {wsg_instance_id});
+            world_cache, {wsg_info.instance_id});
     // Transfer it to the last iiwa link's body frame.
     Matrix6<T> lumped_gripper_inertia_EE =
         transformSpatialInertia(X_WEE.inverse(), lumped_gripper_inertia_W);
