@@ -88,14 +88,14 @@ class RgbdCamera::Impl {
 
   ~Impl() {}
 
-  const Eigen::Isometry3d& base_pose() const { return world_to_base_; }
+  const Eigen::Isometry3d& base_pose() const { return X_WB_; }
 
   const Eigen::Isometry3d& color_camera_optical_pose() const {
-    return world_to_color_optical_;
+    return X_WC_;
   }
 
   const Eigen::Isometry3d& depth_camera_optical_pose() const {
-    return world_to_depth_optical_;
+    return X_WD_;
   }
 
   const CameraInfo& color_camera_info() const { return color_camera_info_; }
@@ -117,11 +117,11 @@ class RgbdCamera::Impl {
   const RigidBodyTree<double>& tree_;
   const CameraInfo color_camera_info_;
   const CameraInfo depth_camera_info_;
-  Eigen::Isometry3d world_to_base_;
-  Eigen::Isometry3d world_to_color_optical_;
-  Eigen::Isometry3d world_to_depth_optical_;
-  const Eigen::Isometry3d base_to_color_optical_;
-  const Eigen::Isometry3d base_to_depth_optical_;
+  Eigen::Isometry3d X_WB_;  // World to Base
+  Eigen::Isometry3d X_WC_;  // World to Color optical
+  Eigen::Isometry3d X_WD_;  // World to Depth optical
+  const Eigen::Isometry3d X_BC_;  // Base to Color optical
+  const Eigen::Isometry3d X_BD_;  // Base to Depth optical
 
   std::map<int, vtkSmartPointer<vtkActor>> id_object_pairs_;
   vtkNew<vtkRenderer> renderer_;
@@ -142,37 +142,35 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
       // Color camera's origin is offset by 0.02m on Y axis in the camera base
       // coordinate system.
       // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
-      base_to_color_optical_(
-          Eigen::Translation3d(0., 0.02, 0.) *
-          (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
-           Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))),
+      X_BC_(Eigen::Translation3d(0., 0.02, 0.) *
+            (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
+             Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))),
       // Depth camera's origin is offset by 0.02m on Y axis in the camera base
       // coordinate system.
       // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
-      base_to_depth_optical_(
-          Eigen::Translation3d(0., 0.02, 0.) *
-          (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
-           Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))) {
+      X_BD_(Eigen::Translation3d(0., 0.02, 0.) *
+            (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
+             Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))) {
   if (!show_window) {
     render_window_->SetOffScreenRendering(1);
   }
 
-  // Rgbd camera's base pose in the world.
+  // RGBD camera's base pose in the world.
   auto axis_angle = drake::math::rpy2axis(orientation);
-  world_to_base_ = Eigen::AngleAxisd(axis_angle[3],
+  X_WB_ = Eigen::AngleAxisd(axis_angle[3],
       Eigen::Vector3d(axis_angle[0], axis_angle[1], axis_angle[2]));
-  world_to_base_.translation() = Eigen::Vector3d(
+  X_WB_.translation() = Eigen::Vector3d(
       position[0], position[1], position[2]);
 
-  world_to_color_optical_ = world_to_base_ * base_to_color_optical_;
-  world_to_depth_optical_ = world_to_base_ * base_to_depth_optical_;
+  X_WC_ = X_WB_ * X_BC_;
+  X_WD_ = X_WB_ * X_BD_;
 
   CreateRenderingWorld();
 
   vtkNew<vtkCamera> camera;
   camera->SetPosition(0., 0., 0.);
-  camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward
-  camera->SetViewUp(0., -1, 0.);  // Sets y-down
+  camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward.
+  camera->SetViewUp(0., -1, 0.);  // Sets y-down.
   camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
 
   renderer_->SetActiveCamera(camera.GetPointer());
@@ -206,7 +204,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
 }
 
 void RgbdCamera::Impl::CreateRenderingWorld() {
-  auto camera_to_world = world_to_color_optical_.inverse();
+  auto camera_to_world = X_WC_.inverse();
 
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == "world") {
@@ -294,7 +292,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         }
       }
 
-      // Registers actors
+      // Registers actors.
       if (shape_matched) {
         actor->SetMapper(mapper.GetPointer());
         actor->SetUserTransform(vtk_transform);
@@ -334,7 +332,7 @@ void RgbdCamera::Impl::UpdateModelPoses(
   KinematicsCache<double> cache = tree_.doKinematics(q);
 
   // TODO(kunimatsu-tri) Update camera frame here and the flat terrain too.
-  auto camera_to_world = world_to_color_optical_.inverse();
+  auto camera_to_world = X_WC_.inverse();
 
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == "world") {
@@ -367,7 +365,7 @@ void RgbdCamera::Impl::DoCalcOutput(
 
   UpdateRenderWindow();
 
-  // Outputs the image data
+  // Outputs the image data.
   systems::AbstractValue* mutable_data = output->GetMutableData(0);
   drake::systems::sensors::Image<uint8_t>& image =
       mutable_data->GetMutableValue<
@@ -382,11 +380,11 @@ void RgbdCamera::Impl::DoCalcOutput(
   const auto width = color_camera_info_.width();
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
-      const int height_reversed = height - v - 1;  // Makes image upside down
+      const int height_reversed = height - v - 1;  // Makes image upside down.
 
       // Color image
       void* color_ptr = color_buffer_->GetOutput()->GetScalarPointer(u, v, 0);
-      // Converts RGBA to BGRA
+      // Converts RGBA to BGRA.
       image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
       image.at(u, height_reversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
       image.at(u, height_reversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
