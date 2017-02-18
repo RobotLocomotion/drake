@@ -69,6 +69,7 @@ filegroup(
         "**/*.urdf",
         "**/*.xml",
     ]),
+    visibility = ["//visibility:public"],
 )
 
 cpplint()
