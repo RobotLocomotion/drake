@@ -283,6 +283,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "decompose_polynomial_test",
+    deps = [
+        ":common",
+        ":monomial",
+        ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
     name = "double_overloads_test",
     deps = [
         ":common",

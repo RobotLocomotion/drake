@@ -42,6 +42,9 @@ target_link_libraries(symbolic_environment_test drakeCommon)
 drake_add_cc_test(symbolic_expression_test)
 target_link_libraries(symbolic_expression_test drakeCommon)
 
+drake_add_cc_test(decompose_polynomial_test)
+target_link_libraries(decompose_polynomial_test drakeCommon)
+
 drake_add_cc_test(symbolic_expression_differentiation_test)
 target_link_libraries(symbolic_expression_differentiation_test drakeCommon)
 
