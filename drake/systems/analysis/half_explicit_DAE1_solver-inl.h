@@ -246,10 +246,20 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
   Eigen::VectorXd Jvprime = system.EvalConstraintEquationsDot(*context);
 
   // Solve ΔtJM⁻¹Jᵀλ + Jv'(t+Δt) = 0 for λ.
-  // @TODO(edrumwri): Do a more clever form of least squares than this
+  // @TODO(edrumwri): Investigate a more clever form of least squares than this
   //                  (Tikhonov regularization), based on the number of
   //                  constraint equations compared to the number of generalized
-  //                  velocity variables.
+  //                  velocity variables. We can increase the Jacobian one row
+  //                  (constraint) at a time until the number of constraint
+  //                  equations is identical to the generalized velocity
+  //                  dimension. A constraint will only be added if it allows
+  //                  the Cholesky factorization (used already below) to
+  //                  succeed. The time complexity for the algorithm just
+  //                  described will be limited to O(n^3), rather than O(m^3),
+  //                  where n is the generalized velocity dimension, and m
+  //                  is the number of algebraic equations. Just doing a series
+  //                  of Cholesky factorizations might prove to be generally
+  //                  faster (albeit, expected to be less accurate). 
   chol_.compute(JiMJT);
   DRAKE_DEMAND(chol_.info() != Eigen::ComputationInfo::InvalidInput);
   if (chol_.info() != Eigen::ComputationInfo::Success) {
@@ -281,7 +291,7 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
     // (1) Computing the error g(.) for a given λ; (2) Determining the Jacobian
     // matrix (J) of the algebraic constraint equation errors computed with
     // respect to the change in the current values of λ; (3) Solving JΔλ =
-    // g(.) for Δλ. (4) Using line search to determine a "good" value of α such
+    // -g(.) for Δλ. (4) Using line search to determine a "good" value of α such
     // that ||g((q(t+Δt))|| = ||g(q(t), v(t), λ+Δαλ)|| is reduced.
     for (int j=0; j< max_nr_iterations_; ++j) {
       // Revert the coordinates and velocity in the context.
