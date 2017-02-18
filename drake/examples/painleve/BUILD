@@ -13,7 +13,6 @@ drake_cc_library(
         "painleve.h",
         "painleve-inl.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/solvers:mathematical_program",
