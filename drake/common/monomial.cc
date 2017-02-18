@@ -167,39 +167,6 @@ typedef std::unordered_map<Monomial, Expression, hash_value<Monomial>>
     MonomialToCoefficientMapInternal;
 
 /**
- * For a polynomial e = c₀ + c₁ * pow(x, k₁) + ... + cₙ * pow(x, kₙ), compute
- * the square of the polynomial.
- * Note that x and kᵢ can both be vectors, for example x = (x₀, x₁),
- * kᵢ = (1, 2), then pow(x, kᵢ) = x₀x₁²
- * @param map maps the monomial in the input polynomial to its coefficient.
- * @return maps the monomial in the output polynomial to its coefficient.
- */
-MonomialToCoefficientMapInternal PolynomialSqaure(
-    const MonomialToCoefficientMapInternal& map) {
-  MonomialToCoefficientMapInternal map_square;
-  map_square.reserve(map.size() * (map.size() + 1) );
-  for (auto it1 = map.begin(); it1 != map.end(); ++it1) {
-    for (auto it2 = it1; it2 != map.end(); ++it2) {
-      Monomial new_monomial = it1->first * it2->first;
-      Expression new_coeff = it1->second * it2->second;
-      if (it1 != it2) {
-        // Two cross terms.
-        new_coeff *= 2;
-      }
-      auto map_it = map_square.find(new_monomial);
-      if (map_it == map_square.end()) {
-        map_square.emplace(new_monomial, new_coeff);
-      } else {
-        // The monomial can appear before. For example, in (x₀²+x₀x₁+x₁)², the
-        // term x₀²x₁² appears in both x₀² * x₁², and x₀x₁ * x₀x₁.
-        map_it->second += new_coeff;
-      }
-    }
-  }
-  return map_square;
-}
-
-/**
  * Adds a term to the polynomial.
  * Find if the monomial in the new term exists in the polynomial or not. If it
  * does, then increment the corresponding coefficient. Otherwise add a new
@@ -217,6 +184,32 @@ void AddTermToPolynomial(const Monomial& monomial,
   } else {
     it->second += coefficient;
   }
+}
+
+/**
+ * For a polynomial e = c₀ + c₁ * pow(x, k₁) + ... + cₙ * pow(x, kₙ), compute
+ * the square of the polynomial.
+ * Note that x and kᵢ can both be vectors, for example x = (x₀, x₁),
+ * kᵢ = (1, 2), then pow(x, kᵢ) = x₀x₁²
+ * @param map maps the monomial in the input polynomial to its coefficient.
+ * @return maps the monomial in the output polynomial to its coefficient.
+ */
+MonomialToCoefficientMapInternal PolynomialSqaure(
+    const MonomialToCoefficientMapInternal& map) {
+  MonomialToCoefficientMapInternal map_square;
+  map_square.reserve(map.size() * (map.size() + 1) / 2);
+  for (auto it1 = map.begin(); it1 != map.end(); ++it1) {
+    for (auto it2 = it1; it2 != map.end(); ++it2) {
+      Monomial new_monomial = it1->first * it2->first;
+      Expression new_coeff = it1->second * it2->second;
+      if (it1 != it2) {
+        // Two cross terms.
+        new_coeff *= 2;
+      }
+      AddTermToPolynomial(new_monomial, new_coeff, &map_square);
+    }
+  }
+  return map_square;
 }
 
 class DecomposePolynomialVisitor {
