@@ -1,27 +1,26 @@
+#include <cmath>
 #include <functional>
 #include <stdexcept>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "gtest/gtest.h"
 
+#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 using std::function;
 using std::pair;
-using std::result_of;
-using std::exception;
 using std::vector;
+using std::runtime_error;
 
 namespace drake {
 namespace symbolic {
 namespace {
 
 using test::ExprEqual;
-using test::FormulaEqual;
 
 class SymbolicExpansionTest : public ::testing::Test {
  protected:
@@ -33,7 +32,7 @@ class SymbolicExpansionTest : public ::testing::Test {
   const Expression y_{var_y_};
   const Expression z_{var_z_};
 
-  std::vector<Environment> envs_;
+  vector<Environment> envs_;
 
   void SetUp() override {
     // Set up environments (envs_).
@@ -201,12 +200,12 @@ TEST_F(SymbolicExpansionTest, MathFunctions) {
 
 TEST_F(SymbolicExpansionTest, NaN) {
   // NaN should be detected during expansion and throw runtime_error.
-  EXPECT_THROW(Expression::NaN().Expand(), std::runtime_error);
+  EXPECT_THROW(Expression::NaN().Expand(), runtime_error);
 }
 
 TEST_F(SymbolicExpansionTest, IfThenElse) {
   EXPECT_THROW(if_then_else(x_ > y_, pow(x_ + y_, 2), pow(x_ - y_, 2)).Expand(),
-               std::runtime_error);
+               runtime_error);
 }
 
 }  // namespace
