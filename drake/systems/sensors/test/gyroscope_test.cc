@@ -7,7 +7,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/sensors/gyroscope_output.h"
@@ -35,11 +34,10 @@ class TestGyroscope : public ::testing::Test {
   TestGyroscope() : tree_(make_unique<RigidBodyTree<double>>()) {}
 
   void SetUp() override {
-    // Adds a box to the RigidBodyTree and obtains its model instance ID.
-    const parsers::ModelInstanceIdTable model_instance_id_table =
-        AddModelInstanceFromUrdfFileToWorld(
-            GetDrakePath() + "/multibody/models/box.urdf",
-            drake::multibody::joints::kQuaternion, tree_.get());
+    // Adds a box to the RigidBodyTree.
+    AddModelInstanceFromUrdfFileToWorld(
+        GetDrakePath() + "/multibody/models/box.urdf",
+        drake::multibody::joints::kQuaternion, tree_.get());
 
     // Adds a frame to the RigidBodyTree called "box frame" that is coincident
     // with the "box" body within the RigidBodyTree.
