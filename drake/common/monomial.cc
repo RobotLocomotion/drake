@@ -160,16 +160,24 @@ map<Variable::Id, int> ToMonomialPower(const Expression& e) {
   return powers;
 }
 
+/* Internally we use internal::Monomial to represent a monomial, rather than
+ * using an Expression object.
+ */
+typedef std::unordered_map<Monomial, Expression, hash_value<Monomial>>
+    MonomialToCoefficientMapInternal;
+
 /**
  * For a polynomial e = c₀ + c₁ * pow(x, k₁) + ... + cₙ * pow(x, kₙ), compute
  * the square of the polynomial.
+ * Note that x and kᵢ can both be vectors, for example x = (x₀, x₁),
+ * kᵢ = (1, 2), then pow(x, kᵢ) = x₀x₁²
  * @param map maps the monomial in the input polynomial to its coefficient.
  * @return maps the monomial in the output polynomial to its coefficient.
  */
 MonomialToCoefficientMapInternal PolynomialSqaure(
     const MonomialToCoefficientMapInternal& map) {
   MonomialToCoefficientMapInternal map_square;
-  map_square.reserve(map.size() * (map.size() + 1));
+  map_square.reserve(map.size() * (map.size() + 1) );
   for (auto it1 = map.begin(); it1 != map.end(); ++it1) {
     for (auto it2 = it1; it2 != map.end(); ++it2) {
       Monomial new_monomial = it1->first * it2->first;
@@ -182,11 +190,33 @@ MonomialToCoefficientMapInternal PolynomialSqaure(
       if (map_it == map_square.end()) {
         map_square.emplace(new_monomial, new_coeff);
       } else {
+        // The monomial can appear before. For example, in (x₀²+x₀x₁+x₁)², the
+        // term x₀²x₁² appears in both x₀² * x₁², and x₀x₁ * x₀x₁.
         map_it->second += new_coeff;
       }
     }
   }
   return map_square;
+}
+
+/**
+ * Adds a term to the polynomial.
+ * Find if the monomial in the new term exists in the polynomial or not. If it
+ * does, then increment the corresponding coefficient. Otherwise add a new
+ * pair (monomial, coefficient) to the map.
+ * @param monomial The monomial in the new term.
+ * @param coefficient The coefficient in the new term.
+ * @param polynomial The polynomial that the new term is added to.
+ */
+void AddTermToPolynomial(const Monomial& monomial,
+                         const Expression& coefficient,
+                         MonomialToCoefficientMapInternal* polynomial) {
+  auto it = polynomial->find(monomial);
+  if (it == polynomial->end()) {
+    polynomial->emplace_hint(it, monomial, coefficient);
+  } else {
+    it->second += coefficient;
+  }
 }
 
 class DecomposePolynomialVisitor {
@@ -198,13 +228,17 @@ class DecomposePolynomialVisitor {
 
   MonomialToCoefficientMapInternal operator()(
       const shared_ptr<ExpressionVar>& e, const Variables& vars) const {
-    if (vars.include(e->get_variable())) {
-      return MonomialToCoefficientMapInternal(
-          {{Monomial(e->get_variable(), 1), 1}});
+    const auto& var = e->get_variable();
+    Expression coeff{};
+    int exponent{};
+    if (vars.include(var)) {
+      exponent = 1;
+      coeff = 1;
     } else {
-      return MonomialToCoefficientMapInternal(
-          {{Monomial(), Expression(e->get_variable())}});
+      exponent = 0;
+      coeff = var;
     }
+    return MonomialToCoefficientMapInternal({{Monomial(var, exponent), coeff}});
   }
 
   MonomialToCoefficientMapInternal operator()(
@@ -227,15 +261,11 @@ class DecomposePolynomialVisitor {
       // map_p[x*y] = 3
       // map_p[x] = 4
       const auto& map_p = Visit(p.first, vars);
-      map.reserve(map.size() + map_p.size());
       for (const auto& map_p_pair : map_p) {
-        auto it = map.find(map_p_pair.first);
+        const Monomial& p_monomial = map_p_pair.first;
+        const Expression& p_coefficient = map_p_pair.second;
         // a * (b * monomial) = (a * b) * monomial.
-        if (it != map.end()) {
-          it->second += map_p_pair.second * p.second;
-        } else {
-          map.emplace(map_p_pair.first, map_p_pair.second * p.second);
-        }
+        AddTermToPolynomial(p_monomial, p_coefficient * p.second, &map);
       }
     }
     return map;
@@ -278,15 +308,10 @@ class DecomposePolynomialVisitor {
           for (const auto& term_map_p : map_p) {
             Monomial new_monomial = term_map.first * term_map_p.first;
             Expression new_coeff = term_map.second * term_map_p.second;
-            auto it = map_product.find(new_monomial);
-            if (it == map_product.end()) {
-              map_product.emplace(new_monomial, new_coeff);
-            } else {
-              it->second += new_coeff;
-            }
+            AddTermToPolynomial(new_monomial, new_coeff, &map_product);
           }
         }
-        map = map_product;
+        map = std::move(map_product);
       }
     }
     // Finally multiply the constant coefficient.
@@ -313,7 +338,7 @@ class DecomposePolynomialVisitor {
       return Visit(e->get_first_argument(), vars);
     } else if (exponent % 2 == 0) {
       // compute the square of a polynomial (c₀ + c₁ * pow(x, k₁) + ... + cₙ *
-      // pow(x, kₙ))
+      // pow(x, kₙ)).
       const auto& map1 = Visit(
           pow(e->get_first_argument(), exponent / 2), vars);
       map = PolynomialSqaure(map1);
@@ -331,12 +356,7 @@ class DecomposePolynomialVisitor {
         for (const auto& p2 : map2) {
           Monomial new_monomial = p1.first * p2.first;
           Expression new_coeff = p1.second * p2.second;
-          auto map_it = map.find(new_monomial);
-          if (map_it == map.end()) {
-            map.emplace(new_monomial, new_coeff);
-          } else {
-            map_it->second += new_coeff;
-          }
+          AddTermToPolynomial(new_monomial, new_coeff, &map);
         }
       }
     }

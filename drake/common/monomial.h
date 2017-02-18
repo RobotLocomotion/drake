@@ -343,19 +343,3 @@ struct hash_value<symbolic::internal::Monomial> {
   }
 };
 }  // namespace drake
-
-namespace drake {
-namespace symbolic {
-namespace internal {
-/* Internally we use internal::Monomial to represent a monomial, rather than
- * using an Expression object.
- */
-typedef std::unordered_map<Monomial, Expression, hash_value<Monomial>>
-    MonomialToCoefficientMapInternal;
-
-/* Decompose a polynomial. @see DecomposePolynomial. */
-MonomialToCoefficientMapInternal DecomposePolynomialInternal(
-    const Expression& e, const Variables& vars);
-}  // namespace internal
-}  // namespace symbolic
-}  // namespace drake
