@@ -38,6 +38,8 @@
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 
+#include "drake/util/drakeGeometryUtil.h"
+
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
 
@@ -172,6 +174,32 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
             iiwa_info.model_path, iiwa_info.world_offset, iiwa_kp, iiwa_ki,
             iiwa_kd);
 
+    // Sets a zero configuration and computes spatial inertia for the gripper
+    // as well as the pose of the end effector link of iiwa using the world
+    // tree.
+    const RigidBodyTree<T>& world_tree = plant_->get_rigid_body_tree();
+    KinematicsCache<T> world_cache = world_tree.CreateKinematicsCache();
+    world_cache.initialize(world_tree.getZeroConfiguration());
+    world_tree.doKinematics(world_cache);
+
+    const RigidBody<T>* end_effector = world_tree.FindBody("iiwa_link_7");
+    Isometry3<T> X_WEE =
+        world_tree.CalcBodyPoseInWorldFrame(world_cache, *end_effector);
+
+    // Computes the lumped inertia for the gripper.
+    Matrix6<T> lumped_gripper_inertia_W =
+        world_tree.LumpedSpatialInertiaInWorldFrame(
+            world_cache, {wsg_instance_id});
+    // Transfer it to the last iiwa link's body frame.
+    Matrix6<T> lumped_gripper_inertia_EE =
+        transformSpatialInertia(X_WEE.inverse(), lumped_gripper_inertia_W);
+    lumped_gripper_inertia_EE += end_effector->get_spatial_inertia();
+
+    // Changes the controller's iiwa end effector's link to the lumped inertia.
+    RigidBody<T>* controller_ee =
+        iiwa_controller->get_robot_for_control().FindBody("iiwa_link_7");
+    controller_ee->set_spatial_inertia(lumped_gripper_inertia_EE);
+
     // Connect iiwa controller and robot.
     builder.Connect(iiwa_output_port,
                     iiwa_controller->get_estimated_state_input_port());
@@ -183,7 +211,6 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     builder.ExportOutput(iiwa_output_port);
 
     // Sets up the WSG gripper part.
-    const RigidBodyTree<T>& world_tree = plant_->get_rigid_body_tree();
     const std::map<std::string, int> index_map =
         world_tree.computePositionNameToIndexMap();
     const int left_finger_position_index =
