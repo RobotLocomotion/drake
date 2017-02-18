@@ -57,7 +57,7 @@ class ExpressionCell {
    */
   virtual double Evaluate(const Environment& env) const = 0;
 
-  /** Returns the expanded expression.
+  /** Expands out products and positive integer powers in expression.
    * @throws std::runtime_error if NaN is detected during expansion.
    */
   virtual Expression Expand() const = 0;

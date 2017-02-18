@@ -142,8 +142,7 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2,
   return ExpandMultiplication(ExpandMultiplication(e1, e2), e3);
 }
 
-// Helper function expanding pow(base, exponent). It assumes that base is
-// expanded.
+// Helper function expanding pow(base, n). It assumes that base is expanded.
 Expression ExpandPow(const Expression& base, const int n) {
   // Precondition: base is already expanded.
   DRAKE_ASSERT(base.EqualTo(base.Expand()));

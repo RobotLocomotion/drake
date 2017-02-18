@@ -198,7 +198,10 @@ class Expression {
    */
   double Evaluate(const Environment& env = Environment{}) const;
 
-  /** Returns the expanded expression.
+  /** Expands out products and positive integer powers in expression. For
+   * example, <tt>(x + y) * (x + y)</tt> is expanded to <tt>x^2 + 2xy +
+   * y^2</tt>. Note that Expand applies recursively to sub-expressions. For
+   * instance, <tt>sin(2 * (x + y))</tt> is expanded to <tt>sin(2x + 2y)</tt>.
    * @throws std::runtime_error if NaN is detected during expansion.
    */
   Expression Expand() const;
