@@ -401,7 +401,7 @@ class Rod2D : public systems::LeafSystem<T> {
     return a[0]*b[1] - b[0]*a[1];
   }
 
-  // Calculates the cross product [0 0 ω] × [rx ry 0] and return the first
+  // Calculates the cross product [0 0 ω] × [rx ry 0] and returns the first
   // two elements of the result (the z component is zero).
   static Vector2<T> w_cross_r(const T& w, const Vector2<T>& r) {
     return w * Vector2<T>(-r[1], r[0]);
@@ -435,7 +435,8 @@ class Rod2D : public systems::LeafSystem<T> {
   double stiffness_{10000};   // Normal stiffness of the ground plane (N/m).
   double dissipation_{1};     // Dissipation factor in 1/velocity (s/m).
   double mu_s_{mu_};          // Static coefficient of friction (>= mu).
-  double v_stick_tol_{1e-3};  // Slip speed below which we are in stiction.
+  double v_stick_tol_{1e-3};  // Slip speed below which the compliant model
+                              //   considers the rod to be in stiction.
 };
 
 }  // namespace rod2d
