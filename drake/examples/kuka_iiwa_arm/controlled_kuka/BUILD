@@ -29,6 +29,7 @@ drake_cc_library(
 cc_binary(
     name = "controlled_kuka_demo",
     srcs = ["controlled_kuka_demo.cc"],
+    data = ["//drake/examples/kuka_iiwa_arm:models"],
     deps = [
         ":kuka_demo_plant_builder",
         "//drake/systems/analysis:simulator",
@@ -39,6 +40,7 @@ cc_binary(
 cc_binary(
     name = "kuka_cartesian_way_point_demo",
     srcs = ["kuka_cartesian_way_point_demo.cc"],
+    data = ["//drake/examples/kuka_iiwa_arm:models"],
     deps = [
         ":kuka_demo_plant_builder",
         "//drake/systems/analysis:simulator",
