@@ -43,7 +43,7 @@ drake_cc_library(
     hdrs = [
             "half_explicit_DAE1_solver.h",
             "half_explicit_DAE1_solver-inl.h", 
-    ]
+    ],
     deps = [
         ":integrator_base",
     ],
