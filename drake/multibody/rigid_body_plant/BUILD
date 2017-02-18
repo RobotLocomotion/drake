@@ -80,7 +80,8 @@ drake_cc_library(
         "//drake/lcmtypes:viewer",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/lcm",
-        "//drake/systems/primitives:signal_log"
+        "//drake/systems/primitives:signal_log",
+        "//drake/systems/rendering:drake_visualizer_client",
     ],
 )
 

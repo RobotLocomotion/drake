@@ -2,9 +2,12 @@
 #include "drake/examples/painleve/painleve-inl.h"
 
 namespace drake {
+namespace examples {
 namespace painleve {
 
-template class Painleve<double>;
+template
+class Painleve<double>;
 
 }  // namespace painleve
+}  // namespace examples
 }  // namespace drake

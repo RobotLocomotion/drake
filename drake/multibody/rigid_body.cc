@@ -24,10 +24,6 @@ RigidBody<T>::RigidBody() {
   spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
 }
 
-// For an explanation of why these SWIG preprocessor commands are needed, see
-// the comment immediately above the declaration of RigidBody::Clone() in
-// rigid_body.h.
-#ifndef SWIG
 template <typename T>
 std::unique_ptr<RigidBody<T>> RigidBody<T>::Clone() const {
   auto body = make_unique<RigidBody<T>>();
@@ -42,93 +38,6 @@ std::unique_ptr<RigidBody<T>> RigidBody<T>::Clone() const {
   body->set_center_of_mass(center_of_mass_);
   body->set_spatial_inertia(spatial_inertia_);
   return move(body);
-}
-#endif
-
-template <typename T>
-bool RigidBody<T>::CompareToClone(const RigidBody& other) const {
-  if (get_name() != other.get_name()) {
-    drake::log()->debug(
-        "RigidBody::CompareToClone(): name mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        get_name(),
-        other.get_name());
-    return false;
-  }
-  if (get_model_name() != other.get_model_name()) {
-    drake::log()->debug(
-        "RigidBody::CompareToClone(): model name mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        get_model_name(),
-        other.get_model_name());
-    return false;
-  }
-  if (get_model_instance_id() != other.get_model_instance_id()) {
-    drake::log()->debug(
-        "RigidBody::CompareToClone(): model instance ID mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        get_model_instance_id(),
-        other.get_model_instance_id());
-    return false;
-  }
-  if (get_body_index() != other.get_body_index()) {
-    drake::log()->debug(
-        "RigidBody::CompareToClone(): body index mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        get_body_index(),
-        other.get_body_index());
-    return false;
-  }
-  if (get_position_start_index() != other.get_position_start_index()) {
-    drake::log()->debug(
-        "RigidBody::CompareToClone(): position start index mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        get_position_start_index(),
-        other.get_position_start_index());
-    return false;
-  }
-  if (get_velocity_start_index() != other.get_velocity_start_index()) {
-    drake::log()->debug(
-        "RigidBody::CompareToClone(): velocity start index mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        get_velocity_start_index(),
-        other.get_velocity_start_index());
-    return false;
-  }
-  if (get_mass() != other.get_mass()) {
-    drake::log()->debug(
-        "RigidBody::CompareToClone(): mass mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        get_mass(),
-        other.get_mass());
-    return false;
-  }
-  if (get_center_of_mass() != other.get_center_of_mass()) {
-    drake::log()->debug(
-        "RigidBody::CompareToClone(): center of mass mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        get_center_of_mass(),
-        other.get_center_of_mass());
-    return false;
-  }
-  if (get_spatial_inertia() != other.get_spatial_inertia()) {
-    drake::log()->debug(
-        "RigidBody::CompareToClone(): spatial inertia mismatch:\n"
-        "  - this: {}\n"
-        "  - other: {}",
-        get_spatial_inertia(),
-        other.get_spatial_inertia());
-    return false;
-  }
-  return true;
 }
 
 template <typename T>

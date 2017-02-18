@@ -21,8 +21,8 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/gravity_compensator.h"
-#include "drake/systems/controllers/pid_controlled_system.h"
+#include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/controllers/pid_with_gravity_compensator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -49,16 +49,11 @@ using schunk_wsg::SchunkWsgStatusSender;
 using schunk_wsg::SchunkWsgTrajectoryGenerator;
 using systems::ConstantVectorSource;
 using systems::Context;
-using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
-using systems::GravityCompensator;
 using systems::InputPortDescriptor;
-using systems::MatrixGain;
-using systems::Multiplexer;
 using systems::OutputPortDescriptor;
-using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 
@@ -163,13 +158,25 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
       iiwa_kd[i] = std::sqrt(iiwa_kp[i]);
     }
 
-    auto iiwa_pid_ports = PidControlledSystem<T>::ConnectController(
-        iiwa_input_port, iiwa_output_port, nullptr /* feedback */,
-        iiwa_kp, iiwa_ki, iiwa_kd, &builder);
+    auto iiwa_controller =
+        builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
+            drake::GetDrakePath() + kIiwaUrdf, nullptr,
+            iiwa_kp, iiwa_ki, iiwa_kd);
 
-    const RigidBodyTree<T>& tree = plant_->get_rigid_body_tree();
+    // Connect iiwa controller and robot.
+    builder.Connect(iiwa_output_port,
+                    iiwa_controller->get_estimated_state_input_port());
+    builder.Connect(iiwa_controller->get_control_output_port(),
+                    iiwa_input_port);
+
+    // Export iiwa's desired state input, and state output.
+    builder.ExportInput(iiwa_controller->get_desired_state_input_port());
+    builder.ExportOutput(iiwa_output_port);
+
+    // Sets up the WSG gripper part.
+    const RigidBodyTree<T>& world_tree = plant_->get_rigid_body_tree();
     const std::map<std::string, int> index_map =
-        tree.computePositionNameToIndexMap();
+        world_tree.computePositionNameToIndexMap();
     const int left_finger_position_index =
         index_map.at("left_finger_sliding_joint");
     const int position_index = plant_->FindInstancePositionIndexFromWorldIndex(
@@ -182,8 +189,8 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
         2 * plant_->get_num_positions(wsg_instance_id));
     feedback_matrix(0, position_index) = 1.;
     feedback_matrix(1, velocity_index) = 1.;
-    std::unique_ptr<MatrixGain<T>> feedback_selector =
-        std::make_unique<MatrixGain<T>>(feedback_matrix);
+    std::unique_ptr<systems::MatrixGain<T>> feedback_selector =
+        std::make_unique<systems::MatrixGain<T>>(feedback_matrix);
 
     // TODO(sam.creasey) The choice of constants below is completely
     // arbitrary and may not match the performance of the actual
@@ -196,50 +203,19 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     const T wsg_ki = 0.0;
     const T wsg_kd = 5.0;
     const VectorX<T> wsg_v = VectorX<T>::Ones(wsg_input_port.size());
-    auto wsg_pid_ports = PidControlledSystem<T>::ConnectController(
-        wsg_input_port, wsg_output_port, std::move(feedback_selector),
-        wsg_v * wsg_kp, wsg_v * wsg_ki, wsg_v * wsg_kd,
-        &builder);
 
-    // Create a tree containing only the iiwa to use with the gravity
-    // compensator.
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + kIiwaUrdf,
-        drake::multibody::joints::kFixed,
-        nullptr /* weld to frame */, &iiwa_tree_);
+    auto wsg_controller =
+        builder.template AddSystem<systems::PidController<T>>(
+            std::move(feedback_selector),
+            wsg_v * wsg_kp, wsg_v * wsg_ki, wsg_v * wsg_kd);
 
-    auto gravity_compensator =
-        builder.template AddSystem<GravityCompensator<T>>(iiwa_tree_);
+    // Connects WSG and controller.
+    builder.Connect(wsg_output_port,
+                    wsg_controller->get_estimated_state_input_port());
+    builder.Connect(wsg_controller->get_control_output_port(), wsg_input_port);
 
-    // Split the input state into two signals one with the positions and one
-    // with the velocities.
-
-    // TODO(sam.creasey) Is this a common enough thing to need to do
-    // that the plant might want to output the positions and
-    // velocities on separate ports?
-    auto rbp_state_demux = builder.template AddSystem<Demultiplexer<T>>(
-        iiwa_tree_.get_num_positions() + iiwa_tree_.get_num_velocities(),
-        iiwa_tree_.get_num_positions());
-    builder.Connect(iiwa_output_port, rbp_state_demux->get_input_port(0));
-
-    // Connects the gravity compensator to the output generalized positions.
-    builder.Connect(rbp_state_demux->get_output_port(0),
-                    gravity_compensator->get_input_port(0));
-    builder.Connect(gravity_compensator->get_output_port(0),
-                    iiwa_pid_ports.control_input_port);
-
-    builder.ExportInput(iiwa_pid_ports.state_input_port);
-    builder.ExportOutput(iiwa_output_port);
-
-    // Now finish building the WSG's part of the diagram.
-
-    // Create a source to emit a single zero.  We'll need this to
-    // express external commanded force to the PidControlledSystem.
-    auto wsg_zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
-        Eigen::VectorXd::Zero(1));
-    builder.Connect(wsg_zero_source->get_output_port(),
-                    wsg_pid_ports.control_input_port);
-    builder.ExportInput(wsg_pid_ports.state_input_port);
+    //  Export wsg's desired state input, and state output.
+    builder.ExportInput(wsg_controller->get_desired_state_input_port());
     builder.ExportOutput(wsg_output_port);
 
     builder.ExportOutput(plant_->get_output_port(0));
@@ -270,8 +246,6 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
 
  private:
   RigidBodyPlant<T>* plant_{nullptr};
-  PidControlledSystem<T>* controller_{nullptr};
-  RigidBodyTree<T> iiwa_tree_;
 };
 
 int DoMain() {
