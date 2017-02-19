@@ -48,7 +48,7 @@ class PiecewisePolynomialTrajectory : public Trajectory {
   /**
    * @return A reference to the underlying piecewise polynomial.
    */
-  const PiecewisePolynomial<double>& piecewise_polynomial() const {
+  const PiecewisePolynomial<double>& get_piecewise_polynomial() const {
     return pp_;
   }
 

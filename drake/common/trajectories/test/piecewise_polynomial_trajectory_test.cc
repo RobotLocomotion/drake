@@ -82,7 +82,7 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, PPAccessor) {
   }
   const auto poly = PiecewisePolynomial<double>::FirstOrderHold(times, points);
   const PiecewisePolynomialTrajectory poly_traj(poly);
-  const auto& poly_traj_poly = poly_traj.piecewise_polynomial();
+  const auto& poly_traj_poly = poly_traj.get_piecewise_polynomial();
   for (int i = 0; i < num_points - 1; ++i) {
     EXPECT_EQ(poly.getPolynomialMatrix(i),
               poly_traj_poly.getPolynomialMatrix(i));
