@@ -15,25 +15,36 @@
 namespace drake {
 namespace systems {
 namespace sensors {
-/// The RGBD camera model provides both RGB and depth images. The image
-/// resolution is fixed at VGA resolution (640x480) for both RGB and depth
-/// cameras. The depth sensing range is 0.5 m to 5.0 m. The RGBD camera's base
-/// coordinate system is defined to be x-forward, y-left, and z-up. The origin
-/// of the RGB camera's optical coordinate system is +0.02 m offset in the base
-/// coordinate system's y axis.  The depth camera's optical coordinate system is
-/// the same as the RGB camera's optical coordinate system, so the user can
-/// regard the depth image to be a "registered depth image" for the RGB image.
-/// No disparity is considered.  For the camera optical coordinate systems's
-/// orientation, refer to CameraInfo's documentation.
+/// The RgbdCamera is a sensor that provides both RGB and depth images. Its
+/// image resolution is fixed at VGA (640 x 480 pixels) for both the RGB and
+/// depth measurements. The depth sensing range is 0.5 m to 5.0 m.
+///
+/// In addition to `W`, the world coordinate system, there are three coordinate
+/// systems that are associated with an RgbdCamera. They are defined as follows:
+///
+///   * `B` - The camera's base coordinate system: X-forward, Y-left, and Z-up.
+///
+///   * `C` - the camera's color sensor's optical coordinate system: `X-right`,
+///           `Y-down` and `Z-forward`.
+///
+///   * `D` - the camera's depth sensor's optical coordinate system: `X-right`,
+///           `Y-down` and `Z-forward`.
+///
+/// The origins of `C` and `D` (i.e., `Co` and `Do`, respectively) are +0.02 m
+/// offset in `B`'s Y-axis.  Since `C` and `D` are coincident, the depth image
+/// is a "registered depth image" for the RGB image. No disparity between the
+/// RGB and depth images are modeled. For more details about the poses of `C`
+/// and `D`, see the class documentation of CameraInfo.
 ///
 /// Output image format:
 ///   - The RGB image has four channels in the following order: blue, green
 ///     red, alpha. Each channel is represented by a uint8_t.
+///
 ///   - The depth image has a depth channel represented by a float. The value
-///     stored in the depth channel holds *the Z value in the camera optical
-///     coordinate system.*  Note that this is different from the range data
-///     used by laser range finders in which the depth value represents the
-///     distance from the sensor origin to the object surface.
+///     stored in the depth channel holds *the Z value in `D`.*  Note that this
+///     is different from the range data used by laser range finders (like that
+///     provided by DepthSensor) in which the depth value represents the
+///     distance from the sensor origin to the object's surface.
 ///
 // TODO(kunimatsu-tri) Add support for the image publish capability.
 class RgbdCamera : public LeafSystem<double> {
@@ -60,20 +71,26 @@ class RgbdCamera : public LeafSystem<double> {
     static constexpr float kTooClose{0.f};
   };
 
-  /// A constructor for %RgbdCamera
+  /// A constructor for %RgbdCamera that defines `B` using Euler angles.
   ///
-  /// @param name The name of the RGBD camera.  This can be any value, but
+  /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
   /// model instance.
-  /// @param tree The RigidBodyTree containing the geometric configuration of
-  /// the world.  This parameter is aliased by a class member variable. Thus,
-  /// its life span must exceed that of this class's instance.
-  /// @param position 3D position of RgbdCamera in the world coordinate system.
-  /// @param orientation 3D orientation of RgbdCamera by roll-pitch-yaw in the
-  /// world coordinate system.
-  /// @param fov_y The vertical field of view for RgbdCamera.
-  /// @param show_window The flag to show visible window.  If this is false,
-  /// offscreen rendering is executed.
+  ///
+  /// @param tree The RigidBodyTree containing the geometric description of the
+  /// world. The life span of this parameter must exceed that of this class's
+  /// instance.
+  ///
+  /// @param position The x-y-z position of `B` in `W`. This defines the
+  /// translation component of `X_WB`.
+  ///
+  /// @param orientation The roll-pitch-yaw orientation of `B` in `W`. This
+  /// defines the orientation component of `X_WB`.
+  ///
+  /// @param fov_y The RgdbCamera's vertical field of view.
+  ///
+  /// @param show_window A flag for showing a visible window.  If this is false,
+  /// offscreen rendering is executed. This is useful for debugging purposes.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
@@ -81,18 +98,22 @@ class RgbdCamera : public LeafSystem<double> {
              double fov_y,
              bool show_window);
 
-  /// A constructor for %RgbdCamera
+  /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
   ///
-  /// @param name The name of the RGBD camera.  This can be any value, but
+  /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
   /// model instance.
-  /// @param tree The RigidBodyTree containing the geometric configuration of
-  /// the world.  This parameter is aliased by a class member variable. Thus,
-  /// its life span must exceed that of this class's instance.
-  /// @param frame The frame in RigidBodyTree to which this camera is attached.
-  /// @param fov_y The vertical field of view for RgbdCamera.
-  /// @param show_window The flag to show visible window.  If this is false,
-  /// offscreen rendering is executed.
+  ///
+  /// @param tree The RigidBodyTree containing the geometric description of the
+  /// world. The life span of this parameter must exceed that of this class's
+  /// instance.
+  ///
+  /// @param frame The frame in @tree to which this camera is attached.
+  ///
+  /// @param fov_y The RgdbCamera's vertical field of view.
+  ///
+  /// @param show_window A flag for showing a visible window.  If this is false,
+  /// offscreen rendering is executed. This is useful for debugging purposes.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const RigidBodyFrame<double>& frame,
@@ -101,21 +122,19 @@ class RgbdCamera : public LeafSystem<double> {
 
   ~RgbdCamera();
 
-  /// Reterns the color camera info.
+  /// Reterns the color sensor's info.
   const CameraInfo& color_camera_info() const;
 
-  /// Reterns the depth camera info.
+  /// Reterns the depth sensor's info.
   const CameraInfo& depth_camera_info() const;
 
-  /// Returns the camera base pose in the world coordinate system.
+  /// Returns `X_WB`.
   const Eigen::Isometry3d& base_pose() const;
 
-  /// Returns the pose of color camera's optical coordinate system in the world
-  /// coordinate system.
+  /// Returns `X_WC`.
   const Eigen::Isometry3d& color_camera_optical_pose() const;
 
-  /// Returns the pose of depth camera's optical coordinate system in the world
-  /// coordinate system.
+  /// Returns `X_WD`.
   const Eigen::Isometry3d& depth_camera_optical_pose() const;
 
   /// Returns the RigidBodyTree within the RigidBodyPlant that this sensor is

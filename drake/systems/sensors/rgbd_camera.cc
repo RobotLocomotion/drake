@@ -139,14 +139,14 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
     : tree_(tree),
       color_camera_info_(kImageWidth, kImageHeight, fov_y),
       depth_camera_info_(kImageWidth, kImageHeight, fov_y),
-      // Color camera's origin is offset by 0.02m on Y axis in the camera base
-      // coordinate system.
+      // The color sensor's origin (`Co`) is offset by 0.02 m on the Y axis of
+      // the RgbdCamera's base coordinate system (`B`).
       // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
       X_BC_(Eigen::Translation3d(0., 0.02, 0.) *
             (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
              Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))),
-      // Depth camera's origin is offset by 0.02m on Y axis in the camera base
-      // coordinate system.
+      // The depth sensor's origin (`Do`) is offset by 0.02 m on Y axis of the
+      /// RgbdCamera's base coordinate system (`B`).
       // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
       X_BD_(Eigen::Translation3d(0., 0.02, 0.) *
             (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
@@ -199,7 +199,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
                        bool show_window)
     : tree_(tree), color_camera_info_(kImageWidth, kImageHeight, fov_y),
       depth_camera_info_(kImageWidth, kImageHeight, fov_y) {
-  // TODO(kunimatsu) Implement this
+  // TODO(kunimatsu) Implement this.
   std::runtime_error("Not implemented");
 }
 
