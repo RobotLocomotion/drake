@@ -341,14 +341,14 @@ class RigidBodyTree {
    * Computes the summed spatial inertia in the world frame of all the bodies
    * in @p bodies.
    * @param cache Reference to the KinematicsCache.
-   * @param bodies Vector of bodies, whose spatial inertia will be summed and
-   * returned.
+   * @param bodies_of_interest Vector of bodies, whose spatial inertia will be
+   * summed and returned.
    * @return Summed spatial inertia in the world frame of all the bodies
    * in @p bodies.
    */
   drake::Matrix6<T> LumpedSpatialInertiaInWorldFrame(
       const KinematicsCache<T>& cache,
-      const std::vector<const RigidBody<T>*>& bodies) const;
+      const std::vector<const RigidBody<T>*>& bodies_of_interest) const;
 
   /// Computes the pose `X_WB` of @p body's frame B in the world frame W.
   /// @param cache Reference to the KinematicsCache.

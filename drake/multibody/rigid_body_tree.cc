@@ -1581,9 +1581,9 @@ drake::Matrix6<T> RigidBodyTree<T>::LumpedSpatialInertiaInWorldFrame(
 template <typename T>
 drake::Matrix6<T> RigidBodyTree<T>::LumpedSpatialInertiaInWorldFrame(
       const KinematicsCache<T>& cache,
-      const std::vector<const RigidBody<T>*>& bodies) const {
+      const std::vector<const RigidBody<T>*>& bodies_of_interest) const {
   drake::Matrix6<T> I_W = drake::Matrix6<T>::Zero();
-  for (const RigidBody<T>* body : bodies) {
+  for (const RigidBody<T>* body : bodies_of_interest) {
     const Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, *body);
     I_W += transformSpatialInertia(
         X_WB, body->get_spatial_inertia().template cast<T>());
