@@ -15,12 +15,13 @@
 namespace drake {
 namespace systems {
 namespace sensors {
-/// The RgbdCamera is a sensor that provides both RGB and depth images. Its
-/// image resolution is fixed at VGA (640 x 480 pixels) for both the RGB and
-/// depth measurements. The depth sensing range is 0.5 m to 5.0 m.
+/// The RgbdCamera provides both RGB and depth images. Its image resolution is
+/// fixed at VGA (640 x 480 pixels) for both the RGB and depth measurements. The
+/// depth sensing range is 0.5 m to 5.0 m.
 ///
-/// In addition to `W`, the world coordinate system, there are three coordinate
-/// systems that are associated with an RgbdCamera. They are defined as follows:
+/// Let `W` be the world coordinate system. In addition to `W`, there are three
+/// more coordinate systems that are associated with an RgbdCamera. They are
+/// defined as follows:
 ///
 ///   * `B` - The camera's base coordinate system: X-forward, Y-left, and Z-up.
 ///
@@ -30,8 +31,9 @@ namespace sensors {
 ///   * `D` - the camera's depth sensor's optical coordinate system: `X-right`,
 ///           `Y-down` and `Z-forward`.
 ///
-/// The origins of `C` and `D` (i.e., `Co` and `Do`, respectively) are +0.02 m
-/// offset in `B`'s Y-axis.  Since `C` and `D` are coincident, the depth image
+/// The origins of `C` and `D` (i.e., `Co` and `Do`, respectively) are offset
+/// from `B`'s origin (`Bo`) by 0 m in `B`'s X-axis, +0.02 m in `B`'s Y-axis,
+/// and 0 m in `B`'s Z axis.  Since `C` and `D` are coincident, the depth image
 /// is a "registered depth image" for the RGB image. No disparity between the
 /// RGB and depth images are modeled. For more details about the poses of `C`
 /// and `D`, see the class documentation of CameraInfo.
