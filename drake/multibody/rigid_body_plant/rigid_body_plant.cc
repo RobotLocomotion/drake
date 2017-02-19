@@ -446,7 +446,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   static_assert(std::is_same<double, T>::value,
                 "Only support templating on double for now");
-  DRAKE_DEMAND(timestep_ == 0.0);
+  if (timestep_ > 0.0) return;
 
   VectorX<T> u = EvaluateActuatorInputs(context);
 
@@ -486,10 +486,10 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   // of dynamicsBiasTerm().
   const typename RigidBodyTree<T>::BodyToWrenchMap no_external_wrenches;
   // right_hand_side is the right hand side of the system's equations:
-  // H*vdot -J^T*f = -right_hand_side.
+  // H*vdot -J^T*f = right_hand_side.
   VectorX<T> right_hand_side =
-      tree_->dynamicsBiasTerm(kinsol, no_external_wrenches);
-  if (num_actuators > 0) right_hand_side -= tree_->B * u;
+      -tree_->dynamicsBiasTerm(kinsol, no_external_wrenches);
+  if (num_actuators > 0) right_hand_side += tree_->B * u;
 
   // Applies joint limit forces.
   // TODO(amcastro-tri): Maybe move to
@@ -503,12 +503,12 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
         const T limit_force =
             JointLimitForce(joint, q(b->get_position_start_index()),
                             v(b->get_velocity_start_index()));
-        right_hand_side(b->get_velocity_start_index()) -= limit_force;
+        right_hand_side(b->get_velocity_start_index()) += limit_force;
       }
     }
   }
 
-  right_hand_side -= ComputeContactForce(kinsol);
+  right_hand_side += ComputeContactForce(kinsol);
 
   solvers::VectorXDecisionVariable position_force{};
 
@@ -534,7 +534,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   }
 
   // Adds [H,-J^T] * [vdot;f] = -C.
-  prog.AddLinearEqualityConstraint(H_and_neg_JT, -right_hand_side,
+  prog.AddLinearEqualityConstraint(H_and_neg_JT, right_hand_side,
                                    {vdot, position_force});
 
   prog.Solve();
@@ -551,9 +551,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     drake::systems::DiscreteState<T>* updates) const {
   static_assert(std::is_same<double, T>::value,
                 "Only support templating on double for now");
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-  DRAKE_DEMAND(updates != nullptr);
-  DRAKE_DEMAND(timestep_ > 0.0);
+  if (timestep_ == 0.0) return;
 
   VectorX<T> u = EvaluateActuatorInputs(context);
 
@@ -574,21 +572,21 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   auto H = tree_->massMatrix(kinsol);
 
   // There are no external wrenches, but it is a required argument in
-  // dynamicsBiasTerm.
+  // dynamicsBiasTerm().
   const typename RigidBodyTree<T>::BodyToWrenchMap no_external_wrenches;
 
   // right_hand_side is the right hand side of the system's equations:
-  //   right_hand_side = C(q,v) - B*u
+  //   right_hand_side = B*u - C(q,v)
   VectorX<T> right_hand_side =
-      tree_->dynamicsBiasTerm(kinsol, no_external_wrenches);
-  if (num_actuators > 0) right_hand_side -= tree_->B * u;
+      -tree_->dynamicsBiasTerm(kinsol, no_external_wrenches);
+  if (num_actuators > 0) right_hand_side += tree_->B * u;
 
   // TODO(russt): Handle joint limits.
   // TODO(russt): Handle contact constraints.
 
-  // Add H*(vn - v)/h = - right_hand_side
+  // Add H*(vn - v)/h = right_hand_side
   prog.AddLinearEqualityConstraint(H / timestep_,
-                                   H * v / timestep_ - right_hand_side, vn);
+                                   H * v / timestep_ + right_hand_side, vn);
 
   prog.Solve();
 
@@ -632,8 +630,7 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
 
   // TODO(amcastro-tri): we would like to compile here with `auto` instead of
   // `VectorX<T>`. However it seems we get some sort of block from a block
-  // which
-  // is not instantiated in drakeRBM.
+  // that is not instantiated in drakeRBM.
   VectorX<T> q = x.topRows(nq);
 
   // TODO(amcastro-tri): place kinematics cache in the context so it can be
@@ -667,8 +664,7 @@ void RigidBodyPlant<T>::DoMapVelocityToQDot(
 
   // TODO(amcastro-tri): we would like to compile here with `auto` instead of
   // `VectorX<T>`. However it seems we get some sort of block from a block
-  // which
-  // is not instantiated in drakeRBM.
+  // that is not instantiated in drakeRBM.
   VectorX<T> q = x.topRows(nq);
   VectorX<T> v = generalized_velocity;
 
@@ -735,8 +731,7 @@ Matrix3<T> RigidBodyPlant<T>::ComputeBasisFromZ(const Vector3<T>& z_axis_W) {
   int minAxis;
   u.minCoeff(&minAxis);
   // The world axis corresponding to the smallest component of the local
-  // z-axis
-  // will be *most* perpendicular.
+  // z-axis will be *most* perpendicular.
   Vector3<T> perpAxis;
   perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
       (minAxis == 2 ? 1 : 0);
@@ -862,12 +857,11 @@ VectorX<T> RigidBodyPlant<T>::EvaluateActuatorInputs(
       }
       if (this->EvalVectorInput(context, input_map_[instance_id]) == nullptr) {
         throw runtime_error(
-            "RigidBodyPlant::DoCalcTimeDerivatives(): ERROR: "
+            "RigidBodyPlant::EvaluateActuatorInputs(): ERROR: "
             "Actuator command input port for model instance " +
             std::to_string(instance_id) + " is not connected. All " +
             std::to_string(get_num_model_instances()) +
-            " actuator command "
-            "input ports must be connected.");
+            " actuator command input ports must be connected.");
       }
     }
 
