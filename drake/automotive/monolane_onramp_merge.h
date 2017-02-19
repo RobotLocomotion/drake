@@ -9,8 +9,6 @@
 namespace drake {
 namespace automotive {
 
-namespace mono = maliput::monolane;
-
 /// RoadCharacteristics computes and stores characteristics of a road network;
 /// i.e. bounds on the lane width and driveable width. Default settings are
 /// taken if no others are specified.
@@ -35,7 +33,7 @@ struct RoadCharacteristics {
 /// creation and modification of road geometries for simulating/analyzing
 /// such scenarios.
 ///
-/// Implements the following onramp example, where each road lane is composed
+/// Implements the following onramp example, where each road section is composed
 /// of sequences of linear and arc primitives:
 ///
 /// <pre>
@@ -50,7 +48,6 @@ struct RoadCharacteristics {
 ///                   |
 ///                   _
 /// </pre>
-template <typename T>
 class MonolaneOnrampMerge {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MonolaneOnrampMerge)
@@ -58,8 +55,9 @@ class MonolaneOnrampMerge {
   /// Constructor for the example.  The user supplies @p rc, a
   /// RoadCharacteristics structure that aggregates the road boundary data.
   explicit MonolaneOnrampMerge(const RoadCharacteristics& rc) {
-    rb_.reset(new mono::Builder(rc.lane_bounds, rc.driveable_bounds,
-                                kLinearTolerance_, kAngularTolerance_));
+    rb_.reset(
+        new maliput::monolane::Builder(rc.lane_bounds, rc.driveable_bounds,
+                                       linear_tolerance_, angular_tolerance_));
   }
 
   /// Constructor for the example, using default RoadCharacteristics settings.
@@ -70,10 +68,10 @@ class MonolaneOnrampMerge {
 
  private:
   /// Tolerances for monolane's Builder.
-  const double kLinearTolerance_ = 0.01;
-  const double kAngularTolerance_ = 0.01 * M_PI;
+  const double linear_tolerance_  = 0.01;
+  const double angular_tolerance_ = 0.01 * M_PI;
 
-  std::unique_ptr<mono::Builder> rb_;
+  std::unique_ptr<maliput::monolane::Builder> rb_;
 };
 
 }  // namespace automotive

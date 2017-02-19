@@ -7,17 +7,16 @@ namespace automotive {
 
 namespace mono = maliput::monolane;
 
-template <typename T>
 std::unique_ptr<const maliput::api::RoadGeometry>
-MonolaneOnrampMerge<T>::BuildOnramp() {
+MonolaneOnrampMerge::BuildOnramp() {
   // Initialize the road from the origin.
-  const mono::EndpointXy& kOriginXy{0., 0., 0.};
-  const mono::EndpointZ& kFlatZ{0., 0., 0., 0.};
-  const mono::Endpoint& kRoadOrigin{kOriginXy, kFlatZ};
+  const mono::EndpointXy kOriginXy{0., 0., 0.};
+  const mono::EndpointZ kFlatZ{0., 0., 0., 0.};
+  const mono::Endpoint kRoadOrigin{kOriginXy, kFlatZ};
 
   // Construct the pre-merge road.
-  const double& kPreArcLength = 25.;
-  const double& kPreArcRadius = 40.;
+  const double kPreArcLength = 25.;
+  const double kPreArcRadius = 40.;
   const auto& pre0 = rb_->Connect(
       "pre0", kRoadOrigin,
       mono::ArcOffset(kPreArcLength, -kPreArcRadius / kPreArcLength), kFlatZ);
@@ -57,10 +56,6 @@ MonolaneOnrampMerge<T>::BuildOnramp() {
 
   return rb_->Build({"monolane-merge-example"});
 }
-
-template class MonolaneOnrampMerge<double>;
-// TODO(jadecastro): Add explicit instantiations for `TaylorVarXd` and
-// `symbolic::Expression` types.
 
 }  // namespace automotive
 }  // namespace drake
