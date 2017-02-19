@@ -427,6 +427,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_expansion_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_expression_test",
     deps = [
         ":common",
