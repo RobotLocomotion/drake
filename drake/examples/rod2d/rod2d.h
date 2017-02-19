@@ -19,23 +19,31 @@ standard multibody notation as described in detail here:
 <!-- http://drake.mit.edu/doxygen_cxx/group__multibody__notation.html -->
 
 For a quick summary and translation to 2D:
+ - When we combine rotational and translational quantities into a single
+   quantity in 3D, we call those "spatial" quantities. In 2D those combined
+   quantities are actually planar, but we will continue to refer to them as
+   "spatial" to keep the notation analogous and promote easy extension of 2D
+   pedagogical examples to 3D.
  - We use capital letters to represent bodies and coordinate frames. Frame F has
    an origin point Fo, and a basis formed by orthogonal unit vector axes Fx and
-   Fy, with an implicit `Fz=Fx × Fy` always out of the screen for a 2D system.
-   The inertial frame World is W, and the rod frame is R.
+   Fy, with an implicit `Fz=Fx × Fy` always pointing out of the screen for a 2D
+   system. The inertial frame World is W, and the rod frame is R.
  - We also use capitals to represent points, and we allow a frame name F to be
-   used in a point context to represent its origin Fo.
- - We use `p_CD` to represent the position vector from point C to point D.
+   used where a point is expected to represent its origin Fo.
+ - We use `p_CD` to represent the position vector from point C to point D. Note
+   that if A and B are frame `p_AB` means `p_AoBo`.
  - If we need to be explicit about the expressed-in frame F for any quantity, we
    add the suffix `_F` to its symbol. So the position vector from C to D,
    expressed in W, is `p_CD_W`.
  - R_AB is the rotation matrix giving frame B's orientation in frame A.
- - X_AB is the transform matrix giving frame B's pose in frame A, combining both
-   a rotation and a position vector.
+ - X_AB is the transformation matrix giving frame B's pose in frame A, combining
+   both a rotation and a translation; this is conventionally called a
+   "transform". A transform is a spatial quantity.
 
-In 2D, with frames A and B the above quantities are (conceptually): <pre>
-    p_AB = Bo-Ao = [x]      R_AB=[ cθ -sθ ]       X_AB=[ R_AB p_AB ]
-                   [y]₂ₓ₁        [ sθ  cθ ]₂ₓ₂         [ 0  0   1  ]₃ₓ₃
+In 2D, with frames A and B the above quantities are (conceptually) matrices
+with the indicated dimensions: <pre>
+    p_AB = Bo-Ao = |x|      R_AB=| cθ -sθ |       X_AB=| R_AB p_AB |
+                   |y|₂ₓ₁        | sθ  cθ |₂ₓ₂         | 0  0   1  |₃ₓ₃
 </pre>
 where x,y are B's Cartesian coordinates in the A frame, and θ is the
 counterclockwise angle from Ax to Bx, measured about Az (and Bz). In practice,
@@ -48,13 +56,13 @@ velocity of a frame. The symbols are:
    other frame is given as a suffix.
  - `w_AB` is frame B's angular velocity in frame A, expressed in frame A
    if no other frame is given as a suffix.
- - `V_AB` is frame B's "spatial" velocity in A, meaning `v_ABo` and `w_AB`.
-   (We'll use "spatial" here even though the motion is planar.)
+ - `V_AB` is frame B's spatial velocity in A, meaning `v_ABo` and `w_AB`.
+
 
 These quantities are conceptually: <pre>
-    v_AB = [vx]      w_AB=[0]       V_AB=[ w_AB ]
-           [vy]           [0]            [ v_AB ]₆ₓ₁
-           [ 0]₃ₓ₁        [ω]₃ₓ₁
+    v_AB = |vx|      w_AB=|0|       V_AB=| w_AB |
+           |vy|           |0|            | v_AB |₆ₓ₁
+           | 0|₃ₓ₁        |ω|₃ₓ₁
 </pre>
 but in 2D we represent translational velocity with just (vx,vy), angular
 velocity with just the scalar w=ω=@f$\dot{\theta}@f$ (that is, d/dt θ), and
@@ -63,14 +71,14 @@ spatial velocity as (vx,vy,ω).
 Forces f and torques τ are represented similarly:
  - `f_P` is an in-plane force applied to a point P fixed to some rigid body.
  - `t_A` is an in-plane torque applied to frame A (meaning it is about Az).
- - `F_A` is a "spatial" force including both `f_Ao` and `t_A`.
+ - `F_A` is a spatial force including both `f_Ao` and `t_A`.
 
 The above symbols can be suffixed with an expressed-in frame if the frame is
 not already obvious, so `F_A_W` is a spatial force applied to frame A (at Ao)
 but expressed in W. These quantities are conceptually: <pre>
-    f_A = [fx]      t_A=[0]       F_A=[ t_A ]
-          [fy]          [0]           [ f_A ]₆ₓ₁
-          [ 0]₃ₓ₁       [τ]₃ₓ₁
+    f_A = |fx|      t_A=|0|       F_A=| t_A |
+          |fy|          |0|           | f_A |₆ₓ₁
+          | 0|₃ₓ₁       |τ|₃ₓ₁
 </pre>
 but in 2D we represent translational force with just (fx,fy), torque with just
 the scalar t=τ, and spatial force as (fx,fy,τ).
