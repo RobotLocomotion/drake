@@ -206,15 +206,27 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// identity (or equivalently a zero rotation).
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {
-    // Extract a pointer to continuous state from the context.
     DRAKE_DEMAND(state != nullptr);
-    ContinuousState<T>* xc = state->get_mutable_continuous_state();
-    DRAKE_DEMAND(xc != nullptr);
 
-    // Write the zero configuration into the continuous state.
     VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
     x0.head(get_num_positions()) = tree_->getZeroConfiguration();
-    xc->SetFromVector(x0);
+
+    if (timestep_ == 0.0) {
+      // Extract a pointer to continuous state from the context.
+      ContinuousState<T>* xc = state->get_mutable_continuous_state();
+      DRAKE_DEMAND(xc != nullptr);
+
+      // Write the zero configuration into the continuous state.
+      xc->SetFromVector(x0);
+    } else {
+      // Extract a pointer to the discrete state from the context.
+      BasicVector<T>* xd =
+          state->get_mutable_discrete_state()->get_mutable_discrete_state(0);
+      DRAKE_DEMAND(xd != nullptr);
+
+      // Write the zero configuration into the discrete state.
+      xd->SetFromVector(x0);
+    }
   }
 
   // System<T> overrides.

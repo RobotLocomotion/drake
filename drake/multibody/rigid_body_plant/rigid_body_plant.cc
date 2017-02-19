@@ -260,7 +260,9 @@ void RigidBodyPlant<T>::set_state_vector(
   DRAKE_ASSERT(state != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
   if (timestep_ > 0.0) {
-    state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->SetFromVector(x);
+    state->get_mutable_discrete_state()
+        ->get_mutable_discrete_state(0)
+        ->SetFromVector(x);
   } else {
     state->get_mutable_continuous_state()->SetFromVector(x);
   }
@@ -351,8 +353,8 @@ std::unique_ptr<DiscreteState<T>> RigidBodyPlant<T>::AllocateDiscreteState()
   if (timestep_ == 0.0) {
     return std::make_unique<DiscreteState<T>>();
   }
-  return make_unique <
-         DiscreteState<T>>(make_unique<BasicVector<T>>(get_num_states()));
+  return make_unique<DiscreteState<T>>(
+      make_unique<BasicVector<T>>(get_num_states()));
 }
 
 template <typename T>
@@ -552,20 +554,19 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   DRAKE_DEMAND(updates != nullptr);
   DRAKE_DEMAND(timestep_ > 0.0);
-  
+
   VectorX<T> u = EvaluateActuatorInputs(context);
-  
+
   auto x = context.get_discrete_state(0)->get_value();
 
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   const int num_actuators = get_num_actuators();
-  
+
   VectorX<T> q = x.topRows(nq);
   VectorX<T> v = x.bottomRows(nv);
   auto kinsol = tree_->doKinematics(q, v);
-  
-  
+
   drake::solvers::MathematicalProgram prog;
   drake::solvers::VectorXDecisionVariable vn =
       prog.NewContinuousVariables(nv, "vn");
@@ -584,17 +585,18 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // TODO(russt): Handle joint limits.
   // TODO(russt): Handle contact constraints.
-  
+
   // Add H*(vn - v)/h = - right_hand_side
-  prog.AddLinearEqualityConstraint(H/timestep_, H*v/timestep_ - right_hand_side, vn);
+  prog.AddLinearEqualityConstraint(H / timestep_,
+                                   H * v / timestep_ - right_hand_side, vn);
 
   prog.Solve();
 
   VectorX<T> xn(get_num_states());
   const auto& vn_sol = prog.GetSolution(vn);
-  
+
   // qn = q + h*qdn.
-  xn << q + timestep_*tree_->transformVelocityToQDot(kinsol, vn_sol), vn_sol;
+  xn << q + timestep_ * tree_->transformVelocityToQDot(kinsol, vn_sol), vn_sol;
   updates->get_mutable_discrete_state(0)->SetFromVector(xn);
 }
 
@@ -847,7 +849,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
 
 template <typename T>
 VectorX<T> RigidBodyPlant<T>::EvaluateActuatorInputs(
-    const Context<T> & context) const {
+    const Context<T>& context) const {
   VectorX<T> u;  // The plant-centric input vector of actuation values.
   u.resize(get_num_actuators());
   u.fill(0.);
