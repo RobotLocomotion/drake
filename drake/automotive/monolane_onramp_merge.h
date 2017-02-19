@@ -54,11 +54,7 @@ class MonolaneOnrampMerge {
 
   /// Constructor for the example.  The user supplies @p rc, a
   /// RoadCharacteristics structure that aggregates the road boundary data.
-  explicit MonolaneOnrampMerge(const RoadCharacteristics& rc) {
-    rb_.reset(
-        new maliput::monolane::Builder(rc.lane_bounds, rc.driveable_bounds,
-                                       linear_tolerance_, angular_tolerance_));
-  }
+  explicit MonolaneOnrampMerge(const RoadCharacteristics& rc) : rc_(rc) {}
 
   /// Constructor for the example, using default RoadCharacteristics settings.
   MonolaneOnrampMerge() : MonolaneOnrampMerge(RoadCharacteristics{}) {}
@@ -71,7 +67,7 @@ class MonolaneOnrampMerge {
   const double linear_tolerance_  = 0.01;
   const double angular_tolerance_ = 0.01 * M_PI;
 
-  std::unique_ptr<maliput::monolane::Builder> rb_;
+  const RoadCharacteristics rc_;
 };
 
 }  // namespace automotive
