@@ -17,6 +17,9 @@ namespace maliput {
 namespace dragway {
 
 /// Dragway's implementation of api::RoadGeometry.
+///
+/// To understand the characteristics of the geometry, consult the
+/// dragway::Segment and dragway::Lane detailed class overview docs.
 class RoadGeometry final : public api::RoadGeometry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
