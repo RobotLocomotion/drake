@@ -24,7 +24,7 @@ namespace acrobot {
 /// @param l2 Length of link 2 (m).
 /// @param lc1 Vertical distance from shoulder joint to center of mass of
 /// link 1 (m).
-/// @param lc2 Vertical distance from elbox joint to center of mass of
+/// @param lc2 Vertical distance from elbow joint to center of mass of
 /// link 2 (m).
 /// @param Ic1 Inertia of link 1 about the center of mass of link 1
 /// (kg*m^2).
@@ -52,6 +52,8 @@ namespace acrobot {
 template <typename T>
 class AcrobotPlant : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotPlant)
+
   AcrobotPlant(double m1 = 1.0,
                double m2 = 1.0,
                double l1 = 1.0,
@@ -66,10 +68,6 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
   /// Creates an instance of AcrobotPlant using parameters of MIT lab's acrobot.
   static std::unique_ptr<AcrobotPlant<T>> CreateAcrobotMIT();
-
-  // Non-copyable.
-  AcrobotPlant(const AcrobotPlant<T>&) = delete;
-  AcrobotPlant& operator=(const AcrobotPlant<T>&) = delete;
 
   /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }

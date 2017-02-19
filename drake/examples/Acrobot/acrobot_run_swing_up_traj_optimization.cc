@@ -36,10 +36,7 @@ DEFINE_double(realtime_factor, 1.0,
 int do_main(int argc, char* argv[]) {
   systems::DiagramBuilder<double> builder;
 
-  AcrobotPlant<double>* acrobot{nullptr};
-  auto acrobot_ptr = AcrobotPlant<double>::CreateAcrobotMIT();
-  acrobot = acrobot_ptr.get();
-  DRAKE_DEMAND(acrobot != nullptr);
+  auto acrobot = AcrobotPlant<double>::CreateAcrobotMIT();
 
   const int kNumTimeSamples = 21;
   const double kTrajectoryTimeLowerBound = 2;
@@ -51,7 +48,7 @@ int do_main(int argc, char* argv[]) {
   auto context = acrobot->CreateDefaultContext();
 
   systems::DircolTrajectoryOptimization dircol_traj(
-      acrobot, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
+      acrobot.get(), *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
   AddSwingUpTrajectoryParams(kNumTimeSamples, x0, xG, &dircol_traj);
 

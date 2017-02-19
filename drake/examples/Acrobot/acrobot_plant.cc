@@ -44,15 +44,15 @@ AcrobotPlant<T>::AcrobotPlant(double m1, double m2, double l1, double l2,
 template <typename T>
 std::unique_ptr<AcrobotPlant<T>> AcrobotPlant<T>::CreateAcrobotMIT() {
   return std::make_unique<AcrobotPlant<T>>(2.4367,   // m1
-                      0.6178,   // m2
-                      0.2563,   // l1
-                      0,        // l2
-                      1.6738,   // lc1
-                      1.5651,   // lc2
-                      -4.7443,  // Ic1
-                      -1.0068,  // Ic2
-                      0.0320,   // b1
-                      0.0413);  // b2
+                                           0.6178,   // m2
+                                           0.2563,   // l1
+                                           0,        // l2
+                                           1.6738,   // lc1
+                                           1.5651,   // lc2
+                                           -4.7443,  // Ic1
+                                           -1.0068,  // Ic2
+                                           0.0320,   // b1
+                                           0.0413);  // b2
   // Parameters are identified in a way that torque has the unit of current
   // (Amps), in order to simplify the implementation of torque constraint on
   // motors. Therefore, numbers here do not carry physical meanings.

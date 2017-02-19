@@ -1,16 +1,16 @@
 // This file contains utility functions for swing-up trajectory
 // optimization. It is based on pendulum_swing_up.cc.
 
-#include <cmath>
+#include "drake/examples/Acrobot/acrobot_swing_up.h"
 
+#include <cmath>
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
-#include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
-#include "drake/examples/Acrobot/acrobot_swing_up.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
+#include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/solvers/function.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 
