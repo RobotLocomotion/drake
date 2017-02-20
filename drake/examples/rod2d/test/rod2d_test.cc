@@ -1,11 +1,12 @@
 #include "drake/examples/rod2d/rod2d.h"
-#include "drake/systems/analysis/simulator.h"
 
 #include <memory>
 
 #include "gtest/gtest.h"
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/analysis/simulator.h"
 
 using drake::systems::VectorBase;
 using drake::systems::BasicVector;
@@ -16,11 +17,15 @@ using drake::systems::AbstractState;
 using drake::systems::Simulator;
 using drake::systems::Context;
 
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Vector6d = Eigen::Matrix<double, 6, 1>;
+
 namespace drake {
 namespace rod2d {
 namespace {
 
-/// Class for testing the 2D rod example using a piecewise DAE
+/// Class for testing the Rod2D example using a piecewise DAE
 /// approach.
 class Rod2DDAETest : public ::testing::Test {
  protected:
@@ -59,7 +64,7 @@ class Rod2DDAETest : public ::testing::Test {
     // * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
     //                    Impact". SIAM Rev., 42(1), 3-39, 2000.
     using std::sqrt;
-    const double half_len = dut_->get_rod_length() / 2;
+    const double half_len = dut_->get_rod_half_length();
     const double r22 = std::sqrt(2) / 2;
     ContinuousState<double>& xc =
         *context_->get_mutable_continuous_state();
@@ -86,7 +91,7 @@ class Rod2DDAETest : public ::testing::Test {
 
   // Sets the rod to a state that corresponds to ballistic motion.
   void SetBallisticState() {
-    const double half_len = dut_->get_rod_length() / 2;
+    const double half_len = dut_->get_rod_half_length();
     ContinuousState<double>& xc =
         *context_->get_mutable_continuous_state();
     xc[0] = 0.0;
@@ -159,17 +164,17 @@ TEST_F(Rod2DDAETest, Parameters) {
   const double g = -1.0;
   const double mass = 0.125;
   const double mu = 0.5;
-  const double ell = 0.0625;
+  const double h = 0.03125;
   const double J = 0.25;
   dut_->set_gravitational_acceleration(g);
   dut_->set_rod_mass(mass);
   dut_->set_mu_coulomb(mu);
-  dut_->set_rod_length(ell);
+  dut_->set_rod_half_length(h);
   dut_->set_rod_moment_of_inertia(J);
   EXPECT_EQ(dut_->get_gravitational_acceleration(), g);
   EXPECT_EQ(dut_->get_rod_mass(), mass);
   EXPECT_EQ(dut_->get_mu_coulomb(), mu);
-  EXPECT_EQ(dut_->get_rod_length(), ell);
+  EXPECT_EQ(dut_->get_rod_half_length(), h);
   EXPECT_EQ(dut_->get_rod_moment_of_inertia(), J);
 }
 
@@ -180,7 +185,7 @@ TEST_F(Rod2DDAETest, ImpactWorks) {
 
   // Cause the initial state to be impacting, with center of mass directly
   // over the point of contact.
-  const double half_len = dut_->get_rod_length() / 2;
+  const double half_len = dut_->get_rod_half_length();
   ContinuousState<double>& xc =
       *context_->get_mutable_continuous_state();
   xc[0] = 0.0;
@@ -246,7 +251,7 @@ TEST_F(Rod2DDAETest, ConsistentDerivativesBallistic) {
 TEST_F(Rod2DDAETest, ConsistentDerivativesContacting) {
   // Set the initial state to sustained contact with zero tangential velocity
   // at the point of contact.
-  const double half_len = dut_->get_rod_length() / 2;
+  const double half_len = dut_->get_rod_half_length();
   ContinuousState<double>& xc =
       *context_->get_mutable_continuous_state();
   xc[0] = 0.0;
@@ -294,7 +299,7 @@ TEST_F(Rod2DDAETest, ConsistentDerivativesContacting) {
 TEST_F(Rod2DDAETest, DerivativesContactingAndSticking) {
   // Set the initial state to sustained contact with zero tangential velocity
   // at the point of contact and the rod being straight up.
-  const double half_len = dut_->get_rod_length() / 2;
+  const double half_len = dut_->get_rod_half_length();
   ContinuousState<double>& xc =
       *context_->get_mutable_continuous_state();
   xc[0] = 0.0;
@@ -314,7 +319,7 @@ TEST_F(Rod2DDAETest, DerivativesContactingAndSticking) {
   const double f_y = -1.0;
   ext_input->SetAtIndex(0, f_x);
   ext_input->SetAtIndex(1, f_y);
-  ext_input->SetAtIndex(2, f_x * dut_->get_rod_length()/2);
+  ext_input->SetAtIndex(2, f_x * dut_->get_rod_half_length());
   const Vector3<double> fext = ext_input->CopyToVector();
   context_->FixInputPort(0, std::move(ext_input));
 
@@ -477,7 +482,7 @@ TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact) {
 
 // Verify that no exceptions thrown for a non-sliding configuration.
 TEST_F(Rod2DDAETest, NoSliding) {
-  const double half_len = dut_->get_rod_length() / 2;
+  const double half_len = dut_->get_rod_half_length();
   const double r22 = std::sqrt(2) / 2;
   ContinuousState<double>& xc =
       *context_->get_mutable_continuous_state();
@@ -662,7 +667,7 @@ TEST_F(Rod2DDAETest, BallisticNoImpact) {
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 }
 
-/// Class for testing the rod example using a first order time
+/// Class for testing the Rod 2D example using a first order time
 /// stepping approach.
 class Rod2DTimeSteppingTest : public ::testing::Test {
  protected:
@@ -687,8 +692,7 @@ class Rod2DTimeSteppingTest : public ::testing::Test {
   BasicVector<double>* mutable_discrete_state() {
     return context_->get_mutable_discrete_state(0);
   }
-
-  // Sets a secondary initial Painleve configuration.
+// Sets a secondary initial Rod2D configuration.
   void SetSecondInitialConfig() {
     // Set the configuration to an inconsistent (Painlevé) type state with
     // the rod at a 135 degree counter-clockwise angle with respect to the
@@ -697,7 +701,7 @@ class Rod2DTimeSteppingTest : public ::testing::Test {
     // * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
     //                    Impact". SIAM Rev., 42(1), 3-39, 2000.
     using std::sqrt;
-    const double half_len = dut_->get_rod_length() / 2;
+    const double half_len = dut_->get_rod_half_length();
     const double r22 = std::sqrt(2) / 2;
     auto xd = mutable_discrete_state()->get_mutable_value();
 
@@ -715,7 +719,7 @@ class Rod2DTimeSteppingTest : public ::testing::Test {
   std::unique_ptr<ContinuousState<double>> derivatives_;
 };
 
-/// Verify that the rod system eventually goes to rest using the
+/// Verify that Rod 2D system eventually goes to rest using the
 /// first-order time stepping approach (this tests expected meta behavior).
 TEST_F(Rod2DTimeSteppingTest, RodGoesToRest) {
   // Set the initial state to an inconsistent configuration.
@@ -740,10 +744,10 @@ TEST_F(Rod2DTimeSteppingTest, RodGoesToRest) {
 }
 
 // This test checks to see whether a single semi-explicit step of the piecewise
-// DAE based rod system is equivalent to a single step of the semi-explicit
+// DAE based Rod2D system is equivalent to a single step of the semi-explicit
 // time stepping based system.
-GTEST_TEST(RodCrossValidationTest, OneStepSolutionSliding) {
-  // Create two rod systems.
+GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
+  // Create two Rod2D systems.
   const double dt = 1e-1;
   Rod2D<double> ts(dt);
   Rod2D<double> pdae(Rod2D<double>::kPiecewiseDAE);
@@ -810,10 +814,10 @@ GTEST_TEST(RodCrossValidationTest, OneStepSolutionSliding) {
 }
 
 // This test checks to see whether a single semi-explicit step of the piecewise
-// DAE based rod system is equivalent to a single step of the semi-explicit
+// DAE based Rod2D system is equivalent to a single step of the semi-explicit
 // time stepping based system for a sticking contact scenario.
-GTEST_TEST(RodCrossValidationTest, OneStepSolutionSticking) {
-  // Create two rod systems.
+GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSticking) {
+  // Create two Rod2D systems.
   const double dt = 1e-1;
   Rod2D<double> ts(dt);
   Rod2D<double> pdae(Rod2D<double>::kPiecewiseDAE);
@@ -833,7 +837,7 @@ GTEST_TEST(RodCrossValidationTest, OneStepSolutionSticking) {
   std::unique_ptr<Context<double>> context_pdae = pdae.CreateDefaultContext();
 
   // This configuration has no sliding velocity.
-  const double half_len = pdae.get_rod_length() / 2;
+  const double half_len = pdae.get_rod_half_length();
   ContinuousState<double>& xc =
       *context_pdae->get_mutable_continuous_state();
   auto xd = context_ts->get_mutable_discrete_state(0)->get_mutable_value();
@@ -848,7 +852,7 @@ GTEST_TEST(RodCrossValidationTest, OneStepSolutionSticking) {
 
   // Set constant input forces for both.
   const double x = 1.0;
-  Vector3<double> fext(x, 0, x * ts.get_rod_length()/2);
+  Vector3<double> fext(x, 0, x * ts.get_rod_half_length());
   std::unique_ptr<BasicVector<double>> ext_input =
     std::make_unique<BasicVector<double>>(fext);
   context_ts->FixInputPort(0, std::move(ext_input));
@@ -884,6 +888,174 @@ GTEST_TEST(RodCrossValidationTest, OneStepSolutionSticking) {
   EXPECT_NEAR(xc[4], xd[4], tol);
   EXPECT_NEAR(xc[5], xd[5], tol);
 }
+
+/// Class for testing the Rod 2D example using compliant contact
+/// thus permitting integration as an ODE.
+class Rod2DCompliantTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    dut_ = std::make_unique<Rod2D<double>>(Rod2D<double>::kCompliant);
+    context_ = dut_->CreateDefaultContext();
+    output_ = dut_->AllocateOutput(*context_);
+    derivatives_ = dut_->AllocateTimeDerivatives();
+
+    // Use a non-unit mass.
+    dut_->set_rod_mass(2.0);
+
+    // Using default compliant contact parameters.
+
+    // Set a zero input force (this is the default).
+    std::unique_ptr<BasicVector<double>> ext_input =
+        std::make_unique<BasicVector<double>>(3);
+    ext_input->SetAtIndex(0, 0.0);
+    ext_input->SetAtIndex(1, 0.0);
+    ext_input->SetAtIndex(2, 0.0);
+    context_->FixInputPort(0, std::move(ext_input));
+  }
+
+  // Calculate time derivatives using the context member and writing to
+  // the derivatives member.
+  void CalcTimeDerivatives() {
+    dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  }
+
+  std::unique_ptr<State<double>> CloneState() const {
+    return context_->CloneState();
+  }
+
+  // Return the state x,y,θ,xdot,ydot,θdot as a Vector6.
+  Vector6d get_state() const {
+    const ContinuousState<double>& xc = *context_->get_continuous_state();
+    return Vector6d(xc.CopyToVector());
+  }
+
+  // Return d/dt state xdot,ydot,θdot,xddot,yddot,θddot as a Vector6.
+  Vector6d get_state_dot() const {
+    const ContinuousState<double>& xcd = *derivatives_;
+    return Vector6d(xcd.CopyToVector());
+  }
+
+  // Sets the planar pose in the context.
+  void set_pose(double x, double y, double theta) {
+    ContinuousState<double>& xc =
+        *context_->get_mutable_continuous_state();
+    xc[0] = x; xc[1] = y; xc[2] = theta;
+  }
+
+  // Sets the planar velocity in the context.
+  void set_velocity(double xdot, double ydot, double thetadot) {
+    ContinuousState<double>& xc =
+        *context_->get_mutable_continuous_state();
+    xc[3] = xdot; xc[4] = ydot; xc[5] = thetadot;
+  }
+
+  // Returns planar pose derivative (should be planar velocities xdot,
+  // ydot, thetadot).
+  Vector3d get_pose_dot() const {
+    const ContinuousState<double>& xcd = *derivatives_;
+    return Vector3d(xcd[0], xcd[1], xcd[2]);
+  }
+
+  // Returns planar acceleration (xddot, yddot, thetaddot).
+  Vector3d get_accelerations() const {
+    const ContinuousState<double>& xcd = *derivatives_;
+    return Vector3d(xcd[3], xcd[4], xcd[5]);
+  }
+
+  // Sets the rod to a state that corresponds to ballistic motion.
+  void SetBallisticState() {
+    const double half_len = dut_->get_rod_half_length();
+    set_pose(0, 10*half_len, M_PI_2);
+    set_velocity(1, 2, 3);
+  }
+
+  // Sets the rod to a perfectly vertical position in which either the left or
+  // right endpoint is contacting, or a perfectly horizontal position in which
+  // both endpoints are contacting. In all cases the penetration depth into the
+  // halfplane is set to 1 cm, and the rod velocity is set to zero.
+  // k=-1,0,1 -> left, both, right.
+  void SetContactingState(int k) {
+    DRAKE_DEMAND(-1 <= k && k <= 1);
+    const double half_len = dut_->get_rod_half_length();
+    const double penetration = 0.01;  // 1 cm
+    set_pose(0, std::abs(k)*half_len - penetration, -k*M_PI_2);
+    set_velocity(0, 0, 0);
+  }
+
+  std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.
+  std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<ContinuousState<double>> derivatives_;
+};
+
+/// Verify that the compliant contact resists penetration.
+TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
+  // We expect only roundoff errors, scaled by force magnitude (~1e-14).
+  const double kTightTol = 50 * std::numeric_limits<double>::epsilon();
+
+  SetContactingState(-1);  // left
+
+  Vector3d F_Ro_W_left = dut_->CalcCompliantContactForces(*context_);
+
+  CalcTimeDerivatives();
+  Vector6d xcd = get_state_dot();
+
+  EXPECT_EQ(xcd[0], 0);  // xdot, ydot, thetadot
+  EXPECT_EQ(xcd[1], 0);
+  EXPECT_EQ(xcd[2], 0);
+
+  // Total acceleration is gravity plus acceleration due to contact forces;
+  // extract just the contact contribution. It should point up!
+  const double a_contact = xcd[4] - dut_->get_gravitational_acceleration();
+
+  // Vertical acceleration is >> 1; just checking for correct sign. Rod is
+  // vertical so horizontal and angular accelerations are zero.
+  EXPECT_NEAR(xcd[3], 0, kTightTol);  // no x acceleration
+  EXPECT_GT(a_contact, 1.);           // + y acceleration
+  EXPECT_NEAR(xcd[5], 0, kTightTol);  // no angular acceleration
+
+  // Now add some downward velocity; that should *increase* the force we
+  // calculated above from just penetration. We're checking that the sign is
+  // correct by making the penetration rate large enough to at least double
+  // the overall force.
+  set_velocity(0, -10, 0);
+  Vector3d F_Ro_W_ldown = dut_->CalcCompliantContactForces(*context_);
+  EXPECT_GT(F_Ro_W_ldown[1], 2*F_Ro_W_left[1]);  // Did it double?
+
+  // An extreme upwards velocity should be a "pull out" situation resulting
+  // in (exactly) zero force rather than a negative force.
+  set_velocity(0, 1000, 0);
+  Vector3d F_Ro_W_lup = dut_->CalcCompliantContactForces(*context_);
+  EXPECT_TRUE(F_Ro_W_lup == Vector3d::Zero());
+
+  // Sliding -x should produce a +x friction force and a positive torque;
+  // no effect on y force.
+  set_velocity(-10, 0, 0);
+  Vector3d F_Ro_W_nx = dut_->CalcCompliantContactForces(*context_);
+  EXPECT_GT(F_Ro_W_nx[0], 1.);
+  EXPECT_NEAR(F_Ro_W_nx[1], F_Ro_W_left[1], kTightTol);
+  EXPECT_GT(F_Ro_W_nx[2], 1.);
+
+  // Sliding +x should produce a -x friction force and a negative torque;
+  // no effect on y force.
+  set_velocity(10, 0, 0);
+  Vector3d F_Ro_W_px = dut_->CalcCompliantContactForces(*context_);
+  EXPECT_LT(F_Ro_W_px[0], -1.);
+  EXPECT_NEAR(F_Ro_W_px[1], F_Ro_W_left[1], kTightTol);
+  EXPECT_LT(F_Ro_W_px[2], -1.);
+
+
+  SetContactingState(1);  // Right should behave same as left.
+  Vector3d F_Ro_W_right = dut_->CalcCompliantContactForces(*context_);
+  EXPECT_TRUE(F_Ro_W_right.isApprox(F_Ro_W_left, kTightTol));
+
+  // With both ends in contact the force should double and there should
+  // be zero moment.
+  SetContactingState(0);
+  Vector3d F_Ro_W_both = dut_->CalcCompliantContactForces(*context_);
+  EXPECT_TRUE(F_Ro_W_both.isApprox(F_Ro_W_left+F_Ro_W_right, kTightTol));
+}
+
 }  // namespace
-}  // namespace rod2d 
+}  // namespace rod2d
 }  // namespace drake
