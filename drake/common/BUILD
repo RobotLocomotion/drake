@@ -288,6 +288,7 @@ drake_cc_googletest(
         ":common",
         ":monomial",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
