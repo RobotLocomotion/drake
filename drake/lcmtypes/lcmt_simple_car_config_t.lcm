@@ -12,6 +12,5 @@ struct lcmt_simple_car_config_t {
   double max_abs_steering_angle;  // The limit on the driving_command.steering angle input (the desired steering angle of a virtual center wheel), in radians; this element must be positive, and is applied symmetrically to both left- and right-turn limits.
   double max_velocity;  // The limit on the car's forward speed, in meters per second; this element must be positive.
   double max_acceleration;  // The limit on the car's acceleration and deceleration, in meters per second per second; this element must be positive.
-  double velocity_lookahead_time;  // The smoothing constant for velocity changes, in seconds; this element must be positive.  This is deprecated and will eventually be removed.
-  double velocity_kp;  // The smoothing constant for velocity changes, in Hz; this element must be positive.  This is deprecated and will eventually be removed.
+  double velocity_limit_kp;  // The smoothing constant for min/max velocity limits, in Hz; this element must be positive.
 }
