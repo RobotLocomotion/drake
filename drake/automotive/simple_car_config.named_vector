@@ -19,10 +19,6 @@ element {
     doc: "The limit on the car's acceleration and deceleration, in meters per second per second; this element must be positive."
 }
 element {
-    name: "velocity_lookahead_time"
-    doc: "The smoothing constant for velocity changes, in seconds; this element must be positive.  This is deprecated and will eventually be removed."
-}
-element {
-    name: "velocity_kp"
-    doc: "The smoothing constant for velocity changes, in Hz; this element must be positive.  This is deprecated and will eventually be removed."
+    name: "velocity_limit_kp"
+    doc: "The smoothing constant for min/max velocity limits, in Hz; this element must be positive."
 }
