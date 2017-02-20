@@ -297,6 +297,7 @@ py_binary(
         "automotive_demo.py",
     ],
     args = [
+        "--road_network=1",
         "-road_file $(location //drake/automotive/maliput/monolane:village.yaml)",
         "-num_ado_car=15",
         "-use_ego_car=false",
@@ -356,6 +357,7 @@ py_binary(
         "automotive_demo.py",
     ],
     args = [
+        "--road_network=1",
         "-road_file $(location //drake/automotive/maliput/monolane:village.yaml)",
         "-num_ado_car=15",
         "-use_ego_car=false",
