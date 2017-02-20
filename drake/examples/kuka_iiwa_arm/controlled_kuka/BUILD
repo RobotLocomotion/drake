@@ -43,6 +43,7 @@ cc_binary(
     data = ["//drake/examples/kuka_iiwa_arm:models"],
     deps = [
         ":kuka_demo_plant_builder",
+        "//drake/examples/kuka_iiwa_arm:iiwa_ik_planner",
         "//drake/systems/analysis:simulator",
         "@gflags//:gflags",
     ],

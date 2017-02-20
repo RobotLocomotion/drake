@@ -17,16 +17,6 @@ namespace kuka_iiwa_arm {
 /// Aborts if the tree isn't as expected.
 void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 
-/// This method generates a simple trajectory plan for a robot using Cartesian
-/// (end effector) way points. The robot is specified by @p tree. The
-/// way-points must be supplied in the world frame.
-/// This method wraps a call to the `inverseKinPointwise` method.
-/// @see inverseKinPointwise.
-std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
-    const RigidBodyTreed& tree, const std::string& link_to_constrain,
-    const std::vector<Eigen::Vector3d>& way_point_list,
-    const std::vector<double>& time_stamps);
-
 /// Builds a vector of time window points distributed about the given time
 /// stamps. Time window positions do not overlap. The @p lower_ratio
 /// and @p upper_ratio variables can be used to proportionally compute
