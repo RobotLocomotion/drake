@@ -12,6 +12,7 @@
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/controlled_kuka/kuka_demo_plant_builder.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_ik_planner.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 
@@ -48,9 +49,10 @@ int DoMain() {
   RigidBodyTreed tree;
   CreateTreedFromFixedModelAtPose(kUrdfPath, &tree);
 
+  IiwaIkPlanner ik(GetDrakePath() + kUrdfPath, "iiwa_link_ee", nullptr);
   std::unique_ptr<PiecewisePolynomialTrajectory> cartesian_trajectory =
-      SimpleCartesianWayPointPlanner(tree, "iiwa_link_ee", way_points,
-                                     time_stamps);
+    ik.GenerateFirstOrderHoldTrajectoryFromCartesianWaypoints(
+        time_stamps, way_points);
 
   KukaDemo<double> model(std::move(cartesian_trajectory));
   Simulator<double> simulator(model);

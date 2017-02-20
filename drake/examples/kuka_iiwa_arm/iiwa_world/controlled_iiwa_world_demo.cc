@@ -13,6 +13,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_ik_planner.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/lcm/drake_lcm.h"
@@ -132,10 +133,18 @@ int DoMain() {
   RigidBodyTreed robot_tree;
   CreateTreedFromFixedModelAtPose(kRobotName, &robot_tree, kRobotBase);
 
-  unique_ptr<PiecewisePolynomialTrajectory> polynomial_trajectory =
-      SimpleCartesianWayPointPlanner(robot_tree, "iiwa_link_ee",
-                                     target_position_vector,
-                                     target_time_vector);
+  // TODO(siyuan): this should be directly returned by world_sim_tree_builder
+  // once #5212 is in.
+  auto iiwa_weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
+      kRobotBase, Vector3<double>::Zero());
+  // TODO(siyuan): path name should be directly returned by
+  // world_sim_tree_builder once #5212 is in.
+  IiwaIkPlanner ik(GetDrakePath() + kRobotName, "iiwa_link_ee",
+      iiwa_weld_to_frame);
+  std::unique_ptr<PiecewisePolynomialTrajectory> polynomial_trajectory =
+    ik.GenerateFirstOrderHoldTrajectoryFromCartesianWaypoints(
+        target_time_vector, target_position_vector);
 
   lcm::DrakeLcm lcm;
   // Contact parameters
