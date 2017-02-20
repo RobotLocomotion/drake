@@ -16,7 +16,7 @@ namespace automotive {
 /// Describes the row indices of a SimpleCarConfig.
 struct SimpleCarConfigIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 7;
+  static const int kNumCoordinates = 6;
 
   // The index of each individual coordinate.
   static const int kWheelbase = 0;
@@ -24,8 +24,7 @@ struct SimpleCarConfigIndices {
   static const int kMaxAbsSteeringAngle = 2;
   static const int kMaxVelocity = 3;
   static const int kMaxAcceleration = 4;
-  static const int kVelocityLookaheadTime = 5;
-  static const int kVelocityKp = 6;
+  static const int kVelocityLimitKp = 5;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -82,19 +81,13 @@ class SimpleCarConfig : public systems::BasicVector<T> {
   void set_max_acceleration(const T& max_acceleration) {
     this->SetAtIndex(K::kMaxAcceleration, max_acceleration);
   }
-  /// The smoothing constant for velocity changes, in seconds; this element must
-  /// be positive.  This is deprecated and will eventually be removed.
-  const T& velocity_lookahead_time() const {
-    return this->GetAtIndex(K::kVelocityLookaheadTime);
+  /// The smoothing constant for min/max velocity limits, in Hz; this element
+  /// must be positive.
+  const T& velocity_limit_kp() const {
+    return this->GetAtIndex(K::kVelocityLimitKp);
   }
-  void set_velocity_lookahead_time(const T& velocity_lookahead_time) {
-    this->SetAtIndex(K::kVelocityLookaheadTime, velocity_lookahead_time);
-  }
-  /// The smoothing constant for velocity changes, in Hz; this element must be
-  /// positive.  This is deprecated and will eventually be removed.
-  const T& velocity_kp() const { return this->GetAtIndex(K::kVelocityKp); }
-  void set_velocity_kp(const T& velocity_kp) {
-    this->SetAtIndex(K::kVelocityKp, velocity_kp);
+  void set_velocity_limit_kp(const T& velocity_limit_kp) {
+    this->SetAtIndex(K::kVelocityLimitKp, velocity_limit_kp);
   }
   //@}
 };
