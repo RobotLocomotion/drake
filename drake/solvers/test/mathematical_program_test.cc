@@ -8,6 +8,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/common/test/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
@@ -17,6 +18,7 @@ using Eigen::Dynamic;
 using Eigen::Ref;
 using Eigen::Matrix;
 using Eigen::Matrix2d;
+using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -28,6 +30,7 @@ using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
 using drake::symbolic::Expression;
 using drake::symbolic::Variable;
+using drake::symbolic::test::ExprEqual;
 
 using std::numeric_limits;
 
@@ -1095,7 +1098,82 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   // clang-format off
   Y << Matrix2d::Identity() * X.topLeftCorner<2, 2>(), Matrix2d::Zero(),
        Matrix2d::Zero(), Matrix2d::Identity() * X.bottomRightCorner<2, 2>();
+  // clang-format on
   CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog, Y);
+}
+
+void CheckAddedQuadraticCost(MathematicalProgram* prog,
+                             const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
+                             const VectorXDecisionVariable& x) {
+  int num_quadratic_cost = prog->quadratic_costs().size();
+  auto cnstr = prog->AddQuadraticCost(Q, b, x);
+
+  EXPECT_EQ(++num_quadratic_cost, prog->quadratic_costs().size());
+  // Check if the newly added quadratic constraint, and the returned
+  // quadratic constraint, both match 0.5 * x' * Q * x + b' * x
+  EXPECT_EQ(cnstr, prog->quadratic_costs().back().constraint());
+  EXPECT_EQ(cnstr->Q(), Q);
+  EXPECT_EQ(cnstr->b(), b);
+}
+
+GTEST_TEST(testMathematicalProgram, AddQuadraticCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d::Zero(), x);
+
+  CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d(1, 2, 3), x);
+}
+
+void CheckAddedSymbolicQuadraticCost(MathematicalProgram* prog,
+                                     const Expression& e, double constant) {
+  int num_quadratic_cost = prog->quadratic_costs().size();
+  auto binding = prog->AddQuadraticCost(e);
+
+  EXPECT_EQ(++num_quadratic_cost, prog->quadratic_costs().size());
+  EXPECT_EQ(binding.constraint(), prog->quadratic_costs().back().constraint());
+  EXPECT_EQ(binding.variables(), prog->quadratic_costs().back().variables());
+
+  // Check the added cost is 0.5 * x' * Q * x + b' * x
+  const auto& x_bound = binding.variables();
+  const Expression e_added =
+      0.5 * x_bound.dot(binding.constraint()->Q() * x_bound) +
+      binding.constraint()->b().dot(x_bound);
+  EXPECT_PRED2(ExprEqual, e_added.Expand() + constant, e.Expand());
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicQuadraticCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  // Identity diagonal term.
+  Expression e1 = x.transpose() * x;
+  CheckAddedSymbolicQuadraticCost(&prog, e1, 0);
+
+  // Identity diagonal term.
+  Expression e2 = x.transpose() * x + 1;
+  CheckAddedSymbolicQuadraticCost(&prog, e2, 1);
+
+  // Identity diagonal term.
+  Expression e3 = x(0) * x(0) + x(1) * x(1) + 2;
+  CheckAddedSymbolicQuadraticCost(&prog, e3, 2);
+
+  // Non-identity diagonal term.
+  Expression e4 = x(0) * x(0) + 2 * x(1) * x(1) + 3 * x(2) * x(2) + 3;
+  CheckAddedSymbolicQuadraticCost(&prog, e4, 3);
+
+  // cross terms.
+  Expression e5 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0) * x(1) + 2;
+  CheckAddedSymbolicQuadraticCost(&prog, e5, 2);
+
+  // linear terms.
+  Expression e6 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0);
+  CheckAddedSymbolicQuadraticCost(&prog, e6, 0);
+
+  // cross terms and linear terms.
+  Expression e7 = (x(0) + 2 * x(1) + 3) * (x(0) + x(1) + 4) + 3 * x(0) * x(0) +
+                  6 * pow(x(1) + 1, 2);
+  CheckAddedSymbolicQuadraticCost(&prog, e7, 18);
 }
 }  // namespace test
 }  // namespace solvers

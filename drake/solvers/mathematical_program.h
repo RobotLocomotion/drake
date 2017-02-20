@@ -836,6 +836,16 @@ class MathematicalProgram {
                const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Add a quadratic cost term of the form 0.5*x'*Q*x + b'*x + c.
+   * Notice that in the optimization program, the constant term `c` in the cost
+   * is ignored.
+   * @param e A quadratic symbolic expression. Throws a runtime error if the
+   * expression is not quadratic.
+   * @return The newly added cost together with the bound variables.
+   */
+  Binding<QuadraticConstraint> AddQuadraticCost(const symbolic::Expression& e);
+
+  /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(

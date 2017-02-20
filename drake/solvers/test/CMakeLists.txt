@@ -5,7 +5,7 @@ drake_add_cc_test(binding_test)
 target_link_libraries(binding_test drakeOptimization)
 
 drake_add_cc_test(mathematical_program_test)
-target_link_libraries(mathematical_program_test drakeOptimization)
+target_link_libraries(mathematical_program_test drakeOptimization drakeCommon)
 
 drake_add_cc_test(moby_lcp_solver_test)
 target_link_libraries(moby_lcp_solver_test drakeOptimization)
