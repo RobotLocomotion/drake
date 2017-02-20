@@ -4,6 +4,7 @@
 #include <list>
 #include <memory>
 
+#include "drake/common/text_logging.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -26,9 +27,6 @@ IiwaIkPlanner::IiwaIkPlanner(const std::string& model_path,
   parsers::urdf::AddModelInstanceFromUrdfFile(
       model_path, multibody::joints::kFixed, base_frame, robot_.get());
 
-  default_initial_pos_tolerance_ << 0.1, 0.1, 0.1;
-  default_initial_rot_tolerance_ = 0.1;
-
   SetEndEffector(end_effector_link_name);
 }
 
@@ -41,10 +39,17 @@ IiwaIkPlanner::IiwaIkPlanner(const std::string& model_path,
   parsers::urdf::AddModelInstanceFromUrdfFile(
       model_path, multibody::joints::kFixed, base, robot_.get());
 
-  default_initial_pos_tolerance_ << 0.1, 0.1, 0.1;
-  default_initial_rot_tolerance_ = 0.1;
-
   SetEndEffector(end_effector_link_name);
+}
+
+std::unique_ptr<PiecewisePolynomialTrajectory>
+IiwaIkPlanner::GenerateFirstOrderHoldTrajectory(const IkResult& ik_res) {
+  std::vector<MatrixX<double>> q(ik_res.q.cols());
+  for (int i = 0; i < ik_res.q.cols(); ++i) {
+    q[i] = ik_res.q.col(i);
+  }
+  return std::make_unique<PiecewisePolynomialTrajectory>(
+      PiecewisePolynomial<double>::FirstOrderHold(ik_res.time, q));
 }
 
 std::unique_ptr<PiecewisePolynomialTrajectory>
@@ -59,11 +64,16 @@ IiwaIkPlanner::GenerateFirstOrderHoldTrajectoryFromCartesianWaypoints(
     waypoints[i].pose.translation() = way_point_list[i];
     waypoints[i].pos_tol = position_tol;
     waypoints[i].rot_tol = 1;
+    waypoints[i].constrain_orientation = false;
   }
 
   IkResult ik_res;
-  PlanSequentialTrajectory(waypoints, robot_->getZeroConfiguration(), &ik_res);
-  return GenerateFirstOrderHoldTrajectory(ik_res);
+  if (PlanSequentialTrajectory(waypoints, robot_->getZeroConfiguration(),
+                               &ik_res)) {
+    return GenerateFirstOrderHoldTrajectory(ik_res);
+  } else {
+    return nullptr;
+  }
 }
 
 bool IiwaIkPlanner::PlanSequentialTrajectory(
@@ -84,33 +94,36 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
   ik_res->info[0] = 1;
   ik_res->q.col(0) = q_current;
 
-  int ctr = 0;
+  int step_ctr = 0;
+  int relaxed_ctr = 0;
+  int random_ctr = 0;
 
   const int kRelaxPosTol = 0;
   const int kRelaxRotTol = 1;
+  const int kMaxNumInitialGuess = 50;
+  const int kMaxNumConstraintRelax = 10;
+  const Vector3<double> kInitialPosTolerance(0.1, 0.1, 0.1);
+  const double kInitialRotTolerance = 0.1;
 
   for (const auto& waypoint : waypoints) {
     // Sets the initial constraints guess bigger than the desired tolerance.
-    Vector3<double> pos_tol = default_initial_pos_tolerance_;
-    double rot_tol = default_initial_rot_tolerance_;
+    Vector3<double> pos_tol = kInitialPosTolerance;
+    double rot_tol = kInitialRotTolerance;
 
-    if (!waypoint.enforce_quat) rot_tol = 0;
+    if (!waypoint.constrain_orientation) rot_tol = 0;
 
     // Sets mode to reduce position tolerance.
     int mode = kRelaxPosTol;
 
-    int random_ctr = 0;
-    int relaxed_ctr = 0;
-
     // Solves point IK with constraint fiddling and random start.
     while (true) {
-      if (!waypoint.enforce_quat) DRAKE_DEMAND(mode == kRelaxPosTol);
+      if (!waypoint.constrain_orientation) DRAKE_DEMAND(mode == kRelaxPosTol);
 
       bool res = SolveIk(waypoint, q0, q_prev, pos_tol, rot_tol, &q_sol);
 
       if (res) {
         // Alternates between kRelaxPosTol and kRelaxRotTol
-        if (mode == kRelaxPosTol && waypoint.enforce_quat) {
+        if (mode == kRelaxPosTol && waypoint.constrain_orientation) {
           rot_tol /= 2.;
           mode = kRelaxRotTol;
         } else {
@@ -127,7 +140,7 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
         }
       } else {
         // Relaxes the constraints no solution is found.
-        if (mode == kRelaxRotTol && waypoint.enforce_quat) {
+        if (mode == kRelaxRotTol && waypoint.constrain_orientation) {
           rot_tol *= 1.5;
         } else {
           pos_tol *= 1.5;
@@ -137,24 +150,24 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
 
       // Switches to a different initial guess and start over if we have relaxed
       // the constraints for max times.
-      if (relaxed_ctr > 10) {
+      if (relaxed_ctr > kMaxNumConstraintRelax) {
         // Make a random initial guess.
         q0 = robot_->getRandomConfiguration(rand_generator_);
         // Resets constraints tolerance.
-        pos_tol = default_initial_pos_tolerance_;
-        rot_tol = default_initial_rot_tolerance_;
-        if (!waypoint.enforce_quat) rot_tol = 0;
+        pos_tol = kInitialPosTolerance;
+        rot_tol = kInitialRotTolerance;
+        if (!waypoint.constrain_orientation) rot_tol = 0;
         mode = kRelaxPosTol;
-
-        std::cout << "FAILED at max constraint relaxing iter: " << relaxed_ctr
-                  << "\n";
+        drake::log()->error("IK FAILED at max constraint relaxing iter: " +
+                            std::to_string(relaxed_ctr));
         relaxed_ctr = 0;
         random_ctr++;
       }
 
       // Admits failure and returns false.
-      if (random_ctr > 50) {
-        std::cout << "FAILED at max random retries: " << random_ctr << "\n";
+      if (random_ctr > kMaxNumInitialGuess) {
+        drake::log()->error("IK FAILED at max random starts: " +
+                            std::to_string(random_ctr));
         return false;
       }
     }
@@ -163,11 +176,11 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
     q_prev = q_sol;
     q0 = q_sol;
 
-    ik_res->time[ctr + 1] = waypoint.time;
-    ik_res->info[ctr + 1] = 1;
+    ik_res->time[step_ctr + 1] = waypoint.time;
+    ik_res->info[step_ctr + 1] = 1;
 
-    ik_res->q.col(ctr + 1) = q_sol;
-    ctr++;
+    ik_res->q.col(step_ctr + 1) = q_sol;
+    step_ctr++;
   }
 
   return true;
@@ -199,7 +212,7 @@ bool IiwaIkPlanner::SolveIk(const IkCartesianWaypoint& waypoint,
   WorldQuatConstraint quat_con(robot_.get(), end_effector_body_idx_,
                                math::rotmat2quat(waypoint.pose.linear()),
                                rot_tol, Vector2<double>::Zero());
-  if (waypoint.enforce_quat) {
+  if (waypoint.constrain_orientation) {
     constraint_array.push_back(&quat_con);
   }
 
