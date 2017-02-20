@@ -91,25 +91,34 @@ class IiwaIkPlanner {
     /// the desired.
     double rot_tol;
     /// Signals if orientation constraint is enabled.
-    bool enforce_quat;
+    bool constrain_orientation;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+    /// Default constructor.
     IkCartesianWaypoint() {
       time = 0;
       pose.setIdentity();
-      enforce_quat = false;
+      constrain_orientation = false;
       pos_tol = Vector3<double>(0.005, 0.005, 0.005);
       rot_tol = 0.05;
     }
   };
 
   /**
+   * Returns a linear PiecewisePolynomialTrajectory from @p ik_res.
+   */
+  static std::unique_ptr<PiecewisePolynomialTrajectory>
+  GenerateFirstOrderHoldTrajectory(const IkResult& ik_res);
+
+  /**
    * Constructor. Instantiates an internal RigidBodyTree from @p model_path.
-   * @param model_path, Path to the model file.
-   * @param end_effector_link_name, Link name of the end effector.
-   * @param base_to_world, X_WB, transformation from robot's base to the world
+   * @param model_path Path to the model file.
+   * @param end_effector_link_name Link name of the end effector.
+   * @param base_to_world X_WB, transformation from robot's base to the world
    * frame.
+   * @param random_seed Seed for the random number generator used to generate
+   * random initial guesses.
    */
   IiwaIkPlanner(const std::string& model_path,
                 const std::string& end_effector_link_name,
@@ -117,10 +126,12 @@ class IiwaIkPlanner {
 
   /**
    * Constructor. Instantiates an internal RigidBodyTree from @p model_path.
-   * @param model_path, Path to the model file.
-   * @param end_effector_link_name, Link name of the end effector.
-   * @param base_to_world, X_WB, transformation from robot's base to the world
+   * @param model_path Path to the model file.
+   * @param end_effector_link_name Link name of the end effector.
+   * @param base_to_world X_WB, transformation from robot's base to the world
    * frame.
+   * @param random_seed Seed for the random number generator used to generate
+   * random initial guesses.
    */
   IiwaIkPlanner(const std::string& model_path,
                 const std::string& end_effector_link_name,
@@ -156,27 +167,14 @@ class IiwaIkPlanner {
    *
    * Note that @p q_current is inserted at the beginning of @p ik_res.
    *
-   * @param waypoints, A sequence of desired waypoints.
-   * @param q_current, The initial generalized position.
-   * @param[out] ik_res, Results.
+   * @param waypoints A sequence of desired waypoints.
+   * @param q_current The initial generalized position.
+   * @param[out] ik_res Results.
    * @return True if solved successfully.
    */
   bool PlanSequentialTrajectory(
       const std::vector<IkCartesianWaypoint>& waypoints,
       const VectorX<double>& q_current, IkResult* ik_res);
-
-  /**
-   * Returns a linear PiecewisePolynomialTrajectory from @p ik_res.
-   */
-  static std::unique_ptr<PiecewisePolynomialTrajectory>
-  GenerateFirstOrderHoldTrajectory(const IkResult& ik_res) {
-    std::vector<MatrixX<double>> q(ik_res.q.cols());
-    for (int i = 0; i < ik_res.q.cols(); ++i) {
-      q[i] = ik_res.q.col(i);
-    }
-    return std::make_unique<PiecewisePolynomialTrajectory>(
-        PiecewisePolynomial<double>::FirstOrderHold(ik_res.time, q));
-  }
 
   /**
    * Returns a linear PiecewisePolynomialTrajectory from the IK solutions
@@ -200,9 +198,6 @@ class IiwaIkPlanner {
   std::default_random_engine rand_generator_;
   std::unique_ptr<RigidBodyTree<double>> robot_{nullptr};
   int end_effector_body_idx_;
-
-  Vector3<double> default_initial_pos_tolerance_;
-  double default_initial_rot_tolerance_;
 };
 
 }  // namespace kuka_iiwa_arm
