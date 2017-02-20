@@ -125,7 +125,7 @@ Eigen::MatrixXd HalfExplicitDAE1Solver<T>::CalcConstraintJacobian(
   // Evaluating the time derivative of the constraint equations is equivalent
   // to multiplying J * v, where J is the constraint Jacobian. By setting the
   // generalized velocity to a sequence of unit vectors and evaluating the
-  // time derivative of the constraint equations repeatedly, we can compute
+  // time derivative of the constraint equations repeatedly, we compute
   // the constraint Jacobian.
   const int ngv = gv_save.size();
   Eigen::MatrixXd J(neq, ngv);
@@ -238,7 +238,9 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
   // where N(q(t)) is a matrix that converts generalized velocities to the time
   // derivatives of generalized coordinates, the starting point will be perfect
   // if g(q(t)) = 0 (the method precondition) and if g() is a linear function
-  // (implying that g(q(t) + Δt⋅v(t+Δt)) = g(q(t)) + Δt⋅N⋅g(v(t+Δt)) = 0 + 0.
+  // (implying that g(q(t) + Δt⋅v(t+Δt)) = g(q(t)) + Δt⋅N⋅g(v(t+Δt)) = 0 + 0).
+  // Such an example occurs when a revolute joint is constrained to be
+  // stationary (as if at a stop).
 
   // Compute JM⁻¹Jᵀ and Jv'(t+Δt).
   const auto& J = CalcConstraintJacobian(*context);
@@ -255,7 +257,7 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
   //                  dimension. A constraint will only be added if it allows
   //                  the Cholesky factorization (used already below) to
   //                  succeed. The time complexity for the algorithm just
-  //                  described will be limited to O(n^3), rather than O(m^3),
+  //                  described will be limited to O(n³), rather than O(m³),
   //                  where n is the generalized velocity dimension, and m
   //                  is the number of algebraic equations. Just doing a series
   //                  of Cholesky factorizations might prove to be generally

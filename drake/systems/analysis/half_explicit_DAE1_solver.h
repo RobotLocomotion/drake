@@ -12,7 +12,7 @@
 namespace drake {
 namespace systems {
 
-/// A first-order, half-explicit DAE solver. This approach solves DAEs of the
+/// A first-order, half-explicit DAE solver. Such an approach solves DAEs of the
 /// form:
 /// <pre>
 /// dx/dt = d(x(t), λ)
@@ -28,9 +28,8 @@ namespace systems {
 /// g(x(t)+ Δt⋅d(x(t), λ) = 0
 /// </pre>
 /// After the value of `λ` has been obtained *implicitly*, `x(t+Δt)` is computed
-/// *explicitly* using the second to last equation above. This code uses
-/// the Newton-Raphson Algorithm to solve the nonlinear system of equations.
-///
+/// *explicitly* using the second to last equation above.
+
 /// Let us now consider the state variables as representing a mechanical system
 /// with generalized coordinates `q` and generalized velocities `v`. We also
 /// define the "quasi-coordinates" `ꝗ` (pronounced "qbar"), where `dꝗ/dt` is
@@ -42,7 +41,7 @@ namespace systems {
 /// </pre>
 /// The time derivative of the constraint equations `dg/dt = Jv` yields-
 /// from the dual relationship between velocities and forces- generalized forces
-/// (`f`) via the relationship `f = Jᵀλ`. We now reformulated the equations
+/// (`f`) via the relationship `f = Jᵀλ`. We now reformulate the equations
 /// above as:
 /// <pre>
 /// v(t+Δt) = v(t) + Δt⋅e() + M⁻¹Jᵀλ
@@ -52,7 +51,8 @@ namespace systems {
 /// where `e(q(t), v(t))` gives the time derivatives of the generalized velocity
 /// variables- now independently of `λ`- and `M` is the generalized inertia
 /// matrix of the mechanical system. `J` and `N` are both dependent upon
-/// `q(t)`. Determining the constraint forces via Newton-Raphson
+/// `q(t)`. Determining the constraint forces via Newton-Raphson (the standard
+/// algorithm for solving nonlinear systems of equations)
 /// requires computing the Jacobian matrix `∂g/∂λ`. Focusing
 /// only on configuration-dependent constraints, i.e., assuming that `g(.)` is a
 /// function only of `q(t+Δt)`, we derive:
@@ -63,7 +63,9 @@ namespace systems {
 /// <pre>
 /// ∂q(t+Δt)/∂λ = Δt⋅NM⁻¹Jᵀ
 /// </pre>
-/// but `∂g(q(t+Δt))/∂λ` is not. This particular implementation uses finite
+/// but `∂g(q(t+Δt))/∂λ` is not. This exercise shows that the necessary
+/// Jacobian matrix is not neatly provided as the output of some typical
+/// piece of code: our particular implementation uses finite
 /// differencing to compute `∂g/∂λ`, as a result.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
