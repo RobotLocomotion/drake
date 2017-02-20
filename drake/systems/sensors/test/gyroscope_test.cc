@@ -85,14 +85,6 @@ TEST_F(TestGyroscope, TestFreeFall) {
       dut_->get_input_port().get_index(),
       make_unique<BasicVector<double>>(state_vector));
 
-  auto xc_vector = make_unique<BasicVector<double>>(
-      VectorX<double>::Zero(num_states_).eval());
-  auto xc = make_unique<ContinuousState<double>>(
-      move(xc_vector), num_positions_, num_velocities_,
-      0 /* num other variables */);
-
-  context_->set_continuous_state(move(xc));
-
   unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput(*context_);
   ASSERT_EQ(output->get_num_ports(), 1);
   dut_->CalcOutput(*context_, output.get());
@@ -128,14 +120,6 @@ TEST_F(TestGyroscope, TestNonZeroRotationalVelocity) {
   context_->FixInputPort(
       dut_->get_input_port().get_index(),
       make_unique<BasicVector<double>>(state_vector));
-
-  auto xc_vector = make_unique<BasicVector<double>>(
-      VectorX<double>::Zero(num_states_).eval());
-  auto xc = make_unique<ContinuousState<double>>(
-      move(xc_vector), num_positions_, num_velocities_,
-      0 /* num other variables */);
-
-  context_->set_continuous_state(move(xc));
 
   unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput(*context_);
   ASSERT_EQ(output->get_num_ports(), 1);
