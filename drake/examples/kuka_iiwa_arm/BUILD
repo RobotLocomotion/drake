@@ -36,6 +36,8 @@ drake_cc_library(
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
+        "@bot_core_lcmtypes//:lib",
+        "@robotlocomotion_lcmtypes//:lib",
     ],
 )
 
@@ -48,8 +50,6 @@ drake_cc_library(
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
     ],
 )
 
@@ -132,6 +132,7 @@ cc_binary(
     srcs = ["kuka_ik_demo.cc"],
     data = [":models"],
     deps = [
+        ":iiwa_common",
         "//drake/lcm",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
