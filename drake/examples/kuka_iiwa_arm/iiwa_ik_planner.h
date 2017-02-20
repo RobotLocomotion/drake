@@ -8,7 +8,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "robotlocomotion/robot_plan_t.hpp"
 
 namespace drake {
 namespace examples {
@@ -31,50 +30,6 @@ class IiwaIkPlanner {
     /// Resulting generalized position per time step. N by T, where N is the
     /// size of the generalized position, and T is the size of time steps.
     MatrixX<double> q;
-
-    /**
-     * Returns a robotlocomotion::robot_plan_t message.
-     */
-    robotlocomotion::robot_plan_t EncodeMessage(
-        const RigidBodyTree<double>& robot) const {
-      DRAKE_DEMAND(q.cols() == static_cast<int>(time.size()));
-      DRAKE_DEMAND(q.rows() == robot.get_num_positions());
-      DRAKE_DEMAND(info.size() == time.size());
-
-      robotlocomotion::robot_plan_t plan;
-      plan.utime = 0;
-      plan.robot_name = "iiwa";
-      plan.num_states = q.cols();
-      plan.plan.resize(plan.num_states);
-      plan.plan_info.resize(plan.num_states, 0);
-
-      for (int t = 0; t < plan.num_states; t++) {
-        bot_core::robot_state_t& step = plan.plan[t];
-
-        step.num_joints = robot.get_num_positions();
-        step.joint_name.resize(step.num_joints);
-        for (int i = 0; i < step.num_joints; i++) {
-          step.joint_name[i] = robot.get_position_name(i);
-        }
-        step.joint_position.resize(step.num_joints, 0);
-        step.joint_velocity.resize(step.num_joints, 0);
-        step.joint_effort.resize(step.num_joints, 0);
-
-        step.utime = time[t] * 1e6;
-        for (int j = 0; j < step.num_joints; j++) {
-          step.joint_position[j] = q(j, t);
-        }
-        plan.plan_info[t] = info[t];
-      }
-      plan.num_grasp_transitions = 0;
-      plan.left_arm_control_type = plan.POSITION;
-      plan.right_arm_control_type = plan.NONE;
-      plan.left_leg_control_type = plan.NONE;
-      plan.right_leg_control_type = plan.NONE;
-      plan.num_bytes = 0;
-
-      return plan;
-    }
   };
 
   /**

@@ -5,7 +5,8 @@ if(lcm_FOUND)
   target_link_libraries(drakeKukaIiwaArmCommon
       drakeLcmSystem
       drakeRBM
-      drakeMultibodyParsers)
+      drakeMultibodyParsers
+      robotlocomotion-lcmtypes-cpp)
   drake_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
       iiwa_common.h iiwa_lcm.h)
@@ -21,8 +22,7 @@ if(lcm_FOUND)
       drakeIK
       drakeRBM
       drakeMultibodyParsers
-      drakeTrajectories
-      robotlocomotion-lcmtypes-cpp)
+      drakeTrajectories)
   drake_install_libraries(drakeKukaIiwaArmIK)
   drake_install_headers(
       iiwa_ik_planner.h)
@@ -48,6 +48,7 @@ if(lcm_FOUND)
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
   target_link_libraries(kuka_ik_demo
     drakeIK
+    drakeKukaIiwaArmCommon
     drakeMultibodyParsers
     drakeRBM
     robotlocomotion-lcmtypes-cpp
