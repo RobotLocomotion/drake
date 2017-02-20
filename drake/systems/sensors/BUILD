@@ -19,6 +19,7 @@ drake_cc_library(
         ":accelerometer",
         ":camera_info",
         ":depth_sensor",
+        ":magnetometer",
         ":rotary_encoders",
     ],
 )
@@ -99,6 +100,22 @@ drake_cc_library(
     hdrs = [
         "gyroscope.h",
         "gyroscope_output.h",
+    ],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "magnetometer",
+    srcs = [
+        "magnetometer.cc",
+        "magnetometer_output.cc",
+    ],
+    hdrs = [
+        "magnetometer.h",
+        "magnetometer_output.h",
     ],
     deps = [
         "//drake/multibody:rigid_body_tree",
@@ -206,6 +223,19 @@ drake_cc_googletest(
     ],
     deps = [
         ":gyroscope",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "magnetometer_test",
+    srcs = ["test/magnetometer_test.cc"],
+    data = [
+        "//drake/multibody:models",
+    ],
+    deps = [
+        ":magnetometer",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
     ],

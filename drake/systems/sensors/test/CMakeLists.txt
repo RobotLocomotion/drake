@@ -42,3 +42,8 @@ drake_add_cc_test(gyroscope_test)
 target_link_libraries(gyroscope_test
     drakeMultibodyParsers
     drakeSensors)
+
+drake_add_cc_test(magnetometer_test)
+target_link_libraries(magnetometer_test
+    drakeMultibodyParsers
+    drakeSensors)
