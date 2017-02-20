@@ -144,6 +144,8 @@ drake_cc_library(
     ],
     deps = [
         ":generated_vectors",
+        "//drake/common:cond",
+        "//drake/common:double",
         "//drake/common:symbolic",
     ],
 )
