@@ -118,6 +118,30 @@ void Box::getPoints(Matrix3Xd& points) const {
                                  points);
 }
 
+void Box::getFaces(TrianglesVector& faces) const {
+  faces.resize(12);
+  // Inspect getBoundingBoxPoints for proper ordering of vertices here.
+  // TODO(gizatt) this is horrible
+  // +y face
+  faces[0] = Vector3i( 2, 1, 0);
+  faces[1] = Vector3i( 3, 2, 0);
+  // +x face
+  faces[2] = Vector3i( 1, 2, 5);
+  faces[3] = Vector3i( 1, 5, 6);
+  // +z face
+  faces[4] = Vector3i( 1, 6, 7);
+  faces[5] = Vector3i( 0, 1, 7);
+  // -y face
+  faces[6] = Vector3i( 6, 5, 4);
+  faces[7] = Vector3i( 7, 6, 4);
+  // -x face
+  faces[8] = Vector3i( 7, 4, 3);
+  faces[9] = Vector3i( 7, 3, 0);
+  // -z face
+  faces[10] = Vector3i( 2, 4, 5);
+  faces[11] = Vector3i( 2, 3, 4);
+}
+
 void Box::getBoundingBoxPoints(Matrix3Xd& points) const { getPoints(points); }
 
 void Box::getTerrainContactPoints(Matrix3Xd& points) const {
@@ -417,6 +441,11 @@ Mesh* Mesh::clone() const { return new Mesh(*this); }
 
 void Mesh::getPoints(Eigen::Matrix3Xd& point_matrix) const {
   extractMeshVertices(point_matrix);
+}
+
+void Mesh::getFaces(TrianglesVector& faces) const {
+  PointsVector points;
+  LoadObjFile(&points, &faces, Mesh::TriangulatePolicy::kTry);
 }
 
 void Mesh::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {
