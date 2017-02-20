@@ -350,6 +350,7 @@ drake_cc_googletest(
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework/test_utilities:pack_value",
+        "//drake/systems/primitives:constant_value_source",
         "//drake/systems/primitives:integrator",
         "//drake/systems/primitives:zero_order_hold",
     ],
