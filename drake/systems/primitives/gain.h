@@ -4,7 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/siso_vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -27,7 +27,7 @@ namespace systems {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// @ingroup primitive_systems
 template <typename T>
-class Gain : public LeafSystem<T> {
+class Gain : public SisoVectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gain)
 
@@ -54,20 +54,12 @@ class Gain : public LeafSystem<T> {
   /// Returns the gain vector constant.
   const VectorX<T>& get_gain_vector() const;
 
-
-  /// Returns the input port.
-  const InputPortDescriptor<T>& get_input_port() const;
-
-  /// Returns the output port.
-  const OutputPortDescriptor<T>& get_output_port() const;
-
- private:
-  // Sets the output port value to the product of the gain and the input port
-  // value. The gain is specified in the constructor.
-  // If number of connected input or output ports differs from one or, the
-  // input ports are not the correct size, std::runtime_error will be thrown.
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
+ protected:
+  void DoCalcVectorOutput(
+      const Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* output) const override;
 
   // TODO(amcastro-tri): move gain_ to System<T>::Parameter.
   const VectorX<T> k_;
