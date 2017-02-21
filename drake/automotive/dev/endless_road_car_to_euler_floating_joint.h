@@ -2,9 +2,9 @@
 
 #include <memory>
 
+#include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/gen/euler_floating_joint_state.h"
-#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

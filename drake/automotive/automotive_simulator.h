@@ -8,10 +8,10 @@
 
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/dev/endless_road_car.h"
+#include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
+#include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
-#include "drake/automotive/endless_road_car_to_euler_floating_joint.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
-#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"

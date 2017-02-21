@@ -11,6 +11,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   curve2.cc
   dev/endless_road_car.cc
   dev/endless_road_oracle.cc
+  dev/infinite_circuit_road.cc
   gen/driving_command.cc
   gen/endless_road_car_config.cc
   gen/endless_road_car_state.cc
@@ -33,7 +34,6 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   maliput/monolane/segment.cc
   maliput/utility/generate_obj.cc
   maliput/utility/generate_urdf.cc
-  maliput/utility/infinite_circuit_road.cc
   monolane_onramp_merge.cc
   simple_car.cc
   single_lane_ego_and_agent.cc

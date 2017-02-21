@@ -5,9 +5,9 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
-#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 
 namespace drake {
 namespace automotive {
