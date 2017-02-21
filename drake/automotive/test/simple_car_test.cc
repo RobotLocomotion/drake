@@ -24,8 +24,7 @@ class SimpleCarTest : public ::testing::Test {
     value->set_steering_angle(steering_angle);
     value->set_throttle(throttle);
     value->set_brake(brake);
-    context_->SetInputPort(
-        0, std::make_unique<systems::FreestandingInputPort>(std::move(value)));
+    context_->FixInputPort(0, std::move(value));
   }
 
   SimpleCarState<double>* continuous_state() {
@@ -51,6 +50,9 @@ TEST_F(SimpleCarTest, Topology) {
   const auto& output_descriptor = dut_->get_output_port(0);
   EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
   EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates, output_descriptor.size());
+
+  // This test covers a portion of the symbolic::Expression instantiation.
+  ASSERT_FALSE(dut_->HasAnyDirectFeedthrough());
 }
 
 TEST_F(SimpleCarTest, Output) {
@@ -256,6 +258,46 @@ TEST_F(SimpleCarTest, Derivatives) {
   EXPECT_NEAR(10.0, result->y(), kTolerance);
   EXPECT_EQ(0.0, result->heading());
   EXPECT_EQ(0.0, result->velocity());
+}
+
+TEST_F(SimpleCarTest, TransmogrifyAutoDiff) {
+  const auto& other_dut = dut_->ToAutoDiffXd();
+  ASSERT_NE(other_dut.get(), nullptr);
+
+  auto other_context = other_dut->CreateDefaultContext();
+  auto other_output = other_dut->AllocateOutput(*other_context);
+  auto other_derivatives = other_dut->AllocateTimeDerivatives();
+
+  auto input_value = std::make_unique<DrivingCommand<AutoDiffXd>>();
+  other_context->FixInputPort(0, std::move(input_value));
+
+  // For now, running without exceptions is good enough.
+  other_dut->CalcOutput(*other_context, other_output.get());
+  other_dut->CalcTimeDerivatives(*other_context, other_derivatives.get());
+}
+
+TEST_F(SimpleCarTest, TransmogrifySymbolic) {
+  const auto& other_dut = dut_->ToSymbolic();
+  ASSERT_NE(other_dut.get(), nullptr);
+
+  auto other_context = other_dut->CreateDefaultContext();
+  auto other_output = other_dut->AllocateOutput(*other_context);
+  auto other_derivatives = other_dut->AllocateTimeDerivatives();
+
+  // TODO(jwnimmer-tri) We should have a framework way to just say "make the
+  // entire context symbolic variables (vs zero)" that is reusable for any
+  // consumer of the framework.
+  auto input_value = std::make_unique<DrivingCommand<symbolic::Expression>>();
+  other_context->FixInputPort(0, std::move(input_value));
+  systems::VectorBase<symbolic::Expression>& xc =
+      *other_context->get_mutable_continuous_state_vector();
+  for (int i = 0; i < xc.size(); ++i) {
+    xc[i] = symbolic::Variable("xc" + std::to_string(i));
+  }
+
+  // For now, running without exceptions is good enough.
+  other_dut->CalcOutput(*other_context, other_output.get());
+  other_dut->CalcTimeDerivatives(*other_context, other_derivatives.get());
 }
 
 }  // namespace

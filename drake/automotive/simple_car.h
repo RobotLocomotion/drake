@@ -52,7 +52,6 @@ class SimpleCar : public systems::LeafSystem<T> {
   SimpleCar();
 
   // System<T> overrides
-  bool has_any_direct_feedthrough() const override;
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
   void DoCalcTimeDerivatives(
@@ -67,6 +66,10 @@ class SimpleCar : public systems::LeafSystem<T> {
   static void SetDefaultParameters(SimpleCarConfig<T>* config);
 
  protected:
+  // System<T> overrides
+  systems::System<AutoDiffXd>* DoToAutoDiffXd() const override;
+  systems::System<symbolic::Expression>* DoToSymbolic() const override;
+
   // LeafSystem<T> overrides
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;
