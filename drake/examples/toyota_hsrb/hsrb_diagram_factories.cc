@@ -65,10 +65,10 @@ unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
 
     // Sets the name and contact parameters.
     plant_ptr->set_contact_parameters(penetration_stiffness,
+                                      penetration_dissipation,
                                       static_friction_coefficient,
                                       dynamic_friction_coefficient,
-                                      v_stiction_tolerance,
-                                      penetration_dissipation);
+                                      v_stiction_tolerance);
   }
 
   const RigidBodyTreed& tree = plant_ptr->get_rigid_body_tree();
