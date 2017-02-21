@@ -62,9 +62,8 @@ class ContactFormulaTest : public ::testing::Test {
     velocities->SetFromVector(target_velocities);
 
     SetContactParameters();
-    plant_->set_contact_parameters(stiffness_, static_friction_,
-                                   dynamic_friction_, v_stiction_tolerance_,
-                                   dissipation_);
+    plant_->set_contact_parameters(stiffness_, dissipation_, static_friction_,
+                                   dynamic_friction_, v_stiction_tolerance_);
 
     plant_->CalcOutput(*context_.get(), output_.get());
     contacts_ =
@@ -126,10 +125,10 @@ class ContactFormulaTest : public ::testing::Test {
   unique_ptr<RigidBodyPlant<double>> plant_{};
   unique_ptr<Context<double>> context_{};
   unique_ptr<SystemOutput<double>> output_{};
-  ContactResults<double> contacts_{};
+  ContactResults<double> contacts_;
 
   // Pointers used for poking into the structure to test values.
-  RigidBodyTree<double>* tree_{};
+  RigidBodyTree<double>* tree_;
 
   // Sphere configuration constants.
   const double kRadius = 1.0;
@@ -180,7 +179,8 @@ class ConvergingContactFormulaTest : public ContactFormulaTest {
 };
 
 // Tests the case where the collision has a non-zero relative velocity in the
-// contact normal direction.  The force will be wholly
+// contact normal direction.  The force will still only have a normal component,
+// but adds the dissipating term.
 TEST_F(ConvergingContactFormulaTest, ConvergingContactTest) {
   EXPECT_EQ(contacts_.get_num_contacts(), 1);
   // A non-zero relative velocity in the normal direction will change the force.
@@ -247,9 +247,9 @@ class SuctionContactFormulaTest : public ContactFormulaTest {
   }
 
   // The relative velocity of the two contact points in the *normal* direction.
-  // The normal force term is: kx(1 + dx'), and k > 0 and d > 0.  In collision,
+  // The normal force term is: kx(1 + dẋ), and k > 0 and d > 0.  In collision,
   // x > 0.  The force is repulsive for positive values. That requires,
-  // 1 + dx' > 0 --> x' > -1 / d.  We'll pick a separating velocity with a
+  // 1 + dẋ > 0 --> ẋ > -1 / d.  We'll pick a separating velocity with a
   // magnitude greater than 1 / d.
   //
   // A positive value is a separating velocity. We pick one larger than the
@@ -362,8 +362,8 @@ class SlidingContactFormulaTest : public ContactFormulaTest {
   const double kTangentSpeed = v_stiction_tolerance_ * 5;
 };
 
-// Confirms that a slight tangential force (between 1 and 3X the transition
-// speed) produces the correct tangential force.
+// Confirms that a slight tangential velocity (between 1X and 3X the stiction
+// speed threshold) produces the correct tangential force.
 TEST_F(SlidingContactFormulaTest, SlidingContactTest) {
   EXPECT_EQ(contacts_.get_num_contacts(), 1);
 
@@ -404,8 +404,8 @@ class SlidingSpinContactFormulaTest : public ContactFormulaTest {
       -0.5 * v_stiction_tolerance_ / (kRadius - kPenetrationDepth * 0.5);
 };
 
-// Confirms that a slight tangential force (between 1 and 3X the transition
-// speed) produces the correct tangential force.
+// Confirms that the correct frictional force is produced in the case where
+// the relative velocity at the contact point is due to angular velocity.
 TEST_F(SlidingSpinContactFormulaTest, SlidingSpinContactTest) {
   EXPECT_EQ(contacts_.get_num_contacts(), 1);
 

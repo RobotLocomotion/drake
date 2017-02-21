@@ -90,9 +90,8 @@ class ContactResultTest : public ::testing::Test {
     // Note: This is done here instead of the SetUp method because it appears
     //  the plant requires a *compiled* tree at constructor time.
     plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
-    plant_->set_contact_parameters(kStiffness, kStaticFriction,
-                                   kDynamicFriction, kVStictionTolerance,
-                                   kDissipation);
+    plant_->set_contact_parameters(kStiffness, kDissipation, kStaticFriction,
+                                   kDynamicFriction, kVStictionTolerance);
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
     plant_->CalcOutput(*context_.get(), output_.get());
@@ -167,7 +166,7 @@ TEST_F(ContactResultTest, SingleCollision) {
 
   // NOTE: Because there is zero velocity, there is no frictional force and no
   // damping on the normal force.  Simply the kx term.  Penetration is twice
-  // the offest.
+  // the offset.
   double force = kStiffness * offset * 2;
   expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
   ASSERT_TRUE(
