@@ -9,12 +9,33 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
 #include <Eigen/Eigenvalues>
 
 namespace drake {
 namespace multibody {
+
+// Implementation details go into this namespace. Users never see this.
+namespace internal {
+// Helper method to swap (i, j) indexes when needed.
+template <int TriangularPart> struct check_and_swap;
+
+// Specialization when using the upper-diagonal elements.
+template <> struct check_and_swap<Eigen::Upper> {
+  static void swap(int& i, int &j) {
+    if (i > j) std::swap(i, j);
+  }
+};
+
+// Specialization when using the lower-diagonal elements.
+template <> struct check_and_swap<Eigen::Lower> {
+  static void swap(int& i, int &j) {
+    if (i < j) std::swap(i, j);
+  }
+};
+}  // namespace internal
 
 /// This class provides an abstraction for the physical concept of the mass
 /// distribution of a body about a particular point. Given a point, the mass
@@ -26,19 +47,34 @@ namespace multibody {
 /// distinguish from the more general concept of **inertia** of a body.
 /// A rotational inertia can be represented by the six scalar elements of a
 /// symmetric 3x3 matrix often referred also as **the inertia matrix** or also
-/// as **the inertia tensor**. These scalar elements are the numerical values of
-/// the rotational inertia components measured on a given frame and therefore
-/// this frame needs to be explicitly stated. These scalar elements have no
-/// meaning if a reference frame is not specified.
-/// For a given point there exists a set of axes, called **principal axes of
-/// inertia** in which the inertia tensor is diagonal. The resulting diagonal
-/// elements are the **principal moments of inertia** about that point.
+/// as **the inertia tensor**. We can therefore think of a rotational inertia
+/// `I` as the matrix: <pre>
+///     | Ixx Ixy Ixz |
+/// I = | Ixy Iyy Iyz |
+///     | Ixz Iyz Izz |
+/// </pre>
+/// where diagonal elements of this matrix are referred to as the **moments of
+/// inertia** while the off-diagonal elements are referred to as the **products
+/// of inertia**. These scalar elements are the numerical values of the
+/// rotational inertia components measured with respect to the axes of a given
+/// frame and therefore this frame needs to be explicitly stated. These scalar
+/// elements have no meaning if a reference frame is not specified.
+/// For a given point on the rigid body there exists a set of axes, called
+/// **principal axes of inertia** in which the inertia tensor is diagonal. The
+/// resulting diagonal elements are the **principal moments of inertia** about
+/// that point. The corresponding directions are an orthogonal basis for the
+/// inertia tensor with those principal moments.
 ///
 /// @note This class does not implement any mechanism to track the frame in
 /// which an inertia is expressed or about what point is computed. Methods and
 /// operators on this class have no means to determine frame consistency through
 /// operations. It is therefore the responsability of users of this class to
 /// keep track of frames in which operations are performed.
+///
+/// In code we use the monogram notation as described
+/// in @ref multibody_notation_basics. For a rotational inertia computed about
+/// point `Bo` and expressed in frame `E` the monogram notation would
+/// read `I_Bo_E`.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -61,26 +97,24 @@ class RotationalInertia {
     TriangularViewNotInUse = Eigen::StrictlyUpper
   };
 
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
+
   /// Default RotationalInertia constructor. All entries are set to NaN for a
   /// quick detection of un-initialized values.
   RotationalInertia() {}
-
-  /// Default copy constructor and copy assignment.
-  RotationalInertia(const RotationalInertia<T>& other) = default;
-  RotationalInertia& operator=(const RotationalInertia<T>& other) = default;
 
   /// Creates a principal rotational inertia with identical diagonal elements
   /// equal to @p I and zero products of inertia.
   /// As examples, consider the moments of inertia taken about their geometric
   /// center for a sphere or a cube.
-  /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube().
   explicit RotationalInertia(const T& I) {
     SetZero();
     I_Bo_F_.diagonal().setConstant(I);
   }
 
-  /// Create a principal axes rotational inertia matrix for which off-diagonal
-  /// elements are zero.
+  /// Creates a principal axes rotational inertia matrix for which the products
+  /// of inertia are zero and the moments of inertia are given by `Ixx`, `Iyy`
+  /// and `Izz`.
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz) {
     SetZero();
     I_Bo_F_.diagonal() = Vector3<T>(Ixx, Iyy, Izz);
@@ -108,62 +142,31 @@ class RotationalInertia {
 
   /// Returns a three-dimensional vector containing the diagonal elements of
   /// this rotational inertia.
-  /// @returns The principal moments of inertia as the vector
-  ///          `moments = [Ixx, Iyy, Izz]`.
+  /// @retval moments The vector of principal moments `[Ixx Iyy Izz]`.
   Vector3<T> get_moments() const { return I_Bo_F_.diagonal(); }
 
   /// Returns a three-dimensional vector containing the products of inertia of
   /// this rotational inertia.
-  /// @returns The products of inertia as the vector
-  ///          `products = [Ixy, Ixz, Iyz]`.
+  /// @retval products The vector of products of inertia `[Ixy, Ixz, Iyz]`.
   Vector3<T> get_products() const {
     // Let operator(int ,int) decide what portion (upper/lower) to use.
     const auto& Iref = *this;
     return Vector3<T>(Iref(0, 1), Iref(0, 2), Iref(1, 2));
   }
 
-  /// Mutable access to the `(i, j)` element of this rotational inertia.
-  /// This operator performs checks on the pair `(i, j)` to determine the
-  /// appropriate mapping to the internal in-memory representation of a
-  /// symmetric rotational inertia. Therefore this accessor is not meant for
-  /// speed but rather as a convinience method. Users should use supplied
-  /// built-in operations for fast compuations.
-  T& operator()(int i, int j) {
-    // Overwrites local copies of i and j.
-    check_and_swap(&i, &j);
-    return I_Bo_F_(i, j);
-  }
-
   /// Const access to the `(i, j)` element of this rotational inertia.
   /// This operator performs checks on the pair `(i, j)` to determine the
   /// appropriate mapping to the internal in-memory representation of a
   /// symmetric rotational inertia. Therefore this accessor is not meant for
-  /// speed but rather as a convinience method. Users should use supplied
-  /// built-in operations for fast compuations.
+  /// speed but rather as a convenience method. Users should use supplied
+  /// built-in operations for fast computations.
+  /// Notice that the mutable counterpart of this accessor is not provided to
+  /// prevent the creation of unphysical inertias by setting one element at a
+  /// time.
   const T& operator()(int i, int j) const {
     // Overwrites local copies of i and j.
     check_and_swap(&i, &j);
     return I_Bo_F_(i, j);
-  }
-
-  /// Returns a const Eigen view expression to the symmetric part of the matrix
-  /// in use by this RotationalInertia. Most users won't call this method.
-  /// This method is generally used in the implementation of class methods and
-  /// it's only useful to users for debugging.
-  const Eigen::SelfAdjointView<const Matrix3<T>, TriangularViewInUse>
-  get_symmetric_matrix_view() const {
-    return I_Bo_F_.template selfadjointView<TriangularViewInUse>();
-  }
-
-  /// Returns a mutable Eigen view expression to the symmetric part of the
-  /// matrix in use by RotationalInertia. Most users won't call this method.
-  /// This method is generally used in the implementation of class methods and
-  /// it's only useful to users for debugging.
-  // Note: operator=() is not defined for Eigen::SelfAdjointView and therefore
-  // we need to return a TriangularView here.
-  Eigen::TriangularView<Matrix3<T>, TriangularViewInUse>
-  get_mutable_symmetric_matrix_view() {
-    return I_Bo_F_.template triangularView<TriangularViewInUse>();
   }
 
   /// Returns a constant reference to the underlying Eigen matrix. Notice that
@@ -274,7 +277,8 @@ class RotationalInertia {
 
   /// For `this` inertia about a given point `P` and expressed in a frame `E`,
   /// this method computes the principal moments of inertia of `this` rotational
-  /// inertia about the same point `P` and expressed in the same frame `E`.
+  /// inertia about the same point `P` and expressed on a frame with origin at
+  /// `P` and aligned with the principal axes.
   /// The computed principal moments are placed into @p principal_moments sorted
   /// in ascending order.
   /// @returns `true` if succesful and `false` otherwise.
@@ -291,11 +295,11 @@ class RotationalInertia {
     return true;
   }
 
-  /// Performs a number of chekcs to verify that this is a physically valid
+  /// Performs a number of checks to verify that this is a physically valid
   /// rotational inertia.
   /// The chekcs performed are:
   /// - No NaN entries.
-  /// - Non-negative principal moments.
+  /// - Strictly positive principal moments.
   /// - Principal moments must satisfy the triangle inequality:
   ///   - `Ixx + Iyy >= Izz`
   ///   - `Ixx + Izz >= Iyy`
@@ -309,8 +313,8 @@ class RotationalInertia {
     Vector3<T> d;
     if (!CalcPrincipalMomentsOfInertia(&d)) return false;
 
-    // Principal moments must be non-negative.
-    if ((d.array() < T(0)).any() ) return false;
+    // Principal moments must be strictly positive.
+    if ((d.array() <= T(0)).any() ) return false;
 
     // Checks triangle inequality
     if (!( d[0] + d[1] >= d[2] && d[0] + d[2] >= d[1] && d[1] + d[2] >= d[0]))
@@ -329,6 +333,12 @@ class RotationalInertia {
   RotationalInertia& ReExpressInPlace(const Matrix3<T>& R_AF) {
     // Note: using triangularView<TriangularViewInUse>() to only write on the
     // triangular part in use causes serious aliasing problems.
+    // There is an interesting discussion on Eigen's forum here:
+    // https://forum.kde.org/viewtopic.php?f=74&t=97282
+    // That discussion tell us that really here we don't have a significant
+    // performance gain for small matrices when writing on one of the triangular
+    // parts only. Then gain is in accuracy, by having RotationalInertia to only
+    // deal with one triangular portion of the matrix.
     I_Bo_F_ = R_AF *
         I_Bo_F_.template selfadjointView<TriangularViewInUse>() *
         R_AF.transpose();
@@ -345,17 +355,55 @@ class RotationalInertia {
     return RotationalInertia(*this).ReExpressInPlace(R_AF);
   }
 
+  /// Multiplication of a RotationalInertia @p I_Bo_F from the left by a
+  /// scalar @p s.
+  friend RotationalInertia<T> operator*(const T& s,
+                                        const RotationalInertia<T>& I_Bo_F) {
+    RotationalInertia<T> sxI;
+    sxI.get_mutable_symmetric_matrix_view() = s * I_Bo_F.get_matrix();
+    return sxI;
+  }
+
  private:
   // Utility method used to swap matrix indexes (i, j) depending on the
   // TriangularViewInUse portion of this inertia. The swap is performed so that
   // we only use the triangular portion corresponding to TriangularViewInUse.
   static void check_and_swap(int* i, int* j) {
-    const bool swap =
-        (static_cast<int>(TriangularViewInUse) == static_cast<int>(Eigen::Upper)
-            && *i > *j) ||
-        (static_cast<int>(TriangularViewInUse) == static_cast<int>(Eigen::Lower)
-            && *i < *j);
-    if (swap) std::swap(*i , *j);
+    internal::check_and_swap<TriangularViewInUse>::swap(*i , *j);
+  }
+
+  // Mutable access to the `(i, j)` element of this rotational inertia.
+  // This operator performs checks on the pair `(i, j)` to determine the
+  // appropriate mapping to the internal in-memory representation of a
+  // symmetric rotational inertia. Therefore this accessor is not meant for
+  // speed but rather as a convenience method. Users should use supplied
+  // built-in operations for fast computations.
+  // This is made private to prevent users from creating unphysical inertias by
+  // setting one element at a time.
+  T& operator()(int i, int j) {
+    // Overwrites local copies of i and j.
+    check_and_swap(&i, &j);
+    return I_Bo_F_(i, j);
+  }
+
+  /// Returns a const Eigen view expression to the symmetric part of the matrix
+  /// in use by this RotationalInertia. Most users won't call this method.
+  /// This method is generally used in the implementation of class methods and
+  /// it's only useful to users for debugging.
+  const Eigen::SelfAdjointView<const Matrix3<T>, TriangularViewInUse>
+  get_symmetric_matrix_view() const {
+    return I_Bo_F_.template selfadjointView<TriangularViewInUse>();
+  }
+
+  /// Returns a mutable Eigen view expression to the symmetric part of the
+  /// matrix in use by RotationalInertia. Most users won't call this method.
+  /// This method is generally used in the implementation of class methods and
+  /// it's only useful to users for debugging.
+  // Note: operator=() is not defined for Eigen::SelfAdjointView and therefore
+  // we need to return a TriangularView here.
+  Eigen::TriangularView<Matrix3<T>, TriangularViewInUse>
+  get_mutable_symmetric_matrix_view() {
+    return I_Bo_F_.template triangularView<TriangularViewInUse>();
   }
 
   // Inertia matrix about frame B's origin Bo expressed in frame F.
@@ -368,16 +416,6 @@ class RotationalInertia {
   Matrix3<T> I_Bo_F_{Matrix3<T>::Constant(std::numeric_limits<
       typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
 };
-
-/// Multiplication of a RotationalInertia @p I_Bo_F from the left by a
-/// scalar @p s.
-template <typename T>
-inline RotationalInertia<T> operator*(
-    const T& s, const RotationalInertia<T>& I_Bo_F) {
-  RotationalInertia<T> sxI;
-  sxI.get_mutable_symmetric_matrix_view() = s * I_Bo_F.get_matrix();
-  return sxI;
-}
 
 /// Insertion operator to write RotationalInertia's into a `std::ostream`.
 /// Especially useful for debugging.
