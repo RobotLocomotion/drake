@@ -39,6 +39,10 @@ QuadraticProgramTest::QuadraticProgramTest() {
       prob_ = std::make_unique<QuadraticProgram3>(cost_form, cnstr_form);
       break;
     }
+    case QuadraticProblems::kQuadraticProgram4 : {
+      prob_ = std::make_unique<QuadraticProgram4>(cost_form, cnstr_form);
+      break;
+    }
     default : throw std::runtime_error("Un-recognized quadratic problem.");
   }
 }
@@ -46,7 +50,8 @@ QuadraticProgramTest::QuadraticProgramTest() {
 std::vector<QuadraticProblems> quadratic_problems() {
   return std::vector<QuadraticProblems>{
       QuadraticProblems::kQuadraticProgram0, QuadraticProblems::kQuadraticProgram1,
-  QuadraticProblems::kQuadraticProgram2, QuadraticProblems::kQuadraticProgram3};
+  QuadraticProblems::kQuadraticProgram2, QuadraticProblems::kQuadraticProgram3,
+      QuadraticProblems::kQuadraticProgram4};
 }
 
 QuadraticProgram0::QuadraticProgram0(CostForm cost_form, ConstraintForm cnstr_form)
@@ -232,6 +237,44 @@ QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
 
 void QuadraticProgram3::CheckSolution() const {
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8, MatrixCompareType::absolute));
+}
+
+QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
+                                     ConstraintForm cnstr_form)
+: OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_(0.8, 0.2, 0.6) {
+  x_ = prog()->NewContinuousVariables<3>();
+  switch (cost_form) {
+    case CostForm::kNonSymbolic : {
+      Matrix3d Q = Matrix3d::Identity();
+      Q(2, 2) = 2.0;
+      Vector3d b = Vector3d::Zero();
+      prog()->AddQuadraticCost(Q, b, x_);
+      break;
+    }
+    default : throw std::runtime_error("Unsupported cost form.");
+  }
+  switch (cnstr_form) {
+    case ConstraintForm::kNonSymbolic : {
+      prog()->AddLinearEqualityConstraint(RowVector2d(1, 1), 1, x_.head<2>());
+      prog()->AddLinearEqualityConstraint(RowVector2d(1, 2), 2, {x_.segment<1>(0), x_.segment<1>(2)});
+      break;
+    }
+    case ConstraintForm::kSymbolic : {
+      prog()->AddLinearEqualityConstraint(x_(0) + x_(1), 1);
+      prog()->AddLinearEqualityConstraint(x_(0) + 2 * x_(2), 2);
+      break;
+    }
+    case ConstraintForm::kFormula : {
+      prog()->AddLinearConstraint(x_(0) + x_(1) == 1);
+      prog()->AddLinearConstraint(x_(0) + 2 * x_(2) == 2);
+      break;
+    }
+    default : throw std::runtime_error("Unsupported constraint form.");
+  }
+}
+
+void QuadraticProgram4::CheckSolution() const {
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-9, MatrixCompareType::absolute));
 }
 }  // namespace test
 }  // namespace solvers
