@@ -32,18 +32,17 @@ class PiecewisePolynomialTrajectory : public Trajectory {
   }
 
   /**
-   * Evaluates a derivative of the PiecewisePolynomialTrajectory at the given
-   * time \p t.
-   *
-   * @param t The time at which to evaluate.
-   * @param derivative_order If zero, return the value of the
-   * Trajectory. Otherwise, take the derivative this many times before
-   * evaluating.
-   * @return The matrix of evaluated values.
+   * Takes the derivative of this PiecewisePolynomialTrajectory.
+   * Each segment of the returned PiecewisePolynomialTrajectory is the
+   * derivative of the segment in the original PiecewisePolynomialTrajectory.
+   * @param derivative_order The number of times to take the derivative before
+   * returning.
+   * @return The nth derivative of this object.
    */
-  drake::MatrixX<double> derivative(double t,
-                                    int derivative_order = 1) const override {
-    return pp_.derivative(t, derivative_order);
+  std::unique_ptr<Trajectory> derivative(
+      int derivative_order = 1) const override {
+    return std::make_unique<PiecewisePolynomialTrajectory>(
+        PiecewisePolynomialTrajectory(pp_.derivative(derivative_order)));
   }
 
   /**

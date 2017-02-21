@@ -53,7 +53,7 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
 
   // Test derivative()
   EXPECT_TRUE(CompareMatrices(kPpFromVec.derivative(1).value(1),
-                              kPpTrajFromVec.derivative(1, 1), 1e-10,
+                              kPpTrajFromVec.derivative(1)->value(1), 1e-10,
                               MatrixCompareType::absolute));
 
   // Test: construct a PiecewisePolynomialTrajectory from a PP matrix.
@@ -80,8 +80,8 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
 
   // Test derivative()
   EXPECT_TRUE(CompareMatrices(kPpFromMatrix.derivative(1).value(1),
-                              kPpTrajFromPpMatrix.derivative(1, 1), 1e-10,
-                              MatrixCompareType::absolute));
+                              kPpTrajFromPpMatrix.derivative(1)->value(1),
+                              1e-10, MatrixCompareType::absolute));
 }
 
 }  // namespace
