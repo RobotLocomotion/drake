@@ -11,6 +11,7 @@ namespace="drake::automotive"
 
 source $drake/tools/lcm_vector_gen.sh
 
+gen_lcm_and_vector_from_proto "bicycle parameters" $drake/automotive/bicycle_parameters.named_vector
 gen_lcm_and_vector_from_proto "driving command" $drake/automotive/driving_command_fields.named_vector
 gen_lcm_and_vector_from_proto "endless road car config" $drake/automotive/dev/endless_road_car_config.named_vector
 gen_lcm_and_vector_from_proto "endless road car state" $drake/automotive/dev/endless_road_car_state.named_vector

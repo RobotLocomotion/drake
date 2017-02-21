@@ -1,0 +1,16 @@
+// GENERATED FILE DO NOT EDIT
+// See drake/tools/lcm_vector_gen.py.
+
+package drake;
+
+struct lcmt_bicycle_parameters_t {
+  // The timestamp in milliseconds.
+  int64_t timestamp;
+
+  double mass;  // mass
+  double lf;  // distance from CG to front axle
+  double lr;  // distance from CG to front axle
+  double Iz;  // moment of inertia about the yaw-axis
+  double Cf;  // cornering stiffness (front)
+  double Cr;  // cornering stiffness (rear)
+}
