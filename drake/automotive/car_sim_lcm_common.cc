@@ -39,8 +39,8 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   const double kDynamicFriction = 5;
   const double kStictionSlipTolerance = 0.001;
   const double kDissipation = 2;
-  plant->set_contact_parameters(kStiffness, kStaticFriction, kDynamicFriction,
-                                kStictionSlipTolerance, kDissipation);
+  plant->set_contact_parameters(kStiffness, kDissipation, kStaticFriction,
+                                kDynamicFriction, kStictionSlipTolerance);
 
   // Instantiates a PID controller for controlling the actuators in the
   // RigidBodyPlant. The vector order is [steering, left wheel, right wheel].
