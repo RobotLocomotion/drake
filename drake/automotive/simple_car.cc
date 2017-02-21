@@ -29,11 +29,6 @@ SimpleCar<T>::SimpleCar() {
 }
 
 template <typename T>
-bool SimpleCar<T>::has_any_direct_feedthrough() const {
-  return false;
-}
-
-template <typename T>
 void SimpleCar<T>::DoCalcOutput(const systems::Context<T>& context,
                                 systems::SystemOutput<T>* output) const {
   // Obtain the state.
@@ -165,6 +160,16 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarConfig<T>& config,
   rates->set_y(nonneg_velocity * sin(state.heading()));
   rates->set_heading(curvature * nonneg_velocity);
   rates->set_velocity(smooth_acceleration);
+}
+
+template <typename T>
+systems::System<AutoDiffXd>* SimpleCar<T>::DoToAutoDiffXd() const {
+  return new SimpleCar<AutoDiffXd>;
+}
+
+template <typename T>
+systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
+  return new SimpleCar<symbolic::Expression>;
 }
 
 template <typename T>
