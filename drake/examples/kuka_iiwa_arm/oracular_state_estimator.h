@@ -31,6 +31,9 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
   OracularStateEstimation(const RigidBodyTree<T>& robot,
                           const RigidBody<T>& base_body)
       : robot_(robot), base_body_(base_body) {
+    DRAKE_DEMAND(robot.get_num_positions() == robot.get_num_velocities());
+    DRAKE_DEMAND(robot.get_num_positions() == robot.get_num_actuators());
+
     input_port_index_state_ =
         this->DeclareInputPort(
                 systems::kVectorValued,
@@ -78,7 +81,7 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
       // To match usage of robot_state_t throughout OpenHumanoids code, set
       // joint_names field to position coordinate names.
       int position_index = body.get_position_start_index();
-      int velocity_index = body.get_position_start_index();
+      int velocity_index = body.get_velocity_start_index();
       msg.joint_name[i] = robot_.get_position_name(position_index);
 
       msg.joint_position[i] = static_cast<float>(q[position_index]);
