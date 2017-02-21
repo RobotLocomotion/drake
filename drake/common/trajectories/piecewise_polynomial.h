@@ -232,17 +232,6 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    */
   drake::MatrixX<double> value(double t) const;
 
- /**
-  * Evaluates a derivative of the PiecewisePolynomial at the given time \p t.
-  *
-  * @param t The time at which to evaluate.
-  * @param derivative_order If zero, return the value of the
-  * PiecewisePolynomial. Otherwise, take the derivative this many times before
-  * evaluating.
-  * @return The matrix of evaluated values.
-  */
-  drake::MatrixX<double> derivative(double t, int derivative_order = 1) const;
-
   const PolynomialMatrix& getPolynomialMatrix(int segment_index) const;
 
   const PolynomialType& getPolynomial(int segment_index, Eigen::Index row = 0,
@@ -313,8 +302,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
 
  private:
   double segmentValueAtGlobalAbscissa(int segment_index, double t,
-                                      Eigen::Index row, Eigen::Index col,
-                                      int derivative_order = 0) const;
+                                      Eigen::Index row, Eigen::Index col) const;
 
   static constexpr CoefficientType kSlopeEpsilon = 1e-10;
 

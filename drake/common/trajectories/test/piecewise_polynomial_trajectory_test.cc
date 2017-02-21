@@ -21,6 +21,7 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   const Polynomiald a = 3;
   const Polynomiald y = Polynomiald("y");
   const Polynomiald y2 = (2 * y);
+  const Polynomiald yy = (y * y);
 
   // Construct a vector of polynomials.
   const std::vector<Polynomiald> p_vec {a, y, y2};
@@ -60,17 +61,18 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
 
   // Construct a matrix of polynomials.
   std::vector<PiecewisePolynomialType::PolynomialMatrix> kPpMatrix(1);
-  kPpMatrix[0].resize(3, 1);
+  kPpMatrix[0].resize(4, 1);
   kPpMatrix[0](0) = a;
   kPpMatrix[0](1) = y;
   kPpMatrix[0](2) = y2;
+  kPpMatrix[0](3) = yy;
 
   // Create a PiecewisePolynomial from a matrix.
   const PiecewisePolynomialType kPpFromMatrix(kPpMatrix, {0.0, 3});
 
   // Create a PiecewisePolynomialTrajectory from a PP made from a matrix.
   const PiecewisePolynomialTrajectory kPpTrajFromPpMatrix {kPpFromMatrix};
-  EXPECT_EQ(kPpTrajFromPpMatrix.rows(), 3);
+  EXPECT_EQ(kPpTrajFromPpMatrix.rows(), 4);
   EXPECT_EQ(kPpTrajFromPpMatrix.cols(), 1);
   EXPECT_EQ(kPpTrajFromPpMatrix.value(2.9)(0), 3);
   EXPECT_EQ(kPpTrajFromPpMatrix.value(2.9)(1), 2.9);  // y
@@ -82,6 +84,9 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   EXPECT_TRUE(CompareMatrices(kPpFromMatrix.derivative(1).value(1),
                               kPpTrajFromPpMatrix.derivative(1)->value(1),
                               1e-10, MatrixCompareType::absolute));
+  EXPECT_EQ(kPpTrajFromPpMatrix.derivative()->value(2.5)(1), 1);  // f' = 1 * 1.
+  EXPECT_EQ(kPpTrajFromPpMatrix.derivative()->value(2.5)(2), 2);  // f' = 2 * 1.
+  EXPECT_EQ(kPpTrajFromPpMatrix.derivative()->value(2.5)(3), 5);  // f' = 2 * y.
 }
 
 }  // namespace
