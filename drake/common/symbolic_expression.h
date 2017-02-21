@@ -177,8 +177,35 @@ class Expression {
   /** Collects variables in expression. */
   Variables GetVariables() const;
 
-  /** Checks structural equality. */
+  /** Checks structural equality.
+   *
+   * Two expressions e1 and e2 are structurally equal when they have the same
+   * internal AST(abstract-syntax tree) representation. Please note that we can
+   * have two computationally (or extensionally) equivalent expressions which
+   * are not structurally equal. For example, consider:
+   *
+   *    e1 = 2 * (x + y)
+   *    e2 = 2x + 2y
+   *
+   * Obviously, we know that e1 and e2 are evaluated to the same value for all
+   * assignments to x and y. However, e1 and e2 are not structurally equal by
+   * the definition. Note that e1 is a multiplication expression
+   * (is_multiplication(e1) is true) while e2 is an addition expression
+   * (is_addition(e2) is true).
+   *
+   * One main reason we use structural equality in EqualTo is due to
+   * Richardson's Theorem. It states that checking ∀x. E(x) = F(x) is
+   * undecidable when we allow sin, asin, log, exp in E and F. Read
+   * https://en.wikipedia.org/wiki/Richardson%27s_theorem for details.
+   *
+   * Note that for polynomial cases, you can use Expand method and check if two
+   * polynomial expressions p1 and p2 are computationally equal. To do so, you
+   * check the following:
+   *
+   *     (p1.Expand() - p2.Expand()).EqualTo(0).
+   */
   bool EqualTo(const Expression& e) const;
+
   /** Provides lexicographical ordering between expressions.
       This function is used as a compare function in map<Expression> and
       set<Expression> via std::less<drake::symbolic::Expression>. */
