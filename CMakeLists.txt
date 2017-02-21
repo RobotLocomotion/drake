@@ -140,6 +140,12 @@ drake_add_external(pythonqt CMAKE PYTHON QT
     -DPythonQt_Wrap_Qtuitools:BOOL=ON
 )
 
+# qhull
+drake_add_external(qhull CMAKE PUBLIC QT
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+)
+
 # snopt
 drake_add_external(snopt CMAKE MATLAB
   CMAKE_ARGS
@@ -272,6 +278,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PYBIND11:BOOL=${WITH_PYBIND11}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
+    -DWITH_QHULL:BOOL=${WITH_QHULL}
     -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
     -DWITH_SIGNALSCOPE:BOOL=${WITH_SIGNALSCOPE}
     -DWITH_SNOPT:BOOL=${WITH_SNOPT}
@@ -307,6 +314,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     nlopt
     octomap
     pybind11
+    qhull
     robotlocomotion_lcmtypes
     sedumi
     snopt
