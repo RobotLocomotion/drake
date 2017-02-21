@@ -41,4 +41,9 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "app_util",
+    hdrs = ["drakeAppUtil.h"],
+)
+
 cpplint()
