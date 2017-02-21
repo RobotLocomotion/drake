@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package drake.automotive;
+
+// Defines parameters for instantiating and initializing a MaliputRailcar.
+message MaliputRailcarConfig {
+  string car_name = 1;
+  string initial_lane_name = 2;
+  bool initial_with_s = 3;
+
+  // Initial state.
+  double initial_s = 4;
+  double initial_speed = 5;
+
+  // Parameters.
+  double r = 6;
+  double h = 7;
+  double max_speed = 8;
+  double velocity_limit_kp = 9;
+}
+
+// Defines parameters for instantiating and initializing an IdmController.
+message IdmControllerConfig {
+  double v_ref = 1;         // Desired velocity in free traffic.
+  double a = 2;             // Max acceleration.
+  double b = 3;             // Comfortable braking deceleration.
+  double s_0 = 4;           // Minimum desired net distance.
+  double time_headway = 5;  // Desired time headway to vehicle in front.
+  double delta = 6;         // Free-road exponent.
+
+  // Diameter of circle about the vehicle's pose that encloses its physical
+  // footprint.
+  double bloat_diameter = 7;
+
+  // Lower saturation bound on net distance to prevent near-singular IDM
+  // solutions.
+  double distance_lower_limit = 8;
+}
+
+// Defines parameters for instantiating and initializing an IDM-controlled
+// MaliputRailcar.
+message IdmControlledMaliputRailcarConfig {
+    MaliputRailcarConfig maliput_railcar_config = 1;
+    IdmControllerConfig idm_controller_config = 2;
+}
+
+// Contains parameters for initializing both uncontrolled and IDM-controlled
+// MaliputRailcars.
+message MaliputRailcarScenarioConfig {
+    repeated MaliputRailcarConfig maliput_railcar_config = 1;
+    repeated IdmControlledMaliputRailcarConfig
+        idm_controlled_maliput_railcar_config = 2;
+}

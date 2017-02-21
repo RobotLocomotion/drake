@@ -1,0 +1,47 @@
+maliput_railcar_config {
+  car_name: "prius_prime"
+  initial_lane_name: "fast_lane"
+  initial_with_s: true
+  initial_s: 1.2843
+  initial_speed: 4.927
+  r: 0.2
+  h: 0.15
+  max_speed: 13.5
+  velocity_limit_kp: 20.2
+}
+
+maliput_railcar_config {
+  car_name: "ls460h"
+  initial_lane_name: "luxury_lane"
+  initial_with_s: false
+  initial_s: 2.5
+  initial_speed: 7.8
+  r: -0.6
+  h: 0.2
+  max_speed: 71.5
+  velocity_limit_kp: 45.3
+}
+
+idm_controlled_maliput_railcar_config {
+  maliput_railcar_config {
+    car_name: "controlled_camry"
+    initial_lane_name: "comfort_lane"
+    initial_with_s: true
+    initial_s: 6.7
+    initial_speed: 8.3
+    r: 0
+    h: 0
+    max_speed: 22.5
+    velocity_limit_kp: 30.5
+  }
+  idm_controller_config {
+    v_ref: 10.1
+    a: 25.5
+    b: 30.2
+    s_0: 5.5
+    time_headway: 5.2
+    delta: 6.1
+    bloat_diameter: 7.5
+    distance_lower_limit: 8.1
+  }
+}

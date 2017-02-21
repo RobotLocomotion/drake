@@ -9,6 +9,7 @@ load(
     "drake_cc_binary",
 )
 load("//tools:python_lint.bzl", "python_lint")
+load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -360,6 +361,28 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "load_maliput_railcar_scenario_config_from_file",
+    srcs = [
+        "load_maliput_railcar_scenario_config_from_file.cc",
+    ],
+    hdrs = [
+        "load_maliput_railcar_scenario_config_from_file.h",
+    ],
+    deps = [
+        ":generated_vectors",
+        ":maliput_railcar_scenario_config",
+        "//drake/common",
+    ],
+)
+
+cc_proto_library(
+    name = "maliput_railcar_scenario_config",
+    srcs = [
+        "maliput_railcar_scenario_config.proto",
+    ],
+)
+
 drake_cc_binary(
     name = "automotive_demo",
     srcs = [
@@ -613,6 +636,18 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:calc_smooth_acceleration",
         "//drake/common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "load_maliput_railcar_scenario_config_from_file_test",
+    srcs = ["test/load_maliput_railcar_scenario_config_from_file_test.cc"],
+    data = [
+        "test/typical.maliput_railcar_scenario_config",
+    ],
+    deps = [
+        ":load_maliput_railcar_scenario_config_from_file",
+        "//drake/common:drake_path",
     ],
 )
 
