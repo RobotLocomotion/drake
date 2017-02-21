@@ -92,9 +92,9 @@ class ToyotaHsrbTests : public ::testing::Test {
     const double v_stiction_tolerance = 0.01;
 
     plant_and_visualizer_ = BuildPlantAndVisualizerDiagram(
-        urdf_string, penetration_stiffness,
+        urdf_string, penetration_stiffness, penetration_dissipation,
         static_friction_coefficient, dynamic_friction_coefficient,
-        v_stiction_tolerance, penetration_dissipation, &lcm_, &plant_);
+        v_stiction_tolerance, &lcm_, &plant_);
 
     ASSERT_NE(plant_and_visualizer_, nullptr);
     ASSERT_NE(plant_, nullptr);

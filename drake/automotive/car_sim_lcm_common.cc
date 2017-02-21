@@ -35,10 +35,10 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
 
   // Contact parameters
   const double kStiffness = 500000;
+  const double kDissipation = 2;
   const double kStaticFriction = 10;
   const double kDynamicFriction = 5;
   const double kStictionSlipTolerance = 0.001;
-  const double kDissipation = 2;
   plant->set_contact_parameters(kStiffness, kDissipation, kStaticFriction,
                                 kDynamicFriction, kStictionSlipTolerance);
 

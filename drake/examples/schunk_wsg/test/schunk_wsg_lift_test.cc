@@ -83,10 +83,10 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   // Arbitrary contact parameters.
   const double kStiffness = 10000;
+  const double kDissipation = 2;
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
   const double kStictionSlipTolerance = 0.001;
-  const double kDissipation = 2;
   plant->set_contact_parameters(kStiffness, kDissipation, kStaticFriction,
                                 kDynamicFriction, kStictionSlipTolerance);
 

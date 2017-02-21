@@ -358,7 +358,7 @@ class SlidingContactFormulaTest : public ContactFormulaTest {
   }
 
   // Tangent speed *is* the relative speed. In the sliding regime, the
-  // coefficient of friction is just the dynanmic coefficient of friction.
+  // coefficient of friction is just the dynamic coefficient of friction.
   const double kTangentSpeed = v_stiction_tolerance_ * 5;
 };
 

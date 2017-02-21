@@ -58,10 +58,10 @@ int main(int argc, const char** argv) {
 
   // Contact parameters
   const double kStiffness = 100000;
+  const double kDissipation = 5.0;
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
   const double kStictionSlipTolerance = 0.01;
-  const double kDissipation = 5.0;
   plant.set_contact_parameters(kStiffness, kDissipation, kStaticFriction,
                                kDynamicFriction, kStictionSlipTolerance);
   const auto& tree = plant.get_rigid_body_tree();
@@ -192,7 +192,8 @@ int main(int argc, const char** argv) {
   // Create simulator.
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
   auto context = simulator->get_mutable_context();
-  // Integrator set arbitrarily.
+  // Integrator set arbitrarily. The time step was selected by tuning for the
+  // largest value that appears to give stable results.
   simulator->reset_integrator<SemiExplicitEulerIntegrator<double>>(*diagram,
                                                                    3e-4,
                                                                    context);
