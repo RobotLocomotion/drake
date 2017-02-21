@@ -138,12 +138,38 @@ RigidBodyPlant<T>::~RigidBodyPlant() {}
 // framework is available.
 template <typename T>
 void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
+                                               double dissipation,
                                                double static_friction_coef,
                                                double dynamic_friction_coef,
-                                               double v_stiction_tolerance,
-                                               double dissipation) {
+                                               double v_stiction_tolerance) {
+  DRAKE_DEMAND(penetration_stiffness >= 0);
+  DRAKE_DEMAND(dissipation >= 0);
+  DRAKE_DEMAND(dynamic_friction_coef >= 0);
+  DRAKE_DEMAND(static_friction_coef >= dynamic_friction_coef);
+  DRAKE_DEMAND(v_stiction_tolerance > 0);
   penetration_stiffness_ = penetration_stiffness;
   dissipation_ = dissipation;
+  dynamic_friction_ceof_ = dynamic_friction_coef;
+  static_friction_coef_ = static_friction_coef;
+  inv_v_stiction_tolerance_ = 1.0 / v_stiction_tolerance;
+}
+
+template <typename T>
+void RigidBodyPlant<T>::set_normal_contact_parameters(
+    double penetration_stiffness, double dissipation) {
+  DRAKE_DEMAND(penetration_stiffness >= 0);
+  DRAKE_DEMAND(dissipation >= 0);
+  penetration_stiffness_ = penetration_stiffness;
+  dissipation_ = dissipation;
+}
+
+template <typename T>
+void RigidBodyPlant<T>::set_friction_contact_parameters(
+    double static_friction_coef, double dynamic_friction_coef,
+    double v_stiction_tolerance) {
+  DRAKE_DEMAND(dynamic_friction_coef >= 0);
+  DRAKE_DEMAND(static_friction_coef >= dynamic_friction_coef);
+  DRAKE_DEMAND(v_stiction_tolerance > 0);
   dynamic_friction_ceof_ = dynamic_friction_coef;
   static_friction_coef_ = static_friction_coef;
   inv_v_stiction_tolerance_ = 1.0 / v_stiction_tolerance;
@@ -752,6 +778,8 @@ Matrix3<T> RigidBodyPlant<T>::ComputeBasisFromZ(const Vector3<T>& z_axis_W) {
 template <typename T>
 VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
+  using std::sqrt;
+
   std::vector<DrakeCollision::PointPair> pairs;
 
   // TODO(amcastro-tri): get rid of this const_cast.
@@ -766,30 +794,33 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   //  as a zero-force contact.
   for (const auto& pair : pairs) {
     if (pair.distance < 0.0) {  // There is contact.
-      // Define contact point: the pair contains points on the *surfaces* of
-      // A and B.  For penetration, these points will *not* be coincident.
-      // We must define a common contact point at which relative velocity is
-      // defined and the force is applied.
+      // Define the contact point: the pair contains points on the *surfaces* of
+      // bodies A and B, given as location vectors measured and expressed in the
+      // respective body frames.  For penetration, these points will *not* be
+      // coincident. We must define a common contact point at which relative
+      // velocity is defined and the force is applied.
 
-      int body_a_index = pair.elementA->get_body()->get_body_index();
-      int body_b_index = pair.elementB->get_body()->get_body_index();
+      const int body_a_index = pair.elementA->get_body()->get_body_index();
+      const int body_b_index = pair.elementB->get_body()->get_body_index();
       // The reported point on A's surface (As) in the world frame (W).
       Vector3<T> p_WAs =
           kinsol.get_element(body_a_index).transform_to_world * pair.ptA;
       // The reported point on B's surface (Bs) in the world frame (W).
       Vector3<T> p_WBs =
           kinsol.get_element(body_b_index).transform_to_world * pair.ptB;
-      // The point of contact in the world frame.
-      Vector3<T> p_WC = (p_WAs + p_WBs) * 0.5;
+      // The point of contact in the world frame.  Without better information,
+      // the point is arbitrarily selected to be halfway between the two
+      // surface points.
+      Vector3<T> p_WC = (p_WAs + p_WBs) / 2;
 
       // The contact point in A's frame.
-      Vector3<T> p_AAc = kinsol.get_element(body_a_index)
-                             .transform_to_world.inverse(Eigen::Isometry) *
-                         p_WC;
+      const auto X_AW = kinsol.get_element(body_a_index)
+          .transform_to_world.inverse(Eigen::Isometry);
+      Vector3<T> p_AAc = X_AW * p_WC;
       // The contact point in B's frame.
-      Vector3<T> p_BBc = kinsol.get_element(body_b_index)
-                             .transform_to_world.inverse(Eigen::Isometry) *
-                         p_WC;
+      const auto X_BW = kinsol.get_element(body_b_index)
+          .transform_to_world.inverse(Eigen::Isometry);
+      Vector3<T> p_BBc = X_BW * p_WC;
 
       auto JA = tree_->transformPointsJacobian(kinsol, p_AAc, body_a_index,
                                                0, false);
@@ -803,52 +834,61 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       Matrix3<T> R_WC = ComputeBasisFromZ(this_normal);
       auto J = R_WC.transpose() * (JA - JB);  // J = [ D1; D2; n ]
 
-      // The velocity of A wr.t. B, expressed in the contact frame, C.
-      auto v_BA_C = J * kinsol.getV();
+      // The *relative* velocity of the contact point in A relative to that in
+      // B, expressed in the contact frame, C.
+      auto rv_BcAc_C = J * kinsol.getV();
 
       {
         // TODO(SeanCurtis-TRI): Move this documentation to the larger doxygen
         // discussion and simply reference it here.
 
         // Normal force:
-        // This is the implementation of the Hunt-Crossley contact model
-        // Normal force is simply f(x, ẋ) = kx(1 + dẋ) where
+        // This is the implementation of the Hunt-Crossley dissipation model
+        // with a linear stiffness model.  Generally, f(x, ẋ) = kxⁿ(1 + dẋ).
+        // For Hertz stiffness, n = 3/2.  Here n = 1.  The variables have the
+        // following interpretation:
         //    x: is the *penetration depth*.
         //    ẋ: is the rate of change of penetration, ẋ > 0 --> increasing
         //        penetration.
         //    k: penetration stiffness, k > 0
         //    d: dissipation factor, d > 0
         // f(x, ẋ) > 0 provides a repulsive force.
-        // It is *possible* for this force to become attractive if there is a
-        // sufficiently large *separating* velocity.  In fact, this occurs if
+        // It is possible for this force to become attractive if there is a
+        // sufficiently large separating velocity.  In fact, this occurs if
         // ẋ < -1 / d.  In these cases, we simply clamp the force to zero.
+        // For analysis, we break it down as follows:
+        //  fK = kx -- force due to stiffness
+        //  fD = fk dẋ -- force due to dissipation
+        //  fN = fK + fD  -- total normal force; (skipped if fN < 0).
+        //  fF = mu(v) fN  - friction force magnitude.
 
         // pair.distance is the signed distance (with negative values indicating
-        // collision.  Therefore, x = -pair.distance.
-        // The relative velocity, v_BA_C, is the velocity of A w.r.t. B
-        // expressed in C.  If the objects are getting closer (i.e., increasing
-        // penetration depth), then A is moving *against* the normal direction.
-        // That means, ẋ = -v_BA_C(2).
+        // collision).  Therefore, x = -pair.distance.
+        // Given the previous definition of rv_BcAc_C, if the objects are
+        // getting closer (i.e., increasing penetration depth), then A is
+        // moving *against* the normal direction. That means, ẋ = -rv_BcAc_C(2).
 
-        double x = -pair.distance;
-        double x_dot = -v_BA_C(2);
+        const T x = T(-pair.distance);
+        const T x_dot = -rv_BcAc_C(2);
 
-        double damping = 1.0 + dissipation_ * x_dot;
-        // No normal force implies no contact force.  Simply move to the next
-        // reported contact.
-        if (damping <= 0) continue;
+        const T fK = penetration_stiffness_ * x;
+        const T fD = fK * dissipation_ * x_dot;
+        const T fN = fK + fD;
+        if (fN <= 0) continue;
+
         Vector3<T> fA;
-        fA(2) = penetration_stiffness_ * x * damping;
+        fA(2) = fN;
         // Friction force
-        auto slip_vector = v_BA_C.template head<2>();
+        auto slip_vector = rv_BcAc_C.template head<2>();
         T slip_speed_squared = slip_vector.squaredNorm();
         // Consider a value value indistinguishable from zero if it is smaller
         // then 1e-14 and test against that value squared.
         const T kNonZeroSqd = T(1e-14 * 1e-14);
         if (slip_speed_squared > kNonZeroSqd) {
-          T slip_speed = std::sqrt(slip_speed_squared);
+          T slip_speed = sqrt(slip_speed_squared);
           T friction_coefficient = ComputeFrictionCoefficient(slip_speed);
-          fA.template head<2>() = -(friction_coefficient * fA(2) / slip_speed) *
+          T fF = friction_coefficient * fN;
+          fA.template head<2>() = -(fF / slip_speed) *
               slip_vector;
         } else {
           fA.template head<2>() << 0, 0;

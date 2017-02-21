@@ -134,10 +134,21 @@ class RigidBodyPlant : public LeafSystem<T> {
   // in detail.  To come in a subsequent PR.
   /// Sets the contact parameters.
   void set_contact_parameters(double penetration_stiffness,
+                              double dissipation,
                               double static_friction_coef,
                               double dynamic_friction_coef,
-                              double v_stiction_tolerance,
-                              double dissipation);
+                              double v_stiction_tolerance);
+
+  /// Sets only the parameters for *normal* contact.  This is a convenience
+  /// function to allow for more targeted parameter tuning.
+  void set_normal_contact_parameters(double penetration_stiffness,
+                                     double dissipation);
+
+  /// Sets only the parameters for *friction* contact.  This is a convenience
+  /// function to allow for more targeted parameter tuning.
+  void set_friction_contact_parameters(double static_friction_coef,
+                                       double dynamic_friction_coef,
+                                       double v_stiction_tolerance);
 
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
@@ -434,7 +445,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   T ComputeFrictionCoefficient(T v_tangent_BAc) const;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
-  // range [0, 1] where the f'(0) = f'(1) = 0.
+  // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
   static T step5(T x);
 
   std::unique_ptr<const RigidBodyTree<T>> tree_;

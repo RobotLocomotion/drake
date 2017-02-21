@@ -59,10 +59,10 @@ VisualizedPlant<T>::VisualizedPlant(
 
   DRAKE_DEMAND(rigid_body_plant_ != nullptr);
   rigid_body_plant_->set_contact_parameters(penetration_stiffness,
+                                            penetration_dissipation,
                                             static_friction_coefficient,
                                             dynamic_friction_coefficient,
-                                            v_stiction_tolerance,
-                                            penetration_dissipation);
+                                            v_stiction_tolerance);
 
   DRAKE_DEMAND(rigid_body_plant_->get_num_actuators() > 0);
 
@@ -150,10 +150,10 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   const auto& plant_output_port = rigid_body_plant_->state_output_port();
 
   rigid_body_plant_->set_contact_parameters(penetration_stiffness,
+                                            penetration_dissipation,
                                             static_friction_coefficient,
                                             dynamic_friction_coefficient,
-                                            v_stiction_tolerance,
-                                            penetration_dissipation);
+                                            v_stiction_tolerance);
 
   // Creates and adds a DrakeVisualizer publisher.
   drake_visualizer_ = builder.template AddSystem<DrakeVisualizer>(

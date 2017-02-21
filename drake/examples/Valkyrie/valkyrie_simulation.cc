@@ -62,8 +62,8 @@ int main(int argc, const char** argv) {
   const double kDynamicFriction = 0.5;
   const double kStictionSlipTolerance = 0.01;
   const double kDissipation = 5.0;
-  plant.set_contact_parameters(kStiffness, kStaticFriction, kDynamicFriction,
-                               kStictionSlipTolerance, kDissipation);
+  plant.set_contact_parameters(kStiffness, kDissipation, kStaticFriction,
+                               kDynamicFriction, kStictionSlipTolerance);
   const auto& tree = plant.get_rigid_body_tree();
 
   // RigidBodyActuators.
