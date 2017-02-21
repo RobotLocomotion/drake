@@ -7,6 +7,7 @@ if(BUILD_TESTING)
 endif()
 
 add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
+  bicycle.cc
   create_trajectory_params.cc
   curve2.cc
   dev/endless_road_car.cc
@@ -49,6 +50,7 @@ target_link_libraries(drakeAutomotive
   )
 drake_install_libraries(drakeAutomotive)
 drake_install_headers(
+  bicycle.h
   create_trajectory_params.h
   curve2.h
   idm_planner.h
