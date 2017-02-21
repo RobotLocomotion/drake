@@ -125,10 +125,6 @@ RigidBodyTree<T>::RigidBodyTree()
 template <typename T>
 RigidBodyTree<T>::~RigidBodyTree() {}
 
-// For an explanation of why these SWIG preprocessor commands are needed, see
-// the comment immediately above the declaration of RigidBodyTree::Clone() in
-// rigid_body_tree.h.
-#ifndef SWIG
 template <>
 unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
   auto clone = make_unique<RigidBodyTree<double>>();
@@ -208,7 +204,6 @@ unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
 
   return clone;
 }
-#endif
 
 template <typename T>
 bool RigidBodyTree<T>::transformCollisionFrame(

@@ -99,6 +99,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "valkyrie_balancing_test",
+    size = "medium",
     srcs = ["test/valkyrie_balancing_test.cc"],
     data = [
         "config/valkyrie.alias_groups",
@@ -110,7 +111,6 @@ drake_cc_googletest(
         "gurobi",
         "local",
     ],
-    size = "medium",
     deps = [
         ":control_utils",
         ":qp_controller",

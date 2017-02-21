@@ -36,9 +36,12 @@ namespace automotive {
 ///    vehicle will be treated as blocked until clear.
 ///
 /// The underlying algorithm is independent for each vehicle, in the sense
-/// that:
+/// that for each Sensing-Car:
+///
+/// <pre>
 ///   Sensor-Output = F(State-of-Sensing-Car, State-of-All-Other-Cars)
-///                   for each Sensing-Car
+/// </pre>
+///
 /// Even though there are no dependencies between sensor outputs (e.g.,
 /// explicitly mediated turntaking), this class computes the sensor-output for
 /// all cars at once for the sake of efficiency.

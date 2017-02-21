@@ -25,8 +25,12 @@ filegroup(
 
 drake_cc_library(
     name = "iiwa_common",
-    srcs = ["iiwa_common.cc"],
-    hdrs = ["iiwa_common.h"],
+    srcs = [
+        "iiwa_common.cc",
+    ],
+    hdrs = [
+        "iiwa_common.h",
+    ],
     deps = [
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/multibody:inverse_kinematics",
@@ -51,6 +55,10 @@ drake_cc_library(
 drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
+    data = [
+        ":models",
+        "//drake/examples/schunk_wsg:models",
+    ],
     deps = [
         ":iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
@@ -58,8 +66,9 @@ drake_cc_binary(
         "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:gravity_compensator",
-        "//drake/systems/controllers:pid_controlled_system",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/controllers:pid_with_gravity_compensator",
+        "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:multiplexer",
         "@gflags//:gflags",
     ],
@@ -68,25 +77,36 @@ drake_cc_binary(
 drake_cc_binary(
     name = "kuka_simulation",
     srcs = ["kuka_simulation.cc"],
+    data = [":models"],
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
-        "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/rigid_body_plant",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:gravity_compensator",
-        "//drake/systems/controllers:pid_controlled_system",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:multiplexer",
+        "//drake/systems/controllers:pid_with_gravity_compensator",
+        "//drake/systems/primitives:constant_vector_source",
         "@gflags//:gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "kuka_plan_runner",
+    srcs = ["kuka_plan_runner.cc"],
+    data = [":models"],
+    deps = [
+        ":iiwa_common",
+        ":iiwa_lcm",
+        "@bot_core_lcmtypes//:lib",
+        "@robotlocomotion_lcmtypes//:lib",
     ],
 )
 
 cc_binary(
     name = "kuka_ik_demo",
     srcs = ["kuka_ik_demo.cc"],
+    data = [":models"],
     deps = [
         "//drake/lcm",
         "//drake/multibody:inverse_kinematics",

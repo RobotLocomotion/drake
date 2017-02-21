@@ -49,12 +49,11 @@ if(lcm_FOUND)
     drakePendulumPlant
     drakeRigidBodyPlant
     drakeSystemControllers
-    drakeSystemAnalysis
-    GTest::GTest)
+    drakeSystemAnalysis)
 
   if(ipopt_FOUND OR NLopt_FOUND OR snopt_FOUND)
     drake_add_test(NAME pendulum_run_swing_up
-      COMMAND pendulum_run_swing_up --non-realtime)
+      COMMAND pendulum_run_swing_up --target_realtime_rate 0.0)
   endif()
 endif()
 

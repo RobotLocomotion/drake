@@ -95,12 +95,34 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rigid_body_compare_to_clone",
+    testonly = 1,
+    srcs = ["test/rigid_body_compare_to_clone.cc"],
+    hdrs = ["test/rigid_body_compare_to_clone.h"],
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_frame_compare_to_clone",
+    testonly = 1,
+    srcs = ["test/rigid_body_frame_compare_to_clone.cc"],
+    hdrs = ["test/rigid_body_frame_compare_to_clone.h"],
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
     name = "rigid_body_tree_compare_to_clone",
     testonly = 1,
     srcs = ["test/rigid_body_tree/rigid_body_tree_compare_to_clone.cc"],
     hdrs = ["test/rigid_body_tree/rigid_body_tree_compare_to_clone.h"],
     deps = [
         ":rigid_body_actuator_compare_to_clone",
+        ":rigid_body_compare_to_clone",
+        ":rigid_body_frame_compare_to_clone",
         ":rigid_body_loop_compare_to_clone",
         ":rigid_body_tree",
     ],
@@ -112,6 +134,7 @@ drake_cc_library(
     srcs = ["test/rigid_body_actuator_compare_to_clone.cc"],
     hdrs = ["test/rigid_body_actuator_compare_to_clone.h"],
     deps = [
+        ":rigid_body_compare_to_clone",
         ":rigid_body_tree",
     ],
 )
@@ -122,6 +145,7 @@ drake_cc_library(
     srcs = ["test/rigid_body_loop_compare_to_clone.cc"],
     hdrs = ["test/rigid_body_loop_compare_to_clone.h"],
     deps = [
+        ":rigid_body_frame_compare_to_clone",
         ":rigid_body_tree",
     ],
 )
@@ -295,6 +319,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rigid_body_test",
     deps = [
+        ":rigid_body_compare_to_clone",
         ":rigid_body_tree",
     ],
 )
@@ -302,6 +327,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rigid_body_frame_test",
     deps = [
+        ":rigid_body_frame_compare_to_clone",
         ":rigid_body_tree",
     ],
 )

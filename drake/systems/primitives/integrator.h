@@ -40,9 +40,6 @@ class Integrator : public LeafSystem<T> {
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
-  // System<T> override.
-  bool has_any_direct_feedthrough() const override;
-
   // Returns an Integrator<AutoDiffXd> with the same dimensions as this
   // Integrator.
   std::unique_ptr<Integrator<AutoDiffXd>> ToAutoDiffXd() const {

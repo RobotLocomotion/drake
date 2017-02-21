@@ -67,7 +67,23 @@ class BinaryExpressionCell;  // In drake/common/symbolic_expression_cell.h
 class ExpressionAdd;         // In drake/common/symbolic_expression_cell.h
 class ExpressionMul;         // In drake/common/symbolic_expression_cell.h
 class ExpressionDiv;         // In drake/common/symbolic_expression_cell.h
+class ExpressionLog;         // In drake/common/symbolic_expression_cell.h
+class ExpressionAbs;         // In drake/common/symbolic_expression_cell.h
+class ExpressionExp;         // In drake/common/symbolic_expression_cell.h
+class ExpressionSqrt;        // In drake/common/symbolic_expression_cell.h
 class ExpressionPow;         // In drake/common/symbolic_expression_cell.h
+class ExpressionSin;         // In drake/common/symbolic_expression_cell.h
+class ExpressionCos;         // In drake/common/symbolic_expression_cell.h
+class ExpressionTan;         // In drake/common/symbolic_expression_cell.h
+class ExpressionAsin;        // In drake/common/symbolic_expression_cell.h
+class ExpressionAcos;        // In drake/common/symbolic_expression_cell.h
+class ExpressionAtan;        // In drake/common/symbolic_expression_cell.h
+class ExpressionAtan2;       // In drake/common/symbolic_expression_cell.h
+class ExpressionSinh;        // In drake/common/symbolic_expression_cell.h
+class ExpressionCosh;        // In drake/common/symbolic_expression_cell.h
+class ExpressionTanh;        // In drake/common/symbolic_expression_cell.h
+class ExpressionMin;         // In drake/common/symbolic_expression_cell.h
+class ExpressionMax;         // In drake/common/symbolic_expression_cell.h
 class ExpressionIfThenElse;  // In drake/common/symbolic_expression_cell.h
 class Formula;               // In drake/common/symbolic_formula.h
 
@@ -181,6 +197,15 @@ class Expression {
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
   double Evaluate(const Environment& env = Environment{}) const;
+
+  /** Expands out products and positive integer powers in expression. For
+   * example, <tt>(x + 1) * (x - 1)</tt> is expanded to <tt>x^2 - 1</tt> and
+   * <tt>(x + y)^2</tt> is expanded to <tt>x^2 + 2xy + y^2</tt>. Note that
+   * Expand applies recursively to sub-expressions. For instance, <tt>sin(2 * (x
+   * + y))</tt> is expanded to <tt>sin(2x + 2y)</tt>.
+   * @throws std::runtime_error if NaN is detected during expansion.
+   */
+  Expression Expand() const;
 
   /** Returns a copy of this expression replacing all occurrences of @p var
    * with @p e.
@@ -341,7 +366,23 @@ class Expression {
   friend std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
   friend std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
   friend std::shared_ptr<ExpressionDiv> to_division(const Expression& e);
+  friend std::shared_ptr<ExpressionLog> to_log(const Expression& e);
+  friend std::shared_ptr<ExpressionAbs> to_abs(const Expression& e);
+  friend std::shared_ptr<ExpressionExp> to_exp(const Expression& e);
+  friend std::shared_ptr<ExpressionSqrt> to_sqrt(const Expression& e);
   friend std::shared_ptr<ExpressionPow> to_pow(const Expression& e);
+  friend std::shared_ptr<ExpressionSin> to_sin(const Expression& e);
+  friend std::shared_ptr<ExpressionCos> to_cos(const Expression& e);
+  friend std::shared_ptr<ExpressionTan> to_tan(const Expression& e);
+  friend std::shared_ptr<ExpressionAsin> to_asin(const Expression& e);
+  friend std::shared_ptr<ExpressionAcos> to_acos(const Expression& e);
+  friend std::shared_ptr<ExpressionAtan> to_atan(const Expression& e);
+  friend std::shared_ptr<ExpressionAtan2> to_atan2(const Expression& e);
+  friend std::shared_ptr<ExpressionSinh> to_sinh(const Expression& e);
+  friend std::shared_ptr<ExpressionCosh> to_cosh(const Expression& e);
+  friend std::shared_ptr<ExpressionTanh> to_tanh(const Expression& e);
+  friend std::shared_ptr<ExpressionMin> to_min(const Expression& e);
+  friend std::shared_ptr<ExpressionMax> to_max(const Expression& e);
   friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
       const Expression& e);
 

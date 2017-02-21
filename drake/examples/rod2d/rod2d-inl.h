@@ -21,6 +21,7 @@
 // but should be done in 2D vectors instead to make it more compact, easier to
 // understand, and easier to relate to our 3D code.
 namespace drake {
+namespace examples {
 namespace rod2d {
 
 template <typename T>
@@ -1256,4 +1257,5 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
 }
 
 }  // namespace rod2d
+}  // namespace examples
 }  // namespace drake

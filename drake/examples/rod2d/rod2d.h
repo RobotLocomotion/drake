@@ -7,6 +7,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
+namespace examples {
 namespace rod2d {
 
 /** Dynamical system representation of a rod contacting a half-space in
@@ -448,4 +449,5 @@ class Rod2D : public systems::LeafSystem<T> {
 };
 
 }  // namespace rod2d
+}  // namespace examples
 }  // namespace drake

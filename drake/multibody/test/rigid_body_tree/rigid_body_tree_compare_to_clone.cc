@@ -4,6 +4,8 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/multibody/test/rigid_body_actuator_compare_to_clone.h"
+#include "drake/multibody/test/rigid_body_compare_to_clone.h"
+#include "drake/multibody/test/rigid_body_frame_compare_to_clone.h"
 #include "drake/multibody/test/rigid_body_loop_compare_to_clone.h"
 
 namespace drake {
@@ -68,14 +70,15 @@ bool CompareToClone(const RigidBodyTree<double>& tree) {
     return false;
   }
   for (int i = 0; i < tree.get_num_bodies(); ++i) {
-    if (!tree.bodies.at(i)->CompareToClone(*clone->bodies.at(i))) {
+    if (!rigid_body::CompareToClone(*tree.bodies.at(i), *clone->bodies.at(i))) {
       drake::log()->debug(
           "CompareToClone(RigidBodyTree): bodies mismatch at index {}.", i);
       return false;
     }
   }
   for (int i = 0; i < tree.get_num_frames(); ++i) {
-    if (!tree.frames.at(i)->CompareToClone(*clone->frames.at(i))) {
+    if (!rigid_body_frame::CompareToClone(*tree.frames.at(i),
+        *clone->frames.at(i))) {
       drake::log()->debug(
           "CompareToClone(RigidBodyTree): frames mismatch at index {}.", i);
       return false;

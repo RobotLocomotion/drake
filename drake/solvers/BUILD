@@ -145,6 +145,7 @@ drake_cc_library(
         "@gtest//:main",
     ],
 )
+
 # The mathematical_program_api target exists so that solver targets can access
 # the mathematical_program.h header, and the :mathematical_program target can
 # depend on solver targets, without creating a circular dependency.
