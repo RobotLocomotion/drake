@@ -40,7 +40,6 @@ class Geometry {
 
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual bool hasFaces() const {
     // By default, arbitary geometry doesn't know how to provide faces.
     return false;
@@ -100,7 +99,7 @@ class Box : public Geometry {
   virtual ~Box() {}
   virtual Box* clone() const;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getPoints(Eigen::Matrix3Xd& points) const;  
+  virtual void getPoints(Eigen::Matrix3Xd& points) const;
   virtual bool hasFaces() const {
     return true;
   }
@@ -175,7 +174,7 @@ class Mesh : public Geometry {
   virtual ~Mesh() {}
   virtual Mesh* clone() const;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getPoints(Eigen::Matrix3Xd& points) const; 
+  virtual void getPoints(Eigen::Matrix3Xd& points) const;
   virtual bool hasFaces() const {
     return true;
   }

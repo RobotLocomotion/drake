@@ -18,8 +18,7 @@ namespace test {
 namespace rigid_body_tree {
 namespace {
 
-
-// This unit test verifies that the complete stack of 
+// This unit test verifies that the complete stack of
 // requesting vertices and faces from the consituent components
 // of an RBT works.
 GTEST_TEST(RBTFaceExtractionTests, ExtractVertsAndFaces) {
@@ -36,24 +35,24 @@ GTEST_TEST(RBTFaceExtractionTests, ExtractVertsAndFaces) {
   // can access.
   bool found_box = false;
   bool found_sphere = false;
-  for (auto iter=tree.bodies.begin(); iter!=tree.bodies.end(); iter++){
+  for (auto iter = tree.bodies.begin(); iter != tree.bodies.end(); iter++) {
     auto collision_elems = (*iter)->get_collision_element_ids();
     for (auto collision_elem = collision_elems.begin();
               collision_elem != collision_elems.end();
-              collision_elem++){
+              collision_elem++) {
       auto element = tree.FindCollisionElement(*collision_elem);
       EXPECT_TRUE(element->hasGeometry());
-      // It is extremely important that this geometry object is 
+      // It is extremely important that this geometry object is
       // a reference or pointer so that whatever subclass the
       // element geometry is, doesn't get clobbered.
       const DrakeShapes::Geometry & geometry = element->getGeometry();
-      if (geometry.getShape() == DrakeShapes::BOX){
+      if (geometry.getShape() == DrakeShapes::BOX) {
         found_box = true;
         EXPECT_TRUE(geometry.hasFaces());
         DrakeShapes::TrianglesVector faces;
         geometry.getFaces(faces);
         EXPECT_EQ(faces.size(), 12);
-      } else if (geometry.getShape() == DrakeShapes::SPHERE){
+      } else if (geometry.getShape() == DrakeShapes::SPHERE) {
         found_sphere = true;
         EXPECT_FALSE(geometry.hasFaces());
       }

@@ -10,10 +10,10 @@ namespace {
 const char kUri[] = "";  // No specific URI is required for these tests.
 
 void CheckAllNormalsFaceOutwards(Eigen::Matrix3Xd verts,
-                                 TrianglesVector faces){
+                                 TrianglesVector faces) {
   // This checks that all faces have outward-facing normals when
   // the points are considered to be oriented clockwise.
-  for (size_t i=0; i<faces.size(); i++){
+  for (size_t i = 0; i < faces.size(); i++) {
     Eigen::Vector3d pt_a = verts.col(faces[i][0]);
     Eigen::Vector3d pt_b = verts.col(faces[i][1]);
     Eigen::Vector3d pt_c = verts.col(faces[i][2]);
@@ -21,10 +21,10 @@ void CheckAllNormalsFaceOutwards(Eigen::Matrix3Xd verts,
     // "rightward" of pt_b - pt_a, so this cross product
     // should face "outward" from the face, as detected via
     // dot product with a point on the face.
-    double norm_sign = pt_a.transpose() * 
+    double norm_sign = pt_a.transpose() *
       ((pt_c - pt_a).cross(pt_b - pt_a));
 
-    EXPECT_TRUE(norm_sign > 0);
+    EXPECT_GT(norm_sign, 0);
   }
 }
 // Tests that we can query faces from a box.
@@ -39,10 +39,10 @@ GTEST_TEST(FaceQueryTests, FaceQueryFromBox) {
   // Do the actual face extraction.
   EXPECT_TRUE(box.hasFaces());
   TrianglesVector faces;
-  box.getFaces(faces); 
+  box.getFaces(faces);
 
   // We should have (6 faces * 2 tris per face = 12) faces.
-  EXPECT_TRUE(faces.size() == 12);
+  EXPECT_EQ(faces.size(),  12);
 
   CheckAllNormalsFaceOutwards(verts, faces);
 }
@@ -60,12 +60,11 @@ GTEST_TEST(FaceQueryTests, FaceQueryFromMesh) {
   // Do the actual face extraction.
   EXPECT_TRUE(mesh.hasFaces());
   TrianglesVector faces;
-  mesh.getFaces(faces); 
+  mesh.getFaces(faces);
 
   // We should have (6 faces * 2 tris per face = 12) faces.
-  EXPECT_TRUE(faces.size() == 12);
+  EXPECT_EQ(faces.size(), 12);
 }
-
 
 }  // namespace
 }  // namespace DrakeShapes
