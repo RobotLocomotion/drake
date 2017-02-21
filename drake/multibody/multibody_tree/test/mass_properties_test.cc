@@ -15,15 +15,6 @@ using Eigen::NumTraits;
 using Eigen::Vector3d;
 using std::sort;
 
-// Test default constructor which leaves all entries initialized to NaN.
-// Also test the implementation of IsNaN().
-GTEST_TEST(RotationalInertia, DefaultConstructor) {
-  RotationalInertia<double> I;
-  // Verify the underlying Eigen matrix.
-  EXPECT_TRUE(I.get_matrix().array().isNaN().all());
-  EXPECT_TRUE(I.IsNaN());
-}
-
 // Test construction and assignment from any Eigen matrix expression.
 GTEST_TEST(RotationalInertia, ConstructorFromEigenExpression) {
   Eigen::RowVector3d row(1.0, 2.0, 0.5);
@@ -126,10 +117,7 @@ GTEST_TEST(RotationalInertia, Symmetry) {
   RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
                               p(0), p(1), p(2));/* products of inertia */
 
-  // Test that the underlying Eigen representation effectively has NaN entries.
-  EXPECT_TRUE(I.get_matrix().array().isNaN().any());
-
-  // Tests however that the copy to a full Matrix3 object is well defined and
+  // Tests that the copy to a full Matrix3 object is well defined and
   // leads to a symmetric matrix.
   Matrix3d Imatrix = I.CopyToFullMatrix3();
   EXPECT_FALSE(Imatrix.array().isNaN().any());  // no entry is NaN.
