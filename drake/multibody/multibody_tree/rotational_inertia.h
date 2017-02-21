@@ -169,25 +169,19 @@ class RotationalInertia {
     return I_Bo_F_(i, j);
   }
 
-  /// Returns a constant reference to the underlying Eigen matrix. Notice that
-  /// since RotationalInertia only uses the
-  /// RotationalInertia::TriangularViewInUse portion of this
-  /// matrix, the RotationalInertia::TriangularViewNotInUse part will be set to
-  /// have NaN entries. Most users won't call this method. This method is
-  /// generally used in the implementation of class methods and
-  /// it's only useful to users for debugging.
-  const Matrix3<T>& get_matrix() const { return I_Bo_F_; }
-
   /// Get a copy to a full Matrix3 representation for this rotational inertia
   /// including both lower and upper triangular parts.
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
-  /// @returns `true` if `other` is within the specified @p precision.
+  /// Compares `this` inertia to @p other rotationl inertia within the specified
+  /// @p precision.
   /// The comparison is performed using the fuzzy comparison provided by Eigen's
   /// method isApprox() returning `true` if: <pre>
   ///   get_moments().isApprox(other.get_moments(), precision) &&
   ///   get_products().isApprox(other.get_products(), precision);
   /// </pre>
+  /// @returns `true` if `other` is within the specified @p precision. Returns
+  /// `false` otherwise.
   bool IsApprox(const RotationalInertia& other,
                 double precision = Eigen::NumTraits<T>::epsilon()) {
     return get_moments().isApprox(other.get_moments(), precision) &&
@@ -385,6 +379,15 @@ class RotationalInertia {
     check_and_swap(&i, &j);
     return I_Bo_F_(i, j);
   }
+
+  // Returns a constant reference to the underlying Eigen matrix. Notice that
+  // since RotationalInertia only uses the
+  // RotationalInertia::TriangularViewInUse portion of this
+  // matrix, the RotationalInertia::TriangularViewNotInUse part will be set to
+  // have NaN entries. Most users won't call this method. This method is
+  // generally used in the implementation of class methods and
+  // it's only useful to users for debugging.
+  const Matrix3<T>& get_matrix() const { return I_Bo_F_; }
 
   /// Returns a const Eigen view expression to the symmetric part of the matrix
   /// in use by this RotationalInertia. Most users won't call this method.
