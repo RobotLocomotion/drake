@@ -216,7 +216,6 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
   }
   return basis;
 }
-
 }  // namespace internal
 
 /**
@@ -342,4 +341,20 @@ struct hash_value<symbolic::internal::Monomial> {
     return m.GetHash();
   }
 };
+
+namespace symbolic {
+namespace internal {
+/* Internally we use internal::Monomial to represent a monomial, rather than
+ * using an Expression object.
+ */
+typedef std::unordered_map<Monomial, Expression, hash_value<Monomial>>
+    MonomialToCoefficientMapInternal;
+
+// Decomposes a polynomial into monomial and the corresponding coefficients.
+// Uses internal::Monomial to represent monomial.
+// @see DecomposePolynomial()
+MonomialToCoefficientMapInternal DecomposePolynomialInternal(
+    const Expression& e, const Variables& vars);
+}  // namespace internal
+}  // namespace symbolic
 }  // namespace drake

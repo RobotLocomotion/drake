@@ -160,12 +160,6 @@ map<Variable::Id, int> ToMonomialPower(const Expression& e) {
   return powers;
 }
 
-/* Internally we use internal::Monomial to represent a monomial, rather than
- * using an Expression object.
- */
-typedef std::unordered_map<Monomial, Expression, hash_value<Monomial>>
-    MonomialToCoefficientMapInternal;
-
 /**
  * Adds a term to the polynomial.
  * Find if the monomial in the new term exists in the polynomial or not. If it

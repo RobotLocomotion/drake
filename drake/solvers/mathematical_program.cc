@@ -422,11 +422,12 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
   Q.setZero();
   b.setZero();
   // Now decomposes the expression into coefficients and monomials.
-  const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map =
-      symbolic::DecomposePolynomial(e);
+  const symbolic::internal::MonomialToCoefficientMapInternal&
+      monomial_to_coeff_map =
+          symbolic::internal::DecomposePolynomialInternal(e, vars);
   for (const auto& p : monomial_to_coeff_map) {
     double coefficient = get_constant_value(p.second);
-    const symbolic::internal::Monomial p_monomial(p.first);
+    const symbolic::internal::Monomial p_monomial = p.first;
     if (p_monomial.total_degree() > 2) {
       ostringstream oss;
       oss << p.first << " has order higher than 2, cannot be handled by "
