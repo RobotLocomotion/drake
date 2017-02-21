@@ -399,13 +399,13 @@ Next topic: @ref collision_filter_file_semantics
 
 @section collision_filter_sdf_semantics SDF File Collision Semantics
 
- <!-- TODO(SeanCurtis-TRI): Provide the missing details. -->
+ <!-- TODO(SeanCurtis-TRI): Provide the missing details. See issue #5211. -->
 
  @note This section is incomplete.
 
 @section collision_filter_urdf_semantics URDF File Collision Semantics
 
- <!-- TODO(SeanCurtis-TRI): Provide the missing details. -->
+ <!-- TODO(SeanCurtis-TRI): Provide the missing details. See issue #5211. -->
 
  @note This section is incomplete.
 
