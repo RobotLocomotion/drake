@@ -328,6 +328,18 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
   ///@}
 
+  /// Computes the generalized forces on all bodies due to contact.
+  ///
+  /// @param kinsol         The kinematics of the rigid body system at the time
+  ///                       of contact evaluation.
+  /// @param[out] contacts  The optional contact results.  If non-null, stores
+  ///                       the contact information for consuming on the output
+  ///                       port.
+  /// @returns              The generalized forces across all the bodies due to
+  ///                       contact response.
+  VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
+                                 ContactResults<T>* contacts = nullptr) const;
+
  protected:
   // LeafSystem<T> override.
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
@@ -374,19 +386,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   // Computes the contact results for feeding the corresponding output port.
   void ComputeContactResults(const Context<T>& context,
                              ContactResults<T>* contacts) const;
-
- public:
-  // Computes the generalized forces on all bodies due to contact.
-  //
-  // @param kinsol         The kinematics of the rigid body system at the time
-  //                       of contact evaluation.
-  // @param[out] contacts  The optional contact results.  If non-null, stores
-  //                       the contact information for consuming on the output
-  //                       port.
-  // @return               The generalized forces across all the bodies due to
-  //                       contact response.
-  VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
-                                 ContactResults<T>* contacts = nullptr) const;
 
  private:
   // Computes the friction coefficient based on the relative tangential

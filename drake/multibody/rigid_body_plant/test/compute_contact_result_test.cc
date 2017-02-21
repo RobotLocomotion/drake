@@ -66,10 +66,10 @@ class ContactResultTest : public ::testing::Test {
 
   // Contact parameters
   const double kStiffness = 150;
+  const double kDissipation = 2.0;
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
   const double kVStictionTolerance = 0.01;
-  const double kDissipation = 2.0;
 
   // Places two spheres are on the x-y plane mirrored across the origin from
   //  each other such there is 2 * `distance` units gap between them.  Negative

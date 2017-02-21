@@ -10,6 +10,6 @@
     <param name="penetration_dissipation" type="double" value="2" />
     <param name="static_friction_coefficient" type="double" value="0.9" />
     <param name="dynamic_friction_coefficient" type="double" value="0.5" />
-    <param name="stiction_speed_tolerance" type="double" value="0.01" />
+    <param name="v_stiction_tolerance" type="double" value="0.01" />
   </group>
 </launch>

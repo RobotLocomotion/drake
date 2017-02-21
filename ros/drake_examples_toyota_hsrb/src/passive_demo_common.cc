@@ -40,7 +40,7 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcmInterface* lcm,
   double dynamic_friction_coefficient =
       GetRosParameterOrThrow<double>("dynamic_friction_coefficient");
   double stiction_speed_tolerance =
-      GetRosParameterOrThrow<double>("stiction_speed_tolerance");
+      GetRosParameterOrThrow<double>("v_stiction_tolerance");
 
   DiagramBuilder<double> builder;
   Diagram<double>* plant_diagram{nullptr};
