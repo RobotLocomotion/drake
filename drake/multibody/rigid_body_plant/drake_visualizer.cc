@@ -70,7 +70,7 @@ void DrakeVisualizer::ReplayCachedSimulation() {
 }
 
 void DrakeVisualizer::PlaybackTrajectory(
-const PiecewisePolynomial<double>& input_trajectory) const {
+    const PiecewisePolynomial<double>& input_trajectory) const {
   using Clock = std::chrono::steady_clock;
   using Duration = std::chrono::duration<double>;
   using TimePoint = std::chrono::time_point<Clock, Duration>;
