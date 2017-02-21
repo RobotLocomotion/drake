@@ -41,4 +41,10 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "app_util",
+    hdrs = ["drakeAppUtil.h"],
+    deprecation = "Please use gflags instead of drakeAppUtil.h.",
+)
+
 cpplint()
