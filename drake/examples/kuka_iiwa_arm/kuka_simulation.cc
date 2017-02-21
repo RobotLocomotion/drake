@@ -124,6 +124,7 @@ int DoMain() {
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm));
+  status_pub->set_publish_period(kIiwaLcmStatusInterval);
   auto status_sender = builder.AddSystem<IiwaStatusSender>();
 
   builder.Connect(command_sub->get_output_port(0),
