@@ -1162,18 +1162,22 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicQuadraticCost) {
   Expression e4 = x(0) * x(0) + 2 * x(1) * x(1) + 3 * x(2) * x(2) + 3;
   CheckAddedSymbolicQuadraticCost(&prog, e4, 3);
 
-  // cross terms.
+  // Cross terms.
   Expression e5 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0) * x(1) + 2;
   CheckAddedSymbolicQuadraticCost(&prog, e5, 2);
 
-  // linear terms.
+  // Linear terms.
   Expression e6 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0);
   CheckAddedSymbolicQuadraticCost(&prog, e6, 0);
 
-  // cross terms and linear terms.
+  // Cross terms and linear terms.
   Expression e7 = (x(0) + 2 * x(1) + 3) * (x(0) + x(1) + 4) + 3 * x(0) * x(0) +
                   6 * pow(x(1) + 1, 2);
   CheckAddedSymbolicQuadraticCost(&prog, e7, 18);
+
+  // Cubic polynomial case.
+  Expression e8 = pow(x(0), 3) + 1;
+  EXPECT_THROW(prog.AddQuadraticCost(e8), std::runtime_error);
 }
 }  // namespace test
 }  // namespace solvers

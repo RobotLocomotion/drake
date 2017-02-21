@@ -426,8 +426,9 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
       monomial_to_coeff_map =
           symbolic::internal::DecomposePolynomialInternal(e, vars);
   for (const auto& p : monomial_to_coeff_map) {
-    double coefficient = get_constant_value(p.second);
-    const symbolic::internal::Monomial p_monomial = p.first;
+    DRAKE_ASSERT(is_constant(p.second));
+    const double coefficient = get_constant_value(p.second);
+    const symbolic::internal::Monomial& p_monomial = p.first;
     if (p_monomial.total_degree() > 2) {
       ostringstream oss;
       oss << p.first << " has order higher than 2, cannot be handled by "
@@ -438,10 +439,10 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
     if (monomial_powers.size() == 2) {
       // cross terms.
       auto it = monomial_powers.begin();
-      int x1_index = map_var_id_to_index[it->first];
+      const int x1_index = map_var_id_to_index[it->first];
       DRAKE_DEMAND(it->second == 1);
       ++it;
-      int x2_index = map_var_id_to_index[it->first];
+      const int x2_index = map_var_id_to_index[it->first];
       DRAKE_DEMAND(it->second == 1);
       Q(x1_index, x2_index) += coefficient;
       Q(x2_index, x1_index) = Q(x1_index, x2_index);
@@ -451,7 +452,7 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
       // 2. linear term b*x
       // 3. constant term. We ignore the constant term in QuadraticConstraint.
       auto it = monomial_powers.begin();
-      int x_index = map_var_id_to_index[it->first];
+      const int x_index = map_var_id_to_index[it->first];
       if (it->second == 2) {
         // quadratic term a * x^2
         Q(x_index, x_index) += 2 * coefficient;
