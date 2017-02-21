@@ -5,14 +5,14 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/automotive/dev/endless_road_car.h"
+#include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
 #include "drake/automotive/dev/endless_road_oracle.h"
-#include "drake/automotive/endless_road_car_to_euler_floating_joint.h"
+#include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/endless_road_car_state_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
 #include "drake/automotive/maliput/utility/generate_urdf.h"
-#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"

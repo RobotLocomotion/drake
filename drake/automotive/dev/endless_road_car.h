@@ -5,11 +5,11 @@
 #include <string>
 #include <utility>
 
+#include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/endless_road_car_config.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/gen/endless_road_oracle_output.h"
-#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 

@@ -80,13 +80,12 @@ drake_cc_library(
     srcs = ["dev/endless_road_car.cc"],
     hdrs = [
         "dev/endless_road_car.h",
-        "endless_road_car_to_euler_floating_joint.h",
+        "dev/endless_road_car_to_euler_floating_joint.h",
     ],
     linkstatic = 1,
     deps = [
         ":generated_vectors",
-        "//drake/automotive/maliput/api",
-        "//drake/automotive/maliput/utility",
+        ":infinite_circuit_road",
     ],
 )
 
@@ -100,8 +99,7 @@ drake_cc_library(
     linkstatic = 1,
     deps = [
         ":generated_vectors",
-        "//drake/automotive/maliput/api",
-        "//drake/automotive/maliput/utility",
+        ":infinite_circuit_road",
     ],
 )
 
@@ -131,7 +129,7 @@ drake_cc_library(
     hdrs = ["monolane_onramp_merge.h"],
     deps = [
         "//drake/automotive/maliput/api",
-        "//drake/automotive/maliput/monolane:monolane",
+        "//drake/automotive/maliput/monolane",
     ],
 )
 
@@ -182,6 +180,7 @@ drake_cc_library(
         ":generated_vectors",
         ":simple_car",
         ":trajectory_car",
+        "//drake/automotive/maliput/utility",
         "//drake/lcm",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
@@ -208,6 +207,16 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_library(
+    name = "infinite_circuit_road",
+    srcs = ["dev/infinite_circuit_road.cc"],
+    hdrs = ["dev/infinite_circuit_road.h"],
+    visibility = [],
+    deps = [
+        "//drake/automotive/maliput/api",
+    ],
+)
+
 drake_cc_binary(
     name = "dev_demo",
     srcs = [
@@ -220,6 +229,7 @@ drake_cc_binary(
     ],
     deps = [
         ":automotive_simulator",
+        ":infinite_circuit_road",
         "//drake/automotive/maliput/monolane:loader",
         "//drake/common:text_logging_gflags",
     ],
@@ -323,9 +333,9 @@ py_binary(
         ":dev_demo",
         ":lcm-spy",
         ":steering_command_driver",
+        "//drake/automotive/maliput/monolane:village.yaml",
         "@drake_visualizer//:drake-visualizer",
         "@lcm//:lcm-logger",
-        "//drake/automotive/maliput/monolane:village.yaml",
     ],
     main = "automotive_demo.py",
     deps = [
@@ -382,9 +392,9 @@ py_binary(
         ":dev_demo",
         ":lcm-spy",
         ":steering_command_driver",
+        "//drake/automotive/maliput/monolane:village.yaml",
         "@drake_visualizer//:drake-visualizer",
         "@lcm//:lcm-logger",
-        "//drake/automotive/maliput/monolane:village.yaml",
     ],
     main = "automotive_demo.py",
     deps = [
@@ -453,6 +463,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "endless_road_car_to_euler_floating_joint_test",
+    srcs = ["dev/test/endless_road_car_to_euler_floating_joint_test.cc"],
     deps = [
         "//drake/automotive:endless_road_car",
         "//drake/automotive/maliput/monolane:builder",
@@ -513,6 +524,15 @@ drake_cc_googletest(
     name = "simple_car_state_translator_test",
     deps = [
         "//drake/automotive:generated_translators",
+    ],
+)
+
+drake_cc_googletest(
+    name = "infinite_circuit_road_test",
+    srcs = ["dev/test/infinite_circuit_road_test.cc"],
+    deps = [
+        ":infinite_circuit_road",
+        "//drake/automotive/maliput/monolane:builder",
     ],
 )
 
