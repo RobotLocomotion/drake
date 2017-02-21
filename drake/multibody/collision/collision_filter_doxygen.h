@@ -187,10 +187,9 @@ Next topic: @ref collision_filter_group
 A collision filter group represents collision filtering by defining a collection
 of collision elements.  That _group_ then defines "ignore" relationships with
 other groups.  A collision element's membership in a group does not guarantee
-inclusion in _any_ filtered collision pairs.  To be filtered, it must:
-   -# Appear in at least one collision filter group, and
-   -# That group must an "ignore" group for _another_ collision filter group with
-   at least one member that is _not_ the collision element in question.
+inclusion in _any_ filtered collision pairs. This group must be included in at
+least one group's ignore list; inclusion in its own ignore list would be
+sufficient.)
 
 A collision-filter-group-based filtering system's unique benefit
 arises from thinking about _classes_ of collision elements. It
@@ -400,9 +399,13 @@ Next topic: @ref collision_filter_file_semantics
 
 @section collision_filter_sdf_semantics SDF File Collision Semantics
 
+ <!-- TODO(SeanCurtis-TRI): Provide the missing details. -->
+
  @note This section is incomplete.
 
 @section collision_filter_urdf_semantics URDF File Collision Semantics
+
+ <!-- TODO(SeanCurtis-TRI): Provide the missing details. -->
 
  @note This section is incomplete.
 
