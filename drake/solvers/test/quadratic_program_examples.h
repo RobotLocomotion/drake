@@ -10,7 +10,7 @@ enum class QuadraticProblems {
   kQuadraticProgram1 = 1,
   kQuadraticProgram2 = 2,
   kQuadraticProgram3 = 3,
-  kQardraticProgram4 = 4,
+  kQuadraticProgram4 = 4,
 };
 
 class QuadraticProgramTest
@@ -119,7 +119,18 @@ class QuadraticProgram3 : public OptimizationProgram {
 //     x(0) + 2*x(2) = 2
 // The optimal solution should be
 // x(0) = 4/5, x(1) = 1/5, x(2) = 3/5
-class QuadraticProgram
+class QuadraticProgram4 : public OptimizationProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram4)
+
+  QuadraticProgram4(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<3> x_;
+  Eigen::Vector3d x_expected_;
+};
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
