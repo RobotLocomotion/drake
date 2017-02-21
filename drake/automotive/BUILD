@@ -14,6 +14,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "generated_vectors",
     srcs = [
+        "gen/bicycle_parameters.cc",
         "gen/driving_command.cc",
         "gen/endless_road_car_config.cc",
         "gen/endless_road_car_state.cc",
@@ -24,6 +25,7 @@ drake_cc_library(
         "gen/simple_car_state.cc",
     ],
     hdrs = [
+        "gen/bicycle_parameters.h",
         "gen/driving_command.h",
         "gen/endless_road_car_config.h",
         "gen/endless_road_car_state.h",
@@ -63,6 +65,16 @@ drake_cc_library(
         "//drake/lcmtypes:automotive",
         "//drake/systems/framework",
         "//drake/systems/lcm:translator",
+    ],
+)
+
+drake_cc_library(
+    name = "bicycle",
+    srcs = ["bicycle.cc"],
+    hdrs = ["bicycle.h"],
+    deps = [
+        ":generated_vectors",
+        "//drake/common:symbolic",
     ],
 )
 

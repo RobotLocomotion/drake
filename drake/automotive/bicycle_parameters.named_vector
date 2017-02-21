@@ -1,0 +1,24 @@
+element {
+     name: "mass"
+     doc: "mass"
+}
+element {
+     name: "lf"
+     doc: "distance from CG to front axle"
+}
+element {
+     name: "lr"
+     doc: "distance from CG to front axle"
+}
+element {
+     name: "Iz"
+     doc: "moment of inertia about the yaw-axis"
+}
+element {
+     name: "Cf"
+     doc: "cornering stiffness (front)"
+}
+element {
+     name: "Cr"
+     doc: "cornering stiffness (rear)"
+}
