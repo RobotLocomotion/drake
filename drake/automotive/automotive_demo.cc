@@ -1,6 +1,4 @@
-#include <iostream>
 #include <limits>
-#include <memory>
 #include <sstream>
 #include <string>
 
@@ -27,11 +25,11 @@ namespace automotive {
 namespace {
 
 std::string MakeChannelName(const std::string& name) {
-  static const std::string kDrivingCommandChannelName {"DRIVING_COMMAND"};
+  const std::string default_prefix{"DRIVING_COMMAND"};
   if (name.empty()) {
-    return kDrivingCommandChannelName;
+    return default_prefix;
   }
-  return kDrivingCommandChannelName + "_" + name;
+  return default_prefix + "_" + name;
 }
 
 int main(int argc, char* argv[]) {
