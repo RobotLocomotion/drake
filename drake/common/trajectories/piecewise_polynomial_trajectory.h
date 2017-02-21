@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include <Eigen/Core>
@@ -43,7 +44,7 @@ class PiecewisePolynomialTrajectory : public Trajectory {
   std::unique_ptr<Trajectory> derivative(
       int derivative_order = 1) const override {
     return std::make_unique<PiecewisePolynomialTrajectory>(
-        PiecewisePolynomialTrajectory(pp_.derivative(derivative_order)));
+        pp_.derivative(derivative_order));
   }
 
   /**
