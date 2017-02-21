@@ -10,139 +10,49 @@ namespace maliput {
 namespace dragway {
 namespace {
 
+// To understand the characteristics of the geometry, consult the
+// dragway::Segment and dragway::Lane detailed class overview docs.
 class MaliputDragwayLaneTest : public ::testing::Test {
  public:
   MaliputDragwayLaneTest()
-      : length_(1365.34),
-        lane_width_(5.0058),
-        shoulder_width_(4.2319) {
+      : length_(100.0),
+        lane_width_(6.0),
+        shoulder_width_(0.5) {
   }
 
   // Contains expected driveable r_min, driveable r_max, and y_offset parameters
   // of a Dragway Lane.
   struct ExpectedLaneParameters {
+    double y_offset{};
     double driveable_r_min{};
     double driveable_r_max{};
-    double y_offset{};
   };
 
-  /*
-   Calculates the expected parameters for a one-lane road.
-   Here is what the lane looks like:
-
-               x
-               ^
-      |<-------|------->|    driveable r_max / r_min
-      | |<-----|----->| |    lane      r_max / r_min
-      -------------------    s = length_
-      | |      ^      | |
-      | |      :      | |
-      | |      ^      | |
-      | |      :      | |
-  y <----------o---------->  s = 0
-               |
-               V
-  */
-  ExpectedLaneParameters CalcExpectedLaneParametersOneLaneRoad() const {
-    ExpectedLaneParameters result;
-    result.driveable_r_min = -lane_width_ / 2 - shoulder_width_;
-    result.driveable_r_max = lane_width_ / 2 + shoulder_width_;
-    result.y_offset = 0;
-    return result;
-  }
-
-  /*
-   Calculates the expected parameters for lane zero of a two-lane road.
-                              x
-                              ^
-                              |
-              |<---------------------|------->|  lane 0 driveable r_max / r_min
-              |               |<-----|----->| |  lane r_max / r_min
-              ----------------|----------------  s = length_
-              |               |      ^      | |
-              |               |      :      | |
-              |               |      ^      | |
-              |               |      :      | |  s = 0
-      y <---------------------o------------------------------>
-                              |    index 0
-                              V
-  */
-  ExpectedLaneParameters CalcExpectedLaneParametersTwoLaneRoadIndexZero()
-      const {
-    ExpectedLaneParameters result;
-    result.driveable_r_min = -lane_width_ / 2 - shoulder_width_;
-    result.driveable_r_max = lane_width_ / 2 + lane_width_ + shoulder_width_;
-    result.y_offset = -lane_width_ / 2;
-    return result;
-  }
-
-  /*
-   Calculates the expected parameters for lane one of a two-lane road.
-
-                              x
-                              ^
-                              |
-              |<-------|--------------------->|  lane 1 driveable r_max / r_min
-              | |<-----|----->|               |  lane r_max / r_min
-              ----------------|----------------  s = length_
-              | |      ^      |               |
-              | |      :      |               |
-              | |      ^      |               |
-              | |      :      |               |  s = 0
-      y <---------------------o------------------------------>
-                    index 1   |
-                              V
-  */
-  ExpectedLaneParameters CalcExpectedLaneParametersTwoLaneRoadIndexOne()
-      const {
-    ExpectedLaneParameters result;
-    result.driveable_r_min = -lane_width_ / 2 - lane_width_ - shoulder_width_;
-    result.driveable_r_max = lane_width_ / 2 + shoulder_width_;
-    result.y_offset = lane_width_ / 2;
-    return result;
-  }
-
-  // Calculates the expected parameters for a Lane.
-  //
-  // @param[in] num_lanes The total number of lanes in the dragway.
-  //
-  // @param[in] lane_index The index of the lane within the dragway.
-  //
-  // @return The expected Lane parameters.
-  //
-  ExpectedLaneParameters CalcExpectedLaneParameters(
+  ExpectedLaneParameters GetExpectedLaneParameters(
       int num_lanes, int lane_index) const {
-    switch (num_lanes) {
-      case 1:
-        return CalcExpectedLaneParametersOneLaneRoad();
-      break;
-      case 2:
-        switch (lane_index) {
-          case 0:
-            return CalcExpectedLaneParametersTwoLaneRoadIndexZero();
-            break;
-          case 1:
-            return CalcExpectedLaneParametersTwoLaneRoadIndexOne();
-            break;
-          default:
-            throw std::runtime_error(
-              "MaliputDragwayLaneTest: CalcExpectedLaneParameters: Invalid "
-              "lane_index of " + std::to_string(lane_index) + ". Valid values "
-              "are 0 and 1.");
-        }
-      break;
-      default:
-        throw std::runtime_error(
-            "MaliputDragwayLaneTest: CalcExpectedLaneParameters: " +
-            std::to_string(num_lanes) + " lanes is not currently supported. "
-            "Currently supported values are 1 and 2.");
+    ExpectedLaneParameters result{};
+    if (num_lanes == 1) {
+      result.y_offset = 0.0;
+      result.driveable_r_min = -3.5;
+      result.driveable_r_max = 3.5;
+    } else if ((num_lanes == 2) && (lane_index == 0)) {
+      result.y_offset = -3.0;
+      result.driveable_r_min = -3.5;
+      result.driveable_r_max = 9.5;
+    } else if ((num_lanes == 2) && (lane_index == 1)) {
+      result.y_offset = 3.0;
+      result.driveable_r_min = -9.5;
+      result.driveable_r_max = 3.5;
+    } else {
+      throw std::runtime_error("GetExpectedLaneParameters: bad input");
     }
+    return result;
   }
 
   // Verifies the correctness of the provided `lane`.
   void VerifyLaneCorrectness(const api::Lane* lane, int num_lanes) {
     const ExpectedLaneParameters expected =
-        CalcExpectedLaneParameters(num_lanes, lane->index());
+        GetExpectedLaneParameters(num_lanes, lane->index());
 
     // Tests Lane::lane_bounds().
     for (double s = 0 ; s < length_; s += length_ / 100) {
