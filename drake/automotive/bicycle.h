@@ -4,7 +4,7 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/automotive/gen/bicycle_parameters.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -24,7 +24,7 @@ namespace automotive {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
-/// - drake::TaylorVarXd
+/// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
 ///
 /// They are already available to link against in libdrakeAutomotive.

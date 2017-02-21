@@ -449,6 +449,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "bicycle_test",
+    deps = [
+        "//drake/automotive:bicycle",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//drake/automotive:curve2",
