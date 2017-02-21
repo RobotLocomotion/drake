@@ -98,8 +98,8 @@ GTEST_TEST(RotationalInertia, GeneralConstructor) {
 GTEST_TEST(RotationalInertia, AccessByIndexes) {
   const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
   const Vector3d p(0.1, 0.3, 1.4);  // p for products.
-  RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
-                              p(0), p(1), p(2));/* products of inertia */
+  const RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
+                                    p(0), p(1), p(2));/* products of inertia */
 
   // Diagonal elements.
   EXPECT_EQ(I(0, 0), m(0));
@@ -114,20 +114,6 @@ GTEST_TEST(RotationalInertia, AccessByIndexes) {
   // And their symmetric counterparts.
   EXPECT_EQ(I(1, 0), p(0));
   EXPECT_EQ(I(2, 0), p(1));
-  EXPECT_EQ(I(2, 1), p(2));
-
-  // Test mutable access.
-  // This should have the effect of setting both (2, 0) and (0, 2) even when
-  // only one element in memory is being accessed.
-  I(2, 0) = -1.0;
-  EXPECT_EQ(I(0, 0), m(0));
-  EXPECT_EQ(I(1, 1), m(1));
-  EXPECT_EQ(I(2, 2), m(2));
-  EXPECT_EQ(I(0, 1), p(0));
-  EXPECT_EQ(I(0, 2), -1.0);
-  EXPECT_EQ(I(1, 2), p(2));
-  EXPECT_EQ(I(1, 0), p(0));
-  EXPECT_EQ(I(2, 0), -1.0);
   EXPECT_EQ(I(2, 1), p(2));
 }
 
@@ -156,11 +142,6 @@ GTEST_TEST(RotationalInertia, Symmetry) {
   EXPECT_EQ(Imatrix(1, 0), p(0));
   EXPECT_EQ(Imatrix(2, 0), p(1));
   EXPECT_EQ(Imatrix(2, 1), p(2));
-
-  // Test that the return from get_symmetric_matrix_view() can be copied to a
-  // full matrix with all valide entries.
-  Matrix3<double> MatView = I.get_symmetric_matrix_view();
-  EXPECT_EQ(MatView, Imatrix);
 }
 
 // Test we can take a rotational inertia expressed in a frame R and express it
@@ -184,7 +165,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
       AngleAxisd(M_PI_2, Vector3d::UnitX()).toRotationMatrix();
 
   // Re-express in frame F using the above rotation.
-  RotationalInertia<double> I_Ro_F = I_Ro_R.ReExpress(R_FR);
+  const RotationalInertia<double> I_Ro_F = I_Ro_R.ReExpress(R_FR);
 
   // Verify that now R's z-axis is oriented along F's y-axis.
   EXPECT_NEAR(I_Ro_F(0, 0), Iperp, Eigen::NumTraits<double>::epsilon());
