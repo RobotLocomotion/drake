@@ -26,6 +26,14 @@ namespace drake {
 namespace automotive {
 namespace {
 
+std::string MakeChannelName(const std::string& name) {
+  static const std::string kDrivingCommandChannelName {"DRIVING_COMMAND"};
+  if (name.empty()) {
+    return kDrivingCommandChannelName;
+  }
+  return kDrivingCommandChannelName + "_" + name;
+}
+
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
@@ -40,20 +48,17 @@ int main(int argc, char* argv[]) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
 
   if (FLAGS_simple_car_names.empty()) {
-    std::cout << "Adding simple car subscribed to DRIVING_COMMAND" << std::endl;
-    simulator->AddSimpleCarFromSdf(kSdfFile);
+    const std::string name = "";
+    const std::string& channel_name = MakeChannelName(name);
+    drake::log()->info("Adding simple car subscribed to {}.", channel_name);
+    simulator->AddSimpleCarFromSdf(kSdfFile, name, channel_name);
   } else {
     std::istringstream simple_car_name_stream(FLAGS_simple_car_names);
     std::string name;
     while (getline(simple_car_name_stream, name, ',')) {
-      if (name.empty()) {
-        std::cout << "Adding simple car subscribed to DRIVING_COMMAND"
-                  << std::endl;
-      } else {
-        std::cout << "Adding simple car subscribed to DRIVING_COMMAND_" << name
-                  << std::endl;
-      }
-      simulator->AddSimpleCarFromSdf(kSdfFile, name);
+      const std::string& channel_name = MakeChannelName(name);
+      drake::log()->info("Adding simple car subscribed to {}.", channel_name);
+      simulator->AddSimpleCarFromSdf(kSdfFile, name, channel_name);
     }
   }
 

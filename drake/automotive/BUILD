@@ -204,6 +204,22 @@ drake_cc_binary(
     ],
     deps = [
         ":automotive_simulator",
+        "//drake/common:text_logging_gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "dev_demo",
+    srcs = [
+        "create_trajectory_params.cc",
+        "create_trajectory_params.h",
+        "dev/dev_demo.cc",
+    ],
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":automotive_simulator",
         "//drake/automotive/maliput/monolane:loader",
         "//drake/common:text_logging_gflags",
     ],
@@ -304,7 +320,7 @@ py_binary(
         "-road_path " + village_demo_path,
     ],
     data = [
-        ":automotive_demo",
+        ":dev_demo",
         ":lcm-spy",
         ":steering_command_driver",
         "@drake_visualizer//:drake-visualizer",
@@ -363,7 +379,7 @@ py_binary(
         "-road_path " + merging_demo_path,
     ],
     data = [
-        ":automotive_demo",
+        ":dev_demo",
         ":lcm-spy",
         ":steering_command_driver",
         "@drake_visualizer//:drake-visualizer",
