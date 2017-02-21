@@ -226,6 +226,7 @@ drake_cc_library(
     hdrs = ["leaf_system.h"],
     deps = [
         ":leaf_context",
+        ":sparsity_matrix",
         ":system",
         "//drake/common",
         "//drake/common:number_traits",

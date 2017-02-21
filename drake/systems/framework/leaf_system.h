@@ -19,6 +19,7 @@
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_state.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/sparsity_matrix.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
@@ -152,6 +153,39 @@ class LeafSystem : public System<T> {
     return AllocateDiscreteState();
   }
 
+  /// Returns to `true` if any of the inputs to the system is directly
+  /// fed through to any of its outputs and `false` otherwise.
+  bool HasAnyDirectFeedthrough() const final {
+    auto sparsity = MakeSparsityMatrix();
+    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+      for (int j = 0; j < this->get_num_output_ports(); ++j) {
+        if (DoHasDirectFeedthrough(sparsity.get(), i, j)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Returns true if there is direct-feedthrough from any input port to the
+  /// given @p output_port, and false otherwise.
+  bool HasDirectFeedthrough(int output_port) const final {
+    auto sparsity = MakeSparsityMatrix();
+    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+      if (DoHasDirectFeedthrough(sparsity.get(), i, output_port)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Returns true if there is direct-feedthrough from the given @p input_port
+  /// to the given @p output_port, and false otherwise.
+  bool HasDirectFeedthrough(int input_port, int output_port) const final {
+    auto sparsity = MakeSparsityMatrix();
+    return DoHasDirectFeedthrough(sparsity.get(), input_port, output_port);
+  }
+
  protected:
   LeafSystem() {}
 
@@ -222,6 +256,56 @@ class LeafSystem : public System<T> {
       const OutputPortDescriptor<T>& descriptor) const {
     DRAKE_ABORT_MSG("A concrete leaf system with abstract output ports must "
                     "override AllocateOutputAbstract.");
+  }
+
+  /// Returns true if there is direct-feedthrough from the given @p input_port
+  /// to the given @p output_port, and false otherwise, according to the given
+  /// @p sparsity.
+  ///
+  /// If @p sparsity is nullptr, returns true, so that by default we assume
+  /// there is direct feedthrough of values from every input to every output.
+  /// This is a conservative assumption that ensures we detect and can prevent
+  /// the formation of algebraic loops (implicit computations) in system
+  /// Diagrams. Systems which do not have direct feedthrough may override that
+  /// assumption in two ways:
+  ///
+  /// - Override DoToSymbolic, allowing this function to infer the sparsity
+  ///   from the symbolic equations. This method is typically preferred for
+  ///   systems that have a symbolic form, but should be avoided in certain
+  ///   corner cases where fully descriptive symbolic analysis is impossible,
+  ///   e.g. when the symbolic form depends on C++ native conditionals. For
+  ///   additional discussion, consult the documentation for SparsityMatrix.
+  ///
+  /// - Override this function directly, reporting manual sparsity. This method
+  ///   is recommended when ToSymbolic has not been implemented, or when its
+  ///   output is not fully descriptive, as discussed above. Manually configured
+  ///   sparsity must be conservative: if there is any Context for which an
+  ///   input port is direct-feedthrough to an output port, this function must
+  ///   return true for those two ports.
+  virtual bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
+                                      int input_port,
+                                      int output_port) const {
+    DRAKE_ASSERT(input_port >= 0);
+    DRAKE_ASSERT(input_port < this->get_num_input_ports());
+    DRAKE_ASSERT(output_port >= 0);
+    DRAKE_ASSERT(output_port < this->get_num_output_ports());
+
+    // If this System has manually declared that it has no direct-feedthrough
+    // by overriding the deprecated API has_any_direct_feedthrough, accept
+    // that override and skip sparsity analysis.
+    // TODO(david-german-tri): Remove overrides of has_any_direct_feedthrough,
+    // then remove this check.
+    if (!this->has_any_direct_feedthrough()) {
+      return false;
+    }
+
+    // If no symbolic sparsity matrix is available, assume direct feedthrough
+    // by default.
+    if (sparsity == nullptr) {
+      return true;
+    }
+
+    return sparsity->IsConnectedInputToOutput(input_port, output_port);
   }
 
   // =========================================================================
@@ -407,6 +491,16 @@ class LeafSystem : public System<T> {
     }
     DRAKE_ASSERT(next_t > current_time_sec);
     return next_t;
+  }
+
+  /// Returns a SparsityMatrix for this system, or nullptr if a SparsityMatrix
+  /// cannot be constructed because this System has no symbolic representation.
+  std::unique_ptr<SparsityMatrix> MakeSparsityMatrix() const {
+    auto symbolic_system = this->DoToSymbolic();
+    if (symbolic_system == nullptr) {
+      return nullptr;
+    }
+    return std::make_unique<SparsityMatrix>(*symbolic_system);
   }
 
   // Periodic Update or Publish events registered on this system.
