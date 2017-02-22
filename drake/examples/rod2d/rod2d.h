@@ -32,7 +32,7 @@ For a quick summary and translation to 2D:
  - We also use capitals to represent points, and we allow a frame name F to be
    used where a point is expected to represent its origin Fo.
  - We use `p_CD` to represent the position vector from point C to point D. Note
-   that if A and B are frame `p_AB` means `p_AoBo`.
+   that if A and B are frames, `p_AB` means `p_AoBo`.
  - If we need to be explicit about the expressed-in frame F for any quantity, we
    add the suffix `_F` to its symbol. So the position vector from C to D,
    expressed in W, is `p_CD_W`.
@@ -303,7 +303,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Get compliant contact static friction (stiction) coefficient `μ_s`.
   double get_mu_static() const { return mu_s_; }
 
-  /// Set compliant contact stiction coefficent (>= mu_coulomb). This has no
+  /// Set compliant contact stiction coefficient (>= mu_coulomb). This has no
   /// effect if the rod model is not compliant.
   void set_mu_static(double mu_static) {
     DRAKE_DEMAND(mu_static >= mu_);
@@ -342,7 +342,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// translational force f_Ro_W=(fx,fy) is applied at the rod origin Ro,
   /// and torque t_R=τ is the moment due to the contact forces actually being
   /// applied elsewhere. The returned spatial force may be the resultant of
-  /// multiple active contact points.
+  /// multiple active contact points. Only valid for simulation type kCompliant.
   Vector3<T> CalcCompliantContactForces(
       const systems::Context<T>& context) const;
 

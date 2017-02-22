@@ -741,10 +741,9 @@ T Rod2D<T>::CalcMuStribeck(const T& mu_s, const T& mu_d, const T& s) {
 // is returned as the spatial force F_Ro_W (described in Rod2D class comments),
 // represented as (fx,fy,τ).
 //
-// Note that we are attributing all of the
-// compliance to the *halfspace*, not the *rod*, so that forces will be applied
-// to the same points of the rod as is done in the rigid contact models. That
-// makes comparison of the models easier.
+// Note that we are attributing all of the compliance to the *halfspace*, not
+// the *rod*, so that forces will be applied to the same points of the rod as is
+// done in the rigid contact models. That makes comparison of the models easier.
 //
 // For each end point, let h be the penetration depth (in the -y direction) and
 // v the slip speed along x. Then
@@ -763,6 +762,9 @@ T Rod2D<T>::CalcMuStribeck(const T& mu_s, const T& mu_d, const T& s) {
 template <class T>
 Vector3<T> Rod2D<T>::CalcCompliantContactForces(
     const systems::Context<T>& context) const {
+  // Depends on continuous state being available.
+  DRAKE_DEMAND(simulation_type_ == kCompliant);
+
   using std::abs;
   using std::max;
 
@@ -786,16 +788,16 @@ Vector3<T> Rod2D<T>::CalcCompliantContactForces(
   for (int i = 0; i < 2; ++i) {
     const Vector2<T>& p_WC = p_WP[i];  // Get contact point C location in World.
 
-    // Calculate penetration depth d along -y; negative means separated.
-    const T d = -p_WC[1];
-    if (d > 0) {  // This point is in contact.
+    // Calculate penetration depth h along -y; negative means separated.
+    const T h = -p_WC[1];
+    if (h > 0) {  // This point is in contact.
       const Vector2<T> v_WRc =  // Velocity of rod point coincident with C.
           CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR, p_WC);
-      const T ddot = -v_WRc[1];  // Penetration rate in -y.
+      const T hdot = -v_WRc[1];  // Penetration rate in -y.
       const T v = v_WRc[0];      // Slip velocity in +x.
       const int sign_v = v < 0 ? -1 : 1;
-      const T fK = get_stiffness() * d;  // See method comment above.
-      const T fD = fK * get_dissipation() * ddot;
+      const T fK = get_stiffness() * h;  // See method comment above.
+      const T fD = fK * get_dissipation() * hdot;
       const T fN = max(fK + fD, T(0));
       const T mu = CalcMuStribeck(get_mu_static(), get_mu_coulomb(),
                                   abs(v) / get_stiction_speed_tolerance());
@@ -810,7 +812,7 @@ Vector3<T> Rod2D<T>::CalcCompliantContactForces(
       F_Ro_W += Vector3<T>(fF, fN, t_R);
     }
   }
-  return F_Ro_W;
+  return F_Ro_W;  // A 2-vector & scalar, not really a 3-vector.
 }
 
 // Computes the accelerations of the rod center of mass for the case of the rod
@@ -845,8 +847,8 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   // Determine the point of contact (cx, cy).
   const Vector2<T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
                                        half_length_);
-  const T cx = c[0];
-  const T cy = c[1];
+  const T& cx = c[0];
+  const T& cy = c[1];
 
   // Compute the horizontal velocity at the point of contact.
   const T cxdot = xdot - k * stheta * half_length_ * thetadot;
@@ -951,13 +953,13 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
   const T ctheta = cos(theta), stheta = sin(theta);
   const Vector2<T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
                                        half_length_);
-  const T cx = c[0];
-  const T cy = c[1];
+  const T& cx = c[0];
+  const T& cy = c[1];
 
   // Compute the contact forces, assuming sticking contact.
-  Vector2<T> cf = CalcStickingContactForces(context);
-  const T fN = cf(0);
-  const T fF = cf(1);
+  const Vector2<T> cf = CalcStickingContactForces(context);
+  const T& fN = cf(0);
+  const T& fF = cf(1);
 
   // Sanity check that normal force is non-negative.
   DRAKE_DEMAND(fN >= 0);

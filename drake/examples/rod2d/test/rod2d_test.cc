@@ -1055,6 +1055,7 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
   SetContactingState(0);
   Vector3d F_Ro_W_both = dut_->CalcCompliantContactForces(*context_);
   EXPECT_TRUE(F_Ro_W_both.isApprox(F_Ro_W_left+F_Ro_W_right, kTightTol));
+  EXPECT_NEAR(F_Ro_W_both[2], 0., kTightTol);
 }
 
 }  // namespace
