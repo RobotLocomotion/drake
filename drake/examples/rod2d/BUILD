@@ -23,7 +23,7 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "rod2d",
+    name = "rod2d_test",
     deps = [
         ":rod2d",
         "//drake/common",
