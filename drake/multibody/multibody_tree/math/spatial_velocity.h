@@ -1,16 +1,5 @@
 #pragma once
 
-/// @file
-/// This file defines the basic set of abstractions to perform mathematical
-/// operations between spatial quantities. For an introduction on spatial
-/// quantities please refer to @ref multibody_spatial_algebra.
-/// We follow some basic conventions and nomenclature used in the following
-/// book by:
-///   - Jain, A., 2010. Robot and multibody dynamics: analysis and algorithms.
-///     Springer Science & Business Media.
-///
-/// Hereafter in this file we'll refer to this book by [Jain, 2010].
-
 #include <limits>
 
 #include "drake/common/drake_assert.h"
@@ -57,6 +46,14 @@ class SpatialVelocity {
     V_.template head<3>() = w;
     V_.template tail<3>() = v;
   }
+
+  /// SpatialVelocity constructor from an Eigen expression that represents a
+  /// six-dimensional vector.
+  // For a fixed sized `V` this constructor will assert at compile time while
+  // an assertion will be triggered not until run-time for dynamic sized Eigen
+  // expressions.
+  template <typename Derived>
+  explicit SpatialVelocity(const Eigen::MatrixBase<Derived>& V) : V_(V) {}
 
   /// The total size of the concatenation of the angular and linear components.
   /// In three dimensions this is six (6) and it is known at compile time.
@@ -124,9 +121,9 @@ class SpatialVelocity {
            angular().isApprox(other.angular(), tolerance);
   }
 
-  /// Sets all entries in `this` SpatialVelocity to NaN. Typically used to quickly
-  /// detect uninitialized values since NaN will trigger a chain of invalid
-  /// computations that can then be tracked back to the source.
+  /// Sets all entries in `this` SpatialVelocity to NaN. Typically used to
+  /// quickly detect uninitialized values since NaN will trigger a chain of
+  /// invalid computations that can then be tracked back to the source.
   void SetNaN() {
     V_.setConstant(std::numeric_limits<
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
@@ -189,6 +186,16 @@ class SpatialVelocity {
     return SpatialVelocity<T>(*this).ShiftInPlace(r_BQ_E);
   }
 
+  /// Multiplication of a spatial velocity `V` from the left by a scalar `s`.
+  friend SpatialVelocity<T> operator*(const T& s, const SpatialVelocity<T>& V) {
+    return SpatialVelocity<T>(s * V.get_coeffs());
+  }
+
+  /// Multiplication of a spatial velocity `V` from the left by a scalar `s`.
+  friend SpatialVelocity<T> operator*(const SpatialVelocity<T>& V, const T& s) {
+    return s * V;  // Multiplication by scalar is commutative.
+  }
+
  private:
   CoeffsEigenType V_;
 };
@@ -201,13 +208,6 @@ std::ostream& operator<<(std::ostream& o, const SpatialVelocity<T>& V) {
   for (int i = 1; i < V.size(); ++i) o << ", " << V[i];
   o << "]^T";  // The "transpose" symbol.
   return o;
-}
-
-/// Multiplication of a SpatialVelocity from the left by a scalar.
-template <typename T>
-inline SpatialVelocity<T> operator*(
-    const T& s, const SpatialVelocity<T>& V) {
-  return SpatialVelocity<T>(s * V.get_coeffs());
 }
 
 }  // namespace multibody
