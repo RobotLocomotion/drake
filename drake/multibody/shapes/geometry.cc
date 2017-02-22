@@ -68,13 +68,13 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
   // Return axis-aligned bounding-box vertices
   points.resize(3, NUM_BBOX_POINTS);
 
-  // Order:
-  //       7------0
-  //      /|     /|
-  //     / 4----/-3       (+z up)
-  //    6------1 /        (+y right)
-  //    |/     |/
-  //    5------2
+ // Order:                +y
+ //       3------2          |
+ //      /|     /|          |
+ //     / 4----/-5          ------  +x
+ //    0------1 /          /
+ //    |/     |/          /
+ //    7------6        +z
 
   RowVectorXd cx(NUM_BBOX_POINTS), cy(NUM_BBOX_POINTS), cz(NUM_BBOX_POINTS);
   cx << -1, 1, 1, -1, -1, 1, 1, -1;
@@ -129,25 +129,27 @@ void Box::getPoints(Matrix3Xd& points) const {
 void Box::getFaces(TrianglesVector& faces) const {
   faces.resize(12);
   // Here, the vertex indices index into the getBoundingBox vertex order.
-  // (See the documentation in that function for a picture.)
+  // (See the documentation in that function for a picture.) For each face,
+  // vertices are supplied in counterclockwise order when viewed from
+  // the "outside" of the face.
   // +y face:
-  faces[0] = Vector3i(2, 1, 0);
-  faces[1] = Vector3i(3, 2, 0);
+  faces[0] = Vector3i(0, 1, 2);
+  faces[1] = Vector3i(0, 2, 3);
   // +x face:
-  faces[2] = Vector3i(1, 2, 5);
-  faces[3] = Vector3i(1, 5, 6);
+  faces[2] = Vector3i(5, 2, 1);
+  faces[3] = Vector3i(6, 5, 1);
   // +z face:
-  faces[4] = Vector3i(1, 6, 7);
-  faces[5] = Vector3i(0, 1, 7);
+  faces[4] = Vector3i(7, 6, 1);
+  faces[5] = Vector3i(7, 1, 0);
   // -y face:
-  faces[6] = Vector3i(6, 5, 4);
-  faces[7] = Vector3i(7, 6, 4);
+  faces[6] = Vector3i(4, 5, 6);
+  faces[7] = Vector3i(4, 6, 7);
   // -x face:
-  faces[8] = Vector3i(7, 4, 3);
-  faces[9] = Vector3i(7, 3, 0);
+  faces[8] = Vector3i(3, 4, 7);
+  faces[9] = Vector3i(0, 3, 7);
   // -z face:
-  faces[10] = Vector3i(2, 4, 5);
-  faces[11] = Vector3i(2, 3, 4);
+  faces[10] = Vector3i(5, 4, 2);
+  faces[11] = Vector3i(4, 3, 2);
 }
 
 void Box::getBoundingBoxPoints(Matrix3Xd& points) const { getPoints(points); }

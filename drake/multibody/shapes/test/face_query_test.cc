@@ -22,7 +22,7 @@ void CheckAllNormalsFaceOutwards(Eigen::Matrix3Xd verts,
     // should face "outward" from the face, as detected via
     // dot product with a point on the face.
     double norm_sign = pt_a.transpose() *
-      ((pt_c - pt_a).cross(pt_b - pt_a));
+      ((pt_b - pt_a).cross(pt_c - pt_a));
 
     EXPECT_GT(norm_sign, 0);
   }
