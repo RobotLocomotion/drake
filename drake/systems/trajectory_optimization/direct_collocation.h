@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/constraint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -38,6 +39,8 @@ namespace systems {
  */
 class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DircolTrajectoryOptimization)
+
   DircolTrajectoryOptimization(const System<double>* system,
                                const Context<double>& context,
                                int num_time_samples,
@@ -50,11 +53,6 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
   // TODO(Lucy-tri) According to @siyuanfeng-tri, the current calculation of
   // derivatives is not correct for floating base joints. More strongly, we
   // can't use independent splines for joints with coupled degrees of freedom.
-
-  // Disable copy and assign.
-  DircolTrajectoryOptimization(const DircolTrajectoryOptimization&) = delete;
-  DircolTrajectoryOptimization& operator=(const DircolTrajectoryOptimization&) =
-      delete;
 
  private:
   const System<double>* system_{nullptr};
