@@ -32,10 +32,15 @@ std::tuple<Curve2<double>, double, double> CreateTrajectoryParams(int index);
  *
  * @param index The lane index within the provided `road_geometry`.
  *
+ * @param speed The speed of the vehicle.
+ *
+ * @param start_time The time when the vehicle should start driving.
+ *
  * @return tuple of curve, speed, start_time
  */
 std::tuple<Curve2<double>, double, double> CreateTrajectoryParamsForDragway(
-    const maliput::dragway::RoadGeometry& road_geometry, int index);
+    const maliput::dragway::RoadGeometry& road_geometry, int index,
+    double speed, double start_time);
 
 }  // namespace automotive
 }  // namespace drake
