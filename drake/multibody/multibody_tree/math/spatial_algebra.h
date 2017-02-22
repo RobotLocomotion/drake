@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -40,10 +41,16 @@ class SpatialVector {
   /// The type of the underlying in-memory representation using an Eigen vector.
   typedef Vector6<T> CoeffsEigenType;
 
-  /// Default constructor leaves numerical entries un-initialized to avoid any
-  /// computational cost. This can be a significant cost for large collections
-  /// of spatial vectors.
-  SpatialVector() {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVector)
+
+  /// Default constructor. In Release builds the elements of the newly
+  /// constructed spatial velocity are left uninitialized resulting in a zero
+  /// cost operation. However in Debug builds those entries are set to NaN so
+  /// that operations using this uninitialized spatial velocity fail fast,
+  /// allowing fast bug detection.
+  SpatialVector() {
+    DRAKE_ASSERT_VOID(SetNaN());
+  }
 
   /// SpatialVector constructor from an angular component @p w and a linear
   /// component @p v.
@@ -118,6 +125,71 @@ class SpatialVector {
            angular().isApprox(other.angular(), tolerance);
   }
 
+  /// Sets all entries in `this` SpatialVector to NaN. Typically used to quickly
+  /// detect uninitialized values since NaN will trigger a chain of invalid
+  /// computations that can then be tracked back to the source.
+  void SetNaN() {
+    V_.setConstant(std::numeric_limits<
+        typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
+  }
+
+  /// Given `this` spatial velocity `V_AB_E` of a frame `B` measured in a frame
+  /// `A` and expressed in a frame `E`, this method computes the spatial
+  /// velocity of a frame `Q` rigidly moving with `B` but offset by a vector
+  /// `r_BQ` from the orgin of frame `B` to the origin of frame Q.
+  ///
+  /// The operation performed, in vector free form, is: <pre>
+  ///   w_AQ = w_AB,  i.e. the angular velocity of frame B and Q is the same.
+  ///   v_AQ = v_AB + w_AB x r_BQ
+  /// </pre>
+  ///
+  /// All quantities above must be expressed in a common frame `E` i.e: <pre>
+  ///   w_AQ_E = w_AB_E
+  ///   v_AQ_E = v_AB_E + w_AB_E x r_BQ_E
+  /// </pre>
+  ///
+  /// This operation is performed in-place modifying the original object.
+  ///
+  /// @param[in] r_BQ_E Shift vector from `Bo` to `Qo` and expressed in
+  ///                   frame `E`.
+  /// @retval V_AQ_E The spatial velocity of frame `Q` with respect to `A` and
+  ///                expressed in frame `A`.
+  ///
+  /// @see Shift() to compute the shifted spatial velocity without modifying
+  ///      this original object.
+  SpatialVector<T>& ShiftInPlace(const Vector3<T>& r_BQ_E) {
+    /* The angular velocity remains the same. */
+    /* For the linear velocity we have: v_AQ = v_AB + w_AB.cross(r_BQ). */
+    linear() += angular().cross(r_BQ_E);
+    return *this;
+  }
+
+  /// Given `this` spatial velocity `V_AB_E` of a frame `B` measured in a frame
+  /// `A` and expressed in a frame `E`, this method computes the spatial
+  /// velocity of a frame `Q` rigidly moving with `B` but offset by a vector
+  /// `r_BQ` from the orgin of frame `B` to the origin of frame Q.
+  ///
+  /// The operation performed, in vector free form, is: <pre>
+  ///   w_AQ = w_AB,  i.e. the angular velocity of frame B and Q is the same.
+  ///   v_AQ = v_AB + w_AB x r_BQ
+  /// </pre>
+  ///
+  /// All quantities above must be expressed in a common frame `E` i.e: <pre>
+  ///   w_AQ_E = w_AB_E
+  ///   v_AQ_E = v_AB_E + w_AB_E x r_BQ_E
+  /// </pre>
+  ///
+  /// @param[in] r_BQ_E Shift vector from `Bo` to `Qo` and expressed in
+  ///                   frame `E`.
+  /// @retval V_AQ_E The spatial velocity of frame `Q` with respect to `A` and
+  ///                expressed in frame `A`.
+  ///
+  /// @see ShiftInPlace() to compute the shifted spatial velocity in-place
+  ///      modifying the original object.
+  SpatialVector<T> Shift(const Vector3<T>& r_BQ_E) const {
+    return SpatialVector<T>(*this).ShiftInPlace(r_BQ_E);
+  }
+
  private:
   CoeffsEigenType V_;
 };
@@ -137,197 +209,6 @@ template <typename T>
 inline SpatialVector<T> operator*(
     const T& s, const SpatialVector<T>& V) {
   return SpatialVector<T>(s * V.get_coeffs());
-}
-
-// Forward declaration of the ShiftOperator's transpose.
-template <typename T> class ShiftOperatorTranspose;
-
-/// A class representing the Rigid Body Transformation Matrix as defined in
-/// Section 1.4 of [Jain, 2010]'s book, which we will call a Shift Operator to
-/// avoid confusion with Transforms.
-/// Given a frame `A` that moves with spatial velocity `V_WA` measured in a
-/// frame `W` and a second frame `B` that **rigidly** moves with frame `A`,
-/// the shift operator `S_AB` is defined such that the spatial velocity of
-/// frame `B` as measured in this same frame `W` is given by: <pre>
-///   V_WB = ST_AB * V_WA
-/// </pre>
-/// where the superscript ST_AB represents the _transpose_ of the shift operator
-/// `S_AB`.
-///
-/// The above example reads in code as:
-/// @code
-/// Assume the following quantities available within a given scope.
-/// // Spatial velocity of frame A measured in frame W, expressed in a third
-/// // frame E.
-/// SpatialVector<T> V_WA_E;
-/// // Vector from A's origin to B's origin, expressed in E.
-/// Vector3<T>       p_AB_E;
-/// // The spatial velocity of frame B rigidly moving with frame A is obtained
-/// // using the shift operator (its transpose) from A to B.
-/// SpatialVector<T> V_WB_E = ShiftOperator(p_AB_E).transpose() * V_WA_E;
-/// @endcode
-///
-/// Notice that we are using the monogram notation introduced in
-/// @ref multibody_notation_basics, which allows us to write unambiguous
-/// expressions in source code using simple ASCII. In addition we are explicit
-/// about the frame these quantities are expressed in when it's not the same
-/// frame in which the spatial quantity is measured.
-///
-/// @note This class does not track the frame in which the shift operator is
-/// defined. Therefore it is the responsability of clients of this class to keep
-/// track of this frame.
-///
-/// With spatial forces defined in @ref multibody_spatial_vectors as the pair of
-/// of three dimensional vectors @f$ \tau @f$ for the torque component and
-/// @f$ f @f$ for the force component, the shift operator relates the
-/// spatial force about a frame `A` on a rigid body with the spatial
-/// force about a frame `B` on the same rigid body as: <pre>
-///   F_WA = S_AB * F_WB
-/// </pre>
-/// which implies that the spatial force `F_WB` about `B` on a
-/// rigid body is equivalent to the spatial force
-/// `F_WA = S_AB * F_WB` about `A` on the same rigid body.
-///
-/// Some basic group properties of this operator are: <pre>
-///   S_XX   = Id, with Id the identity operator.
-///   S_XZ   = S_XY * S_YZ
-///   S_XY⁻¹ = S_YX
-/// </pre>
-///
-/// @see ShiftOperatorTranspose for the dual version of this operator which
-///      allows transformation of spatial forces.
-///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-template <typename T>
-class ShiftOperator {
- public:
-  /// Default constructor. In Release builds the operator's offset is left
-  /// uninitialized resulting in a zero cost operation. However in Debug builds
-  /// the operator's offset is set to NaN so that operations using this
-  /// uninitialized operator fail fast, allowing fast bug detection.
-  ShiftOperator() {
-    DRAKE_ASSERT_VOID(SetToNaN());
-  }
-
-  /// Constructs a rigid body transformation operator between a pair of frames
-  /// `X` and `Y` given a vector @p offset_XoYo_F from `Xo` to `Yo`.
-  /// For a vector @p offset_XoYo_F expressed in a frame `F`, this operator can
-  /// only operate on spatial vectors expressed in the same frame `F`.
-  /// @param[in] offset_XoYo_F Vector from `Xo` to `Yo` expressed in frame `F`.
-  explicit ShiftOperator(const Vector3<T>& offset_XoYo_F) :
-      offset_(offset_XoYo_F) {}
-
-  /// Returns the vector from the origin of frame `X` to the origin of frame `Y`
-  /// expressed in the frame `F` in which this shift operator is expressed.
-  const Vector3<T>& offset() const { return offset_; }
-
-  /// Returns the transpose of this operator which allows transforming spatial
-  /// velocities between two frames rigidly attached to each other.
-  ShiftOperatorTranspose<T> transpose() const;
-
-  /// Creates a %ShiftOperator initialized with a NaN offset vector.
-  /// Typically used to quickly detect uninitialized values since NaN will
-  /// trigger a chain of invalid computations that can then be tracked back
-  /// to the source.
-  /// @see SetToNaN().
-  static ShiftOperator<T> NaN() {
-    return ShiftOperator<T>(Vector3<T>::Constant(std::numeric_limits<
-        typename Eigen::NumTraits<T>::Literal>::quiet_NaN()));
-  }
-
-  /// Sets the offset of this operator to NaN. Typically used to quickly detect
-  /// uninitialized values since NaN will trigger a chain of invalid
-  /// computations that can then be tracked back to the source.
-  void SetToNaN() {
-    offset_.setConstant(std::numeric_limits<
-        typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
-  }
-
- private:
-  Vector3<T> offset_;
-};
-
-/// This class is the return type for ShiftOperator::transpose().
-/// For a detailed description of the shift operator please refer to the
-/// documentation for the ShiftOperator class.
-///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-template <typename T>
-class ShiftOperatorTranspose {
- public:
-  /// Constructs the transpose of a given ShiftOperator `S_XY_F` between two
-  /// frames `X` and `Y`, expressed in a third frame `F`.
-  explicit ShiftOperatorTranspose(const ShiftOperator<T>& phi_XY_F) :
-      phi_(phi_XY_F) {}
-
-  /// Returns the vector from the origin of frame `X` to the origin of frame `Y`
-  /// expressed in the frame `F` in which this operator is expressed.
-  const Vector3<T>& offset() const { return phi_.offset(); }
-
-  /// Given the spatial velocity `V_AB` of a frame `B` measured in a frame
-  /// `A`, this method computes the spatial velocity of a frame `Q` rigidly
-  /// moving with `B` but offset by vector `r_BQ`.
-  ///
-  /// The operation performed, in vector free form, is: <pre>
-  ///   w_AQ = w_AB,  i.e. the angular velocity of frame B and Q is the same.
-  ///   v_AQ = v_AB + w_AB x r_BQ
-  /// </pre>
-  ///
-  /// All quantities above must be expressed in a common frame `E` i.e: <pre>
-  ///   w_AQ_E = w_AB_E
-  ///   v_AQ_E = v_AB_E + w_AB_E x r_BQ_E
-  /// </pre>
-  ///
-  /// @param[in] V_AB_E Spatial velocity of frame `B` measured in frame `A`,
-  ///                   expressed in frame `E`.
-  /// @param[in] r_BQ_E Shift vector from `Bo` to `Qo` and expressed in
-  ///                   frame `E`.
-  /// @returns   V_AQ_E The spatial velocity of frame `Q` with respect to `A`
-  ///                   and expressed in frame `A`.
-  static SpatialVector<T> ShiftSpatialVelocity(
-      const SpatialVector<T>& V_AB_E, const Vector3<T>& r_BQ_E) {
-    return SpatialVector<T>(
-        /* Same angular velocity. */
-        V_AB_E.angular(),
-        /* Linear velocity v_AQ = v_AB + w_AB.cross(r_BQ). */
-        V_AB_E.linear() + V_AB_E.angular().cross(r_BQ_E));
-  }
-
- private:
-  const ShiftOperator<T>& phi_;
-};
-
-// Implementation for ShiftOperator<T>::transpose().
-template <typename T>
-inline ShiftOperatorTranspose<T> ShiftOperator<T>::transpose() const {
-  return ShiftOperatorTranspose<T>(*this);
-}
-
-/// Given the spatial velocity `V_AB` of a frame `B` measured in a frame `A`,
-/// compute the spatial velocity of a frame `Q` rigidly moving with `B`
-/// but offset by vector `r_BQ`.
-///
-/// The operation performed, in vector free form, is: <pre>
-///   V_AQ = S_BQ * V_AB
-/// </pre>
-/// where `ST_BQ` is the transpose of the ShiftOperator `S_BQ`.
-///
-/// All quantities above must be expressed in a common frame `E` i.e: <pre>
-///   V_AQ_E = S_BQ_E^T * V_AB_E
-/// </pre>
-///
-/// @param[in] ST_BQ_E Transpose of the shift operator from frame `B` to `Q`
-///                      expressed in a frame `E`.
-/// @param[in] V_AB_E    The spatial velocity of frame `B` measured in `A`
-///                      and expressed in `E`.
-/// @returns V_AQ_E      The spatial velocity of frame `Q` measured in `A` and
-///                      expressed in `E`.
-template <typename T>
-inline SpatialVector<T> operator*(
-    const ShiftOperatorTranspose<T>& phiT_BQ_E,
-    const SpatialVector<T>& V_AB_E) {
-  return ShiftOperatorTranspose<T>::ShiftSpatialVelocity(
-      V_AB_E, phiT_BQ_E.offset());
 }
 
 }  // namespace multibody
