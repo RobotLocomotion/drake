@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
@@ -255,6 +256,88 @@ GTEST_TEST(RotationalInertia, ShiftOperator) {
                   "[0, 2, 0]\n"
                   "[0, 0, 3]\n";
   EXPECT_EQ(expected_string, stream.str());
+}
+
+// Tests that we can instantiate a rotational inertia with AutoDiffScalar and
+// we can perform some basic operations with it.
+// As an example, we define the rotational inertia I_B of a body B. The
+// orientation of this body in the world frame W is given by the time dependent
+// rotation R_WB = Rz(theta(t)) about the z-axis with angle theta(t).
+// The time derivative of theta(t) is the angular velocity wz.
+// We then re-express the inertia of B in the world frame and verify the value
+// of its time derivative with the expected result.
+GTEST_TEST(RotationalInertia, AutoDiff) {
+  typedef Eigen::AutoDiffScalar<Vector1<double>> ADScalar;
+
+  // Helper lambda to extract from a matrix of auto-diff scalar's the matrix of
+  // values and the matrix of derivatives.
+  auto extract_derivatives = [](
+      const Matrix3<ADScalar>& M, Matrix3d& Mvalue, Matrix3d& Mdot) {
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        Mvalue(i, j) = M(i, j).value();
+        Mdot(i, j) = M(i, j).derivatives()[0];
+      }
+    }
+  };
+
+  // Construct a rotational inertia in the frame of a body B.
+  double Ix(1.0), Iy(2.0), Iz(3.0);
+  RotationalInertia<ADScalar> I_B(Ix, Iy, Iz);
+
+  // Assume B has a pose rotated +20 degrees about z with respect to the
+  // world frame W. The body rotates with angular velocity wz in the z-axis.
+  const double angle_value = 20 * M_PI / 180.0;
+  const double wz = 1.0;  // Angular velocity in the z-axis.
+
+  ADScalar angle = angle_value;
+  angle.derivatives()[0] = wz;
+  Matrix3<ADScalar> R_WB =
+      (AngleAxis<ADScalar>(angle, Vector3d::UnitZ())).toRotationMatrix();
+
+  // Split the rotational inertia into two Matrix3d; one with the values and
+  // another one with the time derivatives.
+  Matrix3<double> Rvalue_WB, Rdot_WB;
+  extract_derivatives(R_WB, Rvalue_WB, Rdot_WB);
+
+  // The time derivative of the rotation matrix should be:
+  //  Rdot = [w] * R, with w the angular velocity.
+  // Therefore we have [w] = Rdot * R.transpose().
+  Matrix3<double> wcross = Rdot_WB * Rvalue_WB.transpose();
+  Matrix3<double> wcross_expected;
+  wcross_expected << 0.0,  -wz, 0.0,
+                      wz,  0.0, 0.0,
+                     0.0,  0.0, 0.0;
+  EXPECT_TRUE(wcross.isApprox(
+      wcross_expected, Eigen::NumTraits<double>::epsilon()));
+
+  // Re-express inertia into another frame.
+  const RotationalInertia<ADScalar> I_W = I_B.ReExpress(R_WB);
+
+  // Extract value and derivatives of I_W into two separate matrices.
+  Matrix3d Ivalue_W, Idot_W;
+  extract_derivatives(I_W.CopyToFullMatrix3(), Ivalue_W, Idot_W);
+
+  // Alternatively, compute the time derivative of I_W directly in terms of the
+  // known angular velocity. Since I_B is diagonal with entries Iᵢ, we can
+  // expand the time derivative of I_W as:
+  //  dI_W/dt = d/dt(R_WB * I_B * R_WBᵀ) = d/dt(∑ Iᵢ * x̂ᵢ * x̂ᵢᵀ) =
+  //          = ∑ Iᵢ * {[w] * x̂ᵢ * x̂ᵢᵀ + ([w] * x̂ᵢ * x̂ᵢᵀ)ᵀ}
+  const auto xhat = Rvalue_WB.col(0);
+  const auto yhat = Rvalue_WB.col(1);
+  const auto zhat = Rvalue_WB.col(2);
+
+  Matrix3d Rdot_x = wcross * xhat * xhat.transpose();
+  Rdot_x += Rdot_x.transpose().eval();
+  Matrix3d Rdot_y = wcross * yhat * yhat.transpose();
+  Rdot_y += Rdot_y.transpose().eval();
+  Matrix3d Rdot_z = wcross * zhat * zhat.transpose();
+  Rdot_z += Rdot_z.transpose().eval();
+
+  const Matrix3d Idot_W_expected = Ix * Rdot_x + Iy * Rdot_y + Iz * Rdot_z;
+
+  EXPECT_TRUE(Idot_W.isApprox(
+      Idot_W_expected, Eigen::NumTraits<double>::epsilon()));
 }
 
 }  // namespace
