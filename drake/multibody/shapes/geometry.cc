@@ -68,13 +68,13 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
   // Return axis-aligned bounding-box vertices
   points.resize(3, NUM_BBOX_POINTS);
 
- // Order:                +y
- //       3------2          |
- //      /|     /|          |
- //     / 4----/-5          ------  +x
- //    0------1 /          /
- //    |/     |/          /
- //    7------6        +z
+  // Order:                +y
+  //       3------2          |
+  //      /|     /|          |
+  //     / 4----/-5          ------  +x
+  //    0------1 /          /
+  //    |/     |/          /
+  //    7------6        +z
 
   RowVectorXd cx(NUM_BBOX_POINTS), cy(NUM_BBOX_POINTS), cz(NUM_BBOX_POINTS);
   cx << -1, 1, 1, -1, -1, 1, 1, -1;
