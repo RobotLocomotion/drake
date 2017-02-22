@@ -341,7 +341,7 @@ namespace symbolic {
 /**
  * Maps a monomial to a coefficient. This map can be used to represent a
  * polynomial, such that the polynomial is
- * sum map[key] * key
+ *   ∑ map[key] * key
  * Compared to MonomialAsExpressionToCoefficientMap, using Monomial as the key
  * type should be faster than using the Expression as the key type.
  */
