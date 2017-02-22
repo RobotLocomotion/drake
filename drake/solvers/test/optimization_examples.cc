@@ -32,7 +32,7 @@ std::set<ConstraintForm> linear_constraint_form() {
 }
 
 std::set<CostForm> quadratic_cost_form() {
-  return std::set<CostForm>{CostForm::kNonSymbolic};
+  return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
 }
 
 OptimizationProgram::OptimizationProgram(CostForm cost_form, ConstraintForm cnstr_form)
