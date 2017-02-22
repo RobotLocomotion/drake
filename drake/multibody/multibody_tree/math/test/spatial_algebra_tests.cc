@@ -14,13 +14,13 @@ namespace {
 using Eigen::Vector3d;
 
 // Tests default construction and proper size at compile time.
-GTEST_TEST(SpatialVector, SizeAtCompileTime) {
-  SpatialVector<double> V;
+GTEST_TEST(SpatialVelocity, SizeAtCompileTime) {
+  SpatialVelocity<double> V;
   EXPECT_EQ(V.size(), 6);
 }
 
 // Construction from two three dimensional vectors.
-GTEST_TEST(SpatialVector, ConstructionFromTwo3DVectors) {
+GTEST_TEST(SpatialVelocity, ConstructionFromTwo3DVectors) {
   // Linear velocity of frame B measured and expressed in frame A.
   Vector3d v_AB(1, 2, 0);
 
@@ -28,7 +28,7 @@ GTEST_TEST(SpatialVector, ConstructionFromTwo3DVectors) {
   Vector3d w_AB(0, 0, 3);
 
   // Spatial velocity of frame B with respect to A and expressed in A.
-  SpatialVector<double> V_AB(w_AB, v_AB);
+  SpatialVelocity<double> V_AB(w_AB, v_AB);
 
   // Verify compile-time size.
   EXPECT_EQ(V_AB.size(), 6);
@@ -38,7 +38,7 @@ GTEST_TEST(SpatialVector, ConstructionFromTwo3DVectors) {
   EXPECT_TRUE(V_AB.angular().isApprox(w_AB));
 }
 
-class SpatialVectorTest : public ::testing::Test {
+class SpatialVelocityTest : public ::testing::Test {
  protected:
   // Linear velocity of a frame Y measured in frame X and expressed in a third
   // frame A.
@@ -48,14 +48,14 @@ class SpatialVectorTest : public ::testing::Test {
   Vector3d w_XY_A_{0, 0, 3};
 
   // Spatial velocity of a frame Y measured in X and expressed in A.
-  SpatialVector<double> V_XY_A_{w_XY_A_, v_XY_A_};
+  SpatialVelocity<double> V_XY_A_{w_XY_A_, v_XY_A_};
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // Tests array accessors.
-TEST_F(SpatialVectorTest, SpatialVectorArrayAccessor) {
+TEST_F(SpatialVelocityTest, SpatialVelocityArrayAccessor) {
   // Mutable access.
   V_XY_A_[0] = 1.0;
   V_XY_A_[1] = 2.0;
@@ -75,14 +75,14 @@ TEST_F(SpatialVectorTest, SpatialVectorArrayAccessor) {
 }
 
 // Tests the (mutable) access with operator[](int).
-TEST_F(SpatialVectorTest, SpatialVectorVectorComponentAccessors) {
+TEST_F(SpatialVelocityTest, SpatialVelocityVectorComponentAccessors) {
   // They should be exactly equal, byte by byte.
   EXPECT_EQ(V_XY_A_.linear(), v_XY_A_);
   EXPECT_EQ(V_XY_A_.angular(), w_XY_A_);
 }
 
 // Tests access as an Eigen vector.
-TEST_F(SpatialVectorTest, EigenAccess) {
+TEST_F(SpatialVelocityTest, EigenAccess) {
   Vector6<double> V = V_XY_A_.get_coeffs();
   Vector6<double> V_expected;
   V_expected << w_XY_A_, v_XY_A_;
@@ -90,7 +90,7 @@ TEST_F(SpatialVectorTest, EigenAccess) {
 }
 
 // Tests access to the raw data pointer.
-TEST_F(SpatialVectorTest, RawDataAccessors) {
+TEST_F(SpatialVelocityTest, RawDataAccessors) {
   // Mutable access.
   double* mutable_data = V_XY_A_.mutable_data();
   for (int i = 0; i < 6; ++i) mutable_data[i] = i;
@@ -106,9 +106,9 @@ TEST_F(SpatialVectorTest, RawDataAccessors) {
 }
 
 // Tests comparison to a given precision.
-TEST_F(SpatialVectorTest, IsApprox) {
+TEST_F(SpatialVelocityTest, IsApprox) {
   const double precision = 1.0e-10;
-  SpatialVector<double> other(
+  SpatialVelocity<double> other(
       (1.0 + precision) * w_XY_A_, (1.0 + precision) * v_XY_A_);
   EXPECT_TRUE(V_XY_A_.IsApprox(other, 1.01 * precision));
   EXPECT_FALSE(V_XY_A_.IsApprox(other, 0.99 * precision));
@@ -116,7 +116,7 @@ TEST_F(SpatialVectorTest, IsApprox) {
 
 // Tests the shifting of a spatial velocity between two moving frames rigidly
 // attached to each other.
-TEST_F(SpatialVectorTest, ShiftOperation) {
+TEST_F(SpatialVelocityTest, ShiftOperation) {
   // A vector from the origin of a frame Y to the origin of a frame Z, expressed
   // in a third frame A.
   Vector3d p_YZ({2, -2, 0});
@@ -124,10 +124,10 @@ TEST_F(SpatialVectorTest, ShiftOperation) {
   // Shift the spatial velocity of a frame Y measured in frame X to the
   // spatial velocity of frame Z measured in frame X knowing that frames Y and Z
   // are rigidly attached to each other.
-  SpatialVector<double> V_XZ_A = V_XY_A_.Shift(p_YZ);
+  SpatialVelocity<double> V_XZ_A = V_XY_A_.Shift(p_YZ);
 
   // Verify the result.
-  SpatialVector<double> expected_V_XZ_A(w_XY_A_, {7, 8, 0});
+  SpatialVelocity<double> expected_V_XZ_A(w_XY_A_, {7, 8, 0});
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
 }
 
