@@ -751,8 +751,8 @@ class DiscreteStateDiagram : public Diagram<double> {
     hold1_ = builder.template AddSystem<ZeroOrderHold<double>>(2.0, kSize);
     hold2_ = builder.template AddSystem<ZeroOrderHold<double>>(3.0, kSize);
     publisher_ = builder.template AddSystem<TestPublishingSystem>();
-    builder.ExportInput(hold1_->get_input_port(0));
-    builder.ExportInput(hold2_->get_input_port(0));
+    builder.ExportInput(hold1_->get_input_port());
+    builder.ExportInput(hold2_->get_input_port());
     builder.BuildInto(this);
   }
 
