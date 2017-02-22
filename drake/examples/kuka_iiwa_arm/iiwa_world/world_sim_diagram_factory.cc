@@ -58,11 +58,11 @@ VisualizedPlant<T>::VisualizedPlant(
       builder.template AddSystem<RigidBodyPlant<T>>(std::move(rigid_body_tree));
 
   DRAKE_DEMAND(rigid_body_plant_ != nullptr);
-  plant->set_normal_contact_parameters(penetration_stiffness,
-                                       penetration_dissipation);
-  plant->set_friction_contact_parameters(static_friction_coefficient,
-                                         dynamic_friction_coefficient,
-                                         v_stiction_tolerance);
+  rigid_body_plant_->set_normal_contact_parameters(penetration_stiffness,
+                                                   penetration_dissipation);
+  rigid_body_plant_->set_friction_contact_parameters(
+      static_friction_coefficient, dynamic_friction_coefficient,
+      v_stiction_tolerance);
 
   DRAKE_DEMAND(rigid_body_plant_->get_num_actuators() > 0);
 
