@@ -21,14 +21,6 @@ class RigidBody {
  public:
   RigidBody();
 
-  // The following preprocessor condition is necessary because wrapping method
-  // Clone() in SWIG causes the following build error to occur:
-  //
-  //     "call to implicitly-deleted copy constructor"
-  //
-  // Unfortunately, adding "%ignore RigidBody<double>::Clone()" to
-  // drake-distro/drake/bindings/swig/rbtree.i does not work.
-#ifndef SWIG
   /**
    * Returns a clone of this RigidBody.
    *
@@ -46,13 +38,6 @@ class RigidBody {
    * The visual and collision elements will be cloned pending identified need.
    */
   std::unique_ptr<RigidBody<T>> Clone() const;
-#endif
-
-  /// Compares this %RigidBody with a clone. Since this method is intended to
-  /// compare a clone, an *exact* match is performed. This method will only
-  /// return `true` if the provided `other` %RigidBody is exactly the same as
-  /// this %RigidBody.
-  virtual bool CompareToClone(const RigidBody& other) const;
 
   /**
    * Returns the name of this rigid body.

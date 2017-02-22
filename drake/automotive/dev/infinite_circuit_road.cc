@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
+#include "drake/automotive/dev/infinite_circuit_road.h"
 
 #include <cmath>
 #include <map>

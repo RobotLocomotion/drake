@@ -1,4 +1,4 @@
-#include "drake/automotive/endless_road_car_to_euler_floating_joint.h"
+#include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
 
 #include <memory>
 

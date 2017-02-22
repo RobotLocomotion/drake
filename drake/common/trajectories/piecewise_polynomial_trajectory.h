@@ -18,8 +18,7 @@ class PiecewisePolynomialTrajectory : public Trajectory {
   /**
    * Construct a PiecewisePolynomialTrajectory from a PiecewisePolynomial.
    */
-  explicit PiecewisePolynomialTrajectory(
-      const PiecewisePolynomial<double>& pp)
+  explicit PiecewisePolynomialTrajectory(const PiecewisePolynomial<double>& pp)
       : pp_(pp) {}
 
   /**
@@ -28,8 +27,8 @@ class PiecewisePolynomialTrajectory : public Trajectory {
    * @return a CoefficientMatrix that is the value of the wrapped
    * PiecewisePolynomial.
    */
-  PiecewisePolynomial<double>::CoefficientMatrix
-  value(double t) const override {
+  PiecewisePolynomial<double>::CoefficientMatrix value(
+      double t) const override {
     return pp_.value(t);
   }
 

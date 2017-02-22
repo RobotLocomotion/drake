@@ -16,12 +16,10 @@ drake_cc_library(
     srcs = [
         "generate_obj.cc",
         "generate_urdf.cc",
-        "infinite_circuit_road.cc",
     ],
     hdrs = [
         "generate_obj.h",
         "generate_urdf.h",
-        "infinite_circuit_road.h",
     ],
     deps = [
         "//drake/automotive/maliput/api",
@@ -48,14 +46,6 @@ drake_cc_googletest(
         ":utility",
         "//drake/automotive/maliput/monolane",
         "//drake/thirdParty:spruce",
-    ],
-)
-
-drake_cc_googletest(
-    name = "infinite_circuit_road_test",
-    deps = [
-        ":utility",
-        "//drake/automotive/maliput/monolane",
     ],
 )
 

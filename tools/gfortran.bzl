@@ -7,6 +7,7 @@ def _find_and_symlink(repository_ctx, lib_name):
     result = repository_ctx.execute([gfortran,
                                      "--print-file-name=" + lib_name])
     if result.return_code != 0:
+        print(result.return_code, result.stdout, result.stderr)
         fail("gfortran.bzl: Could not --print-file-name=" + lib_name + ".  " +
              "Is gfortran installed?")
 

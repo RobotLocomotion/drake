@@ -12,43 +12,32 @@ namespace DrakeCollision {
 
 Element::Element()
     : DrakeShapes::Element(Eigen::Isometry3d::Identity()), body_(nullptr) {
-  id = (ElementId) this;
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry,
                  const Isometry3d& T_element_to_local)
     : DrakeShapes::Element(geometry, T_element_to_local), body_(nullptr) {
-  id = (ElementId) this;
 }
 
 Element::Element(const Isometry3d& T_element_to_link,
                  const RigidBody<double>* body)
     : DrakeShapes::Element(T_element_to_link), body_(body) {
-  id = (ElementId) this;
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry,
                  const Isometry3d& T_element_to_link,
                  const RigidBody<double>* body)
     : DrakeShapes::Element(geometry, T_element_to_link), body_(body) {
-  id = (ElementId) this;
 }
-
-Element::Element(const Element& other)
-    : DrakeShapes::Element(other),
-      // Id's should be assigned by the model, not here.
-      // In addition casting to an int is a bad idea.
-      // Issue #2662 tracks the resolution of these problems.
-      id(reinterpret_cast<ElementId>(this)),
-      is_anchored_(other.is_anchored_),
-      body_(other.body_),
-      collision_cliques_(other.collision_cliques_),
-      collision_filter_group_(other.collision_filter_group_),
-      collision_filter_ignores_(other.collision_filter_ignores_) {}
 
 Element* Element::clone() const { return new Element(*this); }
 
-ElementId Element::getId() const { return id; }
+ElementId Element::getId() const {
+  // Id's should be assigned by the model, not here.
+  // In addition casting to an int is a bad idea.
+  // Issue #2662 tracks the resolution of these problems.
+  return reinterpret_cast<ElementId>(this);
+}
 
 const RigidBody<double>* Element::get_body() const { return body_; }
 
@@ -100,7 +89,7 @@ void Element::set_collision_filter(const DrakeCollision::bitmask &group,
 
 ostream& operator<<(ostream& out, const Element& ee) {
   out << "DrakeCollision::Element:\n"
-      << "  - id = " << ee.id << "\n"
+      << "  - id = " << ee.getId() << "\n"
       << "  - T_element_to_world =\n"
       << ee.T_element_to_world.matrix() << "\n"
       << "  - T_element_to_local =\n"

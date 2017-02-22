@@ -196,9 +196,6 @@ class Accelerometer : public systems::LeafSystem<double> {
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const OutputPortDescriptor<double>& descriptor) const override;
 
-  friend std::ostream& operator<<(std::ostream& out,
-                                  const Accelerometer& depth_sensor);
-
  protected:
   /// Computes the "sensed" linear acceleration.
   void DoCalcOutput(const systems::Context<double>& context,

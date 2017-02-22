@@ -4,6 +4,7 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/multibody/rigid_body.h"
+#include "drake/multibody/test/rigid_body_compare_to_clone.h"
 
 namespace drake {
 namespace multibody {
@@ -20,7 +21,7 @@ bool CompareToClone(const RigidBodyActuator& original,
         original.name_, clone.name_);
     return false;
   }
-  if (!original.body_->CompareToClone(*clone.body_)) {
+  if (!rigid_body::CompareToClone(*original.body_, *clone.body_)) {
     drake::log()->debug(
         "CompareToClone(RigidBodyActuator): Bodies mismatch.");
     return false;

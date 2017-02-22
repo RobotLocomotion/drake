@@ -1,9 +1,5 @@
 #include "drake/systems/sensors/gyroscope_output.h"
 
-#include <cmath>
-
-#include "drake/systems/sensors/gyroscope.h"
-
 namespace drake {
 namespace systems {
 namespace sensors {

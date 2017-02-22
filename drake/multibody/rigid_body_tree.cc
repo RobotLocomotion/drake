@@ -125,10 +125,6 @@ RigidBodyTree<T>::RigidBodyTree()
 template <typename T>
 RigidBodyTree<T>::~RigidBodyTree() {}
 
-// For an explanation of why these SWIG preprocessor commands are needed, see
-// the comment immediately above the declaration of RigidBodyTree::Clone() in
-// rigid_body_tree.h.
-#ifndef SWIG
 template <>
 unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
   auto clone = make_unique<RigidBodyTree<double>>();
@@ -208,7 +204,6 @@ unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
 
   return clone;
 }
-#endif
 
 template <typename T>
 bool RigidBodyTree<T>::transformCollisionFrame(
@@ -1565,6 +1560,35 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree<T>::centerOfMass(
   if (m > 0.0) com /= m;
 
   return com;
+}
+
+template <typename T>
+drake::Matrix6<T> RigidBodyTree<T>::LumpedSpatialInertiaInWorldFrame(
+      const KinematicsCache<T>& cache,
+      const std::set<int>& model_instance_id_set) const {
+  drake::Matrix6<T> I_W = drake::Matrix6<T>::Zero();
+  for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
+    const RigidBody<T>& body = *bodies[i];
+    if (is_part_of_model_instances(body, model_instance_id_set)) {
+      const Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, body);
+      I_W += transformSpatialInertia(
+          X_WB, body.get_spatial_inertia().template cast<T>());
+    }
+  }
+  return I_W;
+}
+
+template <typename T>
+drake::Matrix6<T> RigidBodyTree<T>::LumpedSpatialInertiaInWorldFrame(
+      const KinematicsCache<T>& cache,
+      const std::vector<const RigidBody<T>*>& bodies_of_interest) const {
+  drake::Matrix6<T> I_W = drake::Matrix6<T>::Zero();
+  for (const RigidBody<T>* body : bodies_of_interest) {
+    const Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, *body);
+    I_W += transformSpatialInertia(
+        X_WB, body->get_spatial_inertia().template cast<T>());
+  }
+  return I_W;
 }
 
 template <typename T>
