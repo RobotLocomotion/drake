@@ -26,7 +26,6 @@ using std::runtime_error;
 using std::shared_ptr;
 using std::unordered_map;
 
-namespace internal {
 Monomial::Monomial() : total_degree_{0}, powers_{} {}
 
 Monomial::Monomial(const Variable& var, const int exponent)
@@ -51,7 +50,8 @@ Monomial::Monomial(const map<Variable::Id, int>& powers)
 // Forward declaration.
 map<Variable::Id, int> ToMonomialPower(const Expression& e);
 
-Monomial::Monomial(const Expression& e) : Monomial(ToMonomialPower(e)) {}
+Monomial::Monomial(const Expression& e)
+    : Monomial(ToMonomialPower(e.Expand())) {}
 
 size_t Monomial::GetHash() const {
   // To get a hash value for a Monomial, we re-use the hash value for
@@ -160,12 +160,6 @@ map<Variable::Id, int> ToMonomialPower(const Expression& e) {
   return powers;
 }
 
-/* Internally we use internal::Monomial to represent a monomial, rather than
- * using an Expression object.
- */
-typedef std::unordered_map<Monomial, Expression, hash_value<Monomial>>
-    MonomialToCoefficientMapInternal;
-
 /**
  * Adds a term to the polynomial.
  * Find if the monomial in the new term exists in the polynomial or not. If it
@@ -177,7 +171,7 @@ typedef std::unordered_map<Monomial, Expression, hash_value<Monomial>>
  */
 void AddTermToPolynomial(const Monomial& monomial,
                          const Expression& coefficient,
-                         MonomialToCoefficientMapInternal* polynomial) {
+                         MonomialToCoefficientMap* polynomial) {
   auto it = polynomial->find(monomial);
   if (it == polynomial->end()) {
     polynomial->emplace_hint(it, monomial, coefficient);
@@ -194,9 +188,9 @@ void AddTermToPolynomial(const Monomial& monomial,
  * @param map maps the monomial in the input polynomial to its coefficient.
  * @return maps the monomial in the output polynomial to its coefficient.
  */
-MonomialToCoefficientMapInternal PolynomialSqaure(
-    const MonomialToCoefficientMapInternal& map) {
-  MonomialToCoefficientMapInternal map_square;
+MonomialToCoefficientMap PolynomialSqaure(
+    const MonomialToCoefficientMap& map) {
+  MonomialToCoefficientMap map_square;
   map_square.reserve(map.size() * (map.size() + 1) / 2);
   for (auto it1 = map.begin(); it1 != map.end(); ++it1) {
     for (auto it2 = it1; it2 != map.end(); ++it2) {
@@ -216,12 +210,12 @@ class DecomposePolynomialVisitor {
  public:
   // `vars` is a const set of variables, that will not be changed. It stays
   // the same during visiting each type of symbolic expressions.
-  MonomialToCoefficientMapInternal Visit(const Expression& e,
+  MonomialToCoefficientMap Visit(const Expression& e,
                                          const Variables& vars) const {
-    return VisitPolynomial<MonomialToCoefficientMapInternal>(*this, e, vars);
+    return VisitPolynomial<MonomialToCoefficientMap>(*this, e, vars);
   }
 
-  MonomialToCoefficientMapInternal operator()(
+  MonomialToCoefficientMap operator()(
       const shared_ptr<ExpressionVar>& e, const Variables& vars) const {
     const auto& var = e->get_variable();
     Expression coeff{};
@@ -233,17 +227,17 @@ class DecomposePolynomialVisitor {
       exponent = 0;
       coeff = var;
     }
-    return MonomialToCoefficientMapInternal({{Monomial(var, exponent), coeff}});
+    return MonomialToCoefficientMap({{Monomial(var, exponent), coeff}});
   }
 
-  MonomialToCoefficientMapInternal operator()(
+  MonomialToCoefficientMap operator()(
       const shared_ptr<ExpressionConstant>& e, const Variables& vars) const {
-    return MonomialToCoefficientMapInternal({{Monomial(), e->get_value()}});
+    return MonomialToCoefficientMap({{Monomial(), e->get_value()}});
   }
 
-  MonomialToCoefficientMapInternal operator()(
+  MonomialToCoefficientMap operator()(
       const shared_ptr<ExpressionAdd>& e, const Variables& vars) const {
-    MonomialToCoefficientMapInternal map;
+    MonomialToCoefficientMap map;
     double e_constant = e->get_constant();
     if (e_constant != 0) {
       map.emplace(Monomial(), e_constant);
@@ -266,9 +260,9 @@ class DecomposePolynomialVisitor {
     return map;
   }
 
-  MonomialToCoefficientMapInternal operator()(const shared_ptr<ExpressionMul> e,
+  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionMul> e,
                                               const Variables& vars) const {
-    MonomialToCoefficientMapInternal map;
+    MonomialToCoefficientMap map;
     // We iterate through base_to_exponent_map
     // Suppose e = pow(e₁, p₁) * pow(e₂, p₂) * ... * pow(eₖ, pₖ)
     // We first decompose the first k-1 products
@@ -296,7 +290,7 @@ class DecomposePolynomialVisitor {
         map = Visit(pow(p.first, p.second), vars);
       } else {
         const auto& map_p = Visit(pow(p.first, p.second), vars);
-        MonomialToCoefficientMapInternal map_product;
+        MonomialToCoefficientMap map_product;
         map_product.reserve(map.size() * map_p.size());
         // Now multiply each term in map, with each term in map_p.
         for (const auto& term_map : map) {
@@ -316,7 +310,7 @@ class DecomposePolynomialVisitor {
     return map;
   }
 
-  MonomialToCoefficientMapInternal operator()(
+  MonomialToCoefficientMap operator()(
       const shared_ptr<ExpressionPow>& e, const Variables& vars) const {
     // We use a divide and conquer approach here
     // pow(e, p) can be computed as pow(e, ⌊p/2⌋) * pow(e, ⌈p/2⌉)
@@ -326,7 +320,7 @@ class DecomposePolynomialVisitor {
     // (d₀ + d₁ * pow(x, k₁) + ... + dₘ * pow(x, kₘ))
     // We then multiply the term cᵢ * pow(x, kᵢ) with the term dⱼ * pow(x, kⱼ)
     // to get each monomial in the product.
-    MonomialToCoefficientMapInternal map;
+    MonomialToCoefficientMap map;
     const int exponent{
         static_cast<int>(get_constant_value(e->get_second_argument()))};
     if (exponent == 1) {
@@ -358,7 +352,7 @@ class DecomposePolynomialVisitor {
     return map;
   }
 
-  MonomialToCoefficientMapInternal operator()(const shared_ptr<ExpressionDiv> e,
+  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionDiv> e,
                                               const Variables& vars) const {
     // Currently we can only handle the case of a monomial as the divisor.
     const auto& map1 =
@@ -373,12 +367,12 @@ class DecomposePolynomialVisitor {
     const auto& divisor_monomial = map2.begin()->first;
     const auto& divisor_monomial_powers = divisor_monomial.get_powers();
     const Expression& divisor_coeff = map2.begin()->second;
-    MonomialToCoefficientMapInternal map;
+    MonomialToCoefficientMap map;
     map.reserve(map1.size());
     for (const auto& p1 : map1) {
       // For each monomial in the dividend, compute the division from the
       // dividend monomial by the divisor monomial.
-      const internal::Monomial dividend_monomial(p1.first);
+      const Monomial dividend_monomial(p1.first);
       std::map<Variable::Id, int> division_monomial_powers =
           dividend_monomial.get_powers();
       for (const auto& p_divisor : divisor_monomial_powers) {
@@ -400,12 +394,11 @@ class DecomposePolynomialVisitor {
   }
 };
 
-MonomialToCoefficientMapInternal DecomposePolynomialInternal(
-    const Expression& e, const Variables& vars) {
+MonomialToCoefficientMap DecomposePolynomialIntoMonomial(
+    const Expression &e, const Variables &vars) {
   DRAKE_DEMAND(e.is_polynomial());
   return DecomposePolynomialVisitor().Visit(e, vars);
 }
-}  // namespace internal
 
 class DegreeVisitor {
  public:
@@ -479,18 +472,18 @@ Expression GetMonomial(const unordered_map<Variable, int, hash_value<Variable>>&
 
 Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
     const Variables& vars, const int degree) {
-  return internal::ComputeMonomialBasis<Eigen::Dynamic>(vars, degree);
+  return ComputeMonomialBasis<Eigen::Dynamic>(vars, degree);
 }
 
-MonomialToCoefficientMap DecomposePolynomial(const Expression& e,
-                                             const Variables& vars) {
-  const auto& map_internal = internal::DecomposePolynomialInternal(e, vars);
+MonomialAsExpressionToCoefficientMap DecomposePolynomialIntoExpression(
+    const Expression& e, const Variables& vars) {
+  const auto& map_internal = DecomposePolynomialIntoMonomial(e, vars);
   std::unordered_map<Variable::Id, Variable> map_id_to_var;
   map_id_to_var.reserve(vars.size());
   for (const auto& v : vars) {
     map_id_to_var.emplace(v.get_id(), v);
   }
-  MonomialToCoefficientMap map;
+  MonomialAsExpressionToCoefficientMap map;
   map.reserve(map_internal.size());
   for (const auto& p : map_internal) {
     map.emplace(p.first.ToExpression(map_id_to_var), p.second);
@@ -498,8 +491,9 @@ MonomialToCoefficientMap DecomposePolynomial(const Expression& e,
   return map;
 }
 
-MonomialToCoefficientMap DecomposePolynomial(const Expression& e) {
-  return DecomposePolynomial(e, e.GetVariables());
+MonomialAsExpressionToCoefficientMap DecomposePolynomialIntoExpression(
+    const Expression& e) {
+  return DecomposePolynomialIntoExpression(e, e.GetVariables());
 }
 }  // namespace symbolic
 }  // namespace drake

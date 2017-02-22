@@ -36,10 +36,10 @@ class DecomposePolynomialTest : public ::testing::Test {
 // which maps the monomial to the coefficient, to `map_expected`.
 // If `check_expression_equal` is true, checks if the summation of
 // map[monomial] * monomial is equal to `e`.
-void CheckMonomialToCoeffMap(const symbolic::Expression& e,
-                             const Variables& vars,
-                             const MonomialToCoefficientMap& map_expected) {
-  const auto& map = DecomposePolynomial(e, vars);
+void CheckMonomialToCoeffMap(
+    const symbolic::Expression& e, const Variables& vars,
+    const MonomialAsExpressionToCoefficientMap& map_expected) {
+  const auto& map = DecomposePolynomialIntoExpression(e, vars);
   EXPECT_EQ(map.size(), map_expected.size());
   symbolic::Expression e_expected(0);
   for (const auto& p : map) {
@@ -53,19 +53,19 @@ void CheckMonomialToCoeffMap(const symbolic::Expression& e,
 }
 
 TEST_F(DecomposePolynomialTest, DecomposePolynomial0) {
-  MonomialToCoefficientMap map_expected({{x_, 1}});
+  MonomialAsExpressionToCoefficientMap map_expected({{x_, 1}});
   CheckMonomialToCoeffMap(x_, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(x_, var_xy_, map_expected);
 }
 
 TEST_F(DecomposePolynomialTest, DecomposePolynomial1) {
-  MonomialToCoefficientMap map_expected({{1, x_}});
+  MonomialAsExpressionToCoefficientMap map_expected({{1, x_}});
   CheckMonomialToCoeffMap(x_, {var_y_}, map_expected);
   CheckMonomialToCoeffMap(x_, {var_y_, var_z_}, map_expected);
 }
 
 TEST_F(DecomposePolynomialTest, DecomposePolynomial2) {
-  MonomialToCoefficientMap map_expected({{1, 2}});
+  MonomialAsExpressionToCoefficientMap map_expected({{1, 2}});
   CheckMonomialToCoeffMap(2, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(2, var_xy_, map_expected);
 
@@ -76,8 +76,8 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial2) {
 }
 
 TEST_F(DecomposePolynomialTest, DecomposePolynomial3) {
-  MonomialToCoefficientMap map_expected1;
-  MonomialToCoefficientMap map_expected2;
+  MonomialAsExpressionToCoefficientMap map_expected1;
+  MonomialAsExpressionToCoefficientMap map_expected2;
   map_expected1.emplace(x_, 1);
   map_expected1.emplace(1, y_);
   map_expected2.emplace(x_, 1);
@@ -106,11 +106,11 @@ void DecomposePolynomialTest::CheckDecomposePolynomial4(const Expression& e) {
   // Decomposes 2 * x * x.
   EXPECT_PRED2(ExprEqual, e, 2 * x_ * x_);
 
-  MonomialToCoefficientMap map_expected1({{x_ * x_, 2}});
+  MonomialAsExpressionToCoefficientMap map_expected1({{x_ * x_, 2}});
   CheckMonomialToCoeffMap(e, {var_x_}, map_expected1);
   CheckMonomialToCoeffMap(e, var_xy_, map_expected1);
 
-  MonomialToCoefficientMap map_expected2;
+  MonomialAsExpressionToCoefficientMap map_expected2;
   map_expected2.emplace(1, 2 * x_ * x_);
   CheckMonomialToCoeffMap(e, {var_y_}, map_expected2);
 }
@@ -130,13 +130,13 @@ void DecomposePolynomialTest::CheckDecomposePolynomial5(const Expression& e) {
   // Decomposes 6 * x * y.
   EXPECT_PRED2(ExprEqual, e, 6 * x_ * y_);
 
-  MonomialToCoefficientMap map_expected1({{x_ * y_, 6}});
+  MonomialAsExpressionToCoefficientMap map_expected1({{x_ * y_, 6}});
   CheckMonomialToCoeffMap(e, var_xy_, map_expected1);
 
-  MonomialToCoefficientMap map_expected2({{x_, 6 * y_}});
+  MonomialAsExpressionToCoefficientMap map_expected2({{x_, 6 * y_}});
   CheckMonomialToCoeffMap(e, {var_x_}, map_expected2);
 
-  MonomialToCoefficientMap map_expected3({{y_, 6 * x_}});
+  MonomialAsExpressionToCoefficientMap map_expected3({{y_, 6 * x_}});
   CheckMonomialToCoeffMap(e, {var_y_}, map_expected3);
 }
 
@@ -156,39 +156,39 @@ void DecomposePolynomialTest::CheckDecomposePolynomial6(const Expression& e) {
   Expression e_expected{3 * x_ * x_ * y_ + 4 * pow(y_, 3) * z_ + 2};
   EXPECT_PRED2(ExprEqual, e.Expand(), e_expected);
 
-  MonomialToCoefficientMap map_expected1(
+  MonomialAsExpressionToCoefficientMap map_expected1(
       {{x_ * x_, 3 * y_}, {1, 4 * pow(y_, 3) * z_ + 2}});
   CheckMonomialToCoeffMap(e, {var_x_}, map_expected1);
 
-  MonomialToCoefficientMap map_expected2;
+  MonomialAsExpressionToCoefficientMap map_expected2;
   map_expected2.emplace(y_, 3 * x_ * x_);
   map_expected2.emplace(pow(y_, 3), 4 * z_);
   map_expected2.emplace(1, 2);
   CheckMonomialToCoeffMap(e, {var_y_}, map_expected2);
 
-  MonomialToCoefficientMap map_expected3(
+  MonomialAsExpressionToCoefficientMap map_expected3(
       {{z_, 4 * pow(y_, 3)}, {1, 3 * x_ * x_ * y_ + 2}});
   CheckMonomialToCoeffMap(e, {var_z_}, map_expected3);
 
-  MonomialToCoefficientMap map_expected4;
+  MonomialAsExpressionToCoefficientMap map_expected4;
   map_expected4.emplace(x_ * x_ * y_, 3);
   map_expected4.emplace(pow(y_, 3), 4 * z_);
   map_expected4.emplace(1, 2);
   CheckMonomialToCoeffMap(e, var_xy_, map_expected4);
 
-  MonomialToCoefficientMap map_expected5;
+  MonomialAsExpressionToCoefficientMap map_expected5;
   map_expected5.emplace(x_ * x_, 3 * y_);
   map_expected5.emplace(z_, 4 * pow(y_, 3));
   map_expected5.emplace(1, 2);
   CheckMonomialToCoeffMap(e, {var_x_, var_z_}, map_expected5);
 
-  MonomialToCoefficientMap map_expected6;
+  MonomialAsExpressionToCoefficientMap map_expected6;
   map_expected6.emplace(y_, 3 * x_ * x_);
   map_expected6.emplace(pow(y_, 3) * z_, 4);
   map_expected6.emplace(1, 2);
   CheckMonomialToCoeffMap(e, {var_y_, var_z_}, map_expected6);
 
-  MonomialToCoefficientMap map_expected7;
+  MonomialAsExpressionToCoefficientMap map_expected7;
   map_expected7.emplace(x_ * x_ * y_, 3);
   map_expected7.emplace(pow(y_, 3) * z_, 4);
   map_expected7.emplace(1, 2);
@@ -204,13 +204,16 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial6) {
 void DecomposePolynomialTest::CheckDecomposePolynomial7(const Expression& e) {
   EXPECT_PRED2(ExprEqual, e.Expand(), 6 * pow(x_, 3) * y_ * y_);
 
-  MonomialToCoefficientMap map_expected1({{pow(x_, 3), 6 * y_ * y_}});
+  MonomialAsExpressionToCoefficientMap map_expected1(
+      {{pow(x_, 3), 6 * y_ * y_}});
   CheckMonomialToCoeffMap(e, {var_x_}, map_expected1);
 
-  MonomialToCoefficientMap map_expected2({{pow(y_, 2), 6 * pow(x_, 3)}});
+  MonomialAsExpressionToCoefficientMap map_expected2(
+      {{pow(y_, 2), 6 * pow(x_, 3)}});
   CheckMonomialToCoeffMap(e, {var_y_}, map_expected2);
 
-  MonomialToCoefficientMap map_expected3({{pow(x_, 3) * pow(y_, 2), 6}});
+  MonomialAsExpressionToCoefficientMap map_expected3(
+      {{pow(x_, 3) * pow(y_, 2), 6}});
   CheckMonomialToCoeffMap(e, var_xy_, map_expected3);
 }
 
@@ -234,21 +237,21 @@ void DecomposePolynomialTest::CheckDecomposePolynomial8(const Expression& e) {
       ExprEqual, e.Expand(),
       pow(x_, 3) - 4 * x_ * y_ * y_ + 2 * x_ * x_ * y_ - 8 * pow(y_, 3));
 
-  MonomialToCoefficientMap map_expected1;
+  MonomialAsExpressionToCoefficientMap map_expected1;
   map_expected1.emplace(pow(x_, 3), 1);
   map_expected1.emplace(pow(x_, 2), 2 * y_);
   map_expected1.emplace(x_, -4 * y_ * y_);
   map_expected1.emplace(1, -8 * pow(y_, 3));
   CheckMonomialToCoeffMap(e, {var_x_}, map_expected1);
 
-  MonomialToCoefficientMap map_expected2;
+  MonomialAsExpressionToCoefficientMap map_expected2;
   map_expected2.emplace(pow(y_, 3), -8);
   map_expected2.emplace(y_ * y_, -4 * x_);
   map_expected2.emplace(y_, 2 * x_ * x_);
   map_expected2.emplace(1, pow(x_, 3));
   CheckMonomialToCoeffMap(e, {var_y_}, map_expected2);
 
-  MonomialToCoefficientMap map_expected3;
+  MonomialAsExpressionToCoefficientMap map_expected3;
   map_expected3.emplace(pow(x_, 3), 1);
   map_expected3.emplace(x_ * y_ * y_, -4);
   map_expected3.emplace(x_ * x_ * y_, 2);
@@ -270,10 +273,10 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial8) {
 
 TEST_F(DecomposePolynomialTest, DecomposePolynomial9) {
   // Decomposes -x.
-  MonomialToCoefficientMap map_expected1({{x_, -1}});
+  MonomialAsExpressionToCoefficientMap map_expected1({{x_, -1}});
   CheckMonomialToCoeffMap(-x_, {var_x_}, map_expected1);
 
-  MonomialToCoefficientMap map_expected2;
+  MonomialAsExpressionToCoefficientMap map_expected2;
   map_expected2.emplace(1, -x_);
   CheckMonomialToCoeffMap(-x_, {var_y_}, map_expected2);
 }
@@ -281,7 +284,7 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial9) {
 TEST_F(DecomposePolynomialTest, DecomposePolynomial10) {
   // Decomposes (x + y + 1)^4.
   Expression e = pow(x_ + y_ + 1, 4);
-  MonomialToCoefficientMap map_expected1;
+  MonomialAsExpressionToCoefficientMap map_expected1;
   map_expected1.emplace(pow(x_, 4), 1);
   map_expected1.emplace(pow(x_, 3), 4 * (y_ + 1));
   map_expected1.emplace(pow(x_, 2), 6 * pow(y_ + 1, 2));
@@ -289,7 +292,7 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial10) {
   map_expected1.emplace(1, pow(y_ + 1, 4));
   CheckMonomialToCoeffMap(e, {var_x_}, map_expected1);
 
-  MonomialToCoefficientMap map_expected2;
+  MonomialAsExpressionToCoefficientMap map_expected2;
   map_expected2.emplace(pow(x_, 4), 1);
   map_expected2.emplace(pow(x_, 3) * y_, 4);
   map_expected2.emplace(pow(x_, 2) * pow(y_, 2), 6);
@@ -311,14 +314,14 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial10) {
 TEST_F(DecomposePolynomialTest, DecomposePolynomial11) {
   // Decomposes (x + y + 1)^3.
   Expression e = pow(x_ + y_ + 1, 3);
-  MonomialToCoefficientMap map_expected1;
+  MonomialAsExpressionToCoefficientMap map_expected1;
   map_expected1.emplace(pow(x_, 3), 1);
   map_expected1.emplace(pow(x_, 2), 3 * (y_ + 1));
   map_expected1.emplace(x_, 3 * pow(y_ + 1, 2));
   map_expected1.emplace(1, pow(y_ + 1, 3));
   CheckMonomialToCoeffMap(e, {var_x_}, map_expected1);
 
-  MonomialToCoefficientMap map_expected2;
+  MonomialAsExpressionToCoefficientMap map_expected2;
   map_expected2.emplace(pow(x_, 3), 1);
   map_expected2.emplace(pow(x_, 2) * y_, 3);
   map_expected2.emplace(x_ * pow(y_, 2), 3);
@@ -337,11 +340,11 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial11) {
 
 TEST_F(DecomposePolynomialTest, DISABLED_DecomposePolynomial12) {
   // Decomposes x^2 * y / (x * y)
-  MonomialToCoefficientMap map_expected1;
+  MonomialAsExpressionToCoefficientMap map_expected1;
   map_expected1.emplace(x_, 1);
   CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), {var_x_}, map_expected1);
 
-  MonomialToCoefficientMap map_expected2;
+  MonomialAsExpressionToCoefficientMap map_expected2;
   // TODO(hongkai.dai) : Currently (pow(x_, 2) / x_).EqualTo(x_) returns false,
   // revisit this code when we can simplify the division result.
   map_expected2.emplace(1, pow(x_, 2) / x_);
@@ -356,17 +359,17 @@ TEST_F(DecomposePolynomialTest, DISABLED_DecomposePolynomial13) {
   Expression e = (3 * x_ * x_ * pow(y_, 3) + 2 * pow(x_, 3) * y_ * y_) / (3 * x_
 * y_);
 
-  MonomialToCoefficientMap map_expected1;
+  MonomialAsExpressionToCoefficientMap map_expected1;
   map_expected1.emplace(x_, 3 * pow(y_, 3) / (3 * y_));
   map_expected1.emplace(x_ * x_, (2 * y_ * y_) / (3 * y_));
   CheckMonomialToCoeffMap(e, {var_x_}, map_expected1);
 
-  MonomialToCoefficientMap map_expected2;
+  MonomialAsExpressionToCoefficientMap map_expected2;
   map_expected2.emplace(y_ * y_, (3 * x_ * x_) / (3 * x_));
   map_expected2.emplace(y_, (2 * pow(x_, 3))/(3 * x_));
   CheckMonomialToCoeffMap(e, {var_y_}, map_expected2);
 
-  MonomialToCoefficientMap map_expected3;
+  MonomialAsExpressionToCoefficientMap map_expected3;
   map_expected3.emplace(x_ * y_ * y_, 1);
   map_expected3.emplace(x_ * x_ * y_, 2.0 / 3);
   CheckMonomialToCoeffMap(e, var_xy_, map_expected3);
