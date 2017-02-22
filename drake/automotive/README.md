@@ -74,9 +74,15 @@ The following demos are available:
        --num_trajectory_car=10
    ```
 
-   See the documentation for the parameters by running
-   `bazel run //drake/automotive:demo -- --help`.
+ * A 3-lane dragway with four `TrajectoryCar` vehicles traveling down each lane
+   at different speeds plus one `SimpleCar`:
 
+   ```
+   bazel run //drake/automotive:demo -- \
+       --num_dragway_lanes=3 \
+       --num_trajectory_car=12 \
+       --dragway_lane_speed_delta=2
+   ```
 
 Driving the Prius
 -----------------
