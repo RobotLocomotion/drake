@@ -8,9 +8,11 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 
 #include <Eigen/Eigenvalues>
 
@@ -212,14 +214,30 @@ class RotationalInertia {
   /// this method computes the principal moments of inertia of `this` rotational
   /// inertia about the same point `P` and expressed on a frame with origin at
   /// `P` and aligned with the principal axes.
-  /// The computed principal moments are placed into @p principal_moments sorted
-  /// in ascending order.
-  /// @returns `true` if succesful and `false` otherwise.
-  Vector3<T> CalcPrincipalMomentsOfInertia() const {
-    // Note: Eigen's SelfAdjointEigenSolver only works with the lower diagonal
-    // part of the matrix.
-    Eigen::SelfAdjointEigenSolver<Matrix3<T>> solver(
-        get_matrix(), Eigen::EigenvaluesOnly);
+  ///
+  /// Note: The current version of this method only works for inertias with a
+  ///       scalar type `T` that can be converted to a double discarding any
+  ///       supplemental scalar data, e.g., the derivatives of an
+  ///       AutoDiffScalar. It fails at runtime if the type `T` cannot be
+  ///       converted to `double`.
+  ///
+  /// @retval moments The vector of principal moments `[Ixx Iyy Izz]` sorted in
+  ///                 ascending order.
+  Vector3<double> CalcPrincipalMomentsOfInertia() const {
+    // Notes:
+    //   1. Eigen's SelfAdjointEigenSolver only works with the lower diagonal
+    //      part of the matrix.
+    //   2. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffScalar.
+    //      Therefore we use a local copy to a Matrix3<double>.
+    Matrix3<double> Id;  // Only the lower triangle is used.
+    Id(0, 0) = ExtractDoubleOrThrow(I_Bo_F_(0, 0));
+    Id(1, 0) = ExtractDoubleOrThrow(I_Bo_F_(1, 0));
+    Id(2, 0) = ExtractDoubleOrThrow(I_Bo_F_(2, 0));
+    Id(1, 1) = ExtractDoubleOrThrow(I_Bo_F_(1, 1));
+    Id(2, 1) = ExtractDoubleOrThrow(I_Bo_F_(2, 1));
+    Id(2, 2) = ExtractDoubleOrThrow(I_Bo_F_(2, 2));
+    Eigen::SelfAdjointEigenSolver<Matrix3<double>> solver(
+        Id, Eigen::EigenvaluesOnly);
     if (solver.info() != Eigen::Success) {
       throw std::runtime_error(
           "Error: In RotationalInertia::CalcPrincipalMomentsOfInertia(). "
@@ -243,10 +261,10 @@ class RotationalInertia {
     if (IsNaN()) return false;
 
     // Compute principal moments of inertia.
-    Vector3<T> d = CalcPrincipalMomentsOfInertia();
+    Vector3<double> d = CalcPrincipalMomentsOfInertia();
 
     // Principal moments must be strictly positive.
-    if ((d.array() <= T(0)).any() ) return false;
+    if ((d.array() <= 0).any() ) return false;
 
     // Checks triangle inequality
     if (!( d[0] + d[1] >= d[2] && d[0] + d[2] >= d[1] && d[1] + d[2] >= d[0]))
