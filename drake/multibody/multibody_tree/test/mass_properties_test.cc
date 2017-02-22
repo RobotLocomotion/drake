@@ -33,7 +33,7 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
 // Test constructor for a principal axes rotational inertia matrix for which
 // off-diagonal elements are zero.
 GTEST_TEST(RotationalInertia, PrincipalAxesConstructor) {
-  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
   RotationalInertia<double> I(m(0), m(1), m(2));
   Vector3d moments_expected = m;
   Vector3d products_expected = Vector3d::Zero();
