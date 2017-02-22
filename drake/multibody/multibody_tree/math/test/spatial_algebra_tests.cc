@@ -6,6 +6,9 @@
 
 #include "gtest/gtest.h"
 
+#include <sstream>
+#include <string>
+
 namespace drake {
 namespace multibody {
 namespace math {
@@ -36,6 +39,23 @@ GTEST_TEST(SpatialVelocity, ConstructionFromTwo3DVectors) {
   // Comparison to Eigen::NumTraits<double>::epsilon() precision.
   EXPECT_TRUE(V_AB.linear().isApprox(v_AB));
   EXPECT_TRUE(V_AB.angular().isApprox(w_AB));
+}
+
+// Construction from a Eigen expressions.
+GTEST_TEST(SpatialVelocity, ConstructionFromAnEigenExpression) {
+  // A six-dimensional vector.
+  Vector6<double> v;
+  v << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
+
+  // A spatial velocity instantiated from an Eigen vector.
+  SpatialVelocity<double> V1(v);
+
+  // Verify the underlying Eigen vector matches the original vector.
+  EXPECT_EQ(V1.get_coeffs(), v);
+
+  // A spatial velocity instantiated from an Eigen block.
+  SpatialVelocity<double> V2(v.segment<6>(0));
+  EXPECT_EQ(V2.get_coeffs(), v);
 }
 
 class SpatialVelocityTest : public ::testing::Test {
@@ -129,6 +149,28 @@ TEST_F(SpatialVelocityTest, ShiftOperation) {
   // Verify the result.
   SpatialVelocity<double> expected_V_XZ_A(w_XY_A_, {7, 8, 0});
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
+}
+
+// Test the shift operator to write into a stream.
+TEST_F(SpatialVelocityTest, ShiftOperatorIntoStream) {
+  std::stringstream stream;
+  stream << V_XY_A_;
+  std::string expected_string = "[0, 0, 3, 1, 2, 0]^T";
+  EXPECT_EQ(expected_string, stream.str());
+}
+
+// Test the multiplication of a spatial velocity by a scalar.
+TEST_F(SpatialVelocityTest, MulitplicationByAScalar) {
+  const double scalar = 3.0;
+  SpatialVelocity<double> sxV = scalar * V_XY_A_;
+  SpatialVelocity<double> Vxs = V_XY_A_ * scalar;
+
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(sxV.angular(), scalar * V_XY_A_.angular());
+  EXPECT_EQ(sxV.linear(), scalar * V_XY_A_.linear());
+
+  // Verify the multiplication by a scalar is commutative.
+  EXPECT_EQ(sxV.get_coeffs(), Vxs.get_coeffs());
 }
 
 }  // namespace
