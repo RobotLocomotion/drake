@@ -37,9 +37,9 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoop) {
   auto adder = builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
   auto integrator = builder.AddSystem<Integrator>(1 /* size */);
 
-  builder.Connect(integrator->get_output_port(0), adder->get_input_port(1));
+  builder.Connect(integrator->get_output_port(), adder->get_input_port(1));
   builder.ExportInput(adder->get_input_port(0));
-  builder.ExportOutput(integrator->get_output_port(0));
+  builder.ExportOutput(integrator->get_output_port());
 
   // There is no algebraic loop, so we should not throw.
   EXPECT_NO_THROW(builder.Build());
@@ -53,10 +53,10 @@ GTEST_TEST(DiagramBuilderTest, CascadedNonDirectFeedthrough) {
   auto integrator1 = builder.AddSystem<Integrator>(1 /* size */);
   auto integrator2 = builder.AddSystem<Integrator>(1 /* size */);
 
-  builder.Connect(integrator1->get_output_port(0),
-                  integrator2->get_input_port(0));
-  builder.ExportInput(integrator1->get_input_port(0));
-  builder.ExportOutput(integrator2->get_output_port(0));
+  builder.Connect(integrator1->get_output_port(),
+                  integrator2->get_input_port());
+  builder.ExportInput(integrator1->get_input_port());
+  builder.ExportOutput(integrator2->get_output_port());
 
   // There is no algebraic loop, so we should not throw.
   EXPECT_NO_THROW(builder.Build());
