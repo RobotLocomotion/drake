@@ -6,6 +6,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
+    "drake_cc_googletest",
 )
 
 package(
@@ -140,6 +141,17 @@ cc_binary(
         "//drake/solvers:mathematical_program",
         "@bot_core_lcmtypes//:lib",
         "@robotlocomotion_lcmtypes//:lib",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_ik_test",
+    srcs = ["test/iiwa_ik_test.cc"],
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":iiwa_ik_planner",
     ],
 )
 

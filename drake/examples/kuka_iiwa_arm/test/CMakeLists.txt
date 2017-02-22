@@ -1,0 +1,5 @@
+if(lcm_FOUND)
+  add_executable(iiwa_ik_test iiwa_ik_test.cc)
+  target_link_libraries(iiwa_ik_test drakeKukaIiwaArmIK)
+  drake_add_test(NAME iiwa_ik_test COMMAND iiwa_ik_test SIZE medium)
+endif()
