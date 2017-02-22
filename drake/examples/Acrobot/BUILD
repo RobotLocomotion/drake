@@ -33,7 +33,7 @@ drake_cc_library(
         ":acrobot_state_vector",
         "//drake/lcmtypes:acrobot",
         "//drake/systems/framework:leaf_system",
-        "//drake/systems/framework:vector"
+        "//drake/systems/framework:vector",
     ],
 )
 
@@ -53,25 +53,26 @@ drake_cc_library(
     hdrs = ["acrobot_plant.h"],
     deps = [
         ":acrobot_state_vector",
-        "//drake/systems/controllers:linear_quadratic_regulator",
         "//drake/multibody/parsers",
+        "//drake/systems/controllers:linear_quadratic_regulator",
+        "//drake/systems/framework",
         "//drake/systems/sensors:rotary_encoders",
-        "//drake/systems/framework",      
     ],
 )
 
 drake_cc_binary(
     name = "acrobot_run_swing_up",
-    srcs = ["acrobot_run_swing_up.cc",
-            "acrobot_spong_controller.h"
+    srcs = [
+        "acrobot_run_swing_up.cc",
+        "acrobot_spong_controller.h",
     ],
     deps = [
         ":acrobot_plant",
+        "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
-        "//drake/lcm:lcm",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "@gflags//:gflags",
     ],
 )
@@ -82,29 +83,30 @@ drake_cc_binary(
     deps = [
         ":acrobot_plant",
         ":acrobot_swing_up",
+        "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
-        "//drake/systems/primitives:trajectory_source",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
-        "//drake/lcm:lcm",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/primitives:trajectory_source",
         "@gflags//:gflags",
     ],
 )
 
 drake_cc_binary(
     name = "acrobot_spong_controller_w_lcm",
-    srcs = ["acrobot_spong_controller_w_lcm.cc",
-            "acrobot_spong_controller.h"
+    srcs = [
+        "acrobot_spong_controller.h",
+        "acrobot_spong_controller_w_lcm.cc",
     ],
     deps = [
-        ":acrobot_plant",
         ":acrobot_lcm",
+        ":acrobot_plant",
+        "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
-        "//drake/lcm:lcm",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
     ],
 )
 
@@ -112,14 +114,14 @@ drake_cc_binary(
     name = "acrobot_plant_w_lcm",
     srcs = ["acrobot_plant_w_lcm.cc"],
     deps = [
-        ":acrobot_plant",
         ":acrobot_lcm",
+        ":acrobot_plant",
+        "//drake/lcm",
+        "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
-        "//drake/lcm:lcm",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "@gflags//:gflags",
     ],
 )
