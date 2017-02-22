@@ -147,7 +147,7 @@ AcrobotWEncoder<T>::AcrobotWEncoder(bool acrobot_state_as_second_output) {
           4, std::vector<int>{0, 1});
   builder.Cascade(*acrobot_plant_, *encoder);
   builder.ExportInput(acrobot_plant_->get_input_port(0));
-  builder.ExportOutput(encoder->get_output_port(0));
+  builder.ExportOutput(encoder->get_output_port());
   if (acrobot_state_as_second_output)
     builder.ExportOutput(acrobot_plant_->get_output_port(0));
 
