@@ -42,8 +42,8 @@ class IiwaIkPlanner {
     Isometry3<double> pose;
     /// Bounding box for the end effector in the world frame.
     Vector3<double> pos_tol;
-    /// Max angle difference between solved end effector's orientation and
-    /// the desired.
+    /// Max angle difference (in radians) between solved end effector's
+    /// orientation and the desired.
     double rot_tol;
     /// Signals if orientation constraint is enabled.
     bool constrain_orientation;
