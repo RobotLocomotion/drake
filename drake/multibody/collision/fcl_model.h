@@ -4,14 +4,18 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/model.h"
 #include "drake/multibody/collision/point_pair.h"
 
 namespace DrakeCollision {
 
+// TODO(jwnimmer-tri) This should be named FclModel per cppguide.
 class FCLModel : public Model {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FCLModel)
+
   FCLModel() {}
   virtual ~FCLModel() {}
 
@@ -40,9 +44,6 @@ class FCLModel : public Model {
       const Eigen::Matrix3Xd& points, bool use_margins,
       std::vector<PointPair>& closest_points) override;
   void updateModel() override;
-
-  FCLModel(const FCLModel&) = delete;
-  FCLModel& operator=(const FCLModel&) = delete;
 };
 
 }  // namespace DrakeCollision

@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/model.h"
 
@@ -11,6 +12,8 @@ namespace DrakeCollision {
 /// An unusable model, used when no collision detection backend is available.
 class UnusableModel : public Model {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnusableModel)
+
   UnusableModel() {}
 
   virtual ~UnusableModel() {}
@@ -51,11 +54,6 @@ class UnusableModel : public Model {
   std::vector<size_t> collidingPoints(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;
-
- private:
-  // UnusableModel objects are not copyable
-  UnusableModel(const UnusableModel&) = delete;
-  UnusableModel& operator=(const UnusableModel&) = delete;
 };
 
 }  // namespace DrakeCollision
