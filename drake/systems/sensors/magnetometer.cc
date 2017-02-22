@@ -56,11 +56,13 @@ void Magnetometer::DoCalcOutput(const systems::Context<double>& context,
   // instead of recomputing it here.
   const KinematicsCache<double> cache = tree_.doKinematics(q, v);
 
-  const drake::Isometry3d<double> X_WM =
+  const Eigen::Isometry3d X_WM =
       tree_.CalcFramePoseInWorldFrame(cache, frame_);
-  const Vector3d n_W_M_ = X_WM.inverse() * n_W_W_;
-  std::cout << "n_W_M_ = " << n_W_M_.transpose() << std::endl;
-  std::cout << "n_W_M_.normalize() = " << n_W_M_.normalize().transpose()
+  const Vector3d n_W_M = X_WM.inverse() * n_W_W_;
+  std::cout << "n_W_M = " << n_W_M.transpose() << std::endl;
+  Vector3d normalized_n_W_M = n_W_M;
+  normalized_n_W_M.normalize();
+  std::cout << "normalized_n_W_M = " << normalized_n_W_M.transpose()
       << std::endl;
 
 

@@ -88,7 +88,7 @@ class Magnetometer : public systems::LeafSystem<double> {
   Magnetometer(const std::string& name, const RigidBodyFrame<double>& frame,
                const RigidBodyTree<double>& tree,
                const Eigen::Vector3d& north_star =
-                   Vector3d(std::numeric_limits<double>::max(), 0, 0));
+                   Eigen::Vector3d(std::numeric_limits<double>::max(), 0, 0));
 
   /// Returns the name of this sensor. The name can be any user-specified value.
   const std::string& get_name() const { return name_; }
