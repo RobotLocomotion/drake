@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -17,21 +18,29 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// A simulated ideal magnetometer. It measures angular displacement from true
-/// north.
+/// A simulated ideal magnetometer that measures the unit vector that points to
+/// true north in the sensor's frame.
 ///
-/// <B>The Magnetometer Math:</B> TODO(liang.fok)
+/// <B>The Magnetometer Math:</B>
 ///
 /// Let:
-///  - `M` be the magnetometer's frame.
-///  - `W` be the world frame.
-///  -    
+///  - `M` be the magnetometer's frame with origin `Mo`.
+///  - `W` be the world frame with origin `Wo`.
+///  - `n_W_W` be a point in the world frame and expressed in the world frame
+///    that represents true north. In other words, the vector from `Wo` to `n_W`
+///    points to true north.
+///  - `n_W_M` be the same point as `n_W_W` but expressed in the magnetometer's
+///    frame.
+///  - `X_MW` be the transform from `W` to `M`.
 ///
 /// The math implemented by this sensor is as follows:
 ///
 /// <pre>
-///   
+/// n_W_M = X_MW * n_W_W
 /// </pre>
+///
+/// The output is the normalized `n_W_M` (i.e., the output is a unit vector that
+/// points to `n_W_M`).
 ///
 /// <B>System Input Ports:</B>
 ///
@@ -46,8 +55,8 @@ namespace sensors {
 /// This system has one output port that is accessible via the following
 /// accessor method:
 ///
-///  - get_output_port(): Contains the sensed angular velocity data in this
-///    sensor's frame. See MagnetometerOutput.
+///  - get_output_port(): Contains the sensed unit vector from `Mo` to `n_W_M`.
+///    See MagnetometerOutput.
 ///
 /// @ingroup sensor_systems
 ///
@@ -63,7 +72,8 @@ class Magnetometer : public systems::LeafSystem<double> {
   ///
   /// @param[in] frame The frame to which this magnetometer is attached. This
   /// is the frame in which this sensor's output is given. It need not be in the
-  /// provided `tree`, but must reference a body in the `tree`.
+  /// provided `tree`, but must reference a body in the `tree`. It defines `M`,
+  /// which is described in this class's documentation.
   ///
   /// @param[in] tree The RigidBodyTree that belongs to the RigidBodyPlant being
   /// sensed by this sensor. This should be a reference to the same
@@ -71,18 +81,14 @@ class Magnetometer : public systems::LeafSystem<double> {
   /// fed into this sensor. This parameter's lifespan must exceed that of this
   /// class's instance.
   ///
-  /// @param[in] magnetic_declination The angle between magnetic north
-  /// and true north. The magnetic declination is positive when the magnetic
-  /// north is east of true north, and is negative when the magnetic north is
-  /// west of true north.
+  /// @param[in] north_star A point in `W` representing "true north". It serves
+  /// the same purpose as the real-life north star -- a stationary reference
+  /// point to true north.
   ///
   Magnetometer(const std::string& name, const RigidBodyFrame<double>& frame,
-            const RigidBodyTree<double>& tree, double magnetic_declination = 0);
-
-  /// Sets the magnetic declination. See the constructor's description of
-  /// parameter `magnetic_declination` for details about the magnetic
-  /// declination.
-  void set_magenetic_declination(double magnetic_declination);
+               const RigidBodyTree<double>& tree,
+               const Eigen::Vector3d& north_star =
+                   Vector3d(std::numeric_limits<double>::max(), 0, 0));
 
   /// Returns the name of this sensor. The name can be any user-specified value.
   const std::string& get_name() const { return name_; }
@@ -123,8 +129,7 @@ class Magnetometer : public systems::LeafSystem<double> {
   const std::string name_;
   const RigidBodyFrame<double> frame_;
   const RigidBodyTree<double>& tree_;
-  Eigen::Vector3d magnetic_north_;
-
+  const Eigen::Vector3d n_W_W_;  // The location of the "north star".
   int input_port_index_{};
   int output_port_index_{};
 };

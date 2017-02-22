@@ -20,20 +20,16 @@ namespace sensors {
 Magnetometer::Magnetometer(const std::string& name,
                      const RigidBodyFrame<double>& frame,
                      const RigidBodyTree<double>& tree,
-                     double magnetic_declination)
+                     const Vector3d& north_star)
     : name_(name),
       frame_(frame),
-      tree_(tree) {
-  set_magenetic_declination(magnetic_declination);
+      tree_(tree),
+      n_W_W_(north_star) {
   input_port_index_ =
       DeclareInputPort(kVectorValued, tree_.get_num_positions() +
                                       tree_.get_num_velocities()).get_index();
   output_port_index_ =
       DeclareOutputPort(kVectorValued, 3).get_index();
-}
-
-void Magnetometer::set_magenetic_declination(double magnetic_declination) {
-  magnetic_north_ << cos(magnetic_declination), sin(magnetic_declination), 0;
 }
 
 std::unique_ptr<BasicVector<double>> Magnetometer::AllocateOutputVector(
@@ -60,10 +56,22 @@ void Magnetometer::DoCalcOutput(const systems::Context<double>& context,
   // instead of recomputing it here.
   const KinematicsCache<double> cache = tree_.doKinematics(q, v);
 
-  Vector4d quat_world_to_body = tree_.relativeQuaternion(
-      cache, RigidBodyTreeConstants::kWorldBodyIndex, frame_.get_frame_index());
+  const drake::Isometry3d<double> X_WM =
+      tree_.CalcFramePoseInWorldFrame(cache, frame_);
+  const Vector3d n_W_M_ = X_WM.inverse() * n_W_W_;
+  std::cout << "n_W_M_ = " << n_W_M_.transpose() << std::endl;
+  std::cout << "n_W_M_.normalize() = " << n_W_M_.normalize().transpose()
+      << std::endl;
 
-  Vector3d mag_body = math::quatRotateVec(quat_world_to_body, magnetic_north_);
+
+  // This is the previous logic that assumes the world frame's +X axis is
+  // pointing north.
+  Vector3d magnetic_north(1, 0, 0);
+  Vector4d quat_world_to_body = tree_.relativeQuaternion(
+      cache, RigidBodyTreeConstants::kWorldBodyIndex,
+      frame_.get_frame_index());
+  Vector3d mag_body = math::quatRotateVec(quat_world_to_body, magnetic_north);
+  std::cout << "mag_body = " << mag_body.transpose() << std::endl;
 
   // Saves the magnetometer reading into the output port.
   BasicVector<double>* const output_vector =
