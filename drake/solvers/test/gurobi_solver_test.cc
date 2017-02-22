@@ -63,7 +63,9 @@ INSTANTIATE_TEST_CASE_P(
 
 GTEST_TEST(QPtest, TestUnitBallExample) {
   GurobiSolver solver;
-  TestQPonUnitBallExample(solver);
+  if (solver.available()) {
+    TestQPonUnitBallExample(solver);
+  }
 }
 }  // namespace test
 }  // namespace solvers

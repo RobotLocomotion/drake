@@ -35,7 +35,9 @@ INSTANTIATE_TEST_CASE_P(
 
 GTEST_TEST(QPtest, TestUnitBallExample) {
   MosekSolver solver;
-  TestQPonUnitBallExample(solver);
+  if (solver.available()) {
+    TestQPonUnitBallExample(solver);
+  }
 }
 }  // namespace test
 }  // namespace solvers
