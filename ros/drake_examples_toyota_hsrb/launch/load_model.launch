@@ -7,7 +7,9 @@
 
   <group ns="drake">
     <param name="penetration_stiffness" type="double" value="4000" />
-    <param name="penetration_damping" type="double" value="300" />
-    <param name="friction_coefficient" type="double" value="10" />
+    <param name="penetration_dissipation" type="double" value="2" />
+    <param name="static_friction_coefficient" type="double" value="0.9" />
+    <param name="dynamic_friction_coefficient" type="double" value="0.5" />
+    <param name="v_stiction_tolerance" type="double" value="0.01" />
   </group>
 </launch>

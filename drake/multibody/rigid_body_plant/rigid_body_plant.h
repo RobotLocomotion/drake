@@ -130,12 +130,18 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   ~RigidBodyPlant() override;
 
-  // TODO(liang.fok) Remove this method once a more advanced contact modeling
-  // framework is available.
-  /// Sets the contact parameters.
-  void set_contact_parameters(double penetration_stiffness,
-                              double penetration_damping,
-                              double friction_coefficient);
+  // TODO(SeanCurtis-TRI): Link to documentation explaining these parameters
+  // in detail.  To come in a subsequent PR.
+  /// Sets only the parameters for *normal* contact.  This is a convenience
+  /// function to allow for more targeted parameter tuning.
+  void set_normal_contact_parameters(double penetration_stiffness,
+                                     double dissipation);
+
+  /// Sets only the parameters for *friction* contact.  This is a convenience
+  /// function to allow for more targeted parameter tuning.
+  void set_friction_contact_parameters(double static_friction_coef,
+                                       double dynamic_friction_coef,
+                                       double v_stiction_tolerance);
 
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
@@ -332,6 +338,18 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
   ///@}
 
+  /// Computes the generalized forces on all bodies due to contact.
+  ///
+  /// @param kinsol         The kinematics of the rigid body system at the time
+  ///                       of contact evaluation.
+  /// @param[out] contacts  The optional contact results.  If non-null, stores
+  ///                       the contact information for consuming on the output
+  ///                       port.
+  /// @returns              The generalized forces across all the bodies due to
+  ///                       contact response.
+  VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
+                                 ContactResults<T>* contacts = nullptr) const;
+
  protected:
   // LeafSystem<T> overrides.
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
@@ -382,29 +400,59 @@ class RigidBodyPlant : public LeafSystem<T> {
   void ComputeContactResults(const Context<T>& context,
                              ContactResults<T>* contacts) const;
 
-  // Computes the generalized forces on all bodies due to contact.
-  //
-  // @param kinsol         The kinematics of the rigid body system at the time
-  //                       of contact evaluation.
-  // @param[out] contacts  The optional contact results.  If non-null, stores
-  //                       the contact information for consuming on the output
-  //                       port.
-  // @return               The generalized forces across all the bodies due to
-  //                       contact response.
-  VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
-                                 ContactResults<T>* contacts = nullptr) const;
-
   // Evaluates the actuator command input ports and throws a runtime_error
   // exception if at least one of the ports is not connected.
   VectorX<T> EvaluateActuatorInputs(const Context<T>& context) const;
+
+  // Computes the friction coefficient based on the relative tangential
+  // *speed* of the contact point on Ac relative to B (expressed in B), v_BAc.
+  //
+  // Specifically, this creates a velocity-dependent coefficient of friction
+  // based a Stribeck curve using values of static (us) and dynamic (ud)
+  // coefficients of friction.  The input relative speed, is transformed to be a
+  // dimensionless multiple of a *stiction tolerance speed*, v.
+  //
+  // The curve is a piecewise smooth curve with three intervals (given v >= 0):
+  //  (a) v=0..1: smooth interpolation from 0 to us
+  //  (b) v=1..3: smooth interpolation from us to ud
+  //  (c) v=3..inf: ud
+  //
+  // Graph looks like this:
+  //
+  //    |
+  //    |
+  // us |     **
+  //    |    *  *
+  //    |    *   *
+  // ud |   *      **********
+  //    |   *
+  //    |   *
+  //    |   *
+  //    |  *
+  //    |*____________________
+  //    0     1     2     3
+  //        multiple of v
+  //
+  T ComputeFrictionCoefficient(T v_tangent_BAc) const;
+
+  // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
+  // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
+  static T step5(T x);
 
   std::unique_ptr<const RigidBodyTree<T>> tree_;
 
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
-  T penetration_stiffness_{150.0};  // An arbitrarily large number.
-  T penetration_damping_{penetration_stiffness_ / 10.0};
-  T friction_coefficient_{1.0};
+  // These default values are all semi-arbitrary.  They seem to produce,
+  // generally, plausible results. They are in *no* way universally valid or
+  // meaningful.
+  T penetration_stiffness_{10000.0};
+  T dissipation_{2};
+  // Note: this is the *inverse* of the v_stiction_tolerance parameter to
+  // optimize for the division.
+  T inv_v_stiction_tolerance_{100};  // inverse of 1 cm/s.
+  T static_friction_coef_{0.9};
+  T dynamic_friction_ceof_{0.5};
 
   int state_output_port_index_{};
   int kinematics_output_port_index_{};

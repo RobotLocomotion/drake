@@ -13,7 +13,7 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/systems/analysis/explicit_euler_integrator.h"
+#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
@@ -55,8 +55,16 @@ int main(int argc, const char** argv) {
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
-  // Contact parameters set arbitrarily.
-  plant.set_contact_parameters(10000., 100., 10.);
+
+  // Contact parameters
+  const double kStiffness = 100000;
+  const double kDissipation = 5.0;
+  const double kStaticFriction = 0.9;
+  const double kDynamicFriction = 0.5;
+  const double kStictionSlipTolerance = 0.01;
+  plant.set_normal_contact_parameters(kStiffness, kDissipation);
+  plant.set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+                                        kStictionSlipTolerance);
   const auto& tree = plant.get_rigid_body_tree();
 
   // RigidBodyActuators.
@@ -185,9 +193,11 @@ int main(int argc, const char** argv) {
   // Create simulator.
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
   auto context = simulator->get_mutable_context();
-  // Integrator set arbitrarily.
-  simulator->reset_integrator<ExplicitEulerIntegrator<double>>(*diagram, 1e-3,
-                                                               context);
+  // Integrator set arbitrarily. The time step was selected by tuning for the
+  // largest value that appears to give stable results.
+  simulator->reset_integrator<SemiExplicitEulerIntegrator<double>>(*diagram,
+                                                                   3e-4,
+                                                                   context);
 
   // Set initial state.
   auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);

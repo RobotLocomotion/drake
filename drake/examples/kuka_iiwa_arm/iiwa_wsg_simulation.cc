@@ -119,8 +119,6 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   *wsg_instance = tree_builder->get_model_info_for_instance(id);
 
   auto plant = std::make_unique<RigidBodyPlant<T>>(tree_builder->Build());
-  // Arbitrary contact parameters.
-  plant->set_contact_parameters(10000., 100., 10.);
   return plant;
 }
 

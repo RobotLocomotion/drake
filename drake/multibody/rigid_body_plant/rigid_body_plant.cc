@@ -134,15 +134,27 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
 template <typename T>
 RigidBodyPlant<T>::~RigidBodyPlant() {}
 
-// TODO(liang.fok) Remove this method once a more advanced contact modeling
+// TODO(liang.fok) Remove these methods once a more advanced contact modeling
 // framework is available.
 template <typename T>
-void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
-                                               double penetration_damping,
-                                               double friction_coefficient) {
+void RigidBodyPlant<T>::set_normal_contact_parameters(
+    double penetration_stiffness, double dissipation) {
+  DRAKE_DEMAND(penetration_stiffness >= 0);
+  DRAKE_DEMAND(dissipation >= 0);
   penetration_stiffness_ = penetration_stiffness;
-  penetration_damping_ = penetration_damping;
-  friction_coefficient_ = friction_coefficient;
+  dissipation_ = dissipation;
+}
+
+template <typename T>
+void RigidBodyPlant<T>::set_friction_contact_parameters(
+    double static_friction_coef, double dynamic_friction_coef,
+    double v_stiction_tolerance) {
+  DRAKE_DEMAND(dynamic_friction_coef >= 0);
+  DRAKE_DEMAND(static_friction_coef >= dynamic_friction_coef);
+  DRAKE_DEMAND(v_stiction_tolerance > 0);
+  dynamic_friction_ceof_ = dynamic_friction_coef;
+  static_friction_coef_ = static_friction_coef;
+  inv_v_stiction_tolerance_ = 1.0 / v_stiction_tolerance;
 }
 
 template <typename T>
@@ -706,7 +718,6 @@ void RigidBodyPlant<T>::ComputeContactResults(
     const Context<T>& context, ContactResults<T>* contacts) const {
   DRAKE_ASSERT(contacts != nullptr);
   contacts->Clear();
-
   // TODO(SeanCurtis-TRI): This is horribly redundant code that only exists
   // because the data is not properly accessible in the cache.  This is
   // boilerplate drawn from EvalDerivatives.  See that code for further
@@ -749,13 +760,14 @@ Matrix3<T> RigidBodyPlant<T>::ComputeBasisFromZ(const Vector3<T>& z_axis_W) {
 template <typename T>
 VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
-  std::vector<DrakeCollision::PointPair> pairs;
+  using std::sqrt;
 
   // TODO(amcastro-tri): get rid of this const_cast.
   // Unfortunately collisionDetect() modifies the collision model in the RBT
   // when updating the collision element poses.
-  pairs = const_cast<RigidBodyTree<T>*>(tree_.get())
-              ->ComputeMaximumDepthCollisionPoints(kinsol, true);
+  std::vector<DrakeCollision::PointPair> pairs =
+      const_cast<RigidBodyTree<T>*>(tree_.get())
+          ->ComputeMaximumDepthCollisionPoints(kinsol, true);
 
   VectorX<T> contact_force(kinsol.getV().rows(), 1);
   contact_force.setZero();
@@ -763,79 +775,139 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   //  as a zero-force contact.
   for (const auto& pair : pairs) {
     if (pair.distance < 0.0) {  // There is contact.
-      int body_a_index = pair.elementA->get_body()->get_body_index();
-      int body_b_index = pair.elementB->get_body()->get_body_index();
-      auto JA = tree_->transformPointsJacobian(kinsol, pair.ptA, body_a_index,
-                                               0, false);
-      auto JB = tree_->transformPointsJacobian(kinsol, pair.ptB, body_b_index,
-                                               0, false);
-      Vector3<T> this_normal = pair.normal;
+      // Define the contact point: the pair contains points on the *surfaces* of
+      // bodies A and B, given as location vectors measured and expressed in the
+      // respective body frames.  For penetration, these points will *not* be
+      // coincident. We must define a common contact point at which relative
+      // velocity is defined and the force is applied.
+
+      const int body_a_index = pair.elementA->get_body()->get_body_index();
+      const int body_b_index = pair.elementB->get_body()->get_body_index();
+      // The reported point on A's surface (As) in the world frame (W).
+      const Vector3<T> p_WAs =
+          kinsol.get_element(body_a_index).transform_to_world * pair.ptA;
+      // The reported point on B's surface (Bs) in the world frame (W).
+      const Vector3<T> p_WBs =
+          kinsol.get_element(body_b_index).transform_to_world * pair.ptB;
+      // The point of contact in the world frame.  Without better information,
+      // the point is arbitrarily selected to be halfway between the two
+      // surface points.
+      const Vector3<T> p_WC = (p_WAs + p_WBs) / 2;
+
+      // The contact point in A's frame.
+      const auto X_AW = kinsol.get_element(body_a_index)
+          .transform_to_world.inverse(Eigen::Isometry);
+      const Vector3<T> p_AAc = X_AW * p_WC;
+      // The contact point in B's frame.
+      const auto X_BW = kinsol.get_element(body_b_index)
+          .transform_to_world.inverse(Eigen::Isometry);
+      const Vector3<T> p_BBc = X_BW * p_WC;
+
+      const auto JA = tree_->transformPointsJacobian(kinsol, p_AAc,
+                                                     body_a_index, 0, false);
+      const auto JB = tree_->transformPointsJacobian(kinsol, p_BBc,
+                                                     body_b_index, 0, false);
+      // This normal points *from* element B *to* element A.
+      const Vector3<T> this_normal = pair.normal;
 
       // R_WC is a left-multiplied rotation matrix to transform a vector from
       // contact frame (C) to world (W), e.g., v_W = R_WC * v_C.
-      Matrix3<T> R_WC = ComputeBasisFromZ(this_normal);
-      auto J = R_WC.transpose() * (JA - JB);  // J = [ D1; D2; n ]
+      const Matrix3<T> R_WC = ComputeBasisFromZ(this_normal);
+      const auto J = R_WC.transpose() * (JA - JB);  // J = [ D1; D2; n ]
 
-      auto relative_velocity = J * kinsol.getV();
+      // TODO(SeanCurtis-TRI): Coordinate with Paul Mitiguy to standardize this
+      // notation.
+      // The *relative* velocity of the contact point in A relative to that in
+      // B, expressed in the contact frame, C.
+      const auto rv_BcAc_C = J * kinsol.getV();
 
-      {
-        // Spring law for normal force:  fA_normal = -k * phi - b * phidot
-        // and damping for tangential force:  fA_tangent = -b * tangentdot
-        // (bounded by the friction cone).
-        Vector3<T> fA;
-        fA(2) = std::max<T>(-penetration_stiffness_ * pair.distance -
-                                penetration_damping_ * relative_velocity(2),
-                            0.0);
-        fA.head(2) =
-            -std::min<T>(penetration_damping_,
-                         friction_coefficient_ * fA(2) /
-                             (relative_velocity.head(2).norm() + EPSILON)) *
-            relative_velocity.head(2);  // Epsilon avoids divide by zero.
+      // TODO(SeanCurtis-TRI): Move this documentation to the larger doxygen
+      // discussion and simply reference it here.
 
-        // fB is equal and opposite to fA: fB = -fA.
-        // Therefore the generalized forces tau_c due to contact are:
-        // tau_c = (R_CW * JA)^T * fA + (R_CW * JB)^T * fB = J^T * fA.
-        // With J computed as above: J = R_CW * (JA - JB).
-        // Since right_hand_side has a negative sign when on the RHS of the
-        // system of equations ([H,-J^T] * [vdot;f] + right_hand_side = 0),
-        // this term needs to be subtracted.
-        contact_force += J.transpose() * fA;
-        if (contacts != nullptr) {
-          Vector3<T> pt_a_world =
-              kinsol.get_element(pair.elementA->get_body()->get_body_index())
-                  .transform_to_world *
-              pair.ptA;
-          Vector3<T> pt_b_world =
-              kinsol.get_element(pair.elementB->get_body()->get_body_index())
-                  .transform_to_world *
-              pair.ptB;
-          Vector3<T> point = (pt_a_world + pt_b_world) * 0.5;
+      // Normal force:
+      // This is the implementation of the Hunt-Crossley dissipation model
+      // with a linear stiffness model.  Generally, f(x, ẋ) = kxⁿ(1 + dẋ).
+      // For Hertz stiffness, n = 3/2.  Here n = 1.  The variables have the
+      // following interpretation:
+      //    x: is the penetration depth.
+      //    ẋ: is the rate of change of penetration, ẋ > 0 --> increasing
+      //        penetration.
+      //    k: penetration stiffness, k > 0
+      //    d: dissipation factor, d > 0
+      // f(x, ẋ) > 0 provides a repulsive force.
+      // It is possible for this force to become attractive if there is a
+      // sufficiently large separating velocity.  In fact, this occurs if
+      // ẋ < -1 / d.  In these cases, we simply clamp the force to zero.
+      // For analysis, we break it down as follows:
+      //  fK = kx -- force due to stiffness
+      //  fD = fk dẋ -- force due to dissipation
+      //  fN = fK + fD  -- total normal force; (skipped if fN < 0).
+      //  fF = mu(v) fN  - friction force magnitude.
 
-          ContactInfo<T>& contact_info = contacts->AddContact(
-              pair.elementA->getId(), pair.elementB->getId());
+      // pair.distance is the signed distance (with negative values indicating
+      // collision).  Therefore, x = -pair.distance.
+      // Given the previous definition of rv_BcAc_C, if the objects are
+      // getting closer (i.e., increasing penetration depth), then A is
+      // moving *against* the normal direction. That means, ẋ = -rv_BcAc_C(2).
 
-          // TODO(SeanCurtis-TRI): Future feature: test against user-set flag
-          // for whether the details should generally be captured or not and
-          // make this function dependent.
-          std::vector<unique_ptr<ContactDetail<T>>> details;
-          ContactResultantForceCalculator<T> calculator(&details);
+      const T x = T(-pair.distance);
+      const T x_dot = -rv_BcAc_C(2);
 
-          // This contact model produces responses that only have a force
-          // component (i.e., the torque portion of the wrench is zero.)
-          // In contrast, other models (e.g., torsional friction model) can
-          // also introduce a "pure torque" component to the wrench.
-          Vector3<T> force = R_WC * fA;
-          Vector3<T> normal = R_WC.template block<3, 1>(0, 2);
+      const T fK = penetration_stiffness_ * x;
+      const T fD = fK * dissipation_ * x_dot;
+      const T fN = fK + fD;
+      if (fN <= 0) continue;
 
-          calculator.AddForce(point, normal, force);
+      Vector3<T> fA;
+      fA(2) = fN;
+      // Friction force
+      const auto slip_vector = rv_BcAc_C.template head<2>();
+      T slip_speed_squared = slip_vector.squaredNorm();
+      // Consider a value indistinguishable from zero if it is smaller
+      // then 1e-14 and test against that value squared.
+      const T kNonZeroSqd = T(1e-14 * 1e-14);
+      if (slip_speed_squared > kNonZeroSqd) {
+        const T slip_speed = sqrt(slip_speed_squared);
+        const T friction_coefficient = ComputeFrictionCoefficient(slip_speed);
+        const T fF = friction_coefficient * fN;
+        fA.template head<2>() = -(fF / slip_speed) *
+            slip_vector;
+      } else {
+        fA.template head<2>() << 0, 0;
+      }
 
-          contact_info.set_resultant_force(calculator.ComputeResultant());
-          // TODO(SeanCurtis-TRI): As with previous note, this line depends
-          // on the eventual instantiation of the user-set flag for
-          // accumulating
-          // contact details.
-          contact_info.set_contact_details(move(details));
-        }
+      // fB is equal and opposite to fA: fB = -fA.
+      // Therefore the generalized forces tau_c due to contact are:
+      // tau_c = (R_CW * JA)^T * fA + (R_CW * JB)^T * fB = J^T * fA.
+      // With J computed as above: J = R_CW * (JA - JB).
+      // Since right_hand_side has a negative sign when on the RHS of the
+      // system of equations ([H,-J^T] * [vdot;f] + right_hand_side = 0),
+      // this term needs to be subtracted.
+      contact_force += J.transpose() * fA;
+      if (contacts != nullptr) {
+        ContactInfo<T>& contact_info = contacts->AddContact(
+            pair.elementA->getId(), pair.elementB->getId());
+
+        // TODO(SeanCurtis-TRI): Future feature: test against user-set flag
+        // for whether the details should generally be captured or not and
+        // make this function dependent.
+        vector<unique_ptr<ContactDetail<T>>> details;
+        ContactResultantForceCalculator<T> calculator(&details);
+
+        // This contact model produces responses that only have a force
+        // component (i.e., the torque portion of the wrench is zero.)
+        // In contrast, other models (e.g., torsional friction model) can
+        // also introduce a "pure torque" component to the wrench.
+        const Vector3<T> force = R_WC * fA;
+        const Vector3<T> normal = R_WC.template block<3, 1>(0, 2);
+
+        calculator.AddForce(p_WC, normal, force);
+
+        contact_info.set_resultant_force(calculator.ComputeResultant());
+        // TODO(SeanCurtis-TRI): As with previous note, this line depends
+        // on the eventual instantiation of the user-set flag for accumulating
+        // contact details.
+        contact_info.set_contact_details(move(details));
       }
     }
   }
@@ -858,10 +930,10 @@ VectorX<T> RigidBodyPlant<T>::EvaluateActuatorInputs(
       if (this->EvalVectorInput(context, input_map_[instance_id]) == nullptr) {
         throw runtime_error(
             "RigidBodyPlant::EvaluateActuatorInputs(): ERROR: "
-            "Actuator command input port for model instance " +
-            std::to_string(instance_id) + " is not connected. All " +
-            std::to_string(get_num_model_instances()) +
-            " actuator command input ports must be connected.");
+                "Actuator command input port for model instance " +
+                std::to_string(instance_id) + " is not connected. All " +
+                std::to_string(get_num_model_instances()) +
+                " actuator command input ports must be connected.");
       }
     }
 
@@ -870,19 +942,41 @@ VectorX<T> RigidBodyPlant<T>::EvaluateActuatorInputs(
       if (input_map_[instance_id] == kInvalidPortIdentifier) {
         continue;
       }
-      const BasicVector<T>* instance_input =
+      const BasicVector<T> *instance_input =
           this->EvalVectorInput(context, input_map_[instance_id]);
       if (instance_input == nullptr) {
         continue;
       }
 
-      const auto& instance_actuators = actuator_map_[instance_id];
+      const auto &instance_actuators = actuator_map_[instance_id];
       DRAKE_ASSERT(instance_actuators.first != kInvalidPortIdentifier);
       u.segment(instance_actuators.first, instance_actuators.second) =
           instance_input->get_value();
     }
   }
   return u;
+}
+
+template <typename T>
+T RigidBodyPlant<T>::ComputeFrictionCoefficient(T v_tangent_BAc) const {
+  DRAKE_ASSERT(v_tangent_BAc >= 0);
+  const T v = v_tangent_BAc * inv_v_stiction_tolerance_;
+  if (v >= 3) {
+    return dynamic_friction_ceof_;
+  } else if (v >= 1) {
+    return static_friction_coef_ -
+           (static_friction_coef_ - dynamic_friction_ceof_) *
+               step5((v - 1) / 2);
+  } else {
+    return static_friction_coef_ * step5(v);
+  }
+}
+
+template <typename T>
+T RigidBodyPlant<T>::step5(T x) {
+  DRAKE_ASSERT(0 <= x && x <= 1);
+  const T x3 = x * x * x;
+  return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
 }
 
 // Explicitly instantiates on the most common scalar types.
