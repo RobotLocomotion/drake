@@ -155,7 +155,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
     render_window_->SetOffScreenRendering(1);
   }
 
-  // RGBD camera's base pose in the world.
+  // The RgbdCamera's base pose in the world.
   auto axis_angle = drake::math::rpy2axis(orientation);
   X_WB_ = Eigen::AngleAxisd(axis_angle[3],
       Eigen::Vector3d(axis_angle[0], axis_angle[1], axis_angle[2]));
