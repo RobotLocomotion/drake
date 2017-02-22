@@ -132,13 +132,6 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   // TODO(SeanCurtis-TRI): Link to documentation explaining these parameters
   // in detail.  To come in a subsequent PR.
-  /// Sets the contact parameters.
-  void set_contact_parameters(double penetration_stiffness,
-                              double dissipation,
-                              double static_friction_coef,
-                              double dynamic_friction_coef,
-                              double v_stiction_tolerance);
-
   /// Sets only the parameters for *normal* contact.  This is a convenience
   /// function to allow for more targeted parameter tuning.
   void set_normal_contact_parameters(double penetration_stiffness,
@@ -452,9 +445,14 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
-  T penetration_stiffness_{10000.0};  // An arbitrarily large number.
-  T dissipation_{2};  // An arbitrary value.
-  T inv_v_stiction_tolerance_{100};  // Inverse of the arbitrary value: 1 cm/s.
+  // These default values are all semi-arbitrary.  They seem to produce,
+  // generally, plausible results. They are in *no* way universally valid or
+  // meaningful.
+  T penetration_stiffness_{10000.0};
+  T dissipation_{2};
+  // Note: this is the *inverse* of the v_stiction_tolerance parameter to
+  // optimize for the division.
+  T inv_v_stiction_tolerance_{100};  // inverse of 1 cm/s.
   T static_friction_coef_{0.9};
   T dynamic_friction_ceof_{0.5};
 

@@ -134,19 +134,8 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
 template <typename T>
 RigidBodyPlant<T>::~RigidBodyPlant() {}
 
-// TODO(liang.fok) Remove this method once a more advanced contact modeling
+// TODO(liang.fok) Remove these methods once a more advanced contact modeling
 // framework is available.
-template <typename T>
-void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
-                                               double dissipation,
-                                               double static_friction_coef,
-                                               double dynamic_friction_coef,
-                                               double v_stiction_tolerance) {
-  set_normal_contact_parameters(penetration_stiffness, dissipation);
-  set_friction_contact_parameters(static_friction_coef, dynamic_friction_coef,
-                                  v_stiction_tolerance);
-}
-
 template <typename T>
 void RigidBodyPlant<T>::set_normal_contact_parameters(
     double penetration_stiffness, double dissipation) {
@@ -826,6 +815,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       const Matrix3<T> R_WC = ComputeBasisFromZ(this_normal);
       const auto J = R_WC.transpose() * (JA - JB);  // J = [ D1; D2; n ]
 
+      // TODO(SeanCurtis-TRI): Coordinate with Paul Mitiguy to standardize this
+      // notation.
       // The *relative* velocity of the contact point in A relative to that in
       // B, expressed in the contact frame, C.
       const auto rv_BcAc_C = J * kinsol.getV();
@@ -838,7 +829,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       // with a linear stiffness model.  Generally, f(x, ẋ) = kxⁿ(1 + dẋ).
       // For Hertz stiffness, n = 3/2.  Here n = 1.  The variables have the
       // following interpretation:
-      //    x: is the *penetration depth*.
+      //    x: is the penetration depth.
       //    ẋ: is the rate of change of penetration, ẋ > 0 --> increasing
       //        penetration.
       //    k: penetration stiffness, k > 0

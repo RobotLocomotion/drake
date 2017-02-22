@@ -62,8 +62,9 @@ class ContactFormulaTest : public ::testing::Test {
     velocities->SetFromVector(target_velocities);
 
     SetContactParameters();
-    plant_->set_contact_parameters(stiffness_, dissipation_, static_friction_,
-                                   dynamic_friction_, v_stiction_tolerance_);
+    plant_->set_normal_contact_parameters(stiffness_, dissipation_);
+    plant_->set_friction_contact_parameters(static_friction_, dynamic_friction_,
+                                            v_stiction_tolerance_);
 
     plant_->CalcOutput(*context_.get(), output_.get());
     contacts_ =
@@ -122,13 +123,13 @@ class ContactFormulaTest : public ::testing::Test {
   }
 
   // Instances owned by the class.
-  unique_ptr<RigidBodyPlant<double>> plant_{};
-  unique_ptr<Context<double>> context_{};
-  unique_ptr<SystemOutput<double>> output_{};
+  unique_ptr<RigidBodyPlant<double>> plant_;
+  unique_ptr<Context<double>> context_;
+  unique_ptr<SystemOutput<double>> output_;
   ContactResults<double> contacts_;
 
   // Pointers used for poking into the structure to test values.
-  RigidBodyTree<double>* tree_;
+  RigidBodyTree<double>* tree_{};
 
   // Sphere configuration constants.
   const double kRadius = 1.0;

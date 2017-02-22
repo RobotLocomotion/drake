@@ -87,8 +87,9 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
   const double kStictionSlipTolerance = 0.001;
-  plant->set_contact_parameters(kStiffness, kDissipation, kStaticFriction,
-                                kDynamicFriction, kStictionSlipTolerance);
+  plant->set_normal_contact_parameters(kStiffness, kDissipation);
+  plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+                                         kStictionSlipTolerance);
 
   // Build a trajectory and PID controller for the lifting joint.
   const auto& lifting_input_port =
