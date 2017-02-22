@@ -291,12 +291,19 @@ class RotationalInertia {
   }
 
   /// Multiplication of a RotationalInertia @p I_Bo_F from the left by a
-  /// scalar @p s.
+  /// scalar @p s. Multiplication by scalar is commutative.
   friend RotationalInertia<T> operator*(const T& s,
                                         const RotationalInertia<T>& I_Bo_F) {
     RotationalInertia<T> sxI;
     sxI.get_mutable_symmetric_matrix_view() = s * I_Bo_F.get_matrix();
     return sxI;
+  }
+
+  /// Multiplication of a RotationalInertia @p I_Bo_F from the rigth by a
+  /// scalar @p s. Multiplication by scalar is commutative.
+  friend RotationalInertia<T> operator*(const RotationalInertia<T>& I_Bo_F,
+                                        const T& s) {
+    return s * I_Bo_F;  // Multiplication by a scalar is commutative.
   }
 
  private:

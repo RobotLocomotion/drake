@@ -222,6 +222,11 @@ GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
   RotationalInertia<double> sxI = scalar * I;
   EXPECT_EQ(sxI.get_moments(), scalar * m);
   EXPECT_EQ(sxI.get_products(), scalar * p);
+
+  // Multiplication by a scalar must be commutative.
+  RotationalInertia<double> Ixs = I * scalar;
+  EXPECT_EQ(Ixs.get_moments(), sxI.get_moments());
+  EXPECT_EQ(Ixs.get_products(), sxI.get_products());
 }
 
 // Test the correctness of operator+=().
