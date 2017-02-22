@@ -7,6 +7,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/solvers/mathematical_program.h"
@@ -34,6 +35,8 @@ namespace systems {
  */
 class DirectTrajectoryOptimization {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTrajectoryOptimization)
+
   /**
    * Adds an integrated cost to all time steps.
    *
@@ -197,11 +200,6 @@ class DirectTrajectoryOptimization {
       const PiecewisePolynomial<double>& traj_init_x);
   // TODO(Lucy-tri) If timespan_init has any relationship to
   // trajectory_time_{lower,upper}_bound, then add doc and asserts.
-
-  // Disable copy and assign.
-  DirectTrajectoryOptimization(const DirectTrajectoryOptimization&) = delete;
-  DirectTrajectoryOptimization& operator=(const DirectTrajectoryOptimization&) =
-      delete;
 
   /**
    * Extract the result of the trajectory solution as a set of
