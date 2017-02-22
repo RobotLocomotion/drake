@@ -6,10 +6,10 @@
 
 SplineInformation::SplineInformation(
     std::vector<int> const& segment_polynomial_orders,
-    std::vector<double> const& segment_times)
-    : PiecewisePolynomialBase(segment_times),
+    std::vector<double> const& breaks)
+    : PiecewisePolynomialBase(breaks),
       segment_polynomial_degrees(segment_polynomial_orders) {
-  DRAKE_ASSERT(segment_times.size() == segment_polynomial_orders.size() + 1);
+  DRAKE_ASSERT(breaks.size() == segment_polynomial_orders.size() + 1);
   value_constraints.resize(getNumberOfSegments());
 }
 
@@ -44,7 +44,7 @@ void SplineInformation::addContinuityConstraint(
 }
 
 std::vector<double> const& SplineInformation::getSegmentTimes() const {
-  return segment_times;
+  return breaks;
 }
 
 int SplineInformation::getSegmentPolynomialDegree(int segment_number,
