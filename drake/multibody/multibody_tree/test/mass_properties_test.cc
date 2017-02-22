@@ -4,6 +4,9 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 
+#include <sstream>
+#include <string>
+
 namespace drake {
 namespace multibody {
 namespace math {
@@ -41,8 +44,8 @@ GTEST_TEST(RotationalInertia, PrincipalAxesConstructor) {
 // off-diagonal elements for which the six entries need to be specified.
 // Also test SetZero() and SetNaN methods.
 GTEST_TEST(RotationalInertia, GeneralConstructor) {
-  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, 0.3, 1.4);  // m for products.
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
   RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
                               p(0), p(1), p(2));/* products of inertia */
   Vector3d moments_expected = m;
@@ -61,8 +64,8 @@ GTEST_TEST(RotationalInertia, GeneralConstructor) {
 
 // Test access by (i, j) indexes.
 GTEST_TEST(RotationalInertia, AccessByIndexes) {
-  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, 0.3, 1.4);  // p for products.
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
   const RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
                                     p(0), p(1), p(2));/* products of inertia */
 
@@ -86,8 +89,8 @@ GTEST_TEST(RotationalInertia, AccessByIndexes) {
 // entries for unused entries, the RotationalInertia behaves as a symmetric
 // matrix.
 GTEST_TEST(RotationalInertia, Symmetry) {
-  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, 0.3, 1.4);  // p for products.
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
   RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
                               p(0), p(1), p(2));/* products of inertia */
 
@@ -186,10 +189,33 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
       principal_moments, NumTraits<double>::epsilon()));
 }
 
+// Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() for a
+// matrix that is symmetric and positive definite. This kind of tri-diagonal
+// matrix arises when discretizing the Laplacian operator using either finite
+// differences or the Finite Element Method with iso-parametric linear elements
+// in 1D.
+// This Laplacian matrix takes the form:
+//     [ 2 -1  0]
+// L = [-1  2 -1]
+//     [ 0 -1  2]
+// and has eigenvalues lambda = [2 - sqrt(2), 2, 2 + sqrt(2)] which do not
+// satisfy the triangle inequality.
+GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaLaplacianTest) {
+  const double Idiag =  2.0;  // The diagonal entries.
+  const double Ioff  = -1.0;  // The off-diagonal entries.
+
+  // Even though the inertia matrix is symmetric and positive definite, it does
+  // not satisfy the triangle inequality.
+  ASSERT_DEATH(
+      {RotationalInertia<double> I(Idiag, Idiag, Idiag, Ioff, 0.0, Ioff);},
+      R"(abort: failure at .*rotational_inertia.h:... )"
+      R"(in RotationalInertia\(\): assertion 'IsPhysicallyValid\(\)' failed)");
+}
+
 // Test the correctness of multiplication with a scalar from the left.
 GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
-  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, 0.3, 1.4);  // p for products.
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
   RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
                               p(0), p(1), p(2));/* products of inertia */
   const double scalar = 3.0;
@@ -200,8 +226,8 @@ GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
 
 // Test the correctness of operator+=().
 GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
-  const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, 0.3, 1.4);  // p for products.
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
   RotationalInertia<double> Ia(m(0), m(1), m(2), /* moments of inertia */
                                p(0), p(1), p(2));/* products of inertia */
   // A second inertia.
@@ -214,6 +240,7 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   EXPECT_EQ(Ib.get_products(), 3.0 * p);
 }
 
+// Test the shift operator to write into a stream.
 GTEST_TEST(RotationalInertia, ShiftOperator) {
   std::stringstream stream;
   RotationalInertia<double> I(1, 2, 3);
