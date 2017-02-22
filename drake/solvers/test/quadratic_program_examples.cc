@@ -69,6 +69,10 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form, ConstraintForm cnstr_fo
       prog()->AddLinearCost(Vector1d(1.0), x_.segment<1>(1));
       break;
     }
+    case CostForm::kSymbolic : {
+      prog()->AddQuadraticCost(2 * x_(0) * x_(0) + x_(0) * x_(1) + x_(1) * x_(1) + x_(0) + x_(1));
+      break;
+    }
     default: {
       throw std::runtime_error("Unsupported cost form.");
     }
@@ -115,6 +119,10 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
       Vector3d b{};
       b << 2.0, 0.0, 0.0;
       prog()->AddQuadraticCost(Q, b, x_);
+      break;
+    }
+    case CostForm::kSymbolic : {
+      prog()->AddQuadraticCost(x_(0) * x_(0) + x_(0) * x_(1) + x_(1) * x_(1) + x_(1) * x_(2) + x_(2) * x_(2) + 2 * x_(0));
       break;
     }
     default : throw std::runtime_error("Unsupported cost form.");
@@ -184,6 +192,10 @@ QuadraticProgram2::QuadraticProgram2(CostForm cost_form, ConstraintForm cnstr_fo
       prog()->AddQuadraticCost(Q, b, x_);
       break;
     }
+    case CostForm::kSymbolic : {
+      prog()->AddQuadraticCost(0.5 * x_.dot(Q * x_) + b.dot(x_));
+      break;
+    }
     default : throw std::runtime_error("Unsupported cost form.");
   }
 
@@ -218,6 +230,10 @@ QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
       prog()->AddQuadraticCost(Q2, b2, x_.tail<4>());
       break;
     }
+    case CostForm::kSymbolic : {
+      prog()->AddQuadraticCost(0.5 * x_.head<4>().dot(Q1 * x_.head<4>()) + b1.dot(x_.head<4>()) + 0.5 * x_.tail<4>().dot(Q2 * x_.tail<4>()) + b2.dot(x_.tail<4>()));
+      break;
+    }
     default : throw std::runtime_error("Unsupported cost form.");
   }
 
@@ -248,7 +264,11 @@ QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
       Matrix3d Q = Matrix3d::Identity();
       Q(2, 2) = 2.0;
       Vector3d b = Vector3d::Zero();
-      prog()->AddQuadraticCost(Q, b, x_);
+      prog()->AddQuadraticCost(2 * Q, b, x_);
+      break;
+    }
+    case CostForm::kSymbolic : {
+      prog()->AddQuadraticCost(x_(0) * x_(0) + x_(1) * x_(1) + 2 * x_(2) * x_(2));
       break;
     }
     default : throw std::runtime_error("Unsupported cost form.");
@@ -274,7 +294,7 @@ QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
 }
 
 void QuadraticProgram4::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-9, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8, MatrixCompareType::absolute));
 }
 }  // namespace test
 }  // namespace solvers
