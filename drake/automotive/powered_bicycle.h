@@ -12,9 +12,10 @@
 namespace drake {
 namespace automotive {
 
-/// Model of a powered bicycle, a system consisting of a linear power-train
-/// element connected in series with rigid body bicycle equations-of-motion.
-/// This is assembled according to the following diagram:
+/// PoweredBicycle -- Model of a bicycle driven by a simplistic power-train
+/// element.  Specifically, PoweredBicycle is a diagram consisting of a linear
+/// power-train element connected in series with a three-DOF rigid-body bicycle
+/// model.  The diagram is assembled as follows:
 ///
 ///  steering
 ///  (0) ------------------------------------+   +-------------+
@@ -22,6 +23,15 @@ namespace automotive {
 ///  throttle    +-------------+  body force     |   Bicycle   |-------> (0)
 ///  (1) ------->| Power-train |---------------->|             |
 ///              +-------------+                 +-------------+
+///
+/// Inputs:
+///  - Angle of the front wheel of the bicycle δ [rad].
+///  - A unitless scalar value representing the throttle input to the power
+///    system.
+///
+/// Output:
+///  - A 7-dimensional vector collecting the states of the bicycle (see
+///    bicycle.h).
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -43,7 +53,7 @@ class PoweredBicycle : public systems::Diagram<T> {
 
   ~PoweredBicycle() override = default;
 
-  /// Accessors for the inputs and output.
+  /// Accessors for the input and output ports.
   const systems::InputPortDescriptor<T>& get_steering_input_port() const {
     return systems::System<T>::get_input_port(0);
   }
