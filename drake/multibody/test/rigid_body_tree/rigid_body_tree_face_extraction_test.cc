@@ -1,9 +1,9 @@
 #include <memory>
 
 #include "drake/common/drake_path.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/joints/floating_base_types.h"
 
 #include "gtest/gtest.h"
 
@@ -18,9 +18,9 @@ namespace test {
 namespace rigid_body_tree {
 namespace {
 
-// This unit test verifies that the complete stack of
-// requesting vertices and faces from the consituent components
-// of an RBT works.
+// This unit test confirms that vertices and faces can be requested
+// from the constituent components of an RBT, and demonstrates how
+// to do so.
 GTEST_TEST(RBTFaceExtractionTests, ExtractVertsAndFaces) {
   RigidBodyTree<double> tree;
   parsers::sdf::AddModelInstancesFromSdfFileToWorld(
