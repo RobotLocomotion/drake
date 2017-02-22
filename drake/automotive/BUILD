@@ -146,6 +146,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "powered_bicycle",
+    srcs = ["powered_bicycle.cc"],
+    hdrs = ["powered_bicycle.h"],
+    deps = [
+        ":bicycle",
+        ":simple_power_train",
+    ],
+)
+
+drake_cc_library(
     name = "simple_car",
     srcs = ["simple_car.cc"],
     hdrs = [
@@ -157,6 +167,15 @@ drake_cc_library(
         "//drake/common:cond",
         "//drake/common:double",
         "//drake/common:symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "simple_power_train",
+    srcs = ["simple_power_train.cc"],
+    hdrs = ["simple_power_train.h"],
+    deps = [
+        "//drake/systems/primitives:linear_system",
     ],
 )
 
@@ -519,6 +538,13 @@ drake_cc_googletest(
     name = "linear_car_test",
     deps = [
         "//drake/automotive:linear_car",
+    ],
+)
+
+drake_cc_googletest(
+    name = "powered_bicycle_test",
+    deps = [
+        "//drake/automotive:powered_bicycle",
     ],
 )
 

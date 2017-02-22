@@ -18,7 +18,8 @@ namespace automotive {
 ///
 /// The states of the model are: heading angle Ψ, yaw rate Ψ˙, slip angle at the
 /// center of mass β, velocity magnitude (vector magnitude at the slip angle) v,
-/// x-position at CG sx, and y-position at CG sy.
+/// x-position at CG sx, and y-position at CG sy.  The inputs are force on the
+/// body F_in and steering angle δ.
 ///
 /// TODO(jadecastro) ********** Fill in the details of the model here **********
 ///
@@ -39,8 +40,8 @@ namespace automotive {
 ///     in Proc. of the American Control Conference, 2012, pp. 3559–3566.
 ///
 /// Inputs:
-///   0: @p delta angle of the front wheel [rad].
-///   1: @p F_in force input to the front wheel [N].
+///   0: @p delta angle of the front wheel with respect to the body [rad].
+///   1: @p F_in force input on the body in the direction of slip [N].
 ///
 /// Outputs:
 ///   0: State vector containing linear/angular positions in the global

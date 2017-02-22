@@ -36,7 +36,9 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   maliput/utility/generate_obj.cc
   maliput/utility/generate_urdf.cc
   monolane_onramp_merge.cc
+  powered_bicycle.cc
   simple_car.cc
+  simple_power_train.cc
   single_lane_ego_and_agent.cc
   trajectory_car.cc
   )
@@ -56,8 +58,10 @@ drake_install_headers(
   idm_planner.h
   linear_car.h
   monolane_onramp_merge.h
+  powered_bicycle.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
+  simple_power_train.h
   single_lane_ego_and_agent.h
   trajectory_car.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.

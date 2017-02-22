@@ -44,8 +44,8 @@ class BicycleTest : public ::testing::Test {
     DRAKE_DEMAND(dut_ != nullptr);
     DRAKE_DEMAND(context_ != nullptr);
 
-    steering_input_->SetAtIndex(0, steering_input);
-    force_input_->SetAtIndex(0, force_input);
+    (*steering_input_)[0] = steering_input;
+    (*force_input_)[0] = force_input;
 
     const int kSteeringIndex = dut_->get_steering_input_port().get_index();
     const int kForceIndex = dut_->get_force_input_port().get_index();
@@ -115,8 +115,8 @@ TEST_F(BicycleTest, TrivialDerivatives) {
   // Set all the states to zero except velocity.
   systems::ContinuousState<double>* xc = continuous_state();
   xc->SetFromVector(Vector6<double>::Zero());
-  xc->get_mutable_vector()->SetAtIndex(3, kVelocityState);  // Keep the velocity
-                                                            // positive.
+  (*xc->get_mutable_vector())[3] = kVelocityState;  // Keep the velocity
+                                                    // positive.
 
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   const Vector6<double> result = derivatives_->CopyToVector();
@@ -145,8 +145,8 @@ TEST_F(BicycleTest, DerivativesPositiveSlipAnglePositiveSteeringAngle) {
   // Set β to δ / 2 and the velocity to some positive value.
   systems::ContinuousState<double>* xc = continuous_state();
   xc->SetFromVector(Vector6<double>::Zero());
-  xc->get_mutable_vector()->SetAtIndex(2, kSteeringInput / 2.);
-  xc->get_mutable_vector()->SetAtIndex(3, kVelocityState);
+  (*xc->get_mutable_vector())[2] = kSteeringInput / 2.;
+  (*xc->get_mutable_vector())[3] = kVelocityState;
 
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   const Vector6<double> result = derivatives_->CopyToVector();
@@ -174,15 +174,15 @@ TEST_F(BicycleTest, DerivativesNegativeSlipAnglePositiveSteeringAngle) {
   // Set β to -δ and the velocity to some positive value.
   systems::ContinuousState<double>* xc = continuous_state();
   xc->SetFromVector(Vector6<double>::Zero());
-  xc->get_mutable_vector()->SetAtIndex(2, -kSteeringInput);
-  xc->get_mutable_vector()->SetAtIndex(3, kVelocityState);
+  (*xc->get_mutable_vector())[2] = -kSteeringInput;
+  (*xc->get_mutable_vector())[3] = kVelocityState;
 
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   const Vector6<double> result = derivatives_->CopyToVector();
 
   // We expect β_dot and v_dot to return strictly-positive values. sx_dot and
-  // sy_dot each, respectively positive and negative values.  Note that Ψ_ddot
-  // is indeterminate.
+  // sy_dot, respectively, return positive and negative values.  Note that
+  // Ψ_ddot is indeterminate.
   EXPECT_LT(0., result(2));
   EXPECT_LT(0., result(3));
   EXPECT_LT(0., result(4));
@@ -203,8 +203,8 @@ TEST_F(BicycleTest, DerivativesPositiveYawRate) {
   // Set Ψ_dot and the velocity to some positive values.
   systems::ContinuousState<double>* xc = continuous_state();
   xc->SetFromVector(Vector6<double>::Zero());
-  xc->get_mutable_vector()->SetAtIndex(1, kYawRateState);
-  xc->get_mutable_vector()->SetAtIndex(3, kVelocityState);
+  (*xc->get_mutable_vector())[1] = kYawRateState;
+  (*xc->get_mutable_vector())[3] = kVelocityState;
 
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   const Vector6<double> result = derivatives_->CopyToVector();
