@@ -70,7 +70,9 @@ class RotationalInertia {
   /// equal to @p I and zero products of inertia.
   /// As examples, consider the moments of inertia taken about their geometric
   /// center for a sphere or a cube.
+  /// Aborts if `I` is non-positive.
   explicit RotationalInertia(const T& I) {
+    DRAKE_DEMAND(I > T(0));
     SetZero();
     I_Bo_F_.diagonal().setConstant(I);
   }
@@ -78,7 +80,11 @@ class RotationalInertia {
   /// Creates a principal axes rotational inertia matrix for which the products
   /// of inertia are zero and the moments of inertia are given by `Ixx`, `Iyy`
   /// and `Izz`.
+  /// Aborts if any of the provided moments is non-positive.
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz) {
+    DRAKE_DEMAND(Ixx > T(0));
+    DRAKE_DEMAND(Iyy > T(0));
+    DRAKE_DEMAND(Izz > T(0));
     SetZero();
     I_Bo_F_.diagonal() = Vector3<T>(Ixx, Iyy, Izz);
   }
@@ -86,11 +92,14 @@ class RotationalInertia {
   /// Creates a general rotational inertia matrix with non-zero off-diagonal
   /// elements where the six components of the rotational intertia on a given
   /// frame `E` need to be provided.
+  /// Aborts if the resulting inertia is invalid according to
+  /// IsPhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
                     const T& Ixy, const T& Ixz, const T& Iyz) {
     // The upper part is left initialized to NaN.
     I_Bo_F_(0, 0) = Ixx; I_Bo_F_(1, 1) = Iyy; I_Bo_F_(2, 2) = Izz;
     I_Bo_F_(1, 0) = Ixy; I_Bo_F_(2, 0) = Ixz; I_Bo_F_(2, 1) = Iyz;
+    DRAKE_DEMAND(IsPhysicallyValid());
   }
 
   /// For consistency with Eigen's API this method returns the number of rows
