@@ -133,15 +133,10 @@ int DoMain() {
   RigidBodyTreed robot_tree;
   CreateTreedFromFixedModelAtPose(kRobotName, &robot_tree, kRobotBase);
 
-  // TODO(siyuan): this should be directly returned by world_sim_tree_builder
-  // once #5212 is in.
-  auto iiwa_weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
-      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
-      kRobotBase, Vector3<double>::Zero());
-  // TODO(siyuan): path name should be directly returned by
-  // world_sim_tree_builder once #5212 is in.
-  IiwaIkPlanner ik(GetDrakePath() + kRobotName, "iiwa_link_ee",
-      iiwa_weld_to_frame);
+  ModelInstanceInfo<double> iiwa_info =
+      world_sim_tree_builder->get_model_info_for_instance(robot_model_instance);
+  IiwaIkPlanner ik(iiwa_info.model_path,
+      "iiwa_link_ee", iiwa_info.world_offset);
   std::unique_ptr<PiecewisePolynomialTrajectory> polynomial_trajectory =
     ik.GenerateFirstOrderHoldTrajectoryFromCartesianWaypoints(
         target_time_vector, target_position_vector);
