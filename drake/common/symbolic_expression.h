@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -805,3 +806,21 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
 
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+namespace drake {
+namespace symbolic {
+
+/// Computes the Jacobian matrix J of the vector function @p f with respect to
+/// @p vars. J(i,j) contains ∂f(i)/∂var(j).
+//
+//  For example, Jacobian([x * y * z, y^2, x + z], {x, y, z}) returns the
+//  following 3x3 matrix:
+//  <pre>
+//  = |(y * z)   (x * z)   (x * y)|
+//    |      0   (2 * y)         0|
+//    |      1         0         1|
+//  </pre>
+MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>> f,
+                             const std::vector<Variable>& vars);
+}  // namespace symbolic
+}  // namespace drake
