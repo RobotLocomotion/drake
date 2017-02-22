@@ -139,8 +139,8 @@ void Bicycle<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
 
 // These instantiations must match the API documentation in bicycle.h.
 template class Bicycle<double>;
-template class Bicycle<drake::AutoDiffXd>;
-template class Bicycle<drake::symbolic::Expression>;
+template class Bicycle<AutoDiffXd>;
+template class Bicycle<symbolic::Expression>;
 
 }  // namespace automotive
 }  // namespace drake
