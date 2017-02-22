@@ -241,8 +241,9 @@ class RotationalInertia {
         Id, Eigen::EigenvaluesOnly);
     if (solver.info() != Eigen::Success) {
       throw std::runtime_error(
-          "Error: In RotationalInertia::CalcPrincipalMomentsOfInertia(). "
-              "Most likely your rotational inertia is not positive definite.");
+          "Error: In RotationalInertia::CalcPrincipalMomentsOfInertia()."
+          " Solver failed when attempting to compute the eigen values of the"
+          " inertia matrix.");
     }
     return solver.eigenvalues();
   }
