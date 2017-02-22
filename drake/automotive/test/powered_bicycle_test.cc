@@ -85,7 +85,7 @@ TEST_F(PoweredBicycleTest, Topology) {
   EXPECT_EQ(bike_state_dimension_, state_descriptor.size());
 }
 
-TEST_F(PoweredBicycleTest, EvalOutput) {
+TEST_F(PoweredBicycleTest, Output) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, output_);
 
@@ -107,15 +107,15 @@ TEST_F(PoweredBicycleTest, EvalOutput) {
   dut_->CalcOutput(*context_, output_.get());
 
   // Outputs agree with the states.
-  EXPECT_EQ(1., output->GetAtIndex(0));
-  EXPECT_EQ(2., output->GetAtIndex(1));
-  EXPECT_EQ(3., output->GetAtIndex(2));
-  EXPECT_EQ(4., output->GetAtIndex(3));
-  EXPECT_EQ(5., output->GetAtIndex(4));
-  EXPECT_EQ(6., output->GetAtIndex(5));
+  EXPECT_EQ(1., (*output)[0]);
+  EXPECT_EQ(2., (*output)[1]);
+  EXPECT_EQ(3., (*output)[2]);
+  EXPECT_EQ(4., (*output)[3]);
+  EXPECT_EQ(5., (*output)[4]);
+  EXPECT_EQ(6., (*output)[5]);
 }
 
-TEST_F(PoweredBicycleTest, EvalTimeDerivatives) {
+TEST_F(PoweredBicycleTest, TimeDerivatives) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, derivatives_);
 
@@ -130,9 +130,9 @@ TEST_F(PoweredBicycleTest, EvalTimeDerivatives) {
   // Set the inputs to zero.
   SetInputs(0., 0.);
 
-  // Set the states to arbitrary values.
+  // Set the states to arbitrary values (require a nonzero velocity).
   (*power_state)[0] = 6.0;
-  (*bike_state)[0] = 6.0;
+  (*bike_state)[0] = 27.0;
   (*bike_state)[1] = 7.0;
   (*bike_state)[2] = 6.0;
   (*bike_state)[3] = 10.0;
@@ -143,13 +143,44 @@ TEST_F(PoweredBicycleTest, EvalTimeDerivatives) {
   dut_->CalcOutput(*context_, output_.get());
 
   // Expected state derivatives.
-  EXPECT_EQ(-15., power_derivatives->GetAtIndex(0));
-  EXPECT_EQ(7., bike_derivatives->GetAtIndex(0));
-  EXPECT_GE(0., bike_derivatives->GetAtIndex(1));
-  EXPECT_GE(0., bike_derivatives->GetAtIndex(2));
-  EXPECT_LE(0., bike_derivatives->GetAtIndex(3));
-  EXPECT_LE(0., bike_derivatives->GetAtIndex(4));
-  EXPECT_GE(0., bike_derivatives->GetAtIndex(5));
+  EXPECT_EQ(-15., (*power_derivatives)[0]);
+  EXPECT_EQ(7., (*bike_derivatives)[0]);
+  EXPECT_GE(0., (*bike_derivatives)[1]);
+  EXPECT_GE(0., (*bike_derivatives)[2]);
+  EXPECT_LE(0., (*bike_derivatives)[3]);
+  EXPECT_GE(0., (*bike_derivatives)[4]);
+  EXPECT_LE(0., (*bike_derivatives)[5]);
+}
+
+TEST_F(PoweredBicycleTest, PowerTrainTimeDerivativeAndOutput) {
+  ASSERT_NE(nullptr, context_);
+  ASSERT_NE(nullptr, derivatives_);
+
+  // Obtain pointers to the (continuous) state vector and state
+  // derivative vector for each car.
+  auto power_state = continuous_state(dut_->get_powertrain_system());
+  auto bike_state = continuous_state(dut_->get_bicycle_system());
+
+  auto power_derivatives = state_derivatives(dut_->get_powertrain_system());
+  auto bike_derivatives = state_derivatives(dut_->get_bicycle_system());
+
+  // Set the throttle input to some positive value.
+  SetInputs(0., 10.);
+
+  // Set the power-train state to an arbitrary value. We also require
+  // bicycle velocity to be nonzero.
+  (*power_state)[0] = 20.;
+  (*bike_state)[3] = 1.;
+
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcOutput(*context_, output_.get());
+
+  // Verify the state derivative.
+  EXPECT_EQ(-40., (*power_derivatives)[0]);
+
+  // Verify the v_dot for the bicycle model, as a surrugate for checking the
+  // power-train output directly.
+  EXPECT_LE(0., (*bike_derivatives)[3]);
 }
 
 }  // namespace
