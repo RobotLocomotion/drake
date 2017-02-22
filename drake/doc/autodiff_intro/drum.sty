@@ -1,0 +1,55 @@
+% necessary packages
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{oldstyle}
+\usepackage{color}
+\usepackage{soul}
+% disabled b/c we're using tcolorbox
+%\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+
+% math stuff
+\providecommand{\inv}[1]{{#1}^{\ensuremath{\mathsf{-1}}}} % inverse ...
+\providecommand{\tr}[1]{{#1}^{\ensuremath{\mathsf{T}}}} % transpose ...
+\providecommand{\itr}[1]{{#1}^{\ensuremath{\mathsf{-T}}}} % transpose ...
+\providecommand{\strans}[1]{{#1}^{\ensuremath{\mathsf{S}}}} % transpose ...
+\providecommand{\abs}[1]{\lvert#1\rvert}
+\providecommand{\norm}[1]{\left\lVert#1\right\rVert}
+\providecommand{\svect}[1]{\hat{\bm{#1}}}
+\providecommand{\vect}[1]{\bm#1}
+\providecommand{\mat}[1]{\mathbf#1}
+\providecommand{\smat}[1]{\hat{\mathbf{#1}}}
+\providecommand{\bigTheta}{\mathit{\Theta}}
+\providecommand{\bigO}{\mathit{O}}
+\providecommand{\sgn}[1]{\textrm{sgn}(#1)}
+\providecommand{\xform}[3]{\hspace{0mm}_#1\mat{#2}_#3}
+\newcommand{\ud}{\,\mathrm{d}}
+
+% lists
+\newcommand{\ia}{(\textos{a})\!}
+\newcommand{\ib}{(\textos{b})\!}
+\newcommand{\ic}{(\textos{c})\!}
+\newcommand{\id}{(\textos{d})\!}
+\newcommand{\ie}{(\textos{e})\!}
+\newcommand{\1}{(\textos{1})\!}
+\newcommand{\2}{(\textos{2})\!}
+\newcommand{\3}{(\textos{3})\!}
+\newcommand{\4}{(\textos{4})\!}
+\newcommand{\5}{(\textos{5})\!}
+\newcommand{\6}{(\textos{6})\!}
+\newcommand{\7}{(\textos{7})\!}
+\newcommand{\8}{(\textos{8})\!}
+
+\DeclareMathOperator*{\minimize}{minimize}
+
+% indicate necessary changes
+\providecommand{\captiontxt}[1]{\caption{\emph{#1}}}
+\providecommand{\note}[1]{\textcolor{orange}{#1}} 
+\providecommand{\changeme}[1]{\textcolor{red}{#1}} 
+\providecommand{\TODO}[1]{
+\sethlcolor{yellow}
+\noindent
+$\cdot$\ \hl{#1}
+\\
+} 
+
