@@ -89,6 +89,7 @@ class RotationalInertia {
     DRAKE_DEMAND(Izz > T(0));
     SetZero();
     I_Bo_F_.diagonal() = Vector3<T>(Ixx, Iyy, Izz);
+    DRAKE_DEMAND(IsPhysicallyValid());
   }
 
   /// Creates a general rotational inertia matrix with non-zero off-diagonal
