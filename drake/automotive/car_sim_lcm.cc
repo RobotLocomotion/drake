@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
   lcm.StartReceiveThread();
   Simulator<double> simulator(*diagram);
 
-  auto context = simulator.get_mutable_context();
+  const auto context = simulator.get_mutable_context();
   simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
       *diagram, 1e-4, context);
 

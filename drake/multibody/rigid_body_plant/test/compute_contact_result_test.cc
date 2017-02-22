@@ -90,8 +90,9 @@ class ContactResultTest : public ::testing::Test {
     // Note: This is done here instead of the SetUp method because it appears
     //  the plant requires a *compiled* tree at constructor time.
     plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
-    plant_->set_contact_parameters(kStiffness, kDissipation, kStaticFriction,
-                                   kDynamicFriction, kVStictionTolerance);
+    plant_->set_normal_contact_parameters(kStiffness, kDissipation);
+    plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+                                            kVStictionTolerance);
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
     plant_->CalcOutput(*context_.get(), output_.get());
