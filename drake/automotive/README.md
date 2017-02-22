@@ -65,18 +65,14 @@ The following demos are available:
    Same general idea as the `village-demo`, but with a different path for
    cars which includes a merge.
 
- * A 10-lane dragway with a `TrajectoryCar` traveling down each lane plus one
-   `SimpleCar`:
+ * A 3-lane dragway with four `TrajectoryCar` vehicles traveling down each lane
+   at different speeds plus one `SimpleCar`:
 
    ```
    bazel run //drake/automotive:demo -- \
-       --num_dragway_lanes=10 \
-       --num_trajectory_car=10
+       --num_dragway_lanes=3 \
+       --num_trajectory_car=12
    ```
-
-   See the documentation for the parameters by running
-   `bazel run //drake/automotive:demo -- --help`.
-
 
 Driving the Prius
 -----------------

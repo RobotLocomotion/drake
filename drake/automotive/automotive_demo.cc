@@ -29,6 +29,20 @@ DEFINE_int32(num_dragway_lanes, 0,
 DEFINE_double(dragway_length, 100, "The length of the dragway.");
 DEFINE_double(dragway_lane_width, 3.7, "The dragway lane width.");
 DEFINE_double(dragway_shoulder_width, 3.0, "The dragway's shoulder width.");
+DEFINE_double(dragway_base_speed, 4.0,
+              "The speed of the vehicles on the right-most lane of the "
+              "dragway.");
+DEFINE_double(dragway_lane_speed_delta, 2,
+              "The change in vehicle speed in the left-adjacent lane. For "
+              "example, suppose the dragway has 3 lanes. Vehicles in the "
+              "right-most lane will travel at dragway_base_speed m/s. "
+              "Vehicles in the middle lane will travel at "
+              "dragway_base_speed + dragway_lane_speed_delta m/s. Finally, "
+              "vehicles in the left-most lane will travel at "
+              "dragway_base_speed + 2 * dragway_lane_speed_delta m/s.");
+DEFINE_double(dragway_vehicle_delay, 3,
+              "The starting time delay between consecutive vehicles on a "
+              "lane.");
 
 namespace drake {
 namespace automotive {
@@ -84,8 +98,12 @@ void AddVehicles(RoadNetworkType road_network_type,
     DRAKE_DEMAND(dragway_road_geometry != nullptr);
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
       const int lane_index = i % FLAGS_num_dragway_lanes;
+      const double speed = FLAGS_dragway_base_speed +
+          lane_index * FLAGS_dragway_lane_speed_delta;
+      const double start_time = i / FLAGS_num_dragway_lanes *
+           FLAGS_dragway_vehicle_delay;
       const auto& params = CreateTrajectoryParamsForDragway(
-          *dragway_road_geometry, lane_index);
+          *dragway_road_geometry, lane_index, speed, start_time);
       simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
                                          std::get<1>(params),
                                          std::get<2>(params));
