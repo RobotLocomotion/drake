@@ -400,12 +400,10 @@ class RigidBodyPlant : public LeafSystem<T> {
   void ComputeContactResults(const Context<T>& context,
                              ContactResults<T>* contacts) const;
 
- public:
   // Evaluates the actuator command input ports and throws a runtime_error
   // exception if at least one of the ports is not connected.
   VectorX<T> EvaluateActuatorInputs(const Context<T>& context) const;
 
- private:
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on Ac relative to B (expressed in B), v_BAc.
   //
