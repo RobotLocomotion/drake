@@ -1392,6 +1392,42 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicQuadraticCost) {
   Expression e8 = pow(x(0), 3) + 1;
   EXPECT_THROW(prog.AddQuadraticCost(e8), std::runtime_error);
 }
+
+GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // |Ax - b|^2 = (x-xd)'Q(x-xd) => Q = A'*A and b = A*xd.
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  Eigen::Matrix2d Q = A.transpose() * A;
+  Eigen::Vector2d x_desired;
+  x_desired << 5, 6;
+  Eigen::Vector2d b = A * x_desired;
+
+  std::shared_ptr<QuadraticConstraint> obj1 =
+      prog.AddQuadraticErrorCost(Q, x_desired, x);
+  std::shared_ptr<QuadraticConstraint> obj2 = prog.AddL2NormCost(A, b, x);
+
+  // Test the objective at a 6 arbitrary values (to guarantee correctness
+  // of the six-parameter quadratic form.
+  Eigen::Vector2d x0;
+  Eigen::VectorXd y1, y2;
+  x0 << 7, 8;
+
+  for (int i = 0; i < 6; i++) {
+    obj1->Eval(x0, y1);
+    obj2->Eval(x0, y2);
+
+    EXPECT_TRUE(CompareMatrices(y1, y2));
+    EXPECT_TRUE(CompareMatrices(
+        y2, (A * x0 - b).transpose() * (A * x0 - b) - b.transpose() * b));
+    // Note: Currently have to subtract out the constant term (b'*b) due to
+    // issue #3500.
+
+    x0 += Eigen::Vector2d::Constant(2);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

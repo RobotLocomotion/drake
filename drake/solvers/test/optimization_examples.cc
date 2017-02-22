@@ -35,11 +35,13 @@ std::set<CostForm> quadratic_cost_form() {
   return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
 }
 
-OptimizationProgram::OptimizationProgram(CostForm cost_form, ConstraintForm cnstr_form)
+OptimizationProgram::OptimizationProgram(CostForm cost_form,
+                                         ConstraintForm cnstr_form)
     : prog_(std::make_unique<MathematicalProgram>()) {}
 
-void OptimizationProgram::RunProblem(MathematicalProgramSolverInterface *solver) {
-  if(solver->available()) {
+void OptimizationProgram::RunProblem(
+    MathematicalProgramSolverInterface* solver) {
+  if (solver->available()) {
     RunSolver(prog_.get(), *solver);
     CheckSolution();
   }

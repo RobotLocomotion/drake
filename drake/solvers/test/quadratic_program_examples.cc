@@ -1,5 +1,7 @@
 #include "drake/solvers/test/quadratic_program_examples.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
@@ -48,14 +50,18 @@ QuadraticProgramTest::QuadraticProgramTest() {
 }
 
 std::vector<QuadraticProblems> quadratic_problems() {
-  return std::vector<QuadraticProblems>{
-      QuadraticProblems::kQuadraticProgram0, QuadraticProblems::kQuadraticProgram1,
-  QuadraticProblems::kQuadraticProgram2, QuadraticProblems::kQuadraticProgram3,
-      QuadraticProblems::kQuadraticProgram4};
+  return std::vector<QuadraticProblems>{QuadraticProblems::kQuadraticProgram0,
+                                        QuadraticProblems::kQuadraticProgram1,
+                                        QuadraticProblems::kQuadraticProgram2,
+                                        QuadraticProblems::kQuadraticProgram3,
+                                        QuadraticProblems::kQuadraticProgram4};
 }
 
-QuadraticProgram0::QuadraticProgram0(CostForm cost_form, ConstraintForm cnstr_form)
-    : OptimizationProgram(cost_form, cnstr_form), x_(), x_expected_(0.25, 0.75) {
+QuadraticProgram0::QuadraticProgram0(CostForm cost_form,
+                                     ConstraintForm cnstr_form)
+    : OptimizationProgram(cost_form, cnstr_form),
+      x_(),
+      x_expected_(0.25, 0.75) {
   x_ = prog()->NewContinuousVariables<2>();
   switch (cost_form) {
     case CostForm::kNonSymbolic : {
@@ -70,7 +76,8 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form, ConstraintForm cnstr_fo
       break;
     }
     case CostForm::kSymbolic : {
-      prog()->AddQuadraticCost(2 * x_(0) * x_(0) + x_(0) * x_(1) + x_(1) * x_(1) + x_(0) + x_(1));
+      prog()->AddQuadraticCost(2 * x_(0) * x_(0) + x_(0) * x_(1) +
+                               x_(1) * x_(1) + x_(0) + x_(1));
       break;
     }
     default: {
@@ -79,13 +86,16 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form, ConstraintForm cnstr_fo
   }
   switch (cnstr_form) {
     case ConstraintForm::kNonSymbolic : {
-      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_);
-      prog()->AddBoundingBoxConstraint(-1, numeric_limits<double>::infinity(), x_(1));
+      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
+                                       x_);
+      prog()->AddBoundingBoxConstraint(-1, numeric_limits<double>::infinity(),
+                                       x_(1));
       prog()->AddLinearEqualityConstraint(RowVector2d(1, 1), 1, x_);
       break;
     }
     case ConstraintForm::kSymbolic : {
-      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_);
+      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
+                                       x_);
       prog()->AddLinearEqualityConstraint(x_(0) + x_(1), 1);
       break;
     }
@@ -102,12 +112,15 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form, ConstraintForm cnstr_fo
 }
 
 void QuadraticProgram0::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
+                              MatrixCompareType::absolute));
 }
 
 QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
                                      ConstraintForm cnstr_form)
-    : OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_(0, 1, 2.0 / 3){
+    : OptimizationProgram(cost_form, cnstr_form),
+      x_{},
+      x_expected_(0, 1, 2.0 / 3) {
   x_ = prog()->NewContinuousVariables<3>();
   switch (cost_form) {
     case CostForm::kNonSymbolic : {
@@ -122,7 +135,8 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
       break;
     }
     case CostForm::kSymbolic : {
-      prog()->AddQuadraticCost(x_(0) * x_(0) + x_(0) * x_(1) + x_(1) * x_(1) + x_(1) * x_(2) + x_(2) * x_(2) + 2 * x_(0));
+      prog()->AddQuadraticCost(x_(0) * x_(0) + x_(0) * x_(1) + x_(1) * x_(1) +
+                               x_(1) * x_(2) + x_(2) * x_(2) + 2 * x_(0));
       break;
     }
     default : throw std::runtime_error("Unsupported cost form.");
@@ -133,7 +147,8 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
                 numeric_limits<double>::infinity());
   switch (cnstr_form) {
     case ConstraintForm::kNonSymbolic : {
-      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_);
+      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
+                                       x_);
       Eigen::Matrix<double, 4, 3> A1;
       A1 << 1, 2, 3, -1, -1, 0, 0, 1, 2, 1, 1, 2;
 
@@ -143,7 +158,8 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
       break;
     }
     case ConstraintForm::kSymbolic : {
-      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_);
+      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
+                                       x_);
       Vector4<Expression> expr;
       // clang-format off
       expr << x_(0) + 2 * x_(1) + 3 * x_(2),
@@ -162,9 +178,10 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
       prog()->AddLinearConstraint(x_(0) + 2 * x_(1) + 3 * x_(2) >= 4);
       prog()->AddLinearConstraint(-x_(0) - x_(1) <= -1);
       prog()->AddLinearConstraint(x_(1) + 2 * x_(2), -20, 100);
-      // TODO(hongkai.dai): Uncoment the next line, when we resolves the error with
-      // infinity on the right handside of a formula.
-      // prog()->AddLinearConstraint(x_(0) + x_(1) + 2 * x_(2) <= numeric_limits<double>::infinity());
+      // TODO(hongkai.dai): Uncoment the next line, when we resolves the error
+      // with infinity on the right handside of a formula.
+      // prog()->AddLinearConstraint(x_(0) + x_(1) + 2 * x_(2) <=
+      // numeric_limits<double>::infinity());
       prog()->AddLinearConstraint(3 * x_(0) + x_(1) + 3 * x_(2) == 3);
       break;
     }
@@ -173,10 +190,12 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
 }
 
 void QuadraticProgram1::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
+                              MatrixCompareType::absolute));
 }
 
-QuadraticProgram2::QuadraticProgram2(CostForm cost_form, ConstraintForm cnstr_form)
+QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
+                                     ConstraintForm cnstr_form)
     : OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_{} {
   x_ = prog()->NewContinuousVariables<5>();
 
@@ -204,7 +223,8 @@ QuadraticProgram2::QuadraticProgram2(CostForm cost_form, ConstraintForm cnstr_fo
 }
 
 void QuadraticProgram2::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
+                              MatrixCompareType::absolute));
 }
 
 QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
@@ -231,7 +251,9 @@ QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
       break;
     }
     case CostForm::kSymbolic : {
-      prog()->AddQuadraticCost(0.5 * x_.head<4>().dot(Q1 * x_.head<4>()) + b1.dot(x_.head<4>()) + 0.5 * x_.tail<4>().dot(Q2 * x_.tail<4>()) + b2.dot(x_.tail<4>()));
+      prog()->AddQuadraticCost(
+          0.5 * x_.head<4>().dot(Q1 * x_.head<4>()) + b1.dot(x_.head<4>()) +
+          0.5 * x_.tail<4>().dot(Q2 * x_.tail<4>()) + b2.dot(x_.tail<4>()));
       break;
     }
     default : throw std::runtime_error("Unsupported cost form.");
@@ -252,7 +274,8 @@ QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
 }
 
 void QuadraticProgram3::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
+                              MatrixCompareType::absolute));
 }
 
 QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
@@ -268,7 +291,8 @@ QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
       break;
     }
     case CostForm::kSymbolic : {
-      prog()->AddQuadraticCost(x_(0) * x_(0) + x_(1) * x_(1) + 2 * x_(2) * x_(2));
+      prog()->AddQuadraticCost(x_(0) * x_(0) + x_(1) * x_(1) +
+                               2 * x_(2) * x_(2));
       break;
     }
     default : throw std::runtime_error("Unsupported cost form.");
@@ -276,7 +300,8 @@ QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
   switch (cnstr_form) {
     case ConstraintForm::kNonSymbolic : {
       prog()->AddLinearEqualityConstraint(RowVector2d(1, 1), 1, x_.head<2>());
-      prog()->AddLinearEqualityConstraint(RowVector2d(1, 2), 2, {x_.segment<1>(0), x_.segment<1>(2)});
+      prog()->AddLinearEqualityConstraint(RowVector2d(1, 2), 2,
+                                          {x_.segment<1>(0), x_.segment<1>(2)});
       break;
     }
     case ConstraintForm::kSymbolic : {
@@ -294,7 +319,81 @@ QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
 }
 
 void QuadraticProgram4::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
+                              MatrixCompareType::absolute));
+}
+
+void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2);
+
+  Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d x_desired;
+  x_desired << 1.0, 0.0;
+  auto objective = prog.AddQuadraticErrorCost(Q, x_desired, x);
+
+  Eigen::Matrix2d A;
+  A << 1.0, 1.0, -1.0, 1.0;
+  Eigen::Vector2d ub = Eigen::Vector2d::Constant(1.0);
+  Eigen::Vector2d lb = Eigen::Vector2d::Constant(-1.0);
+  auto constraint = prog.AddLinearConstraint(A, lb, ub, x);
+  Eigen::Vector2d x_expected;
+
+  const int N = 40;  // number of points to test around the circle
+  for (int i = 0; i < N; i++) {
+    double theta = 2.0 * M_PI * i / N;
+    x_desired << sin(theta), cos(theta);
+    objective->UpdateQuadraticAndLinearTerms(2.0 * Q, -2.0 * Q * x_desired);
+
+    if (theta <= M_PI_2) {
+      // simple lagrange multiplier problem:
+      // min (x-x_d)^2 + (y-y_d)^2 s.t. x+y=1
+      x_expected << (x_desired(0) - x_desired(1) + 1.0) / 2.0,
+          (x_desired(1) - x_desired(0) + 1.0) / 2.0;
+    } else if (theta <= M_PI) {
+      // min (x-x_d)^2 + (y-y_d)^2 s.t. x-y=1
+      x_expected << (x_desired(0) + x_desired(1) + 1.0) / 2.0,
+          (x_desired(0) + x_desired(1) - 1.0) / 2.0;
+    } else if (theta <= 3.0 * M_PI_2) {
+      // min (x-x_d)^2 + (y-y_d)^2 s.t. x+y=-1
+      x_expected << (x_desired(0) - x_desired(1) - 1.0) / 2.0,
+          (x_desired(1) - x_desired(0) - 1.0) / 2.0;
+    } else {
+      // min (x-x_d)^2 + (y-y_d)^2 s.t. x-y=-1
+      x_expected << (x_desired(0) + x_desired(1) - 1.0) / 2.0,
+          (x_desired(0) + x_desired(1) + 1.0) / 2.0;
+    }
+
+    if (solver.solver_type() == SolverType::kSnopt) {
+      prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+    }
+    RunSolver(&prog, solver);
+    const auto& x_value = prog.GetSolution(x);
+
+    EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-4,
+                                MatrixCompareType::absolute));
+  }
+
+  // provide some test coverage for changing Q
+  //
+  {
+    // now 2(x-xd)^2 + (y-yd)^2 s.t. x+y=1
+    x_desired << 1.0, 1.0;
+    Q(0, 0) = 2.0;
+    objective->UpdateQuadraticAndLinearTerms(2.0 * Q, -2.0 * Q * x_desired);
+
+    x_expected << 2.0 / 3.0, 1.0 / 3.0;
+
+    SolutionResult result = SolutionResult::kUnknownError;
+
+    prog.SetSolverOption(SolverType::kGurobi, "BarConvTol", 1E-9);
+    ASSERT_NO_THROW(result = prog.Solve());
+    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+
+    const auto& x_value = prog.GetSolution(x);
+    EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-5,
+                                MatrixCompareType::absolute));
+  }
 }
 }  // namespace test
 }  // namespace solvers

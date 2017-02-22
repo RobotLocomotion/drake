@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <tuple>
+#include <vector>
+
 #include "drake/solvers/test/optimization_examples.h"
 
 namespace drake {
