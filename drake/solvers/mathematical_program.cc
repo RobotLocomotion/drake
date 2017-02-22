@@ -403,7 +403,7 @@ void MathematicalProgram::AddCost(
 }
 
 Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
-    const symbolic::Expression &e) {
+    const symbolic::Expression& e) {
   // First build an Eigen vector, that contains all the bound variables.
   const symbolic::Variables& vars = e.GetVariables();
   VectorXDecisionVariable vars_vec(vars.size());
