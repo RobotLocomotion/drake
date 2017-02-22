@@ -38,7 +38,7 @@ GTEST_TEST(RotationalInertia, PrincipalAxesConstructor) {
 }
 
 // Test constructor for a general rotational inertia matrix with non-zero
-// off-diagonal elements for which the six entires need to be specified.
+// off-diagonal elements for which the six entries need to be specified.
 // Also test SetZero() and SetNaN methods.
 GTEST_TEST(RotationalInertia, GeneralConstructor) {
   const Vector3d m(1.0, 1.3, 2.4);  // m for moments.
@@ -115,7 +115,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
   const double radius = 0.1;
   const double length = 1.0;
 
-  // Momentum about its axis aligned with R's z-axis.
+  // Moment about its axis aligned with R's z-axis.
   const double Irr = radius * radius / 2.0;
   // Moment of inertia about an axis perpendicular to the rod's axis.
   const double Iperp = length * length / 12.0;
@@ -149,13 +149,13 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
 
   // Rotational inertia of a box computed about its center of mass.
   const double Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
-  RotationalInertia<double> I_Bc_W(
+  RotationalInertia<double> I_Bc_Q(
       (Ly2 + Lz2) / 12.0,
       (Lx2 + Lz2) / 12.0,
       (Lx2 + Ly2) / 12.0);
 
-  // Define a new frame Q by rotating +20 degrees about x and another +20
-  // degrees about z.
+  // Define frame Q to be rotated +20 degrees about x and another +20
+  // degrees about z with respect to a frame W.
   const double angle = 20 * M_PI / 180.0;
   Matrix3<double> R_WQ =
       (AngleAxisd(angle, Vector3d::UnitZ()) *
@@ -164,19 +164,19 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
   // Compute the cube's spatial inertia in this frame Q.
   // This results in a rotational inertia with all entries being non-zero, i.e
   // far away from being diagonal or diagonalizable in any trivial way.
-  RotationalInertia<double> I_Bc_Q = I_Bc_W.ReExpress(R_WQ);
+  RotationalInertia<double> I_Bc_W = I_Bc_Q.ReExpress(R_WQ);
 
-  // Verify that indeed this inertia in frame Q contains non-zero diagonal
+  // Verify that indeed this inertia in frame W contains non-zero diagonal
   // elements.
-  EXPECT_TRUE((I_Bc_Q.CopyToFullMatrix3().array().abs() > 0.1).all());
+  EXPECT_TRUE((I_Bc_W.CopyToFullMatrix3().array().abs() > 0.1).all());
 
-  // Compute the principal moments of I_Bc_Q.
-  Vector3d principal_moments = I_Bc_Q.CalcPrincipalMomentsOfInertia();
+  // Compute the principal moments of I_Bc_W.
+  Vector3d principal_moments = I_Bc_W.CalcPrincipalMomentsOfInertia();
 
-  // The expected moments are those originally computed in I_Bc_W, though the
+  // The expected moments are those originally computed in I_Bc_Q, though the
   // return from RotationalInertia::CalcPrincipalMomentsOfInertia() is sorted
   // in ascending order. Therefore reorder before performing the comparison.
-  Vector3d expected_principal_moments = I_Bc_W.get_moments();
+  Vector3d expected_principal_moments = I_Bc_Q.get_moments();
   std::sort(expected_principal_moments.data(),
             expected_principal_moments.data() +
                 expected_principal_moments.size());
@@ -212,6 +212,17 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
 
   EXPECT_EQ(Ib.get_moments(), 3.0 * m);
   EXPECT_EQ(Ib.get_products(), 3.0 * p);
+}
+
+GTEST_TEST(RotationalInertia, ShiftOperator) {
+  std::stringstream stream;
+  RotationalInertia<double> I(1, 2, 3);
+  stream << I;
+  std::string expected_string =
+                  "[1, 0, 0]\n"
+                  "[0, 2, 0]\n"
+                  "[0, 0, 3]\n";
+  EXPECT_EQ(expected_string, stream.str());
 }
 
 }  // namespace

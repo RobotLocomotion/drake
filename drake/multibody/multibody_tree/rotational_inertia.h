@@ -17,26 +17,6 @@
 namespace drake {
 namespace multibody {
 
-// Implementation details go into this namespace. Users never see this.
-namespace internal {
-// Helper method to swap (i, j) indexes when needed.
-template <int TriangularPart> struct check_and_swap;
-
-// Specialization when using the upper-diagonal elements.
-template <> struct check_and_swap<Eigen::Upper> {
-  static void swap(int& i, int &j) {
-    if (i > j) std::swap(i, j);
-  }
-};
-
-// Specialization when using the lower-diagonal elements.
-template <> struct check_and_swap<Eigen::Lower> {
-  static void swap(int& i, int &j) {
-    if (i < j) std::swap(i, j);
-  }
-};
-}  // namespace internal
-
 /// This class provides an abstraction for the physical concept of the mass
 /// distribution of a body about a particular point. Given a point, the mass
 /// distribution of a body is generally described by the first three mass
@@ -80,9 +60,6 @@ template <> struct check_and_swap<Eigen::Lower> {
 template <typename T>
 class RotationalInertia {
  public:
-  //TriangularViewInUse = Eigen::StrictlyUpper
-  //TriangularViewNotInUse = Eigen::StrictlyUpper
-
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
 
   /// Default RotationalInertia constructor. All entries are set to NaN for a
@@ -111,11 +88,9 @@ class RotationalInertia {
   /// frame `E` need to be provided.
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
                     const T& Ixy, const T& Ixz, const T& Iyz) {
-    // The TriangularViewNotInUse is left initialized to NaN.
-    auto& Iref = *this;
-    // Let the operator(i, j) decide on what portion (upper/lower) to write on.
-    Iref(0, 0) = Ixx; Iref(1, 1) = Iyy; Iref(2, 2) = Izz;
-    Iref(0, 1) = Ixy; Iref(0, 2) = Ixz; Iref(1, 2) = Iyz;
+    // The upper part is left initialized to NaN.
+    I_Bo_F_(0, 0) = Ixx; I_Bo_F_(1, 1) = Iyy; I_Bo_F_(2, 2) = Izz;
+    I_Bo_F_(1, 0) = Ixy; I_Bo_F_(2, 0) = Ixz; I_Bo_F_(2, 1) = Iyz;
   }
 
   /// For consistency with Eigen's API this method returns the number of rows
@@ -319,9 +294,7 @@ class RotationalInertia {
   // Utility method used to swap matrix indexes (i, j) depending on the
   // TriangularViewInUse portion of this inertia. The swap is performed so that
   // we only use the triangular portion corresponding to TriangularViewInUse.
-  static void check_and_swap(int* i, int* j) {
-    internal::check_and_swap<Eigen::Lower>::swap(*i , *j);
-  }
+  static void check_and_swap(int* i, int* j) { if (*i < *j) std::swap(*i, *j); }
 
   // Mutable access to the `(i, j)` element of this rotational inertia.
   // This operator performs checks on the pair `(i, j)` to determine the
