@@ -94,14 +94,14 @@ class DrakeVisualizer : public LeafSystem<double> {
   //    5. Add a wall-clock scale factor; e.g., play faster than real time,
   //       slower than real time, etc.
   /**
-   * Cause the visualizer to playback its cached data at real time.  If it has
+   * Causes the visualizer to playback its cached data at real time.  If it has
    * not been configured to record/playback, a warning message will be written
    * to the log, but otherwise, no work will be done.
    */
   void ReplayCachedSimulation();
 
   /**
-   * Play back (at real time) a trajectory representing the input signal.
+   * Plays back (at real time) a trajectory representing the input signal.
    */
   void PlaybackTrajectory(
       const PiecewisePolynomial<double>& input_trajectory) const;
