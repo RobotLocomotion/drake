@@ -114,15 +114,17 @@ TEST_F(SpatialVectorTest, IsApprox) {
   EXPECT_FALSE(V_XY_A_.IsApprox(other, 0.99 * precision));
 }
 
-// Tests the transformation of a spatial velocity between two frames using the
-// spatial operator and its transpose.
-TEST_F(SpatialVectorTest, ShiftOperator) {
-  // A shift operator representing the rigid body transformation from frame Z
-  // to frame X, expressed in a third frame A.
-  ShiftOperator<double> phi_YZ_A({2, -2, 0});
+// Tests the shifting of a spatial velocity between two moving frames rigidly
+// attached to each other.
+TEST_F(SpatialVectorTest, ShiftOperation) {
+  // A vector from the origin of a frame Y to the origin of a frame Z, expressed
+  // in a third frame A.
+  Vector3d p_YZ({2, -2, 0});
 
-  // Perform the actual shift operation.
-  SpatialVector<double> V_XZ_A = phi_YZ_A.transpose() * V_XY_A_;
+  // Shift the spatial velocity of a frame Y measured in frame X to the
+  // spatial velocity of frame Z measured in frame X knowing that frames Y and Z
+  // are rigidly attached to each other.
+  SpatialVector<double> V_XZ_A = V_XY_A_.Shift(p_YZ);
 
   // Verify the result.
   SpatialVector<double> expected_V_XZ_A(w_XY_A_, {7, 8, 0});
