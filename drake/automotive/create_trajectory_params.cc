@@ -75,7 +75,8 @@ std::tuple<Curve2<double>, double, double> CreateTrajectoryParams(int index) {
 }
 
 std::tuple<Curve2<double>, double, double> CreateTrajectoryParamsForDragway(
-    const maliput::dragway::RoadGeometry& road_geometry, int index) {
+    const maliput::dragway::RoadGeometry& road_geometry, int index,
+    double speed, double start_time) {
   const maliput::api::Segment* segment = road_geometry.junction(0)->segment(0);
   DRAKE_DEMAND(index < segment->num_lanes());
   const maliput::api::Lane* lane = segment->lane(index);
@@ -89,10 +90,7 @@ std::tuple<Curve2<double>, double, double> CreateTrajectoryParamsForDragway(
   waypoints.push_back({start_geo_position.x, start_geo_position.y});
   waypoints.push_back({end_geo_position.x, end_geo_position.y});
   Curve2<double> curve(waypoints);
-
-  const double kSpeed = 8.0;
-  const double kStartTime = 0;
-  return std::make_tuple(curve, kSpeed, kStartTime);
+  return std::make_tuple(curve, speed, start_time);
 }
 
 }  // namespace automotive
