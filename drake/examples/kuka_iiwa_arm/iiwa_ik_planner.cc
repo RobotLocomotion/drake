@@ -105,8 +105,8 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
 
   const int kMaxNumInitialGuess = 50;
   const int kMaxNumConstraintRelax = 10;
-  const Vector3<double> kInitialPosTolerance(0.1, 0.1, 0.1);
-  const double kInitialRotTolerance = 0.1;
+  const Vector3<double> kInitialPosTolerance(0.01, 0.01, 0.01);
+  const double kInitialRotTolerance = 0.01;
 
   for (const auto& waypoint : waypoints) {
     // Sets the initial constraints guess bigger than the desired tolerance.
@@ -126,6 +126,12 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
       bool res = SolveIk(waypoint, q0, q_prev, pos_tol, rot_tol, &q_sol);
 
       if (res) {
+        // Breaks if the current tolerance is below given threshold.
+        if ((rot_tol <= waypoint.rot_tol) &&
+            (pos_tol.array() <= waypoint.pos_tol.array()).all()) {
+          break;
+        }
+
         // Alternates between kRelaxPosTol and kRelaxRotTol
         if (mode == RelaxMode::kRelaxPosTol && waypoint.constrain_orientation) {
           rot_tol /= 2.;
@@ -136,12 +142,6 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
         }
         // Sets the initial guess to the current solution.
         q0 = q_sol;
-
-        // Breaks if the current tolerance is below given threshold.
-        if ((rot_tol <= waypoint.rot_tol) &&
-            (pos_tol.array() <= waypoint.pos_tol.array()).all()) {
-          break;
-        }
       } else {
         // Relaxes the constraints no solution is found.
         if (mode == RelaxMode::kRelaxRotTol && waypoint.constrain_orientation) {
@@ -162,7 +162,7 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
         rot_tol = kInitialRotTolerance;
         if (!waypoint.constrain_orientation) rot_tol = 0;
         mode = RelaxMode::kRelaxPosTol;
-        drake::log()->error("IK FAILED at max constraint relaxing iter: " +
+        drake::log()->warn("IK FAILED at max constraint relaxing iter: " +
                             std::to_string(relaxed_ctr));
         relaxed_ctr = 0;
         random_ctr++;
