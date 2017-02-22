@@ -80,22 +80,8 @@ template <> struct check_and_swap<Eigen::Lower> {
 template <typename T>
 class RotationalInertia {
  public:
-  enum {
-    // This class internally uses a full 3x3 Eigen matrix to store the six
-    // elements that are needed to represent it. However, only one triangular
-    // portion is used leaving redundant elements set to NaN so that operations
-    // using them fail fast, allowing fast bug detection.
-    // By default RotationalInertia only works on the lower part of the
-    // underlying Eigen matrix.
-    // This particular choice is arbitrary. However, it was observed however
-    // that Eigen sometimes uses the lower part of a symmetric dense matrix.
-    // See Eigen::SelfAdjointEigenSolver. This is used by
-    // RotationalInertia::CalcPrincipalMomentsOfInertia().
-    TriangularViewInUse = Eigen::Lower,
-    // The strictly lower part is set to NaN to quickly detect when used by
-    // error.
-    TriangularViewNotInUse = Eigen::StrictlyUpper
-  };
+  //TriangularViewInUse = Eigen::StrictlyUpper
+  //TriangularViewNotInUse = Eigen::StrictlyUpper
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
 
@@ -220,52 +206,21 @@ class RotationalInertia {
   /// distribution of a point. However this method is useful when performing
   /// initializations for a given computation.
   void SetZero() {
-    // The part corresponding to RotationalInertia::TriangularViewNotInUse still
-    // is left initialized to NaN to quickly detect if this part is
-    // mistakenly used.
-    I_Bo_F_.template triangularView<TriangularViewInUse>() = Matrix3<T>::Zero();
-  }
-
-  /// Constructs a RotationalInertia from an Eigen matrix expression. The matrix
-  /// expression @p m must be represent a valid 3x3 matrix with the measures for
-  /// a rotational inertia computed about a given point on a given frame. This
-  /// method does not check for the physical validity of the resulting
-  /// rotational inertia for fast constructions. Users can still verify the
-  /// validity of the newly created inertia with IsPhysicallyValid().
-  template<typename Derived>
-  explicit RotationalInertia(const Eigen::MatrixBase<Derived>& m) :
-      I_Bo_F_(m) {}
-
-  /// Assignment operator from a general Eigen expression.
-  /// This method allows to assign Eigen expressions to a RotationalInertia.
-  /// The matrix
-  /// expression @p m must be represent a valid 3x3 matrix with the measures for
-  /// a rotational inertia computed about a given point on a given frame. This
-  /// method does not check for the physical validity of the resulting
-  /// rotational inertia for fast constructions. Users can still verify the
-  /// validity of the newly created inertia with IsPhysicallyValid().
-  template<typename Derived>
-  RotationalInertia& operator=(const Eigen::MatrixBase<Derived>& m) {
-    // Static asserts that EigenMatrix is of fixed size 3x3.
-    EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Derived, 3, 3);
-    this->get_mutable_symmetric_matrix_view() = m;
-    return *this;
+    // The strictly-upper triangle is left initialized to NaN to quickly detect
+    // if this part is mistakenly used.
+    I_Bo_F_.template triangularView<Eigen::Lower>() = Matrix3<T>::Zero();
   }
 
   /// Returns `true` if any of the elements in this rotational inertia is NaN
   /// and `false` otherwise.
   bool IsNaN() const {
     using std::isnan;
+    // Only check the lower entries.
     for (int i = 0; i < 3; ++i) {
-      for (int j = 0; j < 3; ++j) {
-        // We use operator()(int, int) here to automatically only check the
-        // portion in use according to TriangularViewInUse.
-        if (isnan(operator()(i, j))) return true;
+      for (int j = 0; j <= i; ++j) {
+        if (isnan(I_Bo_F_(i, j))) return true;
       }
     }
-    // Another alternative is to use:
-    // get_moments().array().isNaN().any() &&
-    // get_products().array().isNaN().any()
     return false;
   }
 
@@ -276,17 +231,17 @@ class RotationalInertia {
   /// The computed principal moments are placed into @p principal_moments sorted
   /// in ascending order.
   /// @returns `true` if succesful and `false` otherwise.
-  bool CalcPrincipalMomentsOfInertia(Vector3<T>* principal_moments) const {
-    DRAKE_ASSERT(principal_moments != nullptr);
-    // Eigen's SelfAdjointEigenSolver only works with the lower diagonal part
-    // of the matrix. To avoid future issues in case we decide to use
-    // RotationalInertia::TriangularViewInUse = Eigen::Upper, here we use a
-    // local copy to a full matrix.
+  Vector3<T> CalcPrincipalMomentsOfInertia() const {
+    // Note: Eigen's SelfAdjointEigenSolver only works with the lower diagonal
+    // part of the matrix.
     Eigen::SelfAdjointEigenSolver<Matrix3<T>> solver(
-        CopyToFullMatrix3(), Eigen::EigenvaluesOnly);
-    if (solver.info() != Eigen::Success) return false;
-    *principal_moments = solver.eigenvalues();
-    return true;
+        get_matrix(), Eigen::EigenvaluesOnly);
+    if (solver.info() != Eigen::Success) {
+      throw std::runtime_error(
+          "Error: In RotationalInertia::CalcPrincipalMomentsOfInertia(). "
+              "Most likely your rotational inertia is not positive definite.");
+    }
+    return solver.eigenvalues();
   }
 
   /// Performs a number of checks to verify that this is a physically valid
@@ -304,8 +259,7 @@ class RotationalInertia {
     if (IsNaN()) return false;
 
     // Compute principal moments of inertia.
-    Vector3<T> d;
-    if (!CalcPrincipalMomentsOfInertia(&d)) return false;
+    Vector3<T> d = CalcPrincipalMomentsOfInertia();
 
     // Principal moments must be strictly positive.
     if ((d.array() <= T(0)).any() ) return false;
@@ -319,23 +273,26 @@ class RotationalInertia {
 
   /// Given this rotational inertia `I_Bo_F` about `Bo` and expressed in frame
   /// `F`, this method computes the same inertia re-expressed in another
-  /// frame `A`.
+  /// frame `A` as `I_Bo_A = R_AF * I_Bo_F * (R_AF)ᵀ`.
   /// This operation is performed in-place modifying the original object.
   /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
   /// @returns A reference to `this` rotational inertia about `Bo` but now
   /// re-expressed in frame `A`.
   RotationalInertia& ReExpressInPlace(const Matrix3<T>& R_AF) {
-    // Note: using triangularView<TriangularViewInUse>() to only write on the
-    // triangular part in use causes serious aliasing problems.
     // There is an interesting discussion on Eigen's forum here:
     // https://forum.kde.org/viewtopic.php?f=74&t=97282
     // That discussion tell us that really here we don't have a significant
     // performance gain for small matrices when writing on one of the triangular
     // parts only. Then gain is in accuracy, by having RotationalInertia to only
     // deal with one triangular portion of the matrix.
-    I_Bo_F_ = R_AF *
-        I_Bo_F_.template selfadjointView<TriangularViewInUse>() *
-        R_AF.transpose();
+
+    // Local copy to avoid aliasing since there is aliasing when using the
+    // triangular view.
+    Matrix3<T> I_Bo_A;
+    I_Bo_A.noalias() =
+        R_AF * I_Bo_F_.template selfadjointView<Eigen::Lower>() *
+            R_AF.transpose();
+    this->get_mutable_symmetric_matrix_view() = I_Bo_A;
     return *this;
   }
 
@@ -363,7 +320,7 @@ class RotationalInertia {
   // TriangularViewInUse portion of this inertia. The swap is performed so that
   // we only use the triangular portion corresponding to TriangularViewInUse.
   static void check_and_swap(int* i, int* j) {
-    internal::check_and_swap<TriangularViewInUse>::swap(*i , *j);
+    internal::check_and_swap<Eigen::Lower>::swap(*i , *j);
   }
 
   // Mutable access to the `(i, j)` element of this rotational inertia.
@@ -393,9 +350,9 @@ class RotationalInertia {
   /// in use by this RotationalInertia. Most users won't call this method.
   /// This method is generally used in the implementation of class methods and
   /// it's only useful to users for debugging.
-  const Eigen::SelfAdjointView<const Matrix3<T>, TriangularViewInUse>
+  const Eigen::SelfAdjointView<const Matrix3<T>, Eigen::Lower>
   get_symmetric_matrix_view() const {
-    return I_Bo_F_.template selfadjointView<TriangularViewInUse>();
+    return I_Bo_F_.template selfadjointView<Eigen::Lower>();
   }
 
   /// Returns a mutable Eigen view expression to the symmetric part of the
@@ -404,9 +361,9 @@ class RotationalInertia {
   /// it's only useful to users for debugging.
   // Note: operator=() is not defined for Eigen::SelfAdjointView and therefore
   // we need to return a TriangularView here.
-  Eigen::TriangularView<Matrix3<T>, TriangularViewInUse>
+  Eigen::TriangularView<Matrix3<T>, Eigen::Lower>
   get_mutable_symmetric_matrix_view() {
-    return I_Bo_F_.template triangularView<TriangularViewInUse>();
+    return I_Bo_F_.template triangularView<Eigen::Lower>();
   }
 
   // Inertia matrix about frame B's origin Bo expressed in frame F.

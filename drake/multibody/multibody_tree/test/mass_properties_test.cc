@@ -15,32 +15,6 @@ using Eigen::NumTraits;
 using Eigen::Vector3d;
 using std::sort;
 
-// Test construction and assignment from any Eigen matrix expression.
-GTEST_TEST(RotationalInertia, ConstructorFromEigenExpression) {
-  Eigen::RowVector3d row(1.0, 2.0, 0.5);
-  Eigen::Matrix<double, 4, 3> M;
-  M << row, 2.0 * row, 0.5 *row, 0.1 * row;
-
-  // Construction from a Matrix3.
-  Matrix3d ma = M.block<3, 3>(0, 0);
-  RotationalInertia<double> Ia(ma);
-  EXPECT_EQ(Ia.CopyToFullMatrix3(), ma);
-
-  // Assign a Matrix3.
-  Matrix3d mm = M.block<3, 3>(1, 0);
-  mm = (mm + mm.transpose()).eval();  // make it symmetric.
-  Ia = mm;
-  EXPECT_EQ(Ia.CopyToFullMatrix3(), mm);
-
-  // Construction from an Eigen block, a more interesting Eigen expression.
-  RotationalInertia<double> Ib(M.block<3, 3>(0, 0));
-  EXPECT_EQ(Ib.CopyToFullMatrix3(), ma);
-
-  // Assign an Eigen expression.
-  Ib = M.block<3, 3>(1, 0) + M.block<3, 3>(1, 0).transpose();
-  EXPECT_EQ(Ib.CopyToFullMatrix3(), mm);
-}
-
 // Test constructor for a diagonal rotational inertia with all elements equal.
 GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
   const double I0 = 3.14;
@@ -197,10 +171,7 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
   EXPECT_TRUE((I_Bc_Q.CopyToFullMatrix3().array().abs() > 0.1).all());
 
   // Compute the principal moments of I_Bc_Q.
-  Vector3d principal_moments;
-  // This method returns true on success.
-  EXPECT_TRUE(I_Bc_Q.CalcPrincipalMomentsOfInertia(
-      &principal_moments));
+  Vector3d principal_moments = I_Bc_Q.CalcPrincipalMomentsOfInertia();
 
   // The expected moments are those originally computed in I_Bc_W, though the
   // return from RotationalInertia::CalcPrincipalMomentsOfInertia() is sorted
