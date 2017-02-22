@@ -150,7 +150,7 @@ PidControllerInternal<T>::PidControllerInternal(
   adder_ = builder.AddSystem(make_unique<Adder<T>>(3 /* inputs */, size));
 
   // Input 0 connects to the proportional and integral components.
-  builder.ExportInput(pass_through_->get_input_port(0));
+  builder.ExportInput(pass_through_->get_input_port());
   // Input 1 connects directly to the derivative component.
   builder.ExportInput(derivative_gain_->get_input_port());
   builder.Connect(*pass_through_, *proportional_gain_);
