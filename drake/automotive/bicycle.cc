@@ -18,7 +18,7 @@ namespace automotive {
 template <typename T>
 Bicycle<T>::Bicycle() {
   this->DeclareInputPort(systems::kVectorValued, kSteeringInputDimension);
-  this->DeclareInputPort(systems::kVectorValued, kPTInputDimension);
+  this->DeclareInputPort(systems::kVectorValued, kForceInputDimension);
   this->DeclareOutputPort(systems::kVectorValued, kStateDimension);
   this->DeclareContinuousState(1,   // num_q (Psi)
                                1,   // num_v (Psi_dot)
@@ -35,7 +35,8 @@ const systems::InputPortDescriptor<T>& Bicycle<T>::get_steering_input_port()
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& Bicycle<T>::get_pt_input_port() const {
+const systems::InputPortDescriptor<T>& Bicycle<T>::get_force_input_port()
+    const {
   return systems::System<T>::get_input_port(1);
 }
 
@@ -69,10 +70,10 @@ void Bicycle<T>::DoCalcTimeDerivatives(
   DRAKE_ASSERT(steering_ptr != nullptr);
   const T delta = steering_ptr->GetAtIndex(0);
 
-  const systems::BasicVector<T>* pt_ptr =
-      this->EvalVectorInput(context, get_pt_input_port().get_index());
-  DRAKE_ASSERT(pt_ptr != nullptr);
-  const T F_in = pt_ptr->GetAtIndex(0);
+  const systems::BasicVector<T>* force_ptr =
+      this->EvalVectorInput(context, get_force_input_port().get_index());
+  DRAKE_ASSERT(force_ptr != nullptr);
+  const T F_in = force_ptr->GetAtIndex(0);
 
   // Obtain the parameters.
   const int kParamsIndex = 0;
@@ -101,11 +102,11 @@ void Bicycle<T>::DoCalcTimeDerivatives(
   const T front_torsional_stiffness = Cf * lf;
   const T torsional_damping = (Cf * pow(lf, 2.) + Cr * pow(lr, 2.)) / v;
 
-  // Differential equations of motion.
-  const T beta_dot = (torsional_stiffness / (m * pow(v, 2.)) - 1.) * Psi_dot +
-      Cf / (m * v) * delta  - (Cf + Cr) / (m * pow(v, 2.)) * beta;
+  // Compute the differential equations of motion.
   const T Psi_ddot = torsional_stiffness / Iz * beta -
       torsional_damping / Iz * Psi_dot + front_torsional_stiffness / Iz * delta;
+  const T beta_dot = (torsional_stiffness / (m * pow(v, 2.)) - 1.) * Psi_dot +
+      Cf / (m * v) * delta  - (Cf + Cr) / (m * v) * beta;
   const T v_dot = F_in / m;
   const T sx_dot = v * cos(beta + Psi);
   const T sy_dot = v * sin(beta + Psi);
