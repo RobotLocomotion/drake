@@ -217,7 +217,6 @@ drake_cc_library(
 drake_cc_library(
     name = "reinit_after_move",
     hdrs = ["reinit_after_move.h"],
-    linkstatic = 1,
 )
 
 drake_cc_library(

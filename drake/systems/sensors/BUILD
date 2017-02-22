@@ -40,7 +40,6 @@ drake_cc_library(
     name = "image",
     srcs = [],
     hdrs = ["image.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:reinit_after_move",
