@@ -1,5 +1,7 @@
 #include "drake/solvers/test/linear_program_examples.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"

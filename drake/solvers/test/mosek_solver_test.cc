@@ -32,6 +32,11 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Combine(::testing::ValuesIn(quadratic_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(quadratic_problems())));
+
+GTEST_TEST(QPtest, TestUnitBallExample) {
+  MosekSolver solver;
+  TestQPonUnitBallExample(solver);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

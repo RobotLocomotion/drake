@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <tuple>
+#include <vector>
+
 #include "drake/solvers/test/optimization_examples.h"
 
 namespace drake {
@@ -131,6 +135,12 @@ class QuadraticProgram4 : public OptimizationProgram {
   VectorDecisionVariable<3> x_;
   Eigen::Vector3d x_expected_;
 };
+
+// Solve a series of QPs with the objective being the Euclidean distance
+// from a desired point which moves along the unit circle (L2 ball), to a point
+// constrained to lie inside the L1 ball.  Implemented in 2D, so that the
+// active set moves along 4 faces of the L1 ball.
+void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
