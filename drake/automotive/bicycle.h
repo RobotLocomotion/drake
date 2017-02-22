@@ -11,17 +11,20 @@ namespace drake {
 namespace automotive {
 
 /// Bicycle -- Implements a nonlinear bicycle model from Althff & Dolan, 2014
-/// [1].  The 6-DOF model considers a lumped representation of the front and
-/// rear wheels, ignoring roll and pitch dynamics.  Although not included here,
-/// it is shown that addition of bounded uncertainties can allow this model to
-/// capture possible behaviors of higher-order car models [2].
+/// [1, 2].  The three-DOF model considers only a single wheel in the front and
+/// rear to capture lateral and longitudinal dynamics of the bicycle.  The model
+/// ignores roll and pitch dynamics.
 ///
 /// The states of the model are: heading angle Ψ, yaw rate Ψ˙, slip angle at the
 /// center of mass β, velocity magnitude (vector magnitude at the slip angle) v,
-/// x-position at CG sx, and y-position at CG sy.  The inputs are force on the
-/// body F_in and steering angle δ.
+/// x-position at CG sx, and y-position at CG sy.
 ///
-/// TODO(jadecastro) ********** Fill in the details of the model here **********
+/// Inputs:
+///  - Angle of the front wheels of the bicycle δ [rad].
+///  - Force acting on the rigid body F_in [N].
+///
+/// Output:
+///  - A 7-dimensional vector collecting the states of the bicycle.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -38,18 +41,6 @@ namespace automotive {
 /// [2] M. Althoff and J. M. Dolan, Reachability computation of low-order
 ///     models for the safety verification of high-order road vehicle models,
 ///     in Proc. of the American Control Conference, 2012, pp. 3559–3566.
-///
-/// Inputs:
-///   0: @p delta angle of the front wheel with respect to the body [rad].
-///   1: @p F_in force input on the body in the direction of slip [N].
-///
-/// Outputs:
-///   0: State vector containing linear/angular positions in the global
-///      reference frame and linear/angular velocities in the local reference
-///      frame.
-///      (@p X [m], @p Y [m], @p theta [rad],
-///       @p u [m/s], @p v [m/s], @p r [rad/s])
-
 template <typename T>
 class Bicycle : public systems::LeafSystem<T> {
  public:
@@ -86,10 +77,9 @@ class Bicycle : public systems::LeafSystem<T> {
       systems::ContinuousState<T>* derivatives) const override;
 
   // Specify the dimension of the state vector and of each input port.
-  // **** put these somewhere else...
-  const int kStateDimension{6};
-  const int kSteeringInputDimension{1};
-  const int kForceInputDimension{1};
+  const int state_dimension_{6};
+  const int steering_input_dimension_{1};
+  const int force_input_dimension_{1};
 };
 
 }  // namespace automotive

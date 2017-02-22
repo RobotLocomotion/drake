@@ -5,9 +5,16 @@
 namespace drake {
 namespace automotive {
 
-/// A simple power-train model modeled as a linear first-order lag, with input
-/// taken as the throttle setting and the output taken as the force applied to
-/// the wheels of the vehicle.
+/// SimplePowerTrain -- A simple power-train model modeled as a linear
+/// first-order lag, with input taken as the throttle setting and the output
+/// taken as the force applied to the wheels of the vehicle.
+///
+/// Input:
+///  - A unitless scalar value representing the throttle input to the power
+///    system.
+///
+/// Output:
+///  - The force transmitted from the wheels to the rigid body [N].
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -24,13 +31,15 @@ class SimplePowerTrain : public systems::LinearSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimplePowerTrain);
 
-  // Construct a simple power train model, using a fixed time-constant.
+  /// Construct a simple power train model, specified via a fixed time-constant
+  /// and scalar gain.  The inputs are as follows:
+  /// @p time_constant is the powertrain time constant [1/s].
+  /// @p gain is the gain from throttle input to force output [N].
   SimplePowerTrain(const double& time_constant, const double& gain)
       : systems::LinearSystem<T>(make_singleton_matrix(-1. / time_constant),
-                                 make_singleton_matrix(1.),
+                                 make_singleton_matrix(gain),
                                  make_singleton_matrix(1. / time_constant),
-                                 make_singleton_matrix(0.)),
-        time_constant_(time_constant), gain_(gain) {}
+                                 make_singleton_matrix(0.)) {}
   ~SimplePowerTrain() override = default;
 
   const systems::InputPortDescriptor<T>& get_throttle_input_port() const {
@@ -47,9 +56,6 @@ class SimplePowerTrain : public systems::LinearSystem<T> {
     matrix << value;
     return matrix;
   }
-
-  const double time_constant_{};  // Powertrain time constant [1/s].
-  const double gain_{};  // Gain from throttle input to force output [N].
 };
 
 }  // namespace automotive

@@ -17,12 +17,12 @@ namespace automotive {
 
 template <typename T>
 Bicycle<T>::Bicycle() {
-  this->DeclareInputPort(systems::kVectorValued, kSteeringInputDimension);
-  this->DeclareInputPort(systems::kVectorValued, kForceInputDimension);
-  this->DeclareOutputPort(systems::kVectorValued, kStateDimension);
+  this->DeclareInputPort(systems::kVectorValued, steering_input_dimension_);
+  this->DeclareInputPort(systems::kVectorValued, force_input_dimension_);
+  this->DeclareOutputPort(systems::kVectorValued, state_dimension_);
   this->DeclareContinuousState(1,   // num_q (Psi)
                                1,   // num_v (Psi_dot)
-                               kStateDimension - 2);  // num_z
+                               state_dimension_ - 2);  // num_z
 }
 
 template <typename T>
