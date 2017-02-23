@@ -110,6 +110,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
           const Eigen::Ref<const Eigen::VectorXd>&,
           const Eigen::Ref<const VectorXDecisionVariable>&))
          &MathematicalProgram::AddQuadraticCost)
+    .def("AddQuadraticCost", (Binding<QuadraticConstraint>
+         (MathematicalProgram::*)(const Expression&))
+         &MathematicalProgram::AddQuadraticCost)
     .def("Solve", &MathematicalProgram::Solve)
     .def("linear_constraints", &MathematicalProgram::linear_constraints)
     .def("linear_equality_constraints",
