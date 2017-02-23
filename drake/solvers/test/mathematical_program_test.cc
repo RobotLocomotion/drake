@@ -269,6 +269,16 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
   CheckGetSolution(prog, X2, X2_value);
   CheckGetSolution(prog, x3, x3_value);
   CheckGetSolution(prog, x4, x4_value);
+
+  // Check a variable that is not a decision variable of the mathematical
+  // program.
+  symbolic::Variable z1("z1");
+  symbolic::Variable z2("z2");
+  EXPECT_THROW(prog.GetSolution(z1), std::runtime_error);
+  EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, z2)),
+               std::runtime_error);
+  EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, X1(0, 0))),
+               std::runtime_error);
 }
 
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
