@@ -25,6 +25,8 @@ drake_cc_library(
     ],
 )
 
+# === test/ ===
+
 drake_cc_googletest(
     name = "iiwa_ik_test",
     srcs = ["test/iiwa_ik_test.cc"],
