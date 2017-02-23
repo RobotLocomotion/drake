@@ -7,14 +7,18 @@
 namespace DrakeShapes {
 namespace {
 
-const char kUri[] = "";  // No specific URI is required for these tests.
+const char * kUri = "";  // No specific URI is required for these tests.
 const double kVertexSameThreshold = 1E-12;  // Threshold for vertices in the
                                             // test cases being the same.
 
+// This function checks that all faces in the supplied mesh have normals
+// that face outward from the origin when the points in the faces are
+// considered to be oriented clockwise.
+// You can use this function to check if all normals are oriented outwards
+// for a CONVEX MESH CONTAINING ON THE ORIGIN. You can't use it to perform
+// that check for non-convex meshes, or for ones that don't contain the origin.
 void CheckAllNormalsFaceOutwards(Eigen::Matrix3Xd verts,
                                  TrianglesVector faces) {
-  // This checks that all faces have outward-facing normals when
-  // the points are considered to be oriented clockwise.
   for (size_t i = 0; i < faces.size(); i++) {
     Eigen::Vector3d pt_a = verts.col(faces[i][0]);
     Eigen::Vector3d pt_b = verts.col(faces[i][1]);
@@ -30,57 +34,55 @@ void CheckAllNormalsFaceOutwards(Eigen::Matrix3Xd verts,
   }
 }
 
-void CheckThatTriMeshIsClosedNonoverlapping(Eigen::Matrix3Xd verts,
-                                            TrianglesVector faces) {
-  // This checks that a given set of triangles represents a closed shape
-  // (of nonzero volume) by confirming that each edge that appears,
-  // appears exactly twice. If this is true across all
-  // faces, then the shape will have a well-defined inside and outside
-  // (without holes or duplicated faces).
-
+// This checks that a given set of triangles represents a closed shape
+// (of nonzero volume) by confirming that each edge that appears,
+// appears exactly twice. If this is true across all
+// faces, then the shape is a closed manifold (i.e. watertight).
+// This check does NOT test that neighboring faces have normals facing
+// the same direction.
+//
+// Pass the expected number of unique edges as expected_unique_edges,
+// or -1 if unknown.
+void CheckThatTriMeshIsClosed(Eigen::Matrix3Xd verts,
+                              TrianglesVector faces,
+                              int expected_unique_edges) {
+  // Create an edge structure which stores the indices of the two vertices
+  // in ascending order (a always <= b).
   struct Edge {
-    Eigen::Vector3d a;
-    Eigen::Vector3d b;
+    int a;
+    int b;
+    Edge(int a_in, int b_in) {
+      a = std::min(a_in, b_in);
+      b = std::max(a_in, b_in);
+    }
+    bool operator==(Edge e) {
+      return (e.a == a && e.b == b);
+    }
   };
+
   std::vector<Edge> edges;
   std::vector<int> edge_counts;
-
   // For each face...
   for (size_t i = 0; i < faces.size(); i++) {
-    // and each edge in that face...
-    for (int k_a = 0; k_a < 3; k_a ++) {
-      for (int k_b = 0; k_b < 3; k_b ++) {
-        if (k_a != k_b) {
-          Edge new_edge;
-          new_edge.a = verts.col(faces[i][k_a]);
-          new_edge.b = verts.col(faces[i][k_b]);
+    // and each edge in that face as we go around the face...
+    for (int k = 0; k < 3; k ++) {
+      Edge new_edge(faces[i][k], faces[i][(k+1)%3]);
 
-          // Check distance against all known edges.
-          bool is_new_edge = true;
-          for (size_t edge_ind = 0; edge_ind < edges.size(); edge_ind++) {
-            // Edge comparison is based on distance between
-            // the constituent vertices of the pair of edges.
-            // We check both vertex orders in case the edges
-            // go in opposite directions.
-            double dist_1 = (new_edge.a - edges[edge_ind].a).norm() +
-                            (new_edge.b - edges[edge_ind].b).norm();
-            double dist_2 = (new_edge.b - edges[edge_ind].a).norm() +
-                            (new_edge.a - edges[edge_ind].b).norm();
-            if (dist_1 < kVertexSameThreshold ||
-                dist_2 < kVertexSameThreshold) {
-              is_new_edge = false;
-              edge_counts[edge_ind]++;
-              break;
-            }
-          }
-
-          // If this edge doesn't exist already, start keeping
-          // track of it.
-          if (!is_new_edge) {
-            edges.push_back(new_edge);
-            edge_counts.push_back(1);
-          }
+      // Check distance against all known edges.
+      bool is_new_edge = true;
+      for (size_t edge_ind = 0; edge_ind < edges.size(); edge_ind++) {
+        if (edges[edge_ind] == new_edge) {
+          is_new_edge = false;
+          edge_counts[edge_ind]++;
+          break;
         }
+      }
+
+      // If this edge doesn't exist already, start keeping
+      // track of it.
+      if (is_new_edge) {
+        edges.push_back(new_edge);
+        edge_counts.push_back(1);
       }
     }
   }
@@ -90,9 +92,20 @@ void CheckThatTriMeshIsClosedNonoverlapping(Eigen::Matrix3Xd verts,
             iter++) {
     EXPECT_EQ(*iter, 2);
   }
+
+  if (expected_unique_edges >= 0) {
+    EXPECT_EQ(edges.size(), expected_unique_edges);
+  }
 }
 
-// Tests that we can query faces from a box.
+// Tests that we can query faces from a box, and that those faces
+// satisfy a few conditions:
+//   - 12 faces are returned (2 triangles per rectangular box face).
+//   - The faces form a closed, non-overlapping shape. See
+//     CheckThatTriMeshIsClosed for details of this.
+//   - Assuming face vertices are returned in ccw order when viewed
+//     from the outside, all face normals should face outwards from
+//     the inside of the box.
 GTEST_TEST(FaceQueryTests, FaceQueryFromBox) {
   Box box(Eigen::Vector3d(1.0, 2.0, 3.0));
 
@@ -108,14 +121,24 @@ GTEST_TEST(FaceQueryTests, FaceQueryFromBox) {
   // We should have (6 faces * 2 tris per face = 12) faces.
   EXPECT_EQ(faces.size(),  12);
 
-  // Since our box is centered on the origin, all normals
-  // should face outwards from the origin.
+  // Since our box mesh is centered on the origin, all normals
+  // should face outwards from the origin if they are correctly
+  // oriented outwards.
   CheckAllNormalsFaceOutwards(verts, faces);
 
-  CheckThatTriMeshIsClosedNonoverlapping(verts, faces);
+  // We expect 18 unique edges on a triangulated cube.
+  CheckThatTriMeshIsClosed(verts, faces, 18);
 }
 
-// Tests that we can query faces from a mesh.
+// Tests that we can query faces from a mesh. This test uses a box
+// mesh, so the same conditions that are checked in FaceQueryFromBox
+// are employed:
+//   - 12 faces are returned (2 triangles per rectangular box face).
+//   - The faces form a closed, non-overlapping shape. See
+//     CheckThatTriMeshIsClosed for details of this.
+//   - Assuming face vertices are returned in ccw order when viewed
+//     from the outside, all face normals should face outwards from
+//     the inside of the box.
 GTEST_TEST(FaceQueryTests, FaceQueryFromMesh) {
   const std::string kFileName = drake::GetDrakePath() +
       "/multibody/shapes/test/tri_cube.obj";
@@ -133,11 +156,13 @@ GTEST_TEST(FaceQueryTests, FaceQueryFromMesh) {
   // We should have (6 faces * 2 tris per face = 12) faces.
   EXPECT_EQ(faces.size(), 12);
 
-  // Since our box is centered on the origin, all normals
-  // should face outwards from the origin.
+  // Since our box mesh is centered on the origin, all normals
+  // should face outwards from the origin if they are correctly
+  // oriented outwards.
   CheckAllNormalsFaceOutwards(verts, faces);
 
-  CheckThatTriMeshIsClosedNonoverlapping(verts, faces);
+  // We expect 18 unique edges on a triangulated cube.
+  CheckThatTriMeshIsClosed(verts, faces, 18);
 }
 
 }  // namespace
