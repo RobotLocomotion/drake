@@ -29,6 +29,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "atlas_joint_level_controller_system",
+    srcs = ["atlas_joint_level_controller_system.cc"],
+    hdrs = ["atlas_joint_level_controller_system.h"],
+    deps = [
+        ":joint_level_controller_system",
+    ],
+)
+
+drake_cc_library(
     name = "plan_eval_system",
     srcs = ["plan_eval_system.cc"],
     hdrs = ["plan_eval_system.h"],
@@ -67,7 +76,7 @@ drake_cc_binary(
         "local",
     ],
     deps = [
-        ":joint_level_controller_system",
+        ":atlas_joint_level_controller_system",
         ":plan_eval_system",
         ":qp_controller_system",
         ":robot_state_decoder_system",
