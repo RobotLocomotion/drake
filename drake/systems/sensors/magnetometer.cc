@@ -20,11 +20,11 @@ namespace sensors {
 Magnetometer::Magnetometer(const std::string& name,
                      const RigidBodyFrame<double>& frame,
                      const RigidBodyTree<double>& tree,
-                     const Vector3d& north_star)
+                     const Vector3d& north_vector)
     : name_(name),
       frame_(frame),
       tree_(tree),
-      n_W_W_(north_star) {
+      p_WoN_W_(north_vector) {
   input_port_index_ =
       DeclareInputPort(kVectorValued, tree_.get_num_positions() +
                                       tree_.get_num_velocities()).get_index();
@@ -58,27 +58,33 @@ void Magnetometer::DoCalcOutput(const systems::Context<double>& context,
 
   const Eigen::Isometry3d X_WM =
       tree_.CalcFramePoseInWorldFrame(cache, frame_);
-  const Vector3d n_W_M = X_WM.inverse() * n_W_W_;
-  std::cout << "n_W_M = " << n_W_M.transpose() << std::endl;
-  Vector3d normalized_n_W_M = n_W_M;
-  normalized_n_W_M.normalize();
-  std::cout << "normalized_n_W_M = " << normalized_n_W_M.transpose()
-      << std::endl;
+  const auto R_MW = X_WM.linear().transpose();
+  auto p_WoN_M = R_MW * p_WoN_W_;
+
+
+  std::cout << "Magnetometer::DoCalcOutput():\n"
+    << "  - p_WoN_W_ = " << p_WoN_W_.transpose() << "\n"
+    << "  - X_WM =\n" << X_WM.matrix() << "\n"
+    << "  - R_MW =\n" << R_MW.matrix() << "\n"
+    << "  - p_WoN_M = " << p_WoN_M.transpose() << "\n"
+    << std::endl;
 
 
   // This is the previous logic that assumes the world frame's +X axis is
   // pointing north.
-  Vector3d magnetic_north(1, 0, 0);
-  Vector4d quat_world_to_body = tree_.relativeQuaternion(
-      cache, RigidBodyTreeConstants::kWorldBodyIndex,
-      frame_.get_frame_index());
-  Vector3d mag_body = math::quatRotateVec(quat_world_to_body, magnetic_north);
-  std::cout << "mag_body = " << mag_body.transpose() << std::endl;
+  // Vector3d magnetic_north(1, 0, 0);
+  // Vector4d quat_world_to_body = tree_.relativeQuaternion(
+  //     cache, RigidBodyTreeConstants::kWorldBodyIndex,
+  //     frame_.get_frame_index());
+  // Vector3d mag_body = math::quatRotateVec(quat_world_to_body,
+  //     magnetic_north);
+  // std::cout << "mag_body = " << mag_body.transpose() << std::endl;
 
   // Saves the magnetometer reading into the output port.
   BasicVector<double>* const output_vector =
       output->GetMutableVectorData(output_port_index_);
-  output_vector->SetFromVector(mag_body);
+  // output_vector->SetFromVector(mag_body);
+  output_vector->SetFromVector(p_WoN_M);
 }
 
 }  // namespace sensors

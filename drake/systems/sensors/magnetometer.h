@@ -24,39 +24,35 @@ namespace sensors {
 /// <B>The Magnetometer Math:</B>
 ///
 /// Let:
-///  - `M` be the magnetometer's frame with origin `Mo`.
+///  - `M` be the magnetometer's frame.
 ///  - `W` be the world frame with origin `Wo`.
-///  - `n_W_W` be a point in the world frame and expressed in the world frame
-///    that represents true north. In other words, the vector from `Wo` to `n_W`
-///    points to true north.
-///  - `n_W_M` be the same point as `n_W_W` but expressed in the magnetometer's
-///    frame.
-///  - `X_MW` be the transform from `W` to `M`.
+///  - `p_WoN_W` be a unit vector from `Wo` to point `N` that points to true
+///     north express in `W`.
+///  - `p_WoN_M` be the same as `p_WoN_W` except expressed in `M`.
+///  - `R_MW` be the rotation matrix from `W` to `M`.
 ///
 /// The math implemented by this sensor is as follows:
 ///
 /// <pre>
-/// n_W_M = X_MW * n_W_W
+/// p_WoN_M = R_MW * p_WoN_W
 /// </pre>
 ///
-/// The output is the normalized `n_W_M` (i.e., the output is a unit vector that
-/// points to `n_W_M`).
+/// The output is `p_WoN_M`.
 ///
 /// <B>System Input Ports:</B>
 ///
 /// This system has one input port that is accessible via the following
 /// accessor:
 ///
-///  - get_input_port(): Contains the state (i.e., position and velocity)
-///    vector, `x`, of the RigidBodyPlant being sensed by this sensor.
+///  - get_input_port(): Contains the state vector, `x`, of the RigidBodyPlant
+///    being sensed by this sensor.
 ///
 /// <B>System Output Ports:</B>
 ///
 /// This system has one output port that is accessible via the following
 /// accessor method:
 ///
-///  - get_output_port(): Contains the sensed unit vector from `Mo` to `n_W_M`.
-///    See MagnetometerOutput.
+///  - get_output_port(): Contains `p_WoN_M`. See MagnetometerOutput.
 ///
 /// @ingroup sensor_systems
 ///
@@ -81,14 +77,12 @@ class Magnetometer : public systems::LeafSystem<double> {
   /// fed into this sensor. This parameter's lifespan must exceed that of this
   /// class's instance.
   ///
-  /// @param[in] north_star A point in `W` representing "true north". It serves
-  /// the same purpose as the real-life north star -- a stationary reference
-  /// point to true north.
+  /// @param[in] north_vector A unit vector in `W` that points to true north,
+  /// i.e., `p_WoN_W`.
   ///
   Magnetometer(const std::string& name, const RigidBodyFrame<double>& frame,
                const RigidBodyTree<double>& tree,
-               const Eigen::Vector3d& north_star =
-                   Eigen::Vector3d(std::numeric_limits<double>::max(), 0, 0));
+               const Eigen::Vector3d& north_vector = Eigen::Vector3d(1, 0, 0));
 
   /// Returns the name of this sensor. The name can be any user-specified value.
   const std::string& get_name() const { return name_; }
@@ -129,7 +123,7 @@ class Magnetometer : public systems::LeafSystem<double> {
   const std::string name_;
   const RigidBodyFrame<double> frame_;
   const RigidBodyTree<double>& tree_;
-  const Eigen::Vector3d n_W_W_;  // The location of the "north star".
+  const Eigen::Vector3d p_WoN_W_;
   int input_port_index_{};
   int output_port_index_{};
 };

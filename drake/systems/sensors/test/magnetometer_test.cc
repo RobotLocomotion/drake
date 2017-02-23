@@ -77,12 +77,14 @@ class TestMagnetometer : public ::testing::Test {
     state_vector_.resize(num_states_);
     state_vector_ << tree_->getZeroConfiguration(),
                      VectorX<double>::Zero(tree_->get_num_velocities());
-    for (int i = 0; i < num_positions_; ++i) {
-      std::cout << "position " << i << ": " << tree_->get_position_name(i) << std::endl;
-    }
-    for (int i = 0; i < num_velocities_; ++i) {
-      std::cout << "velocity " << i << ": " << tree_->get_velocity_name(i) << std::endl;
-    }
+    // for (int i = 0; i < num_positions_; ++i) {
+    //   std::cout << "position " << i << ": "
+    //       << tree_->get_position_name(i) << std::endl;
+    // }
+    // for (int i = 0; i < num_velocities_; ++i) {
+    //   std::cout << "velocity " << i << ": "
+    //       << tree_->get_velocity_name(i) << std::endl;
+    // }
   }
 
   unique_ptr<RigidBodyTree<double>> tree_;
