@@ -147,11 +147,11 @@ class RgbdCamera : public LeafSystem<double> {
   /// the RigidBodyTree.
   const InputPortDescriptor<double>& state_input_port() const;
 
-  /// Returns a descriptor of the abstract valued output port that takes an
+  /// Returns a descriptor of the abstract valued output port that contains an
   /// Image<uint_8>.
   const OutputPortDescriptor<double>& color_image_output_port() const;
 
-  /// Returns a descriptor of the abstract valued output port that takes an
+  /// Returns a descriptor of the abstract valued output port that contains an
   /// Image<float>.
   const OutputPortDescriptor<double>& depth_image_output_port() const;
 
