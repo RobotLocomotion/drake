@@ -98,7 +98,7 @@ class DrakeVisualizer : public LeafSystem<double> {
    * not been configured to record/playback, a warning message will be written
    * to the log, but otherwise, no work will be done.
    */
-  void ReplayCachedSimulation();
+  void ReplayCachedSimulation() const;
 
   /**
    * Plays back (at real time) a trajectory representing the input signal.
