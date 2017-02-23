@@ -537,4 +537,14 @@ drake_cc_googletest(
     ],
 )
 
+sh_test(
+    name = "car_sim_lcm_test",
+    srcs = ["//tools:exec.sh"],
+    args = [
+        "$(location :car_sim_lcm)",
+        " --simulation_sec=0.1",
+    ],
+    data = [":car_sim_lcm"],
+)
+
 cpplint()

@@ -2,6 +2,10 @@
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files([
+    "exec.sh",
+])
+
 sh_binary(
     name = "valgrind",
     srcs = ["valgrind.sh"],
