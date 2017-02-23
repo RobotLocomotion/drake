@@ -16,6 +16,12 @@ inline double get_orientation_difference(const Matrix3<double>& rot0,
 }
 }
 
+// N random samples are taken from the configuration space (q), and the
+// corresponding end effector poses are computed with forward kinematics.
+// We use inverse kinematics to try recover a set of joint angles that would
+// achieve these poses. This test checks that an IK solution can be computed,
+// and that the resulting pose lies within the given tolerance from the forward
+// kinematics poses.
 GTEST_TEST(testInverseKinematics, SolveIkFromFk) {
   const std::string kModelPath =
       GetDrakePath() +
@@ -36,7 +42,7 @@ GTEST_TEST(testInverseKinematics, SolveIkFromFk) {
   IiwaIkPlanner::IkCartesianWaypoint wp;
   wp.time = 0;
   wp.pos_tol = Vector3<double>(0.001, 0.001, 0.001);
-  wp.rot_tol = 0.001;
+  wp.rot_tol = 0.005;
   wp.constrain_orientation = true;
   std::vector<IiwaIkPlanner::IkCartesianWaypoint> waypoints(1, wp);
 
@@ -73,9 +79,8 @@ GTEST_TEST(testInverseKinematics, SolveIkFromFk) {
     EXPECT_TRUE((pos_diff.array() <= kUpperBound.array()).all());
     EXPECT_TRUE((pos_diff.array() >= kLowerBound.array()).all());
 
-    // to Hongkai: this fails sometimes with pretty large error, any ideas?
-    // std::cout << rot_diff << std::endl;
-    // EXPECT_TRUE(std::abs(rot_diff) <= wp.rot_tol + kEpsilon);
+    // cos(ang_diff) >= cos(tol) is the actual constraint in the IK.
+    EXPECT_TRUE(std::cos(rot_diff) + kEpsilon >= std::cos(wp.rot_tol));
   }
 }
 
