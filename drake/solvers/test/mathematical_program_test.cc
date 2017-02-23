@@ -629,8 +629,10 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
 
-  EXPECT_EQ(M_e - M_lb, Ax - lb_in_ctr);
-  EXPECT_EQ(M_e - M_ub, Ax - ub_in_ctr);
+  for (int i = 0; i < M_e.size(); ++i) {
+    EXPECT_PRED2(ExprEqual, M_e(i) - M_lb(i), Ax(i) - lb_in_ctr(i));
+    EXPECT_PRED2(ExprEqual, M_e(i) - M_ub(i), Ax(i) - ub_in_ctr(i));
+  }
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
@@ -695,6 +697,160 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic6) {
       CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
 }
 
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic7) {
+  // Checks the linear constraints
+  // 1 <= -2 * x0 <= 3
+  // 3 <= 4 * x0 + 2<= 5
+  // 2 <= x1 + 2 * (x2 - 0.5*x1) + 3 <= 4;
+  // 3 <= -4 * x1 + 3 <= inf
+  // Note: these are all bounding box constraints.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  Vector4<Expression> e;
+  // clang-format off
+  e << -2 * x(0),
+    4 * x(0) + 2,
+    x(1) + 2 * (x(2) - 0.5 * x(1)) + 3,
+    -4 * x(1) + 3;
+  // clang-format on
+  prog.AddLinearConstraint(
+      e, Vector4d(1, 3, 2, 3),
+      Vector4d(3, 5, 4, numeric_limits<double>::infinity()));
+
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  const auto& binding = prog.bounding_box_constraints().back();
+  EXPECT_EQ(binding.variables(),
+            VectorDecisionVariable<4>(x(0), x(0), x(2), x(1)));
+  EXPECT_TRUE(CompareMatrices(
+      binding.constraint()->lower_bound(),
+      Vector4d(-1.5, 0.25, -0.5, -numeric_limits<double>::infinity())));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                              Vector4d(-0.5, 0.75, 0.5, 0)));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_bounding_box_constraint = 0;
+
+  // x(0) <= 3
+  std::vector<symbolic::Formula> f;
+  f.push_back(x(0) <= 3);
+  f.push_back(3 >= x(0));
+  f.push_back(x(0) + 2 <= 5);
+  f.push_back(4 + x(0) >= 1 + 2 * x(0));
+  f.push_back(2 * x(0) + 1 <= 4 + x(0));
+  f.push_back(3 * x(0) + x(1) <= 6 + x(0) + x(1));
+  for (const auto &fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_bounding_box_constraint,
+              prog.bounding_box_constraints().size());
+    EXPECT_EQ(prog.linear_constraints().size(), 0);
+    EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+    auto binding = prog.bounding_box_constraints().back();
+    EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                                Vector1d(3)));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+                                Vector1d(-numeric_limits<double>::infinity())));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula2) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_bounding_box_constraint = 0;
+  // x0 >= 2
+  std::vector<symbolic::Formula> f;
+  f.push_back(x(0) >= 2);
+  f.push_back(2 <= x(0));
+  f.push_back(-x(0) <= -2);
+  f.push_back(-2 >= -x(0));
+  f.push_back(2 + 2 * x(0) >= x(0) + 4);
+  f.push_back(3 + 3 * x(0) >= x(0) + 7);
+  f.push_back(x(0) + 7 + 2 * x(1) <= 3 * x(0) + 3 + 2 * x(1));
+  for (const auto& fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_bounding_box_constraint,
+              prog.bounding_box_constraints().size());
+    EXPECT_EQ(prog.linear_constraints().size(), 0);
+    EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+    auto binding = prog.bounding_box_constraints().back();
+    EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+                                Vector1d(2)));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                                Vector1d(numeric_limits<double>::infinity())));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula3) {
+  // x(0) + x(2) == 1
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_linear_equality_constraint = 0;
+
+  std::vector<symbolic::Formula> f;
+  f.push_back(x(0) + x(2) == 1);
+  f.push_back(x(0) + 2 * x(2) == 1 + x(2));
+  for (const auto& fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_linear_equality_constraint,
+              prog.linear_equality_constraints().size());
+    EXPECT_EQ(prog.linear_constraints().size(), 0);
+    EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
+    auto binding = prog.linear_equality_constraints().back();
+    EXPECT_TRUE(
+        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
+
+    VectorX<Expression> expr = binding.constraint()->A() * binding.variables()
+        - binding.constraint()->lower_bound();
+    EXPECT_EQ(expr.size(), 1);
+    EXPECT_PRED2(ExprEqual, expr(0), x(0) + x(2) - 1);
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
+  // x(0) + 2 * x(2) <= 1
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_linear_constraint = 0;
+
+  std::vector<symbolic::Formula> f;
+  f.push_back(x(0) + 2 * x(2) <= 1);
+  f.push_back(x(0) + 3 * x(2) <= 1 + x(2));
+  f.push_back(-1 <= -x(0) - 2 * x(2));
+  f.push_back(-1 - x(2) <= -x(0) - 3 * x(2));
+  f.push_back(2 * (x(0) + x(2)) - x(0) <= 1);
+  f.push_back(1 >= x(0) + 2 * x(2));
+  f.push_back(1 + x(2) >= x(0) + 3 * x(2));
+  f.push_back(-x(0) - 2 * x(2) >= -1);
+  f.push_back(-x(0) - 3 * x(2) >= -1 - x(2));
+  f.push_back(1 >= 2 * (x(0) + x(2)) - x(0));
+  for (const auto& fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_linear_constraint,
+              prog.linear_constraints().size());
+    EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+    EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
+    auto binding = prog.linear_constraints().back();
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                                Vector1d(numeric_limits<double>::infinity())));
+    EXPECT_TRUE(
+        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-1)));
+
+    VectorX<Expression> expr = binding.constraint()->A() * binding.variables()
+        - binding.constraint()->lower_bound();
+    EXPECT_EQ(expr.size(), 1);
+    EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
+  }
+}
+
 namespace {
 void CheckAddedLinearEqualityConstraintCommon(
     const Binding<LinearEqualityConstraint>& binding,
@@ -728,9 +884,14 @@ void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
   VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
                                binding.constraint()->lower_bound();
 
+  EXPECT_EQ(flat_V.size(), v.size());
   MatrixX<Expression> v_resize = flat_V;
   v_resize.resize(v.rows(), v.cols());
-  EXPECT_EQ(v_resize, v - b);
+  for (int i = 0; i < v.rows(); ++i) {
+    for (int j = 0; j < v.cols(); ++j) {
+      EXPECT_EQ(v_resize(i, j).Expand(), (v(i, j) - b(i, j)).Expand());
+    }
+  }
 }
 
 template <typename DerivedV, typename DerivedB>
@@ -805,6 +966,8 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   // Checks -(x(0) + 2 * x(1)) = 2
   CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog,
                                                          -(x(0) + 2 * x(1)), 2);
+
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + 2 * (x(0) + x(2)) + 3 * (x(0) - x(1)), 3);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {

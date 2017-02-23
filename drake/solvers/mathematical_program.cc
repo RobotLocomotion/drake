@@ -251,9 +251,11 @@ void ExtractVariablesFromExpression(
    * such that map_var_to_index[vi.get_ID()] = i.
    * @param[out] coeffs A row vector. coeffs(i) = ci.
    * @param[out] constant_term c0 in the equation above.
+   * @return num_variable. Number of variables in the expression. 2 * x(0) + 3
+   * has 1 variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable.
    */
 template <typename Derived>
-void DecomposeLinearExpression(
+int DecomposeLinearExpression(
     const Expression& e,
     const std::unordered_map<Variable::Id, int>& map_var_to_index,
     const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
@@ -261,51 +263,35 @@ void DecomposeLinearExpression(
                 "coeffs must be a matrix of double.");
   DRAKE_DEMAND(coeffs.rows() == 1);
   DRAKE_DEMAND(coeffs.cols() == static_cast<int>(map_var_to_index.size()));
-  if (is_addition(e)) {
-    *constant_term = get_constant_in_addition(e);
-    const std::map<Expression, double>& expr_to_coeff_map{
-        get_expr_to_coeff_map_in_addition(e)};
-    for (const pair<Expression, double>& p : expr_to_coeff_map) {
-      if (is_variable(p.first)) {
-        const Variable& var{get_variable(p.first)};
-        const double coeff{p.second};
-        const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
-            0, map_var_to_index.at(var.get_id())) = coeff;
-      } else {
-        std::ostringstream oss;
-        oss << "Expression " << e << " is non-linear.";
-        throw std::runtime_error(oss.str());
-      }
+  const symbolic::Variables& vars = e.GetVariables();
+  const auto& monomial_to_coeff_map =
+      symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  int num_variable = 0;
+  for (const auto& p : monomial_to_coeff_map) {
+    const auto& p_monomial = p.first;
+    DRAKE_ASSERT(is_constant(p.second));
+    const double p_coeff = symbolic::get_constant_value(p.second);
+    if (p_monomial.total_degree() > 1) {
+      std::ostringstream oss;
+      oss << "Expression " << e << " is non-linear.";
+      throw std::runtime_error(oss.str());
     }
-  } else if (is_multiplication(e)) {
-    const double c = get_constant_in_multiplication(e);
-    const std::map<Expression, Expression>& map_base_to_exponent =
-        get_base_to_exponent_map_in_multiplication(e);
-    if (map_base_to_exponent.size() == 1) {
-      const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
-      if (!is_variable(p.first) || !is_one(p.second)) {
-        throw SymbolicError(e, "is not linear");
-      } else {
-        const Variable& var = get_variable(p.first);
-        const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
-            map_var_to_index.at(var.get_id())) = c;
-        *constant_term = 0;
+    else if (p_monomial.total_degree() == 1) {
+      // Linear coefficient.
+      const auto& p_monomial_powers = p_monomial.get_powers();
+      DRAKE_DEMAND(p_monomial_powers.size() == 1);
+      const Variable::Id var_id = p_monomial_powers.begin()->first;
+      const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
+          map_var_to_index.at(var_id)) = p_coeff;
+      if (p_coeff != 0) {
+        ++num_variable;
       }
     } else {
-      // There are more than one base, like x^2 * y^3
-      throw SymbolicError(e, "is not linear");
+      // Constant term.
+      *constant_term = p_coeff;
     }
-  } else if (is_variable(e)) {
-    // Just a single variable.
-    const Variable& var{get_variable(e)};
-    const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
-        map_var_to_index.at(var.get_id())) = 1;
-    *constant_term = 0;
-  } else if (is_constant(e)) {
-    *constant_term = get_constant_value(e);
-  } else {
-    throw SymbolicError(e, "is not linear");
   }
+  return num_variable;
 }
 
 /**
@@ -524,79 +510,61 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
   Eigen::VectorXd new_lb{v.size()};
   Eigen::VectorXd new_ub{v.size()};
-  for (int i{0}; i < v.size(); ++i) {
-    const Expression& e_i{v(i)};
-    const double lb_i{lb(i)};
-    const double ub_i{ub(i)};
-    if (is_addition(e_i)) {
-      double constant_term{0.0};
-      DecomposeLinearExpression(e_i, map_var_to_index, A.row(i),
-                                &constant_term);
-      new_lb(i) = lb(i) - constant_term;
-      new_ub(i) = ub(i) - constant_term;
-    } else if (is_multiplication(e_i)) {
-      // i-th constraint should be lb <= c * var_i <= ub, where c is a constant.
-      const double c = get_constant_in_multiplication(e_i);
-      const std::map<Expression, Expression>& map_base_to_exponent =
-          get_base_to_exponent_map_in_multiplication(e_i);
-      if (map_base_to_exponent.size() == 1) {
-        const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
-        if (!is_variable(p.first) || !is_one(p.second)) {
-          throw SymbolicError(e_i,
-                              "non-linear but called with AddLinearConstraint");
-        } else {
-          const Variable& var_i = get_variable(p.first);
-          if (v.size() == 1) {
-            // Add a bounding box constraint lb/c <= v <= ub/c
-            if (c > 0) {
-              new_lb(i) = lb(i) / c;
-              new_ub(i) = ub(i) / c;
-            } else {
-              new_lb(i) = ub(i) / c;
-              new_ub(i) = lb(i) / c;
-            }
-            return Binding<BoundingBoxConstraint>(
-                AddBoundingBoxConstraint(new_lb(i), new_ub(i), var_i), vars);
-          } else {
-            A(i, map_var_to_index[var_i.get_id()]) = c;
-            new_lb(i) = lb(i);
-            new_ub(i) = ub(i);
-          }
-        }
-      } else {
-        // There is more than one base, like x^2*y^3
-        throw SymbolicError(e_i,
-                            "non-linear but called with AddLinearConstraint");
-      }
-    } else if (is_variable(e_i)) {
-      // i-th constraint is lb <= var_i <= ub
-      const Variable& var_i{get_variable(e_i)};
-      if (v.size() == 1) {
-        // If this is the only constraint, we call AddBoundingBoxConstraint.
-        return Binding<BoundingBoxConstraint>{
-            AddBoundingBoxConstraint(lb(i), ub(i), var_i), vars};
-      } else {
-        A(i, map_var_to_index[var_i.get_id()]) = 1;
-        new_lb(i) = lb(i);
-        new_ub(i) = ub(i);
-      }
-    } else if (is_constant(e_i)) {
-      const double c_i{get_constant_value(e_i)};
-      if (lb_i <= c_i && c_i <= ub_i) {
-        throw SymbolicError(e_i, lb_i, ub_i,
+  // We will determine if lb <= v <= ub is a bounding box constraint, namely
+  // x_lb <= x <= x_ub.
+  bool is_v_bounding_box = true;
+  for (int i = 0; i < v.size(); ++i) {
+    double constant_term = 0;
+    int num_vi_variables = DecomposeLinearExpression(v(i), map_var_to_index,
+                                                     A.row(i), &constant_term);
+    if (num_vi_variables == 0) {
+      // v(i) is just a constant.
+      if (lb(i) <= constant_term && constant_term <= ub(i)) {
+        throw SymbolicError(v(i), lb(i), ub(i),
                             "trivial but called with AddLinearConstraint");
       } else {
         throw SymbolicError(
-            e_i, lb_i, ub_i,
+            v(i), lb(i), ub(i),
             "unsatisfiable but called with AddLinearConstraint");
       }
     } else {
-      throw SymbolicError(e_i, lb_i, ub_i,
-                          "non-linear but called with AddLinearConstraint");
+      new_lb(i) = lb(i) - constant_term;
+      new_ub(i) = ub(i) - constant_term;
+      if (num_vi_variables > 1) {
+        is_v_bounding_box = false;
+      }
     }
   }
-  return Binding<LinearConstraint>{AddLinearConstraint(A, new_lb, new_ub, vars),
-                                   vars};
+  if (is_v_bounding_box) {
+    // If every lb(i) <= v(i) <= ub(i) is a bounding box constraint, then
+    // formulate a bounding box constraint x_lb <= x <= x_ub
+    VectorXDecisionVariable bounding_box_x(v.size());
+    for (int i = 0; i < v.size(); ++i) {
+      // v(i) is in the form of c * x
+      double x_coeff = 0;
+      for (const auto& x : v(i).GetVariables()) {
+        double coeff = A(i, map_var_to_index[x.get_id()]);
+        if (coeff != 0) {
+          x_coeff += coeff;
+          bounding_box_x(i) = x;
+        }
+      }
+      if (x_coeff > 0) {
+        new_lb(i) /= x_coeff;
+        new_ub(i) /= x_coeff;
+      } else {
+        double lb_i = new_lb(i);
+        new_lb(i) = new_ub(i) / x_coeff;
+        new_ub(i) = lb_i / x_coeff;
+      }
+    }
+    return Binding<BoundingBoxConstraint>(
+        AddBoundingBoxConstraint(new_lb, new_ub, bounding_box_x),
+        bounding_box_x);
+  } else {
+    return Binding<LinearConstraint>{
+        AddLinearConstraint(A, new_lb, new_ub, vars), vars};
+  }
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
@@ -610,14 +578,27 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     // e1 >= e2  ->  e1 - e2 >= 0  ->  0 <= e1 - e2 <= ∞
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
-    return AddLinearConstraint(e1 - e2, 0.0,
-                               std::numeric_limits<double>::infinity());
+    if (symbolic::is_constant(e2)) {
+      return AddLinearConstraint(e1, symbolic::get_constant_value(e2), std::numeric_limits<double>::infinity());
+    } else if (symbolic::is_constant(e1)) {
+      return AddLinearConstraint(-e2, -symbolic::get_constant_value(e1), std::numeric_limits<double>::infinity());
+    }
+    else {
+      return AddLinearConstraint(e1 - e2, 0.0,
+                                 std::numeric_limits<double>::infinity());
+    }
   } else if (is_less_than_or_equal_to(f)) {
     // e1 <= e2  ->  0 <= e2 - e1  ->  0 <= e2 - e1 <= ∞
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
-    return AddLinearConstraint(e2 - e1, 0.0,
-                               std::numeric_limits<double>::infinity());
+    if (symbolic::is_constant(e2)) {
+      return AddLinearConstraint(-e1, -symbolic::get_constant_value(e2), std::numeric_limits<double>::infinity());
+    } else if (symbolic::is_constant(e1)) {
+      return AddLinearConstraint(e2, symbolic::get_constant_value(e1), std::numeric_limits<double>::infinity());
+    } else {
+      return AddLinearConstraint(e2 - e1, 0.0,
+                                 std::numeric_limits<double>::infinity());
+    }
   }
   ostringstream oss;
   oss << "MathematicalProgram::AddLinearConstraint is called with a formula "
