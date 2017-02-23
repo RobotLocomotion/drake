@@ -76,7 +76,7 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
       "box",
       "/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf");
   tree_builder->StoreModel(
-      "wsg", "/examples/schunk_wsg/models/schunk_wsg_50_w_lip.sdf");
+      "wsg", "/examples/schunk_wsg/models/schunk_wsg_50.sdf");
 
   // Build a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
@@ -119,6 +119,15 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   *wsg_instance = tree_builder->get_model_info_for_instance(id);
 
   auto plant = std::make_unique<RigidBodyPlant<T>>(tree_builder->Build());
+  // Contact parameters
+  const double kStiffness = 10000;
+  const double kDissipation = 5.0;
+  const double kStaticFriction = 0.9;
+  const double kDynamicFriction = 0.5;
+  const double kStictionSlipTolerance = 0.01;
+  plant->set_normal_contact_parameters(kStiffness, kDissipation);
+  plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+                                         kStictionSlipTolerance);
   return plant;
 }
 
@@ -235,7 +244,7 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     // TODO(sam.creasey) The choice of constants below is completely
     // arbitrary and may not match the performance of the actual
     // gripper.
-    const T wsg_kp = 3000.0;  // This seems very high, for some grasps
+    const T wsg_kp = 300.0;   // This seems very high, for some grasps
                               // it's actually in the right power of
                               // two.  We'll need to revisit this once
                               // we're using the force command sent to
