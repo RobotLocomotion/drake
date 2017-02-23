@@ -8,8 +8,19 @@ namespace DrakeShapes {
 namespace {
 
 const char * kUri = "";  // No specific URI is required for these tests.
-const double kVertexSameThreshold = 1E-12;  // Threshold for vertices in the
+const double kVertexSameThreshold = 1E-10;  // Threshold for vertices in the
                                             // test cases being the same.
+
+// This function checks that the specified vertex is present in the
+// vertex set.
+void CheckPointInVertexSet(Eigen::Matrix3Xd verts,
+                           Eigen::Vector3d target_vert) {
+  // This expression returns the distance to the nearest neighbor,
+  // in terms of Euclidean distance (squaredNorm), to target_vert in verts.
+  double min_dist =
+    (verts.colwise() - target_vert).colwise().squaredNorm().minCoeff();
+  EXPECT_LT(min_dist, kVertexSameThreshold);
+}
 
 // This function checks that all faces in the supplied mesh have normals
 // that face outward from the origin when the points in the faces are
@@ -113,6 +124,20 @@ GTEST_TEST(FaceQueryTests, FaceQueryFromBox) {
   Eigen::Matrix3Xd verts;
   box.getPoints(verts);
 
+  // Given our cube dimensions above and that the cube is centered on the
+  // origin, these vertices should be present:
+  const double x = 1.0 / 2.0;
+  const double y = 2.0 / 2.0;
+  const double z = 3.0 / 2.0;
+  CheckPointInVertexSet(verts, Eigen::Vector3d(x,  y,  z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(x,  y, -z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(x, -y,  z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(x, -y, -z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(-x,  y,  z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(-x,  y, -z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(-x, -y,  z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(-x, -y, -z));
+
   // Do the actual face extraction.
   EXPECT_TRUE(box.hasFaces());
   TrianglesVector faces;
@@ -147,6 +172,20 @@ GTEST_TEST(FaceQueryTests, FaceQueryFromMesh) {
   // Do vertex extraction.
   Eigen::Matrix3Xd verts;
   mesh.getPoints(verts);
+
+  // This OBJ file contains a cube of side length 2, centered
+  // at the origin. So these vertices should be present:
+  const double x = 2.0 / 2.0;
+  const double y = 2.0 / 2.0;
+  const double z = 2.0 / 2.0;
+  CheckPointInVertexSet(verts, Eigen::Vector3d(x,  y,  z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(x,  y, -z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(x, -y,  z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(x, -y, -z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(-x,  y,  z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(-x,  y, -z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(-x, -y,  z));
+  CheckPointInVertexSet(verts, Eigen::Vector3d(-x, -y, -z));
 
   // Do the actual face extraction.
   EXPECT_TRUE(mesh.hasFaces());
