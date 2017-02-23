@@ -163,7 +163,7 @@ GTEST_TEST(FaceQueryTests, FaceQueryFromBox) {
   // Do the actual face extraction.
   EXPECT_TRUE(box.hasFaces());
   TrianglesVector faces;
-  box.getFaces(faces);
+  box.getFaces(&faces);
 
   // We should have (6 faces * 2 tris per face = 12) faces.
   EXPECT_EQ(faces.size(),  12);
@@ -212,7 +212,7 @@ GTEST_TEST(FaceQueryTests, FaceQueryFromMesh) {
   // Do the actual face extraction.
   EXPECT_TRUE(mesh.hasFaces());
   TrianglesVector faces;
-  mesh.getFaces(faces);
+  mesh.getFaces(&faces);
 
   // We should have (6 faces * 2 tris per face = 12) faces.
   EXPECT_EQ(faces.size(), 12);
