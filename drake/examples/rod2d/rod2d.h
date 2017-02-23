@@ -195,17 +195,15 @@ class Rod2D : public systems::LeafSystem<T> {
     kStickingTwoContacts
   };
 
-  /// Constructor for the 2D rod system using either the piecewise
-  /// DAE (differential algebraic equation) based approach or the compliant
-  /// ordinary differential equation based approach.
-  explicit Rod2D(SimulationType simulation_type);
-
-  /// Constructor for the 2D rod system using a time stepping
-  /// approach.
+  /// Constructor for the 2D rod system using the piecewise DAE (differential
+  /// algebraic equation) based approach, the time stepping approach, or the
+  /// compliant ordinary differential equation based approach.
   /// @param dt The integration step size. This step size cannot be reset
   ///           after construction.
-  /// @throws std::logic_error if @p dt is not positive.
-  explicit Rod2D(double dt);
+  /// @throws std::logic_error if @p dt is not positive and simulation_type is
+  ///         kTimeStepping or @p dt is not zero and simulation_type is
+  ///         kPiecewiseDAE or kCompliant.
+  explicit Rod2D(SimulationType simulation_type, double dt);
 
   /// Gets the constraint force mixing parameter (CFM, used for time stepping
   /// systems only).

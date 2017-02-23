@@ -25,38 +25,31 @@ namespace examples {
 namespace rod2d {
 
 template <typename T>
-Rod2D<T>::Rod2D(SimulationType simulation_type) {
+Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
+    simulation_type_(simulation_type) {
   // Verify that the simulation approach is either piecewise DAE or
   // compliant ODE.
-  if (simulation_type == Rod2D<T>::kTimeStepping)
-    throw std::logic_error("Time stepping approach must be constructed using"
-                               " double argument.");
+  if (simulation_type == Rod2D<T>::kTimeStepping) {
+    if (dt <= 0.0)
+      throw std::logic_error("Time stepping approach must be constructed using"
+                                 " strictly positive step size.");
 
-  // Both approaches need six continuous variables.
-  this->DeclareContinuousState(3, 3, 0);  // q, v, z
+    // Time stepping approach requires three position variables and
+    // three velocity variables, all discrete, and periodic update.
+    this->DeclareDiscreteUpdatePeriodSec(dt);
+    this->DeclareDiscreteState(6);
+  } else {
+    if (dt > 0.0)
+      throw std::logic_error("Piecewise DAE and compliant approaches must be "
+                                 "constructed using zero step size.");
+
+    // Both piecewise DAE and compliant approach require six continuous
+    // variables.
+    this->DeclareContinuousState(3, 3, 0);  // q, v, z
+  }
+
   this->DeclareInputPort(systems::kVectorValued, 3);
   this->DeclareOutputPort(systems::kVectorValued, 6);
-
-  // Set the simulation type.
-  simulation_type_ = simulation_type;
-}
-
-template <typename T>
-Rod2D<T>::Rod2D(double dt) : dt_(dt) {
-  // Verify that step size parameter is valid.
-  if (dt_ <= 0.0)
-    throw std::logic_error("Time stepping system must be constructed using "
-                               "positive integration step.");
-  this->DeclareDiscreteUpdatePeriodSec(dt);
-
-  // Time stepping approach requires three position variables and
-  // three velocity variables, all discrete.
-  this->DeclareDiscreteState(6);
-  this->DeclareInputPort(systems::kVectorValued, 3);
-  this->DeclareOutputPort(systems::kVectorValued, 6);
-
-  // Set the simulation type.
-  simulation_type_ = Rod2D<T>::kTimeStepping;
 }
 
 /// Gets the integer variable 'k' used to determine the point of contact
