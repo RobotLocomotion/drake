@@ -107,6 +107,28 @@ class RgbdCamera::Impl {
   void DoCalcOutput(const BasicVector<double>& input_vector,
                     systems::SystemOutput<double>* output) const;
 
+  void set_state_input_port_index(int port_index) {
+    state_input_port_index_ = port_index;
+  }
+
+  int state_input_port_index() const { return state_input_port_index_; }
+
+  void set_color_image_output_port_index(int port_index) {
+    color_image_output_port_index_ = port_index;
+  }
+
+  int color_image_output_port_index() const {
+    return color_image_output_port_index_;
+  }
+
+  void set_depth_image_output_port_index(int port_index) {
+    depth_image_output_port_index_ = port_index;
+  }
+
+  int depth_image_output_port_index() const {
+    return depth_image_output_port_index_;
+  }
+
  private:
   void CreateRenderingWorld();
 
@@ -122,6 +144,9 @@ class RgbdCamera::Impl {
   Eigen::Isometry3d X_WD_;  // World to Depth optical
   const Eigen::Isometry3d X_BC_;  // Base to Color optical
   const Eigen::Isometry3d X_BD_;  // Base to Depth optical
+  int state_input_port_index_{};
+  int color_image_output_port_index_{};
+  int depth_image_output_port_index_{};
 
   std::map<int, vtkSmartPointer<vtkActor>> id_object_pairs_;
   vtkNew<vtkRenderer> renderer_;
@@ -366,12 +391,14 @@ void RgbdCamera::Impl::DoCalcOutput(
   UpdateRenderWindow();
 
   // Outputs the image data.
-  systems::AbstractValue* mutable_data = output->GetMutableData(0);
+  systems::AbstractValue* mutable_data = output->GetMutableData(
+      color_image_output_port_index_);
   drake::systems::sensors::Image<uint8_t>& image =
       mutable_data->GetMutableValue<
         drake::systems::sensors::Image<uint8_t>>();
 
-  systems::AbstractValue* mutable_data_d = output->GetMutableData(1);
+  systems::AbstractValue* mutable_data_d = output->GetMutableData(
+      depth_image_output_port_index_);
   drake::systems::sensors::Image<float>& depth_image =
       mutable_data_d->GetMutableValue<
         drake::systems::sensors::Image<float>>();
@@ -422,11 +449,12 @@ RgbdCamera::RgbdCamera(const std::string& name,
                                  show_window)) {
   set_name(name);
   const int vec_num =  tree.get_num_positions() + tree.get_num_velocities();
-  input_port_index_ = this->DeclareInputPort(
-      systems::kVectorValued, vec_num).get_index();
-
-  this->DeclareAbstractOutputPort();
-  this->DeclareAbstractOutputPort();
+  impl_->set_state_input_port_index(
+      this->DeclareInputPort(systems::kVectorValued, vec_num).get_index());
+  impl_->set_color_image_output_port_index(
+      this->DeclareAbstractOutputPort().get_index());
+  impl_->set_depth_image_output_port_index(
+      this->DeclareAbstractOutputPort().get_index());
 }
 
 RgbdCamera::RgbdCamera(const std::string& name,
@@ -437,11 +465,12 @@ RgbdCamera::RgbdCamera(const std::string& name,
     : impl_(new RgbdCamera::Impl(tree, frame, fov_y, show_window)) {
   set_name(name);
   const int vec_num =  tree.get_num_positions() + tree.get_num_velocities();
-  input_port_index_ = this->DeclareInputPort(
-      systems::kVectorValued, vec_num).get_index();
-
-  this->DeclareAbstractOutputPort();
-  this->DeclareAbstractOutputPort();
+  impl_->set_state_input_port_index(
+      this->DeclareInputPort(systems::kVectorValued, vec_num).get_index());
+  impl_->set_color_image_output_port_index(
+      this->DeclareAbstractOutputPort().get_index());
+  impl_->set_depth_image_output_port_index(
+      this->DeclareAbstractOutputPort().get_index());
 }
 
 RgbdCamera::~RgbdCamera() {}
@@ -470,6 +499,23 @@ const RigidBodyTree<double>& RgbdCamera::tree() const {
   return impl_->tree();
 }
 
+const InputPortDescriptor<double>& RgbdCamera::state_input_port() const {
+  return System<double>::get_input_port(impl_->state_input_port_index());
+}
+
+const OutputPortDescriptor<double>&
+RgbdCamera::color_image_output_port() const {
+  return System<double>::get_output_port(
+      impl_->color_image_output_port_index());
+}
+
+const OutputPortDescriptor<double>&
+RgbdCamera::depth_image_output_port() const {
+  return System<double>::get_output_port(
+      impl_->depth_image_output_port_index());
+}
+
+
 std::unique_ptr<SystemOutput<double>> RgbdCamera::AllocateOutput(
     const Context<double>& context) const {
   auto output = std::make_unique<systems::LeafSystemOutput<double>>();
@@ -490,7 +536,7 @@ std::unique_ptr<SystemOutput<double>> RgbdCamera::AllocateOutput(
 void RgbdCamera::DoCalcOutput(const systems::Context<double>& context,
                               systems::SystemOutput<double>* output) const {
   const BasicVector<double>* input_vector =
-      this->EvalVectorInput(context, input_port_index_);
+      this->EvalVectorInput(context, impl_->state_input_port_index());
 
   impl_->DoCalcOutput(*input_vector, output);
 }
