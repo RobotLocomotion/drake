@@ -141,9 +141,17 @@ drake_add_external(pythonqt CMAKE PYTHON QT
 )
 
 # qhull
-drake_add_external(qhull CMAKE PUBLIC QT
-  CMAKE_ARGS
-    -DBUILD_SHARED_LIBS=ON
+drake_add_external(qhull CMAKE PUBLIC QT)
+
+ExternalProject_Add_Step(qhull install_libraries
+  COMMAND "${CMAKE_COMMAND}" -E make_directory
+    "${CMAKE_INSTALL_PREFIX}/lib"
+  COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+    "${PROJECT_BINARY_DIR}/externals/qhull/libqhullstatic_r.a"
+    "${PROJECT_BINARY_DIR}/externals/qhull/libqhullstatic.a"
+    "${PROJECT_BINARY_DIR}/externals/qhull/libqhullcpp.a"
+    "${CMAKE_INSTALL_PREFIX}/lib"
+  DEPENDEES build
 )
 
 # snopt
