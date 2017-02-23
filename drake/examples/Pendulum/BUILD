@@ -85,6 +85,16 @@ drake_cc_googletest(
     ],
 )
 
+sh_test(
+    name = "pendulum_run_swing_up_test",
+    srcs = ["//tools:exec.sh"],
+    args = [
+        "$(location :pendulum_run_swing_up)",
+        "--target_realtime_rate=0.0",
+    ],
+    data = [":pendulum_run_swing_up"],
+)
+
 filegroup(
     name = "models",
     srcs = glob([
