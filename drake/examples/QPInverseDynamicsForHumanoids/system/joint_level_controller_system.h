@@ -11,31 +11,32 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * A class that translates QpOutput to vector of torque commands in the
- * actuator order.
+ * Translates a QpOutput to a vector of torque commands in the actuator order
+ * within the RigidBodyTree.
  */
 class JointLevelControllerSystem : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointLevelControllerSystem)
 
   /**
-   * Constructor for JointLevelControllerSystem.
-   * @param robot Reference to a RigidBodyTree. An internal alias is saved,
-   * so the lifespan of @p robot must be longer than this object.
+   * @param robot A reference to the RigidBodyTree within the plant that is
+   * being controlled. The lifespan of this reference must exceed that of this
+   * class's instance. @p robot should only contain a single model instance.
    */
   explicit JointLevelControllerSystem(const RigidBodyTree<double>& robot);
 
   /**
-   * Extracts the torques from a QpOutput to a BasicVector.
-   * More specifically, the output tau_act = B^T * qp_output.dof_torques, where
-   * B is a selection matrix that maps the RigidBodyTree's actuators to its
-   * generalized acceleration.
+   * Extracts the torques from a QpOutput and output them in the actuator order
+   * within the RigidBodyTree passed to the constructor. More specifically, the
+   * output is `tau_act = B^T * qp_output.dof_torques`, where `B` is the
+   * selection matrix that maps the actuator indices to the generalized
+   * coordinate indices.
    */
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
   /**
-   * @return Port for the input: QpOutput
+   * Returns the input port for QpOutput.
    */
   inline const systems::InputPortDescriptor<double>& get_input_port_qp_output()
       const {
@@ -43,7 +44,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * @return Port for the output: torques as a BasicVector
+   * Returns the output port for the torques.
    */
   inline const systems::OutputPortDescriptor<double>& get_output_port_torque()
       const {
