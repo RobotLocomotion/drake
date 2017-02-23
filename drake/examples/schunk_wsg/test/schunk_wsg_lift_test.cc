@@ -12,16 +12,20 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_frame.h"
+#include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
@@ -29,6 +33,10 @@ namespace drake {
 namespace examples {
 namespace schunk_wsg {
 namespace {
+
+using drake::systems::RungeKutta3Integrator;
+using drake::systems::ContactResultsToLcmSystem;
+using drake::systems::lcm::LcmPublisherSystem;
 
 std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
     int* lifter_instance_id, int* gripper_instance_id) {
@@ -60,7 +68,7 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
   auto box_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,
-      Eigen::Vector3d(0, 0, 0.1), Eigen::Vector3d::Zero());
+      Eigen::Vector3d(0, 0, 0.076), Eigen::Vector3d::Zero());
   parsers::urdf::AddModelInstanceFromUrdfFile(
       GetDrakePath() + "/multibody/models/box_small.urdf",
       multibody::joints::kQuaternion, box_frame, tree.get());
@@ -83,13 +91,13 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   // Arbitrary contact parameters.
   const double kStiffness = 10000;
-  const double kDissipation = 2;
+  const double kDissipation = 2.0;
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
-  const double kStictionSlipTolerance = 0.001;
+  const double kVStictionTolerance = 0.001;
   plant->set_normal_contact_parameters(kStiffness, kDissipation);
   plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
-                                         kStictionSlipTolerance);
+                                         kVStictionTolerance);
 
   // Build a trajectory and PID controller for the lifting joint.
   const auto& lifting_input_port =
@@ -117,14 +125,15 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // 1 to second 11, coming to a stop by second 12.  The initial delay
   // is to allow the gripper to settle on the box before we start
   // moving.
+  const double kLiftHeight = 1.0;
   std::vector<double> lift_breaks{0., 0.9, 1., 11., 12};
   std::vector<Eigen::MatrixXd> lift_knots;
   lift_knots.push_back(Eigen::Vector2d(0., 0.));
   lift_knots.push_back(Eigen::Vector2d(0., 0.));
-  lift_knots.push_back(Eigen::Vector2d(0., 0.09));
-  lift_knots.push_back(Eigen::Vector2d(0.9, 0.09));
+  lift_knots.push_back(Eigen::Vector2d(0., 0.09 * kLiftHeight));
+  lift_knots.push_back(Eigen::Vector2d(0.9 * kLiftHeight, 0.09 * kLiftHeight));
   // Stop gradually.
-  lift_knots.push_back(Eigen::Vector2d(1., 0.));
+  lift_knots.push_back(Eigen::Vector2d(kLiftHeight, 0.));
   PiecewisePolynomialTrajectory lift_trajectory(
       PiecewisePolynomial<double>::Cubic(
           lift_breaks, lift_knots, Eigen::Vector2d(0., 0.),
@@ -156,6 +165,20 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
           plant->get_rigid_body_tree(), &lcm);
   builder.Connect(plant->state_output_port(),
                   viz_publisher->get_input_port(0));
+
+  // contact force visualization
+  const ContactResultsToLcmSystem<double>& contact_viz =
+  *builder.template AddSystem<ContactResultsToLcmSystem<double>>(
+      plant->get_rigid_body_tree());
+  auto& contact_results_publisher = *builder.AddSystem(
+      LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
+          "CONTACT_RESULTS", &lcm));
+  // Contact results to lcm msg.
+  builder.Connect(plant->contact_results_output_port(),
+                  contact_viz.get_input_port(0));
+  builder.Connect(contact_viz.get_output_port(0),
+                  contact_results_publisher.get_input_port(0));
+
   builder.ExportOutput(plant->get_output_port(0));
 
   // Set up the model and simulator and set their starting state.
@@ -190,8 +213,15 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   plant_initial_state(5) = 0.009759;
   plant->set_state_vector(plant_context, plant_initial_state);
 
+  auto context = simulator.get_mutable_context();
+
+  simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
+  simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
+  simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
+
   simulator.Initialize();
-  simulator.StepTo(20.0);
+  const double kSimDuration = 20.0;
+  simulator.StepTo(kSimDuration);
 
   // Extract and log the final state of the robot.
   auto final_output = model->AllocateOutput(simulator.get_context());
@@ -208,16 +238,30 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
                         final_output_data[link_index + num_movable_links]);
   }
 
-  // TODO(sam.creasey) Re-enable the tests below once the gripper can
-  // actually hold the box.
-#if 0
   // Expect that the gripper is open (even though clamping force is
   // being applied).
   EXPECT_GT(final_output_data[
       positions["right_finger_sliding_joint"]], 0.02);
+
+  // This is a tight bound on the expected behavior.  The box starts resting
+  // on the ground; it's origin is half its height above the z=0 plane.
+  // Ostensibly, the box is picked up in stiction and lifted a specific amount
+  // (kLiftHeight).  Ideally, the final height of the box should be its
+  // initial height plus the lift height.  However, the contact model allows
+  // a maximum amount of slipping during stiction (kVStictionTolerance). Thus,
+  // for T seconds of stiction time, the object could slip as much as
+  // T * kVStictionTolerance.  So, we pad our expectation by this amount and
+  // confirm that the box hasn't slid *more* than this.
+  //
+  // However, the accuracy required to get this answer requires an exceptionally
+  // small accuracy threshold which, in turn, leads to a massive simulation
+  // time.  So, we'll relax this boundary by allowing as much as 3X as much
+  // slip.
+  const double kBoxZ0 = 0.75;  // Half the box height.
+  const double kExpectedHeight = kBoxZ0 + kLiftHeight -
+      3 * (kSimDuration * kVStictionTolerance);
   // Expect that the box is off of the ground.
-  EXPECT_GT(final_output_data[positions["base_z"]], 0.5);
-#endif
+  EXPECT_GT(final_output_data[positions["base_z"]], kExpectedHeight);
 }
 
 }  // namespace
