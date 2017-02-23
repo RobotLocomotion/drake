@@ -26,7 +26,7 @@ namespace rod2d {
 
 template <typename T>
 Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
-    simulation_type_(simulation_type) {
+    simulation_type_(simulation_type), dt_(dt) {
   // Verify that the simulation approach is either piecewise DAE or
   // compliant ODE.
   if (simulation_type == Rod2D<T>::kTimeStepping) {
@@ -1228,7 +1228,10 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
   VectorX<T> x0(6);
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
-  if (simulation_type_ != Rod2D<T>::kTimeStepping) {
+  if (simulation_type_ == Rod2D<T>::kTimeStepping) {
+    state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->
+        SetFromVector(x0);
+  } else {
     // Continuous variables.
     state->get_mutable_continuous_state()->SetFromVector(x0);
 
@@ -1245,9 +1248,6 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
       state->get_mutable_abstract_state()->get_mutable_abstract_state(1).
           template GetMutableValue<int>() = k;
     }
-  } else {
-    state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->
-        SetFromVector(x0);
   }
 }
 
