@@ -44,13 +44,13 @@ void PidWithGravityCompensator<T>::SetUp(const VectorX<T>& kp,
       robot.get_num_positions());
 
   // Splits q from state, and connects it to gravity compensator.
-  builder.Connect(pass_through->get_output_port(0),
+  builder.Connect(pass_through->get_output_port(),
                   rbp_state_demux->get_input_port(0));
   builder.Connect(rbp_state_demux->get_output_port(0),
                   grav_comp->get_input_port(0));
 
   // Connects state to PID.
-  builder.Connect(pass_through->get_output_port(0),
+  builder.Connect(pass_through->get_output_port(),
                   pid->get_estimated_state_input_port());
 
   // Create an adder to sum the provided input with the output of the
@@ -59,7 +59,7 @@ void PidWithGravityCompensator<T>::SetUp(const VectorX<T>& kp,
   builder.Connect(grav_comp->get_output_port(0), adder->get_input_port(1));
 
   // Exposes estimated state input port.
-  builder.ExportInput(pass_through->get_input_port(0));
+  builder.ExportInput(pass_through->get_input_port());
 
   // Exposes PID's reference state input port.
   builder.ExportInput(pid->get_desired_state_input_port());

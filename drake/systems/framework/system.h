@@ -430,8 +430,8 @@ class System {
   /// `xd(n)`, because the given `event` has arrived.  Dispatches to
   /// DoCalcDiscreteVariableUpdates by default, or to `event.do_update` if
   /// provided.
-  void CalcDiscreteVariableUpdates(const Context<T> &context,
-                                   const DiscreteEvent<T> &event,
+  void CalcDiscreteVariableUpdates(const Context<T>& context,
+                                   const DiscreteEvent<T>& event,
                                    DiscreteState<T> *discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kDiscreteUpdateAction);

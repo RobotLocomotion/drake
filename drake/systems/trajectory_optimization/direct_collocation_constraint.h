@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/autodiff_overloads.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/solvers/constraint.h"
 #include "drake/systems/framework/context.h"
@@ -23,6 +24,8 @@ namespace systems {
 /// vectors + input vectors along with an accompanying timestep.
 class DirectCollocationConstraint : public solvers::Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)
+
   /// The format of the input to the eval() function is defined by @p
   /// num_states and @p num_inputs.  The length of the vector will be
   /// (1 + num_states * 2 + num_inputs * 2), with the format:
@@ -35,15 +38,6 @@ class DirectCollocationConstraint : public solvers::Constraint {
   /// num_inputs: input 1
   DirectCollocationConstraint(int num_states, int num_inputs);
   virtual ~DirectCollocationConstraint();
-
-  explicit DirectCollocationConstraint(
-      const DirectCollocationConstraint& other) = delete;
-  DirectCollocationConstraint& operator=(
-      const DirectCollocationConstraint& other) = delete;
-  explicit DirectCollocationConstraint(DirectCollocationConstraint&& other) =
-      delete;
-  DirectCollocationConstraint& operator=(DirectCollocationConstraint&& other) =
-      delete;
 
  protected:
   virtual void dynamics(const TaylorVecXd& state, const TaylorVecXd& input,
@@ -64,6 +58,8 @@ class DirectCollocationConstraint : public solvers::Constraint {
 /// of a system.
 class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemDirectCollocationConstraint)
+
   /// Creates a direct collocation constraint for a system.
   /// @param system A dynamical system to be used in the dynamic constraints.
   ///  This system must implement DoToAutoDiffXd.  Note that the optimization
@@ -77,15 +73,6 @@ class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
   SystemDirectCollocationConstraint(const systems::System<double>& system,
                                      const systems::Context<double>& context);
   ~SystemDirectCollocationConstraint() override;
-
-  explicit SystemDirectCollocationConstraint(
-      const SystemDirectCollocationConstraint& other) = delete;
-  SystemDirectCollocationConstraint& operator=(
-      const SystemDirectCollocationConstraint& other) = delete;
-  explicit SystemDirectCollocationConstraint(
-      SystemDirectCollocationConstraint&& other) = delete;
-  SystemDirectCollocationConstraint& operator=(
-      SystemDirectCollocationConstraint&& other) = delete;
 
  private:
   void dynamics(const TaylorVecXd& state, const TaylorVecXd& input,

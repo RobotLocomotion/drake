@@ -7,24 +7,27 @@ load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "bead_on_a_wire",
-    srcs = ["bead_on_a_wire.cc"],
+    name = "rod2d",
+    srcs = ["rod2d.cc"],
     hdrs = [
-        "bead_on_a_wire.h",
-        "bead_on_a_wire-inl.h",
+        "rod2d.h",
+        "rod2d-inl.h",
     ],
     deps = [
-        "//drake/systems/framework:leaf_system",
         "//drake/common",
+        "//drake/solvers:mathematical_program",
+        "//drake/systems/framework:leaf_system",
     ],
 )
 
 # === test/ ===
 
 drake_cc_googletest(
-    name = "bead_on_a_wire_test",
+    name = "rod2d_test",
     deps = [
-        ":bead_on_a_wire",
+        ":rod2d",
+        "//drake/common",
+        "//drake/common:eigen_matrix_compare",
         "//drake/systems/analysis",
     ],
 )

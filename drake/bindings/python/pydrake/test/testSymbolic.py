@@ -37,6 +37,12 @@ class TestSymbolicVariables(unittest.TestCase):
         self.assertEqual(str(x >= y), "(x >= y)")
         self.assertEqual(str(x == y), "(x = y)")
 
+    def testExpand(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        ex = 2 * (x + y)
+        self.assertEqual(str(ex), "(2 * (x + y))")
+        self.assertEqual(str(ex.Expand()), "(2 * x + 2 * y)")
 
 
 if __name__ == '__main__':

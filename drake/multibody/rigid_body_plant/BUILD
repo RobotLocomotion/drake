@@ -148,6 +148,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/multibody:models",
         "//drake/multibody:test_models",
     ],
     deps = [

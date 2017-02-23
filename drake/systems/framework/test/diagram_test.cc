@@ -47,16 +47,16 @@ class ExampleDiagram : public Diagram<double> {
     builder.Connect(adder1_->get_output_port(), adder2_->get_input_port(1));
 
     builder.Connect(adder0_->get_output_port(),
-                    integrator0_->get_input_port(0));
-    builder.Connect(integrator0_->get_output_port(0),
-                    integrator1_->get_input_port(0));
+                    integrator0_->get_input_port());
+    builder.Connect(integrator0_->get_output_port(),
+                    integrator1_->get_input_port());
 
     builder.ExportInput(adder0_->get_input_port(0));
     builder.ExportInput(adder0_->get_input_port(1));
     builder.ExportInput(adder1_->get_input_port(1));
     builder.ExportOutput(adder1_->get_output_port());
     builder.ExportOutput(adder2_->get_output_port());
-    builder.ExportOutput(integrator1_->get_output_port(0));
+    builder.ExportOutput(integrator1_->get_output_port());
 
     builder.BuildInto(this);
   }
@@ -563,8 +563,8 @@ class FeedbackDiagram : public Diagram<double> {
 
     DiagramBuilder<double> integrator_builder;
     integrator_ = integrator_builder.AddSystem<Integrator>(1 /* size */);
-    integrator_builder.ExportInput(integrator_->get_input_port(0));
-    integrator_builder.ExportOutput(integrator_->get_output_port(0));
+    integrator_builder.ExportInput(integrator_->get_input_port());
+    integrator_builder.ExportOutput(integrator_->get_output_port());
     integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
 
     DiagramBuilder<double> gain_builder;
@@ -751,8 +751,8 @@ class DiscreteStateDiagram : public Diagram<double> {
     hold1_ = builder.template AddSystem<ZeroOrderHold<double>>(2.0, kSize);
     hold2_ = builder.template AddSystem<ZeroOrderHold<double>>(3.0, kSize);
     publisher_ = builder.template AddSystem<TestPublishingSystem>();
-    builder.ExportInput(hold1_->get_input_port(0));
-    builder.ExportInput(hold2_->get_input_port(0));
+    builder.ExportInput(hold1_->get_input_port());
+    builder.ExportInput(hold2_->get_input_port());
     builder.BuildInto(this);
   }
 

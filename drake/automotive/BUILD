@@ -82,7 +82,6 @@ drake_cc_library(
         "dev/endless_road_car.h",
         "dev/endless_road_car_to_euler_floating_joint.h",
     ],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
         ":infinite_circuit_road",
@@ -96,7 +95,6 @@ drake_cc_library(
         "dev/endless_road_oracle-internal.h",
     ],
     hdrs = ["dev/endless_road_oracle.h"],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
         ":infinite_circuit_road",
@@ -180,6 +178,7 @@ drake_cc_library(
         ":generated_vectors",
         ":simple_car",
         ":trajectory_car",
+        "//drake/automotive/maliput/api",
         "//drake/automotive/maliput/utility",
         "//drake/lcm",
         "//drake/multibody/parsers",
@@ -203,6 +202,7 @@ drake_cc_binary(
     ],
     deps = [
         ":automotive_simulator",
+        "//drake/automotive/maliput/dragway",
         "//drake/common:text_logging_gflags",
     ],
 )
@@ -230,6 +230,7 @@ drake_cc_binary(
     deps = [
         ":automotive_simulator",
         ":infinite_circuit_road",
+        "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane:loader",
         "//drake/common:text_logging_gflags",
     ],

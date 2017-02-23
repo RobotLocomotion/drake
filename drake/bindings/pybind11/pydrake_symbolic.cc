@@ -132,6 +132,7 @@ PYBIND11_PLUGIN(symbolic) {
     .def(py::init<>())
     .def(py::init<const Variable&>())
     .def("__repr__", &Expression::to_string)
+    .def("Expand", &Expression::Expand)
     .def(py::self   + py::self)
     .def(py::self   + Variable())
     .def(py::self   + double())

@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/monomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
@@ -399,6 +400,75 @@ void MathematicalProgram::AddCost(
     const std::shared_ptr<QuadraticConstraint>& obj,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   AddCost(Binding<QuadraticConstraint>(obj, vars));
+}
+
+Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
+    const symbolic::Expression& e) {
+  // First build an Eigen vector, that contains all the bound variables.
+  const symbolic::Variables& vars = e.GetVariables();
+  VectorXDecisionVariable vars_vec(vars.size());
+  unordered_map<Variable::Id, int> map_var_id_to_index;
+  map_var_id_to_index.reserve(vars.size());
+  int index = 0;
+  for (const auto& var : vars) {
+    map_var_id_to_index.emplace(var.get_id(), index);
+    vars_vec(index) = var;
+    ++index;
+  }
+  // We want to write the expression e in the form 0.5 * x' * Q * x + b' * x + c
+  // TODO(hongkai.dai): use a sparse matrix to represent Q and b.
+  Eigen::MatrixXd Q(vars.size(), vars.size());
+  Eigen::VectorXd b(vars.size());
+  Q.setZero();
+  b.setZero();
+  // Now decomposes the expression into coefficients and monomials.
+  const symbolic::MonomialToCoefficientMap&
+      monomial_to_coeff_map =
+          symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  for (const auto& p : monomial_to_coeff_map) {
+    DRAKE_ASSERT(is_constant(p.second));
+    const double coefficient = get_constant_value(p.second);
+    const symbolic::Monomial& p_monomial = p.first;
+    if (p_monomial.total_degree() > 2) {
+      ostringstream oss;
+      oss << p.first << " has order higher than 2, cannot be handled by "
+          "AddQuadraticCost" << std::endl;
+      throw std::runtime_error(oss.str());
+    }
+    const auto& monomial_powers = p_monomial.get_powers();
+    if (monomial_powers.size() == 2) {
+      // cross terms.
+      auto it = monomial_powers.begin();
+      const int x1_index = map_var_id_to_index[it->first];
+      DRAKE_DEMAND(it->second == 1);
+      ++it;
+      const int x2_index = map_var_id_to_index[it->first];
+      DRAKE_DEMAND(it->second == 1);
+      Q(x1_index, x2_index) += coefficient;
+      Q(x2_index, x1_index) = Q(x1_index, x2_index);
+    } else if (monomial_powers.size() == 1) {
+      // Three cases
+      // 1. quadratic term a*x^2
+      // 2. linear term b*x
+      // 3. constant term. We ignore the constant term in QuadraticConstraint.
+      auto it = monomial_powers.begin();
+      const int x_index = map_var_id_to_index[it->first];
+      if (it->second == 2) {
+        // quadratic term a * x^2
+        Q(x_index, x_index) += 2 * coefficient;
+      } else if (it->second == 1) {
+        // linear term b * x.
+        b(x_index) += coefficient;
+      } else {
+        // constant term.
+        // Deliberately left empty, we ignore the constant term in
+        // QuadraticConstraint.
+      }
+    }
+  }
+  // Now add the quadratic constraint 0.5 * x' * Q * x + b' * x
+  return Binding<QuadraticConstraint>(AddQuadraticCost(Q, b, vars_vec),
+                                      vars_vec);
 }
 
 std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticErrorCost(

@@ -5,8 +5,8 @@
 #include <stdexcept>
 
 PiecewisePolynomialBase::PiecewisePolynomialBase(
-    std::vector<double> const& segment_times)
-    : PiecewiseFunction(segment_times) {
+    std::vector<double> const& breaks)
+    : PiecewiseFunction(breaks) {
   // empty
 }
 

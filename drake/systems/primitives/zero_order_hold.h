@@ -1,10 +1,11 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/leaf_system.h"
+#include "drake/common/eigen_types.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/siso_vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -13,7 +14,7 @@ namespace systems {
 /// and discrete output `y`, where the y is sampled from u with a fixed period.
 /// @ingroup primitive_systems
 template <typename T>
-class ZeroOrderHold : public LeafSystem<T> {
+class ZeroOrderHold : public SisoVectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold)
 
@@ -28,15 +29,18 @@ class ZeroOrderHold : public LeafSystem<T> {
  protected:
   /// Sets the output port value to the value that is currently latched in the
   /// zero-order hold.
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
+  void DoCalcVectorOutput(
+      const Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* output) const override;
 
   /// Latches the input port into the discrete state.
-  void DoCalcDiscreteVariableUpdates(
+  void DoCalcVectorDiscreteVariableUpdates(
       const Context<T>& context,
-      DiscreteState<T>* discrete_state) const override;
-
-  std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const override;
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* discrete_updates) const override;
 };
 
 }  // namespace systems

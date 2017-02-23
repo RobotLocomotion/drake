@@ -217,7 +217,6 @@ drake_cc_library(
 drake_cc_library(
     name = "reinit_after_move",
     hdrs = ["reinit_after_move.h"],
-    linkstatic = 1,
 )
 
 drake_cc_library(
@@ -447,6 +446,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_expression_differentiation_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_expression_jacobian_test",
     deps = [
         ":common",
         ":symbolic",

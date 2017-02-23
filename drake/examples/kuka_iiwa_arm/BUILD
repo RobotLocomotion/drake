@@ -52,6 +52,15 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "oracular_state_estimator",
+    hdrs = ["oracular_state_estimator.h"],
+    deps = [
+        "//drake/systems/framework:leaf_system",
+        "@bot_core_lcmtypes//:lib",
+    ],
+)
+
 drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
@@ -61,6 +70,7 @@ drake_cc_binary(
     ],
     deps = [
         ":iiwa_lcm",
+        ":oracular_state_estimator",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/lcm",
@@ -68,8 +78,8 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/controllers:pid_with_gravity_compensator",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:multiplexer",
+        "//drake/systems/primitives:matrix_gain",
+        "//drake/util:lcm_util",
         "@gflags//:gflags",
     ],
 )
