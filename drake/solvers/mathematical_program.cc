@@ -25,6 +25,7 @@ namespace drake {
 namespace solvers {
 
 using std::map;
+using std::numeric_limits;
 using std::ostringstream;
 using std::pair;
 using std::runtime_error;
@@ -275,8 +276,7 @@ int DecomposeLinearExpression(
       std::ostringstream oss;
       oss << "Expression " << e << " is non-linear.";
       throw std::runtime_error(oss.str());
-    }
-    else if (p_monomial.total_degree() == 1) {
+    } else if (p_monomial.total_degree() == 1) {
       // Linear coefficient.
       const auto& p_monomial_powers = p_monomial.get_powers();
       DRAKE_DEMAND(p_monomial_powers.size() == 1);
@@ -366,9 +366,9 @@ std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearCost(
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   auto cost = std::make_shared<LinearConstraint>(
       c.transpose(), drake::Vector1<double>::Constant(
-                         -std::numeric_limits<double>::infinity()),
+                         -numeric_limits<double>::infinity()),
       drake::Vector1<double>::Constant(
-          std::numeric_limits<double>::infinity()));
+          numeric_limits<double>::infinity()));
   AddCost(cost, vars);
   return cost;
 }
@@ -462,8 +462,8 @@ std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticErrorCost(
     const Eigen::Ref<const Eigen::VectorXd>& x_desired,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   auto cost = std::make_shared<QuadraticConstraint>(
-      2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
-      std::numeric_limits<double>::infinity());
+      2 * Q, -2 * Q * x_desired, -numeric_limits<double>::infinity(),
+      numeric_limits<double>::infinity());
   AddCost(cost, vars);
   return cost;
 }
@@ -473,8 +473,8 @@ std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   auto cost = std::make_shared<QuadraticConstraint>(
-      Q, b, -std::numeric_limits<double>::infinity(),
-      std::numeric_limits<double>::infinity());
+      Q, b, -numeric_limits<double>::infinity(),
+      numeric_limits<double>::infinity());
   AddCost(cost, vars);
   return cost;
 }
@@ -578,27 +578,14 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     // e1 >= e2  ->  e1 - e2 >= 0  ->  0 <= e1 - e2 <= ∞
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
-    if (symbolic::is_constant(e2)) {
-      return AddLinearConstraint(e1, symbolic::get_constant_value(e2), std::numeric_limits<double>::infinity());
-    } else if (symbolic::is_constant(e1)) {
-      return AddLinearConstraint(-e2, -symbolic::get_constant_value(e1), std::numeric_limits<double>::infinity());
-    }
-    else {
-      return AddLinearConstraint(e1 - e2, 0.0,
-                                 std::numeric_limits<double>::infinity());
-    }
+    return AddLinearConstraint(e1 - e2, 0.0,
+                               numeric_limits<double>::infinity());
   } else if (is_less_than_or_equal_to(f)) {
     // e1 <= e2  ->  0 <= e2 - e1  ->  0 <= e2 - e1 <= ∞
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
-    if (symbolic::is_constant(e2)) {
-      return AddLinearConstraint(-e1, -symbolic::get_constant_value(e2), std::numeric_limits<double>::infinity());
-    } else if (symbolic::is_constant(e1)) {
-      return AddLinearConstraint(e2, symbolic::get_constant_value(e1), std::numeric_limits<double>::infinity());
-    } else {
-      return AddLinearConstraint(e2 - e1, 0.0,
-                                 std::numeric_limits<double>::infinity());
-    }
+    return AddLinearConstraint(e2 - e1, 0.0,
+                                 numeric_limits<double>::infinity());
   }
   ostringstream oss;
   oss << "MathematicalProgram::AddLinearConstraint is called with a formula "
@@ -655,8 +642,8 @@ void MathematicalProgram::AddConstraint(
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
                                                  double b) {
-  return AddLinearEqualityConstraint(drake::Vector1<symbolic::Expression>(e),
-                                     drake::Vector1d(b));
+  return AddLinearEqualityConstraint(drake::Vector1<Expression>(e),
+                                     Vector1d(b));
 }
 
 Binding<LinearEqualityConstraint>

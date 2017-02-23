@@ -967,7 +967,8 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog,
                                                          -(x(0) + 2 * x(1)), 2);
 
-  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + 2 * (x(0) + x(2)) + 3 * (x(0) - x(1)), 3);
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, x(0) + 2 * (x(0) + x(2)) + 3 * (x(0) - x(1)), 3);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
