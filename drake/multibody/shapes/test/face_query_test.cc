@@ -30,10 +30,10 @@ void CheckPointInVertexSet(Eigen::Matrix3Xd verts,
 // that check for non-convex meshes, or for ones that don't contain the origin.
 void CheckAllNormalsFaceOutwards(Eigen::Matrix3Xd verts,
                                  TrianglesVector faces) {
-  for (size_t i = 0; i < faces.size(); i++) {
-    Eigen::Vector3d pt_a = verts.col(faces[i][0]);
-    Eigen::Vector3d pt_b = verts.col(faces[i][1]);
-    Eigen::Vector3d pt_c = verts.col(faces[i][2]);
+  for (const auto& face : faces) {
+    Eigen::Vector3d pt_a = verts.col(face[0]);
+    Eigen::Vector3d pt_b = verts.col(face[1]);
+    Eigen::Vector3d pt_c = verts.col(face[2]);
     // Since points are clockwise, pt_c - pt_a should be
     // "rightward" of pt_b - pt_a, so this cross product
     // should face "outward" from the face, as detected via
@@ -62,11 +62,12 @@ void CheckThatTriMeshIsClosed(Eigen::Matrix3Xd verts,
   struct Edge {
     int a;
     int b;
+    int count = 1;
     Edge(int a_in, int b_in) {
       a = std::min(a_in, b_in);
       b = std::max(a_in, b_in);
     }
-    bool operator==(Edge e) {
+    bool operator==(const Edge e) const {
       return (e.a == a && e.b == b);
     }
   };
@@ -74,17 +75,17 @@ void CheckThatTriMeshIsClosed(Eigen::Matrix3Xd verts,
   std::vector<Edge> edges;
   std::vector<int> edge_counts;
   // For each face...
-  for (size_t i = 0; i < faces.size(); i++) {
+  for (const auto& face : faces) {
     // and each edge in that face as we go around the face...
     for (int k = 0; k < 3; k ++) {
-      Edge new_edge(faces[i][k], faces[i][(k+1)%3]);
+      Edge new_edge(face[k], face[(k+1)%3]);
 
       // Check distance against all known edges.
       bool is_new_edge = true;
-      for (size_t edge_ind = 0; edge_ind < edges.size(); edge_ind++) {
-        if (edges[edge_ind] == new_edge) {
+      for (auto& edge : edges) {
+        if (edge == new_edge) {
           is_new_edge = false;
-          edge_counts[edge_ind]++;
+          edge.count++;
           break;
         }
       }
@@ -93,15 +94,12 @@ void CheckThatTriMeshIsClosed(Eigen::Matrix3Xd verts,
       // track of it.
       if (is_new_edge) {
         edges.push_back(new_edge);
-        edge_counts.push_back(1);
       }
     }
   }
 
-  for (auto iter = edge_counts.begin();
-            iter != edge_counts.end();
-            iter++) {
-    EXPECT_EQ(*iter, 2);
+  for (const auto& edge : edges) {
+    EXPECT_EQ(edge.count, 2);
   }
 
   if (expected_unique_edges >= 0) {
