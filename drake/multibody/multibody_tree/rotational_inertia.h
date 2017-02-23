@@ -73,7 +73,7 @@ class RotationalInertia {
   /// equal to @p I and zero products of inertia.
   /// As examples, consider the moments of inertia taken about their geometric
   /// center for a sphere or a cube.
-  /// Aborts if `I` is non-positive.
+  /// Aborts if `I` is negative.
   explicit RotationalInertia(const T& I) {
     DRAKE_THROW_UNLESS(I >= T(0));
     SetZero();
@@ -90,20 +90,20 @@ class RotationalInertia {
     DRAKE_THROW_UNLESS(Izz >= T(0));
     SetZero();
     I_Bo_F_.diagonal() = Vector3<T>(Ixx, Iyy, Izz);
-    DRAKE_THROW_UNLESS(IsPhysicallyValid());
+    DRAKE_THROW_UNLESS(CouldBePhysicallyValid());
   }
 
   /// Creates a general rotational inertia matrix with non-zero off-diagonal
   /// elements where the six components of the rotational intertia on a given
   /// frame `E` need to be provided.
   /// Aborts if the resulting inertia is invalid according to
-  /// IsPhysicallyValid().
+  /// CouldBePhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
                     const T& Ixy, const T& Ixz, const T& Iyz) {
     // The upper part is left initialized to NaN.
     I_Bo_F_(0, 0) = Ixx; I_Bo_F_(1, 1) = Iyy; I_Bo_F_(2, 2) = Izz;
     I_Bo_F_(1, 0) = Ixy; I_Bo_F_(2, 0) = Ixz; I_Bo_F_(2, 1) = Iyz;
-    DRAKE_THROW_UNLESS(IsPhysicallyValid());
+    DRAKE_THROW_UNLESS(CouldBePhysicallyValid());
   }
 
   /// For consistency with Eigen's API this method returns the number of rows
@@ -248,11 +248,11 @@ class RotationalInertia {
     return solver.eigenvalues();
   }
 
-  /// Performs a number of checks to verify that this is a physically valid
-  /// rotational inertia.
+  /// Performs a number of checks to verify that this could be a physically
+  /// valid rotational inertia.
   /// The checks performed are:
   /// - No NaN entries.
-  /// - Positive principal moments.
+  /// - Non-negative principal moments.
   /// - Principal moments must satisfy the triangle inequality:
   ///   - `Ixx + Iyy >= Izz`
   ///   - `Ixx + Izz >= Iyy`
@@ -264,18 +264,20 @@ class RotationalInertia {
   /// of mass using the parallel axis theorem. However, this class has no means
   /// to know where the center of mass is located. Use with caution.
   ///
-  /// @returns `true` for a physically valid rotational inertia passing the
-  ///          above checks and `false` otherwise.
-  bool IsPhysicallyValid() const {
+  /// @returns `true` for a plausible rotational inertia passing the above
+  ///                 checks and `false` otherwise.
+  bool CouldBePhysicallyValid() const {
     if (IsNaN()) return false;
 
     // Compute principal moments of inertia.
     Vector3<double> d = CalcPrincipalMomentsOfInertia();
 
-    // Principal moments must be positive.
+    // Principal moments must be non-negative.
     if ((d.array() < 0).any() ) return false;
 
     // Checks triangle inequality
+    // TODO(amcastro-tri): consider adding some slop to these tests when and if
+    // the need arises.
     if (!( d[0] + d[1] >= d[2] && d[0] + d[2] >= d[1] && d[1] + d[2] >= d[0]))
       return false;
 
