@@ -34,6 +34,7 @@ class ContinuousState {
     generalized_velocity_.reset(new Subvector<T>(state_.get()));
     misc_continuous_state_.reset(
         new Subvector<T>(state_.get(), 0, state_->size()));
+    DRAKE_ASSERT_VOID(DemandInvariants());
   }
 
   /// Constructs a ContinuousState that exposes second-order structure.
@@ -71,6 +72,7 @@ class ContinuousState {
     generalized_velocity_.reset(new Subvector<T>(state_.get(), num_q, num_v));
     misc_continuous_state_.reset(
         new Subvector<T>(state_.get(), num_q + num_v, num_z));
+    DRAKE_ASSERT_VOID(DemandInvariants());
   }
 
   /// Constructs a zero-length ContinuousState.
@@ -168,11 +170,7 @@ class ContinuousState {
         generalized_position_(std::move(q)),
         generalized_velocity_(std::move(v)),
         misc_continuous_state_(std::move(z)) {
-    const int num_q = generalized_position_->size();
-    const int num_v = generalized_velocity_->size();
-    const int n = num_q + num_v + misc_continuous_state_->size();
-    DRAKE_ASSERT(state_->size() == n);
-    DRAKE_ASSERT(num_v <= num_q);
+    DRAKE_ASSERT_VOID(DemandInvariants());
   }
 
  private:
@@ -186,6 +184,36 @@ class ContinuousState {
     DRAKE_DEMAND(get_misc_continuous_state().size() ==
         other.get_misc_continuous_state().size());
     SetFromVector(other.CopyToVector().template cast<T>());
+  }
+
+  // Demand that the representation invariants hold.
+  void DemandInvariants() const {
+    DRAKE_DEMAND(!!generalized_position_);
+    DRAKE_DEMAND(!!generalized_velocity_);
+    DRAKE_DEMAND(!!misc_continuous_state_);
+    const int num_q = generalized_position_->size();
+    const int num_v = generalized_velocity_->size();
+    const int num_z = misc_continuous_state_->size();
+    DRAKE_DEMAND(num_q >= 0);
+    DRAKE_DEMAND(num_v >= 0);
+    DRAKE_DEMAND(num_z >= 0);
+    DRAKE_DEMAND(num_v <= num_q);
+    DRAKE_DEMAND(state_->size() == (num_q + num_v + num_z));
+    if (num_q > 0) {
+      const T& first_q = (*generalized_position_)[0];
+      const T& matching_state = (*state_)[0];
+      DRAKE_DEMAND(&first_q == &matching_state);
+    }
+    if (num_v > 0) {
+      const T& first_v = (*generalized_velocity_)[0];
+      const T& matching_state = (*state_)[num_q];
+      DRAKE_DEMAND(&first_v == &matching_state);
+    }
+    if (num_z > 0) {
+      const T& first_z = (*misc_continuous_state_)[0];
+      const T& matching_state = (*state_)[num_q + num_v];
+      DRAKE_DEMAND(&first_z == &matching_state);
+    }
   }
 
   // The entire continuous state vector.  May or may not own the underlying
