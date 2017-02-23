@@ -119,10 +119,10 @@ class RenderingSim : public systems::Diagram<double> {
         "rgbd_camera", plant_->get_rigid_body_tree(),
         position, orientation, kFovY, kShowWindow);
 
-    builder.Connect(plant_->get_output_port(0),
-                    rgbd_camera_->get_input_port(0));
-    builder.ExportOutput(rgbd_camera_->get_output_port(0));
-    builder.ExportOutput(rgbd_camera_->get_output_port(1));
+    builder.Connect(plant_->state_output_port(),
+                    rgbd_camera_->state_input_port());
+    builder.ExportOutput(rgbd_camera_->color_image_output_port());
+    builder.ExportOutput(rgbd_camera_->depth_image_output_port());
     builder.BuildInto(this);
   }
 
