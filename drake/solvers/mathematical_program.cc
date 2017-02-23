@@ -965,7 +965,12 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 size_t MathematicalProgram::FindDecisionVariableIndex(
     const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
-  DRAKE_DEMAND(it != decision_variable_index_.end());
+  if (it == decision_variable_index_.end()) {
+    std::ostringstream oss;
+    oss << var << " is not a decision variable in the mathematical program, "
+                  "when calling GetSolution.\n";
+    throw std::runtime_error(oss.str());
+  }
   return it->second;
 }
 

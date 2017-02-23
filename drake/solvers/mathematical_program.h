@@ -2167,7 +2167,7 @@ class MathematicalProgram {
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    * @pre{@p var is a decision variable in the mathematical program, otherwise
-   * this function asserts an error.}
+   * this function throws a runtime error.}
    */
   size_t FindDecisionVariableIndex(const symbolic::Variable& var) const;
 
@@ -2178,19 +2178,17 @@ class MathematicalProgram {
    * @return The value of the decision variable after solving the problem.
    */
   template <typename Derived>
-  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                    Derived::ColsAtCompileTime>>::type
   GetSolution(const Eigen::MatrixBase<Derived>& var) const {
-    static_assert(
-        std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
-        "The input should be an Eigen matrix of symbolic variable object.");
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime>
         value(var.rows(), var.cols());
     for (int i = 0; i < var.rows(); ++i) {
       for (int j = 0; j < var.cols(); ++j) {
-        auto it = decision_variable_index_.find(var(i, j).get_id());
-        DRAKE_ASSERT(it != decision_variable_index_.end());
-        value(i, j) = x_values_[it->second];
+        value(i, j) = GetSolution(var(i, j));
       }
     }
     return value;
