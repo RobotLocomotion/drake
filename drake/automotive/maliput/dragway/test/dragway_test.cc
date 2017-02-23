@@ -192,6 +192,11 @@ class MaliputDragwayLaneTest : public ::testing::Test {
   const double length_{};
   const double lane_width_{};
   const double shoulder_width_{};
+
+  // The following linear tolerance was empirically derived on a 64-bit Ubuntu
+  // system. It is necessary due to inaccuracies in floating point calculations
+  // and different ways of computing the driveable r_min and r_max.
+  const double kLinearTolerance = 1e-15;
 };
 
 /*
@@ -214,10 +219,6 @@ class MaliputDragwayLaneTest : public ::testing::Test {
 TEST_F(MaliputDragwayLaneTest, SingleLane) {
   const api::RoadGeometryId road_geometry_id({"OneLaneDragwayRoadGeometry"});
   const int kNumLanes = 1;
-  // The following linear tolerance was empirically derived on a 64-bit Ubuntu
-  // system. It is necessary due to inaccuracies in floating point calculations
-  // and different ways of computing the driveable r_min and r_max.
-  const double kLinearTolerance = 1e-15;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
       shoulder_width_, kLinearTolerance);
@@ -262,10 +263,6 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
 TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
   const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
   const int kNumLanes = 2;
-  // The following linear tolerance was empirically derived on a 64-bit Ubuntu
-  // system. It is necessary due to inaccuracies in floating point calculations
-  // and different ways of computing the driveable r_min and r_max.
-  const double kLinearTolerance = 1e-15;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
       lane_width_, shoulder_width_, kLinearTolerance);
@@ -285,6 +282,72 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
     ASSERT_NE(lane, nullptr);
     VerifyLaneCorrectness(lane, kNumLanes);
     VerifyBranches(lane, &road_geometry);
+  }
+}
+
+// Tests dragway::RoadGeometry::ToRoadPosition() using a two-lane dragway. This
+// also verifies that dragway::RoadGeometry::IsGeoPositionOnDragway() does not
+// incorrectly return false.
+TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
+  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const int kNumLanes = 2;
+
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
+      lane_width_, shoulder_width_, kLinearTolerance);
+
+  // Spot checks geographic positions on lane 0 and the right shoulder with a
+  // focus on edge cases.
+  for (double x = 0; x <= length_; x += length_ / 2) {
+    for (double y = -lane_width_ - shoulder_width_; y <= 0;
+        y += (lane_width_ + shoulder_width_) / 2) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        const api::Lane* expected_lane =
+            road_geometry.junction(0)->segment(0)->lane(0);
+        EXPECT_DOUBLE_EQ(nearest_position.x, x);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        EXPECT_DOUBLE_EQ(distance, z);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, x);
+        EXPECT_EQ(road_position.pos.r, y + lane_width_ / 2);
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+
+  // Spot checks geographic positions on lane 1 and the left shoulder with a
+  // focus on edge cases.
+  for (double x = 0; x <= length_; x += length_ / 2) {
+    for (double y = 0; y <= lane_width_ + shoulder_width_;
+        y += (lane_width_ + shoulder_width_) / 2) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        const int lane_index = (y == 0 ? 0 : 1);
+        const api::Lane* expected_lane =
+            road_geometry.junction(0)->segment(0)->lane(lane_index);
+        EXPECT_DOUBLE_EQ(nearest_position.x, x);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        EXPECT_DOUBLE_EQ(distance, z);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, x);
+        if (y == 0) {
+          EXPECT_EQ(road_position.pos.r, y + lane_width_ / 2);
+        } else {
+          EXPECT_EQ(road_position.pos.r, y - lane_width_ / 2);
+        }
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
   }
 }
 
