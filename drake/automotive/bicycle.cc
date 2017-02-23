@@ -15,14 +15,31 @@
 namespace drake {
 namespace automotive {
 
+namespace {
+
+// Specify the dimension of the state vector and of each input port.
+static constexpr int kStateDimension{6};
+static constexpr int kSteeringInputDimension{1};
+static constexpr int kForceInputDimension{1};
+
+}  // namespace
+
 template <typename T>
 Bicycle<T>::Bicycle() {
-  this->DeclareInputPort(systems::kVectorValued, steering_input_dimension_);
-  this->DeclareInputPort(systems::kVectorValued, force_input_dimension_);
-  this->DeclareOutputPort(systems::kVectorValued, state_dimension_);
-  this->DeclareContinuousState(1,   // num_q (Psi)
-                               1,   // num_v (Psi_dot)
-                               state_dimension_ - 2);  // num_z
+  auto& steering_input =
+      this->DeclareInputPort(systems::kVectorValued, kSteeringInputDimension);
+  auto& force_input =
+      this->DeclareInputPort(systems::kVectorValued, kForceInputDimension);
+  auto& state_output =
+      this->DeclareOutputPort(systems::kVectorValued, kStateDimension);
+  this->DeclareContinuousState(1,                     // num_q (Ψ)
+                               1,                     // num_v (Ψ_dot)
+                               kStateDimension - 2);  // num_z (all but Ψ,
+                                                      // Ψ_dot)
+
+  steering_input_port_ = steering_input.get_index();
+  force_input_port_ = force_input.get_index();
+  state_output_port_ = state_output.get_index();
 }
 
 template <typename T>
@@ -31,25 +48,25 @@ Bicycle<T>::~Bicycle() {}
 template <typename T>
 const systems::InputPortDescriptor<T>& Bicycle<T>::get_steering_input_port()
     const {
-  return systems::System<T>::get_input_port(0);
+  return systems::System<T>::get_input_port(steering_input_port_);
 }
 
 template <typename T>
 const systems::InputPortDescriptor<T>& Bicycle<T>::get_force_input_port()
     const {
-  return systems::System<T>::get_input_port(1);
+  return systems::System<T>::get_input_port(force_input_port_);
 }
 
 template <typename T>
 const systems::OutputPortDescriptor<T>& Bicycle<T>::get_state_output_port()
     const {
-  return systems::System<T>::get_output_port(0);
+  return systems::System<T>::get_output_port(state_output_port_);
 }
 
 template <typename T>
 void Bicycle<T>::DoCalcOutput(const systems::Context<T>& context,
-                                   systems::SystemOutput<T>* output) const {
-  Vector6<T> state = this->CopyContinuousStateVector(context);
+                              systems::SystemOutput<T>* output) const {
+  const Vector6<T> state = this->CopyContinuousStateVector(context);
   this->GetMutableOutputVector(output, get_state_output_port().get_index()) =
       state;
 }
@@ -59,11 +76,10 @@ template <typename T>
 void Bicycle<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   DRAKE_ASSERT(derivatives != nullptr);
 
   // Obtain the state and input vectors.
-  const Vector6<T> state = context.get_continuous_state_vector().CopyToVector();
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
 
   const systems::BasicVector<T>* steering_ptr =
       this->EvalVectorInput(context, get_steering_input_port().get_index());
@@ -91,12 +107,12 @@ void Bicycle<T>::DoCalcTimeDerivatives(
   DRAKE_DEMAND(Iz > 0.);
 
   // Obtain the states.
-  const T Psi{state(0)};
-  const T Psi_dot{state(1)};
-  const T beta{state(2)};
-  const T v{state(3)};
+  const T Psi{state[0]};
+  const T Psi_dot{state[1]};
+  const T beta{state[2]};
+  const T v{state[3]};
 
-  DRAKE_DEMAND(v != 0.);
+  DRAKE_DEMAND(v != 0.);  // N.B. Protection against the singular solution.
 
   const T torsional_stiffness = Cr * lr - Cf * lf;
   const T front_torsional_stiffness = Cf * lf;
@@ -104,16 +120,21 @@ void Bicycle<T>::DoCalcTimeDerivatives(
 
   // Compute the differential equations of motion.
   const T Psi_ddot = torsional_stiffness / Iz * beta -
-      torsional_damping / Iz * Psi_dot + front_torsional_stiffness / Iz * delta;
+                     torsional_damping / Iz * Psi_dot +
+                     front_torsional_stiffness / Iz * delta;
   const T beta_dot = (torsional_stiffness / (m * pow(v, 2.)) - 1.) * Psi_dot +
-      Cf / (m * v) * delta  - (Cf + Cr) / (m * v) * beta;
+                     Cf / (m * v) * delta - (Cf + Cr) / (m * v) * beta;
   const T v_dot = F_in / m;
   const T sx_dot = v * cos(beta + Psi);
   const T sy_dot = v * sin(beta + Psi);
 
-  Vector6<T> state_dot;
-  state_dot << Psi_dot, Psi_ddot, beta_dot, v_dot, sx_dot, sy_dot;
-  derivatives->SetFromVector(state_dot);
+  systems::VectorBase<T>* state_dot = derivatives->get_mutable_vector();
+  (*state_dot)[0] = Psi_dot;
+  (*state_dot)[1] = Psi_ddot;
+  (*state_dot)[2] = beta_dot;
+  (*state_dot)[3] = v_dot;
+  (*state_dot)[4] = sx_dot;
+  (*state_dot)[5] = sy_dot;
 }
 
 template <typename T>
@@ -125,16 +146,16 @@ std::unique_ptr<systems::Parameters<T>> Bicycle<T>::AllocateParameters() const {
 template <typename T>
 void Bicycle<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
                                       systems::Parameters<T>* params) const {
-  // Parameters taken from Althoff & Dolan, 2014
+  // Parameters representative of a Cadillac SRX (from Althoff & Dolan, 2014).
   auto p = dynamic_cast<BicycleParameters<T>*>(
       params->get_mutable_numeric_parameter(0));
   DRAKE_DEMAND(p != nullptr);
   p->set_mass(T(2278.));  // Mass [kg].
-  p->set_lf(T(1.292));  // Distance from CG to front axle [m].
-  p->set_lr(T(1.515));  // Distance from CG to rear axle [m].
-  p->set_Iz(T(3210.));  // Moment of inertia about the yaw-axis [kg m^2].
-  p->set_Cf(T(10.8e4));  // Cornering stiffness (front) [N / rad].
-  p->set_Cr(T(10.8e4));  // Cornering stiffness (rear) [N / rad].
+  p->set_lf(T(1.292));    // Distance from CG to front axle [m].
+  p->set_lr(T(1.515));    // Distance from CG to rear axle [m].
+  p->set_Iz(T(3210.));    // Moment of inertia about the yaw-axis [kg m^2].
+  p->set_Cf(T(10.8e4));   // Cornering stiffness (front) [N / rad].
+  p->set_Cr(T(10.8e4));   // Cornering stiffness (rear) [N / rad].
 }
 
 // These instantiations must match the API documentation in bicycle.h.

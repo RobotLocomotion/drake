@@ -149,7 +149,7 @@ drake_cc_library(
     hdrs = ["powered_bicycle.h"],
     deps = [
         ":bicycle",
-        ":simple_power_train",
+        ":simple_powertrain",
     ],
 )
 
@@ -170,9 +170,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "simple_power_train",
-    srcs = ["simple_power_train.cc"],
-    hdrs = ["simple_power_train.h"],
+    name = "simple_powertrain",
+    srcs = ["simple_powertrain.cc"],
+    hdrs = ["simple_powertrain.h"],
     deps = [
         "//drake/systems/primitives:linear_system",
     ],

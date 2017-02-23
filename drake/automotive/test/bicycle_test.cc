@@ -12,6 +12,10 @@ namespace drake {
 namespace automotive {
 namespace {
 
+static constexpr int kStateDimension{6};
+static constexpr int kSteeringInputDimension{1};
+static constexpr int kForceInputDimension{1};
+
 class BicycleTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -20,18 +24,17 @@ class BicycleTest : public ::testing::Test {
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
-    steering_input_.reset(new systems::BasicVector<double>(
-        steering_input_dimension_));
-    force_input_.reset(new systems::BasicVector<double>(
-        force_input_dimension_));
+    steering_input_.reset(
+        new systems::BasicVector<double>(kSteeringInputDimension));
+    force_input_.reset(new systems::BasicVector<double>(kForceInputDimension));
 
     // Set the state to zero initially.
     systems::ContinuousState<double>* xc = continuous_state();
-    EXPECT_EQ(state_dimension_, xc->size());
-    EXPECT_EQ(1, xc->get_generalized_position().size());  // Expect Psi.
-    EXPECT_EQ(1, xc->get_generalized_velocity().size());  // Expect Psi_dot.
-    EXPECT_EQ(state_dimension_ - 2, xc->get_misc_continuous_state().size());
-    xc->SetFromVector(Eigen::VectorXd::Zero(state_dimension_));
+    EXPECT_EQ(kStateDimension, xc->size());
+    EXPECT_EQ(1, xc->get_generalized_position().size()); /* q = Psi */
+    EXPECT_EQ(1, xc->get_generalized_velocity().size()); /* v = Psi_dot */
+    EXPECT_EQ(kStateDimension - 2, xc->get_misc_continuous_state().size());
+    xc->SetFromVector(Eigen::VectorXd::Zero(kStateDimension));
   }
 
   systems::ContinuousState<double>* continuous_state() {
@@ -53,10 +56,6 @@ class BicycleTest : public ::testing::Test {
     context_->FixInputPort(kForceIndex, std::move(force_input_));
   }
 
-  const int state_dimension_{6};
-  const int steering_input_dimension_{1};
-  const int force_input_dimension_{1};
-
   std::unique_ptr<Bicycle<double>> dut_;  //< The device under test.
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
@@ -71,34 +70,35 @@ TEST_F(BicycleTest, Topology) {
   const int kSteeringIndex = dut_->get_steering_input_port().get_index();
   const auto& steering_input_descriptor = dut_->get_input_port(kSteeringIndex);
   EXPECT_EQ(systems::kVectorValued, steering_input_descriptor.get_data_type());
-  EXPECT_EQ(steering_input_dimension_, steering_input_descriptor.size());
+  EXPECT_EQ(kSteeringInputDimension, steering_input_descriptor.size());
 
   const int kForceIndex = dut_->get_force_input_port().get_index();
   const auto& force_input_descriptor = dut_->get_input_port(kForceIndex);
   EXPECT_EQ(systems::kVectorValued, force_input_descriptor.get_data_type());
-  EXPECT_EQ(force_input_dimension_, force_input_descriptor.size());
+  EXPECT_EQ(kForceInputDimension, force_input_descriptor.size());
 
   ASSERT_EQ(1, dut_->get_num_output_ports()); /* state vector */
 
   const auto& state_descriptor = dut_->get_output_port(0);
   EXPECT_EQ(systems::kVectorValued, state_descriptor.get_data_type());
-  EXPECT_EQ(state_dimension_, state_descriptor.size());
+  EXPECT_EQ(kStateDimension, state_descriptor.size());
 }
 
 TEST_F(BicycleTest, Output) {
   const double kTolerance = 1e-10;
 
-  // Keep the steering angle zero and the throttle to some positive value.
-  SetInputs(0., 10.);
+  // Keep the steering angle and the applied force zero.
+  SetInputs(1., 10.);
 
   auto output = output_->get_vector_data(0);
 
   systems::ContinuousState<double>* xc = continuous_state();
-  xc->SetFromVector(Vector6<double>::Ones());
+  xc->SetFromVector(Vector6<double>::Ones());  // Set all the states to one.
 
   dut_->CalcOutput(*context_, output_.get());
-
   const Vector6<double> result = output->CopyToVector();
+
+  // Expect that the output matches the states, since there is no feedthrough.
   EXPECT_TRUE(CompareMatrices(result, Vector6<double>::Ones(), kTolerance,
                               MatrixCompareType::absolute));
 }
@@ -109,84 +109,85 @@ TEST_F(BicycleTest, TrivialDerivatives) {
   const double kForceInput = 10.;
   const double kVelocityState = 1.;
 
-  // Keep the steering angle zero and set the force to some positive value.
+  // Keep the steering angle zero and set the force to a positive value.
   SetInputs(0., kForceInput);
 
-  // Set all the states to zero except velocity.
+  // Set all the states to zero except velocity, which must be kept positive.
   systems::ContinuousState<double>* xc = continuous_state();
   xc->SetFromVector(Vector6<double>::Zero());
-  (*xc->get_mutable_vector())[3] = kVelocityState;  // Keep the velocity
-                                                    // positive.
+  (*xc->get_mutable_vector())[3] = kVelocityState; /* v */
 
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   const Vector6<double> result = derivatives_->CopyToVector();
 
-  // We expect all the derivatives to be identically zero except the v_dot and
-  // sx_dot; require that v_dot is positive for positive force input.
-  EXPECT_EQ(0., result(0));
-  EXPECT_EQ(0., result(1));
-  EXPECT_EQ(0., result(2));
-  EXPECT_LT(0., result(3));
-  EXPECT_EQ(kVelocityState, result(4));
-  EXPECT_EQ(0., result(5));
+  // We expect all the derivatives to be zero except the v_dot and sx_dot, as we
+  // apply a positive force input and zero steering angle translates into
+  // along-track motion.
+  EXPECT_EQ(0., result(0));             /* Ψ_dot */
+  EXPECT_EQ(0., result(1));             /* Ψ_ddot */
+  EXPECT_EQ(0., result(2));             /* β_dot */
+  EXPECT_LT(0., result(3));             /* v_dot */
+  EXPECT_EQ(kVelocityState, result(4)); /* sx_dot */
+  EXPECT_EQ(0., result(5));             /* sy_dot */
 }
 
 // Tests that one equation has terms that cancel for some parameter-independent
 // settings, and that the remaining equations are still consistent, including
 // the kinematics equations.
 TEST_F(BicycleTest, DerivativesPositiveSlipAnglePositiveSteeringAngle) {
-  const double kSteeringInput = 1.;  // An angle in the first-quadrant.
+  const double kSteeringInput = 1.;  // An angle in the first quadrant.
   const double kForceInput = 10.;
   const double kVelocityState = 1.;
 
-  // Set the steering angle and force to some positive values.
+  // Set the steering angle and force to positive values.
   SetInputs(kSteeringInput, kForceInput);
 
-  // Set β to δ / 2 and the velocity to some positive value.
+  // Set β to δ / 2 and the velocity to a positive value.
   systems::ContinuousState<double>* xc = continuous_state();
   xc->SetFromVector(Vector6<double>::Zero());
-  (*xc->get_mutable_vector())[2] = kSteeringInput / 2.;
-  (*xc->get_mutable_vector())[3] = kVelocityState;
+  (*xc->get_mutable_vector())[2] = kSteeringInput / 2.; /* β */
+  (*xc->get_mutable_vector())[3] = kVelocityState;      /* v */
 
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   const Vector6<double> result = derivatives_->CopyToVector();
 
-  // We expect the first and third terms in β_dot to cancel, and Ψ_ddot,
-  // v_dot, sx_dot, and sy_dot to return strictly-positive values.
-  EXPECT_LT(0., result(1));
-  EXPECT_EQ(0., result(2));
-  EXPECT_LT(0., result(3));
-  EXPECT_LT(0., result(4));
-  EXPECT_LT(0., result(5));
+  // We expect the first and third terms in β_dot to cancel, and Ψ_ddot, v_dot
+  // to be strictly positive. We expect sx_dot, and sy_dot to be
+  // strictly-positive as the steering angle is in the first quadrant.
+  EXPECT_LT(0., result(1)); /* Ψ_ddot */
+  EXPECT_EQ(0., result(2)); /* β_dot */
+  EXPECT_LT(0., result(3)); /* v_dot */
+  EXPECT_LT(0., result(4)); /* sx_dot */
+  EXPECT_LT(0., result(5)); /* sy_dot */
 }
 
 // Tests the consistency of the derivatives and kinematic relationships upon
 // feeding in a negative slip angle, keeping the other parameters the same as
 // the previous case.
 TEST_F(BicycleTest, DerivativesNegativeSlipAnglePositiveSteeringAngle) {
-  const double kSteeringInput = 1.;  // An angle in the fourth-quadrant.
+  const double kSteeringInput = 1.;  // An angle in the fourth quadrant.
   const double kForceInput = 10.;
   const double kVelocityState = 1.;
 
-  // Set the steering angle and force to some positive values.
+  // Set the steering angle and force to positive values.
   SetInputs(kSteeringInput, kForceInput);
 
-  // Set β to -δ and the velocity to some positive value.
+  // Set β to -δ and the velocity to a positive value.
   systems::ContinuousState<double>* xc = continuous_state();
   xc->SetFromVector(Vector6<double>::Zero());
-  (*xc->get_mutable_vector())[2] = -kSteeringInput;
-  (*xc->get_mutable_vector())[3] = kVelocityState;
+  (*xc->get_mutable_vector())[2] = -kSteeringInput; /* β */
+  (*xc->get_mutable_vector())[3] = kVelocityState;  /* v */
 
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   const Vector6<double> result = derivatives_->CopyToVector();
 
   // We expect β_dot and v_dot to return strictly-positive values. sx_dot and
-  // sy_dot, respectively, return positive and negative values.  Note that
-  // Ψ_ddot is indeterminate.
-  EXPECT_LT(0., result(2));
-  EXPECT_LT(0., result(3));
-  EXPECT_LT(0., result(4));
-  EXPECT_GT(0., result(5));
+  // sy_dot, respectively, return positive and negative values, as the steering
+  // angle is in the fourth quadrant.  Note that Ψ_ddot is indeterminate.
+  EXPECT_LT(0., result(2)); /* β_dot */
+  EXPECT_LT(0., result(3)); /* v_dot */
+  EXPECT_LT(0., result(4)); /* sx_dot */
+  EXPECT_GT(0., result(5)); /* sy_dot */
 }
 
 // Tests the consistency of the derivatives and kinematic relationships upon
@@ -200,18 +201,18 @@ TEST_F(BicycleTest, DerivativesPositiveYawRate) {
   // Keep the steering angle and force zero.
   SetInputs(0., 0.);
 
-  // Set Ψ_dot and the velocity to some positive values.
+  // Set Ψ_dot and the velocity to positive values.
   systems::ContinuousState<double>* xc = continuous_state();
   xc->SetFromVector(Vector6<double>::Zero());
-  (*xc->get_mutable_vector())[1] = kYawRateState;
-  (*xc->get_mutable_vector())[3] = kVelocityState;
+  (*xc->get_mutable_vector())[1] = kYawRateState;  /* Ψ_dot */
+  (*xc->get_mutable_vector())[3] = kVelocityState; /* β */
 
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   const Vector6<double> result = derivatives_->CopyToVector();
 
-  // We expect β_dot to be negative and Ψ_ddot to be positive.
-  EXPECT_GT(0., result(1));
-  EXPECT_GT(0., result(2));
+  // We expect both β_dot and Ψ_ddot to be strictly negative.
+  EXPECT_GT(0., result(1)); /* Ψ_ddot */
+  EXPECT_GT(0., result(2)); /* β_dot */
 }
 
 }  // namespace
