@@ -4,9 +4,10 @@
 load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_binary",
+    "drake_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -262,7 +263,7 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_test(  # N.B. Not a googletest!
     name = "test_kinematics_cache_checks",
     data = ["//drake/examples/Atlas:models"],
     deps = [
