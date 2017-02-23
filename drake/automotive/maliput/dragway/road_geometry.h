@@ -86,6 +86,15 @@ class RoadGeometry final : public api::RoadGeometry {
   // by IsGeoPositionOnDragway().
   int GetLaneIndex(const api::GeoPosition& geo_pos) const;
 
+  // Returns the road position that's closest to @p geo_pos. This method assumes
+  // that geo_pos is not on the road, i.e., that
+  // `IsGeoPositionOnDragway(geo_pos)` returns `false`.
+  api::RoadPosition GetClosestRoadPosition(
+    const api::GeoPosition& geo_pos,
+    const api::RoadPosition* hint,
+    api::GeoPosition* nearest_position,
+    double* distance) const;
+
   const api::RoadGeometryId id_;
   const double linear_tolerance_{};
   const double angular_tolerance_{};

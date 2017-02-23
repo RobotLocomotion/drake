@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "gtest/gtest.h"
 
 #include "drake/automotive/maliput/dragway/branch_point.h"
@@ -285,9 +287,11 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
   }
 }
 
-// Tests dragway::RoadGeometry::ToRoadPosition() using a two-lane dragway. This
-// also verifies that dragway::RoadGeometry::IsGeoPositionOnDragway() does not
-// incorrectly return false.
+// Tests dragway::RoadGeometry::ToRoadPosition() using a two-lane dragway where
+// the x,y projection of all geographic positions provided to it are in the
+// road's driveable region. This unit test also verifies that
+// dragway::RoadGeometry::IsGeoPositionOnDragway() does not incorrectly return
+// false.
 TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
   const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
   const int kNumLanes = 2;
@@ -345,6 +349,234 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
         } else {
           EXPECT_EQ(road_position.pos.r, y - lane_width_ / 2);
         }
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+}
+
+// Tests dragway::RoadGeometry::ToRoadPosition() using a two-lane dragway where
+// the x,y projection of all geographic positions provided to it are not in the
+// road's driveable region. This unit test also verifies that
+// dragway::RoadGeometry::IsGeoPositionOnDragway() does not incorrectly return
+// true.
+TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
+  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const int kNumLanes = 2;
+
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
+      lane_width_, shoulder_width_, kLinearTolerance);
+
+  // Computes the bounds of the road's driveable region.
+  const double x_max = length_;
+  const double x_min = 0;
+  const double y_max = lane_width_ + shoulder_width_;
+  const double y_min = -y_max;
+
+  // The following tests each of the eight geographic regions outside of the
+  // dragway's driveable region. See the region documentation in
+  // road_geometry.cc, method RoadGeometry::GetClosestRoadPosition().
+
+  // Spot checks geographic positions in region 1.
+  for (double x = x_max; x <= x_max + 10; x += 5) {
+    for (double y = y_max; y <= y_max + 10; y += 5) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        EXPECT_DOUBLE_EQ(nearest_position.x, x_max);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y_max);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        const double expected_distance = std::sqrt(
+            std::pow(x - length_, 2) +
+            std::pow(y + y_min, 2));
+        EXPECT_DOUBLE_EQ(distance, expected_distance);
+        const api::Lane* expected_lane =
+            road_geometry.junction(0)->segment(0)->lane(1 /* lane_index */);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, length_);
+        EXPECT_EQ(road_position.pos.r, lane_width_ / 2 + shoulder_width_);
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+
+  // Spot checks geographic positions in region 2.
+  for (double x = length_; x <= length_ + 10; x += 5) {
+    for (double y = y_min; y <= y_max; y += (y_max - y_min) / 2) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        EXPECT_DOUBLE_EQ(nearest_position.x, length_);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        const double expected_distance = std::sqrt(std::pow(x - length_, 2));
+        EXPECT_DOUBLE_EQ(distance, expected_distance);
+        const int expected_lane_index = (y > 0 ? 1 : 0);
+        const Lane* expected_lane = dynamic_cast<const Lane*>(
+            road_geometry.junction(0)->segment(0)->lane(expected_lane_index));
+        DRAKE_DEMAND(expected_lane != nullptr);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, length_);
+        EXPECT_EQ(road_position.pos.r, y - expected_lane->y_offset());
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+
+  // Spot checks geographic positions in region 3.
+  for (double x = length_; x < length_ + 10; x += 5) {
+    for (double y = y_min; y >= y_min - 10; y -= 5) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        EXPECT_DOUBLE_EQ(nearest_position.x, length_);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y_min);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        const double expected_distance =
+            std::sqrt(std::pow(x - length_, 2) + std::pow(y - y_min, 2));
+        EXPECT_DOUBLE_EQ(distance, expected_distance);
+        const Lane* expected_lane = dynamic_cast<const Lane*>(
+            road_geometry.junction(0)->segment(0)->lane(0 /* lane_index */));
+        DRAKE_DEMAND(expected_lane != nullptr);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, length_);
+        EXPECT_EQ(road_position.pos.r, -lane_width_ / 2 - shoulder_width_);
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+
+  // Spot checks geographic positions in region 4.
+  for (double x = x_min; x <= length_; x += length_ / 2) {
+    for (double y = y_max; y <= y_max + 10; y += 5) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        EXPECT_DOUBLE_EQ(nearest_position.x, x);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y_max);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        const double expected_distance = std::sqrt(std::pow(y - y_max, 2));
+        EXPECT_DOUBLE_EQ(distance, expected_distance);
+        const Lane* expected_lane = dynamic_cast<const Lane*>(
+            road_geometry.junction(0)->segment(0)->lane(1 /* lane_index */));
+        DRAKE_DEMAND(expected_lane != nullptr);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, x);
+        EXPECT_EQ(road_position.pos.r, lane_width_ / 2 + shoulder_width_);
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+
+  // Spot checks geographic positions in region 5.
+  for (double x = x_min; x <= length_; x += length_ / 2) {
+    for (double y = y_min; y >= y_min - 10; y -= 5) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        EXPECT_DOUBLE_EQ(nearest_position.x, x);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y_min);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        const double expected_distance = std::sqrt(std::pow(y - y_min, 2));
+        EXPECT_DOUBLE_EQ(distance, expected_distance);
+        const Lane* expected_lane = dynamic_cast<const Lane*>(
+            road_geometry.junction(0)->segment(0)->lane(0 /* lane_index */));
+        DRAKE_DEMAND(expected_lane != nullptr);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, x);
+        EXPECT_EQ(road_position.pos.r, -lane_width_ / 2 - shoulder_width_);
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+
+// Spot checks geographic positions in region 6.
+  for (double x = x_min; x >= x_min - 10; x -= 5) {
+    for (double y = y_max; y <= y_max + 10; y += 5) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        EXPECT_DOUBLE_EQ(nearest_position.x, x_min);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y_max);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        const double expected_distance = std::sqrt(std::pow(x, 2) +
+                                                   std::pow(y - y_max, 2));
+        EXPECT_DOUBLE_EQ(distance, expected_distance);
+        const api::Lane* expected_lane =
+            road_geometry.junction(0)->segment(0)->lane(1 /* lane_index */);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, x_min);
+        EXPECT_EQ(road_position.pos.r, lane_width_ / 2 + shoulder_width_);
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+
+  // Spot checks geographic positions in region 7.
+  for (double x = x_min; x >= x_min - 10; x -= 5) {
+    for (double y = y_min; y < y_max; y += (y_max - y_min) / 2) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        EXPECT_DOUBLE_EQ(nearest_position.x, x_min);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        const double expected_distance = std::sqrt(std::pow(x, 2));
+        EXPECT_DOUBLE_EQ(distance, expected_distance);
+        const int expected_lane_index = (y > 0 ? 1 : 0);
+        const Lane* expected_lane = dynamic_cast<const Lane*>(
+            road_geometry.junction(0)->segment(0)->lane(expected_lane_index));
+        DRAKE_DEMAND(expected_lane != nullptr);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, x_min);
+        EXPECT_EQ(road_position.pos.r, y - expected_lane->y_offset());
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+
+  // Spot checks geographic positions in region 8.
+  for (double x = x_min; x >= x_min - 10; x -= 5) {
+    for (double y = y_min; y > y_min - 10; y -= 5) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        EXPECT_DOUBLE_EQ(nearest_position.x, x_min);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y_min);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        const double expected_distance = std::sqrt(std::pow(x, 2) +
+                                                   std::pow(y - y_min, 2));
+        EXPECT_DOUBLE_EQ(distance, expected_distance);
+        const Lane* expected_lane = dynamic_cast<const Lane*>(
+            road_geometry.junction(0)->segment(0)->lane(0 /* lane_index */));
+        DRAKE_DEMAND(expected_lane != nullptr);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, x_min);
+        EXPECT_EQ(road_position.pos.r, -lane_width_ / 2 - shoulder_width_);
         EXPECT_EQ(road_position.pos.h, z);
       }
     }

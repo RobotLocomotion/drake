@@ -1,5 +1,6 @@
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 
+#include <cmath>
 #include <memory>
 
 #include "drake/automotive/maliput/dragway/branch_point.h"
@@ -110,6 +111,148 @@ int RoadGeometry::GetLaneIndex(const api::GeoPosition& geo_pos) const {
   return result;
 }
 
+api::RoadPosition RoadGeometry::GetClosestRoadPosition(
+    const api::GeoPosition& geo_pos,
+    const api::RoadPosition* hint,
+    api::GeoPosition* nearest_position,
+    double* distance) const {
+  DRAKE_ASSERT(!IsGeoPositionOnDragway(geo_pos));
+  const Lane* lane = dynamic_cast<const Lane*>(junction_.segment(0)->lane(0));
+  DRAKE_ASSERT(lane != nullptr);
+  const double length = lane->length();
+  const api::RBounds lane_driveable_bounds = lane->driveable_bounds(0 /* s */);
+  const double min_y = lane->y_offset() + lane_driveable_bounds.r_min;
+  const double max_y = lane->y_offset() + lane_driveable_bounds.r_max;
+  api::GeoPosition closest_position;
+  closest_position.z = geo_pos.z;
+  /*
+      There are eight potential regions in which @p geo_pos can reside, as
+      shown below.
+
+                            X
+              Y = max_y     ^      Y = min_y
+                            :
+                  |         :         |
+              1   |         2         |    3
+                  |         :         |
+          --------+---------+---------+---------  X = length
+                  | .   .   :   .   . |
+                  | .   .   :   .   . |
+                  | .   .   :   .   . |
+                  | .   .  The  .   . |
+              4   | .   . Dragway   . |    5
+                  | .   .   :   .   . |
+                  | .   .   :   .   . |
+                  | .   .   :   .   . |
+     Y <----------+---------o---------+---------   X = zero
+                  |         :         |
+              6   |         7         |    8
+                  |         :         |
+                            :
+                            V
+
+      For each of the above regions, the closest point can be easily derived as
+      follows:
+                  |             Closest Point
+         Region   |   x-coordinate    |    y-coordinate
+      ------------------------------------------------------
+            1     |   length          |    max_y
+            2     |   length          |    y
+            3     |   length          |    min_y
+            4     |   x               |    max_y
+            5     |   x               |    min_y
+            6     |   0               |    max_y
+            7     |   0               |    y
+            8     |   0               |    min_y
+
+    The following code implements the above logic.
+  */
+  bool region_found{false};
+  // Region 1:
+  if (geo_pos.x >= length && geo_pos.y >= max_y) {
+    closest_position.x = length;
+    closest_position.y = max_y;
+    region_found = true;
+  }
+
+  // Region 2:
+  if (geo_pos.x >= length && geo_pos.y <= max_y && geo_pos.y >= min_y) {
+    closest_position.x = length;
+    closest_position.y = geo_pos.y;
+    region_found = true;
+  }
+
+  // Region 3:
+  if (geo_pos.x >= length && geo_pos.y <= min_y) {
+    closest_position.x = length;
+    closest_position.y = min_y;
+    region_found = true;
+  }
+
+  // Region 4:
+  if (geo_pos.x >= 0 && geo_pos.x <= length && geo_pos.y >= max_y) {
+    closest_position.x = geo_pos.x;
+    closest_position.y = max_y;
+    region_found = true;
+  }
+
+  // Region 5:
+  if (geo_pos.x <= length && geo_pos.x >= 0 && geo_pos.y <= min_y) {
+    closest_position.x = geo_pos.x;
+    closest_position.y = min_y;
+    region_found = true;
+  }
+
+  // Region 6:
+  if (geo_pos.x <= 0 && geo_pos.y >= max_y) {
+    closest_position.x = 0;
+    closest_position.y = max_y;
+    region_found = true;
+  }
+
+  // Region 7:
+  if (geo_pos.x <= 0 && geo_pos.y >= min_y && geo_pos.y <= max_y) {
+    closest_position.x = 0;
+    closest_position.y = geo_pos.y;
+    region_found = true;
+  }
+
+  // Region 8:
+  if (geo_pos.x <= 0 && geo_pos.y <= min_y) {
+    closest_position.x = 0;
+    closest_position.y = min_y;
+    region_found = true;
+  }
+
+  if (!region_found) {
+    throw std::runtime_error("dragway::RoadGeometry::GetClosestRoadPosition: "
+        "Failed to find region for geo_pos (" + std::to_string(geo_pos.x) + ", "
+        + std::to_string(geo_pos.y) + ") where lane length = " +
+        std::to_string(length) + ", min_y = " + std::to_string(min_y) +
+        ", max_y = " + std::to_string(max_y) + ".");
+  }
+
+  if (distance != nullptr) {
+    *distance = std::sqrt(std::pow(geo_pos.x - closest_position.x, 2) +
+                          std::pow(geo_pos.y - closest_position.y, 2) +
+                          std::pow(geo_pos.z - closest_position.z, 2));
+  }
+
+  if (nearest_position != nullptr) {
+    *nearest_position = closest_position;
+  }
+
+  const int closest_lane_index = GetLaneIndex(closest_position);
+  const Lane* closest_lane =
+      dynamic_cast<const Lane*>(junction_.segment(0)->lane(closest_lane_index));
+  DRAKE_ASSERT(closest_lane != nullptr);
+  const api::LanePosition closest_lane_position(
+      closest_position.x /* s */,
+      closest_position.y - closest_lane->y_offset() /* r */,
+      geo_pos.z /* h */);
+  return api::RoadPosition(closest_lane, closest_lane_position);
+}
+
 api::RoadPosition RoadGeometry::DoToRoadPosition(
     const api::GeoPosition& geo_pos,
     const api::RoadPosition* hint,
@@ -135,11 +278,7 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(
     }
     return api::RoadPosition(lane, result_lane_position);
   } else {
-    // TODO(liang.fok): Implement this!
-    throw std::runtime_error(
-        "dragway::RoadGeometry::DoToRoadPosition: The ability to determine the "
-        "road position of a GeoPosition that's not on top of the dragway has "
-        "yet to be implemented.");
+    return GetClosestRoadPosition(geo_pos, hint, nearest_position, distance);
   }
 }
 
