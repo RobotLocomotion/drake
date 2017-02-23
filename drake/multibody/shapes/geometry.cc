@@ -126,30 +126,30 @@ void Box::getPoints(Matrix3Xd& points) const {
                                  points);
 }
 
-void Box::getFaces(TrianglesVector& faces) const {
-  faces.resize(12);
+void Box::getFaces(TrianglesVector* faces) const {
+  faces->resize(12);
   // Here, the vertex indices index into the getBoundingBox vertex order.
   // (See the documentation in that function for a picture.) For each face,
   // vertices are supplied in counterclockwise order when viewed from
   // the "outside" of the face.
   // +y face:
-  faces[0] = Vector3i(0, 1, 2);
-  faces[1] = Vector3i(0, 2, 3);
+  faces->at(0) = Vector3i(0, 1, 2);
+  faces->at(1) = Vector3i(0, 2, 3);
   // +x face:
-  faces[2] = Vector3i(5, 2, 1);
-  faces[3] = Vector3i(6, 5, 1);
+  faces->at(2) = Vector3i(5, 2, 1);
+  faces->at(3) = Vector3i(6, 5, 1);
   // +z face:
-  faces[4] = Vector3i(7, 6, 1);
-  faces[5] = Vector3i(7, 1, 0);
+  faces->at(4) = Vector3i(7, 6, 1);
+  faces->at(5) = Vector3i(7, 1, 0);
   // -y face:
-  faces[6] = Vector3i(4, 5, 6);
-  faces[7] = Vector3i(4, 6, 7);
+  faces->at(6) = Vector3i(4, 5, 6);
+  faces->at(7) = Vector3i(4, 6, 7);
   // -x face:
-  faces[8] = Vector3i(3, 4, 7);
-  faces[9] = Vector3i(0, 3, 7);
+  faces->at(8) = Vector3i(3, 4, 7);
+  faces->at(9) = Vector3i(0, 3, 7);
   // -z face:
-  faces[10] = Vector3i(5, 4, 2);
-  faces[11] = Vector3i(4, 3, 2);
+  faces->at(10) = Vector3i(5, 4, 2);
+  faces->at(11) = Vector3i(4, 3, 2);
 }
 
 void Box::getBoundingBoxPoints(Matrix3Xd& points) const { getPoints(points); }
@@ -453,9 +453,9 @@ void Mesh::getPoints(Eigen::Matrix3Xd& point_matrix) const {
   extractMeshVertices(point_matrix);
 }
 
-void Mesh::getFaces(TrianglesVector& faces) const {
+void Mesh::getFaces(TrianglesVector* faces) const {
   PointsVector points;
-  LoadObjFile(&points, &faces, Mesh::TriangulatePolicy::kTry);
+  LoadObjFile(&points, faces, Mesh::TriangulatePolicy::kTry);
 }
 
 void Mesh::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {

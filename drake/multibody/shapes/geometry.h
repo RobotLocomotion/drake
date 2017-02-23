@@ -40,12 +40,22 @@ class Geometry {
 
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  /**
+   * @returns `true` if this geometry can return faces.
+   */
   virtual bool hasFaces() const {
     // By default, arbitary geometry doesn't know how to provide faces.
     return false;
   }
+  /**
+   * Returns the faces making up this geometry as a vector of triangles.
+   * Each triangle contains three indices into the vertex list return
+   * by the Geometry getPoints method.
+   * @param[out] faces Returns a vector of triangles describing 
+   * this geometry.
+   */
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getFaces(TrianglesVector & faces) const {
+  virtual void getFaces(TrianglesVector* faces) const {
     throw std::runtime_error("Error: getFaces() not implemented"
       " for this geometry type.\n");
   }
@@ -100,11 +110,11 @@ class Box : public Geometry {
   virtual Box* clone() const;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
-  virtual bool hasFaces() const {
+  bool hasFaces() const override {
     return true;
   }
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getFaces(TrianglesVector & faces) const;
+  void getFaces(TrianglesVector* faces) const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -175,11 +185,11 @@ class Mesh : public Geometry {
   virtual Mesh* clone() const;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
-  virtual bool hasFaces() const {
+  bool hasFaces() const override {
     return true;
   }
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getFaces(TrianglesVector & faces) const;
+  void getFaces(TrianglesVector* faces) const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 

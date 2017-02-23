@@ -53,7 +53,7 @@ GTEST_TEST(RBTFaceExtractionTests, ExtractVertsAndFaces) {
         found_box = true;
         EXPECT_TRUE(geometry.hasFaces());
         DrakeShapes::TrianglesVector faces;
-        geometry.getFaces(faces);
+        geometry.getFaces(&faces);
         EXPECT_EQ(faces.size(), 12);
       } else if (geometry.getShape() == DrakeShapes::SPHERE) {
         found_sphere = true;
