@@ -10,23 +10,23 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * A class that extends JointLevelControllerSystem and output an additional
- * bot_core::atlas_command_t in addition to the BasicVector of torques.
+ * A class that extends JointLevelControllerSystem to output an additional
+ * bot_core::atlas_command_t.
  */
 class AtlasJointLevelControllerSystem : public JointLevelControllerSystem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AtlasJointLevelControllerSystem)
 
   /**
-   * Constructor for AtlasJointLevelControllerSystem.
-   * @param robot Reference to a RigidBodyTree. An internal alias is saved,
-   * so the lifespan of @p robot must be longer than this object.
+   * @param robot A reference to the RigidBodyTree within the plant that is
+   * being controlled. The lifespan of this reference must exceed that of this
+   * class's instance. @p robot should only contain a single model instance.
    */
   explicit AtlasJointLevelControllerSystem(const RigidBodyTree<double>& robot);
 
   /**
-   * Calls JointLevelControllerSystem::DoCalcOutput() first, then constructs
-   * a bot_core::atlas_command_t.
+   * Calls JointLevelControllerSystem::DoCalcOutput(), then updates the
+   * bot_core::atlas_command_t within this system's atlas command output port.
    */
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
@@ -35,7 +35,7 @@ class AtlasJointLevelControllerSystem : public JointLevelControllerSystem {
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   /**
-   * @return Port for the output: bot_core::atlas_command_t message
+   * Returns the output port for bot_core::atlas_command_t.
    */
   inline const systems::OutputPortDescriptor<double>&
   get_output_port_atlas_command() const {
@@ -45,7 +45,10 @@ class AtlasJointLevelControllerSystem : public JointLevelControllerSystem {
  private:
   int output_port_index_atlas_cmd_{0};
 
-  // Joint level gains, these are in the actuator order.
+  // Joint level gains. These are in the actuator order within the
+  // RigidBodyTree. These names are chosen to exactly match the API provided
+  // by Boston Dynamics for the Atlas robot. ff stands for feedforward, f
+  // stands for force.
   VectorX<double> k_q_p_;
   VectorX<double> k_q_i_;
   VectorX<double> k_qd_p_;
