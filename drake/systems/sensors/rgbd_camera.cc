@@ -225,14 +225,14 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
     : tree_(tree), color_camera_info_(kImageWidth, kImageHeight, fov_y),
       depth_camera_info_(kImageWidth, kImageHeight, fov_y) {
   // TODO(kunimatsu) Implement this.
-  std::runtime_error("Not implemented");
+  throw std::runtime_error("Not implemented");
 }
 
 void RgbdCamera::Impl::CreateRenderingWorld() {
   auto camera_to_world = X_WC_.inverse();
 
   for (const auto& body : tree_.bodies) {
-    if (body->get_name() == "world") {
+    if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
     }
 
@@ -360,7 +360,7 @@ void RgbdCamera::Impl::UpdateModelPoses(
   auto camera_to_world = X_WC_.inverse();
 
   for (const auto& body : tree_.bodies) {
-    if (body->get_name() == "world") {
+    if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
     }
 
