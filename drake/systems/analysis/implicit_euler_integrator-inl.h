@@ -29,12 +29,11 @@ VectorX<T> ImplicitEulerIntegrator<T>::EvaluateNonlinearEquations(
   // Evaluate the derivatives at that state.
   system.CalcTimeDerivatives(context, derivs_.get());
 
-  // Do the arithmetic.
   return xtplus - xt - h*derivs_->CopyToVector();
 }
 
 // Attempts a trial step of time length @p dt.
-// @returns *true* if successful, *false* otherwise (typically occurs because
+// @returns 'true' if successful, 'false' otherwise (typically occurs because
 //          @p dt is too large to allow the nonlinear equation solver to
 //          converge).
 template <class T>
@@ -90,7 +89,7 @@ std::pair<bool, T> ImplicitEulerIntegrator<T>::DoStepOnceAtMost(
   // TODO(edrumwri): Account for minimum directed step size.
   // Attempt taking the trial step until it succeeds (by halving steps). This
   // must succeed: at the limit as dt = 0, the nonlinear system is trivially
-  // solved as an explicit Euler "step".
+  // "solved".
   double dt = max_dt;
   while (!DoTrialStep(dt))
     dt /= 2;
