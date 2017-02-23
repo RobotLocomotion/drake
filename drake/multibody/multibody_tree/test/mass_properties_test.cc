@@ -141,7 +141,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
 
   // While at it, check if after transformation this still is a physically
   // valid inertia.
-  EXPECT_TRUE(I_Ro_F.IsPhysicallyValid());
+  EXPECT_TRUE(I_Ro_F.CouldBePhysicallyValid());
 }
 
 // Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() that
