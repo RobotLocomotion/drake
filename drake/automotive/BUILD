@@ -143,6 +143,7 @@ drake_cc_library(
         "//drake/common:cond",
         "//drake/common:double",
         "//drake/common:symbolic",
+        "//drake/systems/rendering:pose_vector",
     ],
 )
 
@@ -483,6 +484,7 @@ drake_cc_googletest(
     name = "simple_car_test",
     deps = [
         "//drake/automotive:simple_car",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 
