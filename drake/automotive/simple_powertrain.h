@@ -5,16 +5,16 @@
 namespace drake {
 namespace automotive {
 
-/// SimplePowerTrain -- A simple power-train model modeled as a linear
-/// first-order lag, with input taken as the throttle setting and the output
-/// taken as the force applied to the wheels of the vehicle.
+/// SimplePowertrain -- A simple powertrain system modeled as a first-order lag,
+/// with input taken as the throttle setting and the output taken as the applied
+/// lumped force from the wheels of a vehicle to the road.
 ///
 /// Input:
 ///  - A unitless scalar value representing the throttle input to the power
 ///    system.
 ///
 /// Output:
-///  - The force transmitted from the wheels to the rigid body [N].
+///  - The force transmitted from the wheels to the road [N].
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -27,20 +27,20 @@ namespace automotive {
 ///
 /// @ingroup automotive_systems
 template <typename T>
-class SimplePowerTrain : public systems::LinearSystem<T> {
+class SimplePowertrain : public systems::LinearSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimplePowerTrain);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimplePowertrain);
 
-  /// Construct a simple power train model, specified via a fixed time-constant
+  /// Constructs a simple powertrain model, specified via a fixed time-constant
   /// and scalar gain.  The inputs are as follows:
-  /// @p time_constant is the powertrain time constant [1/s].
-  /// @p gain is the gain from throttle input to force output [N].
-  SimplePowerTrain(const double& time_constant, const double& gain)
+  /// @p time_constant is the rise time of the first-order lag [s].
+  /// @p gain is the gain converting throttle input to force output [N].
+  SimplePowertrain(const double& time_constant, const double& gain)
       : systems::LinearSystem<T>(make_singleton_matrix(-1. / time_constant),
                                  make_singleton_matrix(gain),
                                  make_singleton_matrix(1. / time_constant),
                                  make_singleton_matrix(0.)) {}
-  ~SimplePowerTrain() override = default;
+  ~SimplePowertrain() override = default;
 
   const systems::InputPortDescriptor<T>& get_throttle_input_port() const {
     return systems::System<T>::get_input_port(0);

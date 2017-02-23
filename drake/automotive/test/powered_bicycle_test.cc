@@ -18,10 +18,10 @@ class PoweredBicycleTest : public ::testing::Test {
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
-    steering_input_.reset(new systems::BasicVector<double>(
-        steering_input_dimension_));
-    throttle_input_.reset(new systems::BasicVector<double>(
-        throttle_input_dimension_));
+    steering_input_.reset(
+        new systems::BasicVector<double>(steering_input_dimension_));
+    throttle_input_.reset(
+        new systems::BasicVector<double>(throttle_input_dimension_));
   }
 
   systems::VectorBase<double>* continuous_state(
@@ -143,7 +143,7 @@ TEST_F(PoweredBicycleTest, TimeDerivatives) {
   dut_->CalcOutput(*context_, output_.get());
 
   // Expected state derivatives.
-  EXPECT_EQ(-15., (*power_derivatives)[0]);
+  EXPECT_EQ(-30., (*power_derivatives)[0]);
   EXPECT_EQ(7., (*bike_derivatives)[0]);
   EXPECT_GE(0., (*bike_derivatives)[1]);
   EXPECT_GE(0., (*bike_derivatives)[2]);
@@ -176,7 +176,7 @@ TEST_F(PoweredBicycleTest, PowerTrainTimeDerivativeAndOutput) {
   dut_->CalcOutput(*context_, output_.get());
 
   // Verify the state derivative.
-  EXPECT_EQ(-40., (*power_derivatives)[0]);
+  EXPECT_EQ(-90., (*power_derivatives)[0]);
 
   // Verify the v_dot for the bicycle model, as a surrugate for checking the
   // power-train output directly.

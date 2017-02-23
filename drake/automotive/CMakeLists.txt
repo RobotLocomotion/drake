@@ -38,7 +38,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   monolane_onramp_merge.cc
   powered_bicycle.cc
   simple_car.cc
-  simple_power_train.cc
+  simple_powertrain.cc
   single_lane_ego_and_agent.cc
   trajectory_car.cc
   )
@@ -61,7 +61,7 @@ drake_install_headers(
   powered_bicycle.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
-  simple_power_train.h
+  simple_powertrain.h
   single_lane_ego_and_agent.h
   trajectory_car.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
