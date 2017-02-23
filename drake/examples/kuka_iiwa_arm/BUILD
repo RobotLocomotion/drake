@@ -6,7 +6,6 @@ load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
-    "drake_cc_googletest",
 )
 
 package(
@@ -39,18 +38,6 @@ drake_cc_library(
         "//drake/multibody/parsers",
         "@bot_core_lcmtypes//:lib",
         "@robotlocomotion_lcmtypes//:lib",
-    ],
-)
-
-drake_cc_library(
-    name = "iiwa_ik_planner",
-    srcs = ["iiwa_ik_planner.cc"],
-    hdrs = ["iiwa_ik_planner.h"],
-    deps = [
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-        "//drake/multibody:inverse_kinematics",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
     ],
 )
 
@@ -141,17 +128,6 @@ cc_binary(
         "//drake/solvers:mathematical_program",
         "@bot_core_lcmtypes//:lib",
         "@robotlocomotion_lcmtypes//:lib",
-    ],
-)
-
-drake_cc_googletest(
-    name = "iiwa_ik_test",
-    srcs = ["test/iiwa_ik_test.cc"],
-    data = [
-        ":models",
-    ],
-    deps = [
-        ":iiwa_ik_planner",
     ],
 )
 

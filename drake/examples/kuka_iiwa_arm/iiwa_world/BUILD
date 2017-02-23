@@ -65,7 +65,6 @@ drake_cc_binary(
         "//drake/common:drake_path",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/examples/kuka_iiwa_arm:iiwa_ik_planner",
         "@gflags//:gflags",
     ],
 )

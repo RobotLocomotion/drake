@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/iiwa_ik_planner.h"
+#include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
 
 #include <iostream>
 #include <list>
@@ -103,10 +103,13 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
     kRelaxRotTol = 1
   };
 
+  // These numbers are arbitrarily picked by siyuan.
   const int kMaxNumInitialGuess = 50;
   const int kMaxNumConstraintRelax = 10;
   const Vector3<double> kInitialPosTolerance(0.01, 0.01, 0.01);
   const double kInitialRotTolerance = 0.01;
+  const double kConstraintShrinkFactor = 0.5;
+  const double kConstraintGrowFactor = 1.5;
 
   for (const auto& waypoint : waypoints) {
     // Sets the initial constraints guess bigger than the desired tolerance.
@@ -134,10 +137,10 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
 
         // Alternates between kRelaxPosTol and kRelaxRotTol
         if (mode == RelaxMode::kRelaxPosTol && waypoint.constrain_orientation) {
-          rot_tol /= 2.;
+          rot_tol *= kConstraintShrinkFactor;
           mode = RelaxMode::kRelaxRotTol;
         } else {
-          pos_tol /= 2.;
+          pos_tol *= kConstraintShrinkFactor;
           mode = RelaxMode::kRelaxPosTol;
         }
         // Sets the initial guess to the current solution.
@@ -145,9 +148,9 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
       } else {
         // Relaxes the constraints no solution is found.
         if (mode == RelaxMode::kRelaxRotTol && waypoint.constrain_orientation) {
-          rot_tol *= 1.5;
+          rot_tol *= kConstraintGrowFactor;
         } else {
-          pos_tol *= 1.5;
+          pos_tol *= kConstraintGrowFactor;
         }
         relaxed_ctr++;
       }

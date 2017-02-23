@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_ik_planner.h"
+#include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {

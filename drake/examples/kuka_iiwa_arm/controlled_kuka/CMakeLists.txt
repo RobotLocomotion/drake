@@ -3,7 +3,6 @@ if(lcm_FOUND)
       controlled_kuka_demo.cc)
   target_link_libraries(controlled_kuka_demo
       drakeKukaIiwaArmCommon
-      drakeKukaIiwaArmIK
       drakeLcmSystem
       drakeMultibodyParsers
       drakeRigidBodyPlant
@@ -16,7 +15,6 @@ if(lcm_FOUND)
       kuka_cartesian_way_point_demo.cc)
   target_link_libraries(kuka_cartesian_way_point_demo
       drakeKukaIiwaArmCommon
-      drakeKukaIiwaArmIK
       drakeLcmSystem
       drakeRigidBodyPlant
       drakeSystemAnalysis

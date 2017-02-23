@@ -3,6 +3,7 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeKukaIiwaArmCommon SOURCE_FILES
       iiwa_common.cc iiwa_lcm.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
+      drakeIK
       drakeLcmSystem
       drakeRBM
       drakeMultibodyParsers
@@ -13,22 +14,6 @@ if(lcm_FOUND)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm-common
       TARGET drakeKukaIiwaArmCommon
       LIBS -ldrakeKukaIiwaArmCommon
-      REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rbm)
-
-  add_library_with_exports(LIB_NAME drakeKukaIiwaArmIK SOURCE_FILES
-      iiwa_ik_planner.cc)
-  target_link_libraries(drakeKukaIiwaArmIK
-      drakeCommon
-      drakeIK
-      drakeRBM
-      drakeMultibodyParsers
-      drakeTrajectories)
-  drake_install_libraries(drakeKukaIiwaArmIK)
-  drake_install_headers(
-      iiwa_ik_planner.h)
-  drake_install_pkg_config_file(drake-kuka-iiwa-arm-ik
-    TARGET drakeKukaIiwaArmIK
-    LIBS -ldrakeKukaIiwaArmIK
       REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rbm)
 
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
@@ -93,6 +78,7 @@ endif()
 
 add_subdirectory(controlled_kuka)
 add_subdirectory(iiwa_world)
+add_subdirectory(dev)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
