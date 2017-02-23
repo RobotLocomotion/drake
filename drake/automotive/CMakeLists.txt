@@ -115,7 +115,9 @@ if(lcm_FOUND)
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers)
-  drake_add_test(NAME car_sim_lcm COMMAND car_sim_lcm --simulation_sec 0.1)
+  if(NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+    drake_add_test(NAME car_sim_lcm COMMAND car_sim_lcm --simulation_sec 0.1)
+  endif()
 
   # TODO(liang.fok) Enable the following unit test once the build system is able
   # to automatically generate the speed_bump.obj file from the speed_bump.yaml
