@@ -39,7 +39,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
                                 systems::State<double>* state) const override;
 
   /**
-   * @return Port for the input: HumanoidStatus.
+   * Returns the input port for HumanoidStatus.
    */
   inline const systems::InputPortDescriptor<double>&
   get_input_port_humanoid_status() const {
@@ -47,7 +47,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * @return Port for the input: QpInput.
+   * Returns the input port for QpInput.
    */
   inline const systems::InputPortDescriptor<double>& get_input_port_qp_input()
       const {
@@ -55,7 +55,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * @return Port for the output: QpOutput.
+   * Returns the output port for QpOutput.
    */
   inline const systems::OutputPortDescriptor<double>&
   get_output_port_qp_output() const {
@@ -63,7 +63,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * @return Port for the output: lcmt_inverse_dynamics_debug_info.
+   * Returns the output port for lcmt_inverse_dynamics_debug_info.
    */
   inline const systems::OutputPortDescriptor<double>&
   get_output_port_debug_info() const {
