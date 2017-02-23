@@ -234,36 +234,42 @@ void ExtractVariablesFromExpression(
 }
 
 /** Decomposes a linear combination @p e = c0 + c1 * v1 + ... cn * vn into
-   *  the followings:
-   *
-   *     constant term      : c0
-   *     coefficient vector : [c1, ..., cn]
-   *     variable vector    : [v1, ..., vn]
-   *
-   *  Then, it returns a pair (c0, [c1, ..., cn]). A map from variable ID to
-   *  int, @p map_var_to_index, is used to decide a variable's index in a linear
-   *  combination.
-   *
-   *  \pre{@c coeffs is a row vector of double, whose length matches with the
-   *          size of @c map_var_to_index.}
-   * @tparam Derived An Eigen row vector of doubles.
-   * @param[in] e The symbolic linear expression
-   * @param[in] map_var_to_index A mapping from variable ID to variable index,
-   * such that map_var_to_index[vi.get_ID()] = i.
-   * @param[out] coeffs A row vector. coeffs(i) = ci.
-   * @param[out] constant_term c0 in the equation above.
-   * @return num_variable. Number of variables in the expression. 2 * x(0) + 3
-   * has 1 variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable.
-   */
+ *  the followings:
+ *
+ *     constant term      : c0
+ *     coefficient vector : [c1, ..., cn]
+ *     variable vector    : [v1, ..., vn]
+ *
+ *  Then, it extracts the coefficient and the constant term.
+ *  A map from variable ID to int, @p map_var_to_index, is used to decide a
+ *  variable's index in a linear combination.
+ *
+ *  \pre{1. @c coeffs is a row vector of double, whose length matches with the
+ *          size of @c map_var_to_index.
+ *       2. e.is_polynomial() is true.}
+ * @tparam Derived An Eigen row vector type with Derived::Scalar == double.
+ * @param[in] e The symbolic linear expression
+ * @param[in] map_var_to_index A mapping from variable ID to variable index,
+ * such that map_var_to_index[vi.get_ID()] = i.
+ * @param[out] coeffs A row vector. coeffs(i) = ci.
+ * @param[out] constant_term c0 in the equation above.
+ * @return num_variable. Number of variables in the expression. 2 * x(0) + 3
+ * has 1 variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable.
+ */
 template <typename Derived>
-int DecomposeLinearExpression(
+typename std::enable_if<std::is_same<typename Derived::Scalar, double>::value,
+                        int>::type
+DecomposeLinearExpression(
     const Expression& e,
     const std::unordered_map<Variable::Id, int>& map_var_to_index,
     const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
-  static_assert(std::is_same<typename Derived::Scalar, double>::value,
-                "coeffs must be a matrix of double.");
   DRAKE_DEMAND(coeffs.rows() == 1);
   DRAKE_DEMAND(coeffs.cols() == static_cast<int>(map_var_to_index.size()));
+  if (!e.is_polynomial()) {
+    std::ostringstream oss;
+    oss << "Expression " << e << "is not a polynomial.\n";
+    throw runtime_error(oss.str());
+  }
   const symbolic::Variables& vars = e.GetVariables();
   const auto& monomial_to_coeff_map =
       symbolic::DecomposePolynomialIntoMonomial(e, vars);
@@ -543,7 +549,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
       // v(i) is in the form of c * x
       double x_coeff = 0;
       for (const auto& x : v(i).GetVariables()) {
-        double coeff = A(i, map_var_to_index[x.get_id()]);
+        const double coeff = A(i, map_var_to_index[x.get_id()]);
         if (coeff != 0) {
           x_coeff += coeff;
           bounding_box_x(i) = x;
@@ -553,7 +559,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
         new_lb(i) /= x_coeff;
         new_ub(i) /= x_coeff;
       } else {
-        double lb_i = new_lb(i);
+        const double lb_i = new_lb(i);
         new_lb(i) = new_ub(i) / x_coeff;
         new_ub(i) = lb_i / x_coeff;
       }

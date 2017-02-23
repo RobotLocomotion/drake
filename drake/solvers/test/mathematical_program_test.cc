@@ -729,6 +729,25 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic7) {
                               Vector4d(-0.5, 0.75, 0.5, 0)));
 }
 
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic8) {
+  // Test the failure cases for adding linear constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // Non-polynomial.
+  EXPECT_THROW(prog.AddLinearConstraint(sin(x(0)), 1, 2), std::runtime_error);
+
+  // Non-linear.
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) * x(0), 1, 2), std::runtime_error);
+
+  // Trivial case 0 <= 1 <= 2
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) + 1 - x(0), 0, 2),
+               std::runtime_error);
+
+  // Trivial (and infeasible) case 1 <= 0 <= 2
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) - x(0), 1, 2), std::runtime_error);
+}
+
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
