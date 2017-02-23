@@ -968,8 +968,7 @@ size_t MathematicalProgram::FindDecisionVariableIndex(
   if (it == decision_variable_index_.end()) {
     std::ostringstream oss;
     oss << var << " is not a decision variable in the mathematical program, "
-                  "when calling GetSolution."
-        << std::endl;
+                  "when calling GetSolution.\n";
     throw std::runtime_error(oss.str());
   }
   return it->second;
