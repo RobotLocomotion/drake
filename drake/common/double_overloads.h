@@ -14,5 +14,8 @@ namespace drake {
 /// v_else are evaluated regardless of the evaluation of @p f_cond. In contrast,
 /// only one of @p v_then or @p v_else is evaluated in C++'s conditional
 /// expression <tt>f_cond ? v_then : v_else</tt>.
-double if_then_else(bool f_cond, double v_then, double v_else);
+inline double if_then_else(bool f_cond, double v_then, double v_else) {
+  return f_cond ? v_then : v_else;
+}
+
 }  // namespace drake
