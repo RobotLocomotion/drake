@@ -20,7 +20,10 @@ namespace {
 
 // This unit test confirms that vertices and faces can be requested
 // from the constituent components of an RBT, and demonstrates how
-// to do so.
+// to do so. In particular, this verifies that the RBT collision world
+// can be accessed according to information stored by RigidBodies
+// to produce shape information specific to each body's shape, as tested
+// by a RBT containing a sphere and a box.
 GTEST_TEST(RBTFaceExtractionTests, ExtractVertsAndFaces) {
   RigidBodyTree<double> tree;
   parsers::sdf::AddModelInstancesFromSdfFileToWorld(
