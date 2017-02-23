@@ -128,4 +128,16 @@ cc_binary(
     ],
 )
 
+# === test/ ===
+
+sh_test(
+    name = "iiwa_wsg_simulation_test",
+    srcs = ["//tools:exec.sh"],
+    args = [
+        "$(location :iiwa_wsg_simulation)",
+        "--simulation_sec=0.01",
+    ],
+    data = [":iiwa_wsg_simulation"],
+)
+
 cpplint()
