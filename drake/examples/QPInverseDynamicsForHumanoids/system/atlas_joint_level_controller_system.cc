@@ -1,7 +1,6 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
 
 #include <memory>
-#include <utility>
 
 #include "bot_core/atlas_command_t.hpp"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
@@ -17,17 +16,17 @@ AtlasJointLevelControllerSystem::AtlasJointLevelControllerSystem(
     : JointLevelControllerSystem(robot) {
   output_port_index_atlas_cmd_ = DeclareAbstractOutputPort().get_index();
 
-  // TODO(siyuan.fent): Load gains from some config.
-  int act_size = robot_.get_num_actuators();
-  k_q_p_ = VectorX<double>::Zero(act_size);
-  k_q_i_ = VectorX<double>::Zero(act_size);
-  k_qd_p_ = VectorX<double>::Zero(act_size);
-  k_f_p_ = VectorX<double>::Zero(act_size);
-  ff_qd_ = VectorX<double>::Zero(act_size);
-  ff_qd_d_ = VectorX<double>::Zero(act_size);
+  // TODO(siyuan.feng): Load gains from some config.
+  const int kActSize = robot_.get_num_actuators();
+  k_q_p_ = VectorX<double>::Zero(kActSize);
+  k_q_i_ = VectorX<double>::Zero(kActSize);
+  k_qd_p_ = VectorX<double>::Zero(kActSize);
+  k_f_p_ = VectorX<double>::Zero(kActSize);
+  ff_qd_ = VectorX<double>::Zero(kActSize);
+  ff_qd_d_ = VectorX<double>::Zero(kActSize);
   // Directly feed torque through without any other feedbacks.
-  ff_f_d_ = VectorX<double>::Constant(act_size, 1.);
-  ff_const_ = VectorX<double>::Zero(act_size);
+  ff_f_d_ = VectorX<double>::Constant(kActSize, 1.);
+  ff_const_ = VectorX<double>::Zero(kActSize);
 }
 
 void AtlasJointLevelControllerSystem::DoCalcOutput(
@@ -35,12 +34,12 @@ void AtlasJointLevelControllerSystem::DoCalcOutput(
     systems::SystemOutput<double>* output) const {
   JointLevelControllerSystem::DoCalcOutput(context, output);
 
-  // Output
+  // Gets a mutable reference to bot_core::atlas_command_t from output.
   bot_core::atlas_command_t& msg =
       output->GetMutableData(output_port_index_atlas_cmd_)
           ->GetMutableValue<bot_core::atlas_command_t>();
 
-  // Make bot_core::atlas_command_t message.
+  // Makes bot_core::atlas_command_t message.
   msg.utime = static_cast<uint64_t>(context.get_time() * 1e6);
 
   msg.num_joints = robot_.get_num_actuators();
