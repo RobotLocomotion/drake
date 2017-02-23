@@ -139,14 +139,27 @@ class RgbdCamera : public LeafSystem<double> {
   /// Returns `X_WD`.
   const Eigen::Isometry3d& depth_camera_optical_pose() const;
 
-  /// Returns the RigidBodyTree within the RigidBodyPlant that this sensor is
-  /// sensing.
+  /// Returns the RigidBodyTree to which this RgbdCamera is attached.
   const RigidBodyTree<double>& tree() const;
+
+  /// Returns a descriptor of the vector valued input port that takes a vector
+  /// of `q, v` corresponding to the positions and velocities associated with
+  /// the RigidBodyTree.
+  const InputPortDescriptor<double>& state_input_port() const;
+
+  /// Returns a descriptor of the abstract valued output port that takes an
+  /// Image<uint_8>.
+  const OutputPortDescriptor<double>& color_image_output_port() const;
+
+  /// Returns a descriptor of the abstract valued output port that takes an
+  /// Image<float>.
+  const OutputPortDescriptor<double>& depth_image_output_port() const;
 
   /// Allocates the output vector. See this class's description for details of
   /// this output vector.
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
     const Context<double>& context) const override;
+
 
  protected:
   /// Updates all the model frames for the renderer and outputs the rendered
@@ -157,8 +170,6 @@ class RgbdCamera : public LeafSystem<double> {
  private:
   class Impl;
   std::unique_ptr<Impl> impl_;
-
-  int input_port_index_{};
 };
 
 }  // namespace sensors
