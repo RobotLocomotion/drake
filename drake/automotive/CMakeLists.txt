@@ -44,6 +44,7 @@ target_link_libraries(drakeAutomotive
   drakeSystemAnalysis
   drakeSystemFramework
   drakeSystemPrimitives
+  drakeRendering
   Eigen3::Eigen
   yaml-cpp
   )

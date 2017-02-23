@@ -18,6 +18,9 @@
 #include "drake/common/symbolic_formula.h"
 
 namespace drake {
+
+using systems::rendering::PoseVector;
+
 namespace automotive {
 
 template <typename T>
@@ -26,6 +29,17 @@ SimpleCar<T>::SimpleCar() {
                          DrivingCommandIndices::kNumCoordinates);
   this->DeclareOutputPort(systems::kVectorValued,
                           SimpleCarStateIndices::kNumCoordinates);
+  this->DeclareOutputPort(systems::kVectorValued, PoseVector<T>::kSize);
+}
+
+template <typename T>
+const systems::OutputPortDescriptor<T>& SimpleCar<T>::state_output() const {
+  return this->get_output_port(0);
+}
+
+template <typename T>
+const systems::OutputPortDescriptor<T>& SimpleCar<T>::pose_output() const {
+  return this->get_output_port(1);
 }
 
 template <typename T>
@@ -41,9 +55,15 @@ void SimpleCar<T>::DoCalcOutput(const systems::Context<T>& context,
   // Obtain the output pointer.
   SimpleCarState<T>* const output_vector =
       dynamic_cast<SimpleCarState<T>*>(output->GetMutableVectorData(0));
-  DRAKE_ASSERT(output_vector);
+  DRAKE_ASSERT(output_vector != nullptr);
 
   ImplCalcOutput(*state, output_vector);
+
+  PoseVector<T>* const pose =
+      dynamic_cast<PoseVector<T>*>(output->GetMutableVectorData(1));
+  DRAKE_ASSERT(pose != nullptr);
+
+  ImplCalcPose(*state, pose);
 }
 
 template <typename T>
@@ -54,6 +74,15 @@ void SimpleCar<T>::ImplCalcOutput(const SimpleCarState<T>& state,
   // Don't allow small negative velocities to escape our state.
   using std::max;
   output->set_velocity(max(T(0), state.velocity()));
+}
+
+template <typename T>
+void SimpleCar<T>::ImplCalcPose(const SimpleCarState<T>& state,
+                                PoseVector<T>* pose) const {
+  pose->set_translation(Eigen::Translation<T, 3>(state.x(), state.y(), 0));
+  const Vector3<T> z_axis{0.0, 0.0, 1.0};
+  const Eigen::AngleAxis<T> rotation(state.heading(), z_axis);
+  pose->set_rotation(Eigen::Quaternion<T>(rotation));
 }
 
 template <typename T>
@@ -182,7 +211,15 @@ SimpleCar<T>::AllocateContinuousState() const {
 template <typename T>
 std::unique_ptr<systems::BasicVector<T>> SimpleCar<T>::AllocateOutputVector(
     const systems::OutputPortDescriptor<T>& descriptor) const {
-  return std::make_unique<SimpleCarState<T>>();
+  DRAKE_DEMAND(descriptor.get_index() <= 1);
+  switch (descriptor.get_index()) {
+    case 0:
+      return std::make_unique<SimpleCarState<T>>();
+    case 1:
+      return std::make_unique<PoseVector<T>>();
+    default:
+      return nullptr;
+  }
 }
 
 template <typename T>

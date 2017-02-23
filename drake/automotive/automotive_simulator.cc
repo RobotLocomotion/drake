@@ -88,7 +88,8 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
 
   builder_->Connect(*command_subscriber, *simple_car);
-  builder_->Connect(*simple_car, *coord_transform);
+  builder_->Connect(simple_car->state_output(),
+                    coord_transform->get_input_port(0));
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
   return AddSdfModel(sdf_filename, coord_transform, model_name);
@@ -262,7 +263,7 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
       builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
           std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE", translator,
           lcm_.get());
-  builder_->Connect(system, *publisher);
+  builder_->Connect(system.state_output(), publisher->get_input_port(0));
 }
 
 template <typename T>
