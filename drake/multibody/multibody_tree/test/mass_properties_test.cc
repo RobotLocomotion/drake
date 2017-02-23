@@ -5,6 +5,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 
+#include <iomanip>
 #include <sstream>
 #include <string>
 
@@ -206,11 +207,11 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaLaplacianTest) {
   const double Ioff  = -1.0;  // The off-diagonal entries.
 
   // Even though the inertia matrix is symmetric and positive definite, it does
-  // not satisfy the triangle inequality.
-  ASSERT_DEATH(
-      {RotationalInertia<double> I(Idiag, Idiag, Idiag, Ioff, 0.0, Ioff);},
-      R"(abort: failure at .*rotational_inertia.h:... )"
-      R"(in RotationalInertia\(\): assertion 'IsPhysicallyValid\(\)' failed)");
+  // not satisfy the triangle inequality. Therefore the constructor throws an
+  // exception.
+  EXPECT_THROW(
+      RotationalInertia<double> I(Idiag, Idiag, Idiag, Ioff, 0.0, Ioff),
+      std::runtime_error);
 }
 
 // Test the correctness of multiplication with a scalar from the left.
@@ -249,12 +250,12 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
 // Test the shift operator to write into a stream.
 GTEST_TEST(RotationalInertia, ShiftOperator) {
   std::stringstream stream;
-  RotationalInertia<double> I(1, 2, 3);
-  stream << I;
+  RotationalInertia<double> I(1, 2.718, 3.14);
+  stream << std::fixed << std::setprecision(4) << I;
   std::string expected_string =
-                  "[1, 0, 0]\n"
-                  "[0, 2, 0]\n"
-                  "[0, 0, 3]\n";
+                  "[1.0000, 0.0000, 0.0000]\n"
+                  "[0.0000, 2.7180, 0.0000]\n"
+                  "[0.0000, 0.0000, 3.1400]\n";
   EXPECT_EQ(expected_string, stream.str());
 }
 

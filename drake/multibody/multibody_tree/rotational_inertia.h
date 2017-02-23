@@ -11,6 +11,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 
@@ -74,7 +75,7 @@ class RotationalInertia {
   /// center for a sphere or a cube.
   /// Aborts if `I` is non-positive.
   explicit RotationalInertia(const T& I) {
-    DRAKE_DEMAND(I > T(0));
+    DRAKE_THROW_UNLESS(I >= T(0));
     SetZero();
     I_Bo_F_.diagonal().setConstant(I);
   }
@@ -82,14 +83,14 @@ class RotationalInertia {
   /// Creates a principal axes rotational inertia matrix for which the products
   /// of inertia are zero and the moments of inertia are given by `Ixx`, `Iyy`
   /// and `Izz`.
-  /// Aborts if any of the provided moments is non-positive.
+  /// Aborts if any of the provided moments is negative.
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz) {
-    DRAKE_DEMAND(Ixx > T(0));
-    DRAKE_DEMAND(Iyy > T(0));
-    DRAKE_DEMAND(Izz > T(0));
+    DRAKE_THROW_UNLESS(Ixx >= T(0));
+    DRAKE_THROW_UNLESS(Iyy >= T(0));
+    DRAKE_THROW_UNLESS(Izz >= T(0));
     SetZero();
     I_Bo_F_.diagonal() = Vector3<T>(Ixx, Iyy, Izz);
-    DRAKE_DEMAND(IsPhysicallyValid());
+    DRAKE_THROW_UNLESS(IsPhysicallyValid());
   }
 
   /// Creates a general rotational inertia matrix with non-zero off-diagonal
@@ -102,7 +103,7 @@ class RotationalInertia {
     // The upper part is left initialized to NaN.
     I_Bo_F_(0, 0) = Ixx; I_Bo_F_(1, 1) = Iyy; I_Bo_F_(2, 2) = Izz;
     I_Bo_F_(1, 0) = Ixy; I_Bo_F_(2, 0) = Ixz; I_Bo_F_(2, 1) = Iyz;
-    DRAKE_DEMAND(IsPhysicallyValid());
+    DRAKE_THROW_UNLESS(IsPhysicallyValid());
   }
 
   /// For consistency with Eigen's API this method returns the number of rows
@@ -131,8 +132,7 @@ class RotationalInertia {
   /// This operator performs checks on the pair `(i, j)` to determine the
   /// appropriate mapping to the internal in-memory representation of a
   /// symmetric rotational inertia. Therefore this accessor is not meant for
-  /// speed but rather as a convenience method. Users should use supplied
-  /// built-in operations for fast computations.
+  /// speed but rather as a convenience method.
   /// Notice that the mutable counterpart of this accessor is not provided to
   /// prevent the creation of unphysical inertias by setting one element at a
   /// time.
@@ -146,8 +146,8 @@ class RotationalInertia {
   /// including both lower and upper triangular parts.
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
-  /// Compares `this` inertia to @p other rotationl inertia within the specified
-  /// @p precision.
+  /// Compares `this` inertia to @p other rotational inertia within the
+  /// specified @p precision.
   /// The comparison is performed using the fuzzy comparison provided by Eigen's
   /// method isApprox() returning `true` if: <pre>
   ///   get_moments().isApprox(other.get_moments(), precision) &&
@@ -167,7 +167,7 @@ class RotationalInertia {
   /// @param[in] I_Bo_F A rotational inertia to be added to this inertia.
   /// @returns A reference to `this` rotational inetia.
   RotationalInertia& operator+=(const RotationalInertia<T>& I_Bo_F) {
-    this->get_mutable_symmetric_matrix_view() += I_Bo_F.get_matrix();
+    this->get_mutable_triangular_view() += I_Bo_F.get_matrix();
     return *this;
   }
 
@@ -242,7 +242,7 @@ class RotationalInertia {
     if (solver.info() != Eigen::Success) {
       throw std::runtime_error(
           "Error: In RotationalInertia::CalcPrincipalMomentsOfInertia()."
-          " Solver failed when attempting to compute the eigen values of the"
+          " Solver failed when attempting to compute the eigenvalues of the"
           " inertia matrix.");
     }
     return solver.eigenvalues();
@@ -250,13 +250,20 @@ class RotationalInertia {
 
   /// Performs a number of checks to verify that this is a physically valid
   /// rotational inertia.
-  /// The chekcs performed are:
+  /// The checks performed are:
   /// - No NaN entries.
-  /// - Strictly positive principal moments.
+  /// - Positive principal moments.
   /// - Principal moments must satisfy the triangle inequality:
   ///   - `Ixx + Iyy >= Izz`
   ///   - `Ixx + Izz >= Iyy`
   ///   - `Iyy + Izz >= Ixx`
+  ///
+  /// @warning These checks are a necessary but NOT a sufficient condition for a
+  /// rotational inertia to be physically valid. The sufficient condition is for
+  /// a rotational inertia to meet these conditions when shifted to the center
+  /// of mass using the parallel axis theorem. However, this class has no means
+  /// to know where the center of mass is located. Use with caution.
+  ///
   /// @returns `true` for a physically valid rotational inertia passing the
   ///          above checks and `false` otherwise.
   bool IsPhysicallyValid() const {
@@ -265,8 +272,8 @@ class RotationalInertia {
     // Compute principal moments of inertia.
     Vector3<double> d = CalcPrincipalMomentsOfInertia();
 
-    // Principal moments must be strictly positive.
-    if ((d.array() <= 0).any() ) return false;
+    // Principal moments must be positive.
+    if ((d.array() < 0).any() ) return false;
 
     // Checks triangle inequality
     if (!( d[0] + d[1] >= d[2] && d[0] + d[2] >= d[1] && d[1] + d[2] >= d[0]))
@@ -296,7 +303,12 @@ class RotationalInertia {
     I_Bo_A.noalias() =
         R_AF * I_Bo_F_.template selfadjointView<Eigen::Lower>() *
             R_AF.transpose();
-    this->get_mutable_symmetric_matrix_view() = I_Bo_A;
+
+    // Notice that there is no guarantee on having a symmetric result in I_Bo_A,
+    // though it should be symmetric to round-off error. Here we are simply
+    // dropping the upper triangle elements, which could be slightly different
+    // than their lower triangle equivalents.
+    this->get_mutable_triangular_view() = I_Bo_A;
     return *this;
   }
 
@@ -315,7 +327,7 @@ class RotationalInertia {
   friend RotationalInertia<T> operator*(const T& s,
                                         const RotationalInertia<T>& I_Bo_F) {
     RotationalInertia<T> sxI;
-    sxI.get_mutable_symmetric_matrix_view() = s * I_Bo_F.get_matrix();
+    sxI.get_mutable_triangular_view() = s * I_Bo_F.get_matrix();
     return sxI;
   }
 
@@ -347,31 +359,24 @@ class RotationalInertia {
   }
 
   // Returns a constant reference to the underlying Eigen matrix. Notice that
-  // since RotationalInertia only uses the
-  // RotationalInertia::TriangularViewInUse portion of this
-  // matrix, the RotationalInertia::TriangularViewNotInUse part will be set to
-  // have NaN entries. Most users won't call this method. This method is
-  // generally used in the implementation of class methods and
-  // it's only useful to users for debugging.
+  // since RotationalInertia only uses the lower portion of this matrix, the
+  // strictly upper part will be set to have NaN entries.
+  // Most users won't call this method.
   const Matrix3<T>& get_matrix() const { return I_Bo_F_; }
 
-  /// Returns a const Eigen view expression to the symmetric part of the matrix
-  /// in use by this RotationalInertia. Most users won't call this method.
-  /// This method is generally used in the implementation of class methods and
-  /// it's only useful to users for debugging.
+  // Returns a const Eigen view expression to the symmetric part of the matrix
+  // in use by this RotationalInertia.
   const Eigen::SelfAdjointView<const Matrix3<T>, Eigen::Lower>
   get_symmetric_matrix_view() const {
     return I_Bo_F_.template selfadjointView<Eigen::Lower>();
   }
 
-  /// Returns a mutable Eigen view expression to the symmetric part of the
-  /// matrix in use by RotationalInertia. Most users won't call this method.
-  /// This method is generally used in the implementation of class methods and
-  /// it's only useful to users for debugging.
+  // Returns a mutable Eigen view expression to the symmetric part of the
+  // matrix in use by RotationalInertia.
   // Note: operator=() is not defined for Eigen::SelfAdjointView and therefore
   // we need to return a TriangularView here.
   Eigen::TriangularView<Matrix3<T>, Eigen::Lower>
-  get_mutable_symmetric_matrix_view() {
+  get_mutable_triangular_view() {
     return I_Bo_F_.template triangularView<Eigen::Lower>();
   }
 
@@ -380,8 +385,7 @@ class RotationalInertia {
   // of the inertia measures in this frame F. Users are responsible for keeping
   // track of the frame in which a particular inertia is expressed in.
   // Initially set to NaN to aid finding when by mistake we use the strictly
-  // TriangularViewNotInUse portion of the matrix. Only the TriangularViewInUse
-  // portion should be used.
+  // upper portion of the matrix. Only the lower portion should be used.
   Matrix3<T> I_Bo_F_{Matrix3<T>::Constant(std::numeric_limits<
       typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
 };
@@ -391,18 +395,7 @@ class RotationalInertia {
 template <typename T> inline
 std::ostream& operator<<(std::ostream& o,
                          const RotationalInertia<T>& I) {
-  // This allow us to set the number of decimal places to print.
-  // 0 uses default precision.
-  const std::streamsize precision = 0;
-
   int width = 0;
-  std::streamsize old_precision = 0;
-  std::ios_base::fmtflags old_flags = o.flags();
-  if (precision) {
-    old_precision = o.precision(precision);
-    o << std::fixed;
-  }
-
   // Computes largest width so that we can align columns for a prettier format.
   // Idea taken from: Eigen::internal::print_matrix() in Eigen/src/Core/IO.h
   for (int j = 0; j < I.cols(); ++j) {
@@ -425,10 +418,6 @@ std::ostream& operator<<(std::ostream& o,
       o << I(i, j);
     }
     o << "]" << std::endl;
-  }
-  if (precision) {
-    o.precision(old_precision);
-    o.flags(old_flags);
   }
   return o;
 }
