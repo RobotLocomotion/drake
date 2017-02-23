@@ -31,7 +31,7 @@ void DrakeVisualizer::set_publish_period(double period) {
   LeafSystem<double>::DeclarePublishPeriodSec(period);
 }
 
-void DrakeVisualizer::ReplayCachedSimulation() {
+void DrakeVisualizer::ReplayCachedSimulation() const {
   if (log_ != nullptr) {
     // Build piecewise polynomial
     auto times = log_->sample_times();
