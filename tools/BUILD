@@ -38,11 +38,12 @@ alias(
 # /usr/bin/gcc as well as /usr/bin/clang, and the wrapper script invokes the
 # former.
 #
-# On Linux, we support --compiler strings "clang-3.9", "gcc-4.9", and "gcc-5",
-# each of which does exactly what you would expect.  "clang-3.9" is the default
-# for convenience, because the Drake install instructions provide it on both
-# Trusty and Xenial. No wrapper script is needed for any of these compilers,
-# so the cc_toolchain rule does not provide one.
+# On Linux, we support --compiler strings "clang-3.9", "gcc-4.9",
+# "gcc-5", and "gcc-6" each of which does exactly what you would
+# expect. "clang-3.9" is the default for convenience, because the
+# Drake install instructions provide it on both Trusty and Xenial. No
+# wrapper script is needed for any of these compilers, so the
+# cc_toolchain rule does not provide one.
 cc_toolchain_suite(
     name = "default-toolchain",
     toolchains = {
@@ -50,6 +51,7 @@ cc_toolchain_suite(
         "k8|clang-3.9": "cc_toolchain_linux",
         "k8|gcc-4.9": "cc_toolchain_linux",
         "k8|gcc-5": "cc_toolchain_linux",
+        "k8|gcc-6": "cc_toolchain_linux",
     },
 )
 
@@ -161,6 +163,14 @@ config_setting(
 config_setting(
     name = "apple",
     values = {"cpu": "darwin"},
+)
+
+config_setting(
+    name = "gcc6-linux",
+    values = {
+        "compiler": "gcc-6",
+        "cpu": "k8",
+    },
 )
 
 config_setting(
