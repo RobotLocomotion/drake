@@ -13,6 +13,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_ik_planner.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/lcm/drake_lcm.h"
@@ -132,10 +133,13 @@ int DoMain() {
   RigidBodyTreed robot_tree;
   CreateTreedFromFixedModelAtPose(kRobotName, &robot_tree, kRobotBase);
 
-  unique_ptr<PiecewisePolynomialTrajectory> polynomial_trajectory =
-      SimpleCartesianWayPointPlanner(robot_tree, "iiwa_link_ee",
-                                     target_position_vector,
-                                     target_time_vector);
+  ModelInstanceInfo<double> iiwa_info =
+      world_sim_tree_builder->get_model_info_for_instance(robot_model_instance);
+  IiwaIkPlanner ik(iiwa_info.model_path,
+      "iiwa_link_ee", iiwa_info.world_offset);
+  std::unique_ptr<PiecewisePolynomialTrajectory> polynomial_trajectory =
+    ik.GenerateFirstOrderHoldTrajectoryFromCartesianWaypoints(
+        target_time_vector, target_position_vector);
 
   lcm::DrakeLcm lcm;
   // Contact parameters

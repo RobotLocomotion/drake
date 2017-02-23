@@ -9,6 +9,8 @@
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 
+#include "robotlocomotion/robot_plan_t.hpp"
+
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
@@ -16,16 +18,6 @@ namespace kuka_iiwa_arm {
 /// Verifies that @p tree matches assumptions about joint indices.
 /// Aborts if the tree isn't as expected.
 void VerifyIiwaTree(const RigidBodyTree<double>& tree);
-
-/// This method generates a simple trajectory plan for a robot using Cartesian
-/// (end effector) way points. The robot is specified by @p tree. The
-/// way-points must be supplied in the world frame.
-/// This method wraps a call to the `inverseKinPointwise` method.
-/// @see inverseKinPointwise.
-std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
-    const RigidBodyTreed& tree, const std::string& link_to_constrain,
-    const std::vector<Eigen::Vector3d>& way_point_list,
-    const std::vector<double>& time_stamps);
 
 /// Builds a vector of time window points distributed about the given time
 /// stamps. Time window positions do not overlap. The @p lower_ratio
@@ -56,6 +48,12 @@ void CreateTreedFromFixedModelAtPose(
 void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd);
+
+/// Makes a robotlocomotion::robot_plan_t message.
+robotlocomotion::robot_plan_t EncodeKeyFrames(
+    const RigidBodyTree<double>& robot, const std::vector<double>& time,
+    const std::vector<int>& info, const MatrixX<double>& keyframes);
+
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
