@@ -30,14 +30,15 @@ namespace qp_inverse_dynamics {
 // The overall input and output is a LCM message of type
 // bot_core::robot_state_t and bot_core::atlas_command_t.
 void controller_loop() {
-  const std::string kModelPath =
-      drake::GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
+  const std::string kModelFileName =
+      drake::GetDrakePath() +
+      "/examples/Valkyrie/urdf/urdf/"
       "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
 
   // Loads model.
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      kModelPath, multibody::joints::kRollPitchYaw, robot.get());
+      kModelFileName, multibody::joints::kRollPitchYaw, robot.get());
 
   systems::DiagramBuilder<double> builder;
 

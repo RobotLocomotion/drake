@@ -20,9 +20,9 @@ class QPControllerSystem : public systems::LeafSystem<double> {
 
   /**
    * Constructor for the inverse dynamics controller.
-   * @param robot Reference to a RigidBodyTree. An internal alias is saved,
-   * so the lifespan of @p robot must be longer than this object.
-   * @param dt Delta time between controls.
+   * @param robot Reference to a RigidBodyTree. Its lifespan of @p robot
+   * must be longer than this object.
+   * @param dt Control cycle period.
    */
   QPControllerSystem(const RigidBodyTree<double>& robot, double dt);
 
@@ -73,15 +73,18 @@ class QPControllerSystem : public systems::LeafSystem<double> {
  private:
   template <typename ValueType>
   ValueType& get_mutable_value(systems::State<double>* state, int index) const {
+    DRAKE_DEMAND(state);
     return state->get_mutable_abstract_state()
         ->get_mutable_abstract_state(index)
         .GetMutableValue<ValueType>();
   }
 
   const RigidBodyTree<double>& robot_;
-  const double kControlDt;
-  const int kAbsStateIdxQpOutput;
-  const int kAbsStateIdxDebug;
+  const double control_dt_{};
+  // Indices into AbstractState. These are updated by DoCalcUnrestrictedUpdate,
+  // and DoCalcOutput copies them to the output ports.
+  const int kAbstractStateIndexQpOutput{0};
+  const int kAbstractStateIndexDebug{1};
 
   // TODO(siyuan.feng): This is a bad temporary hack to the const constraint for
   // CalcOutput. It is because qp controller needs to allocate mutable workspace
