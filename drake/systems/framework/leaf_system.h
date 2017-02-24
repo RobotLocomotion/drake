@@ -132,11 +132,11 @@ class LeafSystem : public System<T> {
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
       if (descriptor.get_data_type() == kVectorValued) {
-        output->get_mutable_ports()->emplace_back(
-            new OutputPort(AllocateOutputVector(descriptor)));
+        output->add_port(
+            std::make_unique<OutputPort>(AllocateOutputVector(descriptor)));
       } else {
-        output->get_mutable_ports()->emplace_back(
-            new OutputPort(AllocateOutputAbstract(descriptor)));
+        output->add_port(
+            std::make_unique<OutputPort>(AllocateOutputAbstract(descriptor)));
       }
     }
     return std::unique_ptr<SystemOutput<T>>(output.release());

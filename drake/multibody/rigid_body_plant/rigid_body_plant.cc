@@ -292,7 +292,7 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
   {
     auto data = make_unique<BasicVector<T>>(get_num_states());
     auto port = make_unique<OutputPort>(move(data));
-    output->get_mutable_ports()->push_back(move(port));
+    output->add_port(move(port));
   }
 
   // Allocates an output port for each model instance's state vector in the
@@ -304,7 +304,7 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
     }
     auto data = make_unique<BasicVector<T>>(get_num_states(instance_id));
     auto port = make_unique<OutputPort>(move(data));
-    output->get_mutable_ports()->push_back(move(port));
+    output->add_port(move(port));
   }
 
   // Allocates an output port for the kinematics results.
