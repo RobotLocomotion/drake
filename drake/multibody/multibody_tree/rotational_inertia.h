@@ -88,7 +88,7 @@ class RotationalInertia {
   /// Throws an exception if the resulting inertia is invalid according to
   /// CouldBePhysicallyValid(). For a diagonal rotational inertia the necessary
   /// conditions for a valid inertia reduce to:
-  /// - Neither Ixx, Iyy nor Izz is NaN.
+  /// - Neither Ixx, Iyy, nor Izz are NaN.
   /// - Ixx, Iyy and Izz are all non-negative.
   /// - Ixx, Iyy and Izz must satisfy the triangle inequality:
   ///   - `Ixx + Iyy >= Izz`
