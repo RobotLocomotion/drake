@@ -196,18 +196,18 @@ robotlocomotion::robot_plan_t EncodeKeyFrames(
   DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time.size()));
   DRAKE_DEMAND(keyframes.rows() == robot.get_num_positions());
 
-  const int kNumTimesteps = keyframes.cols();
+  const int num_time_steps = keyframes.cols();
 
   robotlocomotion::robot_plan_t plan{};
   plan.utime = 0;  // I (sam.creasey) don't think this is used?
   plan.robot_name = "iiwa";  // Arbitrary, probably ignored
-  plan.num_states = kNumTimesteps;
+  plan.num_states = num_time_steps;
   const bot_core::robot_state_t default_robot_state{};
-  plan.plan.resize(kNumTimesteps, default_robot_state);
-  plan.plan_info.resize(kNumTimesteps, 0);
+  plan.plan.resize(num_time_steps, default_robot_state);
+  plan.plan_info.resize(num_time_steps, 0);
   /// Encode the q_sol returned for each timestep into the vector of
   /// robot states.
-  for (int i = 0; i < kNumTimesteps; i++) {
+  for (int i = 0; i < num_time_steps; i++) {
     bot_core::robot_state_t& step = plan.plan[i];
     step.utime = time[i] * 1e6;
     step.num_joints = keyframes.rows();
