@@ -206,7 +206,7 @@ class UnitInertia : public RotationalInertia<T> {
     const T Iz = r * r / T(2);
     const T Ix = (T(3) * r * r + L * L) / T(12) + L * L / T(4);
     return UnitInertia(Ix, Ix, Iz);
-  }
+  } 
   // End of Doxygen group
   //@}
 

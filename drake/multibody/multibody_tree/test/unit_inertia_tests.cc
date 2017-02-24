@@ -109,6 +109,26 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
   EXPECT_TRUE(G_Ro_F.CouldBePhysicallyValid());
 }
 
+// This overload gets chosen if the scalar multiply would would compile.
+template <typename T, typename = decltype(1.*T())>
+bool has_scalar_mult_helper(int) { return true; }
+// This overload gets chosen if the above can't compile.
+template <typename T>
+bool has_scalar_mult_helper(...) { return false; }
+
+// This method returns true at runtime if type T has a scalar multiply.
+template <typename T>
+bool has_scalar_multiply() { return has_scalar_mult_helper<T>(1); }
+
+// Tests that multiplication by a scalar is disallowed.
+GTEST_TEST(RotationalInertia, MultiplicationWithAScalar) {
+  // While we can multiply a RotationalInertia by a scalar....
+  EXPECT_TRUE(has_scalar_multiply<RotationalInertia<double>>());
+
+  // ... we cannot perform the same operation on a UnitInertia.
+  EXPECT_FALSE(has_scalar_multiply<UnitInertia<double>>());
+}
+
 // Tests the static method to obtain the unit inertia of a point mass.
 GTEST_TEST(UnitInertia, PointMass) {
   Vector3d v(1, 2, 4.2);
