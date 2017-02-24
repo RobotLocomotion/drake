@@ -20,6 +20,8 @@ namespace multibody {
 template <typename T>
 class SpatialVelocity {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity)
+
   /// Sizes for spatial quantities and its components in three dimensions.
   enum {
     kSpatialVelocitySize = 6,
@@ -28,8 +30,6 @@ class SpatialVelocity {
   };
   /// The type of the underlying in-memory representation using an Eigen vector.
   typedef Vector6<T> CoeffsEigenType;
-
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity)
 
   /// Default constructor. In Release builds the elements of the newly
   /// constructed spatial velocity are left uninitialized resulting in a zero
@@ -42,7 +42,8 @@ class SpatialVelocity {
 
   /// SpatialVelocity constructor from an angular velocity @p w and a linear
   /// velocity @p v.
-  SpatialVelocity(const Vector3<T>& w, const Vector3<T>& v) {
+  SpatialVelocity(const Eigen::Ref<const Vector3<T>>& w,
+                  const Eigen::Ref<const Vector3<T>>& v) {
     V_.template head<3>() = w;
     V_.template tail<3>() = v;
   }
@@ -60,7 +61,7 @@ class SpatialVelocity {
   int size() const { return kSpatialVelocitySize; }
 
   /// Const access to the underlying Eigen vector.
-  const CoeffsEigenType& get_coeffs() const { return V_;}
+  const CoeffsEigenType& get_Eigen_vector() const { return V_;}
 
   /// Const access to the i-th component of this spatial velocity.
   /// Bounds are only checked in Debug builds for a zero overhead implementation
@@ -80,35 +81,42 @@ class SpatialVelocity {
 
   /// Const access to the angular component of this spatial velocity.
   const Vector3<T>& angular() const {
+    // We are counting on a particular representation for an Eigen Vector3<T>:
+    // it must be represented exactly as 3 T's in an array with no metadata.
     return *reinterpret_cast<const Vector3<T>*>(V_.data());
   }
 
   /// Mutable access to the angular component of this spatial velocity.
   Vector3<T>& angular() {
+    // We are counting on a particular representation for an Eigen Vector3<T>:
+    // it must be represented exactly as 3 T's in an array with no metadata.
     return *reinterpret_cast<Vector3<T>*>(V_.data());
   }
 
   /// Const access to the linear component of this spatial velocity.
   const Vector3<T>& linear() const {
+    // We are counting on a particular representation for an Eigen Vector3<T>:
+    // it must be represented exactly as 3 T's in an array with no metadata.
     return *reinterpret_cast<const Vector3<T>*>(
         V_.data() + kRotationSize);
   }
 
   /// Mutable access to the linear component of this spatial velocity.
   Vector3<T>& linear() {
+    // We are counting on a particular representation for an Eigen Vector3<T>:
+    // it must be represented exactly as 3 T's in an array with no metadata.
     return *reinterpret_cast<Vector3<T>*>(
         V_.data() + kRotationSize);
   }
 
-  /// Performs the dot product in ℝ⁶ of `this` spatial velocity with @p V.
-  T dot(const SpatialVelocity& V) const {
-    return V_.dot(V.V_);
-  }
-
   /// Returns a (const) bare pointer to the underlying data.
+  /// It is guaranteed that there will be six (6) T's densely packed at data[0],
+  /// data[1], etc.
   const T* data() const { return V_.data(); }
 
   /// Returns a (mutable) bare pointer to the underlying data.
+  /// It is guaranteed that there will be six (6) T's densely packed at data[0],
+  /// data[1], etc.
   T* mutable_data() { return V_.data(); }
 
   /// @returns `true` if `other` is within a precision given by @p tolerance.
@@ -132,63 +140,51 @@ class SpatialVelocity {
   /// Given `this` spatial velocity `V_AB_E` of a frame `B` measured in a frame
   /// `A` and expressed in a frame `E`, this method computes the spatial
   /// velocity of a frame `Q` rigidly moving with `B` but offset by a vector
-  /// `r_BQ` from the orgin of frame `B` to the origin of frame Q.
+  /// `p_BQ` from the orgin of frame `B` to the origin of frame Q.
   ///
   /// The operation performed, in vector free form, is: <pre>
   ///   w_AQ = w_AB,  i.e. the angular velocity of frame B and Q is the same.
-  ///   v_AQ = v_AB + w_AB x r_BQ
+  ///   v_AQ = v_AB + w_AB x p_BQ
   /// </pre>
   ///
   /// All quantities above must be expressed in a common frame `E` i.e: <pre>
   ///   w_AQ_E = w_AB_E
-  ///   v_AQ_E = v_AB_E + w_AB_E x r_BQ_E
+  ///   v_AQ_E = v_AB_E + w_AB_E x p_BQ_E
   /// </pre>
   ///
   /// This operation is performed in-place modifying the original object.
   ///
-  /// @param[in] r_BQ_E Shift vector from `Bo` to `Qo` and expressed in
+  /// @param[in] p_BQ_E Shift vector from `Bo` to `Qo` and expressed in
   ///                   frame `E`.
   /// @retval V_AQ_E The spatial velocity of frame `Q` with respect to `A` and
   ///                expressed in frame `A`.
   ///
   /// @see Shift() to compute the shifted spatial velocity without modifying
   ///      this original object.
-  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& r_BQ_E) {
-    /* The angular velocity remains the same. */
-    /* For the linear velocity we have: v_AQ = v_AB + w_AB.cross(r_BQ). */
-    linear() += angular().cross(r_BQ_E);
+  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_BQ_E) {
+    linear() += angular().cross(p_BQ_E);
     return *this;
   }
 
   /// Given `this` spatial velocity `V_AB_E` of a frame `B` measured in a frame
   /// `A` and expressed in a frame `E`, this method computes the spatial
   /// velocity of a frame `Q` rigidly moving with `B` but offset by a vector
-  /// `r_BQ` from the orgin of frame `B` to the origin of frame Q.
+  /// `p_BQ` from the orgin of frame `B` to the origin of frame Q.
   ///
-  /// The operation performed, in vector free form, is: <pre>
-  ///   w_AQ = w_AB,  i.e. the angular velocity of frame B and Q is the same.
-  ///   v_AQ = v_AB + w_AB x r_BQ
-  /// </pre>
-  ///
-  /// All quantities above must be expressed in a common frame `E` i.e: <pre>
-  ///   w_AQ_E = w_AB_E
-  ///   v_AQ_E = v_AB_E + w_AB_E x r_BQ_E
-  /// </pre>
-  ///
-  /// @param[in] r_BQ_E Shift vector from `Bo` to `Qo` and expressed in
+  /// @param[in] p_BQ_E Shift vector from `Bo` to `Qo` and expressed in
   ///                   frame `E`.
   /// @retval V_AQ_E The spatial velocity of frame `Q` with respect to `A` and
   ///                expressed in frame `A`.
   ///
   /// @see ShiftInPlace() to compute the shifted spatial velocity in-place
   ///      modifying the original object.
-  SpatialVelocity<T> Shift(const Vector3<T>& r_BQ_E) const {
-    return SpatialVelocity<T>(*this).ShiftInPlace(r_BQ_E);
+  SpatialVelocity<T> Shift(const Vector3<T>& p_BQ_E) const {
+    return SpatialVelocity<T>(*this).ShiftInPlace(p_BQ_E);
   }
 
   /// Multiplication of a spatial velocity `V` from the left by a scalar `s`.
   friend SpatialVelocity<T> operator*(const T& s, const SpatialVelocity<T>& V) {
-    return SpatialVelocity<T>(s * V.get_coeffs());
+    return SpatialVelocity<T>(s * V.get_Eigen_vector());
   }
 
   /// Multiplication of a spatial velocity `V` from the left by a scalar `s`.
@@ -200,8 +196,9 @@ class SpatialVelocity {
   CoeffsEigenType V_;
 };
 
-/// Insertion operator to write SpatialVelocitys into a `std::ostream`.
-/// Especially useful for debugging.
+/// Stream insertion operator to write SpatialVelocity objects into a
+/// `std::ostream`. Especially useful for debugging.
+/// @relates SpatialVelocity.
 template <typename T> inline
 std::ostream& operator<<(std::ostream& o, const SpatialVelocity<T>& V) {
   o << "[" << V[0];
