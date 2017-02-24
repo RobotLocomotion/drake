@@ -147,6 +147,13 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
     CustomVector() : BasicVector<double>(kDim) {}
     void SetName(int index, std::string name) { names_.at(index) = name; }
     std::string GetName(int index) const { return names_.at(index); }
+   protected:
+    CustomVector* DoClone() const override {
+      auto result = new CustomVector;
+      result->set_value(this->get_value());
+      result->names_ = this->names_;
+      return result;
+    }
    private:
     std::array<std::string, kDim> names_;
   };
