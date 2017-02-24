@@ -23,6 +23,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
+#include "drake/systems/framework/value_checker.h"
 
 namespace drake {
 namespace systems {
@@ -68,9 +69,23 @@ class LeafSystem : public System<T> {
     context->set_parameters(this->AllocateParameters());
 
     // Enforce some requirements on the fully-assembled Context.
-    // -- The ContinuousState must be contiguous.
-    VectorBase<T>* xc_vec = context->get_mutable_continuous_state_vector();
-    DRAKE_DEMAND(dynamic_cast<BasicVector<T>*>(xc_vec) != nullptr);
+    // -- The continuous state must be contiguous, i.e., a valid BasicVector.
+    detail::CheckBasicVectorInvariants(
+        dynamic_cast<const BasicVector<T>*>(
+            &context->get_continuous_state_vector()));
+    // -- The discrete state must all be valid BasicVectors.
+    for (const BasicVector<T>* group :
+             context->get_state().get_discrete_state()->get_data()) {
+      detail::CheckBasicVectorInvariants(group);
+    }
+    // -- The numeric parameters must all be valid BasicVectors.
+    const int num_numeric_parameters = context->num_numeric_parameters();
+    for (int i = 0; i < num_numeric_parameters; ++i) {
+      const BasicVector<T>* const group = context->get_numeric_parameter(i);
+      detail::CheckBasicVectorInvariants(group);
+    }
+    // Note that the outputs are not part of the Context, but instead are
+    // checked by LeafSystemOutput::add_port.
 
     return std::unique_ptr<Context<T>>(context.release());
   }
