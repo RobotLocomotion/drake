@@ -135,7 +135,9 @@ double ArcLane::heading_dot_of_p(const double p) const {
 }
 
 
-api::LanePosition ArcLane::DoToLanePosition(const api::GeoPosition&) const {
+api::LanePosition ArcLane::DoToLanePosition(const api::GeoPosition&,
+                                            api::GeoPosition*,
+                                            double*) const {
   DRAKE_ABORT();  // TODO(maddog@tri.global) Implement me.
 }
 

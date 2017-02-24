@@ -149,8 +149,9 @@ class Lane final : public api::Lane {
   api::Rotation DoGetOrientation(const api::LanePosition& lane_pos) const
       final;
 
-  api::LanePosition DoToLanePosition(const api::GeoPosition& geo_pos) const
-      final;
+  api::LanePosition DoToLanePosition(const api::GeoPosition& geo_pos,
+                                     api::GeoPosition* nearest_point,
+                                     double* distance) const final;
 
   const Segment* segment_{};  // The segment to which this lane belongs.
   const api::LaneId id_;

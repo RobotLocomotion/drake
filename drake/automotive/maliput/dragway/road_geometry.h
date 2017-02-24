@@ -68,8 +68,10 @@ class RoadGeometry final : public api::RoadGeometry {
   const api::BranchPoint* do_branch_point(int index) const final;
 
   api::RoadPosition DoToRoadPosition(
-      const api::GeoPosition& geo_pos,
-      const api::RoadPosition& hint) const final;
+      const api::GeoPosition& geo_position,
+      const api::RoadPosition* hint,
+      api::GeoPosition* nearest_point,
+      double* distance) const final;
 
   double do_linear_tolerance() const final { return linear_tolerance_; }
 
