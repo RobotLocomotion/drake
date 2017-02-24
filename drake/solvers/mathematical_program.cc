@@ -524,20 +524,15 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     double constant_term = 0;
     int num_vi_variables = DecomposeLinearExpression(v(i), map_var_to_index,
                                                      A.row(i), &constant_term);
-    if (num_vi_variables == 0) {
-      // v(i) is just a constant.
-      if (lb(i) <= constant_term && constant_term <= ub(i)) {
-        throw SymbolicError(v(i), lb(i), ub(i),
-                            "trivial but called with AddLinearConstraint");
-      } else {
-        throw SymbolicError(
-            v(i), lb(i), ub(i),
-            "unsatisfiable but called with AddLinearConstraint");
-      }
+    if (num_vi_variables == 0 && !(lb(i) <= constant_term && constant_term <= ub(i))) {
+      // Unsatisfiable constraint with no variables, such as 1 <= 0 <= 2
+      throw SymbolicError(v(i), lb(i), ub(i),
+          "unsatisfiable but called with AddLinearConstraint");
+
     } else {
       new_lb(i) = lb(i) - constant_term;
       new_ub(i) = ub(i) - constant_term;
-      if (num_vi_variables > 1) {
+      if (num_vi_variables != 1) {
         is_v_bounding_box = false;
       }
     }
@@ -592,7 +587,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
     return AddLinearConstraint(e2 - e1, 0.0,
-                                 numeric_limits<double>::infinity());
+                               numeric_limits<double>::infinity());
   }
   ostringstream oss;
   oss << "MathematicalProgram::AddLinearConstraint is called with a formula "

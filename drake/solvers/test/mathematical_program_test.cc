@@ -744,6 +744,30 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic8) {
   EXPECT_THROW(prog.AddLinearConstraint(x(0) - x(0), 1, 2), std::runtime_error);
 }
 
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic9) {
+  // Test trivial constraint with no variables, such as 1 <= 2 <= 3
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  prog.AddLinearConstraint(Expression(2), 1, 3);
+  EXPECT_EQ(prog.linear_constraints().size(), 1);
+  auto binding = prog.linear_constraints().back();
+  EXPECT_EQ(binding.constraint()->A().rows(), 1);
+  EXPECT_EQ(binding.constraint()->A().cols(), 0);
+
+  Vector2<Expression> expr;
+  expr << 2, x(0);
+  prog.AddLinearConstraint(expr, Vector2d(1, 2), Vector2d(3, 4));
+  EXPECT_EQ(prog.linear_constraints().size(), 2);
+  binding = prog.linear_constraints().back();
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->A(), Eigen::Vector2d(0, 1)));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+                              Eigen::Vector2d(-1, 2)));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                              Eigen::Vector2d(1, 4)));
+}
+
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
