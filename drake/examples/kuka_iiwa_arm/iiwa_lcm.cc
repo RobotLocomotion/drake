@@ -89,7 +89,7 @@ IiwaStatusSender::AllocateOutput(
   msg.joint_torque_commanded.resize(msg.num_joints, 0);
   msg.joint_torque_external.resize(msg.num_joints, 0);
 
-  output->get_mutable_ports()->emplace_back(
+  output->add_port(
       std::make_unique<systems::OutputPort>(
           std::make_unique<systems::Value<lcmt_iiwa_status>>(msg)));
   return std::unique_ptr<SystemOutput<double>>(output.release());
