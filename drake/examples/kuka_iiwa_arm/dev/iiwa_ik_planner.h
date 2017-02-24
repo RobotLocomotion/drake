@@ -5,9 +5,10 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_ik.h"
 
 namespace drake {
 namespace examples {
@@ -19,18 +20,7 @@ namespace kuka_iiwa_arm {
  */
 class IiwaIkPlanner {
  public:
-  /**
-   * Struct holding results from the IK planner.
-   */
-  struct IkResult {
-    /// Time steps.
-    std::vector<double> time;
-    /// Solver information indicating success or failure mode.
-    std::vector<int> info;
-    /// Resulting generalized position per time step. N by T, where N is the
-    /// size of the generalized position, and T is the size of time steps.
-    MatrixX<double> q;
-  };
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaIkPlanner);
 
   /**
    * Cartesian waypoint. Input to the IK solver.
@@ -61,10 +51,11 @@ class IiwaIkPlanner {
   };
 
   /**
-   * Returns a linear PiecewisePolynomialTrajectory from @p ik_res.
+   * Returns a linear PiecewisePolynomialTrajectory from @p times and @p ik_res.
    */
   static std::unique_ptr<PiecewisePolynomialTrajectory>
-  GenerateFirstOrderHoldTrajectory(const IkResult& ik_res);
+  GenerateFirstOrderHoldTrajectory(const std::vector<double>& times,
+                                   const IKResults& ik_res);
 
   /**
    * Constructor. Instantiates an internal RigidBodyTree from @p model_path.
@@ -129,26 +120,15 @@ class IiwaIkPlanner {
    */
   bool PlanSequentialTrajectory(
       const std::vector<IkCartesianWaypoint>& waypoints,
-      const VectorX<double>& q_current, IkResult* ik_res);
-
-  /**
-   * Returns a linear PiecewisePolynomialTrajectory from the IK solutions
-   * that goes through @p way_point_list at @p time_stamps. Only the position
-   * of the end effector is constrained, and the tolerance is specified by
-   * @p position_tol for all the waypoints.
-   */
-  std::unique_ptr<PiecewisePolynomialTrajectory>
-  GenerateFirstOrderHoldTrajectoryFromCartesianWaypoints(
-      const std::vector<double>& time_stamps,
-      const std::vector<Vector3<double>>& way_point_list,
-      const Vector3<double>& position_tol = Vector3<double>(0.005, 0.005,
-                                                            0.005));
+      const VectorX<double>& q_current, IKResults* ik_res);
 
  private:
   bool SolveIk(const IkCartesianWaypoint& waypoint, const VectorX<double>& q0,
                const VectorX<double>& q_nom,
                const Vector3<double>& position_tol, double rot_tolerance,
-               VectorX<double>* ik_res);
+               VectorX<double>* ik_res,
+               std::vector<int>* info,
+               std::vector<std::string>* infeasible_constraints);
 
   std::default_random_engine rand_generator_;
   std::unique_ptr<RigidBodyTree<double>> robot_{nullptr};

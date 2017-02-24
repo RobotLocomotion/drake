@@ -37,8 +37,8 @@ GTEST_TEST(testInverseKinematics, SolveIkFromFk) {
   KinematicsCache<double> cache = iiwa->CreateKinematicsCache();
   const RigidBody<double>* end_effector = iiwa->FindBody(kEndEffectorLinkName);
 
+  IKResults ik_res;
   IiwaIkPlanner ik_planner(kModelPath, kEndEffectorLinkName, nullptr);
-  IiwaIkPlanner::IkResult ik_res;
   IiwaIkPlanner::IkCartesianWaypoint wp;
   wp.time = 0;
   wp.pos_tol = Vector3<double>(0.001, 0.001, 0.001);
@@ -68,7 +68,7 @@ GTEST_TEST(testInverseKinematics, SolveIkFromFk) {
         ik_planner.PlanSequentialTrajectory(waypoints, kQcurrent, &ik_res);
     EXPECT_TRUE(ret);
 
-    cache.initialize(ik_res.q.col(1));
+    cache.initialize(ik_res.q_sol[1]);
     iiwa->doKinematics(cache);
     Isometry3<double> ik_pose =
         iiwa->CalcBodyPoseInWorldFrame(cache, *end_effector);

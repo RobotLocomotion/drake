@@ -1,7 +1,5 @@
 #include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
 
-#include <iostream>
-#include <list>
 #include <memory>
 
 #include "drake/common/text_logging.h"
@@ -43,65 +41,38 @@ IiwaIkPlanner::IiwaIkPlanner(const std::string& model_path,
 }
 
 std::unique_ptr<PiecewisePolynomialTrajectory>
-IiwaIkPlanner::GenerateFirstOrderHoldTrajectory(const IkResult& ik_res) {
-  std::vector<MatrixX<double>> q(ik_res.q.cols());
-  for (int i = 0; i < ik_res.q.cols(); ++i) {
-    q[i] = ik_res.q.col(i);
+IiwaIkPlanner::GenerateFirstOrderHoldTrajectory(
+    const std::vector<double>& times, const IKResults& ik_res) {
+  DRAKE_DEMAND(times.size() == ik_res.q_sol.size());
+  std::vector<MatrixX<double>> q(ik_res.q_sol.size());
+  for (size_t i = 0; i < ik_res.q_sol.size(); ++i) {
+    q[i] = ik_res.q_sol[i];
   }
   return std::make_unique<PiecewisePolynomialTrajectory>(
-      PiecewisePolynomial<double>::FirstOrderHold(ik_res.time, q));
-}
-
-std::unique_ptr<PiecewisePolynomialTrajectory>
-IiwaIkPlanner::GenerateFirstOrderHoldTrajectoryFromCartesianWaypoints(
-    const std::vector<double>& time_stamps,
-    const std::vector<Vector3<double>>& way_point_list,
-    const Vector3<double>& position_tol) {
-  DRAKE_DEMAND(way_point_list.size() == time_stamps.size());
-  std::vector<IkCartesianWaypoint> waypoints(time_stamps.size());
-  for (int i = 0; i < static_cast<int>(time_stamps.size()); ++i) {
-    waypoints[i].time = time_stamps[i];
-    waypoints[i].pose.translation() = way_point_list[i];
-    waypoints[i].pos_tol = position_tol;
-    waypoints[i].rot_tol = 1;
-    waypoints[i].constrain_orientation = false;
-  }
-
-  IkResult ik_res;
-  if (PlanSequentialTrajectory(waypoints, robot_->getZeroConfiguration(),
-                               &ik_res)) {
-    return GenerateFirstOrderHoldTrajectory(ik_res);
-  } else {
-    return nullptr;
-  }
+      PiecewisePolynomial<double>::FirstOrderHold(times, q));
 }
 
 bool IiwaIkPlanner::PlanSequentialTrajectory(
     const std::vector<IkCartesianWaypoint>& waypoints,
-    const VectorX<double>& q_current, IkResult* ik_res) {
+    const VectorX<double>& q_current, IKResults* ik_res) {
   DRAKE_DEMAND(ik_res);
-  int num_dof = robot_->get_num_positions();
   int num_steps = static_cast<int>(waypoints.size());
 
   VectorX<double> q_prev = q_current;
   VectorX<double> q0 = q_current;
   VectorX<double> q_sol = q_current;
 
-  ik_res->time.resize(num_steps + 1);
+  ik_res->infeasible_constraints.clear();
   ik_res->info.resize(num_steps + 1);
-  ik_res->q.resize(num_dof, num_steps + 1);
-  ik_res->time[0] = 0;
+  ik_res->q_sol.resize(num_steps + 1);
   ik_res->info[0] = 1;
-  ik_res->q.col(0) = q_current;
+  ik_res->q_sol[0] = q_current;
 
   int step_ctr = 0;
   int relaxed_ctr = 0;
   int random_ctr = 0;
 
-  enum class RelaxMode {
-    kRelaxPosTol = 0,
-    kRelaxRotTol = 1
-  };
+  enum class RelaxMode { kRelaxPosTol = 0, kRelaxRotTol = 1 };
 
   // These numbers are arbitrarily picked by siyuan.
   const int kMaxNumInitialGuess = 50;
@@ -126,7 +97,10 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
       if (!waypoint.constrain_orientation)
         DRAKE_DEMAND(mode == RelaxMode::kRelaxPosTol);
 
-      bool res = SolveIk(waypoint, q0, q_prev, pos_tol, rot_tol, &q_sol);
+      std::vector<int> info;
+      std::vector<std::string> infeasible_constraints;
+      bool res = SolveIk(waypoint, q0, q_prev, pos_tol, rot_tol, &q_sol, &info,
+                         &infeasible_constraints);
 
       if (res) {
         // Breaks if the current tolerance is below given threshold.
@@ -166,7 +140,7 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
         if (!waypoint.constrain_orientation) rot_tol = 0;
         mode = RelaxMode::kRelaxPosTol;
         drake::log()->warn("IK FAILED at max constraint relaxing iter: " +
-                            std::to_string(relaxed_ctr));
+                           std::to_string(relaxed_ctr));
         relaxed_ctr = 0;
         random_ctr++;
       }
@@ -175,6 +149,10 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
       if (random_ctr > kMaxNumInitialGuess) {
         drake::log()->error("IK FAILED at max random starts: " +
                             std::to_string(random_ctr));
+        // Returns information about failure.
+        ik_res->info[step_ctr + 1] = info[0];
+        ik_res->q_sol[step_ctr + 1] = q_sol;
+        ik_res->infeasible_constraints = infeasible_constraints;
         return false;
       }
     }
@@ -183,10 +161,8 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
     q_prev = q_sol;
     q0 = q_sol;
 
-    ik_res->time[step_ctr + 1] = waypoint.time;
     ik_res->info[step_ctr + 1] = 1;
-
-    ik_res->q.col(step_ctr + 1) = q_sol;
+    ik_res->q_sol[step_ctr + 1] = q_sol;
     step_ctr++;
   }
 
@@ -197,11 +173,14 @@ bool IiwaIkPlanner::SolveIk(const IkCartesianWaypoint& waypoint,
                             const VectorX<double>& q0,
                             const VectorX<double>& q_nom,
                             const Vector3<double>& pos_tol, double rot_tol,
-                            VectorX<double>* q_res) {
+                            VectorX<double>* q_res, std::vector<int>* info,
+                            std::vector<std::string>* infeasible_constraints) {
   DRAKE_DEMAND(q_res);
+  DRAKE_DEMAND(info);
+  DRAKE_DEMAND(infeasible_constraints);
+
+  info->resize(1);
   std::vector<RigidBodyConstraint*> constraint_array;
-  std::vector<int> info(1);
-  std::vector<std::string> infeasible_constraint;
   IKoptions ikoptions(robot_.get());
   ikoptions.setDebug(true);
 
@@ -224,10 +203,10 @@ bool IiwaIkPlanner::SolveIk(const IkCartesianWaypoint& waypoint,
   }
 
   inverseKin(robot_.get(), q0, q_nom, constraint_array.size(),
-             constraint_array.data(), ikoptions, q_res, info.data(),
-             &infeasible_constraint);
+             constraint_array.data(), ikoptions, q_res, info->data(),
+             infeasible_constraints);
 
-  if (info[0] != 1) {
+  if ((*info)[0] != 1) {
     return false;
   }
 
