@@ -107,18 +107,18 @@ class Box : public Geometry {
  public:
   explicit Box(const Eigen::Vector3d& size);
   virtual ~Box() {}
-  virtual Box* clone() const;
+  Box* clone() const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  void getPoints(Eigen::Matrix3Xd& points) const override;
   bool hasFaces() const override {
     return true;
   }
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getFaces(TrianglesVector* faces) const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
+  void getTerrainContactPoints(Eigen::Matrix3Xd& points) const override;
 
   /**
    * A toString method for this class.
@@ -182,16 +182,16 @@ class Mesh : public Geometry {
   with BotVisualizer. **/
   Mesh(const std::string& uri, const std::string& resolved_filename);
   virtual ~Mesh() {}
-  virtual Mesh* clone() const;
+  Mesh* clone() const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  void getPoints(Eigen::Matrix3Xd& points) const override;
   bool hasFaces() const override {
     return true;
   }
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getFaces(TrianglesVector* faces) const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const override;
 
   /**
    * A toString method for this class.
