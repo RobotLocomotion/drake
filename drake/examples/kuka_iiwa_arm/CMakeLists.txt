@@ -3,10 +3,11 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeKukaIiwaArmCommon SOURCE_FILES
       iiwa_common.cc iiwa_lcm.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
-    drakeIK
-    drakeLcmSystem
-    drakeRBM
-    drakeMultibodyParsers)
+      drakeIK
+      drakeLcmSystem
+      drakeRBM
+      drakeMultibodyParsers
+      robotlocomotion-lcmtypes-cpp)
   drake_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
       iiwa_common.h iiwa_lcm.h)
@@ -32,6 +33,7 @@ if(lcm_FOUND)
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
   target_link_libraries(kuka_ik_demo
     drakeIK
+    drakeKukaIiwaArmCommon
     drakeMultibodyParsers
     drakeRBM
     robotlocomotion-lcmtypes-cpp
@@ -76,6 +78,7 @@ endif()
 
 add_subdirectory(controlled_kuka)
 add_subdirectory(iiwa_world)
+add_subdirectory(dev)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
