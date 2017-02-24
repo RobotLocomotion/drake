@@ -524,7 +524,8 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     double constant_term = 0;
     int num_vi_variables = DecomposeLinearExpression(v(i), map_var_to_index,
                                                      A.row(i), &constant_term);
-    if (num_vi_variables == 0 && !(lb(i) <= constant_term && constant_term <= ub(i))) {
+    if (num_vi_variables == 0 &&
+        !(lb(i) <= constant_term && constant_term <= ub(i))) {
       // Unsatisfiable constraint with no variables, such as 1 <= 0 <= 2
       throw SymbolicError(v(i), lb(i), ub(i),
           "unsatisfiable but called with AddLinearConstraint");
