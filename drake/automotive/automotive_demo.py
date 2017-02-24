@@ -197,6 +197,9 @@ def main():
     parser.add_argument("--visualizer", action='store_true',
                         dest='launch_visualizer',
                         default=True, help="launch drake-visualizer (default)")
+    parser.add_argument("--no_steering_command_gui", action='store_false',
+                        dest='launch_steering_gui', default=True,
+                        help="don't launch steering_command_driver")
     parser.add_argument("--no-visualizer", action='store_false',
                         dest='launch_visualizer',
                         default=True, help="don't launch drake-visualizer")
@@ -234,7 +237,9 @@ def main():
                 wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')
 
         the_launcher.launch([demo_path] + tail)
-        the_launcher.launch([steering_command_driver_path])
+
+        if args.launch_steering_gui:
+            the_launcher.launch([steering_command_driver_path])
 
         the_launcher.wait(args.duration)
 
