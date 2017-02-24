@@ -12,6 +12,7 @@ drake_cc_library(
     hdrs = ["pose_aggregator.h"],
     deps = [
         ":pose_bundle",
+        ":pose_vector",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/multibody:rigid_body_tree",
