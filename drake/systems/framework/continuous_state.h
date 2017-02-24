@@ -73,28 +73,6 @@ class ContinuousState {
         new Subvector<T>(state_.get(), num_q + num_v, num_z));
   }
 
-  /// Constructs a continuous state that exposes second-order structure, with
-  /// no particular constraints on the layout.
-  ///
-  /// @param state The entire continuous state.
-  /// @param q The subset of state that is generalized position.
-  /// @param v The subset of state that is generalized velocity.
-  /// @param z The subset of state that is neither position nor velocity.
-  ContinuousState(std::unique_ptr<VectorBase<T>> state,
-                  std::unique_ptr<VectorBase<T>> q,
-                  std::unique_ptr<VectorBase<T>> v,
-                  std::unique_ptr<VectorBase<T>> z)
-      : state_(std::move(state)),
-        generalized_position_(std::move(q)),
-        generalized_velocity_(std::move(v)),
-        misc_continuous_state_(std::move(z)) {
-    const int num_q = generalized_position_->size();
-    const int num_v = generalized_velocity_->size();
-    const int n = num_q + num_v + misc_continuous_state_->size();
-    DRAKE_ASSERT(state_->size() == n);
-    DRAKE_ASSERT(num_v <= num_q);
-  }
-
   /// Constructs a zero-length ContinuousState.
   ContinuousState()
       : ContinuousState(std::make_unique<BasicVector<T>>(0)) {}
@@ -171,6 +149,31 @@ class ContinuousState {
 
   /// Returns a copy of the entire continuous state vector into an Eigen vector.
   VectorX<T> CopyToVector() const { return this->get_vector().CopyToVector(); }
+
+ protected:
+  /// Constructs a continuous state that exposes second-order structure, with
+  /// no particular constraints on the layout.
+  ///
+  /// @pre The q, v, z are all views into the same storage as @p state.
+  ///
+  /// @param state The entire continuous state.
+  /// @param q The subset of state that is generalized position.
+  /// @param v The subset of state that is generalized velocity.
+  /// @param z The subset of state that is neither position nor velocity.
+  ContinuousState(std::unique_ptr<VectorBase<T>> state,
+                  std::unique_ptr<VectorBase<T>> q,
+                  std::unique_ptr<VectorBase<T>> v,
+                  std::unique_ptr<VectorBase<T>> z)
+      : state_(std::move(state)),
+        generalized_position_(std::move(q)),
+        generalized_velocity_(std::move(v)),
+        misc_continuous_state_(std::move(z)) {
+    const int num_q = generalized_position_->size();
+    const int num_v = generalized_velocity_->size();
+    const int n = num_q + num_v + misc_continuous_state_->size();
+    DRAKE_ASSERT(state_->size() == n);
+    DRAKE_ASSERT(num_v <= num_q);
+  }
 
  private:
   template <typename U>
