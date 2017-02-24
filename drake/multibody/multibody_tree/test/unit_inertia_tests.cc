@@ -1,8 +1,9 @@
+#include "drake/multibody/multibody_tree/unit_inertia.h"
+
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 
 #include <iomanip>
@@ -14,16 +15,27 @@ namespace multibody {
 namespace math {
 namespace {
 
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+#define PRINT_VARn(x) std::cout <<  #x ": \n" << x << std::endl;
+
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::NumTraits;
 using Eigen::Vector3d;
 using std::sort;
 
-// Test constructor for a diagonal rotational inertia with all elements equal.
-GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
+// Test default constructor which leaves entries initialized to NaN for a
+// quick detection of un-initialized values.
+GTEST_TEST(UnitInertia, DefaultConstructor) {
+  UnitInertia<double> I;
+  ASSERT_TRUE(I.IsNaN());
+}
+
+// Test constructor for a diagonal unit inertia with all elements equal.
+GTEST_TEST(UnitInertia, DiagonalInertiaConstructor) {
   const double I0 = 3.14;
-  RotationalInertia<double> I(I0);
+  UnitInertia<double> I(I0);
   Vector3d moments_expected;
   moments_expected.setConstant(I0);
   Vector3d products_expected = Vector3d::Zero();
@@ -31,25 +43,25 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
   EXPECT_EQ(I.get_products(), products_expected);
 }
 
-// Test constructor for a principal axes rotational inertia matrix for which
+// Test constructor for a principal axes unit inertia matrix for which
 // off-diagonal elements are zero.
-GTEST_TEST(RotationalInertia, PrincipalAxesConstructor) {
+GTEST_TEST(UnitInertia, PrincipalAxesConstructor) {
   const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  RotationalInertia<double> I(m(0), m(1), m(2));
+  UnitInertia<double> I(m(0), m(1), m(2));
   Vector3d moments_expected = m;
   Vector3d products_expected = Vector3d::Zero();
   EXPECT_EQ(I.get_moments(), moments_expected);
   EXPECT_EQ(I.get_products(), products_expected);
 }
 
-// Test constructor for a general rotational inertia matrix with non-zero
+// Test constructor for a general unit inertia matrix with non-zero
 // off-diagonal elements for which the six entries need to be specified.
 // Also test SetZero() and SetNaN methods.
-GTEST_TEST(RotationalInertia, GeneralConstructor) {
+GTEST_TEST(UnitInertia, GeneralConstructor) {
   const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
   const Vector3d p(0.1, -0.1, 0.2);  // p for products.
-  RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
-                              p(0), p(1), p(2));/* products of inertia */
+  UnitInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
+                        p(0), p(1), p(2));/* products of inertia */
   Vector3d moments_expected = m;
   Vector3d products_expected = p;
   EXPECT_EQ(I.get_moments(), moments_expected);
@@ -64,56 +76,22 @@ GTEST_TEST(RotationalInertia, GeneralConstructor) {
   EXPECT_TRUE(I.CopyToFullMatrix3().array().isNaN().all());
 }
 
-// Test access by (i, j) indexes.
-GTEST_TEST(RotationalInertia, AccessByIndexes) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
-  const RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
-                                    p(0), p(1), p(2));/* products of inertia */
+// Tests the static method to obtain the unit inertia of a point mass.
+GTEST_TEST(UnitInertia, PointMass) {
+  Vector3d v(1, 2, 4.2);
+  Vector3d u(-1.5, 2.2, -2.0);
 
-  // Diagonal elements.
-  EXPECT_EQ(I(0, 0), m(0));
-  EXPECT_EQ(I(1, 1), m(1));
-  EXPECT_EQ(I(2, 2), m(2));
+  // Reference triple vector product.
+  Vector3d uxuxv = -u.cross(u.cross(v));
+  UnitInertia<double> G = UnitInertia<double>::PointMass(u);
 
-  // Off diagonal elements.
-  EXPECT_EQ(I(0, 1), p(0));
-  EXPECT_EQ(I(0, 2), p(1));
-  EXPECT_EQ(I(1, 2), p(2));
-
-  // And their symmetric counterparts.
-  EXPECT_EQ(I(1, 0), p(0));
-  EXPECT_EQ(I(2, 0), p(1));
-  EXPECT_EQ(I(2, 1), p(2));
+  // Verify that G(u) * v = u x (u x v).
+  EXPECT_TRUE(uxuxv.isApprox(G * v, Eigen::NumTraits<double>::epsilon()));
 }
 
-// Tests that even when the underlying dense Eigen representation holds NaN
-// entries for unused entries, the RotationalInertia behaves as a symmetric
-// matrix.
-GTEST_TEST(RotationalInertia, Symmetry) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
-  RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
-                              p(0), p(1), p(2));/* products of inertia */
-
-  // Tests that the copy to a full Matrix3 object is well defined and
-  // leads to a symmetric matrix.
-  Matrix3d Imatrix = I.CopyToFullMatrix3();
-  EXPECT_FALSE(Imatrix.array().isNaN().any());  // no entry is NaN.
-  EXPECT_EQ(Imatrix(0, 0), m(0));
-  EXPECT_EQ(Imatrix(1, 1), m(1));
-  EXPECT_EQ(Imatrix(2, 2), m(2));
-  EXPECT_EQ(Imatrix(0, 1), p(0));
-  EXPECT_EQ(Imatrix(0, 2), p(1));
-  EXPECT_EQ(Imatrix(1, 2), p(2));
-  EXPECT_EQ(Imatrix(1, 0), p(0));
-  EXPECT_EQ(Imatrix(2, 0), p(1));
-  EXPECT_EQ(Imatrix(2, 1), p(2));
-}
-
-// Test we can take a rotational inertia expressed in a frame R and express it
+// Test we can take a unit inertia expressed in a frame R and express it
 // in another frame F.
-GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
+GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
   // Rod frame R located at the rod's geometric center, oriented along its
   // principal axes and z-axis along the rod's axial direction.
   // Inertia computed about Ro and expressed in R.
@@ -145,14 +123,14 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
 }
 
 // Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() that
-// computes the principal moments of inertia of a general rotational inertia
+// computes the principal moments of inertia of a general unit inertia
 // by solving an eigenvalue problem.
-GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
+GTEST_TEST(UnitInertia, PrincipalMomentsOfInertia) {
   const double Lx = 3.0;
   const double Ly = 1.0;
   const double Lz = 5.0;
 
-  // Rotational inertia of a box computed about its center of mass.
+  // unit inertia of a box computed about its center of mass.
   const double Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
   RotationalInertia<double> I_Bc_Q(
       (Ly2 + Lz2) / 12.0,
@@ -167,7 +145,7 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
        AngleAxisd(angle, Vector3d::UnitX())).toRotationMatrix();
 
   // Compute the cube's spatial inertia in this frame Q.
-  // This results in a rotational inertia with all entries being non-zero, i.e
+  // This results in a unit inertia with all entries being non-zero, i.e
   // far away from being diagonal or diagonalizable in any trivial way.
   RotationalInertia<double> I_Bc_W = I_Bc_Q.ReExpress(R_WQ);
 
@@ -202,7 +180,7 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
 //     [ 0 -1  2]
 // and has eigenvalues lambda = [2 - sqrt(2), 2, 2 + sqrt(2)] which do not
 // satisfy the triangle inequality.
-GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaLaplacianTest) {
+GTEST_TEST(UnitInertia, PrincipalMomentsOfInertiaLaplacianTest) {
   const double Idiag =  2.0;  // The diagonal entries.
   const double Ioff  = -1.0;  // The off-diagonal entries.
 
@@ -215,7 +193,7 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaLaplacianTest) {
 }
 
 // Test the correctness of multiplication with a scalar from the left.
-GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
+GTEST_TEST(UnitInertia, MultiplicationWithScalarFromTheLeft) {
   const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
   const Vector3d p(0.1, -0.1, 0.2);  // p for products.
   RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
@@ -232,7 +210,7 @@ GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
 }
 
 // Test the correctness of operator+=().
-GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
+GTEST_TEST(UnitInertia, OperatorPlusEqual) {
   const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
   const Vector3d p(0.1, -0.1, 0.2);  // p for products.
   RotationalInertia<double> Ia(m(0), m(1), m(2), /* moments of inertia */
@@ -248,7 +226,7 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
 }
 
 // Test the shift operator to write into a stream.
-GTEST_TEST(RotationalInertia, ShiftOperator) {
+GTEST_TEST(UnitInertia, ShiftOperator) {
   std::stringstream stream;
   RotationalInertia<double> I(1, 2.718, 3.14);
   stream << std::fixed << std::setprecision(4) << I;
@@ -259,15 +237,15 @@ GTEST_TEST(RotationalInertia, ShiftOperator) {
   EXPECT_EQ(expected_string, stream.str());
 }
 
-// Tests that we can instantiate a rotational inertia with AutoDiffScalar and
+// Tests that we can instantiate a unit inertia with AutoDiffScalar and
 // we can perform some basic operations with it.
-// As an example, we define the rotational inertia I_B of a body B. The
+// As an example, we define the unit inertia I_B of a body B. The
 // orientation of this body in the world frame W is given by the time dependent
 // rotation R_WB = Rz(theta(t)) about the z-axis with angle theta(t).
 // The time derivative of theta(t) is the angular velocity wz.
 // We then re-express the inertia of B in the world frame and verify the value
 // of its time derivative with the expected result.
-GTEST_TEST(RotationalInertia, AutoDiff) {
+GTEST_TEST(UnitInertia, AutoDiff) {
   typedef Eigen::AutoDiffScalar<Vector1<double>> ADScalar;
 
   // Helper lambda to extract from a matrix of auto-diff scalar's the matrix of
@@ -282,7 +260,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
     }
   };
 
-  // Construct a rotational inertia in the frame of a body B.
+  // Construct a unit inertia in the frame of a body B.
   double Ix(1.0), Iy(2.0), Iz(3.0);
   RotationalInertia<ADScalar> I_B(Ix, Iy, Iz);
 
@@ -296,7 +274,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
   Matrix3<ADScalar> R_WB =
       (AngleAxis<ADScalar>(angle, Vector3d::UnitZ())).toRotationMatrix();
 
-  // Split the rotational inertia into two Matrix3d; one with the values and
+  // Split the unit inertia into two Matrix3d; one with the values and
   // another one with the time derivatives.
   Matrix3<double> Rvalue_WB, Rdot_WB;
   extract_derivatives(R_WB, Rvalue_WB, Rdot_WB);

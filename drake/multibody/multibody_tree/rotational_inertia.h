@@ -73,7 +73,7 @@ class RotationalInertia {
   /// equal to @p I and zero products of inertia.
   /// As examples, consider the moments of inertia taken about their geometric
   /// center for a sphere or a cube.
-  /// Aborts if `I` is negative.
+  /// Throws an exception if `I` is negative.
   explicit RotationalInertia(const T& I) {
     DRAKE_THROW_UNLESS(I >= T(0));
     SetZero();
@@ -83,7 +83,9 @@ class RotationalInertia {
   /// Creates a principal axes rotational inertia matrix for which the products
   /// of inertia are zero and the moments of inertia are given by `Ixx`, `Iyy`
   /// and `Izz`.
-  /// Aborts if any of the provided moments is negative.
+  /// Throws an exception if any of the provided moments is negative or the
+  /// resulting inertia is not physically valid according to
+  /// CouldBePhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz) {
     DRAKE_THROW_UNLESS(Ixx >= T(0));
     DRAKE_THROW_UNLESS(Iyy >= T(0));
@@ -96,7 +98,7 @@ class RotationalInertia {
   /// Creates a general rotational inertia matrix with non-zero off-diagonal
   /// elements where the six components of the rotational intertia on a given
   /// frame `E` need to be provided.
-  /// Aborts if the resulting inertia is invalid according to
+  /// Throws an exception if the resulting inertia is invalid according to
   /// CouldBePhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
                     const T& Ixy, const T& Ixz, const T& Iyz) {
@@ -272,14 +274,17 @@ class RotationalInertia {
     // Compute principal moments of inertia.
     Vector3<double> d = CalcPrincipalMomentsOfInertia();
 
-    // Principal moments must be non-negative.
-    if ((d.array() < 0).any() ) return false;
+    // Perform checks to a given precision.
+    const double precision = Eigen::NumTraits<double>::epsilon();
+    const double slop = precision * std::abs(d.sum());
 
-    // Checks triangle inequality
-    // TODO(amcastro-tri): consider adding some slop to these tests when and if
-    // the need arises.
-    if (!( d[0] + d[1] >= d[2] && d[0] + d[2] >= d[1] && d[1] + d[2] >= d[0]))
-      return false;
+    // Principal moments must be non-negative.
+    if ((d.array() < -slop).any() ) return false;
+
+    // Checks triangle inequality.
+    if (!(d[0] + d[1] >= d[2] - slop &&
+          d[0] + d[2] >= d[1] - slop &&
+          d[1] + d[2] >= d[0] - slop)) return false;
 
     return true;  // All tests passed.
   }
