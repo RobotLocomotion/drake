@@ -246,7 +246,8 @@ void ExtractVariablesFromExpression(
  *
  *  \pre{1. @c coeffs is a row vector of double, whose length matches with the
  *          size of @c map_var_to_index.
- *       2. e.is_polynomial() is true.}
+ *       2. e.is_polynomial() is true.
+ *       3. e is a linear expression.}
  * @tparam Derived An Eigen row vector type with Derived::Scalar == double.
  * @param[in] e The symbolic linear expression
  * @param[in] map_var_to_index A mapping from variable ID to variable index,

@@ -740,10 +740,6 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic8) {
   // Non-linear.
   EXPECT_THROW(prog.AddLinearConstraint(x(0) * x(0), 1, 2), std::runtime_error);
 
-  // Trivial case 0 <= 1 <= 2
-  EXPECT_THROW(prog.AddLinearConstraint(x(0) + 1 - x(0), 0, 2),
-               std::runtime_error);
-
   // Trivial (and infeasible) case 1 <= 0 <= 2
   EXPECT_THROW(prog.AddLinearConstraint(x(0) - x(0), 1, 2), std::runtime_error);
 }
