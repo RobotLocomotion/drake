@@ -26,7 +26,9 @@ double LineLane::heading_of_p(const double) const { return heading_; }
 double LineLane::heading_dot_of_p(const double) const { return 0.; }
 
 
-api::LanePosition LineLane::DoToLanePosition(const api::GeoPosition&) const {
+api::LanePosition LineLane::DoToLanePosition(const api::GeoPosition&,
+                                             api::GeoPosition*,
+                                             double*) const {
   DRAKE_ABORT();  // TODO(maddog@tri.global) Implement me.
 }
 
