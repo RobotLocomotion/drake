@@ -70,7 +70,7 @@ class RoadGeometry final : public api::RoadGeometry {
   api::RoadPosition DoToRoadPosition(
       const api::GeoPosition& geo_position,
       const api::RoadPosition* hint,
-      api::GeoPosition* nearest_point,
+      api::GeoPosition* nearest_position,
       double* distance) const final;
 
   double do_linear_tolerance() const final { return linear_tolerance_; }
