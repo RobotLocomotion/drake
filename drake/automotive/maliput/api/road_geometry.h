@@ -61,7 +61,7 @@ class RoadGeometry {
 
   /// Determines the RoadPosition corresponding to GeoPosition @p geo_position.
   ///
-  /// If @p hint is non-null, its value is used to help determine result.
+  /// If @p hint is non-null, its value is used to help determine the result.
   ///
   /// The return value is the RoadPosition of the point in the RoadGeometry's
   /// manifold which is, in the world frame, closest to @p geo_position.  If
