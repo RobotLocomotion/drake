@@ -295,7 +295,7 @@ class RotationalInertia {
   /// This operation is performed in-place modifying the original object.
   /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
   /// @returns A reference to `this` rotational inertia about `Bo` but now
-  /// re-expressed in frame `A`.
+  ///            re-expressed in frame `A`.
   RotationalInertia& ReExpressInPlace(const Matrix3<T>& R_AF) {
     // There is an interesting discussion on Eigen's forum here:
     // https://forum.kde.org/viewtopic.php?f=74&t=97282
@@ -323,8 +323,8 @@ class RotationalInertia {
   /// frame `F`, this method computes the same inertia re-expressed in another
   /// frame `A`.
   /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
-  /// @returns I_Bo_A The same rotational inertia bout `Bo` expressed in frame
-  /// `A`.
+  /// @retval I_Bo_A The same rotational inertia about `Bo` but now
+  ///                re-expressed in frame`A`.
   RotationalInertia ReExpress(const Matrix3<T>& R_AF) const {
     return RotationalInertia(*this).ReExpressInPlace(R_AF);
   }

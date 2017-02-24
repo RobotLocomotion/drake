@@ -6,24 +6,15 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 
-#include <iomanip>
-#include <sstream>
-#include <string>
-
 namespace drake {
 namespace multibody {
 namespace math {
 namespace {
 
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-#define PRINT_VARn(x) std::cout <<  #x ": \n" << x << std::endl;
-
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::NumTraits;
 using Eigen::Vector3d;
-using std::sort;
 
 // Test default constructor which leaves entries initialized to NaN for a
 // quick detection of un-initialized values.
@@ -76,20 +67,16 @@ GTEST_TEST(UnitInertia, GeneralConstructor) {
   EXPECT_TRUE(I.CopyToFullMatrix3().array().isNaN().all());
 }
 
-// Tests the static method to obtain the unit inertia of a point mass.
-GTEST_TEST(UnitInertia, PointMass) {
-  Vector3d v(1, 2, 4.2);
-  Vector3d u(-1.5, 2.2, -2.0);
-
-  // Reference triple vector product.
-  Vector3d uxuxv = -u.cross(u.cross(v));
-  UnitInertia<double> G = UnitInertia<double>::PointMass(u);
-
-  // Verify that G(u) * v = u x (u x v).
-  EXPECT_TRUE(uxuxv.isApprox(G * v, Eigen::NumTraits<double>::epsilon()));
+// Test constructor from a RotationalInertia.
+GTEST_TEST(UnitInertia, ConstructorFromRotationalInertia) {
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  RotationalInertia<double> I(m(0), m(1), m(2));
+  UnitInertia<double> G(I);
+  EXPECT_EQ(G.get_moments(), I.get_moments());
+  EXPECT_EQ(G.get_products(), I.get_products());
 }
 
-// Test we can take a unit inertia expressed in a frame R and express it
+// Tests we can take a unit inertia expressed in a frame R and express it
 // in another frame F.
 GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
   // Rod frame R located at the rod's geometric center, oriented along its
@@ -103,138 +90,122 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
   // Moment of inertia about an axis perpendicular to the rod's axis.
   const double Iperp = length * length / 12.0;
 
-  RotationalInertia<double> I_Ro_R(Iperp, Iperp, Irr);
+  UnitInertia<double> G_Ro_R(Iperp, Iperp, Irr);
 
   // Rotation of +90 degrees about x.
   Matrix3<double> R_FR =
       AngleAxisd(M_PI_2, Vector3d::UnitX()).toRotationMatrix();
 
   // Re-express in frame F using the above rotation.
-  const RotationalInertia<double> I_Ro_F = I_Ro_R.ReExpress(R_FR);
+  const UnitInertia<double> G_Ro_F = G_Ro_R.ReExpress(R_FR);
 
   // Verify that now R's z-axis is oriented along F's y-axis.
-  EXPECT_NEAR(I_Ro_F(0, 0), Iperp, Eigen::NumTraits<double>::epsilon());
-  EXPECT_NEAR(I_Ro_F(1, 1), Irr, Eigen::NumTraits<double>::epsilon());
-  EXPECT_NEAR(I_Ro_F(2, 2), Iperp, Eigen::NumTraits<double>::epsilon());
+  EXPECT_NEAR(G_Ro_F(0, 0), Iperp, Eigen::NumTraits<double>::epsilon());
+  EXPECT_NEAR(G_Ro_F(1, 1), Irr, Eigen::NumTraits<double>::epsilon());
+  EXPECT_NEAR(G_Ro_F(2, 2), Iperp, Eigen::NumTraits<double>::epsilon());
 
   // While at it, check if after transformation this still is a physically
   // valid inertia.
-  EXPECT_TRUE(I_Ro_F.CouldBePhysicallyValid());
+  EXPECT_TRUE(G_Ro_F.CouldBePhysicallyValid());
 }
 
-// Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() that
-// computes the principal moments of inertia of a general unit inertia
-// by solving an eigenvalue problem.
-GTEST_TEST(UnitInertia, PrincipalMomentsOfInertia) {
-  const double Lx = 3.0;
-  const double Ly = 1.0;
-  const double Lz = 5.0;
+// Tests the static method to obtain the unit inertia of a point mass.
+GTEST_TEST(UnitInertia, PointMass) {
+  Vector3d v(1, 2, 4.2);
+  Vector3d u(-1.5, 2.2, -2.0);
 
-  // unit inertia of a box computed about its center of mass.
+  // Reference triple vector product.
+  Vector3d uxuxv = -u.cross(u.cross(v));
+  UnitInertia<double> G = UnitInertia<double>::PointMass(u);
+
+  // Verify that G(u) * v = u x (u x v).
+  EXPECT_TRUE(uxuxv.isApprox(G * v, Eigen::NumTraits<double>::epsilon()));
+}
+
+// Tests the static method to obtain the unit inertia of a solid sphere.
+GTEST_TEST(UnitInertia, SolidSphere) {
+  const double radius = 3.5;
+  const double sphere_I = 4.9;
+  const UnitInertia<double> G_expected(sphere_I);
+  UnitInertia<double> G = UnitInertia<double>::SolidSphere(radius);
+  EXPECT_TRUE(G_expected.get_moments() == G.get_moments());
+  EXPECT_TRUE(G_expected.get_products() == G.get_products());
+}
+
+// Tests the static method to obtain the unit inertia of a hollow sphere.
+GTEST_TEST(UnitInertia, HollowSphere) {
+  const double radius = 3.5;
+  const double sphere_I = 2.0 *radius * radius / 3.0;
+  const UnitInertia<double> G_expected(sphere_I);
+  UnitInertia<double> G = UnitInertia<double>::HollowSphere(radius);
+  EXPECT_TRUE(G_expected.get_moments() == G.get_moments());
+  EXPECT_TRUE(G_expected.get_products() == G.get_products());
+}
+
+// Tests the static method to obtain the unit inertia of a solid box.
+GTEST_TEST(UnitInertia, SolidBox) {
+  const double Lx = 1.0;
+  const double Ly = 2.0;
+  const double Lz = 3.0;
   const double Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
-  RotationalInertia<double> I_Bc_Q(
-      (Ly2 + Lz2) / 12.0,
-      (Lx2 + Lz2) / 12.0,
-      (Lx2 + Ly2) / 12.0);
-
-  // Define frame Q to be rotated +20 degrees about x and another +20
-  // degrees about z with respect to a frame W.
-  const double angle = 20 * M_PI / 180.0;
-  Matrix3<double> R_WQ =
-      (AngleAxisd(angle, Vector3d::UnitZ()) *
-       AngleAxisd(angle, Vector3d::UnitX())).toRotationMatrix();
-
-  // Compute the cube's spatial inertia in this frame Q.
-  // This results in a unit inertia with all entries being non-zero, i.e
-  // far away from being diagonal or diagonalizable in any trivial way.
-  RotationalInertia<double> I_Bc_W = I_Bc_Q.ReExpress(R_WQ);
-
-  // Verify that indeed this inertia in frame W contains non-zero diagonal
-  // elements.
-  EXPECT_TRUE((I_Bc_W.CopyToFullMatrix3().array().abs() > 0.1).all());
-
-  // Compute the principal moments of I_Bc_W.
-  Vector3d principal_moments = I_Bc_W.CalcPrincipalMomentsOfInertia();
-
-  // The expected moments are those originally computed in I_Bc_Q, though the
-  // return from RotationalInertia::CalcPrincipalMomentsOfInertia() is sorted
-  // in ascending order. Therefore reorder before performing the comparison.
-  Vector3d expected_principal_moments = I_Bc_Q.get_moments();
-  std::sort(expected_principal_moments.data(),
-            expected_principal_moments.data() +
-                expected_principal_moments.size());
-
-  // Verify against the expected value.
-  EXPECT_TRUE(expected_principal_moments.isApprox(
-      principal_moments, NumTraits<double>::epsilon()));
+  const double Ixx = (Ly2 + Lz2) / 12.0;
+  const double Iyy = (Lx2 + Lz2) / 12.0;
+  const double Izz = (Lx2 + Ly2) / 12.0;
+  const UnitInertia<double> G_expected(Ixx, Iyy, Izz);
+  UnitInertia<double> G = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
+  EXPECT_TRUE(G.IsApprox(G_expected));
 }
 
-// Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() for a
-// matrix that is symmetric and positive definite. This kind of tri-diagonal
-// matrix arises when discretizing the Laplacian operator using either finite
-// differences or the Finite Element Method with iso-parametric linear elements
-// in 1D.
-// This Laplacian matrix takes the form:
-//     [ 2 -1  0]
-// L = [-1  2 -1]
-//     [ 0 -1  2]
-// and has eigenvalues lambda = [2 - sqrt(2), 2, 2 + sqrt(2)] which do not
-// satisfy the triangle inequality.
-GTEST_TEST(UnitInertia, PrincipalMomentsOfInertiaLaplacianTest) {
-  const double Idiag =  2.0;  // The diagonal entries.
-  const double Ioff  = -1.0;  // The off-diagonal entries.
-
-  // Even though the inertia matrix is symmetric and positive definite, it does
-  // not satisfy the triangle inequality. Therefore the constructor throws an
-  // exception.
-  EXPECT_THROW(
-      RotationalInertia<double> I(Idiag, Idiag, Idiag, Ioff, 0.0, Ioff),
-      std::runtime_error);
+// Tests the static method to obtain the unit inertia of a solid cube.
+GTEST_TEST(UnitInertia, SolidCube) {
+  const double L = 1.5;
+  const double I = L * L / 6.0;
+  const UnitInertia<double> G_expected(I);
+  UnitInertia<double> G = UnitInertia<double>::SolidCube(L);
+  EXPECT_TRUE(G.IsApprox(G_expected));
 }
 
-// Test the correctness of multiplication with a scalar from the left.
-GTEST_TEST(UnitInertia, MultiplicationWithScalarFromTheLeft) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
-  RotationalInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
-                              p(0), p(1), p(2));/* products of inertia */
-  const double scalar = 3.0;
-  RotationalInertia<double> sxI = scalar * I;
-  EXPECT_EQ(sxI.get_moments(), scalar * m);
-  EXPECT_EQ(sxI.get_products(), scalar * p);
-
-  // Multiplication by a scalar must be commutative.
-  RotationalInertia<double> Ixs = I * scalar;
-  EXPECT_EQ(Ixs.get_moments(), sxI.get_moments());
-  EXPECT_EQ(Ixs.get_products(), sxI.get_products());
+// Tests the static method to obtain the unit inertia of a solid cylinder.
+GTEST_TEST(UnitInertia, SolidCylinder) {
+  const double r = 2.5;
+  const double L = 1.5;
+  const double I_perp = (3.0 * r * r + L * L) / 12.0;
+  const double I_axial = r * r / 2.0;
+  const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
+  UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
+  EXPECT_TRUE(G.IsApprox(G_expected));
 }
 
-// Test the correctness of operator+=().
-GTEST_TEST(UnitInertia, OperatorPlusEqual) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
-  RotationalInertia<double> Ia(m(0), m(1), m(2), /* moments of inertia */
-                               p(0), p(1), p(2));/* products of inertia */
-  // A second inertia.
-  RotationalInertia<double> Ib = 2.0 * Ia;
-
-  // Use of operator+=() results in: Ib = Ib + Ia.
-  Ib += Ia;
-
-  EXPECT_EQ(Ib.get_moments(), 3.0 * m);
-  EXPECT_EQ(Ib.get_products(), 3.0 * p);
+// Tests the static method to obtain the unit inertia of a solid cylinder
+// computed about a point at the center of its base.
+GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
+  const double r = 2.5;
+  const double L = 1.5;
+  const double I_perp = (3.0 * r * r + L * L) / 12.0 + L * L /4.0;
+  const double I_axial = r * r / 2.0;
+  const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
+  UnitInertia<double> G = UnitInertia<double>::SolidCylinderAboutEnd(r, L);
+  EXPECT_TRUE(G.IsApprox(G_expected));
 }
 
-// Test the shift operator to write into a stream.
-GTEST_TEST(UnitInertia, ShiftOperator) {
-  std::stringstream stream;
-  RotationalInertia<double> I(1, 2.718, 3.14);
-  stream << std::fixed << std::setprecision(4) << I;
-  std::string expected_string =
-                  "[1.0000, 0.0000, 0.0000]\n"
-                  "[0.0000, 2.7180, 0.0000]\n"
-                  "[0.0000, 0.0000, 3.1400]\n";
-  EXPECT_EQ(expected_string, stream.str());
+// Tests the methods ShiftFromCenterOfMassInPlace() and ShiftFromCenterOfMass().
+GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
+  const double r = 2.5;
+  const double L = 1.5;
+  const UnitInertia<double> G_expected =
+      UnitInertia<double>::SolidCylinderAboutEnd(r, L);
+  UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
+  EXPECT_FALSE(G.IsApprox(G_expected));  // Not equal yet.
+  G.ShiftFromCenterOfMassInPlace({0.0, 0.0, L / 2.0});
+  EXPECT_TRUE(G.IsApprox(G_expected));  // Equal after shifting in place.
+  EXPECT_TRUE(G.CouldBePhysicallyValid());
+
+  // Create a new object.
+  UnitInertia<double> G2 =
+      UnitInertia<double>::
+      SolidCylinder(r, L).ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
+  EXPECT_TRUE(G2.IsApprox(G_expected));
+  EXPECT_TRUE(G2.CouldBePhysicallyValid());
 }
 
 // Tests that we can instantiate a unit inertia with AutoDiffScalar and
@@ -262,7 +233,7 @@ GTEST_TEST(UnitInertia, AutoDiff) {
 
   // Construct a unit inertia in the frame of a body B.
   double Ix(1.0), Iy(2.0), Iz(3.0);
-  RotationalInertia<ADScalar> I_B(Ix, Iy, Iz);
+  UnitInertia<ADScalar> I_B(Ix, Iy, Iz);
 
   // Assume B has a pose rotated +20 degrees about z with respect to the
   // world frame W. The body rotates with angular velocity wz in the z-axis.
@@ -291,7 +262,7 @@ GTEST_TEST(UnitInertia, AutoDiff) {
       wcross_expected, Eigen::NumTraits<double>::epsilon()));
 
   // Re-express inertia into another frame.
-  const RotationalInertia<ADScalar> I_W = I_B.ReExpress(R_WB);
+  const UnitInertia<ADScalar> I_W = I_B.ReExpress(R_WB);
 
   // Extract value and derivatives of I_W into two separate matrices.
   Matrix3d Ivalue_W, Idot_W;
