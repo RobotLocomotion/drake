@@ -137,7 +137,7 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
   RenderingSim diagram;
   // The following SDF includes a box that is located under the flat terrain.
   // Thus, only the terrain is visible to the RGBD camera.
-  const std::string sdf("/systems/sensors/test/box.sdf");
+  const std::string sdf("/systems/sensors/test/models/box.sdf");
   diagram.Init(GetDrakePath() + sdf,
                Eigen::Vector3d(0., 0., 4.999),
                Eigen::Vector3d(0., M_PI_2, 0.));
@@ -177,11 +177,103 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
   }
 }
 
+const float kExpectedDepth[192] = {
+1.93014, 1.93014, 1.93014, 1.93014, 1.93014, 1.93014, 1.93014, 1.93014, 1.93014,
+1.93014, 1.93014, 1.93014, 1.93014, 1.93014, 1.93014, 1.93014, 1.81925, 1.81925,
+1.81925, 1.81925, 1.81925, 1.81925, 1.81925, 1.81925, 1.81925, 1.81925, 1.36472,
+1.36472, 1.36472, 1.36472, 1.81925, 1.81925, 1.72038, 1.72038, 1.72038, 1.72038,
+1.72038, 1.72038, 1.72038, 1.72038, 1.41352, 1.72038, 1.38042, 1.38042, 1.38042,
+1.38042, 1.72038, 1.72038, 1.63173, 1.63173, 1.63173, 1.63173, 1.63173, 1.63173,
+1.63173, 1.63173, 1.46039, 1.63173, 1.43481, 1.43481, 1.43481, 1.63173, 1.63173,
+1.63173, 1.55175, 1.55175, 1.55175, 1.55175, 1.25229, 1.25229, 1.25229, 1.55175,
+1.51801, 1.55175, 1.55175, 1.55175, 1.55175, 1.55175, 1.55175, 1.55175, 1.47926,
+1.47926, 1.47926, 1.47926, 1.24474, 1.24474, 1.24474, 1.47926, 1.47926, 1.47926,
+1.47926, 1.47926, 1.47926, 1.47926, 1.47926, 1.47926, 1.41322, 1.41322, 1.41322,
+1.41322, 1.27349, 1.27349, 1.27349, 1.41322, 1.13369, 1.13791, 1.41322, 1.41322,
+1.41322, 1.41322, 1.41322, 1.41322, 1.35283, 1.35283, 1.35283, 1.35283, 1.35283,
+1.35283, 1.35283, 1.13405, 1.10639, 1.10888, 1.14946, 1.35283, 1.35283, 1.35283,
+1.35283, 1.35283, 1.2974, 1.2974, 1.2974, 1.2974, 1.2974, 1.2974, 1.2974,
+1.13922, 1.10854, 1.11134, 1.15869, 1.2974, 1.2974, 1.2974, 1.2974, 1.2974,
+1.24633, 1.24633, 1.24633, 1.24633, 1.24633, 1.24633, 1.24633, 1.24633, 1.15248,
+1.16167, 1.24633, 1.24633, 1.24633, 1.24633, 1.24633, 1.24633, 1.19913, 1.19913,
+1.19913, 1.19913, 1.19913, 1.19913, 1.19913, 1.19913, 1.19913, 1.19913, 1.19913,
+1.19913, 1.19913, 1.19913, 1.19913, 1.19913, 1.15537, 1.15537, 1.15537, 1.15537,
+1.15537, 1.15537, 1.15537, 1.15537, 1.15537, 1.15537, 1.15537, 1.15537, 1.15537,
+1.15537, 1.15537, 1.15537};
+
+struct ColorPixel {
+  uint8_t b;
+  uint8_t g;
+  uint8_t r;
+  uint8_t a;
+};
+
+typedef ColorPixel P;
+
+const ColorPixel kExpectedColor[192] = {};
+
+// Verifies rendered terrain.
+GTEST_TEST(RenderingTest, AllShapeRenderingTest) {
+  RenderingSim diagram;
+  // The following SDF includes a box that is located under the flat terrain.
+  // Thus, only the terrain is visible to the RGBD camera.
+  const std::string sdf("/systems/sensors/test/models/all_shapes.sdf");
+  diagram.Init(GetDrakePath() + sdf,
+               Eigen::Vector3d(-1., 0., 1.),
+               Eigen::Vector3d(0., M_PI_4, 0.));
+
+  std::unique_ptr<systems::Context<double>> context =
+      diagram.CreateDefaultContext();
+  std::unique_ptr<systems::SystemOutput<double>> output =
+      diagram.AllocateOutput(*context);
+  systems::Simulator<double> simulator(diagram, std::move(context));
+  simulator.Initialize();
+
+  const double duration = 0.01;
+  for (double time = 0.; time < duration ; time += 0.01) {
+    simulator.StepTo(time);
+    diagram.CalcOutput(simulator.get_context(), output.get());
+
+    systems::AbstractValue* mutable_data = output->GetMutableData(0);
+    systems::AbstractValue* mutable_data_d = output->GetMutableData(1);
+    auto color_image =
+        mutable_data->GetMutableValue<sensors::Image<uint8_t>>();
+    auto depth_image =
+        mutable_data_d->GetMutableValue<sensors::Image<float>>();
+
+
+    // vtkNer<vtkImageCanvasSource2D> image_source;
+    // image_source->SetExtent(extent);
+
+    // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
+    // assumption is any defects will be detected by sampling this amount.
+    int i = 0;
+    for (int v = 0; v < color_image.height(); v += 40) {
+      for (int u = 0; u < color_image.width(); u += 40) {
+    //     ASSERT_NEAR(color_image.at(u, v)[0], 204u, 1.);
+    //     ASSERT_NEAR(color_image.at(u, v)[1], 229u, 1.);
+    //     ASSERT_NEAR(color_image.at(u, v)[2], 255u, 1.);
+    //     ASSERT_NEAR(color_image.at(u, v)[3], 255u, 1.);
+        std::cout << static_cast<int>(color_image.at(u, v)[0]) << ", ";
+        std::cout << static_cast<int>(color_image.at(u, v)[1]) << ", ";
+        std::cout << static_cast<int>(color_image.at(u, v)[2]) << ", ";
+        std::cout << static_cast<int>(color_image.at(u, v)[3]) << ", ";
+        // std::cout << i << ": ";
+
+
+        // Assuming depth value provides 0.1mm precision.
+        ASSERT_NEAR(depth_image.at(u, v)[0], kExpectedDepth[i], 1e-4);
+        ++i;
+      }
+    }
+  }
+}
+
 // Verifies an exception is thrown if a link has more than two visuals.
 GTEST_TEST(RenderingTest, MultipleVisualsTest) {
   RenderingSim diagram;
   // The following SDF includes a link that has more than two visuals.
-  const std::string sdf("/systems/sensors/test/bad.sdf");
+  const std::string sdf("/systems/sensors/test/models/bad.sdf");
   EXPECT_THROW(diagram.Init(GetDrakePath() + sdf,
                             Eigen::Vector3d(0., 0., 1.),
                             Eigen::Vector3d(0., 0., 0.)),
