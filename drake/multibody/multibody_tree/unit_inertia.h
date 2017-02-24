@@ -1,9 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <sstream>
-#include <vector>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -12,6 +8,26 @@
 namespace drake {
 namespace multibody {
 
+/// This class is used to represent rotational inertias for unit mass bodies.
+/// Therefore, unlike RotationalInertia, the units of a UnitInertia are those of
+/// length squared. A unit inertia is a useful concept to represent the
+/// geometric distribution of mass in a body regardless of the actual value of
+/// the body mass. The rotational inertia of a body can therefore be obtained
+/// from a its unit inertia by multiplying it by its mass.
+/// Unit inertia matrices are also referred as **gyration** matrices and
+/// therefore many times the capital letter `G` is used to represent a unit
+/// inertia while generally the capital letter `I` is used to represent non-unit
+/// mass rotationl inertias.
+/// This class restricts the number of allowed operations on a unit inertia to
+/// ensure unit mass. For instance, multiplication by a scalar can only return a
+/// general RotationalInertia but not a UnitInertia.
+///
+/// @note This class has no means to check at construction from user provided
+/// parameters whether it actually represents the unit inertia or gyration
+/// matrix of a unit-mass body. However, once a unit inertia is created, a
+/// number of operations are dissallowed to ensure unit mass.
+///
+/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class UnitInertia : public RotationalInertia<T> {
  public:
@@ -27,7 +43,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// center for a sphere or a cube.
   /// Throws an exception if `I` is negative.
   /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube().
-  UnitInertia(const T& I) : RotationalInertia<T>(I) {}
+  explicit UnitInertia(const T& I) : RotationalInertia<T>(I) {}
 
   /// Creates a principal axes rotational inertia matrix for which the products
   /// of inertia are zero and the moments of inertia are given by `Ixx`, `Iyy`
@@ -35,7 +51,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// Throws an exception if any of the provided moments is negative or the
   /// resulting inertia is not physically valid according to
   /// RotationalInertia::CouldBePhysicallyValid().
-  UnitInertia(const T& Ixx, const T& Iyy, const T& Izz) : 
+  UnitInertia(const T& Ixx, const T& Iyy, const T& Izz) :
       RotationalInertia<T>(Ixx, Iyy, Izz) {}
 
   /// Creates a general unit inertia matrix with non-zero off-diagonal
@@ -50,8 +66,9 @@ class UnitInertia : public RotationalInertia<T> {
   /// Constructs a UnitInertia from a RotationalInertia. This constructor has
   /// no way to verify that the input rotational inertia IS a unit inertia.
   /// It is the responsability of the user to pass a valid unit inertia.
-  UnitInertia(const RotationalInertia<T>& I) : RotationalInertia<T>(I) {}
-  
+  explicit UnitInertia(const RotationalInertia<T>& I) :
+      RotationalInertia<T>(I) {}
+
   /// Given `this` rotational inertia `G_Bo_F` about `Bo` and expressed in frame
   /// `F`, this method computes the same unit inertia re-expressed in another
   /// frame `A` as `I_Bo_A = R_AF * G_Bo_F * (R_AF)ᵀ`.
