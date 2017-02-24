@@ -51,11 +51,11 @@ GTEST_TEST(SpatialVelocity, ConstructionFromAnEigenExpression) {
   SpatialVelocity<double> V1(v);
 
   // Verify the underlying Eigen vector matches the original vector.
-  EXPECT_EQ(V1.get_coeffs(), v);
+  EXPECT_EQ(V1.get_Eigen_vector(), v);
 
   // A spatial velocity instantiated from an Eigen block.
   SpatialVelocity<double> V2(v.segment<6>(0));
-  EXPECT_EQ(V2.get_coeffs(), v);
+  EXPECT_EQ(V2.get_Eigen_vector(), v);
 }
 
 class SpatialVelocityTest : public ::testing::Test {
@@ -103,7 +103,7 @@ TEST_F(SpatialVelocityTest, SpatialVelocityVectorComponentAccessors) {
 
 // Tests access as an Eigen vector.
 TEST_F(SpatialVelocityTest, EigenAccess) {
-  Vector6<double> V = V_XY_A_.get_coeffs();
+  Vector6<double> V = V_XY_A_.get_Eigen_vector();
   Vector6<double> V_expected;
   V_expected << w_XY_A_, v_XY_A_;
   EXPECT_EQ(V, V_expected);
@@ -130,28 +130,28 @@ TEST_F(SpatialVelocityTest, IsApprox) {
   const double precision = 1.0e-10;
   SpatialVelocity<double> other(
       (1.0 + precision) * w_XY_A_, (1.0 + precision) * v_XY_A_);
-  EXPECT_TRUE(V_XY_A_.IsApprox(other, 1.01 * precision));
-  EXPECT_FALSE(V_XY_A_.IsApprox(other, 0.99 * precision));
+  EXPECT_TRUE(V_XY_A_.IsApprox(other, (1.0 + 1.0e-7) * precision));
+  EXPECT_FALSE(V_XY_A_.IsApprox(other, precision));
 }
 
 // Tests the shifting of a spatial velocity between two moving frames rigidly
 // attached to each other.
 TEST_F(SpatialVelocityTest, ShiftOperation) {
-  // A vector from the origin of a frame Y to the origin of a frame Z, expressed
-  // in a third frame A.
+  // Consider a vector from the origin of a frame Y to the origin of a frame Z,
+  // expressed in a third frame A.
   Vector3d p_YZ({2, -2, 0});
 
-  // Shift the spatial velocity of a frame Y measured in frame X to the
-  // spatial velocity of frame Z measured in frame X knowing that frames Y and Z
-  // are rigidly attached to each other.
+  // Consider now shifting the spatial velocity of a frame Y measured in frame
+  // X to the spatial velocity of frame Z measured in frame X knowing that
+  // frames Y and Z are rigidly attached to each other.
   SpatialVelocity<double> V_XZ_A = V_XY_A_.Shift(p_YZ);
 
   // Verify the result.
-  SpatialVelocity<double> expected_V_XZ_A(w_XY_A_, {7, 8, 0});
+  SpatialVelocity<double> expected_V_XZ_A(w_XY_A_, Vector3d(7, 8, 0));
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
 }
 
-// Test the shift operator to write into a stream.
+// Test the stream insertion operator to write into a stream.
 TEST_F(SpatialVelocityTest, ShiftOperatorIntoStream) {
   std::stringstream stream;
   stream << V_XY_A_;
@@ -170,7 +170,7 @@ TEST_F(SpatialVelocityTest, MulitplicationByAScalar) {
   EXPECT_EQ(sxV.linear(), scalar * V_XY_A_.linear());
 
   // Verify the multiplication by a scalar is commutative.
-  EXPECT_EQ(sxV.get_coeffs(), Vxs.get_coeffs());
+  EXPECT_EQ(sxV.get_Eigen_vector(), Vxs.get_Eigen_vector());
 }
 
 }  // namespace
