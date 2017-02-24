@@ -270,7 +270,7 @@ class System {
   /// does not exist.
   ///
   /// @tparam Vec The template type of the input vector, which must be a
-  ///             subclass of BasicVector. 
+  ///             subclass of BasicVector.
   template <template<typename> class Vec = BasicVector>
   const Vec<T>* EvalVectorInput(const Context<T>& context,
                                 int port_index) const {

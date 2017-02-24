@@ -14,6 +14,7 @@
 #include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/rendering/pose_bundle.h"
+#include "drake/systems/rendering/pose_vector.h"
 
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
@@ -50,8 +51,10 @@ class PoseAggregatorTest : public ::testing::Test {
 
     // Allocate an input for the tree we just assembled.
     aggregator_.AddRigidBodyPlantInput(tree_);
-    // Allocate another input for generic poses.
-    aggregator_.AddBundleInput("generic", kNumGenericPoses);
+    // Allocate another input for a PoseBundle.
+    aggregator_.AddBundleInput("bundle", kNumGenericPoses);
+    // Allocate a third input for a PoseVector.
+    aggregator_.AddSingleInput("vector");
 
     context_ = aggregator_.CreateDefaultContext();
     output_ = aggregator_.AllocateOutput(*context_);
@@ -66,15 +69,15 @@ class PoseAggregatorTest : public ::testing::Test {
   const Vector3d axis_{Vector3d::UnitX()};
 };
 
-// Tests that PoseAggregator aggregates poses from both a RigidBodyTree input
-// and a generic PoseBundle input.
+// Tests that PoseAggregator aggregates poses from a RigidBodyTree input, a
+// PoseVector input, and a PoseBundle input.
 TEST_F(PoseAggregatorTest, HeterogeneousAggregation) {
   // Set the rigid body state input so that the revolute joint has position
   // pi/2, which results in the link "link1" pointing in the +y direction.
   auto rbt_input = BasicVector<double>::Make({M_PI, 0.0});
   context_->FixInputPort(0, std::move(rbt_input));
 
-  // Set some arbitrary translations in the generic input.
+  // Set some arbitrary translations in the PoseBundle input.
   PoseBundle<double> generic_input(2);
   Eigen::Translation3d translation_0(0, 1, 0);
   Eigen::Translation3d translation_1(0, 1, 1);
@@ -84,12 +87,17 @@ TEST_F(PoseAggregatorTest, HeterogeneousAggregation) {
   generic_input.set_pose(1, Isometry3d(translation_1));
   context_->FixInputPort(1, AbstractValue::Make(generic_input));
 
+  // Set an arbitrary rotation in the PoseVector input.
+  auto pose_vec = std::make_unique<PoseVector<double>>();
+  pose_vec->set_rotation(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5));
+  context_->FixInputPort(2, std::move(pose_vec));
+
   aggregator_.CalcOutput(*context_, output_.get());
 
   // Extract the output PoseBundle.
   const PoseBundle<double>& bundle =
       output_->get_data(0)->GetValueOrThrow<PoseBundle<double>>();
-  ASSERT_EQ(kNumGenericPoses + kNumRigidBodyPoses, bundle.get_num_poses());
+  ASSERT_EQ(kNumGenericPoses + kNumRigidBodyPoses + 1, bundle.get_num_poses());
 
   // Check that the rigid body poses, as determined by the kinematics,
   // appear in the output.
@@ -99,15 +107,21 @@ TEST_F(PoseAggregatorTest, HeterogeneousAggregation) {
                               link1_pose.matrix()));
 
   // Check that the generic poses are passed through to the output.
-  EXPECT_EQ("generic::Sherlock", bundle.get_name(1));
+  EXPECT_EQ("bundle::Sherlock", bundle.get_name(1));
   const Isometry3d& generic_pose_0 = bundle.get_pose(1);
-  EXPECT_EQ("generic::Mycroft", bundle.get_name(2));
+  EXPECT_EQ("bundle::Mycroft", bundle.get_name(2));
   const Isometry3d& generic_pose_1 = bundle.get_pose(2);
 
   EXPECT_TRUE(CompareMatrices(Isometry3d(translation_0).matrix(),
                               generic_pose_0.matrix()));
   EXPECT_TRUE(CompareMatrices(Isometry3d(translation_1).matrix(),
                               generic_pose_1.matrix()));
+
+  EXPECT_EQ("vector", bundle.get_name(3));
+  const Isometry3d& vector_pose = bundle.get_pose(3);
+  EXPECT_TRUE(CompareMatrices(
+      Isometry3d(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5)).matrix(),
+      vector_pose.matrix()));
 }
 
 // Tests that PoseAggregator allocates no state variables in the context_.

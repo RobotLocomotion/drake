@@ -5,6 +5,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/rendering/pose_bundle.h"
+#include "drake/systems/rendering/pose_vector.h"
 
 using std::to_string;
 
@@ -22,7 +23,7 @@ PoseAggregator<T>::~PoseAggregator() {}
 
 template <typename T>
 const InputPortDescriptor<T>& PoseAggregator<T>::AddRigidBodyPlantInput(
-    const RigidBodyTree<double> &tree) {
+    const RigidBodyTree<double>& tree) {
   input_records_.emplace_back(&tree);
   const int num_states = tree.get_num_positions() + tree.get_num_velocities();
   const InputPortDescriptor<T>& descriptor =
@@ -31,8 +32,17 @@ const InputPortDescriptor<T>& PoseAggregator<T>::AddRigidBodyPlantInput(
 }
 
 template <typename T>
+const InputPortDescriptor<T>& PoseAggregator<T>::AddSingleInput(
+    const std::string& name) {
+  input_records_.emplace_back(name);
+  const InputPortDescriptor<T>& descriptor =
+      this->DeclareInputPort(kVectorValued, PoseVector<T>::kSize);
+  return descriptor;
+}
+
+template <typename T>
 const InputPortDescriptor<T>& PoseAggregator<T>::AddBundleInput(
-    const std::string &bundle_name, int num_poses) {
+    const std::string& bundle_name, int num_poses) {
   input_records_.emplace_back(bundle_name, num_poses);
   const InputPortDescriptor<T>& descriptor = this->DeclareAbstractInputPort();
   return descriptor;
@@ -74,6 +84,15 @@ void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
         }
         break;
       }
+      case kSingle: {
+        const PoseVector<T>* value =
+            this->template EvalVectorInput<PoseVector>(context, port_index);
+        DRAKE_ASSERT(pose_index < bundle.get_num_poses());
+        bundle.set_name(pose_index, record.name);
+        bundle.set_pose(pose_index, value->get_isometry());
+        pose_index++;
+        break;
+      }
       case kBundle: {
         // Concatenate the poses of the input pose bundle into the output.
         // TODO(david-german-tri): Accept PoseBundles of variable width, with
@@ -81,7 +100,7 @@ void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
         const PoseBundle<T>* value =
             this->template EvalInputValue<PoseBundle<T>>(context, port_index);
         DRAKE_ASSERT(num_poses == value->get_num_poses());
-        const std::string& bundle_name = record.bundle_name;
+        const std::string& bundle_name = record.name;
         for (int j = 0; j < num_poses; ++j) {
           DRAKE_ASSERT(pose_index < bundle.get_num_poses());
           bundle.set_pose(pose_index, value->get_pose(j));
