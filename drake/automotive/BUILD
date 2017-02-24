@@ -542,7 +542,7 @@ sh_test(
     srcs = ["//tools:exec.sh"],
     args = [
         "$(location :car_sim_lcm)",
-        " --simulation_sec=0.1",
+        " --simulation_sec=0.01",
     ],
     data = [":car_sim_lcm"],
 )
