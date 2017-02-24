@@ -50,7 +50,7 @@ class RoadGeometry : public api::RoadGeometry {
 
   api::RoadPosition DoToRoadPosition(
       const api::GeoPosition& geo_pos,
-      const api::RoadPosition& hint,
+      const api::RoadPosition* hint,
       api::GeoPosition* nearest_point,
       double* distance) const override;
 

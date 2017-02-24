@@ -50,7 +50,7 @@ const api::BranchPoint* RoadGeometry::do_branch_point(int index) const {
 
 api::RoadPosition RoadGeometry::DoToRoadPosition(
     const api::GeoPosition&,
-    const api::RoadPosition&,
+    const api::RoadPosition*,
     api::GeoPosition*,
     double*) const {
   DRAKE_ABORT();  // TODO(liang.fok) Implement me.

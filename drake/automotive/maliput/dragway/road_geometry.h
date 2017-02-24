@@ -69,7 +69,7 @@ class RoadGeometry final : public api::RoadGeometry {
 
   api::RoadPosition DoToRoadPosition(
       const api::GeoPosition& geo_position,
-      const api::RoadPosition& hint,
+      const api::RoadPosition* hint,
       api::GeoPosition* nearest_point,
       double* distance) const final;
 

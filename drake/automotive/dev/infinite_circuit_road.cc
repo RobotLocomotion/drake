@@ -44,7 +44,7 @@ InfiniteCircuitRoad::do_branch_point(int index) const { DRAKE_ABORT(); }
 api::RoadPosition
 InfiniteCircuitRoad::DoToRoadPosition(
     const api::GeoPosition& geo_pos,
-    const api::RoadPosition& hint,
+    const api::RoadPosition* hint,
     api::GeoPosition* nearest_point,
     double* distance) const { DRAKE_ABORT(); }
 

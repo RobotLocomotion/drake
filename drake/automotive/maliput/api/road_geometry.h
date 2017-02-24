@@ -59,8 +59,10 @@ class RoadGeometry {
     return do_branch_point(index);
   }
 
-  /// Determines the RoadPosition corresponding to GeoPosition @p geo_position,
-  /// potentially using @p hint to guide the search.
+  /// Determines the RoadPosition corresponding to GeoPosition @p geo_position.
+  ///
+  /// If @p hint in non-null, its value is used to help guide the search and
+  /// select the result.
   ///
   /// The return value is the RoadPosition of the point in the RoadGeometry's
   /// manifold which is, in the world frame, closest to @p geo_position.  If
@@ -73,11 +75,11 @@ class RoadGeometry {
   /// `result.lane->ToGeoPosition(result.pos)` is within `linear_tolerance()`
   /// of `*nearest_position`.
   ///
-  /// The map from RoadGeometry to world frame is not onto (as a RoadGeometry
-  /// is bounded, and the Cartesian universe is not).  If @p geo_position
-  /// does represent a point contained within the volume of the RoadGeometry,
-  /// then result @p distance is guaranteed to be less than or equal to
-  /// `linear_tolerance()`.
+  /// The map from RoadGeometry to the world frame is not onto (as a bounded
+  /// RoadGeometry cannot completely cover the unbounded Cartesian universe).
+  /// If @p geo_position does represent a point contained within the volume
+  /// of the RoadGeometry, then result @p distance is guaranteed to be less
+  /// than or equal to `linear_tolerance()`.
   ///
   /// The map from RoadGeometry to world frame is not necessarily one-to-one.
   /// Different `(s,r,h)` coordinates from different Lanes, potentially from
@@ -88,8 +90,8 @@ class RoadGeometry {
   /// height `h` value in the result.  If the chosen Segment has multiple
   /// Lanes, then ToRoadPosition() will choose a Lane which contains
   /// @p geo_position within its `lane_bounds()` if possible, and if that is
-  /// still ambiguous, will further select a Lane which minimizes the absolute
-  /// value of the lateral `r` coordinate in the result.
+  /// still ambiguous, it will further select a Lane which minimizes the
+  /// absolute value of the lateral `r` coordinate in the result.
   // TODO(maddog@tri.global)  Establish what effect `hint` has on the outcome.
   //                          Two notions:
   //                          1)  the hint helps to bootstrap a search;
@@ -100,7 +102,7 @@ class RoadGeometry {
   //                          might expect an updated RoadPosition which is
   //                          nearby (e.g., on the same Lane).
   RoadPosition ToRoadPosition(const GeoPosition& geo_position,
-                              const RoadPosition& hint,
+                              const RoadPosition* hint,
                               GeoPosition* nearest_position,
                               double* distance) const {
     return DoToRoadPosition(geo_position, hint, nearest_position, distance);
@@ -141,7 +143,7 @@ class RoadGeometry {
   virtual const BranchPoint* do_branch_point(int index) const = 0;
 
   virtual RoadPosition DoToRoadPosition(const GeoPosition& geo_pos,
-                                        const RoadPosition& hint,
+                                        const RoadPosition* hint,
                                         GeoPosition* nearest_position,
                                         double* distance) const = 0;
 
