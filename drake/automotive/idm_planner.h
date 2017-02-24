@@ -45,13 +45,17 @@ class IdmPlanner : public systems::LeafSystem<T> {
   const systems::InputPortDescriptor<T>& get_agent_port() const;
 
   // System<T> overrides.
-  // The output of this system is an algebraic relation of its inputs.
-  bool has_any_direct_feedthrough() const override { return true; }
-
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
   void SetDefaultParameters(const systems::LeafContext<T>& context,
                             systems::Parameters<T>* params) const override;
+
+ protected:
+  // The output of this system is an algebraic relation of its inputs.
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
+                              int input_port, int output_port) const override {
+    return true;
+  }
 
  private:
   void DoCalcOutput(const systems::Context<T>& context,
