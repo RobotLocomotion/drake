@@ -109,26 +109,6 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
   EXPECT_TRUE(G_Ro_F.CouldBePhysicallyValid());
 }
 
-// This overload gets chosen if the scalar multiply would would compile.
-template <typename T, typename = decltype(1.*T())>
-bool has_scalar_mult_helper(int) { return true; }
-// This overload gets chosen if the above can't compile.
-template <typename T>
-bool has_scalar_mult_helper(...) { return false; }
-
-// This method returns true at runtime if type T has a scalar multiply.
-template <typename T>
-bool has_scalar_multiply() { return has_scalar_mult_helper<T>(1); }
-
-// Tests that multiplication by a scalar is disallowed.
-GTEST_TEST(RotationalInertia, MultiplicationWithAScalar) {
-  // While we can multiply a RotationalInertia by a scalar....
-  EXPECT_TRUE(has_scalar_multiply<RotationalInertia<double>>());
-
-  // ... we cannot perform the same operation on a UnitInertia.
-  EXPECT_FALSE(has_scalar_multiply<UnitInertia<double>>());
-}
-
 // Tests the static method to obtain the unit inertia of a point mass.
 GTEST_TEST(UnitInertia, PointMass) {
   Vector3d v(1, 2, 4.2);
@@ -308,6 +288,77 @@ GTEST_TEST(UnitInertia, AutoDiff) {
 
   EXPECT_TRUE(Idot_W.isApprox(
       Idot_W_expected, Eigen::NumTraits<double>::epsilon()));
+}
+
+// This is a trick dummy to create at compile time an l-value for the template
+// below.
+template <class T>
+struct DummyToCreateLValue { T& get_thing(); };
+
+// This overload gets chosen if the *= double would compile.
+template <typename T,
+    typename = decltype(DummyToCreateLValue<T>().get_thing() *= 1.)>
+bool has_times_equal_helper(int) { return true; }
+
+// This overload gets chosen if the above can't compile.
+// It is made to take any other argument but the above is a better match to an
+// int argument if it got compiled, and therefore gets selected for a class with
+// an opeartor*=() defined.
+template <typename T>
+bool has_times_equal_helper(...) { return false; }
+
+// This method returns true at runtime if type T has an operator*=().
+template <typename T>
+bool has_times_equal() { return has_times_equal_helper<T>(1); }
+
+// Tests that operator*=() is indeed not available for a UnitInertia while it is
+// available for a general RotationalInertia.
+GTEST_TEST(UnitInertia, TimesEqualScalar) {
+  // While we can multiply a RotationalInertia by a scalar...
+  EXPECT_TRUE(has_times_equal<RotationalInertia<double>>());
+
+  // ... we cannot perform the same operation on a UnitInertia.
+  EXPECT_FALSE(has_times_equal<UnitInertia<double>>());
+}
+
+// See the explanation for this template helpers in the analogous implementation
+// for has_times_equal() above.
+template <typename T,
+    typename = decltype(DummyToCreateLValue<T>().get_thing() /= 1.)>
+bool has_divide_equal_helper(int) { return true; }
+template <typename T>
+bool has_divide_equal_helper(...) { return false; }
+template <typename T>
+bool has_divide_equal() { return has_divide_equal_helper<T>(1); }
+
+// Tests that operator/=() is indeed not available for a UnitInertia while it is
+// available for a general RotationalInertia.
+GTEST_TEST(UnitInertia, DivideEqualScalar) {
+  // While we can divide a RotationalInertia by a scalar...
+  EXPECT_TRUE(has_divide_equal<RotationalInertia<double>>());
+
+  // ... we cannot perform the same operation on a UnitInertia.
+  EXPECT_FALSE(has_divide_equal<UnitInertia<double>>());
+}
+
+// See the explanation for this template helpers in the analogous implementation
+// for has_times_equal() above.
+template <typename T,
+    typename = decltype(DummyToCreateLValue<T>().get_thing() += T())>
+bool has_plus_equal_helper(int) { return true; }
+template <typename T>
+bool has_plus_equal_helper(...) { return false; }
+template <typename T>
+bool has_plus_equal() { return has_plus_equal_helper<T>(1); }
+
+// Tests that operator+=() is indeed not available for a UnitInertia while it is
+// available for a general RotationalInertia.
+GTEST_TEST(UnitInertia, PlusEqualAnInertia) {
+  // While we can add a RotationalInertia to a RotationalInertia....
+  EXPECT_TRUE(has_plus_equal<RotationalInertia<double>>());
+
+  // ... we cannot perform the same operation on a UnitInertia.
+  EXPECT_FALSE(has_plus_equal<UnitInertia<double>>());
 }
 
 }  // namespace

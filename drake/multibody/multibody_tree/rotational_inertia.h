@@ -163,13 +163,31 @@ class RotationalInertia {
            get_products().isApprox(other.get_products(), precision);
   }
 
-  /// Adds rotational inertia @p `I_Bo_F` to this rotational inertia. This
+  /// Adds rotational inertia @p `I_Bo_F` to `this` rotational inertia. This
   /// operation is only valid if both inertias are computed about the same
   /// center `Bo` and expressed in the same frame `F`.
   /// @param[in] I_Bo_F A rotational inertia to be added to this inertia.
   /// @returns A reference to `this` rotational inetia.
-  RotationalInertia& operator+=(const RotationalInertia<T>& I_Bo_F) {
+  RotationalInertia<T>& operator+=(const RotationalInertia<T>& I_Bo_F) {
     this->get_mutable_triangular_view() += I_Bo_F.get_matrix();
+    return *this;
+  }
+
+  /// Disallow the substraction of another inertia from `this` inertia since
+  /// this operation might lead to invalid (non physical) results.
+  RotationalInertia<T>& operator-=(const RotationalInertia<T>&) = delete;
+
+  /// Multiply `this` rotational inertia by a `scalar` in place modifying the
+  /// original object.
+  RotationalInertia<T>& operator*=(const T& scalar) {
+    this->get_mutable_triangular_view() *= scalar;
+    return *this;
+  }
+
+  /// Divide `this` rotational inertia by a `scalar` in place modifying the
+  /// original object.
+  RotationalInertia<T>& operator/=(const T& scalar) {
+    this->get_mutable_triangular_view() /= scalar;
     return *this;
   }
 

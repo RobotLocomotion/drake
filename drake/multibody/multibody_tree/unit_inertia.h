@@ -206,22 +206,21 @@ class UnitInertia : public RotationalInertia<T> {
     const T Iz = r * r / T(2);
     const T Ix = (T(3) * r * r + L * L) / T(12) + L * L / T(4);
     return UnitInertia(Ix, Ix, Iz);
-  } 
+  }
   // End of Doxygen group
   //@}
 
- private:
+  /// @name Operations not allowed for unit inertias.
   // Disable here operations that while well defined for the general
-  // RotationalInertia class, would otherwise result in general in non-unit
+  // RotationalInertia class, would otherwise result, in general, in non-unit
   // inertias.
-  RotationalInertia<T>& operator+=(const RotationalInertia<T>& I_Bo_F) {}
-
-  // Disable operations to any scalar that has an implicit conversion to int
-  // defined.
-  void operator+=(int) {}
-  void operator-=(int) {}
-  void operator*=(int) {}
-  void operator/=(int) {}
+  //@{
+  UnitInertia<T>& operator+=(const RotationalInertia<T>&) = delete;
+  UnitInertia<T>& operator-=(const RotationalInertia<T>&) = delete;
+  UnitInertia<T>& operator*=(const T&) = delete;
+  UnitInertia<T>& operator/=(const T&) = delete;
+  // End of Doxygen group
+  //@}
 };
 
 }  // namespace multibody
