@@ -48,8 +48,8 @@ void controller_loop() {
       builder.AddSystem(std::make_unique<RobotStateDecoderSystem>(*robot));
   PlanEvalSystem* plan_eval =
       builder.AddSystem(std::make_unique<PlanEvalSystem>(*robot));
-  QPControllerSystem* qp_con =
-      builder.AddSystem(std::make_unique<QPControllerSystem>(*robot, 0.003));
+  QpControllerSystem* qp_con =
+      builder.AddSystem(std::make_unique<QpControllerSystem>(*robot, 0.003));
   JointLevelControllerSystem* joint_con =
       builder.AddSystem<JointLevelControllerSystem>(*robot);
 

@@ -11,7 +11,7 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-QPControllerSystem::QPControllerSystem(const RigidBodyTree<double>& robot,
+QpControllerSystem::QpControllerSystem(const RigidBodyTree<double>& robot,
                                        double dt)
     : robot_(robot), control_dt_(dt) {
   input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
@@ -19,11 +19,11 @@ QPControllerSystem::QPControllerSystem(const RigidBodyTree<double>& robot,
   output_port_index_qp_output_ = DeclareAbstractOutputPort().get_index();
   output_port_index_debug_info_ = DeclareAbstractOutputPort().get_index();
 
-  set_name("QPControllerSystem");
+  set_name("QpControllerSystem");
   DeclarePeriodicUnrestrictedUpdate(control_dt_, 0);
 }
 
-void QPControllerSystem::DoCalcOutput(
+void QpControllerSystem::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
   QpOutput& qp_output = output->GetMutableData(output_port_index_qp_output_)
@@ -38,7 +38,7 @@ void QPControllerSystem::DoCalcOutput(
       kAbstractStateIndexDebug);
 }
 
-void QPControllerSystem::DoCalcUnrestrictedUpdate(
+void QpControllerSystem::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
   // Inputs:
@@ -57,7 +57,7 @@ void QPControllerSystem::DoCalcUnrestrictedUpdate(
     err << rs->position().transpose() << "\n";
     err << rs->velocity().transpose() << "\n";
     err << *qp_input << std::endl;
-    throw std::runtime_error("QPControllerSystem: QP cannot solve\n" +
+    throw std::runtime_error("QpControllerSystem: QP cannot solve\n" +
                              err.str());
   }
 
@@ -80,7 +80,7 @@ void QPControllerSystem::DoCalcUnrestrictedUpdate(
 }
 
 std::unique_ptr<systems::AbstractState>
-QPControllerSystem::AllocateAbstractState() const {
+QpControllerSystem::AllocateAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
   abstract_vals[kAbstractStateIndexQpOutput] =
       std::unique_ptr<systems::AbstractValue>(
@@ -93,7 +93,7 @@ QPControllerSystem::AllocateAbstractState() const {
 }
 
 std::unique_ptr<systems::AbstractValue>
-QPControllerSystem::AllocateOutputAbstract(
+QpControllerSystem::AllocateOutputAbstract(
     const systems::OutputPortDescriptor<double>& descriptor) const {
   if (descriptor.get_index() == output_port_index_qp_output_) {
     return systems::AbstractValue::Make<QpOutput>(

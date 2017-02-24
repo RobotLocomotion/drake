@@ -14,17 +14,17 @@ namespace qp_inverse_dynamics {
 /**
  * A discrete time system block for an inverse dynamics controller.
  */
-class QPControllerSystem : public systems::LeafSystem<double> {
+class QpControllerSystem : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QPControllerSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QpControllerSystem)
 
   /**
    * Constructor for the inverse dynamics controller.
-   * @param robot Reference to a RigidBodyTree. Its lifespan of @p robot
-   * must be longer than this object.
+   * @param robot Reference to a RigidBodyTree. Its lifespan must be longer
+   * than this object.
    * @param dt Control cycle period.
    */
-  QPControllerSystem(const RigidBodyTree<double>& robot, double dt);
+  QpControllerSystem(const RigidBodyTree<double>& robot, double dt);
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
@@ -69,6 +69,8 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   get_output_port_debug_info() const {
     return get_output_port(output_port_index_debug_info_);
   }
+
+  inline double get_control_dt() const { return control_dt_; }
 
  private:
   template <typename ValueType>

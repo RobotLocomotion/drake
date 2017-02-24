@@ -75,6 +75,14 @@ GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
   EXPECT_TRUE(drake::CompareMatrices(input.desired_dof_motions().values(),
                                      output.vd(), 1e-9,
                                      drake::MatrixCompareType::absolute));
+
+  // Without any external forces or hitting any contraints, torque = M * vd_d +
+  // h.
+  VectorX<double> expected_torque =
+      robot_status.M() * input.desired_dof_motions().values() +
+      robot_status.bias_term();
+  EXPECT_TRUE(drake::CompareMatrices(expected_torque, output.dof_torques(),
+                                     1e-9, drake::MatrixCompareType::absolute));
 }
 
 }  // namespace qp_inverse_dynamics
