@@ -13,6 +13,8 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   dev/endless_road_car.cc
   dev/endless_road_oracle.cc
   dev/infinite_circuit_road.cc
+  gen/bicycle_parameters.cc
+  gen/bicycle_state.cc
   gen/driving_command.cc
   gen/endless_road_car_config.cc
   gen/endless_road_car_state.cc

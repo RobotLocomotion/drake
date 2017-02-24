@@ -39,7 +39,8 @@ class SimplePowertrain : public systems::LinearSystem<T> {
       : systems::LinearSystem<T>(make_singleton_matrix(-1. / time_constant),
                                  make_singleton_matrix(gain),
                                  make_singleton_matrix(1. / time_constant),
-                                 make_singleton_matrix(0.)) {}
+                                 make_singleton_matrix(0.)),
+      time_constant_(time_constant), gain_(gain) {}
   ~SimplePowertrain() override = default;
 
   const systems::InputPortDescriptor<T>& get_throttle_input_port() const {
@@ -50,12 +51,21 @@ class SimplePowertrain : public systems::LinearSystem<T> {
     return systems::System<T>::get_output_port(0);
   }
 
+  /// Accessors for the system constants.
+  /// @{
+  const double get_time_constant() const { return time_constant_; }
+  const double get_gain() const { return gain_; }
+  /// @}
+
  private:
   static Eigen::MatrixXd make_singleton_matrix(const double& value) {
     Eigen::MatrixXd matrix(1, 1);
     matrix << value;
     return matrix;
   }
+
+  const double time_constant_;
+  const double gain_;
 };
 
 }  // namespace automotive

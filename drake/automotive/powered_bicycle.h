@@ -18,11 +18,11 @@ namespace automotive {
 /// model (see Bicycle for details).  The diagram is assembled as follows:
 ///
 /// <pre>
-///  steering                                   +-------------+
-///  (0) -------------------------------------->|             |      states
-///              +------------+  body force     |   Bicycle   |-------> (0)
-///  (1) ------->| Powertrain |---------------->|             |
-///  throttle    +------------+                 +-------------+
+///   steering                                   +-------------+
+///   (0) -------------------------------------->|             |      states
+///               +------------+  body force     |   Bicycle   |-------> (0)
+///   (1) ------->| Powertrain |---------------->|             |
+///   throttle    +------------+                 +-------------+
 /// </pre>
 ///
 /// Inputs:
@@ -33,6 +33,9 @@ namespace automotive {
 ///    (InputPortDescriptor getter: get_throttle_input_port())
 ///
 /// Output:
+///  - A scalar value representing the force input to the bicycle [N] (see
+///    SimplePowertrain for details).
+///    (OutputPortDescriptor getter: get_powertrain_output_port())
 ///  - A 6-dimensional vector containing the states of the bicycle (see
 ///    Bicycle for details).
 ///    (OutputPortDescriptor getter: get_state_output_port())
@@ -67,8 +70,12 @@ class PoweredBicycle : public systems::Diagram<T> {
     return systems::System<T>::get_input_port(1);
   }
 
-  const systems::OutputPortDescriptor<T>& get_state_output_port() const {
+  const systems::OutputPortDescriptor<T>& get_powertrain_output_port() const {
     return systems::System<T>::get_output_port(0);
+  }
+
+  const systems::OutputPortDescriptor<T>& get_state_output_port() const {
+    return systems::System<T>::get_output_port(1);
   }
   /// @}
 

@@ -4,6 +4,8 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/gen/bicycle_parameters.h"
+#include "drake/automotive/gen/bicycle_state.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -46,8 +48,6 @@ namespace automotive {
 ///
 /// They are already available to link against in libdrakeAutomotive.
 ///
-/// @ingroup automotive_systems
-///
 /// [1] M. Althoff and J.M. Dolan, Online verification of automated road
 ///     vehicles using reachability analysis, IEEE Transactions on Robotics,
 ///     30(4), 2014, pp. 903-908.  DOI: 10.1109/TRO.2014.2312453.
@@ -55,6 +55,8 @@ namespace automotive {
 /// [2] M. Althoff and J. M. Dolan, Reachability computation of low-order
 ///     models for the safety verification of high-order road vehicle models,
 ///     in Proc. of the American Control Conference, 2012, pp. 3559–3566.
+///
+/// @ingroup automotive_systems
 template <typename T>
 class Bicycle : public systems::LeafSystem<T> {
  public:
@@ -77,6 +79,11 @@ class Bicycle : public systems::LeafSystem<T> {
   void SetDefaultParameters(const systems::LeafContext<T>& context,
                             systems::Parameters<T>* params) const override;
 
+  // LeafSystem<T> overrides
+  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
+      const override;
+  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
+      const systems::OutputPortDescriptor<T>& descriptor) const override;
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
   // System<T> overrides.
@@ -90,6 +97,12 @@ class Bicycle : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  void ImplCalcTimeDerivatives(const BicycleParameters<T>& params,
+                               const BicycleState<T>& state,
+                               const systems::BasicVector<T>& steering,
+                               const systems::BasicVector<T>& force,
+                               BicycleState<T>* derivatives) const;
 
   int steering_input_port_{};
   int force_input_port_{};

@@ -1,0 +1,24 @@
+element {
+     name: "Psi"
+     doc: "yaw angle"
+}
+element {
+     name: "Psi_dot"
+     doc: "yaw angular rate"
+}
+element {
+     name: "beta"
+     doc: "slip angle at the center of mass"
+}
+element {
+     name: "v"
+     doc: "velocity magnitude"
+}
+element {
+     name: "sx"
+     doc: "x-position at the center of mass"
+}
+element {
+     name: "sy"
+     doc: "y-position at the center of mass"
+}

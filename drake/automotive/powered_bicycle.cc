@@ -25,6 +25,8 @@ PoweredBicycle<T>::PoweredBicycle() : systems::Diagram<T>() {
 
   builder.ExportInput(bike_->get_steering_input_port());
   builder.ExportInput(power_->get_throttle_input_port());
+
+  builder.ExportOutput(power_->get_output_port());
   builder.ExportOutput(bike_->get_state_output_port());
 
   builder.BuildInto(this);

@@ -15,6 +15,7 @@ drake_cc_library(
     name = "generated_vectors",
     srcs = [
         "gen/bicycle_parameters.cc",
+        "gen/bicycle_state.cc",
         "gen/driving_command.cc",
         "gen/endless_road_car_config.cc",
         "gen/endless_road_car_state.cc",
@@ -26,6 +27,7 @@ drake_cc_library(
     ],
     hdrs = [
         "gen/bicycle_parameters.h",
+        "gen/bicycle_state.h",
         "gen/driving_command.h",
         "gen/endless_road_car_config.h",
         "gen/endless_road_car_state.h",

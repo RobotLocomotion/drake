@@ -6,7 +6,6 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/automotive/gen/bicycle_parameters.h"
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
@@ -18,7 +17,7 @@ namespace automotive {
 namespace {
 
 // Specify the dimension of the state vector and of each input port.
-static constexpr int kStateDimension{6};
+static constexpr int kStateDimension{BicycleStateIndices::kNumCoordinates};
 static constexpr int kSteeringInputDimension{1};
 static constexpr int kForceInputDimension{1};
 
@@ -66,9 +65,19 @@ const systems::OutputPortDescriptor<T>& Bicycle<T>::get_state_output_port()
 template <typename T>
 void Bicycle<T>::DoCalcOutput(const systems::Context<T>& context,
                               systems::SystemOutput<T>* output) const {
-  const Vector6<T> state = this->CopyContinuousStateVector(context);
-  this->GetMutableOutputVector(output, get_state_output_port().get_index()) =
-      state;
+  // Obtain the state.
+  const systems::VectorBase<T>& context_state =
+      context.get_continuous_state_vector();
+  const BicycleState<T>* const state =
+      dynamic_cast<const BicycleState<T>*>(&context_state);
+  DRAKE_ASSERT(state != nullptr);
+
+  // Obtain the output pointer and mutate with our state.
+  BicycleState<T>* const output_vector =
+      dynamic_cast<BicycleState<T>*>(output->GetMutableVectorData(0));
+  DRAKE_ASSERT(output_vector != nullptr);
+
+  output_vector->set_value(state->get_value());
 }
 
 // Calculate the continuous-time derivatives.
@@ -76,26 +85,43 @@ template <typename T>
 void Bicycle<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT(derivatives != nullptr);
-
-  // Obtain the state and input vectors.
-  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
-
-  const systems::BasicVector<T>* steering_ptr =
-      this->EvalVectorInput(context, get_steering_input_port().get_index());
-  DRAKE_ASSERT(steering_ptr != nullptr);
-  const T delta = steering_ptr->GetAtIndex(0);
-
-  const systems::BasicVector<T>* force_ptr =
-      this->EvalVectorInput(context, get_force_input_port().get_index());
-  DRAKE_ASSERT(force_ptr != nullptr);
-  const T F_in = force_ptr->GetAtIndex(0);
-
-  // Obtain the parameters.
+  // Obtain the parameters, states, inputs, and state derivatives.
   const int kParamsIndex = 0;
   const BicycleParameters<T>& params =
       this->template GetNumericParameter<BicycleParameters>(context,
                                                             kParamsIndex);
+  const systems::VectorBase<T>& context_state =
+      context.get_continuous_state_vector();
+  const BicycleState<T>* const state =
+      dynamic_cast<const BicycleState<T>*>(&context_state);
+  DRAKE_ASSERT(state != nullptr);
+
+  const systems::BasicVector<T>* steering =
+      this->EvalVectorInput(context, get_steering_input_port().get_index());
+  DRAKE_ASSERT(steering != nullptr);
+
+  const systems::BasicVector<T>* force =
+      this->EvalVectorInput(context, get_force_input_port().get_index());
+  DRAKE_ASSERT(force != nullptr);
+
+  DRAKE_ASSERT(derivatives != nullptr);
+  systems::VectorBase<T>* derivative_vector = derivatives->get_mutable_vector();
+  DRAKE_ASSERT(derivative_vector != nullptr);
+  BicycleState<T>* const state_derivatives =
+      dynamic_cast<BicycleState<T>*>(derivative_vector);
+  DRAKE_ASSERT(state_derivatives != nullptr);
+
+  ImplCalcTimeDerivatives(params, *state, *steering, *force, state_derivatives);
+}
+
+template <typename T>
+void Bicycle<T>::ImplCalcTimeDerivatives(
+    const BicycleParameters<T>& params,
+    const BicycleState<T>& state,
+    const systems::BasicVector<T>& steering,
+    const systems::BasicVector<T>& force,
+    BicycleState<T>* derivatives) const {
+  // Parse and validate the parameters.
   const T m = params.mass();
   const T lr = params.lf();
   const T lf = params.lr();
@@ -106,11 +132,15 @@ void Bicycle<T>::DoCalcTimeDerivatives(
   DRAKE_DEMAND(m > 0.);
   DRAKE_DEMAND(Iz > 0.);
 
-  // Obtain the states.
-  const T Psi{state[0]};
-  const T Psi_dot{state[1]};
-  const T beta{state[2]};
-  const T v{state[3]};
+  // Parse the inputs.
+  const T delta = steering[0];
+  const T F_in = force[0];
+
+  // Parse and validate the states.
+  const T Psi{state.Psi()};
+  const T Psi_dot{state.Psi_dot()};
+  const T beta{state.beta()};
+  const T v{state.v()};
 
   DRAKE_DEMAND(v != 0.);  // N.B. Protection against the singular solution.
 
@@ -128,13 +158,25 @@ void Bicycle<T>::DoCalcTimeDerivatives(
   const T sx_dot = v * cos(beta + Psi);
   const T sy_dot = v * sin(beta + Psi);
 
-  systems::VectorBase<T>* state_dot = derivatives->get_mutable_vector();
-  (*state_dot)[0] = Psi_dot;
-  (*state_dot)[1] = Psi_ddot;
-  (*state_dot)[2] = beta_dot;
-  (*state_dot)[3] = v_dot;
-  (*state_dot)[4] = sx_dot;
-  (*state_dot)[5] = sy_dot;
+  derivatives->set_Psi(Psi_dot);
+  derivatives->set_Psi_dot(Psi_ddot);
+  derivatives->set_beta(beta_dot);
+  derivatives->set_v(v_dot);
+  derivatives->set_sx(sx_dot);
+  derivatives->set_sy(sy_dot);
+}
+
+template <typename T>
+std::unique_ptr<systems::ContinuousState<T>>
+Bicycle<T>::AllocateContinuousState() const {
+  return std::make_unique<systems::ContinuousState<T>>(
+      std::make_unique<BicycleState<T>>());
+}
+
+template <typename T>
+std::unique_ptr<systems::BasicVector<T>> Bicycle<T>::AllocateOutputVector(
+    const systems::OutputPortDescriptor<T>& descriptor) const {
+  return std::make_unique<BicycleState<T>>();
 }
 
 template <typename T>
@@ -151,8 +193,8 @@ void Bicycle<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
       params->get_mutable_numeric_parameter(0));
   DRAKE_DEMAND(p != nullptr);
   p->set_mass(T(2278.));  // Mass [kg].
-  p->set_lf(T(1.292));    // Distance from CG to front axle [m].
-  p->set_lr(T(1.515));    // Distance from CG to rear axle [m].
+  p->set_lf(T(1.292));    // Distance from center of mass to front axle [m].
+  p->set_lr(T(1.515));    // Distance from center of mass to rear axle [m].
   p->set_Iz(T(3210.));    // Moment of inertia about the yaw-axis [kg m^2].
   p->set_Cf(T(10.8e4));   // Cornering stiffness (front) [N / rad].
   p->set_Cr(T(10.8e4));   // Cornering stiffness (rear) [N / rad].
