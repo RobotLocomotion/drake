@@ -20,17 +20,16 @@ endif()
 if(VTK_FOUND)
   find_program(Xvfb Xvfb)
   if(Xvfb)
+    execute_process(COMMAND glxinfo)
     set(ENV{DISPLAY} :99)
     execute_process(COMMAND glxinfo)
-    set(wrap_xvfb "${Xvfb} :99 -ac -screen 0 1280x1024x24")
-    drake_add_cc_test(rgbd_camera_test ${wrap_xvfb})
+    drake_add_cc_test(rgbd_camera_test)
     target_link_libraries(rgbd_camera_test
       drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSensors
       drakeSystemAnalysis
     )
-    set_property(TEST rgbd_camera_test PROPERTY RESOURCE_LOCK xvfb)
   endif()
 
   drake_add_cc_test(vtk_util_test)
