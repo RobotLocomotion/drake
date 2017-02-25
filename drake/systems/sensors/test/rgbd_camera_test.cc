@@ -203,16 +203,16 @@ const float kExpectedDepth[192] = {
 1.15537, 1.15537, 1.15537, 1.15537, 1.15537, 1.15537, 1.15537, 1.15537, 1.15537,
 1.15537, 1.15537, 1.15537};
 
-struct ColorPixel {
-  uint8_t b;
-  uint8_t g;
-  uint8_t r;
-  uint8_t a;
-};
+  // struct ColorPixel {
+  // uint8_t b;
+  // uint8_t g;
+  // uint8_t r;
+  // uint8_t a;
+  //};
 
-typedef ColorPixel P;
+  //typedef ColorPixel P;
 
-const ColorPixel kExpectedColor[192] = {};
+  //const ColorPixel kExpectedColor[192] = {};
 
 // Verifies rendered terrain.
 GTEST_TEST(RenderingTest, AllShapeRenderingTest) {
