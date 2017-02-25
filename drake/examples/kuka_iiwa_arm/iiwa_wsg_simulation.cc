@@ -119,15 +119,7 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   *wsg_instance = tree_builder->get_model_info_for_instance(id);
 
   auto plant = std::make_unique<RigidBodyPlant<T>>(tree_builder->Build());
-  // Contact parameters
-  const double kStiffness = 10000;
-  const double kDissipation = 5.0;
-  const double kStaticFriction = 0.9;
-  const double kDynamicFriction = 0.5;
-  const double kStictionSlipTolerance = 0.01;
-  plant->set_normal_contact_parameters(kStiffness, kDissipation);
-  plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
-                                         kStictionSlipTolerance);
+
   return plant;
 }
 
