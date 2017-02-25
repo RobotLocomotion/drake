@@ -18,18 +18,22 @@ if(BUILD_TESTING)
 endif()
 
 if(VTK_FOUND)
-  find_program(Xvfb Xvfb)
-  if(Xvfb)
-    execute_process(COMMAND glxinfo)
-    set(ENV{DISPLAY} :99)
-    execute_process(COMMAND glxinfo)
-    drake_add_cc_test(rgbd_camera_test)
+  find_program(xvfb-run xvfb-run)
+  if(xvfb-run)
+    set(wrap_xvfb ${xvfb-run} -a -s "-screen 0 1280x1024x24")
+    add_executable(rgbd_camera_test rgbd_camera_test.cc)
     target_link_libraries(rgbd_camera_test
+      GTest::GTest
+      GTest::Main
       drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSensors
       drakeSystemAnalysis
     )
+    add_test(
+      NAME rgbd_camera_test2
+      COMMAND ${wrap_xvfb}
+              ${PROJECT_BINARY_DIR}/systems/sensors/test/rgbd_camera_test)
   endif()
 
   drake_add_cc_test(vtk_util_test)
