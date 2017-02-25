@@ -40,8 +40,8 @@ class PoweredBicycleTest : public ::testing::Test {
 
   BicycleState<double>* bicycle_continuous_state() {
     auto context_state = get_continuous_state(dut_->get_bicycle_system());
-    BicycleState<double>* state = dynamic_cast<BicycleState<double>*>(
-        context_state);
+    BicycleState<double>* state =
+        dynamic_cast<BicycleState<double>*>(context_state);
     DRAKE_DEMAND(state != nullptr);
     return state;
   }
@@ -131,8 +131,8 @@ TEST_F(PoweredBicycleTest, Output) {
   // vector for the bicycle.
   auto bike_state = bicycle_continuous_state();
 
-  const systems::BasicVector<double>* output = output_->get_vector_data(
-      kBikeStateIndex);
+  const systems::BasicVector<double>* output =
+      output_->get_vector_data(kBikeStateIndex);
   const BicycleState<double>* bike_output =
       dynamic_cast<const BicycleState<double>*>(output);
   ASSERT_NE(nullptr, bike_output);
@@ -212,13 +212,13 @@ TEST_F(PoweredBicycleTest, PowerTrainTimeDerivativeAndOutput) {
   const auto power_derivatives = powertrain_state_derivatives();
   const auto bike_derivatives = bicycle_state_derivatives();
 
-  const systems::BasicVector<double>* power_output = output_->get_vector_data(
-      kPowertrainIndex);
+  const systems::BasicVector<double>* power_output =
+      output_->get_vector_data(kPowertrainIndex);
 
   // Set the throttle input to some positive value.
   SetInputs(0., 10.);
 
-  // Set the power-train state to an arbitrary value. We also require
+  // Set the powertrain state to an arbitrary value. We also require
   // bicycle velocity to be nonzero.
   (*power_state)[0] = 20.;
   bike_state->set_v(1.);
@@ -230,7 +230,7 @@ TEST_F(PoweredBicycleTest, PowerTrainTimeDerivativeAndOutput) {
   EXPECT_EQ(-90., (*power_derivatives)[0]);
 
   // Verify the v_dot for the bicycle model, as a surrugate for checking the
-  // power-train output directly.
+  // powertrain output directly.
   EXPECT_LE(0., bike_derivatives->v());
 
   // Verify that the powertrain state matches its output.

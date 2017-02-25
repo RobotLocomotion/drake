@@ -123,8 +123,8 @@ void Bicycle<T>::ImplCalcTimeDerivatives(
     BicycleState<T>* derivatives) const {
   // Parse and validate the parameters.
   const T m = params.mass();
-  const T lr = params.lf();
-  const T lf = params.lr();
+  const T lr = params.lr();
+  const T lf = params.lf();
   const T Iz = params.Iz();
   const T Cf = params.Cf();
   const T Cr = params.Cr();
