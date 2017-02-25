@@ -8,8 +8,8 @@ struct lcmt_bicycle_parameters_t {
   int64_t timestamp;
 
   double mass;  // mass
-  double lf;  // distance from center of mass to the front axle
-  double lr;  // distance from center of mass to the rear axle
+  double lf;  // distance from the center of mass to the front axle
+  double lr;  // distance from the center of mass to the rear axle
   double Iz;  // moment of inertia about the yaw-axis
   double Cf;  // cornering stiffness (front)
   double Cr;  // cornering stiffness (rear)

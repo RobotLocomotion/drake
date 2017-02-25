@@ -7,14 +7,14 @@ namespace automotive {
 
 /// SimplePowertrain -- A simple powertrain system modeled as a first-order lag,
 /// with input taken as the throttle setting and the output taken as the applied
-/// lumped force from the wheels of a vehicle to the road.
+/// lumped force from the vehicle to the road.
 ///
 /// Input:
 ///  - A unitless scalar value representing the throttle input to the power
 ///    system.
 ///
 /// Output:
-///  - The force transmitted from the wheels to the road [N].
+///  - The force transmitted from the vehicle to the road [N].
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -33,14 +33,15 @@ class SimplePowertrain : public systems::LinearSystem<T> {
 
   /// Constructs a simple powertrain model, specified via a fixed time-constant
   /// and scalar gain.  The inputs are as follows:
-  /// @p time_constant is the rise time of the first-order lag [s].
-  /// @p gain is the gain converting throttle input to force output [N].
+  /// @param time_constant is the rise time of the first-order lag [s].
+  /// @param gain is the gain converting throttle input to force output [N].
   SimplePowertrain(const double& time_constant, const double& gain)
       : systems::LinearSystem<T>(make_singleton_matrix(-1. / time_constant),
                                  make_singleton_matrix(gain),
                                  make_singleton_matrix(1. / time_constant),
                                  make_singleton_matrix(0.)),
-      time_constant_(time_constant), gain_(gain) {}
+        time_constant_(time_constant),
+        gain_(gain) {}
   ~SimplePowertrain() override = default;
 
   const systems::InputPortDescriptor<T>& get_throttle_input_port() const {
@@ -53,8 +54,8 @@ class SimplePowertrain : public systems::LinearSystem<T> {
 
   /// Accessors for the system constants.
   /// @{
-  const double get_time_constant() const { return time_constant_; }
-  const double get_gain() const { return gain_; }
+  double get_time_constant() const { return time_constant_; }
+  double get_gain() const { return gain_; }
   /// @}
 
  private:
@@ -64,8 +65,8 @@ class SimplePowertrain : public systems::LinearSystem<T> {
     return matrix;
   }
 
-  const double time_constant_;
-  const double gain_;
+  const double time_constant_{};
+  const double gain_{};
 };
 
 }  // namespace automotive
