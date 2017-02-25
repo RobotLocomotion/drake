@@ -50,9 +50,9 @@ class SpatialVelocity {
 
   /// SpatialVelocity constructor from an Eigen expression that represents a
   /// six-dimensional vector.
-  // For a fixed sized `V` this constructor will assert at compile time while
-  // an assertion will be triggered not until run-time for dynamic sized Eigen
-  // expressions.
+  /// This constructor will assert the size of `V` is six (6) at compile-time
+  /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
+  /// expressions.
   template <typename Derived>
   explicit SpatialVelocity(const Eigen::MatrixBase<Derived>& V) : V_(V) {}
 
@@ -187,7 +187,7 @@ class SpatialVelocity {
     return SpatialVelocity<T>(s * V.get_Eigen_vector());
   }
 
-  /// Multiplication of a spatial velocity `V` from the left by a scalar `s`.
+  /// Multiplication of a spatial velocity `V` from the right by a scalar `s`.
   friend SpatialVelocity<T> operator*(const SpatialVelocity<T>& V, const T& s) {
     return s * V;  // Multiplication by scalar is commutative.
   }
@@ -203,7 +203,7 @@ template <typename T> inline
 std::ostream& operator<<(std::ostream& o, const SpatialVelocity<T>& V) {
   o << "[" << V[0];
   for (int i = 1; i < V.size(); ++i) o << ", " << V[i];
-  o << "]^T";  // The "transpose" symbol.
+  o << "]ᵀ";  // The "transpose" symbol.
   return o;
 }
 
