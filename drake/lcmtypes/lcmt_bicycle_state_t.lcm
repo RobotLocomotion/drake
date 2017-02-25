@@ -1,0 +1,16 @@
+// GENERATED FILE DO NOT EDIT
+// See drake/tools/lcm_vector_gen.py.
+
+package drake;
+
+struct lcmt_bicycle_state_t {
+  // The timestamp in milliseconds.
+  int64_t timestamp;
+
+  double Psi;  // yaw angle
+  double Psi_dot;  // yaw angular rate
+  double beta;  // slip angle at the center of mass
+  double v;  // velocity magnitude
+  double sx;  // x-position at the center of mass
+  double sy;  // y-position at the center of mass
+}

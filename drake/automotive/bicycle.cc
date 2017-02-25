@@ -123,8 +123,8 @@ void Bicycle<T>::ImplCalcTimeDerivatives(
     BicycleState<T>* derivatives) const {
   // Parse and validate the parameters.
   const T m = params.mass();
-  const T lr = params.lf();
-  const T lf = params.lr();
+  const T lr = params.lr();
+  const T lf = params.lf();
   const T Iz = params.Iz();
   const T Cf = params.Cf();
   const T Cr = params.Cr();
@@ -143,6 +143,7 @@ void Bicycle<T>::ImplCalcTimeDerivatives(
   const T v{state.v()};
 
   DRAKE_DEMAND(v != 0.);  // N.B. Protection against the singular solution.
+  // TODO(jadecastro): Enable v = 0. (see #5318).
 
   const T torsional_stiffness = Cr * lr - Cf * lf;
   const T front_torsional_stiffness = Cf * lf;

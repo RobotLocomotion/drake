@@ -86,6 +86,8 @@ if(lcm_FOUND)
 
   add_library_with_exports(LIB_NAME drakeAutomotiveLcm SOURCE_FILES
     automotive_simulator.cc
+    gen/bicycle_parameters_translator.cc
+    gen/bicycle_state_translator.cc
     gen/driving_command_translator.cc
     gen/endless_road_car_config_translator.cc
     gen/endless_road_car_state_translator.cc

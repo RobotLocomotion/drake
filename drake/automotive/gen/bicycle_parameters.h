@@ -50,10 +50,10 @@ class BicycleParameters : public systems::BasicVector<T> {
   /// mass
   const T& mass() const { return this->GetAtIndex(K::kMass); }
   void set_mass(const T& mass) { this->SetAtIndex(K::kMass, mass); }
-  /// distance from center of mass to the front axle
+  /// distance from the center of mass to the front axle
   const T& lf() const { return this->GetAtIndex(K::kLf); }
   void set_lf(const T& lf) { this->SetAtIndex(K::kLf, lf); }
-  /// distance from center of mass to the rear axle
+  /// distance from the center of mass to the rear axle
   const T& lr() const { return this->GetAtIndex(K::kLr); }
   void set_lr(const T& lr) { this->SetAtIndex(K::kLr, lr); }
   /// moment of inertia about the yaw-axis

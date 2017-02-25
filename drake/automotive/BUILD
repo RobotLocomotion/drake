@@ -45,6 +45,8 @@ drake_cc_library(
 drake_cc_library(
     name = "generated_translators",
     srcs = [
+        "gen/bicycle_parameters_translator.cc",
+        "gen/bicycle_state_translator.cc",
         "gen/driving_command_translator.cc",
         "gen/endless_road_car_config_translator.cc",
         "gen/endless_road_car_state_translator.cc",
@@ -54,6 +56,8 @@ drake_cc_library(
         "gen/simple_car_state_translator.cc",
     ],
     hdrs = [
+        "gen/bicycle_parameters_translator.h",
+        "gen/bicycle_state_translator.h",
         "gen/driving_command_translator.h",
         "gen/endless_road_car_config_translator.h",
         "gen/endless_road_car_state_translator.h",
