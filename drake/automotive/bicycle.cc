@@ -116,11 +116,9 @@ void Bicycle<T>::DoCalcTimeDerivatives(
 
 template <typename T>
 void Bicycle<T>::ImplCalcTimeDerivatives(
-    const BicycleParameters<T>& params,
-    const BicycleState<T>& state,
+    const BicycleParameters<T>& params, const BicycleState<T>& state,
     const systems::BasicVector<T>& steering,
-    const systems::BasicVector<T>& force,
-    BicycleState<T>* derivatives) const {
+    const systems::BasicVector<T>& force, BicycleState<T>* derivatives) const {
   // Parse and validate the parameters.
   const T m = params.mass();
   const T lr = params.lf();

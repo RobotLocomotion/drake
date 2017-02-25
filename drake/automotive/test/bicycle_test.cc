@@ -36,7 +36,7 @@ class BicycleTest : public ::testing::Test {
     return state;
   }
 
-  const BicycleState<double>* const derivatives() {
+  const BicycleState<double>* derivatives() const {
     const auto derivatives = dynamic_cast<const BicycleState<double>*>(
         derivatives_->get_mutable_vector());
     DRAKE_DEMAND(derivatives != nullptr);
@@ -89,7 +89,7 @@ TEST_F(BicycleTest, Topology) {
 TEST_F(BicycleTest, Output) {
   const double kTolerance = 1e-10;
 
-  // Keep the steering angle and the applied force zero.
+  // Set the steering angle and the applied force to positive values.
   SetInputs(1., 10.);
 
   auto output = output_->get_vector_data(0);

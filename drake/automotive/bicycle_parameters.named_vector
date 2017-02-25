@@ -4,11 +4,11 @@ element {
 }
 element {
      name: "lf"
-     doc: "distance from center of mass to the front axle"
+     doc: "distance from the center of mass to the front axle"
 }
 element {
      name: "lr"
-     doc: "distance from center of mass to the rear axle"
+     doc: "distance from the center of mass to the rear axle"
 }
 element {
      name: "Iz"

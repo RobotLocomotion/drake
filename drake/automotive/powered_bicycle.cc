@@ -9,10 +9,10 @@ namespace automotive {
 template <typename T>
 PoweredBicycle<T>::PoweredBicycle() : systems::Diagram<T>() {
   // Time constant approximated from Section 4.5 (p. 45) of
-  // Powertrain modeling for realtime simulation
-  //    http://liu.diva-portal.org/smash/get/diva2:763494/FULLTEXT01.pdf
-  const double kPowertrainTimeConstant = 0.2;
-  const double kPowertrainGain = 1.;
+  // Lind, Simon. Powertrain modeling for realtime simulation, 2014.
+  //    http://liu.diva-portal.org/smash/get/diva2:763494/
+  const double kPowertrainTimeConstant = 0.2; /* [s] */
+  const double kPowertrainGain = 1.;          /* [N] */
   systems::DiagramBuilder<T> builder;
 
   // Instantiate the bicycle and the powertrain system models.
