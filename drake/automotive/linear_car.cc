@@ -48,8 +48,6 @@ template <typename T>
 void LinearCar<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-  DRAKE_ASSERT(derivatives != nullptr);
 
   // Obtain the state.
   const systems::VectorBase<T>& context_state =

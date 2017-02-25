@@ -173,12 +173,12 @@ if(Matlab_FOUND)
 endif()
 add_subdirectory(examples)
 
-if(Matlab_FOUND OR NOT DISABLE_PYTHON)
-  add_subdirectory(bindings)
-endif()
-
-if(BUILD_TESTING)
-  add_subdirectory(regtests)
+if(pybind11_FOUND AND NOT DISABLE_PYTHON AND NUMPY_FOUND)
+  if (NUMPY_VERSION VERSION_LESS 1.7)
+    message(WARNING "Python bindings are disabled because numpy version is less than 1.7")
+  else()
+    add_subdirectory(bindings)
+  endif()
 endif()
 
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)

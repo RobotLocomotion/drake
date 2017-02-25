@@ -12,18 +12,15 @@ drake_cc_library(
     srcs = ["bsd/spruce/spruce.cc"],
     hdrs = ["bsd/spruce/spruce.hh"],
     includes = ["bsd/spruce"],
-    linkstatic = 1,
 )
 
 drake_cc_library(
     name = "tinydir",
     hdrs = ["bsd/tinydir/tinydir.h"],
-    linkstatic = 1,
 )
 
 drake_cc_library(
     name = "tinyxml2",
     srcs = ["zlib/tinyxml2/tinyxml2.cpp"],
     hdrs = ["zlib/tinyxml2/tinyxml2.h"],
-    linkstatic = 1,
 )

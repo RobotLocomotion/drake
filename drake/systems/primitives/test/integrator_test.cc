@@ -88,7 +88,7 @@ TEST_F(IntegratorTest, Derivatives) {
 
 // Asserts that integrators do not have any direct feedthrough inputs.
 TEST_F(IntegratorTest, IntegratorIsNotDirectFeedthrough) {
-  EXPECT_FALSE(integrator_->has_any_direct_feedthrough());
+  EXPECT_FALSE(integrator_->HasAnyDirectFeedthrough());
 }
 
 class SymbolicIntegratorTest : public IntegratorTest {
@@ -102,12 +102,15 @@ class SymbolicIntegratorTest : public IntegratorTest {
 
     ASSERT_EQ(1, symbolic_context_->get_num_input_ports());
     symbolic_context_->FixInputPort(
-        0, BasicVector<symbolic::Expression>::Make("u0", "u1", "u2"));
+        0, BasicVector<symbolic::Expression>::Make(
+            symbolic::Variable("u0"),
+            symbolic::Variable("u1"),
+            symbolic::Variable("u2")));
 
     auto& xc = *symbolic_context_->get_mutable_continuous_state_vector();
-    xc[0] = symbolic::Expression("x0");
-    xc[1] = symbolic::Expression("x1");
-    xc[2] = symbolic::Expression("x2");
+    xc[0] = symbolic::Variable("x0");
+    xc[1] = symbolic::Variable("x1");
+    xc[2] = symbolic::Variable("x2");
   }
 
   std::unique_ptr<System<symbolic::Expression>> symbolic_integrator_;

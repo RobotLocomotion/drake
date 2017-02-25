@@ -33,10 +33,14 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcmInterface* lcm,
       GetRosParameterOrThrow<std::string>("/robot_description");
   double penetration_stiffness =
       GetRosParameterOrThrow<double>("penetration_stiffness");
-  double penetration_damping =
-      GetRosParameterOrThrow<double>("penetration_damping");
-  double friction_coefficient =
-      GetRosParameterOrThrow<double>("friction_coefficient");
+  double penetration_dissipation =
+      GetRosParameterOrThrow<double>("penetration_dissipation");
+  double static_friction_coefficient =
+      GetRosParameterOrThrow<double>("static_friction_coefficient");
+  double dynamic_friction_coefficient =
+      GetRosParameterOrThrow<double>("dynamic_friction_coefficient");
+  double stiction_speed_tolerance =
+      GetRosParameterOrThrow<double>("v_stiction_tolerance");
 
   DiagramBuilder<double> builder;
   Diagram<double>* plant_diagram{nullptr};
@@ -46,8 +50,9 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcmInterface* lcm,
   {
     std::unique_ptr<Diagram<double>> plant_diagram_ptr =
         BuildPlantAndVisualizerDiagram(
-            urdf_string, penetration_stiffness, penetration_damping,
-            friction_coefficient, lcm, &plant);
+            urdf_string, penetration_stiffness, penetration_dissipation,
+            static_friction_coefficient, dynamic_friction_coefficient,
+            stiction_speed_tolerance, lcm, &plant);
     DRAKE_DEMAND(plant_diagram_ptr != nullptr);
     DRAKE_DEMAND(plant != nullptr);
 

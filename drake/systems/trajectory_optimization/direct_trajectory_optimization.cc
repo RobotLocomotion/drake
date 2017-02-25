@@ -94,6 +94,8 @@ namespace {
 /// time steps and mangle the output appropriately.
 class FinalCostWrapper : public solvers::Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FinalCostWrapper)
+
   FinalCostWrapper(int num_time_samples, int num_states,
                    std::shared_ptr<Constraint> constraint)
       : Constraint(constraint->num_constraints(),

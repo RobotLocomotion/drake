@@ -72,12 +72,23 @@ void DoEmptyWorldTest(const char* const name,
   dut.CalcOutput(*context, output.get());
 
   Eigen::VectorXd expected_output =
-      VectorXd::Constant(dut.get_num_depth_readings(), DepthSensor::kTooFar);
+      VectorXd::Constant(dut.get_num_depth_readings(),
+          DepthSensorOutput<double>::kTooFar);
 
   int output_port_index = dut.get_sensor_state_output_port().get_index();
 
   EXPECT_TRUE(CompareMatrices(
       expected_output, output->get_vector_data(output_port_index)->get_value(),
+      1e-10));
+
+  // Confirms that Clone is correct.
+  std::unique_ptr<BasicVector<double>> cloned_base =
+      output->get_vector_data(output_port_index)->Clone();
+  const DepthSensorOutput<double>* const cloned_sub =
+      dynamic_cast<const DepthSensorOutput<double>*>(cloned_base.get());
+  ASSERT_NE(cloned_sub, nullptr);
+  EXPECT_TRUE(CompareMatrices(
+      expected_output, cloned_sub->get_value(),
       1e-10));
 }
 
@@ -180,7 +191,8 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
   const VectorX<double> depth_measurements = std::get<0>(result);
 
   Eigen::VectorXd expected_depths =
-      VectorXd::Constant(depth_measurements.size(), DepthSensor::kTooFar);
+      VectorXd::Constant(depth_measurements.size(),
+          DepthSensorOutput<double>::kTooFar);
 
   const double box_distance = box_xyz(0) - kBoxWidth / 2;
   expected_depths(23) = box_distance / cos(specification.min_yaw() +
@@ -232,7 +244,8 @@ GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
   const VectorX<double> depth_measurements = std::get<0>(result);
 
   Eigen::VectorXd expected_output =
-      VectorXd::Constant(depth_measurements.size(), DepthSensor::kTooFar);
+      VectorXd::Constant(depth_measurements.size(),
+          DepthSensorOutput<double>::kTooFar);
 
   const double box_distance = box_xyz(2) - kBoxWidth / 2;
   // sin() is used below because pitch is the angle between the sensor's base
@@ -265,7 +278,8 @@ GTEST_TEST(TestDepthSensor, TestTooClose) {
 
   EXPECT_EQ(depth_measurements.size(), 1);
   Eigen::VectorXd expected_output =
-      VectorXd::Constant(depth_measurements.size(), DepthSensor::kTooClose);
+      VectorXd::Constant(depth_measurements.size(),
+          DepthSensorOutput<double>::kTooClose);
 
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
                               MatrixCompareType::absolute));

@@ -85,6 +85,7 @@ struct UpdateActions {
   std::vector<DiscreteEvent<T>> events;
 };
 
+
 /// A superclass template for systems that receive input, maintain state, and
 /// produce output of a given mathematical type T.
 ///
@@ -152,20 +153,32 @@ class System {
   // override.
   virtual void SetDefaults(Context<T>* context) const = 0;
 
-  /// Evaluates to `true` if any of the inputs to the system is directly
-  /// fed through to any of its outputs and `false` otherwise.
-  ///
-  /// By default we assume that there is direct feedthrough of values from
-  /// every input port to every output port. This is a conservative assumption
-  /// that ensures we detect and can prevent the formation of algebraic loops
-  /// (implicit computations) in system diagrams. Any System for which none of
-  /// the input ports ever feeds through to any of the output ports should
-  /// override this method to return false.
-  // TODO(4105): Provide a more descriptive mechanism to specify pairwise
-  // (input_port, output_port) feedthrough.
+  // This method is DEPRECATED. Legacy overrides will be respected, but should
+  // migrate to override LeafSystem::DoHasDirectFeedthrough.
   virtual bool has_any_direct_feedthrough() const {
     return (get_num_input_ports() > 0) && (get_num_output_ports() > 0);
   }
+
+  /// Returns `true` if any of the inputs to the system might be directly
+  /// fed through to any of its outputs and `false` otherwise.
+  ///
+  /// This method is virtual for framework purposes only. User code should not
+  /// override it.
+  virtual bool HasAnyDirectFeedthrough() const = 0;
+
+  /// Returns true if there might be direct-feedthrough from any input port to
+  /// the given @p output_port, and false otherwise.
+  ///
+  /// This method is virtual for framework purposes only. User code should not
+  /// override it.
+  virtual bool HasDirectFeedthrough(int output_port) const = 0;
+
+  /// Returns true if there might be direct-feedthrough from the given
+  /// @p input_port to the given @p output_port, and false otherwise.
+  ///
+  /// This method is virtual for framework purposes only. User code should not
+  /// override it.
+  virtual bool HasDirectFeedthrough(int input_port, int output_port) const = 0;
 
   //@}
 
@@ -295,6 +308,91 @@ class System {
   //@}
 
   //----------------------------------------------------------------------------
+  /// @name                        Constraint-related functions.
+  ///
+  // @{
+
+  /// Gets the number of constraint equations for this system using the given
+  /// context (useful in case the number of constraints is dependent upon the
+  /// current state (as might be the case with a system modeled using piecewise
+  /// differential algebraic equations).
+  int get_num_constraint_equations(const Context<T>& context) const {
+    return do_get_num_constraint_equations(context);
+  }
+
+  /// Evaluates the constraint equations for the system at the generalized
+  /// coordinates and generalized velocity specified by the context. The context
+  /// allows the set of constraints to be dependent upon the current system
+  /// state (as might be the case with a system modeled using piecewise
+  /// differential algebraic equations).
+  /// @returns a vector of dimension get_num_constraint_equations(); the
+  ///          zero vector indicates that the algebraic constraints are all
+  ///          satisfied.
+  Eigen::VectorXd EvalConstraintEquations(
+      const Context<T>& context) const {
+    return DoEvalConstraintEquations(context);
+  }
+
+  /// Computes the time derivative of each constraint equation, evaluated at
+  /// the generalized coordinates and generalized velocity specified by the
+  /// context. The context allows the set of constraints to be dependent upon
+  /// the current system state (as might be the case with a system modeled using
+  /// piecewise differential algebraic equations).
+  /// @returns a vector of dimension get_num_constraint_equations().
+  Eigen::VectorXd EvalConstraintEquationsDot(
+      const Context<T>& context) const {
+    return DoEvalConstraintEquationsDot(context);
+  }
+
+  /// Computes the change in velocity from applying the given constraint forces
+  /// to the system at the given context.
+  /// @param context the current system state, provision of which also yields
+  ///        the ability of the constraints to be dependent upon the current
+  ///        system state (as might be the case with a piecewise differential
+  ///        algebraic equation).
+  /// @param J a m × n constraint Jacobian matrix of the `m` constraint
+  ///          equations `g()` differentiated with respect to the `n`
+  ///          configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
+  ///          the time derivatives of the generalized coordinates of the system
+  ///          are not identical to the generalized velocity (in general they
+  ///          need not be, e.g., if generalized coordinates use unit
+  ///          unit quaternions to represent 3D orientation), `J` should instead
+  ///          be defined as `∂g/∂q⋅N`, where `N ≡ ∂q/∂ꝗ` is the Jacobian matrix
+  ///          (dependent on `q`) of the generalized coordinates with respect
+  ///          to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
+  ///          the generalized velocities).
+  /// @param lambda the vector of constraint forces (of same dimension as the
+  ///        number of rows in the Jacobian matrix, @p J)
+  /// @returns a `n` dimensional vector, where `n` is the dimension of the
+  ///          quasi-coordinates.
+  Eigen::VectorXd
+      CalcVelocityChangeFromConstraintImpulses(const Context<T>& context,
+                                               const Eigen::MatrixXd& J,
+                                               const Eigen::VectorXd& lambda)
+                                                   const {
+    DRAKE_ASSERT(lambda.size() == get_num_constraint_equations(context));
+    DRAKE_ASSERT(J.rows() == get_num_constraint_equations(context));
+    DRAKE_ASSERT(J.cols() ==
+        context.get_continuous_state()->get_generalized_velocity().size());
+    return DoCalcVelocityChangeFromConstraintImpulses(context, J, lambda);
+  }
+
+  /// Computes the norm on constraint error (used as a metric for comparing
+  /// errors between the outputs of algebraic equations applied to two
+  /// different state variable instances). This norm need be neither continuous
+  /// nor differentiable.
+  /// @throws std::logic_error if the dimension of @p err is not equivalent to
+  ///         the output of get_num_constraint_equations().
+  double CalcConstraintErrorNorm(const Context<T>& context,
+                                 const Eigen::VectorXd& error) const {
+    if (error.size() != get_num_constraint_equations(context))
+      throw std::logic_error("Error vector is mis-sized.");
+    return DoCalcConstraintErrorNorm(context, error);
+  }
+
+  //@}
+
+  //----------------------------------------------------------------------------
   /// @name                        Calculations
   /// A Drake %System defines a set of common computations that are understood
   /// by the framework. Most of these are embodied in a `Calc` method that
@@ -332,8 +430,8 @@ class System {
   /// `xd(n)`, because the given `event` has arrived.  Dispatches to
   /// DoCalcDiscreteVariableUpdates by default, or to `event.do_update` if
   /// provided.
-  void CalcDiscreteVariableUpdates(const Context<T> &context,
-                                   const DiscreteEvent<T> &event,
+  void CalcDiscreteVariableUpdates(const Context<T>& context,
+                                   const DiscreteEvent<T>& event,
                                    DiscreteState<T> *discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kDiscreteUpdateAction);
@@ -706,7 +804,8 @@ class System {
   //@{
 
   /// Creates a deep copy of this System, transmogrified to use the symbolic
-  /// scalar type.
+  /// scalar type. Returns `nullptr` if DoToSymbolic has not been implemented.
+  ///
   /// Concrete Systems may shadow this with a more specific return type.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolic() const {
     return std::unique_ptr<System<symbolic::Expression>>(DoToSymbolic());
@@ -714,7 +813,8 @@ class System {
 
   /// Creates a deep copy of `from`, transmogrified to use the symbolic
   /// scalar type. Returns `nullptr` if the template parameter `S` is not the
-  /// type of the concrete system, or a superclass thereof.
+  /// type of the concrete system, or a superclass thereof. Returns `nullptr`
+  /// if DoToSymbolic has not been implemented.
   ///
   /// Usage: @code
   ///   MySystem<double> plant;
@@ -1029,19 +1129,97 @@ class System {
   /// pointer. Overrides should return a more specific covariant type.
   /// Templated overrides may assume that they are subclasses of System<double>.
   ///
+  /// Returns `nullptr` by default.  Direct-feedthrough detection relies on
+  /// this behavior.
+  ///
   /// No default implementation is provided in LeafSystem, since the member data
   /// of a particular concrete leaf system is not knowable to the framework.
   /// A default implementation is provided in Diagram, which Diagram subclasses
   /// with member data should override.
   virtual System<symbolic::Expression>* DoToSymbolic() const {
-    DRAKE_ABORT_MSG("Override DoToSymbolic before using ToSymbolic.");
     return nullptr;
   }
   //@}
 
+//----------------------------------------------------------------------------
+/// @name                        Constraint-related functions (protected).
+///
+// @{
+
+  /// Gets the number of constraint equations for this system from the given
+  /// context. The context is supplied in case the number of constraints is
+  /// dependent upon the current state (as might be the case with a piecewise
+  /// differential algebraic equation). Derived classes can override this
+  /// function, which is called by get_num_constraint_equations().
+  /// @sa get_num_constraint_equations() for parameter documentation.
+  /// @returns zero by default
+  virtual int do_get_num_constraint_equations(const Context<T>& context) const {
+    return 0;
+  }
+
+  /// Evaluates the constraint equations for the system at the generalized
+  /// coordinates and generalized velocity specified by the context. The context
+  /// allows the set of constraints to be dependent upon the current
+  /// system state (as might be the case with a piecewise differential algebraic
+  /// equation). The default implementation of this function returns a
+  /// zero-dimensional vector. Derived classes can override this function,
+  /// which is called by EvalConstraintEquations().
+  /// @sa EvalConstraintEquations() for parameter documentation.
+  /// @returns a vector of dimension get_num_constraint_equations(); the
+  ///          zero vector indicates that the algebraic constraints are all
+  ///          satisfied.
+  virtual Eigen::VectorXd DoEvalConstraintEquations(
+      const Context<T>& context) const {
+    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    return Eigen::VectorXd();
+  }
+
+  /// Computes the time derivative of each constraint equation, evaluated at
+  /// the generalized coordinates and generalized velocity specified by the
+  /// context.  The context allows the set of constraints to be dependent upon
+  /// the current system state (as might be the case with a piecewise
+  /// differential algebraic equation). The default implementation of this
+  /// function returns a zero-dimensional vector. Derived classes can override
+  /// this function, which is called by EvalConstraintEquationsDot().
+  /// @returns a vector of dimension get_num_constraint_equations().
+  /// @sa EvalConstraintEquationsDot() for parameter documentation.
+  virtual Eigen::VectorXd DoEvalConstraintEquationsDot(
+        const Context<T>& context) const {
+    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    return Eigen::VectorXd();
+  }
+
+  /// Computes the change in velocity from applying the given constraint forces
+  /// to the system at the given context. Derived classes can override this
+  /// function, which is called by CalcVelocityChangeFromConstraintImpulses().
+  /// @returns the zero vector of dimension of the dimension of the
+  ///          quasi-coordinates, by default.
+  /// @sa CalcVelocityChangeFromConstraintImpulses() for parameter
+  ///     documentation.
+  virtual Eigen::VectorXd
+    DoCalcVelocityChangeFromConstraintImpulses(const Context<T>& context,
+                                               const Eigen::MatrixXd& J,
+                                               const Eigen::VectorXd& lambda)
+                                                   const {
+    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    const auto& gv = context.get_continuous_state()->get_generalized_velocity();
+    return Eigen::VectorXd::Zero(gv.size());
+  }
+
+  /// Computes the norm of the constraint error. This default implementation
+  /// computes a Euclidean norm of the error. Derived classes can override this
+  /// function, which is called by CalcConstraintErrorNorm(). This norm need be
+  /// neither continuous nor differentiable.
+  /// @sa CalcConstraintErrorNorm() for parameter documentation.
+  virtual double DoCalcConstraintErrorNorm(const Context<T>& context,
+                                           const Eigen::VectorXd& error) const {
+    return error.norm();
+  }
+
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
   //@{
+
   /// Returns a mutable Eigen expression for a vector valued output port with
   /// index @p port_index in this system. All InputPorts that directly depend
   /// on this OutputPort will be notified that upstream data has changed, and

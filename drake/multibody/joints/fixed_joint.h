@@ -16,8 +16,6 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
 
   virtual ~FixedJoint() {}
 
-  std::unique_ptr<DrakeJoint> Clone() const final;
-
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
@@ -102,12 +100,14 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
       std::default_random_engine& generator) const override;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_position_name().")
-#endif
   std::string getPositionName(int index) const override;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ protected:
+  std::unique_ptr<DrakeJoint> DoClone() const final;
+  void DoInitializeClone(DrakeJoint* clone) const final {}
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

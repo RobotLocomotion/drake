@@ -135,12 +135,12 @@ class LeafSystemOutputTest : public ::testing::Test {
     {
       std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
       vec->get_mutable_value() << 5, 25;
-      output_.get_mutable_ports()->emplace_back(new OutputPort(std::move(vec)));
+      output_.add_port(std::make_unique<OutputPort>(std::move(vec)));
     }
     {
       std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(3));
       vec->get_mutable_value() << 125, 625, 3125;
-      output_.get_mutable_ports()->emplace_back(new OutputPort(std::move(vec)));
+      output_.add_port(std::make_unique<OutputPort>(std::move(vec)));
     }
   }
 

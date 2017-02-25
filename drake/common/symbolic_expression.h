@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -66,6 +67,24 @@ class UnaryExpressionCell;   // In drake/common/symbolic_expression_cell.h
 class BinaryExpressionCell;  // In drake/common/symbolic_expression_cell.h
 class ExpressionAdd;         // In drake/common/symbolic_expression_cell.h
 class ExpressionMul;         // In drake/common/symbolic_expression_cell.h
+class ExpressionDiv;         // In drake/common/symbolic_expression_cell.h
+class ExpressionLog;         // In drake/common/symbolic_expression_cell.h
+class ExpressionAbs;         // In drake/common/symbolic_expression_cell.h
+class ExpressionExp;         // In drake/common/symbolic_expression_cell.h
+class ExpressionSqrt;        // In drake/common/symbolic_expression_cell.h
+class ExpressionPow;         // In drake/common/symbolic_expression_cell.h
+class ExpressionSin;         // In drake/common/symbolic_expression_cell.h
+class ExpressionCos;         // In drake/common/symbolic_expression_cell.h
+class ExpressionTan;         // In drake/common/symbolic_expression_cell.h
+class ExpressionAsin;        // In drake/common/symbolic_expression_cell.h
+class ExpressionAcos;        // In drake/common/symbolic_expression_cell.h
+class ExpressionAtan;        // In drake/common/symbolic_expression_cell.h
+class ExpressionAtan2;       // In drake/common/symbolic_expression_cell.h
+class ExpressionSinh;        // In drake/common/symbolic_expression_cell.h
+class ExpressionCosh;        // In drake/common/symbolic_expression_cell.h
+class ExpressionTanh;        // In drake/common/symbolic_expression_cell.h
+class ExpressionMin;         // In drake/common/symbolic_expression_cell.h
+class ExpressionMax;         // In drake/common/symbolic_expression_cell.h
 class ExpressionIfThenElse;  // In drake/common/symbolic_expression_cell.h
 class Formula;               // In drake/common/symbolic_formula.h
 
@@ -150,9 +169,8 @@ class Expression {
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(double d);
   /** Constructs a variable expression from Variable. */
-  explicit Expression(const Variable& var);
-  /** Constructs a variable expression from string @p name. */
-  explicit Expression(const std::string& name);
+  // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
+  Expression(const Variable& var);
   /** Returns expression kind. */
   ExpressionKind get_kind() const;
   /** Returns hash value. */
@@ -160,8 +178,35 @@ class Expression {
   /** Collects variables in expression. */
   Variables GetVariables() const;
 
-  /** Checks structural equality. */
+  /** Checks structural equality.
+   *
+   * Two expressions e1 and e2 are structurally equal when they have the same
+   * internal AST(abstract-syntax tree) representation. Please note that we can
+   * have two computationally (or extensionally) equivalent expressions which
+   * are not structurally equal. For example, consider:
+   *
+   *    e1 = 2 * (x + y)
+   *    e2 = 2x + 2y
+   *
+   * Obviously, we know that e1 and e2 are evaluated to the same value for all
+   * assignments to x and y. However, e1 and e2 are not structurally equal by
+   * the definition. Note that e1 is a multiplication expression
+   * (is_multiplication(e1) is true) while e2 is an addition expression
+   * (is_addition(e2) is true).
+   *
+   * One main reason we use structural equality in EqualTo is due to
+   * Richardson's Theorem. It states that checking ∀x. E(x) = F(x) is
+   * undecidable when we allow sin, asin, log, exp in E and F. Read
+   * https://en.wikipedia.org/wiki/Richardson%27s_theorem for details.
+   *
+   * Note that for polynomial cases, you can use Expand method and check if two
+   * polynomial expressions p1 and p2 are computationally equal. To do so, you
+   * check the following:
+   *
+   *     (p1.Expand() - p2.Expand()).EqualTo(0).
+   */
   bool EqualTo(const Expression& e) const;
+
   /** Provides lexicographical ordering between expressions.
       This function is used as a compare function in map<Expression> and
       set<Expression> via std::less<drake::symbolic::Expression>. */
@@ -176,32 +221,19 @@ class Expression {
    */
   Polynomial<double> ToPolynomial() const;
 
- /**
-  * Returns the total degrees of the polynomial w.r.t the variables in
-  * @p vars. For example, the total degree of
-  * e = x^2*y + 2 * x*y*z^3 + x * z^2
-  * w.r.t (x, y) is 3 (from x^2 * y)
-  * w.r.t (x, z) is 4 (from x*y*z^3)
-  * w.r.t (z)    is 3 (from x*y*z^3)
-  * Throws a runtime error if is_polynomial() is false.
-  * @param vars A set of variables.
-  * @return The total degree.
-  */
-  int Degree(const Variables& vars) const;
-
-  /**
-   * Returns the total degress of all the variables in the polynomial.
-   * For example, the total degree of
-   * x^2*y + 2*x*y*z^3 + x*z^2
-   * is 5, from x*y*z^3
-   * Throws a runtime error is is_polynomial() is false.
-   * @return The total degree.
-   */
-  int Degree() const;
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
   double Evaluate(const Environment& env = Environment{}) const;
+
+  /** Expands out products and positive integer powers in expression. For
+   * example, <tt>(x + 1) * (x - 1)</tt> is expanded to <tt>x^2 - 1</tt> and
+   * <tt>(x + y)^2</tt> is expanded to <tt>x^2 + 2xy + y^2</tt>. Note that
+   * Expand applies recursively to sub-expressions. For instance, <tt>sin(2 * (x
+   * + y))</tt> is expanded to <tt>sin(2x + 2y)</tt>.
+   * @throws std::runtime_error if NaN is detected during expansion.
+   */
+  Expression Expand() const;
 
   /** Returns a copy of this expression replacing all occurrences of @p var
    * with @p e.
@@ -361,6 +393,24 @@ class Expression {
   friend std::shared_ptr<BinaryExpressionCell> to_binary(const Expression& e);
   friend std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
   friend std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
+  friend std::shared_ptr<ExpressionDiv> to_division(const Expression& e);
+  friend std::shared_ptr<ExpressionLog> to_log(const Expression& e);
+  friend std::shared_ptr<ExpressionAbs> to_abs(const Expression& e);
+  friend std::shared_ptr<ExpressionExp> to_exp(const Expression& e);
+  friend std::shared_ptr<ExpressionSqrt> to_sqrt(const Expression& e);
+  friend std::shared_ptr<ExpressionPow> to_pow(const Expression& e);
+  friend std::shared_ptr<ExpressionSin> to_sin(const Expression& e);
+  friend std::shared_ptr<ExpressionCos> to_cos(const Expression& e);
+  friend std::shared_ptr<ExpressionTan> to_tan(const Expression& e);
+  friend std::shared_ptr<ExpressionAsin> to_asin(const Expression& e);
+  friend std::shared_ptr<ExpressionAcos> to_acos(const Expression& e);
+  friend std::shared_ptr<ExpressionAtan> to_atan(const Expression& e);
+  friend std::shared_ptr<ExpressionAtan2> to_atan2(const Expression& e);
+  friend std::shared_ptr<ExpressionSinh> to_sinh(const Expression& e);
+  friend std::shared_ptr<ExpressionCosh> to_cosh(const Expression& e);
+  friend std::shared_ptr<ExpressionTanh> to_tanh(const Expression& e);
+  friend std::shared_ptr<ExpressionMin> to_min(const Expression& e);
+  friend std::shared_ptr<ExpressionMax> to_max(const Expression& e);
   friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
       const Expression& e);
 
@@ -756,3 +806,29 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
 
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+namespace drake {
+namespace symbolic {
+/// Computes the Jacobian matrix J of the vector function @p f with respect to
+/// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
+///
+///  For example, Jacobian([x * cos(y), x * sin(y), x^2], {x, y}) returns the
+///  following 3x2 matrix:
+///  <pre>
+///  = |cos(y)   -x * sin(y)|
+///    |sin(y)    x * cos(y)|
+///    | 2 * x             0|
+///  </pre>
+///
+/// @pre {@p vars is non-empty}.
+MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
+                             const std::vector<Variable>& vars);
+
+/// Computes the Jacobian matrix J of the vector function @p f with respect to
+/// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
+///
+/// @pre {@p vars is non-empty}.
+MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
+                             const Eigen::Ref<const VectorX<Variable>>& vars);
+}  // namespace symbolic
+}  // namespace drake

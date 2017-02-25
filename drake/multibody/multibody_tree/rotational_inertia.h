@@ -26,6 +26,8 @@ namespace multibody {
 /// weighted moments about that point. These moments are the mass of the body
 /// (or zeroth moment), the center of mass vector (or first order moment) and
 /// finally the rotational inertia (or second order moment).
+// TODO(amcastro-tri): Add reference to a book describing the concept of i-th
+// moments for those not familiar with it.
 /// We choose to use the term **rotational inertia** as used by [Jain 2010] to
 /// distinguish from the more general concept of **inertia** of a body.
 /// A rotational inertia can be represented by the six scalar elements of a
@@ -83,9 +85,15 @@ class RotationalInertia {
   /// Creates a principal axes rotational inertia matrix for which the products
   /// of inertia are zero and the moments of inertia are given by `Ixx`, `Iyy`
   /// and `Izz`.
-  /// Throws an exception if any of the provided moments is negative or the
-  /// resulting inertia is not physically valid according to
-  /// CouldBePhysicallyValid().
+  /// Throws an exception if the resulting inertia is invalid according to
+  /// CouldBePhysicallyValid(). For a diagonal rotational inertia the necessary
+  /// conditions for a valid inertia reduce to:
+  /// - Neither Ixx, Iyy, nor Izz are NaN.
+  /// - Ixx, Iyy and Izz are all non-negative.
+  /// - Ixx, Iyy and Izz must satisfy the triangle inequality:
+  ///   - `Ixx + Iyy >= Izz`
+  ///   - `Ixx + Izz >= Iyy`
+  ///   - `Iyy + Izz >= Ixx`
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz) {
     DRAKE_THROW_UNLESS(Ixx >= T(0));
     DRAKE_THROW_UNLESS(Iyy >= T(0));
@@ -313,8 +321,8 @@ class RotationalInertia {
   /// This operation is performed in-place modifying the original object.
   /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
   /// @returns A reference to `this` rotational inertia about `Bo` but now
-  ///            re-expressed in frame `A`.
-  RotationalInertia& ReExpressInPlace(const Matrix3<T>& R_AF) {
+  ///          re-expressed in frame `A`.
+  RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AF) {
     // There is an interesting discussion on Eigen's forum here:
     // https://forum.kde.org/viewtopic.php?f=74&t=97282
     // That discussion tell us that really here we don't have a significant
@@ -343,7 +351,7 @@ class RotationalInertia {
   /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
   /// @retval I_Bo_A The same rotational inertia about `Bo` but now
   ///                re-expressed in frame`A`.
-  RotationalInertia ReExpress(const Matrix3<T>& R_AF) const {
+  RotationalInertia<T> ReExpress(const Matrix3<T>& R_AF) const {
     return RotationalInertia(*this).ReExpressInPlace(R_AF);
   }
 
@@ -368,20 +376,6 @@ class RotationalInertia {
   // TriangularViewInUse portion of this inertia. The swap is performed so that
   // we only use the triangular portion corresponding to TriangularViewInUse.
   static void check_and_swap(int* i, int* j) { if (*i < *j) std::swap(*i, *j); }
-
-  // Mutable access to the `(i, j)` element of this rotational inertia.
-  // This operator performs checks on the pair `(i, j)` to determine the
-  // appropriate mapping to the internal in-memory representation of a
-  // symmetric rotational inertia. Therefore this accessor is not meant for
-  // speed but rather as a convenience method. Users should use supplied
-  // built-in operations for fast computations.
-  // This is made private to prevent users from creating unphysical inertias by
-  // setting one element at a time.
-  T& operator()(int i, int j) {
-    // Overwrites local copies of i and j.
-    check_and_swap(&i, &j);
-    return I_Bo_F_(i, j);
-  }
 
   // Returns a constant reference to the underlying Eigen matrix. Notice that
   // since RotationalInertia only uses the lower portion of this matrix, the

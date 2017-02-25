@@ -10,7 +10,6 @@ drake_cc_library(
     name = "binding",
     srcs = [],
     hdrs = ["binding.h"],
-    linkstatic = 1,
     deps = [
         ":decision_variable",
     ],
@@ -20,7 +19,6 @@ drake_cc_library(
     name = "constraint",
     srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
@@ -33,7 +31,6 @@ drake_cc_library(
     name = "decision_variable",
     srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:number_traits",
@@ -45,7 +42,6 @@ drake_cc_library(
     name = "function",
     srcs = [],
     hdrs = ["function.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
@@ -88,7 +84,6 @@ drake_cc_library(
         "nlopt_solver.h",
         "snopt_solver.h",
     ],
-    linkstatic = 1,
     deps = [
         ":binding",
         ":constraint",
@@ -99,6 +94,7 @@ drake_cc_library(
         ":snopt_solver",
         "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:monomial",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
@@ -109,12 +105,45 @@ drake_cc_library(
     name = "system_identification",
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
-    linkstatic = 1,
     deps = [
         ":mathematical_program",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "add_solver_util",
+    testonly = 1,
+    srcs = ["test/add_solver_util.cc"],
+    hdrs = ["test/add_solver_util.h"],
+    deps = [
+        ":mathematical_program",
+    ],
+)
+
+drake_cc_library(
+    name = "mathematical_program_test_util",
+    testonly = 1,
+    srcs = ["test/mathematical_program_test_util.cc"],
+    hdrs = ["test/mathematical_program_test_util.h"],
+    deps = [
+        ":mathematical_program",
+        "@gtest//:main",
+    ],
+)
+
+drake_cc_library(
+    name = "optimization_examples",
+    testonly = 1,
+    srcs = ["test/optimization_examples.cc"],
+    hdrs = ["test/optimization_examples.h"],
+    deps = [
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
     ],
 )
 
@@ -132,7 +161,6 @@ drake_cc_library(
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
     ],
-    linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = [
         ":binding",
@@ -158,7 +186,6 @@ drake_cc_library(
         "//conditions:default": ["no_gurobi.cc"],
     }),
     hdrs = ["gurobi_solver.h"],
-    linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = select({
         "//tools:with_gurobi": [
@@ -182,7 +209,6 @@ drake_cc_library(
         "//conditions:default": ["no_snopt.cc"],
     }),
     hdrs = ["snopt_solver.h"],
-    linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = select({
         "//tools:with_snopt": [
@@ -200,7 +226,6 @@ drake_cc_library(
     name = "ipopt_solver",
     srcs = ["ipopt_solver.cc"],
     hdrs = ["ipopt_solver.h"],
-    linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = [
         ":mathematical_program_api",
@@ -236,7 +261,6 @@ drake_cc_googletest(
     name = "convex_optimization_test",
     srcs = [
         "test/convex_optimization_test.cc",
-        "test/mathematical_program_test_util.h",
     ],
     # This test uses Gurobi if present, but does not require it.
     tags = [
@@ -244,7 +268,9 @@ drake_cc_googletest(
         "local",
     ],
     deps = [
+        ":add_solver_util",
         ":mathematical_program",
+        ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
     ],
 )
@@ -261,10 +287,29 @@ drake_cc_googletest(
     name = "equality_constrained_qp_solver_test",
     srcs = [
         "test/equality_constrained_qp_solver_test.cc",
-        "test/mathematical_program_test_util.h",
     ],
     deps = [
         ":mathematical_program",
+        ":mathematical_program_test_util",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gurobi_solver_test",
+    srcs = [
+        "test/gurobi_solver_test.cc",
+    ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    deps = [
+        ":gurobi_solver",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":optimization_examples",
         "//drake/common:eigen_matrix_compare",
     ],
 )
@@ -284,12 +329,11 @@ drake_cc_googletest(
     name = "linear_system_solver_test",
     srcs = [
         "test/linear_system_solver_test.cc",
-        "test/mathematical_program_test_util.h",
-        "test/optimization_examples.cc",
-        "test/optimization_examples.h",
     ],
     deps = [
         ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":optimization_examples",
         "//drake/common:eigen_matrix_compare",
     ],
 )
@@ -298,11 +342,12 @@ drake_cc_googletest(
     name = "mathematical_program_test",
     srcs = [
         "test/mathematical_program_test.cc",
-        "test/mathematical_program_test_util.h",
     ],
     deps = [
         ":mathematical_program",
+        ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
     ],
 )
 
@@ -311,7 +356,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mixed_integer_optimization_test",
     srcs = [
-        "test/mathematical_program_test_util.h",
         "test/mixed_integer_optimization_test.cc",
     ],
     # This test uses Gurobi if present, but does not require it.
@@ -320,7 +364,9 @@ drake_cc_googletest(
         "local",
     ],
     deps = [
+        ":add_solver_util",
         ":mathematical_program",
+        ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
     ],
 )
@@ -336,13 +382,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "nonlinear_program_test",
     srcs = [
-        "test/mathematical_program_test_util.h",
         "test/nonlinear_program_test.cc",
-        "test/optimization_examples.cc",
-        "test/optimization_examples.h",
     ],
     deps = [
         ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":optimization_examples",
         "//drake/common:eigen_matrix_compare",
     ],
 )

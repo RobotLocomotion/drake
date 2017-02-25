@@ -32,6 +32,39 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "simulated_schunk_wsg_system",
+    srcs = ["simulated_schunk_wsg_system.cc"],
+    hdrs = ["simulated_schunk_wsg_system.h"],
+    deps = [
+        "//drake/common:drake_path",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+    ],
+)
+
+drake_cc_binary(
+    name = "schunk_wsg_simulation",
+    srcs = ["schunk_wsg_simulation.cc"],
+    data = [":models"],
+    deps = [
+        ":schunk_wsg_lcm",
+        ":simulated_schunk_wsg_system",
+        "//drake/lcm",
+        "//drake/lcmtypes:schunk",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:pid_controlled_system",
+        "//drake/systems/framework",
+        "//drake/systems/lcm",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:matrix_gain",
+        "//drake/systems/primitives:multiplexer",
+        "@gflags//:gflags",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -61,6 +94,16 @@ drake_cc_googletest(
     ],
 )
 
+sh_test(
+    name = "schunk_wsg_simulation_test",
+    srcs = ["//tools:exec.sh"],
+    args = [
+        "$(location :schunk_wsg_simulation)",
+        "--simulation_sec=0.1",
+    ],
+    data = [":schunk_wsg_simulation"],
+)
+
 filegroup(
     name = "models",
     srcs = glob([
@@ -69,6 +112,7 @@ filegroup(
         "**/*.urdf",
         "**/*.xml",
     ]),
+    visibility = ["//visibility:public"],
 )
 
 cpplint()

@@ -2,6 +2,11 @@
 
 #include <limits>
 #include <memory>
+#include <set>
+#include <tuple>
+#include <vector>
+
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
@@ -9,6 +14,47 @@
 namespace drake {
 namespace solvers {
 namespace test {
+enum class CostForm {
+  kGeneric = 0,
+  kNonSymbolic = 1,
+  kSymbolic = 2,
+};
+
+enum class ConstraintForm {
+  kGeneric = 0,
+  kNonSymbolic = 1,
+  kSymbolic = 2,
+  kFormula = 3,
+};
+
+enum class LinearProblems {
+  kLinearFeasibilityProgram = 0,
+  kLinearProgram0 = 1,
+  kLinearProgram1 = 2,
+  kLinearProgram2 = 3,
+  kLinearProgram3 = 4,
+};
+
+std::set<CostForm> linear_cost_form();
+
+std::set<ConstraintForm> linear_constraint_form();
+
+std::vector<LinearProblems> linear_problems();
+
+class LinearProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram)
+
+  LinearProgram(CostForm cost_form, ConstraintForm cnstr_form);
+
+  MathematicalProgram* prog() const { return prog_.get(); }
+
+  virtual void CheckSolution() const = 0;
+
+ private:
+  std::unique_ptr<MathematicalProgram> prog_;
+};
+
 /**
  * Simple example x = b
  */
@@ -106,20 +152,16 @@ class NonConvexQPproblem1 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem1)
 
-  enum CostForm {
-    kCostBegin = 0,
-    kGenericCost = 0,
-    kQuadraticCost = 1,
-    kCostEnd = 1
-    // TODO(hongkai.dai) Add quadratic symbolic cost
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic};
+    return costs;
+  }
 
-  enum ConstraintForm {
-    kConstraintBegin = 0,
-    kSymbolicConstraint = 0,
-    kNonSymbolicConstraint = 1,
-    kConstraintEnd = 1
-  };
+  static ::std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kSymbolic,
+                                      ConstraintForm::kNonSymbolic};
+    return cnstr;
+  }
 
   NonConvexQPproblem1(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -169,20 +211,16 @@ class NonConvexQPproblem2 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem2)
 
-  enum CostForm {
-    kCostBegin = 0,
-    kGenericCost = 0,
-    kQuadraticCost = 1,
-    // TODO(hongkai.dai): Add symbolic quadratic cost
-    kCostEnd = 1
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic};
+    return costs;
+  }
 
-  enum ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolicConstraint = 0,
-    kSymbolicConstraint = 1,
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
+    return cnstr;
+  }
 
   NonConvexQPproblem2(CostForm cost_form, ConstraintForm cnstr_form);
 
@@ -232,12 +270,11 @@ class LowerBoundedProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem)
 
-  enum ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolic = 0,
-    kSymbolic = 1,
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
+    return cnstr;
+  }
 
   explicit LowerBoundedProblem(ConstraintForm cnstr_form);
 
@@ -330,21 +367,17 @@ class GloptiPolyConstrainedMinimizationProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem)
 
-  enum CostForm {
-    kCostBegin = 0,
-    kGenericCost = 0,
-    kNonSymbolicCost = 1,
-    kSymbolicCost = 2,
-    kCostEnd = 2
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic,
+                                CostForm::kSymbolic};
+    return costs;
+  }
 
-  enum ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolicConstraint = 0,
-    kSymbolicConstraint = 1,
-    // TODO(hongkai.dai): add quadratic constraint
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
+    return cnstr;
+  }
 
   GloptiPolyConstrainedMinimizationProblem(CostForm cost_form,
                                            ConstraintForm cnstr_form);
@@ -445,19 +478,16 @@ class MinDistanceFromPlaneToOrigin {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinDistanceFromPlaneToOrigin)
 
-  enum CostForm {
-    kCostBegin = 0,
-    kNonSymbolicCost = 0,
-    kSymbolicCost = 1,
-    kCostEnd = 1
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::kNonSymbolic, CostForm::kSymbolic};
+    return costs;
+  }
 
-  enum ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolicConstraint = 0,
-    kSymbolicConstraint = 1,
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
+    return cnstr;
+  }
 
   MinDistanceFromPlaneToOrigin(const Eigen::MatrixXd& A,
                                const Eigen::VectorXd& b, CostForm cost_form,
@@ -487,6 +517,128 @@ class MinDistanceFromPlaneToOrigin {
   VectorXDecisionVariable x_rotated_lorentz_;
   Eigen::VectorXd x_expected_;
 };
+
+/// Test a simple linear programming problem with zero cost, i.e. a feasibility
+/// problem
+///    0 <= x0 + 2x1 + 3x2 <= 10
+/// -inf <=       x1 - 2x2 <= 3
+///   -1 <= 0x0+ 0x1 + 0x2 <= 0
+///           x1 >= 1
+class LinearFeasibilityProgram : public LinearProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearFeasibilityProgram)
+
+  explicit LinearFeasibilityProgram(ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<3> x_;
+};
+
+/// Adapt from the linear programming example
+/// http://cvxopt.org/examples/tutorial/lp.html
+/// Solve the following linear program
+/// min     2x0 + x1
+/// s.t  -inf <= -x0 + x1 <= 1
+///         2 <= x0 + x1  <=inf
+///      -inf <= x0 - 2x1 <= 4
+///      x1 >= 2
+///      x0 >= 0
+/// The optimal solution is x0 = 1, x1 = 2
+class LinearProgram0 : public LinearProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram0)
+
+  LinearProgram0(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<2> x_;
+  Eigen::Vector2d x_expected_;
+};
+
+// Test a simple linear programming problem with only bounding box constraint
+// on x.
+// min x0 - 2*x1
+//     0 <= x0 <= 2
+//    -1 <= x1 <= 4
+// The optimal solution is (0, 4)
+class LinearProgram1 : public LinearProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram1)
+
+  LinearProgram1(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<2> x_;
+  Eigen::Vector2d x_expected_;
+};
+
+// Test a simple linear programming problem
+// Adapt from http://docs.mosek.com/7.1/capi/Linear_optimization.html
+// min -3x0 - x1 - 5x2 - x3
+// s.t     3x0 +  x1 + 2x2        = 30
+//   15 <= 2x0 +  x1 + 3x2 +  x3 <= inf
+//  -inf<=       2x1       + 3x3 <= 25
+// -inf <=  x0 + 2x1       + x3  <= inf
+// -100 <=  x0       + 2x2       <= 40
+//           0 <= x0 <= inf
+//           0 <= x1 <= 10
+//           0 <= x2 <= inf
+//           0 <= x3 <= inf
+// The optimal solution is at (0, 0, 15, 25/3)
+class LinearProgram2 : public LinearProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram2)
+
+  LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<4> x_;
+  Eigen::Vector4d x_expected_;
+};
+
+// Test a simple linear programming problem
+// Adapt from http://people.brunel.ac.uk/~mastjjb/jeb/or/morelp.html
+// min 4x0 + 5x1 + 6x2
+// s.t.
+//     x0 + x1 >= 11
+//     x0 - x1 <= 5
+//     x2 - x0 - x1 = 0
+//     7x0 >= 35 - 12x1
+//     x0 >= 0 x1 >= 0 x2 >= 0
+// The optimal solution is at (8, 3, 11)
+class LinearProgram3 : public LinearProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram3)
+
+  LinearProgram3(CostForm cost_form, ConstraintForm cnstr_form);
+
+  void CheckSolution() const override;
+
+ private:
+  VectorDecisionVariable<3> x_;
+  Eigen::Vector3d x_expected_;
+};
+
+class LinearProgramTest
+    : public ::testing::TestWithParam<
+          std::tuple<CostForm, ConstraintForm, LinearProblems>> {
+ public:
+  LinearProgramTest();
+
+  LinearProgram* prob() const {return prob_.get();}
+
+ private:
+  std::unique_ptr<LinearProgram> prob_;
+};
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

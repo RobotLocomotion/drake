@@ -1,5 +1,10 @@
 #include "drake/multibody/rigid_body_actuator.h"
 
+#include <string>
+
+#include "drake/common/text_logging.h"
+#include "drake/multibody/rigid_body.h"
+
 RigidBodyActuator::RigidBodyActuator(const std::string& name,
                                      const RigidBody<double>* body,
                                      double reduction,

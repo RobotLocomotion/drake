@@ -36,17 +36,13 @@ C++14-compliant compiler. **/
 
 /* C++14 introduces a standard way to mark deprecated declarations. Before
 that we can use non-standard compiler hacks. */
-#ifndef SWIG
-  /* Figure out the best form of deprecation for this compiler. */
-  #if __cplusplus >= 201402L
-    /* C++14 */
-    #define DRAKE_DEPRECATED(MSG) [[deprecated("\nDRAKE DEPRECATED: " MSG)]]
-  #else /* gcc or clang */
-    #define DRAKE_DEPRECATED(MSG) \
-      __attribute__((deprecated("\nDRAKE DEPRECATED: " MSG)))
-  #endif
-#else /* Swigging */
-  #define DRAKE_DEPRECATED(MSG)
+/* Figure out the best form of deprecation for this compiler. */
+#if __cplusplus >= 201402L
+  /* C++14 */
+  #define DRAKE_DEPRECATED(MSG) [[deprecated("\nDRAKE DEPRECATED: " MSG)]]
+#else /* gcc or clang */
+  #define DRAKE_DEPRECATED(MSG) \
+    __attribute__((deprecated("\nDRAKE DEPRECATED: " MSG)))
 #endif
 
 #endif  // DRAKE_DOXYGEN_CXX

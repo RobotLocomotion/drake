@@ -41,7 +41,9 @@ class LineLane : public Lane {
 
  private:
   api::LanePosition DoToLanePosition(
-      const api::GeoPosition& geo_pos) const override;
+      const api::GeoPosition& geo_pos,
+      api::GeoPosition* nearest_point,
+      double* distance) const override;
 
   V2 xy_of_p(const double p) const override;
   V2 xy_dot_of_p(const double p) const override;

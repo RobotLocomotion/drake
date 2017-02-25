@@ -26,10 +26,6 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-constexpr double DepthSensor::kError;
-constexpr double DepthSensor::kTooFar;
-constexpr double DepthSensor::kTooClose;
-
 DepthSensor::DepthSensor(const std::string& name,
                          const RigidBodyTree<double>& tree,
                          const RigidBodyFrame<double>& frame,
@@ -131,9 +127,6 @@ std::unique_ptr<BasicVector<double>> DepthSensor::AllocateOutputVector(
 
 void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
                                systems::SystemOutput<double>* output) const {
-  DRAKE_ASSERT_VOID(System<double>::CheckValidContext(context));
-  DRAKE_ASSERT_VOID(System<double>::CheckValidOutput(output));
-
   VectorXd u = this->EvalEigenVectorInput(context, 0);
   auto q = u.head(tree_.get_num_positions());
   KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
@@ -174,16 +167,16 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
     if (distances[i] < 0) {
       // Infinity distance measurements show up as -1.
       if (distances[i] == -1) {
-        distances[i] = kTooFar;
+        distances[i] = DepthSensorOutput<double>::kTooFar;
       } else {
         drake::log()->warn("Measured distance was < 0 and != -1: " +
                            std::to_string(distances[i]));
-        distances[i] = kError;
+        distances[i] = DepthSensorOutput<double>::kError;
       }
     } else if (distances[i] > specification_.max_range()) {
-      distances[i] = kTooFar;
+      distances[i] = DepthSensorOutput<double>::kTooFar;
     } else if (distances[i] < specification_.min_range()) {
-      distances[i] = kTooClose;
+      distances[i] = DepthSensorOutput<double>::kTooClose;
     }
   }
 

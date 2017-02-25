@@ -18,17 +18,18 @@ namespace {
 class ParamParserTests : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    std::string urdf_name =
+    const std::string urdf_name =
         drake::GetDrakePath() +
         "/examples/Valkyrie/urdf/urdf/"
         "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
-    std::string alias_groups_config_name =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/config/valkyrie.alias_groups";
-    std::string controller_config_name =
+    const std::string alias_groups_config_name =
         drake::GetDrakePath() +
         "/examples/QPInverseDynamicsForHumanoids/"
-        "param_parsers/test/params.yaml";
+        "param_parsers/test/params.alias_groups";
+    const std::string controller_config_name =
+        drake::GetDrakePath() +
+        "/examples/QPInverseDynamicsForHumanoids/"
+        "param_parsers/test/params.id_controller_config";
 
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -37,8 +38,7 @@ class ParamParserTests : public ::testing::Test {
     rbt_alias_ = std::make_unique<RigidBodyTreeAliasGroups<double>>(*robot_);
     rbt_alias_->LoadFromFile(alias_groups_config_name);
 
-    paramset_.LoadFromYAMLConfigFile(YAML::LoadFile(controller_config_name),
-                                     *rbt_alias_);
+    paramset_.LoadFromFile(controller_config_name, *rbt_alias_);
   }
 
   std::unique_ptr<RigidBodyTree<double>> robot_;
@@ -91,8 +91,8 @@ TEST_F(ParamParserTests, ContactInformation) {
                                 Vector3<double>(-0.05, -0.05, -0.09),
                                 kTolerance, MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(3),
-                                Vector3<double>(-0.05, 0.05, -0.09),
-                                kTolerance, MatrixCompareType::absolute));
+                                Vector3<double>(-0.05, 0.05, -0.09), kTolerance,
+                                MatrixCompareType::absolute));
   }
 
   {
@@ -233,8 +233,12 @@ TEST_F(ParamParserTests, CentroidalMomentumDotParams) {
                               MatrixCompareType::absolute));
 }
 
-// Tests for DesiredDoFMotion related param parsing.
-TEST_F(ParamParserTests, DoFParams) {
+// Helper function use to test parsing for the Dof motions. Checks numerical
+// equality between @p motion, @p Kp, and @p kd, and values in the config file.
+void TestDofMotionsParamsHelper(
+    const DesiredDofMotions& motion, const VectorX<double>& Kp,
+    const VectorX<double>& Kd,
+    const RigidBodyTreeAliasGroups<double>& rbt_alias, double tol) {
   // DoFMotions:
   //   default:
   //     Kp: 0
@@ -254,16 +258,16 @@ TEST_F(ParamParserTests, DoFParams) {
   //     Kp: 20
   //     Kd: 11
   //     weight: 1
-  DesiredDofMotions motion = paramset_.MakeDesiredDofMotions();
-  std::set<int> l_arm(rbt_alias_->get_velocity_group("left_arm").begin(),
-                      rbt_alias_->get_velocity_group("left_arm").end());
-  std::set<int> r_arm(rbt_alias_->get_velocity_group("right_arm").begin(),
-                      rbt_alias_->get_velocity_group("right_arm").end());
+  std::set<int> l_arm(rbt_alias.get_velocity_group("left_arm").begin(),
+                      rbt_alias.get_velocity_group("left_arm").end());
+  std::set<int> r_arm(rbt_alias.get_velocity_group("right_arm").begin(),
+                      rbt_alias.get_velocity_group("right_arm").end());
   std::set<int> floating_base(
-      rbt_alias_->get_velocity_group("floating_base").begin(),
-      rbt_alias_->get_velocity_group("floating_base").end());
+      rbt_alias.get_velocity_group("floating_base").begin(),
+      rbt_alias.get_velocity_group("floating_base").end());
 
-  int dim = robot_->get_num_velocities();
+  const RigidBodyTree<double>& robot = rbt_alias.get_tree();
+  int dim = robot.get_num_velocities();
   for (int i = 0; i < dim; ++i) {
     if (l_arm.count(i)) {
       EXPECT_EQ(motion.weight(i), -1);
@@ -281,9 +285,9 @@ TEST_F(ParamParserTests, DoFParams) {
   }
 
   // Check gains.
-  VectorX<double> Kp, Kd, Kp_expected, Kd_expected;
-  Kp_expected = VectorX<double>::Constant(robot_->get_num_velocities(), 0);
-  Kd_expected = VectorX<double>::Constant(robot_->get_num_velocities(), 0);
+  VectorX<double> Kp_expected, Kd_expected;
+  Kp_expected = VectorX<double>::Constant(robot.get_num_velocities(), 0);
+  Kd_expected = VectorX<double>::Constant(robot.get_num_velocities(), 0);
   for (int i : l_arm) {
     Kp_expected(i) = 10;
     Kd_expected(i) = 3;
@@ -297,11 +301,73 @@ TEST_F(ParamParserTests, DoFParams) {
     Kp_expected(i) = 0;
     Kd_expected(i) = ctr++;
   }
+  EXPECT_TRUE(
+      CompareMatrices(Kp, Kp_expected, tol, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(Kd, Kd_expected, tol, MatrixCompareType::absolute));
+}
+
+// Tests for DesiredDoFMotion related param parsing.
+TEST_F(ParamParserTests, DoFParams) {
+  DesiredDofMotions motion = paramset_.MakeDesiredDofMotions();
+  VectorX<double> Kp, Kd;
   paramset_.LookupDesiredDofMotionGains(&Kp, &Kd);
-  EXPECT_TRUE(CompareMatrices(Kp, Kp_expected, kTolerance,
+
+  TestDofMotionsParamsHelper(motion, Kp, Kd, *rbt_alias_, kTolerance);
+}
+
+// Tests MakeQpInput
+TEST_F(ParamParserTests, MakeQpInput) {
+  QpInput qp_input =
+      paramset_.MakeQpInput({"pelvis"},               /* contact groups */
+                            {"pelvis", "right_foot"}, /* tracked body groups */
+                            *rbt_alias_);
+
+  // Tests for body motion params.
+  EXPECT_EQ(qp_input.desired_body_motions().size(), 2);
+
+  Vector6<double> weights;
+  const RigidBody<double>* body = robot_->FindBody("pelvis");
+  weights << 1, 1, 1, 0, 0, 0;
+  TestDesiredBodyMotion(qp_input.desired_body_motions().at("pelvis"), body,
+                        weights, kTolerance);
+
+  body = robot_->FindBody("rightFoot");
+  weights = Vector6<double>::Constant(1e-2);
+  TestDesiredBodyMotion(qp_input.desired_body_motions().at("rightFoot"), body,
+                        weights, kTolerance);
+
+  // Tests for contacts, pelvis should be the default contact.
+  EXPECT_EQ(qp_input.contact_information().size(), 1);
+  const ContactInformation& contact =
+      qp_input.contact_information().at("pelvis");
+  EXPECT_EQ(&contact.body(), robot_->FindBody("pelvis"));
+  EXPECT_EQ(contact.mu(), 1);
+  EXPECT_EQ(contact.Kd(), 8);
+  EXPECT_EQ(contact.num_basis_per_contact_point(), 3);
+  EXPECT_EQ(contact.weight(), 1e5);
+  EXPECT_EQ(contact.acceleration_constraint_type(), ConstraintType::Soft);
+  EXPECT_TRUE(CompareMatrices(contact.normal(), Vector3<double>(0, 0, 1),
+                              kTolerance, MatrixCompareType::absolute));
+  EXPECT_EQ(contact.contact_points().cols(), 1);
+  EXPECT_TRUE(CompareMatrices(contact.contact_points().col(0),
+                              Vector3<double>::Zero(), kTolerance,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Kd, Kd_expected, kTolerance,
-                              MatrixCompareType::absolute));
+
+  // Tests for contact force basis regularization.
+  EXPECT_EQ(qp_input.w_basis_reg(), 1e-6);
+
+  // Tests for Dof motion.
+  VectorX<double> Kp, Kd;
+  paramset_.LookupDesiredDofMotionGains(&Kp, &Kd);
+  TestDofMotionsParamsHelper(qp_input.desired_dof_motions(), Kp, Kd,
+                             *rbt_alias_, kTolerance);
+
+  // Tests for centroidal momentum rate.
+  weights << 0, 0, 0, 10, 10, 10;
+  EXPECT_TRUE(
+      CompareMatrices(qp_input.desired_centroidal_momentum_dot().weights(),
+                      weights, kTolerance, MatrixCompareType::absolute));
 }
 
 }  // namespace

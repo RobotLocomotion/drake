@@ -254,6 +254,7 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   EXPECT_EQ(Ia.get_moments(), scalar * m);
   EXPECT_EQ(Ia.get_products(), scalar * p);
 
+  // Verify correctness of operator/=().
   Ia /= scalar;
   EXPECT_EQ(Ia.get_moments(), m);
   EXPECT_EQ(Ia.get_products(), p);

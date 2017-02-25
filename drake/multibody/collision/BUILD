@@ -19,7 +19,6 @@ drake_cc_library(
         "model.h",
         "point_pair.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
@@ -44,7 +43,6 @@ drake_cc_library(
         "drake_collision.cc",
     ],
     defines = ["BULLET_COLLISION"],
-    linkstatic = 1,
     deps = [
         ":collision_api",
         "@bullet//:lib",
@@ -61,7 +59,6 @@ drake_cc_library(
         "unusable_model.cc",
         "unusable_model.h",
     ],
-    linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = [
         ":collision_api",
@@ -76,7 +73,6 @@ drake_cc_library(
         "fcl_model.cc",
         "fcl_model.h",
     ],
-    linkstatic = 1,
     deps = [
         ":collision_api",
         "@fcl//:lib",

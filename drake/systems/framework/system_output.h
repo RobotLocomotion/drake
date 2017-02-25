@@ -195,12 +195,12 @@ struct LeafSystemOutput : public SystemOutput<T> {
     return *ports_[index];
   }
 
-  std::vector<std::unique_ptr<OutputPort>>* get_mutable_ports() {
-    return &ports_;
+  void add_port(std::unique_ptr<AbstractValue> value) {
+    add_port(std::make_unique<OutputPort>(std::move(value)));
   }
 
-  void add_port(std::unique_ptr<AbstractValue> value) {
-    ports_.emplace_back(new OutputPort(std::move(value)));
+  void add_port(std::unique_ptr<OutputPort> port) {
+    ports_.emplace_back(std::move(port));
   }
 
  protected:

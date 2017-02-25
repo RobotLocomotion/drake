@@ -15,27 +15,28 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
+#include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/gravity_compensator.h"
-#include "drake/systems/controllers/pid_controlled_system.h"
+#include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/controllers/pid_with_gravity_compensator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/demultiplexer.h"
-#include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/primitives/matrix_gain.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
+
+#include "drake/util/drakeGeometryUtil.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
@@ -47,18 +48,12 @@ namespace {
 
 using schunk_wsg::SchunkWsgStatusSender;
 using schunk_wsg::SchunkWsgTrajectoryGenerator;
-using systems::ConstantVectorSource;
 using systems::Context;
-using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
-using systems::GravityCompensator;
 using systems::InputPortDescriptor;
-using systems::MatrixGain;
-using systems::Multiplexer;
 using systems::OutputPortDescriptor;
-using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 
@@ -67,30 +62,34 @@ const char* const kIiwaUrdf =
 
 template <typename T>
 std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
-    int* iiwa_instance_id, int* wsg_instance_id) {
+    ModelInstanceInfo<T>* iiwa_instance, ModelInstanceInfo<T>* wsg_instance,
+    ModelInstanceInfo<T>* box_instance) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
   tree_builder->StoreModel("iiwa", kIiwaUrdf);
+  tree_builder->StoreModel("table",
+                           "/examples/kuka_iiwa_arm/models/table/"
+                           "extra_heavy_duty_table_surface_only_collision.sdf");
   tree_builder->StoreModel(
-      "table",
-      "/examples/kuka_iiwa_arm/models/table/"
-      "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreModel(
-      "cylinder",
-      "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf");
+      "box",
+      "/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf");
   tree_builder->StoreModel(
       "wsg", "/examples/schunk_wsg/models/schunk_wsg_50.sdf");
 
-  // Build a world with two fixed tables.  A cylinder is placed one on
+  // Build a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
-  tree_builder->AddFixedModelInstance(
-      "table", Eigen::Vector3d::Zero() /* xyz */,
-      Eigen::Vector3d::Zero() /* rpy */);
-  tree_builder->AddFixedModelInstance(
-      "table", Eigen::Vector3d(1, 0, 0) /* xyz */,
-      Eigen::Vector3d::Zero() /* rpy */);
+  tree_builder->AddFixedModelInstance("table",
+                                      Eigen::Vector3d::Zero() /* xyz */,
+                                      Eigen::Vector3d::Zero() /* rpy */);
+  tree_builder->AddFixedModelInstance("table",
+                                      Eigen::Vector3d(0.8, 0, 0) /* xyz */,
+                                      Eigen::Vector3d::Zero() /* rpy */);
+  tree_builder->AddFixedModelInstance("table",
+                                      Eigen::Vector3d(0, 0.85, 0) /* xyz */,
+                                      Eigen::Vector3d::Zero() /* rpy */);
+
   tree_builder->AddGround();
 
   // The `z` coordinate of the top of the table in the world frame.
@@ -103,48 +102,59 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   // Coordinates for kRobotBase originally from iiwa_world_demo.cc.
   // The intention is to center the robot on the table.
   const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
-  // Start the cylinder slightly above the table.  If we place it at
+  // Start the box slightly above the table.  If we place it at
   // the table top exactly, it may start colliding the table (which is
   // not good, as it will likely shoot off into space).
-  const Eigen::Vector3d kCylinderBase(
-      1 + -0.43, -0.65, kTableTopZInWorld + 0.1);
+  const Eigen::Vector3d kBoxBase(1 + -0.43, -0.65, kTableTopZInWorld + 0.1);
 
-  *iiwa_instance_id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
-  tree_builder->AddFloatingModelInstance("cylinder", kCylinderBase);
-  *wsg_instance_id = tree_builder->AddModelInstanceToFrame(
-      "wsg", Eigen::Vector3d::Zero(),  Eigen::Vector3d::Zero(),
+  int id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
+  *iiwa_instance = tree_builder->get_model_info_for_instance(id);
+  id = tree_builder->AddFloatingModelInstance("box", kBoxBase,
+                                              Vector3<double>(0, 0, 1));
+  *box_instance = tree_builder->get_model_info_for_instance(id);
+  id = tree_builder->AddModelInstanceToFrame(
+      "wsg", Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
       tree_builder->tree().findFrame("iiwa_frame_ee"),
       drake::multibody::joints::kFixed);
+  *wsg_instance = tree_builder->get_model_info_for_instance(id);
 
   auto plant = std::make_unique<RigidBodyPlant<T>>(tree_builder->Build());
-  // Arbitrary contact parameters.
-  plant->set_contact_parameters(10000., 100., 10.);
+  // Contact parameters
+  const double kStiffness = 10000;
+  const double kDissipation = 5.0;
+  const double kStaticFriction = 0.9;
+  const double kDynamicFriction = 0.5;
+  const double kStictionSlipTolerance = 0.01;
+  plant->set_normal_contact_parameters(kStiffness, kDissipation);
+  plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+                                         kStictionSlipTolerance);
   return plant;
 }
 
 // TODO(sam.creasey) We should de-duplicate this with kuka_demo.cc.
 // See #4521 which moves the factory for the KukaDemo into a header,
 // we might want to examine/duplicate that approach.
-template<typename T>
+template <typename T>
 class SimulatedIiwaWithWsg : public systems::Diagram<T> {
  public:
   SimulatedIiwaWithWsg() {
     this->set_name("SimulatedIiwaWithWsg");
     DiagramBuilder<T> builder;
 
-    int iiwa_instance_id{};
-    int wsg_instance_id{};
-    plant_ = builder.AddSystem(BuildCombinedPlant<T>(&iiwa_instance_id,
-                                                     &wsg_instance_id));
+    ModelInstanceInfo<T> iiwa_info, wsg_info, box_info;
+    plant_ = builder.AddSystem(
+        BuildCombinedPlant<T>(&iiwa_info, &wsg_info, &box_info));
     const auto& iiwa_input_port =
-        plant_->model_instance_actuator_command_input_port(iiwa_instance_id);
+        plant_->model_instance_actuator_command_input_port(
+            iiwa_info.instance_id);
     const auto& iiwa_output_port =
-        plant_->model_instance_state_output_port(iiwa_instance_id);
+        plant_->model_instance_state_output_port(iiwa_info.instance_id);
 
     const auto& wsg_input_port =
-        plant_->model_instance_actuator_command_input_port(wsg_instance_id);
+        plant_->model_instance_actuator_command_input_port(
+            wsg_info.instance_id);
     const auto& wsg_output_port =
-            plant_->model_instance_state_output_port(wsg_instance_id);
+        plant_->model_instance_state_output_port(wsg_info.instance_id);
 
     // Connect the pid controllers for each device.
 
@@ -160,35 +170,81 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     iiwa_kp << 100, 200, 100, 200, 10, 100, 1;
     iiwa_ki << 0, 2, 0, 1, 0, 0.5, 0;
     for (int i = 0; i < iiwa_kp.size(); i++) {
-      iiwa_kd[i] = std::sqrt(iiwa_kp[i]);
+      iiwa_kd[i] = 2 * std::sqrt(iiwa_kp[i]);
     }
 
-    auto iiwa_pid_ports = PidControlledSystem<T>::ConnectController(
-        iiwa_input_port, iiwa_output_port, nullptr /* feedback */,
-        iiwa_kp, iiwa_ki, iiwa_kd, &builder);
+    auto iiwa_controller =
+        builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
+            iiwa_info.model_path, iiwa_info.world_offset, iiwa_kp, iiwa_ki,
+            iiwa_kd);
 
-    const RigidBodyTree<T>& tree = plant_->get_rigid_body_tree();
+    // Sets a zero configuration and computes spatial inertia for the gripper
+    // as well as the pose of the end effector link of iiwa using the world
+    // tree.
+    const RigidBodyTree<T>& world_tree = plant_->get_rigid_body_tree();
+    KinematicsCache<T> world_cache = world_tree.CreateKinematicsCache();
+    world_cache.initialize(world_tree.getZeroConfiguration());
+    world_tree.doKinematics(world_cache);
+
+    const RigidBody<T>* end_effector = world_tree.FindBody("iiwa_link_7");
+    Isometry3<T> X_WEE =
+        world_tree.CalcBodyPoseInWorldFrame(world_cache, *end_effector);
+
+    // The inertia of the added gripper is lumped into the last link of the
+    // controller's iiwa arm model. This is motivated by the fact that the
+    // gripper inertia is relatively large compared to the last couple links
+    // in the iiwa arm model. And to completely rely on using feedback to cope
+    // with added inertia, we need to either rely on larger gains (which will
+    // cause simulation to explode without the gripper), or wait longer for
+    // the integrator to kick in.
+
+    // Computes the lumped inertia for the gripper.
+    std::set<int> gripper_instance_set = {wsg_info.instance_id};
+    Matrix6<T> lumped_gripper_inertia_W =
+        world_tree.LumpedSpatialInertiaInWorldFrame(
+            world_cache, gripper_instance_set);
+    // Transfer it to the last iiwa link's body frame.
+    Matrix6<T> lumped_gripper_inertia_EE =
+        transformSpatialInertia(X_WEE.inverse(), lumped_gripper_inertia_W);
+    lumped_gripper_inertia_EE += end_effector->get_spatial_inertia();
+
+    // Changes the controller's iiwa end effector's link to the lumped inertia.
+    RigidBody<T>* controller_ee =
+        iiwa_controller->get_robot_for_control().FindBody("iiwa_link_7");
+    controller_ee->set_spatial_inertia(lumped_gripper_inertia_EE);
+
+    // Connect iiwa controller and robot.
+    builder.Connect(iiwa_output_port,
+                    iiwa_controller->get_estimated_state_input_port());
+    builder.Connect(iiwa_controller->get_control_output_port(),
+                    iiwa_input_port);
+
+    // Export iiwa's desired state input, and state output.
+    builder.ExportInput(iiwa_controller->get_desired_state_input_port());
+    builder.ExportOutput(iiwa_output_port);
+
+    // Sets up the WSG gripper part.
     const std::map<std::string, int> index_map =
-        tree.computePositionNameToIndexMap();
+        world_tree.computePositionNameToIndexMap();
     const int left_finger_position_index =
         index_map.at("left_finger_sliding_joint");
     const int position_index = plant_->FindInstancePositionIndexFromWorldIndex(
-        wsg_instance_id, left_finger_position_index);
-    const int velocity_index = position_index +
-        plant_->get_num_positions(wsg_instance_id);
+        wsg_info.instance_id, left_finger_position_index);
+    const int velocity_index =
+        position_index + plant_->get_num_positions(wsg_info.instance_id);
 
     Eigen::MatrixXd feedback_matrix = Eigen::MatrixXd::Zero(
-        2 * plant_->get_num_actuators(wsg_instance_id),
-        2 * plant_->get_num_positions(wsg_instance_id));
+        2 * plant_->get_num_actuators(wsg_info.instance_id),
+        2 * plant_->get_num_positions(wsg_info.instance_id));
     feedback_matrix(0, position_index) = 1.;
     feedback_matrix(1, velocity_index) = 1.;
-    std::unique_ptr<MatrixGain<T>> feedback_selector =
-        std::make_unique<MatrixGain<T>>(feedback_matrix);
+    std::unique_ptr<systems::MatrixGain<T>> feedback_selector =
+        std::make_unique<systems::MatrixGain<T>>(feedback_matrix);
 
     // TODO(sam.creasey) The choice of constants below is completely
     // arbitrary and may not match the performance of the actual
     // gripper.
-    const T wsg_kp = 3000.0;  // This seems very high, for some grasps
+    const T wsg_kp = 300.0;   // This seems very high, for some grasps
                               // it's actually in the right power of
                               // two.  We'll need to revisit this once
                               // we're using the force command sent to
@@ -196,53 +252,45 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     const T wsg_ki = 0.0;
     const T wsg_kd = 5.0;
     const VectorX<T> wsg_v = VectorX<T>::Ones(wsg_input_port.size());
-    auto wsg_pid_ports = PidControlledSystem<T>::ConnectController(
-        wsg_input_port, wsg_output_port, std::move(feedback_selector),
-        wsg_v * wsg_kp, wsg_v * wsg_ki, wsg_v * wsg_kd,
-        &builder);
 
-    // Create a tree containing only the iiwa to use with the gravity
-    // compensator.
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + kIiwaUrdf,
-        drake::multibody::joints::kFixed,
-        nullptr /* weld to frame */, &iiwa_tree_);
+    auto wsg_controller = builder.template AddSystem<systems::PidController<T>>(
+        std::move(feedback_selector), wsg_v * wsg_kp, wsg_v * wsg_ki,
+        wsg_v * wsg_kd);
 
-    auto gravity_compensator =
-        builder.template AddSystem<GravityCompensator<T>>(iiwa_tree_);
+    // Connects WSG and controller.
+    builder.Connect(wsg_output_port,
+                    wsg_controller->get_estimated_state_input_port());
+    builder.Connect(wsg_controller->get_control_output_port(), wsg_input_port);
 
-    // Split the input state into two signals one with the positions and one
-    // with the velocities.
-
-    // TODO(sam.creasey) Is this a common enough thing to need to do
-    // that the plant might want to output the positions and
-    // velocities on separate ports?
-    auto rbp_state_demux = builder.template AddSystem<Demultiplexer<T>>(
-        iiwa_tree_.get_num_positions() + iiwa_tree_.get_num_velocities(),
-        iiwa_tree_.get_num_positions());
-    builder.Connect(iiwa_output_port, rbp_state_demux->get_input_port(0));
-
-    // Connects the gravity compensator to the output generalized positions.
-    builder.Connect(rbp_state_demux->get_output_port(0),
-                    gravity_compensator->get_input_port(0));
-    builder.Connect(gravity_compensator->get_output_port(0),
-                    iiwa_pid_ports.control_input_port);
-
-    builder.ExportInput(iiwa_pid_ports.state_input_port);
-    builder.ExportOutput(iiwa_output_port);
-
-    // Now finish building the WSG's part of the diagram.
-
-    // Create a source to emit a single zero.  We'll need this to
-    // express external commanded force to the PidControlledSystem.
-    auto wsg_zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
-        Eigen::VectorXd::Zero(1));
-    builder.Connect(wsg_zero_source->get_output_port(),
-                    wsg_pid_ports.control_input_port);
-    builder.ExportInput(wsg_pid_ports.state_input_port);
+    //  Export wsg's desired state input, and state output.
+    builder.ExportInput(wsg_controller->get_desired_state_input_port());
     builder.ExportOutput(wsg_output_port);
 
     builder.ExportOutput(plant_->get_output_port(0));
+
+    // Sets up a "state estimator" for iiwa that generates
+    // bot_core::robot_state_t messages.
+    auto iiwa_state_est =
+        builder.template AddSystem<OracularStateEstimation<T>>(
+            iiwa_controller->get_robot_for_control(),
+            iiwa_controller->get_robot_for_control().get_body(1));
+    builder.Connect(iiwa_output_port, iiwa_state_est->get_input_port_state());
+    builder.ExportOutput(iiwa_state_est->get_output_port_msg());
+
+    // Sets up a "state estimator" for the box that generates
+    // bot_core::robot_state_t messages.
+    // Make a box RBT for the fake state estimator.
+    object_ = std::make_unique<RigidBodyTree<T>>();
+    parsers::urdf::AddModelInstanceFromUrdfFile(
+        box_info.model_path, multibody::joints::kQuaternion,
+        box_info.world_offset, object_.get());
+    auto box_state_est = builder.template AddSystem<OracularStateEstimation<T>>(
+        *object_, object_->get_body(1));
+    builder.Connect(
+        plant_->model_instance_state_output_port(box_info.instance_id),
+        box_state_est->get_input_port_state());
+    builder.ExportOutput(box_state_est->get_output_port_msg());
+
     builder.BuildInto(this);
   }
 
@@ -268,34 +316,39 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     return this->get_output_port(2);
   }
 
+  const OutputPortDescriptor<T>& get_iiwa_robot_state_msg_port() const {
+    return this->get_output_port(3);
+  }
+
+  const OutputPortDescriptor<T>& get_box_robot_state_msg_port() const {
+    return this->get_output_port(4);
+  }
+
  private:
   RigidBodyPlant<T>* plant_{nullptr};
-  PidControlledSystem<T>* controller_{nullptr};
-  RigidBodyTree<T> iiwa_tree_;
+  std::unique_ptr<RigidBodyTree<T>> object_;
 };
 
 int DoMain() {
   systems::DiagramBuilder<double> builder;
   auto model = builder.AddSystem<SimulatedIiwaWithWsg<double>>();
 
-  const RigidBodyTree<double>& tree =
-      model->get_plant().get_rigid_body_tree();
+  const RigidBodyTree<double>& tree = model->get_plant().get_rigid_body_tree();
 
   drake::lcm::DrakeLcm lcm;
-  DrakeVisualizer* visualizer =
-      builder.AddSystem<DrakeVisualizer>(tree, &lcm);
+  DrakeVisualizer* visualizer = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
   builder.Connect(model->get_plant_output_port(),
                   visualizer->get_input_port(0));
 
   // Create the command subscriber and status publisher.
   auto iiwa_command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
-          "IIWA_COMMAND", &lcm));
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
+                                                                 &lcm));
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
 
   auto iiwa_status_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
-          "IIWA_STATUS", &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
+                                                               &lcm));
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
 
   builder.Connect(iiwa_command_sub->get_output_port(0),
@@ -331,6 +384,18 @@ int DoMain() {
   builder.Connect(model->get_wsg_state_port(),
                   wsg_trajectory_generator->get_state_input_port());
   builder.Connect(*wsg_status_sender, *wsg_status_pub);
+
+  auto iiwa_state_pub = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
+          "IIWA_STATE_EST", &lcm));
+  builder.Connect(model->get_iiwa_robot_state_msg_port(),
+                  iiwa_state_pub->get_input_port(0));
+
+  auto box_state_pub = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
+          "OBJECT_STATE_EST", &lcm));
+  builder.Connect(model->get_box_robot_state_msg_port(),
+                  box_state_pub->get_input_port(0));
 
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);

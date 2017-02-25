@@ -28,7 +28,7 @@ if(lcm_FOUND)
     drakeSystemAnalysis
     drakeSystemControllers)
   drake_add_test(
-      NAME schunk_wsg_simulation COMMAND schunk_wsg_simulation -simulation_sec 0.1)
+      NAME schunk_wsg_simulation COMMAND schunk_wsg_simulation --simulation_sec 0.1)
 endif()
 
 if(BUILD_TESTING)

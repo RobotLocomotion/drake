@@ -11,7 +11,6 @@ drake_cc_library(
     testonly = 1,
     srcs = [],
     hdrs = [],
-    linkstatic = 1,
     deps = [
         ":pack_value",
     ],
@@ -22,7 +21,6 @@ drake_cc_library(
     testonly = 1,
     srcs = [],
     hdrs = ["pack_value.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework:value",
     ],

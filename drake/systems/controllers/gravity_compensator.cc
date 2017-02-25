@@ -23,9 +23,6 @@ GravityCompensator<T>::GravityCompensator(const RigidBodyTree<T>& tree)
 template <typename T>
 void GravityCompensator<T>::DoCalcOutput(const Context<T>& context,
                                          SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
   Eigen::VectorXd q = this->EvalEigenVectorInput(context, 0);
 
   KinematicsCache<T> cache = tree_.doKinematics(q);

@@ -92,15 +92,17 @@ IPOPT_LIBS = [
 ]
 
 # Invokes ./configure, make, and make install to build IPOPT. We arbitrarily
-# use make -j 32 and hope for the best in terms of overall CPU consumption, since
-# Bazel has no way to tell a genrule how many cores it should use.
+# allow make to use a number of cores equal to half the number of available
+# cores, rounded up.
 #
 # We emit static libraries because dynamic libraries would have different names
 # on OS X and on Linux, and Bazel genrules don't allow platform-dependent outs.
 # https://github.com/bazelbuild/bazel/issues/281
+HALF_THE_CORES = "$$[($$(getconf _NPROCESSORS_ONLN)+1)/2]"
+
 BUILD_IPOPT_CMD = (
     CDEXEC + " `pwd`/external/ipopt/configure --enable-shared=no 2> /dev/null" +
-    " && " + CDEXEC + " make -j 32 2> /dev/null" +
+    " && " + CDEXEC + " make -j " + HALF_THE_CORES + "  2> /dev/null" +
     " && " + CDEXEC + " make install 2> /dev/null"
 )
 

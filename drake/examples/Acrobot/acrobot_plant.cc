@@ -75,8 +75,6 @@ template <typename T>
 void AcrobotPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
   const T& tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
@@ -93,7 +91,6 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
 template <typename T>
 T AcrobotPlant<T>::DoCalcKineticEnergy(
     const systems::Context<T>& context) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
 
@@ -106,7 +103,6 @@ T AcrobotPlant<T>::DoCalcKineticEnergy(
 template <typename T>
 T AcrobotPlant<T>::DoCalcPotentialEnergy(
     const systems::Context<T>& context) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
 
@@ -151,7 +147,7 @@ AcrobotWEncoder<T>::AcrobotWEncoder(bool acrobot_state_as_second_output) {
           4, std::vector<int>{0, 1});
   builder.Cascade(*acrobot_plant_, *encoder);
   builder.ExportInput(acrobot_plant_->get_input_port(0));
-  builder.ExportOutput(encoder->get_output_port(0));
+  builder.ExportOutput(encoder->get_output_port());
   if (acrobot_state_as_second_output)
     builder.ExportOutput(acrobot_plant_->get_output_port(0));
 

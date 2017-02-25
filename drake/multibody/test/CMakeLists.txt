@@ -10,10 +10,14 @@ target_link_libraries(benchmark_rigid_body_tree
     drakeRBM)
 
 drake_add_cc_test(rigid_body_frame_test)
-target_link_libraries(rigid_body_frame_test drakeRBM)
+target_link_libraries(rigid_body_frame_test
+    drakeRBM
+    drakeRigidBodyFrameCompareToClone)
 
 drake_add_cc_test(rigid_body_test)
-target_link_libraries(rigid_body_test drakeRBM)
+target_link_libraries(rigid_body_test
+    drakeRBM
+    drakeRigidBodyCompareToClone)
 
 add_executable(debug_manipulator_dynamics debug_manipulator_dynamics.cc)
 target_link_libraries(debug_manipulator_dynamics
@@ -49,5 +53,25 @@ if (snopt_FOUND)
   add_ik_gtest(test_ik_more_constraints)
   add_ik_gtest(test_ik_traj)
 endif ()
+
+add_library_with_exports(LIB_NAME drakeRigidBodyCompareToClone
+    SOURCE_FILES rigid_body_compare_to_clone.cc)
+target_link_libraries(drakeRigidBodyCompareToClone drakeRBM)
+
+add_library_with_exports(LIB_NAME drakeRigidBodyActuatorCompareToClone
+    SOURCE_FILES rigid_body_actuator_compare_to_clone.cc)
+target_link_libraries(drakeRigidBodyActuatorCompareToClone
+    drakeRBM
+    drakeRigidBodyCompareToClone)
+
+add_library_with_exports(LIB_NAME drakeRigidBodyFrameCompareToClone
+    SOURCE_FILES rigid_body_frame_compare_to_clone.cc)
+target_link_libraries(drakeRigidBodyFrameCompareToClone drakeRBM)
+
+add_library_with_exports(LIB_NAME drakeRigidBodyLoopCompareToClone
+    SOURCE_FILES rigid_body_loop_compare_to_clone.cc)
+target_link_libraries(drakeRigidBodyLoopCompareToClone
+  drakeRBM
+  drakeRigidBodyFrameCompareToClone)
 
 add_subdirectory(rigid_body_tree)

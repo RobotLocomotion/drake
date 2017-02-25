@@ -10,7 +10,6 @@ drake_cc_library(
     name = "pose_aggregator",
     srcs = ["pose_aggregator.cc"],
     hdrs = ["pose_aggregator.h"],
-    linkstatic = 1,
     deps = [
         ":pose_bundle",
         "//drake/common",
@@ -21,22 +20,63 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "pose_vector",
+    srcs = ["pose_vector.cc"],
+    hdrs = ["pose_vector.h"],
+    deps = [
+        "//drake/math:geometric_transform",
+        "//drake/systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
     name = "pose_bundle",
     srcs = ["pose_bundle.cc"],
     hdrs = ["pose_bundle.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
     ],
 )
 
+drake_cc_library(
+    name = "drake_visualizer_client",
+    srcs = ["drake_visualizer_client.cc"],
+    hdrs = ["drake_visualizer_client.h"],
+    deps = [
+        "@eigen//:eigen",
+        "//drake/lcmtypes:viewer",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/shapes",
+    ],
+)
+
 drake_cc_googletest(
     name = "pose_aggregator_test",
-    linkstatic = 1,
     deps = [
         ":pose_aggregator",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pose_vector_test",
+    deps = [
+        ":pose_vector",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_visualizer_client_test",
+    data = [
+        "//drake/multibody/shapes:test_models",
+    ],
+    deps = [
+        ":drake_visualizer_client",
+        "//drake/common:drake_path",
+        "//drake/lcmtypes:viewer",
     ],
 )
 

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
 
 namespace drake {
@@ -19,15 +20,12 @@ namespace systems {
 template <typename T>
 class PointContactDetail : public ContactDetail<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointContactDetail)
+
   explicit PointContactDetail(const ContactForce<T>& force);
   std::unique_ptr<ContactDetail<T>> Clone() const override;
   ContactForce<T> ComputeContactForce() const override { return force_; }
 
-  // not copyable or movable
-  PointContactDetail(const PointContactDetail& other) = delete;
-  PointContactDetail& operator=(const PointContactDetail& other) = delete;
-  PointContactDetail(PointContactDetail&& other) = delete;
-  PointContactDetail& operator=(PointContactDetail&& other) = delete;
  private:
   ContactForce<T> force_;
 };

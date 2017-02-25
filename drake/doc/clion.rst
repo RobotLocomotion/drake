@@ -40,8 +40,8 @@ directory as described in the :ref:`installation instructions <getting_drake>`.
 6. Browse to ``Build, Execution, Deployment > CMake``.
 7. Under ``CMake Options``, fill in
    ``-DCMAKE_INSTALL_PREFIX=/absolute_path_to_your/drake-distro/build/install``.
-8. [This step only for Ubuntu 14.04 - Trusty]. Under ``CMake Options`` 
-   expand the tab ``Pass system 
+8. [This step only for Ubuntu 14.04 - Trusty]. Under ``CMake Options``
+   expand the tab ``Pass system
    environment``. Add the following environment variables.  (You can copy these
    from this documentation one at a time and click on the ``paste`` button at
    the right of the environment variables dialog.)
@@ -120,7 +120,10 @@ Using CLion with Bazel
 ======================
 
 First, install Bazel and build Drake with Bazel, following
-:ref:`the Drake Bazel instructions <bazel>`
+:ref:`the Drake Bazel instructions <bazel>`. When using CLion with Bazel, it
+is especially important to make sure that ``ccache`` is never on your ``PATH``
+when you run CLion, because CLion will cache the ``PATH`` aggressively. We do
+not yet have a proven technique for purging it.
 
 Installing CLion and the Bazel Plugin
 -------------------------------------
@@ -132,9 +135,12 @@ supplies in source form only.
    `previous releases <https://www.jetbrains.com/clion/download/previous.html>`_.
    No other version of CLion is compatible with the Bazel plugin.
 
-2. Adjust your JVM options to increase CLion's memory limits.
-   Edit ``bin/clion64.vmoptions`` so that ``-Xms`` is ``1024m`` and
-   ``-Xmx`` is ``16384m``.
+2. Adjust your JVM options to increase CLion's memory limits so that ``-Xms``
+   is ``1024m`` and ``-Xmx`` is ``8196m``. The JVM options file location
+   is platform-dependent:
+
+   a. **Linux:**  ``bin/clion64.vmoptions``, in the CLion tarball.
+   b. **OS X:** ``Contents/bin/clion.vmoptions``, in the CLion app package.
 
 3. Clone the `bazelbuild/intellij <https://github.com/bazelbuild/intellij>`_
    project from GitHub, and build the CLion plugin with
@@ -185,11 +191,6 @@ Changes to BUILD files can add or remove source files from the Bazel build.
 To propagate those changes into the CLion project structure, select
 ``Bazel > Sync Project With BUILD Files``.
 
-Known Limitations
------------------
-CLion does not index symbols from any Bazel ``WORKSPACE`` externals, although
-those externals do participate as usual in Bazel builds initiated from CLion.
-
 Integrating External Tools with CLion
 =====================================
 
@@ -202,7 +203,7 @@ Code formatter settings
 
    * Program: ``clang-format``
    * Parameters (whole file): ``-i $FileName$``
-   * Parameters (current selection only): 
+   * Parameters (current selection only):
      ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
    * Working directory : ``$FileDir$``
 
@@ -243,7 +244,7 @@ Run ``Cpplint`` on Single File
    :Program: ``$ProjectFileDir$/common/test/cpplint_wrapper.py``
    :Parameters: ``$FilePath$``
    :Working directory: ``$ProjectFileDir$``
-5. Make sure that *only* the following Options are checked (the 
+5. Make sure that *only* the following Options are checked (the
    ``Synchronize files after execution`` is unnecessary because cpplint is
    a read-only operation):
 
@@ -278,7 +279,7 @@ Continue on with steps 5 to the end.
 
 Executing
 ^^^^^^^^^
-The external tools you've created can be exercised in one of several ways, 
+The external tools you've created can be exercised in one of several ways,
 depending on whether you're doing a single-file or full-project operation.
 
 To check a single file, select the file that you want to be worked on to be
@@ -289,10 +290,10 @@ will be displayed in the title bar.
 Once the file is "active", the ``Cpplint File`` External Tool can be invoked
 in two ways:
 
-1. Right-click on the document (or tab) and select ``External Tools`` > 
+1. Right-click on the document (or tab) and select ``External Tools`` >
    ``Cpplint File``, or
 2. in the menu bar, select ``Tools`` > ``External Tools`` > ``Cpplint File``
 
-To check the whole project, in the menu bar, select ``Tools`` > 
+To check the whole project, in the menu bar, select ``Tools`` >
 ``External Tools`` > ``Cpplint Project``. Alternatively, this can also be
 done through the right-click context menu.
