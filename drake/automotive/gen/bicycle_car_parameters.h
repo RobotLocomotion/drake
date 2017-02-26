@@ -13,8 +13,8 @@
 namespace drake {
 namespace automotive {
 
-/// Describes the row indices of a BicycleParameters.
-struct BicycleParametersIndices {
+/// Describes the row indices of a BicycleCarParameters.
+struct BicycleCarParametersIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 6;
 
@@ -29,18 +29,18 @@ struct BicycleParametersIndices {
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class BicycleParameters : public systems::BasicVector<T> {
+class BicycleCarParameters : public systems::BasicVector<T> {
  public:
   // An abbreviation for our row index constants.
-  typedef BicycleParametersIndices K;
+  typedef BicycleCarParametersIndices K;
 
   /// Default constructor.  Sets all rows to zero.
-  BicycleParameters() : systems::BasicVector<T>(K::kNumCoordinates) {
+  BicycleCarParameters() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
-  BicycleParameters<T>* DoClone() const override {
-    auto result = new BicycleParameters;
+  BicycleCarParameters<T>* DoClone() const override {
+    auto result = new BicycleCarParameters;
     result->set_value(this->get_value());
     return result;
   }

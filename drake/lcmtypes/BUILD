@@ -169,8 +169,8 @@ lcm_java_library(
 )
 
 _AUTOMOTIVE_LCM_SRCS = [
-    "lcmt_bicycle_parameters_t.lcm",
-    "lcmt_bicycle_state_t.lcm",
+    "lcmt_bicycle_car_parameters_t.lcm",
+    "lcmt_bicycle_car_state_t.lcm",
     "lcmt_driving_command_t.lcm",
     "lcmt_endless_road_car_config_t.lcm",
     "lcmt_endless_road_car_state_t.lcm",

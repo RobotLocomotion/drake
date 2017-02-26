@@ -1,6 +1,5 @@
 #include "drake/automotive/powered_bicycle.h"
 
-#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -16,7 +15,7 @@ PoweredBicycle<T>::PoweredBicycle() : systems::Diagram<T>() {
   systems::DiagramBuilder<T> builder;
 
   // Instantiate the bicycle and the powertrain system models.
-  bike_ = builder.AddSystem(std::make_unique<Bicycle<T>>());
+  bike_ = builder.AddSystem(std::make_unique<BicycleCar<T>>());
   power_ = builder.AddSystem(std::make_unique<SimplePowertrain<T>>(
       kPowertrainTimeConstant, kPowertrainGain));
 

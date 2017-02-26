@@ -6,8 +6,8 @@
 #include <memory>
 #include <vector>
 
-#include "drake/automotive/gen/bicycle_state.h"
-#include "drake/lcmt_bicycle_state_t.hpp"
+#include "drake/automotive/gen/bicycle_car_state.h"
+#include "drake/lcmt_bicycle_car_state_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
@@ -15,12 +15,13 @@ namespace automotive {
 
 /**
  * Translates between LCM message objects and VectorBase objects for the
- * BicycleState type.
+ * BicycleCarState type.
  */
-class BicycleStateTranslator : public systems::lcm::LcmAndVectorBaseTranslator {
+class BicycleCarStateTranslator
+    : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
-  BicycleStateTranslator()
-      : LcmAndVectorBaseTranslator(BicycleStateIndices::kNumCoordinates) {}
+  BicycleCarStateTranslator()
+      : LcmAndVectorBaseTranslator(BicycleCarStateIndices::kNumCoordinates) {}
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
       const override;
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,

@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/automotive/bicycle.h"
+#include "drake/automotive/bicycle_car.h"
 #include "drake/automotive/simple_powertrain.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
@@ -15,14 +15,15 @@ namespace automotive {
 /// PoweredBicycle -- Model of a bicycle driven by a simplistic powertrain
 /// element.  Specifically, PoweredBicycle is a diagram consisting of a linear
 /// powertrain element connected in series with a three-DOF rigid-body bicycle
-/// model (see Bicycle for details).  The diagram is assembled as follows:
+/// model (see BicycleCar for details).  The diagram is assembled as follows:
 ///
 /// <pre>
-///   steering                                   +-------------+
-///   (0) -------------------------------------->|             |      states
-///               +------------+  body force     |   Bicycle   |-------> (0)
-///   (1) ------->| Powertrain |---------------->|             |
-///   throttle    +------------+                 +-------------+
+///   steering                                   +--------------+
+///   (0) -------------------------------------->|              |      states
+///               +------------+   body force    |  BicycleCar  |-------> (1)
+///   (1) ------->| Powertrain |-------+-------->|              |
+///   throttle    +------------+       |         +--------------+       force
+///                                    +--------------------------------> (0)
 /// </pre>
 ///
 /// Inputs:
@@ -32,12 +33,12 @@ namespace automotive {
 ///    system.
 ///    (InputPortDescriptor getter: get_throttle_input_port())
 ///
-/// Output:
+/// Outputs:
 ///  - A scalar value representing the force input to the bicycle [N] (see
 ///    SimplePowertrain for details).
 ///    (OutputPortDescriptor getter: get_powertrain_output_port())
-///  - A 6-dimensional vector containing the states of the bicycle (see
-///    Bicycle for details).
+///  - A BicycleCarState collecting the 6-dimensional state vector of the
+///    bicycle. (see BicycleCar for details).
 ///    (OutputPortDescriptor getter: get_state_output_port())
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
@@ -45,7 +46,6 @@ namespace automotive {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
-/// - drake::symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 ///
@@ -81,12 +81,12 @@ class PoweredBicycle : public systems::Diagram<T> {
 
   /// Accessors for the Bicycle and SimplePowertrain systems.
   /// @{
-  const Bicycle<T>* get_bicycle_system() const { return bike_; }
+  const BicycleCar<T>* get_bicycle_system() const { return bike_; }
   const SimplePowertrain<T>* get_powertrain_system() const { return power_; }
   /// @}
 
  private:
-  const Bicycle<T>* bike_{nullptr};
+  const BicycleCar<T>* bike_{nullptr};
   const SimplePowertrain<T>* power_{nullptr};
 };
 

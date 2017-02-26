@@ -35,11 +35,11 @@ class SimplePowertrain : public systems::LinearSystem<T> {
   /// and scalar gain.  The inputs are as follows:
   /// @param time_constant is the rise time of the first-order lag [s].
   /// @param gain is the gain converting throttle input to force output [N].
-  SimplePowertrain(const double& time_constant, const double& gain)
-      : systems::LinearSystem<T>(make_singleton_matrix(-1. / time_constant),
-                                 make_singleton_matrix(gain),
-                                 make_singleton_matrix(1. / time_constant),
-                                 make_singleton_matrix(0.)),
+  SimplePowertrain(const double time_constant, const double gain)
+      : systems::LinearSystem<T>(Vector1d(-1. / time_constant),
+                                 Vector1d(gain),
+                                 Vector1d(1. / time_constant),
+                                 Vector1d(0.)),
         time_constant_(time_constant),
         gain_(gain) {}
   ~SimplePowertrain() override = default;
@@ -59,12 +59,6 @@ class SimplePowertrain : public systems::LinearSystem<T> {
   /// @}
 
  private:
-  static Eigen::MatrixXd make_singleton_matrix(const double& value) {
-    Eigen::MatrixXd matrix(1, 1);
-    matrix << value;
-    return matrix;
-  }
-
   const double time_constant_{};
   const double gain_{};
 };

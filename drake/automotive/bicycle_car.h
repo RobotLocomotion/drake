@@ -4,24 +4,24 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/automotive/gen/bicycle_parameters.h"
-#include "drake/automotive/gen/bicycle_state.h"
+#include "drake/automotive/gen/bicycle_car_parameters.h"
+#include "drake/automotive/gen/bicycle_car_state.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace automotive {
 
-/// Bicycle -- Implements a nonlinear rigid body bicycle model from Althoff &
+/// BicycleCar -- Implements a nonlinear rigid body bicycle model from Althoff &
 /// Dolan (2012, 2014) [1, 2].  The three-DOF model assumes a single wheel in
 /// both the front and rear to capture dynamics in the lateral, longitudinal,
 /// and yaw directions.  The model does not capture roll/pitch dynamics.
 ///
 /// The states of the model are:
 ///  - yaw angle Ψ [rad]
-///  - yaw rate Ψ˙ [rad/s]
+///  - yaw rate Ψ_dot [rad/s]
 ///  - slip angle at the center of mass β [rad]
-///  - velocity magnitude (vector magnitude at the slip angle) v [m/s]
+///  - velocity magnitude (vector magnitude at the slip angle) vel [m/s]
 ///  - x-position of the center of mass sx [m]
 ///  - y-position of the center of mass sy [m]
 ///
@@ -37,8 +37,8 @@ namespace automotive {
 ///    (InputPortDescriptor getter: get_force_input_port())
 ///
 /// Output:
-///  - A 6-dimensional vector collecting the states of the bicycle ordered
-///    according to the state definition list above.
+///  - A BicycleCarState collecting the 6-dimensional state vector of the
+///    bicycle.
 ///    (OutputPortDescriptor getter: get_state_output_port())
 ///
 /// Instantiated templates for the following kinds of T's are provided:
@@ -58,12 +58,12 @@ namespace automotive {
 ///
 /// @ingroup automotive_systems
 template <typename T>
-class Bicycle : public systems::LeafSystem<T> {
+class BicycleCar : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Bicycle)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BicycleCar)
 
-  Bicycle();
-  ~Bicycle() override;
+  BicycleCar();
+  ~BicycleCar() override;
 
   /// Returns a descriptor of the input port that contains the steering angle.
   const systems::InputPortDescriptor<T>& get_steering_input_port() const;
@@ -98,11 +98,11 @@ class Bicycle : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  void ImplCalcTimeDerivatives(const BicycleParameters<T>& params,
-                               const BicycleState<T>& state,
+  void ImplCalcTimeDerivatives(const BicycleCarParameters<T>& params,
+                               const BicycleCarState<T>& state,
                                const systems::BasicVector<T>& steering,
                                const systems::BasicVector<T>& force,
-                               BicycleState<T>* derivatives) const;
+                               BicycleCarState<T>* derivatives) const;
 
   int steering_input_port_{};
   int force_input_port_{};

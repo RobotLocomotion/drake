@@ -3,7 +3,7 @@
 
 package drake;
 
-struct lcmt_bicycle_parameters_t {
+struct lcmt_bicycle_car_parameters_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 

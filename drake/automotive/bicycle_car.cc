@@ -1,4 +1,4 @@
-#include "drake/automotive/bicycle.h"
+#include "drake/automotive/bicycle_car.h"
 
 #include <cmath>
 #include <memory>
@@ -17,20 +17,26 @@ namespace automotive {
 namespace {
 
 // Specify the dimension of the state vector and of each input port.
-static constexpr int kStateDimension{BicycleStateIndices::kNumCoordinates};
+static constexpr int kStateDimension{BicycleCarStateIndices::kNumCoordinates};
 static constexpr int kSteeringInputDimension{1};
 static constexpr int kForceInputDimension{1};
 
 }  // namespace
 
 template <typename T>
-Bicycle<T>::Bicycle() {
+BicycleCar<T>::BicycleCar() {
   auto& steering_input =
       this->DeclareInputPort(systems::kVectorValued, kSteeringInputDimension);
   auto& force_input =
       this->DeclareInputPort(systems::kVectorValued, kForceInputDimension);
   auto& state_output =
       this->DeclareOutputPort(systems::kVectorValued, kStateDimension);
+  static_assert(BicycleCarStateIndices::kPsi == 0,
+                "BicycleCar requires BicycleCarStateIndices::kPsi to be the "
+                "0th element.");
+  static_assert(BicycleCarStateIndices::kPsiDot == 1,
+                "BicycleCar requires BicycleCarStateIndices::kPsiDot to be the "
+                "1st element.");
   this->DeclareContinuousState(1,                     // num_q (Ψ)
                                1,                     // num_v (Ψ_dot)
                                kStateDimension - 2);  // num_z (all but Ψ,
@@ -42,39 +48,39 @@ Bicycle<T>::Bicycle() {
 }
 
 template <typename T>
-Bicycle<T>::~Bicycle() {}
+BicycleCar<T>::~BicycleCar() {}
 
 template <typename T>
-const systems::InputPortDescriptor<T>& Bicycle<T>::get_steering_input_port()
+const systems::InputPortDescriptor<T>& BicycleCar<T>::get_steering_input_port()
     const {
   return systems::System<T>::get_input_port(steering_input_port_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& Bicycle<T>::get_force_input_port()
+const systems::InputPortDescriptor<T>& BicycleCar<T>::get_force_input_port()
     const {
   return systems::System<T>::get_input_port(force_input_port_);
 }
 
 template <typename T>
-const systems::OutputPortDescriptor<T>& Bicycle<T>::get_state_output_port()
+const systems::OutputPortDescriptor<T>& BicycleCar<T>::get_state_output_port()
     const {
   return systems::System<T>::get_output_port(state_output_port_);
 }
 
 template <typename T>
-void Bicycle<T>::DoCalcOutput(const systems::Context<T>& context,
+void BicycleCar<T>::DoCalcOutput(const systems::Context<T>& context,
                               systems::SystemOutput<T>* output) const {
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
-  const BicycleState<T>* const state =
-      dynamic_cast<const BicycleState<T>*>(&context_state);
+  const BicycleCarState<T>* const state =
+      dynamic_cast<const BicycleCarState<T>*>(&context_state);
   DRAKE_ASSERT(state != nullptr);
 
   // Obtain the output pointer and mutate with our state.
-  BicycleState<T>* const output_vector =
-      dynamic_cast<BicycleState<T>*>(output->GetMutableVectorData(0));
+  BicycleCarState<T>* const output_vector =
+      dynamic_cast<BicycleCarState<T>*>(output->GetMutableVectorData(0));
   DRAKE_ASSERT(output_vector != nullptr);
 
   output_vector->set_value(state->get_value());
@@ -82,18 +88,18 @@ void Bicycle<T>::DoCalcOutput(const systems::Context<T>& context,
 
 // Calculate the continuous-time derivatives.
 template <typename T>
-void Bicycle<T>::DoCalcTimeDerivatives(
+void BicycleCar<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   // Obtain the parameters, states, inputs, and state derivatives.
   const int kParamsIndex = 0;
-  const BicycleParameters<T>& params =
-      this->template GetNumericParameter<BicycleParameters>(context,
+  const BicycleCarParameters<T>& params =
+      this->template GetNumericParameter<BicycleCarParameters>(context,
                                                             kParamsIndex);
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
-  const BicycleState<T>* const state =
-      dynamic_cast<const BicycleState<T>*>(&context_state);
+  const BicycleCarState<T>* const state =
+      dynamic_cast<const BicycleCarState<T>*>(&context_state);
   DRAKE_ASSERT(state != nullptr);
 
   const systems::BasicVector<T>* steering =
@@ -107,20 +113,24 @@ void Bicycle<T>::DoCalcTimeDerivatives(
   DRAKE_ASSERT(derivatives != nullptr);
   systems::VectorBase<T>* derivative_vector = derivatives->get_mutable_vector();
   DRAKE_ASSERT(derivative_vector != nullptr);
-  BicycleState<T>* const state_derivatives =
-      dynamic_cast<BicycleState<T>*>(derivative_vector);
+  BicycleCarState<T>* const state_derivatives =
+      dynamic_cast<BicycleCarState<T>*>(derivative_vector);
   DRAKE_ASSERT(state_derivatives != nullptr);
 
   ImplCalcTimeDerivatives(params, *state, *steering, *force, state_derivatives);
 }
 
 template <typename T>
-void Bicycle<T>::ImplCalcTimeDerivatives(
-    const BicycleParameters<T>& params,
-    const BicycleState<T>& state,
+void BicycleCar<T>::ImplCalcTimeDerivatives(
+    const BicycleCarParameters<T>& params,
+    const BicycleCarState<T>& state,
     const systems::BasicVector<T>& steering,
     const systems::BasicVector<T>& force,
-    BicycleState<T>* derivatives) const {
+    BicycleCarState<T>* derivatives) const {
+  using std::pow;
+  using std::cos;
+  using std::sin;
+
   // Parse and validate the parameters.
   const T m = params.mass();
   const T lr = params.lr();
@@ -140,57 +150,58 @@ void Bicycle<T>::ImplCalcTimeDerivatives(
   const T Psi{state.Psi()};
   const T Psi_dot{state.Psi_dot()};
   const T beta{state.beta()};
-  const T v{state.v()};
+  const T vel{state.vel()};
 
-  DRAKE_DEMAND(v != 0.);  // N.B. Protection against the singular solution.
-  // TODO(jadecastro): Enable v = 0. (see #5318).
+  DRAKE_DEMAND(vel != 0.);  // N.B. Protection against the singular solution.
+  // TODO(jadecastro): Enable vel = 0. (see #5318).
 
   const T torsional_stiffness = Cr * lr - Cf * lf;
   const T front_torsional_stiffness = Cf * lf;
-  const T torsional_damping = (Cf * pow(lf, 2.) + Cr * pow(lr, 2.)) / v;
+  const T torsional_damping = (Cf * pow(lf, 2.) + Cr * pow(lr, 2.)) / vel;
 
   // Compute the differential equations of motion.
   const T Psi_ddot = torsional_stiffness / Iz * beta -
                      torsional_damping / Iz * Psi_dot +
                      front_torsional_stiffness / Iz * delta;
-  const T beta_dot = (torsional_stiffness / (m * pow(v, 2.)) - 1.) * Psi_dot +
-                     Cf / (m * v) * delta - (Cf + Cr) / (m * v) * beta;
-  const T v_dot = F_in / m;
-  const T sx_dot = v * cos(beta + Psi);
-  const T sy_dot = v * sin(beta + Psi);
+  const T beta_dot = (torsional_stiffness / (m * pow(vel, 2.)) - 1.) * Psi_dot +
+                     Cf / (m * vel) * delta - (Cf + Cr) / (m * vel) * beta;
+  const T vel_dot = F_in / m;
+  const T sx_dot = vel * cos(beta + Psi);
+  const T sy_dot = vel * sin(beta + Psi);
 
   derivatives->set_Psi(Psi_dot);
   derivatives->set_Psi_dot(Psi_ddot);
   derivatives->set_beta(beta_dot);
-  derivatives->set_v(v_dot);
+  derivatives->set_vel(vel_dot);
   derivatives->set_sx(sx_dot);
   derivatives->set_sy(sy_dot);
 }
 
 template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>
-Bicycle<T>::AllocateContinuousState() const {
+BicycleCar<T>::AllocateContinuousState() const {
   return std::make_unique<systems::ContinuousState<T>>(
-      std::make_unique<BicycleState<T>>());
+      std::make_unique<BicycleCarState<T>>());
 }
 
 template <typename T>
-std::unique_ptr<systems::BasicVector<T>> Bicycle<T>::AllocateOutputVector(
+std::unique_ptr<systems::BasicVector<T>> BicycleCar<T>::AllocateOutputVector(
     const systems::OutputPortDescriptor<T>& descriptor) const {
-  return std::make_unique<BicycleState<T>>();
+  return std::make_unique<BicycleCarState<T>>();
 }
 
 template <typename T>
-std::unique_ptr<systems::Parameters<T>> Bicycle<T>::AllocateParameters() const {
-  auto params = std::make_unique<BicycleParameters<T>>();
+std::unique_ptr<systems::Parameters<T>> BicycleCar<T>::AllocateParameters()
+    const {
+  auto params = std::make_unique<BicycleCarParameters<T>>();
   return std::make_unique<systems::Parameters<T>>(std::move(params));
 }
 
 template <typename T>
-void Bicycle<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
+void BicycleCar<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
                                       systems::Parameters<T>* params) const {
   // Parameters representative of a Cadillac SRX (from Althoff & Dolan, 2014).
-  auto p = dynamic_cast<BicycleParameters<T>*>(
+  auto p = dynamic_cast<BicycleCarParameters<T>*>(
       params->get_mutable_numeric_parameter(0));
   DRAKE_DEMAND(p != nullptr);
   p->set_mass(T(2278.));  // Mass [kg].
@@ -202,9 +213,9 @@ void Bicycle<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
 }
 
 // These instantiations must match the API documentation in bicycle.h.
-template class Bicycle<double>;
-template class Bicycle<AutoDiffXd>;
-template class Bicycle<symbolic::Expression>;
+template class BicycleCar<double>;
+template class BicycleCar<AutoDiffXd>;
+template class BicycleCar<symbolic::Expression>;
 
 }  // namespace automotive
 }  // namespace drake
