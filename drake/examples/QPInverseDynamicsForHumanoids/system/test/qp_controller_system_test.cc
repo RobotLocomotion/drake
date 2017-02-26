@@ -1,18 +1,18 @@
-#include "gtest/gtest.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 
-#include "drake/systems/analysis/simulator.h"
+#include "gtest/gtest.h"
 
 namespace drake {
 namespace examples {
@@ -49,16 +49,16 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
   systems::DiagramBuilder<double> builder;
 
   // Makes a controller block.
+  const double kControlDt = 0.02;
   QpControllerSystem* controller =
-      builder.AddSystem<QpControllerSystem>(*robot, 0.02);
+      builder.AddSystem<QpControllerSystem>(*robot, kControlDt);
 
-  // Makes a source for humanoid status that captures estimated state of the
-  // robot.
+  // Makes a source for humanoid status.
   HumanoidStatus robot_status(*robot, alias_groups);
-  VectorX<double> q = VectorX<double>::Zero(robot->get_num_positions());
-  VectorX<double> v = VectorX<double>::Zero(robot->get_num_velocities());
+  const VectorX<double> q = VectorX<double>::Zero(robot->get_num_positions());
+  const VectorX<double> v = VectorX<double>::Zero(robot->get_num_velocities());
 
-  robot_status.Update(0, q, v,
+  robot_status.Update(0 /* time */, q, v,
                       VectorX<double>::Zero(robot->get_num_actuators()),
                       Vector6<double>::Zero(), Vector6<double>::Zero());
   systems::ConstantValueSource<double>* state_source =
@@ -76,8 +76,8 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
   VectorX<double> v_d = v;
   q_d[2] += 1;
   v_d[5] -= 0.5;
-  VectorSetpoint<double> policy(q_d, v_d, VectorX<double>::Zero(v_d.size()), kp,
-                                kd);
+  const VectorSetpoint<double> policy(
+      q_d, v_d, VectorX<double>::Zero(v_d.size()), kp, kd);
   // Uses policy to generate desired acceleration.
   input.mutable_desired_dof_motions().mutable_values() =
       policy.ComputeTargetAcceleration(q, v);
@@ -97,7 +97,7 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
 
   auto diagram = builder.Build();
 
-  // Uses the simulator to avoid vairous allocations by hand.
+  // Uses the simulator to avoid various allocations by hand.
   systems::Simulator<double> sim(*diagram);
   std::unique_ptr<systems::SystemOutput<double>> output =
       diagram->AllocateOutput(sim.get_context());
