@@ -11,15 +11,16 @@ namespace drake {
 namespace systems {
 namespace {
 
-class PendulumTestDirectCollocationConstraint :
-      public DirectCollocationConstraint {
+class PendulumTestDirectCollocationConstraint
+    : public DirectCollocationConstraint {
  public:
-  PendulumTestDirectCollocationConstraint(int num_states, int num_inputs)
-      : DirectCollocationConstraint(num_states, num_inputs) {}
+  PendulumTestDirectCollocationConstraint()
+      : DirectCollocationConstraint(2,  // num_states
+                                    1)  // num_inputs
+  {}
 
  protected:
-  void dynamics(const TaylorVecXd& state,
-                const TaylorVecXd& input,
+  void dynamics(const TaylorVecXd& state, const TaylorVecXd& input,
                 TaylorVecXd* xdot) const override {
     // From the Pendulum example:
     const double m = 1.0;
@@ -53,7 +54,7 @@ GTEST_TEST(DirectCollocationConstraintPendulumDynamicsTest,
   x(5) = 0.00537668;   // u0
   x(6) = 0.018339;     // u1
 
-  PendulumTestDirectCollocationConstraint dut(kNumStates, kNumInputs);
+  PendulumTestDirectCollocationConstraint dut;
 
   TaylorVecXd result;
   dut.Eval(math::initializeAutoDiff(x), result);
@@ -64,8 +65,8 @@ GTEST_TEST(DirectCollocationConstraintPendulumDynamicsTest,
   Eigen::VectorXd d_0_expected(x.size());
   d_0_expected << -6.26766, -7.0095, -0.74, 7.015539, -0.76, -0.1, 0.1;
   Eigen::VectorXd d_1_expected(x.size());
-  d_1_expected << 0.1508698, 14.488559, -6.715012, 14.818155,
-      7.315012, -2.96, -3.04;
+  d_1_expected << 0.1508698, 14.488559, -6.715012, 14.818155, 7.315012, -2.96,
+      -3.04;
   EXPECT_TRUE(CompareMatrices(result(0).derivatives(), d_0_expected, 1e-4,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(result(1).derivatives(), d_1_expected, 1e-4,
