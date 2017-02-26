@@ -13,8 +13,8 @@
 namespace drake {
 namespace automotive {
 
-/// Describes the row indices of a BicycleState.
-struct BicycleStateIndices {
+/// Describes the row indices of a BicycleCarState.
+struct BicycleCarStateIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 6;
 
@@ -22,25 +22,25 @@ struct BicycleStateIndices {
   static const int kPsi = 0;
   static const int kPsiDot = 1;
   static const int kBeta = 2;
-  static const int kV = 3;
+  static const int kVel = 3;
   static const int kSx = 4;
   static const int kSy = 5;
 };
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class BicycleState : public systems::BasicVector<T> {
+class BicycleCarState : public systems::BasicVector<T> {
  public:
   // An abbreviation for our row index constants.
-  typedef BicycleStateIndices K;
+  typedef BicycleCarStateIndices K;
 
   /// Default constructor.  Sets all rows to zero.
-  BicycleState() : systems::BasicVector<T>(K::kNumCoordinates) {
+  BicycleCarState() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
-  BicycleState<T>* DoClone() const override {
-    auto result = new BicycleState;
+  BicycleCarState<T>* DoClone() const override {
+    auto result = new BicycleCarState;
     result->set_value(this->get_value());
     return result;
   }
@@ -57,8 +57,8 @@ class BicycleState : public systems::BasicVector<T> {
   const T& beta() const { return this->GetAtIndex(K::kBeta); }
   void set_beta(const T& beta) { this->SetAtIndex(K::kBeta, beta); }
   /// velocity magnitude
-  const T& v() const { return this->GetAtIndex(K::kV); }
-  void set_v(const T& v) { this->SetAtIndex(K::kV, v); }
+  const T& vel() const { return this->GetAtIndex(K::kVel); }
+  void set_vel(const T& vel) { this->SetAtIndex(K::kVel, vel); }
   /// x-position at the center of mass
   const T& sx() const { return this->GetAtIndex(K::kSx); }
   void set_sx(const T& sx) { this->SetAtIndex(K::kSx, sx); }

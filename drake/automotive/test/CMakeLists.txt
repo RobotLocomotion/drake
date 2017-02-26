@@ -1,5 +1,5 @@
-drake_add_cc_test(bicycle_test)
-target_link_libraries(bicycle_test drakeAutomotive)
+drake_add_cc_test(bicycle_car_test)
+target_link_libraries(bicycle_car_test drakeAutomotive)
 
 drake_add_cc_test(powered_bicycle_test)
 target_link_libraries(powered_bicycle_test drakeAutomotive)

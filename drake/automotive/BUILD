@@ -14,8 +14,8 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "generated_vectors",
     srcs = [
-        "gen/bicycle_parameters.cc",
-        "gen/bicycle_state.cc",
+        "gen/bicycle_car_parameters.cc",
+        "gen/bicycle_car_state.cc",
         "gen/driving_command.cc",
         "gen/endless_road_car_config.cc",
         "gen/endless_road_car_state.cc",
@@ -26,8 +26,8 @@ drake_cc_library(
         "gen/simple_car_state.cc",
     ],
     hdrs = [
-        "gen/bicycle_parameters.h",
-        "gen/bicycle_state.h",
+        "gen/bicycle_car_parameters.h",
+        "gen/bicycle_car_state.h",
         "gen/driving_command.h",
         "gen/endless_road_car_config.h",
         "gen/endless_road_car_state.h",
@@ -45,8 +45,8 @@ drake_cc_library(
 drake_cc_library(
     name = "generated_translators",
     srcs = [
-        "gen/bicycle_parameters_translator.cc",
-        "gen/bicycle_state_translator.cc",
+        "gen/bicycle_car_parameters_translator.cc",
+        "gen/bicycle_car_state_translator.cc",
         "gen/driving_command_translator.cc",
         "gen/endless_road_car_config_translator.cc",
         "gen/endless_road_car_state_translator.cc",
@@ -56,8 +56,8 @@ drake_cc_library(
         "gen/simple_car_state_translator.cc",
     ],
     hdrs = [
-        "gen/bicycle_parameters_translator.h",
-        "gen/bicycle_state_translator.h",
+        "gen/bicycle_car_parameters_translator.h",
+        "gen/bicycle_car_state_translator.h",
         "gen/driving_command_translator.h",
         "gen/endless_road_car_config_translator.h",
         "gen/endless_road_car_state_translator.h",
@@ -75,9 +75,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "bicycle",
-    srcs = ["bicycle.cc"],
-    hdrs = ["bicycle.h"],
+    name = "bicycle_car",
+    srcs = ["bicycle_car.cc"],
+    hdrs = ["bicycle_car.h"],
     deps = [
         ":generated_vectors",
         "//drake/common:symbolic",
@@ -154,7 +154,7 @@ drake_cc_library(
     srcs = ["powered_bicycle.cc"],
     hdrs = ["powered_bicycle.h"],
     deps = [
-        ":bicycle",
+        ":bicycle_car",
         ":simple_powertrain",
     ],
 )
@@ -474,9 +474,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "bicycle_test",
+    name = "bicycle_car_test",
     deps = [
-        "//drake/automotive:bicycle",
+        "//drake/automotive:bicycle_car",
         "//drake/common:eigen_matrix_compare",
     ],
 )

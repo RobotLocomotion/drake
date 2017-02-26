@@ -1,4 +1,4 @@
-#include "drake/automotive/gen/bicycle_parameters_translator.h"
+#include "drake/automotive/gen/bicycle_car_parameters_translator.h"
 
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
@@ -11,17 +11,17 @@ namespace drake {
 namespace automotive {
 
 std::unique_ptr<systems::BasicVector<double>>
-BicycleParametersTranslator::AllocateOutputVector() const {
-  return std::make_unique<BicycleParameters<double>>();
+BicycleCarParametersTranslator::AllocateOutputVector() const {
+  return std::make_unique<BicycleCarParameters<double>>();
 }
 
-void BicycleParametersTranslator::Serialize(
+void BicycleCarParametersTranslator::Serialize(
     double time, const systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
-      dynamic_cast<const BicycleParameters<double>*>(&vector_base);
+      dynamic_cast<const BicycleCarParameters<double>*>(&vector_base);
   DRAKE_DEMAND(vector != nullptr);
-  drake::lcmt_bicycle_parameters_t message;
+  drake::lcmt_bicycle_car_parameters_t message;
   message.timestamp = static_cast<int64_t>(time * 1000);
   message.mass = vector->mass();
   message.lf = vector->lf();
@@ -34,18 +34,19 @@ void BicycleParametersTranslator::Serialize(
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
 }
 
-void BicycleParametersTranslator::Deserialize(
+void BicycleCarParametersTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     systems::VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base != nullptr);
-  auto* const my_vector = dynamic_cast<BicycleParameters<double>*>(vector_base);
+  auto* const my_vector =
+      dynamic_cast<BicycleCarParameters<double>*>(vector_base);
   DRAKE_DEMAND(my_vector != nullptr);
 
-  drake::lcmt_bicycle_parameters_t message;
+  drake::lcmt_bicycle_car_parameters_t message;
   int status = message.decode(lcm_message_bytes, 0, lcm_message_length);
   if (status < 0) {
     throw std::runtime_error(
-        "Failed to decode LCM message bicycle_parameters.");
+        "Failed to decode LCM message bicycle_car_parameters.");
   }
   my_vector->set_mass(message.mass);
   my_vector->set_lf(message.lf);
