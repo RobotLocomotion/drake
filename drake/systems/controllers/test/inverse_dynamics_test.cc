@@ -1,4 +1,4 @@
-#include "drake/systems/controllers/gravity_compensator.h"
+#include "drake/systems/controllers/inverse_dynamics.h"
 
 #include <memory>
 #include <stdexcept>
@@ -10,14 +10,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
-
-
 
 using Eigen::AutoDiffScalar;
 using Eigen::VectorXd;
@@ -28,10 +25,11 @@ namespace systems {
 namespace {
 
 VectorXd ComputeGravityTorque(const RigidBodyTree<double>& rigid_body_tree,
-                                  const VectorXd& robot_state) {
+                              const VectorXd& robot_state) {
   KinematicsCache<double> cache = rigid_body_tree.doKinematics(robot_state);
   eigen_aligned_std_unordered_map<RigidBody<double> const*,
-                                  drake::TwistVector<double>> f_ext;
+                                  drake::TwistVector<double>>
+      f_ext;
   f_ext.clear();
 
   return rigid_body_tree.dynamicsBiasTerm(cache, f_ext, false);
@@ -41,7 +39,8 @@ class GravityCompensatorTest : public ::testing::Test {
  protected:
   void Init(std::unique_ptr<RigidBodyTree<double>> tree) {
     tree_ = std::move(tree);
-    gravity_compensator_ = make_unique<GravityCompensator<double>>(*tree_);
+    gravity_compensator_ = make_unique<InverseDynamics<double>>(
+        *tree_, true /* pure gravity compensation mode */);
     context_ = gravity_compensator_->CreateDefaultContext();
     output_ = gravity_compensator_->AllocateOutput(*context_);
 
@@ -62,15 +61,17 @@ class GravityCompensatorTest : public ::testing::Test {
 
   void CheckConfiguration(const Eigen::VectorXd& position_vector) {
     EXPECT_EQ(position_vector.size(), tree_->get_num_positions());
-    auto input = make_unique<BasicVector<double>>(tree_->get_num_positions());
-    input->get_mutable_value() << position_vector;
+    auto input = make_unique<BasicVector<double>>(tree_->get_num_positions() +
+                                                  tree_->get_num_velocities());
+    input->get_mutable_value() << position_vector,
+        VectorX<double>::Zero(tree_->get_num_velocities());
 
     // Hook input of the expected size.
     context_->FixInputPort(0, std::move(input));
     gravity_compensator_->CalcOutput(*context_, output_.get());
 
     VectorXd expected_gravity_vector =
-      ComputeGravityTorque(*tree_, position_vector);
+        ComputeGravityTorque(*tree_, position_vector);
 
     // Checks the expected and computed gravity torque.
     const BasicVector<double>* output_vector = output_->get_vector_data(0);

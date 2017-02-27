@@ -13,7 +13,7 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/systems/controllers/pid_with_gravity_compensator.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -66,8 +66,9 @@ class KukaDemo : public systems::Diagram<T> {
     SetPositionControlledIiwaGains(&kp, &ki, &kd);
 
     controller_ =
-        builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
-            GetDrakePath() + kUrdfPath, nullptr, kp, ki, kd);
+        builder.template AddSystem<systems::InverseDynamicsController<T>>(
+            GetDrakePath() + kUrdfPath, nullptr, kp, ki, kd,
+            true /* no feedforward acceleration */);
 
     // The iiwa's control protocol doesn't have any way to express the
     // desired velocity for the arm, so this simulation doesn't take
@@ -127,7 +128,7 @@ class KukaDemo : public systems::Diagram<T> {
 
  private:
   systems::RigidBodyPlant<T>* plant_{nullptr};
-  systems::PidWithGravityCompensator<T>* controller_{nullptr};
+  systems::InverseDynamicsController<T>* controller_{nullptr};
   systems::Demultiplexer<T>* rbp_state_demux_{nullptr};
   systems::TrajectorySource<T>* desired_plan_{nullptr};
   std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory_;
