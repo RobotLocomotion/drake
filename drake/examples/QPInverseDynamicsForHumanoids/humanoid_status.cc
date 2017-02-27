@@ -98,16 +98,8 @@ void HumanoidStatus::Update(
 void HumanoidStatus::UpdateKinematics(
     double t, const Eigen::Ref<const VectorX<double>>& q,
     const Eigen::Ref<const VectorX<double>>& v) {
-  if (q.size() != position_.size() || v.size() != velocity_.size()) {
-    throw std::runtime_error("robot state update dimension mismatch.");
-  }
-  time_ = t;
-  position_ = q;
-  velocity_ = v;
-  joint_torque_.setZero();
-  foot_wrench_raw_[Side::LEFT].setZero();
-  foot_wrench_raw_[Side::RIGHT].setZero();
-  Update();
+  Update((t, q, v, VectorX<double>::Zero(joint_torque_.size()),
+      Vector6<double>::Zero(), Vector6<double>::Zero());
 }
 
 void HumanoidStatus::Update() {

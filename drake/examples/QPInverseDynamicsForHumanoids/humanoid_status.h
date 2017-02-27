@@ -118,8 +118,8 @@ class HumanoidStatus {
               const Eigen::Ref<const Vector6<double>>& r_wrench);
 
   /**
-   * Computes only kinematics related information. Sets joint torque, foot
-   * wrench, and everything related to these to zeros.
+   * Sets joint torque, foot wrench, and then computes only kinematics related
+   * information. Center of pressure related values will not be meaninful.
    * @param time In seconds
    * @param q Generalized positions.
    * @param v Generalized velocities.
