@@ -141,7 +141,7 @@ drake_add_external(pythonqt CMAKE PYTHON QT
 )
 
 # qhull
-drake_add_external(qhull CMAKE PUBLIC QT)
+drake_add_external(qhull CMAKE PUBLIC QT CMAKE_ARGS -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
 
 ExternalProject_Add_Step(qhull install_libraries
   COMMAND "${CMAKE_COMMAND}" -E make_directory
