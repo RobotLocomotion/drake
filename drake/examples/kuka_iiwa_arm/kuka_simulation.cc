@@ -60,7 +60,8 @@ class SimulatedKuka : public systems::Diagram<T> {
     // Instantiates a model of the world.
     auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
     const std::string model_path = drake::GetDrakePath() +
-        "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf";
+        "/examples/kuka_iiwa_arm/models/iiwa14/"
+        "iiwa14_simplified_collision.urdf";
 
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         model_path,

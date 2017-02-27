@@ -28,7 +28,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 const char kUrdfPath[] =
-    "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf";
+    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
 
 /// A systems::Diagram of a Kuka iiwa arm with position controller using
 /// gravity compensation and a PID controller. A plan may be passed in as
