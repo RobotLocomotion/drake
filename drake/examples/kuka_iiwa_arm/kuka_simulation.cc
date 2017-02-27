@@ -19,7 +19,7 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/pid_with_gravity_compensator.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -81,8 +81,9 @@ class SimulatedKuka : public systems::Diagram<T> {
     SetPositionControlledIiwaGains(&kp, &ki, &kd);
 
     controller_ =
-        builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
-            plant_->get_rigid_body_tree(), kp, ki, kd);
+        builder.template AddSystem<systems::InverseDynamicsController<T>>(
+            plant_->get_rigid_body_tree(), kp, ki, kd,
+            true /* no feedforward acceleration */);
 
     // Connects plant and controller.
     builder.Connect(plant_->state_output_port(),
@@ -100,7 +101,7 @@ class SimulatedKuka : public systems::Diagram<T> {
 
  private:
   RigidBodyPlant<T>* plant_{nullptr};
-  systems::PidWithGravityCompensator<T>* controller_{nullptr};
+  systems::InverseDynamicsController<T>* controller_{nullptr};
 };
 
 int DoMain() {

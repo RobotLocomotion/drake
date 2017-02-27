@@ -175,8 +175,8 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   SetPositionControlledIiwaGains(&kp, &ki, &kd);
 
   controller_ =
-      builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
-          robot_tree, kp, ki, kd);
+      builder.template AddSystem<systems::InverseDynamicsController<T>>(
+          robot_tree, kp, ki, kd, true /* no feedforward acceleration */);
 
   // Connect robot (not the entire plant) and controller
   builder.Connect(robot_output_port,
