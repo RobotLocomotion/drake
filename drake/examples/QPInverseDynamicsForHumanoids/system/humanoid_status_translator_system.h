@@ -13,7 +13,8 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * Base class that translates different forms of state into HumanoidStatus
+ * A base class for systems that translate various types of state into
+ * HumanoidStatus.
  */
 class HumanoidStatusTranslatorSystem : public systems::LeafSystem<double> {
  public:
@@ -21,8 +22,8 @@ class HumanoidStatusTranslatorSystem : public systems::LeafSystem<double> {
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree. An internal alias is saved,
-   * so the lifespan of @p robot must be longer than this object.
+   * @param robot Reference to a RigidBodyTree. The lifespan of @p robot must
+   * be longer than this object.
    * @param alias_group_path Path to the alias groups file. Used to construct
    * HumanoidStatus.
    */
@@ -49,14 +50,13 @@ class HumanoidStatusTranslatorSystem : public systems::LeafSystem<double> {
 
  private:
   const RigidBodyTree<double>& robot_;
-  const std::string kAliasGroupPath;
+  const std::string alias_group_path_;
 
   int output_port_index_humanoid_status_{0};
 };
 
 /**
- * Extends HumanoidStatusTranslatorSystem to translates a state vector to
- * HumanoidStatus.
+ * Translates a state vector to HumanoidStatus.
  */
 class StateToHumanoidStatusSystem : public HumanoidStatusTranslatorSystem {
  public:
@@ -64,8 +64,8 @@ class StateToHumanoidStatusSystem : public HumanoidStatusTranslatorSystem {
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree. An internal alias is saved,
-   * so the lifespan of @p robot must be longer than this object.
+   * @param robot Reference to a RigidBodyTree. The lifespan of @p robot must
+   * be longer than this object.
    * @param alias_group_path Path to the alias groups file. Used to construct
    * HumanoidStatus.
    */
@@ -88,8 +88,7 @@ class StateToHumanoidStatusSystem : public HumanoidStatusTranslatorSystem {
 };
 
 /**
- * Extends HumanoidStatusTranslatorSystem to translates a
- * bot_core::robot_state_t message to HumanoidStatus.
+ * Translates a bot_core::robot_state_t message to HumanoidStatus.
  */
 class RobotStateMsgToHumanoidStatusSystem
     : public HumanoidStatusTranslatorSystem {
@@ -98,8 +97,8 @@ class RobotStateMsgToHumanoidStatusSystem
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree. An internal alias is saved,
-   * so the lifespan of @p robot must be longer than this object.
+   * @param robot Reference to a RigidBodyTree. The lifespan of @p robot
+   * must be longer than this object.
    * @param alias_group_path Path to the alias groups file. Used to construct
    * HumanoidStatus.
    */

@@ -95,7 +95,7 @@ void HumanoidStatus::Update(
   Update();
 }
 
-void HumanoidStatus::Update(
+void HumanoidStatus::UpdateKinematics(
     double t, const Eigen::Ref<const VectorX<double>>& q,
     const Eigen::Ref<const VectorX<double>>& v) {
   if (q.size() != position_.size() || v.size() != velocity_.size()) {

@@ -10,7 +10,7 @@ namespace qp_inverse_dynamics {
 
 HumanoidStatusTranslatorSystem::HumanoidStatusTranslatorSystem(
     const RigidBodyTree<double>& robot, const std::string& alias_group_path)
-    : robot_(robot), kAliasGroupPath(alias_group_path) {
+    : robot_(robot), alias_group_path_(alias_group_path) {
   output_port_index_humanoid_status_ = DeclareAbstractOutputPort().get_index();
 }
 
@@ -20,7 +20,7 @@ HumanoidStatusTranslatorSystem::AllocateOutputAbstract(
   DRAKE_DEMAND(descriptor.get_index() == output_port_index_humanoid_status_);
 
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(robot_);
-  alias_groups.LoadFromFile(kAliasGroupPath);
+  alias_groups.LoadFromFile(alias_group_path_);
 
   return systems::AbstractValue::Make<HumanoidStatus>(
       HumanoidStatus(robot_, alias_groups));
@@ -37,15 +37,17 @@ StateToHumanoidStatusSystem::StateToHumanoidStatusSystem(
 void StateToHumanoidStatusSystem::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
-  VectorX<double> x = EvalEigenVectorInput(context, input_port_index_state_);
+  const VectorX<double> x =
+      EvalEigenVectorInput(context, input_port_index_state_);
 
-  HumanoidStatus& hum_status =
+  HumanoidStatus& humanoid_status =
       output->GetMutableData(get_output_port_index_humanoid_status())
           ->GetMutableValue<HumanoidStatus>();
 
   const int kPosDim = get_robot().get_num_positions();
   const int kVelDim = get_robot().get_num_velocities();
-  hum_status.Update(context.get_time(), x.head(kPosDim), x.tail(kVelDim));
+  humanoid_status.UpdateKinematics(context.get_time(), x.head(kPosDim),
+                                   x.tail(kVelDim));
 }
 
 RobotStateMsgToHumanoidStatusSystem::RobotStateMsgToHumanoidStatusSystem(
@@ -60,20 +62,22 @@ void RobotStateMsgToHumanoidStatusSystem::DoCalcOutput(
   const bot_core::robot_state_t* msg = EvalInputValue<bot_core::robot_state_t>(
       context, input_port_index_lcm_msg_);
 
-  HumanoidStatus& hum_status =
+  HumanoidStatus& humanoid_status =
       output->GetMutableData(get_output_port_index_humanoid_status())
           ->GetMutableValue<HumanoidStatus>();
 
-  VectorX<double> pos(hum_status.position().size());
-  VectorX<double> vel(hum_status.velocity().size());
-  VectorX<double> joint_torque(hum_status.joint_torque().size());
+  VectorX<double> pos(humanoid_status.position().size());
+  VectorX<double> vel(humanoid_status.velocity().size());
+  VectorX<double> joint_torque(humanoid_status.joint_torque().size());
   Vector6<double> l_foot_wrench, r_foot_wrench;
   double time;
 
-  DecodeRobotStateLcmMsg(*msg, hum_status.name_to_position_index(), &time, &pos,
-                         &vel, &joint_torque, &l_foot_wrench, &r_foot_wrench);
+  DecodeRobotStateLcmMsg(*msg, humanoid_status.name_to_position_index(), &time,
+                         &pos, &vel, &joint_torque, &l_foot_wrench,
+                         &r_foot_wrench);
 
-  hum_status.Update(time, pos, vel, joint_torque, l_foot_wrench, r_foot_wrench);
+  humanoid_status.Update(time, pos, vel, joint_torque, l_foot_wrench,
+                         r_foot_wrench);
 }
 
 }  // namespace qp_inverse_dynamics

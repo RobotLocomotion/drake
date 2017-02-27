@@ -103,14 +103,13 @@ class HumanoidStatus {
   /**
    * Do kinematics and compute useful information based on kinematics and
    * measured force torque information.
-   * @param time is in seconds
-   * @param q is the vector or generalized positions.
-   * @param v is the vector of generalized velocities.
-   * @param joint_torque is joint torque, should be in the same order as @p v,
-   * not
-   * in robot->actuators order
-   * @param l_wrench is wrench measured in the sensor frame.
-   * @param r_wrench is wrench measured in the sensor frame.
+   * @param time In seconds
+   * @param q Generalized positions.
+   * @param v Generalized velocities.
+   * @param joint_torque Joint torque, should be in the same order as @p v,
+   * not in the actuator order
+   * @param l_wrench Wrench measured in the sensor frame.
+   * @param r_wrench Wrench measured in the sensor frame.
    */
   void Update(double t, const Eigen::Ref<const VectorX<double>>& q,
               const Eigen::Ref<const VectorX<double>>& v,
@@ -121,14 +120,12 @@ class HumanoidStatus {
   /**
    * Computes only kinematics related information. Sets joint torque, foot
    * wrench, and everything related to these to zeros.
-   * @param time is in seconds
-   * @param q is the vector or generalized positions.
-   * @param v is the vector of generalized velocities.
+   * @param time In seconds
+   * @param q Generalized positions.
+   * @param v Generalized velocities.
    */
-  void Update(double t, const Eigen::Ref<const VectorX<double>>& q,
+  void UpdateKinematics(double t, const Eigen::Ref<const VectorX<double>>& q,
               const Eigen::Ref<const VectorX<double>>& v);
-
-  void Update();
 
   // Getters
   inline const RigidBodyTree<double>& robot() const { return *robot_; }
@@ -229,6 +226,10 @@ class HumanoidStatus {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
+  // Do kinematics first using position_ and velocity_. Force torque information
+  // in foot_wrench_raw_ are used to compute center of pressure if appropriate.
+  void Update();
+
   const RigidBodyTree<double>* robot_;
   KinematicsCache<double> cache_;
 
