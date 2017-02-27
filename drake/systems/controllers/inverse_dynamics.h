@@ -9,16 +9,31 @@
 namespace drake {
 namespace systems {
 
+/**
+ * Solves inverse dynamics with no consideration for external wrenches,
+ * under actuation, joint torque limits or closed kinematic chains. The torque
+ * is `H(q) * vd_d + c(q, v)`, where `H` is the inertia matrix, `c` is the
+ * coriolis and centrifugal and gravity terms, `q` is the generalized position,
+ * `v` is the generalized velocity and `vd_d` is the desired generalized
+ * acceleration.
+ */
 template <typename T>
 class InverseDynamics : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
 
-  /// Constructs a gravity compensator for the given @tree. The provided @p tree
-  /// must be fully actuated, i.e., the number of actuators must equal the
-  /// number of positions in the RigidBodyTree. Otherwise, the process will
-  /// abort.
+  /**
+   * Computes inverse dynamics for @p tree.
+   * @param tree Reference to the model. The life span of @p tree must be longer
+   * than this instance.
+   * @param pure_gravity_compensation If set to true, this instance will only
+   * consider the gravity term. It also will NOT have the desired acceleration
+   * input port.
+   */
   InverseDynamics(const RigidBodyTree<T>& tree, bool pure_gravity_compensation);
+
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
 
   /**
    * Returns the input port for the estimated state.
@@ -28,10 +43,10 @@ class InverseDynamics : public LeafSystem<T> {
   }
 
   /**
-   * Returns the input port for the estimated state.
+   * Returns the input port for the desired acceleration.
    */
   const InputPortDescriptor<T>& get_input_port_desired_acceleration() const {
-    DRAKE_DEMAND(!only_gravity_);
+    DRAKE_DEMAND(!pure_gravity_compensation);
     return this->get_input_port(input_port_index_desired_acceleration_);
   }
 
@@ -43,13 +58,8 @@ class InverseDynamics : public LeafSystem<T> {
   }
 
  private:
-  // Sets the output port value to the generalized gravity forces
-  // corresponding to a joint configuration as specified in the input.
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
-
   const RigidBodyTree<T>& tree_;
-  const bool only_gravity_{false};
+  const bool pure_gravity_compensation{false};
 
   int input_port_index_state_{0};
   int input_port_index_desired_acceleration_{0};
