@@ -210,11 +210,13 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   color_buffer_->SetInput(render_window_.GetPointer());
   color_buffer_->SetMagnification(1);
   color_buffer_->SetInputBufferTypeToRGBA();
+  color_buffer_->ReadFrontBufferOff();
   color_buffer_->Update();
 
   depth_buffer_->SetInput(render_window_.GetPointer());
   depth_buffer_->SetMagnification(1);
   depth_buffer_->SetInputBufferTypeToZBuffer();
+  depth_buffer_->ReadFrontBufferOff();
   depth_buffer_->Update();
 }
 
