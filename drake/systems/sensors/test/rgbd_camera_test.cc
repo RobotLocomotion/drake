@@ -112,9 +112,11 @@ class RenderingSim : public systems::Diagram<double> {
     systems::DiagramBuilder<double> builder;
 
     plant_ = builder.AddSystem<RigidBodyPlant<double>>(std::move(tree));
-    plant_->set_contact_parameters(3000,  // Penetration stiffness
-                                   30.0,  // Penetration damping
-                                   1.0);  // Friction coefficient
+    const double penetration_stiffness = 3000.;
+    const double penetration_damping = 30.;
+    plant_->set_normal_contact_parameters(penetration_stiffness,
+                                          penetration_damping);
+
     rgbd_camera_ = builder.AddSystem<RgbdCamera>(
         "rgbd_camera", plant_->get_rigid_body_tree(),
         position, orientation, kFovY, kShowWindow);
