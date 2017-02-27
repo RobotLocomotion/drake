@@ -213,15 +213,34 @@ class SymbolicError : public runtime_error {
   }
 };
 
+// Given an expression `e`, extracts all variables inside `e`.
+// @param[in] e. A symbolic expression.
+// @param[out] vars. The variables in `e`.
+// @param[out] map_var_to_index. map_var_to_index is of the same size as `vars`,
+// and map_var_to_index[vars(i).get_id()] = i.
+void ExtractVariablesFromExpression(
+    const Expression& e, VectorXDecisionVariable* vars,
+    unordered_map<Variable::Id, int>* map_var_to_index) {
+  DRAKE_DEMAND(vars->size() == 0);
+  DRAKE_DEMAND(map_var_to_index->size() == 0);
+  int var_count = 0;
+  const symbolic::Variables var_set = e.GetVariables();
+  vars->resize(var_set.size());
+  for (const Variable& var : var_set) {
+    map_var_to_index->emplace(var.get_id(), var_count);
+    (*vars)(var_count++) = var;
+  }
+}
+
 // Given an expression @p e, extract all variables inside e, append these
 // variables to @p vars if they are not included in @p vars yet.
 // @param[in] e.  A symbolic expression.
-// @param[out] vars.  The variables in @p e but not included in @p vars before
+// @param[in/out] vars.  The variables in @p e but not included in @p vars before
 // this call, will be appended to @p vars.
-// @param[out] map_var_to_index. map_var_to_index is of the same size as @p
+// @param[in/out] map_var_to_index. map_var_to_index is of the same size as @p
 // vars, and map_var_to_index[vars(i).get_id()] = i.
-void ExtractVariablesFromExpression(
-    const Expression& e, VectorXDecisionVariable* vars,
+void ExtractAndAppendVariablesFromExpression(
+    const Expression &e, VectorXDecisionVariable* vars,
     unordered_map<Variable::Id, int>* map_var_to_index) {
   DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) == vars->size());
   for (const Variable& var : e.GetVariables()) {
@@ -315,7 +334,7 @@ void DecomposeLinearExpression(const Eigen::Ref<const VectorX<Expression>>& v,
   // 0. Setup map_var_to_index and var_vec.
   unordered_map<Variable::Id, int> map_var_to_index;
   for (int i = 0; i < v.size(); ++i) {
-    ExtractVariablesFromExpression(v(i), vars, &map_var_to_index);
+    ExtractAndAppendVariablesFromExpression(v(i), vars, &map_var_to_index);
   }
 
   // 2. Construct decompose v as
@@ -399,15 +418,9 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
     const symbolic::Expression& e) {
   // First build an Eigen vector, that contains all the bound variables.
   const symbolic::Variables& vars = e.GetVariables();
-  VectorXDecisionVariable vars_vec(vars.size());
-  unordered_map<Variable::Id, int> map_var_id_to_index;
-  map_var_id_to_index.reserve(vars.size());
-  int index = 0;
-  for (const auto& var : vars) {
-    map_var_id_to_index.emplace(var.get_id(), index);
-    vars_vec(index) = var;
-    ++index;
-  }
+  VectorXDecisionVariable vars_vec(0);
+  unordered_map<Variable::Id, int> map_var_to_index;
+  ExtractVariablesFromExpression(e, &vars_vec, &map_var_to_index);
   // We want to write the expression e in the form 0.5 * x' * Q * x + b' * x + c
   // TODO(hongkai.dai): use a sparse matrix to represent Q and b.
   Eigen::MatrixXd Q(vars.size(), vars.size());
@@ -432,10 +445,10 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
     if (monomial_powers.size() == 2) {
       // cross terms.
       auto it = monomial_powers.begin();
-      const int x1_index = map_var_id_to_index[it->first];
+      const int x1_index = map_var_to_index[it->first];
       DRAKE_DEMAND(it->second == 1);
       ++it;
-      const int x2_index = map_var_id_to_index[it->first];
+      const int x2_index = map_var_to_index[it->first];
       DRAKE_DEMAND(it->second == 1);
       Q(x1_index, x2_index) += coefficient;
       Q(x2_index, x1_index) = Q(x1_index, x2_index);
@@ -445,7 +458,7 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
       // 2. linear term b*x
       // 3. constant term. We ignore the constant term in QuadraticConstraint.
       auto it = monomial_powers.begin();
-      const int x_index = map_var_id_to_index[it->first];
+      const int x_index = map_var_to_index[it->first];
       if (it->second == 2) {
         // quadratic term a * x^2
         Q(x_index, x_index) += 2 * coefficient;
@@ -486,6 +499,10 @@ std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
   return cost;
 }
 
+/*Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
+
+}*/
+
 void MathematicalProgram::AddConstraint(const Binding<Constraint>& binding) {
   required_capabilities_ |= kGenericConstraint;
   generic_constraints_.push_back(binding);
@@ -509,7 +526,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   unordered_map<Variable::Id, int> map_var_to_index;
   VectorXDecisionVariable vars(0);
   for (int i = 0; i < v.size(); ++i) {
-    ExtractVariablesFromExpression(v(i), &vars, &map_var_to_index);
+    ExtractAndAppendVariablesFromExpression(v(i), &vars, &map_var_to_index);
   }
   DRAKE_ASSERT(IsDecisionVariable(vars));
 
@@ -657,7 +674,7 @@ MathematicalProgram::DoAddLinearEqualityConstraint(
   VectorXDecisionVariable vars(0);
   unordered_map<Variable::Id, int> map_var_to_index;
   for (int i = 0; i < v.rows(); ++i) {
-    ExtractVariablesFromExpression(v(i), &vars, &map_var_to_index);
+    ExtractAndAppendVariablesFromExpression(v(i), &vars, &map_var_to_index);
   }
   // TODO(hongkai.dai): use sparse matrix.
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(v.rows(), vars.rows());
