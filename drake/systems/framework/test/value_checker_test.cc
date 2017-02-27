@@ -39,14 +39,14 @@ class MissingCloneVector : public BasicVector<double> {
 class NotSoGoodVector : public GoodVector {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotSoGoodVector)
-  NotSoGoodVector() = default;
+  NotSoGoodVector() {}  // The default is not used here due to #5327.
 };
 
 // This one remembers to DoClone in the subclass, but does it wrong.
 class NotQuiteGoodVector : public GoodVector {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotQuiteGoodVector)
-  NotQuiteGoodVector() = default;
+  NotQuiteGoodVector() {}  // The default is not used here due to #5327.
   GoodVector* DoClone() const override {
     auto result = new GoodVector;
     result->set_value(this->get_value());
