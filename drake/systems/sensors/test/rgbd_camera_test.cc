@@ -28,7 +28,7 @@ namespace {
 const double kTolerance = 1e-12;
 
 const double kFovY = M_PI_4;
-const bool kShowWindow = false;
+const bool kShowWindow = true;
 
 class RgbdCameraTest : public ::testing::Test {
  public:
