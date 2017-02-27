@@ -13,6 +13,7 @@ namespace {
 using std::make_unique;
 using std::unique_ptr;
 
+// Test the basic MultibodyTree API to create and add bodies.
 GTEST_TEST(MultibodyTree, AddBodies) {
   auto owned_model = std::make_unique<MultibodyTree<double>>();
   MultibodyTree<double>* model = owned_model.get();
@@ -44,6 +45,24 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   // compiled already.
   model->Compile();
   EXPECT_THROW(RigidBody<double>::Create(model), std::runtime_error);
+}
+
+// Verify the correctness of
+GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
+  auto model1 = std::make_unique<MultibodyTree<double>>();
+  auto model2 = std::make_unique<MultibodyTree<double>>();
+
+  const RigidBody<double>& body1 = RigidBody<double>::Create(model1.get());
+  const RigidBody<double>& body2 = RigidBody<double>::Create(model2.get());
+
+  // Tests that the created bodies indeed do have a parent MultibodyTree.
+  EXPECT_NO_THROW(body1.HasParentTreeOrThrows());
+  EXPECT_NO_THROW(body2.HasParentTreeOrThrows());
+
+  // Tests the check to verify that two bodies belong to the same MultibodyTree.
+  EXPECT_THROW(body1.HasSameParentTreeOrThrows(body2), std::runtime_error);
+  EXPECT_NO_THROW(model1->get_world_body().HasSameParentTreeOrThrows(body1));
+  EXPECT_NO_THROW(model2->get_world_body().HasSameParentTreeOrThrows(body2));
 }
 
 }  // namespace
