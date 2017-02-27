@@ -8,9 +8,10 @@ load("//tools:lcm.bzl", "lcm_cc_library", "lcm_java_library", "lcm_py_library")
 lcm_cc_library(
     name = "acrobot",
     lcm_package = "drake",
-    lcm_srcs = ["lcmt_acrobot_u.lcm",
-                "lcmt_acrobot_x.lcm",
-                "lcmt_acrobot_y.lcm",
+    lcm_srcs = [
+        "lcmt_acrobot_u.lcm",
+        "lcmt_acrobot_x.lcm",
+        "lcmt_acrobot_y.lcm",
     ],
 )
 

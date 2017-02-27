@@ -14,7 +14,11 @@ drake_install_pkg_config_file(drake-acrobot-plant
         LIBS -ldrakeAcrobotPlant
         REQUIRES
         drake-trajectory-optimization
-        eigen3)
+        eigen3
+        drake-linear-control
+        drake-multibody-parsers
+        drake-sensors
+        drake-system-framework)
 
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeAcrobotLcm SOURCE_FILES
@@ -91,8 +95,7 @@ if(lcm_FOUND)
   target_link_libraries(acrobot_run_swing_up_traj_optimization
           drakeAcrobotPlant
           drakeRigidBodyPlant
-          drakeSystemAnalysis
-          GTest::GTest)
+          drakeSystemAnalysis)
 
 endif(lcm_FOUND)
 
