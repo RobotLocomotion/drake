@@ -60,9 +60,6 @@ class SpatialVelocity {
   /// In three dimensions this is six (6) and it is known at compile time.
   int size() const { return kSpatialVelocitySize; }
 
-  /// Const access to the underlying Eigen vector.
-  const CoeffsEigenType& get_Eigen_vector() const { return V_;}
-
   /// Const access to the i-th component of this spatial velocity.
   /// Bounds are only checked in Debug builds for a zero overhead implementation
   /// in Release builds.
@@ -140,7 +137,8 @@ class SpatialVelocity {
   /// Given `this` spatial velocity `V_AB_E` of a frame `B` measured in a frame
   /// `A` and expressed in a frame `E`, this method computes the spatial
   /// velocity of a frame `Q` rigidly moving with `B` but offset by a vector
-  /// `p_BQ` from the orgin of frame `B` to the origin of frame Q.
+  /// `p_BQ_E` from the orgin of frame `B` to the origin of frame `Q` and
+  /// expressed in the same frame `E`.
   ///
   /// The operation performed, in vector free form, is: <pre>
   ///   w_AQ = w_AB,  i.e. the angular velocity of frame B and Q is the same.
@@ -184,7 +182,7 @@ class SpatialVelocity {
 
   /// Multiplication of a spatial velocity `V` from the left by a scalar `s`.
   friend SpatialVelocity<T> operator*(const T& s, const SpatialVelocity<T>& V) {
-    return SpatialVelocity<T>(s * V.get_Eigen_vector());
+    return SpatialVelocity<T>(s * V.V_);
   }
 
   /// Multiplication of a spatial velocity `V` from the right by a scalar `s`.

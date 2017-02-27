@@ -51,11 +51,13 @@ GTEST_TEST(SpatialVelocity, ConstructionFromAnEigenExpression) {
   SpatialVelocity<double> V1(v);
 
   // Verify the underlying Eigen vector matches the original vector.
-  EXPECT_EQ(V1.get_Eigen_vector(), v);
+  EXPECT_EQ(V1.angular(), v.segment<3>(0));
+  EXPECT_EQ(V1.linear(), v.segment<3>(3));
 
   // A spatial velocity instantiated from an Eigen block.
   SpatialVelocity<double> V2(v.segment<6>(0));
-  EXPECT_EQ(V2.get_Eigen_vector(), v);
+  EXPECT_EQ(V2.angular(), v.segment<3>(0));
+  EXPECT_EQ(V2.linear(), v.segment<3>(3));
 }
 
 class SpatialVelocityTest : public ::testing::Test {
@@ -99,14 +101,6 @@ TEST_F(SpatialVelocityTest, SpatialVelocityVectorComponentAccessors) {
   // They should be exactly equal, byte by byte.
   EXPECT_EQ(V_XY_A_.linear(), v_XY_A_);
   EXPECT_EQ(V_XY_A_.angular(), w_XY_A_);
-}
-
-// Tests access as an Eigen vector.
-TEST_F(SpatialVelocityTest, EigenAccess) {
-  Vector6<double> V = V_XY_A_.get_Eigen_vector();
-  Vector6<double> V_expected;
-  V_expected << w_XY_A_, v_XY_A_;
-  EXPECT_EQ(V, V_expected);
 }
 
 // Tests access to the raw data pointer.
@@ -155,7 +149,7 @@ TEST_F(SpatialVelocityTest, ShiftOperation) {
 TEST_F(SpatialVelocityTest, ShiftOperatorIntoStream) {
   std::stringstream stream;
   stream << V_XY_A_;
-  std::string expected_string = "[0, 0, 3, 1, 2, 0]^T";
+  std::string expected_string = "[0, 0, 3, 1, 2, 0]ᵀ";
   EXPECT_EQ(expected_string, stream.str());
 }
 
@@ -170,7 +164,8 @@ TEST_F(SpatialVelocityTest, MulitplicationByAScalar) {
   EXPECT_EQ(sxV.linear(), scalar * V_XY_A_.linear());
 
   // Verify the multiplication by a scalar is commutative.
-  EXPECT_EQ(sxV.get_Eigen_vector(), Vxs.get_Eigen_vector());
+  EXPECT_EQ(sxV.angular(), Vxs.angular());
+  EXPECT_EQ(sxV.linear(), Vxs.linear());
 }
 
 }  // namespace
