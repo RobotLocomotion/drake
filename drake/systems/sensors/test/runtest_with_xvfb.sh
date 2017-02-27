@@ -1,5 +1,6 @@
 #!/bin/sh
 lspci | grep VGA
+ldd $1
 Xvfb :88 -ac -screen 0 1280x1024x24 &
 # Xorg -noreset +extension GLX +extension RANDR +extension RENDER -config ./xorg.conf :88 &
 sleep 3
