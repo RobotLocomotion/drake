@@ -29,7 +29,7 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
     simulation_type_(simulation_type), dt_(dt) {
   // Verify that the simulation approach is either piecewise DAE or
   // compliant ODE.
-  if (simulation_type == Rod2D<T>::kTimeStepping) {
+  if (simulation_type == SimulationType::kTimeStepping) {
     if (dt <= 0.0)
       throw std::logic_error("Time stepping approach must be constructed using"
                                  " strictly positive step size.");
@@ -39,7 +39,7 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
     this->DeclareDiscreteUpdatePeriodSec(dt);
     this->DeclareDiscreteState(6);
   } else {
-    if (dt > 0.0)
+    if (dt != 0)
       throw std::logic_error("Piecewise DAE and compliant approaches must be "
                                  "constructed using zero step size.");
 
@@ -62,7 +62,7 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
 ///          the halfspace.
 template <class T>
 int Rod2D<T>::get_k(const systems::Context<T>& context) const {
-  if (simulation_type_ != Rod2D<T>::kPiecewiseDAE)
+  if (simulation_type_ != SimulationType::kPiecewiseDAE)
     throw std::logic_error("'k' is only valid for piecewise DAE approach.");
   const int k = context.template get_abstract_state<int>(1);
   DRAKE_DEMAND(std::abs(k) <= 1);
@@ -276,7 +276,7 @@ void Rod2D<T>::HandleImpact(const systems::Context<T>& context,
 
   // This method is only used for piecewise DAE integration. The time
   // stepping method implicitly incorporates impact into its model.
-  DRAKE_DEMAND(simulation_type_ == Rod2D<T>::kPiecewiseDAE);
+  DRAKE_DEMAND(simulation_type_ == SimulationType::kPiecewiseDAE);
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -756,7 +756,7 @@ template <class T>
 Vector3<T> Rod2D<T>::CalcCompliantContactForces(
     const systems::Context<T>& context) const {
   // Depends on continuous state being available.
-  DRAKE_DEMAND(simulation_type_ == kCompliant);
+  DRAKE_DEMAND(simulation_type_ == SimulationType::kCompliant);
 
   using std::abs;
   using std::max;
@@ -1143,7 +1143,7 @@ void Rod2D<T>::DoCalcTimeDerivatives(
   using std::abs;
 
   // Don't compute any derivatives if this is the time stepping system.
-  if (simulation_type_ == Rod2D<T>::kTimeStepping) {
+  if (simulation_type_ == SimulationType::kTimeStepping) {
     DRAKE_ASSERT(derivatives->size() == 0);
     return;
   }
@@ -1163,7 +1163,7 @@ void Rod2D<T>::DoCalcTimeDerivatives(
   f->SetAtIndex(2, thetadot);
 
   // Compute the velocity derivatives (accelerations).
-  if (simulation_type_ == Rod2D<T>::kCompliant) {
+  if (simulation_type_ == SimulationType::kCompliant) {
     return CalcAccelerationsCompliantContactAndBallistic(context, derivatives);
   } else {
     // (Piecewise DAE approach follows).
@@ -1198,7 +1198,7 @@ void Rod2D<T>::DoCalcTimeDerivatives(
 template <typename T>
 std::unique_ptr<systems::AbstractState> Rod2D<T>::
   AllocateAbstractState() const {
-  if (simulation_type_ == Rod2D<T>::kPiecewiseDAE) {
+  if (simulation_type_ == SimulationType::kPiecewiseDAE) {
     // Piecewise DAE approach needs two abstract variables (one mode and one
     // contact point indicator).
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
@@ -1228,7 +1228,7 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
   VectorX<T> x0(6);
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
-  if (simulation_type_ == Rod2D<T>::kTimeStepping) {
+  if (simulation_type_ == SimulationType::kTimeStepping) {
     state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->
         SetFromVector(x0);
   } else {
@@ -1236,7 +1236,7 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
     state->get_mutable_continuous_state()->SetFromVector(x0);
 
     // Set abstract variables for piecewise DAE approach.
-    if (simulation_type_ == Rod2D<T>::kPiecewiseDAE) {
+    if (simulation_type_ == SimulationType::kPiecewiseDAE) {
       // Indicate that the rod is in the single contact sliding mode.
       state->get_mutable_abstract_state()->get_mutable_abstract_state(0).
           template GetMutableValue<Rod2D<T>::Mode>() =

@@ -158,7 +158,7 @@ template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:
   /// Simulation model and approach for the system.
-  enum SimulationType {
+  enum class SimulationType {
     /// For simulating the system using rigid contact, Coulomb friction, and
     /// piecewise differential algebraic equations.
     kPiecewiseDAE,
@@ -215,7 +215,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// @throws std::logic_error if this is not a time stepping system or if
   ///         cfm is set to a negative value.
   void set_cfm(double cfm) {
-    if (simulation_type_ != kTimeStepping)
+    if (simulation_type_ != SimulationType::kTimeStepping)
       throw std::logic_error("Attempt to set CFM for non-time stepping "
                              "system.");
     if (cfm < 0)
@@ -233,7 +233,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// @throws std::logic_error if this is not a time stepping system or if
   ///         erp is set to a negative value.
   void set_erp(double erp) {
-    if (simulation_type_ != kTimeStepping)
+    if (simulation_type_ != SimulationType::kTimeStepping)
       throw std::logic_error("Attempt to set ERP for non-time stepping "
                              "system.");
     if (erp < 0 || erp > 1)
@@ -423,9 +423,8 @@ class Rod2D : public systems::LeafSystem<T> {
   // Solves linear complementarity problems for time stepping.
   solvers::MobyLCPSolver lcp_;
 
-  // The simulation type, currently unable to be changed after object
-  // construction.
-  SimulationType simulation_type_;
+  // The simulation type, unable to be changed after object construction.
+  const SimulationType simulation_type_;
 
   // TODO(edrumwri,sherm1) Document these defaults once they stabilize.
 
