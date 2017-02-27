@@ -41,22 +41,68 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
 
   /// Returns the decision variable associated with the timestep, h, at time
   /// index @p index.
-  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> h(
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> timestep(
       int index) const {
     DRAKE_DEMAND(index >= 0 && index < N_);
     return h_vars_.segment(index,
                            1);  // TODO(russt): Replace with segment<1>(index).
   }
+
+  /// Returns a placeholder decision variable (not actually declared as a
+  /// decision variable in the MathematicalProgram) associated with the time, t.
+  /// This variable will be substituted for real decision variables at
+  /// particular times in methods like AddRunningCost.  Passing this variable
+  /// directly into objectives/constraints for the parent classes will result
+  /// in an error.
+  const solvers::VectorDecisionVariable<1>& time() const {
+    return placeholder_t_var_;
+  }
+
+  /// Returns placeholder decision variables (not actually declared as decision
+  /// variables in the MathematicalProgram) associated with the state, x, but
+  /// with the time-index undetermined.  These variables will be substituted
+  /// for real decision variables at particular times in methods like
+  /// AddRunningCost.  Passing these variables directly into
+  /// objectives/constraints for the parent classes will result in an error.
+  const solvers::VectorXDecisionVariable& state() const {
+    return placeholder_x_var_;
+  }
+
+  /// Returns placeholder decision variables (not actually declared as decision
+  /// variables in the MathematicalProgram) associated with the input, u, but
+  /// with the time-index undetermined.  These variables will be substituted
+  /// for real decision variables at particular times in methods like
+  /// AddRunningCost.  Passing these variables directly into
+  /// objectives/constraints for the parent classes will result in an error.
+  const solvers::VectorXDecisionVariable& input() const {
+    return placeholder_u_var_;
+  }
+
   /// Returns the decision variables associated with the state, x, at time
   /// index @p index.
-  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> x(
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> state(
       int index) const {
     DRAKE_DEMAND(index >= 0 && index < N_);
     return x_vars_.segment(index * num_states_, num_states_);
   }
+
+  /// Returns the decision variables associated with the state, x, at the
+  /// initial time index.
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> initial_state()
+      const {
+    return state(0);
+  }
+
+  /// Returns the decision variables associated with the state, x, at the final
+  /// time index.
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> final_state()
+      const {
+    return state(N_ - 1);
+  }
+
   /// Returns the decision variables associated with the input, u, at time
   /// index @p index.
-  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> u(
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> input(
       int index) const {
     DRAKE_DEMAND(index >= 0 && index < N_);
     return u_vars_.segment(index * num_inputs_, num_inputs_);
@@ -266,9 +312,7 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
    */
   std::vector<Eigen::MatrixXd> GetStateVector() const;
 
-  // TODO(russt): Add accessors to a (mutable or not) raw pointer to the
-  // AutoDiffXd system and context used in the dynamic constraints.  This would
-  // allow folks to e.g. update the system parameters and then re-solve.
+
 
   int num_inputs() const { return num_inputs_; }
   int num_states() const { return num_states_; }
@@ -304,6 +348,12 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
                                              // input/state sample.
   solvers::VectorXDecisionVariable x_vars_;
   solvers::VectorXDecisionVariable u_vars_;
+
+  // See description of the public time(), state(), and input() accessor methods
+  // for details about the placeholder variables.
+  solvers::VectorDecisionVariable<1> placeholder_t_var_;
+  solvers::VectorXDecisionVariable placeholder_x_var_;
+  solvers::VectorXDecisionVariable placeholder_u_var_;
 };
 
 }  // namespace systems

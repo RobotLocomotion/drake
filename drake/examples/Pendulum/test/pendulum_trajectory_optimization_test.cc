@@ -29,17 +29,17 @@ GTEST_TEST(PendulumTrajectoryOptimization,
   const PendulumPlant<double> pendulum;
   auto context = pendulum.CreateDefaultContext();
 
-  systems::DircolTrajectoryOptimization dircol_traj(
+  systems::DircolTrajectoryOptimization dircol(
       &pendulum, *context,
       kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
-  AddSwingUpTrajectoryParams(kNumTimeSamples, x0, xG, &dircol_traj);
+  AddSwingUpTrajectoryParams(x0, xG, &dircol);
 
   const double timespan_init = 4;
   auto traj_init_x = PiecewisePolynomialType::FirstOrderHold(
       {0, timespan_init}, {x0, xG});
   const SolutionResult result =
-      dircol_traj.SolveTraj(timespan_init, PiecewisePolynomialType(),
+      dircol.SolveTraj(timespan_init, PiecewisePolynomialType(),
                             traj_init_x);
   ASSERT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
 
@@ -47,13 +47,13 @@ GTEST_TEST(PendulumTrajectoryOptimization,
   Eigen::MatrixXd states;
   std::vector<double> times_out;
 
-  dircol_traj.GetResultSamples(&inputs, &states, &times_out);
+  dircol.GetResultSamples(&inputs, &states, &times_out);
   EXPECT_TRUE(CompareMatrices(x0, states.col(0),
                               1e-10, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(xG, states.col(kNumTimeSamples - 1),
                               1e-10, MatrixCompareType::absolute));
   const PiecewisePolynomialTrajectory state_traj =
-      dircol_traj.ReconstructStateTrajectory();
+      dircol.ReconstructStateTrajectory();
   for (int i = 0; i < kNumTimeSamples; ++i) {
     EXPECT_TRUE(CompareMatrices(states.col(i), state_traj.value(times_out[i]),
                                 1e-10, MatrixCompareType::absolute));
