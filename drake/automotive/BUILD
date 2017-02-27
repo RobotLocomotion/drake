@@ -143,6 +143,7 @@ drake_cc_library(
         "//drake/common:cond",
         "//drake/common:double",
         "//drake/common:symbolic",
+        "//drake/systems/rendering:pose_vector",
     ],
 )
 
@@ -483,6 +484,7 @@ drake_cc_googletest(
     name = "simple_car_test",
     deps = [
         "//drake/automotive:simple_car",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 
@@ -535,6 +537,16 @@ drake_cc_googletest(
         ":infinite_circuit_road",
         "//drake/automotive/maliput/monolane:builder",
     ],
+)
+
+sh_test(
+    name = "car_sim_lcm_test",
+    srcs = ["//tools:exec.sh"],
+    args = [
+        "$(location :car_sim_lcm)",
+        " --simulation_sec=0.01",
+    ],
+    data = [":car_sim_lcm"],
 )
 
 cpplint()

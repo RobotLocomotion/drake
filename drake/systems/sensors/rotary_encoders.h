@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/siso_vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -20,7 +20,7 @@ namespace sensors {
 ///
 /// @ingroup sensor_systems
 template <typename T>
-class RotaryEncoders : public systems::LeafSystem<T> {
+class RotaryEncoders : public SisoVectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotaryEncoders)
 
@@ -42,24 +42,27 @@ class RotaryEncoders : public systems::LeafSystem<T> {
                  const std::vector<int>& ticks_per_revolution);
 
   /// Calibration offsets are defined as parameters.
-  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
+  std::unique_ptr<Parameters<T>> AllocateParameters() const override;
 
   /// Set the calibration offset parameters.
   void set_calibration_offsets(
-      systems::Context<T>* context,
+      Context<T>* context,
       const Eigen::Ref<VectorX<T>>& calibration_offsets) const;
 
   /// Retreive the calibration offset parameters.
   Eigen::VectorBlock<const VectorX<T>> get_calibration_offsets(
-      const systems::Context<T>& context) const;
+      const Context<T>& context) const;
 
  private:
   // Outputs the transformed signal.
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
+  void DoCalcVectorOutput(
+      const Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* output) const override;
 
-  void SetDefaultParameters(const systems::LeafContext<T>& context,
-                            systems::Parameters<T>* params) const override;
+  void SetDefaultParameters(const LeafContext<T>& context,
+                            Parameters<T>* params) const override;
 
   // System<T> override.
   RotaryEncoders<AutoDiffXd>* DoToAutoDiffXd() const override;

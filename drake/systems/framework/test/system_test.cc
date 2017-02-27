@@ -351,9 +351,8 @@ class ValueIOTestSystem : public System<double> {
     output->add_port(
         std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
 
-    std::unique_ptr<OutputPort> vec_out_port(
-        new OutputPort(std::make_unique<BasicVector<double>>(1)));
-    output->get_mutable_ports()->push_back(std::move(vec_out_port));
+    output->add_port(std::make_unique<OutputPort>(
+        std::make_unique<BasicVector<double>>(1)));
 
     return std::unique_ptr<SystemOutput<double>>(output.release());
   }

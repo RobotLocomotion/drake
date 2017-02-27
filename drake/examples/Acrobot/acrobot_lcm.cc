@@ -54,7 +54,7 @@ AcrobotCommandSender::AllocateOutput(
   lcmt_acrobot_u msg{};
   msg.tau = 0;
 
-  output->get_mutable_ports()->emplace_back(
+  output->add_port(
       std::make_unique<systems::OutputPort>(
           std::make_unique<systems::Value<lcmt_acrobot_u>>(msg)));
   return std::unique_ptr<SystemOutput<double>>(output.release());
@@ -106,7 +106,7 @@ AcrobotStateSender::AllocateOutput(
   msg.theta1Dot = 0;
   msg.theta2Dot = 0;
 
-  output->get_mutable_ports()->emplace_back(
+  output->add_port(
       std::make_unique<systems::OutputPort>(
           std::make_unique<systems::Value<lcmt_acrobot_x>>(msg)));
   return std::unique_ptr<SystemOutput<double>>(output.release());

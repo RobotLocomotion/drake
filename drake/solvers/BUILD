@@ -94,6 +94,7 @@ drake_cc_library(
         ":snopt_solver",
         "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:monomial",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
@@ -346,6 +347,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
     ],
 )
 

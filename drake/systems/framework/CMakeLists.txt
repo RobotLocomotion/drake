@@ -66,6 +66,7 @@ set(installed_headers
   system_port_descriptor.h
   systems.h
   value.h
+  value_checker.h
   vector_base.h
   )
 

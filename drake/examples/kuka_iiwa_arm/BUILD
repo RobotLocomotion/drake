@@ -6,6 +6,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
+    "drake_cc_googletest",
 )
 
 package(
@@ -36,6 +37,8 @@ drake_cc_library(
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
+        "@bot_core_lcmtypes//:lib",
+        "@robotlocomotion_lcmtypes//:lib",
     ],
 )
 
@@ -118,6 +121,7 @@ cc_binary(
     srcs = ["kuka_ik_demo.cc"],
     data = [":models"],
     deps = [
+        ":iiwa_common",
         "//drake/lcm",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
@@ -125,6 +129,27 @@ cc_binary(
         "//drake/solvers:mathematical_program",
         "@bot_core_lcmtypes//:lib",
         "@robotlocomotion_lcmtypes//:lib",
+    ],
+)
+
+# === test/ ===
+
+sh_test(
+    name = "iiwa_wsg_simulation_test",
+    srcs = ["//tools:exec.sh"],
+    args = [
+        "$(location :iiwa_wsg_simulation)",
+        "--simulation_sec=0.01",
+    ],
+    data = [":iiwa_wsg_simulation"],
+)
+
+drake_cc_googletest(
+    name = "iiwa_lcm_test",
+    deps = [
+        ":iiwa_lcm",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework",
     ],
 )
 

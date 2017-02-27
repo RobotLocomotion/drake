@@ -62,6 +62,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "value_checker",
+    srcs = [],
+    hdrs = ["value_checker.h"],
+    visibility = [":__subpackages__"],
+    deps = [
+        ":value",
+        "//drake/common",
+        "//drake/common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "cache",
     srcs = ["cache.cc"],
     hdrs = ["cache.h"],
@@ -156,6 +168,7 @@ drake_cc_library(
     deps = [
         ":output_port_listener_interface",
         ":value",
+        ":value_checker",
         ":vector",
         "//drake/common",
     ],
@@ -229,6 +242,7 @@ drake_cc_library(
         ":leaf_context",
         ":sparsity_matrix",
         ":system",
+        ":value_checker",
         "//drake/common",
         "//drake/common:number_traits",
     ],
@@ -471,6 +485,13 @@ drake_cc_googletest(
     deps = [
         ":value",
         "//drake/common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "value_checker_test",
+    deps = [
+        ":value_checker",
     ],
 )
 

@@ -90,7 +90,9 @@ api::Rotation Lane::DoGetOrientation(
 }
 
 api::LanePosition Lane::DoToLanePosition(
-    const api::GeoPosition& geo_pos) const {
+    const api::GeoPosition& geo_pos,
+    api::GeoPosition* nearest_point,
+    double* distance) const {
   DRAKE_ABORT();  // TODO(liangfok) Implement me.
 }
 

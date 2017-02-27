@@ -176,6 +176,10 @@ To analyze test coverage, run the tests under ``kcov``::
 
   bazel test --config kcov //...
 
+Note that it disables compiler-optimization (``-O0``) to have a better and more
+precise coverage report. If you have trouble with kcov and unoptimized programs,
+you can turn it back on by also supplying ``--copt -O2``.
+
 The coverage report is written to the ``drake-distro/bazel-kcov`` directory. To
 view it, browse to ``drake-distro/bazel-kcov/index.html``.
 
@@ -187,8 +191,8 @@ view it, browse to ``drake-distro/bazel-kcov/index.html``.
 FAQ
 ===
 
-Q. What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
+Q: What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
 
-   A. Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
+   A: Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
       Update your dotfiles so that something like ``/usr/lib/ccache`` is not on
       your ``$PATH``.

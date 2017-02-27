@@ -47,12 +47,12 @@ EndlessRoadCar<T>::EndlessRoadCar(
                           EndlessRoadCarStateIndices::kNumCoordinates);
 }
 
-
 template <typename T>
-bool EndlessRoadCar<T>::has_any_direct_feedthrough() const {
+bool EndlessRoadCar<T>::DoHasDirectFeedthrough(
+    const systems::SparsityMatrix* sparsity,
+    int input_port, int output_port) const {
   return false;
 }
-
 
 template <typename T>
 void EndlessRoadCar<T>::DoCalcOutput(const systems::Context<T>& context,

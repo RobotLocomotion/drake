@@ -211,7 +211,6 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
   return basis;
 }
 
-
 /**
  * Returns the total degrees of the polynomial @p e w.r.t the variables in @p
  * vars. For example, the total degree of

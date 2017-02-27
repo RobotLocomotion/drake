@@ -1,7 +1,9 @@
 #include "drake/systems/framework/siso_vector_system.h"
 
 #include <stdexcept>
+#include <vector>
 
+#include <Eigen/Dense>
 #include "gtest/gtest.h"
 
 namespace drake {

@@ -74,15 +74,15 @@ def drake_cc_binary(
         linkstatic=linkstatic,
         **kwargs)
 
-def drake_cc_googletest(
+def drake_cc_test(
         name,
         size=None,
         srcs=None,
-        deps=None,
+        copts=[],
         disable_in_compilation_mode_dbg=False,
         **kwargs):
-    """Creates a rule to declare a C++ unit test using googletest.  Always adds a
-    deps= entry for googletest main (@gtest//:main).
+    """Creates a rule to declare a C++ unit test.  Note that for almost all
+    cases, drake_cc_googletest should be used, instead of this rule.
 
     By default, sets size="small" because that indicates a unit test.
     By default, sets name="test/${name}.cc" per Drake's filename convention.
@@ -99,12 +99,31 @@ def drake_cc_googletest(
         # Remove the test declarations from the test in debug mode.
         # TODO(david-german-tri): Actually suppress the test rule.
         srcs = select({"//tools:debug" : [], "//conditions:default" : srcs})
-    if deps == None:
-        deps = []
-    deps.append("@gtest//:main")
     native.cc_test(
         name=name,
         size=size,
         srcs=srcs,
+        copts=_platform_copts(copts),
+        **kwargs)
+
+def drake_cc_googletest(
+        name,
+        deps=None,
+        **kwargs):
+    """Creates a rule to declare a C++ unit test using googletest.  Always adds
+    a deps= entry for googletest main (@gtest//:main).
+
+    By default, sets size="small" because that indicates a unit test.
+    By default, sets name="test/${name}.cc" per Drake's filename convention.
+
+    If disable_in_compilation_mode_dbg is True, the srcs will be suppressed
+    in debug-mode builds, so the test will trivially pass. This option should
+    be used only rarely, and the reason should always be documented.
+    """
+    if deps == None:
+        deps = []
+    deps.append("@gtest//:main")
+    drake_cc_test(
+        name=name,
         deps=deps,
         **kwargs)

@@ -49,6 +49,9 @@ lcm_cc_library(
     name = "contact_results_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_contact_results_for_viz.lcm"],
+    deps = [
+        ":contact_info_for_viz",
+    ],
 )
 
 lcm_cc_library(

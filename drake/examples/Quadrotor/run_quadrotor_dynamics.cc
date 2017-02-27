@@ -84,7 +84,8 @@ class Quadrotor : public systems::Diagram<T> {
      * x0(0), x0(1), x0(2) are the quadrotor's x, y, z -states
      * x0(3), x0(4), x0(5) are the quedrotor's Euler angles phi, theta, psi
      */
-    x0(2) = 0.2;  // setting arbitrary z-position
+    x0(2) = 0.2;  // Sets arbitrary z-position. This is the initial height of
+                  // the quadrotor in the world frame.
     plant_->set_state_vector(plant_state, x0);
   }
 
