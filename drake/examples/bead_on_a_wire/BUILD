@@ -14,8 +14,8 @@ drake_cc_library(
         "bead_on_a_wire-inl.h",
     ],
     deps = [
-        "//drake/systems/framework:leaf_system",
         "//drake/common",
+        "//drake/systems/framework:leaf_system",
     ],
 )
 

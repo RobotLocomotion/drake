@@ -65,12 +65,12 @@ drake_cc_library(
     name = "value_checker",
     srcs = [],
     hdrs = ["value_checker.h"],
+    visibility = [":__subpackages__"],
     deps = [
         ":value",
         "//drake/common",
         "//drake/common:nice_type_name",
     ],
-    visibility = [":__subpackages__"],
 )
 
 drake_cc_library(
