@@ -25,12 +25,13 @@ if(VTK_FOUND)
     # set(wrap_xvfb ${xvfb-run} -a -s "-screen 0 1280x1024x24")
     add_executable(rgbd_camera_test rgbd_camera_test.cc)
     target_link_libraries(rgbd_camera_test
-      GTest::GTest
-      GTest::Main
+      drakeCollision
       drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSensors
       drakeSystemAnalysis
+      GTest::GTest
+      GTest::Main
     )
     add_test(
       NAME rgbd_camera_test2
