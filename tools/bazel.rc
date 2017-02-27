@@ -79,6 +79,7 @@ test:cpplint --test_tag_filters=cpplint
 
 ### Kcov coverage build. ###
 build:kcov --copt -g
+build:kcov --copt -O0
 test:kcov --spawn_strategy=standalone
 test:kcov --run_under //tools:kcov
 test:kcov --local_test_jobs=1
