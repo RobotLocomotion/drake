@@ -263,7 +263,7 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_test(  # N.B. Not a googletest!
+drake_cc_test(
     name = "test_kinematics_cache_checks",
     data = ["//drake/examples/Atlas:models"],
     deps = [
