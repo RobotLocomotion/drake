@@ -346,6 +346,9 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
   actor->GetProperty()->SetColor(kPlaneColor[0],
                                  kPlaneColor[1],
                                  kPlaneColor[2]);
+  actor->GetProperty()->SetAmbient(1);
+  actor->GetProperty()->SetDiffuse(0);
+  actor->GetProperty()->SetSpecular(0);
 
   actor->SetUserTransform(transform);
   renderer_->AddActor(actor.GetPointer());
