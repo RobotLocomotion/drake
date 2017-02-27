@@ -5,6 +5,7 @@
 #include "drake/multibody/multibody_tree/rigid_body.h"
 
 #include <stdexcept>
+#include <utility>
 
 namespace drake {
 namespace multibody {
@@ -45,7 +46,7 @@ void MultibodyTree<T>::Compile() {
   //   - Setup computational structures (BodyNode based).
 
   // Give here bodies the chance to perform any compile-time setup.
-  for (const auto& body: bodies_) {
+  for (const auto& body : bodies_) {
     body->Compile();
   }
 

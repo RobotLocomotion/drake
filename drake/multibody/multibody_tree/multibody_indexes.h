@@ -6,22 +6,22 @@
 
 #define DrakeMultibody_DEFINE_INDEX_TYPE(NAME)                                 \
 class NAME {                                                                   \
-public:                                                                        \
+ public:                                                                       \
     NAME() : ix(InvalidIndex) {}                                               \
-    explicit NAME(int i) : ix(i) {DRAKE_ASSERT(i>=0 || i==InvalidIndex);}      \
+    explicit NAME(int i) : ix(i) {DRAKE_ASSERT(i >= 0 || i == InvalidIndex);}  \
     operator int() const { return ix;}                                         \
-    bool is_valid() const { return ix>=0;}                                     \
+    bool is_valid() const { return ix >= 0;}                                   \
     bool is_invalid() const { return ix == InvalidIndex;}                      \
     void invalidate() { clear();}                                              \
-    void clear(){ ix = InvalidIndex;}                                          \
+    void clear() { ix = InvalidIndex;}                                         \
                                                                                \
-    bool operator==(int  i) const { return ix==i;}                             \
+    bool operator==(int  i) const { return ix == i;}                           \
     bool operator!=(int  i) const { return !operator==(i);}                    \
                                                                                \
-    bool operator< (int  i) const { return ix<i;}                              \
+    bool operator< (int  i) const { return ix < i;}                            \
     bool operator>=(int  i) const { return !operator<(i);}                     \
                                                                                \
-    bool operator> (int  i) const { return ix>i;}                              \
+    bool operator> (int  i) const { return ix > i;}                            \
     bool operator<=(int  i) const { return !operator>(i);}                     \
                                                                                \
     const NAME& operator++() {  /*prefix */                                    \
@@ -43,12 +43,12 @@ public:                                                                        \
       DRAKE_ASSERT(is_valid()); return NAME(ix-1);                             \
     }                                                                          \
                                                                                \
-    NAME& operator+=(int i)  {DRAKE_ASSERT(is_valid()); ix+=i; return *this;}  \
-    NAME& operator-=(int i)  {DRAKE_ASSERT(is_valid()); ix-=i; return *this;}  \
+    NAME& operator+=(int i)  {DRAKE_ASSERT(is_valid()); ix += i; return *this;}\
+    NAME& operator-=(int i)  {DRAKE_ASSERT(is_valid()); ix -= i; return *this;}\
                                                                                \
     static const NAME& Invalid() {static const NAME invalid; return invalid;}  \
-    static bool isValid(int  i) {return i>=0;}                                 \
-private:                                                                       \
+    static bool isValid(int  i) {return i >= 0;}                               \
+ private:                                                                      \
     int ix;                                                                    \
     static const int InvalidIndex{-1111111111};                                \
 };                                                                             \

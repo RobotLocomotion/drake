@@ -30,7 +30,8 @@ class MultibodyTreeElement;
 ///
 /// @tparam ElementType The type of the multibody tree component.
 /// @tparam ElemeentIndexType The type-safe index used for this element type.
-template <template <typename> class ElementType, typename T, typename ElementIndexType>
+template <template <typename> class ElementType,
+    typename T, typename ElementIndexType>
 class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
  public:
   /// Returns a constant reference to the parent MultibodyTree that owns
@@ -54,7 +55,8 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
 
   /// Checks if `this` element has the same parent three as @p other.
   /// If not, it throws an exception of type std::runtime_error.
-  template <template <typename> class OtherElementType, typename OtherElementIndexType>
+  template <template <typename> class OtherElementType,
+      typename OtherElementIndexType>
   void HasSameParentTreeOrThrows(
       const MultibodyTreeElement<OtherElementType<T>, OtherElementIndexType>&
       other) const {
