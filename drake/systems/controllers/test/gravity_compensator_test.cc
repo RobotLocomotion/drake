@@ -89,7 +89,8 @@ class GravityCompensatorTest : public ::testing::Test {
 TEST_F(GravityCompensatorTest, IiwaOutputTest) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::GetDrakePath() +
+      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
   Init(std::move(tree));
