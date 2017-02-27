@@ -29,6 +29,14 @@ def _platform_copts(rule_copts):
       "//conditions:default": rule_copts,
   })
 
+def _dsym_command(name):
+  """Returns the command to produce .dSYM on OS X, or a no-op on Linux."""
+  return select({
+      "//tools:apple_debug":
+          "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null",
+      "//conditions:default": "touch $@",
+  })
+
 def drake_cc_library(
         name,
         hdrs=None,
@@ -59,6 +67,7 @@ def drake_cc_binary(
         deps=None,
         copts=[],
         linkstatic=1,
+        testonly=0,
         **kwargs):
     """Creates a rule to declare a C++ binary.
 
@@ -71,8 +80,21 @@ def drake_cc_binary(
         srcs=srcs,
         deps=deps,
         copts=_platform_copts(copts),
+        testonly=testonly,
         linkstatic=linkstatic,
         **kwargs)
+
+    # Also generate the OS X debug symbol file for this binary.
+    native.genrule(
+        name=name + "_dsym",
+        srcs=[":" + name],
+        outs=[name + ".dSYM"],
+        output_to_bindir=1,
+        testonly=testonly,
+        tags=["dsym"],
+        visibility=["//visibility:private"],
+        cmd=_dsym_command(name),
+    )
 
 def drake_cc_test(
         name,
@@ -105,6 +127,18 @@ def drake_cc_test(
         srcs=srcs,
         copts=_platform_copts(copts),
         **kwargs)
+
+    # Also generate the OS X debug symbol file for this test.
+    native.genrule(
+        name=name + "_dsym",
+        srcs=[":" + name],
+        outs=[name + ".dSYM"],
+        output_to_bindir=1,
+        testonly=1,
+        tags=["dsym"],
+        visibility=["//visibility:private"],
+        cmd=_dsym_command(name),
+    )
 
 def drake_cc_googletest(
         name,
