@@ -41,6 +41,8 @@ BicycleCar<T>::BicycleCar() {
                                1,                     // num_v (Ψ_dot)
                                kStateDimension - 2);  // num_z (all but Ψ,
                                                       // Ψ_dot)
+  // TODO(jadecastro): Expose translational second-order structure of `sx`, `sy`
+  // using `vel` as the generalized velocity (#5323).
 
   steering_input_port_ = steering_input.get_index();
   force_input_port_ = force_input.get_index();
