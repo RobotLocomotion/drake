@@ -47,7 +47,8 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   EXPECT_THROW(RigidBody<double>::Create(model), std::runtime_error);
 }
 
-// Verify the correctness of
+// Tests the correctness of MultibodyTreeElement checks to verify one or more
+// elements belong to a given MultibodyTree.
 GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   auto model1 = std::make_unique<MultibodyTree<double>>();
   auto model2 = std::make_unique<MultibodyTree<double>>();
