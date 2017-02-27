@@ -14,8 +14,9 @@ namespace automotive {
 
 /// BicycleCar -- Implements a nonlinear rigid body bicycle model from Althoff &
 /// Dolan (2012, 2014) [1, 2].  The three-DOF model assumes a single wheel in
-/// both the front and rear to capture dynamics in the lateral, longitudinal,
-/// and yaw directions.  The model does not capture roll/pitch dynamics.
+/// the front and one in the rear and captures rigid-body dynamics in the
+/// lateral, longitudinal, and yaw directions.  The model does not capture
+/// roll/pitch dynamics.
 ///
 /// The states of the model are:
 ///  - yaw angle Ψ [rad]
@@ -37,7 +38,7 @@ namespace automotive {
 ///    (InputPortDescriptor getter: get_force_input_port())
 ///
 /// Output:
-///  - A BicycleCarState collecting the 6-dimensional state vector of the
+///  - A BicycleCarState containing the 6-dimensional state vector of the
 ///    bicycle.
 ///    (OutputPortDescriptor getter: get_state_output_port())
 ///

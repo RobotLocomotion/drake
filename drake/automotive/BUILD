@@ -150,16 +150,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "powered_bicycle",
-    srcs = ["powered_bicycle.cc"],
-    hdrs = ["powered_bicycle.h"],
-    deps = [
-        ":bicycle_car",
-        ":simple_powertrain",
-    ],
-)
-
-drake_cc_library(
     name = "simple_car",
     srcs = ["simple_car.cc"],
     hdrs = [
@@ -548,9 +538,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "powered_bicycle_test",
+    name = "simple_powertrain_test",
     deps = [
-        "//drake/automotive:powered_bicycle",
+        "//drake/automotive:simple_powertrain",
     ],
 )
 
