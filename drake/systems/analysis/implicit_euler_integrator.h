@@ -3,7 +3,12 @@
 #include <memory>
 #include <utility>
 
+#include <Eigen/LU>
+
+#include "drake/math/jacobian.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/systems/analysis/line_search.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -61,8 +66,10 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   ~ImplicitEulerIntegrator() override = default;
 
   explicit ImplicitEulerIntegrator(const System<T>& system,
-                                 Context<T>* context = nullptr)
+                                   const T& max_step_size,
+                                   Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {
+    IntegratorBase<T>::set_maximum_step_size(max_step_size);
     derivs_ = system.AllocateTimeDerivatives();
   }
 
@@ -79,24 +86,62 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// halt.
   void set_convergence_tolerance(double tol) { convergence_tol_ = tol; }
 
+  /// Gets the error estimate order (zero).
+  virtual int get_error_estimate_order() const override { return 0; }
+
+  /// Gets the number of times that the integrator rejected a trial step due to
+  /// spurious gradient convergence.
+  int get_num_spurious_gradient_convergences() const {
+    return num_spurious_gradient_convergences_;
+  }
+
+  /// Gets the number of times that the integrator rejected a trial step due to
+  /// misdirected descent steps (i.e., the Newton-Raphson step would increase
+  /// the Euclidean norm of x(t+h) - x(t) - h*f(t+h, x(t+h)).
+  int get_num_misdirected_descents() const {
+    return num_misdirected_descents_;
+  } 
+
+  /// Gets the number of times that the integrator rejected a trial step due to
+  /// an increase in the Euclidean norm of x(t+h) - x(t) - h*f(t+h, x(t+h))
+  /// upon an update to x(t+h).
+  int get_num_objective_function_increases() const {
+    return num_objective_function_increases_;
+  }
+
  protected:
   std::pair<bool, T> DoStepOnceAtMost(const T& max_dt);
+  virtual void DoResetStatistics() override;
 
  private:
-  void DoInitialize() override;
+  void RestoreTimeAndState(const T& t, const VectorX<T>& x);
   void DoStepOnceFixedSize(const T& dt) override;
   bool DoTrialStep(const T& dt);
   VectorX<T> EvaluateNonlinearEquations(const VectorX<T>& xt,
                                         const VectorX<T>& xtplus,
                                         double h);
+  MatrixX<T> ComputeNDiffJacobian(const VectorX<T>& xt,
+                                  const VectorX<T>& xtplus,
+                                  double h);
+  MatrixX<T> ComputeADiffJacobian(const VectorX<T>& xt,
+                                  const VectorX<T>& xtplus,
+                                  double h);
 
   // The Euclidean norm tolerance at which the nonlinear system solving
   // process will halt.
-  double convergence_tol_{std::numeric_limits<double>::epsilon()};
+  double convergence_tol_{std::sqrt(std::numeric_limits<double>::epsilon())};
 
   // This is a pre-allocated temporary for use by integration. It stores
   // the derivatives computed at x(t+h).
   std::unique_ptr<ContinuousState<T>> derivs_;
+
+  // For LU factorization with full pivoting; this yields a solution to a
+  // system of linear equations that is somewhat robust 
+  Eigen::FullPivLU<MatrixX<T>> LU_;
+
+  int num_objective_function_increases_{0};
+  int num_spurious_gradient_convergences_{0};
+  int num_misdirected_descents_{0};
 };
 }  // namespace systems
 }  // namespace drake

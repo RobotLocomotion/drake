@@ -125,6 +125,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "implicit_euler_integrator_test",
+    deps = [
+        ":implicit_euler_integrator",
+        ":my_spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
     name = "runge_kutta2_integrator_test",
     deps = [
         ":my_spring_mass_system",

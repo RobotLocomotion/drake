@@ -401,6 +401,7 @@ class IntegratorBase {
     largest_step_size_taken_ = nan();
     num_steps_taken_ = 0;
     error_check_failures_ = 0;
+    DoResetStatistics();
   }
 
   /**
@@ -762,6 +763,10 @@ class IntegratorBase {
    */
 
  protected:
+  /// Resets any statistics particular to a specific integrator. The default
+  /// implementation of this function does nothing.
+  virtual void DoResetStatistics() {}
+
   /**
    * Sets the working ("in use") accuracy for this integrator. The working
    * accuracy may not be equivalent to the target accuracy when the latter is
@@ -1327,6 +1332,9 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   bool step_size_was_dt;
   T actual_dt;
   std::tie(step_size_was_dt, actual_dt) = DoStepOnceAtMost(dt);
+
+  // Record the previous step size.
+  prev_step_size_ = dt;
 
   // Update generic statistics.
   UpdateStatistics(actual_dt);
