@@ -18,12 +18,30 @@ if(BUILD_TESTING)
 endif()
 
 if(VTK_FOUND)
-  drake_add_cc_test(rgbd_camera_test)
-  target_link_libraries(rgbd_camera_test
-    drakeMultibodyParsers
-    drakeSensors
-    drakeSystemAnalysis
-  )
+  if(Bullet_FOUND)
+    find_program(Xvfb Xvfb)
+    if(Xvfb)
+      add_executable(rgbd_camera_test rgbd_camera_test.cc)
+      target_link_libraries(rgbd_camera_test
+        drakeCollision
+        drakeMultibodyParsers
+        drakeRigidBodyPlant
+        drakeSensors
+        drakeSystemAnalysis
+        GTest::GTest
+        GTest::Main
+      )
+      add_test(
+        NAME rgbd_camera_test2
+        COMMAND
+          bash ${PROJECT_SOURCE_DIR}/systems/sensors/test/runtest_with_xvfb.sh
+          ${PROJECT_BINARY_DIR}/systems/sensors/test/rgbd_camera_test)
+      set_tests_properties(rgbd_camera_test2
+        PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL")
+      set_tests_properties(rgbd_camera_test2
+        PROPERTIES PASS_REGULAR_EXPRESSION "PASS")
+    endif()
+  endif()
 
   drake_add_cc_test(vtk_util_test)
   target_link_libraries(vtk_util_test drakeSensors)
