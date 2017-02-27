@@ -116,8 +116,8 @@ TEST_F(BicycleCarTest, TrivialDerivatives) {
 
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
 
-  // We expect all the derivatives to be zero except the vel_dot and sx_dot, as
-  // we apply a positive force input and zero steering angle translates into
+  // We expect all derivatives to be zero except vel_dot and sx_dot, since
+  // applying a positive force input and zero steering angle translates into
   // along-track motion.
   EXPECT_EQ(0., derivatives()->Psi());
   EXPECT_EQ(0., derivatives()->Psi_dot());

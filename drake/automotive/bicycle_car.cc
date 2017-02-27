@@ -41,6 +41,8 @@ BicycleCar<T>::BicycleCar() {
                                1,                     // num_v (Ψ_dot)
                                kStateDimension - 2);  // num_z (all but Ψ,
                                                       // Ψ_dot)
+  // TODO(jadecastro): Expose translational second-order structure of `sx`, `sy`
+  // using `vel` as the generalized velocity (#5323).
 
   steering_input_port_ = steering_input.get_index();
   force_input_port_ = force_input.get_index();
@@ -165,7 +167,7 @@ void BicycleCar<T>::ImplCalcTimeDerivatives(
                      front_torsional_stiffness / Iz * delta;
   const T beta_dot = (torsional_stiffness / (m * pow(vel, 2.)) - 1.) * Psi_dot +
                      Cf / (m * vel) * delta - (Cf + Cr) / (m * vel) * beta;
-  const T vel_dot = F_in / m;
+  const T vel_dot = F_in / m;  // a_x in Althoff & Dolan, 2014.
   const T sx_dot = vel * cos(beta + Psi);
   const T sy_dot = vel * sin(beta + Psi);
 
