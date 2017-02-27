@@ -904,6 +904,17 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Adds a cost in the symbolic form.
+   * Note that the constant part of the cost is ignored. So if you set
+   * `e` = x + 2, then only the cost on `x` is added, the constant term 2 is
+   * ignored.
+   * @param e The linear expression of the cost
+   * @pre{e is linear or e is quadratic. Otherwise throws a runtime error.}
+   * @return The newly created cost, together with the bound variables.
+   */
+  Binding<Constraint> AddCost(const symbolic::Expression& e);
+
+  /**
    * Adds a generic constraint to the program.  This should
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
