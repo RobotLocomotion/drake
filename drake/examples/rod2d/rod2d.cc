@@ -1,13 +1,12 @@
 // NOLINTNEXTLINE(build/include) False positive on inl file.
-#include "drake/examples/painleve/painleve-inl.h"
+#include "drake/examples/rod2d/rod2d-inl.h"
 
 namespace drake {
 namespace examples {
-namespace painleve {
+namespace rod2d {
 
-template
-class Painleve<double>;
+template class Rod2D<double>;
 
-}  // namespace painleve
+}  // namespace rod2d
 }  // namespace examples
 }  // namespace drake
