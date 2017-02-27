@@ -208,11 +208,11 @@ const float kExpectedDepth[192] = {
   // uint8_t g;
   // uint8_t r;
   // uint8_t a;
-  //};
+  // };
 
-  //typedef ColorPixel P;
+  // typedef ColorPixel P;
 
-  //const ColorPixel kExpectedColor[192] = {};
+  // const ColorPixel kExpectedColor[192] = {};
 
 // Verifies rendered terrain.
 GTEST_TEST(RenderingTest, AllShapeRenderingTest) {
