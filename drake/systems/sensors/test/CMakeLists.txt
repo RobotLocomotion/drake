@@ -34,10 +34,14 @@ if(VTK_FOUND)
     )
     add_test(
       NAME rgbd_camera_test2
-      COMMAND sh ${PROJECT_SOURCE_DIR}/systems/sensors/test/runtest_with_xvfb.sh
+      COMMAND bash ${PROJECT_SOURCE_DIR}/systems/sensors/test/runtest_with_xvfb.sh
               ${PROJECT_BINARY_DIR}/systems/sensors/test/rgbd_camera_test)
 #      COMMAND ${wrap_xvfb}
 #              ${PROJECT_BINARY_DIR}/systems/sensors/test/rgbd_camera_test)
+    set_tests_properties(rgbd_camera_test2
+       PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL")
+    set_tests_properties(rgbd_camera_test2
+       PROPERTIES PASS_REGULAR_EXPRESSION "PASS")
   endif()
 
   drake_add_cc_test(vtk_util_test)
