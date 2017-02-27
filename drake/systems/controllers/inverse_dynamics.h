@@ -57,6 +57,10 @@ class InverseDynamics : public LeafSystem<T> {
     return this->get_output_port(output_port_index_torque_);
   }
 
+  bool is_pure_gravity_compenstation() const {
+    return pure_gravity_compensation;
+  }
+
  private:
   const RigidBodyTree<T>& tree_;
   const bool pure_gravity_compensation{false};
