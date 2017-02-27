@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -23,10 +22,40 @@ constexpr int kNumDOF = 2;  // theta1 + theta2.
 }
 
 template <typename T>
-AcrobotPlant<T>::AcrobotPlant() {
+AcrobotPlant<T>::AcrobotPlant(double m1, double m2, double l1, double l2,
+                              double lc1, double lc2, double Ic1, double Ic2,
+                              double b1, double b2, double g)
+    : m1_(m1),
+      m2_(m2),
+      l1_(l1),
+      l2_(l2),
+      lc1_(lc1),
+      lc2_(lc2),
+      Ic1_(Ic1),
+      Ic2_(Ic2),
+      b1_(b1),
+      b2_(b2),
+      g_(g) {
   this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareContinuousState(kNumDOF * 2);  // Position + velocity.
   this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2);
+}
+
+template <typename T>
+std::unique_ptr<AcrobotPlant<T>> AcrobotPlant<T>::CreateAcrobotMIT() {
+  return std::make_unique<AcrobotPlant<T>>(2.4367,   // m1
+                                           0.6178,   // m2
+                                           0.2563,   // l1
+                                           0,        // l2
+                                           1.6738,   // lc1
+                                           1.5651,   // lc2
+                                           -4.7443,  // Ic1
+                                           -1.0068,  // Ic2
+                                           0.0320,   // b1
+                                           0.0413);  // b2
+  // Parameters are identified in a way that torque has the unit of current
+  // (Amps), in order to simplify the implementation of torque constraint on
+  // motors. Therefore, numbers here do not carry physical meanings.
 }
 
 template <typename T>
@@ -39,8 +68,7 @@ void AcrobotPlant<T>::DoCalcOutput(const systems::Context<T>& context,
 }
 
 template <typename T>
-Matrix2<T> AcrobotPlant<T>::MatrixH(
-    const AcrobotStateVector<T>& x) const {
+Matrix2<T> AcrobotPlant<T>::MatrixH(const AcrobotStateVector<T>& x) const {
   const T c2 = cos(x.theta2());
 
   const T h12 = I2_ + m2l1lc2_ * c2;
