@@ -20,7 +20,7 @@ endif()
 if(VTK_FOUND)
   if(Bullet_FOUND)
     find_program(Xvfb Xvfb)
-      if(Xvfb)
+    if(Xvfb)
       add_executable(rgbd_camera_test rgbd_camera_test.cc)
       target_link_libraries(rgbd_camera_test
         drakeCollision

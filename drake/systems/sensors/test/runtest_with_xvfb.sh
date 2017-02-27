@@ -7,6 +7,7 @@ then
   $1
 else
   Xvfb :88 -ac -screen 0 1280x1024x24 &
+  sleep 1
   DISPLAY=:88 $1
   test_result=$?
   if [ "$test_result" == "0" ]
