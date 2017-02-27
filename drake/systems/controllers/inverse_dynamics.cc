@@ -67,7 +67,8 @@ void InverseDynamics<T>::DoCalcOutput(const Context<T>& context,
 }
 
 template class InverseDynamics<double>;
-template class InverseDynamics<AutoDiffXd>;
+// TODO(siyuan): having linking error with this line 56
+// template class InverseDynamics<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
