@@ -9,14 +9,16 @@
 namespace drake {
 namespace systems {
 
-// TODO(siyuan.feng): Lift the assumptions.
-
 /**
- * A state feedback controller whose output is the sum of a PID controller
- * and a gravity compensator.
+ * A state feedback controller whose output is:
+ * `torque = inverse_dynamics(q, v, vd_d)`,
+ * where `vd_d = kp * (q* - q) + kd * (v* - v) + ki * int(q* - q) + vd*`.
+ * `q` and `v` stand for the generalized position and velocity, and `vd` is
+ * the generalized acceleration. `*` indicates reference values.
  *
  * Note that this class assumes the robot is fully actuated, its position
- * and velocity have the same dimension, and it does not have a floating base.
+ * and velocity have the same dimension, it does not have a floating base,
+ * and it does not contain any closed kinematic loops.
  */
 template <typename T>
 class InverseDynamicsController : public ModelBasedController<T> {
@@ -29,6 +31,11 @@ class InverseDynamicsController : public ModelBasedController<T> {
    * multibody::joints::kFixed joint.
    * @param model_path Path to the model file.
    * @param world_offset X_WB, where B is the base frame of the model.
+   * @param kp Position gain
+   * @param kp Velocity gain
+   * @param kp Integral gain
+   * @param no_reference_acceleration If true, sets `vd*` to zero, and does
+   * not declare an input port for it.
    */
   InverseDynamicsController(
       const std::string& model_path,
@@ -39,6 +46,11 @@ class InverseDynamicsController : public ModelBasedController<T> {
   /**
    * Constructs the controller that clones a given RigidBodyTree.
    * @param robot Reference to the RigidBodyTree to be cloned.
+   * @param kp Position gain
+   * @param kp Velocity gain
+   * @param kp Integral gain
+   * @param no_reference_acceleration If true, sets `vd*` to zero, and does
+   * not declare an input port for it.
    */
   InverseDynamicsController(const RigidBodyTree<T>& robot, const VectorX<T>& kp,
                             const VectorX<T>& ki, const VectorX<T>& kd,
@@ -49,6 +61,11 @@ class InverseDynamicsController : public ModelBasedController<T> {
    * unique pointer.
    * @param robot Unique pointer whose ownership will be transfered to this
    * instance.
+   * @param kp Position gain
+   * @param kp Velocity gain
+   * @param kp Integral gain
+   * @param no_reference_acceleration If true, sets `vd*` to zero, and does
+   * not declare an input port for it.
    */
   InverseDynamicsController(std::unique_ptr<RigidBodyTree<T>> robot,
                             const VectorX<T>& kp, const VectorX<T>& ki,
@@ -56,7 +73,7 @@ class InverseDynamicsController : public ModelBasedController<T> {
                             bool no_reference_acceleration);
 
   /**
-   * Returns the input port for the desired state.
+   * Returns the input port for the reference acceleration.
    */
   const InputPortDescriptor<T>& get_desired_acceleration_input_port() const {
     DRAKE_DEMAND(!no_reference_acceleration_);

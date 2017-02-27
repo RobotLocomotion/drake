@@ -35,7 +35,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
   auto inverse_dynamics =
       builder.template AddSystem<InverseDynamics<T>>(robot, false);
 
-  // Splits state into q for gravity compensator.
+  // Redirects estimated state input into PID and inverse dynamics.
   auto pass_through = builder.template AddSystem<PassThrough<T>>(2 * dim);
 
   // Adds a adder to do PID's acceleration + reference acceleration.
@@ -63,6 +63,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
   builder.ExportInput(pid->get_desired_state_input_port());
 
   if (no_reference_acceleration_) {
+    // Uses a zero constant source for reference acceleration.
     auto zero_feedforward_acceleartion =
         builder.template AddSystem<ConstantVectorSource<double>>(
             VectorX<T>::Zero(robot.get_num_velocities()));

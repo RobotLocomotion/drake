@@ -9,7 +9,7 @@ template <typename T>
 InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>& tree,
                                     bool pure_gravity_compensation)
     : tree_(tree),
-      only_gravity_{pure_gravity_compensation},
+      pure_gravity_compensation{pure_gravity_compensation},
       q_dim_(tree.get_num_positions()),
       v_dim_(tree.get_num_velocities()),
       act_dim_(tree.get_num_actuators()) {
@@ -20,7 +20,7 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>& tree,
 
   // Doesn't declare desired acceleration input port if we are only doing
   // gravity compensation.
-  if (!only_gravity_) {
+  if (!pure_gravity_compensation) {
     input_port_index_desired_acceleration_ =
         this->DeclareInputPort(kVectorValued, v_dim_).get_index();
   }
@@ -43,7 +43,7 @@ void InverseDynamics<T>::DoCalcOutput(const Context<T>& context,
   // Desired acceleration input.
   VectorX<T> desired_vd = VectorX<T>::Zero(v_dim_);
 
-  if (!only_gravity_) {
+  if (!pure_gravity_compensation) {
     // Only eval acceleration input port when we are not in pure gravity
     // compensation mode.
     desired_vd = this->EvalEigenVectorInput(
@@ -58,7 +58,8 @@ void InverseDynamics<T>::DoCalcOutput(const Context<T>& context,
       f_ext;
 
   VectorX<T> torque = tree_.inverseDynamics(
-      cache, f_ext, desired_vd, !only_gravity_ /* include v dependent terms */);
+      cache, f_ext, desired_vd,
+      !pure_gravity_compensation /* include v dependent terms */);
 
   DRAKE_ASSERT(torque.size() ==
                System<T>::get_output_port(output_port_index_torque_).size());
@@ -66,7 +67,6 @@ void InverseDynamics<T>::DoCalcOutput(const Context<T>& context,
 }
 
 template class InverseDynamics<double>;
-// TODO(naveenoid): Get the AutoDiff working as in the line below.
 template class InverseDynamics<AutoDiffXd>;
 
 }  // namespace systems
