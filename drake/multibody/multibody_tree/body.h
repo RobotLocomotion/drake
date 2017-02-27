@@ -3,8 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/eigen_types.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/multibody_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 
@@ -14,9 +13,25 @@ namespace multibody {
 // Forward declarations.
 template<typename T> class MultibodyTree;
 
+/// Bodies are a bound interconnected aggregate of matter that moves together
+/// through space by translation and rotation and may or not undergo
+/// deformations, [Mitiguy 2016].
+/// This class provides the general abstraction of a body with an API that
+/// makes no assumption on whether a body is rigid or deformable and neither
+/// makes an assumption on the underlying physical model or approximation.
+/// As an element or component of a MultibodyTree, a body is a
+/// MultibodyTreeElement and therefore it has a unique identifier within the
+/// multibody tree it belongs to.
+///
+/// -[Mitiguy 2016] P Mitiguy. Advanced Dynamics and Motion Simulation, 2016.
+///                 Stanford University. www.MotionGenesis.com.
+///
+/// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
+
   /// Returns the number of generalized positions associated with this body.
   virtual int get_num_positions() const = 0;
 
@@ -26,6 +41,9 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// At MultibodyTree::Compile() time each body will retrieve its topology from
   /// the parent MultibodyTree.
   virtual void Compile() {}
+ protected:
+  // Default constructor. Only sub-classes can use it.
+  Body() = default;
 };
 
 }  // namespace multibody

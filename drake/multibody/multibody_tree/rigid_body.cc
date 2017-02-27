@@ -1,6 +1,6 @@
 #include "drake/multibody/multibody_tree/rigid_body.h"
 
-#include "drake/common/drake_assert.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 #include <memory>
@@ -28,6 +28,7 @@ RigidBody<T>::RigidBody() {}
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBody<double>;
+template class RigidBody<AutoDiffXd>;
 
 }  // namespace multibody
 }  // namespace drake
