@@ -552,9 +552,9 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));
 
-  // The new model gets a copy of the Gurobi environment, so when we set 
+  // The new model gets a copy of the Gurobi environment, so when we set
   // parameters, we have to be sure to set them on the model's environment,
-  // not the global gurobi environment. 
+  // not the global gurobi environment.
   // See: FAQ #11: http://www.gurobi.com/support/faqs
   // Note that it is not necessary to free this environment; rather,
   // we just have to call GRBfreemodel(model).
