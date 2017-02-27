@@ -4,7 +4,6 @@
 load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
-    "drake_cc_binary",
     "drake_cc_library",
     "drake_cc_googletest",
 )
@@ -22,40 +21,6 @@ drake_cc_library(
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-    ],
-)
-
-drake_cc_library(
-    name = "kuka_pick_and_place",
-    srcs = ["pick_and_place_state.cc"],
-    hdrs = ["pick_and_place_state.h"],
-    deps = [
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/schunk_wsg:schunk_wsg_lcm",
-        "//drake/util:lcm_util",
-        "//drake/lcm",
-        "//drake/multibody:inverse_kinematics",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-        "//drake/solvers:mathematical_program",
-    ],
-)
-
-drake_cc_binary(
-    name = "pick_and_place_state_machine",
-    srcs = [
-        "pick_and_place_state_machine.cc",
-    ],
-    deps = [
-        ":iiwa_ik_planner",
-        ":kuka_pick_and_place",
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/common/trajectories:piecewise_quaternion",
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/examples/schunk_wsg:schunk_wsg_lcm",
-        "//drake/util:lcm_util",
     ],
 )
 

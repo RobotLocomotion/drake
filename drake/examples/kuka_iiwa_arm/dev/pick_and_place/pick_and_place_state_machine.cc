@@ -8,7 +8,8 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place_state.h"
+#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/action.h"
+#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/world_state.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_status.hpp"
 
@@ -28,12 +29,18 @@ namespace {
 const Vector3<double> kPlacePosition0(0.8, 0, 0);
 const Vector3<double> kPlacePosition1(0, 0.8, 0);
 
-// TODO(siyuan): have a better way to determine which table is the object on.
+// Determines which table the object is on based on its xy distance to the
+// center of each table.
+// TODO(siyuan): have a better way to determine.
 int get_table(const Isometry3<double>& X_WObj,
               const Isometry3<double>& X_WIiiwa) {
+  // These need to match iiwa_wsg_simulation.cc's table configuration.
+  const Vector3<double> p_IiwaMidTable0 = Vector3<double>(0.8, 0, 0);
+  const Vector3<double> p_IiwaMidTable1 = Vector3<double>(0, 0.85, 0);
+
   Isometry3<double> X_IiwaObj = X_WIiiwa.inverse() * X_WObj;
-  double dist_to_table_0 = (X_IiwaObj.translation() - kPlacePosition0).norm();
-  double dist_to_table_1 = (X_IiwaObj.translation() - kPlacePosition1).norm();
+  double dist_to_table_0 = (X_IiwaObj.translation() - p_IiwaMidTable0).norm();
+  double dist_to_table_1 = (X_IiwaObj.translation() - p_IiwaMidTable1).norm();
 
   int table = 1;
   if (dist_to_table_0 < dist_to_table_1) table = 0;
@@ -43,8 +50,9 @@ int get_table(const Isometry3<double>& X_WObj,
 // Computes the desired end effector pose in the world frame given the object
 // pose in the world frame.
 Isometry3<double> ComputeGraspPose(const Isometry3<double>& X_WObj) {
-  // Sets desired end effector location to be 11cm behind the object,
-  // with the same orientation relative to the object frame.
+  // Sets desired end effector location to be 12cm behind the object,
+  // with the same orientation relative to the object frame. This number
+  // dependents on the length of the finger and how the gripper is attached.
   const double kEndEffectorToMidFingerDepth = 0.12;
   Isometry3<double> X_ObjEndEffector_desired;
   X_ObjEndEffector_desired.translation() =
@@ -112,15 +120,15 @@ enum PickAndPlaceState {
 
 // Makes a state machine that drives the iiwa to pick up a block from one table
 // and place it on on the other.
-int main(int argc, const char* argv[]) {
+void RunPickAndPlaceDemo() {
   lcm::LCM lcm;
 
   const std::string iiwa_path =
       GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf";
   const std::string iiwa_end_effector_name = "iiwa_link_ee";
 
-  // Makes a EnvState, and sets up LCM subscriptions.
-  EnvState env_state(iiwa_path, iiwa_end_effector_name, &lcm);
+  // Makes a WorldState, and sets up LCM subscriptions.
+  WorldState env_state(iiwa_path, iiwa_end_effector_name, &lcm);
   env_state.SubscribeToWsgStatus("SCHUNK_WSG_STATUS");
   env_state.SubscribeToIiwaStatus("IIWA_STATE_EST");
   env_state.SubscribeToObjectStatus("OBJECT_STATE_EST");
@@ -158,8 +166,11 @@ int main(int argc, const char* argv[]) {
   const double kPreGraspHeightOffset = 0.3;
 
   // Position and rotation tolerances.
+  // These should be adjusted to a tight bound until IK stop reliably giving
+  // results.
   const Vector3<double> kTightPosTol(0.005, 0.005, 0.005);
   const double kTightRotTol = 0.05;
+
   const Vector3<double> kLoosePosTol(0.05, 0.05, 0.05);
   const double kLooseRotTol = 0.5;
 
@@ -395,8 +406,6 @@ int main(int argc, const char* argv[]) {
         break;
     }
   }
-
-  return 0;
 }
 
 }  // namespace
@@ -406,5 +415,6 @@ int main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::kuka_iiwa_arm::pick_and_place_demo::main(argc, argv);
+  drake::examples::kuka_iiwa_arm::pick_and_place_demo::RunPickAndPlaceDemo();
+  return 0;
 }
