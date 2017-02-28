@@ -589,8 +589,19 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
     if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
-      if (optimstatus == GRB_INF_OR_UNBD || optimstatus == GRB_INFEASIBLE) {
-        result = SolutionResult::kInfeasibleConstraints;
+      switch (optimstatus) {
+        case GRB_INF_OR_UNBD : {
+          result = SolutionResult::kInfeasible_Or_Unbounded;
+          break;
+        }
+        case GRB_UNBOUNDED : {
+          result = SolutionResult::kUnbounded;
+          break;
+        }
+        case GRB_INFEASIBLE : {
+          result = SolutionResult::kInfeasibleConstraints;
+          break;
+        }
       }
     } else {
       result = SolutionResult::kSolutionFound;
