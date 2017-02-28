@@ -26,7 +26,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   explicit JointLevelControllerSystem(const RigidBodyTree<double>& robot);
 
   /**
-   * Extracts the torques from a QpOutput and output them in the actuator order
+   * Extracts the torques from a QpOutput and outputs them in the actuator order
    * within the RigidBodyTree passed to the constructor. More specifically, the
    * output is `tau_act = B^T * qp_output.dof_torques`, where `B` is the
    * selection matrix that maps the actuator indices to the generalized
