@@ -11,8 +11,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-ZeroOrderHold<T>::ZeroOrderHold(const T& period_sec, int size)
-    : SisoVectorSystem<T>(size, size) {
+ZeroOrderHold<T>::ZeroOrderHold(double period_sec, int size)
+    : SisoVectorSystem<T>(size, size), period_sec_(period_sec) {
   // TODO(david-german-tri): remove the size parameter from the constructor
   // once #3109 supporting automatic sizes is resolved.
   this->DeclareDiscreteState(size);
@@ -35,6 +35,12 @@ void ZeroOrderHold<T>::DoCalcVectorDiscreteVariableUpdates(
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* discrete_updates) const {
   *discrete_updates = input;
+}
+
+template <typename T>
+ZeroOrderHold<symbolic::Expression>* ZeroOrderHold<T>::DoToSymbolic() const {
+  return new ZeroOrderHold<symbolic::Expression>(period_sec_,
+                                                 this->get_input_port().size());
 }
 
 }  // namespace systems
