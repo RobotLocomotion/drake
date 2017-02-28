@@ -22,7 +22,3 @@ element {
      name: "delta"
      doc: "free-road exponent"
 }
-element {
-     name: "l_a"
-     doc: "length of leading car"
-}

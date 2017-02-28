@@ -1,9 +1,7 @@
 #pragma once
 
-#include <memory>
-
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/leaf_system.h"
+#include "drake/automotive/gen/idm_planner_parameters.h"
 
 namespace drake {
 namespace automotive {
@@ -21,47 +19,22 @@ namespace automotive {
 /// They are already available to link against in the containing library.
 ///
 /// @ingroup automotive_systems
-///
-/// Inputs:
-///   0: @p x_ego ego car position (scalar) [m]
-///   1: @p v_ego ego car velocity (scalar) [m/s]
-///   2: @p x_agent agent car position (scalar) [m]
-///   3: @p v_agent agent car velocity (scalar) [m/s]
-/// Outputs:
-///   0: @p vdot_ego linear acceleration of the ego car (scalar) [m/s^2].
 template <typename T>
-class IdmPlanner : public systems::LeafSystem<T> {
+class IdmPlanner {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdmPlanner)
+  IdmPlanner() = delete;
 
-  /// @p v_ref desired velocity of the ego car in units of m/s.
-  explicit IdmPlanner(const T& v_ref);
-  ~IdmPlanner() override;
+  static T Evaluate(
+      const IdmPlannerParameters<T>& params,
+      const T& ego_velocity,
+      const T& target_distance,
+      const T& target_distance_dot);
 
-  /// Returns the port to the ego car input subvector.
-  const systems::InputPortDescriptor<T>& get_ego_port() const;
+  /// Sets defaults for all parameters.  Most callers will want to replace
+  /// v_ref with a new value, because the default is 1.0 m/s.
+  static void SetDefaultParameters(IdmPlannerParameters<T>* params);
 
-  /// Returns the port to the agent car input subvector.
-  const systems::InputPortDescriptor<T>& get_agent_port() const;
-
-  // System<T> overrides.
-  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
-
-  void SetDefaultParameters(const systems::LeafContext<T>& context,
-                            systems::Parameters<T>* params) const override;
-
- protected:
-  // The output of this system is an algebraic relation of its inputs.
-  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
-                              int input_port, int output_port) const override {
-    return true;
-  }
-
- private:
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
-
-  const T v_ref_;  // Desired vehicle velocity.
 };
 
 }  // namespace automotive
