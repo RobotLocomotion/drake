@@ -76,15 +76,15 @@ class SpatialVelocity {
     return V_[i];
   }
 
-  /// Const access to the angular component of this spatial velocity.
-  const Vector3<T>& angular() const {
+  /// Const access to the rotational component of this spatial velocity.
+  const Vector3<T>& rotational() const {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
     return *reinterpret_cast<const Vector3<T>*>(V_.data());
   }
 
-  /// Mutable access to the angular component of this spatial velocity.
-  Vector3<T>& angular() {
+  /// Mutable access to the rotational component of this spatial velocity.
+  Vector3<T>& rotational() {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
     return *reinterpret_cast<Vector3<T>*>(V_.data());
@@ -123,7 +123,7 @@ class SpatialVelocity {
   bool IsApprox(const SpatialVelocity<T>& other,
                 double tolerance = Eigen::NumTraits<T>::epsilon()) {
     return translational().isApprox(other.translational(), tolerance) &&
-           angular().isApprox(other.angular(), tolerance);
+           rotational().isApprox(other.rotational(), tolerance);
   }
 
   /// Sets all entries in `this` SpatialVelocity to NaN. Typically used to
@@ -160,7 +160,7 @@ class SpatialVelocity {
   /// @see Shift() to compute the shifted spatial velocity without modifying
   ///      this original object.
   SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_BQ_E) {
-    translational() += angular().cross(p_BQ_E);
+    translational() += rotational().cross(p_BQ_E);
     return *this;
   }
 

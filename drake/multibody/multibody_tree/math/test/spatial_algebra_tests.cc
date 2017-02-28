@@ -38,7 +38,7 @@ GTEST_TEST(SpatialVelocity, ConstructionFromTwo3DVectors) {
 
   // Comparison to Eigen::NumTraits<double>::epsilon() precision.
   EXPECT_TRUE(V_AB.translational().isApprox(v_AB));
-  EXPECT_TRUE(V_AB.angular().isApprox(w_AB));
+  EXPECT_TRUE(V_AB.rotational().isApprox(w_AB));
 }
 
 // Construction from a Eigen expressions.
@@ -51,12 +51,12 @@ GTEST_TEST(SpatialVelocity, ConstructionFromAnEigenExpression) {
   SpatialVelocity<double> V1(v);
 
   // Verify the underlying Eigen vector matches the original vector.
-  EXPECT_EQ(V1.angular(), v.segment<3>(0));
+  EXPECT_EQ(V1.rotational(), v.segment<3>(0));
   EXPECT_EQ(V1.translational(), v.segment<3>(3));
 
   // A spatial velocity instantiated from an Eigen block.
   SpatialVelocity<double> V2(v.segment<6>(0));
-  EXPECT_EQ(V2.angular(), v.segment<3>(0));
+  EXPECT_EQ(V2.rotational(), v.segment<3>(0));
   EXPECT_EQ(V2.translational(), v.segment<3>(3));
 }
 
@@ -100,7 +100,7 @@ TEST_F(SpatialVelocityTest, SpatialVelocityArrayAccessor) {
 TEST_F(SpatialVelocityTest, SpatialVelocityVectorComponentAccessors) {
   // They should be exactly equal, byte by byte.
   EXPECT_EQ(V_XY_A_.translational(), v_XY_A_);
-  EXPECT_EQ(V_XY_A_.angular(), w_XY_A_);
+  EXPECT_EQ(V_XY_A_.rotational(), w_XY_A_);
 }
 
 // Tests access to the raw data pointer.
@@ -160,11 +160,11 @@ TEST_F(SpatialVelocityTest, MulitplicationByAScalar) {
   SpatialVelocity<double> Vxs = V_XY_A_ * scalar;
 
   // Verify the result using Eigen operations.
-  EXPECT_EQ(sxV.angular(), scalar * V_XY_A_.angular());
+  EXPECT_EQ(sxV.rotational(), scalar * V_XY_A_.rotational());
   EXPECT_EQ(sxV.translational(), scalar * V_XY_A_.translational());
 
   // Verify the multiplication by a scalar is commutative.
-  EXPECT_EQ(sxV.angular(), Vxs.angular());
+  EXPECT_EQ(sxV.rotational(), Vxs.rotational());
   EXPECT_EQ(sxV.translational(), Vxs.translational());
 }
 
