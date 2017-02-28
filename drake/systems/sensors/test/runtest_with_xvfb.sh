@@ -1,5 +1,5 @@
 #!/bin/sh
-# Runs a ctest executable which passed as the first argument.  If libGL.so is
+# Runs a ctest executable which is passed as the first argument.  If libGL.so is
 # not the one from Nvidia, Xvfb is executed before calling the test executable.
 # Otherwise, Xvfb is not called.  This script assumes that Xvfb is installed.
 #
