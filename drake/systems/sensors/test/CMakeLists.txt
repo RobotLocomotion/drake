@@ -19,28 +19,19 @@ endif()
 
 if(VTK_FOUND)
   if(Bullet_FOUND)
-    find_program(Xvfb Xvfb)
-    if(Xvfb)
-      add_executable(rgbd_camera_test rgbd_camera_test.cc)
-      target_link_libraries(rgbd_camera_test
-        drakeCollision
-        drakeMultibodyParsers
-        drakeRigidBodyPlant
-        drakeSensors
-        drakeSystemAnalysis
-        GTest::GTest
-        GTest::Main
-      )
-      drake_add_test(
-        NAME rgbd_camera_test
-        COMMAND
-          bash ${PROJECT_SOURCE_DIR}/systems/sensors/test/runtest_with_xvfb.sh
-          ${PROJECT_BINARY_DIR}/systems/sensors/test/rgbd_camera_test)
-      set_tests_properties(rgbd_camera_test
-        PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL")
-      set_tests_properties(rgbd_camera_test
-        PROPERTIES PASS_REGULAR_EXPRESSION "PASS")
-    endif()
+    # Building a manual test executable for RgbdCamera until we have CI that
+    # runs Xvfb server.  #5210 and #5227 are the related issues.
+    # TODO(kunimatsu-tri) Replace this with an appropriate unit test once CI
+    # had Xvfb.
+    add_executable(rgbd_camera_test rgbd_camera_test.cc)
+    target_link_libraries(rgbd_camera_test
+      drakeCollision
+      drakeMultibodyParsers
+      drakeRigidBodyPlant
+      drakeSensors
+      drakeSystemAnalysis
+      GTest::GTest
+      GTest::Main)
   endif()
 
   drake_add_cc_test(vtk_util_test)
