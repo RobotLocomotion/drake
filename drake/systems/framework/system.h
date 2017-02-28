@@ -109,6 +109,25 @@ class System {
   /// to nullptr.
   virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
 
+  /// Given a port descriptor, allocates the vector storage.  The default
+  /// implementation in this class allocates a BasicVector.  Subclasses can
+  /// override to use output vector types other than BasicVector.  The
+  /// descriptor must match a port declared via DeclareInputPort.
+  virtual std::unique_ptr<BasicVector<T>> AllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const {
+    return std::make_unique<BasicVector<T>>(descriptor.size());
+  }
+
+  /// Given a port descriptor, allocates the abstract storage.  The default
+  /// implementation in this class aborts.  Subclasses with abstract output
+  /// ports must override. The descriptor must match a port declared via
+  /// DeclareOutputPort.
+  virtual std::unique_ptr<AbstractValue> AllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const {
+    DRAKE_ABORT_MSG("A concrete leaf system with abstract input ports must "
+                        "override AllocateInputAbstract.");
+  }
+
   /// Returns a default output, initialized with the correct number of
   /// concrete output ports for this System. @p context is provided as
   /// an argument to support some specialized use cases. Most typical

@@ -296,6 +296,28 @@ class Diagram : public System<T>,
     }
   }
 
+  virtual std::unique_ptr<BasicVector<T>> AllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const override {
+    // Ask the subsystem to perform the allocation.
+    DRAKE_DEMAND(descriptor.get_index() <
+                 static_cast<int>(input_port_ids_.size()));
+    const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
+    const InputPortDescriptor<T> subsystem_descriptor(
+        id.first, id.second, descriptor.get_data_type(), descriptor.size());
+    return id.first->AllocateInputVector(subsystem_descriptor);
+  }
+
+  virtual std::unique_ptr<AbstractValue> AllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const override {
+    // Ask the subsystem to perform the allocation.
+    DRAKE_DEMAND(descriptor.get_index() <
+                 static_cast<int>(input_port_ids_.size()));
+    const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
+    const InputPortDescriptor<T> subsystem_descriptor(
+        id.first, id.second, descriptor.get_data_type(), descriptor.size());
+    return id.first->AllocateInputAbstract(subsystem_descriptor);
+  }
+
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
