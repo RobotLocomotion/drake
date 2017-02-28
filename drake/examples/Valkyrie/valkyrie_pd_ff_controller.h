@@ -17,16 +17,6 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
                          const VectorX<double>& nominal_torque,
                          const VectorX<double>& Kp, const VectorX<double>& Kd);
 
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override {
-    std::unique_ptr<LeafSystemOutput<double>> output(
-        new LeafSystemOutput<double>);
-
-    output->add_port(std::unique_ptr<AbstractValue>(
-        new Value<bot_core::atlas_command_t>(bot_core::atlas_command_t())));
-    return std::move(output);
-  }
-
   inline const InputPortDescriptor<double>& get_input_port_kinematics_result()
       const {
     return get_input_port(input_port_index_kinematics_result_);
@@ -35,6 +25,13 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
   inline const OutputPortDescriptor<double>& get_output_port_atlas_command()
       const {
     return get_output_port(output_port_index_atlas_command_);
+  }
+
+ protected:
+  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<double>& descriptor) const override {
+    return std::make_unique<Value<bot_core::atlas_command_t>>(
+        bot_core::atlas_command_t());
   }
 
  private:

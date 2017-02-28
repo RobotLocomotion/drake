@@ -31,8 +31,9 @@ class ConstantValueSource : public LeafSystem<T> {
   /// @p value The constant value to emit.
   explicit ConstantValueSource(std::unique_ptr<AbstractValue> value);
 
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override;
+ protected:
+  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<T>& descriptor) const override;
 
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;

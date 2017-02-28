@@ -281,47 +281,35 @@ void RigidBodyPlant<T>::set_state_vector(
 }
 
 template <typename T>
-std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
-    const Context<T>& context) const {
-  auto output = make_unique<LeafSystemOutput<T>>();
-
-  // Note that the ordering here must match the order in which the output ports
-  // were declared during construction.
-
-  // Allocates an output port for the plant-centric state vector.
-  {
-    auto data = make_unique<BasicVector<T>>(get_num_states());
-    auto port = make_unique<OutputPort>(move(data));
-    output->add_port(move(port));
-  }
-
-  // Allocates an output port for each model instance's state vector in the
-  // RigidBodyTree.
-  for (int instance_id = 0; instance_id < get_num_model_instances();
-       ++instance_id) {
-    if (output_map_[instance_id] == kInvalidPortIdentifier) {
-      continue;
-    }
-    auto data = make_unique<BasicVector<T>>(get_num_states(instance_id));
-    auto port = make_unique<OutputPort>(move(data));
-    output->add_port(move(port));
-  }
-
-  // Allocates an output port for the kinematics results.
-  {
-    auto kinematics_results = make_unique<Value<KinematicsResults<T>>>(
+std::unique_ptr<AbstractValue> RigidBodyPlant<T>::AllocateOutputAbstract(
+    const OutputPortDescriptor<T>& descriptor) const {
+  DRAKE_DEMAND(descriptor.get_data_type() == kAbstractValued);
+  const int idx = descriptor.get_index();
+  if (idx == kinematics_results_output_port().get_index()) {
+    return make_unique<Value<KinematicsResults<T>>>(
         KinematicsResults<T>(tree_.get()));
-    output->add_port(move(kinematics_results));
+  } else if (idx == contact_results_output_port().get_index()) {
+    return make_unique<Value<ContactResults<T>>>(ContactResults<T>());
   }
+  DRAKE_ABORT_MSG("Unknown abstract output port.");
+  return nullptr;
+}
 
-  // Allocates an output port for the contact results.
-  {
-    auto contact_results =
-        make_unique<Value<ContactResults<T>>>(ContactResults<T>());
-    output->add_port(move(contact_results));
+template <typename T>
+std::unique_ptr<BasicVector<T>> RigidBodyPlant<T>::AllocateOutputVector(
+    const OutputPortDescriptor<T>& descriptor) const {
+  DRAKE_DEMAND(descriptor.get_data_type() == kVectorValued);
+  if (descriptor.get_index() == state_output_port().get_index()) {
+    // One vector-valued port is the plant-centric state vector.
+    return make_unique<BasicVector<T>>(get_num_states());
+  } else {
+    // The other vector-valued ports are the model instance state vectors.
+    auto it = std::find(output_map_.begin(), output_map_.end(),
+                        descriptor.get_index());
+    DRAKE_DEMAND(it != output_map_.end());
+    const int instance_id = it - output_map_.begin();
+    return make_unique<BasicVector<T>>(get_num_states(instance_id));
   }
-
-  return std::unique_ptr<SystemOutput<T>>(output.release());
 }
 
 template <typename T>
