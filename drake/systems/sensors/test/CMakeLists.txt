@@ -32,13 +32,13 @@ if(VTK_FOUND)
         GTest::Main
       )
       add_test(
-        NAME rgbd_camera_test2
+        NAME rgbd_camera_test
         COMMAND
           bash ${PROJECT_SOURCE_DIR}/systems/sensors/test/runtest_with_xvfb.sh
           ${PROJECT_BINARY_DIR}/systems/sensors/test/rgbd_camera_test)
-      set_tests_properties(rgbd_camera_test2
+      set_tests_properties(rgbd_camera_test
         PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL")
-      set_tests_properties(rgbd_camera_test2
+      set_tests_properties(rgbd_camera_test
         PROPERTIES PASS_REGULAR_EXPRESSION "PASS")
     endif()
   endif()

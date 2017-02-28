@@ -112,10 +112,10 @@ class RenderingSim : public systems::Diagram<double> {
     systems::DiagramBuilder<double> builder;
 
     plant_ = builder.AddSystem<RigidBodyPlant<double>>(std::move(tree));
-    const double penetration_stiffness = 3000.;
-    const double penetration_damping = 30.;
-    plant_->set_normal_contact_parameters(penetration_stiffness,
-                                          penetration_damping);
+    const double kPenetrationStiffness = 3000.;
+    const double kPenetrationDamping = 30.;
+    plant_->set_normal_contact_parameters(kPenetrationStiffness,
+                                          kPenetrationDamping);
 
     rgbd_camera_ = builder.AddSystem<RgbdCamera>(
         "rgbd_camera", plant_->get_rigid_body_tree(),
@@ -151,8 +151,8 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
   systems::Simulator<double> simulator(diagram, std::move(context));
   simulator.Initialize();
 
-  const double duration = 0.03;
-  for (double time = 0.; time < duration ; time += 0.01) {
+  const double kDuration = 0.03;
+  for (double time = 0.; time < kDuration ; time += 0.01) {
     simulator.StepTo(time);
     diagram.CalcOutput(simulator.get_context(), output.get());
 
