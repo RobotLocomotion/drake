@@ -77,7 +77,7 @@ drake_cc_binary(
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
-        "//drake/systems/analysis:simulator",
+        "//drake/systems/analysis",
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/controllers:pid_with_gravity_compensator",
         "//drake/systems/primitives:matrix_gain",
