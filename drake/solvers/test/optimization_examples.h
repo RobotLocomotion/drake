@@ -666,7 +666,6 @@ class UnboundedLinearProgramTest0 : public ::testing::Test {
 
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
-
 };
 }  // namespace test
 }  // namespace solvers

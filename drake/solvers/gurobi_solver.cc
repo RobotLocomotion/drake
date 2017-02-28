@@ -559,7 +559,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   GRBenv* model_env = GRBgetenv(model);
   DRAKE_DEMAND(model_env);
 
-  // Corresponds to no console or file logging (this is the default, which 
+  // Corresponds to no console or file logging (this is the default, which
   // can be overridden by parameters set in the MathematicalProgram).
   GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
 
