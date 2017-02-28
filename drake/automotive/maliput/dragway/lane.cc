@@ -1,17 +1,39 @@
 #include "drake/automotive/maliput/dragway/lane.h"
 
+#include <cmath>
 #include <memory>
 
 #include "drake/automotive/maliput/dragway/branch_point.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/dragway/segment.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 
 using std::make_unique;
 
 namespace drake {
 namespace maliput {
 namespace dragway {
+
+namespace {
+
+// Clamps the provided `value` by the provided `min` and `max` values. Returns
+// the clamped result.
+//
+// TODO(liang.fok) Once c++17 or later is used, switch to std::clamp().
+//
+double clamp(double value, double min, double max) {
+  double result = value;
+  if (value < min) {
+    result = min;
+  }
+  if (value > max) {
+    result = max;
+  }
+  return result;
+}
+
+}  // namespace
 
 Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
     double length, double y_offset, const api::RBounds& lane_bounds,
@@ -93,7 +115,30 @@ api::LanePosition Lane::DoToLanePosition(
     const api::GeoPosition& geo_pos,
     api::GeoPosition* nearest_point,
     double* distance) const {
-  DRAKE_ABORT();  // TODO(liangfok) Implement me.
+
+  const double min_x = 0;
+  const double max_x = length_;
+  const double min_y = driveable_bounds_.r_min + y_offset_;
+  const double max_y = driveable_bounds_.r_max + y_offset_;
+
+  api::GeoPosition closest_point;
+  closest_point.x = clamp(geo_pos.x, min_x, max_x);
+  closest_point.y = clamp(geo_pos.y, min_y, max_y);
+  closest_point.z = geo_pos.z;
+
+  if (nearest_point != nullptr) {
+    *nearest_point = closest_point;
+  }
+
+  if (distance != nullptr) {
+    *distance = std::sqrt(std::pow(geo_pos.x - closest_point.x, 2) +
+                          std::pow(geo_pos.y - closest_point.y, 2) +
+                          std::pow(geo_pos.z - closest_point.z, 2));
+  }
+
+  return api::LanePosition(closest_point.x              /* s */,
+                           closest_point.y - y_offset_  /* r */,
+                           closest_point.z              /* h */);
 }
 
 }  // namespace dragway
