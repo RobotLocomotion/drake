@@ -62,6 +62,12 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
     case SolutionResult::kInfeasibleConstraints: {
       return 13;
     }
+    case SolutionResult::kInfeasible_Or_Unbounded: {
+      return 13;
+    }
+    case SolutionResult::kUnbounded: {
+      return 21;
+    }
     case SolutionResult::kUnknownError: {
       return 100;  // Not a real SNOPT error.
     }
