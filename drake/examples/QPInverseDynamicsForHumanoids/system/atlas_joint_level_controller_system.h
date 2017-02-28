@@ -10,10 +10,10 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * A class that extends JointLevelControllerSystem to output an additional
+ * A class that extends JointLevelControllerBaseSystem to output an additional
  * bot_core::atlas_command_t.
  */
-class AtlasJointLevelControllerSystem : public JointLevelControllerSystem {
+class AtlasJointLevelControllerSystem : public JointLevelControllerBaseSystem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AtlasJointLevelControllerSystem)
 
@@ -23,13 +23,6 @@ class AtlasJointLevelControllerSystem : public JointLevelControllerSystem {
    * class's instance. @p robot should only contain a single model instance.
    */
   explicit AtlasJointLevelControllerSystem(const RigidBodyTree<double>& robot);
-
-  /**
-   * Calls JointLevelControllerSystem::DoCalcOutput(), then updates the
-   * bot_core::atlas_command_t within this system's atlas command output port.
-   */
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
 
   std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const override;
@@ -43,6 +36,11 @@ class AtlasJointLevelControllerSystem : public JointLevelControllerSystem {
   }
 
  private:
+  // Generates an additional bot_core::atlas_command_t output.
+  void DoCalcExtendedOutput(
+      const systems::Context<double>& context,
+      systems::SystemOutput<double>* output) const override;
+
   int output_port_index_atlas_cmd_{0};
 
   // Joint level gains. These are in the actuator order within the

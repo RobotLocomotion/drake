@@ -7,7 +7,7 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-JointLevelControllerSystem::JointLevelControllerSystem(
+JointLevelControllerBaseSystem::JointLevelControllerBaseSystem(
     const RigidBodyTree<double>& robot)
     : robot_(robot) {
   input_port_index_qp_output_ = DeclareAbstractInputPort().get_index();
@@ -16,7 +16,7 @@ JointLevelControllerSystem::JointLevelControllerSystem(
           .get_index();
 }
 
-void JointLevelControllerSystem::DoCalcOutput(
+void JointLevelControllerBaseSystem::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
   // Input:
@@ -29,6 +29,9 @@ void JointLevelControllerSystem::DoCalcOutput(
   out_vector = robot_.B.transpose() * qp_output->dof_torques();
 
   DRAKE_ASSERT(out_vector.size() == robot_.get_num_actuators());
+
+  // Call Derived class's extended methods.
+  DoCalcExtendedOutput(context, output);
 }
 
 }  // namespace qp_inverse_dynamics

@@ -13,27 +13,25 @@ namespace qp_inverse_dynamics {
 
 AtlasJointLevelControllerSystem::AtlasJointLevelControllerSystem(
     const RigidBodyTree<double>& robot)
-    : JointLevelControllerSystem(robot) {
+    : JointLevelControllerBaseSystem(robot) {
   output_port_index_atlas_cmd_ = DeclareAbstractOutputPort().get_index();
 
   // TODO(siyuan.feng): Load gains from some config.
-  const int num_act = robot_.get_num_actuators();
-  k_q_p_ = VectorX<double>::Zero(num_act);
-  k_q_i_ = VectorX<double>::Zero(num_act);
-  k_qd_p_ = VectorX<double>::Zero(num_act);
-  k_f_p_ = VectorX<double>::Zero(num_act);
-  ff_qd_ = VectorX<double>::Zero(num_act);
-  ff_qd_d_ = VectorX<double>::Zero(num_act);
+  const int act_size = get_robot().get_num_actuators();
+  k_q_p_ = VectorX<double>::Zero(act_size);
+  k_q_i_ = VectorX<double>::Zero(act_size);
+  k_qd_p_ = VectorX<double>::Zero(act_size);
+  k_f_p_ = VectorX<double>::Zero(act_size);
+  ff_qd_ = VectorX<double>::Zero(act_size);
+  ff_qd_d_ = VectorX<double>::Zero(act_size);
   // Directly feed torque through without any other feedbacks.
-  ff_f_d_ = VectorX<double>::Constant(num_act, 1.);
-  ff_const_ = VectorX<double>::Zero(num_act);
+  ff_f_d_ = VectorX<double>::Constant(act_size, 1.);
+  ff_const_ = VectorX<double>::Zero(act_size);
 }
 
-void AtlasJointLevelControllerSystem::DoCalcOutput(
+void AtlasJointLevelControllerSystem::DoCalcExtendedOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
-  JointLevelControllerSystem::DoCalcOutput(context, output);
-
   // Gets a mutable reference to bot_core::atlas_command_t from output.
   bot_core::atlas_command_t& msg =
       output->GetMutableData(output_port_index_atlas_cmd_)
@@ -42,7 +40,7 @@ void AtlasJointLevelControllerSystem::DoCalcOutput(
   // Makes bot_core::atlas_command_t message.
   msg.utime = static_cast<uint64_t>(context.get_time() * 1e6);
 
-  msg.num_joints = robot_.get_num_actuators();
+  msg.num_joints = get_robot().get_num_actuators();
   msg.joint_names.resize(msg.num_joints);
   msg.position.resize(msg.num_joints);
   msg.velocity.resize(msg.num_joints);
@@ -51,11 +49,11 @@ void AtlasJointLevelControllerSystem::DoCalcOutput(
   // The torques have already been computed and set in
   // JointLevelControllerSystem::DoCalcOutput()
   VectorX<double> act_torques =
-      output->get_vector_data(output_port_index_torque_)->get_value();
+      output->get_vector_data(get_output_port_index_torque())->get_value();
 
   // Set desired position, velocity and torque for all actuators.
   for (int i = 0; i < msg.num_joints; ++i) {
-    msg.joint_names[i] = robot_.actuators[i].name_;
+    msg.joint_names[i] = get_robot().actuators[i].name_;
     msg.position[i] = 0;
     msg.velocity[i] = 0;
     msg.effort[i] = act_torques[i];
