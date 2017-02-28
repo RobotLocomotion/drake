@@ -51,12 +51,12 @@ void RunMultibodyIndexTests() {
     IndexType index1(5);
     IndexType index2(5);
     IndexType index3(7);
-    EXPECT_EQ(index1, index2); // operator==
-    EXPECT_NE(index1, index3); // operator!=
-    EXPECT_LT(index1, index3); // operator<
-    EXPECT_LE(index1, index2); // operator<=
-    EXPECT_GT(index3, index1); // operator>
-    EXPECT_GE(index2, index1); // operator>=
+    EXPECT_EQ(index1, index2);  // operator==
+    EXPECT_NE(index1, index3);  // operator!=
+    EXPECT_LT(index1, index3);  // operator<
+    EXPECT_LE(index1, index2);  // operator<=
+    EXPECT_GT(index3, index1);  // operator>
+    EXPECT_GE(index2, index1);  // operator>=
   }
 
   // Prefix increment.
