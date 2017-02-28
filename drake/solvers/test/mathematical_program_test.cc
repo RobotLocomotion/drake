@@ -552,6 +552,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
   CheckAddedSymbolicLinearCost(&prog, -x(0));
   // Add Linear cost -(x(1) + 3 * x(0))
   CheckAddedSymbolicLinearCost(&prog, -(x(1) + 3 * x(0)));
+  // AddLinear cost x(1)*x(1) + x(0) - x(1)*x(1)
+  CheckAddedSymbolicLinearCost(&prog, x(1) * x(1) + x(0) - x(1) * x(1));
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {

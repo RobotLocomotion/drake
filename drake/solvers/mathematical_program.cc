@@ -537,15 +537,14 @@ Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
                                  "expression.\n";
     throw std::runtime_error(oss.str());
   } else if (total_degree == 2) {
-    auto binding = AddQuadraticCostWithMonomialToCoeffMap(
+    return  AddQuadraticCostWithMonomialToCoeffMap(
         monomial_to_coeff_map, vars_vec, map_var_to_index, this);
-    return Binding<Constraint>(binding.constraint(), binding.variables());
   } else {
     Eigen::VectorXd c(vars_vec.size());
     c.setZero();
     for (const auto& p : monomial_to_coeff_map) {
       if (p.first.total_degree() == 1) {
-        Variable::Id var_id = p.first.get_powers().begin()->first;
+        const Variable::Id var_id = p.first.get_powers().begin()->first;
         DRAKE_DEMAND(is_constant(p.second));
         c(map_var_to_index.at(var_id)) += get_constant_value(p.second);
       }
