@@ -238,8 +238,10 @@ class RigidBodyPlant : public LeafSystem<T> {
   // System<T> overrides.
   /// Allocates the output ports. See this class' description for details of
   /// these ports.
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override;
+  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<T>& descriptor) const override;
+  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
+      const OutputPortDescriptor<T>& descriptor) const override;
 
   bool has_any_direct_feedthrough() const override;
 
