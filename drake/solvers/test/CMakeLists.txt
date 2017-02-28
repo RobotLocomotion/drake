@@ -60,6 +60,12 @@ target_link_libraries(mosek_solver_test drakeCommon drakeOptimizationTest)
 drake_add_cc_test(linear_complementary_problem_test)
 target_link_libraries(linear_complementary_problem_test drakeOptimization)
 
+drake_add_cc_test(ipopt_solver_test)
+target_link_libraries(ipopt_solver_test drakeOptimizationTest)
+
+drake_add_cc_test(snopt_solver_test)
+target_link_libraries(snopt_solver_test drakeOptimizationTest)
+
 if(dreal_FOUND)
   drake_add_cc_test(dreal_solver_test)
   target_link_libraries(dreal_solver_test drakeOptimization)

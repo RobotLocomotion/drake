@@ -223,6 +223,7 @@ QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
 }
 
 void QuadraticProgram2::CheckSolution() const {
+
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
                               MatrixCompareType::absolute));
 }
