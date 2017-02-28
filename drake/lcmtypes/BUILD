@@ -6,6 +6,16 @@ package(default_visibility = ["//visibility:public"])
 load("//tools:lcm.bzl", "lcm_cc_library", "lcm_java_library", "lcm_py_library")
 
 lcm_cc_library(
+    name = "acrobot",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_acrobot_u.lcm",
+        "lcmt_acrobot_x.lcm",
+        "lcmt_acrobot_y.lcm",
+    ],
+)
+
+lcm_cc_library(
     name = "body_acceleration",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_body_acceleration.lcm"],
@@ -66,6 +76,12 @@ lcm_cc_library(
     name = "desired_dof_motions",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_desired_dof_motions.lcm"],
+)
+
+lcm_cc_library(
+    name = "inverse_dynamics_debug_info",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_inverse_dynamics_debug_info.lcm"],
 )
 
 lcm_cc_library(
@@ -169,6 +185,8 @@ lcm_java_library(
 )
 
 _AUTOMOTIVE_LCM_SRCS = [
+    "lcmt_bicycle_car_parameters_t.lcm",
+    "lcmt_bicycle_car_state_t.lcm",
     "lcmt_driving_command_t.lcm",
     "lcmt_endless_road_car_config_t.lcm",
     "lcmt_endless_road_car_state_t.lcm",

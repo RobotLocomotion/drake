@@ -7,11 +7,11 @@ load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "painleve",
-    srcs = ["painleve.cc"],
+    name = "rod2d",
+    srcs = ["rod2d.cc"],
     hdrs = [
-        "painleve.h",
-        "painleve-inl.h",
+        "rod2d.h",
+        "rod2d-inl.h",
     ],
     deps = [
         "//drake/common",
@@ -23,9 +23,9 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "painleve_test",
+    name = "rod2d_test",
     deps = [
-        ":painleve",
+        ":rod2d",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/analysis",

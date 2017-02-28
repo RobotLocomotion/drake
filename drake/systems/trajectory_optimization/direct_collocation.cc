@@ -41,10 +41,10 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
   // value along with the state and input vectors at that knot and the
   // next.
   for (int i = 0; i < N() - 1; i++) {
-    opt_problem()->AddConstraint(
-        constraint, {h_vars().segment<1>(i),
-                     x_vars().segment(i * num_states(), num_states() * 2),
-                     u_vars().segment(i * num_inputs(), num_inputs() * 2)});
+    AddConstraint(constraint,
+                  {h_vars().segment<1>(i),
+                   x_vars().segment(i * num_states(), num_states() * 2),
+                   u_vars().segment(i * num_inputs(), num_inputs() * 2)});
   }
 }
 
@@ -61,13 +61,13 @@ class RunningCostEndWrapper : public solvers::Constraint {
         constraint_(constraint) {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
-              TaylorVecXd &y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+              TaylorVecXd& y) const override {
     TaylorVecXd wrapped_x = x;
     wrapped_x(0) *= 0.5;
     constraint_->Eval(wrapped_x, y);
@@ -90,13 +90,13 @@ class RunningCostMidWrapper : public solvers::Constraint {
         constraint_(constraint) {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
-              TaylorVecXd &y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+              TaylorVecXd& y) const override {
     TaylorVecXd wrapped_x(x.rows() - 1);
     wrapped_x.tail(x.rows() - 2) = x.tail(x.rows() - 2);
     wrapped_x(0) = (x(0) + x(1)) * 0.5;
@@ -113,20 +113,20 @@ class RunningCostMidWrapper : public solvers::Constraint {
 // input and output anyway.
 void DircolTrajectoryOptimization::AddRunningCost(
     std::shared_ptr<solvers::Constraint> constraint) {
-  opt_problem()->AddCost(std::make_shared<RunningCostEndWrapper>(constraint),
-                         {h_vars().head(1), x_vars().head(num_states()),
-                          u_vars().head(num_inputs())});
+  AddCost(std::make_shared<RunningCostEndWrapper>(constraint),
+          {h_vars().head(1), x_vars().head(num_states()),
+           u_vars().head(num_inputs())});
 
   for (int i = 1; i < N() - 1; i++) {
-    opt_problem()->AddCost(std::make_shared<RunningCostMidWrapper>(constraint),
-                           {h_vars().segment(i - 1, 2),
-                            x_vars().segment(i * num_states(), num_states()),
-                            u_vars().segment(i * num_inputs(), num_inputs())});
+    AddCost(std::make_shared<RunningCostMidWrapper>(constraint),
+            {h_vars().segment(i - 1, 2),
+             x_vars().segment(i * num_states(), num_states()),
+             u_vars().segment(i * num_inputs(), num_inputs())});
   }
 
-  opt_problem()->AddCost(std::make_shared<RunningCostEndWrapper>(constraint),
-                         {h_vars().tail(1), x_vars().tail(num_states()),
-                          u_vars().tail(num_inputs())});
+  AddCost(std::make_shared<RunningCostEndWrapper>(constraint),
+          {h_vars().tail(1), x_vars().tail(num_states()),
+           u_vars().tail(num_inputs())});
 }
 
 PiecewisePolynomialTrajectory

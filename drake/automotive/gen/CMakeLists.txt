@@ -1,5 +1,9 @@
 if(lcm_FOUND)
   drake_install_headers(
+    bicycle_car_parameters.h
+    bicycle_car_parameters_translator.h
+    bicycle_car_state.h
+    bicycle_car_state_translator.h
     driving_command.h
     driving_command_translator.h
     endless_road_car_state.h
