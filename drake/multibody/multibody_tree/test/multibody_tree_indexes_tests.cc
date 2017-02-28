@@ -1,17 +1,13 @@
 #include "gtest/gtest.h"
 
-#include "drake/multibody/multibody_tree/multibody_indexes.h"
+#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
-#include <memory>
 #include <string>
 #include <sstream>
 
 namespace drake {
 namespace multibody {
 namespace {
-
-using std::make_unique;
-using std::unique_ptr;
 
 template <class IndexType>
 void RunMultibodyIndexTests() {
@@ -25,7 +21,7 @@ void RunMultibodyIndexTests() {
     EXPECT_TRUE(index.is_invalid());  // Tests is_invalid().
   }
 
-  // Default Construction and validity.
+  // Default construction and validity.
   {
     IndexType invalid_index;
     EXPECT_TRUE(invalid_index.is_invalid());
@@ -124,14 +120,17 @@ void RunMultibodyIndexTests() {
   }
 }
 
+// Verifies the correct behavior of FrameIndex.
 GTEST_TEST(MultibodyTreeIndexes, FrameIndex) {
   RunMultibodyIndexTests<FrameIndex>();
 }
 
+// Verifies the correct behavior of BodyIndex.
 GTEST_TEST(MultibodyTreeIndexes, BodyIndex) {
   RunMultibodyIndexTests<BodyIndex>();
 }
 
+// Verifies the correct behavior of MobilizerIndex.
 GTEST_TEST(MultibodyTreeIndexes, MobilizerIndex) {
   RunMultibodyIndexTests<MobilizerIndex>();
 }
