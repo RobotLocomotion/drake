@@ -153,7 +153,7 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
   // Expected state derivatives. Velocity v maps should map to x_dot.
   // The car should rapidly decelerate, as evidenced by a negative v_dot.
   EXPECT_EQ(25.0, derivatives_ego->GetAtIndex(0));
-  EXPECT_NEAR(-411.914474, derivatives_ego->GetAtIndex(1), 1e-6);
+  EXPECT_NEAR(-400.8138313, derivatives_ego->GetAtIndex(1), 1e-6);
   EXPECT_EQ(10.0, derivatives_agent->GetAtIndex(0));
   EXPECT_EQ(2.7, derivatives_agent->GetAtIndex(1));
 }

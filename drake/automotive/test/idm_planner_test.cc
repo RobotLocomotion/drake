@@ -9,66 +9,89 @@ namespace drake {
 namespace automotive {
 namespace {
 
+using std::sqrt;
+
+class IdmPlannerTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // Set the parameters to their default values.
+    IdmPlanner<double>::SetDefaultParameters(params_.get());
+  }
+  std::unique_ptr<IdmPlannerParameters<double>> params_ =
+      std::make_unique<IdmPlannerParameters<double>>();
+};
+
 // Set the initial states such that the agent and ego start at the
-// headway distance, both at the desired speed.
-GTEST_TEST(IdmPlannerTest, SameSpeedAtHeadwayDistance) {
-  IdmPlannerParameters<double>* params = nullptr;
-  IdmPlanner<double>::SetDefaultParameters(params);
-  const double result =
-      IdmPlanner<double>::Evaluate(
-          *params, params->v_ref() /* set ego velocity to v_ref */,
-          params->v_ref() * params->time_headway() /* maintain time headway */,
-          0. /* ego and lead car at same speed */ );
-  // Expect there to be no acceleration or deceleration.
-  EXPECT_NEAR(result, 0., 1e-2);
+// headway distance, with the ego closing in on the lead car.
+TEST_F(IdmPlannerTest, SameSpeedAtHeadwayDistance) {
+  const double ego_velocity = params_->v_ref();
+  const double target_distance = params_->v_ref() * params_->time_headway();
+  const double target_distance_dot =
+      -4 * sqrt(params_->a() * params_->b()) / params_->v_ref();
+
+  const double result = IdmPlanner<double>::Evaluate(
+      *params_, ego_velocity, target_distance, target_distance_dot);
+
+  // We expect zero acceleration.
+  EXPECT_NEAR(0., result, 1e-2);
 }
 
-/*
 // Set the initial states such that the agent and ego start within the
 // headway distance, both at the desired speed.
-GTEST_TEST(IdmPlannerTest, SameSpeedBelowHeadwayDistance) {
-  std::vector<double> state = {0.0, IdmPlannerTest::get_v_0(), 6.0,
-                               IdmPlannerTest::get_v_0()};
-  // Set the inputs to IdmPlanner.
-  SetInputValue(state);
-  dut_->CalcOutput(*context_, output_.get());
-  // Expect the car to decelerate.
-  EXPECT_LE(result->GetAtIndex(0), -1e-2);
+TEST_F(IdmPlannerTest, SameSpeedBelowHeadwayDistance) {
+  const double ego_velocity = params_->v_ref();
+  const double target_distance = 6.;
+  const double target_distance_dot = 0.;
+
+  const double result = IdmPlanner<double>::Evaluate(
+      *params_, ego_velocity, target_distance, target_distance_dot);
+
+  // We expect the car to decelerate.
+  EXPECT_GE(0., result);
 }
 
 // Set the initial states such that the agent and ego start close
 // together at different speeds.
-GTEST_TEST(IdmPlannerTest, DifferentSpeedsBelowHeadwayDistance) {
-  std::vector<double> state = {0.0, 7.0, 6.0, 4.0};
-  // Set the inputs to IdmPlanner.
-  SetInputValue(state);
-  dut_->CalcOutput(*context_, output_.get());
-  // Expect the car to decelerate.
-  EXPECT_LE(result->GetAtIndex(0), -1e-2);
+TEST_F(IdmPlannerTest, DifferentSpeedsBelowHeadwayDistance) {
+  const double ego_velocity = 7.;
+  const double target_distance = 6.;
+  const double target_distance_dot = 3.;
+
+  const double result = IdmPlanner<double>::Evaluate(
+      *params_, ego_velocity, target_distance, target_distance_dot);
+
+  // We expect the car to decelerate.
+  EXPECT_GE(0., result);
 }
 
 // Set the agent and ego sufficiently far apart from one another, with
-// the ego car initially at the desired speed.  set-point.
-GTEST_TEST(IdmPlannerTest, EgoAtDesiredSpeed) {
-  std::vector<double> state = {0.0, IdmPlannerTest::get_v_0(), 1e6, 0.0};
-  // Set the inputs to IdmPlanner.
-  SetInputValue(state);
-  dut_->CalcOutput(*context_, output_.get());
-  // Expect there to be no acceleration or deceleration.
-  EXPECT_NEAR(result->GetAtIndex(0), 0.0, 1e-2);
+// the ego car initially at the desired speed.
+TEST_F(IdmPlannerTest, EgoAtDesiredSpeed) {
+  const double ego_velocity = params_->v_ref();
+  const double target_distance = 1e6;
+  const double target_distance_dot = params_->v_ref();
+
+  const double result = IdmPlanner<double>::Evaluate(
+      *params_, ego_velocity, target_distance, target_distance_dot);
+
+  // We expect acceleration to be close-to-zero.
+  EXPECT_NEAR(0., result, 1e-2);
 }
 
 // Set the agent and ego sufficiently far apart from one another, with
 // the ego car speed initially zero.  set-point.
-GTEST_TEST(IdmPlannerTest, EgoStartFromRest) {
-  std::vector<double> state = {0.0, 0.0, 1e6, 0.0};
-  // Set the inputs to IdmPlanner.
-  SetInputValue(state);
-  dut_->CalcOutput(*context_, output_.get());
-  // Expect the car to accelerate.
-  EXPECT_GE(result->GetAtIndex(0), 1e-2);
+TEST_F(IdmPlannerTest, EgoStartFromRest) {
+  const double ego_velocity = 0.;
+  const double target_distance = 1e6;
+  const double target_distance_dot = 0.;
+
+  const double result = IdmPlanner<double>::Evaluate(
+      *params_, ego_velocity, target_distance, target_distance_dot);
+
+  // We expect the car to accelerate.
+  EXPECT_LE(0., result);
 }
-*/
+
 }  // namespace
 }  // namespace automotive
 }  // namespace drake

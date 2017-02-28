@@ -27,16 +27,15 @@ const T IdmPlanner<T>::Evaluate(const IdmPlannerParameters<T>& params,
   DRAKE_DEMAND(b > 0.);
   DRAKE_DEMAND(target_distance > 0.);
 
-  const T& v_ego = ego_velocity;
-
   // Compute the interaction acceleration terms.
-  const T& closing_term = v_ego * target_distance_dot / (2 * sqrt(a * b));
-  const T& small_distance_term = s_0 + v_ego * time_headway;
-
+  const T& closing_term =
+      ego_velocity * target_distance_dot / (2 * sqrt(a * b));
+  const T& too_close_term = s_0 + ego_velocity * time_headway;
   const T& accel_interaction =
-      pow((closing_term + small_distance_term) / target_distance, 2.);
+      pow((closing_term + too_close_term) / target_distance, 2.);
+
   // Compute the free-road accleration term.
-  const T& accel_free_road = pow(v_ego / v_ref, delta);
+  const T& accel_free_road = pow(ego_velocity / v_ref, delta);
 
   // Compute the IDM acceleration.
   return a * (1. - accel_free_road - accel_interaction);
@@ -56,8 +55,8 @@ void IdmPlanner<T>::SetDefaultParameters(IdmPlannerParameters<T>* idm_params) {
 
 // These instantiations must match the API documentation in idm_planner.h.
 template class IdmPlanner<double>;
-// template class IdmPlanner<drake::TaylorVarXd>;
-// template class IdmPlanner<drake::symbolic::Expression>;
+template class IdmPlanner<drake::TaylorVarXd>;
+template class IdmPlanner<drake::symbolic::Expression>;
 
 }  // namespace automotive
 }  // namespace drake
