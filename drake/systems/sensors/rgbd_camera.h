@@ -74,6 +74,8 @@ class RgbdCamera : public LeafSystem<double> {
   };
 
   /// A constructor for %RgbdCamera that defines `B` using Euler angles.
+  /// The pose of %RgbdCamera will be fixed to the world coordinate system
+  /// troughtout the simulation.
   ///
   /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
@@ -101,6 +103,7 @@ class RgbdCamera : public LeafSystem<double> {
              bool show_window);
 
   /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
+  /// The pose of %RgbdCamera will be updated during the simulation.
   ///
   /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
@@ -139,6 +142,9 @@ class RgbdCamera : public LeafSystem<double> {
   /// Returns `X_WD`.
   const Eigen::Isometry3d& depth_camera_optical_pose() const;
 
+  /// Returns the RigidBodyFrame to which this RgbdCamera is attached.
+  const RigidBodyFrame<double>& frame() const;
+
   /// Returns the RigidBodyTree to which this RgbdCamera is attached.
   const RigidBodyTree<double>& tree() const;
 
@@ -166,6 +172,8 @@ class RgbdCamera : public LeafSystem<double> {
                     systems::SystemOutput<double>* output) const override;
 
  private:
+  void Init(const std::string& name);
+
   class Impl;
   std::unique_ptr<Impl> impl_;
 };
