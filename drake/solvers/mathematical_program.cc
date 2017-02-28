@@ -235,8 +235,8 @@ void ExtractVariablesFromExpression(
 // Given an expression @p e, extract all variables inside e, append these
 // variables to @p vars if they are not included in @p vars yet.
 // @param[in] e.  A symbolic expression.
-// @param[in/out] vars.  The variables in @p e but not included in @p vars before
-// this call, will be appended to @p vars.
+// @param[in/out] vars.  The variables in @p e but not included in @p vars
+// before this call, will be appended to @p vars.
 // @param[in/out] map_var_to_index. map_var_to_index is of the same size as @p
 // vars, and map_var_to_index[vars(i).get_id()] = i.
 void ExtractAndAppendVariablesFromExpression(
@@ -364,13 +364,7 @@ void MathematicalProgram::AddCost(const Binding<LinearConstraint>& binding) {
   DRAKE_ASSERT(binding.constraint()->num_constraints() == 1 &&
                binding.constraint()->A().cols() ==
                    static_cast<int>(binding.GetNumElements()));
-  for (int i = 0; i < binding.variables().size(); ++i) {
-    if (!IsDecisionVariable(VectorDecisionVariable<1>(binding.variables()(i)))) {
-      std::ostringstream oss;
-      oss << binding.variables()(i) << " is not a variable in the mathematical program.\n";
-      throw std::runtime_error(oss.str());
-    }
-  }
+  CheckIsDecisionVariable(binding.variables());
   linear_costs_.push_back(binding);
 }
 
@@ -411,13 +405,7 @@ void MathematicalProgram::AddCost(const Binding<QuadraticConstraint>& binding) {
                    static_cast<int>(binding.GetNumElements()) &&
                binding.constraint()->b().rows() ==
                    static_cast<int>(binding.GetNumElements()));
-  for (int i = 0; i < binding.variables().size(); ++i) {
-    if (!IsDecisionVariable(VectorDecisionVariable<1>(binding.variables()(i)))) {
-      std::ostringstream oss;
-      oss << binding.variables()(i) << " is not a variable of the mathematical program.\n";
-      throw std::runtime_error(oss.str());
-    }
-  }
+  CheckIsDecisionVariable(binding.variables());
   quadratic_costs_.push_back(binding);
 }
 
@@ -427,7 +415,11 @@ void MathematicalProgram::AddCost(
   AddCost(Binding<QuadraticConstraint>(obj, vars));
 }
 
-Binding<QuadraticConstraint> AddQuadraticCostWithMonomialToCoeffMap(const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map, const VectorXDecisionVariable& vars_vec, const unordered_map<Variable::Id, int>& map_var_to_index, MathematicalProgram* prog) {
+Binding<QuadraticConstraint> AddQuadraticCostWithMonomialToCoeffMap(
+    const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map,
+    const VectorXDecisionVariable& vars_vec,
+    const unordered_map<Variable::Id, int>& map_var_to_index,
+    MathematicalProgram* prog) {
   // We want to write the expression e in the form 0.5 * x' * Q * x + b' * x + c
   // TODO(hongkai.dai): use a sparse matrix to represent Q and b.
   Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
@@ -493,7 +485,8 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
   const symbolic::MonomialToCoefficientMap&
       monomial_to_coeff_map =
           symbolic::DecomposePolynomialIntoMonomial(e, vars);
-  return AddQuadraticCostWithMonomialToCoeffMap(monomial_to_coeff_map, vars_vec, map_var_to_index, this);
+  return AddQuadraticCostWithMonomialToCoeffMap(monomial_to_coeff_map, vars_vec,
+                                                map_var_to_index, this);
 }
 
 std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticErrorCost(
@@ -521,7 +514,8 @@ std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
 Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
   if (!e.is_polynomial()) {
     std::ostringstream oss;
-    oss << "Expression " << e << " is not a polynomial. Currently AddCost does not support non-polynomial expression.\n";
+    oss << "Expression " << e << " is not a polynomial. Currently AddCost does "
+                                 "not support non-polynomial expression.\n";
     throw std::runtime_error(oss.str());
   }
   const symbolic::Variables& vars = e.GetVariables();
@@ -538,10 +532,13 @@ Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
 
   if (total_degree > 2) {
     std::ostringstream oss;
-    oss << "Expression " << e << " has degree higher than 2. Currently AddCost only supports quadratic or linear expression.\n";
+    oss << "Expression " << e << " has degree higher than 2. Currently AddCost "
+                                 "only supports quadratic or linear "
+                                 "expression.\n";
     throw std::runtime_error(oss.str());
   } else if (total_degree == 2) {
-    auto binding = AddQuadraticCostWithMonomialToCoeffMap(monomial_to_coeff_map, vars_vec, map_var_to_index, this);
+    auto binding = AddQuadraticCostWithMonomialToCoeffMap(
+        monomial_to_coeff_map, vars_vec, map_var_to_index, this);
     return Binding<Constraint>(binding.constraint(), binding.variables());
   } else {
     Eigen::VectorXd c(vars_vec.size());
@@ -583,7 +580,6 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   for (int i = 0; i < v.size(); ++i) {
     ExtractAndAppendVariablesFromExpression(v(i), &vars, &map_var_to_index);
   }
-  DRAKE_ASSERT(IsDecisionVariable(vars));
 
   // Construct A, new_lb, new_ub. map_var_to_index is used here.
   Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
@@ -680,6 +676,7 @@ void MathematicalProgram::AddConstraint(
   required_capabilities_ |= kLinearConstraint;
   DRAKE_ASSERT(binding.constraint()->A().cols() ==
                static_cast<int>(binding.GetNumElements()));
+  CheckIsDecisionVariable(binding.variables());
   linear_constraints_.push_back(binding);
 }
 
@@ -771,6 +768,7 @@ void MathematicalProgram::AddConstraint(
 void MathematicalProgram::AddConstraint(
     const Binding<LorentzConeConstraint>& binding) {
   required_capabilities_ |= kLorentzConeConstraint;
+  CheckIsDecisionVariable(binding.variables());
   lorentz_cone_constraint_.push_back(binding);
 }
 
@@ -781,7 +779,6 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   Eigen::VectorXd b(v.size());
   VectorXDecisionVariable vars{};
   DecomposeLinearExpression(v, &A, &b, &vars);
-  DRAKE_ASSERT(IsDecisionVariable(vars));
   DRAKE_DEMAND(vars.rows() >= 1);
   return Binding<LorentzConeConstraint>(AddLorentzConeConstraint(A, b, vars),
                                         vars);
@@ -807,6 +804,7 @@ MathematicalProgram::AddLorentzConeConstraint(
 void MathematicalProgram::AddConstraint(
     const Binding<RotatedLorentzConeConstraint>& binding) {
   required_capabilities_ |= kRotatedLorentzConeConstraint;
+  CheckIsDecisionVariable(binding.variables());
   rotated_lorentz_cone_constraint_.push_back(binding);
 }
 
@@ -825,7 +823,6 @@ MathematicalProgram::AddRotatedLorentzConeConstraint(
   VectorXDecisionVariable vars{};
   DecomposeLinearExpression(v, &A, &b, &vars);
   DRAKE_DEMAND(vars.rows() >= 1);
-  DRAKE_ASSERT(IsDecisionVariable(vars));
   return Binding<RotatedLorentzConeConstraint>(
       AddRotatedLorentzConeConstraint(A, b, vars), vars);
 }

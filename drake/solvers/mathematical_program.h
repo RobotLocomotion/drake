@@ -2364,25 +2364,27 @@ class MathematicalProgram {
                                        const std::vector<std::string>& names);
 
   /*
-   * Given a matrix of decision variables, return true if every entry in the
-   * matrix is a decision variable in the program; otherwise return false.
+   * Given a matrix of decision variables, checks if every entry in the
+   * matrix is a decision variable in the program; throws a runtime
+   * error if any variable is not a decsion variable in the program.
    * @tparam  A Eigen::Matrix type of symbolic Variable.
    * @param vars A matrix of variable.
    */
   template <typename Derived>
   typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
-      bool>::type
-  IsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) {
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value>::type
+  CheckIsDecisionVariable(const Eigen::MatrixBase<Derived> &vars) {
     for (int i = 0; i < vars.rows(); ++i) {
       for (int j = 0; j < vars.cols(); ++j) {
         if (decision_variable_index_.find(vars(i, j).get_id()) ==
             decision_variable_index_.end()) {
-          return false;
+          std::ostringstream oss;
+          oss << vars(i, j)
+              << " is not a decision variable of the mathematical program.\n";
+          throw std::runtime_error(oss.str());
         }
       }
     }
-    return true;
   }
 
   Binding<LinearEqualityConstraint> DoAddLinearEqualityConstraint(
