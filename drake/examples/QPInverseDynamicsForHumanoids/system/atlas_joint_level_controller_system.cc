@@ -17,16 +17,16 @@ AtlasJointLevelControllerSystem::AtlasJointLevelControllerSystem(
   output_port_index_atlas_cmd_ = DeclareAbstractOutputPort().get_index();
 
   // TODO(siyuan.feng): Load gains from some config.
-  const int kActSize = robot_.get_num_actuators();
-  k_q_p_ = VectorX<double>::Zero(kActSize);
-  k_q_i_ = VectorX<double>::Zero(kActSize);
-  k_qd_p_ = VectorX<double>::Zero(kActSize);
-  k_f_p_ = VectorX<double>::Zero(kActSize);
-  ff_qd_ = VectorX<double>::Zero(kActSize);
-  ff_qd_d_ = VectorX<double>::Zero(kActSize);
+  const int num_act = robot_.get_num_actuators();
+  k_q_p_ = VectorX<double>::Zero(num_act);
+  k_q_i_ = VectorX<double>::Zero(num_act);
+  k_qd_p_ = VectorX<double>::Zero(num_act);
+  k_f_p_ = VectorX<double>::Zero(num_act);
+  ff_qd_ = VectorX<double>::Zero(num_act);
+  ff_qd_d_ = VectorX<double>::Zero(num_act);
   // Directly feed torque through without any other feedbacks.
-  ff_f_d_ = VectorX<double>::Constant(kActSize, 1.);
-  ff_const_ = VectorX<double>::Zero(kActSize);
+  ff_f_d_ = VectorX<double>::Constant(num_act, 1.);
+  ff_const_ = VectorX<double>::Zero(num_act);
 }
 
 void AtlasJointLevelControllerSystem::DoCalcOutput(
