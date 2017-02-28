@@ -90,16 +90,16 @@ class SpatialVelocity {
     return *reinterpret_cast<Vector3<T>*>(V_.data());
   }
 
-  /// Const access to the linear component of this spatial velocity.
-  const Vector3<T>& linear() const {
+  /// Const access to the translational component of this spatial velocity.
+  const Vector3<T>& translational() const {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
     return *reinterpret_cast<const Vector3<T>*>(
         V_.data() + kRotationSize);
   }
 
-  /// Mutable access to the linear component of this spatial velocity.
-  Vector3<T>& linear() {
+  /// Mutable access to the translational component of this spatial velocity.
+  Vector3<T>& translational() {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
     return *reinterpret_cast<Vector3<T>*>(
@@ -122,7 +122,7 @@ class SpatialVelocity {
   /// using the fuzzy comparison provided by Eigen's method isApprox().
   bool IsApprox(const SpatialVelocity<T>& other,
                 double tolerance = Eigen::NumTraits<T>::epsilon()) {
-    return linear().isApprox(other.linear(), tolerance) &&
+    return translational().isApprox(other.translational(), tolerance) &&
            angular().isApprox(other.angular(), tolerance);
   }
 
@@ -140,7 +140,7 @@ class SpatialVelocity {
   /// `p_BQ_E` from the orgin of frame `B` to the origin of frame `Q` and
   /// expressed in the same frame `E`.
   ///
-  /// The operation performed, in vector free form, is: <pre>
+  /// The operation performed, in coordinate-free form, is: <pre>
   ///   w_AQ = w_AB,  i.e. the angular velocity of frame B and Q is the same.
   ///   v_AQ = v_AB + w_AB x p_BQ
   /// </pre>
@@ -160,7 +160,7 @@ class SpatialVelocity {
   /// @see Shift() to compute the shifted spatial velocity without modifying
   ///      this original object.
   SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_BQ_E) {
-    linear() += angular().cross(p_BQ_E);
+    translational() += angular().cross(p_BQ_E);
     return *this;
   }
 
@@ -181,11 +181,13 @@ class SpatialVelocity {
   }
 
   /// Multiplication of a spatial velocity `V` from the left by a scalar `s`.
+  /// @relates SpatialVelocity.
   friend SpatialVelocity<T> operator*(const T& s, const SpatialVelocity<T>& V) {
     return SpatialVelocity<T>(s * V.V_);
   }
 
   /// Multiplication of a spatial velocity `V` from the right by a scalar `s`.
+  /// @relates SpatialVelocity.
   friend SpatialVelocity<T> operator*(const SpatialVelocity<T>& V, const T& s) {
     return s * V;  // Multiplication by scalar is commutative.
   }

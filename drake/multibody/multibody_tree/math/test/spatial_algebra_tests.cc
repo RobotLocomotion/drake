@@ -37,7 +37,7 @@ GTEST_TEST(SpatialVelocity, ConstructionFromTwo3DVectors) {
   EXPECT_EQ(V_AB.size(), 6);
 
   // Comparison to Eigen::NumTraits<double>::epsilon() precision.
-  EXPECT_TRUE(V_AB.linear().isApprox(v_AB));
+  EXPECT_TRUE(V_AB.translational().isApprox(v_AB));
   EXPECT_TRUE(V_AB.angular().isApprox(w_AB));
 }
 
@@ -52,12 +52,12 @@ GTEST_TEST(SpatialVelocity, ConstructionFromAnEigenExpression) {
 
   // Verify the underlying Eigen vector matches the original vector.
   EXPECT_EQ(V1.angular(), v.segment<3>(0));
-  EXPECT_EQ(V1.linear(), v.segment<3>(3));
+  EXPECT_EQ(V1.translational(), v.segment<3>(3));
 
   // A spatial velocity instantiated from an Eigen block.
   SpatialVelocity<double> V2(v.segment<6>(0));
   EXPECT_EQ(V2.angular(), v.segment<3>(0));
-  EXPECT_EQ(V2.linear(), v.segment<3>(3));
+  EXPECT_EQ(V2.translational(), v.segment<3>(3));
 }
 
 class SpatialVelocityTest : public ::testing::Test {
@@ -99,7 +99,7 @@ TEST_F(SpatialVelocityTest, SpatialVelocityArrayAccessor) {
 // Tests the (mutable) access with operator[](int).
 TEST_F(SpatialVelocityTest, SpatialVelocityVectorComponentAccessors) {
   // They should be exactly equal, byte by byte.
-  EXPECT_EQ(V_XY_A_.linear(), v_XY_A_);
+  EXPECT_EQ(V_XY_A_.translational(), v_XY_A_);
   EXPECT_EQ(V_XY_A_.angular(), w_XY_A_);
 }
 
@@ -133,12 +133,12 @@ TEST_F(SpatialVelocityTest, IsApprox) {
 TEST_F(SpatialVelocityTest, ShiftOperation) {
   // Consider a vector from the origin of a frame Y to the origin of a frame Z,
   // expressed in a third frame A.
-  Vector3d p_YZ({2, -2, 0});
+  Vector3d p_YZ_A({2, -2, 0});
 
   // Consider now shifting the spatial velocity of a frame Y measured in frame
   // X to the spatial velocity of frame Z measured in frame X knowing that
   // frames Y and Z are rigidly attached to each other.
-  SpatialVelocity<double> V_XZ_A = V_XY_A_.Shift(p_YZ);
+  SpatialVelocity<double> V_XZ_A = V_XY_A_.Shift(p_YZ_A);
 
   // Verify the result.
   SpatialVelocity<double> expected_V_XZ_A(w_XY_A_, Vector3d(7, 8, 0));
@@ -161,11 +161,11 @@ TEST_F(SpatialVelocityTest, MulitplicationByAScalar) {
 
   // Verify the result using Eigen operations.
   EXPECT_EQ(sxV.angular(), scalar * V_XY_A_.angular());
-  EXPECT_EQ(sxV.linear(), scalar * V_XY_A_.linear());
+  EXPECT_EQ(sxV.translational(), scalar * V_XY_A_.translational());
 
   // Verify the multiplication by a scalar is commutative.
   EXPECT_EQ(sxV.angular(), Vxs.angular());
-  EXPECT_EQ(sxV.linear(), Vxs.linear());
+  EXPECT_EQ(sxV.translational(), Vxs.translational());
 }
 
 }  // namespace
