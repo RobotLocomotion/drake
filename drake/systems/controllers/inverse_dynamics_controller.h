@@ -75,7 +75,7 @@ class InverseDynamicsController : public ModelBasedController<T> {
   /**
    * Returns the input port for the reference acceleration.
    */
-  const InputPortDescriptor<T>& get_desired_acceleration_input_port() const {
+  const InputPortDescriptor<T>& get_input_port_desired_acceleration() const {
     DRAKE_DEMAND(!no_reference_acceleration_);
     return Diagram<T>::get_input_port(2);
   }

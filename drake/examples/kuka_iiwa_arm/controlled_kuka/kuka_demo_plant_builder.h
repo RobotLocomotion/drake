@@ -83,14 +83,14 @@ class KukaDemo : public systems::Diagram<T> {
 
     // Connects desired state to the controller.
     builder.Connect(input_mux->get_output_port(0),
-                    controller_->get_desired_state_input_port());
+                    controller_->get_input_port_desired_state());
 
     // Connects RBP state to the controller.
     builder.Connect(plant_->state_output_port(),
-                    controller_->get_estimated_state_input_port());
+                    controller_->get_input_port_estimated_state());
 
     // Connects controller's output to RBP.
-    builder.Connect(controller_->get_control_output_port(),
+    builder.Connect(controller_->get_output_port_control(),
                     plant_->actuator_command_input_port());
 
     // Creates a plan and wraps it into a source system.

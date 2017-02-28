@@ -88,12 +88,12 @@ class SimulatedKuka : public systems::Diagram<T> {
 
     // Connects plant and controller.
     builder.Connect(plant_->state_output_port(),
-                    controller_->get_estimated_state_input_port());
-    builder.Connect(controller_->get_control_output_port(),
+                    controller_->get_input_port_estimated_state());
+    builder.Connect(controller_->get_output_port_control(),
                     plant_->actuator_command_input_port());
 
     // Exposes desired state input port.
-    builder.ExportInput(controller_->get_desired_state_input_port());
+    builder.ExportInput(controller_->get_input_port_desired_state());
     builder.ExportOutput(plant_->state_output_port());
     builder.BuildInto(this);
   }
