@@ -236,11 +236,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
 
   // System<T> overrides.
-  /// Allocates the output ports. See this class' description for details of
-  /// these ports.
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override;
-
   bool has_any_direct_feedthrough() const override;
 
   /// Computes the force exerted by the stop when a joint hits its limit,
@@ -352,8 +347,18 @@ class RigidBodyPlant : public LeafSystem<T> {
 
  protected:
   // LeafSystem<T> overrides.
+
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
   std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const override;
+
+  /// Allocates the data for the abstract-valued output port specified by
+  /// @p descriptor.
+  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<T>& descriptor) const override;
+  /// Allocates the data for the vector-valued output port specified by
+  /// @p descriptor.
+  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
+      const OutputPortDescriptor<T>& descriptor) const override;
 
   // System<T> overrides.
 

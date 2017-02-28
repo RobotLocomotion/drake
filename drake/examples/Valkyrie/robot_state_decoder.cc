@@ -162,14 +162,10 @@ void RobotStateDecoder::DoCalcOutput(const Context<double>& context,
   tree_.doKinematics(kinematics_cache, true);
 }
 
-std::unique_ptr<SystemOutput<double>> RobotStateDecoder::AllocateOutput(
-    const Context<double>& context) const {
-  auto output = make_unique<LeafSystemOutput<double>>();
-  auto kinematics_cache =
-      std::make_unique<Value<KinematicsCache<double>>>(
-          tree_.CreateKinematicsCache());
-  output->add_port(move(kinematics_cache));
-  return unique_ptr<SystemOutput<double>>(output.release());
+std::unique_ptr<AbstractValue> RobotStateDecoder::AllocateOutputAbstract(
+    const OutputPortDescriptor<double>& output) const {
+  return std::make_unique<Value<KinematicsCache<double>>>(
+      tree_.CreateKinematicsCache());
 }
 
 std::map<std::string, const RigidBody<double>*>
