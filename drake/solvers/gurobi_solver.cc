@@ -450,8 +450,6 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   GRBenv* env = nullptr;
   GRBloadenv(&env, nullptr);
-  // Corresponds to no console or file logging.
-  GRBsetintparam(env, GRB_INT_PAR_OUTPUTFLAG, 0);
 
   DRAKE_ASSERT(prog.generic_costs().empty());
   DRAKE_ASSERT(prog.generic_constraints().empty());
@@ -560,6 +558,10 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // we just have to call GRBfreemodel(model).
   GRBenv* model_env = GRBgetenv(model);
   DRAKE_DEMAND(model_env);
+
+  // Corresponds to no console or file logging (this is the default, which 
+  // can be overridden by parameters set in the MathematicalProgram).
+  GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
 
   for (const auto it : prog.GetSolverOptionsDouble(SolverType::kGurobi)) {
     error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
