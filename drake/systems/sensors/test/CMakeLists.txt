@@ -31,7 +31,7 @@ if(VTK_FOUND)
         GTest::GTest
         GTest::Main
       )
-      add_test(
+      drake_add_test(
         NAME rgbd_camera_test
         COMMAND
           bash ${PROJECT_SOURCE_DIR}/systems/sensors/test/runtest_with_xvfb.sh
