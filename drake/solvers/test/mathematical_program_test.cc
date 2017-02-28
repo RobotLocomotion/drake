@@ -504,14 +504,14 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
                    Eigen::Vector2d(1, 2), num_generic_costs);
 }
 
-void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
-                                  const Expression& e) {
-  int num_linear_costs = prog->linear_costs().size();
-  const auto& binding = prog->AddLinearCost(e);
-  EXPECT_EQ(prog->linear_costs().size(), num_linear_costs + 1);
-  EXPECT_EQ(prog->linear_costs().back().constraint(), binding.constraint());
+void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog, const Expression& e, const Binding<Constraint>& binding, int num_linear_costs) {
+  EXPECT_EQ(prog.linear_costs().size(), num_linear_costs);
+  EXPECT_EQ(prog.linear_costs().back().constraint(), binding.constraint());
+  EXPECT_EQ(prog.linear_costs().back().variables(), binding.variables());
   EXPECT_EQ(binding.constraint()->num_constraints(), 1);
-  const Expression cx{(binding.constraint()->A() * binding.variables())(0)};
+  auto cnstr = prog.linear_costs().back().constraint();
+  auto vars = prog.linear_costs().back().variables();
+  const Expression cx{(cnstr->A() * vars)(0)};
   double constant_term{0};
   if (is_addition(e)) {
     constant_term = get_constant_in_addition(e);
@@ -519,6 +519,15 @@ void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
     constant_term = get_constant_value(e);
   }
   EXPECT_TRUE((e - cx).EqualTo(constant_term));
+}
+
+void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
+                                  const Expression& e) {
+  int num_linear_costs = prog->linear_costs().size();
+  auto binding1 = prog->AddLinearCost(e);
+  CheckAddedSymbolicLinearCostUserFun(*prog, e, binding1, ++num_linear_costs);
+  auto binding2 = prog->AddCost(e);
+  CheckAddedSymbolicLinearCostUserFun(*prog, e, binding2, ++num_linear_costs);
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
@@ -1338,21 +1347,26 @@ GTEST_TEST(testMathematicalProgram, AddQuadraticCost) {
   CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d(1, 2, 3), x);
 }
 
-void CheckAddedSymbolicQuadraticCost(MathematicalProgram* prog,
-                                     const Expression& e, double constant) {
-  int num_quadratic_cost = prog->quadratic_costs().size();
-  auto binding = prog->AddQuadraticCost(e);
+void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog, const Expression& e, double constant, const Binding<Constraint>& binding, int num_quadratic_cost) {
+  EXPECT_EQ(num_quadratic_cost, prog.quadratic_costs().size());
+  EXPECT_EQ(binding.constraint(), prog.quadratic_costs().back().constraint());
+  EXPECT_EQ(binding.variables(), prog.quadratic_costs().back().variables());
 
-  EXPECT_EQ(++num_quadratic_cost, prog->quadratic_costs().size());
-  EXPECT_EQ(binding.constraint(), prog->quadratic_costs().back().constraint());
-  EXPECT_EQ(binding.variables(), prog->quadratic_costs().back().variables());
-
+  auto cnstr = prog.quadratic_costs().back().constraint();
   // Check the added cost is 0.5 * x' * Q * x + b' * x
   const auto& x_bound = binding.variables();
   const Expression e_added =
-      0.5 * x_bound.dot(binding.constraint()->Q() * x_bound) +
-      binding.constraint()->b().dot(x_bound);
+      0.5 * x_bound.dot(cnstr->Q() * x_bound) + cnstr->b().dot(x_bound);
   EXPECT_PRED2(ExprEqual, e_added.Expand() + constant, e.Expand());
+}
+
+void CheckAddedSymbolicQuadraticCost(MathematicalProgram* prog,
+                                     const Expression& e, double constant) {
+  int num_quadratic_cost = prog->quadratic_costs().size();
+  auto binding1 = prog->AddQuadraticCost(e);
+  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding1, ++num_quadratic_cost);
+  auto binding2 = prog->AddCost(e);
+  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding2, ++num_quadratic_cost);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicQuadraticCost) {
@@ -1427,6 +1441,22 @@ GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
 
     x0 += Eigen::Vector2d::Constant(2);
   }
+}
+
+GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // Add a non-polynomial cost
+  EXPECT_THROW(prog.AddCost(sin(x(0))), std::runtime_error);
+
+  // Add a cubic cost
+  EXPECT_THROW(prog.AddCost(x(0) * x(0) * x(1)), std::runtime_error);
+
+  // Add a cost containing variable not included in the mathematical program.
+  symbolic::Variable y("y");
+  EXPECT_THROW(prog.AddCost(x(0) + y), std::runtime_error);
+  EXPECT_THROW(prog.AddCost(x(0) * x(0) + y), std::runtime_error);
 }
 }  // namespace test
 }  // namespace solvers
