@@ -1,0 +1,21 @@
+package drake;
+
+struct lcmt_inverse_dynamics_debug_info {
+  int64_t timestamp;
+
+  int32_t num_dof;
+
+  string dof_names[num_dof];
+
+  // Desired acceleration for each degree of freedom.
+  double desired_vd[num_dof];
+
+  // Computed acceleration for each degree of freedom.
+  double solved_vd[num_dof];
+
+  // Computed torque for each degree of freedom.
+  double solved_torque[num_dof];
+
+  // TODO(siyuan.feng): should also include things like desired vs solved body
+  // accelerations, centroidal momentum, cost / infeasible constraints etc.
+}
