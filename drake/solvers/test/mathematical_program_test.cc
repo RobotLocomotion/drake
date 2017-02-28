@@ -504,7 +504,10 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
                    Eigen::Vector2d(1, 2), num_generic_costs);
 }
 
-void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog, const Expression& e, const Binding<Constraint>& binding, int num_linear_costs) {
+void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
+                                         const Expression& e,
+                                         const Binding<Constraint>& binding,
+                                         int num_linear_costs) {
   EXPECT_EQ(prog.linear_costs().size(), num_linear_costs);
   EXPECT_EQ(prog.linear_costs().back().constraint(), binding.constraint());
   EXPECT_EQ(prog.linear_costs().back().variables(), binding.variables());
@@ -1347,7 +1350,11 @@ GTEST_TEST(testMathematicalProgram, AddQuadraticCost) {
   CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d(1, 2, 3), x);
 }
 
-void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog, const Expression& e, double constant, const Binding<Constraint>& binding, int num_quadratic_cost) {
+void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
+                                            const Expression& e,
+                                            double constant,
+                                            const Binding<Constraint>& binding,
+                                            int num_quadratic_cost) {
   EXPECT_EQ(num_quadratic_cost, prog.quadratic_costs().size());
   EXPECT_EQ(binding.constraint(), prog.quadratic_costs().back().constraint());
   EXPECT_EQ(binding.variables(), prog.quadratic_costs().back().variables());
@@ -1364,9 +1371,11 @@ void CheckAddedSymbolicQuadraticCost(MathematicalProgram* prog,
                                      const Expression& e, double constant) {
   int num_quadratic_cost = prog->quadratic_costs().size();
   auto binding1 = prog->AddQuadraticCost(e);
-  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding1, ++num_quadratic_cost);
+  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding1,
+                                         ++num_quadratic_cost);
   auto binding2 = prog->AddCost(e);
-  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding2, ++num_quadratic_cost);
+  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding2,
+                                         ++num_quadratic_cost);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicQuadraticCost) {
