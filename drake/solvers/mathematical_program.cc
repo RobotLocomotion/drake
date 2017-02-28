@@ -364,6 +364,13 @@ void MathematicalProgram::AddCost(const Binding<LinearConstraint>& binding) {
   DRAKE_ASSERT(binding.constraint()->num_constraints() == 1 &&
                binding.constraint()->A().cols() ==
                    static_cast<int>(binding.GetNumElements()));
+  for (int i = 0; i < binding.variables().size(); ++i) {
+    if (!IsDecisionVariable(VectorDecisionVariable<1>(binding.variables()(i)))) {
+      std::ostringstream oss;
+      oss << binding.variables()(i) << " is not a variable in the mathematical program.\n";
+      throw std::runtime_error(oss.str());
+    }
+  }
   linear_costs_.push_back(binding);
 }
 
@@ -378,7 +385,6 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
   VectorXDecisionVariable var(0);
   unordered_map<Variable::Id, int> map_var_to_index;
   ExtractVariablesFromExpression(e, &var, &map_var_to_index);
-  DRAKE_ASSERT(IsDecisionVariable(var));
   Eigen::RowVectorXd c(var.size());
   double constant_term;
   DecomposeLinearExpression(e, map_var_to_index, c, &constant_term);
@@ -405,6 +411,13 @@ void MathematicalProgram::AddCost(const Binding<QuadraticConstraint>& binding) {
                    static_cast<int>(binding.GetNumElements()) &&
                binding.constraint()->b().rows() ==
                    static_cast<int>(binding.GetNumElements()));
+  for (int i = 0; i < binding.variables().size(); ++i) {
+    if (!IsDecisionVariable(VectorDecisionVariable<1>(binding.variables()(i)))) {
+      std::ostringstream oss;
+      oss << binding.variables()(i) << " is not a variable of the mathematical program.\n";
+      throw std::runtime_error(oss.str());
+    }
+  }
   quadratic_costs_.push_back(binding);
 }
 
@@ -414,23 +427,13 @@ void MathematicalProgram::AddCost(
   AddCost(Binding<QuadraticConstraint>(obj, vars));
 }
 
-Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
-    const symbolic::Expression& e) {
-  // First build an Eigen vector, that contains all the bound variables.
-  const symbolic::Variables& vars = e.GetVariables();
-  VectorXDecisionVariable vars_vec(0);
-  unordered_map<Variable::Id, int> map_var_to_index;
-  ExtractVariablesFromExpression(e, &vars_vec, &map_var_to_index);
+Binding<QuadraticConstraint> AddQuadraticCostWithMonomialToCoeffMap(const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map, const VectorXDecisionVariable& vars_vec, const unordered_map<Variable::Id, int>& map_var_to_index, MathematicalProgram* prog) {
   // We want to write the expression e in the form 0.5 * x' * Q * x + b' * x + c
   // TODO(hongkai.dai): use a sparse matrix to represent Q and b.
-  Eigen::MatrixXd Q(vars.size(), vars.size());
-  Eigen::VectorXd b(vars.size());
+  Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
+  Eigen::VectorXd b(vars_vec.size());
   Q.setZero();
   b.setZero();
-  // Now decomposes the expression into coefficients and monomials.
-  const symbolic::MonomialToCoefficientMap&
-      monomial_to_coeff_map =
-          symbolic::DecomposePolynomialIntoMonomial(e, vars);
   for (const auto& p : monomial_to_coeff_map) {
     DRAKE_ASSERT(is_constant(p.second));
     const double coefficient = get_constant_value(p.second);
@@ -445,10 +448,10 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
     if (monomial_powers.size() == 2) {
       // cross terms.
       auto it = monomial_powers.begin();
-      const int x1_index = map_var_to_index[it->first];
+      const int x1_index = map_var_to_index.at(it->first);
       DRAKE_DEMAND(it->second == 1);
       ++it;
-      const int x2_index = map_var_to_index[it->first];
+      const int x2_index = map_var_to_index.at(it->first);
       DRAKE_DEMAND(it->second == 1);
       Q(x1_index, x2_index) += coefficient;
       Q(x2_index, x1_index) = Q(x1_index, x2_index);
@@ -458,7 +461,7 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
       // 2. linear term b*x
       // 3. constant term. We ignore the constant term in QuadraticConstraint.
       auto it = monomial_powers.begin();
-      const int x_index = map_var_to_index[it->first];
+      const int x_index = map_var_to_index.at(it->first);
       if (it->second == 2) {
         // quadratic term a * x^2
         Q(x_index, x_index) += 2 * coefficient;
@@ -473,8 +476,24 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
     }
   }
   // Now add the quadratic constraint 0.5 * x' * Q * x + b' * x
-  return Binding<QuadraticConstraint>(AddQuadraticCost(Q, b, vars_vec),
+  return Binding<QuadraticConstraint>(prog->AddQuadraticCost(Q, b, vars_vec),
                                       vars_vec);
+}
+
+Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
+    const symbolic::Expression& e) {
+  // First build an Eigen vector, that contains all the bound variables.
+  const symbolic::Variables& vars = e.GetVariables();
+  VectorXDecisionVariable vars_vec(0);
+  unordered_map<Variable::Id, int> map_var_to_index;
+  ExtractVariablesFromExpression(e, &vars_vec, &map_var_to_index);
+
+
+  // Now decomposes the expression into coefficients and monomials.
+  const symbolic::MonomialToCoefficientMap&
+      monomial_to_coeff_map =
+          symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  return AddQuadraticCostWithMonomialToCoeffMap(monomial_to_coeff_map, vars_vec, map_var_to_index, this);
 }
 
 std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticErrorCost(
@@ -499,9 +518,36 @@ std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
   return cost;
 }
 
-/*Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
+Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
+  if (!e.is_polynomial()) {
+    std::ostringstream oss;
+    oss << "Expression " << e << " is not a polynomial. Currently AddCost does not support non-polynomial expression.\n";
+    throw std::runtime_error(oss.str());
+  }
+  const symbolic::Variables& vars = e.GetVariables();
+  const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map =
+      symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  int total_degree = 0;
+  for (const auto& p : monomial_to_coeff_map) {
+    total_degree = std::max(total_degree, p.first.total_degree());
+  }
 
-}*/
+  VectorXDecisionVariable vars_vec(0);
+  unordered_map<Variable::Id, int> map_var_to_index;
+  ExtractVariablesFromExpression(e, &vars_vec, &map_var_to_index);
+
+  if (total_degree > 2) {
+    std::ostringstream oss;
+    oss << "Expression " << e << " has degree higher than 2. Currently AddCost only supports quadratic or linear expression.\n";
+    throw std::runtime_error(oss.str());
+  } else if (total_degree == 2) {
+    auto binding = AddQuadraticCostWithMonomialToCoeffMap(monomial_to_coeff_map, vars_vec, map_var_to_index, this);
+    return Binding<Constraint>(binding.constraint(), binding.variables());
+  } else {
+    auto binding = AddLinearCost(e);
+    return Binding<Constraint>(binding.constraint(), binding.variables());
+  }
+}
 
 void MathematicalProgram::AddConstraint(const Binding<Constraint>& binding) {
   required_capabilities_ |= kGenericConstraint;
