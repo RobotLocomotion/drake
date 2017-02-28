@@ -25,7 +25,7 @@ class PiecewisePolynomialTrajectory : public Trajectory {
   /**
    * Evaluate this PiecewisePolynomial at a particular time.
    * @param t The time to evaluate.
-   * @return a CoefficientMatrix that is the value of the wrapped
+   * @return a Matrix that is the value of the wrapped
    * PiecewisePolynomial.
    */
   drake::MatrixX<double> value(double t) const override {
