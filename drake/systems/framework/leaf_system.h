@@ -515,11 +515,13 @@ class LeafSystem : public System<T> {
   /// Returns a SparsityMatrix for this system, or nullptr if a SparsityMatrix
   /// cannot be constructed because this System has no symbolic representation.
   std::unique_ptr<SparsityMatrix> MakeSparsityMatrix() const {
-    auto symbolic_system = this->DoToSymbolic();
-    if (symbolic_system == nullptr) {
+    std::unique_ptr<System<symbolic::Expression>> symbolic_system =
+        this->ToSymbolic();
+    if (symbolic_system) {
+      return std::make_unique<SparsityMatrix>(*symbolic_system);
+    } else {
       return nullptr;
     }
-    return std::make_unique<SparsityMatrix>(*symbolic_system);
   }
 
   // Periodic Update or Publish events registered on this system.
