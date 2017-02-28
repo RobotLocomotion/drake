@@ -13,6 +13,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
@@ -22,8 +23,8 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -61,6 +62,7 @@ using systems::Simulator;
 const char* const kIiwaUrdf =
     "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
 
+// TODO(naveen): refactor this to reduce duplicate code.
 template <typename T>
 std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
     ModelInstanceInfo<T>* iiwa_instance, ModelInstanceInfo<T>* wsg_instance,
@@ -149,23 +151,14 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     const auto& wsg_output_port =
         plant_->model_instance_state_output_port(wsg_info.instance_id);
 
-    // Connect the pid controllers for each device.
-
-    // Constants are chosen by trial and error to qualitatively match
-    // an experimental run with the same initial conditions and
-    // planner.  It's still not a very good match.  Quantitative
-    // comparisons would require torque control and a more careful
-    // estimation of the model parameters such as friction in the
-    // joints.
-    Eigen::VectorXd iiwa_kp = Eigen::VectorXd::Zero(7);
-    Eigen::VectorXd iiwa_kd = Eigen::VectorXd::Zero(7);
-    Eigen::VectorXd iiwa_ki = Eigen::VectorXd::Zero(7);
-    iiwa_kp << 100, 100, 100, 100, 100, 100, 100;
+    VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+    SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+    // Have a bit of inertia gains to deal with the added mass from the grasped
+    // object.
     iiwa_ki << 1, 1, 1, 1, 1, 1, 1;
-    for (int i = 0; i < iiwa_kp.size(); i++) {
-      iiwa_kd[i] = 2 * std::sqrt(iiwa_kp[i]);
-    }
 
+    // Exposing feedforward acceleration. Should help with more dynamic
+    // motions.
     auto iiwa_controller =
         builder.template AddSystem<systems::InverseDynamicsController<T>>(
             iiwa_info.model_path, iiwa_info.world_offset, iiwa_kp, iiwa_ki,
@@ -350,6 +343,8 @@ int DoMain() {
   iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
 
+  // TODO(siyuan): Connect this to kuka_planner runner once it generates
+  // reference acceleration.
   auto iiwa_zero_acceleration_source =
         builder.template AddSystem<systems::ConstantVectorSource<double>>(
             Eigen::VectorXd::Zero(7));
