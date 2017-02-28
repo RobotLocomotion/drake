@@ -18,8 +18,22 @@ if(BUILD_TESTING)
 endif()
 
 if(VTK_FOUND)
-  drake_add_cc_test(rgbd_camera_test)
-  target_link_libraries(rgbd_camera_test drakeSensors)
+  if(Bullet_FOUND)
+    # Building a manual test executable for RgbdCamera until we have CI that
+    # runs Xvfb server.  #5210 and #5227 are the related issues.
+    # TODO(kunimatsu-tri) Replace this with an appropriate unit test once CI
+    # had Xvfb.
+    add_executable(rgbd_camera_test rgbd_camera_test.cc)
+    target_link_libraries(rgbd_camera_test
+      drakeCollision
+      drakeMultibodyParsers
+      drakeRigidBodyPlant
+      drakeSensors
+      drakeSystemAnalysis
+      GTest::GTest
+      GTest::Main)
+  endif()
+
   drake_add_cc_test(vtk_util_test)
   target_link_libraries(vtk_util_test drakeSensors)
 endif()
