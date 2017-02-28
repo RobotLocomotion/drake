@@ -70,13 +70,8 @@ class KukaDemo : public systems::Diagram<T> {
             GetDrakePath() + kUrdfPath, nullptr, kp, ki, kd,
             true /* no feedforward acceleration */);
 
-    // The iiwa's control protocol doesn't have any way to express the
-    // desired velocity for the arm, so this simulation doesn't take
-    // target velocities as an input.  The PidControlledSystem does
-    // want target velocities to calculate the D term.  Since we don't
-    // have any logic to calculate the desired target velocity (yet!)
-    // set the D term (to stabilize the arm near the commanded
-    // position) and feed a desired velocity vector of zero.
+    // TODO(siyuan): should be able to easily compute derivatives once
+    // #5215 is in.
     auto zero_source =
         builder.template AddSystem<systems::ConstantVectorSource<T>>(
             Eigen::VectorXd::Zero(plant_->get_num_velocities()));

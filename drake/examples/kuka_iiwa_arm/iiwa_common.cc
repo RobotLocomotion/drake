@@ -167,14 +167,15 @@ void CreateTreedFromFixedModelAtPose(const std::string& model_file_name,
 void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd) {
+  // All the gains are for acceleration, not directly responsible for generating
+  // torques. These are set to high values to ensure good tracking. These gains
+  // are picked arbitrarily.
   Kp->resize(7);
   *Kp << 100, 100, 100, 100, 100, 100, 100;
   Kd->resize(Kp->size());
   for (int i = 0; i < Kp->size(); i++) {
-    // Derivative gains are computed as the square-root of the corresponding
-    // position gains as a reasonable approximation of critically damped
-    // behaviour.
-    (*Kd)[i] = std::sqrt((*Kp)[i]);
+    // Critical damping gains.
+    (*Kd)[i] = 2 * std::sqrt((*Kp)[i]);
   }
   *Ki = Eigen::VectorXd::Zero(7);
 }
