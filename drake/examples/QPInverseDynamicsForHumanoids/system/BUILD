@@ -5,9 +5,9 @@ load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_binary", "drake_cc_googletest", "drake_cc_library")
 
 drake_cc_library(
-    name = "robot_state_decoder_system",
-    srcs = ["robot_state_decoder_system.cc"],
-    hdrs = ["robot_state_decoder_system.h"],
+    name = "humanoid_status_translator_system",
+    srcs = ["humanoid_status_translator_system.cc"],
+    hdrs = ["humanoid_status_translator_system.h"],
     deps = [
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
         "//drake/examples/QPInverseDynamicsForHumanoids:lcm_utils",
@@ -71,7 +71,7 @@ drake_cc_binary(
         ":joint_level_controller_system",
         ":plan_eval_system",
         ":qp_controller_system",
-        ":robot_state_decoder_system",
+        ":humanoid_status_translator_system",
         "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/lcm",
         "//drake/multibody/parsers",
