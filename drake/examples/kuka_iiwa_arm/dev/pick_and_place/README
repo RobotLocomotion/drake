@@ -1,0 +1,8 @@
+To run the demo, start three terminals from drake's home directory. (bazel build)
+
+tty1:
+$ ./bazel-bin/drake/examples/kuka_iiwa_arm/iiwa_wsg_simulation
+tty2:
+$ ./bazel-bin/drake/examples/kuka_iiwa_arm/kuka_plan_runner
+tty3:
+$ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_state_machine
