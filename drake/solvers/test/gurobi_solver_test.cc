@@ -25,6 +25,34 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
+
+TEST_F(InfeasibleLinearProgramTest0, TestGurobiInfeasible) {
+  GurobiSolver solver;
+  if (solver.available()) {
+    // With dual reductions, gurobi may not be able to differentiate between
+    // infeasible and unbounded.
+    prog_->SetSolverOption(SolverType::kGurobi, "DualReductions", 1);
+    SolutionResult result = solver.Solve(*prog_);
+    EXPECT_EQ(result, SolutionResult::kInfeasible_Or_Unbounded);
+    prog_->SetSolverOption(SolverType::kGurobi, "DualReductions", 0);
+    result = solver.Solve(*prog_);
+    EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
+  }
+}
+
+TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
+  GurobiSolver solver;
+  if (solver.available()) {
+    // With dual reductions, gurobi may not be able to differentiate between
+    // infeasible and unbounded.
+    prog_->SetSolverOption(SolverType::kGurobi, "DualReductions", 1);
+    SolutionResult result = solver.Solve(*prog_);
+    EXPECT_EQ(result, SolutionResult::kInfeasible_Or_Unbounded);
+    prog_->SetSolverOption(SolverType::kGurobi, "DualReductions", 0);
+    result = solver.Solve(*prog_);
+    EXPECT_EQ(result, SolutionResult::kUnbounded);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

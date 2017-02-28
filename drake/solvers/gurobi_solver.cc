@@ -559,7 +559,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   GRBenv* model_env = GRBgetenv(model);
   DRAKE_DEMAND(model_env);
 
-  // Corresponds to no console or file logging (this is the default, which 
+  // Corresponds to no console or file logging (this is the default, which
   // can be overridden by parameters set in the MathematicalProgram).
   GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
 
@@ -589,8 +589,19 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
     if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
-      if (optimstatus == GRB_INF_OR_UNBD || optimstatus == GRB_INFEASIBLE) {
-        result = SolutionResult::kInfeasibleConstraints;
+      switch (optimstatus) {
+        case GRB_INF_OR_UNBD : {
+          result = SolutionResult::kInfeasible_Or_Unbounded;
+          break;
+        }
+        case GRB_UNBOUNDED : {
+          result = SolutionResult::kUnbounded;
+          break;
+        }
+        case GRB_INFEASIBLE : {
+          result = SolutionResult::kInfeasibleConstraints;
+          break;
+        }
       }
     } else {
       result = SolutionResult::kSolutionFound;

@@ -639,6 +639,34 @@ class LinearProgramTest
   std::unique_ptr<LinearProgram> prob_;
 };
 
+/**
+ * An infeasible linear program.
+ * max x0 + x1
+ * s.t x0 + 2 * x1 <= 3;
+ *     2 * x0 + x1 == 4
+ *     x0 >= 0, x1 >= 2
+ */
+class InfeasibleLinearProgramTest0 : public ::testing::Test {
+ public:
+  InfeasibleLinearProgramTest0();
+
+ protected:
+  std::unique_ptr<MathematicalProgram> prog_;
+};
+
+/**
+ * An unbounded linear program.
+ * max x0 + x1
+ * s.t 2 * x0 + x1 >= 4
+ *     x0 >= 0, x1 >= 2
+ */
+class UnboundedLinearProgramTest0 : public ::testing::Test {
+ public:
+  UnboundedLinearProgramTest0();
+
+ protected:
+  std::unique_ptr<MathematicalProgram> prog_;
+};
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
