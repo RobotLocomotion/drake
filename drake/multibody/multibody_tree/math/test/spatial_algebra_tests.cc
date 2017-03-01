@@ -19,6 +19,7 @@ namespace {
 template <class SpatialQuantityUnderTest>
 class SpatialQuantityTest : public ::testing::Test {
  public:
+  // Useful typedefs when witting unit tests to access types.
   typedef SpatialQuantityUnderTest SpatialQuantityType;
   typedef typename internal::spatial_vector_traits<
       SpatialQuantityType>::ScalarType ScalarType;
@@ -37,6 +38,7 @@ class SpatialQuantityTest : public ::testing::Test {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
+// Create a list of SpatialVector types to be tested.
 typedef ::testing::Types<
     SpatialVelocity<double>, SpatialForce<double>,
     SpatialVelocity<AutoDiffXd>, SpatialForce<AutoDiffXd>> SpatialQuantityTypes;
@@ -57,14 +59,14 @@ TYPED_TEST(SpatialQuantityTest, ConstructionFromAnEigenExpression) {
   Vector6<T> v;
   v << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
 
-  // A spatial velocity instantiated from an Eigen vector.
+  // A spatial quantity instantiated from an Eigen vector.
   SpatialQuantity V1(v);
 
   // Verify the underlying Eigen vector matches the original vector.
   EXPECT_EQ(V1.rotational(), v.template segment<3>(0));
   EXPECT_EQ(V1.translational(), v.template segment<3>(3));
 
-  // A spatial velocity instantiated from an Eigen block.
+  // A spatial quantity instantiated from an Eigen block.
   SpatialQuantity V2(v.template segment<6>(0));
   EXPECT_EQ(V2.rotational(), v.template segment<3>(0));
   EXPECT_EQ(V2.translational(), v.template segment<3>(3));
@@ -163,28 +165,6 @@ TYPED_TEST(SpatialQuantityTest, IsApprox) {
   EXPECT_FALSE(V_XY_A.IsApprox(other, precision));
 }
 
-// Tests the shifting of a spatial velocity between two moving frames rigidly
-// attached to each other.
-TYPED_TEST(SpatialQuantityTest, ShiftOperation) {
-  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
-  typedef typename TestFixture::ScalarType T;
-  const SpatialQuantity& V_XY_A = this->V_XY_A_;
-  const Vector3<T>& w_XY_A = this->w_XY_A_;
-
-  // Consider a vector from the origin of a frame Y to the origin of a frame Z,
-  // expressed in a third frame A.
-  Vector3<T> p_YZ_A({2, -2, 0});
-
-  // Consider now shifting the spatial velocity of a frame Y measured in frame
-  // X to the spatial velocity of frame Z measured in frame X knowing that
-  // frames Y and Z are rigidly attached to each other.
-  SpatialQuantity V_XZ_A = V_XY_A.Shift(p_YZ_A);
-
-  // Verify the result.
-  SpatialQuantity expected_V_XZ_A(w_XY_A, Vector3<T>(7, 8, 0));
-  EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
-}
-
 // Test the stream insertion operator to write into a stream.
 TYPED_TEST(SpatialQuantityTest, ShiftOperatorIntoStream) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
@@ -213,6 +193,53 @@ TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
   // Verify the multiplication by a scalar is commutative.
   EXPECT_EQ(sxV.rotational(), Vxs.rotational());
   EXPECT_EQ(sxV.translational(), Vxs.translational());
+}
+
+// SpatialVelocity specific unit tests.
+template <typename T>
+class SpatialVelocityTest : public ::testing::Test {
+ public:
+  // Useful typedefs when witting unit tests to access types.
+  typedef T ScalarType;
+ protected:
+  // Linear velocity of a Frame Y, measured in Frame X, and expressed in a third
+  // frame A.
+  Vector3<ScalarType> v_XY_A_{1, 2, 0};
+
+  // Angular velocity of a frame Y measured in X and expressed in A.
+  Vector3<ScalarType> w_XY_A_{0, 0, 3};
+
+  // Spatial velocity of a frame Y measured in X and expressed in A.
+  SpatialVelocity<ScalarType> V_XY_A_{w_XY_A_, v_XY_A_};
+
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+// Create a list of scalar types for specific tests on different spatial
+// quantities.
+typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
+TYPED_TEST_CASE(SpatialVelocityTest, ScalarTypes);
+
+// Tests the shifting of a spatial velocity between two moving frames rigidly
+// attached to each other.
+TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
+  typedef typename TestFixture::ScalarType T;
+  const SpatialVelocity<T>& V_XY_A = this->V_XY_A_;
+  const Vector3<T>& w_XY_A = this->w_XY_A_;
+
+  // Consider a vector from the origin of a frame Y to the origin of a frame Z,
+  // expressed in a third frame A.
+  Vector3<T> p_YZ_A(2., -2., 0.);
+
+  // Consider now shifting the spatial velocity of a frame Y measured in frame
+  // X to the spatial velocity of frame Z measured in frame X knowing that
+  // frames Y and Z are rigidly attached to each other.
+  SpatialVelocity<T> V_XZ_A = V_XY_A.Shift(p_YZ_A);
+
+  // Verify the result.
+  SpatialVelocity<T> expected_V_XZ_A(w_XY_A, Vector3<T>(7, 8, 0));
+  EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
 }
 
 }  // namespace
