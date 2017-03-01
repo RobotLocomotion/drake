@@ -4,7 +4,6 @@
 #include <utility>
 
 #include "drake/systems/controllers/inverse_dynamics.h"
-#include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -42,7 +41,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
   */
 
   // Adds a PID.
-  auto pid = builder.template AddSystem<PidController<T>>(kp, ki, kd);
+  pid_ = builder.template AddSystem<PidController<T>>(kp, ki, kd);
 
   // Adds inverse dynamics.
   auto inverse_dynamics =
@@ -56,14 +55,14 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
 
   // Connects estimated state to PID.
   builder.Connect(pass_through->get_output_port(),
-                  pid->get_input_port_estimated_state());
+                  pid_->get_input_port_estimated_state());
 
   // Connects estimated state to inverse dynamics.
   builder.Connect(pass_through->get_output_port(),
                   inverse_dynamics->get_input_port_estimated_state());
 
   // Adds PID's output with reference acceleration
-  builder.Connect(pid->get_output_port_control(), adder->get_input_port(0));
+  builder.Connect(pid_->get_output_port_control(), adder->get_input_port(0));
 
   // Connects desired acceleration to inverse dynamics
   builder.Connect(adder->get_output_port(),
@@ -73,7 +72,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
   builder.ExportInput(pass_through->get_input_port());
 
   // Exposes reference state input port.
-  builder.ExportInput(pid->get_input_port_desired_state());
+  builder.ExportInput(pid_->get_input_port_desired_state());
 
   if (!has_reference_acceleration_) {
     // Uses a zero constant source for reference acceleration.
@@ -91,6 +90,14 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
   builder.ExportOutput(inverse_dynamics->get_output_port_torque());
 
   builder.BuildInto(this);
+}
+
+template <typename T>
+void InverseDynamicsController<T>::set_integral_value(
+    Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
+  Context<T>* pid_context =
+      Diagram<T>::GetMutableSubsystemContext(context, pid_);
+  pid_->set_integral_value(pid_context, value);
 }
 
 template <typename T>

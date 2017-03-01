@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/controllers/model_based_controller_base.h"
+#include "drake/systems/controllers/pid_controller.h"
 
 namespace drake {
 namespace systems {
@@ -86,6 +87,13 @@ class InverseDynamicsController : public ModelBasedController<T> {
                             bool has_reference_acceleration);
 
   /**
+   * Sets the integral part of the PidController to @p value.
+   * @p value must be a column vector of the appropriate size.
+   */
+  void set_integral_value(Context<T>* context,
+                          const Eigen::Ref<const VectorX<T>>& value) const;
+
+  /**
    * Returns the input port for the reference acceleration.
    */
   const InputPortDescriptor<T>& get_input_port_desired_acceleration() const {
@@ -96,6 +104,7 @@ class InverseDynamicsController : public ModelBasedController<T> {
  private:
   void SetUp(const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
 
+  PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
 };
 

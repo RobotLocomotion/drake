@@ -37,24 +37,19 @@ VectorX<double> ComputeTorque(const RigidBodyTree<double>& tree,
 // Tests the computed torque from InverseDynamicsController matches hand
 // derived results for the kuka iiwa arm at a given state (q, v), when
 // asked to track reference state (q_r, v_r) and reference acceleration (vd_r).
-// TODO(siyuan): this test does not currently test for non zero integrated
-// position error because of some API restriction. Need to test that once
-// accessing the integrator state is exposed in the API.
 GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
   auto robot = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() +
-      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
+          "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       robot.get());
   const int dim = robot->get_num_positions();
 
   // Sets pid gains.
-  // TODO(siyuan): test for non zero integral. Can't easily test it now because
-  // the integrator's API doesn't expose it's state.
   VectorX<double> kp(dim), ki(dim), kd(dim);
   kp << 1, 2, 3, 4, 5, 6, 7;
-  ki << 0, 0, 0, 0, 0, 0, 0;
+  ki << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
   kd = kp / 2.;
 
   auto dut = std::make_unique<InverseDynamicsController<double>>(*robot, kp, ki,
@@ -91,12 +86,18 @@ GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
   context->FixInputPort(dut->get_input_port_desired_acceleration().get_index(),
                         std::move(reference_acceleration_input));
 
+  // Sets integrated position error.
+  VectorX<double> q_int(dim);
+  q_int << -1, -2, -3, -4, -5, -6, -7;
+  dut->set_integral_value(context.get(), q_int);
+
   // Computes output.
   dut->CalcOutput(*context, output.get());
 
   // The results should equal to this.
-  VectorX<double> vd_d = vd_r + (kp.array() * (q_r - q).array()).matrix() +
-                         (kd.array() * (v_r - v).array()).matrix();
+  VectorX<double> vd_d = (kp.array() * (q_r - q).array()).matrix() +
+                         (kd.array() * (v_r - v).array()).matrix() +
+                         (ki.array() * q_int.array()).matrix() + vd_r;
 
   VectorX<double> expected_torque = ComputeTorque(*robot, q, v, vd_d);
 
