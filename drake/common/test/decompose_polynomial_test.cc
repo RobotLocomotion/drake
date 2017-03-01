@@ -375,6 +375,23 @@ TEST_F(DecomposePolynomialTest, DISABLED_DecomposePolynomial13) {
   CheckMonomialToCoeffMap(e, var_xy_, map_expected3);
 }
 
+TEST_F(DecomposePolynomialTest, DecomposePolynomial14) {
+  // Test the polynomial that some terms has zero coefficient.
+  Expression e = 1 + x_ * x_ + 2 * (y_ - 0.5 * x_ * x_ - 0.5);
+
+  MonomialAsExpressionToCoefficientMap map_expected1{{y_, 2}};
+  CheckMonomialToCoeffMap(e, {var_x_, var_y_}, map_expected1);
+
+  // Checks e = x^2 * y - (x+1) * (x-1) * y = y
+  e = x_ * x_ * y_  - (x_ + 1) * (x_ - 1) * y_;
+  CheckMonomialToCoeffMap(e, {var_y_}, {{y_, 1}});
+  CheckMonomialToCoeffMap(e, {var_x_}, {{1, y_}});
+
+  // Checks e = x*y - 2 * x * (0.5 * y + 1) = -2*x
+  e = x_ * y_ - 2 * x_ * (0.5 * y_ + 1);
+  CheckMonomialToCoeffMap(e, {var_x_}, {{x_, -2}});
+  CheckMonomialToCoeffMap(e, {var_y_}, {{1, -2 * x_}});
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

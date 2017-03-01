@@ -397,7 +397,30 @@ class DecomposePolynomialVisitor {
 MonomialToCoefficientMap DecomposePolynomialIntoMonomial(
     const Expression &e, const Variables &vars) {
   DRAKE_DEMAND(e.is_polynomial());
-  return DecomposePolynomialVisitor().Visit(e, vars);
+  MonomialToCoefficientMap map = DecomposePolynomialVisitor().Visit(e, vars);
+  // Now loops through the map to remove the term with zero coefficient.
+  for (auto it = map.begin(); it != map.end(); ) {
+    bool is_zero_term = false;
+    if (is_constant(it->second) && is_zero(it->second)) {
+      is_zero_term = true;
+    } else if (it->second.is_polynomial()) {
+      // If the coefficient it->second is a polynomial, then determine if it
+      // is a zero polynomial, by decomposing it->second into monomials,
+      // and check if the constant coefficient for each term is zero.
+      MonomialToCoefficientMap coeff_map = DecomposePolynomialVisitor().Visit(
+          it->second, it->second.GetVariables());
+      for (const auto& p : coeff_map) {
+        DRAKE_DEMAND(is_constant(p.second));
+        is_zero_term &= is_zero(p.second);
+      }
+    }
+    if (is_zero_term) {
+      it = map.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  return map;
 }
 
 class DegreeVisitor {
