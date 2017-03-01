@@ -21,7 +21,7 @@ typedef T ScalarType;
 }
 
 /// This class is used to represent physical quantities that correspond to
-/// spatial velocities. Spatial velocities are 6-element quantities that are
+/// spatial forces. spatial forces are 6-element quantities that are
 /// pairs of ordinary 3-vectors. Elements 0-2 are always the angular velocity
 /// while elements 3-5 are the linear velocity.
 /// For a more detailed introduction on spatial vectors please refer to
@@ -44,8 +44,7 @@ class SpatialForce : public SpatialVector<SpatialForce<T>> {
   /// allowing fast bug detection.
   SpatialForce() : Base() {}
 
-  /// SpatialForce constructor from an angular velocity @p w and a linear
-  /// velocity @p v.
+  /// SpatialForce constructor from a torque @p τ and a force @p f.
   SpatialForce(const Eigen::Ref<const Vector3<T>>& w,
                const Eigen::Ref<const Vector3<T>>& v) : Base(w, v) {}
 

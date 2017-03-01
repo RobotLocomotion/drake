@@ -24,18 +24,15 @@ class SpatialQuantityTest : public ::testing::Test {
   typedef typename internal::spatial_vector_traits<
       SpatialQuantityType>::ScalarType ScalarType;
  protected:
-  // Linear velocity of a Frame Y, measured in Frame X, and expressed in a third
-  // frame A.
-  Vector3<ScalarType> v_XY_A_{1, 2, 0};
+  // A translational component ∈ ℝ³.
+  Vector3<ScalarType> v_{1, 2, 0};
 
-  // Angular velocity of a frame Y measured in X and expressed in A.
-  Vector3<ScalarType> w_XY_A_{0, 0, 3};
+  // A rotational component ∈ ℝ³.
+  Vector3<ScalarType> w_{0, 0, 3};
 
-  // Spatial velocity of a frame Y measured in X and expressed in A.
-  SpatialQuantityType V_XY_A_{w_XY_A_, v_XY_A_};
-
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  // A spatial quantity related to the above rotational and translational
+  // components.
+  SpatialQuantityType V_{w_, v_};
 };
 
 // Create a list of SpatialVector types to be tested.
@@ -77,13 +74,14 @@ TYPED_TEST(SpatialQuantityTest, ConstructionFromTwo3DVectors) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
   typedef typename TestFixture::ScalarType T;
 
-  // Linear velocity of frame B measured and expressed in frame A.
+  // A translational component ∈ ℝ³.
   Vector3<T> v_AB(1, 2, 0);
 
-  // Angular velocity of frame B measured and expressed in frame A.
+  // An rotational component ∈ ℝ³.
   Vector3<T> w_AB(0, 0, 3);
 
-  // Spatial velocity of frame B with respect to A and expressed in A.
+  // A spatial quantity related to the above rotational and translational
+  // components.
   SpatialQuantity V_AB(w_AB, v_AB);
 
   // Verify compile-time size.
@@ -97,98 +95,98 @@ TYPED_TEST(SpatialQuantityTest, ConstructionFromTwo3DVectors) {
 // Tests array accessors.
 TYPED_TEST(SpatialQuantityTest, SpatialVelocityArrayAccessor) {
   typedef TypeParam SpatialQuantity;
-  SpatialQuantity& V_XY_A = this->V_XY_A_;
+  SpatialQuantity& V = this->V_;
 
   // Mutable access.
-  V_XY_A[0] = 1.0;
-  V_XY_A[1] = 2.0;
-  V_XY_A[2] = 3.0;
-  V_XY_A[3] = 4.0;
-  V_XY_A[4] = 5.0;
-  V_XY_A[5] = 6.0;
+  V[0] = 1.0;
+  V[1] = 2.0;
+  V[2] = 3.0;
+  V[3] = 4.0;
+  V[4] = 5.0;
+  V[5] = 6.0;
 
   // Const access.
-  const auto& V = V_XY_A;
-  EXPECT_EQ(V[0], 1.0);
-  EXPECT_EQ(V[1], 2.0);
-  EXPECT_EQ(V[2], 3.0);
-  EXPECT_EQ(V[3], 4.0);
-  EXPECT_EQ(V[4], 5.0);
-  EXPECT_EQ(V[5], 6.0);
+  const auto& constV = V;
+  EXPECT_EQ(constV[0], 1.0);
+  EXPECT_EQ(constV[1], 2.0);
+  EXPECT_EQ(constV[2], 3.0);
+  EXPECT_EQ(constV[3], 4.0);
+  EXPECT_EQ(constV[4], 5.0);
+  EXPECT_EQ(constV[5], 6.0);
 }
 
 // Tests the (mutable) access with operator[](int).
 TYPED_TEST(SpatialQuantityTest, SpatialVelocityVectorComponentAccessors) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
   typedef typename TestFixture::ScalarType T;
-  const SpatialQuantity& V_XY_A = this->V_XY_A_;
-  const Vector3<T>& v_XY_A = this->v_XY_A_;
-  const Vector3<T>& w_XY_A = this->w_XY_A_;
+  const SpatialQuantity& V = this->V_;
+  const Vector3<T>& v = this->v_;
+  const Vector3<T>& w = this->w_;
 
   // They should be exactly equal, byte by byte.
-  EXPECT_EQ(V_XY_A.translational(), v_XY_A);
-  EXPECT_EQ(V_XY_A.rotational(), w_XY_A);
+  EXPECT_EQ(V.translational(), v);
+  EXPECT_EQ(V.rotational(), w);
 }
 
 // Tests access to the raw data pointer.
 TYPED_TEST(SpatialQuantityTest, RawDataAccessors) {
   typedef TypeParam SpatialQuantity;
   typedef typename TestFixture::ScalarType T;
-  SpatialQuantity& V_XY_A = this->V_XY_A_;
+  SpatialQuantity& V = this->V_;
 
   // Mutable access.
-  T* mutable_data = V_XY_A.mutable_data();
+  T* mutable_data = V.mutable_data();
   for (int i = 0; i < 6; ++i) mutable_data[i] = i;
 
   // Const access.
-  const T* const_data = V_XY_A.data();
-  EXPECT_EQ(V_XY_A[0], const_data[0]);
-  EXPECT_EQ(V_XY_A[1], const_data[1]);
-  EXPECT_EQ(V_XY_A[2], const_data[2]);
-  EXPECT_EQ(V_XY_A[3], const_data[3]);
-  EXPECT_EQ(V_XY_A[4], const_data[4]);
-  EXPECT_EQ(V_XY_A[5], const_data[5]);
+  const T* const_data = V.data();
+  EXPECT_EQ(V[0], const_data[0]);
+  EXPECT_EQ(V[1], const_data[1]);
+  EXPECT_EQ(V[2], const_data[2]);
+  EXPECT_EQ(V[3], const_data[3]);
+  EXPECT_EQ(V[4], const_data[4]);
+  EXPECT_EQ(V[5], const_data[5]);
 }
 
 // Tests comparison to a given precision.
 TYPED_TEST(SpatialQuantityTest, IsApprox) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
   typedef typename TestFixture::ScalarType T;
-  const SpatialQuantity& V_XY_A = this->V_XY_A_;
-  const Vector3<T>& v_XY_A = this->v_XY_A_;
-  const Vector3<T>& w_XY_A = this->w_XY_A_;
+  const SpatialQuantity& V = this->V_;
+  const Vector3<T>& v = this->v_;
+  const Vector3<T>& w = this->w_;
 
   const double precision = 1.0e-10;
   SpatialQuantity other(
-      (1.0 + precision) * w_XY_A, (1.0 + precision) * v_XY_A);
-  EXPECT_TRUE(V_XY_A.IsApprox(other, (1.0 + 1.0e-7) * precision));
-  EXPECT_FALSE(V_XY_A.IsApprox(other, precision));
+      (1.0 + precision) * w, (1.0 + precision) * v);
+  EXPECT_TRUE(V.IsApprox(other, (1.0 + 1.0e-7) * precision));
+  EXPECT_FALSE(V.IsApprox(other, precision));
 }
 
 // Test the stream insertion operator to write into a stream.
 TYPED_TEST(SpatialQuantityTest, ShiftOperatorIntoStream) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
-  const SpatialQuantity& V_XY_A = this->V_XY_A_;
+  const SpatialQuantity& V = this->V_;
 
   std::stringstream stream;
-  stream << V_XY_A;
+  stream << V;
   std::string expected_string = "[0, 0, 3, 1, 2, 0]ᵀ";
   EXPECT_EQ(expected_string, stream.str());
 }
 
-// Test the multiplication of a spatial velocity by a scalar.
+// Test the multiplication of a spatial quantity by a scalar.
 TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
   typedef typename TestFixture::ScalarType T;
-  const SpatialQuantity& V_XY_A = this->V_XY_A_;
+  const SpatialQuantity& V = this->V_;
 
   const T scalar = 3.0;
-  SpatialQuantity sxV = scalar * V_XY_A;
-  SpatialQuantity Vxs = V_XY_A * scalar;
+  SpatialQuantity sxV = scalar * V;
+  SpatialQuantity Vxs = V * scalar;
 
   // Verify the result using Eigen operations.
-  EXPECT_EQ(sxV.rotational(), scalar * V_XY_A.rotational());
-  EXPECT_EQ(sxV.translational(), scalar * V_XY_A.translational());
+  EXPECT_EQ(sxV.rotational(), scalar * V.rotational());
+  EXPECT_EQ(sxV.translational(), scalar * V.translational());
 
   // Verify the multiplication by a scalar is commutative.
   EXPECT_EQ(sxV.rotational(), Vxs.rotational());
