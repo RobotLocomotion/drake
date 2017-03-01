@@ -31,6 +31,7 @@ typedef T ScalarType;
 template <typename T>
 class SpatialForce : public SpatialVector<SpatialForce<T>> {
   typedef SpatialVector<SpatialForce<T>> Base;
+
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForce)
 
@@ -118,7 +119,8 @@ class SpatialForce : public SpatialVector<SpatialForce<T>> {
   }
 
   /// Returns the dot-product between `this` spatial force and the spatial
-  /// velocity @p V. Both spatial quantities must be expressed in the same frame.
+  /// velocity @p V. Both spatial quantities must be expressed in the same
+  /// frame.
   T dot(const SpatialVelocity<T>& V) const;
 };
 

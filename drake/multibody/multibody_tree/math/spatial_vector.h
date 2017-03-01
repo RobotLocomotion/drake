@@ -9,20 +9,20 @@
 namespace drake {
 namespace multibody {
 
-namespace internal { 
+namespace internal {
 // Traits class to figure out compile-time quantities used within SpatialVector,
 // specifically the type T of the Eigen compatible scalar type the spatial
 // quantity is instantiated with.
-// Specific spatial quantities derived from SpatialVector need to define these 
+// Specific spatial quantities derived from SpatialVector need to define these
 // traits within this internal namespace.
 // Users do not need to interact with these traits.
 template <class SpatialQuantity> struct spatial_vector_traits;
 };
 
 /// This class is used to represent physical quantities that correspond to
-/// spatial vectors such as spatial velocities, spatial accelerations and 
+/// spatial vectors such as spatial velocities, spatial accelerations and
 /// spatial forces. Spatial vectors are 6-element quantities that are
-/// pairs of ordinary 3-vectors. Elements 0-2 are always the rotational 
+/// pairs of ordinary 3-vectors. Elements 0-2 are always the rotational
 /// component while elements 3-5 are always the translational component.
 /// For a more detailed introduction on spatial vectors please refer to
 /// section @ref multibody_spatial_vectors.
@@ -31,6 +31,7 @@ template <class SpatialQuantity> struct spatial_vector_traits;
 template <typename Derived>
 class SpatialVector {
   typedef typename internal::spatial_vector_traits<Derived>::ScalarType T;
+
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVector)
 
