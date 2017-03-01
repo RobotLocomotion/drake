@@ -22,7 +22,9 @@ const int kNumberToUpdate = 2001;
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
-  TestSystem() { this->set_name("TestSystem"); }
+  TestSystem() {
+    this->set_name("TestSystem");
+  }
   ~TestSystem() override {}
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
@@ -48,13 +50,18 @@ class TestSystem : public System<double> {
     return this->DeclareAbstractInputPort();
   }
 
+
   const OutputPortDescriptor<double>& AddAbstractOutputPort() {
     return this->DeclareAbstractOutputPort();
   }
 
-  bool HasAnyDirectFeedthrough() const override { return true; }
+  bool HasAnyDirectFeedthrough() const override {
+    return true;
+  }
 
-  bool HasDirectFeedthrough(int output_port) const override { return true; }
+  bool HasDirectFeedthrough(int output_port) const override {
+    return true;
+  }
 
   bool HasDirectFeedthrough(int input_port, int output_port) const override {
     return true;
@@ -99,9 +106,10 @@ class TestSystem : public System<double> {
       // Use a custom update action.
       event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
       event.do_calc_discrete_variable_update = std::bind(
-          &TestSystem::DoCalcDiscreteUpdatesNumber, this,
-          std::placeholders::_1 /* context */,
-          std::placeholders::_2 /* discrete state */, kNumberToUpdate);
+                                  &TestSystem::DoCalcDiscreteUpdatesNumber,
+                                  this, std::placeholders::_1 /* context */,
+                                  std::placeholders::_2 /* discrete state */,
+                                  kNumberToUpdate);
     }
   }
 
@@ -112,8 +120,8 @@ class TestSystem : public System<double> {
 
   // The default update function.
   void DoCalcDiscreteVariableUpdates(
-      const Context<double>& context,
-      DiscreteState<double>* discrete_state) const override {
+      const Context<double> &context,
+      DiscreteState<double> *discrete_state) const override {
     ++update_count_;
   }
 
@@ -125,8 +133,8 @@ class TestSystem : public System<double> {
 
   // A custom update function with additional argument @p num, which may be
   // bound in DoCalcNextUpdateTime.
-  void DoCalcDiscreteUpdatesNumber(const Context<double>& context,
-                                   DiscreteState<double>* discrete_state,
+  void DoCalcDiscreteUpdatesNumber(const Context<double> &context,
+                                   DiscreteState<double> *discrete_state,
                                    int num) const {
     updated_numbers_.push_back(num);
   }
@@ -328,9 +336,13 @@ class ValueIOTestSystem : public System<double> {
 
   void SetDefaults(Context<double>* context) const override {}
 
-  bool HasAnyDirectFeedthrough() const override { return true; }
+  bool HasAnyDirectFeedthrough() const override {
+    return true;
+  }
 
-  bool HasDirectFeedthrough(int output_port) const override { return true; }
+  bool HasDirectFeedthrough(int output_port) const override {
+    return true;
+  }
 
   bool HasDirectFeedthrough(int input_port, int output_port) const override {
     return true;
@@ -358,8 +370,8 @@ class ValueIOTestSystem : public System<double> {
     output->add_port(
         std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
 
-    output->add_port(
-        std::make_unique<OutputPort>(std::make_unique<BasicVector<double>>(1)));
+    output->add_port(std::make_unique<OutputPort>(
+        std::make_unique<BasicVector<double>>(1)));
 
     return std::unique_ptr<SystemOutput<double>>(output.release());
   }
