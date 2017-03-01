@@ -214,31 +214,34 @@ class SymbolicError : public runtime_error {
 };
 
 // Given an expression `e`, extracts all variables inside `e`.
-// @param[in] e. A symbolic expression.
-// @param[out] vars. The variables in `e`.
-// @param[out] map_var_to_index. map_var_to_index is of the same size as `vars`,
-// and map_var_to_index[vars(i).get_id()] = i.
-void ExtractVariablesFromExpression(
-    const Expression& e, VectorXDecisionVariable* vars,
-    unordered_map<Variable::Id, int>* map_var_to_index) {
-  DRAKE_DEMAND(vars->size() == 0);
-  DRAKE_DEMAND(map_var_to_index->size() == 0);
+// @param[in] e A symbolic expression.
+// @return pair. pair.first is the variables in `e`. pair.second is the mapping
+// from the variable ID to the index in pair.first, such that
+// pair.second[pair.first(i).get_id()] = i
+std::pair<VectorXDecisionVariable, unordered_map<Variable::Id, int>>
+ExtractVariablesFromExpression(const Expression& e) {
   int var_count = 0;
   const symbolic::Variables var_set = e.GetVariables();
-  vars->resize(var_set.size());
+  VectorXDecisionVariable vars(var_set.size());
+  unordered_map<Variable::Id, int> map_var_to_index{};
+  map_var_to_index.reserve(var_set.size());
   for (const Variable& var : var_set) {
-    map_var_to_index->emplace(var.get_id(), var_count);
-    (*vars)(var_count++) = var;
+    map_var_to_index.emplace(var.get_id(), var_count);
+    vars(var_count++) = var;
   }
+  return std::pair<VectorXDecisionVariable, unordered_map<Variable::Id, int>>(
+      vars, map_var_to_index);
 }
 
-// Given an expression @p e, extract all variables inside e, append these
-// variables to @p vars if they are not included in @p vars yet.
+// Given an expression `e`, extract all variables inside `e`, append these
+// variables to `vars` if they are not included in `vars` yet.
 // @param[in] e.  A symbolic expression.
-// @param[in/out] vars.  The variables in @p e but not included in @p vars
-// before this call, will be appended to @p vars.
-// @param[in/out] map_var_to_index. map_var_to_index is of the same size as @p
-// vars, and map_var_to_index[vars(i).get_id()] = i.
+// @param[in,out] vars.  As an input, `vars` contain the variables before
+// extracting expression `e`. As an output, the variables in `e` that were not
+// included in `vars`, will be appended to the end of `vars.
+// @param[in,out] map_var_to_index. map_var_to_index is of the same size as
+// `vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds
+// for map_var_to_index both as the input and as the output.
 void ExtractAndAppendVariablesFromExpression(
     const Expression &e, VectorXDecisionVariable* vars,
     unordered_map<Variable::Id, int>* map_var_to_index) {
@@ -376,9 +379,10 @@ void MathematicalProgram::AddCost(
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
     const Expression& e) {
-  VectorXDecisionVariable var(0);
-  unordered_map<Variable::Id, int> map_var_to_index;
-  ExtractVariablesFromExpression(e, &var, &map_var_to_index);
+
+  auto p = ExtractVariablesFromExpression(e);
+  const VectorXDecisionVariable& var = p.first;
+  const auto& map_var_to_index = p.second;
   Eigen::RowVectorXd c(var.size());
   double constant_term;
   DecomposeLinearExpression(e, map_var_to_index, c, &constant_term);
@@ -476,10 +480,9 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
     const symbolic::Expression& e) {
   // First build an Eigen vector, that contains all the bound variables.
   const symbolic::Variables& vars = e.GetVariables();
-  VectorXDecisionVariable vars_vec(0);
-  unordered_map<Variable::Id, int> map_var_to_index;
-  ExtractVariablesFromExpression(e, &vars_vec, &map_var_to_index);
-
+  auto p = ExtractVariablesFromExpression(e);
+  const auto& vars_vec = p.first;
+  const auto& map_var_to_index = p.second;
 
   // Now decomposes the expression into coefficients and monomials.
   const symbolic::MonomialToCoefficientMap&
@@ -526,15 +529,16 @@ Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
     total_degree = std::max(total_degree, p.first.total_degree());
   }
 
-  VectorXDecisionVariable vars_vec(0);
-  unordered_map<Variable::Id, int> map_var_to_index;
-  ExtractVariablesFromExpression(e, &vars_vec, &map_var_to_index);
+
+  auto p = ExtractVariablesFromExpression(e);
+  const VectorXDecisionVariable& vars_vec = p.first;
+  const auto& map_var_to_index = p.second;
 
   if (total_degree > 2) {
     std::ostringstream oss;
     oss << "Expression " << e << " has degree higher than 2. Currently AddCost "
                                  "only supports quadratic or linear "
-                                 "expression.\n";
+                                 "expressions.\n";
     throw std::runtime_error(oss.str());
   } else if (total_degree == 2) {
     return  AddQuadraticCostWithMonomialToCoeffMap(
