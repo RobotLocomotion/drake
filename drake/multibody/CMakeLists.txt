@@ -83,6 +83,14 @@ drake_install_pkg_config_file(drake-ik
         drake-rigid-body-constraint
         eigen3)
 
+add_library_with_exports(LIB_NAME drakeGlobalIK SOURCE_FILES global_inverse_kinematics.cc)
+target_link_libraries(drakeGlobalIK
+        drakeOptimization
+        drakeRBM
+        Eigen3::Eigen)
+drake_install_libraries(drakeGlobalIK)
+dake_install_headers(global_inverse_kinematics.h)
+
 add_subdirectory(benchmarks)
 add_subdirectory(collision)
 add_subdirectory(constraint)
