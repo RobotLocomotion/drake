@@ -34,6 +34,7 @@ template <typename T> class SpatialForce;
 template <typename T>
 class SpatialVelocity : public SpatialVector<SpatialVelocity<T>> {
   typedef SpatialVector<SpatialVelocity<T>> Base;
+
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity)
 
