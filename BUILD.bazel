@@ -10,6 +10,7 @@ package(
 
 exports_files([
     "CPPLINT.cfg",
+    ".clang-format",
 ])
 
 alias(
