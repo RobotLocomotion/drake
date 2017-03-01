@@ -530,9 +530,9 @@ Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
   }
 
 
-  auto p = ExtractVariablesFromExpression(e);
-  const VectorXDecisionVariable& vars_vec = p.first;
-  const auto& map_var_to_index = p.second;
+  auto e_extracted = ExtractVariablesFromExpression(e);
+  const VectorXDecisionVariable& vars_vec = e_extracted.first;
+  const auto& map_var_to_index = e_extracted.second;
 
   if (total_degree > 2) {
     std::ostringstream oss;
