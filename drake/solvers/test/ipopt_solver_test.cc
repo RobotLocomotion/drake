@@ -1,4 +1,4 @@
-#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/ipopt_solver.h"
 
 #include <gtest/gtest.h>
 
@@ -12,29 +12,29 @@ namespace solvers {
 namespace test {
 
 TEST_P(LinearProgramTest, TestLP) {
-  MosekSolver solver;
+  IpoptSolver solver;
   prob()->RunProblem(&solver);
 }
 
 INSTANTIATE_TEST_CASE_P(
-    MosekTest, LinearProgramTest,
+    IpoptTest, LinearProgramTest,
     ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
 
 TEST_P(QuadraticProgramTest, TestQP) {
-  MosekSolver solver;
+  IpoptSolver solver;
   prob()->RunProblem(&solver);
 }
 
 INSTANTIATE_TEST_CASE_P(
-    MosekTest, QuadraticProgramTest,
+    IpoptTest, QuadraticProgramTest,
     ::testing::Combine(::testing::ValuesIn(quadratic_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(quadratic_problems())));
 
 GTEST_TEST(QPtest, TestUnitBallExample) {
-  MosekSolver solver;
+  IpoptSolver solver;
   if (solver.available()) {
     TestQPonUnitBallExample(solver);
   }
