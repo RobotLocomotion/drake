@@ -111,8 +111,14 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form,
   }
 }
 
-void QuadraticProgram0::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
+void QuadraticProgram0::CheckSolution(SolverType solver_type) const {
+  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
+  if (solver_type == SolverType::kGurobi) {
+    tol = 1E-8;
+  } else if (solver_type == SolverType::kMosek) {
+    tol = 1E-9;
+  }
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
 }
 
@@ -189,8 +195,14 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
   }
 }
 
-void QuadraticProgram1::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
+void QuadraticProgram1::CheckSolution(SolverType solver_type) const {
+  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
+  if (solver_type == SolverType::kGurobi) {
+    tol = 1E-8;
+  } else if (solver_type == SolverType::kMosek) {
+    tol = 1E-9;
+  }
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
 }
 
@@ -222,9 +234,14 @@ QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
   x_expected_ = -Q_symmetric.llt().solve(b);
 }
 
-void QuadraticProgram2::CheckSolution() const {
-
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
+void QuadraticProgram2::CheckSolution(SolverType solver_type) const {
+  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
+  if (solver_type == SolverType::kMosek) {
+    tol = 1E-8;
+  } else if (solver_type == SolverType::kSnopt) {
+    tol = 1E-6;
+  }
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
 }
 
@@ -274,8 +291,12 @@ QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
   x_expected_ = -Q_symmetric.llt().solve(b);
 }
 
-void QuadraticProgram3::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
+void QuadraticProgram3::CheckSolution(SolverType solver_type) const {
+  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
+  if (solver_type == SolverType::kMosek) {
+    tol = 1E-8;
+  }
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
 }
 
@@ -319,8 +340,12 @@ QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
   }
 }
 
-void QuadraticProgram4::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-8,
+void QuadraticProgram4::CheckSolution(SolverType solver_type) const {
+  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
+  if (solver_type == SolverType::kMosek) {
+    tol = 1E-8;
+  }
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
 }
 

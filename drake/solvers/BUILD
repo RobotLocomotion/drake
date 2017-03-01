@@ -336,6 +336,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "ipopt_solver_test",
+    srcs = [
+        "test/ipopt_solver_test.cc",
+    ],
+    deps = [
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":optimization_examples",
+        ":quadratic_program_examples",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "linear_complementary_problem_test",
     srcs = [
         "test/linear_complementary_problem_test.cc",
@@ -408,6 +423,21 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":optimization_examples",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "snopt_solver_test",
+    srcs = [
+        "test/snopt_solver_test.cc",
+    ],
+    deps = [
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":quadratic_program_examples",
         ":optimization_examples",
         "//drake/common:eigen_matrix_compare",
     ],

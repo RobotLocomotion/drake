@@ -24,7 +24,6 @@ INSTANTIATE_TEST_CASE_P(
 
 TEST_P(QuadraticProgramTest, TestQP) {
   SnoptSolver solver;
-  prob()->prog()->SetSolverOption(SolverType::kSnopt, "MajorOptimalityTol", 1E-8);
   prob()->RunProblem(&solver);
 }
 

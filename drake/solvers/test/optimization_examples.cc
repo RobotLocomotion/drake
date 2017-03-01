@@ -43,10 +43,33 @@ void OptimizationProgram::RunProblem(
     MathematicalProgramSolverInterface* solver) {
   if (solver->available()) {
     RunSolver(prog_.get(), *solver);
-    CheckSolution();
+    CheckSolution(solver->solver_type());
   }
 }
 
+double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
+    SolverType solver_type) const {
+  switch (solver_type) {
+    case SolverType::kMosek : {
+      return 1E-10;
+    }
+    case SolverType::kGurobi : {
+      return 1E-10;
+    }
+    case SolverType::kSnopt : {
+      return 1E-8;
+    }
+    case SolverType::kIpopt : {
+      return 1E-6;
+    }
+    case SolverType::kNlopt : {
+      return 1E-6;
+    }
+    default : {
+      throw std::runtime_error("Unsupported solver type.");
+    }
+  }
+}
 LinearSystemExample1::LinearSystemExample1()
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, b_{}, con_{} {
   x_ = prog_->NewContinuousVariables<4>();

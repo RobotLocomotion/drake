@@ -33,9 +33,13 @@ class OptimizationProgram {
 
   OptimizationProgram(CostForm cost_form, ConstraintForm cnstr_form);
 
+  virtual ~OptimizationProgram() {}
+
   MathematicalProgram* prog() const { return prog_.get(); }
 
-  virtual void CheckSolution() const = 0;
+  virtual void CheckSolution(SolverType solver_type) const = 0;
+
+  double GetSolverSolutionDefaultCompareTolerance(SolverType solver_type) const;
 
   void RunProblem(MathematicalProgramSolverInterface* solver);
 

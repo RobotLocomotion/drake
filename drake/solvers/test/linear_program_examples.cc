@@ -60,7 +60,7 @@ LinearFeasibilityProgram::LinearFeasibilityProgram(ConstraintForm cnstr_form)
   }
 }
 
-void LinearFeasibilityProgram::CheckSolution() const {
+void LinearFeasibilityProgram::CheckSolution(SolverType solver_type) const {
   auto x_val = prog()->GetSolution(x_);
   Vector3d A_times_x(x_val(0) + 2 * x_val(1) + 3 * x_val(2),
                      x_val(1) - 2 * x_val(2), 0);
@@ -128,8 +128,9 @@ LinearProgram0::LinearProgram0(CostForm cost_form, ConstraintForm cnstr_form)
   }
 }
 
-void LinearProgram0::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-10,
+void LinearProgram0::CheckSolution(SolverType solver_type) const {
+  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
 }
 
@@ -166,8 +167,10 @@ LinearProgram1::LinearProgram1(CostForm cost_form, ConstraintForm cnstr_form)
   }
 }
 
-void LinearProgram1::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_));
+void LinearProgram1::CheckSolution(SolverType solver_type) const {
+  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+                              MatrixCompareType::absolute));
 }
 
 LinearProgram2::LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form)
@@ -250,8 +253,9 @@ LinearProgram2::LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form)
   }
 }
 
-void LinearProgram2::CheckSolution() const {
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, 1E-10,
+void LinearProgram2::CheckSolution(SolverType solver_type) const {
+  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
 }
 
@@ -317,12 +321,9 @@ LinearProgram3::LinearProgram3(CostForm cost_form, ConstraintForm cnstr_form)
   }
 }
 
-void LinearProgram3::CheckSolution() const {
+void LinearProgram3::CheckSolution(SolverType solver_type) const {
   // Mosek has a looser tolerance.
-  SolverType solver_type;
-  int solver_result;
-  prog()->GetSolverResult(&solver_type, &solver_result);
-  double tol = 1E-10;
+  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
   if (solver_type == SolverType::kMosek) {
     tol = 1E-6;
   }

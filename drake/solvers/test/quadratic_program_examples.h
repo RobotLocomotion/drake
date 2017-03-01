@@ -44,7 +44,9 @@ class QuadraticProgram0 : public OptimizationProgram {
 
   QuadraticProgram0(CostForm cost_form, ConstraintForm cnstr_form);
 
-  void CheckSolution() const override;
+  ~QuadraticProgram0() override {};
+
+  void CheckSolution(SolverType solver_type) const override;
 
  private:
   VectorDecisionVariable<2> x_;
@@ -66,7 +68,9 @@ class QuadraticProgram1 : public OptimizationProgram {
 
   QuadraticProgram1(CostForm cost_form, ConstraintForm cnstr_form);
 
-  void CheckSolution() const override;
+  ~QuadraticProgram1() override {};
+
+  void CheckSolution(SolverType solver_type) const override;
 
  private:
   VectorDecisionVariable<3> x_;
@@ -86,7 +90,9 @@ class QuadraticProgram2 : public OptimizationProgram {
 
   QuadraticProgram2(CostForm cost_form, ConstraintForm cnstr_form);
 
-  void CheckSolution() const override;
+  ~QuadraticProgram2() override {};
+
+  void CheckSolution(SolverType solver_type) const override;
 
  private:
   VectorDecisionVariable<5> x_;
@@ -110,7 +116,9 @@ class QuadraticProgram3 : public OptimizationProgram {
 
   QuadraticProgram3(CostForm cost_form, ConstraintForm cnstr_form);
 
-  void CheckSolution() const override;
+  ~QuadraticProgram3() override {};
+
+  void CheckSolution(SolverType solver_type) const override;
 
  private:
   VectorDecisionVariable<6> x_;
@@ -129,7 +137,9 @@ class QuadraticProgram4 : public OptimizationProgram {
 
   QuadraticProgram4(CostForm cost_form, ConstraintForm cnstr_form);
 
-  void CheckSolution() const override;
+  ~QuadraticProgram4() override {};
+
+  void CheckSolution(SolverType solver_type) const override;
 
  private:
   VectorDecisionVariable<3> x_;
