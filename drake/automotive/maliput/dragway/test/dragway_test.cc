@@ -436,6 +436,30 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
   }
 }
 
+// Tests that dragway::RoadGeometry::ToRoadPosition() can be called with
+// parameters `nearest_position` and `distance` set to `nullptr`.
+TEST_F(MaliputDragwayLaneTest, TestToRoadPositionNullptr) {
+  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const int kNumLanes = 2;
+
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
+      lane_width_, shoulder_width_, kLinearTolerance);
+
+  // Case 1: The provided geo_pos is in the driveable region.
+  EXPECT_NO_THROW(road_geometry.ToRoadPosition(
+            api::GeoPosition(length_ / 2 /* x */, 0 /* y */, 0 /* z */),
+            nullptr /* hint */,
+            nullptr /* nearest_position */,
+            nullptr /* distance */));
+
+  // Case 2: The provided geo_pos is beyond the driveable region.
+  EXPECT_NO_THROW(road_geometry.ToRoadPosition(
+            api::GeoPosition(length_ + 1e-10 /* x */, 0 /* y */, 0 /* z */),
+            nullptr /* hint */,
+            nullptr /* nearest_position */,
+            nullptr /* distance */));
+}
+
 }  // namespace
 }  // namespace dragway
 }  // namespace maliput
