@@ -13,21 +13,23 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place_demo {
 
 /**
- * Base class that represents actions for the pick and place demo. E.g. moving
- * iiwa arm, open / close gripper. The commands are packaged and sent through
- * LCM.
+ * Base class for actions used by the pick and place demo. E.g., moving the KUKA
+ * iiwa arm, and opening / closing the gripper. The commands are packaged and
+ * sent through LCM.
  */
 class Action {
  public:
   explicit Action(lcm::LCM* lcm) : lcm_(lcm) { Reset(); }
 
   /**
-   * Returns true if the action has finished given estimated state.
+   * Returns true if the action has finished based on the provided estimated
+   * state.
    */
   virtual bool ActionFinished(const WorldState& est_state) const = 0;
 
   /**
-   * Returns true if the action has failed given estimated state.
+   * Returns true if the action has failed based on the provided estimated
+   * state.
    */
   virtual bool ActionFailed(const WorldState& est_state) const = 0;
 
@@ -73,16 +75,17 @@ class Action {
 };
 
 /**
- * A class that represents action that sends a sequence of desired joint
- * positions through LCM to move the iiwa arm.
+ * A class that represents an action that sends a sequence of desired joint
+ * positions through LCM to move the KUKA iiwa arm.
  */
 class IiwaMove : public Action {
  public:
   /**
    * Constructs an Action class to move the iiwa arm.
-   * @param iiwa Reference to a RigidBodyTree that represents the iiwa robot.
-   * Its life span must be longer than this instance.
-   * @param channel Lcm message channel name of the output
+   *
+   * @param iiwa The KUKA iiwa model. Its life span must be longer than the
+   * instance of this class.
+   * @param channel Name of the LCM message channel containing the output
    * robotlocomotion::robot_plan_t.
    */
   IiwaMove(const RigidBodyTree<double>& iiwa, const std::string& channel,
@@ -90,7 +93,7 @@ class IiwaMove : public Action {
       : Action(lcm), iiwa_(iiwa), pub_channel_(channel) {}
 
   /**
-   * Returns a constant reference to the iiwa model.
+   * Returns a constant reference to the KUKA iiwa model.
    */
   const RigidBodyTree<double>& get_iiwa() const { return iiwa_; }
 
@@ -113,8 +116,8 @@ class IiwaMove : public Action {
   }
 
   /**
-   * Returns ture if time since beginning of action is longer than then the
-   * duration of the desired motion, and the arm stopped moving.
+   * Returns true if the time since the beginning of the action is longer than
+   * the duration of the desired motion, and the arm stopped moving.
    */
   bool ActionFinished(const WorldState& est_state) const override;
 
@@ -132,24 +135,23 @@ class WsgAction : public Action {
   WsgAction(const std::string& channel, lcm::LCM* lcm)
       : Action(lcm), pub_channel_(channel) {}
 
-  /*
-   * Sends a lcm message that tells the WSG gripper driver to open all the way.
+  /**
+   * Sends an LCM message that tells the WSG gripper driver to fully open.
    */
   void OpenGripper(const WorldState& est_state);
 
-  /*
-   * Sends a lcm message that tells the WSG gripper driver to close all the way.
+  /**
+   * Sends an LCM message that tells the WSG gripper driver to fully close.
    */
   void CloseGripper(const WorldState& est_state);
 
-  // TODO(siyuanfeng): have something meaningful here, like check for force
-  // threshold.
+  // TODO(siyuanfeng): Implement something meaningful here like a check for a
+  // force threshold being crossed.
   bool ActionFailed(const WorldState& est_state) const { return false; }
 
   /**
-   * Returns true if the gripper stopped moving, and it is at least 0.5 second
-   * after
-   * a Open / Close command was last issued.
+   * Returns true if the gripper stopped moving, and it is at least 0.5 seconds
+   * after an Open / Close command was last issued.
    */
   bool ActionFinished(const WorldState& est_state) const;
 

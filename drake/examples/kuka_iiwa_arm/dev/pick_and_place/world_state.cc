@@ -9,7 +9,7 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place_demo {
 
 WorldState::WorldState(const std::string& iiwa_model_path,
-                   const std::string end_effector_name, lcm::LCM* lcm)
+                       const std::string& end_effector_name, lcm::LCM* lcm)
     : iiwa_model_path_(iiwa_model_path),
       ee_name_(end_effector_name),
       lcm_(lcm) {
@@ -53,8 +53,8 @@ void WorldState::SubscribeToObjectStatus(const std::string& channel) {
 }
 
 void WorldState::HandleIiwaStatus(const lcm::ReceiveBuffer* rbuf,
-                                const std::string& chan,
-                                const bot_core::robot_state_t* iiwa_msg) {
+                                  const std::string& chan,
+                                  const bot_core::robot_state_t* iiwa_msg) {
   iiwa_base_ = DecodePose(iiwa_msg->pose);
 
   if (iiwa_time_ == -1) {
@@ -70,7 +70,7 @@ void WorldState::HandleIiwaStatus(const lcm::ReceiveBuffer* rbuf,
 
   iiwa_time_ = iiwa_msg->utime / 1e6;
 
-  for (int i = 0; i < iiwa_msg->num_joints; i++) {
+  for (int i = 0; i < iiwa_msg->num_joints; ++i) {
     iiwa_v_[i] = iiwa_msg->joint_velocity[i];
     iiwa_q_[i] = iiwa_msg->joint_position[i];
   }
@@ -83,8 +83,8 @@ void WorldState::HandleIiwaStatus(const lcm::ReceiveBuffer* rbuf,
 }
 
 void WorldState::HandleWsgStatus(const lcm::ReceiveBuffer* rbuf,
-                               const std::string& chan,
-                               const lcmt_schunk_wsg_status* wsg_msg) {
+                                 const std::string& chan,
+                                 const lcmt_schunk_wsg_status* wsg_msg) {
   bool is_first_msg = wsg_time_ == -1;
   double cur_time = wsg_msg->utime / 1e6;
   double dt = cur_time - wsg_time_;
@@ -107,8 +107,8 @@ void WorldState::HandleWsgStatus(const lcm::ReceiveBuffer* rbuf,
 }
 
 void WorldState::HandleObjectStatus(const lcm::ReceiveBuffer* rbuf,
-                                  const std::string& chan,
-                                  const bot_core::robot_state_t* obj_msg) {
+                                    const std::string& chan,
+                                    const bot_core::robot_state_t* obj_msg) {
   obj_time_ = obj_msg->utime / 1e6;
   obj_pose_ = DecodePose(obj_msg->pose);
   obj_vel_ = DecodeTwist(obj_msg->twist);
