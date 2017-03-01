@@ -193,8 +193,7 @@ TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
 }
 
 // Create a list of scalar types for the unit tests that follow below.
-//typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
-typedef ::testing::Types<double> ScalarTypes;
+typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
 
 // SpatialVelocity specific unit tests.
 template <typename T>
