@@ -53,14 +53,14 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
 
   // Connects the estimated state to PID.
   builder.Connect(mux->get_output_port(0),
-                  controller_->get_estimated_state_input_port());
+                  controller_->get_input_port_estimated_state());
 
   // Connects the desired state to PID.
   builder.Connect(target_->get_output_port(),
-                  controller_->get_desired_state_input_port());
+                  controller_->get_input_port_desired_state());
 
   // Closes the feedback loop.
-  builder.Connect(controller_->get_control_output_port(),
+  builder.Connect(controller_->get_output_port_control(),
                   plant_->get_force_port());
 
   // The output to this system is the output of the spring-mass system which
