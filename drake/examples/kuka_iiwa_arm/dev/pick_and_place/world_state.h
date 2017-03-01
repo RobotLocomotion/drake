@@ -16,32 +16,35 @@ namespace pick_and_place_demo {
 
 /**
  * A class that represents the iiwa pick and place world, which contains a
- * kuka iiwa arm, a schunk wsg gripper and an object that is being
+ * KUKA iiwa arm, a Schunk WSG gripper, and an object that is being
  * manipulated. These states are updated through LCM messages.
  */
 class WorldState {
  public:
   /**
-   * Constructs an WorldState object that holds the states represent a pick and
-   * place scenario.
+   * Constructs an WorldState object that holds the states that represent a pick
+   * and place scenario.
    */
   WorldState(const std::string& iiwa_model_path,
-           const std::string end_effector_name, lcm::LCM* lcm);
+             const std::string& end_effector_name, lcm::LCM* lcm);
 
   virtual ~WorldState();
 
   /**
-   * Adds a lcm callback listening to @p channel to process iiwa status.
+   * Adds an LCM callback listening to @p channel to process iiwa status
+   * messages.
    */
   void SubscribeToIiwaStatus(const std::string& channel);
 
   /**
-   * Adds a lcm callback listening to @p channel to process wsg gripper status.
+   * Adds an LCM callback listening to @p channel to process wsg gripper status
+   * messages.
    */
   void SubscribeToWsgStatus(const std::string& channel);
 
   /**
-   * Adds a lcm callback listening to @p channel to process object status.
+   * Adds an LCM callback listening to @p channel to process object status
+   * messages.
    */
   void SubscribeToObjectStatus(const std::string& channel);
 
@@ -67,27 +70,28 @@ class WorldState {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  // Handles iiwa states from the lcm message.
+  // Handles iiwa states from the LCM message.
   void HandleIiwaStatus(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
                         const bot_core::robot_state_t* iiwa_msg);
 
-  // Handles wsg states from the lcm message.
+  // Handles WSG states from the LCM message.
   void HandleWsgStatus(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
                        const lcmt_schunk_wsg_status* wsg_msg);
 
-  // Handles object states from the lcm message.
+  // Handles object states from the LCM message.
   void HandleObjectStatus(const lcm::ReceiveBuffer* rbuf,
                           const std::string& chan,
                           const bot_core::robot_state_t* obj_msg);
 
-  // Since we can't initialize the RBT unless we know where its base is,
-  // which is coming from lcm. So it's easier for us to own a model internally.
+  // We can't initialize the RigidBodyTree unless we know where its base is
+  // located. Since this information comes from LCM and thus may be delayed,
+  // it's easier for us to own a model internally.
   std::unique_ptr<RigidBodyTree<double>> iiwa_;
   const std::string iiwa_model_path_;
   const std::string ee_name_;
   const RigidBody<double>* end_effector_{nullptr};
 
-  // Iiwa status
+  // Iiwa status.
   double iiwa_time_;
   Isometry3<double> iiwa_base_;
   VectorX<double> iiwa_q_;
@@ -95,18 +99,18 @@ class WorldState {
   Isometry3<double> iiwa_ee_pose_;
   Vector6<double> iiwa_ee_vel_;
 
-  // Gripper status
+  // Gripper status.
   double wsg_time_;
   double wsg_q_;  // units [m]
   double wsg_v_;  // units [m/s]
   double wsg_force_;
 
-  // Object status
+  // Object status.
   double obj_time_;
   Isometry3<double> obj_pose_;
   Vector6<double> obj_vel_;
 
-  // Lcm subscription management
+  // LCM subscription management.
   lcm::LCM* lcm_;
   std::list<lcm::Subscription*> lcm_subscriptions_;
 };

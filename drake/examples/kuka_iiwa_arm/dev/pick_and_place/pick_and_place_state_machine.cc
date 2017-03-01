@@ -29,14 +29,15 @@ namespace pick_and_place_demo {
 namespace {
 
 // Desired location to place the object for table0 and table1. Positions are
-// specified in the iiwa arm base frame. Table0 is right in front of the arm
+// specified in the iiwa arm's base frame. Table0 is right in front of the arm's
 // base.
 const Vector3<double> kPlacePosition0(0.8, 0, 0);
 const Vector3<double> kPlacePosition1(0, 0.8, 0);
 
-// Determines which table the object is on based on its xy distance to the
-// center of each table.
-// TODO(siyuan): have a better way to determine.
+// Determines which table is holding the object based on the object's xy
+// distance to the center of each table.
+// TODO(siyuan): Implement a better way to determine which table is holding the
+// object.
 int get_table(const Isometry3<double>& X_WObj,
               const Isometry3<double>& X_WIiiwa) {
   // These need to match iiwa_wsg_simulation.cc's table configuration.
@@ -125,7 +126,7 @@ enum PickAndPlaceState {
 };
 
 // Makes a state machine that drives the iiwa to pick up a block from one table
-// and place it on on the other.
+// and place it on the other table.
 void RunPickAndPlaceDemo() {
   lcm::LCM lcm;
 
@@ -139,7 +140,7 @@ void RunPickAndPlaceDemo() {
   env_state.SubscribeToIiwaStatus("IIWA_STATE_EST");
   env_state.SubscribeToObjectStatus("OBJECT_STATE_EST");
 
-  // Spins until we get at least 1 message from all channels.
+  // Spins until at least one message is received from every LCM channel.
   while (lcm.handleTimeout(10) == 0 || env_state.get_iiwa_time() == -1 ||
          env_state.get_obj_time() == -1 || env_state.get_wsg_time() == -1) {
   }
