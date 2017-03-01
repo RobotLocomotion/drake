@@ -131,7 +131,7 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(
       nearest_position->z = geo_pos.z;
     }
     if (distance != nullptr) {
-      *distance = geo_pos.z;
+      *distance = 0;
     }
     return api::RoadPosition(lane, result_lane_position);
   } else {
