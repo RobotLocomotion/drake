@@ -9,15 +9,21 @@
 namespace drake {
 namespace multibody {
 
-namespace internal {
-  template <class SpatialQuantity>
-  struct spatial_vector_traits;
+namespace internal { 
+// Traits class to figure out compile-time quantities used within SpatialVector,
+// specifically the type T of the Eigen compatible scalar type the spatial
+// quantity is instantiated with.
+// Specific spatial quantities derived from SpatialVector need to define these 
+// traits within this internal namespace.
+// Users do not need to interact with these traits.
+template <class SpatialQuantity> struct spatial_vector_traits;
 };
 
 /// This class is used to represent physical quantities that correspond to
-/// spatial velocities. Spatial velocities are 6-element quantities that are
-/// pairs of ordinary 3-vectors. Elements 0-2 are always the angular velocity
-/// while elements 3-5 are the linear velocity.
+/// spatial vectors such as spatial velocities, spatial accelerations and 
+/// spatial forces. Spatial vectors are 6-element quantities that are
+/// pairs of ordinary 3-vectors. Elements 0-2 are always the rotational 
+/// component while elements 3-5 are always the translational component.
 /// For a more detailed introduction on spatial vectors please refer to
 /// section @ref multibody_spatial_vectors.
 ///
@@ -38,16 +44,16 @@ class SpatialVector {
   typedef Vector6<T> CoeffsEigenType;
 
   /// Default constructor. In Release builds the elements of the newly
-  /// constructed spatial velocity are left uninitialized resulting in a zero
+  /// constructed spatial vector are left uninitialized resulting in a zero
   /// cost operation. However in Debug builds those entries are set to NaN so
-  /// that operations using this uninitialized spatial velocity fail fast,
+  /// that operations using this uninitialized spatial vector fail fast,
   /// allowing fast bug detection.
   SpatialVector() {
     DRAKE_ASSERT_VOID(SetNaN());
   }
 
-  /// SpatialVector constructor from an angular velocity @p w and a linear
-  /// velocity @p v.
+  /// SpatialVector constructor from an rotational component @p w and a linear
+  /// component @p v.
   SpatialVector(const Eigen::Ref<const Vector3<T>>& w,
                 const Eigen::Ref<const Vector3<T>>& v) {
     V_.template head<3>() = w;
@@ -66,7 +72,7 @@ class SpatialVector {
   /// In three dimensions this is six (6) and it is known at compile time.
   int size() const { return kSpatialVectorSize; }
 
-  /// Const access to the i-th component of this spatial velocity.
+  /// Const access to the i-th component of this spatial vector.
   /// Bounds are only checked in Debug builds for a zero overhead implementation
   /// in Release builds.
   const T& operator[](int i) const {
@@ -74,7 +80,7 @@ class SpatialVector {
     return V_[i];
   }
 
-  /// Mutable access to the i-th component of this spatial velocity.
+  /// Mutable access to the i-th component of this spatial vector.
   /// Bounds are only checked in Debug builds for a zero overhead implementation
   /// in Release builds.
   T& operator[](int i) {
@@ -82,21 +88,21 @@ class SpatialVector {
     return V_[i];
   }
 
-  /// Const access to the rotational component of this spatial velocity.
+  /// Const access to the rotational component of this spatial vector.
   const Vector3<T>& rotational() const {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
     return *reinterpret_cast<const Vector3<T>*>(V_.data());
   }
 
-  /// Mutable access to the rotational component of this spatial velocity.
+  /// Mutable access to the rotational component of this spatial vector.
   Vector3<T>& rotational() {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
     return *reinterpret_cast<Vector3<T>*>(V_.data());
   }
 
-  /// Const access to the translational component of this spatial velocity.
+  /// Const access to the translational component of this spatial vector.
   const Vector3<T>& translational() const {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
@@ -104,7 +110,7 @@ class SpatialVector {
         V_.data() + kRotationSize);
   }
 
-  /// Mutable access to the translational component of this spatial velocity.
+  /// Mutable access to the translational component of this spatial vector.
   Vector3<T>& translational() {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
@@ -124,7 +130,7 @@ class SpatialVector {
 
   /// @returns `true` if `other` is within a precision given by @p tolerance.
   /// The comparison is performed by comparing the angular (linear) component of
-  /// `this` spatial velocity with the angular (linear) component of @p other
+  /// `this` spatial vector with the angular (linear) component of @p other
   /// using the fuzzy comparison provided by Eigen's method isApprox().
   bool IsApprox(const Derived& other,
                 double tolerance = Eigen::NumTraits<T>::epsilon()) const {
