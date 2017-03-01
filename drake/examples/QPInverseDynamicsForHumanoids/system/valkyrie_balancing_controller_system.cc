@@ -7,7 +7,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_status_translator_system.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
@@ -53,8 +53,8 @@ void controller_loop() {
       builder.AddSystem(std::make_unique<PlanEvalSystem>(*robot));
   QpControllerSystem* qp_con =
       builder.AddSystem(std::make_unique<QpControllerSystem>(*robot, 0.003));
-  JointLevelControllerSystem* joint_con =
-      builder.AddSystem<JointLevelControllerSystem>(*robot);
+  AtlasJointLevelControllerSystem* joint_con =
+      builder.AddSystem<AtlasJointLevelControllerSystem>(*robot);
 
   auto& robot_state_subscriber = *builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<bot_core::robot_state_t>(
@@ -74,9 +74,7 @@ void controller_loop() {
                   qp_con->get_input_port_humanoid_status());
   builder.Connect(plan_eval->get_output_port_qp_input(),
                   qp_con->get_input_port_qp_input());
-  // rs + qp_output -> atlas_command_t
-  builder.Connect(rs_msg_to_rs->get_output_port_humanoid_status(),
-                  joint_con->get_input_port_humanoid_status());
+  // qp_output -> atlas_command_t
   builder.Connect(qp_con->get_output_port_qp_output(),
                   joint_con->get_input_port_qp_output());
   // atlas_command_t -> lcm
