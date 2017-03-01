@@ -356,20 +356,6 @@ toolchain {
   tool_path { name: "cpp" path: "/usr/bin/cpp" }
   tool_path { name: "dwp" path: "/usr/bin/dwp" }
   tool_path { name: "gcc" path: "third_party/bazel/tools/cpp/osx_cc_wrapper.sh" }
-
-  ### Additional flags for Drake.
-  ### These must go above the Bazel-derived flags, because some of those flags
-  ### are designed to be concatenated with a predicate, for instance the
-  ### ar_flag "-o".
-  # This warning is common in Drake, and we don't really care about compact
-  # exception unwinding, since catching exceptions is forbidden, so we suppress
-  # it. See https://github.com/RobotLocomotion/drake/issues/5183
-  linker_flag: "-Wl,-no_compact_unwind"
-  # The no-symbols warning is common and harmless for header-only libraries,
-  # so we suppress it. See https://github.com/RobotLocomotion/drake/issues/5183
-  ar_flag: "-no_warning_for_no_symbols"
-  ### End of additional flags for Drake.
-
   cxx_flag: "-std=c++1y"
   ar_flag: "-static"
   ar_flag: "-s"
