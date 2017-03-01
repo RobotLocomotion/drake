@@ -906,10 +906,10 @@ class MathematicalProgram {
   /**
    * Adds a cost in the symbolic form.
    * Note that the constant part of the cost is ignored. So if you set
-   * `e` = x + 2, then only the cost on `x` is added, the constant term 2 is
+   * `e = x + 2`, then only the cost on `x` is added, the constant term 2 is
    * ignored.
    * @param e The linear or quadratic expression of the cost.
-   * @pre{e is linear or e is quadratic. Otherwise throws a runtime error.}
+   * @pre `e` is linear or `e` is quadratic. Otherwise throws a runtime error.
    * @return The newly created cost, together with the bound variables.
    */
   Binding<Constraint> AddCost(const symbolic::Expression& e);
@@ -2367,8 +2367,8 @@ class MathematicalProgram {
    * Given a matrix of decision variables, checks if every entry in the
    * matrix is a decision variable in the program; throws a runtime
    * error if any variable is not a decision variable in the program.
-   * @tparam Derived A Eigen::Matrix type of symbolic Variable.
-   * @param vars A matrix of variable.
+   * @tparam Derived An Eigen::Matrix type of symbolic Variable.
+   * @param vars A matrix of variables.
    */
   template <typename Derived>
   typename std::enable_if<

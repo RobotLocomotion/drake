@@ -552,7 +552,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
   CheckAddedSymbolicLinearCost(&prog, -x(0));
   // Add Linear cost -(x(1) + 3 * x(0))
   CheckAddedSymbolicLinearCost(&prog, -(x(1) + 3 * x(0)));
-  // AddLinear cost x(1)*x(1) + x(0) - x(1)*x(1)
+  // Add linear cost x(1)*x(1) + x(0) - x(1)*x(1)
   CheckAddedSymbolicLinearCost(&prog, x(1) * x(1) + x(0) - x(1) * x(1));
 }
 
@@ -1458,11 +1458,12 @@ GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
-  // Add a non-polynomial cost
+  // Add a non-polynomial cost.
   EXPECT_THROW(prog.AddCost(sin(x(0))), std::runtime_error);
 
-  // Add a cubic cost
+  // Add a third order polynomial cost.
   EXPECT_THROW(prog.AddCost(x(0) * x(0) * x(1)), std::runtime_error);
+  EXPECT_THROW(prog.AddCost(pow(x(0), 3)), std::runtime_error);
 
   // Add a cost containing variable not included in the mathematical program.
   symbolic::Variable y("y");
