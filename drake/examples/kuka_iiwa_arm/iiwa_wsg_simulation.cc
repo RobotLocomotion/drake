@@ -58,7 +58,7 @@ using systems::RigidBodyPlant;
 using systems::Simulator;
 
 const char* const kIiwaUrdf =
-    "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf";
+    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
 
 template <typename T>
 std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(

@@ -54,7 +54,8 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
     auto tree = make_unique<RigidBodyTree<T>>();
     ModelInstanceIdTable vehicle_instance_id_table =
         drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-            drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+            drake::GetDrakePath() +
+            "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
             kFixed, nullptr /* weld to frame */, tree.get());
 
     drake::multibody::AddFlatTerrainToWorld(tree.get());

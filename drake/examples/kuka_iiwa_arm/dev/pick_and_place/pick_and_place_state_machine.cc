@@ -130,7 +130,7 @@ void RunPickAndPlaceDemo() {
   lcm::LCM lcm;
 
   const std::string iiwa_path =
-      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf";
+      GetDrakePath() + "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf";
   const std::string iiwa_end_effector_name = "iiwa_link_ee";
 
   // Makes a WorldState, and sets up LCM subscriptions.
