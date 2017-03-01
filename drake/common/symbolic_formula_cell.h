@@ -58,6 +58,9 @@ class FormulaCell {
   FormulaCell& operator=(const FormulaCell& f) = delete;
   /** Construct FormulaCell of kind @p k with @p hash. */
   FormulaCell(FormulaKind k, size_t hash);
+  /** Default destructor. */
+  virtual ~FormulaCell() = default;
+
  private:
   const FormulaKind kind_{};
   const size_t hash_{};
