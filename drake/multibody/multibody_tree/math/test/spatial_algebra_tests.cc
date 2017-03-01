@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/eigen_autodiff_types.h"
 
 #include "gtest/gtest.h"
 
@@ -36,8 +37,10 @@ class SpatialQuantityTest : public ::testing::Test {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-typedef ::testing::Types<SpatialVelocity<double>, SpatialForce<double>> MyTypes;
-TYPED_TEST_CASE(SpatialQuantityTest, MyTypes);
+typedef ::testing::Types<
+    SpatialVelocity<double>, SpatialForce<double>,
+    SpatialVelocity<AutoDiffXd>, SpatialForce<AutoDiffXd>> SpatialQuantityTypes;
+TYPED_TEST_CASE(SpatialQuantityTest, SpatialQuantityTypes);
 
 // Tests default construction and proper size at compile time.
 TYPED_TEST(SpatialQuantityTest, SizeAtCompileTime) {
@@ -128,14 +131,15 @@ TYPED_TEST(SpatialQuantityTest, SpatialVelocityVectorComponentAccessors) {
 // Tests access to the raw data pointer.
 TYPED_TEST(SpatialQuantityTest, RawDataAccessors) {
   typedef TypeParam SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
   SpatialQuantity& V_XY_A = this->V_XY_A_;
 
   // Mutable access.
-  double* mutable_data = V_XY_A.mutable_data();
+  T* mutable_data = V_XY_A.mutable_data();
   for (int i = 0; i < 6; ++i) mutable_data[i] = i;
 
   // Const access.
-  const double* const_data = V_XY_A.data();
+  const T* const_data = V_XY_A.data();
   EXPECT_EQ(V_XY_A[0], const_data[0]);
   EXPECT_EQ(V_XY_A[1], const_data[1]);
   EXPECT_EQ(V_XY_A[2], const_data[2]);
