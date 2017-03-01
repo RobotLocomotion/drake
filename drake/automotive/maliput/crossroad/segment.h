@@ -83,13 +83,18 @@ class Segment final : public api::Segment {
 
   const api::Junction* do_junction() const final;
 
+
+  int do_num_lanes() const final { 
+    return (static_cast<int>(horizontal_lanes_.size())
+    +static_cast<int>(vertical_lanes_.size())); }
+
   int num_horizontal_lanes() const { return do_num_horizontal_lanes(); }
   int num_vertical_lanes() const { return do_num_vertical_lanes(); }
 
 
-  int do_num_horizontal_lanes() const final { return static_cast<int>
+  int do_num_horizontal_lanes() const { return static_cast<int>
     (horizontal_lanes_.size()); }
-  int do_num_vertical_lanes() const final { return static_cast<int>
+  int do_num_vertical_lanes() const { return static_cast<int>
     (vertical_lanes_.size()); }
 
   const api::Lane* do_lane(int index) const final;
