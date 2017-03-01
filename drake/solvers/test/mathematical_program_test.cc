@@ -546,18 +546,18 @@ GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
   CheckAddedSymbolicLinearCost(&prog, 2 * x(0) + 3 * x(1) + 2);
   // Add linear cost 2 * x(1)
   CheckAddedSymbolicLinearCost(&prog, 2 * x(1));
-  // Add Linear (constant) cost 3
+  // Add linear (constant) cost 3
   CheckAddedSymbolicLinearCost(&prog, 3);
-  // Add Linear cost -x(0)
+  // Add linear cost -x(0)
   CheckAddedSymbolicLinearCost(&prog, -x(0));
-  // Add Linear cost -(x(1) + 3 * x(0))
+  // Add linear cost -(x(1) + 3 * x(0))
   CheckAddedSymbolicLinearCost(&prog, -(x(1) + 3 * x(0)));
   // Add linear cost x(1)*x(1) + x(0) - x(1)*x(1)
   CheckAddedSymbolicLinearCost(&prog, x(1) * x(1) + x(0) - x(1) * x(1));
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
-  // Add Linear Constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
+  // Add linear constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(3, "x");
   auto y = prog.NewContinuousVariables(3, "y");
@@ -578,7 +578,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
-  // Add Linear Constraint: -10 <= x0 <= 10
+  // Add linear constraint: -10 <= x0 <= 10
   // Note that this constraint is a bounding-box constraint which is a sub-class
   // of linear-constraint.
   MathematicalProgram prog;
@@ -603,7 +603,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
-  // Add Linear Constraints
+  // Add linear constraints
   //     3 <=  3 - 5*x0 +      + 10*x2        - 7*y1        <= 9
   //   -10 <=                       x2                      <= 10
   //    -7 <= -5 + 2*x0 + 3*x2         + 3*y0 - 2*y1 + 6*y2 <= 12

@@ -215,7 +215,7 @@ class SymbolicError : public runtime_error {
 
 // Given an expression `e`, extracts all variables inside `e`.
 // @param[in] e A symbolic expression.
-// @return pair. pair.first is the variables in `e`. pair.second is the mapping
+// @retval pair pair.first is the variables in `e`. pair.second is the mapping
 // from the variable ID to the index in pair.first, such that
 // pair.second[pair.first(i).get_id()] = i
 std::pair<VectorXDecisionVariable, unordered_map<Variable::Id, int>>
@@ -235,10 +235,10 @@ ExtractVariablesFromExpression(const Expression& e) {
 
 // Given an expression `e`, extract all variables inside `e`, append these
 // variables to `vars` if they are not included in `vars` yet.
-// @param[in] e.  A symbolic expression.
-// @param[in,out] vars.  As an input, `vars` contain the variables before
+// @param[in] e  A symbolic expression.
+// @param[in,out] vars  As an input, `vars` contain the variables before
 // extracting expression `e`. As an output, the variables in `e` that were not
-// included in `vars`, will be appended to the end of `vars.
+// included in `vars`, will be appended to the end of `vars`.
 // @param[in,out] map_var_to_index. map_var_to_index is of the same size as
 // `vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds
 // for map_var_to_index both as the input and as the output.
