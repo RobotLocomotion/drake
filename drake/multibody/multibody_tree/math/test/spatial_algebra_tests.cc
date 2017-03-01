@@ -195,6 +195,9 @@ TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
   EXPECT_EQ(sxV.translational(), Vxs.translational());
 }
 
+// Create a list of scalar types for the unit tests that follow below.
+typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
+
 // SpatialVelocity specific unit tests.
 template <typename T>
 class SpatialVelocityTest : public ::testing::Test {
@@ -211,14 +214,7 @@ class SpatialVelocityTest : public ::testing::Test {
 
   // Spatial velocity of a frame Y measured in X and expressed in A.
   SpatialVelocity<ScalarType> V_XY_A_{w_XY_A_, v_XY_A_};
-
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-// Create a list of scalar types for specific tests on different spatial
-// quantities.
-typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
 TYPED_TEST_CASE(SpatialVelocityTest, ScalarTypes);
 
 // Tests the shifting of a spatial velocity between two moving frames rigidly
@@ -240,6 +236,48 @@ TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
   // Verify the result.
   SpatialVelocity<T> expected_V_XZ_A(w_XY_A, Vector3<T>(7, 8, 0));
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
+}
+
+// SpatialForce specific unit tests.
+template <typename T>
+class SpatialForceTest : public ::testing::Test {
+ public:
+  // Useful typedefs when witting unit tests to access types.
+  typedef T ScalarType;
+ protected:
+  // Consider a force applied at the origin of Frame A, expressed in a Frame E.
+  Vector3<ScalarType> f_Ao_E_{1, 2, 0};
+
+  // Consider a torque applied about the origin of Frame A, expressed in a
+  // Frame E.
+  Vector3<ScalarType> tau_Ao_E_{0, 0, 3};
+
+  // Consider a spatial force about the origin of Frame A, expressed in a
+  // frame A.
+  SpatialForce<ScalarType> F_Ao_E_{tau_Ao_E_, f_Ao_E_};
+};
+TYPED_TEST_CASE(SpatialForceTest, ScalarTypes);
+
+// Tests the shifting of a spatial force between two moving frames rigidly
+// attached to each other.
+TYPED_TEST(SpatialForceTest, ShiftOperation) {
+  typedef typename TestFixture::ScalarType T;
+  const SpatialForce<T>& F_Ao_E = this->F_Ao_E_;
+  const Vector3<T>& f_Ao_E = this->f_Ao_E_;
+
+  // Consider a vector from the origin of a frame A to the origin of a frame B,
+  // expressed in a third frame E.
+  Vector3<T> p_AB_E(2., -2., 1.);
+
+  // Consider now shifting the spatial force as applied about the origin of
+  // frame A measured in frame E to the spatial force as applied about frame B
+  // also measured in frame E knowing that frames A and B are rigidly attached
+  // to each other.
+  SpatialForce<T> F_Bo_E = F_Ao_E.Shift(p_AB_E);
+
+  // Verify the result.
+  SpatialForce<T> expected_F_Bo_E(Vector3<T>(2.0, -1.0, -3.0), f_Ao_E);
+  EXPECT_TRUE(F_Bo_E.IsApprox(expected_F_Bo_E));
 }
 
 }  // namespace

@@ -77,8 +77,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity<T>> {
   ///
   /// @param[in] p_BQ_E Shift vector from `Bo` to `Qo` and expressed in
   ///                   frame `E`.
-  /// @retval V_AQ_E The spatial velocity of frame `Q` with respect to `A` and
-  ///                expressed in frame `A`.
+  /// @returns A reference to `this` spatial velocity `V_AQ_E` now of frame `Q`
+  ///          measured in frame `A` and expressed in frame `E`.
   ///
   /// @see Shift() to compute the shifted spatial velocity without modifying
   ///      this original object.
@@ -94,8 +94,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity<T>> {
   ///
   /// @param[in] p_BQ_E Shift vector from `Bo` to `Qo` and expressed in
   ///                   frame `E`.
-  /// @retval V_AQ_E The spatial velocity of frame `Q` with respect to `A` and
-  ///                expressed in frame `A`.
+  /// @retval V_AQ_E The spatial velocity of frame `Q` measured in frame `A` and
+  ///                expressed in frame `E`.
   ///
   /// @see ShiftInPlace() to compute the shifted spatial velocity in-place
   ///      modifying the original object.
