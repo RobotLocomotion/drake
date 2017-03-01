@@ -70,7 +70,8 @@ void InverseDynamics<T>::DoCalcOutput(const Context<T>& context,
 }
 
 template class InverseDynamics<double>;
-template class InverseDynamics<AutoDiffXd>;
+// TODO(siyuan): some linking issue on mac.
+// template class InverseDynamics<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
