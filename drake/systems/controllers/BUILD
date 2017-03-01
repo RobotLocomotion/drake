@@ -103,6 +103,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "inverse_dynamics_controller_test",
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    deps = [
+        ":inverse_dynamics_controller",
+        "//drake/multibody/parsers",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "linear_quadratic_regulator_test",
     deps = [
         ":linear_quadratic_regulator",

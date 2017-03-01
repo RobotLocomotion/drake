@@ -4,6 +4,12 @@ target_link_libraries(inverse_dynamics_test
     drakeSystemFramework
     drakeRBSystem)
 
+drake_add_cc_test(inverse_dynamics_controller_test)
+target_link_libraries(inverse_dynamics_controller_test
+    drakeSystemControllers
+    drakeSystemFramework
+    drakeRBSystem)
+
 drake_add_cc_test(pid_controlled_system_test)
 target_link_libraries(pid_controlled_system_test
     drakeSystemControllers
