@@ -1,5 +1,4 @@
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
-#include "drake/multibody/multibody_tree/math/spatial_force.h"
+#include "drake/multibody/multibody_tree/math/spatial_vectors.h"
 
 #include <Eigen/Dense>
 
@@ -194,7 +193,8 @@ TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
 }
 
 // Create a list of scalar types for the unit tests that follow below.
-typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
+//typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
+typedef ::testing::Types<double> ScalarTypes;
 
 // SpatialVelocity specific unit tests.
 template <typename T>
@@ -234,6 +234,26 @@ TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
   // Verify the result.
   SpatialVelocity<T> expected_V_XZ_A(w_XY_A, Vector3<T>(7, 8, 0));
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
+}
+
+// Tests that we can take the dot product of a SpatialVelocity with a
+// SpatialForce.
+TYPED_TEST(SpatialVelocityTest, DotProductWithSpatialForce) {
+  typedef typename TestFixture::ScalarType T;
+
+  SpatialVelocity<T> V(Vector3<T>(1.0, 2.0, 3.0), /*rotational component*/
+                       Vector3<T>(-2.0, -5.0, 8.0) /*translational component*/);
+  SpatialForce<T> F(Vector3<T>(4.0, 1.0, -3.0), /*rotational component*/
+                    Vector3<T>(11.0, 9.0, -2.0) /*translational component*/);
+  T VdotF = V.dot(F);
+  T VdotF_expected(-86);
+  // Verify the result.
+  EXPECT_EQ(VdotF, VdotF_expected);
+
+  // Verify the dot product is commutative.
+  T FdotV = F.dot(V);
+  // Verify the result.
+  EXPECT_EQ(FdotV, VdotF_expected);
 }
 
 // SpatialForce specific unit tests.

@@ -20,6 +20,9 @@ typedef T ScalarType;
 };
 }
 
+// Forward declaration to define dot product with a spatial force.
+template <typename T> class SpatialForce;
+
 /// This class is used to represent physical quantities that correspond to
 /// spatial velocities. Spatial velocities are 6-element quantities that are
 /// pairs of ordinary 3-vectors. Elements 0-2 are always the angular velocity
@@ -114,6 +117,10 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity<T>> {
   friend SpatialVelocity<T> operator*(const SpatialVelocity<T>& V, const T& s) {
     return s * V;  // Multiplication by scalar is commutative.
   }
+
+  /// Returns the dot-product between `this` spatial velocity and the spatial
+  /// force @p F. Both spatial quantities must be expressed in the same frame.
+  T dot(const SpatialForce<T>& F) const;
 };
 
 }  // namespace multibody
