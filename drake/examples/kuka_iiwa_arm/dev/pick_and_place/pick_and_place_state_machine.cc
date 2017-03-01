@@ -28,11 +28,15 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place_demo {
 namespace {
 
+
+// This needs to match the object model file in iiwa_wsg_simulation.cc
+const double kHalfBoxHeight = 0.1;
+
 // Desired location to place the object for table0 and table1. Positions are
 // specified in the iiwa arm's base frame. Table0 is right in front of the arm's
 // base.
-const Vector3<double> kPlacePosition0(0.8, 0, 0);
-const Vector3<double> kPlacePosition1(0, 0.8, 0);
+const Vector3<double> kPlacePosition0(0.8, 0, kHalfBoxHeight);
+const Vector3<double> kPlacePosition1(0, 0.8, kHalfBoxHeight);
 
 // Determines which table is holding the object based on the object's xy
 // distance to the center of each table.
