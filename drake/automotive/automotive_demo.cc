@@ -50,7 +50,8 @@ namespace {
 
 enum class RoadNetworkType {
   flat = 0,
-  dragway = 1
+  dragway = 1,
+  crossing = 2
 };
 
 std::string MakeChannelName(const std::string& name) {
@@ -162,6 +163,10 @@ const maliput::api::RoadGeometry* AddTerrain(RoadNetworkType road_network_type,
       road_geometry = AddDragway(simulator);
       break;
     }
+    case RoadNetworkType::crossing: {
+      road_geometry = AddCrossing(simulator);
+      break;
+    }
   }
   return road_geometry;
 }
@@ -171,7 +176,11 @@ const maliput::api::RoadGeometry* AddTerrain(RoadNetworkType road_network_type,
 RoadNetworkType DetermineRoadNetworkType() {
   if (FLAGS_num_dragway_lanes > 0) {
     return RoadNetworkType::dragway;
-  } else {
+  } 
+  if (Flags_num_crossing_lanes >0){
+    return RoadNetworkType::crossing;
+  }
+  else{
     return RoadNetworkType::flat;
   }
 }
