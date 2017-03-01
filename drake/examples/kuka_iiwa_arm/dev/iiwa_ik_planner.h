@@ -123,8 +123,7 @@ class IiwaIkPlanner {
   bool SolveIk(const IkCartesianWaypoint& waypoint, const VectorX<double>& q0,
                const VectorX<double>& q_nom,
                const Vector3<double>& position_tol, double rot_tolerance,
-               VectorX<double>* ik_res,
-               std::vector<int>* info,
+               VectorX<double>* ik_res, std::vector<int>* info,
                std::vector<std::string>* infeasible_constraints);
 
   std::default_random_engine rand_generator_;
