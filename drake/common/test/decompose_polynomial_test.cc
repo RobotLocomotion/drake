@@ -376,7 +376,7 @@ TEST_F(DecomposePolynomialTest, DISABLED_DecomposePolynomial13) {
 }
 
 TEST_F(DecomposePolynomialTest, DecomposePolynomial14) {
-  // Test the polynomial that some terms has zero coefficient.
+  // Test the polynomial that some terms have zero coefficient.
   Expression e = 1 + x_ * x_ + 2 * (y_ - 0.5 * x_ * x_ - 0.5);
 
   MonomialAsExpressionToCoefficientMap map_expected1{{y_, 2}};
