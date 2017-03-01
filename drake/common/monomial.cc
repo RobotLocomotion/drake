@@ -400,7 +400,7 @@ MonomialToCoefficientMap DecomposePolynomialIntoMonomial(
   MonomialToCoefficientMap map = DecomposePolynomialVisitor().Visit(e, vars);
   // Now loops through the map to remove the term with zero coefficient.
   for (auto it = map.begin(); it != map.end(); ) {
-    bool is_zero_term = false;
+    bool is_zero_term(true);
     if (is_constant(it->second) && is_zero(it->second)) {
       is_zero_term = true;
     } else if (it->second.is_polynomial()) {
@@ -411,8 +411,13 @@ MonomialToCoefficientMap DecomposePolynomialIntoMonomial(
           it->second, it->second.GetVariables());
       for (const auto& p : coeff_map) {
         DRAKE_DEMAND(is_constant(p.second));
-        is_zero_term &= is_zero(p.second);
+        if (!is_zero(p.second)) {
+          is_zero_term = false;
+          break;
+        }
       }
+    } else {
+      is_zero_term = false;
     }
     if (is_zero_term) {
       it = map.erase(it);
