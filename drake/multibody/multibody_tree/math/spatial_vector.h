@@ -127,7 +127,7 @@ class SpatialVector {
   /// `this` spatial velocity with the angular (linear) component of @p other
   /// using the fuzzy comparison provided by Eigen's method isApprox().
   bool IsApprox(const Derived& other,
-                double tolerance = Eigen::NumTraits<T>::epsilon()) {
+                double tolerance = Eigen::NumTraits<T>::epsilon()) const {
     return translational().isApprox(other.translational(), tolerance) &&
            rotational().isApprox(other.rotational(), tolerance);
   }

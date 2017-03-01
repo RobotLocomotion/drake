@@ -1,4 +1,5 @@
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/multibody_tree/math/spatial_force.h"
 
 #include <Eigen/Dense>
 
@@ -14,24 +15,71 @@ namespace multibody {
 namespace math {
 namespace {
 
-using Eigen::Vector3d;
+template <class SpatialQuantityUnderTest>
+class SpatialQuantityTest : public ::testing::Test {
+ public:
+  typedef SpatialQuantityUnderTest SpatialQuantityType;
+  typedef typename internal::spatial_vector_traits<
+      SpatialQuantityType>::ScalarType ScalarType;
+ protected:
+  // Linear velocity of a Frame Y, measured in Frame X, and expressed in a third
+  // frame A.
+  Vector3<ScalarType> v_XY_A_{1, 2, 0};
+
+  // Angular velocity of a frame Y measured in X and expressed in A.
+  Vector3<ScalarType> w_XY_A_{0, 0, 3};
+
+  // Spatial velocity of a frame Y measured in X and expressed in A.
+  SpatialQuantityType V_XY_A_{w_XY_A_, v_XY_A_};
+
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+typedef ::testing::Types<SpatialVelocity<double>, SpatialForce<double>> MyTypes;
+TYPED_TEST_CASE(SpatialQuantityTest, MyTypes);
 
 // Tests default construction and proper size at compile time.
-GTEST_TEST(SpatialVelocity, SizeAtCompileTime) {
-  SpatialVelocity<double> V;
+TYPED_TEST(SpatialQuantityTest, SizeAtCompileTime) {
+  TypeParam V;
   EXPECT_EQ(V.size(), 6);
 }
 
-// Construction from two three dimensional vectors.
-GTEST_TEST(SpatialVelocity, ConstructionFromTwo3DVectors) {
+// Construction from a Eigen expressions.
+TYPED_TEST(SpatialQuantityTest, ConstructionFromAnEigenExpression) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+
+  // A six-dimensional vector.
+  Vector6<T> v;
+  v << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
+
+  // A spatial velocity instantiated from an Eigen vector.
+  SpatialQuantity V1(v);
+
+  // Verify the underlying Eigen vector matches the original vector.
+  EXPECT_EQ(V1.rotational(), v.template segment<3>(0));
+  EXPECT_EQ(V1.translational(), v.template segment<3>(3));
+
+  // A spatial velocity instantiated from an Eigen block.
+  SpatialQuantity V2(v.template segment<6>(0));
+  EXPECT_EQ(V2.rotational(), v.template segment<3>(0));
+  EXPECT_EQ(V2.translational(), v.template segment<3>(3));
+}
+
+// Construction from two three-dimensional vectors.
+TYPED_TEST(SpatialQuantityTest, ConstructionFromTwo3DVectors) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+
   // Linear velocity of frame B measured and expressed in frame A.
-  Vector3d v_AB(1, 2, 0);
+  Vector3<T> v_AB(1, 2, 0);
 
   // Angular velocity of frame B measured and expressed in frame A.
-  Vector3d w_AB(0, 0, 3);
+  Vector3<T> w_AB(0, 0, 3);
 
   // Spatial velocity of frame B with respect to A and expressed in A.
-  SpatialVelocity<double> V_AB(w_AB, v_AB);
+  SpatialQuantity V_AB(w_AB, v_AB);
 
   // Verify compile-time size.
   EXPECT_EQ(V_AB.size(), 6);
@@ -41,53 +89,21 @@ GTEST_TEST(SpatialVelocity, ConstructionFromTwo3DVectors) {
   EXPECT_TRUE(V_AB.rotational().isApprox(w_AB));
 }
 
-// Construction from a Eigen expressions.
-GTEST_TEST(SpatialVelocity, ConstructionFromAnEigenExpression) {
-  // A six-dimensional vector.
-  Vector6<double> v;
-  v << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
-
-  // A spatial velocity instantiated from an Eigen vector.
-  SpatialVelocity<double> V1(v);
-
-  // Verify the underlying Eigen vector matches the original vector.
-  EXPECT_EQ(V1.rotational(), v.segment<3>(0));
-  EXPECT_EQ(V1.translational(), v.segment<3>(3));
-
-  // A spatial velocity instantiated from an Eigen block.
-  SpatialVelocity<double> V2(v.segment<6>(0));
-  EXPECT_EQ(V2.rotational(), v.segment<3>(0));
-  EXPECT_EQ(V2.translational(), v.segment<3>(3));
-}
-
-class SpatialVelocityTest : public ::testing::Test {
- protected:
-  // Linear velocity of a Frame Y, measured in Frame X, and expressed in a third
-  // frame A.
-  Vector3d v_XY_A_{1, 2, 0};
-
-  // Angular velocity of a frame Y measured in X and expressed in A.
-  Vector3d w_XY_A_{0, 0, 3};
-
-  // Spatial velocity of a frame Y measured in X and expressed in A.
-  SpatialVelocity<double> V_XY_A_{w_XY_A_, v_XY_A_};
-
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
 // Tests array accessors.
-TEST_F(SpatialVelocityTest, SpatialVelocityArrayAccessor) {
+TYPED_TEST(SpatialQuantityTest, SpatialVelocityArrayAccessor) {
+  typedef TypeParam SpatialQuantity;
+  SpatialQuantity& V_XY_A = this->V_XY_A_;
+
   // Mutable access.
-  V_XY_A_[0] = 1.0;
-  V_XY_A_[1] = 2.0;
-  V_XY_A_[2] = 3.0;
-  V_XY_A_[3] = 4.0;
-  V_XY_A_[4] = 5.0;
-  V_XY_A_[5] = 6.0;
+  V_XY_A[0] = 1.0;
+  V_XY_A[1] = 2.0;
+  V_XY_A[2] = 3.0;
+  V_XY_A[3] = 4.0;
+  V_XY_A[4] = 5.0;
+  V_XY_A[5] = 6.0;
 
   // Const access.
-  const auto& V = V_XY_A_;
+  const auto& V = V_XY_A;
   EXPECT_EQ(V[0], 1.0);
   EXPECT_EQ(V[1], 2.0);
   EXPECT_EQ(V[2], 3.0);
@@ -97,71 +113,98 @@ TEST_F(SpatialVelocityTest, SpatialVelocityArrayAccessor) {
 }
 
 // Tests the (mutable) access with operator[](int).
-TEST_F(SpatialVelocityTest, SpatialVelocityVectorComponentAccessors) {
+TYPED_TEST(SpatialQuantityTest, SpatialVelocityVectorComponentAccessors) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const SpatialQuantity& V_XY_A = this->V_XY_A_;
+  const Vector3<T>& v_XY_A = this->v_XY_A_;
+  const Vector3<T>& w_XY_A = this->w_XY_A_;
+
   // They should be exactly equal, byte by byte.
-  EXPECT_EQ(V_XY_A_.translational(), v_XY_A_);
-  EXPECT_EQ(V_XY_A_.rotational(), w_XY_A_);
+  EXPECT_EQ(V_XY_A.translational(), v_XY_A);
+  EXPECT_EQ(V_XY_A.rotational(), w_XY_A);
 }
 
 // Tests access to the raw data pointer.
-TEST_F(SpatialVelocityTest, RawDataAccessors) {
+TYPED_TEST(SpatialQuantityTest, RawDataAccessors) {
+  typedef TypeParam SpatialQuantity;
+  SpatialQuantity& V_XY_A = this->V_XY_A_;
+
   // Mutable access.
-  double* mutable_data = V_XY_A_.mutable_data();
+  double* mutable_data = V_XY_A.mutable_data();
   for (int i = 0; i < 6; ++i) mutable_data[i] = i;
 
   // Const access.
-  const double* const_data = V_XY_A_.data();
-  EXPECT_EQ(V_XY_A_[0], const_data[0]);
-  EXPECT_EQ(V_XY_A_[1], const_data[1]);
-  EXPECT_EQ(V_XY_A_[2], const_data[2]);
-  EXPECT_EQ(V_XY_A_[3], const_data[3]);
-  EXPECT_EQ(V_XY_A_[4], const_data[4]);
-  EXPECT_EQ(V_XY_A_[5], const_data[5]);
+  const double* const_data = V_XY_A.data();
+  EXPECT_EQ(V_XY_A[0], const_data[0]);
+  EXPECT_EQ(V_XY_A[1], const_data[1]);
+  EXPECT_EQ(V_XY_A[2], const_data[2]);
+  EXPECT_EQ(V_XY_A[3], const_data[3]);
+  EXPECT_EQ(V_XY_A[4], const_data[4]);
+  EXPECT_EQ(V_XY_A[5], const_data[5]);
 }
 
 // Tests comparison to a given precision.
-TEST_F(SpatialVelocityTest, IsApprox) {
+TYPED_TEST(SpatialQuantityTest, IsApprox) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const SpatialQuantity& V_XY_A = this->V_XY_A_;
+  const Vector3<T>& v_XY_A = this->v_XY_A_;
+  const Vector3<T>& w_XY_A = this->w_XY_A_;
+
   const double precision = 1.0e-10;
-  SpatialVelocity<double> other(
-      (1.0 + precision) * w_XY_A_, (1.0 + precision) * v_XY_A_);
-  EXPECT_TRUE(V_XY_A_.IsApprox(other, (1.0 + 1.0e-7) * precision));
-  EXPECT_FALSE(V_XY_A_.IsApprox(other, precision));
+  SpatialQuantity other(
+      (1.0 + precision) * w_XY_A, (1.0 + precision) * v_XY_A);
+  EXPECT_TRUE(V_XY_A.IsApprox(other, (1.0 + 1.0e-7) * precision));
+  EXPECT_FALSE(V_XY_A.IsApprox(other, precision));
 }
 
 // Tests the shifting of a spatial velocity between two moving frames rigidly
 // attached to each other.
-TEST_F(SpatialVelocityTest, ShiftOperation) {
+TYPED_TEST(SpatialQuantityTest, ShiftOperation) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const SpatialQuantity& V_XY_A = this->V_XY_A_;
+  const Vector3<T>& w_XY_A = this->w_XY_A_;
+
   // Consider a vector from the origin of a frame Y to the origin of a frame Z,
   // expressed in a third frame A.
-  Vector3d p_YZ_A({2, -2, 0});
+  Vector3<T> p_YZ_A({2, -2, 0});
 
   // Consider now shifting the spatial velocity of a frame Y measured in frame
   // X to the spatial velocity of frame Z measured in frame X knowing that
   // frames Y and Z are rigidly attached to each other.
-  SpatialVelocity<double> V_XZ_A = V_XY_A_.Shift(p_YZ_A);
+  SpatialQuantity V_XZ_A = V_XY_A.Shift(p_YZ_A);
 
   // Verify the result.
-  SpatialVelocity<double> expected_V_XZ_A(w_XY_A_, Vector3d(7, 8, 0));
+  SpatialQuantity expected_V_XZ_A(w_XY_A, Vector3<T>(7, 8, 0));
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
 }
 
 // Test the stream insertion operator to write into a stream.
-TEST_F(SpatialVelocityTest, ShiftOperatorIntoStream) {
+TYPED_TEST(SpatialQuantityTest, ShiftOperatorIntoStream) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  const SpatialQuantity& V_XY_A = this->V_XY_A_;
+
   std::stringstream stream;
-  stream << V_XY_A_;
+  stream << V_XY_A;
   std::string expected_string = "[0, 0, 3, 1, 2, 0]ᵀ";
   EXPECT_EQ(expected_string, stream.str());
 }
 
 // Test the multiplication of a spatial velocity by a scalar.
-TEST_F(SpatialVelocityTest, MulitplicationByAScalar) {
-  const double scalar = 3.0;
-  SpatialVelocity<double> sxV = scalar * V_XY_A_;
-  SpatialVelocity<double> Vxs = V_XY_A_ * scalar;
+TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const SpatialQuantity& V_XY_A = this->V_XY_A_;
+
+  const T scalar = 3.0;
+  SpatialQuantity sxV = scalar * V_XY_A;
+  SpatialQuantity Vxs = V_XY_A * scalar;
 
   // Verify the result using Eigen operations.
-  EXPECT_EQ(sxV.rotational(), scalar * V_XY_A_.rotational());
-  EXPECT_EQ(sxV.translational(), scalar * V_XY_A_.translational());
+  EXPECT_EQ(sxV.rotational(), scalar * V_XY_A.rotational());
+  EXPECT_EQ(sxV.translational(), scalar * V_XY_A.translational());
 
   // Verify the multiplication by a scalar is commutative.
   EXPECT_EQ(sxV.rotational(), Vxs.rotational());
