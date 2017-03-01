@@ -19,7 +19,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassDamperSystem);
   SpringMassDamperSystem(const T& spring_constant_N_per_m,
                          const T& damping_constant_N_per_m,
-                         const T& mass_kg) : 
+                         const T& mass_kg) :
     SpringMassSystem<T>(spring_constant_N_per_m, mass_kg, false /* unforced */),
     damping_constant_N_per_m_(damping_constant_N_per_m) { }
 
@@ -27,7 +27,8 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   const T& get_damping_constant() const { return damping_constant_N_per_m_; }
 
  protected:
-  void DoCalcTimeDerivatives(const Context<T>& context, ContinuousState<T>* derivatives) const override {
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {
     // Get the current state of the spring.
     const ContinuousState<T>& state = *context.get_continuous_state();
 
@@ -45,11 +46,11 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
     T force = -k * (x - x0) - b * xd;
 
     // Second element of the derivative is spring acceleration.
-    (*derivatives)[1] = force / this->get_mass(); 
+    (*derivatives)[1] = force / this->get_mass();
   }
 
  private:
-   T damping_constant_N_per_m_;
+  T damping_constant_N_per_m_;
 };
 
 // This is a modified spring-mass-damper system that is only active in a small
@@ -61,8 +62,8 @@ class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
   ModifiedSpringMassDamperSystem(const T& spring_constant_N_per_m,
                                  const T& damping_constant_N_per_m,
                                  const T& mass_kg,
-                                 const T& constant_force) : 
-    SpringMassDamperSystem<T>(spring_constant_N_per_m, 
+                                 const T& constant_force) :
+    SpringMassDamperSystem<T>(spring_constant_N_per_m,
                               damping_constant_N_per_m,
                               mass_kg),
     constant_force_(constant_force) { }
@@ -71,7 +72,8 @@ class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
   const T& get_constant_force() const { return constant_force_; }
 
  protected:
-  void DoCalcTimeDerivatives(const Context<T>& context, ContinuousState<T>* derivatives) const override {
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {
     // Get the current state of the spring.
     const ContinuousState<T>& state = *context.get_continuous_state();
 
@@ -87,68 +89,79 @@ class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
     const T b = this->get_damping_constant();
     const T x0 = 0;
     const T x = state[0];
-    if (x <= x0) 
+    if (x <= x0)
       force -= k * (x - x0) + b * xd;
 
     // Second element of the derivative is spring acceleration.
-    (*derivatives)[1] = force / this->get_mass(); 
+    (*derivatives)[1] = force / this->get_mass();
   }
 
  private:
-   T constant_force_;
+  T constant_force_;
 };
 
-GTEST_TEST(IntegratorTest, MiscAPI) {
-  SpringMassSystem<double> spring_mass_dbl(1., 1., 0.);
+class ImplicitIntegratorTest : public ::testing::Test {
+ public:
+  ImplicitIntegratorTest() {
 
-  // Setup the integration step size.
-  const double dt = 1e-3;
+    // Create three systems.
+    spring = std::make_unique<SpringMassSystem<double>>(spring_k,
+                                                         mass,
+                                                         false /* no forcing */
+    );
+    spring_damper = std::make_unique<SpringMassDamperSystem<double>>(
+        stiff_spring_k, stiff_damping_b, mass);
+    mod_spring_damper = std::make_unique<
+        ModifiedSpringMassDamperSystem<double>>(stiff_spring_k, damping_b,
+                                                mass, constant_force_mag);
 
-  // Create a context.
-  auto context_dbl = spring_mass_dbl.CreateDefaultContext();
+    // One context will be usable for all three systems.
+    context = spring->CreateDefaultContext();
+  }
 
+  std::unique_ptr<Context<double>> context;
+  std::unique_ptr<SpringMassSystem<double>> spring;
+  std::unique_ptr<SpringMassDamperSystem<double>> spring_damper;
+  std::unique_ptr<ModifiedSpringMassDamperSystem<double>> mod_spring_damper;
+  const double dt = 1e-3;               // Default integration step size.
+  const double spring_k = 1.0;          // Default spring constant.
+  const double stiff_spring_k = 1e10;   // Default constant for a stiff spring.
+  const double damping_b = 1e4;         // Default semi-stiff damper constant.
+  const double stiff_damping_b = 1e8;   // Default stiff damper constant.
+  const double mass = 2.0;              // Default particle mass.
+  const double constant_force_mag = 10; // Magnitude of the constant force.
+  const double inf = std::numeric_limits<double>::infinity();
+};
+
+TEST_F(ImplicitIntegratorTest, MiscAPI) {
   // Create the integrator as a double and as an autodiff type
-  ImplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, dt,
-                                          context_dbl.get());
+  ImplicitEulerIntegrator<double> integrator(*spring, dt, context.get());
 
   // Test that setting the target accuracy or initial step size target fails.
-  EXPECT_THROW(int_dbl.set_target_accuracy(1.0), std::logic_error);
-  EXPECT_THROW(int_dbl.request_initial_step_size_target(1.0), std::logic_error);
+  EXPECT_THROW(integrator.set_target_accuracy(1.0), std::logic_error);
+  EXPECT_THROW(integrator.request_initial_step_size_target(1.0),
+               std::logic_error);
 }
 
 // TODO(edrumwri): Somehow verify that the integrator statistics were properly
 // reset?
 
-GTEST_TEST(IntegratorTest, ContextAccess) {
-  // Create the mass spring system.
-  SpringMassSystem<double> spring_mass(1., 1., 0.);
-
-  // Setup the integration step size.
-  const double dt = 1e-3;
-
-  // Create a context.
-  auto context = spring_mass.CreateDefaultContext();
-
+TEST_F(ImplicitIntegratorTest, ContextAccess) {
   // Create the integrator.
-  ImplicitEulerIntegrator<double> integrator(
-      spring_mass, dt, context.get());  // Use default Context.
+  ImplicitEulerIntegrator<double> integrator(*spring, dt, context.get());
 
   integrator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
-  EXPECT_EQ(context->get_time(), 3.);\
+  EXPECT_EQ(context->get_time(), 3.);
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
   EXPECT_THROW(integrator.StepOnceAtMost(dt, dt, dt), std::logic_error);
 }
 
 /// Verifies error estimation is unsupported.
-GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
+TEST_F(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
   // Spring-mass system is necessary only to setup the problem.
-  SpringMassSystem<double> spring_mass(1., 1., 0.);
-  const double dt = 1e-3;
-  auto context = spring_mass.CreateDefaultContext();
-  ImplicitEulerIntegrator<double> integrator(
-      spring_mass, dt, context.get());
+  ImplicitEulerIntegrator<double> integrator(*spring, dt, context.get());
 
   EXPECT_EQ(integrator.get_error_estimate_order(), 0);
   EXPECT_EQ(integrator.supports_error_estimation(), false);
@@ -163,26 +176,17 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
 // where omega = sqrt(k/m)
 // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
 // for t = 0, x(0) = c1, x'(0) = c2*omega
-GTEST_TEST(IntegratorTest, SpringMassStep) {
+TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   const double spring_k = 300.0;  // N/m
-  const double mass = 2.0;      // kg
 
-  // Create the spring-mass system.
-  SpringMassSystem<double> spring_mass(spring_k, mass, 0.);
+  // Create a new spring-mass system.
+  SpringMassSystem<double> spring_mass(spring_k, mass, false /* no forcing */);
 
-  // Create a context.
-  auto context = spring_mass.CreateDefaultContext();
-
-  // Setup the integration size and infinity.
+  // Create a new dt.
   const double dt = 1e-2;
-  const double inf = std::numeric_limits<double>::infinity();
 
-  // Create the integrator.
-  ImplicitEulerIntegrator<double> integrator(
-      spring_mass, dt, context.get());  // Use default Context.
-
-  // TODO(edrumwri): consider making the convergence tolerance a parameter
-  // to the constructor in ImplicitEulerIntegrator.
+  // Spring-mass system is necessary only to setup the problem.
+  ImplicitEulerIntegrator<double> integrator(spring_mass, dt, context.get());
 
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
@@ -225,35 +229,23 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
 // Integrate the mass-spring-damping system using huge stiffness and damping.
 // This equation should be stiff. 
-GTEST_TEST(IntegratorTest, SpringMassDamperStiff) {
-  const double spring_k = 1e10;  // N/m
-  const double damping_b = 1e8;   // N/m
-  const double mass = 2.0;      // kg
-
-  // Create the spring-mass-damping system.
-  SpringMassDamperSystem<double> spring_mass(spring_k, damping_b, mass);
-
+TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   // Create a context.
-  auto context = spring_mass.CreateDefaultContext();
+  auto context = spring_damper->CreateDefaultContext();
 
-  // Set the integration size and infinity.
+  // Use a new integration size.
   const double dt = 1e-1;
-  const double inf = std::numeric_limits<double>::infinity();
 
   // Create the integrator.
-  ImplicitEulerIntegrator<double> integrator(
-      spring_mass, dt, context.get());  // Use default Context.
-
-  // TODO(edrumwri): consider making the convergence tolerance a parameter
-  // to the constructor in ImplicitEulerIntegrator.
+  ImplicitEulerIntegrator<double> integrator(*spring_damper, dt, context.get());
 
   // Set the initial position and initial velocity.
   const double initial_position = 1;
   const double initial_velocity = 0.1;
 
   // Set initial condition.
-  spring_mass.set_position(context.get(), initial_position);
-  spring_mass.set_velocity(context.get(), initial_velocity);
+  spring_damper->set_position(context.get(), initial_position);
+  spring_damper->set_velocity(context.get(), initial_velocity);
 
   // Take all the defaults.
   integrator.Initialize();
@@ -261,7 +253,7 @@ GTEST_TEST(IntegratorTest, SpringMassDamperStiff) {
   // Integrate for 1 second.
   const double t_final = 1.0;
   double t;
-  for (t = 0.0; std::abs(t - t_final) > dt; t = context->get_time()) 
+  for (t = 0.0; std::abs(t - t_final) >= dt; t = context->get_time())
     integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
 
   // TODO(edrumwri): Tighten this test.
@@ -275,8 +267,6 @@ GTEST_TEST(IntegratorTest, SpringMassDamperStiff) {
   const double tol = std::sqrt(std::numeric_limits<double>::epsilon());
   EXPECT_NEAR(0.0, x_final, tol);
 
-std::cout << "Number of spurious gradient encounters: " << integrator.get_num_misdirected_descents() << std::endl;
-std::cout << "Number of objective function increases: " << integrator.get_num_objective_function_increases() << std::endl;
   // Verify that integrator statistics are valid
   EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
@@ -284,41 +274,21 @@ std::cout << "Number of objective function increases: " << integrator.get_num_ob
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }
 
-// Integrate the mass-spring-damping system with a constant force. 
-GTEST_TEST(IntegratorTest, ModifiedSpringMassDamper) {
-  const double spring_k = 1e4;  // N/m
-  const double damping_b = 1e2;   // N/m
-  const double mass = 2.0;      // kg
-
-  // Create the modified spring-mass-damping system.
-  const double steady_force = 10.0;
-  ModifiedSpringMassDamperSystem<double> spring_mass(spring_k,
-                                                     damping_b,
-                                                     mass,
-                                                     steady_force);
-
-  // Create a context.
-  auto context = spring_mass.CreateDefaultContext();
-
-  // Set the integration size and infinity.
-  const double dt = 1e-3;
-  const double inf = std::numeric_limits<double>::infinity();
-
+// Integrate the mass-spring-damping system with a constant force.
+TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
   // Create the integrator.
-  ImplicitEulerIntegrator<double> integrator(
-      spring_mass, dt, context.get());  // Use default Context.
-
-  // TODO(edrumwri): consider making the convergence tolerance a parameter
-  // to the constructor in ImplicitEulerIntegrator.
-  integrator.set_convergence_tolerance(1e-5);  
+  ImplicitEulerIntegrator<double> integrator(*mod_spring_damper,
+                                             dt,
+                                             context.get());
+  integrator.set_convergence_tolerance(1e-8);
 
   // Set the initial position and initial velocity.
-  const double initial_position = 1;
+  const double initial_position = 1e-8;
   const double initial_velocity = 0;
 
   // Set initial condition.
-  spring_mass.set_position(context.get(), initial_position);
-  spring_mass.set_velocity(context.get(), initial_velocity);
+  mod_spring_damper->set_position(context.get(), initial_position);
+  mod_spring_damper->set_velocity(context.get(), initial_velocity);
 
   // Take all the defaults.
   integrator.Initialize();
@@ -326,8 +296,13 @@ GTEST_TEST(IntegratorTest, ModifiedSpringMassDamper) {
   // Integrate for 1 second.
   const double t_final = 1.0;
   double t;
-  for (t = 0.0; std::abs(t - t_final) > dt; t = context->get_time()) 
+//  int last_obj_inc = 0;
+  for (t = 0.0; std::abs(t - t_final) >= dt; t = context->get_time()) {
+//    const VectorBase<double>& xc = context->get_continuous_state_vector();
+//   std::cout << (integrator.get_num_objective_function_increases() - last_obj_inc) << " objective function increases for xc=" << xc.GetAtIndex(0) << ", " << xc.GetAtIndex(1) << " at " << context->get_time() << std::endl;
+//    last_obj_inc = integrator.get_num_objective_function_increases();
     integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
+  }
 
   // TODO(edrumwri): Tighten this test.
   EXPECT_NEAR(context->get_time(), t, dt);
@@ -345,8 +320,6 @@ GTEST_TEST(IntegratorTest, ModifiedSpringMassDamper) {
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
-std::cout << "Number of spurious gradient encounters: " << integrator.get_num_misdirected_descents() << std::endl;
-std::cout << "Number of objective function increases: " << integrator.get_num_objective_function_increases() << std::endl;
 }
 
 

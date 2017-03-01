@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <utility>
 
@@ -8,7 +9,6 @@
 #include "drake/math/jacobian.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/analysis/line_search.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -65,6 +65,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   ~ImplicitEulerIntegrator() override = default;
 
+  // TODO(edrumwri): consider making the convergence tolerance a parameter
+  // to the constructor in ImplicitEulerIntegrator.
   explicit ImplicitEulerIntegrator(const System<T>& system,
                                    const T& max_step_size,
                                    Context<T>* context = nullptr)
@@ -87,20 +89,14 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   void set_convergence_tolerance(double tol) { convergence_tol_ = tol; }
 
   /// Gets the error estimate order (zero).
-  virtual int get_error_estimate_order() const override { return 0; }
-
-  /// Gets the number of times that the integrator rejected a trial step due to
-  /// spurious gradient convergence.
-  int get_num_spurious_gradient_convergences() const {
-    return num_spurious_gradient_convergences_;
-  }
+  int get_error_estimate_order() const override { return 0; }
 
   /// Gets the number of times that the integrator rejected a trial step due to
   /// misdirected descent steps (i.e., the Newton-Raphson step would increase
   /// the Euclidean norm of x(t+h) - x(t) - h*f(t+h, x(t+h)).
   int get_num_misdirected_descents() const {
     return num_misdirected_descents_;
-  } 
+  }
 
   /// Gets the number of times that the integrator rejected a trial step due to
   /// an increase in the Euclidean norm of x(t+h) - x(t) - h*f(t+h, x(t+h))
@@ -109,9 +105,14 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     return num_objective_function_increases_;
   }
 
+  /// Gets the number of times that the integrator rejected a trial step due to
+  /// the update vector in Newton-Raphson being too small.
+  int get_num_overly_small_updates() const {
+    return num_overly_small_updates_; }
+
  protected:
   std::pair<bool, T> DoStepOnceAtMost(const T& max_dt);
-  virtual void DoResetStatistics() override;
+  void DoResetStatistics() override;
 
  private:
   void RestoreTimeAndState(const T& t, const VectorX<T>& x);
@@ -136,11 +137,11 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   std::unique_ptr<ContinuousState<T>> derivs_;
 
   // For LU factorization with full pivoting; this yields a solution to a
-  // system of linear equations that is somewhat robust 
+  // system of linear equations that is somewhat robust.
   Eigen::FullPivLU<MatrixX<T>> LU_;
 
+  int num_overly_small_updates_{0};
   int num_objective_function_increases_{0};
-  int num_spurious_gradient_convergences_{0};
   int num_misdirected_descents_{0};
 };
 }  // namespace systems
