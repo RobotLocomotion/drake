@@ -1,13 +1,13 @@
 #include "gtest/gtest.h"
 
-#include "drake/automotive/maliput/dragway/branch_point.h"
-#include "drake/automotive/maliput/dragway/junction.h"
-#include "drake/automotive/maliput/dragway/lane.h"
-#include "drake/automotive/maliput/dragway/road_geometry.h"
+#include "drake/automotive/maliput/crossroad/branch_point.h"
+#include "drake/automotive/maliput/crossroad/junction.h"
+#include "drake/automotive/maliput/crossroad/lane.h"
+#include "drake/automotive/maliput/crossroad/road_geometry.h"
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad{
 namespace {
 
 // To understand the characteristics of the geometry, consult the
@@ -289,6 +289,6 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
 }
 
 }  // namespace
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake

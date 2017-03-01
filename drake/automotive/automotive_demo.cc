@@ -7,6 +7,7 @@
 #include "drake/automotive/automotive_simulator.h"
 #include "drake/automotive/create_trajectory_params.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
+#include "drake/automotive/maliput/crossroad/road_geometry.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
 
@@ -26,6 +27,40 @@ DEFINE_int32(num_dragway_lanes, 0,
              "default zero to disable the dragway. A dragway road network is "
              "only enabled when the user specifies a number of lanes greater "
              "than zero.");
+DEFINE_int32(num_horizontal_crossroad_lanes, 0,
+  // TODO:(shensquared) polish the definition
+             "The number of horizontal lanes on the cross road. The number of"
+             "lanes is by default zero to disable the horizontal sections,"
+             "egenerated cross road that reduces to just a dragway. A"
+             "dragway road network is "
+             "only enabled when the user specifies a number of lanes greater "
+             "than zero.");
+DEFINE_int32(num_vertical_crossroad_lanes, 0,
+  // TODO:(shensquared) polish the definition
+            "The number of horizontal lanes on the cross road. The number of"
+            "lanes is by default zero to disable the horizontal sections,"
+            "egenerated cross road that reduces to just a dragway. A"
+            "dragway road network is "
+            "only enabled when the user specifies a number of lanes greater "
+              "than zero.");
+// TODO:(shensquared) polish the definition
+DEFINE_double(crossroad_length, 100, "The length of the crossroad.");
+DEFINE_double(crossroad_lane_width, 3.7, "The crossroad lane width.");
+DEFINE_double(crossroad_shoulder_width, 3.0, "The crossroad's shoulder width.");
+DEFINE_double(crossroad_base_speed, 4.0,
+              "The speed of the vehicles on the right-most lane of the "
+              "crossroad.");
+DEFINE_double(crossroad_lane_speed_delta, 2,
+              "The change in vehicle speed in the left-adjacent lane. For "
+              "example, suppose the crossroad has 3 lanes. Vehicles in the "
+              "right-most lane will travel at crossroad_base_speed m/s. "
+              "Vehicles in the middle lane will travel at "
+              "crossroad_base_speed + crossroad_lane_speed_delta m/s. Finally, "
+              "vehicles in the left-most lane will travel at "
+              "crossroad_base_speed + 2 * crossroad_lane_speed_delta m/s.");
+DEFINE_double(crossroad_vehicle_delay, 3,
+              "The starting time delay between consecutive vehicles on a "
+              "lane.");
 DEFINE_double(dragway_length, 100, "The length of the dragway.");
 DEFINE_double(dragway_lane_width, 3.7, "The dragway lane width.");
 DEFINE_double(dragway_shoulder_width, 3.0, "The dragway's shoulder width.");
@@ -51,7 +86,7 @@ namespace {
 enum class RoadNetworkType {
   flat = 0,
   dragway = 1,
-  crossing = 2
+  crossroad = 2
 };
 
 std::string MakeChannelName(const std::string& name) {
@@ -109,7 +144,30 @@ void AddVehicles(RoadNetworkType road_network_type,
                                          std::get<1>(params),
                                          std::get<2>(params));
     }
-  } else {
+  } 
+  else if (road_network_type == RoadNetworkType::crossroad) {
+    DRAKE_DEMAND(road_geometry != nullptr);
+    const maliput::crossroad::RoadGeometry* crossroad_road_geometry =
+        dynamic_cast<const maliput::crossroad::RoadGeometry*>(road_geometry);
+    DRAKE_DEMAND(crossroad_road_geometry != nullptr);
+    for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
+      const int lane_index = i % FLAGS_num_horizontal_crossroad_lanes;
+      const double speed = FLAGS_crossroad_base_speed +
+          lane_index * FLAGS_crossroad_lane_speed_delta;
+      const double start_time = i / FLAGS_num_horizontal_crossroad_lanes *
+           FLAGS_crossroad_vehicle_delay;
+      const auto& params = CreateTrajectoryParamsForCrossroad(
+          *crossroad_road_geometry, lane_index, speed, start_time);
+      simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
+                                         std::get<1>(params),
+                                         std::get<2>(params));
+    }
+  } 
+
+
+
+
+  else {
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
       simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
@@ -147,6 +205,29 @@ const maliput::api::RoadGeometry* AddDragway(
   return simulator->SetRoadGeometry(std::move(road_geometry));
 }
 
+
+// Adds a crossroad to the provided `simulator`. The number of lanes, lane
+// width, lane length, and the shoulder width are all user-specifiable via
+// command line flags.
+const maliput::api::RoadGeometry* AddCrossroad(
+    AutomotiveSimulator<double>* simulator) {
+  std::unique_ptr<const maliput::api::RoadGeometry> road_geometry
+      = std::make_unique<const maliput::crossroad::RoadGeometry>(
+          maliput::api::RoadGeometryId({"Automotive Demo Crossroad"}),
+          FLAGS_num_dragway_lanes,
+          FLAGS_dragway_length,
+          FLAGS_dragway_lane_width,
+          FLAGS_dragway_shoulder_width);
+
+
+          // FLAGS_num_horizontal_crossroad_lanes,
+          // FLAGS_num_vertical_crossroad_lanes,
+          // FLAGS_crossroad_length,
+          // FLAGS_crossroad_lane_width,
+          // FLAGS_crossroad_shoulder_width);
+  return simulator->SetRoadGeometry(std::move(road_geometry));
+}
+
 // Adds a terrain to the simulated world. The type of terrain added depends on
 // the provided `road_network_type` parameter. A pointer to the road network is
 // returned. A return value of `nullptr` is possible if no road network is
@@ -163,8 +244,8 @@ const maliput::api::RoadGeometry* AddTerrain(RoadNetworkType road_network_type,
       road_geometry = AddDragway(simulator);
       break;
     }
-    case RoadNetworkType::crossing: {
-      road_geometry = AddCrossing(simulator);
+    case RoadNetworkType::crossroad: {
+      road_geometry = AddCrossroad(simulator);
       break;
     }
   }
@@ -177,8 +258,8 @@ RoadNetworkType DetermineRoadNetworkType() {
   if (FLAGS_num_dragway_lanes > 0) {
     return RoadNetworkType::dragway;
   } 
-  if (Flags_num_crossing_lanes >0){
-    return RoadNetworkType::crossing;
+  if (FLAGS_num_horizontal_crossroad_lanes >0){
+    return RoadNetworkType::crossroad;
   }
   else{
     return RoadNetworkType::flat;

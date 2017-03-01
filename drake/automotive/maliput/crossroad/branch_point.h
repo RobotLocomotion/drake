@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad{
 
 class BranchPoint;
 class Lane;
@@ -82,6 +82,6 @@ class BranchPoint final : public api::BranchPoint {
   const LaneEndSet finish_side_lane_end_set_;
 };
 
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake

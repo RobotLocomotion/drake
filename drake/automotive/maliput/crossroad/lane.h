@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad{
 
 // Forward declarations.
 class BranchPoint;
@@ -169,6 +169,6 @@ class Lane final : public api::Lane {
 };
 
 
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake

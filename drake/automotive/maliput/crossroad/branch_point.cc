@@ -1,11 +1,11 @@
-#include "drake/automotive/maliput/dragway/branch_point.h"
+#include "drake/automotive/maliput/crossroad/branch_point.h"
 
-#include "drake/automotive/maliput/dragway/lane.h"
+#include "drake/automotive/maliput/crossroad/lane.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad {
 
 BranchPoint::BranchPoint(const api::BranchPointId& id, const Lane* lane,
                          const api::RoadGeometry* road_geometry)
@@ -59,6 +59,6 @@ const api::LaneEndSet* BranchPoint::DoGetBSide() const {
   return &finish_side_lane_end_set_;
 }
 
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake

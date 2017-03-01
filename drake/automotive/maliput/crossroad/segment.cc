@@ -1,16 +1,16 @@
-#include "drake/automotive/maliput/dragway/segment.h"
+#include "drake/automotive/maliput/crossroad/segment.h"
 
 #include <string>
 #include <utility>
 
 #include "drake/automotive/maliput/api/lane.h"
-#include "drake/automotive/maliput/dragway/junction.h"
-#include "drake/automotive/maliput/dragway/lane.h"
+#include "drake/automotive/maliput/crossroad/junction.h"
+#include "drake/automotive/maliput/crossroad/lane.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad{
 
 Segment::Segment(Junction* junction,
     int num_lanes,
@@ -68,6 +68,6 @@ const api::Lane* Segment::do_lane(int index) const {
   return lanes_.at(index).get();
 }
 
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake

@@ -231,6 +231,7 @@ drake_cc_binary(
     deps = [
         ":automotive_simulator",
         "//drake/automotive/maliput/dragway",
+        "//drake/automotive/maliput/crossroad",
         "//drake/common:text_logging_gflags",
     ],
 )
@@ -259,6 +260,7 @@ drake_cc_binary(
         ":automotive_simulator",
         ":infinite_circuit_road",
         "//drake/automotive/maliput/dragway",
+        "//drake/automotive/maliput/crossroad",
         "//drake/automotive/maliput/monolane:loader",
         "//drake/common:text_logging_gflags",
     ],

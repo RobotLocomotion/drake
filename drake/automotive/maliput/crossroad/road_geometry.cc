@@ -1,16 +1,16 @@
-#include "drake/automotive/maliput/dragway/road_geometry.h"
+#include "drake/automotive/maliput/crossroad/road_geometry.h"
 
 #include <memory>
 
-#include "drake/automotive/maliput/dragway/branch_point.h"
-#include "drake/automotive/maliput/dragway/junction.h"
+#include "drake/automotive/maliput/crossroad/branch_point.h"
+#include "drake/automotive/maliput/crossroad/junction.h"
 #include "drake/common/drake_assert.h"
 
 using std::make_unique;
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad{
 
 RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
                int num_lanes,
@@ -56,6 +56,6 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(
   DRAKE_ABORT();  // TODO(liang.fok) Implement me.
 }
 
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake

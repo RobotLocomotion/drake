@@ -8,12 +8,12 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/segment.h"
-#include "drake/automotive/maliput/dragway/lane.h"
+#include "drake/automotive/maliput/crossroad/lane.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad{
 
 class Junction;
 
@@ -56,13 +56,13 @@ class Segment final : public api::Segment {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Segment)
 
-  /// Constructs a new dragway Segment.
+  /// Constructs a new crossroad Segment.
   ///
   /// @param[in] junction The junction to which this Segment belongs.
   ///
   /// @param[in] num_lanes The number of lanes in the segment.
   ///
-  /// @param[in] length The length of the dragway.
+  /// @param[in] length The length of the crossroad.
   ///
   /// @param[in] lane_width The width of each lane.
   ///
@@ -90,6 +90,6 @@ class Segment final : public api::Segment {
   std::vector<std::unique_ptr<Lane>> lanes_;
 };
 
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake

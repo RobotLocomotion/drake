@@ -7,12 +7,12 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
-#include "drake/automotive/maliput/dragway/segment.h"
+#include "drake/automotive/maliput/crossroad/segment.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad{
 
 class RoadGeometry;
 
@@ -51,6 +51,6 @@ class Junction final : public api::Junction {
   const Segment segment_;
 };
 
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake

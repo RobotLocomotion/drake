@@ -4,7 +4,7 @@
  **/
 #include <gflags/gflags.h>
 
-#include "drake/automotive/maliput/dragway/road_geometry.h"
+#include "drake/automotive/maliput/crossroad/road_geometry.h"
 #include "drake/automotive/maliput/utility/generate_urdf.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/text_logging_gflags.h"
@@ -31,7 +31,7 @@ DEFINE_string(file_name_root, "dragway",
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad{
 namespace {
 
 int exec(int argc, char* argv[]) {
@@ -57,7 +57,7 @@ int exec(int argc, char* argv[]) {
 
   // The following is necessary for users to know where to find the resulting
   // files when this program is executed in a sandbox. This occurs, for example
-  // when using `bazel run //drake/automotive/maliput/dragway:dragway_to_urdf`.
+  // when using `bazel run //drake/automotive/maliput/crossroad:dragway_to_urdf`.
   spruce::path my_path;
   my_path.setAsCurrent();
 
@@ -68,10 +68,10 @@ int exec(int argc, char* argv[]) {
 }
 
 }  // namespace
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::maliput::dragway::exec(argc, argv);
+  return drake::maliput::crossroad::exec(argc, argv);
 }

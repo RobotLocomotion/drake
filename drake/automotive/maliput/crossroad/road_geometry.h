@@ -8,30 +8,30 @@
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
-#include "drake/automotive/maliput/dragway/branch_point.h"
-#include "drake/automotive/maliput/dragway/junction.h"
+#include "drake/automotive/maliput/crossroad/branch_point.h"
+#include "drake/automotive/maliput/crossroad/junction.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad{
 
 /// Dragway's implementation of api::RoadGeometry.
 ///
 /// To understand the characteristics of the geometry, consult the
-/// dragway::Segment and dragway::Lane detailed class overview docs.
+/// crossroad::Segment and crossroad::Lane detailed class overview docs.
 class RoadGeometry final : public api::RoadGeometry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
 
-  /// Constructs a dragway RoadGeometry.
+  /// Constructs a crossroad RoadGeometry.
   ///
   /// @param[in] id The ID of this RoadGeometry. This can be any user-selectable
   /// value.
   ///
   /// @param[in] num_lanes The number of lanes. This must be greater than zero.
   ///
-  /// @param[in] length The length of the dragway.
+  /// @param[in] length The length of the crossroad.
   ///
   /// @param[in] lane_width The width of each lane.
   ///
@@ -83,6 +83,6 @@ class RoadGeometry final : public api::RoadGeometry {
   const Junction junction_;
 };
 
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake

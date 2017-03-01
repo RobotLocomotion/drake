@@ -1,17 +1,17 @@
-#include "drake/automotive/maliput/dragway/lane.h"
+#include "drake/automotive/maliput/crossroad/lane.h"
 
 #include <memory>
 
-#include "drake/automotive/maliput/dragway/branch_point.h"
-#include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/automotive/maliput/dragway/segment.h"
+#include "drake/automotive/maliput/crossroad/branch_point.h"
+#include "drake/automotive/maliput/crossroad/road_geometry.h"
+#include "drake/automotive/maliput/crossroad/segment.h"
 #include "drake/common/drake_assert.h"
 
 using std::make_unique;
 
 namespace drake {
 namespace maliput {
-namespace dragway {
+namespace crossroad{
 
 Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
     double length, double y_offset, const api::RBounds& lane_bounds,
@@ -96,6 +96,6 @@ api::LanePosition Lane::DoToLanePosition(
   DRAKE_ABORT();  // TODO(liangfok) Implement me.
 }
 
-}  // namespace dragway
+}  // namespace crossroad
 }  // namespace maliput
 }  // namespace drake
