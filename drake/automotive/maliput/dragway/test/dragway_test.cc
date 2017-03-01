@@ -311,7 +311,7 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
         EXPECT_DOUBLE_EQ(nearest_position.x, x);
         EXPECT_DOUBLE_EQ(nearest_position.y, y);
         EXPECT_DOUBLE_EQ(nearest_position.z, z);
-        EXPECT_DOUBLE_EQ(distance, z);
+        EXPECT_DOUBLE_EQ(distance, 0);
         EXPECT_EQ(road_position.lane, expected_lane);
         EXPECT_EQ(road_position.pos.s, x);
         EXPECT_EQ(road_position.pos.r, y + lane_width_ / 2);
@@ -337,7 +337,7 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
         EXPECT_DOUBLE_EQ(nearest_position.x, x);
         EXPECT_DOUBLE_EQ(nearest_position.y, y);
         EXPECT_DOUBLE_EQ(nearest_position.z, z);
-        EXPECT_DOUBLE_EQ(distance, z);
+        EXPECT_DOUBLE_EQ(distance, 0);
         EXPECT_EQ(road_position.lane, expected_lane);
         EXPECT_EQ(road_position.pos.s, x);
         if (y == 0) {
