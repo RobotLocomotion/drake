@@ -10,7 +10,7 @@ namespace automotive {
 /// simple model governing longitudinal accelerations of a vehicle in
 /// single-lane traffic [1, 2].  It is derived based on qualitative observations
 /// of actual driving behavior and captures objectives such as keeping a safe
-/// distance away from a lead vehicle, maintaining a desired speed, and
+/// distance behind a lead vehicle, maintaining a desired speed, and
 /// accelerating and decelerating within comfortable limits.
 ///
 /// The IDM equation produces accelerations that realize smooth transitions
@@ -22,6 +22,8 @@ namespace automotive {
 ///    deceleration comfortable according to parameter `b`.
 ///  - Small-distance behavior: within small net distances to the lead vehicle,
 ///    comfort is ignored in favor of increasing this distance to `s_0`.
+///
+/// See the corresponding .cc file for details about the IDM equation.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -44,7 +46,8 @@ class IdmPlanner {
 
   /// Evaluates the IDM equation for the chosen planner parameters @p params,
   /// given the current velocity @p ego_velocity, distance to the lead car @p
-  /// target_distance, and the closing velocity @p target_distance_dot.
+  /// target_distance, and the closing velocity @p target_distance_dot.  The
+  /// returned value is a longitudinal acceleration.
   static const T Evaluate(const IdmPlannerParameters<T>& params,
                           const T& ego_velocity, const T& target_distance,
                           const T& target_distance_dot);

@@ -34,7 +34,7 @@ const T IdmPlanner<T>::Evaluate(const IdmPlannerParameters<T>& params,
   const T& accel_interaction =
       pow((closing_term + too_close_term) / target_distance, 2.);
 
-  // Compute the free-road accleration term.
+  // Compute the free-road acceleration term.
   const T& accel_free_road = pow(ego_velocity / v_ref, delta);
 
   // Compute the resultant acceleration (IDM equation).
@@ -45,12 +45,12 @@ template <typename T>
 void IdmPlanner<T>::SetDefaultParameters(IdmPlannerParameters<T>* idm_params) {
   // Default values from https://en.wikipedia.org/wiki/Intelligent_driver_model.
   DRAKE_DEMAND(idm_params != nullptr);
-  idm_params->set_v_ref(10.);            // desired velocity in free traffic.
-  idm_params->set_a(T(1.));              // max acceleration.
-  idm_params->set_b(T(3.));              // comfortable braking deceleration.
-  idm_params->set_s_0(T(1.));            // minimum desired net distance.
-  idm_params->set_time_headway(T(0.1));  // desired headway to lead vehicle.
-  idm_params->set_delta(T(4.));  // recommended choice of free-road exponent.
+  idm_params->set_v_ref(10.);  // desired velocity in free traffic [m/s].
+  idm_params->set_a(T(1.));    // max acceleration [m/s^2].
+  idm_params->set_b(T(3.));    // comfortable braking deceleration [m/s^2].
+  idm_params->set_s_0(T(1.));  // minimum desired net distance [m].
+  idm_params->set_time_headway(T(0.1));  // desired headway to lead vehicle [s].
+  idm_params->set_delta(T(4.));  // recommended choice of acceleration exponent.
 }
 
 // These instantiations must match the API documentation in idm_planner.h.

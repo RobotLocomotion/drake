@@ -22,7 +22,7 @@ class IdmPlannerTest : public ::testing::Test {
 };
 
 // Set the initial states such that the agent and ego start at the
-// headway distance, with the ego closing in on the lead car.
+// headway distance, with the ego car closing in on the lead car.
 TEST_F(IdmPlannerTest, SameSpeedAtHeadwayDistance) {
   const double ego_velocity = params_->v_ref();
   const double target_distance = params_->v_ref() * params_->time_headway();
@@ -32,7 +32,7 @@ TEST_F(IdmPlannerTest, SameSpeedAtHeadwayDistance) {
   const double result = IdmPlanner<double>::Evaluate(
       *params_, ego_velocity, target_distance, target_distance_dot);
 
-  // We expect zero acceleration.
+  // We expect acceleration to be close to zero.
   EXPECT_NEAR(0., result, 1e-2);
 }
 
@@ -74,12 +74,12 @@ TEST_F(IdmPlannerTest, EgoAtDesiredSpeed) {
   const double result = IdmPlanner<double>::Evaluate(
       *params_, ego_velocity, target_distance, target_distance_dot);
 
-  // We expect acceleration to be close-to-zero.
+  // We expect acceleration to be close to zero.
   EXPECT_NEAR(0., result, 1e-2);
 }
 
 // Set the agent and ego sufficiently far apart from one another, with
-// the ego car speed initially zero.  set-point.
+// the ego car speed initially zero.
 TEST_F(IdmPlannerTest, EgoStartFromRest) {
   const double ego_velocity = 0.;
   const double target_distance = 1e6;

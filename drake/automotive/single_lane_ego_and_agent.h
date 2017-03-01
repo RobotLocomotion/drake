@@ -25,7 +25,8 @@ namespace automotive {
 ///       - @p x_agent agent car position (scalar) [m]
 ///       - @p v_agent agent car velocity (scalar) [m/s]
 /// Output:
-///   0: @p vdot_ego linear acceleration of the ego car (scalar) [m/s^2].
+///   0: @p vdot_ego longitudinal acceleration request to the ego car (scalar)
+///      [m/s^2].
 template <typename T>
 class Idm : public systems::LeafSystem<T> {
  public:
@@ -52,6 +53,7 @@ class Idm : public systems::LeafSystem<T> {
 /// agent, where the ego is governed by an IDM (intelligent driver model)
 /// planner, and where the agent is fed a constant acceleration input.
 ///
+/// <pre>
 ///   +--------------+         +-------------+
 ///   | Acceleration | v_dot_a |  Agent Car  |  x_a, v_a
 ///   |    Input     |-------->|             |----+
@@ -67,6 +69,7 @@ class Idm : public systems::LeafSystem<T> {
 ///       | port +-------------+         +-------------+    |
 ///       |  0                                              |
 ///       +-------------------------------------------------+
+/// </pre>
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
