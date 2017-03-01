@@ -7,6 +7,17 @@ getting started with Bazel, see http://drake.mit.edu/bazel.html.
 Note that the *libraries* in this directory subtree support the CMake build
 system; only the demo is Bazel-specific.
 
+Install pygame
+--------------
+
+The automotive demo uses ``pygame`` to allow a user to issue commands to a
+simulated vehicle via keyboard or joystick. Install this application by
+executing:
+
+```
+pip install pygame
+```
+
 Prepare the drake-visualizer
 ----------------------------
 
