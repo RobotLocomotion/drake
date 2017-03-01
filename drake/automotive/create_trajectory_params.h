@@ -43,6 +43,22 @@ std::tuple<Curve2<double>, double, double> CreateTrajectoryParamsForDragway(
     const maliput::dragway::RoadGeometry& road_geometry, int index,
     double speed, double start_time);
 
+
+/**
+ * Creates TrajectoryCar constructor demo arguments for a vehicle on a crossroad. 
+ * The details of the trajectory are not documented / promised by this API.
+ *
+ * @param road_geometry The crossroad. upon which the TrajectoryCar will travel.
+ *
+ * @param index The lane index within the provided `road_geometry`.
+ *
+ * @param speed The speed of the vehicle.
+ *
+ * @param start_time The time when the vehicle should start driving.
+ *
+ * @return tuple of curve, speed, start_time
+ */
+
 std::tuple<Curve2<double>, double, double> CreateTrajectoryParamsForCrossroad(
     const maliput::crossroad::RoadGeometry& road_geometry, int index,
     double speed, double start_time);

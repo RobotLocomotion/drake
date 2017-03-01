@@ -1,5 +1,5 @@
 #pragma once
-
+  
 #include <memory>
 #include <vector>
 
@@ -27,7 +27,8 @@ class Junction final : public api::Junction {
   /// and must refer to the RoadGeometry which will contain this newly
   /// constructed Junction instance.
   Junction(RoadGeometry* road_geometry,
-      int num_lanes,
+      int num_horizontal_lanes,
+      int num_vertical_lanes,
       double length,
       double lane_width,
       double shoulder_width);

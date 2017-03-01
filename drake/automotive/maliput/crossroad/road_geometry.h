@@ -45,7 +45,8 @@ class RoadGeometry final : public api::RoadGeometry {
   /// measurements (orientations).
   ///
   RoadGeometry(const api::RoadGeometryId& id,
-               int num_lanes,
+              int num_horizontal_lanes,
+               int num_vertical_lanes,
                double length,
                double lane_width,
                double shoulder_width,

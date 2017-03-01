@@ -13,7 +13,8 @@ namespace maliput {
 namespace crossroad{
 
 RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
-               int num_lanes,
+  int num_horizontal_lanes,
+   int num_vertical_lanes,
                double length,
                double lane_width,
                double shoulder_width,
@@ -22,7 +23,7 @@ RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
   : id_(id),
     linear_tolerance_(linear_tolerance),
     angular_tolerance_(angular_tolerance),
-    junction_(this, num_lanes, length, lane_width, shoulder_width) {
+    junction_(this, num_horizontal_lanes, num_vertical_lanes, length, lane_width, shoulder_width) {
   DRAKE_DEMAND(length > 0);
   DRAKE_DEMAND(lane_width > 0);
   DRAKE_DEMAND(shoulder_width >= 0);

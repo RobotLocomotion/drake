@@ -164,9 +164,6 @@ void AddVehicles(RoadNetworkType road_network_type,
     }
   } 
 
-
-
-
   else {
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
@@ -214,17 +211,11 @@ const maliput::api::RoadGeometry* AddCrossroad(
   std::unique_ptr<const maliput::api::RoadGeometry> road_geometry
       = std::make_unique<const maliput::crossroad::RoadGeometry>(
           maliput::api::RoadGeometryId({"Automotive Demo Crossroad"}),
-          FLAGS_num_dragway_lanes,
-          FLAGS_dragway_length,
-          FLAGS_dragway_lane_width,
-          FLAGS_dragway_shoulder_width);
-
-
-          // FLAGS_num_horizontal_crossroad_lanes,
-          // FLAGS_num_vertical_crossroad_lanes,
-          // FLAGS_crossroad_length,
-          // FLAGS_crossroad_lane_width,
-          // FLAGS_crossroad_shoulder_width);
+          FLAGS_num_horizontal_crossroad_lanes,
+          FLAGS_num_vertical_crossroad_lanes,
+          FLAGS_crossroad_length,
+          FLAGS_crossroad_lane_width,
+          FLAGS_crossroad_shoulder_width);
   return simulator->SetRoadGeometry(std::move(road_geometry));
 }
 

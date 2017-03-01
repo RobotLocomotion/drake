@@ -69,25 +69,36 @@ class Segment final : public api::Segment {
   /// @param[in] shoulder_width The width of the shoulders on each side of the
   /// road.
   Segment(Junction* junction,
-      int num_lanes,
+      int num_horizontal_lanes,
+      int num_vertical_lanes,
       double length,
       double lane_width,
       double shoulder_width);
 
   ~Segment() final = default;
 
+
  private:
   const api::SegmentId do_id() const final { return id_; }
 
   const api::Junction* do_junction() const final;
 
-  int do_num_lanes() const final { return static_cast<int>(lanes_.size()); }
+  int num_horizontal_lanes() const { return do_num_horizontal_lanes(); }
+  int num_vertical_lanes() const { return do_num_vertical_lanes(); }
+
+
+  int do_num_horizontal_lanes() const final { return static_cast<int>
+    (horizontal_lanes_.size()); }
+  int do_num_vertical_lanes() const final { return static_cast<int>
+    (vertical_lanes_.size()); }
 
   const api::Lane* do_lane(int index) const final;
 
   const api::SegmentId id_;
   const Junction* junction_{};
-  std::vector<std::unique_ptr<Lane>> lanes_;
+  std::vector<std::unique_ptr<Lane>> horizontal_lanes_;
+  std::vector<std::unique_ptr<Lane>> vertical_lanes_;
+
 };
 
 }  // namespace crossroad

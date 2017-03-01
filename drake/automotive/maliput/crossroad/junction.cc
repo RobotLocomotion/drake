@@ -8,13 +8,14 @@ namespace maliput {
 namespace crossroad{
 
 Junction::Junction(RoadGeometry* road_geometry,
-    int num_lanes,
+	int num_horizontal_lanes
+    int num_vertical_lanes,
     double length,
     double lane_width,
     double shoulder_width)
   : id_({"Crossroad Junction"}),
     road_geometry_(road_geometry),
-    segment_(this, num_lanes, length, lane_width, shoulder_width) {
+    segment_(this, num_horizontal_lanes, num_vertical_lanes, length, lane_width, shoulder_width) {
   DRAKE_DEMAND(road_geometry != nullptr);
 }
 
