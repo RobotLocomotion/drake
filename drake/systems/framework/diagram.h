@@ -182,9 +182,7 @@ class Diagram : public System<T>,
   /// without manual intervention.
   ///
   /// Returns `true` as a conservative default.
-  bool has_any_direct_feedthrough() const override {
-    return true;
-  }
+  bool has_any_direct_feedthrough() const override { return true; }
 
   /// Returns true if any output of the Diagram might have direct-feedthrough
   /// from any input of the Diagram. The implementation is quite conservative:
@@ -233,8 +231,9 @@ class Diagram : public System<T>,
   /// Returns true if there might be direct feedthrough from the given
   /// @p input_port of the Diagram to the given @p output_port of the Diagram.
   bool HasDirectFeedthrough(int input_port, int output_port) const final {
-    DRAKE_ABORT_MSG("The two-argument version of HasDirectFeedthrough is "
-                    "not yet implemented for Diagrams.");
+    DRAKE_ABORT_MSG(
+        "The two-argument version of HasDirectFeedthrough is "
+        "not yet implemented for Diagrams.");
   }
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
@@ -296,7 +295,7 @@ class Diagram : public System<T>,
     }
   }
 
-  virtual std::unique_ptr<BasicVector<T>> AllocateInputVector(
+  std::unique_ptr<BasicVector<T>> AllocateInputVector(
       const InputPortDescriptor<T>& descriptor) const override {
     // Ask the subsystem to perform the allocation.
     DRAKE_DEMAND(descriptor.get_index() <
@@ -307,7 +306,7 @@ class Diagram : public System<T>,
     return id.first->AllocateInputVector(subsystem_descriptor);
   }
 
-  virtual std::unique_ptr<AbstractValue> AllocateInputAbstract(
+  std::unique_ptr<AbstractValue> AllocateInputAbstract(
       const InputPortDescriptor<T>& descriptor) const override {
     // Ask the subsystem to perform the allocation.
     DRAKE_DEMAND(descriptor.get_index() <
@@ -365,15 +364,13 @@ class Diagram : public System<T>,
 
   /// Aggregates the discrete update variables from each subsystem into a
   /// DiagramDiscreteVariables.
-  std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
-      const override {
+  std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables() const override {
     std::vector<std::unique_ptr<DiscreteState<T>>> sub_differences;
     for (const System<T>* const system : sorted_systems_) {
       sub_differences.push_back(system->AllocateDiscreteVariables());
     }
     return std::unique_ptr<DiscreteState<T>>(
-        new internal::DiagramDiscreteVariables<T>(
-            std::move(sub_differences)));
+        new internal::DiagramDiscreteVariables<T>(std::move(sub_differences)));
   }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -570,10 +567,9 @@ class Diagram : public System<T>,
   /// The @p generalized_velocity vector must have the same size and ordering as
   /// the generalized velocity in the ContinuousState that this Diagram reserves
   /// in its context.
-  void DoMapQDotToVelocity(
-      const Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      VectorBase<T>* generalized_velocity) const override {
+  void DoMapQDotToVelocity(const Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& qdot,
+                           VectorBase<T>* generalized_velocity) const override {
     // Check that the dimensions of the continuous state in the context match
     // the dimensions of the provided generalized velocity and configuration
     // derivatives.
@@ -604,7 +600,7 @@ class Diagram : public System<T>,
       // Select the chunk of qdot belonging to subsystem i.
       const int num_q = sub_xc->get_generalized_position().size();
       const Eigen::Ref<const VectorX<T>>& dq_slice =
-        qdot.segment(q_index, num_q);
+          qdot.segment(q_index, num_q);
 
       // Select the chunk of generalized_velocity belonging to subsystem i.
       const int num_v = sub_xc->get_generalized_velocity().size();
@@ -636,9 +632,7 @@ class Diagram : public System<T>,
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<AutoDiffXd>>;
     std::function<ToType(const FromType&)> subsystem_converter{
-      [](const FromType& subsystem) {
-        return subsystem.ToAutoDiffXd();
-      }};
+        [](const FromType& subsystem) { return subsystem.ToAutoDiffXd(); }};
     return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
   }
 
@@ -651,11 +645,9 @@ class Diagram : public System<T>,
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<symbolic::Expression>>;
     std::function<ToType(const FromType&)> subsystem_converter{
-        [](const FromType& subsystem) {
-          return subsystem.ToSymbolic();
-        }};
-    return ConvertScalarType<symbolic::Expression>(
-        subsystem_converter).release();
+        [](const FromType& subsystem) { return subsystem.ToSymbolic(); }};
+    return ConvertScalarType<symbolic::Expression>(subsystem_converter)
+        .release();
   }
 
  private:
@@ -815,11 +807,9 @@ class Diagram : public System<T>,
       DiscreteEvent<T1> event;
       event.action = DiscreteEvent<T1>::kDiscreteUpdateAction;
       event.do_calc_discrete_variable_update = std::bind(
-                                  &Diagram<T1>::HandleUpdate,
-                                  this,
-                                  std::placeholders::_1, /* context */
-                                  std::placeholders::_2, /* difference state */
-                                  updaters);
+          &Diagram<T1>::HandleUpdate, this, std::placeholders::_1, /* context */
+          std::placeholders::_2, /* difference state */
+          updaters);
       actions->events.push_back(event);
     }
 
@@ -827,12 +817,11 @@ class Diagram : public System<T>,
     if (!unrestricted_updaters.empty()) {
       DiscreteEvent<T1> event;
       event.action = DiscreteEvent<T1>::kUnrestrictedUpdateAction;
-      event.do_unrestricted_update = std::bind(
-                                  &Diagram<T1>::HandleUnrestrictedUpdate,
-                                  this,
-                                  std::placeholders::_1, /* context */
-                                  std::placeholders::_2, /* state */
-                                  unrestricted_updaters);
+      event.do_unrestricted_update =
+          std::bind(&Diagram<T1>::HandleUnrestrictedUpdate, this,
+                    std::placeholders::_1, /* context */
+                    std::placeholders::_2, /* state */
+                    unrestricted_updaters);
       actions->events.push_back(event);
     }
   }
@@ -1147,9 +1136,8 @@ class Diagram : public System<T>,
       // Do that system's update actions.
       for (const DiscreteEvent<T>& event : action_details.events) {
         if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
-          sorted_systems_[index]->CalcDiscreteVariableUpdates(*subcontext,
-                                                              event,
-                                                              subdifference);
+          sorted_systems_[index]->CalcDiscreteVariableUpdates(
+              *subcontext, event, subdifference);
         }
       }
     }
@@ -1184,8 +1172,7 @@ class Diagram : public System<T>,
       // Do that system's update actions.
       for (const DiscreteEvent<T>& event : action_details.events) {
         if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
-          sorted_systems_[index]->CalcUnrestrictedUpdate(*subcontext,
-                                                         event,
+          sorted_systems_[index]->CalcUnrestrictedUpdate(*subcontext, event,
                                                          substate);
         }
       }

@@ -22,9 +22,7 @@ const int kNumberToUpdate = 2001;
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
-  TestSystem() {
-    this->set_name("TestSystem");
-  }
+  TestSystem() { this->set_name("TestSystem"); }
   ~TestSystem() override {}
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
@@ -50,18 +48,13 @@ class TestSystem : public System<double> {
     return this->DeclareAbstractInputPort();
   }
 
-
   const OutputPortDescriptor<double>& AddAbstractOutputPort() {
     return this->DeclareAbstractOutputPort();
   }
 
-  bool HasAnyDirectFeedthrough() const override {
-    return true;
-  }
+  bool HasAnyDirectFeedthrough() const override { return true; }
 
-  bool HasDirectFeedthrough(int output_port) const override {
-    return true;
-  }
+  bool HasDirectFeedthrough(int output_port) const override { return true; }
 
   bool HasDirectFeedthrough(int input_port, int output_port) const override {
     return true;
@@ -106,10 +99,9 @@ class TestSystem : public System<double> {
       // Use a custom update action.
       event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
       event.do_calc_discrete_variable_update = std::bind(
-                                  &TestSystem::DoCalcDiscreteUpdatesNumber,
-                                  this, std::placeholders::_1 /* context */,
-                                  std::placeholders::_2 /* discrete state */,
-                                  kNumberToUpdate);
+          &TestSystem::DoCalcDiscreteUpdatesNumber, this,
+          std::placeholders::_1 /* context */,
+          std::placeholders::_2 /* discrete state */, kNumberToUpdate);
     }
   }
 
@@ -120,8 +112,8 @@ class TestSystem : public System<double> {
 
   // The default update function.
   void DoCalcDiscreteVariableUpdates(
-      const Context<double> &context,
-      DiscreteState<double> *discrete_state) const override {
+      const Context<double>& context,
+      DiscreteState<double>* discrete_state) const override {
     ++update_count_;
   }
 
@@ -133,8 +125,8 @@ class TestSystem : public System<double> {
 
   // A custom update function with additional argument @p num, which may be
   // bound in DoCalcNextUpdateTime.
-  void DoCalcDiscreteUpdatesNumber(const Context<double> &context,
-                                   DiscreteState<double> *discrete_state,
+  void DoCalcDiscreteUpdatesNumber(const Context<double>& context,
+                                   DiscreteState<double>* discrete_state,
                                    int num) const {
     updated_numbers_.push_back(num);
   }
@@ -282,11 +274,16 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
+class TestTypedVector : public BasicVector<double> {
+ public:
+  explicit TestTypedVector(int size) : BasicVector(size) {}
+};
+
 // A shell System for AbstractValue IO test
 class ValueIOTestSystem : public System<double> {
  public:
   // Has 2 input and 2 output ports.
-  // The first input / output pair are abstractu type, but assumed to be
+  // The first input / output pair are abstract type, but assumed to be
   // std::string.
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
@@ -300,6 +297,20 @@ class ValueIOTestSystem : public System<double> {
   }
 
   ~ValueIOTestSystem() override {}
+
+  std::unique_ptr<AbstractValue> AllocateInputAbstract(
+      const InputPortDescriptor<double>& descriptor) const override {
+    // Should only get called for the first input.
+    EXPECT_EQ(descriptor.get_index(), 0);
+    return AbstractValue::Make<std::string>("");
+  }
+
+  std::unique_ptr<BasicVector<double>> AllocateInputVector(
+      const InputPortDescriptor<double>& descriptor) const override {
+    // Should only get called for the second input.
+    EXPECT_EQ(descriptor.get_index(), 1);
+    return std::make_unique<TestTypedVector>(1);
+  }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
@@ -317,13 +328,9 @@ class ValueIOTestSystem : public System<double> {
 
   void SetDefaults(Context<double>* context) const override {}
 
-  bool HasAnyDirectFeedthrough() const override {
-    return true;
-  }
+  bool HasAnyDirectFeedthrough() const override { return true; }
 
-  bool HasDirectFeedthrough(int output_port) const override {
-    return true;
-  }
+  bool HasDirectFeedthrough(int output_port) const override { return true; }
 
   bool HasDirectFeedthrough(int input_port, int output_port) const override {
     return true;
@@ -351,8 +358,8 @@ class ValueIOTestSystem : public System<double> {
     output->add_port(
         std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
 
-    output->add_port(std::make_unique<OutputPort>(
-        std::make_unique<BasicVector<double>>(1)));
+    output->add_port(
+        std::make_unique<OutputPort>(std::make_unique<BasicVector<double>>(1)));
 
     return std::unique_ptr<SystemOutput<double>>(output.release());
   }
@@ -386,6 +393,22 @@ GTEST_TEST(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(output->get_data(0)->GetValue<std::string>(),
             std::string("inputoutput"));
   EXPECT_EQ(output->get_vector_data(1)->get_value()(0), 4);
+
+  // Test AllocateInput*
+  // Second input is not (yet) a TestTypedVector, since I haven't called the
+  // Allocate methods directly yet.
+  EXPECT_EQ(dynamic_cast<const TestTypedVector*>(
+                test_sys.EvalVectorInput(*context, 1)),
+            nullptr);
+  // Now allocate.
+  test_sys.AllocateFreestandingInputs(context.get());
+  // First input should have been re-allocated to the empty string.
+  EXPECT_EQ(test_sys.EvalAbstractInput(*context, 0)->GetValue<std::string>(),
+            std::string(""));
+  // Second input should now be of type TestTypedVector.
+  EXPECT_NE(dynamic_cast<const TestTypedVector*>(
+                test_sys.EvalVectorInput(*context, 1)),
+            nullptr);
 }
 
 }  // namespace

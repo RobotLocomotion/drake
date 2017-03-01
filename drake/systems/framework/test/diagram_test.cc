@@ -46,8 +46,7 @@ class ExampleDiagram : public Diagram<double> {
     builder.Connect(adder0_->get_output_port(), adder2_->get_input_port(0));
     builder.Connect(adder1_->get_output_port(), adder2_->get_input_port(1));
 
-    builder.Connect(adder0_->get_output_port(),
-                    integrator0_->get_input_port());
+    builder.Connect(adder0_->get_output_port(), integrator0_->get_input_port());
     builder.Connect(integrator0_->get_output_port(),
                     integrator1_->get_input_port());
 
@@ -113,16 +112,11 @@ class DiagramTest : public ::testing::Test {
   // Asserts that output_ is what it should be for the default values
   // of input0_, input1_, and input2_.
   void ExpectDefaultOutputs() {
-    Eigen::Vector3d expected_output0(
-        1 + 8 + 64,
-        2 + 16 + 128,
-        4 + 32 + 256);  // B
+    Eigen::Vector3d expected_output0(1 + 8 + 64, 2 + 16 + 128,
+                                     4 + 32 + 256);  // B
 
-    Eigen::Vector3d expected_output1(
-        1 + 8,
-        2 + 16,
-        4 + 32);  // A
-    expected_output1 += expected_output0;       // A + B
+    Eigen::Vector3d expected_output1(1 + 8, 2 + 16, 4 + 32);  // A
+    expected_output1 += expected_output0;                     // A + B
 
     Eigen::Vector3d expected_output2(81, 243, 729);  // state of integrator1_
 
@@ -253,6 +247,24 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
   EXPECT_EQ(27, integrator1_xcdot->get_vector().GetAtIndex(2));
 }
 
+// Tests the AllocateInput logic.
+TEST_F(DiagramTest, AllocateInputs) {
+  auto context = diagram_->CreateDefaultContext();
+
+  for (int port = 0; port < 3; port++) {
+    const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
+    EXPECT_EQ(vec, nullptr);
+  }
+
+  diagram_->AllocateFreestandingInputs(context.get());
+
+  for (int port = 0; port < 3; port++) {
+    const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
+    EXPECT_NE(vec, nullptr);
+    EXPECT_EQ(vec->size(), kSize);
+  }
+}
+
 /// Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
   std::unique_ptr<System<AutoDiffXd>> ad_diagram =
@@ -263,11 +275,11 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
       ad_diagram->AllocateOutput(*context);
 
   // Set up some inputs, computing gradients with respect to every other input.
-/// adder0_: (input0_ + input1_) -> A
-/// adder1_: (A + input2_)       -> B, output 0
-/// adder2_: (A + B)             -> output 1
-/// integrator1_: A              -> C
-/// integrator2_: C              -> output 2
+  /// adder0_: (input0_ + input1_) -> A
+  /// adder1_: (A + input2_)       -> B, output 0
+  /// adder2_: (A + B)             -> output 1
+  /// integrator1_: A              -> C
+  /// integrator2_: C              -> output 2
   auto input0 = std::make_unique<BasicVector<AutoDiffXd>>(3);
   auto input1 = std::make_unique<BasicVector<AutoDiffXd>>(3);
   auto input2 = std::make_unique<BasicVector<AutoDiffXd>>(3);
@@ -335,21 +347,16 @@ TEST_F(DiagramTest, Clone) {
   // Recompute the output and check the values.
   diagram_->CalcOutput(*clone, output_.get());
 
-  Eigen::Vector3d expected_output0(
-      3 + 8 + 64,
-      6 + 16 + 128,
-      9 + 32 + 256);  // B
+  Eigen::Vector3d expected_output0(3 + 8 + 64, 6 + 16 + 128,
+                                   9 + 32 + 256);  // B
   const BasicVector<double>* output0 = output_->get_vector_data(0);
   ASSERT_TRUE(output0 != nullptr);
   EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
   EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
   EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
 
-  Eigen::Vector3d expected_output1(
-      3 + 8,
-      6 + 16,
-      9 + 32);  // A
-  expected_output1 += expected_output0;       // A + B
+  Eigen::Vector3d expected_output1(3 + 8, 6 + 16, 9 + 32);  // A
+  expected_output1 += expected_output0;                     // A + B
   const BasicVector<double>* output1 = output_->get_vector_data(1);
   ASSERT_TRUE(output1 != nullptr);
   EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
@@ -410,22 +417,26 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator0());
     integrator0_x->get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 3);
+        ->get_mutable_vector()
+        ->SetAtIndex(0, 3);
 
     State<double>* integrator1_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator1());
     integrator1_x->get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 9);
+        ->get_mutable_vector()
+        ->SetAtIndex(0, 9);
 
     State<double>* integrator2_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator0());
     integrator2_x->get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 27);
+        ->get_mutable_vector()
+        ->SetAtIndex(0, 27);
 
     State<double>* integrator3_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator1());
     integrator3_x->get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 81);
+        ->get_mutable_vector()
+        ->SetAtIndex(0, 81);
   }
 
   const int kSize = 1;
@@ -644,8 +655,7 @@ class SecondOrderStateSystem : public LeafSystem<double> {
       const Context<double>& context,
       const Eigen::Ref<const VectorX<double>>& generalized_velocity,
       VectorBase<double>* qdot) const override {
-    qdot->SetAtIndex(
-        0, 2 * generalized_velocity[0]);
+    qdot->SetAtIndex(0, 2 * generalized_velocity[0]);
   }
 
   // v = 1/2 * qdot.
@@ -653,8 +663,7 @@ class SecondOrderStateSystem : public LeafSystem<double> {
       const Context<double>& context,
       const Eigen::Ref<const VectorX<double>>& qdot,
       VectorBase<double>* generalized_velocity) const override {
-    generalized_velocity->SetAtIndex(
-        0, 0.5 * qdot[0]);
+    generalized_velocity->SetAtIndex(0, 0.5 * qdot[0]);
   }
 };
 
@@ -696,8 +705,8 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
   diagram.x(context.get(), diagram.sys2())->set_v(17);
 
   BasicVector<double> qdot(2);
-  const VectorBase<double>& v = context->get_continuous_state()->
-                                         get_generalized_velocity();
+  const VectorBase<double>& v =
+      context->get_continuous_state()->get_generalized_velocity();
   diagram.MapVelocityToQDot(*context, v, &qdot);
 
   // The order of these derivatives is arbitrary, so this test is brittle.
@@ -729,12 +738,9 @@ const double kTestPublishPeriod = 19.0;
 
 class TestPublishingSystem : public LeafSystem<double> {
  public:
-  TestPublishingSystem() {
-    this->DeclarePublishPeriodSec(kTestPublishPeriod);
-  }
+  TestPublishingSystem() { this->DeclarePublishPeriodSec(kTestPublishPeriod); }
 
   ~TestPublishingSystem() override {}
-
 
   bool published() { return published_; }
 
@@ -839,8 +845,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 9.0 sec and do the update.
   context_->set_time(9.0);
-  diagram_.CalcDiscreteVariableUpdates(*context_,
-                                       actions.events[0],
+  diagram_.CalcDiscreteVariableUpdates(*context_, actions.events[0],
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
   EXPECT_EQ(1001.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
@@ -858,8 +863,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 12.0 sec and do the update again.
   context_->set_time(12.0);
-  diagram_.CalcDiscreteVariableUpdates(*context_,
-                                       actions.events[0],
+  diagram_.CalcDiscreteVariableUpdates(*context_, actions.events[0],
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
   EXPECT_EQ(17.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
@@ -904,8 +908,9 @@ class AbstractStateSystem : public LeafSystem<double> {
   // Abstract state is set to time + id.
   void DoCalcUnrestrictedUpdate(const Context<double>& context,
                                 State<double>* state) const override {
-    double& state_num = state->get_mutable_abstract_state()->
-        get_mutable_abstract_state(0).GetMutableValue<double>();
+    double& state_num = state->get_mutable_abstract_state()
+                            ->get_mutable_abstract_state(0)
+                            .GetMutableValue<double>();
     state_num = id_ + context.get_time();
   }
 
@@ -934,9 +939,7 @@ class AbstractStateDiagram : public Diagram<double> {
 
 class AbstractStateDiagramTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    context_ = diagram_.CreateDefaultContext();
-  }
+  void SetUp() override { context_ = diagram_.CreateDefaultContext(); }
 
   double get_sys0_abstract_data_as_double() {
     const Context<double>& sys_context =
@@ -968,7 +971,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(update_actions.time, 2);
   EXPECT_EQ(update_actions.events.size(), 1u);
   EXPECT_EQ(update_actions.events.front().action,
-      DiscreteEvent<double>::ActionType::kUnrestrictedUpdateAction);
+            DiscreteEvent<double>::ActionType::kUnrestrictedUpdateAction);
 
   // Creates a temp state and does unrestricted updates.
   std::unique_ptr<State<double>> x_buf = context_->CloneState();
