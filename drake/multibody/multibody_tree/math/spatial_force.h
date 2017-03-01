@@ -116,6 +116,10 @@ class SpatialForce : public SpatialVector<SpatialForce<T>> {
   friend SpatialForce<T> operator*(const SpatialForce<T>& V, const T& s) {
     return s * V;  // Multiplication by scalar is commutative.
   }
+
+  /// Returns the dot-product between `this` spatial force and the spatial
+  /// velocity @p V. Both spatial quantities must be expressed in the same frame.
+  T dot(const SpatialVelocity<T>& V) const;
 };
 
 }  // namespace multibody

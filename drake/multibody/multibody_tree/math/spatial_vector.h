@@ -42,6 +42,8 @@ class SpatialVector {
   };
   /// The type of the underlying in-memory representation using an Eigen vector.
   typedef Vector6<T> CoeffsEigenType;
+  // Make it available to implementations using SpatialVector.
+  typedef T ScalarType;
 
   /// Default constructor. In Release builds the elements of the newly
   /// constructed spatial vector are left uninitialized resulting in a zero
@@ -146,9 +148,10 @@ class SpatialVector {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
- protected:
+  /// Returns a reference to the underlying storage.
   CoeffsEigenType& get_coeffs() { return V_;}
 
+  /// Returns a constant reference to the underlying storage.
   const CoeffsEigenType& get_coeffs() const { return V_;}
 
  private:
