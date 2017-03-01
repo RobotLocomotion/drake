@@ -43,7 +43,8 @@ VectorX<double> ComputeTorque(const RigidBodyTree<double>& tree,
 GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
   auto robot = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::GetDrakePath() +
+      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       robot.get());
   const int dim = robot->get_num_positions();
