@@ -19,7 +19,7 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/pid_with_gravity_compensator.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -82,17 +82,18 @@ class SimulatedKuka : public systems::Diagram<T> {
     SetPositionControlledIiwaGains(&kp, &ki, &kd);
 
     controller_ =
-        builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
-            plant_->get_rigid_body_tree(), kp, ki, kd);
+        builder.template AddSystem<systems::InverseDynamicsController<T>>(
+            plant_->get_rigid_body_tree(), kp, ki, kd,
+            false /* no feedforward acceleration */);
 
     // Connects plant and controller.
     builder.Connect(plant_->state_output_port(),
-                    controller_->get_estimated_state_input_port());
-    builder.Connect(controller_->get_control_output_port(),
+                    controller_->get_input_port_estimated_state());
+    builder.Connect(controller_->get_output_port_control(),
                     plant_->actuator_command_input_port());
 
     // Exposes desired state input port.
-    builder.ExportInput(controller_->get_desired_state_input_port());
+    builder.ExportInput(controller_->get_input_port_desired_state());
     builder.ExportOutput(plant_->state_output_port());
     builder.BuildInto(this);
   }
@@ -101,7 +102,7 @@ class SimulatedKuka : public systems::Diagram<T> {
 
  private:
   RigidBodyPlant<T>* plant_{nullptr};
-  systems::PidWithGravityCompensator<T>* controller_{nullptr};
+  systems::InverseDynamicsController<T>* controller_{nullptr};
 };
 
 int DoMain() {

@@ -3502,6 +3502,16 @@ RigidBodyTree<double>::inverseDynamics<double>(
                   Eigen::aligned_allocator<pair<RigidBody<double> const* const,
                                                 WrenchVector<double>>>> const&,
     VectorX<double> const&, bool) const;
+template VectorX<AutoDiffXd>
+RigidBodyTree<AutoDiffXd>::inverseDynamics<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd>&,
+    unordered_map<RigidBody<AutoDiffXd> const*, TwistVector<AutoDiffXd>,
+                  hash<RigidBody<AutoDiffXd> const*>,
+                  equal_to<RigidBody<AutoDiffXd> const*>,
+                  Eigen::aligned_allocator<pair<
+                  RigidBody<AutoDiffXd> const* const,
+                  TwistVector<AutoDiffXd>>>> const&,
+    VectorX<AutoDiffXd> const&, bool) const;
 
 // Explicit template instantiations for jointLimitConstraints.
 template void RigidBodyTree<double>::jointLimitConstraints<
@@ -3729,6 +3739,10 @@ template KinematicsCache<double>
 RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&, bool) const;
+template KinematicsCache<AutoDiffXd>
+RigidBodyTree<AutoDiffXd>::doKinematics(
+    Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
+    Eigen::MatrixBase<VectorX<AutoDiffXd>> const&, bool) const;
 
 // Explicit template instantiations for parseBodyOrFrameID.
 template int RigidBodyTree<double>::parseBodyOrFrameID(
