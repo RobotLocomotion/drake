@@ -12,10 +12,14 @@ namespace systems {
 /**
  * Solves inverse dynamics with no consideration for external wrenches,
  * under actuation, joint torque limits or closed kinematic chains. The torque
- * is `H(q) * vd_d + c(q, v)`, where `H` is the inertia matrix, `c` is the
- * coriolis and centrifugal and gravity terms, `q` is the generalized position,
- * `v` is the generalized velocity and `vd_d` is the desired generalized
- * acceleration.
+ * is `H(q) * vd_d + c(q, v) + g(q)`, where `H` is the inertia matrix, `c` is
+ * the coriolis and centrifugal, `g` is the gravity term, `q` is the generalized
+ * position, `v` is the generalized velocity and `vd_d` is the desired
+ * generalized acceleration. There is also a pure gravity compensation mode,
+ * in which torque is computed as `g(q)`. This system always has an BasicVector
+ * input port for the state `(q, v)` and an BasicVector output port for the
+ * computed torque. There is an additional BasicVector input port for desired
+ * acceleration when configured to be not in pure gravity compensation mode.
  */
 template <typename T>
 class InverseDynamics : public LeafSystem<T> {

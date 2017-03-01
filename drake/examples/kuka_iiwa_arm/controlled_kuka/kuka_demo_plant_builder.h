@@ -68,7 +68,7 @@ class KukaDemo : public systems::Diagram<T> {
     controller_ =
         builder.template AddSystem<systems::InverseDynamicsController<T>>(
             GetDrakePath() + kUrdfPath, nullptr, kp, ki, kd,
-            true /* no feedforward acceleration */);
+            false /* no feedforward acceleration */);
 
     // TODO(siyuan): should be able to easily compute derivatives once
     // #5215 is in.

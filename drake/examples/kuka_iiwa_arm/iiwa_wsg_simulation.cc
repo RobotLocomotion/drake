@@ -153,8 +153,7 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
 
     VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
     SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
-    // Have a bit of inertia gains to deal with the added mass from the grasped
-    // object.
+    // Uses intergral gains to deal with the added mass from the grasped object.
     iiwa_ki << 1, 1, 1, 1, 1, 1, 1;
 
     // Exposing feedforward acceleration. Should help with more dynamic
@@ -162,7 +161,7 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     auto iiwa_controller =
         builder.template AddSystem<systems::InverseDynamicsController<T>>(
             iiwa_info.model_path, iiwa_info.world_offset, iiwa_kp, iiwa_ki,
-            iiwa_kd, false /* with feedforward acceleration */);
+            iiwa_kd, true /* with feedforward acceleration */);
 
     // Sets a zero configuration and computes spatial inertia for the gripper
     // as well as the pose of the end effector link of iiwa using the world

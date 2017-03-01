@@ -28,6 +28,19 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
 
   const int dim = robot.get_num_velocities();
 
+  /*
+  (vd*)
+         --------------------
+                            |
+  (q*, v*)                  |
+         ---------> |   |   |
+  (q, v)            |PID|   |
+         ---------> |   | --+--> |                  |
+             |                   | inverse dynamics | ---> torque
+             ------------------> |                  |
+
+  */
+
   // Adds a PID.
   auto pid = builder.template AddSystem<PidController<T>>(kp, ki, kd);
 
@@ -62,7 +75,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
   // Exposes reference state input port.
   builder.ExportInput(pid->get_input_port_desired_state());
 
-  if (no_reference_acceleration_) {
+  if (!has_reference_acceleration_) {
     // Uses a zero constant source for reference acceleration.
     auto zero_feedforward_acceleartion =
         builder.template AddSystem<ConstantVectorSource<double>>(
@@ -84,28 +97,28 @@ template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
     const std::string& model_path,
     std::shared_ptr<RigidBodyFrame<double>> world_offset, const VectorX<T>& kp,
-    const VectorX<T>& ki, const VectorX<T>& kd, bool no_reference_acceleration)
+    const VectorX<T>& ki, const VectorX<T>& kd, bool has_reference_acceleration)
     : ModelBasedController<T>(model_path, world_offset,
                               multibody::joints::kFixed),
-      no_reference_acceleration_(no_reference_acceleration) {
+      has_reference_acceleration_(has_reference_acceleration) {
   SetUp(kp, ki, kd);
 }
 
 template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
     const RigidBodyTree<T>& robot, const VectorX<T>& kp, const VectorX<T>& ki,
-    const VectorX<T>& kd, bool no_reference_acceleration)
+    const VectorX<T>& kd, bool has_reference_acceleration)
     : ModelBasedController<T>(robot),
-      no_reference_acceleration_(no_reference_acceleration) {
+      has_reference_acceleration_(has_reference_acceleration) {
   SetUp(kp, ki, kd);
 }
 
 template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
     std::unique_ptr<RigidBodyTree<T>> robot, const VectorX<T>& kp,
-    const VectorX<T>& ki, const VectorX<T>& kd, bool no_reference_acceleration)
+    const VectorX<T>& ki, const VectorX<T>& kd, bool has_reference_acceleration)
     : ModelBasedController<T>(std::move(robot)),
-      no_reference_acceleration_(no_reference_acceleration) {
+      has_reference_acceleration_(has_reference_acceleration) {
   SetUp(kp, ki, kd);
 }
 

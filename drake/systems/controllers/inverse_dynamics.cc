@@ -9,7 +9,7 @@ template <typename T>
 InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>& tree,
                                     bool pure_gravity_compensation)
     : tree_(tree),
-      pure_gravity_compensation{pure_gravity_compensation},
+      pure_gravity_compensation(pure_gravity_compensation),
       q_dim_(tree.get_num_positions()),
       v_dim_(tree.get_num_velocities()),
       act_dim_(tree.get_num_actuators()) {

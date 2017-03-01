@@ -176,7 +176,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
 
   controller_ =
       builder.template AddSystem<systems::InverseDynamicsController<T>>(
-          robot_tree, kp, ki, kd, true /* no feedforward acceleration */);
+          robot_tree, kp, ki, kd, false /* no feedforward acceleration */);
 
   // Connect robot (not the entire plant) and controller
   builder.Connect(robot_output_port,

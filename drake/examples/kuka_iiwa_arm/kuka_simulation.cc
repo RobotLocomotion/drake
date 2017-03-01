@@ -84,7 +84,7 @@ class SimulatedKuka : public systems::Diagram<T> {
     controller_ =
         builder.template AddSystem<systems::InverseDynamicsController<T>>(
             plant_->get_rigid_body_tree(), kp, ki, kd,
-            true /* no feedforward acceleration */);
+            false /* no feedforward acceleration */);
 
     // Connects plant and controller.
     builder.Connect(plant_->state_output_port(),
