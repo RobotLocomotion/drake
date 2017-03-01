@@ -70,6 +70,7 @@ double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
     }
   }
 }
+
 LinearSystemExample1::LinearSystemExample1()
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, b_{}, con_{} {
   x_ = prog_->NewContinuousVariables<4>();
@@ -601,25 +602,6 @@ bool MinDistanceFromPlaneToOrigin::CheckSolution(bool rotated_cone) const {
            CompareMatrices(t_lorentz_value, Vector1d(x_expected_.norm()), 1E-3,
                            MatrixCompareType::absolute);
   }
-}
-
-InfeasibleLinearProgramTest0::InfeasibleLinearProgramTest0()
-  : prog_(std::make_unique<MathematicalProgram>()) {
-  auto x = prog_->NewContinuousVariables<2>("x");
-  prog_->AddLinearCost(-x(0) - x(1));
-  prog_->AddLinearConstraint(x(0) + 2 * x(1) <= 3);
-  prog_->AddLinearConstraint(2 * x(0) + x(1) == 4);
-  prog_->AddLinearConstraint(x(0) >= 0);
-  prog_->AddLinearConstraint(x(1) >= 2);
-}
-
-UnboundedLinearProgramTest0::UnboundedLinearProgramTest0()
-  : prog_(std::make_unique<MathematicalProgram>()) {
-  auto x = prog_->NewContinuousVariables<2>("x");
-  prog_->AddLinearCost(-x(0) - x(1));
-  prog_->AddLinearConstraint(2 * x(0) + x(1) >= 4);
-  prog_->AddLinearConstraint(x(0) >= 0);
-  prog_->AddLinearConstraint(x(1) >= 2);
 }
 }  // namespace test
 }  // namespace solvers

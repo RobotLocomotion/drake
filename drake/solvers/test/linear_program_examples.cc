@@ -366,6 +366,25 @@ std::vector<LinearProblems> linear_problems() {
       LinearProblems::kLinearProgram0, LinearProblems::kLinearProgram1,
       LinearProblems::kLinearProgram2, LinearProblems::kLinearProgram3};
 }
+
+InfeasibleLinearProgramTest0::InfeasibleLinearProgramTest0()
+    : prog_(std::make_unique<MathematicalProgram>()) {
+  auto x = prog_->NewContinuousVariables<2>("x");
+  prog_->AddLinearCost(-x(0) - x(1));
+  prog_->AddLinearConstraint(x(0) + 2 * x(1) <= 3);
+  prog_->AddLinearConstraint(2 * x(0) + x(1) == 4);
+  prog_->AddLinearConstraint(x(0) >= 0);
+  prog_->AddLinearConstraint(x(1) >= 2);
+}
+
+UnboundedLinearProgramTest0::UnboundedLinearProgramTest0()
+    : prog_(std::make_unique<MathematicalProgram>()) {
+  auto x = prog_->NewContinuousVariables<2>("x");
+  prog_->AddLinearCost(-x(0) - x(1));
+  prog_->AddLinearConstraint(2 * x(0) + x(1) >= 4);
+  prog_->AddLinearConstraint(x(0) >= 0);
+  prog_->AddLinearConstraint(x(1) >= 2);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
