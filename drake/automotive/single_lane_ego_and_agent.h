@@ -12,7 +12,20 @@
 namespace drake {
 namespace automotive {
 
-/// A system enclosing the IdmPlanner as an output equation.
+/// Idm -- A System that takes in the positions and velocities of an ego car and
+/// agent car, and produces an output with the computed IDM acceleration (see
+/// IdmPlanner).
+///
+/// Inputs:
+///   0: A BasicVector consisting of
+///       - @p x_ego ego car position (scalar) [m]
+///       - @p v_ego ego car velocity (scalar) [m/s]
+///      (InputPortDescriptor getter: get_ego_port())
+///   1: A BasicVector consisting of
+///       - @p x_agent agent car position (scalar) [m]
+///       - @p v_agent agent car velocity (scalar) [m/s]
+/// Output:
+///   0: @p vdot_ego linear acceleration of the ego car (scalar) [m/s^2].
 template <typename T>
 class Idm : public systems::LeafSystem<T> {
  public:
@@ -35,9 +48,9 @@ class Idm : public systems::LeafSystem<T> {
                             systems::Parameters<T>* params) const override;
 };
 
-/// System consisting of two cars: an ego and an agent, where the ego
-/// is governed by an IDM (intelligent driver model) planner, and
-/// where the agent is fed a constant acceleration input.
+/// SingleLaneEgoAndAgent -- A System consisting of two cars: an ego and an
+/// agent, where the ego is governed by an IDM (intelligent driver model)
+/// planner, and where the agent is fed a constant acceleration input.
 ///
 ///   +--------------+         +-------------+
 ///   | Acceleration | v_dot_a |  Agent Car  |  x_a, v_a
@@ -47,13 +60,13 @@ class Idm : public systems::LeafSystem<T> {
 ///                                               |
 ///       +---------------------------------------+
 ///       | port
-///       |  1   +--------------+         +-------------+
-///       +----->|   Planner    | v_dot_e |   Ego Car   |  x_e, v_e
-///              |              |-------->|             |----+
-///       +----->| (IdmPlanner) |         | (LinearCar) |    |
-///       | port +--------------+         +-------------+    |
-///       |  0                                               |
-///       +--------------------------------------------------+
+///       |  1   +-------------+         +-------------+
+///       +----->|   Planner   | v_dot_e |   Ego Car   |  x_e, v_e
+///              |             |-------->|             |----+
+///       +----->|    (Idm)    |         | (LinearCar) |    |
+///       | port +-------------+         +-------------+    |
+///       |  0                                              |
+///       +-------------------------------------------------+
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///

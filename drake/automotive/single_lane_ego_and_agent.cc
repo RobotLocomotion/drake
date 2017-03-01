@@ -39,7 +39,7 @@ void Idm<T>::DoCalcOutput(const systems::Context<T>& context,
                           systems::SystemOutput<T>* output) const {
   const T l_car = 4.5;  // Length of the lead car [m].
 
-  // Obtain the input/output structures we need to read from and write into.
+  // Obtain the input/output data structures.
   const systems::BasicVector<T>* input_ego =
       this->EvalVectorInput(context, this->get_ego_port().get_index());
   const systems::BasicVector<T>* input_agent =

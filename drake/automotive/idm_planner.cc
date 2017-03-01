@@ -37,7 +37,7 @@ const T IdmPlanner<T>::Evaluate(const IdmPlannerParameters<T>& params,
   // Compute the free-road accleration term.
   const T& accel_free_road = pow(ego_velocity / v_ref, delta);
 
-  // Compute the IDM acceleration.
+  // Compute the resultant acceleration (IDM equation).
   return a * (1. - accel_free_road - accel_interaction);
 }
 
