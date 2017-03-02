@@ -95,6 +95,7 @@ drake_cc_googletest(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:trajectory_source",
     ],
+    size = "large",
 )
 
 filegroup(

@@ -267,9 +267,9 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const double kExpectedHeight = kBoxZ0 + kLiftHeight -
       (kSimDuration * kVStictionTolerance);
   // Expect that the box is off of the ground.
-  // TODO(SeanCurtis-TRI): Provide a better basis. Currently, *Assuming* the
-  // second exported output has index 1 and that kinematics results *are* the
-  // second, exported output.
+  // TODO(SeanCurtis-TRI): Provide a better basis for acquiring exported output
+  // port index. Currently, *assuming* the second exported output has index 1
+  // and that kinematics results *are* the second, exported output.
   const int kinematrics_results_index = 1;
   auto& kinematics_results2 = state_output->get_data(kinematrics_results_index)
       ->GetValue<KinematicsResults<double>>();
