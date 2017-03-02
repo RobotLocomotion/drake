@@ -18,9 +18,6 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-// TODO(naveenoid): These methods must be merged with those in
-// /examples/toyota_hsrb/hsrb_diagram_factories.h and moved to a common
-// library.
 
 /// A custom `systems::Diagram` composed of a `systems::RigidBodyPlant`
 /// and a `systems::DrakeVisualizer`. The diagram's output port zero is
