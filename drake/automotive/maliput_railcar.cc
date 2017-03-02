@@ -320,6 +320,21 @@ void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
   const T distance = cond(with_s, T(lane->length()) - s, -s);
 
   actions->time = context.get_time() + distance / s_dot;
+  // std::cout << "MaliputRailcar::DoCalcNextUpdateTime:\n"
+  //           << "  - context.get_time() = " << context.get_time() << "\n"
+  //           << "  - s_dot = " << s_dot << "\n"
+  //           << "  - distance = " << distance << "\n"
+  //           << "  - action time = " << actions->time
+  //           << std::endl;
+  if (actions->time <= context.get_time()) {
+    // std::cout << "MaliputRailcar::DoCalcNextUpdateTime: Action time is less "
+    //     "than or equal to the current time! Adding an epsilon to the "
+    //     "current time." << std::endl;
+
+    // Add an epsilon to ensure the actions time is strictly positive relative
+    // to the current time.
+    actions->time = context.get_time() + 1e-10;
+  }
   actions->events.push_back(systems::DiscreteEvent<T>());
   actions->events.back().action =
       systems::DiscreteEvent<T>::kUnrestrictedUpdateAction;
@@ -377,21 +392,44 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
         next_state->template get_mutable_abstract_state<LaneDirection>(0);
     // TODO(liang.fok) Generalize the following to support the selection of
     // non-default branches.
-    std::unique_ptr<LaneEnd> default_branch;
+    std::unique_ptr<LaneEnd> next_branch;
     if (current_with_s) {
-      default_branch = current_lane_direction.lane->GetDefaultBranch(
+      next_branch = current_lane_direction.lane->GetDefaultBranch(
           LaneEnd::kFinish);
+      if (next_branch == nullptr) {
+        const maliput::api::LaneEndSet* ongoing_lanes =
+            current_lane_direction.lane->GetOngoingBranches(LaneEnd::kFinish);
+        if (ongoing_lanes != nullptr) {
+          if (ongoing_lanes->size() > 0) {
+            std::cout << "MaliputRailcar::DoCalcUnrestrictedUpdate: No default "
+                "branch specified. Using first ongoing branch." << std::endl;
+            next_branch = std::make_unique<LaneEnd>(ongoing_lanes->get(0));
+          }
+        }
+      }
     } else {
-      default_branch = current_lane_direction.lane->GetDefaultBranch(
+      next_branch = current_lane_direction.lane->GetDefaultBranch(
           LaneEnd::kStart);
+      if (next_branch == nullptr) {
+        const maliput::api::LaneEndSet* ongoing_lanes =
+            current_lane_direction.lane->GetOngoingBranches(LaneEnd::kStart);
+        if (ongoing_lanes != nullptr) {
+          if (ongoing_lanes->size() > 0) {
+            std::cout << "MaliputRailcar::DoCalcUnrestrictedUpdate: No default "
+                "branch specified. Using first ongoing branch." << std::endl;
+            next_branch = std::make_unique<LaneEnd>(ongoing_lanes->get(0));
+          }
+        }
+      }
     }
 
-    if (default_branch == nullptr) {
+    if (next_branch == nullptr) {
       DRAKE_ABORT_MSG("MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
-          "Vehicle should switch lanes but is at the end of the road.");
+          "Vehicle should switch lanes but no default or ongoing branch "
+          "exists.");
     } else {
-      next_lane_direction.lane = default_branch->lane;
-      if (default_branch->end == LaneEnd::kStart) {
+      next_lane_direction.lane = next_branch->lane;
+      if (next_branch->end == LaneEnd::kStart) {
         next_lane_direction.with_s = true;
         next_railcar_state->set_s(0);
       } else {
