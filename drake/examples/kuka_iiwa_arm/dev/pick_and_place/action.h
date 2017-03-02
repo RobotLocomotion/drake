@@ -21,6 +21,8 @@ class Action {
  public:
   explicit Action(lcm::LCM* lcm) : lcm_(lcm) { Reset(); }
 
+  virtual ~Action() {}
+
   /**
    * Returns true if the action has finished based on the provided estimated
    * state.
@@ -92,6 +94,8 @@ class IiwaMove : public Action {
            lcm::LCM* lcm)
       : Action(lcm), iiwa_(iiwa), pub_channel_(channel) {}
 
+  ~IiwaMove() override {}
+
   /**
    * Returns a constant reference to the KUKA iiwa model.
    */
@@ -135,6 +139,8 @@ class WsgAction : public Action {
   WsgAction(const std::string& channel, lcm::LCM* lcm)
       : Action(lcm), pub_channel_(channel) {}
 
+  ~WsgAction() override {}
+
   /**
    * Sends an LCM message that tells the WSG gripper driver to fully open.
    */
@@ -147,13 +153,15 @@ class WsgAction : public Action {
 
   // TODO(siyuanfeng): Implement something meaningful here like a check for a
   // force threshold being crossed.
-  bool ActionFailed(const WorldState& est_state) const { return false; }
+  bool ActionFailed(const WorldState& est_state) const override {
+    return false;
+  }
 
   /**
    * Returns true if the gripper stopped moving, and it is at least 0.5 seconds
    * after an Open / Close command was last issued.
    */
-  bool ActionFinished(const WorldState& est_state) const;
+  bool ActionFinished(const WorldState& est_state) const override;
 
  private:
   const std::string pub_channel_;

@@ -115,6 +115,8 @@ class TrigPoly {
     sin_cos_map_[q.GetSimpleVariable()] = sc;
   }
 
+  virtual ~TrigPoly() {}
+
   /// Returns the underlying Polynomial for this TrigPoly.
   const PolyType& poly(void) const { return poly_; }
 
