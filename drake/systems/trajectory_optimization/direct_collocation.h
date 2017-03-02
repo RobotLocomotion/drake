@@ -47,6 +47,8 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
                                double trajectory_time_lower_bound,
                                double trajectory_time_upper_bound);
 
+  ~DircolTrajectoryOptimization() override {}
+
   void AddRunningCost(std::shared_ptr<solvers::Constraint> constraint) override;
 
   PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;

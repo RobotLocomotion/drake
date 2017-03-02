@@ -233,6 +233,7 @@ class MathematicalProgram {
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
 
   MathematicalProgram();
+  virtual ~MathematicalProgram() {}
 
   /**
    * Adds new variables to MathematicalProgram.
