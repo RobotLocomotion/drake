@@ -450,8 +450,6 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   GRBenv* env = nullptr;
   GRBloadenv(&env, nullptr);
-  // Corresponds to no console or file logging.
-  GRBsetintparam(env, GRB_INT_PAR_OUTPUTFLAG, 0);
 
   DRAKE_ASSERT(prog.generic_costs().empty());
   DRAKE_ASSERT(prog.generic_constraints().empty());
@@ -552,14 +550,27 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));
 
+  // The new model gets a copy of the Gurobi environment, so when we set
+  // parameters, we have to be sure to set them on the model's environment,
+  // not the global gurobi environment.
+  // See: FAQ #11: http://www.gurobi.com/support/faqs
+  // Note that it is not necessary to free this environment; rather,
+  // we just have to call GRBfreemodel(model).
+  GRBenv* model_env = GRBgetenv(model);
+  DRAKE_DEMAND(model_env);
+
+  // Corresponds to no console or file logging (this is the default, which
+  // can be overridden by parameters set in the MathematicalProgram).
+  GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
+
   for (const auto it : prog.GetSolverOptionsDouble(SolverType::kGurobi)) {
-    error = GRBsetdblparam(env, it.first.c_str(), it.second);
+    error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
     DRAKE_DEMAND(!error);
   }
 
 
   for (const auto it : prog.GetSolverOptionsInt(SolverType::kGurobi)) {
-    error = GRBsetintparam(env, it.first.c_str(), it.second);
+    error = GRBsetintparam(model_env, it.first.c_str(), it.second);
     DRAKE_DEMAND(!error);
   }
 
@@ -578,8 +589,19 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
     if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
-      if (optimstatus == GRB_INF_OR_UNBD || optimstatus == GRB_INFEASIBLE) {
-        result = SolutionResult::kInfeasibleConstraints;
+      switch (optimstatus) {
+        case GRB_INF_OR_UNBD : {
+          result = SolutionResult::kInfeasible_Or_Unbounded;
+          break;
+        }
+        case GRB_UNBOUNDED : {
+          result = SolutionResult::kUnbounded;
+          break;
+        }
+        case GRB_INFEASIBLE : {
+          result = SolutionResult::kInfeasibleConstraints;
+          break;
+        }
       }
     } else {
       result = SolutionResult::kSolutionFound;

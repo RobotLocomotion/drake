@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "gtest/gtest.h"
 
 #include "drake/automotive/maliput/dragway/branch_point.h"
@@ -192,6 +194,11 @@ class MaliputDragwayLaneTest : public ::testing::Test {
   const double length_{};
   const double lane_width_{};
   const double shoulder_width_{};
+
+  // The following linear tolerance was empirically derived on a 64-bit Ubuntu
+  // system. It is necessary due to inaccuracies in floating point calculations
+  // and different ways of computing the driveable r_min and r_max.
+  const double kLinearTolerance = 1e-15;
 };
 
 /*
@@ -214,10 +221,6 @@ class MaliputDragwayLaneTest : public ::testing::Test {
 TEST_F(MaliputDragwayLaneTest, SingleLane) {
   const api::RoadGeometryId road_geometry_id({"OneLaneDragwayRoadGeometry"});
   const int kNumLanes = 1;
-  // The following linear tolerance was empirically derived on a 64-bit Ubuntu
-  // system. It is necessary due to inaccuracies in floating point calculations
-  // and different ways of computing the driveable r_min and r_max.
-  const double kLinearTolerance = 1e-15;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
       shoulder_width_, kLinearTolerance);
@@ -262,10 +265,6 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
 TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
   const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
   const int kNumLanes = 2;
-  // The following linear tolerance was empirically derived on a 64-bit Ubuntu
-  // system. It is necessary due to inaccuracies in floating point calculations
-  // and different ways of computing the driveable r_min and r_max.
-  const double kLinearTolerance = 1e-15;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
       lane_width_, shoulder_width_, kLinearTolerance);
@@ -286,6 +285,179 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
     VerifyLaneCorrectness(lane, kNumLanes);
     VerifyBranches(lane, &road_geometry);
   }
+}
+
+// Tests dragway::RoadGeometry::ToRoadPosition() using a two-lane dragway where
+// the x,y projection of all geographic positions provided to it are in the
+// road's driveable region. This unit test also verifies that
+// dragway::RoadGeometry::IsGeoPositionOnDragway() does not incorrectly return
+// false.
+TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
+  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const int kNumLanes = 2;
+
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
+      lane_width_, shoulder_width_, kLinearTolerance);
+
+  // Spot checks geographic positions on lane 0 and the right shoulder with a
+  // focus on edge cases.
+  for (double x = 0; x <= length_; x += length_ / 2) {
+    for (double y = -lane_width_ - shoulder_width_; y <= 0;
+        y += (lane_width_ + shoulder_width_) / 2) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        const api::Lane* expected_lane =
+            road_geometry.junction(0)->segment(0)->lane(0);
+        EXPECT_DOUBLE_EQ(nearest_position.x, x);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        EXPECT_DOUBLE_EQ(distance, 0);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, x);
+        EXPECT_EQ(road_position.pos.r, y + lane_width_ / 2);
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+
+  // Spot checks geographic positions on lane 1 and the left shoulder with a
+  // focus on edge cases.
+  for (double x = 0; x <= length_; x += length_ / 2) {
+    for (double y = 0; y <= lane_width_ + shoulder_width_;
+        y += (lane_width_ + shoulder_width_) / 2) {
+      for (double z = 0; z <= 10; z += 5) {
+        api::GeoPosition nearest_position;
+        double distance;
+        const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+            api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+            &distance);
+        const int lane_index = (y == 0 ? 0 : 1);
+        const api::Lane* expected_lane =
+            road_geometry.junction(0)->segment(0)->lane(lane_index);
+        EXPECT_DOUBLE_EQ(nearest_position.x, x);
+        EXPECT_DOUBLE_EQ(nearest_position.y, y);
+        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        EXPECT_DOUBLE_EQ(distance, 0);
+        EXPECT_EQ(road_position.lane, expected_lane);
+        EXPECT_EQ(road_position.pos.s, x);
+        if (y == 0) {
+          EXPECT_EQ(road_position.pos.r, y + lane_width_ / 2);
+        } else {
+          EXPECT_EQ(road_position.pos.r, y - lane_width_ / 2);
+        }
+        EXPECT_EQ(road_position.pos.h, z);
+      }
+    }
+  }
+}
+
+// Tests dragway::RoadGeometry::ToRoadPosition() using a two-lane dragway where
+// the x,y projection of all geographic positions provided to it may be outside
+// of the road's driveable region. This unit test also verifies that
+// dragway::RoadGeometry::IsGeoPositionOnDragway() does not incorrectly return
+// false.
+TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
+  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const int kNumLanes = 2;
+
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
+      lane_width_, shoulder_width_, kLinearTolerance);
+
+  // Computes the bounds of the road's driveable region.
+  const double x_max = length_;
+  const double x_min = 0;
+  const double y_max = lane_width_ + shoulder_width_;
+  const double y_min = -y_max;
+
+  // Spot checks a region that is a superset of the road's driveable bounds with
+  // a focus on edge cases.
+  const double test_x_min = x_min - 10;
+  const double test_x_max = x_max + 10;
+  const double test_y_min = y_min - 10;
+  const double test_y_max = y_max + 10;
+
+  // Defines the test case values for x and y. Points both far away and close to
+  // the driveable area are evaluated.
+  const std::vector<double> x_test_cases{
+    test_x_min, x_min - 1e-10, x_max + 1e10, test_x_max};
+  const std::vector<double> y_test_cases{
+    test_y_min, y_min - 1e-10, y_max + 1e10, test_y_max};
+
+  for (const auto x : x_test_cases) {
+    for (const auto y : y_test_cases) {
+      // Provide a non-zero `z` value for one test case just to ensure that the
+      // results of dragway::RoadGeometry::ToRoadPosition() are reasonable for
+      // this scenario.
+      const double z = (x == test_x_min && y == test_y_min) ? 0.01 : 0;
+      api::GeoPosition nearest_position;
+      double distance;
+      const api::RoadPosition road_position = road_geometry.ToRoadPosition(
+          api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
+          &distance);
+      EXPECT_LE(nearest_position.x, x_max);
+      EXPECT_GE(nearest_position.x, x_min);
+      EXPECT_LE(nearest_position.y, y_max);
+      EXPECT_GE(nearest_position.y, y_min);
+
+      api::GeoPosition expected_nearest_position;
+      expected_nearest_position.x = x;
+      expected_nearest_position.y = y;
+      expected_nearest_position.z = z;
+      if (x < x_min) {
+        expected_nearest_position.x = x_min;
+      }
+      if (x > x_max) {
+        expected_nearest_position.x = x_max;
+      }
+      if (y < y_min) {
+        expected_nearest_position.y = y_min;
+      }
+      if (y > y_max) {
+        expected_nearest_position.y = y_max;
+      }
+
+      EXPECT_DOUBLE_EQ(nearest_position.x, expected_nearest_position.x);
+      EXPECT_DOUBLE_EQ(nearest_position.y, expected_nearest_position.y);
+      EXPECT_DOUBLE_EQ(nearest_position.z, expected_nearest_position.z);
+      EXPECT_LT(0, distance);
+      const int expected_lane_index = (y > 0 ? 1 : 0);
+      const Lane* expected_lane = dynamic_cast<const Lane*>(
+          road_geometry.junction(0)->segment(0)->lane(expected_lane_index));
+      EXPECT_EQ(road_position.lane, expected_lane);
+      EXPECT_EQ(road_position.pos.s, expected_nearest_position.x);
+      EXPECT_EQ(road_position.pos.r,
+          expected_nearest_position.y - expected_lane->y_offset());
+      EXPECT_EQ(road_position.pos.h, z);
+    }
+  }
+}
+
+// Tests that dragway::RoadGeometry::ToRoadPosition() can be called with
+// parameters `nearest_position` and `distance` set to `nullptr`.
+TEST_F(MaliputDragwayLaneTest, TestToRoadPositionNullptr) {
+  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const int kNumLanes = 2;
+
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
+      lane_width_, shoulder_width_, kLinearTolerance);
+
+  // Case 1: The provided geo_pos is in the driveable region.
+  EXPECT_NO_THROW(road_geometry.ToRoadPosition(
+            api::GeoPosition(length_ / 2 /* x */, 0 /* y */, 0 /* z */),
+            nullptr /* hint */,
+            nullptr /* nearest_position */,
+            nullptr /* distance */));
+
+  // Case 2: The provided geo_pos is beyond the driveable region.
+  EXPECT_NO_THROW(road_geometry.ToRoadPosition(
+            api::GeoPosition(length_ + 1e-10 /* x */, 0 /* y */, 0 /* z */),
+            nullptr /* hint */,
+            nullptr /* nearest_position */,
+            nullptr /* distance */));
 }
 
 }  // namespace

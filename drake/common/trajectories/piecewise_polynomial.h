@@ -224,6 +224,12 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
 
   double scalarValue(double t, Eigen::Index row = 0, Eigen::Index col = 0);
 
+  /**
+   * Evaluates the PiecewisePolynomial at the given time \p t.
+   *
+   * @param t The time at which to evaluate the PiecewisePolynomial.
+   * @return The matrix of evaluated values.
+   */
   drake::MatrixX<double> value(double t) const;
 
   const PolynomialMatrix& getPolynomialMatrix(int segment_index) const;
@@ -294,11 +300,10 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
 
   PiecewisePolynomial slice(int start_segment_index, int num_segments) const;
 
- protected:
+ private:
   double segmentValueAtGlobalAbscissa(int segment_index, double t,
                                       Eigen::Index row, Eigen::Index col) const;
 
- private:
   static constexpr CoefficientType kSlopeEpsilon = 1e-10;
 
   // a PolynomialMatrix for each piece (segment)

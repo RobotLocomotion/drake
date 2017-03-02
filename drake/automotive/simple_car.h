@@ -36,7 +36,7 @@ namespace automotive {
 /// output port 1: A PoseVector containing X_WC, where C is the car frame.
 ///
 /// @tparam T must support certain arithmetic operations;
-/// for details, see ./test/simple_car_scalartype_test.cc.
+/// for details, see drake::symbolic::Expression.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double

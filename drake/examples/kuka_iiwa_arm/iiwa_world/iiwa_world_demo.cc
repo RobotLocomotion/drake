@@ -34,7 +34,7 @@ int DoMain() {
 
   iiwa_world->StoreModel(
       "iiwa",
-      "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf");
 
   iiwa_world->StoreModel(
       "table", "/examples/kuka_iiwa_arm/models/table/"

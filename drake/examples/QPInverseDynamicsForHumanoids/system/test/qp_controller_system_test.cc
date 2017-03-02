@@ -25,7 +25,7 @@ namespace qp_inverse_dynamics {
 GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
   const std::string kModelPath =
       drake::GetDrakePath() +
-      "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf";
+      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
 
   const std::string kAliasGroupsPath =
       drake::GetDrakePath() +

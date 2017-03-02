@@ -166,7 +166,7 @@ class RobotPlanRunner {
 int do_main(int argc, const char* argv[]) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      GetDrakePath() + "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
       multibody::joints::kFixed, tree.get());
 
   RobotPlanRunner runner(*tree);
