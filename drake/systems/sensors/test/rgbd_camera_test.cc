@@ -139,6 +139,12 @@ class RenderingSim : public systems::Diagram<double> {
   RgbdCamera* rgbd_camera_;
 };
 
+void AssertLe(uint8_t value_a, uint8_t value_b, uint8_t tolerance) {
+  int a = static_cast<int>(value_a);
+  int b = static_cast<int>(value_b);
+  int t = static_cast<int>(tolerance);
+  ASSERT_LE(std::abs(a - b), t);
+}
 
 class ImageTest {
  public:
@@ -183,10 +189,10 @@ class ImageTest {
       for (int u = 0; u < color_image.width(); u += 20) {
         // We need kColorPixelTolerance because it is possible to have rendering
         // errors dependeing on the hardware that VTK renderer uses.
-        ASSERT_NEAR(color_image.at(u, v)[0], 204u, kColorPixelTolerance);
-        ASSERT_NEAR(color_image.at(u, v)[1], 229u, kColorPixelTolerance);
-        ASSERT_NEAR(color_image.at(u, v)[2], 255u, kColorPixelTolerance);
-        ASSERT_NEAR(color_image.at(u, v)[3], 255u, kColorPixelTolerance);
+        AssertLe(color_image.at(u, v)[0], 204u, kColorPixelTolerance);
+        AssertLe(color_image.at(u, v)[1], 229u, kColorPixelTolerance);
+        AssertLe(color_image.at(u, v)[2], 255u, kColorPixelTolerance);
+        AssertLe(color_image.at(u, v)[3], 255u, kColorPixelTolerance);
 
         // Assuming depth value provides 0.1 mm precision.
         ASSERT_NEAR(depth_image.at(u, v)[0], 4.999f, 1e-4);
@@ -222,14 +228,14 @@ class ImageTest {
         uint8_t* color = static_cast<uint8_t*>(
             color_expected->GetScalarPointer(x, y, 0));
 
-        ASSERT_NEAR(color_image.at(u, v)[0],
-                    *(color + 2), kColorPixelTolerance);  // B
-        ASSERT_NEAR(color_image.at(u, v)[1],
-                    *(color + 1), kColorPixelTolerance);  // G
-        ASSERT_NEAR(color_image.at(u, v)[2],
-                    *(color + 0), kColorPixelTolerance);  // R
-        ASSERT_NEAR(color_image.at(u, v)[3],
-                    *(color + 3), kColorPixelTolerance);  // A
+        AssertLe(color_image.at(u, v)[0], *(color + 2),
+                 kColorPixelTolerance);  // B
+        AssertLe(color_image.at(u, v)[1], *(color + 1),
+                 kColorPixelTolerance);  // G
+        AssertLe(color_image.at(u, v)[2], *(color + 0),
+                 kColorPixelTolerance);  // R
+        AssertLe(color_image.at(u, v)[3], *(color + 3),
+                 kColorPixelTolerance);  // A
 
         float* depth = static_cast<float*>(
             depth_expected->GetScalarPointer(x, y, 0));
