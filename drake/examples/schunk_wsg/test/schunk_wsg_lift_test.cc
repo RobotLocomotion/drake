@@ -18,6 +18,7 @@
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
@@ -37,6 +38,10 @@ namespace {
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
+using drake::systems::KinematicsResults;
+
+// Initial height of the box's origin.
+const double kBoxInitZ = 0.076;
 
 std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
     int* lifter_instance_id, int* gripper_instance_id) {
@@ -55,12 +60,12 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
   // locate the target at the origin.
   auto gripper_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "lifted_link_frame",
-      tree->FindBody("lifted_link"),
-      Eigen::Vector3d(0, -0.05, 0.05), Eigen::Vector3d::Zero());
-  const auto gripper_id_table =
-      parsers::sdf::AddModelInstancesFromSdfFile(
-          GetDrakePath() + "/examples/schunk_wsg/models/schunk_wsg_50.sdf",
-          multibody::joints::kFixed, gripper_frame, tree.get());
+      tree->FindBody("lifted_link"), Eigen::Vector3d(0, -0.05, 0.05),
+      Eigen::Vector3d::Zero());
+  const auto gripper_id_table = parsers::sdf::AddModelInstancesFromSdfFile(
+      GetDrakePath() +
+          "/examples/schunk_wsg/models/schunk_wsg_50_ball_contact.sdf",
+      multibody::joints::kFixed, gripper_frame, tree.get());
   EXPECT_EQ(gripper_id_table.size(), 1);
   *gripper_instance_id = gripper_id_table.begin()->second;
 
@@ -68,7 +73,7 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
   auto box_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,
-      Eigen::Vector3d(0, 0, 0.076), Eigen::Vector3d::Zero());
+      Eigen::Vector3d(0, 0, kBoxInitZ), Eigen::Vector3d::Zero());
   parsers::urdf::AddModelInstanceFromUrdfFile(
       GetDrakePath() + "/multibody/models/box_small.urdf",
       multibody::joints::kQuaternion, box_frame, tree.get());
@@ -94,7 +99,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const double kDissipation = 2.0;
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
-  const double kVStictionTolerance = 0.001;
+  const double kVStictionTolerance = 0.01;
   plant->set_normal_contact_parameters(kStiffness, kDissipation);
   plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
                                          kVStictionTolerance);
@@ -121,12 +126,12 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   builder.Connect(zero_source->get_output_port(),
                   lifting_pid_ports.control_input_port);
 
-  // Create a trajectory with 10 seconds of main lift time from second
-  // 1 to second 11, coming to a stop by second 12.  The initial delay
+  // Create a trajectory with 3 seconds of main lift time from second
+  // 1 to second 4, coming to a stop by second 5.  The initial delay
   // is to allow the gripper to settle on the box before we start
   // moving.
   const double kLiftHeight = 1.0;
-  std::vector<double> lift_breaks{0., 0.9, 1., 11., 12};
+  std::vector<double> lift_breaks{0., 0.9, 1., 4., 5};
   std::vector<Eigen::MatrixXd> lift_knots;
   lift_knots.push_back(Eigen::Vector2d(0., 0.));
   lift_knots.push_back(Eigen::Vector2d(0., 0.));
@@ -180,6 +185,10 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
                   contact_results_publisher.get_input_port(0));
 
   builder.ExportOutput(plant->get_output_port(0));
+  // Expose the RBPlant kinematics results as a diagram output for body state
+  // validation.
+  builder.ExportOutput(plant->get_output_port(
+      plant->kinematics_results_output_port().get_index()));
 
   // Set up the model and simulator and set their starting state.
   const std::unique_ptr<systems::Diagram<double>> model = builder.Build();
@@ -220,14 +229,16 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
 
   simulator.Initialize();
-  const double kSimDuration = 20.0;
+
+  // Simulate to one second beyond the trajectory motion.
+  const double kSimDuration = lift_breaks[lift_breaks.size() - 1] + 1.0;
   simulator.StepTo(kSimDuration);
 
-  // Extract and log the final state of the robot.
-  auto final_output = model->AllocateOutput(simulator.get_context());
-  model->CalcOutput(simulator.get_context(), final_output.get());
+  // Extract and log the state of the robot.
+  auto state_output = model->AllocateOutput(simulator.get_context());
+  model->CalcOutput(simulator.get_context(), state_output.get());
   const auto final_output_data =
-      final_output->get_vector_data(0)->get_value();
+      state_output->get_vector_data(0)->get_value();
 
   drake::log()->debug("Final state:");
   const int num_movable_links = plant->get_num_positions();
@@ -252,16 +263,19 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // for T seconds of stiction time, the object could slip as much as
   // T * kVStictionTolerance.  So, we pad our expectation by this amount and
   // confirm that the box hasn't slid *more* than this.
-  //
-  // However, the accuracy required to get this answer requires an exceptionally
-  // small accuracy threshold which, in turn, leads to a massive simulation
-  // time.  So, we'll relax this boundary by allowing as much as 3X as much
-  // slip.
-  const double kBoxZ0 = 0.75;  // Half the box height.
+  const double kBoxZ0 = 0.075;  // Half the box height.
   const double kExpectedHeight = kBoxZ0 + kLiftHeight -
-      3 * (kSimDuration * kVStictionTolerance);
+      (kSimDuration * kVStictionTolerance);
   // Expect that the box is off of the ground.
-  EXPECT_GT(final_output_data[positions["base_z"]], kExpectedHeight);
+  // TODO(SeanCurtis-TRI): Provide a better basis. Currently, *Assuming* the
+  // second exported output has index 1 and that kinematics results *are* the
+  // second, exported output.
+  const int kinematrics_results_index = 1;
+  auto& kinematics_results2 = state_output->get_data(kinematrics_results_index)
+      ->GetValue<KinematicsResults<double>>();
+  const int box_index = tree.FindBodyIndex("box");
+  Vector3<double> final_pos = kinematics_results2.get_body_position(box_index);
+  EXPECT_GT(final_pos(2), kExpectedHeight);
 }
 
 }  // namespace
