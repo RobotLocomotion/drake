@@ -75,31 +75,31 @@ class UnitInertia : public RotationalInertia<T> {
   explicit UnitInertia(const RotationalInertia<T>& I) :
       RotationalInertia<T>(I) {}
 
-  /// Given `this` rotational inertia `G_Po_F` about `Po` and expressed in frame
-  /// `F`, this method computes the same unit inertia re-expressed in another
-  /// frame `A` as `I_Po_A = R_AF * G_Po_F * (R_AF)ᵀ`.
+  /// Given `this` rotational inertia `G_Po_E` about `Po` and expressed in frame
+  /// `E`, this method computes the same unit inertia re-expressed in another
+  /// frame `F` as `G_Po_F = R_FE * G_Po_E * (R_FE)ᵀ`.
   /// This operation is performed in place, modifying the original object.
-  /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
+  /// @param[in] R_FE Rotation matrix from frame `E` to frame `F`.
   /// @returns A reference to `this` unit inertia about `Po` but now
-  ///          re-expressed in frame `A`.
-  /// @warning This method does not check whether the input matrix `R_AF`
+  ///          re-expressed in frame `F`.
+  /// @warning This method does not check whether the input matrix `R_FE`
   /// represents a valid rotation or not. It is the resposibility of users to
   /// provide valid rotation matrices.
-  UnitInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AF) {
-    return RotationalInertia<T>::ReExpressInPlace(R_AF);
+  UnitInertia<T>& ReExpressInPlace(const Matrix3<T>& R_FE) {
+    return RotationalInertia<T>::ReExpressInPlace(R_FE);
   }
 
-  /// Given `this` rotational inertia `G_Po_F` about `Po` and expressed in frame
-  /// `F`, this method computes the same unit inertia re-expressed in another
-  /// frame `A` as `I_Po_A = R_AF * G_Po_F * (R_AF)ᵀ`.
-  /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
-  /// @retval G_Po_A The same rotational inertia about `Po` but now
-  ///                re-expressed in frame`A`.
-  /// @warning This method does not check whether the input matrix `R_AF`
+  /// Given `this` rotational inertia `G_Po_E` about `Po` and expressed in frame
+  /// `E`, this method computes the same unit inertia re-expressed in another
+  /// frame `F` as `G_Po_F = R_FE * G_Po_E * (R_FE)ᵀ`.
+  /// @param[in] R_FE Rotation matrix from frame `E` to frame `F`.
+  /// @retval G_Po_F The same rotational inertia about `Po` but now
+  ///                re-expressed in frame`F`.
+  /// @warning This method does not check whether the input matrix `R_FE`
   /// represents a valid rotation or not. It is the resposibility of users to
   /// provide valid rotation matrices.
-  UnitInertia<T> ReExpress(const Matrix3<T>& R_AF) const {
-    return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_AF));
+  UnitInertia<T> ReExpress(const Matrix3<T>& R_FE) const {
+    return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
   }
 
   /// For a central unit inertia `G_Bcm_E` computed about a body's center of
@@ -131,8 +131,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// @name Unit inertiae for common 3D objects.
   /// The following methods assist in the construction of UnitInertia instances
   /// for common 3D objects such as boxes, spheres, rods and others.
-  /// This method computes a UnitInertia a body with unit mass, typically around
-  /// its center of mass, and in a frame aligned with its principal axes.
+  /// This method computes a UnitInertia for body with unit mass, typically
+  /// around its center of mass, and in a frame aligned with its principal axes.
   /// To construct general UnitInertia objects use these methods along with
   /// ShiftFromCenterOfMassInPlace() to move the point about which the inertia
   /// is computed and use ReExpress() to express in a different frame.

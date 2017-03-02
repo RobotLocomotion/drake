@@ -292,6 +292,14 @@ GTEST_TEST(UnitInertia, AutoDiff) {
       Idot_W_expected, Eigen::NumTraits<double>::epsilon()));
 }
 
+// The code below is in support of the goal to use a unit-test to confirm that
+// disallowed operators have not been introduced. This uses SFINAE template
+// trickery to introduce compile-time code that can be evaluated at run-time.
+// If the operator is introduced, the "failing" version of the method will be
+// instantiated and invoked. Otherwise, only the passing version will be
+// instantiated. There is a variation of this block of code for each disallowed
+// operator.
+//
 // This template generates an l-value at compile time for the templates below.
 template <class T>
 struct GenerateLValue { T& get_thing(); };
