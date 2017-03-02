@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "drake/common/autodiff_overloads.h"
@@ -265,12 +266,21 @@ class System {
   /// up-to-date, delegating to our parent Diagram if necessary. Returns
   /// the port's value, or nullptr if the port is not connected.
   ///
-  /// Throws std::bad_cast if the port is not vector-valued. Aborts if the port
+  /// Throws std::bad_cast if the port is not vector-valued. Returns nullptr if
+  /// the port is vector valued, but not of type Vec. Aborts if the port
   /// does not exist.
-  const BasicVector<T>* EvalVectorInput(const Context<T>& context,
-                                        int port_index) const {
+  ///
+  /// @tparam Vec The template type of the input vector, which must be a
+  ///             subclass of BasicVector.
+  template <template<typename> class Vec = BasicVector>
+  const Vec<T>* EvalVectorInput(const Context<T>& context,
+                                int port_index) const {
+    static_assert(
+        std::is_base_of<BasicVector<T>, Vec<T>>::value,
+        "In EvalVectorInput<Vec>, Vec must be a subclass of BasicVector.");
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalVectorInput(parent_, get_input_port(port_index));
+    return dynamic_cast<const Vec<T>*>(
+        context.EvalVectorInput(parent_, get_input_port(port_index)));
   }
 
   /// Causes the vector-valued input port with the given `port_index` to become

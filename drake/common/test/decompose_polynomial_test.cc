@@ -42,7 +42,7 @@ void CheckMonomialToCoeffMap(
   const auto& map = DecomposePolynomialIntoExpression(e, vars);
   EXPECT_EQ(map.size(), map_expected.size());
   symbolic::Expression e_expected(0);
-  for (const auto& p : map) {
+  for (const auto &p : map) {
     const auto it = map_expected.find(p.first);
     ASSERT_NE(it, map_expected.end());
     EXPECT_PRED2(ExprEqual, p.second.Expand(), it->second.Expand());
@@ -73,6 +73,10 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial2) {
   map_expected.emplace(1, 3.14159);
   CheckMonomialToCoeffMap(3.14159, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(3.14159, var_xy_, map_expected);
+
+  CheckMonomialToCoeffMap(0, {var_x_}, MonomialAsExpressionToCoefficientMap());
+  CheckMonomialToCoeffMap(x_ - x_, {var_x_},
+                          MonomialAsExpressionToCoefficientMap());
 }
 
 TEST_F(DecomposePolynomialTest, DecomposePolynomial3) {
@@ -375,6 +379,32 @@ TEST_F(DecomposePolynomialTest, DISABLED_DecomposePolynomial13) {
   CheckMonomialToCoeffMap(e, var_xy_, map_expected3);
 }
 
+TEST_F(DecomposePolynomialTest, DecomposePolynomial14) {
+  // Test the polynomial that some terms have zero coefficient.
+  Expression e = 1 + x_ * x_ + 2 * (y_ - 0.5 * x_ * x_ - 0.5);
+
+  MonomialAsExpressionToCoefficientMap map_expected1{{y_, 2}};
+  CheckMonomialToCoeffMap(e, {var_x_, var_y_}, map_expected1);
+
+  // Checks e = x^2 * y - (x+1) * (x-1) * y = y
+  e = x_ * x_ * y_  - (x_ + 1) * (x_ - 1) * y_;
+  CheckMonomialToCoeffMap(e, {var_y_}, {{y_, 1}});
+  CheckMonomialToCoeffMap(e, {var_x_}, {{1, y_}});
+
+  // Checks e = x*y - 2 * x * (0.5 * y + 1) = -2*x
+  e = x_ * y_ - 2 * x_ * (0.5 * y_ + 1);
+  CheckMonomialToCoeffMap(e, {var_x_}, {{x_, -2}});
+  CheckMonomialToCoeffMap(e, {var_y_}, {{1, -2 * x_}});
+
+  // Checks e = (y + y * y - 2*(0.5 * y + 0.5 *y *y)) * x
+  e = (y_ + y_ * y_ - 2 * (0.5 * y_ + 0.5 * y_ * y_)) * x_;
+  CheckMonomialToCoeffMap(e, {var_x_}, MonomialAsExpressionToCoefficientMap());
+
+  // // Checks e = (y + y * y - 2*(0.5 * y + 0.5 *y *y) + y_) * x
+  e = (y_ + y_ * y_ - 2 * (0.5 * y_ + 0.5 * y_ * y_) + y_) * x_;
+  CheckMonomialToCoeffMap(e, {var_x_}, {{x_, y_}});
+  CheckMonomialToCoeffMap(e, {var_y_}, {{y_, x_}});
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

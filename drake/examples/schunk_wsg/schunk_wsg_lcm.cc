@@ -165,13 +165,11 @@ SchunkWsgStatusSender(int input_size,
   this->DeclareAbstractOutputPort();
 }
 
-std::unique_ptr<SystemOutput<double>> SchunkWsgStatusSender::AllocateOutput(
-    const Context<double>& context) const {
-  auto output = std::make_unique<systems::LeafSystemOutput<double>>();
+std::unique_ptr<systems::AbstractValue>
+SchunkWsgStatusSender::AllocateOutputAbstract(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
   lcmt_schunk_wsg_status msg{};
-  output->add_port(
-      std::make_unique<systems::Value<lcmt_schunk_wsg_status>>(msg));
-  return std::unique_ptr<SystemOutput<double>>(output.release());
+  return std::make_unique<systems::Value<lcmt_schunk_wsg_status>>(msg);
 }
 
 void SchunkWsgStatusSender::DoCalcOutput(const Context<double>& context,

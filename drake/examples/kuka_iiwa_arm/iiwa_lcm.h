@@ -72,11 +72,10 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
     return this->get_input_port(torque_input_port_);
   }
 
-  std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
-      const systems::Context<double>& context) const override;
-
-
  protected:
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
+
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
@@ -154,8 +153,9 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
     return this->get_input_port(1);
   }
 
-  std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
-      const systems::Context<double>& context) const override;
+ protected:
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;

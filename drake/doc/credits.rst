@@ -22,6 +22,7 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * David German
 * Lucy Gibson
 * Grant Gould
+* Kunimatsu Hashimoto
 * Bill Hoffman
 * Greg Izatt
 * Brad King
