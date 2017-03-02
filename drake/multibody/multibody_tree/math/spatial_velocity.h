@@ -10,16 +10,6 @@
 namespace drake {
 namespace multibody {
 
-// forward declaration for the traits struct below.
-template <typename T> class SpatialVelocity;
-namespace internal {
-// traits specialization for SpatialVelocity.
-template <typename T>
-struct spatial_vector_traits<SpatialVelocity<T>> {
-typedef T ScalarType;
-};
-}
-
 // Forward declaration to define dot product with a spatial force.
 template <typename T> class SpatialForce;
 
@@ -32,8 +22,8 @@ template <typename T> class SpatialForce;
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class SpatialVelocity : public SpatialVector<SpatialVelocity<T>> {
-  typedef SpatialVector<SpatialVelocity<T>> Base;
+class SpatialVelocity : public SpatialVector<SpatialVelocity<T>, T> {
+  typedef SpatialVector<SpatialVelocity<T>, T> Base;
 
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity)

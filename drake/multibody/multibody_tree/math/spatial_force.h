@@ -10,19 +10,6 @@
 namespace drake {
 namespace multibody {
 
-// forward declaration so that we can specialize the spatial_vector_traits
-// struct below BEFORE SpatialForce is actually defined.
-// spatial_vector_traits is first defined in spatial_vector.h.
-template <typename T> class SpatialForce;
-namespace internal {
-// traits specialization for SpatialForce so that SpatialVector can figure out
-// the scalar type T at compile time.
-template <typename T>
-struct spatial_vector_traits<SpatialForce<T>> {
-typedef T ScalarType;
-};
-}
-
 /// This class is used to represent spatial forces. Spatial forces are 6-element
 /// quantities that are pairs of ordinary 3-vectors. Elements 0-2 are always the
 /// torque component while elements 3-5 are the force component.
@@ -31,8 +18,8 @@ typedef T ScalarType;
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class SpatialForce : public SpatialVector<SpatialForce<T>> {
-  typedef SpatialVector<SpatialForce<T>> Base;
+class SpatialForce : public SpatialVector<SpatialForce<T>, T> {
+  typedef SpatialVector<SpatialForce<T>, T> Base;
 
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForce)

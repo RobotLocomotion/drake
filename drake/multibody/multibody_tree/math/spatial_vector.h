@@ -9,16 +9,6 @@
 namespace drake {
 namespace multibody {
 
-namespace internal {
-// Traits class to figure out compile-time quantities used within SpatialVector,
-// specifically the type T of the Eigen compatible scalar type the spatial
-// quantity is instantiated with.
-// Specific spatial quantities derived from SpatialVector need to define these
-// traits within this internal namespace.
-// Users do not need to interact with these traits.
-template <class SpatialQuantity> struct spatial_vector_traits;
-};
-
 /// This class is used to represent physical quantities that correspond to
 /// spatial vectors such as spatial velocities, spatial accelerations and
 /// spatial forces. Spatial vectors are 6-element quantities that are
@@ -28,10 +18,9 @@ template <class SpatialQuantity> struct spatial_vector_traits;
 /// section @ref multibody_spatial_vectors.
 ///
 /// @tparam Derived The type of the more specialized spatial vector class.
-template <typename Derived>
+/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+template <typename Derived, typename T>
 class SpatialVector {
-  typedef typename internal::spatial_vector_traits<Derived>::ScalarType T;
-
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVector)
 
@@ -174,8 +163,8 @@ class SpatialVector {
 /// Stream insertion operator to write SpatialVector objects into a
 /// `std::ostream`. Especially useful for debugging.
 /// @relates SpatialVector.
-template <typename Derived> inline
-std::ostream& operator<<(std::ostream& o, const SpatialVector<Derived>& V) {
+template <typename Derived, typename T> inline
+std::ostream& operator<<(std::ostream& o, const SpatialVector<Derived, T>& V) {
   o << "[" << V[0];
   for (int i = 1; i < V.size(); ++i) o << ", " << V[i];
   o << "]ᵀ";  // The "transpose" symbol.
