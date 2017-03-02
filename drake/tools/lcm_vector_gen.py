@@ -140,6 +140,8 @@ VECTOR_HH_PREAMBLE = """
 %(opening_namespace)s
 """
 
+# TODO(jwnimmer-tri) Turn this into doxygen style in the template below, for
+# better doxygen output: "// An abbreviation for our row index constants."
 VECTOR_CLASS_BEGIN = """
 
 /// Specializes BasicVector with specific getters and setters.

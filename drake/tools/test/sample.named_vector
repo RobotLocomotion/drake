@@ -1,0 +1,8 @@
+element {
+    name: "x"
+    doc: "Some coordinate"
+}
+element {
+    name: "two_word"
+    doc: "A very long documentation string that will certainly flow across multiple lines of C++"
+}

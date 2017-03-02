@@ -566,13 +566,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simple_car_state_translator_test",
-    deps = [
-        "//drake/automotive:generated_translators",
-    ],
-)
-
-drake_cc_googletest(
     name = "infinite_circuit_road_test",
     srcs = ["dev/test/infinite_circuit_road_test.cc"],
     deps = [
