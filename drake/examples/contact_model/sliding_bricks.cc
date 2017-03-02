@@ -25,16 +25,16 @@ using std::make_unique;
 
 // Simple example of the "stiction" properties of the contact model.
 // Based on the default values (50 kg brick) and the friction coefficients,
-// the stationary block a force of 260 N is insufficient to move the
-// stationary block.  This is because the static friction  is too great.
-// However, if its initial velocity is 0.1 m/s, the force is sufficient to
-// accelerate the moving box against the dynamic friction.
+// a force of 260 N is insufficient to move the stationary block.  This is
+// because the static friction is too great. However, if its initial velocity is
+// 0.1 m/s, the force is sufficient to accelerate the moving box against the
+// dynamic friction.
 //
 // After performing the initial simulation up to `sim_duration`, the example
-// will promptly being looping performing real-time playback.
+// will promptly begin infinitely looping playback in wall clock time.
 
-// Simulation parameters
-DEFINE_double(v, 01., "The initial speed of the second brick");
+// Simulation parameters.
+DEFINE_double(v, 0.1, "The initial speed of the second brick");
 DEFINE_double(timestep, 1e-4, "The simulator time step");
 DEFINE_double(push, 260, "The magnitude of the force pushing on the bricks");
 DEFINE_double(stiffness, 100000, "The contact model's stiffness");
