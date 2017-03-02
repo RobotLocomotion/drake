@@ -18,7 +18,7 @@ namespace {
 template <class SpatialQuantityUnderTest>
 class SpatialQuantityTest : public ::testing::Test {
  public:
-  // Useful typedefs when witting unit tests to access types.
+  // Useful typedefs when writing unit tests to access types.
   typedef SpatialQuantityUnderTest SpatialQuantityType;
   typedef typename internal::spatial_vector_traits<
       SpatialQuantityType>::ScalarType ScalarType;
