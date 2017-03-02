@@ -32,6 +32,7 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
       end
       if (nargout>1)
         df_ext((obj.child_body-1)*6+1:obj.child_body*6,1:size(q,1)) = [manip.body(obj.child_body).joint_axis * dtorquedq; zeros(3,size(q,1))];
+        dwrench_on_child_in_child_joint_frame = [matGradMultMat(manip.body(obj.child_body).joint_axis, torque, zeros(3,4), dtorquedq); zeros(3,4)]; % HACK!
          if obj.parent_body ~= 0
            df_ext((obj.parent_body-1)*6+1:obj.parent_body*6,1:size(q,1)) = -AdT_parent_to_child_joint_predecessor' * dwrench_on_child_in_child_joint_frame;
          end

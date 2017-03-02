@@ -1,0 +1,3 @@
+drake_add_matlab_test(NAME examples/ChineseYoYo/test/runSoftPaddleHybrid OPTIONAL snopt COMMAND runSoftPaddleHybrid)
+drake_add_matlab_test(NAME examples/ChineseYoYo/test/runSoftPaddleControl OPTIONAL snopt COMMAND runSoftPaddleControl)
+drake_add_matlab_test(NAME examples/ChineseYoYo/test/runSoftPaddlePositionController OPTIONAL snopt COMMAND runSoftPaddlePositionController)

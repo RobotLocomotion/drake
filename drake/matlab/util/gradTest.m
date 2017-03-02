@@ -42,9 +42,9 @@ function gradTest(FUN,varargin)
 %   Example: (for the simple pendulum)
 %      while(1)
 %        t0=0;  x0=randn(2,1); u0=randn;
-%        grad_test(@dynamics,t0,x0,u0,struct('input_names',{{'t','x','u'}},'output_name','xdot'));
-%        grad_test(@cost,t0,x0,u0,struct('input_names',{{'t','x','u'}},'output_name','g'));
-%        grad_test(@finalcost,t0,x0,struct('input_names',{{'t','x'}},'output_name','h'));
+%        gradTest(@dynamics,t0,x0,u0,struct('input_names',{{'t','x','u'}},'output_name','xdot'));
+%        gradTest(@cost,t0,x0,u0,struct('input_names',{{'t','x','u'}},'output_name','g'));
+%        gradTest(@finalcost,t0,x0,struct('input_names',{{'t','x'}},'output_name','h'));
 %      end
 %
 

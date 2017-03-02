@@ -1,0 +1,120 @@
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="SimplePulley">
+
+  <link name="base">
+    <visual>
+      <material>
+        <color rgba="1 .5 0 0"/>
+      </material>
+      <origin xyz="-3 1 4" rpy="1.57 0 0"/>
+      <geometry>
+        <cylinder radius=".01" length=".2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0 0 3"/>
+      <geometry>
+        <box size="9 1.7 6"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <link name="tensioner">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.125" iyz="0.000000" izz="0.065833" />
+    </inertial>
+    <visual>
+      <material>
+        <color rgba="1 .5 0 0"/>
+      </material>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <geometry>
+        <cylinder radius=".5" length=".2"/>
+      </geometry>
+    </visual>
+    <visual> <!-- add a "line" for a visual reference -->
+      <material>
+        <color rgba="0 0 0 0"/>
+      </material>
+      <origin xyz=".22 .2 0" rpy="0 0 0"/>
+      <geometry>
+        <box size=".4 .2 .01"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="load">
+    <inertial>
+      <mass value="2"/>
+      <inertia ixx="0.506667" ixy="0.000000" ixz="0.000000" iyy="1.000000" iyz="0.000000" izz="0.506667" />
+    </inertial>
+    <visual>
+      <material>
+        <color rgba=".8 0 0 0"/>
+      </material>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <geometry>
+        <cylinder radius="1" length=".2"/>
+      </geometry>
+    </visual>
+
+    <!-- add a "line" for a visual reference -->
+<!--    <visual>
+      <material>
+        <color rgba="0 0 0 0"/>
+      </material>
+      <origin xyz="0 .2 0.45" rpy="0 0 0"/>
+      <geometry>
+        <box size=".01 .2 .9"/>
+      </geometry>
+    </visual> -->
+  </link>
+  
+  <joint name="tensioner_angle" type="revolute">
+    <origin xyz="3 1 2.5"/>
+    <axis xyz="0 1 0"/>
+    <parent link="base"/>
+    <child link="tensioner"/>
+    <dynamics damping=".5"/>
+  </joint>
+  
+  <link name="load_x" />
+  <joint name="load_x" type="prismatic">
+    <origin xyz="0 1 0"/>
+    <axis xyz="1 0 0"/>
+    <parent link="base"/>
+    <child link="load_x"/>
+    <dynamics damping="0"/>
+  </joint>
+  <joint name="load_z" type="prismatic">
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="load_x"/>
+    <child link="load"/>
+    <dynamics damping="0"/>
+  </joint>
+
+  <force_element name="tensioner_spring">
+    <torsional_spring rest_angle="0" stiffness="40">
+      <joint name="tensioner_angle"/>
+    </torsional_spring>
+  </force_element>
+
+ <transmission type="SimpleTransmission" name="tensioner_trans">
+    <actuator name="tensioner_angle" />
+    <joint name="tensioner_angle" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+<!--  <cable min_length="8" max_length="8"> --> <!-- good for if I take out the final pulley -->
+  <cable min_length="10" max_length="10"> 
+    <terminator link="base" xyz="-3 1 3" />
+    <pulley link="load" xyz="0 0 0" axis="0 -1 0" radius="1"/>
+    <pulley link="base" xyz="3 1 2.5" axis="0 1 0" radius=".5" number_of_wraps="1" />
+    <terminator link="tensioner" xyz=".51 0 0"/>
+  </cable>
+
+</robot>

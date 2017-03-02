@@ -1,0 +1,177 @@
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="SoftPaddle">
+
+  <link name="base">
+  <!--  <visual>
+      <origin xyz="0 0 3"/>
+      <geometry>
+        <box size="9 1.7 6"/>
+      </geometry>
+    </visual>-->
+  </link>
+  
+  <link name="paddle">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.125" iyz="0.000000" izz="0.065833" />
+    </inertial>
+    <visual>
+      <material>
+        <color rgba="1 .5 .5 0"/>
+      </material>
+      <origin xyz="0 1 0.25" rpy="1.57 0 0"/>
+      <geometry>
+        <cylinder radius="0.25" length=".2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <material>
+        <color rgba=".5 .5 .5 0"/>
+      </material>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <geometry>
+        <cylinder radius="0.45" length=".2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="3 0 0"/>
+      <geometry>
+        <box size="6 0.5 0.25"/>
+      </geometry>
+    </visual>
+   <!-- <visual>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <box size="0.5 0.5 0.5"/>
+      </geometry>
+    </visual> -->
+  </link>
+
+  <link name="tensioner">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.125" iyz="0.000000" izz="0.065833" />
+    </inertial>
+    <visual>
+      <material>
+        <color rgba="1 .5 0 0"/>
+      </material>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <geometry>
+        <cylinder radius=".5" length=".2"/>
+      </geometry>
+    </visual>
+    <visual> <!-- add a "line" for a visual reference -->
+      <material>
+        <color rgba="0 0 0 0"/>
+      </material>
+      <origin xyz=".22 .2 0" rpy="0 0 0"/>
+      <geometry>
+        <box size=".4 .2 .01"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="load">
+    <inertial>
+      <mass value="1.5"/>
+      <inertia ixx="0.506667" ixy="0.000000" ixz="0.000000" iyy="1.000000" iyz="0.000000" izz="0.506667" />
+    </inertial>
+    <visual>
+      <material>
+        <color rgba=".8 0 0 0"/>
+      </material>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <geometry>
+        <cylinder radius="1" length=".2"/>
+      </geometry>
+    </visual>
+
+    <!-- add a "line" for a visual reference -->
+<!--    <visual>
+      <material>
+        <color rgba="0 0 0 0"/>
+      </material>
+      <origin xyz="0 .2 0.45" rpy="0 0 0"/>
+      <geometry>
+        <box size=".01 .2 .9"/>
+      </geometry>
+    </visual> -->
+  </link>
+  
+  <joint name="paddle_angle" type="continuous">
+    <parent link="base" />
+    <child link="paddle" />
+    <origin xyz="-3 0 3" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.0" />
+  </joint>
+
+  <joint name="tensioner_angle" type="revolute">
+    <origin xyz="6 1.0 -0.5"/>
+    <axis xyz="0 1 0"/>
+    <parent link="paddle"/>
+    <child link="tensioner"/>
+    <dynamics damping="0.1"/>
+  </joint>
+  
+  <link name="load_x" />
+  <joint name="load_x" type="prismatic">
+    <origin xyz="0 1 0"/>
+    <axis xyz="1 0 0"/>
+    <parent link="base"/>
+    <child link="load_x"/>
+    <dynamics damping="0"/>
+  </joint>
+  <joint name="load_z" type="prismatic">
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="load_x"/>
+    <child link="load"/>
+    <dynamics damping="0"/>
+  </joint>
+
+  <force_element name="paddle_spring">
+    <torsional_spring rest_angle="0" stiffness="0">
+      <joint name="paddle_angle"/>
+    </torsional_spring>
+  </force_element> 
+
+  <force_element name="tensioner_spring">
+    <torsional_spring rest_angle="0" stiffness="80">
+      <joint name="tensioner_angle"/>
+    </torsional_spring>
+  </force_element>
+
+  
+<!--  <force_element name="ball_spring_x">
+    <linear_spring_damper rest_length="0.0" stiffness="100000" damping="100">
+      <link1 link="base" xyz="-0.02845 1 5" />
+      <link2 link="load_x" xyz="0 0 0" />
+    </linear_spring_damper>
+  </force_element>
+
+  <force_element name="ball_spring_z">
+    <linear_spring_damper rest_length="0.0" stiffness="100000" damping="100">
+      <link1 link="load_x" xyz="0 0 0" />
+      <link2 link="load" xyz="0 0 0" />
+    </linear_spring_damper>
+  </force_element> -->
+
+ <transmission type="SimpleTransmission" name="paddle_trans">
+    <actuator name="paddle_angle" />
+    <joint name="paddle_angle" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+<!--  <cable min_length="8" max_length="8"> --> <!-- good for if I take out the final pulley -->
+  <cable min_length="10" max_length="10"> 
+    <terminator link="paddle" xyz="0 1 0" />
+    <pulley link="load" xyz="0 0 0" axis="0 -1 0" radius="1"/>
+    <pulley link="paddle" xyz="6 1 -0.5" axis="0 1 0" radius=".5" number_of_wraps="1" />
+    <terminator link="tensioner" xyz=".51 0 0"/>
+  </cable>
+
+</robot>

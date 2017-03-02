@@ -918,7 +918,12 @@ classdef RigidBodyManipulator < Manipulator
         % todo: generalize this by moving the updateConstraint logic above into
         % drakeFunction.RBM
         if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableLength')
-          model = updatePositionEqualityConstraint(model,j,DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,setRigidBodyManipulator(model.position_constraints{j}.fcn,model)));
+          cable_length_function = setRigidBodyManipulator(model.position_constraints{j}.fcn,model);
+          constraint = DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,cable_length_function);
+          constraint = setName(constraint,cable_length_function.name);
+          constraint.grad_level = 2; %declare that the second derivative is provided
+          constraint.grad_method = 'user';
+          model = updatePositionEqualityConstraint(model,j,constraint); 
         end
       end
 
@@ -2533,7 +2538,12 @@ classdef RigidBodyManipulator < Manipulator
         % todo: generalize this by moving the updateConstraint logic above into
         % drakeFunction.RBM
         if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableLength')
-          model = updatePositionEqualityConstraint(model,j,DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,feval(fcn,model.position_constraints{j}.fcn,varargin{:})));
+          cable_length_function = feval(fcn,model.position_constraints{j}.fcn,varargin{:});
+          constraint = DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,cable_length_function);
+          constraint = setName(constraint,cable_length_function.name);
+          constraint.grad_level = 2; %declare that the second derivative is provided
+          constraint.grad_method = 'user';
+          model = updatePositionEqualityConstraint(model,j,constraint);            
         end
       end
     end
