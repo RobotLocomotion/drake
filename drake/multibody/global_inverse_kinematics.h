@@ -1,9 +1,8 @@
 #pragma once
-#include<vector>
+#include <vector>
 
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/rotation_constraint.h"
 
 namespace drake {
 namespace multibody {

@@ -24,6 +24,10 @@ target_link_libraries(debug_manipulator_dynamics
     drakeMultibodyParsers
     drakeRBM)
 
+drake_add_cc_test(globak_inverse_kinematics_test)
+target_link_libraries(globak_inverse_kinematics_test
+        drakeGlobalIK)
+
 # Inverse kinematics unit tests.
 macro(add_ik_cpp)
   drake_add_cc_test(${ARGV})

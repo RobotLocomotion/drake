@@ -89,7 +89,7 @@ target_link_libraries(drakeGlobalIK
         drakeRBM
         Eigen3::Eigen)
 drake_install_libraries(drakeGlobalIK)
-dake_install_headers(global_inverse_kinematics.h)
+drake_install_headers(global_inverse_kinematics.h)
 
 add_subdirectory(benchmarks)
 add_subdirectory(collision)
