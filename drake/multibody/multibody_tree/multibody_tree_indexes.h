@@ -6,30 +6,30 @@
 #include <iostream>
 
 /// A type-safe positive index that can be associated to a tag name. Different
-/// instantiations of TaggedInt are not interconvertible.
-/// TaggedInt allows for instantiations from an `int` as well as it allows to
+/// instantiations of TaggedIndex are not interconvertible.
+/// TaggedIndex allows for instantiations from an `int` as well as it allows to
 /// convert back to an `int` via its conversion operator. Negative index values
 /// are not allowed.
-/// TaggedInt can be used in places where an index is needed and therefore basic
-/// operations such as prefix and postfix increment/decrement are implemented.
-/// As an example, consider the creation of a tagged index associated with class
-/// `Foo`. This can be done in code as: <pre>
-///   using FooIndex = TaggedInt<class FooTag>;
+/// TaggedIndex can be used in places where an index is needed and therefore
+/// basic operations such as prefix and postfix increment/decrement are
+/// implemented. As an example, consider the creation of a tagged index
+/// associated with class `Foo`. This can be done in code as: <pre>
+///   using FooIndex = TaggedIndex<class FooTag>;
 /// </pre>
 ///
 /// @tparam Tag The name of the tag associated with a class type.
 template <class Tag>
-class TaggedInt {
+class TaggedIndex {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TaggedInt)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TaggedIndex)
 
   /// Default constructor intializes `this` to the zero index.
-  TaggedInt() {}
+  TaggedIndex() {}
 
   /// Construction from an `int` value.
   /// For Debug builds this constructor aborts if the provided input `int`
   /// `index` is negative. There is no check for Release builds.
-  explicit TaggedInt(int index) : ix(index) {
+  explicit TaggedIndex(int index) : ix(index) {
     DRAKE_ASSERT(ix >= 0);
   }
 
@@ -62,21 +62,21 @@ class TaggedInt {
   ///@{
 
   /// Prefix increment operator.
-  const TaggedInt& operator++() {
+  const TaggedIndex& operator++() {
     ++ix;
     return *this;
   }
 
   /// Postfix increment operator.
-  TaggedInt operator++(int) {
+  TaggedIndex operator++(int) {
     ++ix;
-    return TaggedInt(ix-1);
+    return TaggedIndex(ix-1);
   }
 
   /// Prefix decrement operator.
   /// In Debug builds this method asserts that the resulting index is
   /// non-negative.
-  const TaggedInt& operator--() {
+  const TaggedIndex& operator--() {
     --ix;
     DRAKE_ASSERT(ix >= 0);
     return *this;
@@ -85,10 +85,10 @@ class TaggedInt {
   /// Postfix decrement operator.
   /// In Debug builds this method asserts that the resulting index is
   /// non-negative.
-  TaggedInt operator--(int) {
+  TaggedIndex operator--(int) {
     --ix;
     DRAKE_ASSERT(ix >= 0);
-    return TaggedInt(ix+1);
+    return TaggedIndex(ix+1);
   }
   ///@}
 
@@ -96,7 +96,7 @@ class TaggedInt {
   ///@{
 
   /// Addition assignment operator.
-  TaggedInt& operator+=(int i) {
+  TaggedIndex& operator+=(int i) {
     ix += i;
     return *this;
   }
@@ -104,7 +104,7 @@ class TaggedInt {
   /// Subtraction assignment operator.
   /// In Debug builds this method asserts that the resulting index is
   /// non-negative.
-  TaggedInt& operator-=(int i) {
+  TaggedIndex& operator-=(int i) {
     ix -= i;
     DRAKE_ASSERT(ix >= 0);
     return *this;
@@ -115,10 +115,10 @@ class TaggedInt {
   int ix{0};
 };
 
-/// Stream insertion operator to write a TaggedInt into a std::ostream.
+/// Stream insertion operator to write a TaggedIndex into a std::ostream.
 template <class Tag>
 inline std::ostream& operator<<(
-    std::ostream& o, const TaggedInt<Tag>& index) {
+    std::ostream& o, const TaggedIndex<Tag>& index) {
   o << int(index);
   return o;
 }
@@ -126,9 +126,9 @@ inline std::ostream& operator<<(
 namespace drake {
 namespace multibody {
 
-using FrameIndex = TaggedInt<class FrameTag>;
-using BodyIndex = TaggedInt<class BodyTag>;
-using MobilizerIndex = TaggedInt<class MobilizerTag>;
+using FrameIndex = TaggedIndex<class FrameTag>;
+using BodyIndex = TaggedIndex<class BodyTag>;
+using MobilizerIndex = TaggedIndex<class MobilizerTag>;
 
 /// For every MultibodyTree<T> the **world** body _always_ has this unique
 /// identifier and it is always zero.
