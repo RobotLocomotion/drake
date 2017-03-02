@@ -1,9 +1,9 @@
-#include "gtest/gtest.h"
-
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
-#include <string>
 #include <sstream>
+#include <type_traits>
+
+#include "gtest/gtest.h"
 
 namespace drake {
 namespace multibody {
@@ -91,10 +91,10 @@ void RunMultibodyIndexTests() {
   // Subtraction assignment.
   {
     IndexType index(8);
-    IndexType index_plus_seven = index -= 7;
+    IndexType index_minus_seven = index -= 7;
     EXPECT_EQ(index, IndexType(1));
-    EXPECT_EQ(index_plus_seven, IndexType(1));
-    EXPECT_EQ(index, index_plus_seven);
+    EXPECT_EQ(index_minus_seven, IndexType(1));
+    EXPECT_EQ(index, index_minus_seven);
   }
 
   // Stream insertion operator.
@@ -120,6 +120,19 @@ GTEST_TEST(MultibodyTreeIndexes, BodyIndex) {
 GTEST_TEST(MultibodyTreeIndexes, MobilizerIndex) {
   RunMultibodyIndexTests<MobilizerIndex>();
 }
+
+// Verifies that it is not possible to convert between two different
+// index types.
+GTEST_TEST(MultibodyTreeIndexes, ConversionNotAllowedBetweenDifferentTypes) {
+  // Conversion is not allowed between two different index types.
+  // Note: the extra set of parentheses are needed to avoid the test macro
+  // getting confused with the comma inside the template brackets.
+  EXPECT_FALSE((std::is_convertible<BodyIndex, FrameIndex>::value));
+  // The trivial case of course is true.
+  EXPECT_TRUE((std::is_convertible<BodyIndex, BodyIndex>::value));
+  EXPECT_TRUE((std::is_convertible<FrameIndex, FrameIndex>::value));
+}
+
 
 }  // namespace
 }  // namespace multibody

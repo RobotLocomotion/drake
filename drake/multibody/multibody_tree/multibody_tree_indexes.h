@@ -48,10 +48,10 @@ class TaggedIndex {
   /// Less than operator.
   bool operator< (int  i) const { return ix < i;}
 
-  /// Greather than or equal to operator.
+  /// Greater than or equal to operator.
   bool operator>=(int  i) const { return !operator<(i);}
 
-  /// Greather than operator.
+  /// Greater than operator.
   bool operator> (int  i) const { return ix > i;}
 
   /// Less than or equal to operator.
