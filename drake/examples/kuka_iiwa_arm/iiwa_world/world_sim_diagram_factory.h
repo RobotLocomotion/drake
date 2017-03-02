@@ -24,15 +24,15 @@ namespace kuka_iiwa_arm {
 /// connected to the `systems::DrakeVisualizer`'s input port zero. The
 /// resulting diagram has the same input and output ports as the plant.
 template <typename T>
-class VisualizedPlant : public systems::Diagram<T> {
+class PlantAndVisualizerDiagram : public systems::Diagram<T> {
  public:
-  /// Builds the VisualizedPlant.
+  /// Builds the PlantAndVisualizerDiagram.
   /// `rigid_body_tree` the tree to be used within the `RigidBodyPlant`
   /// `penetration_stiffness`, `penetration_dissipation`,
   /// `static_friction_coefficient`, `dynamic_friction_coefficient`, and
   /// `v_stiction_tolerance` define the contact model of the plant.
   /// `lcm` is a pointer to an externally created lcm object.
-  VisualizedPlant(std::unique_ptr<RigidBodyTree<T>> rigid_body_tree,
+  PlantAndVisualizerDiagram(std::unique_ptr<RigidBodyTree<T>> rigid_body_tree,
                   double penetration_stiffness, double penetration_dissipation,
                   double static_friction_coefficient,
                   double dynamic_friction_coefficient,
@@ -55,10 +55,10 @@ class PassiveVisualizedPlant : public systems::Diagram<T> {
   /// Builds the PassiveVisualizedPlant.
   /// \param visualized_plant a unique pointer to the `VisualizedPlant`.
   explicit PassiveVisualizedPlant(
-      std::unique_ptr<VisualizedPlant<T>> visualized_plant);
+      std::unique_ptr<PlantAndVisualizerDiagram<T>> visualized_plant);
 
  private:
-  VisualizedPlant<T>* visualized_plant_{nullptr};
+  PlantAndVisualizerDiagram<T>* visualized_plant_{nullptr};
 };
 
 /// A custom `systems::Diagram` consisting of a `systems::PidControlledSystem`
