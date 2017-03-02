@@ -1,10 +1,13 @@
 #include "drake/multibody/global_inverse_kinematics.h"
 
 #include <gtest/gtest.h>
+#include <drake/solvers/gurobi_solver.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+
+using drake::solvers::SolutionResult;
 
 namespace drake {
 namespace multibody {
@@ -24,6 +27,13 @@ GTEST_TEST(TestGlobakIK, KukaTest) {
   AddFlatTerrainToWorld(rigid_body_tree.get());
 
   GlobalInverseKinematics global_ik(std::move(rigid_body_tree));
+
+  solvers::GurobiSolver gurobi_solver;
+
+  global_ik.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
+  SolutionResult sol_result = gurobi_solver.Solve(global_ik);
+
+  EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 }
 }  // namespace
 }  // namespace multibody

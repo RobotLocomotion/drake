@@ -27,7 +27,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(std::unique_ptr<RigidBodyTreed>
       const string body_pos_name = body->get_name() + "_pos";
       body_rotmat_[body_idx] = NewContinuousVariables<3, 3>(body_R_name);
       body_pos_[body_idx] = NewContinuousVariables<3>(body_pos_name);
-      // If the body is fixed to the world, the fix the decision variables on
+      // If the body is fixed to the world, then fix the decision variables on
       // the body position and orientation.
       if (body->IsRigidlyFixedToWorld()) {
         Isometry3d body_pose = body->ComputeWorldFixedPose();
@@ -41,11 +41,10 @@ GlobalInverseKinematics::GlobalInverseKinematics(std::unique_ptr<RigidBodyTreed>
         body_rotmat_[body_idx] =
             solvers::NewRotationMatrixVars(this, body_R_name);
         body_pos_[body_idx] = NewContinuousVariables<3>(body_pos_name);
-        solvers::AddRotationMatrixOrthonormalSocpConstraint(this,
-                                                            body_rotmat_[body_idx]);
-        solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(this,
-                                                                   body_rotmat_[body_idx],
-                                                                   2);
+        solvers::AddRotationMatrixOrthonormalSocpConstraint(
+            this, body_rotmat_[body_idx]);
+        solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+            this, body_rotmat_[body_idx], 2);
 
         // If the body has a parent, then add the constraint to connect the
         // parent body with this body through a joint.
@@ -64,7 +63,10 @@ GlobalInverseKinematics::GlobalInverseKinematics(std::unique_ptr<RigidBodyTreed>
                   *revolute_joint = static_cast<const RevoluteJoint*>(joint);
               const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
               // The rotation joint is the same in both child body and the parent body.
-              AddLinearEqualityConstraint(body_rotmat_[body_idx] * rotate_axis - body_rotmat_[parent_idx] * joint_to_parent_transform.linear() * rotate_axis, Eigen::Vector3d::Zero());
+              AddLinearEqualityConstraint(body_rotmat_[body_idx] * rotate_axis - body_rotmat_[parent_idx] * joint_to_parent_transform.linear() * rotate_axis, Vector3d::Zero());
+
+              // The position of the rotation axis is the same on both child and parent bodies.
+              AddLinearEqualityConstraint(body_pos_[parent_idx] + body_rotmat_[parent_idx] * joint_to_parent_transform.translation() - body_pos_[body_idx], Vector3d::Zero());
 
               // Now add the joint limits constraint -α ≤ θ ≤ α, where α is the
               // maximal angle the joint can rotate. Notice we require that
