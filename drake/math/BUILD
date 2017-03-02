@@ -113,6 +113,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "saturate",
+    srcs = [],
+    hdrs = ["saturate.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:cond",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -196,6 +207,15 @@ drake_cc_googletest(
         ":geometric_transform",
         ":gradient",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "saturate_test",
+    deps = [
+        ":saturate",
+        "//drake/common:autodiff",
+        "//drake/common:symbolic",
     ],
 )
 
