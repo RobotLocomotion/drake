@@ -16,9 +16,11 @@ Segment::Segment(Junction* junction,
     int num_lanes,
     double length,
     double lane_width,
-    double shoulder_width)
-    : id_({"Crossroad_Segment_ID"}),
-      junction_(junction) {
+    double shoulder_width,
+    api::SegmentId id)
+    : id_(id), junction_(junction)
+    
+    {
   // To better understand the semantics of the variables defined in this method,
   // see the class description.
 
@@ -34,7 +36,7 @@ Segment::Segment(Junction* junction,
 // TODO(shensquared): adding distinction based on segement id
     auto lane = std::make_unique<Lane>(
         this,
-        api::LaneId({"Crossroad_Lane_Section" + this->do_id() + 
+        api::LaneId({"Crossroad_Lane_Section"  + 
           std::to_string(i)}),
         i,
         length,

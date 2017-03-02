@@ -72,14 +72,23 @@ class Segment final : public api::Segment {
       int num_lanes,
       double length,
       double lane_width,
-      double shoulder_width);
+      double shoulder_width,
+      api::SegmentId segment_id);
 
   ~Segment() final = default;
 
+  /// Returns the index of this Segment within the Junction which owns it.
+  // int index() const { return do_index(); }
+
+
  private:
+  // virtual int do_index() const = 0;
+
   const api::SegmentId do_id() const final { return id_; }
 
   const api::Junction* do_junction() const final;
+
+  // const int index_{};  // The index of this Segment within a Junction.
 
   int do_num_lanes() const final { return static_cast<int>(lanes_.size()); }
 
