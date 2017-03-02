@@ -66,12 +66,13 @@ The following demos are available:
    cars which includes a merge.
 
  * A 3-lane dragway with four `TrajectoryCar` vehicles traveling down each lane
-   at different speeds plus one `SimpleCar`:
+   at different speeds plus one `SimpleCar` and one `MaliputRailcar`:
 
    ```
    bazel run //drake/automotive:demo -- \
        --num_dragway_lanes=3 \
-       --num_trajectory_car=12
+       --num_trajectory_car=12 \
+       --num_maliput_railcar=1
    ```
 
 Driving the Prius
