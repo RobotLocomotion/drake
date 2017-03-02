@@ -22,6 +22,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkSphereSource.h>
 #include <vtkTransform.h>
+#include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
 #include <Eigen/Dense>
 
@@ -284,7 +285,16 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         vtk_cylinder->SetRadius(cylinder.radius);
         vtk_cylinder->SetResolution(50);
 
-        mapper->SetInputConnection(vtk_cylinder->GetOutputPort());
+        // Since the cylinder in vtkCylinderSource is y-axis aligned, we need to
+        // rotate it to be z-axis aligned because that is what Drake uses.
+        vtkNew<vtkTransform> transform;
+        transform->RotateX(90);
+        vtkNew<vtkTransformPolyDataFilter> transform_filter;
+        transform_filter->SetInput(vtk_cylinder->GetOutput());
+        transform_filter->SetTransform(transform.GetPointer());
+        transform_filter->Update();
+
+        mapper->SetInputConnection(transform_filter->GetOutputPort());
         break;
       }
       case DrakeShapes::MESH: {

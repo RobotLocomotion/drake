@@ -4,8 +4,12 @@
 #include <stdexcept>
 
 #include "gtest/gtest.h"
+#include <vtkImageData.h>
+#include <vtkNew.h>
+#include <vtkPNGReader.h>
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/parsers/sdf_parser.h"
@@ -26,7 +30,7 @@ namespace {
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Macintosh OSX.
 const double kTolerance = 1e-12;
-
+const uint8_t kColorPixelTolerance = 1u;
 const double kFovY = M_PI_4;
 const bool kShowWindow = true;
 
@@ -98,6 +102,8 @@ TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
 
 class RenderingSim : public systems::Diagram<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderingSim)
+
   RenderingSim() { this->set_name("rendering_sim"); }
 
   void Init(const std::string& sdf_file,
@@ -134,56 +140,133 @@ class RenderingSim : public systems::Diagram<double> {
 };
 
 
-// Verifies rendered terrain.
-GTEST_TEST(RenderingTest, TerrainRenderingTest) {
-  RenderingSim diagram;
-  // The following SDF includes a box that is located under the flat terrain.
-  // Thus, only the terrain is visible to the RGBD camera.
-  const std::string sdf("/systems/sensors/test/box.sdf");
-  diagram.Init(GetDrakePath() + sdf,
-               Eigen::Vector3d(0., 0., 4.999),
-               Eigen::Vector3d(0., M_PI_2, 0.));
+class ImageTest {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageTest)
 
-  std::unique_ptr<systems::Context<double>> context =
-      diagram.CreateDefaultContext();
-  std::unique_ptr<systems::SystemOutput<double>> output =
-      diagram.AllocateOutput(*context);
-  systems::Simulator<double> simulator(diagram, std::move(context));
-  simulator.Initialize();
+  typedef std::function<void(
+      const sensors::Image<uint8_t>& color_image,
+      const sensors::Image<float>& depth_image)> Verifier;
 
-  const double kDuration = 0.03;
-  for (double time = 0.; time < kDuration ; time += 0.01) {
-    simulator.StepTo(time);
-    diagram.CalcOutput(simulator.get_context(), output.get());
+  ImageTest(const std::string& sdf, const Eigen::Vector3d& position,
+            const Eigen::Vector3d& orientation, Verifier verifier) {
+    diagram_.Init(GetDrakePath() + sdf, position, orientation);
 
-    systems::AbstractValue* mutable_data = output->GetMutableData(0);
-    systems::AbstractValue* mutable_data_d = output->GetMutableData(1);
-    auto color_image =
-        mutable_data->GetMutableValue<sensors::Image<uint8_t>>();
-    auto depth_image =
-        mutable_data_d->GetMutableValue<sensors::Image<float>>();
+    std::unique_ptr<systems::Context<double>> context =
+        diagram_.CreateDefaultContext();
+    std::unique_ptr<systems::SystemOutput<double>> output =
+        diagram_.AllocateOutput(*context);
+    systems::Simulator<double> simulator(diagram_, std::move(context));
+    simulator.Initialize();
 
+    const double kDuration = 0.01;
+    for (double time = 0.; time < kDuration ; time += 0.01) {
+      simulator.StepTo(time);
+      diagram_.CalcOutput(simulator.get_context(), output.get());
+
+      systems::AbstractValue* mutable_data = output->GetMutableData(0);
+      systems::AbstractValue* mutable_data_d = output->GetMutableData(1);
+      auto color_image =
+          mutable_data->GetMutableValue<sensors::Image<uint8_t>>();
+      auto depth_image =
+          mutable_data_d->GetMutableValue<sensors::Image<float>>();
+
+      verifier(color_image, depth_image);
+    }
+  }
+
+  static void VerifyTerrain(const sensors::Image<uint8_t>& color_image,
+                            const sensors::Image<float>& depth_image) {
     // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
     // assumption is any defects will be detected by sampling this amount.
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
-        ASSERT_NEAR(color_image.at(u, v)[0], 204u, 1.);
-        ASSERT_NEAR(color_image.at(u, v)[1], 229u, 1.);
-        ASSERT_NEAR(color_image.at(u, v)[2], 255u, 1.);
-        ASSERT_NEAR(color_image.at(u, v)[3], 255u, 1.);
+        // We need kColorPixelTolerance because it is possible to have rendering
+        // errors dependeing on the hardware that VTK renderer uses.
+        ASSERT_NEAR(color_image.at(u, v)[0], 204u, kColorPixelTolerance);
+        ASSERT_NEAR(color_image.at(u, v)[1], 229u, kColorPixelTolerance);
+        ASSERT_NEAR(color_image.at(u, v)[2], 255u, kColorPixelTolerance);
+        ASSERT_NEAR(color_image.at(u, v)[3], 255u, kColorPixelTolerance);
 
-        // Assuming depth value provides 0.1mm precision.
+        // Assuming depth value provides 0.1 mm precision.
         ASSERT_NEAR(depth_image.at(u, v)[0], 4.999f, 1e-4);
       }
     }
   }
+
+  static void VerifyAllShapes(const sensors::Image<uint8_t>& color_image,
+                              const sensors::Image<float>& depth_image) {
+    const std::string color_file("/systems/sensors/test/images/color.png");
+    const std::string depth_file("/systems/sensors/test/images/depth.png");
+
+    vtkNew<vtkPNGReader> color_reader;
+    color_reader->SetFileName((GetDrakePath() + color_file).c_str());
+    color_reader->Update();
+    vtkImageData* color_expected = color_reader->GetOutput();
+
+    vtkNew<vtkPNGReader> depth_reader;
+    depth_reader->SetFileName((GetDrakePath() + depth_file).c_str());
+    depth_reader->Update();
+    vtkImageData* depth_expected = depth_reader->GetOutput();
+
+    // Verifies by sampling 64 x 48 points instead of 640 x 480 points. The
+    // assumption is any defects will be detected by sampling this amount.
+    // `y` is traversed in reverse (largest to smallest) order because the
+    // origin of VTK's image coordinate system is on the left-bottom corner of
+    // the image while `RgbdCamera`'s is on the left-top corner.
+    int y = 47;
+    int x = 0;
+    for (int v = 0; v < color_image.height(); v += 10) {
+      x = 0;
+      for (int u = 0; u < color_image.width(); u += 10) {
+        uint8_t* color = static_cast<uint8_t*>(
+            color_expected->GetScalarPointer(x, y, 0));
+
+        ASSERT_NEAR(color_image.at(u, v)[0],
+                    *(color + 2), kColorPixelTolerance);  // B
+        ASSERT_NEAR(color_image.at(u, v)[1],
+                    *(color + 1), kColorPixelTolerance);  // G
+        ASSERT_NEAR(color_image.at(u, v)[2],
+                    *(color + 0), kColorPixelTolerance);  // R
+        ASSERT_NEAR(color_image.at(u, v)[3],
+                    *(color + 3), kColorPixelTolerance);  // A
+
+        float* depth = static_cast<float*>(
+            depth_expected->GetScalarPointer(x, y, 0));
+        ASSERT_NEAR(depth_image.at(u, v)[0], *depth, 1e-4);
+        ++x;
+      }
+      --y;
+    }
+  }
+
+ private:
+  RenderingSim diagram_;
+};
+
+// Verifies the rendered terrain.
+GTEST_TEST(RenderingTest, TerrainRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/box.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(0., 0., 4.999),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifyTerrain);
+}
+
+// Verifies the rendered shapes.
+GTEST_TEST(RenderingTest, AllShapeRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/all_shapes.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(-1., 0., 1),
+                Eigen::Vector3d(0., M_PI_2 * 0.5, 0.),
+                ImageTest::VerifyAllShapes);
 }
 
 // Verifies an exception is thrown if a link has more than two visuals.
 GTEST_TEST(RenderingTest, MultipleVisualsTest) {
   RenderingSim diagram;
   // The following SDF includes a link that has more than two visuals.
-  const std::string sdf("/systems/sensors/test/bad.sdf");
+  const std::string sdf("/systems/sensors/test/models/bad.sdf");
   EXPECT_THROW(diagram.Init(GetDrakePath() + sdf,
                             Eigen::Vector3d(0., 0., 1.),
                             Eigen::Vector3d(0., 0., 0.)),
