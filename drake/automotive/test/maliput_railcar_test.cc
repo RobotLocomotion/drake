@@ -689,6 +689,10 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeWithSpeedZero) {
   systems::UpdateActions<double> actions;
   dut_->CalcNextUpdateTime(*context_, &actions);
   EXPECT_DOUBLE_EQ(actions.time, std::numeric_limits<double>::infinity());
+
+  lane_direction().with_s = false;
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_DOUBLE_EQ(actions.time, std::numeric_limits<double>::infinity());
 }
 
 // Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the
@@ -937,12 +941,14 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   //
   // The above should be true regardless of whether it is (1) traveling with or
   // against s or (2) traveling left or right of the s axis.
+  const double epsilon = MaliputRailcar<double>::kLaneEndEpsilon;
   continuous_state()->set_speed(kSpeed);
   lane_direction().lane = straight_lane;
-  for (const auto s : std::list<double>{1e-10,
-                                        straight_lane->length() / 2.0,
-                                        straight_lane->length() - 1e-10,
-                                        straight_lane->length() + 1e-10}) {
+  for (const auto s : std::list<double>{
+      1.1 * epsilon,
+      straight_lane->length() / 2.0,
+      straight_lane->length() - 1.1 * epsilon,
+      straight_lane->length() + 1.1 * epsilon}) {
     continuous_state()->set_s(s);
     for (const auto with_s : std::list<bool>{true, false}) {
       lane_direction().with_s = with_s;
@@ -964,10 +970,11 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   // against s or (2) traveling left or right of the s axis.
   continuous_state()->set_speed(kSpeed);
   lane_direction().lane = curved_lane;
-  for (const auto s : std::list<double>{-1e-10,
-                                        1e-10,
-                                        curved_lane->length() / 2.0,
-                                        curved_lane->length() - 1e-10}) {
+  for (const auto s : std::list<double>{
+      -1.1 * epsilon,
+      1.1 * epsilon,
+      curved_lane->length() / 2.0,
+      curved_lane->length() - 1.1 * epsilon}) {
     continuous_state()->set_s(s);
     for (const auto with_s : std::list<bool>{true, false}) {
       lane_direction().with_s = with_s;

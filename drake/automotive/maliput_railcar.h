@@ -57,6 +57,7 @@ template <typename T>
 class MaliputRailcar : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaliputRailcar)
+  static constexpr double kLaneEndEpsilon{1e-12};
 
   /// The constructor.
   ///
