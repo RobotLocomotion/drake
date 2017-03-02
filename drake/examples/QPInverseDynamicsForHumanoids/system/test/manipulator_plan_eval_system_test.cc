@@ -1,16 +1,11 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/manipulator_plan_eval_system.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/constant_value_source.h"
-#include "drake/systems/primitives/constant_vector_source.h"
-
-#include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace examples {
@@ -19,16 +14,16 @@ namespace qp_inverse_dynamics {
 GTEST_TEST(testManipPlanEval, ManipPlanEval) {
   const std::string kModelPath =
       drake::GetDrakePath() +
-      "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf";
+      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf";
 
   const std::string kAliasGroupsPath =
       drake::GetDrakePath() +
-      "/examples/QPInverseDynamicsForHumanoids/system/test/config/"
+      "/examples/QPInverseDynamicsForHumanoids/config/"
       "iiwa.alias_groups";
 
   const std::string kControllConfigPath =
       drake::GetDrakePath() +
-      "/examples/QPInverseDynamicsForHumanoids/system/test/config/"
+      "/examples/QPInverseDynamicsForHumanoids/config/"
       "iiwa.id_controller_config";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
@@ -54,67 +49,54 @@ GTEST_TEST(testManipPlanEval, ManipPlanEval) {
   for (int i = 0; i < vd_d.size(); ++i) {
     vd_d[i] = -1 + i;
   }
-
-  systems::DiagramBuilder<double> builder;
-
-  // Makes a plan eval block.
-  ManipulatorPlanEvalSystem* plan_eval =
-      builder.AddSystem<ManipulatorPlanEvalSystem>(*robot, kAliasGroupsPath,
-                                                   kControllConfigPath, 0.02);
-
-  // Makes a source for humanoid status that captures estimated state of the
-  // robot.
   HumanoidStatus robot_status(*robot, alias_groups);
   robot_status.Update(0, q, v,
                       VectorX<double>::Zero(robot->get_num_actuators()),
                       Vector6<double>::Zero(), Vector6<double>::Zero());
-  systems::ConstantValueSource<double>* rs_source =
-      builder.AddSystem<systems::ConstantValueSource<double>>(
-          systems::AbstractValue::Make<HumanoidStatus>(robot_status));
 
-  // Makes a source for desired position and velocity.
-  systems::ConstantVectorSource<double>* state_desired =
-      builder.AddSystem<systems::ConstantVectorSource<double>>(x_d);
-
-  // Makes a source for desired acceleration.
-  systems::ConstantVectorSource<double>* acc_desired =
-      builder.AddSystem<systems::ConstantVectorSource<double>>(vd_d);
-
-  builder.Connect(rs_source->get_output_port(0),
-                  plan_eval->get_input_port_humanoid_status());
-
-  builder.Connect(state_desired->get_output_port(),
-                  plan_eval->get_input_port_desired_state());
-
-  builder.Connect(acc_desired->get_output_port(),
-                  plan_eval->get_input_port_desired_acceleration());
-
-  builder.ExportOutput(plan_eval->get_output_port_qp_input());
-
-  auto diagram = builder.Build();
-
-  // Uses the simulator because I don't have to allocate various things myself.
-  systems::Simulator<double> sim(*diagram);
+  // Makes a plan eval block and system related structs.
+  std::unique_ptr<ManipulatorPlanEvalSystem> plan_eval =
+      std::make_unique<ManipulatorPlanEvalSystem>(*robot, kAliasGroupsPath,
+                                                  kControllConfigPath, 0.02);
+  std::unique_ptr<systems::Context<double>> context =
+      plan_eval->CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
-      diagram->AllocateOutput(sim.get_context());
-  sim.Initialize();
-  plan_eval->Initialize(diagram->GetMutableSubsystemContext(
-      sim.get_mutable_context(), plan_eval));
-  sim.StepTo(plan_eval->get_control_dt());
+      plan_eval->AllocateOutput(*context);
 
-  // Gets the output from the plan eval block.
-  diagram->CalcOutput(sim.get_context(), output.get());
+  // Initializes.
+  plan_eval->Initialize(context->get_mutable_state());
+
+  // Connects inputs.
+  context->FixInputPort(plan_eval->get_input_port_humanoid_status().get_index(),
+                        systems::AbstractValue::Make<HumanoidStatus>(robot_status));
+
+  context->FixInputPort(plan_eval->get_input_port_desired_state().get_index(),
+                        std::make_unique<systems::BasicVector<double>>(x_d));
+  context->FixInputPort(plan_eval->get_input_port_desired_acceleration().get_index(),
+                        std::make_unique<systems::BasicVector<double>>(vd_d));
+
+  // Computes results.
+  systems::DiscreteEvent<double> event;
+  event.action = systems::DiscreteEvent<double>::kUnrestrictedUpdateAction;
+  std::unique_ptr<systems::State<double>> state = context->CloneState();
+
+  plan_eval->CalcUnrestrictedUpdate(*context, event, state.get());
+  context->get_mutable_state()->CopyFrom(*state);
+  plan_eval->CalcOutput(*context, output.get());
+
   const QpInput& qp_input = output->get_data(0)->GetValue<QpInput>();
 
   // Computes the expected output.
   VectorX<double> kp(q.size());
   VectorX<double> kd(v.size());
   plan_eval->get_paramset().LookupDesiredDofMotionGains(&kp, &kd);
-  for (int i = 0; i < v.size(); ++i) {
-    double expected =
-        kp[i] * (x_d[i] - q[i]) + kd[i] * (x_d[i + q.size()] - v[i]) + vd_d[i];
-    EXPECT_EQ(expected, qp_input.desired_dof_motions().value(i));
-  }
+
+  VectorX<double> expected = vd_d +
+      (kp.array() * (x_d.head(q.size()) - q).array()).matrix() +
+      (kd.array() * (x_d.tail(v.size()) - v).array()).matrix();
+
+  EXPECT_TRUE(drake::CompareMatrices(expected, qp_input.desired_dof_motions().values(), 1e-12,
+                                     drake::MatrixCompareType::absolute));
 }
 
 }  // namespace qp_inverse_dynamics

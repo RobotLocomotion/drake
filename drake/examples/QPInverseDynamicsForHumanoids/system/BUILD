@@ -150,7 +150,6 @@ drake_cc_googletest(
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
-        "//drake/systems/primitives:constant_value_source",
     ],
 )
 
