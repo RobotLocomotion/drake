@@ -47,7 +47,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 template <typename T>
-VisualizedPlant<T>::VisualizedPlant(
+PlantAndVisualizerDiagram<T>::PlantAndVisualizerDiagram(
     std::unique_ptr<RigidBodyTree<T>> rigid_body_tree,
     double penetration_stiffness, double penetration_dissipation,
     double static_friction_coefficient, double dynamic_friction_coefficient,
@@ -87,14 +87,14 @@ VisualizedPlant<T>::VisualizedPlant(
 
   builder.BuildInto(this);
 }
-template class VisualizedPlant<double>;
+template class PlantAndVisualizerDiagram<double>;
 
 template <typename T>
 PassiveVisualizedPlant<T>::PassiveVisualizedPlant(
-    std::unique_ptr<VisualizedPlant<T>> visualized_plant) {
+    std::unique_ptr<PlantAndVisualizerDiagram<T>> visualized_plant) {
   // Sets up a builder for the demo.
   DiagramBuilder<T> builder;
-  visualized_plant_ = builder.template AddSystem<VisualizedPlant<T>>(
+  visualized_plant_ = builder.template AddSystem<PlantAndVisualizerDiagram<T>>(
       std::move(visualized_plant));
 
   // Fixes constant sources to all inputs.
