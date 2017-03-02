@@ -42,11 +42,13 @@ void CheckMonomialToCoeffMap(
   const auto& map = DecomposePolynomialIntoExpression(e, vars);
   EXPECT_EQ(map.size(), map_expected.size());
   symbolic::Expression e_expected(0);
-  for (const auto& p : map) {
-    const auto it = map_expected.find(p.first);
-    ASSERT_NE(it, map_expected.end());
-    EXPECT_PRED2(ExprEqual, p.second.Expand(), it->second.Expand());
-    e_expected += p.first * p.second;
+  if (map.size() != 0) {
+    for (const auto &p : map) {
+      const auto it = map_expected.find(p.first);
+      ASSERT_NE(it, map_expected.end());
+      EXPECT_PRED2(ExprEqual, p.second.Expand(), it->second.Expand());
+      e_expected += p.first * p.second;
+    }
   }
 
   EXPECT_PRED2(ExprEqual, e.Expand(), e_expected.Expand());
@@ -391,6 +393,15 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial14) {
   e = x_ * y_ - 2 * x_ * (0.5 * y_ + 1);
   CheckMonomialToCoeffMap(e, {var_x_}, {{x_, -2}});
   CheckMonomialToCoeffMap(e, {var_y_}, {{1, -2 * x_}});
+
+  // Checks e = (y + y * y - 2*(0.5 * y + 0.5 *y *y)) * x
+  e = (y_ + y_ * y_ - 2 * (0.5 * y_ + 0.5 * y_ * y_)) * x_;
+  CheckMonomialToCoeffMap(e, {var_x_}, MonomialAsExpressionToCoefficientMap());
+
+  // // Checks e = (y + y * y - 2*(0.5 * y + 0.5 *y *y) + y_) * x
+  e = (y_ + y_ * y_ - 2 * (0.5 * y_ + 0.5 * y_ * y_) + y_) * x_;
+  CheckMonomialToCoeffMap(e, {var_x_}, {{x_, y_}});
+  CheckMonomialToCoeffMap(e, {var_y_}, {{y_, x_}});
 }
 }  // namespace
 }  // namespace symbolic
