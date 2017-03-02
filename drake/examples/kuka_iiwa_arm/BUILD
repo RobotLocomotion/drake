@@ -79,6 +79,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "sim_diagram_builder",
+    srcs = ["sim_diagram_builder.cc"],
+    hdrs = ["sim_diagram_builder.h"],
+    deps = [
+        "//drake/systems/controllers:state_feedback_controller_base",
+        "//drake/systems/framework",
+        "//drake/multibody/rigid_body_plant",
+    ],
+)
+
 drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
@@ -131,6 +142,26 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
+        "@bot_core_lcmtypes//:lib",
+        "@robotlocomotion_lcmtypes//:lib",
+    ],
+)
+
+drake_cc_binary(
+    name = "hahaha",
+    srcs = ["hahaha.cc"],
+    data = [":models"],
+    deps = [
+        ":iiwa_common",
+        ":iiwa_lcm",
+        ":sim_diagram_builder",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
+        "//drake/systems/analysis",
+        "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/primitives:multiplexer",
+        "//drake/systems/primitives:trajectory_source",
+        "//drake/lcm",
         "@bot_core_lcmtypes//:lib",
         "@robotlocomotion_lcmtypes//:lib",
     ],
