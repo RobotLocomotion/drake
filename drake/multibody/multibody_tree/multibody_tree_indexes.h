@@ -29,30 +29,30 @@ class TaggedIndex {
   /// Construction from an `int` value.
   /// For Debug builds this constructor aborts if the provided input `int`
   /// `index` is negative. There is no check for Release builds.
-  explicit TaggedIndex(int index) : ix(index) {
-    DRAKE_ASSERT(ix >= 0);
+  explicit TaggedIndex(int index) : index_(index) {
+    DRAKE_ASSERT(index_ >= 0);
   }
 
   /// Converstion to int operator.
-  operator int() const { return ix;}
+  operator int() const { return index_;}
 
   /// @name Relational operators
   ///@{
 
   /// Equal to operator.
-  bool operator==(int  i) const { return ix == i;}
+  bool operator==(int  i) const { return index_ == i;}
 
   /// Not equal to operator.
   bool operator!=(int  i) const { return !operator==(i);}
 
   /// Less than operator.
-  bool operator< (int  i) const { return ix < i;}
+  bool operator< (int  i) const { return index_ < i;}
 
   /// Greater than or equal to operator.
   bool operator>=(int  i) const { return !operator<(i);}
 
   /// Greater than operator.
-  bool operator> (int  i) const { return ix > i;}
+  bool operator> (int  i) const { return index_ > i;}
 
   /// Less than or equal to operator.
   bool operator<=(int  i) const { return !operator>(i);}
@@ -63,22 +63,22 @@ class TaggedIndex {
 
   /// Prefix increment operator.
   const TaggedIndex& operator++() {
-    ++ix;
+    ++index_;
     return *this;
   }
 
   /// Postfix increment operator.
   TaggedIndex operator++(int) {
-    ++ix;
-    return TaggedIndex(ix-1);
+    ++index_;
+    return TaggedIndex(index_-1);
   }
 
   /// Prefix decrement operator.
   /// In Debug builds this method asserts that the resulting index is
   /// non-negative.
   const TaggedIndex& operator--() {
-    --ix;
-    DRAKE_ASSERT(ix >= 0);
+    --index_;
+    DRAKE_ASSERT(index_ >= 0);
     return *this;
   }
 
@@ -86,9 +86,9 @@ class TaggedIndex {
   /// In Debug builds this method asserts that the resulting index is
   /// non-negative.
   TaggedIndex operator--(int) {
-    --ix;
-    DRAKE_ASSERT(ix >= 0);
-    return TaggedIndex(ix+1);
+    --index_;
+    DRAKE_ASSERT(index_ >= 0);
+    return TaggedIndex(index_+1);
   }
   ///@}
 
@@ -97,7 +97,7 @@ class TaggedIndex {
 
   /// Addition assignment operator.
   TaggedIndex& operator+=(int i) {
-    ix += i;
+    index_ += i;
     return *this;
   }
 
@@ -105,14 +105,14 @@ class TaggedIndex {
   /// In Debug builds this method asserts that the resulting index is
   /// non-negative.
   TaggedIndex& operator-=(int i) {
-    ix -= i;
-    DRAKE_ASSERT(ix >= 0);
+    index_ -= i;
+    DRAKE_ASSERT(index_ >= 0);
     return *this;
   }
   ///@}
 
  private:
-  int ix{0};
+  int index_{0};
 };
 
 /// Stream insertion operator to write a TaggedIndex into a std::ostream.
