@@ -78,14 +78,9 @@ void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
   SetForceTorque(kinematics_results, contact_results, &message);
 }
 
-std::unique_ptr<SystemOutput<double>> RobotStateEncoder::AllocateOutput(
-    const Context<double>& context) const {
-  auto output = make_unique<LeafSystemOutput<double>>();
-
-  auto data = make_unique<Value<robot_state_t>>(robot_state_t());
-  output->add_port(move(data));
-
-  return std::unique_ptr<SystemOutput<double>>(output.release());
+std::unique_ptr<AbstractValue> RobotStateEncoder::AllocateOutputAbstract(
+    const OutputPortDescriptor<double>& descriptor) const {
+  return make_unique<Value<robot_state_t>>(robot_state_t());
 }
 
 const OutputPortDescriptor<double>& RobotStateEncoder::lcm_message_port()

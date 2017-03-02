@@ -27,11 +27,9 @@ ConstantValueSource<T>::ConstantValueSource(
 }
 
 template <typename T>
-std::unique_ptr<SystemOutput<T>> ConstantValueSource<T>::AllocateOutput(
-    const Context<T>& context) const {
-  std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
-  output->add_port(source_value_->Clone());
-  return std::unique_ptr<SystemOutput<T>>(output.release());
+std::unique_ptr<AbstractValue> ConstantValueSource<T>::AllocateOutputAbstract(
+    const OutputPortDescriptor<T>& descriptor) const {
+  return source_value_->Clone();
 }
 
 template <typename T>

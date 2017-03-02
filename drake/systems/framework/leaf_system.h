@@ -147,7 +147,7 @@ class LeafSystem : public System<T> {
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override {
+      const Context<T>& context) const final {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);

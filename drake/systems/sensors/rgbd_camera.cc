@@ -521,21 +521,19 @@ RgbdCamera::depth_image_output_port() const {
 }
 
 
-std::unique_ptr<SystemOutput<double>> RgbdCamera::AllocateOutput(
-    const Context<double>& context) const {
-  auto output = std::make_unique<systems::LeafSystemOutput<double>>();
-
-  sensors::Image<uint8_t> color_image(kImageWidth, kImageHeight,
-                                      kColorImageChannel);
-  output->add_port(
-      std::make_unique<systems::Value<sensors::Image<uint8_t>>>(color_image));
-
-  sensors::Image<float> depth_image(kImageWidth, kImageHeight,
-                                    kDepthImageChannel);
-  output->add_port(
-      std::make_unique<systems::Value<sensors::Image<float>>>(depth_image));
-
-  return std::unique_ptr<SystemOutput<double>>(output.release());
+std::unique_ptr<AbstractValue> RgbdCamera::AllocateOutputAbstract(
+    const OutputPortDescriptor<double>& descriptor) const {
+  if (descriptor.get_index() == color_image_output_port().get_index()) {
+    sensors::Image<uint8_t> color_image(kImageWidth, kImageHeight,
+                                        kColorImageChannel);
+    return std::make_unique<systems::Value<sensors::Image<uint8_t>>>(
+        color_image);
+  } else if (descriptor.get_index() == depth_image_output_port().get_index()) {
+    Image<float> depth_image(kImageWidth, kImageHeight, kDepthImageChannel);
+    return std::make_unique<systems::Value<sensors::Image<float>>>(depth_image);
+  }
+  DRAKE_ABORT_MSG("Unknown output port.");
+  return nullptr;
 }
 
 void RgbdCamera::DoCalcOutput(const systems::Context<double>& context,
