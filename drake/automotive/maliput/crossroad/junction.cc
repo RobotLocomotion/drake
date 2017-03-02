@@ -8,7 +8,7 @@ namespace maliput {
 namespace crossroad{
 
 Junction::Junction(RoadGeometry* road_geometry,
-	int num_horizontal_lanes,
+    int num_horizontal_lanes,
     int num_vertical_lanes,
     double length,
     double lane_width,

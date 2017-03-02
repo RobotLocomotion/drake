@@ -40,7 +40,7 @@ class Junction final : public api::Junction {
 
   const api::RoadGeometry* do_road_geometry() const final;
 
-  int do_num_segments() const final { return 1; }
+  int do_num_segments() const final { return 2; }
 
   const api::Segment* do_segment(int index) const final {
     DRAKE_DEMAND(index < num_segments());
