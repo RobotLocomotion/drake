@@ -361,8 +361,8 @@ cliques</a> of the graph. This is known to be an NP-complete problem.
 
 <b>Collision Filter Groups</b> The collision filter implementation of this is
 straightforward. Two groups are created (we'll call them `A` and `B`). The
-collision elements of `body1` and `body2` are assigned to `A`. The collision
-elements of `body3` and `body4` are assigned to `B`. `A` is set to ignore `B`
+collision elements of `body1` and `body2` belong to group `A`. The collision
+elements of `body3` and `body4` belong to group `B`. `A` is set to ignore `B`
 and vice versa.  This would be represented by the following bitmasks:
 
 Group  |  Bitmask Type | Bitmask Value
