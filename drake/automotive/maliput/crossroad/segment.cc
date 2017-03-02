@@ -36,8 +36,7 @@ Segment::Segment(Junction* junction,
 // TODO(shensquared): adding distinction based on segement id
     auto lane = std::make_unique<Lane>(
         this,
-        api::LaneId({"Crossroad_Lane_Section"  + 
-          std::to_string(i)}),
+        api::LaneId({"Crossroad_Lane_Section"  + std::to_string(i)}),
         i,
         length,
         y_offset,

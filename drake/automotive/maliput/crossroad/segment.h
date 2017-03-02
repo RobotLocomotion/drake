@@ -18,7 +18,7 @@ namespace crossroad {
 class Junction;
 
 /**
-  crossroad's implementation of api::Segment. It contains multiple straight
+  Crossroad's implementation of api::Segment. It contains multiple straight
   lanes. For the lane semantics, see the class descriptions of Lane.
 
   The following ASCII art shows how N lanes are arranged in a segment.

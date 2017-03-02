@@ -14,7 +14,7 @@ class BranchPoint;
 class Segment;
 
 /**
- Dragway's implementation of api::Lane. The lane is flat with a height of
+ Crossroad's implementation of api::Lane. The lane is flat with a height of
  zero.
 
  The following lane is implemented:
@@ -61,8 +61,8 @@ class Segment;
   the lane. Coordinate `r` is a value between `r_min` and `r_max`. It specifies
   the lateral traversal at a particular `s`. Coordinate `h` specifies the
   height above the lane's surface at a particular `s` and `r` (the lane's
-  surface itself is always at `h = 0`). Since Dragway lanes are flat and level,
-  `z = h` for all values of `s` and `r` and, in the Dragway's case, `z = 0` for
+  surface itself is always at `h = 0`). Since Crossroad lanes are flat and level,
+  `z = h` for all values of `s` and `r` and, in the Crossroad's case, `z = 0` for
   the surface itself. The origin of the lane's frame is defined by the `o` along
   the above-shown `s = 0` line.
 **/
@@ -70,7 +70,7 @@ class Lane final : public api::Lane {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Lane)
 
-  /// Constructs a dragway Lane.
+  /// Constructs a Crossroad Lane.
   ///
   /// @param segment The Segment to which this lane belongs.
   ///

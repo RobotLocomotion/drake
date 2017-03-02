@@ -16,7 +16,7 @@ namespace drake {
 namespace maliput {
 namespace crossroad{
 
-/// Dragway's implementation of api::RoadGeometry.
+/// Crossroad's implementation of api::RoadGeometry.
 ///
 /// To understand the characteristics of the geometry, consult the
 /// crossroad::Segment and crossroad::Lane detailed class overview docs.

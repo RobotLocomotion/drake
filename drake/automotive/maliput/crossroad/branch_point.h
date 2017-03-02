@@ -16,7 +16,7 @@ namespace crossroad{
 class BranchPoint;
 class Lane;
 
-/// Dragway's implementation of api::LaneEndSet. Since a dragway::Lane connects
+/// Crossroad's implementation of api::LaneEndSet. Since a Crossroad::Lane connects
 /// to itself, this LaneEndSet only contains one api::LaneEnd.
 class LaneEndSet final : public api::LaneEndSet {
  public:
@@ -36,12 +36,12 @@ class LaneEndSet final : public api::LaneEndSet {
 };
 
 
-/// Dragway's implementation of api::BranchPoint.
+/// Crossroad's implementation of api::BranchPoint.
 class BranchPoint final : public api::BranchPoint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BranchPoint)
 
-  /// Constructs a fully initialized BranchPoint for a Dragway lane.
+  /// Constructs a fully initialized BranchPoint for a Crossroad lane.
   ///
   /// @param[in] id The ID of this branch point. It can be any user-specified
   /// value.

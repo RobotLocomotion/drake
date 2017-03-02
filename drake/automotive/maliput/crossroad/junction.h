@@ -16,7 +16,7 @@ namespace crossroad{
 
 class RoadGeometry;
 
-/// Dragway's implementation of api::Junction.
+/// Crossroad's implementation of api::Junction.
 class Junction final : public api::Junction {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Junction)
