@@ -117,6 +117,8 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("linear_constraints", &MathematicalProgram::linear_constraints)
     .def("linear_equality_constraints",
          &MathematicalProgram::linear_equality_constraints)
+    .def("bounding_box_constraints", 
+         &MathematicalProgram::bounding_box_constraints)
     .def("linear_costs", &MathematicalProgram::linear_costs)
     .def("quadratic_costs", &MathematicalProgram::quadratic_costs)
     .def("FindDecisionVariableIndex",
@@ -164,16 +166,22 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   // Assign the wrapped Constraint class to the name 'constraint'
   // so we can use it in this file to indicate that the other constraint
   // types inherit from it.
-  py::class_<Constraint> constraint(m, "Constraint");
+  py::class_<Constraint, std::shared_ptr<Constraint> > constraint(m, "Constraint");
   constraint.def("lower_bound", &Constraint::lower_bound)
             .def("upper_bound", &Constraint::upper_bound);
 
-  py::class_<LinearConstraint, std::shared_ptr<LinearConstraint> >(
-    m, "LinearConstraint", constraint)
+  py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint> >(
+    m, "LinearConstraint")
     .def("A", &LinearConstraint::A);
 
-  py::class_<QuadraticConstraint, std::shared_ptr<QuadraticConstraint> >(
-    m, "QuadraticConstraint", constraint)
+  py::class_<LinearEqualityConstraint, LinearConstraint, std::shared_ptr<LinearEqualityConstraint> >(
+    m, "LinearEqualityConstraint");
+
+  py::class_<BoundingBoxConstraint, LinearConstraint, std::shared_ptr<BoundingBoxConstraint> >(
+    m, "BoundingBoxConstraint");
+
+  py::class_<QuadraticConstraint, Constraint, std::shared_ptr<QuadraticConstraint> >(
+    m, "QuadraticConstraint")
     .def("Q", &QuadraticConstraint::Q)
     .def("b", &QuadraticConstraint::b);
 
@@ -186,6 +194,16 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     m, "Binding_QuadraticConstraint")
     .def("constraint", &Binding<QuadraticConstraint>::constraint)
     .def("variables", &Binding<QuadraticConstraint>::variables);
+
+  py::class_<Binding<LinearEqualityConstraint> >(
+    m, "Binding_LinearEqualityConstraint")
+    .def("constraint", &Binding<LinearEqualityConstraint>::constraint)
+    .def("variables", &Binding<LinearEqualityConstraint>::variables);
+
+  py::class_<Binding<BoundingBoxConstraint> >(
+    m, "Binding_BoundingBoxConstraint")
+    .def("constraint", &Binding<BoundingBoxConstraint>::constraint)
+    .def("variables", &Binding<BoundingBoxConstraint>::variables);
 
   return m.ptr();
 }
