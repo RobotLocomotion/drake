@@ -86,6 +86,7 @@ api::GeoPosition Lane::DoToGeoPosition(
 
 api::Rotation Lane::DoGetOrientation(
     const api::LanePosition& lane_pos) const {
+  // int segment_id = this->segment()->do_index(); 
   return api::Rotation(0, 0, 0);  // roll, pitch, yaw.
 }
 

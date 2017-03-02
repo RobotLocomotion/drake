@@ -58,6 +58,8 @@ class Segment final : public api::Segment {
 
   /// Constructs a new crossroad Segment.
   ///
+  /// @param index The index of the segment with its Junction.
+
   /// @param[in] junction The junction to which this Segment belongs.
   ///
   /// @param[in] num_lanes The number of lanes in the segment.
@@ -69,6 +71,7 @@ class Segment final : public api::Segment {
   /// @param[in] shoulder_width The width of the shoulders on each side of the
   /// road.
   Segment(Junction* junction,
+      int index,
       int num_lanes,
       double length,
       double lane_width,
@@ -78,17 +81,17 @@ class Segment final : public api::Segment {
   ~Segment() final = default;
 
   /// Returns the index of this Segment within the Junction which owns it.
-  // int index() const { return do_index(); }
+  int index() const { return do_index(); }
 
 
  private:
-  // virtual int do_index() const = 0;
+  const int index_{};  // The index of this segment within a Junction.
+
+  int do_index() const {return index_;};
 
   const api::SegmentId do_id() const final { return id_; }
 
   const api::Junction* do_junction() const final;
-
-  // const int index_{};  // The index of this Segment within a Junction.
 
   int do_num_lanes() const final { return static_cast<int>(lanes_.size()); }
 

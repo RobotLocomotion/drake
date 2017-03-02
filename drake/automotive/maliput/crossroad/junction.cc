@@ -19,6 +19,7 @@ Junction::Junction(RoadGeometry* road_geometry,
   for (int i = 0; i < this->do_num_segments(); ++i) {
     auto segment = std::make_unique<Segment>(
         this,
+        i,
         i==0?num_horizontal_lanes:num_vertical_lanes, 
         length, 
         lane_width,

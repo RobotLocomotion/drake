@@ -13,13 +13,13 @@ namespace maliput {
 namespace crossroad {
 
 Segment::Segment(Junction* junction,
+    int index,
     int num_lanes,
     double length,
     double lane_width,
     double shoulder_width,
     api::SegmentId id)
-    : id_(id), junction_(junction)
-    
+    : index_(index), id_(id),junction_(junction)
     {
   // To better understand the semantics of the variables defined in this method,
   // see the class description.

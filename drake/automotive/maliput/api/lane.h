@@ -86,6 +86,7 @@ class Lane {
   /// @pre The r component of @p lane_pos must be in domain [Rmin, Rmax]
   ///      derived from Lane::driveable_bounds().
   GeoPosition ToGeoPosition(const LanePosition& lane_pos) const {
+
     return DoToGeoPosition(lane_pos);
   }
 
@@ -118,6 +119,8 @@ class Lane {
   /// LANE-space basis at @p lane_pos with regards to the (single, global)
   /// GEO-space basis.
   Rotation GetOrientation(const LanePosition& lane_pos) const {
+// check the api for getting the segment id that's assossiated
+// with the current lane 
     return DoGetOrientation(lane_pos);
   }
 
