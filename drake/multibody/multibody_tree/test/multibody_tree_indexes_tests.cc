@@ -13,24 +13,14 @@ template <class IndexType>
 void RunMultibodyIndexTests() {
   // Construction from an int.
   {
-    IndexType index(0);
-    EXPECT_EQ(index, 0);  // This also tests operator==(int).
-    EXPECT_TRUE(index.is_valid());  // Tests is_valid().
-    index.invalidate();  // Tests invalidate().
-    EXPECT_FALSE(index.is_valid());
-    EXPECT_TRUE(index.is_invalid());  // Tests is_invalid().
+    IndexType index(1);
+    EXPECT_EQ(index, 1);  // This also tests operator==(int).
   }
 
-  // Default construction and validity.
+  // Default construction, makes a zero index.
   {
-    IndexType invalid_index;
-    EXPECT_TRUE(invalid_index.is_invalid());
-    EXPECT_FALSE(invalid_index.is_valid());
-    EXPECT_EQ(invalid_index, IndexType::Invalid());  // Tests Invalid().
-    IndexType valid_index(1);
-    EXPECT_TRUE(valid_index.is_valid());
-    valid_index = IndexType::Invalid();  // Tests IndexType::Invalid().
-    EXPECT_TRUE(valid_index.is_invalid());
+    IndexType index;
+    EXPECT_EQ(index, 0);
   }
 
   // Conversion operator.
@@ -113,10 +103,6 @@ void RunMultibodyIndexTests() {
     std::stringstream stream;
     stream << index;
     EXPECT_EQ(stream.str(), "8");
-    index.invalidate();
-    stream.str(std::string());  // Clear contents.
-    stream << index;
-    EXPECT_EQ(stream.str(), "Invalid");
   }
 }
 
