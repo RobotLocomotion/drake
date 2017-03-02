@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <memory>
 #include <utility>
 
@@ -125,6 +126,10 @@ class LineSearch {
         }
       }
     }
+
+    std::ofstream fout("alpha.dat", std::ostream::app);
+    fout << alpha << std::endl;
+    fout.close();
 
     return out;
   }

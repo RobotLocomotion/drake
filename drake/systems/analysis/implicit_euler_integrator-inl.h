@@ -8,6 +8,7 @@
 #include <limits>
 #include <utility>
 
+#include "drake/systems/analysis/line_search.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 
 namespace drake {
@@ -111,6 +112,52 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeNDiffJacobian(
   return J;
 }
 
+// Computes the Jacobian of the residual "error" with respect to the state
+// variables using a second-order numerical differentiation.
+// TODO(edrumwri): Write proper documentation for this.
+template <class T>
+MatrixX<T> ImplicitEulerIntegrator<T>::ComputeN2DiffJacobian(
+    const VectorX<T>& xt, const VectorX<T>& xtplus, double h) {
+  // Set epsilon to the square root of machine precision.
+  double eps = std::sqrt(std::numeric_limits<double>::epsilon());
+
+  Context<T>* context = this->get_mutable_context();
+  const int n = context->get_continuous_state()->size();
+
+  // Initialize the Jacobian.
+  MatrixX<T> J(n, n);
+
+  // Compute the Jacobian.
+  VectorX<T> xtplus_prime = xtplus;
+  for (int i = 0; i < n; ++i) {
+    // Compute a good increment to the dimension.
+    const double abs_xi = std::abs(xtplus(i));
+    double dxi = (abs_xi > 0) ? eps * abs_xi : eps;
+
+    // Update xtplus', minimizing the effect of roundoff error.
+    xtplus_prime(i) = xtplus(i) + dxi;
+    const double dxi_pos = xtplus_prime(i) - xtplus(i);
+
+    // Compute g'.
+    VectorX<T> gprime_pos = EvaluateNonlinearEquations(xt, xtplus_prime, h);
+
+    // Update xtplus' again, minimizing the effect of roundoff error.
+    xtplus_prime(i) = xtplus(i) - dxi;
+    const double dxi_minus = xtplus(i) - xtplus_prime(i);
+
+    // Compute g' again.
+    VectorX<T> gprime_minus = EvaluateNonlinearEquations(xt, xtplus_prime, h);
+
+    // Set the Jacobian column.
+    J.col(i) = (gprime_pos - gprime_minus) / (dxi_pos + dxi_minus);
+
+    // Reset xtplus' to xtplus.
+    xtplus_prime(i) = xtplus(i);
+  }
+
+  return J;
+}
+
 // Evaluates x(t+h) - x(t) - h f(t+h, x(t+h))
 template <class T>
 VectorX<T> ImplicitEulerIntegrator<T>::EvaluateNonlinearEquations(
@@ -151,7 +198,7 @@ template <class T>
 bool ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
   using std::abs;
   // TODO(edrumwri): Make this user-settable.
-  const double dx_tol = 1e-6 * dt;
+  const double dx_tol = 1e-8 * dt;
 
   // Presumptuously advance the context time; this means that all derivatives
   // will be computed at t+dt.
@@ -175,15 +222,15 @@ bool ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
   VectorX<T> goutput = g(xtplus);
 
   // Set the initial value of the objective function f = g^Tg
-  double f_last = goutput.squaredNorm();
+  double f_last = 0.5*goutput.norm();
 
   // TODO(edrumwri): Routine assumes that typical values for x and g are on the
   // order of unity.
 
   // Evaluate the objective function.
-  while (std::sqrt(f_last) > convergence_tol_) {
+  while (f_last > convergence_tol_) {
     // Form the Jacobian matrix ∂g/∂xtplus.
-    MatrixX<T> J = ComputeNDiffJacobian(xt, xtplus, dt);
+    MatrixX<T> J = ComputeN2DiffJacobian(xt, xtplus, dt);
 
     // The Jacobian matrix yields the relationship J dxtplus/dt = dg/dt.
     // Converting this from a derivative into a differential yields
@@ -192,7 +239,8 @@ bool ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
     // reducing ||g||. J will be n x n, where n is the number of state
     // variables. It will generally possess no "nice" properties (e.g.,
     // symmetry) or even be guaranteed to be invertible.
-    // TODO(edrumwri): Check for singularity?
+    // TODO(edrumwri): Check for singular matrix?
+//    VectorX<T> dx = J.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(-goutput);
     LU_.compute(J);
     VectorX<T> dx = LU_.solve(-goutput);
 
@@ -200,15 +248,15 @@ bool ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
     // size if the dot product of this gradient and dx is positive. Note that
     // there is no need to scale the gradient by the 1/2 factor, as we look
     // only for a positive dot product.
-/*
     const VectorX<T> grad = J * goutput;
+/*
     if (grad.dot(dx) > 0) {
       num_misdirected_descents_++;
       RestoreTimeAndState(last_time, xt); 
       return false;
     }
 */
-/*
+
     // Search the ray \alpha \in [0, \infty] for a "good" value that minimizes
     // || x(t+h)_i + dx \alpha - x(t) - h f(t+h, x(t+h)_i + dx \alpha) ||. The
     // ray search is relativelly expensive, as it requres evaluating f().
@@ -217,12 +265,19 @@ bool ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
     // forming the next Jacobian and solving the next linear system.
     typename LineSearch<T>::LineSearchOutput lout = 
         LineSearch<T>::search_line(xtplus, dx, f_last, grad, g);
+    // Check to see whether the update is too close to zero. This test
+    // effectively also covers the case where the gradient is zero.
+    if ((xtplus - lout.x_new).template lpNorm<1>() < dx_tol) {
+      RestoreTimeAndState(last_time, xt);
+      num_overly_small_updates_++;
+      return false;
+    }
 
     // Update x, g_output, and f 
     goutput = lout.g_output;
     xtplus = lout.x_new;
     f_last = lout.f_new;
-*/
+/*
     // Evaluate new xtplus and guard against increase in error.
     xtplus = xt + dx;
     goutput = g(xtplus);
@@ -235,14 +290,7 @@ bool ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
 
     // Update f_last
     f_last = f_new;
-
-    // Check to see whether the update is too close to zero. This test
-    // effectively also covers the case where the gradient is zero.
-    if (dx.template lpNorm<1>() < dx_tol) {
-      RestoreTimeAndState(last_time, xt);
-      num_overly_small_updates_++;
-      return false;
-    }
+*/
   }
 
   // Converged - last evaluation of g() updated the context to xt+.

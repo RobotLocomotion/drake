@@ -40,23 +40,35 @@ namespace systems {
  * </pre>
  * given unknowns x(t+h).
  *
- * This "implicit Euler" method is known to be L-Stable, meaning that
- * (TODO: finish this thought). The practical effect is that the integrator
- * tends to be stable for any given step size on any system of ordinary
+ * This "implicit Euler" method is known to be A-Stable, meaning that applying
+ * it at a fixed integration step to the  "test" equation `y(t) = eᵏᵗ` yields
+ * zero (for `k < 0` and `t → ∞`). The practical effect is that the integrator
+ * tends to be stable for any given step size on a system of ordinary
  * differential equations, given that the nonlinear system of equations is
- * solvable (which typically depends on the step size, h).
+ * solvable (which typically depends on the step size, `h`).
  *
  * The time complexity of this method is often dominated by the time to form
  * the Jacobian matrix consisting of the partial derivatives of the nonlinear
- * system (of n dimensions, where n is the number of state variables) taken
- * with respect to the partial derivatives of the state variables at x(t+h).
- * For typical numerical differentiation, f() will be evaluated n^2 times during
+ * system (of `n` dimensions, where `n` is the number of state variables) taken
+ * with respect to the partial derivatives of the state variables at `x(t+h)`.
+ * For typical numerical differentiation, `f` will be evaluated `n` times during
  * the Jacobian formation; if we liberally assume that the derivative function
- * evaluation code runs in O(n) time (e.g., as it would for multi-rigid
+ * evaluation code runs in `O(n)` time (e.g., as it would for multi-rigid
  * body dynamics without kinematic loops), the asymptotic complexity to form
- * the Jacobian will be O(n^3). This Jacobian matrix needs to be formed
+ * the Jacobian will be `O(n²)`. This Jacobian matrix needs to be formed
  * repeatedly- every time the state variables are updated- during the solution
- * process.
+ * process, or one must cleverly attempt to reuse the Jacobian (repeatedly, if
+ * possible). Using automatic differentiation replaces the `n` derivative
+ * evaluations with what is hopefully a much less expensive process, though the
+ * complexity to form the Jacobian matrix is still `O(n²)`. For large `n`, the
+ * time complexity will be dominated by the `O(n³)` time required to
+ * (repeatedly) solve least squares problems as part of the nonlinear system
+ * solution process.
+ *
+ * The keys to efficiently solving the systems of nonlinear systems are (1)
+ * accurate Jacobian matrices, (2) a "good" initial guess for `x(t+h)`, (3)
+ * balancing efficient line search against likelihood of converging to an
+ * undesirable solution.
  */
 template <class T>
 class ImplicitEulerIntegrator : public IntegratorBase<T> {
@@ -124,6 +136,9 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   MatrixX<T> ComputeNDiffJacobian(const VectorX<T>& xt,
                                   const VectorX<T>& xtplus,
                                   double h);
+  MatrixX<T> ComputeN2DiffJacobian(const VectorX<T>& xt,
+                                   const VectorX<T>& xtplus,
+                                   double h);
   MatrixX<T> ComputeADiffJacobian(const VectorX<T>& xt,
                                   const VectorX<T>& xtplus,
                                   double h);
