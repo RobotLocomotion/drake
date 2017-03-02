@@ -56,6 +56,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "iiwa_plan_source",
+    srcs = ["iiwa_plan_source.cc"],
+    hdrs = ["iiwa_plan_source.h"],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/lcmtypes:iiwa",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "//drake/systems/framework:leaf_system",
+        "@bot_core_lcmtypes//:lib",
+        "@robotlocomotion_lcmtypes//:lib",
+    ],
+)
+
+drake_cc_library(
     name = "oracular_state_estimator",
     hdrs = ["oracular_state_estimator.h"],
     deps = [
@@ -143,6 +158,15 @@ drake_cc_googletest(
     deps = [
         ":iiwa_lcm",
         "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_plan_source_test",
+    data = [":models"],
+    deps = [
+        ":iiwa_plan_source",
         "//drake/systems/framework",
     ],
 )
