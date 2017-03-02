@@ -29,6 +29,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "atlas_joint_level_controller_system",
+    srcs = ["atlas_joint_level_controller_system.cc"],
+    hdrs = ["atlas_joint_level_controller_system.h"],
+    deps = [
+        ":joint_level_controller_system",
+    ],
+)
+
+drake_cc_library(
     name = "plan_eval_system",
     srcs = ["plan_eval_system.cc"],
     hdrs = ["plan_eval_system.h"],
@@ -68,7 +77,7 @@ drake_cc_binary(
         "local",
     ],
     deps = [
-        ":joint_level_controller_system",
+        ":atlas_joint_level_controller_system",
         ":plan_eval_system",
         ":qp_controller_system",
         ":humanoid_status_translator_system",
@@ -107,5 +116,18 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "joint_level_controller_system_test",
+    srcs = ["test/joint_level_controller_system_test.cc"],
+    data = [
+        "//drake/examples/Valkyrie:models",
+    ],
+    deps = [
+        ":atlas_joint_level_controller_system",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework",
+        "//drake/multibody/parsers",
+    ],
+)
 
 cpplint()
