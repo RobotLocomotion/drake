@@ -67,13 +67,15 @@ GTEST_TEST(testManipPlanEval, ManipPlanEval) {
   plan_eval->Initialize(context->get_mutable_state());
 
   // Connects inputs.
-  context->FixInputPort(plan_eval->get_input_port_humanoid_status().get_index(),
-                        systems::AbstractValue::Make<HumanoidStatus>(robot_status));
+  context->FixInputPort(
+      plan_eval->get_input_port_humanoid_status().get_index(),
+      systems::AbstractValue::Make<HumanoidStatus>(robot_status));
 
   context->FixInputPort(plan_eval->get_input_port_desired_state().get_index(),
                         std::make_unique<systems::BasicVector<double>>(x_d));
-  context->FixInputPort(plan_eval->get_input_port_desired_acceleration().get_index(),
-                        std::make_unique<systems::BasicVector<double>>(vd_d));
+  context->FixInputPort(
+      plan_eval->get_input_port_desired_acceleration().get_index(),
+      std::make_unique<systems::BasicVector<double>>(vd_d));
 
   // Computes results.
   systems::DiscreteEvent<double> event;
@@ -87,16 +89,47 @@ GTEST_TEST(testManipPlanEval, ManipPlanEval) {
   const QpInput& qp_input = output->get_data(0)->GetValue<QpInput>();
 
   // Computes the expected output.
+  const param_parsers::ParamSet& params = plan_eval->get_paramset();
   VectorX<double> kp(q.size());
   VectorX<double> kd(v.size());
-  plan_eval->get_paramset().LookupDesiredDofMotionGains(&kp, &kd);
+  params.LookupDesiredDofMotionGains(&kp, &kd);
 
-  VectorX<double> expected = vd_d +
-      (kp.array() * (x_d.head(q.size()) - q).array()).matrix() +
+  VectorX<double> expected =
+      vd_d + (kp.array() * (x_d.head(q.size()) - q).array()).matrix() +
       (kd.array() * (x_d.tail(v.size()) - v).array()).matrix();
 
-  EXPECT_TRUE(drake::CompareMatrices(expected, qp_input.desired_dof_motions().values(), 1e-12,
-                                     drake::MatrixCompareType::absolute));
+  // Desired generalized acceleration should match expected.
+  EXPECT_TRUE(
+      drake::CompareMatrices(expected, qp_input.desired_dof_motions().values(),
+                             1e-12, drake::MatrixCompareType::absolute));
+  VectorX<double> expected_weights = params.MakeDesiredDofMotions().weights();
+  EXPECT_TRUE(drake::CompareMatrices(
+      expected_weights, qp_input.desired_dof_motions().weights(), 1e-12,
+      drake::MatrixCompareType::absolute));
+  std::vector<ConstraintType> expected_constraint_type =
+      params.MakeDesiredDofMotions().constraint_types();
+  for (size_t i = 0; i < expected_constraint_type.size(); ++i) {
+    EXPECT_EQ(qp_input.desired_dof_motions().constraint_type(i),
+              expected_constraint_type[i]);
+  }
+
+  // Contact force basis regularization weight is irrelevant here since there
+  // is not contacts, but its value should match params'.
+  EXPECT_EQ(qp_input.w_basis_reg(), params.get_basis_regularization_weight());
+
+  // Not tracking Cartesian motions.
+  EXPECT_TRUE(qp_input.desired_body_motions().empty());
+
+  // No contacts.
+  EXPECT_TRUE(qp_input.contact_information().empty());
+
+  // Doesn't care about overall center of mass or angular momentum.
+  for (int i = 0; i < 6; ++i) {
+    EXPECT_EQ(qp_input.desired_centroidal_momentum_dot().value(i), 0);
+    EXPECT_EQ(qp_input.desired_centroidal_momentum_dot().weight(i), 0);
+    EXPECT_EQ(qp_input.desired_centroidal_momentum_dot().constraint_type(i),
+              ConstraintType::Skip);
+  }
 }
 
 }  // namespace qp_inverse_dynamics
