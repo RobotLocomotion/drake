@@ -44,7 +44,7 @@ GTEST_TEST(BasicVectorTest, AutodiffInitiallyNaN) {
 // Tests that the BasicVector<symbolic::Expression> is initialized to NaN.
 GTEST_TEST(BasicVectorTest, SymbolicInitiallyNaN) {
   BasicVector<symbolic::Expression> vec(1);
-  EXPECT_TRUE(symbolic::is_nan(vec.get_value()[0]));
+  EXPECT_TRUE(symbolic::isnan(vec.get_value()[0]));
 }
 
 // Tests that BasicVector<symbolic::Expression>::Make does what it says on
@@ -214,7 +214,6 @@ GTEST_TEST(BasicVectorTest, ZeroLengthStringStream) {
   s << "foo " << vec << " bar";
   EXPECT_EQ(s.str(), "foo [] bar");
 }
-
 
 }  // namespace
 }  // namespace systems

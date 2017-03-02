@@ -140,7 +140,7 @@ class SymbolicExpressionTest : public ::testing::Test {
 };
 
 TEST_F(SymbolicExpressionTest, Dummy) {
-  EXPECT_TRUE(is_nan(dummy_value<Expression>::get()));
+  EXPECT_TRUE(isnan(dummy_value<Expression>::get()));
 }
 
 TEST_F(SymbolicExpressionTest, IsConstant1) {
@@ -172,7 +172,7 @@ TEST_F(SymbolicExpressionTest, IsTwo) { EXPECT_TRUE(is_two(two_)); }
 TEST_F(SymbolicExpressionTest, NaN) {
   // It's OK to have NaN expression.
   const Expression nan{NAN};
-  EXPECT_TRUE(is_nan(nan));
+  EXPECT_TRUE(isnan(nan));
   EXPECT_TRUE(nan.EqualTo(Expression::NaN()));
   // It's OK to have an expression including NaN inside.
   const Expression e1{1.0 + nan};

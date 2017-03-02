@@ -696,7 +696,7 @@ bool is_zero(const Expression& e) { return is_constant(e, 0.0); }
 bool is_one(const Expression& e) { return is_constant(e, 1.0); }
 bool is_neg_one(const Expression& e) { return is_constant(e, -1.0); }
 bool is_two(const Expression& e) { return is_constant(e, 2.0); }
-bool is_nan(const Expression& e) { return e.get_kind() == ExpressionKind::NaN; }
+bool isnan(const Expression& e) { return e.get_kind() == ExpressionKind::NaN; }
 bool is_variable(const Expression& e) { return is_variable(*e.ptr_); }
 bool is_addition(const Expression& e) { return is_addition(*e.ptr_); }
 bool is_multiplication(const Expression& e) {
