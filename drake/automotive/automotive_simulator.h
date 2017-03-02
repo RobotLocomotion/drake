@@ -223,6 +223,10 @@ class AutomotiveSimulator {
 
   // Adds an LCM publisher for the given @p system.
   // @pre Start() has NOT been called.
+  void AddPublisher(const MaliputRailcar<T>& system, int vehicle_number);
+
+  // Adds an LCM publisher for the given @p system.
+  // @pre Start() has NOT been called.
   void AddPublisher(const SimpleCar<T>& system, int vehicle_number);
 
   // Adds an LCM publisher for the given @p system.

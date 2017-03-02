@@ -6,6 +6,7 @@
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/endless_road_car_state_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
+#include "drake/automotive/gen/maliput_railcar_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/utility/generate_urdf.h"
@@ -275,6 +276,18 @@ void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
 }
 
 template <typename T>
+void AutomotiveSimulator<T>::AddPublisher(const MaliputRailcar<T>& system,
+                                          int vehicle_number) {
+  DRAKE_DEMAND(!has_started());
+  static const MaliputRailcarStateTranslator translator;
+  auto publisher =
+      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
+          std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE", translator,
+          lcm_.get());
+  builder_->Connect(system.state_output(), publisher->get_input_port(0));
+}
+
+template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
@@ -309,6 +322,10 @@ void AutomotiveSimulator<T>::AddPublisher(const EndlessRoadCar<T>& system,
           translator, lcm_.get());
   builder_->Connect(system, *publisher);
 }
+
+// TODO(liang.fok) The following three methods meet the rule-of-three since all
+// of them take a LeafSystem as input and connect their outputs to an
+// LcmPublisherSystem. Factor out the common code into a shared method.
 
 template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(

@@ -74,6 +74,15 @@ The following demos are available:
        --num_trajectory_car=12
    ```
 
+ * A 1-lane dragway with a `MaliputRailcar` vehicle traveling down its length:
+
+   ```
+   bazel run //drake/automotive:demo -- \
+       --num_dragway_lanes=1 \
+       --num_trajectory_car=0 \
+       --num_maliput_railcar=1
+   ```
+
 Driving the Prius
 -----------------
 
