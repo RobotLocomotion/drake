@@ -27,7 +27,7 @@ template <class SpatialQuantity> struct spatial_vector_traits;
 /// For a more detailed introduction on spatial vectors please refer to
 /// section @ref multibody_spatial_vectors.
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+/// @tparam Derived The type of the more specialized spatial vector class.
 template <typename Derived>
 class SpatialVector {
   typedef typename internal::spatial_vector_traits<Derived>::ScalarType T;
