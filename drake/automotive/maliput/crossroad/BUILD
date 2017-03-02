@@ -28,18 +28,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_binary(
-    name = "crossroad_to_urdf",
-    srcs = ["crossroad_to_urdf.cc"],
-    deps = [
-        ":crossroad",
-        "//drake/automotive/maliput/utility",
-        "//drake/common",
-        "//drake/common:text_logging_gflags",
-        "//drake/thirdParty:spruce",
-        "@gflags//:gflags",
-    ],
-)
 
 # === test/ ===
 
