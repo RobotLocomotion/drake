@@ -38,9 +38,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "plan_eval_system",
-    srcs = ["plan_eval_system.cc"],
-    hdrs = ["plan_eval_system.h"],
+    name = "plan_eval_base_system",
+    srcs = ["plan_eval_base_system.cc"],
+    hdrs = ["plan_eval_base_system.h"],
     deps = [
         "//drake/common:drake_path",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
@@ -48,6 +48,25 @@ drake_cc_library(
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
         "//drake/systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "manipulator_plan_eval_system",
+    srcs = ["manipulator_plan_eval_system.cc"],
+    hdrs = ["manipulator_plan_eval_system.h"],
+    deps = [
+        ":plan_eval_base_system",
+        "//drake/lcmtypes:plan_eval_debug_info",
+    ],
+)
+
+drake_cc_library(
+    name = "humanoid_plan_eval_system",
+    srcs = ["humanoid_plan_eval_system.cc"],
+    hdrs = ["humanoid_plan_eval_system.h"],
+    deps = [
+        ":plan_eval_base_system",
     ],
 )
 
@@ -80,7 +99,7 @@ drake_cc_binary(
     deps = [
         ":atlas_joint_level_controller_system",
         ":humanoid_status_translator_system",
-        ":plan_eval_system",
+        ":humanoid_plan_eval_system",
         ":qp_controller_system",
         "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/lcm",
@@ -109,6 +128,24 @@ drake_cc_googletest(
         ":qp_controller_system",
         "//drake/common:eigen_matrix_compare",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/multibody/parsers",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework",
+        "//drake/systems/primitives:constant_value_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "manipulator_plan_eval_test",
+    srcs = ["test/manipulator_plan_eval_system_test.cc"],
+    data = [
+    ],
+    deps = [
+        ":manipulator_plan_eval_system",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
+        "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",

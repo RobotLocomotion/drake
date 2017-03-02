@@ -1,0 +1,47 @@
+# For centroidal_momentum and body_motion, there should be 6 kp, kd, and weight
+# fields to fully specify the parameters, and the first 3 dimensions correspond
+# to the angular components. A single parameter can also be used to specify the
+# same value for all dimensions.
+
+name: "iiwa"
+
+centroidal_momentum {
+    name: "centroidal"
+    kp: 0
+    kd: 0
+    weight: 0
+}
+
+contact_force_basis_weight: 1e-6
+
+default_dof_motion {
+    name: "default"
+    kp: 100
+    kd: 20
+    weight: 1e-1
+}
+
+default_body_motion {
+    name: "default"
+    kp: 10
+    kd: 6
+    weight: 1
+}
+
+default_contact {
+    name: "default"
+    weight: 1e5
+    kd: 8
+    mu: 1
+    contact_point {
+        x: 0
+        y: 0
+        z: 0
+    }
+    contact_normal {
+        x: 0
+        y: 0
+        z: 1
+    }
+    num_basis_per_contact_point: 4
+}
