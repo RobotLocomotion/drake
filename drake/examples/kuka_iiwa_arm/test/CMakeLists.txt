@@ -4,4 +4,7 @@ if(lcm_FOUND)
     drakeKukaIiwaArmCommon
     drakeLCMTypes
     Eigen3::Eigen)
+
+  drake_add_cc_test(iiwa_plan_source_test)
+  target_link_libraries(iiwa_plan_source_test drakeKukaIiwaArmCommon)
 endif()
