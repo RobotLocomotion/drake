@@ -75,6 +75,10 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial2) {
   map_expected.emplace(1, 3.14159);
   CheckMonomialToCoeffMap(3.14159, {var_x_}, map_expected);
   CheckMonomialToCoeffMap(3.14159, var_xy_, map_expected);
+
+  CheckMonomialToCoeffMap(0, {var_x_}, MonomialAsExpressionToCoefficientMap());
+  CheckMonomialToCoeffMap(x_ - x_, {var_x_},
+                          MonomialAsExpressionToCoefficientMap());
 }
 
 TEST_F(DecomposePolynomialTest, DecomposePolynomial3) {

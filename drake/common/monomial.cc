@@ -237,7 +237,11 @@ class DecomposePolynomialVisitor {
 
   MonomialToCoefficientMap operator()(
       const shared_ptr<ExpressionConstant>& e, const Variables& vars) const {
-    return MonomialToCoefficientMap({{Monomial(), e->get_value()}});
+    if (e->get_value() != 0) {
+      return MonomialToCoefficientMap({{Monomial(), e->get_value()}});
+    } else {
+      return MonomialToCoefficientMap();
+    }
   }
 
   MonomialToCoefficientMap operator()(
