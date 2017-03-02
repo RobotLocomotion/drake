@@ -113,6 +113,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "saturate",
+    srcs = [],
+    hdrs = ["saturate.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:cond",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
