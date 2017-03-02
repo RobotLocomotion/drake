@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/math/spatial_vectors.h"
+#include "drake/multibody/multibody_tree/math/spatial_algebra.h"
 
 #include <Eigen/Dense>
 
