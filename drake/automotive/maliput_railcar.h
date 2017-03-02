@@ -57,6 +57,13 @@ template <typename T>
 class MaliputRailcar : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaliputRailcar)
+  /// Defines a distance that is "close enough" to the end of a lane for the
+  /// vehicle to transition to an ongoing branch.
+  static constexpr double kLaneEndEpsilon{1e-12};
+
+  /// Defines a time interval that is used to ensure a desired update time is
+  /// always greater than the current time.
+  static constexpr double kTimeEpsilon{1e-12};
 
   /// The constructor.
   ///
