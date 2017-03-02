@@ -3,12 +3,15 @@
 
 #include "drake/solvers/rotation_constraint.h"
 using Eigen::Isometry3d;
+using Eigen::Vector3d;
 
 using std::string;
 
+using drake::symbolic::Expression;
+
 namespace drake {
 namespace multibody {
-GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTree<double> &robot) : robot_(&robot) {
+GlobalInverseKinematics::GlobalInverseKinematics(std::unique_ptr<RigidBodyTreed> robot) : robot_(robot.get()) {
 
   const int num_bodies = robot_->get_num_bodies();
   body_rotmat_.resize(num_bodies);
@@ -28,17 +31,16 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTree<double> &ro
       // the body position and orientation.
       if (body->IsRigidlyFixedToWorld()) {
         Isometry3d body_pose = body->ComputeWorldFixedPose();
-        AddBoundingBoxConstraint(body_rotmat_[body_idx].resize(9, 1),
-                                 body_pose.linear().resize(9, 1),
-                                 body_pose.linear().resize(9, 1));
-        AddBoundingBoxConstraint(body_pos_[body_idx],
+        for (int i = 0; i < 3; ++i) {
+          AddBoundingBoxConstraint(body_pose.linear().col(i), body_pose.linear().col(i), body_rotmat_[body_idx].col(i));
+        }
+        AddBoundingBoxConstraint(body_pose.translation(),
                                  body_pose.translation(),
-                                 body_pose.translation());
+                                 body_pos_[body_idx]);
       } else {
         body_rotmat_[body_idx] =
             solvers::NewRotationMatrixVars(this, body_R_name);
-        body_pos_[body_idx] =
-            solvers::NewRotationMatrixVars(this, body_pos_name);
+        body_pos_[body_idx] = NewContinuousVariables<3>(body_pos_name);
         solvers::AddRotationMatrixOrthonormalSocpConstraint(this,
                                                             body_rotmat_[body_idx]);
         solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(this,
@@ -50,19 +52,59 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTree<double> &ro
         if (body->has_parent_body()) {
           const RigidBody<double> *parent_body = body->get_parent();
           const int parent_idx = parent_body->get_body_index();
-          DrakeJoint joint = body->getJoint();
+          const DrakeJoint* joint = &(body->getJoint());
           const auto &joint_to_parent_transform =
-              joint.get_transform_to_parent_body();
-          if (joint.get_num_velocities() == 1) {
+              joint->get_transform_to_parent_body();
+          if (joint->get_num_velocities() == 1) {
             // Should NOT do this evil dynamic cast here, but currently we do
             // not have a method to tell if a joint is revolute or not.
-            if (dynamic_cast<RevoluteJoint *>(&joint)
-                == static_cast<RevoluteJoint *>(&joint)) {
+            if (dynamic_cast<const RevoluteJoint*>(joint)
+                == static_cast<const RevoluteJoint*>(joint)) {
               const RevoluteJoint
-                  *revolute_joint = static_cast<RevoluteJoint *>(&joint);
-              const auto &joint_axis = revolute_joint->joint_axis();
+                  *revolute_joint = static_cast<const RevoluteJoint*>(joint);
+              const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
               // The rotation joint is the same in both child body and the parent body.
-              AddLinearEqualityConstraint(body_rotmat_[body_idx] * joint_axis - body_rotmat_[parent_idx] * joint_to_parent_transform.linear() * joint_axis, Eigen::Vector3d::Zero());
+              AddLinearEqualityConstraint(body_rotmat_[body_idx] * rotate_axis - body_rotmat_[parent_idx] * joint_to_parent_transform.linear() * rotate_axis, Eigen::Vector3d::Zero());
+
+              // Now add the joint limits constraint -α ≤ θ ≤ α, where α is the
+              // maximal angle the joint can rotate. Notice we require that
+              // the joint lower and upper limits are symmetric.
+              double joint_lb = joint->getJointLimitMin()(0);
+              double joint_ub = joint->getJointLimitMax()(0);
+
+              // TODO(hongkai.dai): add the function to change joint_to_parent_transform if the joint lower bound and the joint upper bound do not adds up to 0.
+              DRAKE_DEMAND(joint_lb + joint_ub == 0);
+
+              if (joint_ub < M_PI) {
+                // To constrain a joint angle θ within revolute range [-α, α],
+                // we can consider a unit length vector v perpendicular to the
+                // rotation axis; after rotating v by angle θ we get another
+                // vector u, and
+                //    |u - v| <= 2*sin(α/2)
+                // which is a second order cone constraint.
+
+                // First generate a vector that is perpendicular to rotation axis.
+                Vector3d revolute_vector = rotate_axis.cross(Vector3d(1, 0, 0));
+                double revolute_vector_norm = revolute_vector.norm();
+                if (revolute_vector_norm < 1E-2) {
+                  // rotate_axis is almost parallel to [1; 0; 0].
+                  revolute_vector = rotate_axis.cross(Vector3d(0, 1, 0));
+                  revolute_vector_norm = revolute_vector.norm();
+                }
+                DRAKE_DEMAND(revolute_vector_norm >= 1E-2 - 1E-10);
+                // Normalizes the revolute vector.
+                revolute_vector /= revolute_vector_norm;
+                Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
+
+                // clang-format off
+                joint_limit_expr << 2 * sin(joint_ub),
+                    body_rotmat_[body_idx] * revolute_vector -
+                        body_rotmat_[parent_idx] *
+                            joint_to_parent_transform.linear() *
+                            revolute_vector;
+                // clang-format on;
+                AddLorentzConeConstraint(joint_limit_expr);
+              }
             }
           }
         }

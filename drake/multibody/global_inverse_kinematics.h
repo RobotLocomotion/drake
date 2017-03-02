@@ -8,7 +8,7 @@ namespace drake {
 namespace multibody {
 class GlobalInverseKinematics : public solvers::MathematicalProgram {
  public:
-  GlobalInverseKinematics(const RigidBodyTree<double>& robot);
+  GlobalInverseKinematics(std::unique_ptr<RigidBodyTreed> robot);
 
  private:
   const RigidBodyTree<double> *robot_;

@@ -2,6 +2,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_path.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
+
 namespace drake {
 namespace multibody {
 namespace {
@@ -19,7 +23,7 @@ GTEST_TEST(TestGlobakIK, KukaTest) {
 
   AddFlatTerrainToWorld(rigid_body_tree.get());
 
-  GlobalInverseKinematics global_ik(rigid_body_tree);
+  GlobalInverseKinematics global_ik(std::move(rigid_body_tree));
 }
 }  // namespace
 }  // namespace multibody
