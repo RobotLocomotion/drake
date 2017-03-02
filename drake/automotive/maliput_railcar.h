@@ -57,6 +57,30 @@ template <typename T>
 class MaliputRailcar : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaliputRailcar)
+  /// Defines a distance that is "close enough" to the end of a lane for the
+  /// vehicle to transition to an ongoing branch. The primary constraint on the
+  /// selection of this variable is the application's degree of sensitivity to
+  /// position state discontinuity when the MaliputRailcar "jumps" from its
+  /// current lane to a lane in an ongoing branch. A smaller value results in a
+  /// smaller spatial discontinuity. If this value is zero, the spatial
+  /// discontinuity will be zero. However, it will trigger the use of
+  /// kTimeEpsilon, which results in a temporal discontinuity.
+  static constexpr double kLaneEndEpsilon{1e-12};
+
+  /// Defines a time interval that is used to ensure a desired update time is
+  /// always greater than (i.e., after) the current time. Despite the spatial
+  /// window provided by kLaneEndEpsilon, it is still possible for the vehicle
+  /// to end up precisely at the end of its current lane (e.g., it could be
+  /// initialized in this state). In this scenario, the next update time will be
+  /// equal to the current time. The integrator, however, requires that the next
+  /// update time be strictly after the current time, which is when this
+  /// constant is used. The primary constraint on the selection of this constant
+  /// is the application's sensitivity to a MaliputRailcar being "late" in its
+  /// transition to an ongoing branch once it is at the end of its current lane.
+  /// The smaller this value, the less "late" the transition will occur. This
+  /// value cannot be zero since that will violate the integrator's need for the
+  /// next update time to be strictly after the current time.
+  static constexpr double kTimeEpsilon{1e-12};
 
   /// The constructor.
   ///
