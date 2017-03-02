@@ -133,6 +133,7 @@ drake_cc_library(
     srcs = ["saturation.cc"],
     hdrs = ["saturation.h"],
     deps = [
+        "//drake/math:saturate",
         "//drake/systems/framework",
     ],
 )

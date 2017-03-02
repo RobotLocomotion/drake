@@ -12,6 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/math/saturate.h"
 #include "drake/systems/framework/vector_base.h"
 
 // This is used indirectly to allow DRAKE_ASSERT on symbolic::Expression.
@@ -157,18 +158,6 @@ void SimpleCar<T>::DoCalcTimeDerivatives(
   ImplCalcTimeDerivatives(config, *state, *input, rates);
 }
 
-namespace {
-// If value is within [low, high] then return it; else return the boundary.
-template <class T1, class T2, class T3>
-T1 saturate(const T1& value, const T2& low, const T3& high) {
-  DRAKE_ASSERT(low <= high);
-  return cond(
-      value < low, low,
-      value > high, high,
-      value);
-}
-}  // namespace
-
 template <typename T>
 void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarConfig<T>& config,
                                            const SimpleCarState<T>& state,
@@ -213,7 +202,7 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarConfig<T>& config,
   const T smooth_acceleration = damped_acceleration * smoothing_factor;
 
   // Determine steering.
-  const T saturated_steering_angle = saturate(
+  const T saturated_steering_angle = math::saturate(
       input.steering_angle(),
       -config.max_abs_steering_angle(),
       config.max_abs_steering_angle());
