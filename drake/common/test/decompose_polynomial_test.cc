@@ -42,13 +42,11 @@ void CheckMonomialToCoeffMap(
   const auto& map = DecomposePolynomialIntoExpression(e, vars);
   EXPECT_EQ(map.size(), map_expected.size());
   symbolic::Expression e_expected(0);
-  if (map.size() != 0) {
-    for (const auto &p : map) {
-      const auto it = map_expected.find(p.first);
-      ASSERT_NE(it, map_expected.end());
-      EXPECT_PRED2(ExprEqual, p.second.Expand(), it->second.Expand());
-      e_expected += p.first * p.second;
-    }
+  for (const auto &p : map) {
+    const auto it = map_expected.find(p.first);
+    ASSERT_NE(it, map_expected.end());
+    EXPECT_PRED2(ExprEqual, p.second.Expand(), it->second.Expand());
+    e_expected += p.first * p.second;
   }
 
   EXPECT_PRED2(ExprEqual, e.Expand(), e_expected.Expand());
