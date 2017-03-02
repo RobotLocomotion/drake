@@ -24,8 +24,9 @@ namespace multibody {
 ///
 /// @note This class has no means to check at construction from user provided
 /// parameters whether it actually represents the unit inertia or gyration
-/// matrix of a unit-mass body. However, once a unit inertia is created, a
-/// number of operations are dissallowed to ensure unit mass.
+/// matrix of a unit-mass body. However, as previously noted, once a unit
+/// inertia is created, a number of operations are dissallowed to ensure the
+/// unit-mass invariant.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -77,7 +78,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// Given `this` rotational inertia `G_Po_F` about `Po` and expressed in frame
   /// `F`, this method computes the same unit inertia re-expressed in another
   /// frame `A` as `I_Po_A = R_AF * G_Po_F * (R_AF)ᵀ`.
-  /// This operation is performed in-place, modifying the original object.
+  /// This operation is performed in place, modifying the original object.
   /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
   /// @returns A reference to `this` unit inertia about `Po` but now
   ///          re-expressed in frame `A`.
@@ -104,7 +105,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// For a central unit inertia `G_Bcm_E` computed about a body's center of
   /// mass `Bcm` and expressed in a frame `E`, this method shifts this inertia
   /// using the parallel axis theorem to be computed about a point `Qo`.
-  /// This operation is performed in-place, modifying the original object.
+  /// This operation is performed in place, modifying the original object.
   /// @param[in] p_BcmQo_E A vector from the body's center of mass `Bcm` to
   ///                      point `Qo` expressed in the same frame `E` in which
   ///                      `this` inertia is expressed.
@@ -127,13 +128,12 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia<T>(*this).ShiftFromCenterOfMassInPlace(p_BcmQo_E);
   }
 
-  /// @name UnitInertia's for common 3D objects.
+  /// @name Unit inertiae for common 3D objects.
   /// The following methods assist in the construction of UnitInertia instances
   /// for common 3D objects such as boxes, spheres, rods and others.
-  /// The UnitInertias computed correspond to objects with unit mass and most
-  /// of the times are computed about these objects centers of mass and in a
-  /// frame aligned with their principal axes.
-  /// To construct general UnitInertia's use these methods along with
+  /// This method computes a UnitInertia a body with unit mass, typically around
+  /// its center of mass, and in a frame aligned with its principal axes.
+  /// To construct general UnitInertia objects use these methods along with
   /// ShiftFromCenterOfMassInPlace() to move the point about which the inertia
   /// is computed and use ReExpress() to express in a different frame.
   /// A non-unit RotationalInertia is obtained by multiplying the generated

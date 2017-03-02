@@ -183,6 +183,9 @@ class RotationalInertia {
 
   /// Disallow the substraction of another inertia from `this` inertia since
   /// this operation might lead to invalid (non physical) results.
+  // TODO(amcastro-tri): Consider allowing this operation to, for instance,
+  // compute the inertia for an object that has a hole of a known shape in it.
+  // For example, a block with a cylindrical hole.
   RotationalInertia<T>& operator-=(const RotationalInertia<T>&) = delete;
 
   /// In-place multiplication of `this` rotational inertia by a `scalar`
@@ -326,6 +329,10 @@ class RotationalInertia {
     //   d1 >= d2 - (slop - slop⁻)
     // which allows the >= comparision to succeed even for this degenerate case
     // since (slop - slop⁻) > 0.
+    //
+    // Another case that requires to account for slop is when the addition of
+    // two moments equals to the third one. Consider the case d0 = d1 = 50
+    // and d2 = 100.
     if (!(d[0] + d[1] >= d[2] - slop &&
           d[0] + d[2] >= d[1] - slop &&
           d[1] + d[2] >= d[0] - slop)) return false;
