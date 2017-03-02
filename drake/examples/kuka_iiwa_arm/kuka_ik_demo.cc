@@ -12,6 +12,7 @@
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_path.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -38,7 +39,7 @@ int main(int argc, const char* argv[]) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
 
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      GetDrakePath() + "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
       multibody::joints::kFixed, tree.get());
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
@@ -89,7 +90,7 @@ int main(int argc, const char* argv[]) {
 
 
   const int kNumTimesteps = 5;
-  double t[kNumTimesteps] = { 0.0, 2.0, 5.0, 7.0, 9.0 };
+  std::vector<double> t = { 0.0, 2.0, 5.0, 7.0, 9.0 };
   MatrixXd q0(tree->get_num_positions(), kNumTimesteps);
   for (int i = 0; i < kNumTimesteps; i++) {
     q0.col(i) = zero_conf;
@@ -102,13 +103,13 @@ int main(int argc, const char* argv[]) {
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
   IKoptions ikoptions(tree.get());
-  int info[kNumTimesteps];
+  std::vector<int> info;
   MatrixXd q_sol(tree->get_num_positions(), kNumTimesteps);
   std::vector<std::string> infeasible_constraint;
 
-  inverseKinPointwise(tree.get(), kNumTimesteps, t, q0, q0,
+  inverseKinPointwise(tree.get(), kNumTimesteps, t.data(), q0, q0,
                       constraint_array.size(), constraint_array.data(),
-                      ikoptions, &q_sol, info, &infeasible_constraint);
+                      ikoptions, &q_sol, info.data(), &infeasible_constraint);
   bool info_good = true;
   for (int i = 0; i < kNumTimesteps; ++i) {
     printf("INFO[%d] = %d ", i, info[i]);
@@ -123,33 +124,7 @@ int main(int argc, const char* argv[]) {
     return 1;
   }
 
-  robotlocomotion::robot_plan_t plan{};
-  plan.utime = 0;  // I (sam.creasey) don't think this is used?
-  plan.robot_name = "iiwa";  // Arbitrary, probably ignored
-  plan.num_states = kNumTimesteps;
-  const bot_core::robot_state_t default_robot_state{};
-  plan.plan.resize(kNumTimesteps, default_robot_state);
-  plan.plan_info.resize(kNumTimesteps, 0);
-  /// Encode the q_sol returned for each timestep into the vector of
-  /// robot states.
-  for (int i = 0; i < kNumTimesteps; i++) {
-    bot_core::robot_state_t& step = plan.plan[i];
-    step.utime = t[i] * 1e6;
-    step.num_joints = 7;
-    for (int j = 0; j < step.num_joints; j++) {
-      step.joint_name.push_back(tree->get_position_name(j));
-      step.joint_position.push_back(q_sol(j, i));
-      step.joint_velocity.push_back(0);
-      step.joint_effort.push_back(0);
-    }
-    plan.plan_info[i] = info[i];
-  }
-  plan.num_grasp_transitions = 0;
-  plan.left_arm_control_type = plan.POSITION;
-  plan.right_arm_control_type = plan.NONE;
-  plan.left_leg_control_type = plan.NONE;
-  plan.right_leg_control_type = plan.NONE;
-  plan.num_bytes = 0;
+  robotlocomotion::robot_plan_t plan = EncodeKeyFrames(*tree, t, info, q_sol);
 
   lcm::LCM lcm;
   return lcm.publish(kLcmPlanChannel, &plan);

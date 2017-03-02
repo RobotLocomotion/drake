@@ -20,6 +20,7 @@ drake_cc_library(
         ":leaf_system",
         ":parameters",
         ":single_output_vector_source",
+        ":siso_vector_system",
         ":sparsity_matrix",
         ":state",
         ":system",
@@ -57,6 +58,18 @@ drake_cc_library(
     deps = [
         ":vector",
         "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "value_checker",
+    srcs = [],
+    hdrs = ["value_checker.h"],
+    visibility = [":__subpackages__"],
+    deps = [
+        ":value",
+        "//drake/common",
+        "//drake/common:nice_type_name",
     ],
 )
 
@@ -155,6 +168,7 @@ drake_cc_library(
     deps = [
         ":output_port_listener_interface",
         ":value",
+        ":value_checker",
         ":vector",
         "//drake/common",
     ],
@@ -226,7 +240,9 @@ drake_cc_library(
     hdrs = ["leaf_system.h"],
     deps = [
         ":leaf_context",
+        ":sparsity_matrix",
         ":system",
+        ":value_checker",
         "//drake/common",
         "//drake/common:number_traits",
     ],
@@ -292,6 +308,15 @@ drake_cc_library(
     name = "single_output_vector_source",
     srcs = ["single_output_vector_source.cc"],
     hdrs = ["single_output_vector_source.h"],
+    deps = [
+        ":leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "siso_vector_system",
+    srcs = ["siso_vector_system.cc"],
+    hdrs = ["siso_vector_system.h"],
     deps = [
         ":leaf_system",
     ],
@@ -464,6 +489,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "value_checker_test",
+    deps = [
+        ":value_checker",
+    ],
+)
+
+drake_cc_googletest(
     name = "sparsity_matrix_test",
     deps = [
         ":leaf_system",
@@ -475,6 +507,13 @@ drake_cc_googletest(
     name = "single_output_vector_source_test",
     deps = [
         ":single_output_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "siso_vector_system_test",
+    deps = [
+        ":siso_vector_system",
     ],
 )
 

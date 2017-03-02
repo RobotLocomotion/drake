@@ -38,7 +38,7 @@ if(lcm_FOUND)
   target_link_libraries(iiwa_world_demo
       drakeKukaIiwaWorld)
   drake_add_test(
-      NAME iiwa_world_demo COMMAND iiwa_world_demo -simulation_sec 0.1)
+      NAME iiwa_world_demo COMMAND iiwa_world_demo --simulation_sec 0.1)
 
   add_executable(controlled_iiwa_world_demo controlled_iiwa_world_demo.cc)
   target_link_libraries(controlled_iiwa_world_demo
@@ -46,6 +46,6 @@ if(lcm_FOUND)
   if(snopt_FOUND)
     drake_add_test(
         NAME controlled_iiwa_world_demo
-        COMMAND controlled_iiwa_world_demo -simulation_sec 0.1)
+        COMMAND controlled_iiwa_world_demo --simulation_sec 0.1)
   endif()
 endif()

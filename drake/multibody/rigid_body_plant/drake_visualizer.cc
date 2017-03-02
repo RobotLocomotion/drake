@@ -31,7 +31,7 @@ void DrakeVisualizer::set_publish_period(double period) {
   LeafSystem<double>::DeclarePublishPeriodSec(period);
 }
 
-void DrakeVisualizer::ReplayCachedSimulation() {
+void DrakeVisualizer::ReplayCachedSimulation() const {
   if (log_ != nullptr) {
     // Build piecewise polynomial
     auto times = log_->sample_times();
@@ -60,7 +60,7 @@ void DrakeVisualizer::ReplayCachedSimulation() {
     }
     auto func = PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots);
 
-    RunPlaybackLoop(func, breaks[breaks.size() - 1]);
+    PlaybackTrajectory(func);
   } else {
     drake::log()->warn(
         "DrakeVisualizer::ReplayCachedSimulation() called on instance that "
@@ -69,20 +69,19 @@ void DrakeVisualizer::ReplayCachedSimulation() {
   }
 }
 
-void DrakeVisualizer::RunPlaybackLoop(
-    const PiecewisePolynomial<double>& trajectory,
-    const double kMaxTime) const {
+void DrakeVisualizer::PlaybackTrajectory(
+    const PiecewisePolynomial<double>& input_trajectory) const {
   using Clock = std::chrono::steady_clock;
   using Duration = std::chrono::duration<double>;
   using TimePoint = std::chrono::time_point<Clock, Duration>;
 
   // Target frame length at 60 Hz playback rate.
   const double kFrameLength = 1 / 60.0;
-  double sim_time = 0;
+  double sim_time = input_trajectory.getStartTime();
   TimePoint prev_time = Clock::now();
   BasicVector<double> data(log_->get_input_size());
-  while (sim_time < kMaxTime) {
-    data.set_value(trajectory.value(sim_time));
+  while (sim_time < input_trajectory.getEndTime()) {
+    data.set_value(input_trajectory.value(sim_time));
 
     // Translates the input vector into an array of bytes representing an LCM
     // message.
@@ -103,7 +102,7 @@ void DrakeVisualizer::RunPlaybackLoop(
 
   // Final evaluation is at the final time stamp, guaranteeing the final state
   // is visualized.
-  data.set_value(trajectory.value(kMaxTime));
+  data.set_value(input_trajectory.value(input_trajectory.getEndTime()));
   std::vector<uint8_t> message_bytes;
   draw_message_translator_.Serialize(sim_time, data,
                                      &message_bytes);

@@ -109,7 +109,7 @@ LcmSubscriberSystem::AllocateOutput(const Context<double>& context) const {
   } else {
     // For abstract-valued output, we need to roll our own.
     auto output = std::make_unique<LeafSystemOutput<double>>();
-    output->get_mutable_ports()->emplace_back(
+    output->add_port(
         std::make_unique<OutputPort>(serializer_->CreateDefaultValue()));
     return std::unique_ptr<SystemOutput<double>>(output.release());
   }

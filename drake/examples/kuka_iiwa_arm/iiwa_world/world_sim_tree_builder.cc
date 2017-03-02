@@ -96,6 +96,12 @@ int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
         weld_to_frame, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
+
+  ModelInstanceInfo<T> info;
+  info.model_path = drake::GetDrakePath() + model_map_[model_name];
+  info.instance_id = model_instance_id;
+  info.world_offset = weld_to_frame;
+  instance_id_to_model_info_[model_instance_id] = info;
   return model_instance_id;
 }
 

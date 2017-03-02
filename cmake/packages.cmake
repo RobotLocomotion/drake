@@ -3,6 +3,8 @@ option(FIND_PACKAGE_STRICT
   ON)
 mark_as_advanced(FIND_PACKAGE_STRICT)
 
+set(DRAKE_DEPENDENCIES)
+
 #------------------------------------------------------------------------------
 # Find and load settings from an external project. <PACKAGE>_FOUND will be set
 # to indicate whether the package was found.
@@ -60,6 +62,10 @@ macro(drake_find_package PACKAGE)
   if(NOT ${PACKAGE}_FOUND AND FIND_PACKAGE_STRICT AND WITH_${dfp_package_upper})
     message(FATAL_ERROR
       "WITH_${dfp_package_upper} is enabled, but could NOT find ${PACKAGE}")
+  endif()
+
+  if(NOT DFP_PKG_CONFIG AND ${PACKAGE}_FOUND)
+    list(APPEND DRAKE_DEPENDENCIES ${PACKAGE})
   endif()
 
   unset(dfp_package_upper)

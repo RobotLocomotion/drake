@@ -94,6 +94,7 @@ drake_cc_library(
         ":snopt_solver",
         "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:monomial",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
@@ -143,6 +144,26 @@ drake_cc_library(
         ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
         "@gtest//:main",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_program_examples",
+    testonly = 1,
+    srcs = ["test/linear_program_examples.cc"],
+    hdrs = ["test/linear_program_examples.h"],
+    deps = [
+        ":optimization_examples",
+    ],
+)
+
+drake_cc_library(
+    name = "quadratic_program_examples",
+    testonly = 1,
+    srcs = ["test/quadratic_program_examples.cc"],
+    hdrs = ["test/quadratic_program_examples.h"],
+    deps = [
+        ":optimization_examples",
     ],
 )
 
@@ -308,7 +329,23 @@ drake_cc_googletest(
         ":gurobi_solver",
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":linear_program_examples",
+        ":quadratic_program_examples",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "ipopt_solver_test",
+    srcs = [
+        "test/ipopt_solver_test.cc",
+    ],
+    deps = [
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
         ":optimization_examples",
+        ":quadratic_program_examples",
         "//drake/common:eigen_matrix_compare",
     ],
 )
@@ -346,6 +383,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
     ],
 )
 
@@ -385,6 +423,21 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":optimization_examples",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "snopt_solver_test",
+    srcs = [
+        "test/snopt_solver_test.cc",
+    ],
+    deps = [
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":quadratic_program_examples",
         ":optimization_examples",
         "//drake/common:eigen_matrix_compare",
     ],

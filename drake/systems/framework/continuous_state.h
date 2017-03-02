@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -34,6 +35,7 @@ class ContinuousState {
     generalized_velocity_.reset(new Subvector<T>(state_.get()));
     misc_continuous_state_.reset(
         new Subvector<T>(state_.get(), 0, state_->size()));
+    DRAKE_ASSERT_VOID(DemandInvariants());
   }
 
   /// Constructs a ContinuousState that exposes second-order structure.
@@ -71,28 +73,7 @@ class ContinuousState {
     generalized_velocity_.reset(new Subvector<T>(state_.get(), num_q, num_v));
     misc_continuous_state_.reset(
         new Subvector<T>(state_.get(), num_q + num_v, num_z));
-  }
-
-  /// Constructs a continuous state that exposes second-order structure, with
-  /// no particular constraints on the layout.
-  ///
-  /// @param state The entire continuous state.
-  /// @param q The subset of state that is generalized position.
-  /// @param v The subset of state that is generalized velocity.
-  /// @param z The subset of state that is neither position nor velocity.
-  ContinuousState(std::unique_ptr<VectorBase<T>> state,
-                  std::unique_ptr<VectorBase<T>> q,
-                  std::unique_ptr<VectorBase<T>> v,
-                  std::unique_ptr<VectorBase<T>> z)
-      : state_(std::move(state)),
-        generalized_position_(std::move(q)),
-        generalized_velocity_(std::move(v)),
-        misc_continuous_state_(std::move(z)) {
-    const int num_q = generalized_position_->size();
-    const int num_v = generalized_velocity_->size();
-    const int n = num_q + num_v + misc_continuous_state_->size();
-    DRAKE_ASSERT(state_->size() == n);
-    DRAKE_ASSERT(num_v <= num_q);
+    DRAKE_ASSERT_VOID(DemandInvariants());
   }
 
   /// Constructs a zero-length ContinuousState.
@@ -172,6 +153,27 @@ class ContinuousState {
   /// Returns a copy of the entire continuous state vector into an Eigen vector.
   VectorX<T> CopyToVector() const { return this->get_vector().CopyToVector(); }
 
+ protected:
+  /// Constructs a continuous state that exposes second-order structure, with
+  /// no particular constraints on the layout.
+  ///
+  /// @pre The q, v, z are all views into the same storage as @p state.
+  ///
+  /// @param state The entire continuous state.
+  /// @param q The subset of state that is generalized position.
+  /// @param v The subset of state that is generalized velocity.
+  /// @param z The subset of state that is neither position nor velocity.
+  ContinuousState(std::unique_ptr<VectorBase<T>> state,
+                  std::unique_ptr<VectorBase<T>> q,
+                  std::unique_ptr<VectorBase<T>> v,
+                  std::unique_ptr<VectorBase<T>> z)
+      : state_(std::move(state)),
+        generalized_position_(std::move(q)),
+        generalized_velocity_(std::move(v)),
+        misc_continuous_state_(std::move(z)) {
+    DRAKE_ASSERT_VOID(DemandInvariants());
+  }
+
  private:
   template <typename U>
   void SetFromGeneric(const ContinuousState<U>& other) {
@@ -183,6 +185,55 @@ class ContinuousState {
     DRAKE_DEMAND(get_misc_continuous_state().size() ==
         other.get_misc_continuous_state().size());
     SetFromVector(other.CopyToVector().template cast<T>());
+  }
+
+  // Demand that the representation invariants hold.
+  void DemandInvariants() const {
+    // Nothing is nullptr.
+    DRAKE_DEMAND(!!generalized_position_);
+    DRAKE_DEMAND(!!generalized_velocity_);
+    DRAKE_DEMAND(!!misc_continuous_state_);
+
+    // The sizes are consistent.
+    const int num_q = generalized_position_->size();
+    const int num_v = generalized_velocity_->size();
+    const int num_z = misc_continuous_state_->size();
+    const int num_total = (num_q + num_v + num_z);
+    DRAKE_DEMAND(num_q >= 0);
+    DRAKE_DEMAND(num_v >= 0);
+    DRAKE_DEMAND(num_z >= 0);
+    DRAKE_DEMAND(num_v <= num_q);
+    DRAKE_DEMAND(state_->size() == num_total);
+
+    // The storage addresses of `state_` elements contain no duplicates.
+    std::unordered_set<const T*> state_element_pointers;
+    for (int i = 0; i < num_total; ++i) {
+      const T* element = &(state_->GetAtIndex(i));
+      state_element_pointers.emplace(element);
+    }
+    DRAKE_DEMAND(static_cast<int>(state_element_pointers.size()) == num_total);
+
+    // The storage addresses of (q, v, z) elements contain no duplicates, and
+    // are drawn from the set of storage addresses of `state_` elements.
+    // Therefore, the `state_` vector and (q, v, z) vectors form views into the
+    // same unique underlying data, just with different indexing.
+    std::unordered_set<const T*> qvz_element_pointers;
+    for (int i = 0; i < num_q; ++i) {
+      const T* element = &(generalized_position_->GetAtIndex(i));
+      qvz_element_pointers.emplace(element);
+      DRAKE_DEMAND(state_element_pointers.count(element) == 1);
+    }
+    for (int i = 0; i < num_v; ++i) {
+      const T* element = &(generalized_velocity_->GetAtIndex(i));
+      qvz_element_pointers.emplace(element);
+      DRAKE_DEMAND(state_element_pointers.count(element) == 1);
+    }
+    for (int i = 0; i < num_z; ++i) {
+      const T* element = &(misc_continuous_state_->GetAtIndex(i));
+      qvz_element_pointers.emplace(element);
+      DRAKE_DEMAND(state_element_pointers.count(element) == 1);
+    }
+    DRAKE_DEMAND(static_cast<int>(qvz_element_pointers.size()) == num_total);
   }
 
   // The entire continuous state vector.  May or may not own the underlying

@@ -20,6 +20,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "pose_vector",
+    srcs = ["pose_vector.cc"],
+    hdrs = ["pose_vector.h"],
+    deps = [
+        "//drake/math:geometric_transform",
+        "//drake/systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
     name = "pose_bundle",
     srcs = ["pose_bundle.cc"],
     hdrs = ["pose_bundle.h"],
@@ -46,6 +56,15 @@ drake_cc_googletest(
     deps = [
         ":pose_aggregator",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pose_vector_test",
+    deps = [
+        ":pose_vector",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
     ],
 )
 

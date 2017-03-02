@@ -11,6 +11,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/value.h"
+#include "drake/systems/framework/value_checker.h"
 
 namespace drake {
 namespace systems {
@@ -195,12 +196,16 @@ struct LeafSystemOutput : public SystemOutput<T> {
     return *ports_[index];
   }
 
-  std::vector<std::unique_ptr<OutputPort>>* get_mutable_ports() {
-    return &ports_;
+  void add_port(std::unique_ptr<AbstractValue> value) {
+    add_port(std::make_unique<OutputPort>(std::move(value)));
   }
 
-  void add_port(std::unique_ptr<AbstractValue> value) {
-    ports_.emplace_back(new OutputPort(std::move(value)));
+  void add_port(std::unique_ptr<OutputPort> port) {
+    // This is a good time to confirm that the port's value is well-formed.
+    // This check will mostly occur only once per System.
+    DRAKE_ASSERT_VOID(detail::CheckVectorValueInvariants<T>(
+        port->get_abstract_data()));
+    ports_.emplace_back(std::move(port));
   }
 
  protected:

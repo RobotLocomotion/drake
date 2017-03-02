@@ -54,7 +54,8 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
     auto tree = make_unique<RigidBodyTree<T>>();
     ModelInstanceIdTable vehicle_instance_id_table =
         drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-            drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+            drake::GetDrakePath() +
+            "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
             kFixed, nullptr /* weld to frame */, tree.get());
 
     drake::multibody::AddFlatTerrainToWorld(tree.get());
@@ -63,8 +64,6 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
 
     // Instantiates a RigidBodyPlant from the MBD model of the world.
     plant_ = builder.template AddSystem<RigidBodyPlant<T>>(move(tree));
-    plant_->set_contact_parameters(3000 /* penetration stiffness */,
-        0 /* penetration damping */, 1.0 /* friction coefficient */);
 
     // Feed in constant inputs of zero into the RigidBodyPlant.
     VectorX<T> constant_value(plant_->get_input_size());

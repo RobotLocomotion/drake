@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -177,8 +178,35 @@ class Expression {
   /** Collects variables in expression. */
   Variables GetVariables() const;
 
-  /** Checks structural equality. */
+  /** Checks structural equality.
+   *
+   * Two expressions e1 and e2 are structurally equal when they have the same
+   * internal AST(abstract-syntax tree) representation. Please note that we can
+   * have two computationally (or extensionally) equivalent expressions which
+   * are not structurally equal. For example, consider:
+   *
+   *    e1 = 2 * (x + y)
+   *    e2 = 2x + 2y
+   *
+   * Obviously, we know that e1 and e2 are evaluated to the same value for all
+   * assignments to x and y. However, e1 and e2 are not structurally equal by
+   * the definition. Note that e1 is a multiplication expression
+   * (is_multiplication(e1) is true) while e2 is an addition expression
+   * (is_addition(e2) is true).
+   *
+   * One main reason we use structural equality in EqualTo is due to
+   * Richardson's Theorem. It states that checking ∀x. E(x) = F(x) is
+   * undecidable when we allow sin, asin, log, exp in E and F. Read
+   * https://en.wikipedia.org/wiki/Richardson%27s_theorem for details.
+   *
+   * Note that for polynomial cases, you can use Expand method and check if two
+   * polynomial expressions p1 and p2 are computationally equal. To do so, you
+   * check the following:
+   *
+   *     (p1.Expand() - p2.Expand()).EqualTo(0).
+   */
   bool EqualTo(const Expression& e) const;
+
   /** Provides lexicographical ordering between expressions.
       This function is used as a compare function in map<Expression> and
       set<Expression> via std::less<drake::symbolic::Expression>. */
@@ -197,6 +225,15 @@ class Expression {
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
   double Evaluate(const Environment& env = Environment{}) const;
+
+  /** Expands out products and positive integer powers in expression. For
+   * example, <tt>(x + 1) * (x - 1)</tt> is expanded to <tt>x^2 - 1</tt> and
+   * <tt>(x + y)^2</tt> is expanded to <tt>x^2 + 2xy + y^2</tt>. Note that
+   * Expand applies recursively to sub-expressions. For instance, <tt>sin(2 * (x
+   * + y))</tt> is expanded to <tt>sin(2x + 2y)</tt>.
+   * @throws std::runtime_error if NaN is detected during expansion.
+   */
+  Expression Expand() const;
 
   /** Returns a copy of this expression replacing all occurrences of @p var
    * with @p e.
@@ -769,3 +806,29 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
 
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+namespace drake {
+namespace symbolic {
+/// Computes the Jacobian matrix J of the vector function @p f with respect to
+/// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
+///
+///  For example, Jacobian([x * cos(y), x * sin(y), x^2], {x, y}) returns the
+///  following 3x2 matrix:
+///  <pre>
+///  = |cos(y)   -x * sin(y)|
+///    |sin(y)    x * cos(y)|
+///    | 2 * x             0|
+///  </pre>
+///
+/// @pre {@p vars is non-empty}.
+MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
+                             const std::vector<Variable>& vars);
+
+/// Computes the Jacobian matrix J of the vector function @p f with respect to
+/// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
+///
+/// @pre {@p vars is non-empty}.
+MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
+                             const Eigen::Ref<const VectorX<Variable>>& vars);
+}  // namespace symbolic
+}  // namespace drake

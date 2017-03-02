@@ -217,7 +217,6 @@ drake_cc_library(
 drake_cc_library(
     name = "reinit_after_move",
     hdrs = ["reinit_after_move.h"],
-    linkstatic = 1,
 )
 
 drake_cc_library(
@@ -234,7 +233,10 @@ drake_cc_library(
     # TODO(jwnimmer-tri) Ideally, gflags BUILD would do this for us.  Figure
     # out what's going on.  Definitely don't let "-pthread" get copy-pasta'd
     # throughout our code.
-    linkopts = ["-pthread"],
+    linkopts = select({
+        "//tools:linux": ["-pthread"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":common",
         "@gflags//:gflags",
@@ -279,6 +281,16 @@ drake_cc_googletest(
     name = "cond_test",
     deps = [
         ":cond",
+    ],
+)
+
+drake_cc_googletest(
+    name = "decompose_polynomial_test",
+    deps = [
+        ":common",
+        ":monomial",
+        ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
@@ -418,6 +430,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_expansion_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_expression_test",
     deps = [
         ":common",
@@ -428,6 +449,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_expression_differentiation_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_expression_jacobian_test",
     deps = [
         ":common",
         ":symbolic",

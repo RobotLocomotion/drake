@@ -7,7 +7,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/sensors/gyroscope_output.h"
@@ -35,11 +34,10 @@ class TestGyroscope : public ::testing::Test {
   TestGyroscope() : tree_(make_unique<RigidBodyTree<double>>()) {}
 
   void SetUp() override {
-    // Adds a box to the RigidBodyTree and obtains its model instance ID.
-    const parsers::ModelInstanceIdTable model_instance_id_table =
-        AddModelInstanceFromUrdfFileToWorld(
-            GetDrakePath() + "/multibody/models/box.urdf",
-            drake::multibody::joints::kQuaternion, tree_.get());
+    // Adds a box to the RigidBodyTree.
+    AddModelInstanceFromUrdfFileToWorld(
+        GetDrakePath() + "/multibody/models/box.urdf",
+        drake::multibody::joints::kQuaternion, tree_.get());
 
     // Adds a frame to the RigidBodyTree called "box frame" that is coincident
     // with the "box" body within the RigidBodyTree.
@@ -85,14 +83,6 @@ TEST_F(TestGyroscope, TestFreeFall) {
       dut_->get_input_port().get_index(),
       make_unique<BasicVector<double>>(state_vector));
 
-  auto xc_vector = make_unique<BasicVector<double>>(
-      VectorX<double>::Zero(num_states_).eval());
-  auto xc = make_unique<ContinuousState<double>>(
-      move(xc_vector), num_positions_, num_velocities_,
-      0 /* num other variables */);
-
-  context_->set_continuous_state(move(xc));
-
   unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput(*context_);
   ASSERT_EQ(output->get_num_ports(), 1);
   dut_->CalcOutput(*context_, output.get());
@@ -128,14 +118,6 @@ TEST_F(TestGyroscope, TestNonZeroRotationalVelocity) {
   context_->FixInputPort(
       dut_->get_input_port().get_index(),
       make_unique<BasicVector<double>>(state_vector));
-
-  auto xc_vector = make_unique<BasicVector<double>>(
-      VectorX<double>::Zero(num_states_).eval());
-  auto xc = make_unique<ContinuousState<double>>(
-      move(xc_vector), num_positions_, num_velocities_,
-      0 /* num other variables */);
-
-  context_->set_continuous_state(move(xc));
 
   unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput(*context_);
   ASSERT_EQ(output->get_num_ports(), 1);

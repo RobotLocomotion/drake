@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
+
 constexpr int kMaxNumCollisionFilterGroups = 128;
 
 // forward declaration
@@ -58,6 +60,8 @@ constexpr bitmask kDefaultGroup(1);
 template <typename T>
 class CollisionFilterGroup {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterGroup)
+
   /**
    Default constructor required by use in std::unordered_map.
    */
@@ -135,6 +139,8 @@ class CollisionFilterGroup {
 template <typename T>
 class CollisionFilterGroupManager {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CollisionFilterGroupManager)
+
   /** Default constructor. */
   CollisionFilterGroupManager() {}
 

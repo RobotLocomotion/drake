@@ -28,7 +28,8 @@ namespace toyota_hsrb {
  */
 std::unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
     const std::string& urdf_string, double penetration_stiffness,
-    double penetration_damping, double friction_coefficient,
+    double penetration_dissipation, double static_friction_coefficient,
+    double dynamic_friction_coefficient, double v_stiction_tolerance,
     lcm::DrakeLcmInterface* lcm, systems::RigidBodyPlant<double>** plant);
 
 /**

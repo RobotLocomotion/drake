@@ -5,14 +5,14 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/automotive/dev/endless_road_car.h"
+#include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
 #include "drake/automotive/dev/endless_road_oracle.h"
-#include "drake/automotive/endless_road_car_to_euler_floating_joint.h"
+#include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/endless_road_car_state_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
 #include "drake/automotive/maliput/utility/generate_urdf.h"
-#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
@@ -33,9 +33,11 @@
 #include "drake/systems/primitives/multiplexer.h"
 
 namespace drake {
-namespace automotive {
 
-using drake::multibody::joints::kRollPitchYaw;
+using multibody::joints::kFixed;
+using multibody::joints::kRollPitchYaw;
+
+namespace automotive {
 
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator()
@@ -86,7 +88,8 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
 
   builder_->Connect(*command_subscriber, *simple_car);
-  builder_->Connect(*simple_car, *coord_transform);
+  builder_->Connect(simple_car->state_output(),
+                    coord_transform->get_input_port(0));
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
   return AddSdfModel(sdf_filename, coord_transform, model_name);
@@ -109,9 +112,8 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
   builder_->Connect(*trajectory_car, *coord_transform);
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_filename, coord_transform, ""/*model_name*/);
+  return AddSdfModel(sdf_filename, coord_transform, ""/* model_name */);
 }
-
 
 template <typename T>
 int AutomotiveSimulator<T>::AddEndlessRoadCar(
@@ -162,6 +164,15 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
 }
 
 template <typename T>
+const maliput::api::RoadGeometry* AutomotiveSimulator<T>::SetRoadGeometry(
+    std::unique_ptr<const maliput::api::RoadGeometry> road) {
+  DRAKE_DEMAND(!started_);
+  road_ = std::move(road);
+  GenerateAndLoadRoadNetworkUrdf();
+  return road_.get();
+}
+
+template <typename T>
 const maliput::utility::InfiniteCircuitRoad*
 AutomotiveSimulator<T>::SetRoadGeometry(
     std::unique_ptr<const maliput::api::RoadGeometry> road,
@@ -172,17 +183,21 @@ AutomotiveSimulator<T>::SetRoadGeometry(
   endless_road_ = std::make_unique<maliput::utility::InfiniteCircuitRoad>(
       maliput::api::RoadGeometryId({"ForeverRoad"}),
       road_.get(), start, path);
+  GenerateAndLoadRoadNetworkUrdf();
+  return endless_road_.get();
+}
 
+template <typename T>
+void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
   maliput::utility::GenerateUrdfFile(road_.get(),
                                      "/tmp", road_->id().id,
                                      maliput::utility::ObjFeatures());
-  std::string urdf_filepath = std::string("/tmp/") + road_->id().id + ".urdf";
+  const std::string urdf_filepath =
+      std::string("/tmp/") + road_->id().id + ".urdf";
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf_filepath,
       drake::multibody::joints::kFixed,
       rigid_body_tree_.get());
-
-  return endless_road_.get();
 }
 
 
@@ -248,7 +263,7 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
       builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
           std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE", translator,
           lcm_.get());
-  builder_->Connect(system, *publisher);
+  builder_->Connect(system.state_output(), publisher->get_input_port(0));
 }
 
 template <typename T>

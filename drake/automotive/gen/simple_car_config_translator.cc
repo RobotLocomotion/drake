@@ -28,8 +28,7 @@ void SimpleCarConfigTranslator::Serialize(
   message.max_abs_steering_angle = vector->max_abs_steering_angle();
   message.max_velocity = vector->max_velocity();
   message.max_acceleration = vector->max_acceleration();
-  message.velocity_lookahead_time = vector->velocity_lookahead_time();
-  message.velocity_kp = vector->velocity_kp();
+  message.velocity_limit_kp = vector->velocity_limit_kp();
   const int lcm_message_length = message.getEncodedSize();
   lcm_message_bytes->resize(lcm_message_length);
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
@@ -52,8 +51,7 @@ void SimpleCarConfigTranslator::Deserialize(
   my_vector->set_max_abs_steering_angle(message.max_abs_steering_angle);
   my_vector->set_max_velocity(message.max_velocity);
   my_vector->set_max_acceleration(message.max_acceleration);
-  my_vector->set_velocity_lookahead_time(message.velocity_lookahead_time);
-  my_vector->set_velocity_kp(message.velocity_kp);
+  my_vector->set_velocity_limit_kp(message.velocity_limit_kp);
 }
 
 }  // namespace automotive

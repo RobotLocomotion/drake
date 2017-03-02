@@ -6,10 +6,10 @@
 #include "bot_core/robot_state_t.hpp"
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_status_translator_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_decoder_system.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -30,23 +30,29 @@ namespace qp_inverse_dynamics {
 // The overall input and output is a LCM message of type
 // bot_core::robot_state_t and bot_core::atlas_command_t.
 void controller_loop() {
-  // Loads model.
-  std::string urdf = drake::GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
+  const std::string kModelFileName =
+      drake::GetDrakePath() +
+      "/examples/Valkyrie/urdf/urdf/"
       "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
+  const std::string kAliasGroupPath = drake::GetDrakePath() +
+                                      "/examples/QPInverseDynamicsForHumanoids/"
+                                      "config/valkyrie.alias_groups";
+
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      urdf, multibody::joints::kRollPitchYaw, robot.get());
+      kModelFileName, multibody::joints::kRollPitchYaw, robot.get());
 
   systems::DiagramBuilder<double> builder;
 
   lcm::DrakeLcm lcm;
 
-  RobotStateDecoderSystem* rs_msg_to_rs =
-      builder.AddSystem(std::make_unique<RobotStateDecoderSystem>(*robot));
+  RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs =
+      builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(
+          *robot, kAliasGroupPath));
   PlanEvalSystem* plan_eval =
       builder.AddSystem(std::make_unique<PlanEvalSystem>(*robot));
-  QPControllerSystem* qp_con =
-      builder.AddSystem(std::make_unique<QPControllerSystem>(*robot));
+  QpControllerSystem* qp_con =
+      builder.AddSystem(std::make_unique<QpControllerSystem>(*robot, 0.003));
   JointLevelControllerSystem* joint_con =
       builder.AddSystem<JointLevelControllerSystem>(*robot);
 

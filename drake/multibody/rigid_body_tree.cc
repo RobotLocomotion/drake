@@ -1563,6 +1563,35 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree<T>::centerOfMass(
 }
 
 template <typename T>
+drake::Matrix6<T> RigidBodyTree<T>::LumpedSpatialInertiaInWorldFrame(
+      const KinematicsCache<T>& cache,
+      const std::set<int>& model_instance_id_set) const {
+  drake::Matrix6<T> I_W = drake::Matrix6<T>::Zero();
+  for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
+    const RigidBody<T>& body = *bodies[i];
+    if (is_part_of_model_instances(body, model_instance_id_set)) {
+      const Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, body);
+      I_W += transformSpatialInertia(
+          X_WB, body.get_spatial_inertia().template cast<T>());
+    }
+  }
+  return I_W;
+}
+
+template <typename T>
+drake::Matrix6<T> RigidBodyTree<T>::LumpedSpatialInertiaInWorldFrame(
+      const KinematicsCache<T>& cache,
+      const std::vector<const RigidBody<T>*>& bodies_of_interest) const {
+  drake::Matrix6<T> I_W = drake::Matrix6<T>::Zero();
+  for (const RigidBody<T>* body : bodies_of_interest) {
+    const Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, *body);
+    I_W += transformSpatialInertia(
+        X_WB, body->get_spatial_inertia().template cast<T>());
+  }
+  return I_W;
+}
+
+template <typename T>
 VectorX<T> RigidBodyTree<T>::transformVelocityToQDot(
     const KinematicsCache<T>& cache,
     const VectorX<T>& v) {
@@ -3716,4 +3745,3 @@ RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffUpTo73d>() const;
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyTree<double>;
-template class RigidBodyTree<AutoDiffXd>;

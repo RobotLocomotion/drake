@@ -194,6 +194,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--duration", type=float, default=float('Inf'),
                         help="demo run duration in seconds")
+    parser.add_argument("--steering-command-driver", action='store_true',
+                        dest='launch_steering_command_driver', default=True,
+                        help="launch steering_command_driver (default)")
+    parser.add_argument("--no-steering-command-driver", action='store_false',
+                        dest='launch_steering_command_driver', default=True,
+                        help="don't launch steering_command_driver")
     parser.add_argument("--visualizer", action='store_true',
                         dest='launch_visualizer',
                         default=True, help="launch drake-visualizer (default)")
@@ -204,6 +210,10 @@ def main():
                         default=False,
                         help="print commands instead of running them")
     args, tail = parser.parse_known_args()
+
+    # TODO(jwnimmer-tri) Remove this magic once dev_demo is gone.
+    if '-road_path' in tail:
+        demo_path = "drake/automotive/dev_demo"
 
     if '--help' in tail:
         parser.print_help(file=sys.stderr)
@@ -230,7 +240,9 @@ def main():
                 wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')
 
         the_launcher.launch([demo_path] + tail)
-        the_launcher.launch([steering_command_driver_path])
+
+        if args.launch_steering_command_driver:
+            the_launcher.launch([steering_command_driver_path])
 
         the_launcher.wait(args.duration)
 

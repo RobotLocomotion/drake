@@ -16,7 +16,7 @@ class SplineInformation : public PiecewisePolynomialBase {
   virtual ~SplineInformation() {}
 
   SplineInformation(std::vector<int> const& segment_polynomial_orders,
-                    std::vector<double> const& segment_times);
+                    std::vector<double> const& breaks);
 
   virtual int getSegmentPolynomialDegree(int segment_number, Eigen::Index row,
                                          Eigen::Index cols) const;

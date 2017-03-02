@@ -17,6 +17,9 @@ namespace maliput {
 namespace dragway {
 
 /// Dragway's implementation of api::RoadGeometry.
+///
+/// To understand the characteristics of the geometry, consult the
+/// dragway::Segment and dragway::Lane detailed class overview docs.
 class RoadGeometry final : public api::RoadGeometry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
@@ -65,12 +68,23 @@ class RoadGeometry final : public api::RoadGeometry {
   const api::BranchPoint* do_branch_point(int index) const final;
 
   api::RoadPosition DoToRoadPosition(
-      const api::GeoPosition& geo_pos,
-      const api::RoadPosition& hint) const final;
+      const api::GeoPosition& geo_position,
+      const api::RoadPosition* hint,
+      api::GeoPosition* nearest_position,
+      double* distance) const final;
 
   double do_linear_tolerance() const final { return linear_tolerance_; }
 
   double do_angular_tolerance() const final { return angular_tolerance_; }
+
+  // Returns true iff `geo_pos` is "on" the dragway. It is on the dragway iff
+  // `geo_pos.x` and `geo_pos.y` fall within the dragway's driveable region.
+  bool IsGeoPositionOnDragway(const api::GeoPosition& geo_pos) const;
+
+  // Returns the index of the lane on which the provided `geo_pos` resides. This
+  // method requires that the provided `geo_pos` be on the dragway as determined
+  // by IsGeoPositionOnDragway().
+  int GetLaneIndex(const api::GeoPosition& geo_pos) const;
 
   const api::RoadGeometryId id_;
   const double linear_tolerance_{};

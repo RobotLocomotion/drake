@@ -7,6 +7,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/prismatic_joint.h"
@@ -136,8 +137,8 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
       for (double yaw = 0; yaw <= M_PI_2; yaw += kAngleInc) {
         // Get the mutable state.
         VectorBase<double>* xc = context->get_mutable_state()
-                                        ->get_mutable_continuous_state()
-                                        ->get_mutable_generalized_position();
+                                     ->get_mutable_continuous_state()
+                                     ->get_mutable_generalized_position();
 
         // Update the orientation.
         const Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitZ()) *
@@ -160,10 +161,10 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
         // derivative code is correct. See #4121.
 
         // Test q * qdot near zero.
-         Quaterniond qdot(positions_derivatives.GetAtIndex(3),
-                          positions_derivatives.GetAtIndex(4),
-                          positions_derivatives.GetAtIndex(5),
-                          positions_derivatives.GetAtIndex(6));
+        Quaterniond qdot(positions_derivatives.GetAtIndex(3),
+                         positions_derivatives.GetAtIndex(4),
+                         positions_derivatives.GetAtIndex(5),
+                         positions_derivatives.GetAtIndex(6));
         DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-15);
 
         // Map time derivative of generalized configuration back to generalized
@@ -188,7 +189,8 @@ class KukaArmTest : public ::testing::Test {
   void SetUp() override {
     auto tree = make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+        drake::GetDrakePath() +
+        "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
         drake::multibody::joints::kFixed, nullptr /* weld to frame */,
         tree.get());
 
@@ -233,9 +235,9 @@ TEST_F(KukaArmTest, SetDefaultState) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->FixInputPort(kuka_plant_->actuator_command_input_port().get_index(),
-                         make_unique<BasicVector<double>>(
-                             kuka_plant_->get_num_actuators()));
+  context_->FixInputPort(
+      kuka_plant_->actuator_command_input_port().get_index(),
+      make_unique<BasicVector<double>>(kuka_plant_->get_num_actuators()));
 
   // Asserts that for this case the zero configuration corresponds to a state
   // vector with all entries equal to zero.
@@ -267,18 +269,18 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_EQ(kNumStates_, kuka_plant_->get_num_states(0));
   ASSERT_EQ(kNumActuators_, kuka_plant_->get_num_actuators());
   ASSERT_EQ(kNumActuators_, kuka_plant_->get_num_actuators(0));
-  ASSERT_EQ(kNumActuators_,
-      kuka_plant_->model_instance_actuator_command_input_port(
-          kModelInstanceId).size());
+  ASSERT_EQ(
+      kNumActuators_,
+      kuka_plant_->model_instance_actuator_command_input_port(kModelInstanceId)
+          .size());
 
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
   context_->FixInputPort(
-      kuka_plant_->model_instance_actuator_command_input_port(
-                       kModelInstanceId).get_index(),
-                       make_unique<BasicVector<double>>(
-                           kuka_plant_->get_num_actuators()));
+      kuka_plant_->model_instance_actuator_command_input_port(kModelInstanceId)
+          .get_index(),
+      make_unique<BasicVector<double>>(kuka_plant_->get_num_actuators()));
 
   // Sets the state to a non-zero value.
   VectorXd desired_angles(kNumPositions_);
@@ -306,8 +308,9 @@ TEST_F(KukaArmTest, EvalOutput) {
 
   // Check that the per-instance port (we should only have one) equals
   // the expected state.
-  const int output_index = kuka_plant_->
-      model_instance_state_output_port(kModelInstanceId).get_index();
+  const int output_index =
+      kuka_plant_->model_instance_state_output_port(kModelInstanceId)
+          .get_index();
   const BasicVector<double>* instance_output =
       output_->get_vector_data(output_index);
   ASSERT_NE(nullptr, instance_output);
@@ -392,8 +395,9 @@ GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
 double GetPrismaticJointLimitAccel(double position, double applied_force) {
   // Build two links connected by a limited prismatic joint.
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  AddModelInstancesFromSdfFile(drake::GetDrakePath() +
-      "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
+  AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() +
+          "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
       kFixed, nullptr /* weld to frame */, tree.get());
   RigidBodyPlant<double> plant(move(tree));
 
@@ -489,7 +493,7 @@ GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/three_dof_robot.urdf",
+          "/multibody/test/rigid_body_tree/three_dof_robot.urdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree_ptr.get());
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
@@ -497,9 +501,8 @@ GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
       Vector3d(1., 1., 0));
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/four_dof_robot.urdf",
-      drake::multibody::joints::kFixed, weld_to_frame,
-      tree_ptr.get());
+          "/multibody/test/rigid_body_tree/four_dof_robot.urdf",
+      drake::multibody::joints::kFixed, weld_to_frame, tree_ptr.get());
 
   RigidBodyPlant<double> plant(move(tree_ptr));
 
@@ -522,11 +525,72 @@ GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
       tree.computePositionNameToIndexMap();
   const int joint4_world = position_name_to_index_map.at("joint4");
   ASSERT_EQ(joint4_world, 6);
-  const int joint4_instance = plant.FindInstancePositionIndexFromWorldIndex(
-      1, joint4_world);
+  const int joint4_instance =
+      plant.FindInstancePositionIndexFromWorldIndex(1, joint4_world);
   EXPECT_EQ(joint4_instance, 3);
   EXPECT_ANY_THROW(
       plant.FindInstancePositionIndexFromWorldIndex(0, joint4_world));
+}
+
+GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::GetDrakePath() + "/multibody/models/box.urdf",
+      drake::multibody::joints::kQuaternion, nullptr /* weld to frame */,
+      tree_ptr.get());
+
+  const double timestep = 0.1;
+  RigidBodyPlant<double> continuous_plant(tree_ptr->Clone());
+  RigidBodyPlant<double> time_stepping_plant(move(tree_ptr), timestep);
+
+  auto continuous_context = continuous_plant.AllocateContext();
+  continuous_plant.SetDefaults(continuous_context.get());
+
+  auto time_stepping_context = time_stepping_plant.AllocateContext();
+  time_stepping_plant.SetDefaults(time_stepping_context.get());
+
+  // Check that the time-stepping model has the same states as the continuous,
+  // but as discrete state.
+  EXPECT_TRUE(continuous_context->has_only_continuous_state());
+  EXPECT_TRUE(time_stepping_context->has_only_discrete_state());
+  EXPECT_EQ(continuous_context->get_continuous_state()->size(),
+            time_stepping_context->get_discrete_state(0)->size());
+
+  // Check that the dynamics of the time-stepping model match the
+  // (backwards-)Euler approximation of the continuous time dynamics.
+  auto derivatives = continuous_plant.AllocateTimeDerivatives();
+  continuous_plant.CalcTimeDerivatives(*continuous_context, derivatives.get());
+  auto updates = time_stepping_plant.AllocateDiscreteVariables();
+  DiscreteEvent<double> update_event;
+  update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
+  time_stepping_plant.CalcDiscreteVariableUpdates(*time_stepping_context,
+                                                  update_event, updates.get());
+
+  const VectorXd x = continuous_context->get_continuous_state()->CopyToVector();
+  EXPECT_TRUE(CompareMatrices(
+      x, time_stepping_context->get_discrete_state(0)->CopyToVector()));
+
+  const VectorXd q = continuous_context->get_continuous_state()
+                         ->get_generalized_position()
+                         .CopyToVector();
+  const VectorXd v = continuous_context->get_continuous_state()
+                         ->get_generalized_velocity()
+                         .CopyToVector();
+
+  const VectorXd vn =
+      v + timestep * derivatives->get_generalized_velocity().CopyToVector();
+
+  auto kinsol = continuous_plant.get_rigid_body_tree().doKinematics(q, v);
+  const VectorXd qn =
+      q +
+      timestep *
+          continuous_plant.get_rigid_body_tree().transformVelocityToQDot(kinsol,
+                                                                         vn);
+  VectorXd xn(qn.rows() + vn.rows());
+  xn << qn, vn;
+
+  EXPECT_TRUE(
+      CompareMatrices(updates->get_discrete_state(0)->CopyToVector(), xn));
 }
 
 }  // namespace
