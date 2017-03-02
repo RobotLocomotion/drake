@@ -1,7 +1,7 @@
 if(lcm_FOUND)
   # Defines a shared library for use by KUKA iiwa demos based on System 2.0.
   add_library_with_exports(LIB_NAME drakeKukaIiwaArmCommon SOURCE_FILES
-      iiwa_common.cc iiwa_lcm.cc)
+      iiwa_common.cc iiwa_lcm.cc iiwa_plan_source.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
       drakeIK
       drakeLcmSystem
@@ -11,7 +11,7 @@ if(lcm_FOUND)
       Eigen3::Eigen)
   drake_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
-      iiwa_common.h iiwa_lcm.h)
+      iiwa_common.h iiwa_lcm.h iiwa_plan_source.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm-common
       TARGET drakeKukaIiwaArmCommon
       LIBS -ldrakeKukaIiwaArmCommon
