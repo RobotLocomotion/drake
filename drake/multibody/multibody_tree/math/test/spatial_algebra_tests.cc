@@ -15,12 +15,28 @@ namespace multibody {
 namespace math {
 namespace {
 
+// Generic declaration of a traits class to figure out at compile time the
+// scalar type a spatial quantity is instantiated with.
+template <class SpatialQuantity> struct spatial_vector_traits {};
+
+// traits specialization for SpatialVelocity.
+template <typename T>
+struct spatial_vector_traits<SpatialVelocity<T>> {
+  typedef T ScalarType;
+};
+
+// traits specialization for SpatialForce.
+template <typename T>
+struct spatial_vector_traits<SpatialForce<T>> {
+  typedef T ScalarType;
+};
+
 template <class SpatialQuantityUnderTest>
 class SpatialQuantityTest : public ::testing::Test {
  public:
   // Useful typedefs when writing unit tests to access types.
   typedef SpatialQuantityUnderTest SpatialQuantityType;
-  typedef typename internal::spatial_vector_traits<
+  typedef typename spatial_vector_traits<
       SpatialQuantityType>::ScalarType ScalarType;
  protected:
   // A translational component ∈ ℝ³.
