@@ -285,8 +285,8 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         vtk_cylinder->SetRadius(cylinder.radius);
         vtk_cylinder->SetResolution(50);
 
-        // Since the cylinder in vtkCylinderSource is y axis aligned, we need to
-        // rotate to be z axis aligned instead.
+        // Since the cylinder in vtkCylinderSource is y-axis aligned, we need to
+        // rotate it to be z-axis aligned since that is what Drake uses.
         vtkNew<vtkTransform> transform;
         transform->RotateX(90);
         vtkNew<vtkTransformPolyDataFilter> transform_filter;

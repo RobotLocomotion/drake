@@ -1,93 +1,93 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
-  <model name='box'>
+  <model name="box">
     <pose>0.2 -0.2 0.5 0 0 0</pose>
-    <link name='box'>
+    <link name="box">
       <pose>0 0 0 0 0 0</pose>
-        <inertial>
-          <mass>1.</mass>
-        </inertial>
-        <visual name='box'>
-          <pose>0 0 0 0 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.05 0.2 1.</size>
-            </box>
-          </geometry>
-          <material/>
-        </visual>
-        <collision name='box'>
-          <geometry>
-            <box>
-              <size>0.05 0.2 1.</size>
-            </box>
-          </geometry>
-        </collision>
+      <inertial>
+        <mass>1.</mass>
+      </inertial>
+      <visual name="box">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.2 1.</size>
+          </box>
+        </geometry>
+        <material/>
+      </visual>
+      <collision name="box">
+        <geometry>
+          <box>
+            <size>0.05 0.2 1.</size>
+          </box>
+        </geometry>
+      </collision>
     </link>
     <static>1</static>
   </model>
-  <model name='sphere'>
+  <model name="sphere">
     <pose>-0.2 0 0.1 0 0 0</pose>
-    <link name='sphere'>
+    <link name="sphere">
       <pose>0 0 0 0 0 0</pose>
-        <inertial>
-          <mass>1.</mass>
-        </inertial>
-        <visual name='sphere'>
-          <pose>0 0 0 0 0 0</pose>
-          <geometry>
-            <sphere>
-              <radius>0.1</radius>
-            </sphere>
-          </geometry>
-          <material/>
-        </visual>
-        <collision name='sphere'>
-          <geometry>
-            <sphere>
-              <radius>0.1</radius>
-            </sphere>
-          </geometry>
-        </collision>
+      <inertial>
+        <mass>1.</mass>
+      </inertial>
+      <visual name="sphere">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+        <material/>
+      </visual>
+      <collision name="sphere">
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+      </collision>
     </link>
     <static>1</static>
   </model>
-  <model name='cylinder'>
+  <model name="cylinder">
     <pose>0 0.2 0.05 0 0 0</pose>
-    <link name='cylinder'>
+    <link name="cylinder">
       <pose>0 0 0 0 0 0</pose>
-        <inertial>
-          <mass>1.</mass>
-        </inertial>
-        <visual name='cylinder'>
-          <pose>0 0 0 0 0 0</pose>
-          <geometry>
-            <cylinder>
-	      <length>0.1</length>
-              <radius>0.1</radius>
-            </cylinder>
-          </geometry>
-          <material/>
-        </visual>
-        <collision name='cylinder'>
-          <geometry>
-            <cylinder>
-	      <length>0.1</length>
-              <radius>0.1</radius>
-            </cylinder>
-          </geometry>
-        </collision>
+      <inertial>
+        <mass>1.</mass>
+      </inertial>
+      <visual name="cylinder">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.1</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+        <material/>
+      </visual>
+      <collision name="cylinder">
+        <geometry>
+          <cylinder>
+            <length>0.1</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </collision>
     </link>
     <static>1</static>
   </model>
-  <model name='bottle'>
+  <model name="bottle">
     <pose>0.2 0 0.1 0 0 0</pose>
-    <link name='bottle'>
+    <link name="bottle">
       <pose>0 0 0 0 0 0</pose>
       <inertial>
         <mass>0.5</mass>
       </inertial>
-      <visual name='bottle'>
+      <visual name="bottle">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
@@ -96,13 +96,13 @@
         </geometry>
         <material/>
       </visual>
-      <collision name='bottle'>
+      <collision name="bottle">
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0 0 0 0 0 0</pose>
+        <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
-	    <length>0.2</length>
+            <length>0.2</length>
             <radius>0.02</radius>
           </cylinder>
         </geometry>

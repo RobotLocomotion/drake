@@ -186,14 +186,14 @@ class ImageTest {
         ASSERT_NEAR(color_image.at(u, v)[2], 255u, 1.);
         ASSERT_NEAR(color_image.at(u, v)[3], 255u, 1.);
 
-        // Assuming depth value provides 0.1mm precision.
+        // Assuming depth value provides 0.1 mm precision.
         ASSERT_NEAR(depth_image.at(u, v)[0], 4.999f, 1e-4);
       }
     }
   }
 
   static void VerifyAllShapes(const sensors::Image<uint8_t>& color_image,
-                             const sensors::Image<float>& depth_image) {
+                              const sensors::Image<float>& depth_image) {
     const std::string color_file("/systems/sensors/test/images/color.png");
     const std::string depth_file("/systems/sensors/test/images/depth.png");
 
@@ -209,9 +209,9 @@ class ImageTest {
 
     // Verifies by sampling 64 x 48 points instead of 640 x 480 points. The
     // assumption is any defects will be detected by sampling this amount.
-    // `y` is upside down here because the orign of vtk's image coordinate
-    // system is on the left-bottom corner while that of `RgbdCamera`'s is on
-    // the left-top corner which is the same way as OpenCV does.
+    // `y` is traversed in reverse (largest to smallest) order because the
+    // origin of VTK's image coordinate system is on the left-bottom corner of
+    // the image while `RgbdCamera`'s is on the left-top corner.
     int y = 47;
     int x = 0;
     for (int v = 0; v < color_image.height(); v += 10) {
@@ -238,7 +238,7 @@ class ImageTest {
   RenderingSim diagram_;
 };
 
-// Verifies rendered terrain.
+// Verifies the rendered terrain.
 GTEST_TEST(RenderingTest, TerrainRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/box.sdf");
   ImageTest dut(sdf,
@@ -247,7 +247,7 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
                 ImageTest::VerifyTerrain);
 }
 
-// Verifies rendered terrain.
+// Verifies the rendered shapes.
 GTEST_TEST(RenderingTest, AllShapeRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/all_shapes.sdf");
   ImageTest dut(sdf,
