@@ -90,9 +90,6 @@
 [submodule "externals/robotlocomotion_lcmtypes"]
 	path = externals/robotlocomotion_lcmtypes
 	url = https://github.com/RobotLocomotion/lcmtypes.git
-[submodule "ros/hsrb_description"]
-	path = ros/hsrb_description
-	url = https://github.com/ToyotaResearchInstitute/hsrb_description.git
 [submodule "externals/fcl"]
 	path = externals/fcl
 	url = https://github.com/flexible-collision-library/fcl.git
