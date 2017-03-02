@@ -104,7 +104,7 @@ class RotationalInertia {
   }
 
   /// Creates a general rotational inertia matrix with non-zero off-diagonal
-  /// elements where the six components of the rotational intertia on a given
+  /// elements where the six components of the rotational intertia in a given
   /// frame `E` need to be provided.
   /// Throws an exception if the resulting inertia is invalid according to
   /// CouldBePhysicallyValid().
@@ -171,7 +171,7 @@ class RotationalInertia {
            get_products().isApprox(other.get_products(), precision);
   }
 
-  /// Adds rotational inertia @p `I_Bo_F` to `this` rotational inertia. This
+  /// Adds rotational inertia `I_Bo_F` to `this` rotational inertia. This
   /// operation is only valid if both inertias are computed about the same
   /// center `Bo` and expressed in the same frame `F`.
   /// @param[in] I_Bo_F A rotational inertia to be added to this inertia.
@@ -185,14 +185,14 @@ class RotationalInertia {
   /// this operation might lead to invalid (non physical) results.
   RotationalInertia<T>& operator-=(const RotationalInertia<T>&) = delete;
 
-  /// Multiply `this` rotational inertia by a `scalar` in place modifying the
-  /// original object.
+  /// In-place multiplication of `this` rotational inertia by a `scalar`
+  /// modifying the original object.
   RotationalInertia<T>& operator*=(const T& scalar) {
     this->get_mutable_triangular_view() *= scalar;
     return *this;
   }
 
-  /// Divide `this` rotational inertia by a `scalar` in place modifying the
+  /// In-place division of `this` rotational inertia by a `scalar` modifying the
   /// original object.
   RotationalInertia<T>& operator/=(const T& scalar) {
     this->get_mutable_triangular_view() /= scalar;
@@ -241,7 +241,7 @@ class RotationalInertia {
 
   /// For `this` inertia about a given point `P` and expressed in a frame `E`,
   /// this method computes the principal moments of inertia of `this` rotational
-  /// inertia about the same point `P` and expressed on a frame with origin at
+  /// inertia about the same point `P` and expressed in a frame with origin at
   /// `P` and aligned with the principal axes.
   ///
   /// Note: The current version of this method only works for inertias with a
@@ -300,14 +300,32 @@ class RotationalInertia {
     // Compute principal moments of inertia.
     Vector3<double> d = CalcPrincipalMomentsOfInertia();
 
-    // Perform checks to a given precision.
+    // Perform checks to machine precision instead of performing exact
+    // comparisons. A "slop" value is chosen relative to the "size" of the
+    // inertia matrix which is measured by the magnitude of the absolute value
+    // of its trace. The trace is chosen since it's an invariant under
+    // rotations. See below for details on how a "slop" is needed for specific
+    // floating point comparisons.
     const double precision = Eigen::NumTraits<double>::epsilon();
     const double slop = precision * std::abs(d.sum());
 
     // Principal moments must be non-negative.
+    // This comparison actually allows for very small (equal to -slop) negative
+    // principal moments since the result from CalcPrincipalMomentsOfInertia()
+    // is affected by round-off errors.
     if ((d.array() < -slop).any() ) return false;
 
     // Checks triangle inequality.
+    // To understand why a slop is needed consider a case in which the result
+    // from CalcPrincipalMomentsOfInertia() is d0 = -slop⁻ (since slop in the
+    // first comparison above actually is a lower bound, d0 can never be equal
+    // to slop but to an infinitesimally close value slop⁻ with slop⁻ < slop).
+    // For this case the first triangle inequality below becomes:
+    //   d0 + d1 >= d2 - slop
+    //   -slop⁻ + d1 >= d2 - slop
+    //   d1 >= d2 - (slop - slop⁻)
+    // which allows the >= comparision to succeed even for this degenerate case
+    // since (slop - slop⁻) > 0.
     if (!(d[0] + d[1] >= d[2] - slop &&
           d[0] + d[2] >= d[1] - slop &&
           d[1] + d[2] >= d[0] - slop)) return false;

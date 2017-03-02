@@ -37,7 +37,7 @@ GTEST_TEST(UnitInertia, DiagonalInertiaConstructor) {
 // Test constructor for a principal axes unit inertia matrix for which
 // off-diagonal elements are zero.
 GTEST_TEST(UnitInertia, PrincipalAxesConstructor) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d m(2.0, 2.3, 2.4);  // m for moments.
   UnitInertia<double> I(m(0), m(1), m(2));
   Vector3d moments_expected = m;
   Vector3d products_expected = Vector3d::Zero();
@@ -103,6 +103,8 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
   EXPECT_NEAR(G_Ro_F(0, 0), Iperp, Eigen::NumTraits<double>::epsilon());
   EXPECT_NEAR(G_Ro_F(1, 1), Irr, Eigen::NumTraits<double>::epsilon());
   EXPECT_NEAR(G_Ro_F(2, 2), Iperp, Eigen::NumTraits<double>::epsilon());
+  EXPECT_TRUE(
+      G_Ro_F.get_products().isZero(Eigen::NumTraits<double>::epsilon()));
 
   // While at it, check if after transformation this still is a physically
   // valid inertia.
@@ -118,7 +120,7 @@ GTEST_TEST(UnitInertia, PointMass) {
   Vector3d uxuxv = -u.cross(u.cross(v));
   UnitInertia<double> G = UnitInertia<double>::PointMass(u);
 
-  // Verify that G(u) * v = u x (u x v).
+  // Verify that G(u) * v = -u x (u x v).
   EXPECT_TRUE(uxuxv.isApprox(G * v, Eigen::NumTraits<double>::epsilon()));
 }
 
@@ -210,7 +212,7 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
 
 // Tests that we can instantiate a unit inertia with AutoDiffScalar and
 // we can perform some basic operations with it.
-// As an example, we define the unit inertia I_B of a body B. The
+// As an example, we define the unit inertia G_B of a body B. The
 // orientation of this body in the world frame W is given by the time dependent
 // rotation R_WB = Rz(theta(t)) about the z-axis with angle theta(t).
 // The time derivative of theta(t) is the angular velocity wz.
@@ -233,7 +235,7 @@ GTEST_TEST(UnitInertia, AutoDiff) {
 
   // Construct a unit inertia in the frame of a body B.
   double Ix(1.0), Iy(2.0), Iz(3.0);
-  UnitInertia<ADScalar> I_B(Ix, Iy, Iz);
+  UnitInertia<ADScalar> G_B(Ix, Iy, Iz);
 
   // Assume B has a pose rotated +20 degrees about z with respect to the
   // world frame W. The body rotates with angular velocity wz in the z-axis.
@@ -262,16 +264,16 @@ GTEST_TEST(UnitInertia, AutoDiff) {
       wcross_expected, Eigen::NumTraits<double>::epsilon()));
 
   // Re-express inertia into another frame.
-  const UnitInertia<ADScalar> I_W = I_B.ReExpress(R_WB);
+  const UnitInertia<ADScalar> I_W = G_B.ReExpress(R_WB);
 
   // Extract value and derivatives of I_W into two separate matrices.
   Matrix3d Ivalue_W, Idot_W;
   extract_derivatives(I_W.CopyToFullMatrix3(), Ivalue_W, Idot_W);
 
   // Alternatively, compute the time derivative of I_W directly in terms of the
-  // known angular velocity. Since I_B is diagonal with entries Iᵢ, we can
+  // known angular velocity. Since G_B is diagonal with entries Iᵢ, we can
   // expand the time derivative of I_W as:
-  //  dI_W/dt = d/dt(R_WB * I_B * R_WBᵀ) = d/dt(∑ Iᵢ * x̂ᵢ * x̂ᵢᵀ) =
+  //  dI_W/dt = d/dt(R_WB * G_B * R_WBᵀ) = d/dt(∑ Iᵢ * x̂ᵢ * x̂ᵢᵀ) =
   //          = ∑ Iᵢ * {[w] * x̂ᵢ * x̂ᵢᵀ + ([w] * x̂ᵢ * x̂ᵢᵀ)ᵀ}
   const auto xhat = Rvalue_WB.col(0);
   const auto yhat = Rvalue_WB.col(1);
@@ -290,14 +292,13 @@ GTEST_TEST(UnitInertia, AutoDiff) {
       Idot_W_expected, Eigen::NumTraits<double>::epsilon()));
 }
 
-// This is a trick dummy to create at compile time an l-value for the template
-// below.
+// This template generates an l-value at compile time for the templates below.
 template <class T>
-struct DummyToCreateLValue { T& get_thing(); };
+struct GenerateLValue { T& get_thing(); };
 
 // This overload gets chosen if the *= double would compile.
 template <typename T,
-    typename = decltype(DummyToCreateLValue<T>().get_thing() *= 1.)>
+    typename = decltype(GenerateLValue<T>().get_thing() *= 1.)>
 bool has_times_equal_helper(int) { return true; }
 
 // This overload gets chosen if the above can't compile.
@@ -321,10 +322,10 @@ GTEST_TEST(UnitInertia, TimesEqualScalar) {
   EXPECT_FALSE(has_times_equal<UnitInertia<double>>());
 }
 
-// See the explanation for this template helpers in the analogous implementation
-// for has_times_equal() above.
+// See the explanation for these template helpers in the analogous
+// implementation for has_times_equal() above.
 template <typename T,
-    typename = decltype(DummyToCreateLValue<T>().get_thing() /= 1.)>
+    typename = decltype(GenerateLValue<T>().get_thing() /= 1.)>
 bool has_divide_equal_helper(int) { return true; }
 template <typename T>
 bool has_divide_equal_helper(...) { return false; }
@@ -344,7 +345,7 @@ GTEST_TEST(UnitInertia, DivideEqualScalar) {
 // See the explanation for this template helpers in the analogous implementation
 // for has_times_equal() above.
 template <typename T,
-    typename = decltype(DummyToCreateLValue<T>().get_thing() += T())>
+    typename = decltype(GenerateLValue<T>().get_thing() += T())>
 bool has_plus_equal_helper(int) { return true; }
 template <typename T>
 bool has_plus_equal_helper(...) { return false; }
