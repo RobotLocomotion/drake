@@ -155,6 +155,18 @@ class SpatialVector {
   /// Returns a constant reference to the underlying storage.
   const CoeffsEigenType& get_coeffs() const { return V_;}
 
+  /// Multiplication of a spatial vector `V` from the left by a scalar `s`.
+  /// @relates SpatialVector.
+  friend Derived operator*(const T& s, const Derived& V) {
+    return Derived(s * V.get_coeffs());
+  }
+
+  /// Multiplication of a spatial vector `V` from the right by a scalar `s`.
+  /// @relates SpatialVector.
+  friend Derived operator*(const Derived& V, const T& s) {
+    return s * V;  // Multiplication by scalar is commutative.
+  }
+
  private:
   CoeffsEigenType V_;
 };
