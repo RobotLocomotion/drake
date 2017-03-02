@@ -38,6 +38,9 @@ class Trajectory {
    * @return The number of columns in the matrix returned by value().
    */
   virtual Eigen::Index cols() const = 0;
+
+  virtual double get_start_time() const = 0;
+  virtual double get_end_time() const = 0;
 };
 
 }  // namespace drake
