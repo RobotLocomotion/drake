@@ -59,6 +59,7 @@ GTEST_TEST(ValueTest, BadCast) {
 
 class PrintInterface {
  public:
+  virtual ~PrintInterface() {}
   virtual std::string print() const = 0;
 };
 

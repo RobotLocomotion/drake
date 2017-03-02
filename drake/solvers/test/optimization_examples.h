@@ -55,6 +55,7 @@ class LinearSystemExample1 {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample1)
 
   LinearSystemExample1();
+  virtual ~LinearSystemExample1() {}
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
@@ -87,6 +88,7 @@ class LinearSystemExample2 : public LinearSystemExample1 {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample2)
 
   LinearSystemExample2();
+  ~LinearSystemExample2() override {}
 
   VectorDecisionVariable<2> y() const { return y_; }
 
@@ -107,6 +109,7 @@ class LinearSystemExample3 : public LinearSystemExample2 {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample3)
 
   LinearSystemExample3();
+  ~LinearSystemExample3() override {}
 
   bool CheckSolution() const override;
 };

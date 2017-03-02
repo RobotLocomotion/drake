@@ -6,6 +6,7 @@ CLANG_FLAGS = [
     "-Werror=all",
     "-Werror=inconsistent-missing-override",
     "-Werror=sign-compare",
+    "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
 ]
 
@@ -15,6 +16,7 @@ GCC_FLAGS = [
     "-Werror=all",
     "-Werror=extra",
     "-Werror=return-local-addr",
+    "-Werror=non-virtual-dtor",
     "-Wno-unused-parameter",
     "-Wno-missing-field-initializers",
 ]
