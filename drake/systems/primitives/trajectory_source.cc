@@ -6,18 +6,44 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-TrajectorySource<T>::TrajectorySource(const Trajectory& trajectory)
-    : SingleOutputVectorSource<T>(trajectory.rows()),
-      trajectory_(trajectory) {
+TrajectorySource<T>::TrajectorySource(const Trajectory& trajectory,
+                                      int output_derivative_order,
+                                      bool zero_derivatives_beyond_limits)
+    : SingleOutputVectorSource<T>(trajectory.rows() *
+                                  (1 + output_derivative_order)),
+      trajectory_(trajectory),
+      clamp_derivatives_(zero_derivatives_beyond_limits) {
   // This class does not currently support trajectories which output
   // more complicated matrices.
   DRAKE_DEMAND(trajectory.cols() == 1);
+  DRAKE_DEMAND(output_derivative_order >= 0);
+
+  for (int i = 0; i < output_derivative_order; i++) {
+    if (i == 0)
+      derivatives_.push_back(trajectory_.derivative());
+    else
+      derivatives_.push_back(derivatives_[i - 1]->derivative());
+  }
 }
 
 template <typename T>
 void TrajectorySource<T>::DoCalcVectorOutput(
     const Context<T>& context, Eigen::VectorBlock<VectorX<T>>* output) const {
-  *output = trajectory_.value(context.get_time());
+  int len = trajectory_.rows();
+  output->head(len) = trajectory_.value(context.get_time());
+
+  double time = context.get_time();
+  bool set_zero = clamp_derivatives_ && (time > trajectory_.get_end_time() ||
+      time < trajectory_.get_start_time());
+
+  for (size_t i = 0; i < derivatives_.size(); ++i) {
+    if (set_zero) {
+      output->segment(len * (i + 1), len).setZero();
+    } else {
+      output->segment(len * (i + 1), len) =
+          derivatives_[i]->value(context.get_time());
+    }
+  }
 }
 
 // Explicitly instantiates on the most common scalar types.
