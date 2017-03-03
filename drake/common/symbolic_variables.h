@@ -46,6 +46,9 @@ class Variables {
   /** Returns the number of elements. */
   size_type size() const { return vars_.size(); }
 
+  /** Checks if this set is empty or not. */
+  bool empty() const { return vars_.empty(); }
+
   /** Returns string representation of Variables. */
   std::string to_string() const;
 
