@@ -18,9 +18,11 @@ namespace drake {
 namespace symbolic {
 
 using std::accumulate;
+using std::make_pair;
 using std::map;
 using std::ostream;
 using std::ostringstream;
+using std::out_of_range;
 using std::pair;
 using std::runtime_error;
 using std::shared_ptr;
@@ -63,6 +65,47 @@ size_t Monomial::GetHash() const {
 
 bool Monomial::operator==(const Monomial& m) const {
   return powers_ == m.powers_;
+}
+
+double Monomial::Evaluate(
+    const unordered_map<Variable::Id, double>& env) const {
+  return accumulate(
+      powers_.begin(), powers_.end(), 1.0,
+      [this, &env](const double v, const pair<Variable::Id, int>& p) {
+        const Variable::Id& var_id{p.first};
+        const auto it = env.find(var_id);
+        if (it == env.end()) {
+          ostringstream oss;
+          oss << "Monomial " << *this
+              << " cannot be evaluated with the given "
+                 "environment which does not provide an entry "
+                 "for variable ID = "
+              << var_id << ".";
+          throw out_of_range(oss.str());
+        } else {
+          const double base{it->second};
+          const int exponent{p.second};
+          return v * std::pow(base, exponent);
+        }
+      });
+}
+
+pair<double, Monomial> Monomial::Substitute(
+    const unordered_map<Variable::Id, double>& env) const {
+  double coeff{1.0};
+  map<Variable::Id, int> new_powers;
+  for (const pair<Variable::Id, int>& p : powers_) {
+    const Variable::Id& var_id{p.first};
+    const int exponent{p.second};
+    const auto it = env.find(var_id);
+    if (it != env.end()) {
+      const double base{it->second};
+      coeff *= std::pow(base, exponent);
+    } else {
+      new_powers.insert(p);
+    }
+  }
+  return make_pair(coeff, Monomial(new_powers));
 }
 
 Expression Monomial::ToExpression(
