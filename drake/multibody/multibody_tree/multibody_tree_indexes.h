@@ -5,6 +5,9 @@
 
 #include <iostream>
 
+namespace drake {
+namespace multibody {
+
 /// A type-safe positive index that can be associated to a tag name. Different
 /// instantiations of TaggedIndex are not interconvertible.
 /// TaggedIndex allows for instantiations from an `int` as well as it allows to
@@ -122,9 +125,6 @@ inline std::ostream& operator<<(
   o << int(index);
   return o;
 }
-
-namespace drake {
-namespace multibody {
 
 using FrameIndex = TaggedIndex<class FrameTag>;
 using BodyIndex = TaggedIndex<class BodyTag>;
