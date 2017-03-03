@@ -83,13 +83,13 @@ class RoadGeometry final : public api::RoadGeometry {
 
   // Returns true iff `geo_pos` is "on" the crossroad. It is on the crossroad iff
   // `geo_pos.x` and `geo_pos.y` fall within the crossroad's driveable region.
-  bool IsGeoPositionOnCrossroad(const api::GeoPosition& geo_pos) const;
+  // bool IsGeoPositionOnCrossroad(const api::GeoPosition& geo_pos) const;
 
 
   // Returns the index of the lane on which the provided `geo_pos` resides. This
   // method requires that the provided `geo_pos` be on the crossroad as determined
   // by IsGeoPositionOnCrossroad().
-  int GetLaneIndex(const api::GeoPosition& geo_pos) const;
+  // int GetLaneIndex(const api::GeoPosition& geo_pos) const;
 
   const api::RoadGeometryId id_;
   const double linear_tolerance_{};

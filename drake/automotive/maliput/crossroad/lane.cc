@@ -14,18 +14,18 @@ namespace drake {
 namespace maliput {
 namespace crossroad{
 
-namespace{
-  double clamp(double value, double min, double max) {
-    double result = value;
-    if (value < min) {
-      result = min;
-    }
-    if (value > max) {
-      result = max;
-    }
-    return result;
-  }  
-}
+// namespace{
+//   double clamp(double value, double min, double max) {
+//     double result = value;
+//     if (value < min) {
+//       result = min;
+//     }
+//     if (value > max) {
+//       result = max;
+//     }
+//     return result;
+//   }  
+// }
 
 
 Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
@@ -108,7 +108,6 @@ api::GeoPosition Lane::DoToGeoPosition(
   else{
     throw std::runtime_error("Segment ID not recogonized");  
   }
-
 }
 
 
@@ -131,54 +130,54 @@ api::LanePosition Lane::DoToLanePosition(
     const api::GeoPosition& geo_pos,
     api::GeoPosition* nearest_point,
     double* distance) const {
+DRAKE_ABORT();
+//   const double min_s = 0;
+//   const double max_s = length_;
+//   const double min_r = driveable_bounds_.r_min + r_offset_;
+//   const double max_r = driveable_bounds_.r_max + r_offset_;
+//   api::SegmentId segment_id= this->segment()->id();
 
-  const double min_s = 0;
-  const double max_s = length_;
-  const double min_r = driveable_bounds_.r_min + r_offset_;
-  const double max_r = driveable_bounds_.r_max + r_offset_;
-  api::SegmentId segment_id= this->segment()->id();
+//   if (strcmp(segment_id.id.c_str(), "Crossroad_Horizontal_Segment")==0){
+//     const api::GeoPosition closest_point{clamp(geo_pos.x, min_s, max_s),
+//                                        clamp(geo_pos.y, min_r, max_r),
+//                                        geo_pos.z};
+//     if (nearest_point != nullptr) {
+//       *nearest_point = closest_point;
+//     }
 
-  if (strcmp(segment_id.id.c_str(), "Crossroad_Horizontal_Segment")==0){
-    const api::GeoPosition closest_point{clamp(geo_pos.x, min_s, max_s),
-                                       clamp(geo_pos.y, min_r, max_r),
-                                       geo_pos.z};
-    if (nearest_point != nullptr) {
-      *nearest_point = closest_point;
-    }
+//     if (distance != nullptr) {
+//       *distance = std::sqrt(std::pow(geo_pos.x - closest_point.x, 2) +
+//                           std::pow(geo_pos.y - closest_point.y, 2) +
+//                           std::pow(geo_pos.z - closest_point.z, 2));
+//     }
 
-    if (distance != nullptr) {
-      *distance = std::sqrt(std::pow(geo_pos.x - closest_point.x, 2) +
-                          std::pow(geo_pos.y - closest_point.y, 2) +
-                          std::pow(geo_pos.z - closest_point.z, 2));
-    }
+//     return api::LanePosition(closest_point.x              /* s */,
+//                            closest_point.y - r_offset_  /* r */,
+//                            closest_point.z              /* h */);
+//   }
 
-    return api::LanePosition(closest_point.x              /* s */,
-                           closest_point.y - r_offset_  /* r */,
-                           closest_point.z              /* h */);
-  }
+//   if (strcmp(segment_id.id.c_str(), "Crossroad_Vertical_Segment")==0){
+//     const api::GeoPosition closest_point{clamp(geo_pos.x, min_r, max_r),
+//                                        clamp(geo_pos.y, min_s, max_s),
+//                                        geo_pos.z};
+//     if (nearest_point != nullptr) {
+//       *nearest_point = closest_point;
+//     }
 
-  if (strcmp(segment_id.id.c_str(), "Crossroad_Vertical_Segment")==0){
-    const api::GeoPosition closest_point{clamp(geo_pos.x, min_r, max_r),
-                                       clamp(geo_pos.y, min_s, max_s),
-                                       geo_pos.z};
-    if (nearest_point != nullptr) {
-      *nearest_point = closest_point;
-    }
+//     if (distance != nullptr) {
+//       *distance = std::sqrt(std::pow(geo_pos.x - closest_point.x, 2) +
+//                           std::pow(geo_pos.y - closest_point.y, 2) +
+//                           std::pow(geo_pos.z - closest_point.z, 2));
+//     }
 
-    if (distance != nullptr) {
-      *distance = std::sqrt(std::pow(geo_pos.x - closest_point.x, 2) +
-                          std::pow(geo_pos.y - closest_point.y, 2) +
-                          std::pow(geo_pos.z - closest_point.z, 2));
-    }
+//     return api::LanePosition(closest_point.x - r_offset_             /* s */,
+//                            closest_point.y   /* r */,
+//                            closest_point.z              /* h */);
+//   }
+//   else{
+//     throw std::runtime_error("Segment ID not recogonized");  
 
-    return api::LanePosition(closest_point.x - r_offset_             /* s */,
-                           closest_point.y   /* r */,
-                           closest_point.z              /* h */);
-  }
-  else{
-    throw std::runtime_error("Segment ID not recogonized");  
-
-  }
+//   }
 }
 
 }  // namespace crossroad
