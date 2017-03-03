@@ -111,9 +111,10 @@ class System {
   virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
 
   /// Given a port descriptor, allocates the vector storage.  The default
-  /// implementation in this class allocates a BasicVector.  Subclasses can
-  /// override to use input vector types other than BasicVector. The
-  /// descriptor must match a port declared via DeclareInputPort.
+  /// implementation in this class allocates a BasicVector.  Subclasses must
+  /// override the NVI implementation of this function, DoAllocateInputVector,
+  /// to return input vector types other than BasicVector. The @p descriptor
+  /// must match a port declared via DeclareInputPort.
   std::unique_ptr<BasicVector<T>> AllocateInputVector(
       const InputPortDescriptor<T>& descriptor) const {
     DRAKE_ASSERT(descriptor.get_data_type() == kVectorValued);
@@ -123,10 +124,10 @@ class System {
     return std::unique_ptr<BasicVector<T>>(DoAllocateInputVector(descriptor));
   }
 
-  /// Given a port descriptor, allocates the abstract storage.  The default
-  /// implementation in this class aborts.  Subclasses with abstract input
-  /// ports may override. The descriptor must match a port declared via
-  /// DeclareInputPort.
+  /// Given a port descriptor, allocates the abstract storage. Subclasses with a
+  /// abstract input ports must override the NVI implementation of this
+  /// function, DoAllocateInputAbstract, to return an appropriate AbstractValue.
+  /// The @p descriptor must match a port declared via DeclareInputPort.
   std::unique_ptr<AbstractValue> AllocateInputAbstract(
       const InputPortDescriptor<T>& descriptor) const {
     DRAKE_ASSERT(descriptor.get_data_type() == kAbstractValued);
