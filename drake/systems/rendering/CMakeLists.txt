@@ -1,4 +1,5 @@
 add_library_with_exports(LIB_NAME drakeRendering SOURCE_FILES
+    frame_velocity.cc
     pose_aggregator.cc
     pose_bundle.cc
     pose_vector.cc)
@@ -8,6 +9,7 @@ target_link_libraries(drakeRendering
 
 drake_install_libraries(drakeRendering)
 drake_install_headers(
+    frame_velocity.h
     pose_aggregator.h
     pose_bundle.h
     pose_vector.h)
