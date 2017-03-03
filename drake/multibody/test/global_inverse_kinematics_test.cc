@@ -59,42 +59,46 @@ TEST_F(KukaTest, ReachableTest) {
   solvers::GurobiSolver gurobi_solver;
 
   global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
-  SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
+  if (gurobi_solver.available()) {
+    SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 
-  EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
-  const auto& body_pos = global_ik_.body_pos();
+    const auto &body_pos = global_ik_.body_pos();
 
-  const auto& body_rotmat = global_ik_.body_rotmat();
+    const auto &body_rotmat = global_ik_.body_rotmat();
 
-  Eigen::VectorXd q_global_ik = global_ik_.ReconstructPostureSolution();
+    Eigen::VectorXd q_global_ik = global_ik_.ReconstructPostureSolution();
 
-  std::cout << "Reconstructed robot posture:\n" << q_global_ik << std::endl;
-  KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q_global_ik);
+    std::cout << "Reconstructed robot posture:\n" << q_global_ik << std::endl;
+    KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q_global_ik);
 
-  // TODO(hongkai.dai): replace this print out with error check. We have not
-  // derived a rigorous bound on the rotation matrix relaxation yet. Should be
-  // able to get a more meaningful bound when we have some theoretical proof.
-  for (int i = 1; i < rigid_body_tree_->get_num_bodies(); ++i) {
-    const auto& body_pose_fk = rigid_body_tree_->CalcFramePoseInWorldFrame(
-        cache, rigid_body_tree_->get_body(i), Isometry3d::Identity());
+    // TODO(hongkai.dai): replace this print out with error check. We have not
+    // derived a rigorous bound on the rotation matrix relaxation yet. Should be
+    // able to get a more meaningful bound when we have some theoretical proof.
+    for (int i = 1; i < rigid_body_tree_->get_num_bodies(); ++i) {
+      const auto &body_pose_fk = rigid_body_tree_->CalcFramePoseInWorldFrame(
+          cache, rigid_body_tree_->get_body(i), Isometry3d::Identity());
 
-    const Eigen::Matrix3d body_Ri = global_ik_.GetSolution((body_rotmat[i]));
-    std::cout << rigid_body_tree_->get_body(i).get_name() << std::endl;
-    std::cout << "rotation matrix:\n global_ik\n" << body_Ri << std::endl;
-    std::cout << "forward kinematics\n" << body_pose_fk.linear() << std::endl;
-    std::cout << "R * R':\n" << body_Ri * body_Ri.transpose() << std::endl;
-    std::cout << "det(R) = " << body_Ri.determinant() << std::endl;
-    Vector3d body_pos_global_ik = global_ik_.GetSolution(body_pos[i]);
-    std::cout << "position:\n global_ik\n"
-              << body_pos_global_ik << std::endl;
-    std::cout << "forward kinematics\n"
-              << body_pose_fk.translation() << std::endl;
-    std::cout << std::endl;
-    EXPECT_TRUE(CompareMatrices(body_pose_fk.translation(), body_pos_global_ik,
-                                0.1, MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, 0.3,
-                                MatrixCompareType::absolute));
+      const Eigen::Matrix3d body_Ri = global_ik_.GetSolution((body_rotmat[i]));
+      std::cout << rigid_body_tree_->get_body(i).get_name() << std::endl;
+      std::cout << "rotation matrix:\n global_ik\n" << body_Ri << std::endl;
+      std::cout << "forward kinematics\n" << body_pose_fk.linear() << std::endl;
+      std::cout << "R * R':\n" << body_Ri * body_Ri.transpose() << std::endl;
+      std::cout << "det(R) = " << body_Ri.determinant() << std::endl;
+      Vector3d body_pos_global_ik = global_ik_.GetSolution(body_pos[i]);
+      std::cout << "position:\n global_ik\n"
+                << body_pos_global_ik << std::endl;
+      std::cout << "forward kinematics\n"
+                << body_pose_fk.translation() << std::endl;
+      std::cout << std::endl;
+      EXPECT_TRUE(CompareMatrices(body_pose_fk.translation(),
+                                  body_pos_global_ik,
+                                  0.1,
+                                  MatrixCompareType::absolute));
+      EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, 0.3,
+                                  MatrixCompareType::absolute));
+    }
   }
 }
 
@@ -113,10 +117,12 @@ TEST_F(KukaTest, UnreachableTest) {
   solvers::GurobiSolver gurobi_solver;
 
   global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
-  SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
+  if (gurobi_solver.available()) {
+    SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 
-  EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded
-  || sol_result == SolutionResult::kInfeasibleConstraints);
+    EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded
+                    || sol_result == SolutionResult::kInfeasibleConstraints);
+  }
 }
 }  // namespace
 }  // namespace multibody
