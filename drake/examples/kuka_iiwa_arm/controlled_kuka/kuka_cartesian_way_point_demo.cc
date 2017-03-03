@@ -12,6 +12,7 @@
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/controlled_kuka/kuka_demo_plant_builder.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 
@@ -45,18 +46,52 @@ int DoMain() {
 
   std::vector<double> time_stamps{1.0, 2.0, 3.0, 4.0, 5.0};
 
-  RigidBodyTreed tree;
-  CreateTreedFromFixedModelAtPose(kUrdfPath, &tree);
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  drake::lcm::DrakeLcm lcm;
+  CreateTreedFromFixedModelAtPose(kUrdfPath, tree.get());
 
   std::unique_ptr<PiecewisePolynomialTrajectory> cartesian_trajectory =
-      SimpleCartesianWayPointPlanner(tree, "iiwa_link_ee", way_points,
+      SimpleCartesianWayPointPlanner(*tree, "iiwa_link_ee", way_points,
                                      time_stamps);
+  std::unique_ptr<Trajectory> cartesian_trajectory_dot = cartesian_trajectory->derivative(1);
 
-  KukaDemo<double> model(std::move(cartesian_trajectory));
-  Simulator<double> simulator(model);
+  const int kInstanceId = RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
 
-  Context<double>* context = simulator.get_mutable_context();
-  model.SetDefaultState(*context, context->get_mutable_state());
+  SimDiagramBuilder<double> builder;
+  // Adds a plant
+  builder.AddPlant(std::move(tree));
+
+  // Adds a iiwa controller
+  {
+    VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+    SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+    std::unique_ptr<systems::StateFeedbackController<double>> controller =
+        std::make_unique<systems::InverseDynamicsController<double>>(GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd, false /* without feedforward acceleration */);
+    builder.AddController(kInstanceId, std::move(controller));
+  }
+  systems::InverseDynamicsController<double>* controller = dynamic_cast<systems::InverseDynamicsController<double>*>(builder.get_controller(kInstanceId));
+
+  // Adds desired trajectory sources.
+  auto traj = builder.template AddSystem<systems::TrajectorySource<double>>(*cartesian_trajectory);
+  auto trajd = builder.template AddSystem<systems::TrajectorySource<double>>(*cartesian_trajectory_dot);
+
+  auto input_mux = builder.template AddSystem<systems::Multiplexer<double>>(std::vector<int>{traj->get_output_port().size(), trajd->get_output_port().size()});
+  builder.Connect(traj->get_output_port(), input_mux->get_input_port(0));
+  builder.Connect(trajd->get_output_port(), input_mux->get_input_port(1));
+  builder.Connect(input_mux->get_output_port(0), controller->get_input_port_desired_state());
+
+  // Connects visualizer.
+  systems::DrakeVisualizer* viz_publisher = builder.template AddSystem<systems::DrakeVisualizer>(
+      builder.get_plant()->get_rigid_body_tree(), &lcm);
+  builder.Connect(builder.get_plant()->get_output_port(0),
+      viz_publisher->get_input_port(0));
+
+  // Finishes wiring.
+  builder.WireThingsTogether();
+
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  Simulator<double> simulator(*diagram);
+
   simulator.Initialize();
   simulator.set_target_realtime_rate(1.0);
 

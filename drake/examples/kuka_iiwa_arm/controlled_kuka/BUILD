@@ -14,6 +14,7 @@ drake_cc_library(
     hdrs = ["kuka_demo_plant_builder.h"],
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/rigid_body_plant",
