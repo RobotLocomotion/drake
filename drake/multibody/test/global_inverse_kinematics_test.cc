@@ -7,6 +7,8 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 
+using Eigen::Vector3d;
+
 using drake::solvers::SolutionResult;
 
 namespace drake {
@@ -27,6 +29,14 @@ GTEST_TEST(TestGlobakIK, KukaTest) {
   AddFlatTerrainToWorld(rigid_body_tree.get());
 
   GlobalInverseKinematics global_ik(*rigid_body_tree, 2);
+
+  int ee_idx = rigid_body_tree->FindBodyIndex("iiwa_link_ee");
+  Eigen::Vector3d ee_pos_lb(0.4, -0.1, 0.4);
+  Eigen::Vector3d ee_pos_ub(0.6, 0.1, 0.6);
+  global_ik.AddWorldPositionConstraint(ee_idx, Vector3d::Zero(), ee_pos_lb, ee_pos_ub);
+
+  Eigen::Quaterniond ee_desired_orient(Eigen::AngleAxisd(-M_PI / 2, Vector3d(0, 1, 0)));
+  global_ik.AddWorldOrientationConstraint(ee_idx, ee_desired_orient, 0.2 * M_PI);
 
   solvers::GurobiSolver gurobi_solver;
 

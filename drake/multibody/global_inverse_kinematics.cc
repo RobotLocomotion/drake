@@ -145,9 +145,24 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
   }
 }
 
-void GlobalInverseKinematics::AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& body_pt, const Eigen::Vector3d& box_lb, const Eigen::Vector3d& box_ub) {
+void GlobalInverseKinematics::AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& body_pt, const Eigen::Vector3d& box_lb, const Eigen::Vector3d& box_ub, const Isometry3d& measured_transform) {
   Vector3<Expression> body_pt_pos = body_pos_[body_idx] + body_rotmat_[body_idx] * body_pt;
-  AddLinearConstraint(body_pt_pos, box_lb, box_ub);
+  Vector3<Expression> body_pt_in_measured_frame = measured_transform.linear().transpose() * (body_pt_pos - measured_transform.translation());
+  AddLinearConstraint(body_pt_in_measured_frame, box_lb, box_ub);
+}
+
+void GlobalInverseKinematics::AddWorldOrientationConstraint(
+    int body_idx,
+    const Eigen::Quaterniond &desired_orientation,
+    double angle_tol) {
+  // The rotation matrix err R_e satisfies
+  // trace(R_e) = 4 * cos(θ / 2)^2 - 1, where θ is the rotation angle between
+  // desired orientation and the current orientation. Thus the constraint is
+  // 4 * cos(angle_tol / 2) ^ 2 - 1 <= trace(R_e) <= 3
+  Matrix3<Expression> rotation_matrix_err =
+  desired_orientation.toRotationMatrix() * body_rotmat_[body_idx].transpose();
+  double lb = angle_tol < M_PI ? 4 * pow(cos(angle_tol / 2), 2) - 1 : -1;
+  AddLinearConstraint(rotation_matrix_err.trace(), lb, 3);
 }
 }  // namespace multibody
 }  // namespace drake

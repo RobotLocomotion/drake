@@ -17,17 +17,25 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
 
   /**
    * Adds the constraint that position of a point `body_pt` on a body
-   * (whose index is `body_idx`), is within a box box_lb <= x <= box_ub
+   * (whose index is `body_idx`), is within a box in a specified frame.
    * where the inequality is elementwise.
    * @param body_idx The index of the body on which the position of a point is constrained.
    * @param body_pt The position of the point measured in the body `body_idx`.
    * @param box_lb The lower bound of the box.
    * @param box_ub The upper bound of the box.
+   * @param measured_frame. The frame in which the box is specified. Namely if
+   * the position of `body_pt` in the world frame is x, then the constraint
+   * is box_lb <= measured_transform.linear().transpose() * (x - measured_transform.translation()) <= box_ub
    */
   void AddWorldPositionConstraint(int body_idx,
                              const Eigen::Vector3d& body_pt,
                              const Eigen::Vector3d& box_lb,
-                             const Eigen::Vector3d& box_ub);
+                             const Eigen::Vector3d& box_ub,
+                             const Eigen::Isometry3d& measured_frame = Eigen::Isometry3d::Identity());
+
+  void AddWorldOrientationConstraint(int body_idx,
+                                     const Eigen::Quaterniond& desired_orientation,
+                                     double angle_tol);
 
  private:
   const RigidBodyTree<double> *robot_;
