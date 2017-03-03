@@ -87,6 +87,22 @@ drake_cc_library(
         "//drake/systems/controllers:state_feedback_controller_base",
         "//drake/systems/framework",
         "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+    ],
+)
+
+drake_cc_library(
+    name = "sim_diagram_building_util",
+    srcs = ["sim_diagram_building_util.cc"],
+    hdrs = [
+        "sim_diagram_building_util.h",
+    ],
+    deps = [
+        "//drake/systems/framework",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:multiplexer",
+        "//drake/systems/primitives:trajectory_source",
+        "//drake/common/trajectories:piecewise_polynomial_trajectory",
     ],
 )
 

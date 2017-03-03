@@ -9,11 +9,13 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
-#include "drake/examples/kuka_iiwa_arm/controlled_kuka/kuka_demo_plant_builder.h"
+#include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
+#include "drake/examples/kuka_iiwa_arm/sim_diagram_building_util.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/context.h"
 
 DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
@@ -28,6 +30,9 @@ using systems::Simulator;
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
+
+const char kUrdfPath[] =
+    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
 
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
@@ -47,44 +52,39 @@ int DoMain() {
   std::vector<double> time_stamps{1.0, 2.0, 3.0, 4.0, 5.0};
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  drake::lcm::DrakeLcm lcm;
   CreateTreedFromFixedModelAtPose(kUrdfPath, tree.get());
 
   std::unique_ptr<PiecewisePolynomialTrajectory> cartesian_trajectory =
       SimpleCartesianWayPointPlanner(*tree, "iiwa_link_ee", way_points,
                                      time_stamps);
-  std::unique_ptr<Trajectory> cartesian_trajectory_dot = cartesian_trajectory->derivative(1);
 
   const int kInstanceId = RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
 
+  drake::lcm::DrakeLcm lcm;
   SimDiagramBuilder<double> builder;
   // Adds a plant
   builder.AddPlant(std::move(tree));
+  builder.AddVisualizer(&lcm);
 
   // Adds a iiwa controller
-  {
-    VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
-    SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
-    std::unique_ptr<systems::StateFeedbackController<double>> controller =
-        std::make_unique<systems::InverseDynamicsController<double>>(GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd, false /* without feedforward acceleration */);
-    builder.AddController(kInstanceId, std::move(controller));
-  }
-  systems::InverseDynamicsController<double>* controller = dynamic_cast<systems::InverseDynamicsController<double>*>(builder.get_controller(kInstanceId));
+  VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+  SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+  auto controller = dynamic_cast<systems::InverseDynamicsController<double>*>(
+      builder.AddController(
+          kInstanceId,
+          std::make_unique<systems::InverseDynamicsController<double>>(
+              GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
+              true /* without feedforward acceleration */)));
 
-  // Adds desired trajectory sources.
-  auto traj = builder.template AddSystem<systems::TrajectorySource<double>>(*cartesian_trajectory);
-  auto trajd = builder.template AddSystem<systems::TrajectorySource<double>>(*cartesian_trajectory_dot);
+  // Adds a trajectory source for desired state and accelerations.
+  auto traj_src = builder.template AddSystem<DesiredTrajectorySource<double>>(
+      std::make_unique<DesiredTrajectorySource<double>>(
+          std::move(cartesian_trajectory), 2));
 
-  auto input_mux = builder.template AddSystem<systems::Multiplexer<double>>(std::vector<int>{traj->get_output_port().size(), trajd->get_output_port().size()});
-  builder.Connect(traj->get_output_port(), input_mux->get_input_port(0));
-  builder.Connect(trajd->get_output_port(), input_mux->get_input_port(1));
-  builder.Connect(input_mux->get_output_port(0), controller->get_input_port_desired_state());
-
-  // Connects visualizer.
-  systems::DrakeVisualizer* viz_publisher = builder.template AddSystem<systems::DrakeVisualizer>(
-      builder.get_plant()->get_rigid_body_tree(), &lcm);
-  builder.Connect(builder.get_plant()->get_output_port(0),
-      viz_publisher->get_input_port(0));
+  builder.Connect(traj_src->get_output_port_state(),
+                  controller->get_input_port_desired_state());
+  builder.Connect(traj_src->get_output_port_acceleration(),
+                  controller->get_input_port_desired_acceleration());
 
   // Finishes wiring.
   builder.WireThingsTogether();
