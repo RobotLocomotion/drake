@@ -15,6 +15,13 @@ void RunMultibodyIndexTests() {
   {
     IndexType index(1);
     EXPECT_EQ(index, 1);  // This also tests operator==(int).
+    // In Debug builds construction from a negative int aborts.
+#ifdef DRAKE_ASSERT_IS_ARMED
+    ASSERT_DEATH(
+        { IndexType negative_index(-1); },
+        R"(abort: failure at .*multibody_tree_indexes.h:..)"
+        R"( in TaggedIndex\(\): assertion 'index_ >= 0' failed)");
+#endif
   }
 
   // Default construction, makes a zero index.
@@ -35,12 +42,12 @@ void RunMultibodyIndexTests() {
     IndexType index1(5);
     IndexType index2(5);
     IndexType index3(7);
-    EXPECT_EQ(index1, index2);  // operator==
-    EXPECT_NE(index1, index3);  // operator!=
-    EXPECT_LT(index1, index3);  // operator<
-    EXPECT_LE(index1, index2);  // operator<=
-    EXPECT_GT(index3, index1);  // operator>
-    EXPECT_GE(index2, index1);  // operator>=
+    EXPECT_TRUE(index1 == index2);  // operator==
+    EXPECT_TRUE(index1 != index3);  // operator!=
+    EXPECT_TRUE(index1 <  index3);  // operator<
+    EXPECT_TRUE(index1 <= index2);  // operator<=
+    EXPECT_TRUE(index3 >  index1);  // operator>
+    EXPECT_TRUE(index2 >= index1);  // operator>=
   }
 
   // Prefix increment.
@@ -68,6 +75,14 @@ void RunMultibodyIndexTests() {
     IndexType index_minus = --index;
     EXPECT_EQ(index, IndexType(7));
     EXPECT_EQ(index_minus, IndexType(7));
+    // In Debug builds decrements leading to a negative result will abort.
+#ifdef DRAKE_ASSERT_IS_ARMED
+    IndexType about_to_be_negative_index(0);
+    ASSERT_DEATH(
+        { --about_to_be_negative_index; },
+        R"(abort: failure at .*multibody_tree_indexes.h:.. in operator--\(\): )"
+        R"(assertion 'index_ >= 0' failed)");
+#endif
   }
 
   // Postfix decrement.
@@ -77,6 +92,14 @@ void RunMultibodyIndexTests() {
     IndexType index_minus = index--;
     EXPECT_EQ(index, IndexType(7));
     EXPECT_EQ(index_minus, IndexType(8));
+    // In Debug builds decrements leading to a negative result will abort.
+#ifdef DRAKE_ASSERT_IS_ARMED
+    IndexType about_to_be_negative_index(0);
+    ASSERT_DEATH(
+        { about_to_be_negative_index--; },
+        R"(abort: failure at .*multibody_tree_indexes.h:.. in operator--\(\): )"
+        R"(assertion 'index_ >= 0' failed)");
+#endif
   }
 
   // Addition and Subtraction.
@@ -85,6 +108,15 @@ void RunMultibodyIndexTests() {
     IndexType index2(5);
     EXPECT_EQ(index1 + index2, IndexType(13));
     EXPECT_EQ(index1 - index2, IndexType(3));
+    // Negative results are an int, not an index, and therefore are allowed.
+    EXPECT_EQ(index2 - index1, -3);
+    // However construction from a negative result is not allowed.
+#ifdef DRAKE_ASSERT_IS_ARMED
+    ASSERT_DEATH(
+        { IndexType bad_index(index2 - index1); },
+        R"(abort: failure at .*multibody_tree_indexes.h:.. )"
+        R"(in TaggedIndex\(\): assertion 'index_ >= 0' failed)");
+#endif
   }
 
   // Addition assignment.
@@ -103,6 +135,14 @@ void RunMultibodyIndexTests() {
     EXPECT_EQ(index, IndexType(1));
     EXPECT_EQ(index_minus_seven, IndexType(1));
     EXPECT_EQ(index, index_minus_seven);
+    // In Debug builds decrements leading to a negative result will abort.
+#ifdef DRAKE_ASSERT_IS_ARMED
+    IndexType about_to_be_negative_index(0);
+    ASSERT_DEATH(
+        { about_to_be_negative_index -= 7; },
+        R"(abort: failure at .*multibody_tree_indexes.h:.. in operator-=\(\): )"
+        R"(assertion 'index_ >= 0' failed)");
+#endif
   }
 
   // Stream insertion operator.
