@@ -23,7 +23,7 @@
         <geometry>
           <box>
             <size>1 1 1</size>
-	  </box>
+          </box>
         </geometry>
       </collision>
     </link>
