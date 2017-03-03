@@ -200,50 +200,45 @@ class ImageTest {
     }
   }
 
-  static void VerifyAllShapes(const sensors::Image<uint8_t>& color_image,
-                              const sensors::Image<float>& depth_image) {
-    const std::string color_file("/systems/sensors/test/images/color.png");
-    const std::string depth_file("/systems/sensors/test/images/depth.png");
-
-    vtkNew<vtkPNGReader> color_reader;
-    color_reader->SetFileName((GetDrakePath() + color_file).c_str());
-    color_reader->Update();
-    vtkImageData* color_expected = color_reader->GetOutput();
-
-    vtkNew<vtkPNGReader> depth_reader;
-    depth_reader->SetFileName((GetDrakePath() + depth_file).c_str());
-    depth_reader->Update();
-    vtkImageData* depth_expected = depth_reader->GetOutput();
-
-    // Verifies by sampling 64 x 48 points instead of 640 x 480 points. The
+  static void VerifyBox(const sensors::Image<uint8_t>& color_image,
+                        const sensors::Image<float>& depth_image) {
+    // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
     // assumption is any defects will be detected by sampling this amount.
-    // `y` is traversed in reverse (largest to smallest) order because the
-    // origin of VTK's image coordinate system is on the left-bottom corner of
-    // the image while `RgbdCamera`'s is on the left-top corner.
-    int y = 47;
-    int x = 0;
-    for (int v = 0; v < color_image.height(); v += 10) {
-      x = 0;
-      for (int u = 0; u < color_image.width(); u += 10) {
-        uint8_t* color = static_cast<uint8_t*>(
-            color_expected->GetScalarPointer(x, y, 0));
-
-        AssertLe(color_image.at(u, v)[0], *(color + 2),
-                 kColorPixelTolerance);  // B
-        AssertLe(color_image.at(u, v)[1], *(color + 1),
-                 kColorPixelTolerance);  // G
-        AssertLe(color_image.at(u, v)[2], *(color + 0),
-                 kColorPixelTolerance);  // R
-        AssertLe(color_image.at(u, v)[3], *(color + 3),
-                 kColorPixelTolerance);  // A
-
-        float* depth = static_cast<float*>(
-            depth_expected->GetScalarPointer(x, y, 0));
-        ASSERT_NEAR(depth_image.at(u, v)[0], *depth, 1e-4);
-        ++x;
+    for (int v = 0; v < color_image.height(); v += 20) {
+      for (int u = 0; u < color_image.width(); u += 20) {
+        // Assuming depth value provides 0.1 mm precision.
+        ASSERT_NEAR(depth_image.at(u, v)[0], 1.f, 1e-4);
       }
-      --y;
     }
+  }
+
+  static void VerifyCylinder(const sensors::Image<uint8_t>& color_image,
+                             const sensors::Image<float>& depth_image) {
+    // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
+    // assumption is any defects will be detected by sampling this amount.
+    for (int v = 0; v < color_image.height(); v += 20) {
+      for (int u = 0; u < color_image.width(); u += 20) {
+        // Assuming depth value provides 0.1 mm precision.
+        ASSERT_NEAR(depth_image.at(u, v)[0], 1.f, 1e-4);
+      }
+    }
+  }
+
+  static void VerifySphere(const sensors::Image<uint8_t>& color_image,
+                           const sensors::Image<float>& depth_image) {
+    // Assuming depth value provides 0.1 mm precision.
+    const int kHalfWidth = color_image.width() / 2;
+    const int kHalfHeight = color_image.height() / 2;
+
+    // A location of the sphere surface is a crossing point of four pixels
+    // adjacent to the optical axis.
+    const float actual_sphere_depth_on_optical_axis = (
+        depth_image.at(kHalfWidth, kHalfHeight)[0] +
+        depth_image.at(kHalfWidth, kHalfHeight + 1)[0] +
+        depth_image.at(kHalfWidth + 1, kHalfHeight)[0] +
+        depth_image.at(kHalfWidth + 1, kHalfHeight + 1)[0]) / 4.f;
+
+    ASSERT_NEAR(actual_sphere_depth_on_optical_axis, 1.f, 1e-3);
   }
 
  private:
@@ -252,20 +247,47 @@ class ImageTest {
 
 // Verifies the rendered terrain.
 GTEST_TEST(RenderingTest, TerrainRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/box.sdf");
+  const std::string sdf("/systems/sensors/test/models/nothing.sdf");
   ImageTest dut(sdf,
                 Eigen::Vector3d(0., 0., 4.999),
                 Eigen::Vector3d(0., M_PI_2, 0.),
                 ImageTest::VerifyTerrain);
 }
 
-// Verifies the rendered shapes.
-GTEST_TEST(RenderingTest, AllShapeRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/all_shapes.sdf");
+// Verifies the rendered box.
+GTEST_TEST(RenderingTest, BoxRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/box.sdf");
   ImageTest dut(sdf,
-                Eigen::Vector3d(-1., 0., 1),
-                Eigen::Vector3d(0., M_PI_2 * 0.5, 0.),
-                ImageTest::VerifyAllShapes);
+                Eigen::Vector3d(0., 0., 2.),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifyBox);
+}
+
+// Verifies the rendered mesh box.
+GTEST_TEST(RenderingTest, MeshBoxRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/mesh_box.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(0., 0., 3.),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifyBox);
+}
+
+// Verifies the rendered cylinder.
+GTEST_TEST(RenderingTest, CylinderRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/cylinder.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(0., 0., 2.),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifyCylinder);
+}
+
+// Verifies the rendered sphere.
+GTEST_TEST(RenderingTest, SphereRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/sphere.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(0., 0., 2.),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifySphere);
 }
 
 // Verifies an exception is thrown if a link has more than two visuals.
