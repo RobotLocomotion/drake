@@ -28,7 +28,8 @@ drake_add_cc_test(global_inverse_kinematics_test)
 target_link_libraries(global_inverse_kinematics_test
         drakeGlobalIK
         drakeRigidBodyPlant
-        drakeMultibodyParsers)
+        drakeMultibodyParsers
+        drakeCommon)
 
 # Inverse kinematics unit tests.
 macro(add_ik_cpp)

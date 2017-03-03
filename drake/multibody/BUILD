@@ -297,6 +297,7 @@ drake_cc_googletest(
         ":global_inverse_kinematics",
         ":rigid_body_tree_construction",
         "//drake/multibody/parsers",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 

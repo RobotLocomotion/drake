@@ -1,5 +1,7 @@
 #include "drake/multibody/global_inverse_kinematics.h"
 
+#include <string>
+
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/drake_joints.h"
 #include "drake/solvers/rotation_constraint.h"
@@ -14,8 +16,9 @@ using drake::symbolic::Expression;
 
 namespace drake {
 namespace multibody {
-GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, int num_binary_vars_per_half_axis) : robot_(&robot) {
-
+GlobalInverseKinematics::GlobalInverseKinematics(
+    const RigidBodyTreed& robot, int num_binary_vars_per_half_axis)
+    : robot_(&robot) {
   const int num_bodies = robot_->get_num_bodies();
   body_rotmat_.resize(num_bodies);
   body_pos_.resize(num_bodies);
@@ -32,7 +35,9 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
     if (body.IsRigidlyFixedToWorld()) {
       Isometry3d body_pose = body.ComputeWorldFixedPose();
       for (int i = 0; i < 3; ++i) {
-        AddBoundingBoxConstraint(body_pose.linear().col(i), body_pose.linear().col(i), body_rotmat_[body_idx].col(i));
+        AddBoundingBoxConstraint(body_pose.linear().col(i),
+                                 body_pose.linear().col(i),
+                                 body_rotmat_[body_idx].col(i));
       }
       AddBoundingBoxConstraint(body_pose.translation(),
                                body_pose.translation(),
@@ -67,12 +72,24 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
 
               const RevoluteJoint
                   *revolute_joint = static_cast<const RevoluteJoint*>(joint);
-              const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
-              // The rotation joint is the same in both child body and the parent body.
-              AddLinearEqualityConstraint(body_rotmat_[body_idx] * rotate_axis - body_rotmat_[parent_idx] * joint_to_parent_transform.linear() * rotate_axis, Vector3d::Zero());
+              const Vector3d rotate_axis =
+                  revolute_joint->joint_axis().head<3>();
+              // The rotation joint is the same in both child body and the
+              // parent body.
+              AddLinearEqualityConstraint(
+                  body_rotmat_[body_idx] * rotate_axis -
+                      body_rotmat_[parent_idx] *
+                          joint_to_parent_transform.linear() * rotate_axis,
+                  Vector3d::Zero());
 
-              // The position of the rotation axis is the same on both child and parent bodies.
-              AddLinearEqualityConstraint(body_pos_[parent_idx] + body_rotmat_[parent_idx] * joint_to_parent_transform.translation() - body_pos_[body_idx], Vector3d::Zero());
+              // The position of the rotation axis is the same on both child and
+              // parent bodies.
+              AddLinearEqualityConstraint(
+                  body_pos_[parent_idx] +
+                      body_rotmat_[parent_idx] *
+                          joint_to_parent_transform.translation() -
+                      body_pos_[body_idx],
+                  Vector3d::Zero());
 
               // Now add the joint limits constraint -α ≤ θ ≤ α, where α is the
               // maximal angle the joint can rotate. Notice we require that
@@ -80,7 +97,9 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
               double joint_lb = joint->getJointLimitMin()(0);
               double joint_ub = joint->getJointLimitMax()(0);
 
-              // TODO(hongkai.dai): add the function to change joint_to_parent_transform if the joint lower bound and the joint upper bound do not adds up to 0.
+              // TODO(hongkai.dai): add the function to change
+              // joint_to_parent_transform if the joint lower bound and the
+              // joint upper bound do not adds up to 0.
               DRAKE_DEMAND(joint_lb + joint_ub == 0);
 
               if (joint_ub < M_PI) {
@@ -91,7 +110,8 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
                 //    |u - v| <= 2*sin(α/2)
                 // which is a second order cone constraint.
 
-                // First generate a vector that is perpendicular to rotation axis.
+                // First generate a vector that is perpendicular to rotation
+                // axis.
                 Vector3d revolute_vector = rotate_axis.cross(Vector3d(1, 0, 0));
                 double revolute_vector_norm = revolute_vector.norm();
                 if (revolute_vector_norm < 1E-2) {
@@ -110,7 +130,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
                         body_rotmat_[parent_idx] *
                             joint_to_parent_transform.linear() *
                             revolute_vector;
-                // clang-format on;
+                // clang-format on
                 AddLorentzConeConstraint(joint_limit_expr);
               }
             } else {
@@ -123,12 +143,22 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
             // Fixed to the parent body.
 
             // The position can be computed from the parent body pose.
-            AddLinearEqualityConstraint(body_pos_[parent_idx] + body_rotmat_[parent_idx] * joint_to_parent_transform.translation() - body_pos_[body_idx], Vector3d::Zero());
+            // child_pos = parent_pos + parent_rotmat * joint_to_parent_pos.
+            AddLinearEqualityConstraint(
+                body_pos_[parent_idx] +
+                    body_rotmat_[parent_idx] *
+                        joint_to_parent_transform.translation() -
+                    body_pos_[body_idx],
+                Vector3d::Zero());
 
             // The orientation can be computed from the parent body orientation.
-            Matrix3<Expression> orient_invariance = body_rotmat_[parent_idx] * joint_to_parent_transform.linear() - body_rotmat_[body_idx];
+            // child_rotmat = parent_rotmat * joint_to_parent_rotmat.
+            Matrix3<Expression> orient_invariance =
+                body_rotmat_[parent_idx] * joint_to_parent_transform.linear() -
+                body_rotmat_[body_idx];
             for (int i = 0; i < 3; ++i) {
-              AddLinearEqualityConstraint(orient_invariance.col(i), Vector3d::Zero());
+              AddLinearEqualityConstraint(orient_invariance.col(i),
+                                          Vector3d::Zero());
             }
             break;
           }
@@ -137,7 +167,6 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
           }
           default : throw std::runtime_error("Unsupporte joint type.");
         }
-
       }
     }
   }
@@ -194,8 +223,7 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
           q(body.get_position_start_index()) =
               joint_angle_axis.axis().dot(rotate_axis) > 0
               ? joint_angle_axis.angle() : -joint_angle_axis.angle();
-        }
-        else {
+        } else {
           // TODO(hongkai.dai): add prismatic and helical joints.
           throw std::runtime_error("Unsupported joint type.");
         }
@@ -209,9 +237,14 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
   return q;
 }
 
-void GlobalInverseKinematics::AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& body_pt, const Eigen::Vector3d& box_lb, const Eigen::Vector3d& box_ub, const Isometry3d& measured_transform) {
-  Vector3<Expression> body_pt_pos = body_pos_[body_idx] + body_rotmat_[body_idx] * body_pt;
-  Vector3<Expression> body_pt_in_measured_frame = measured_transform.linear().transpose() * (body_pt_pos - measured_transform.translation());
+void GlobalInverseKinematics::AddWorldPositionConstraint(
+    int body_idx, const Eigen::Vector3d& body_pt, const Eigen::Vector3d& box_lb,
+    const Eigen::Vector3d& box_ub, const Isometry3d& measured_transform) {
+  Vector3<Expression> body_pt_pos =
+      body_pos_[body_idx] + body_rotmat_[body_idx] * body_pt;
+  Vector3<Expression> body_pt_in_measured_frame =
+      measured_transform.linear().transpose() *
+      (body_pt_pos - measured_transform.translation());
   AddLinearConstraint(body_pt_in_measured_frame, box_lb, box_ub);
 }
 
