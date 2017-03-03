@@ -8,4 +8,13 @@ if (lcm_FOUND AND Bullet_FOUND)
       drakeSystemFramework
       drakeSystemPrimitives
       )
+
+  add_executable(bowling_ball bowling_ball.cc)
+  target_link_libraries(bowling_ball
+      drakeLcmSystem
+      drakeMultibodyParsers
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeSystemFramework
+      )
 endif()
