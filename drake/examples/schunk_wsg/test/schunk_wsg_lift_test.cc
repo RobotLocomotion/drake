@@ -3,6 +3,15 @@
 /// This file implements a test that the Schunk WSG50 gripper can grip
 /// a box which is sitting on the world, raise it into the air, and
 /// not drop the box.
+///
+/// This test is, in some sense, a warning alarm.  Given the implemented contact
+/// model and the encoded parameters, this test implicitly defines an acceptable
+/// *behavior*.  It doesn't test the contact model's functionality (the contact
+/// model has its own unit tests.)  It also doesn't guarantee physical
+/// correctness. Instead, it evaluates the contact model in a larger integrated
+/// context, quantifies "valid" behavior, in some sense, and serves as an early
+/// warning that can indicate if something has changed in the system such that
+/// the final system no longer reproduces the expected baseline behavior.
 
 #include <memory>
 
@@ -39,6 +48,7 @@ using drake::systems::RungeKutta3Integrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
+using Eigen::Vector3d;
 
 // Initial height of the box's origin.
 const double kBoxInitZ = 0.076;
@@ -131,7 +141,8 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // is to allow the gripper to settle on the box before we start
   // moving.
   const double kLiftHeight = 1.0;
-  std::vector<double> lift_breaks{0., 0.9, 1., 4., 5};
+  const double kLiftStart = 1.0;
+  std::vector<double> lift_breaks{0., 0.9, kLiftStart, 4., 5};
   std::vector<Eigen::MatrixXd> lift_knots;
   lift_knots.push_back(Eigen::Vector2d(0., 0.));
   lift_knots.push_back(Eigen::Vector2d(0., 0.));
@@ -254,18 +265,50 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   EXPECT_GT(final_output_data[
       positions["right_finger_sliding_joint"]], 0.02);
 
-  // This is a tight bound on the expected behavior.  The box starts resting
-  // on the ground; it's origin is half its height above the z=0 plane.
+  // This is a bound on the expected behavior and implicitly defines what we
+  // consider to be "acceptable" stiction behavior.
+  //
+  // The box starts resting on the ground; it's center is at the position
+  // <0, 0, h/2> (where h is the height of the box).
   // Ostensibly, the box is picked up in stiction and lifted a specific amount
-  // (kLiftHeight).  Ideally, the final height of the box should be its
-  // initial height plus the lift height.  However, the contact model allows
+  // (kLiftHeight).  Ideally, the final position of the box should be
+  // <0, 0, h/2 + kLiftHeight>.  However, the contact model allows
   // a maximum amount of slipping during stiction (kVStictionTolerance). Thus,
   // for T seconds of stiction time, the object could slip as much as
   // T * kVStictionTolerance.  So, we pad our expectation by this amount and
-  // confirm that the box hasn't slid *more* than this.
+  // confirm that the box hasn't slid *more* than this.  Due to the fact that
+  // the grip predominantly lies *behind* the box's center of mass, this
+  // displacement due to slip will not be solely in the z-direction, so we
+  // look at the overall displacement of the box's origin.
+  //
+  // Note that this isn't a *definitive* metric.  It's an attempt at a
+  // quantitative metric to indicate that the behavior lies with in an expected
+  // qualitative threshold. The completeness of this metric is limited on
+  // multiple fronts:
+  //   - We are looking at the overall displacement of the center of mass and
+  //     not its actual trajectory (which is more likely an arc).  However, for
+  //     small curves, the chord is a reasonable approximation of the arc.
+  //   - The stiction model doesn't *actually* guarantee the slip velocity of
+  //     the body origin; it guarantees the speed of the contact points. Given
+  //     a long enough lever arm, the disparity between speeds at those to
+  //     locations can be significant.  However, this is a small scale problem
+  //     with multiple points of contact which would help reduce the lever
+  //     effect, so this approximation isn't particularly destructive.
+  //   - We haven't guaranteed the initial position of the box when the gripper
+  //     begins lifting it.  There can be slight perturbations while the box
+  //     settles on the ground and as the gripper first grips it.  So, the
+  //     initial position may not be <0, 0, h/2>.  Qualitatively, any error
+  //     introduced by this assumption seems to lie safely below a meaningful
+  //     threshold.
+  //   - We allow a fair amount of slippage (at a rate of 0.01 m/s for a box
+  //     whose scale is on the same order of magnitude.  This is a testing
+  //     expediency to allow for timely execution.  This does not *prove* that
+  //     the behavior is correct smaller thresholds (and the corresponding
+  //     more precise integrator settings.
   const double kBoxZ0 = 0.075;  // Half the box height.
-  const double kExpectedHeight = kBoxZ0 + kLiftHeight -
-      (kSimDuration * kVStictionTolerance);
+  const double kIdealBoxHeight = kBoxZ0 + kLiftHeight;
+  Vector3d ideal_pos;
+  ideal_pos << 0.0, 0.0, kIdealBoxHeight;
   // Expect that the box is off of the ground.
   // TODO(SeanCurtis-TRI): Provide a better basis for acquiring exported output
   // port index. Currently, *assuming* the second exported output has index 1
@@ -274,8 +317,14 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   auto& kinematics_results2 = state_output->get_data(kinematrics_results_index)
       ->GetValue<KinematicsResults<double>>();
   const int box_index = tree.FindBodyIndex("box");
-  Vector3<double> final_pos = kinematics_results2.get_body_position(box_index);
-  EXPECT_GT(final_pos(2), kExpectedHeight);
+  Vector3d final_pos = kinematics_results2.get_body_position(box_index);
+  Vector3d displacement = final_pos - ideal_pos;
+  double distance = displacement.norm();
+
+  // Lift duration is a sub-interval of the full simulation.
+  const double kLiftDuration = kSimDuration - kLiftStart;
+  const double kMeanSlipSpeed = distance / kLiftDuration;
+  EXPECT_LT(kMeanSlipSpeed, kVStictionTolerance);
 }
 
 }  // namespace
