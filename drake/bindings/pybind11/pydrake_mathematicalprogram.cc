@@ -117,7 +117,7 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("linear_constraints", &MathematicalProgram::linear_constraints)
     .def("linear_equality_constraints",
          &MathematicalProgram::linear_equality_constraints)
-    .def("bounding_box_constraints", 
+    .def("bounding_box_constraints",
          &MathematicalProgram::bounding_box_constraints)
     .def("linear_costs", &MathematicalProgram::linear_costs)
     .def("quadratic_costs", &MathematicalProgram::quadratic_costs)
@@ -166,7 +166,8 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   // Assign the wrapped Constraint class to the name 'constraint'
   // so we can use it in this file to indicate that the other constraint
   // types inherit from it.
-  py::class_<Constraint, std::shared_ptr<Constraint> > constraint(m, "Constraint");
+  py::class_<Constraint, std::shared_ptr<Constraint> > constraint(
+    m, "Constraint");
   constraint.def("lower_bound", &Constraint::lower_bound)
             .def("upper_bound", &Constraint::upper_bound);
 
@@ -174,14 +175,16 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     m, "LinearConstraint")
     .def("A", &LinearConstraint::A);
 
-  py::class_<LinearEqualityConstraint, LinearConstraint, std::shared_ptr<LinearEqualityConstraint> >(
+  py::class_<LinearEqualityConstraint, LinearConstraint,
+             std::shared_ptr<LinearEqualityConstraint> >(
     m, "LinearEqualityConstraint");
 
-  py::class_<BoundingBoxConstraint, LinearConstraint, std::shared_ptr<BoundingBoxConstraint> >(
+  py::class_<BoundingBoxConstraint, LinearConstraint,
+             std::shared_ptr<BoundingBoxConstraint> >(
     m, "BoundingBoxConstraint");
 
-  py::class_<QuadraticConstraint, Constraint, std::shared_ptr<QuadraticConstraint> >(
-    m, "QuadraticConstraint")
+  py::class_<QuadraticConstraint, Constraint,
+             std::shared_ptr<QuadraticConstraint> >(m, "QuadraticConstraint")
     .def("Q", &QuadraticConstraint::Q)
     .def("b", &QuadraticConstraint::b);
 
