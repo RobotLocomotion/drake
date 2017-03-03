@@ -9,11 +9,28 @@ namespace drake {
 namespace multibody {
 class GlobalInverseKinematics : public solvers::MathematicalProgram {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GlobalInverseKinematics)
+
   GlobalInverseKinematics(const RigidBodyTreed& robot, int num_binary_vars_per_half_axis = 2);
+
+  ~GlobalInverseKinematics() override {}
 
   const std::vector<solvers::MatrixDecisionVariable<3, 3>>& body_rotmat() const { return body_rotmat_;}
 
   const std::vector<solvers::VectorDecisionVariable<3>>& body_pos() const { return body_pos_;}
+
+  /**
+   * After solving the inverse kinematics problem and find out the pose of each
+   * body, reconstruct the robot posture (joint angles, etc) that matches with
+   * the body poses.
+   * Notice that since the rotation matrix is approximated, that
+   * the solution of body_rotmat might not be on so(3) exactly, the
+   * reconstructed body posture might not match with the body poses exactly, and
+   * the kinematics constraint might not be satisfied exactly with this
+   * reconstructed posture.
+   * @return The reconstructed posture.
+   */
+  Eigen::VectorXd ReconstructPostureSolution() const;
 
   /**
    * Adds the constraint that position of a point `body_pt` on a body

@@ -6,6 +6,7 @@
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
+using Eigen::Matrix3d;
 
 using std::string;
 
@@ -21,7 +22,6 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
   // Loop through each body in the robot, to add the constraint that the bodies
   // are welded by joints.
   for (int model_id = 0; model_id < robot_->get_num_model_instances(); ++model_id) {
-    // In each model, start from the base links to parse the tree.
     const std::vector<const RigidBody<double>*>& model_bodies = robot_->FindModelInstanceBodies(model_id);
     for (const auto& body : model_bodies) {
       const int body_idx = body->get_body_index();
@@ -116,6 +116,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
                   AddLorentzConeConstraint(joint_limit_expr);
                 }
               } else {
+                // TODO(hongkai.dai): Add prismatic and helical joint.
                 throw std::runtime_error("Unsupported joint type.");
               }
               break;
@@ -145,6 +146,75 @@ GlobalInverseKinematics::GlobalInverseKinematics(const RigidBodyTreed& robot, in
   }
 }
 
+Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
+  Eigen::VectorXd q(robot_->get_num_positions());
+  for (int model_id = 0; model_id < robot_->get_num_model_instances(); ++model_id) {
+    const std::vector<const RigidBody<double> *>
+        &model_bodies = robot_->FindModelInstanceBodies(model_id);
+    for (const auto &body : model_bodies) {
+      int body_idx = body->get_body_index();
+      const Matrix3d body_rotmat = GetSolution(body_rotmat_[body_idx]);
+      if (!body->IsRigidlyFixedToWorld() && body->has_parent_body()) {
+        const RigidBody<double> *parent = body->get_parent();
+        const Matrix3d
+            parent_rotmat = GetSolution(body_rotmat_[parent->get_body_index()]);
+        const DrakeJoint *joint = &(body->getJoint());
+        const auto &joint_to_parent_transform =
+            joint->get_transform_to_parent_body();
+        int num_positions = joint->get_num_positions();
+        if (num_positions == 6 || num_positions == 7) {
+          // Question: Is there a function to determine if a body is floating?
+          Vector3d body_pos = GetSolution(body_pos_[body_idx]);
+          Matrix3d normalized_rotmat = math::ProjectMatToRotMat(body_rotmat);
+
+          if (num_positions == 6) {
+            // The position order is x-y-z-roll-pitch-yaw.
+            q.segment<3>(body->get_position_start_index()) = body_pos;
+            q.segment<3>(body->get_position_start_index() + 3) =
+                math::rotmat2rpy(normalized_rotmat);
+          } else {
+            // The position order is qw-qx-qy-qz-x-y-z, namely quaternion first,
+            // and translation second.
+            q.segment<4>(body->get_position_start_index()) =
+                math::rotmat2quat(normalized_rotmat);
+            q.segment<3>(body->get_position_start_index() + 4) = body_pos;
+          }
+        } else if (num_positions == 1) {
+          // Should NOT do this evil dynamic cast here, but currently we do
+          // not have a method to tell if a joint is revolute or not.
+          if (dynamic_cast<const RevoluteJoint *>(joint)
+              == static_cast<const RevoluteJoint *>(joint)) {
+            const RevoluteJoint
+                *revolute_joint = static_cast<const RevoluteJoint *>(joint);
+            Matrix3d joint_rotmat =
+                joint_to_parent_transform.linear().transpose()
+                    * parent_rotmat.transpose() * body_rotmat;
+            // The joint_angle_axis computed from the body orientation is very
+            // likely not being aligned with the real joint axis. The reason is
+            // that we use a relaxation of the rotation matrix, and thus
+            // body_rotmat might not lie on so(3) exactly.
+            Matrix3d normalized_rotmat = math::ProjectMatToRotMat(joint_rotmat);
+            Eigen::AngleAxisd joint_angle_axis(normalized_rotmat);
+
+            const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
+            q(body->get_position_start_index()) =
+                joint_angle_axis.axis().dot(rotate_axis) > 0
+                ? joint_angle_axis.angle() : -joint_angle_axis.angle();
+          }
+          else {
+            // TODO(hongkai.dai): add prismatic and helical joints.
+            throw std::runtime_error("Unsupported joint type.");
+          }
+        } else if (num_positions == 0) {
+          // Deliberately left empty because the joint is removed by welding the
+          // parent body to the child body.
+        }
+      }
+    }
+  }
+  return q;
+}
+
 void GlobalInverseKinematics::AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& body_pt, const Eigen::Vector3d& box_lb, const Eigen::Vector3d& box_ub, const Isometry3d& measured_transform) {
   Vector3<Expression> body_pt_pos = body_pos_[body_idx] + body_rotmat_[body_idx] * body_pt;
   Vector3<Expression> body_pt_in_measured_frame = measured_transform.linear().transpose() * (body_pt_pos - measured_transform.translation());
@@ -155,13 +225,13 @@ void GlobalInverseKinematics::AddWorldOrientationConstraint(
     int body_idx,
     const Eigen::Quaterniond &desired_orientation,
     double angle_tol) {
-  // The rotation matrix err R_e satisfies
-  // trace(R_e) = 4 * cos(θ / 2)^2 - 1, where θ is the rotation angle between
+  // The rotation matrix error R_e satisfies
+  // trace(R_e) = 2 * cos(θ) + 1, where θ is the rotation angle between
   // desired orientation and the current orientation. Thus the constraint is
-  // 4 * cos(angle_tol / 2) ^ 2 - 1 <= trace(R_e) <= 3
+  // 2 * cos(angle_tol) + 1 <= trace(R_e) <= 3
   Matrix3<Expression> rotation_matrix_err =
   desired_orientation.toRotationMatrix() * body_rotmat_[body_idx].transpose();
-  double lb = angle_tol < M_PI ? 4 * pow(cos(angle_tol / 2), 2) - 1 : -1;
+  double lb = angle_tol < M_PI ? 2 * cos(angle_tol) + 1 : -1;
   AddLinearConstraint(rotation_matrix_err.trace(), lb, 3);
 }
 }  // namespace multibody
