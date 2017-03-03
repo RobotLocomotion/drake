@@ -34,9 +34,9 @@ namespace systems {
 template <typename T>
 struct PeriodicEvent {
   /// The period with which this event should recur.
-  T period_sec{0.0};
+  double period_sec{0.0};
   /// The time after zero when this event should first occur.
-  T offset_sec{0.0};
+  double offset_sec{0.0};
   /// The action that should be taken when this event occurs.
   DiscreteEvent<T> event;
 };
@@ -147,7 +147,7 @@ class LeafSystem : public System<T> {
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override {
+      const Context<T>& context) const final {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
@@ -350,7 +350,7 @@ class LeafSystem : public System<T> {
   /// The first tick will be at t = period_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may perform
   /// the given type of action.
-  void DeclarePeriodicAction(const T& period_sec, const T& offset_sec,
+  void DeclarePeriodicAction(double period_sec, double offset_sec,
       const typename DiscreteEvent<T>::ActionType& action) {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
@@ -363,7 +363,7 @@ class LeafSystem : public System<T> {
   /// The first tick will be at t = period_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update
   /// the discrete state.
-  void DeclareDiscreteUpdatePeriodSec(const T& period_sec) {
+  void DeclareDiscreteUpdatePeriodSec(double period_sec) {
     DeclarePeriodicAction(period_sec, 0.0,
         DiscreteEvent<T>::kDiscreteUpdateAction);
   }
@@ -372,7 +372,7 @@ class LeafSystem : public System<T> {
   /// The first tick will be at t = offset_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update the
   /// discrete state.
-  void DeclarePeriodicDiscreteUpdate(const T& period_sec, const T& offset_sec) {
+  void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec) {
     DeclarePeriodicAction(period_sec, offset_sec,
         DiscreteEvent<T>::kDiscreteUpdateAction);
   }
@@ -381,8 +381,7 @@ class LeafSystem : public System<T> {
   /// update. The first tick will be at t = offset_sec, and it will recur at
   /// every period_sec thereafter. On the discrete tick, the system may perform
   /// unrestricted updates.
-  void DeclarePeriodicUnrestrictedUpdate(const T& period_sec,
-      const T& offset_sec) {
+  void DeclarePeriodicUnrestrictedUpdate(double period_sec, double offset_sec) {
     DeclarePeriodicAction(period_sec, offset_sec,
         DiscreteEvent<T>::kUnrestrictedUpdateAction);
   }
@@ -391,7 +390,7 @@ class LeafSystem : public System<T> {
   /// The first tick will be at t = period_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update
   /// the discrete state.
-  void DeclarePublishPeriodSec(const T& period_sec) {
+  void DeclarePublishPeriodSec(double period_sec) {
     DeclarePeriodicAction(period_sec, 0, DiscreteEvent<T>::kPublishAction);
   }
 
@@ -487,9 +486,9 @@ class LeafSystem : public System<T> {
   // Returns the next sample time for the given @p event.
   static T GetNextSampleTime(const PeriodicEvent<T>& event,
                              const T& current_time_sec) {
-    const T& period = event.period_sec;
+    const double period = event.period_sec;
     DRAKE_ASSERT(period > 0);
-    const T& offset = event.offset_sec;
+    const double offset = event.offset_sec;
     DRAKE_ASSERT(offset >= 0);
 
     // If the first sample time hasn't arrived yet, then that is the next
@@ -516,11 +515,13 @@ class LeafSystem : public System<T> {
   /// Returns a SparsityMatrix for this system, or nullptr if a SparsityMatrix
   /// cannot be constructed because this System has no symbolic representation.
   std::unique_ptr<SparsityMatrix> MakeSparsityMatrix() const {
-    auto symbolic_system = this->DoToSymbolic();
-    if (symbolic_system == nullptr) {
+    std::unique_ptr<System<symbolic::Expression>> symbolic_system =
+        this->ToSymbolic();
+    if (symbolic_system) {
+      return std::make_unique<SparsityMatrix>(*symbolic_system);
+    } else {
       return nullptr;
     }
-    return std::make_unique<SparsityMatrix>(*symbolic_system);
   }
 
   // Periodic Update or Publish events registered on this system.

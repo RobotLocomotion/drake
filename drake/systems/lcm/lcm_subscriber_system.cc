@@ -98,34 +98,29 @@ void LcmSubscriberSystem::DoCalcOutput(const Context<double>&,
   }
 }
 
-// This is called no matter what output port type we are using.
-std::unique_ptr<SystemOutput<double>>
-LcmSubscriberSystem::AllocateOutput(const Context<double>& context) const {
-  DRAKE_DEMAND((translator_ != nullptr) != (serializer_.get() != nullptr));
-
-  if (translator_ != nullptr) {
-    // For vector-valued output, the base class implementation is correct.
-    return LeafSystem<double>::AllocateOutput(context);
-  } else {
-    // For abstract-valued output, we need to roll our own.
-    auto output = std::make_unique<LeafSystemOutput<double>>();
-    output->add_port(
-        std::make_unique<OutputPort>(serializer_->CreateDefaultValue()));
-    return std::unique_ptr<SystemOutput<double>>(output.release());
-  }
-}
-
 // This is only called if our output port is vector-valued.
 std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
     const OutputPortDescriptor<double>& descriptor) const {
   DRAKE_DEMAND(descriptor.get_index() == 0);
+  DRAKE_DEMAND(descriptor.get_data_type() == kVectorValued);
   DRAKE_DEMAND(translator_ != nullptr);
-  DRAKE_DEMAND(serializer_.get() == nullptr);
+  DRAKE_DEMAND(serializer_ == nullptr);
   auto result = translator_->AllocateOutputVector();
   if (result) {
     return result;
   }
   return LeafSystem<double>::AllocateOutputVector(descriptor);
+}
+
+// This is only called if our output port is abstract-valued.
+std::unique_ptr<systems::AbstractValue>
+LcmSubscriberSystem::AllocateOutputAbstract(
+    const OutputPortDescriptor<double>& descriptor) const {
+  DRAKE_DEMAND(descriptor.get_index() == 0);
+  DRAKE_DEMAND(descriptor.get_data_type() == kAbstractValued);
+  DRAKE_DEMAND(translator_ == nullptr);
+  DRAKE_DEMAND(serializer_ != nullptr);
+  return serializer_->CreateDefaultValue();
 }
 
 void LcmSubscriberSystem::HandleMessage(const std::string& channel,

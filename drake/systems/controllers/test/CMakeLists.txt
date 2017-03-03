@@ -1,5 +1,11 @@
-drake_add_cc_test(gravity_compensator_test)
-target_link_libraries(gravity_compensator_test
+drake_add_cc_test(inverse_dynamics_test)
+target_link_libraries(inverse_dynamics_test
+    drakeSystemControllers
+    drakeSystemFramework
+    drakeRBSystem)
+
+drake_add_cc_test(inverse_dynamics_controller_test)
+target_link_libraries(inverse_dynamics_controller_test
     drakeSystemControllers
     drakeSystemFramework
     drakeRBSystem)

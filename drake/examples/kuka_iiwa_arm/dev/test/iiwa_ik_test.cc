@@ -25,7 +25,7 @@ inline double get_orientation_difference(const Matrix3<double>& rot0,
 GTEST_TEST(testInverseKinematics, SolveIkFromFk) {
   const std::string kModelPath =
       GetDrakePath() +
-      "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf";
+      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
   const std::string kEndEffectorLinkName = "iiwa_link_ee";
   std::default_random_engine rand_generator(1234);
 

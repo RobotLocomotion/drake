@@ -18,7 +18,7 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/controllers:pid_with_gravity_compensator",
+        "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:demultiplexer",
         "//drake/systems/primitives:multiplexer",

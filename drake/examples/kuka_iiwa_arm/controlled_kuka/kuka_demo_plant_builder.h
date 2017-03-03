@@ -13,7 +13,7 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/systems/controllers/pid_with_gravity_compensator.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -28,7 +28,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 const char kUrdfPath[] =
-    "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf";
+    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
 
 /// A systems::Diagram of a Kuka iiwa arm with position controller using
 /// gravity compensation and a PID controller. A plan may be passed in as
@@ -66,16 +66,12 @@ class KukaDemo : public systems::Diagram<T> {
     SetPositionControlledIiwaGains(&kp, &ki, &kd);
 
     controller_ =
-        builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
-            GetDrakePath() + kUrdfPath, nullptr, kp, ki, kd);
+        builder.template AddSystem<systems::InverseDynamicsController<T>>(
+            GetDrakePath() + kUrdfPath, nullptr, kp, ki, kd,
+            false /* no feedforward acceleration */);
 
-    // The iiwa's control protocol doesn't have any way to express the
-    // desired velocity for the arm, so this simulation doesn't take
-    // target velocities as an input.  The PidControlledSystem does
-    // want target velocities to calculate the D term.  Since we don't
-    // have any logic to calculate the desired target velocity (yet!)
-    // set the D term (to stabilize the arm near the commanded
-    // position) and feed a desired velocity vector of zero.
+    // TODO(siyuan): should be able to easily compute derivatives once
+    // #5215 is in.
     auto zero_source =
         builder.template AddSystem<systems::ConstantVectorSource<T>>(
             Eigen::VectorXd::Zero(plant_->get_num_velocities()));
@@ -87,14 +83,14 @@ class KukaDemo : public systems::Diagram<T> {
 
     // Connects desired state to the controller.
     builder.Connect(input_mux->get_output_port(0),
-                    controller_->get_desired_state_input_port());
+                    controller_->get_input_port_desired_state());
 
     // Connects RBP state to the controller.
     builder.Connect(plant_->state_output_port(),
-                    controller_->get_estimated_state_input_port());
+                    controller_->get_input_port_estimated_state());
 
     // Connects controller's output to RBP.
-    builder.Connect(controller_->get_control_output_port(),
+    builder.Connect(controller_->get_output_port_control(),
                     plant_->actuator_command_input_port());
 
     // Creates a plan and wraps it into a source system.
@@ -127,7 +123,7 @@ class KukaDemo : public systems::Diagram<T> {
 
  private:
   systems::RigidBodyPlant<T>* plant_{nullptr};
-  systems::PidWithGravityCompensator<T>* controller_{nullptr};
+  systems::InverseDynamicsController<T>* controller_{nullptr};
   systems::Demultiplexer<T>* rbp_state_demux_{nullptr};
   systems::TrajectorySource<T>* desired_plan_{nullptr};
   std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory_;

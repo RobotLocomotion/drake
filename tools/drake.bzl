@@ -6,6 +6,7 @@ CLANG_FLAGS = [
     "-Werror=all",
     "-Werror=inconsistent-missing-override",
     "-Werror=sign-compare",
+    "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
 ]
 
@@ -15,6 +16,7 @@ GCC_FLAGS = [
     "-Werror=all",
     "-Werror=extra",
     "-Werror=return-local-addr",
+    "-Werror=non-virtual-dtor",
     "-Wno-unused-parameter",
     "-Wno-missing-field-initializers",
 ]
@@ -27,6 +29,14 @@ def _platform_copts(rule_copts):
       "//tools:clang3.9-linux": CLANG_FLAGS + rule_copts,
       "//tools:apple": CLANG_FLAGS + rule_copts,
       "//conditions:default": rule_copts,
+  })
+
+def _dsym_command(name):
+  """Returns the command to produce .dSYM on OS X, or a no-op on Linux."""
+  return select({
+      "//tools:apple_debug":
+          "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null",
+      "//conditions:default": "touch $@",
   })
 
 def drake_cc_library(
@@ -59,6 +69,7 @@ def drake_cc_binary(
         deps=None,
         copts=[],
         linkstatic=1,
+        testonly=0,
         **kwargs):
     """Creates a rule to declare a C++ binary.
 
@@ -71,8 +82,21 @@ def drake_cc_binary(
         srcs=srcs,
         deps=deps,
         copts=_platform_copts(copts),
+        testonly=testonly,
         linkstatic=linkstatic,
         **kwargs)
+
+    # Also generate the OS X debug symbol file for this binary.
+    native.genrule(
+        name=name + "_dsym",
+        srcs=[":" + name],
+        outs=[name + ".dSYM"],
+        output_to_bindir=1,
+        testonly=testonly,
+        tags=["dsym"],
+        visibility=["//visibility:private"],
+        cmd=_dsym_command(name),
+    )
 
 def drake_cc_test(
         name,
@@ -105,6 +129,18 @@ def drake_cc_test(
         srcs=srcs,
         copts=_platform_copts(copts),
         **kwargs)
+
+    # Also generate the OS X debug symbol file for this test.
+    native.genrule(
+        name=name + "_dsym",
+        srcs=[":" + name],
+        outs=[name + ".dSYM"],
+        output_to_bindir=1,
+        testonly=1,
+        tags=["dsym"],
+        visibility=["//visibility:private"],
+        cmd=_dsym_command(name),
+    )
 
 def drake_cc_googletest(
         name,

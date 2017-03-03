@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <Eigen/Core>
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 
@@ -14,10 +16,18 @@ class Trajectory {
   /**
    * Evaluates the trajectory at the given time \p t.
    * @param t The time at which to evaluate the trajectory.
-   * @return The output matrix.
+   * @return The matrix of evaluated values.
    */
-  virtual Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> value(
-      double t) const = 0;
+  virtual drake::MatrixX<double> value(double t) const = 0;
+
+  /**
+   * Takes the derivative of this Trajectory.
+   * @param derivative_order The number of times to take the derivative before
+   * returning.
+   * @return The nth derivative of this object.
+   */
+  virtual std::unique_ptr<Trajectory> derivative(
+      int derivative_order = 1) const = 0;
 
   /**
    * @return The number of rows in the matrix returned by value().

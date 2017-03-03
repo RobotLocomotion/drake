@@ -79,6 +79,12 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "inverse_dynamics_debug_info",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_inverse_dynamics_debug_info.lcm"],
+)
+
+lcm_cc_library(
     name = "joint_pd_override",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_joint_pd_override.lcm"],

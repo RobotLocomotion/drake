@@ -16,7 +16,7 @@ namespace automotive {
 /// Describes the row indices of a IdmPlannerParameters.
 struct IdmPlannerParametersIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 7;
+  static const int kNumCoordinates = 6;
 
   // The index of each individual coordinate.
   static const int kVRef = 0;
@@ -25,7 +25,6 @@ struct IdmPlannerParametersIndices {
   static const int kS0 = 3;
   static const int kTimeHeadway = 4;
   static const int kDelta = 5;
-  static const int kLA = 6;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -68,9 +67,6 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   /// free-road exponent
   const T& delta() const { return this->GetAtIndex(K::kDelta); }
   void set_delta(const T& delta) { this->SetAtIndex(K::kDelta, delta); }
-  /// length of leading car
-  const T& l_a() const { return this->GetAtIndex(K::kLA); }
-  void set_l_a(const T& l_a) { this->SetAtIndex(K::kLA, l_a); }
   //@}
 };
 

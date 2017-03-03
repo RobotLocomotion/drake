@@ -275,9 +275,6 @@ macro(drake_setup_options)
     DEPENDS "NOT DISABLE_PYTHON"
     "Google code style tools for cpplint.py style checking" ON)
 
-  drake_optional_external(HSRB_DESCRIPTION ON
-    "A ROS package containing a model of Toyota's HSR version B robot.")
-
   # IPOPT is currently disabled on Mac when MATLAB is enabled due to MATLAB
   # compatibility issues:
   # https://github.com/RobotLocomotion/drake/issues/2578

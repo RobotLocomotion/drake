@@ -203,3 +203,12 @@ config_setting(
         "cpu": "k8",
     },
 )
+
+config_setting(
+    name = "apple_debug",
+    values = {
+        "compilation_mode": "dbg",
+        "cpu": "darwin",
+    },
+)
+
