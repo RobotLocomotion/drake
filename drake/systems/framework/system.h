@@ -112,22 +112,28 @@ class System {
 
   /// Given a port descriptor, allocates the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses can
-  /// override to use output vector types other than BasicVector.  The
+  /// override to use input vector types other than BasicVector. The
   /// descriptor must match a port declared via DeclareInputPort.
-  virtual std::unique_ptr<BasicVector<T>> AllocateInputVector(
+  std::unique_ptr<BasicVector<T>> AllocateInputVector(
       const InputPortDescriptor<T>& descriptor) const {
-    return std::make_unique<BasicVector<T>>(descriptor.size());
+    DRAKE_ASSERT(descriptor.get_data_type() == kVectorValued);
+    const int index = descriptor.get_index();
+    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
+    DRAKE_ASSERT(get_input_port(index).get_data_type() == kVectorValued);
+    return std::unique_ptr<BasicVector<T>>(DoAllocateInputVector(descriptor));
   }
 
   /// Given a port descriptor, allocates the abstract storage.  The default
-  /// implementation in this class aborts.  Subclasses with abstract output
-  /// ports must override. The descriptor must match a port declared via
-  /// DeclareOutputPort.
-  virtual std::unique_ptr<AbstractValue> AllocateInputAbstract(
+  /// implementation in this class aborts.  Subclasses with abstract input
+  /// ports may override. The descriptor must match a port declared via
+  /// DeclareInputPort.
+  std::unique_ptr<AbstractValue> AllocateInputAbstract(
       const InputPortDescriptor<T>& descriptor) const {
-    DRAKE_ABORT_MSG(
-        "A concrete leaf system with abstract input ports must "
-        "override AllocateInputAbstract.");
+    DRAKE_ASSERT(descriptor.get_data_type() == kAbstractValued);
+    const int index = descriptor.get_index();
+    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
+    DRAKE_ASSERT(get_input_port(index).get_data_type() == kAbstractValued);
+    return std::unique_ptr<AbstractValue>(DoAllocateInputAbstract(descriptor));
   }
 
   /// Returns a default output, initialized with the correct number of
@@ -174,8 +180,9 @@ class System {
   // override.
   virtual void SetDefaults(Context<T>* context) const = 0;
 
-  /// Allocates uninitialized input vectors and/or abstract data for all
-  /// registered input ports.
+  /// For each input port, allocates a freestanding input of the concrete type
+  /// that this System requires, and binds it to the port, disconnecting any
+  /// prior input. Does not assign any values to the freestanding inputs.
   void AllocateFreestandingInputs(Context<T>* context) const {
     for (const auto& port : input_ports_) {
       if (port->get_data_type() == kVectorValued) {
@@ -923,6 +930,22 @@ class System {
   const OutputPortDescriptor<T>& DeclareAbstractOutputPort() {
     return DeclareOutputPort(kAbstractValued, 0 /* size */);
   }
+  //@}
+
+  //----------------------------------------------------------------------------
+  /// @name               Virtual methods for input allocation
+  /// Authors of derived %Systems should override these methods to self-describe
+  /// acceptable inputs to the %System.
+
+  /// Allocates an input vector of the leaf type that the System requires on
+  /// the port specified by @p descriptor. Caller owns the returned memory.
+  virtual BasicVector<T>* DoAllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const = 0;
+
+  /// Allocates an abstract input of the leaf type that the System requires on
+  /// the port specified by @p descriptor. Caller owns the returned memory.
+  virtual AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const = 0;
   //@}
 
   //----------------------------------------------------------------------------

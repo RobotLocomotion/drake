@@ -202,10 +202,10 @@ systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
 }
 
 template <typename T>
-std::unique_ptr<systems::BasicVector<T>> SimpleCar<T>::AllocateInputVector(
+systems::BasicVector<T>* SimpleCar<T>::DoAllocateInputVector(
     const systems::InputPortDescriptor<T>& descriptor) const {
   DRAKE_DEMAND(descriptor.get_index() == 0);
-  return std::make_unique<DrivingCommand<T>>();
+  return new DrivingCommand<T>();
 }
 
 template <typename T>

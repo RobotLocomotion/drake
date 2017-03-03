@@ -77,6 +77,16 @@ class TestSystem : public System<double> {
   }
 
  protected:
+  BasicVector<double>* DoAllocateInputVector(
+      const InputPortDescriptor<double>& descriptor) const override {
+    return nullptr;
+  }
+
+  AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<double>& descriptor) const override {
+    return nullptr;
+  }
+
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
@@ -285,6 +295,11 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
 class TestTypedVector : public BasicVector<double> {
  public:
   explicit TestTypedVector(int size) : BasicVector(size) {}
+
+ protected:
+  TestTypedVector* DoClone() const {
+    return new TestTypedVector(size());
+  }
 };
 
 // A shell System for AbstractValue IO test
@@ -306,18 +321,18 @@ class ValueIOTestSystem : public System<double> {
 
   ~ValueIOTestSystem() override {}
 
-  std::unique_ptr<AbstractValue> AllocateInputAbstract(
+  AbstractValue* DoAllocateInputAbstract(
       const InputPortDescriptor<double>& descriptor) const override {
     // Should only get called for the first input.
     EXPECT_EQ(descriptor.get_index(), 0);
-    return AbstractValue::Make<std::string>("");
+    return AbstractValue::Make<std::string>("").release();
   }
 
-  std::unique_ptr<BasicVector<double>> AllocateInputVector(
+  BasicVector<double>* DoAllocateInputVector(
       const InputPortDescriptor<double>& descriptor) const override {
     // Should only get called for the second input.
     EXPECT_EQ(descriptor.get_index(), 1);
-    return std::make_unique<TestTypedVector>(1);
+    return new TestTypedVector(1);
   }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()

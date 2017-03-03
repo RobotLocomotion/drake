@@ -296,28 +296,6 @@ class Diagram : public System<T>,
     }
   }
 
-  std::unique_ptr<BasicVector<T>> AllocateInputVector(
-      const InputPortDescriptor<T>& descriptor) const override {
-    // Ask the subsystem to perform the allocation.
-    DRAKE_DEMAND(descriptor.get_index() <
-                 static_cast<int>(input_port_ids_.size()));
-    const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
-    const InputPortDescriptor<T> subsystem_descriptor(
-        id.first, id.second, descriptor.get_data_type(), descriptor.size());
-    return id.first->AllocateInputVector(subsystem_descriptor);
-  }
-
-  std::unique_ptr<AbstractValue> AllocateInputAbstract(
-      const InputPortDescriptor<T>& descriptor) const override {
-    // Ask the subsystem to perform the allocation.
-    DRAKE_DEMAND(descriptor.get_index() <
-                 static_cast<int>(input_port_ids_.size()));
-    const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
-    const InputPortDescriptor<T> subsystem_descriptor(
-        id.first, id.second, descriptor.get_data_type(), descriptor.size());
-    return id.first->AllocateInputAbstract(subsystem_descriptor);
-  }
-
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
@@ -656,6 +634,26 @@ class Diagram : public System<T>,
         }};
     return ConvertScalarType<symbolic::Expression>(
         subsystem_converter).release();
+  }
+
+  BasicVector<T>* DoAllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const override {
+    // Ask the subsystem to perform the allocation.
+    const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
+    const System<T>* subsystem = id.first;
+    const int subindex = id.second;
+    return subsystem->AllocateInputVector(
+        subsystem->get_input_port(subindex)).release();
+  }
+
+  AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const override {
+    // Ask the subsystem to perform the allocation.
+    const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
+    const System<T>* subsystem = id.first;
+    const int subindex = id.second;
+    return subsystem->AllocateInputAbstract(
+        subsystem->get_input_port(subindex)).release();
   }
 
  private:
