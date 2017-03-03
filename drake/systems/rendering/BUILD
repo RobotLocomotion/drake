@@ -20,12 +20,23 @@ drake_cc_library(
     ],
 )
 
+# TODO(david-german-tri): Rename PoseVector to FramePose.
 drake_cc_library(
     name = "pose_vector",
     srcs = ["pose_vector.cc"],
     hdrs = ["pose_vector.h"],
     deps = [
         "//drake/math:geometric_transform",
+        "//drake/systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
+    name = "frame_velocity",
+    srcs = ["frame_velocity.cc"],
+    hdrs = ["frame_velocity.h"],
+    deps = [
+        "//drake/multibody/multibody_tree/math:spatial_velocity",
         "//drake/systems/framework:vector",
     ],
 )
@@ -66,6 +77,14 @@ drake_cc_googletest(
         ":pose_vector",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frame_velocity_test",
+    deps = [
+        ":frame_velocity",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 
