@@ -26,4 +26,16 @@ drake_cc_binary(
     ],
 )
 
+# A test to guarantee the example doesn't fall out of sync with Drake.
+sh_test(
+    name = "sliding_bricks_test",
+    srcs = ["//tools:exec.sh"],
+    args = [
+        "$(location :sliding_bricks)",
+        " --sim_duration=0.01",
+        " --no_playback=true",
+    ],
+    data = [":sliding_bricks"],
+)
+
 cpplint()
