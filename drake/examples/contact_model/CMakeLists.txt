@@ -16,7 +16,5 @@ if (lcm_FOUND AND Bullet_FOUND)
       drakeRBM
       drakeRigidBodyPlant
       drakeSystemAnalysis
-      drakeSystemControllers
-      drakeSystemPrimitives
       )
 endif()

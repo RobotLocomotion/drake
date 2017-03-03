@@ -3,8 +3,9 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd" name="rigid_gripper">
 
- <!-- A simple, rigid, two-fingered gripper.  The placement of the fingers is
- just enough to fit the the box in `box_small.urdf`.
+ <!-- A simple, rigid, two-fingered gripper.  The space between the fingers is
+ just enough to fit the box in `box_small.urdf` (placed on opposite sides
+ along the x-axis).
  -->
 
   <link name="gripper">
@@ -41,10 +42,11 @@
     </collision>
 
     <!-- NOTE:
-        This assumes that box_small.urdf has a size of 0.05 along the x-axis.
-        As such, any contact sphere's x-position of magnitude greater than
-        0.25 + radius will be collision free (finger 1 having a negative value,
-        finger 2 having the corresponding positive value).
+        This assumes that box_small.urdf has a size of 0.05 along the x-axis,
+        centered on the y-z plane. As such, for a sphere with radius `r`, any
+        x-position of magnitude greater than 0.025 + `r` will be collision free
+        (finger 1 having a negative value, finger 2 having the corresponding
+        positive value).
 
         Below, we are assuming a contact radius of 0.01, which means the contact
         threshold is 0.025 + 0.01 = 0.035.  So, the following values will
