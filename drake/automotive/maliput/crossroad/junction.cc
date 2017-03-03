@@ -19,14 +19,15 @@ Junction::Junction(RoadGeometry* road_geometry,
     num_vertical_lanes_(num_vertical_lanes){
   DRAKE_DEMAND(road_geometry != nullptr);
   for (int i = 0; i < this->do_num_segments(); ++i) {
+    std::string HorizontalorVertical = i==0?"Horizontal_":"Vertical_";
     auto segment = std::make_unique<Segment>(
         this,
         i,
         i==0?num_horizontal_lanes:num_vertical_lanes, 
         length, 
         lane_width,
-        shoulder_width, 
-        api::SegmentId({"Crossroad_Segment_" + std::to_string(i)})
+        shoulder_width,
+        api::SegmentId({"Crossroad_" + HorizontalorVertical + "Segment"})
         );
     segments_.push_back(move(segment));
   }

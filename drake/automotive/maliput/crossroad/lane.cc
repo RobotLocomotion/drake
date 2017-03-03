@@ -1,7 +1,7 @@
 #include "drake/automotive/maliput/crossroad/lane.h"
 
 #include <memory>
-
+#include <iostream>
 #include "drake/automotive/maliput/crossroad/branch_point.h"
 #include "drake/automotive/maliput/crossroad/road_geometry.h"
 #include "drake/automotive/maliput/crossroad/segment.h"
@@ -84,10 +84,22 @@ api::GeoPosition Lane::DoToGeoPosition(
   return {lane_pos.s, lane_pos.r + Lane::y_offset(), lane_pos.h};
 }
 
+
 api::Rotation Lane::DoGetOrientation(
     const api::LanePosition& lane_pos) const {
-  // int segment_id = this->segment()->do_index(); 
-  return api::Rotation(0, 0, 0);  // roll, pitch, yaw.
+  api::SegmentId segment_id= this->segment()->id();
+  if (strcmp(segment_id.id.c_str(), "Crossroad_Segment_0")==0){
+    std::cout<<"actually called 1st branch";
+    return api::Rotation(0, 0, 0);  // roll, pitch, yaw.    
+  }
+  else if (strcmp(segment_id.id.c_str(), "Crossroad_Segment_1")==0){
+    std::cout<<"actually called 2nd branch";
+    return api::Rotation(0, 0, 90);  // roll, pitch, yaw.    
+  }
+  else{
+    throw std::runtime_error("Segment ID not recogonized");  
+  }
+
 }
 
 api::LanePosition Lane::DoToLanePosition(
