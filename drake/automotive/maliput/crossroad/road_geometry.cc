@@ -62,7 +62,7 @@ const Junction* RoadGeometry::do_junction(int index) const {
 int RoadGeometry::do_num_branch_points() const {
   // There is only one BranchPoint per lane. Thus, return the number of lanes.
   return (junction_.segment(0)->num_lanes()+
-    junction_.segment(0)->num_lanes());
+    junction_.segment(1)->num_lanes());
 }
 
 
@@ -97,15 +97,15 @@ int RoadGeometry::GetLaneIndex(const api::GeoPosition& geo_pos) const {
     for (int i = 0; !lane_found && i < junction_.segment(j)->num_lanes(); ++i) {
       const Lane* lane = dynamic_cast<const Lane*>(junction_.segment(j)->lane(i));
       DRAKE_ASSERT(lane != nullptr);
-      if (geo_pos.y <= lane->y_offset() + lane->lane_bounds(0).r_max) {
+      if (geo_pos.y <= lane->r_offset() + lane->lane_bounds(0).r_max) {
         result = i;
         lane_found = true;
       }
     // Checks whether `geo_pos` is on the right shoulder. If it is, save the
     // index of the right-most lane in `result`.
     if (lane->to_right() == nullptr) {
-      if (geo_pos.y <= lane->y_offset() + lane->lane_bounds(0).r_min &&
-          geo_pos.y >= lane->y_offset() + lane->driveable_bounds(0).r_min) {
+      if (geo_pos.y <= lane->r_offset() + lane->lane_bounds(0).r_min &&
+          geo_pos.y >= lane->r_offset() + lane->driveable_bounds(0).r_min) {
         result = i;
         lane_found = true;
       }
@@ -114,8 +114,8 @@ int RoadGeometry::GetLaneIndex(const api::GeoPosition& geo_pos) const {
     // Checks whether `geo_pos` is on the left shoulder. If it is, save the
     // index of the left-most lane in `result`.
     if (lane->to_left() == nullptr) {
-      if (geo_pos.y >= lane->y_offset() + lane->lane_bounds(0).r_max &&
-          geo_pos.y <= lane->y_offset() + lane->driveable_bounds(0).r_max) {
+      if (geo_pos.y >= lane->r_offset() + lane->lane_bounds(0).r_max &&
+          geo_pos.y <= lane->r_offset() + lane->driveable_bounds(0).r_max) {
         result = i;
         lane_found = true;
       }
@@ -154,8 +154,8 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(
   DRAKE_ASSERT(lane != nullptr);
   const double length = lane->length();
   const api::RBounds lane_driveable_bounds = lane->driveable_bounds(0 /* s */);
-  const double min_y = lane->y_offset() + lane_driveable_bounds.r_min;
-  const double max_y = lane->y_offset() + lane_driveable_bounds.r_max;
+  const double min_y = lane->r_offset() + lane_driveable_bounds.r_min;
+  const double max_y = lane->r_offset() + lane_driveable_bounds.r_max;
   const double min_x = 0;
   const double max_x = length;
 
@@ -209,7 +209,7 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(
   DRAKE_ASSERT(closest_lane != nullptr);
   const api::LanePosition closest_lane_position(
       closest_position.x                             /* s */,
-      closest_position.y - closest_lane->y_offset()  /* r */,
+      closest_position.y - closest_lane->r_offset()  /* r */,
       geo_pos.z                                      /* h */);
   return api::RoadPosition(closest_lane, closest_lane_position);
 }

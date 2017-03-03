@@ -28,6 +28,8 @@ Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
   DRAKE_DEMAND(lane_bounds_.r_max <= driveable_bounds_.r_max);
   // TODO(liang.fok) Consider initializing this variable in the constructor's
   // initializer list so branch_point_ can be declared `const`.
+
+  // TODO(shensquared) Possible place things break down, double check the BranchPoint API
   branch_point_ = make_unique<BranchPoint>(
       api::BranchPointId({id.id + "_Branch_Point"}), this,
       segment->junction()->road_geometry());
