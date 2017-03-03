@@ -103,6 +103,20 @@ Cheat sheet for operating on specific portions of the project::
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 - For the definitions of the "``--config``" options see ``drake-distro/tools/bazel.rc``.
 
+Debugging on OS X
+-----------------
+
+On OS X, DWARF debug symbols are emitted to a ``.dSYM`` file. The Bazel
+``cc_binary`` and ``cc_test`` rules do not natively generate or expose this
+file, so we have implemented a workaround in Drake, ``--config=apple_debug``.
+This config turns off sandboxing, which allows a ``genrule`` to access the
+``.o`` files and process them into a ``.dSYM``.  Use as follows::
+
+  bazel build --config=apple_debug drake/path/to/my:binary_or_test_dsym
+  lldb ./bazel_bin/drake/path/to/my/binary_or_test
+
+For more information, see https://github.com/bazelbuild/bazel/issues/2537.
+
 Updating BUILD files
 ====================
 
@@ -176,6 +190,10 @@ To analyze test coverage, run the tests under ``kcov``::
 
   bazel test --config kcov //...
 
+Note that it disables compiler-optimization (``-O0``) to have a better and more
+precise coverage report. If you have trouble with kcov and unoptimized programs,
+you can turn it back on by also supplying ``--copt -O2``.
+
 The coverage report is written to the ``drake-distro/bazel-kcov`` directory. To
 view it, browse to ``drake-distro/bazel-kcov/index.html``.
 
@@ -187,8 +205,8 @@ view it, browse to ``drake-distro/bazel-kcov/index.html``.
 FAQ
 ===
 
-Q. What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
+Q: What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
 
-   A. Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
+   A: Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
       Update your dotfiles so that something like ``/usr/lib/ccache`` is not on
       your ``$PATH``.

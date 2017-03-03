@@ -79,16 +79,16 @@ PidControlledSystem<T>::ConnectController(
   auto plant_input_adder =
       builder->template AddSystem<Adder<T>>(2, plant_input.size());
 
-  builder->Connect(plant_output, controller->get_estimated_state_input_port());
+  builder->Connect(plant_output, controller->get_input_port_estimated_state());
 
-  builder->Connect(controller->get_control_output_port(),
+  builder->Connect(controller->get_output_port_control(),
                    plant_input_adder->get_input_port(0));
 
   builder->Connect(plant_input_adder->get_output_port(), plant_input);
 
   return ConnectResult{
       plant_input_adder->get_input_port(1),
-      controller->get_desired_state_input_port()};
+      controller->get_input_port_desired_state()};
 }
 
 template <typename T>

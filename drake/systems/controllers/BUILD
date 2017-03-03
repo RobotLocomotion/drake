@@ -25,13 +25,26 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "gravity_compensator",
-    srcs = ["gravity_compensator.cc"],
-    hdrs = ["gravity_compensator.h"],
+    name = "inverse_dynamics",
+    srcs = ["inverse_dynamics.cc"],
+    hdrs = ["inverse_dynamics.h"],
     deps = [
         "//drake/multibody:rigid_body_tree",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "inverse_dynamics_controller",
+    srcs = ["inverse_dynamics_controller.cc"],
+    hdrs = ["inverse_dynamics_controller.h"],
+    deps = [
+        ":inverse_dynamics",
+        ":model_based_controller_base",
+        ":pid_controller",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
+        "//drake/systems/primitives:constant_vector_source",
     ],
 )
 
@@ -55,12 +68,12 @@ drake_cc_library(
         ":state_feedback_controller_base",
         "//drake/systems/framework",
         "//drake/systems/primitives:adder",
+        "//drake/systems/primitives:demultiplexer",
         "//drake/systems/primitives:gain",
         "//drake/systems/primitives:integrator",
+        "//drake/systems/primitives:matrix_gain",
         "//drake/systems/primitives:pass_through",
         "//drake/systems/primitives:saturation",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:matrix_gain",
     ],
 )
 
@@ -74,27 +87,29 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "pid_with_gravity_compensator",
-    srcs = ["pid_with_gravity_compensator.cc"],
-    hdrs = ["pid_with_gravity_compensator.h"],
-    deps = [
-        ":gravity_compensator",
-        ":model_based_controller_base",
-        ":pid_controller",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
-    name = "gravity_compensator_test",
+    name = "inverse_dynamics_test",
     data = [
         "//drake/examples/SimpleFourBar:models",
         "//drake/examples/kuka_iiwa_arm:models",
     ],
     deps = [
-        ":gravity_compensator",
+        ":inverse_dynamics",
+        "//drake/multibody/parsers",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "inverse_dynamics_controller_test",
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    deps = [
+        ":inverse_dynamics_controller",
+        "//drake/multibody/parsers",
         "//drake/common:eigen_matrix_compare",
     ],
 )

@@ -22,8 +22,9 @@ bazel query 'kind("source file", deps(attr(tags, cpplint, tests(//...))))' |
     sort > /tmp/cpplint_files.txt
 
 echo "Files missed by cpplint() in BUILD files ..."
-diff -u /tmp/cc_files.txt /tmp/cpplint_files.txt
-echo
+diff -u /tmp/cc_files.txt /tmp/cpplint_files.txt | grep "^-" || true
+echo "\n"
 
 echo "Files unknown to Bazel ..."
-diff -u /tmp/git_files.txt /tmp/cc_files.txt
+diff -u /tmp/git_files.txt /tmp/cc_files.txt | grep "^-" || true
+

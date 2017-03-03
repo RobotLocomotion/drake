@@ -55,6 +55,17 @@ class TestSystem : public System<double> {
     return this->DeclareAbstractOutputPort();
   }
 
+  bool HasAnyDirectFeedthrough() const override {
+    return true;
+  }
+
+  bool HasDirectFeedthrough(int output_port) const override {
+    return true;
+  }
+
+  bool HasDirectFeedthrough(int input_port, int output_port) const override {
+    return true;
+  }
 
   int get_publish_count() const { return publish_count_; }
   int get_update_count() const { return update_count_; }
@@ -140,26 +151,6 @@ class SystemTest : public ::testing::Test {
   TestSystem system_;
   LeafContext<double> context_;
 };
-
-TEST_F(SystemTest, Feedthrough) {
-  // No inputs or outputs.
-  EXPECT_FALSE(system_.has_any_direct_feedthrough());
-
-  // Both inputs and outputs.
-  system_.AddAbstractInputPort();
-  system_.AddAbstractOutputPort();
-  EXPECT_TRUE(system_.has_any_direct_feedthrough());
-
-  // Only inputs.
-  TestSystem input_only;
-  input_only.AddAbstractInputPort();
-  EXPECT_FALSE(input_only.has_any_direct_feedthrough());
-
-  // Only outputs.
-  TestSystem output_only;
-  output_only.AddAbstractOutputPort();
-  EXPECT_FALSE(output_only.has_any_direct_feedthrough());
-}
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
@@ -326,6 +317,18 @@ class ValueIOTestSystem : public System<double> {
 
   void SetDefaults(Context<double>* context) const override {}
 
+  bool HasAnyDirectFeedthrough() const override {
+    return true;
+  }
+
+  bool HasDirectFeedthrough(int output_port) const override {
+    return true;
+  }
+
+  bool HasDirectFeedthrough(int input_port, int output_port) const override {
+    return true;
+  }
+
   // Append "output" to input(0), and sets output(1) = 2 * input(1).
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {
@@ -348,9 +351,8 @@ class ValueIOTestSystem : public System<double> {
     output->add_port(
         std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
 
-    std::unique_ptr<OutputPort> vec_out_port(
-        new OutputPort(std::make_unique<BasicVector<double>>(1)));
-    output->get_mutable_ports()->push_back(std::move(vec_out_port));
+    output->add_port(std::make_unique<OutputPort>(
+        std::make_unique<BasicVector<double>>(1)));
 
     return std::unique_ptr<SystemOutput<double>>(output.release());
   }

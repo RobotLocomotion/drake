@@ -8,7 +8,7 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/pid_with_gravity_compensator.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -18,9 +18,6 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-// TODO(naveenoid): These methods must be merged with those in
-// /examples/toyota_hsrb/hsrb_diagram_factories.h and moved to a common
-// library.
 
 /// A custom `systems::Diagram` composed of a `systems::RigidBodyPlant`
 /// and a `systems::DrakeVisualizer`. The diagram's output port zero is
@@ -30,14 +27,16 @@ template <typename T>
 class VisualizedPlant : public systems::Diagram<T> {
  public:
   /// Builds the VisualizedPlant.
-  /// @p rigid_body_tree the tree to be used within the `RigidBodyPlant`
-  /// @p penetration_stiffness, @p penetration_damping, and
-  /// @p friction_coefficient define the penetration and friction parameters
-  /// of the plant.
-  /// @p lcm is a pointer to an externally created lcm object.
+  /// `rigid_body_tree` the tree to be used within the `RigidBodyPlant`
+  /// `penetration_stiffness`, `penetration_dissipation`,
+  /// `static_friction_coefficient`, `dynamic_friction_coefficient`, and
+  /// `v_stiction_tolerance` define the contact model of the plant.
+  /// `lcm` is a pointer to an externally created lcm object.
   VisualizedPlant(std::unique_ptr<RigidBodyTree<T>> rigid_body_tree,
-                  double penetration_stiffness, double penetration_damping,
-                  double friction_coefficient, lcm::DrakeLcmInterface* lcm);
+                  double penetration_stiffness, double penetration_dissipation,
+                  double static_friction_coefficient,
+                  double dynamic_friction_coefficient,
+                  double v_stiction_tolerance, lcm::DrakeLcmInterface* lcm);
 
   const systems::RigidBodyPlant<T>& plant() const {
     return *rigid_body_plant_;
@@ -75,15 +74,16 @@ class PositionControlledPlantWithRobot : public systems::Diagram<T> {
       std::unique_ptr<RigidBodyTree<T>> world_tree,
       std::unique_ptr<PiecewisePolynomialTrajectory> pp_traj,
       int robot_model_instance_id, const RigidBodyTree<T>& robot_tree,
-      double penetration_stiffness, double penetration_damping,
-      double friction_coefficient, lcm::DrakeLcmInterface* lcm);
+      double penetration_stiffness, double penetration_dissipation,
+      double static_friction_coefficient, double dynamic_friction_coefficient,
+      double v_stiction_tolerance, lcm::DrakeLcmInterface* lcm);
 
  private:
   systems::Multiplexer<T>* input_mux_{nullptr};
   systems::TrajectorySource<T>* desired_plan_{nullptr};
   systems::DrakeVisualizer* drake_visualizer_{nullptr};
   systems::RigidBodyPlant<T>* rigid_body_plant_{nullptr};
-  systems::PidWithGravityCompensator<T>* controller_{nullptr};
+  systems::InverseDynamicsController<T>* controller_{nullptr};
   std::unique_ptr<const PiecewisePolynomialTrajectory> poly_trajectory_;
 };
 

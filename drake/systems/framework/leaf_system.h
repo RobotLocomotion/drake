@@ -19,9 +19,11 @@
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_state.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/sparsity_matrix.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
+#include "drake/systems/framework/value_checker.h"
 
 namespace drake {
 namespace systems {
@@ -32,9 +34,9 @@ namespace systems {
 template <typename T>
 struct PeriodicEvent {
   /// The period with which this event should recur.
-  T period_sec{0.0};
+  double period_sec{0.0};
   /// The time after zero when this event should first occur.
-  T offset_sec{0.0};
+  double offset_sec{0.0};
   /// The action that should be taken when this event occurs.
   DiscreteEvent<T> event;
 };
@@ -67,9 +69,28 @@ class LeafSystem : public System<T> {
     context->set_parameters(this->AllocateParameters());
 
     // Enforce some requirements on the fully-assembled Context.
-    // -- The ContinuousState must be contiguous.
-    VectorBase<T>* xc_vec = context->get_mutable_continuous_state_vector();
-    DRAKE_DEMAND(dynamic_cast<BasicVector<T>*>(xc_vec) != nullptr);
+    // -- The continuous state must be contiguous, i.e., a valid BasicVector.
+    //    (In general, a System's Context's continuous state can be any kind of
+    //    VectorBase including scatter-gather implementations like Supervector.
+    //    But for a LeafSystem with LeafContext, we only allow BasicVectors,
+    //    which are guaranteed to have a linear storage layout.)  If the xc is
+    //    not BasicVector, the dynamic_cast will yield nullptr, and the
+    //    invariant-checker will complain.
+    const VectorBase<T>* const xc = &context->get_continuous_state_vector();
+    detail::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
+    // -- The discrete state must all be valid BasicVectors.
+    for (const BasicVector<T>* group :
+             context->get_state().get_discrete_state()->get_data()) {
+      detail::CheckBasicVectorInvariants(group);
+    }
+    // -- The numeric parameters must all be valid BasicVectors.
+    const int num_numeric_parameters = context->num_numeric_parameters();
+    for (int i = 0; i < num_numeric_parameters; ++i) {
+      const BasicVector<T>* const group = context->get_numeric_parameter(i);
+      detail::CheckBasicVectorInvariants(group);
+    }
+    // Note that the outputs are not part of the Context, but instead are
+    // checked by LeafSystemOutput::add_port.
 
     return std::unique_ptr<Context<T>>(context.release());
   }
@@ -126,16 +147,16 @@ class LeafSystem : public System<T> {
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override {
+      const Context<T>& context) const final {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
       if (descriptor.get_data_type() == kVectorValued) {
-        output->get_mutable_ports()->emplace_back(
-            new OutputPort(AllocateOutputVector(descriptor)));
+        output->add_port(
+            std::make_unique<OutputPort>(AllocateOutputVector(descriptor)));
       } else {
-        output->get_mutable_ports()->emplace_back(
-            new OutputPort(AllocateOutputAbstract(descriptor)));
+        output->add_port(
+            std::make_unique<OutputPort>(AllocateOutputAbstract(descriptor)));
       }
     }
     return std::unique_ptr<SystemOutput<T>>(output.release());
@@ -150,6 +171,39 @@ class LeafSystem : public System<T> {
   std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
       const override {
     return AllocateDiscreteState();
+  }
+
+  /// Returns to `true` if any of the inputs to the system is directly
+  /// fed through to any of its outputs and `false` otherwise.
+  bool HasAnyDirectFeedthrough() const final {
+    auto sparsity = MakeSparsityMatrix();
+    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+      for (int j = 0; j < this->get_num_output_ports(); ++j) {
+        if (DoHasDirectFeedthrough(sparsity.get(), i, j)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Returns true if there is direct-feedthrough from any input port to the
+  /// given @p output_port, and false otherwise.
+  bool HasDirectFeedthrough(int output_port) const final {
+    auto sparsity = MakeSparsityMatrix();
+    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+      if (DoHasDirectFeedthrough(sparsity.get(), i, output_port)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Returns true if there is direct-feedthrough from the given @p input_port
+  /// to the given @p output_port, and false otherwise.
+  bool HasDirectFeedthrough(int input_port, int output_port) const final {
+    auto sparsity = MakeSparsityMatrix();
+    return DoHasDirectFeedthrough(sparsity.get(), input_port, output_port);
   }
 
  protected:
@@ -224,6 +278,56 @@ class LeafSystem : public System<T> {
                     "override AllocateOutputAbstract.");
   }
 
+  /// Returns true if there is direct-feedthrough from the given @p input_port
+  /// to the given @p output_port, and false otherwise, according to the given
+  /// @p sparsity.
+  ///
+  /// If @p sparsity is nullptr, returns true, so that by default we assume
+  /// there is direct feedthrough of values from every input to every output.
+  /// This is a conservative assumption that ensures we detect and can prevent
+  /// the formation of algebraic loops (implicit computations) in system
+  /// Diagrams. Systems which do not have direct feedthrough may override that
+  /// assumption in two ways:
+  ///
+  /// - Override DoToSymbolic, allowing this function to infer the sparsity
+  ///   from the symbolic equations. This method is typically preferred for
+  ///   systems that have a symbolic form, but should be avoided in certain
+  ///   corner cases where fully descriptive symbolic analysis is impossible,
+  ///   e.g. when the symbolic form depends on C++ native conditionals. For
+  ///   additional discussion, consult the documentation for SparsityMatrix.
+  ///
+  /// - Override this function directly, reporting manual sparsity. This method
+  ///   is recommended when ToSymbolic has not been implemented, or when its
+  ///   output is not fully descriptive, as discussed above. Manually configured
+  ///   sparsity must be conservative: if there is any Context for which an
+  ///   input port is direct-feedthrough to an output port, this function must
+  ///   return true for those two ports.
+  virtual bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
+                                      int input_port,
+                                      int output_port) const {
+    DRAKE_ASSERT(input_port >= 0);
+    DRAKE_ASSERT(input_port < this->get_num_input_ports());
+    DRAKE_ASSERT(output_port >= 0);
+    DRAKE_ASSERT(output_port < this->get_num_output_ports());
+
+    // If this System has manually declared that it has no direct-feedthrough
+    // by overriding the deprecated API has_any_direct_feedthrough, accept
+    // that override and skip sparsity analysis.
+    // TODO(david-german-tri): Remove overrides of has_any_direct_feedthrough,
+    // then remove this check.
+    if (!this->has_any_direct_feedthrough()) {
+      return false;
+    }
+
+    // If no symbolic sparsity matrix is available, assume direct feedthrough
+    // by default.
+    if (sparsity == nullptr) {
+      return true;
+    }
+
+    return sparsity->IsConnectedInputToOutput(input_port, output_port);
+  }
+
   // =========================================================================
   // New methods for subclasses to use
 
@@ -246,7 +350,7 @@ class LeafSystem : public System<T> {
   /// The first tick will be at t = period_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may perform
   /// the given type of action.
-  void DeclarePeriodicAction(const T& period_sec, const T& offset_sec,
+  void DeclarePeriodicAction(double period_sec, double offset_sec,
       const typename DiscreteEvent<T>::ActionType& action) {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
@@ -259,7 +363,7 @@ class LeafSystem : public System<T> {
   /// The first tick will be at t = period_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update
   /// the discrete state.
-  void DeclareDiscreteUpdatePeriodSec(const T& period_sec) {
+  void DeclareDiscreteUpdatePeriodSec(double period_sec) {
     DeclarePeriodicAction(period_sec, 0.0,
         DiscreteEvent<T>::kDiscreteUpdateAction);
   }
@@ -268,7 +372,7 @@ class LeafSystem : public System<T> {
   /// The first tick will be at t = offset_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update the
   /// discrete state.
-  void DeclarePeriodicDiscreteUpdate(const T& period_sec, const T& offset_sec) {
+  void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec) {
     DeclarePeriodicAction(period_sec, offset_sec,
         DiscreteEvent<T>::kDiscreteUpdateAction);
   }
@@ -277,8 +381,7 @@ class LeafSystem : public System<T> {
   /// update. The first tick will be at t = offset_sec, and it will recur at
   /// every period_sec thereafter. On the discrete tick, the system may perform
   /// unrestricted updates.
-  void DeclarePeriodicUnrestrictedUpdate(const T& period_sec,
-      const T& offset_sec) {
+  void DeclarePeriodicUnrestrictedUpdate(double period_sec, double offset_sec) {
     DeclarePeriodicAction(period_sec, offset_sec,
         DiscreteEvent<T>::kUnrestrictedUpdateAction);
   }
@@ -287,7 +390,7 @@ class LeafSystem : public System<T> {
   /// The first tick will be at t = period_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update
   /// the discrete state.
-  void DeclarePublishPeriodSec(const T& period_sec) {
+  void DeclarePublishPeriodSec(double period_sec) {
     DeclarePeriodicAction(period_sec, 0, DiscreteEvent<T>::kPublishAction);
   }
 
@@ -383,9 +486,9 @@ class LeafSystem : public System<T> {
   // Returns the next sample time for the given @p event.
   static T GetNextSampleTime(const PeriodicEvent<T>& event,
                              const T& current_time_sec) {
-    const T& period = event.period_sec;
+    const double period = event.period_sec;
     DRAKE_ASSERT(period > 0);
-    const T& offset = event.offset_sec;
+    const double offset = event.offset_sec;
     DRAKE_ASSERT(offset >= 0);
 
     // If the first sample time hasn't arrived yet, then that is the next
@@ -407,6 +510,18 @@ class LeafSystem : public System<T> {
     }
     DRAKE_ASSERT(next_t > current_time_sec);
     return next_t;
+  }
+
+  /// Returns a SparsityMatrix for this system, or nullptr if a SparsityMatrix
+  /// cannot be constructed because this System has no symbolic representation.
+  std::unique_ptr<SparsityMatrix> MakeSparsityMatrix() const {
+    std::unique_ptr<System<symbolic::Expression>> symbolic_system =
+        this->ToSymbolic();
+    if (symbolic_system) {
+      return std::make_unique<SparsityMatrix>(*symbolic_system);
+    } else {
+      return nullptr;
+    }
   }
 
   // Periodic Update or Publish events registered on this system.

@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/point_pair.h"
 
@@ -17,6 +18,8 @@ typedef std::pair<ElementId, ElementId> ElementIdPair;
  implement the actual collision detection logic. **/
 class Model {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Model)
+
   Model() {}
 
   virtual ~Model() {}
@@ -285,10 +288,6 @@ class Model {
   // Please do not add new references to this member.  Instead, use
   // the accessors.
   std::unordered_map<ElementId, std::unique_ptr<Element>> elements;
-
- private:
-  Model(const Model&) {}
-  Model& operator=(const Model&) { return *this; }
 };
 
 }  // namespace DrakeCollision

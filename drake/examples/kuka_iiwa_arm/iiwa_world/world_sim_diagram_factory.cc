@@ -49,16 +49,20 @@ namespace kuka_iiwa_arm {
 template <typename T>
 VisualizedPlant<T>::VisualizedPlant(
     std::unique_ptr<RigidBodyTree<T>> rigid_body_tree,
-    double penetration_stiffness, double penetration_damping,
-    double friction_coefficient, lcm::DrakeLcmInterface* lcm) {
+    double penetration_stiffness, double penetration_dissipation,
+    double static_friction_coefficient, double dynamic_friction_coefficient,
+    double v_stiction_tolerance, lcm::DrakeLcmInterface* lcm) {
   DiagramBuilder<T> builder;
 
   rigid_body_plant_ =
       builder.template AddSystem<RigidBodyPlant<T>>(std::move(rigid_body_tree));
 
   DRAKE_DEMAND(rigid_body_plant_ != nullptr);
-  rigid_body_plant_->set_contact_parameters(
-      penetration_stiffness, penetration_damping, friction_coefficient);
+  rigid_body_plant_->set_normal_contact_parameters(penetration_stiffness,
+                                                   penetration_dissipation);
+  rigid_body_plant_->set_friction_contact_parameters(
+      static_friction_coefficient, dynamic_friction_coefficient,
+      v_stiction_tolerance);
 
   DRAKE_DEMAND(rigid_body_plant_->get_num_actuators() > 0);
 
@@ -128,8 +132,9 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
     std::unique_ptr<RigidBodyTree<T>> world_tree,
     std::unique_ptr<PiecewisePolynomialTrajectory> pp_traj,
     int robot_instance_id, const RigidBodyTree<T>& robot_tree,
-    double penetration_stiffness, double penetration_damping,
-    double friction_coefficient, lcm::DrakeLcmInterface* lcm)
+    double penetration_stiffness, double penetration_dissipation,
+    double static_friction_coefficient, double dynamic_friction_coefficient,
+    double v_stiction_tolerance, lcm::DrakeLcmInterface* lcm)
     : poly_trajectory_(std::move(pp_traj)) {
   DiagramBuilder<T> builder;
 
@@ -144,8 +149,11 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
 
   const auto& plant_output_port = rigid_body_plant_->state_output_port();
 
-  rigid_body_plant_->set_contact_parameters(
-      penetration_stiffness, penetration_damping, friction_coefficient);
+  rigid_body_plant_->set_normal_contact_parameters(penetration_stiffness,
+                                                   penetration_dissipation);
+  rigid_body_plant_->set_friction_contact_parameters(
+      static_friction_coefficient, dynamic_friction_coefficient,
+      v_stiction_tolerance);
 
   // Creates and adds a DrakeVisualizer publisher.
   drake_visualizer_ = builder.template AddSystem<DrakeVisualizer>(
@@ -167,13 +175,13 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   SetPositionControlledIiwaGains(&kp, &ki, &kd);
 
   controller_ =
-      builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
-          robot_tree, kp, ki, kd);
+      builder.template AddSystem<systems::InverseDynamicsController<T>>(
+          robot_tree, kp, ki, kd, false /* no feedforward acceleration */);
 
   // Connect robot (not the entire plant) and controller
   builder.Connect(robot_output_port,
-                  controller_->get_estimated_state_input_port());
-  builder.Connect(controller_->get_control_output_port(),
+                  controller_->get_input_port_estimated_state());
+  builder.Connect(controller_->get_output_port_control(),
                   robot_input_port);
 
   // Create a multiplexer to handle the fact that we'll be getting
@@ -197,7 +205,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
                   input_mux_->get_input_port(1));
 
   builder.Connect(input_mux_->get_output_port(0),
-                  controller_->get_desired_state_input_port());
+                  controller_->get_input_port_desired_state());
 
   // Creates a plan and wraps it into a source system.
   desired_plan_ =

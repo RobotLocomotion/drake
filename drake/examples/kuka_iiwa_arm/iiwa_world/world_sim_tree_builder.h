@@ -12,6 +12,12 @@ namespace examples {
 namespace kuka_iiwa_arm {
 // TODO(naveenoid): Consider a common location for this class.
 
+template<typename T> struct ModelInstanceInfo {
+  std::string model_path;
+  int instance_id;
+  std::shared_ptr<RigidBodyFrame<T>> world_offset;
+};
+
 /// A helper class to construct robot world RigidBodyTree objects from model
 /// (URDF/SDF) files. Models (e.g., robots, objects for manipulation, etc.)
 /// can be stored and added to the tree to be built.
@@ -100,6 +106,10 @@ class WorldSimTreeBuilder {
     return *rigid_body_tree_;
   }
 
+  ModelInstanceInfo<T> get_model_info_for_instance(int id) {
+    return instance_id_to_model_info_.at(id);
+  }
+
  private:
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
       std::make_unique<RigidBodyTree<T>>()};
@@ -110,6 +120,8 @@ class WorldSimTreeBuilder {
   // user-supplied names (keys in the map). Instances of these models can be
   // loaded into the simulation.
   std::map<std::string, std::string> model_map_;
+
+  std::map<int, ModelInstanceInfo<T>> instance_id_to_model_info_;
 };
 
 }  // namespace kuka_iiwa_arm

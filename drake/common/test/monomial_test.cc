@@ -39,9 +39,9 @@ class MonomialTest : public ::testing::Test {
 
 TEST_F(MonomialTest, MonomialOne) {
   // Compares monomials all equal to 1, but with different variables.
-  internal::Monomial m1{};
-  internal::Monomial m2({{var_x_.get_id(), 0}});
-  internal::Monomial m3({{var_x_.get_id(), 0}, {var_y_.get_id(), 0}});
+  Monomial m1{};
+  Monomial m2({{var_x_.get_id(), 0}});
+  Monomial m3({{var_x_.get_id(), 0}, {var_y_.get_id(), 0}});
   EXPECT_EQ(m1, m2);
   EXPECT_EQ(m1, m3);
   EXPECT_EQ(m2, m3);
@@ -49,8 +49,8 @@ TEST_F(MonomialTest, MonomialOne) {
 
 TEST_F(MonomialTest, MonomialWithZeroExponent) {
   // Compares monomials containing zero exponent, such as x^0 * y^2
-  internal::Monomial m1({{var_y_.get_id(), 2}});
-  internal::Monomial m2({{var_x_.get_id(), 0}, {var_y_.get_id(), 2}});
+  Monomial m1({{var_y_.get_id(), 2}});
+  Monomial m2({{var_x_.get_id(), 0}, {var_y_.get_id(), 2}});
   EXPECT_EQ(m1, m2);
   EXPECT_EQ(m2.get_powers().size(), 1);
   std::map<Variable::Id, int> power_expected;
@@ -298,12 +298,12 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
 }
 
 // This test shows that we can have a std::unordered_map whose key is of
-// internal::Monomial.
+// Monomial.
 TEST_F(MonomialTest, UnorderedMapOfMonomial) {
-  unordered_map<internal::Monomial, double, hash_value<internal::Monomial>>
+  unordered_map<Monomial, double, hash_value<Monomial>>
       monomial_to_coeff_map;
-  internal::Monomial x_3{var_x_, 3};
-  internal::Monomial y_5{var_y_, 5};
+  Monomial x_3{var_x_, 3};
+  Monomial y_5{var_y_, 5};
   // Add 2 * x^3
   monomial_to_coeff_map.emplace(x_3, 2);
   // Add -7 * y^5
@@ -320,16 +320,16 @@ TEST_F(MonomialTest, UnorderedMapOfMonomial) {
 
 // Converts a constant to monomial.
 TEST_F(MonomialTest, ToMonomial0) {
-  internal::Monomial expected;
-  EXPECT_EQ(internal::Monomial(1), expected);
-  EXPECT_EQ(internal::Monomial(pow(x_, 0)), expected);
-  EXPECT_THROW(internal::Monomial(2), std::exception);
+  Monomial expected;
+  EXPECT_EQ(Monomial(1), expected);
+  EXPECT_EQ(Monomial(pow(x_, 0)), expected);
+  EXPECT_THROW(Monomial(2), std::exception);
 }
 
 // Converts expression x to monomial.
 TEST_F(MonomialTest, ToMonomial1) {
-  internal::Monomial expected(var_x_, 1);
-  EXPECT_EQ(internal::Monomial(x_), expected);
+  Monomial expected(var_x_, 1);
+  EXPECT_EQ(Monomial(x_), expected);
 }
 
 // Converts expression x * y to monomial.
@@ -337,15 +337,15 @@ TEST_F(MonomialTest, ToMonomial2) {
   std::map<Variable::Id, int> powers;
   powers.emplace(var_x_.get_id(), 1);
   powers.emplace(var_y_.get_id(), 1);
-  internal::Monomial expected(powers);
-  EXPECT_EQ(internal::Monomial(x_ * y_), expected);
+  Monomial expected(powers);
+  EXPECT_EQ(Monomial(x_ * y_), expected);
 }
 
 // Converts expression x^3 to monomial.
 TEST_F(MonomialTest, ToMonomial3) {
-  internal::Monomial expected(var_x_, 3);
-  EXPECT_EQ(internal::Monomial(pow(x_, 3)), expected);
-  EXPECT_EQ(internal::Monomial(pow(x_, 2) * x_), expected);
+  Monomial expected(var_x_, 3);
+  EXPECT_EQ(Monomial(pow(x_, 3)), expected);
+  EXPECT_EQ(Monomial(pow(x_, 2) * x_), expected);
 }
 
 // Converts expression x^3 * y to monomial.
@@ -353,9 +353,18 @@ TEST_F(MonomialTest, ToMonomial4) {
   std::map<Variable::Id, int> powers;
   powers.emplace(var_x_.get_id(), 3);
   powers.emplace(var_y_.get_id(), 1);
-  internal::Monomial expected(powers);
-  EXPECT_EQ(internal::Monomial(pow(x_, 3) * y_), expected);
-  EXPECT_EQ(internal::Monomial(pow(x_, 2) * y_ * x_), expected);
+  Monomial expected(powers);
+  EXPECT_EQ(Monomial(pow(x_, 3) * y_), expected);
+  EXPECT_EQ(Monomial(pow(x_, 2) * y_ * x_), expected);
+}
+
+// Converts expression x*(y+z) - x*y to monomial
+TEST_F(MonomialTest, ToMonomial5) {
+  std::map<Variable::Id, int> powers(
+      {{var_x_.get_id(), 1}, {var_z_.get_id(), 1}});
+  Monomial expected(powers);
+  EXPECT_EQ(Monomial(x_ * z_), expected);
+  EXPECT_EQ(Monomial(x_ * (y_ + z_) - x_ * y_), expected);
 }
 
 TEST_F(MonomialTest, Degree) {

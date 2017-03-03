@@ -233,6 +233,7 @@ class MathematicalProgram {
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
 
   MathematicalProgram();
+  virtual ~MathematicalProgram() {}
 
   /**
    * Adds new variables to MathematicalProgram.
@@ -836,6 +837,16 @@ class MathematicalProgram {
                const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Add a quadratic cost term of the form 0.5*x'*Q*x + b'*x + c.
+   * Notice that in the optimization program, the constant term `c` in the cost
+   * is ignored.
+   * @param e A quadratic symbolic expression. Throws a runtime error if the
+   * expression is not quadratic.
+   * @return The newly added cost together with the bound variables.
+   */
+  Binding<QuadraticConstraint> AddQuadraticCost(const symbolic::Expression& e);
+
+  /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
@@ -892,6 +903,17 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& b,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a cost in the symbolic form.
+   * Note that the constant part of the cost is ignored. So if you set
+   * `e = x + 2`, then only the cost on `x` is added, the constant term 2 is
+   * ignored.
+   * @param e The linear or quadratic expression of the cost.
+   * @pre `e` is linear or `e` is quadratic. Otherwise throws a runtime error.
+   * @return The newly created cost, together with the bound variables.
+   */
+  Binding<Constraint> AddCost(const symbolic::Expression& e);
 
   /**
    * Adds a generic constraint to the program.  This should
@@ -2157,7 +2179,7 @@ class MathematicalProgram {
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    * @pre{@p var is a decision variable in the mathematical program, otherwise
-   * this function asserts an error.}
+   * this function throws a runtime error.}
    */
   size_t FindDecisionVariableIndex(const symbolic::Variable& var) const;
 
@@ -2168,19 +2190,17 @@ class MathematicalProgram {
    * @return The value of the decision variable after solving the problem.
    */
   template <typename Derived>
-  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                    Derived::ColsAtCompileTime>>::type
   GetSolution(const Eigen::MatrixBase<Derived>& var) const {
-    static_assert(
-        std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
-        "The input should be an Eigen matrix of symbolic variable object.");
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime>
         value(var.rows(), var.cols());
     for (int i = 0; i < var.rows(); ++i) {
       for (int j = 0; j < var.cols(); ++j) {
-        auto it = decision_variable_index_.find(var(i, j).get_id());
-        DRAKE_ASSERT(it != decision_variable_index_.end());
-        value(i, j) = x_values_[it->second];
+        value(i, j) = GetSolution(var(i, j));
       }
     }
     return value;
@@ -2345,25 +2365,27 @@ class MathematicalProgram {
                                        const std::vector<std::string>& names);
 
   /*
-   * Given a matrix of decision variables, return true if every entry in the
-   * matrix is a decision variable in the program; otherwise return false.
-   * @tparam  A Eigen::Matrix type of symbolic Variable.
-   * @param vars A matrix of variable.
+   * Given a matrix of decision variables, checks if every entry in the
+   * matrix is a decision variable in the program; throws a runtime
+   * error if any variable is not a decision variable in the program.
+   * @tparam Derived An Eigen::Matrix type of symbolic Variable.
+   * @param vars A matrix of variables.
    */
   template <typename Derived>
   typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
-      bool>::type
-  IsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) {
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value>::type
+  CheckIsDecisionVariable(const Eigen::MatrixBase<Derived> &vars) {
     for (int i = 0; i < vars.rows(); ++i) {
       for (int j = 0; j < vars.cols(); ++j) {
         if (decision_variable_index_.find(vars(i, j).get_id()) ==
             decision_variable_index_.end()) {
-          return false;
+          std::ostringstream oss;
+          oss << vars(i, j)
+              << " is not a decision variable of the mathematical program.\n";
+          throw std::runtime_error(oss.str());
         }
       }
     }
-    return true;
   }
 
   Binding<LinearEqualityConstraint> DoAddLinearEqualityConstraint(

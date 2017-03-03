@@ -322,6 +322,32 @@ class RigidBodyTree {
       const std::set<int>& model_instance_id_set =
           RigidBodyTreeConstants::default_model_instance_id_set) const;
 
+  /**
+   * Computes the summed spatial inertia in the world frame of all bodies that
+   * belong to model instances in @p model_instance_id_set.
+   * @param cache Reference to the KinematicsCache.
+   * @param model_instance_id_set A set of model instance ID values
+   * corresponding to the model instances whose spatial inertia should be
+   * included in the returned value.
+   * @return The summed spatial inertia.
+   */
+  drake::Matrix6<T> LumpedSpatialInertiaInWorldFrame(
+      const KinematicsCache<T>& cache,
+      const std::set<int>& model_instance_id_set =
+          RigidBodyTreeConstants::default_model_instance_id_set) const;
+
+  /**
+   * Computes the summed spatial inertia in the world frame of all the bodies
+   * in @p bodies_of_interest.
+   * @param cache Reference to the KinematicsCache.
+   * @param bodies_of_interest Vector of bodies, whose spatial inertia will be
+   * summed and returned.
+   * @return The summed spatial inertia.
+   */
+  drake::Matrix6<T> LumpedSpatialInertiaInWorldFrame(
+      const KinematicsCache<T>& cache,
+      const std::vector<const RigidBody<T>*>& bodies_of_interest) const;
+
   /// Computes the pose `X_WB` of @p body's frame B in the world frame W.
   /// @param cache Reference to the KinematicsCache.
   /// @param body Reference to the RigidBody.

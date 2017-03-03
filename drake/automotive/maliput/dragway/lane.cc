@@ -1,5 +1,6 @@
 #include "drake/automotive/maliput/dragway/lane.h"
 
+#include <cmath>
 #include <memory>
 
 #include "drake/automotive/maliput/dragway/branch_point.h"
@@ -12,6 +13,29 @@ using std::make_unique;
 namespace drake {
 namespace maliput {
 namespace dragway {
+
+namespace {
+
+// Clamps the provided `value` by the provided `min` and `max` values. Returns
+// the clamped result.
+//
+// TODO(liang.fok) Once c++17 or later is used, switch to std::clamp().
+//
+// TODO(liang.fok) Move this and identical functions in dragway/road_geometry.cc
+// and SimpleCar into a common shared location.
+//
+double clamp(double value, double min, double max) {
+  double result = value;
+  if (value < min) {
+    result = min;
+  }
+  if (value > max) {
+    result = max;
+  }
+  return result;
+}
+
+}  // namespace
 
 Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
     double length, double y_offset, const api::RBounds& lane_bounds,
@@ -90,8 +114,31 @@ api::Rotation Lane::DoGetOrientation(
 }
 
 api::LanePosition Lane::DoToLanePosition(
-    const api::GeoPosition& geo_pos) const {
-  DRAKE_ABORT();  // TODO(liangfok) Implement me.
+    const api::GeoPosition& geo_pos,
+    api::GeoPosition* nearest_point,
+    double* distance) const {
+
+  const double min_x = 0;
+  const double max_x = length_;
+  const double min_y = driveable_bounds_.r_min + y_offset_;
+  const double max_y = driveable_bounds_.r_max + y_offset_;
+
+  const api::GeoPosition closest_point{clamp(geo_pos.x, min_x, max_x),
+                                       clamp(geo_pos.y, min_y, max_y),
+                                       geo_pos.z};
+  if (nearest_point != nullptr) {
+    *nearest_point = closest_point;
+  }
+
+  if (distance != nullptr) {
+    *distance = std::sqrt(std::pow(geo_pos.x - closest_point.x, 2) +
+                          std::pow(geo_pos.y - closest_point.y, 2) +
+                          std::pow(geo_pos.z - closest_point.z, 2));
+  }
+
+  return api::LanePosition(closest_point.x              /* s */,
+                           closest_point.y - y_offset_  /* r */,
+                           closest_point.z              /* h */);
 }
 
 }  // namespace dragway

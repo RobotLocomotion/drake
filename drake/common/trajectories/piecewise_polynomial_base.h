@@ -8,7 +8,7 @@
 
 class PiecewisePolynomialBase : public PiecewiseFunction {
  public:
-  explicit PiecewisePolynomialBase(std::vector<double> const& segment_times);
+  explicit PiecewisePolynomialBase(std::vector<double> const& breaks);
 
   virtual ~PiecewisePolynomialBase();
 

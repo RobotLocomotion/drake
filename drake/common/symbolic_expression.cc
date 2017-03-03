@@ -7,6 +7,9 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
+
+#include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
@@ -26,6 +29,7 @@ using std::ostringstream;
 using std::runtime_error;
 using std::shared_ptr;
 using std::string;
+using std::vector;
 
 bool operator<(ExpressionKind k1, ExpressionKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
@@ -156,10 +160,15 @@ double Expression::Evaluate(const Environment& env) const {
   return ptr_->Evaluate(env);
 }
 
+Expression Expression::Expand() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->Expand();
+}
+
 Expression Expression::Substitute(const Variable& var,
                                   const Expression& e) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return Expression{ptr_->Substitute({{var, e}})};
+  return ptr_->Substitute({{var, e}});
 }
 
 Expression Expression::Substitute(const Substitution& s) const {
@@ -790,6 +799,23 @@ Expression operator/(const Variable& lhs, const Expression& rhs) {
 Expression operator+(const Variable& var) { return Expression{var}; }
 Expression operator-(const Variable& var) { return -Expression{var}; }
 
-}  // namespace symbolic
+MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
+                             const vector<Variable>& vars) {
+  DRAKE_DEMAND(vars.size() > 0);
+  const Eigen::Ref<const VectorX<Expression>>::Index n{f.size()};
+  const size_t m{vars.size()};
+  MatrixX<Expression> J(n, m);
+  for (int i = 0; i < n; ++i) {
+    for (size_t j = 0; j < m; ++j) {
+      J(i, j) = f[i].Differentiate(vars[j]);
+    }
+  }
+  return J;
+}
 
+MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
+                             const Eigen::Ref<const VectorX<Variable>>& vars) {
+  return Jacobian(f, vector<Variable>(vars.data(), vars.data() + vars.size()));
+}
+}  // namespace symbolic
 }  // namespace drake

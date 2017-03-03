@@ -1,8 +1,10 @@
 #include <iostream>
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/drake_path.h"
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/lcm/drake_lcm.h"
@@ -15,10 +17,8 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
-#include "drake/util/drakeAppUtil.h"
 
 using drake::solvers::SolutionResult;
-using drake::MatrixCompareType;
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
@@ -26,6 +26,10 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 namespace {
+
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
 
 int do_main(int argc, char* argv[]) {
   systems::DiagramBuilder<double> builder;
@@ -103,13 +107,14 @@ int do_main(int argc, char* argv[]) {
       diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
                                           controller);
 
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(kTrajectoryTimeUpperBound);
 
   systems::Context<double>* pendulum_context =
       controller->GetMutableSubsystemContext(controller_context, pendulum);
   auto state_vec = pendulum_context->get_continuous_state()->CopyToVector();
-  if (!CompareMatrices(state_vec, xG, 1e-3, MatrixCompareType::absolute)) {
+  if (!is_approx_equal_abstol(state_vec, xG, 1e-3)) {
     throw std::runtime_error("Did not reach trajectory target.");
   }
   return 0;

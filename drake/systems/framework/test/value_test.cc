@@ -5,10 +5,10 @@
 #include <string>
 #include <vector>
 
+#include "gtest/gtest.h"
+
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
-
-#include "gtest/gtest.h"
 
 namespace drake {
 namespace systems {
@@ -59,6 +59,7 @@ GTEST_TEST(ValueTest, BadCast) {
 
 class PrintInterface {
  public:
+  virtual ~PrintInterface() {}
   virtual std::string print() const = 0;
 };
 

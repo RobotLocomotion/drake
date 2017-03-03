@@ -1,9 +1,11 @@
+drake_add_cc_test(bicycle_car_test)
+target_link_libraries(bicycle_car_test drakeAutomotive)
+
+drake_add_cc_test(simple_powertrain_test)
+target_link_libraries(simple_powertrain_test drakeAutomotive)
+
 drake_add_cc_test(curve2_test)
 target_link_libraries(curve2_test drakeAutomotive)
-
-drake_add_cc_test(endless_road_car_to_euler_floating_joint_test)
-target_link_libraries(endless_road_car_to_euler_floating_joint_test
-                      drakeAutomotive)
 
 drake_add_cc_test(simple_car_test)
 target_link_libraries(simple_car_test drakeAutomotive)
@@ -23,10 +25,10 @@ target_link_libraries(idm_planner_test drakeAutomotive)
 drake_add_cc_test(single_lane_ego_and_agent_test)
 target_link_libraries(single_lane_ego_and_agent_test drakeAutomotive)
 
-if(lcm_FOUND)
-  drake_add_cc_test(simple_car_state_translator_test)
-  target_link_libraries(simple_car_state_translator_test drakeAutomotiveLcm)
+drake_add_cc_test(monolane_onramp_merge_test)
+target_link_libraries(monolane_onramp_merge_test drakeAutomotive)
 
+if(lcm_FOUND)
   drake_add_cc_test(automotive_simulator_test)
   target_link_libraries(automotive_simulator_test drakeAutomotiveLcm)
 endif()

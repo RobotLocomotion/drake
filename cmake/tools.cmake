@@ -29,6 +29,7 @@ endmacro()
 # Set compiler flags and CTest variables for dynamic and static analysis tools
 #------------------------------------------------------------------------------
 macro(drake_setup_tools_common)
+  set(TESTS_ENVIRONMENT)
   drake_setup_clang_tidy()
   drake_setup_include_what_you_use()
   drake_setup_link_what_you_use()
@@ -207,15 +208,17 @@ macro(drake_setup_sanitizers)
 
     if(USE_SANITIZER STREQUAL "Address")
       _drake_add_compiler_and_linker_flag("-fsanitize=address" FSANITIZE_ADDRESS)
+      set(MEMORYCHECK_TYPE AddressSanitizer)
       set(ENV{ASAN_OPTIONS}
         "${SANITIZER_COMMON_OPTIONS}:suppressions=${_tools_dir}/asan.supp:$ENV{ASAN_OPTIONS}")
-      set(MEMORYCHECK_TYPE AddressSanitizer)
+      list(APPEND TESTS_ENVIRONMENT ASAN_OPTIONS=$ENV{ASAN_OPTIONS})
     elseif(USE_SANITIZER STREQUAL "Leak")
       _drake_add_compiler_and_linker_flag("-fsanitize=leak" FSANITIZE_LEAK)
       # LeakSanitizer is part of AddressSanitizer
       set(MEMORYCHECK_TYPE AddressSanitizer)
       set(ENV{LSAN_OPTIONS}
         "${SANITIZER_COMMON_OPTIONS}:suppressions=${_tools_dir}/lsan.supp:$ENV{LSAN_OPTIONS}")
+      list(APPEND TESTS_ENVIRONMENT LSAN_OPTIONS=$ENV{LSAN_OPTIONS})
     elseif(USE_SANITIZER MATCHES "^Memory(WithOrigins)?$")
 
       # Work around the generator not supporting Fortran for the compiler
@@ -234,17 +237,20 @@ macro(drake_setup_sanitizers)
       set(MEMORYCHECK_TYPE MemorySanitizer)
       set(ENV{MSAN_OPTIONS}
         "${SANITIZER_COMMON_OPTIONS}:suppressions=${_tools_dir}/msan.supp:$ENV{MSAN_OPTIONS}")
+      list(APPEND TESTS_ENVIRONMENT MSAN_OPTIONS=$ENV{MSAN_OPTIONS})
     elseif(USE_SANITIZER STREQUAL "Thread")
       _drake_add_compiler_and_linker_flag("-fsanitize=thread" FSANITIZE_THREAD)
       set(MEMORYCHECK_TYPE ThreadSanitizer)
       set(ENV{TSAN_OPTIONS}
         "${SANITIZER_COMMON_OPTIONS}:suppressions=${_tools_dir}/tsan.supp:$ENV{TSAN_OPTIONS}")
+      list(APPEND TESTS_ENVIRONMENT TSAN_OPTIONS=$ENV{TSAN_OPTIONS})
     elseif(USE_SANITIZER STREQUAL "Undefined")
       _drake_add_compiler_and_linker_flag("-fsanitize=undefined"
         FSANITIZE_UNDEFINED)
       set(MEMORYCHECK_TYPE UndefinedBehaviorSanitizer)
       set(ENV{UBSAN_OPTIONS}
         "${SANITIZER_COMMON_OPTIONS}:suppressions=${_tools_dir}/ubsan.supp:$ENV{UBSAN_OPTIONS}")
+      list(APPEND TESTS_ENVIRONMENT UBSAN_OPTIONS=$ENV{UBSAN_OPTIONS})
     else()
       message(FATAL_ERROR "Sanitizer ${USE_SANITIZER} is not supported")
     endif()

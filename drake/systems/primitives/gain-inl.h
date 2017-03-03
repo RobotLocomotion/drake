@@ -8,12 +8,8 @@
 #include "drake/systems/primitives/gain.h"
 
 #include <sstream>
-#include <stdexcept>
-#include <string>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {
@@ -24,11 +20,8 @@ template <typename T>
 Gain<T>::Gain(const T& k, int size) : Gain(VectorX<T>::Ones(size) * k) {}
 
 template <typename T>
-Gain<T>::Gain(const VectorX<T>& k) : k_(k) {
-  DRAKE_DEMAND(k.size() > 0);
-  this->DeclareInputPort(kVectorValued, k.size());
-  this->DeclareOutputPort(kVectorValued, k.size());
-}
+Gain<T>::Gain(const VectorX<T>& k)
+    : SisoVectorSystem<T>(k.size(), k.size()), k_(k) { }
 
 template <typename T>
 const T& Gain<T>::get_gain() const {
@@ -47,21 +40,12 @@ const VectorX<T>& Gain<T>::get_gain_vector() const {
 }
 
 template <typename T>
-const InputPortDescriptor<T>& Gain<T>::get_input_port() const {
-  return System<T>::get_input_port(0);
-}
-
-template <typename T>
-const OutputPortDescriptor<T>& Gain<T>::get_output_port() const {
-  return System<T>::get_output_port(0);
-}
-
-template <typename T>
-void Gain<T>::DoCalcOutput(const Context<T>& context,
-                           SystemOutput<T>* output) const {
-  auto input_vector = this->EvalEigenVectorInput(context, 0);
-  System<T>::GetMutableOutputVector(output, 0) =
-      k_.array() * input_vector.array();
+void Gain<T>::DoCalcVectorOutput(
+    const Context<T>& context,
+    const Eigen::VectorBlock<const VectorX<T>>& input,
+    const Eigen::VectorBlock<const VectorX<T>>& state,
+    Eigen::VectorBlock<VectorX<T>>* output) const {
+  *output = k_.array() * input.array();
 }
 
 }  // namespace systems

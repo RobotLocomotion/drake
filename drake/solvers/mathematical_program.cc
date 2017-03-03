@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/monomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
@@ -24,6 +25,7 @@ namespace drake {
 namespace solvers {
 
 using std::map;
+using std::numeric_limits;
 using std::ostringstream;
 using std::pair;
 using std::runtime_error;
@@ -211,15 +213,37 @@ class SymbolicError : public runtime_error {
   }
 };
 
-// Given an expression @p e, extract all variables inside e, append these
-// variables to @p vars if they are not included in @p vars yet.
-// @param[in] e.  A symbolic expression.
-// @param[out] vars.  The variables in @p e but not included in @p vars before
-// this call, will be appended to @p vars.
-// @param[out] map_var_to_index. map_var_to_index is of the same size as @p
-// vars, and map_var_to_index[vars(i).get_id()] = i.
-void ExtractVariablesFromExpression(
-    const Expression& e, VectorXDecisionVariable* vars,
+// Given an expression `e`, extracts all variables inside `e`.
+// @param[in] e A symbolic expression.
+// @retval pair pair.first is the variables in `e`. pair.second is the mapping
+// from the variable ID to the index in pair.first, such that
+// pair.second[pair.first(i).get_id()] = i
+std::pair<VectorXDecisionVariable, unordered_map<Variable::Id, int>>
+ExtractVariablesFromExpression(const Expression& e) {
+  int var_count = 0;
+  const symbolic::Variables var_set = e.GetVariables();
+  VectorXDecisionVariable vars(var_set.size());
+  unordered_map<Variable::Id, int> map_var_to_index{};
+  map_var_to_index.reserve(var_set.size());
+  for (const Variable& var : var_set) {
+    map_var_to_index.emplace(var.get_id(), var_count);
+    vars(var_count++) = var;
+  }
+  return std::pair<VectorXDecisionVariable, unordered_map<Variable::Id, int>>(
+      vars, map_var_to_index);
+}
+
+// Given an expression `e`, extract all variables inside `e`, append these
+// variables to `vars` if they are not included in `vars` yet.
+// @param[in] e  A symbolic expression.
+// @param[in,out] vars  As an input, `vars` contain the variables before
+// extracting expression `e`. As an output, the variables in `e` that were not
+// included in `vars`, will be appended to the end of `vars`.
+// @param[in,out] map_var_to_index. map_var_to_index is of the same size as
+// `vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds
+// for map_var_to_index both as the input and as the output.
+void ExtractAndAppendVariablesFromExpression(
+    const Expression &e, VectorXDecisionVariable* vars,
     unordered_map<Variable::Id, int>* map_var_to_index) {
   DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) == vars->size());
   for (const Variable& var : e.GetVariables()) {
@@ -232,79 +256,71 @@ void ExtractVariablesFromExpression(
 }
 
 /** Decomposes a linear combination @p e = c0 + c1 * v1 + ... cn * vn into
-   *  the followings:
-   *
-   *     constant term      : c0
-   *     coefficient vector : [c1, ..., cn]
-   *     variable vector    : [v1, ..., vn]
-   *
-   *  Then, it returns a pair (c0, [c1, ..., cn]). A map from variable ID to
-   *  int, @p map_var_to_index, is used to decide a variable's index in a linear
-   *  combination.
-   *
-   *  \pre{@c coeffs is a row vector of double, whose length matches with the
-   *          size of @c map_var_to_index.}
-   * @tparam Derived An Eigen row vector of doubles.
-   * @param[in] e The symbolic linear expression
-   * @param[in] map_var_to_index A mapping from variable ID to variable index,
-   * such that map_var_to_index[vi.get_ID()] = i.
-   * @param[out] coeffs A row vector. coeffs(i) = ci.
-   * @param[out] constant_term c0 in the equation above.
-   */
+ *  the followings:
+ *
+ *     constant term      : c0
+ *     coefficient vector : [c1, ..., cn]
+ *     variable vector    : [v1, ..., vn]
+ *
+ *  Then, it extracts the coefficient and the constant term.
+ *  A map from variable ID to int, @p map_var_to_index, is used to decide a
+ *  variable's index in a linear combination.
+ *
+ *  \pre{1. @c coeffs is a row vector of double, whose length matches with the
+ *          size of @c map_var_to_index.
+ *       2. e.is_polynomial() is true.
+ *       3. e is a linear expression.}
+ * @tparam Derived An Eigen row vector type with Derived::Scalar == double.
+ * @param[in] e The symbolic linear expression
+ * @param[in] map_var_to_index A mapping from variable ID to variable index,
+ * such that map_var_to_index[vi.get_ID()] = i.
+ * @param[out] coeffs A row vector. coeffs(i) = ci.
+ * @param[out] constant_term c0 in the equation above.
+ * @return num_variable. Number of variables in the expression. 2 * x(0) + 3
+ * has 1 variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable.
+ */
 template <typename Derived>
-void DecomposeLinearExpression(
+typename std::enable_if<std::is_same<typename Derived::Scalar, double>::value,
+                        int>::type
+DecomposeLinearExpression(
     const Expression& e,
     const std::unordered_map<Variable::Id, int>& map_var_to_index,
     const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
-  static_assert(std::is_same<typename Derived::Scalar, double>::value,
-                "coeffs must be a matrix of double.");
   DRAKE_DEMAND(coeffs.rows() == 1);
   DRAKE_DEMAND(coeffs.cols() == static_cast<int>(map_var_to_index.size()));
-  if (is_addition(e)) {
-    *constant_term = get_constant_in_addition(e);
-    const std::map<Expression, double>& expr_to_coeff_map{
-        get_expr_to_coeff_map_in_addition(e)};
-    for (const pair<Expression, double>& p : expr_to_coeff_map) {
-      if (is_variable(p.first)) {
-        const Variable& var{get_variable(p.first)};
-        const double coeff{p.second};
-        const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
-            0, map_var_to_index.at(var.get_id())) = coeff;
-      } else {
-        std::ostringstream oss;
-        oss << "Expression " << e << " is non-linear.";
-        throw std::runtime_error(oss.str());
-      }
-    }
-  } else if (is_multiplication(e)) {
-    const double c = get_constant_in_multiplication(e);
-    const std::map<Expression, Expression>& map_base_to_exponent =
-        get_base_to_exponent_map_in_multiplication(e);
-    if (map_base_to_exponent.size() == 1) {
-      const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
-      if (!is_variable(p.first) || !is_one(p.second)) {
-        throw SymbolicError(e, "is not linear");
-      } else {
-        const Variable& var = get_variable(p.first);
-        const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
-            map_var_to_index.at(var.get_id())) = c;
-        *constant_term = 0;
+  if (!e.is_polynomial()) {
+    std::ostringstream oss;
+    oss << "Expression " << e << "is not a polynomial.\n";
+    throw runtime_error(oss.str());
+  }
+  const symbolic::Variables& vars = e.GetVariables();
+  const auto& monomial_to_coeff_map =
+      symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  int num_variable = 0;
+  for (const auto& p : monomial_to_coeff_map) {
+    const auto& p_monomial = p.first;
+    DRAKE_ASSERT(is_constant(p.second));
+    const double p_coeff = symbolic::get_constant_value(p.second);
+    if (p_monomial.total_degree() > 1) {
+      std::ostringstream oss;
+      oss << "Expression " << e << " is non-linear.";
+      throw std::runtime_error(oss.str());
+    } else if (p_monomial.total_degree() == 1) {
+      // Linear coefficient.
+      const auto& p_monomial_powers = p_monomial.get_powers();
+      DRAKE_DEMAND(p_monomial_powers.size() == 1);
+      const Variable::Id var_id = p_monomial_powers.begin()->first;
+      const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
+          map_var_to_index.at(var_id)) = p_coeff;
+      if (p_coeff != 0) {
+        ++num_variable;
       }
     } else {
-      // There are more than one base, like x^2 * y^3
-      throw SymbolicError(e, "is not linear");
+      // Constant term.
+      *constant_term = p_coeff;
     }
-  } else if (is_variable(e)) {
-    // Just a single variable.
-    const Variable& var{get_variable(e)};
-    const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
-        map_var_to_index.at(var.get_id())) = 1;
-    *constant_term = 0;
-  } else if (is_constant(e)) {
-    *constant_term = get_constant_value(e);
-  } else {
-    throw SymbolicError(e, "is not linear");
   }
+  return num_variable;
 }
 
 /**
@@ -321,7 +337,7 @@ void DecomposeLinearExpression(const Eigen::Ref<const VectorX<Expression>>& v,
   // 0. Setup map_var_to_index and var_vec.
   unordered_map<Variable::Id, int> map_var_to_index;
   for (int i = 0; i < v.size(); ++i) {
-    ExtractVariablesFromExpression(v(i), vars, &map_var_to_index);
+    ExtractAndAppendVariablesFromExpression(v(i), vars, &map_var_to_index);
   }
 
   // 2. Construct decompose v as
@@ -351,6 +367,7 @@ void MathematicalProgram::AddCost(const Binding<LinearConstraint>& binding) {
   DRAKE_ASSERT(binding.constraint()->num_constraints() == 1 &&
                binding.constraint()->A().cols() ==
                    static_cast<int>(binding.GetNumElements()));
+  CheckIsDecisionVariable(binding.variables());
   linear_costs_.push_back(binding);
 }
 
@@ -362,10 +379,10 @@ void MathematicalProgram::AddCost(
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
     const Expression& e) {
-  VectorXDecisionVariable var(0);
-  unordered_map<Variable::Id, int> map_var_to_index;
-  ExtractVariablesFromExpression(e, &var, &map_var_to_index);
-  DRAKE_ASSERT(IsDecisionVariable(var));
+
+  auto p = ExtractVariablesFromExpression(e);
+  const VectorXDecisionVariable& var = p.first;
+  const auto& map_var_to_index = p.second;
   Eigen::RowVectorXd c(var.size());
   double constant_term;
   DecomposeLinearExpression(e, map_var_to_index, c, &constant_term);
@@ -379,9 +396,9 @@ std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearCost(
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   auto cost = std::make_shared<LinearConstraint>(
       c.transpose(), drake::Vector1<double>::Constant(
-                         -std::numeric_limits<double>::infinity()),
+                         -numeric_limits<double>::infinity()),
       drake::Vector1<double>::Constant(
-          std::numeric_limits<double>::infinity()));
+          numeric_limits<double>::infinity()));
   AddCost(cost, vars);
   return cost;
 }
@@ -392,6 +409,7 @@ void MathematicalProgram::AddCost(const Binding<QuadraticConstraint>& binding) {
                    static_cast<int>(binding.GetNumElements()) &&
                binding.constraint()->b().rows() ==
                    static_cast<int>(binding.GetNumElements()));
+  CheckIsDecisionVariable(binding.variables());
   quadratic_costs_.push_back(binding);
 }
 
@@ -401,13 +419,86 @@ void MathematicalProgram::AddCost(
   AddCost(Binding<QuadraticConstraint>(obj, vars));
 }
 
+Binding<QuadraticConstraint> AddQuadraticCostWithMonomialToCoeffMap(
+    const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map,
+    const VectorXDecisionVariable& vars_vec,
+    const unordered_map<Variable::Id, int>& map_var_to_index,
+    MathematicalProgram* prog) {
+  // We want to write the expression e in the form 0.5 * x' * Q * x + b' * x + c
+  // TODO(hongkai.dai): use a sparse matrix to represent Q and b.
+  Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
+  Eigen::VectorXd b(vars_vec.size());
+  Q.setZero();
+  b.setZero();
+  for (const auto& p : monomial_to_coeff_map) {
+    DRAKE_ASSERT(is_constant(p.second));
+    const double coefficient = get_constant_value(p.second);
+    const symbolic::Monomial& p_monomial = p.first;
+    if (p_monomial.total_degree() > 2) {
+      ostringstream oss;
+      oss << p.first << " has order higher than 2, cannot be handled by "
+          "AddQuadraticCost" << std::endl;
+      throw std::runtime_error(oss.str());
+    }
+    const auto& monomial_powers = p_monomial.get_powers();
+    if (monomial_powers.size() == 2) {
+      // cross terms.
+      auto it = monomial_powers.begin();
+      const int x1_index = map_var_to_index.at(it->first);
+      DRAKE_DEMAND(it->second == 1);
+      ++it;
+      const int x2_index = map_var_to_index.at(it->first);
+      DRAKE_DEMAND(it->second == 1);
+      Q(x1_index, x2_index) += coefficient;
+      Q(x2_index, x1_index) = Q(x1_index, x2_index);
+    } else if (monomial_powers.size() == 1) {
+      // Three cases
+      // 1. quadratic term a*x^2
+      // 2. linear term b*x
+      // 3. constant term. We ignore the constant term in QuadraticConstraint.
+      auto it = monomial_powers.begin();
+      const int x_index = map_var_to_index.at(it->first);
+      if (it->second == 2) {
+        // quadratic term a * x^2
+        Q(x_index, x_index) += 2 * coefficient;
+      } else if (it->second == 1) {
+        // linear term b * x.
+        b(x_index) += coefficient;
+      } else {
+        // constant term.
+        // Deliberately left empty, we ignore the constant term in
+        // QuadraticConstraint.
+      }
+    }
+  }
+  // Now add the quadratic constraint 0.5 * x' * Q * x + b' * x
+  return Binding<QuadraticConstraint>(prog->AddQuadraticCost(Q, b, vars_vec),
+                                      vars_vec);
+}
+
+Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
+    const symbolic::Expression& e) {
+  // First build an Eigen vector, that contains all the bound variables.
+  const symbolic::Variables& vars = e.GetVariables();
+  auto p = ExtractVariablesFromExpression(e);
+  const auto& vars_vec = p.first;
+  const auto& map_var_to_index = p.second;
+
+  // Now decomposes the expression into coefficients and monomials.
+  const symbolic::MonomialToCoefficientMap&
+      monomial_to_coeff_map =
+          symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  return AddQuadraticCostWithMonomialToCoeffMap(monomial_to_coeff_map, vars_vec,
+                                                map_var_to_index, this);
+}
+
 std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticErrorCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& x_desired,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   auto cost = std::make_shared<QuadraticConstraint>(
-      2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
-      std::numeric_limits<double>::infinity());
+      2 * Q, -2 * Q * x_desired, -numeric_limits<double>::infinity(),
+      numeric_limits<double>::infinity());
   AddCost(cost, vars);
   return cost;
 }
@@ -417,10 +508,54 @@ std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   auto cost = std::make_shared<QuadraticConstraint>(
-      Q, b, -std::numeric_limits<double>::infinity(),
-      std::numeric_limits<double>::infinity());
+      Q, b, -numeric_limits<double>::infinity(),
+      numeric_limits<double>::infinity());
   AddCost(cost, vars);
   return cost;
+}
+
+Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
+  if (!e.is_polynomial()) {
+    std::ostringstream oss;
+    oss << "Expression " << e << " is not a polynomial. Currently AddCost does "
+                                 "not support non-polynomial expression.\n";
+    throw std::runtime_error(oss.str());
+  }
+  const symbolic::Variables& vars = e.GetVariables();
+  const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map =
+      symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  int total_degree = 0;
+  for (const auto& p : monomial_to_coeff_map) {
+    total_degree = std::max(total_degree, p.first.total_degree());
+  }
+
+
+  auto e_extracted = ExtractVariablesFromExpression(e);
+  const VectorXDecisionVariable& vars_vec = e_extracted.first;
+  const auto& map_var_to_index = e_extracted.second;
+
+  if (total_degree > 2) {
+    std::ostringstream oss;
+    oss << "Expression " << e << " has degree higher than 2. Currently AddCost "
+                                 "only supports quadratic or linear "
+                                 "expressions.\n";
+    throw std::runtime_error(oss.str());
+  } else if (total_degree == 2) {
+    return  AddQuadraticCostWithMonomialToCoeffMap(
+        monomial_to_coeff_map, vars_vec, map_var_to_index, this);
+  } else {
+    Eigen::VectorXd c(vars_vec.size());
+    c.setZero();
+    for (const auto& p : monomial_to_coeff_map) {
+      if (p.first.total_degree() == 1) {
+        const Variable::Id var_id = p.first.get_powers().begin()->first;
+        DRAKE_DEMAND(is_constant(p.second));
+        c(map_var_to_index.at(var_id)) += get_constant_value(p.second);
+      }
+    }
+    auto lin_cost = AddLinearCost(c, vars_vec);
+    return Binding<Constraint>(lin_cost, vars_vec);
+  }
 }
 
 void MathematicalProgram::AddConstraint(const Binding<Constraint>& binding) {
@@ -446,87 +581,64 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   unordered_map<Variable::Id, int> map_var_to_index;
   VectorXDecisionVariable vars(0);
   for (int i = 0; i < v.size(); ++i) {
-    ExtractVariablesFromExpression(v(i), &vars, &map_var_to_index);
+    ExtractAndAppendVariablesFromExpression(v(i), &vars, &map_var_to_index);
   }
-  DRAKE_ASSERT(IsDecisionVariable(vars));
 
   // Construct A, new_lb, new_ub. map_var_to_index is used here.
   Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
   Eigen::VectorXd new_lb{v.size()};
   Eigen::VectorXd new_ub{v.size()};
-  for (int i{0}; i < v.size(); ++i) {
-    const Expression& e_i{v(i)};
-    const double lb_i{lb(i)};
-    const double ub_i{ub(i)};
-    if (is_addition(e_i)) {
-      double constant_term{0.0};
-      DecomposeLinearExpression(e_i, map_var_to_index, A.row(i),
-                                &constant_term);
+  // We will determine if lb <= v <= ub is a bounding box constraint, namely
+  // x_lb <= x <= x_ub.
+  bool is_v_bounding_box = true;
+  for (int i = 0; i < v.size(); ++i) {
+    double constant_term = 0;
+    int num_vi_variables = DecomposeLinearExpression(v(i), map_var_to_index,
+                                                     A.row(i), &constant_term);
+    if (num_vi_variables == 0 &&
+        !(lb(i) <= constant_term && constant_term <= ub(i))) {
+      // Unsatisfiable constraint with no variables, such as 1 <= 0 <= 2
+      throw SymbolicError(v(i), lb(i), ub(i),
+          "unsatisfiable but called with AddLinearConstraint");
+
+    } else {
       new_lb(i) = lb(i) - constant_term;
       new_ub(i) = ub(i) - constant_term;
-    } else if (is_multiplication(e_i)) {
-      // i-th constraint should be lb <= c * var_i <= ub, where c is a constant.
-      const double c = get_constant_in_multiplication(e_i);
-      const std::map<Expression, Expression>& map_base_to_exponent =
-          get_base_to_exponent_map_in_multiplication(e_i);
-      if (map_base_to_exponent.size() == 1) {
-        const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
-        if (!is_variable(p.first) || !is_one(p.second)) {
-          throw SymbolicError(e_i,
-                              "non-linear but called with AddLinearConstraint");
-        } else {
-          const Variable& var_i = get_variable(p.first);
-          if (v.size() == 1) {
-            // Add a bounding box constraint lb/c <= v <= ub/c
-            if (c > 0) {
-              new_lb(i) = lb(i) / c;
-              new_ub(i) = ub(i) / c;
-            } else {
-              new_lb(i) = ub(i) / c;
-              new_ub(i) = lb(i) / c;
-            }
-            return Binding<BoundingBoxConstraint>(
-                AddBoundingBoxConstraint(new_lb(i), new_ub(i), var_i), vars);
-          } else {
-            A(i, map_var_to_index[var_i.get_id()]) = c;
-            new_lb(i) = lb(i);
-            new_ub(i) = ub(i);
-          }
-        }
-      } else {
-        // There is more than one base, like x^2*y^3
-        throw SymbolicError(e_i,
-                            "non-linear but called with AddLinearConstraint");
+      if (num_vi_variables != 1) {
+        is_v_bounding_box = false;
       }
-    } else if (is_variable(e_i)) {
-      // i-th constraint is lb <= var_i <= ub
-      const Variable& var_i{get_variable(e_i)};
-      if (v.size() == 1) {
-        // If this is the only constraint, we call AddBoundingBoxConstraint.
-        return Binding<BoundingBoxConstraint>{
-            AddBoundingBoxConstraint(lb(i), ub(i), var_i), vars};
-      } else {
-        A(i, map_var_to_index[var_i.get_id()]) = 1;
-        new_lb(i) = lb(i);
-        new_ub(i) = ub(i);
-      }
-    } else if (is_constant(e_i)) {
-      const double c_i{get_constant_value(e_i)};
-      if (lb_i <= c_i && c_i <= ub_i) {
-        throw SymbolicError(e_i, lb_i, ub_i,
-                            "trivial but called with AddLinearConstraint");
-      } else {
-        throw SymbolicError(
-            e_i, lb_i, ub_i,
-            "unsatisfiable but called with AddLinearConstraint");
-      }
-    } else {
-      throw SymbolicError(e_i, lb_i, ub_i,
-                          "non-linear but called with AddLinearConstraint");
     }
   }
-  return Binding<LinearConstraint>{AddLinearConstraint(A, new_lb, new_ub, vars),
-                                   vars};
+  if (is_v_bounding_box) {
+    // If every lb(i) <= v(i) <= ub(i) is a bounding box constraint, then
+    // formulate a bounding box constraint x_lb <= x <= x_ub
+    VectorXDecisionVariable bounding_box_x(v.size());
+    for (int i = 0; i < v.size(); ++i) {
+      // v(i) is in the form of c * x
+      double x_coeff = 0;
+      for (const auto& x : v(i).GetVariables()) {
+        const double coeff = A(i, map_var_to_index[x.get_id()]);
+        if (coeff != 0) {
+          x_coeff += coeff;
+          bounding_box_x(i) = x;
+        }
+      }
+      if (x_coeff > 0) {
+        new_lb(i) /= x_coeff;
+        new_ub(i) /= x_coeff;
+      } else {
+        const double lb_i = new_lb(i);
+        new_lb(i) = new_ub(i) / x_coeff;
+        new_ub(i) = lb_i / x_coeff;
+      }
+    }
+    return Binding<BoundingBoxConstraint>(
+        AddBoundingBoxConstraint(new_lb, new_ub, bounding_box_x),
+        bounding_box_x);
+  } else {
+    return Binding<LinearConstraint>{
+        AddLinearConstraint(A, new_lb, new_ub, vars), vars};
+  }
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
@@ -541,13 +653,13 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
     return AddLinearConstraint(e1 - e2, 0.0,
-                               std::numeric_limits<double>::infinity());
+                               numeric_limits<double>::infinity());
   } else if (is_less_than_or_equal_to(f)) {
     // e1 <= e2  ->  0 <= e2 - e1  ->  0 <= e2 - e1 <= ∞
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
     return AddLinearConstraint(e2 - e1, 0.0,
-                               std::numeric_limits<double>::infinity());
+                               numeric_limits<double>::infinity());
   }
   ostringstream oss;
   oss << "MathematicalProgram::AddLinearConstraint is called with a formula "
@@ -567,6 +679,7 @@ void MathematicalProgram::AddConstraint(
   required_capabilities_ |= kLinearConstraint;
   DRAKE_ASSERT(binding.constraint()->A().cols() ==
                static_cast<int>(binding.GetNumElements()));
+  CheckIsDecisionVariable(binding.variables());
   linear_constraints_.push_back(binding);
 }
 
@@ -604,8 +717,8 @@ void MathematicalProgram::AddConstraint(
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
                                                  double b) {
-  return AddLinearEqualityConstraint(drake::Vector1<symbolic::Expression>(e),
-                                     drake::Vector1d(b));
+  return AddLinearEqualityConstraint(drake::Vector1<Expression>(e),
+                                     Vector1d(b));
 }
 
 Binding<LinearEqualityConstraint>
@@ -616,7 +729,7 @@ MathematicalProgram::DoAddLinearEqualityConstraint(
   VectorXDecisionVariable vars(0);
   unordered_map<Variable::Id, int> map_var_to_index;
   for (int i = 0; i < v.rows(); ++i) {
-    ExtractVariablesFromExpression(v(i), &vars, &map_var_to_index);
+    ExtractAndAppendVariablesFromExpression(v(i), &vars, &map_var_to_index);
   }
   // TODO(hongkai.dai): use sparse matrix.
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(v.rows(), vars.rows());
@@ -658,6 +771,7 @@ void MathematicalProgram::AddConstraint(
 void MathematicalProgram::AddConstraint(
     const Binding<LorentzConeConstraint>& binding) {
   required_capabilities_ |= kLorentzConeConstraint;
+  CheckIsDecisionVariable(binding.variables());
   lorentz_cone_constraint_.push_back(binding);
 }
 
@@ -668,7 +782,6 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   Eigen::VectorXd b(v.size());
   VectorXDecisionVariable vars{};
   DecomposeLinearExpression(v, &A, &b, &vars);
-  DRAKE_ASSERT(IsDecisionVariable(vars));
   DRAKE_DEMAND(vars.rows() >= 1);
   return Binding<LorentzConeConstraint>(AddLorentzConeConstraint(A, b, vars),
                                         vars);
@@ -694,6 +807,7 @@ MathematicalProgram::AddLorentzConeConstraint(
 void MathematicalProgram::AddConstraint(
     const Binding<RotatedLorentzConeConstraint>& binding) {
   required_capabilities_ |= kRotatedLorentzConeConstraint;
+  CheckIsDecisionVariable(binding.variables());
   rotated_lorentz_cone_constraint_.push_back(binding);
 }
 
@@ -712,7 +826,6 @@ MathematicalProgram::AddRotatedLorentzConeConstraint(
   VectorXDecisionVariable vars{};
   DecomposeLinearExpression(v, &A, &b, &vars);
   DRAKE_DEMAND(vars.rows() >= 1);
-  DRAKE_ASSERT(IsDecisionVariable(vars));
   return Binding<RotatedLorentzConeConstraint>(
       AddRotatedLorentzConeConstraint(A, b, vars), vars);
 }
@@ -895,7 +1008,12 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 size_t MathematicalProgram::FindDecisionVariableIndex(
     const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
-  DRAKE_DEMAND(it != decision_variable_index_.end());
+  if (it == decision_variable_index_.end()) {
+    std::ostringstream oss;
+    oss << var << " is not a decision variable in the mathematical program, "
+                  "when calling GetSolution.\n";
+    throw std::runtime_error(oss.str());
+  }
   return it->second;
 }
 

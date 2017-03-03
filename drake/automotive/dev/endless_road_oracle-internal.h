@@ -3,10 +3,10 @@
 #include <map>
 #include <vector>
 
+#include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/lane_data.h"
-#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 
 namespace drake {
 namespace automotive {

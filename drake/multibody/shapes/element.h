@@ -35,7 +35,7 @@ class Element {
 
   void SetLocalTransform(const Eigen::Isometry3d& T_element_to_local);
 
-  virtual void updateWorldTransform(const Eigen::Isometry3d& T_local_to_world);
+  void updateWorldTransform(const Eigen::Isometry3d& T_local_to_world);
 
   Shape getShape() const;
 
@@ -49,13 +49,18 @@ class Element {
   void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
  protected:
-  virtual void setWorldTransform(const Eigen::Isometry3d& T_elem_to_world);
+  // Provide a copy constructor for use by our subclasses' clone().
+  // Delete all of the other operations.
+  Element(const Element&);
+  void operator=(const Element&) = delete;
+  Element(Element&&) = delete;
+  void operator=(Element&&) = delete;
+
+  void setWorldTransform(const Eigen::Isometry3d& T_elem_to_world);
+
   Eigen::Isometry3d T_element_to_world;
   Eigen::Isometry3d T_element_to_local;
   std::unique_ptr<Geometry> geometry;
-
-  Element(const Element&);
-  Element& operator=(const Element&) { return *this; }
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -10,6 +10,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h"
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/model.h"
 
@@ -52,6 +53,8 @@ class UnknownShapeException : public std::runtime_error {
 
 class BulletModel : public Model {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BulletModel)
+
   BulletModel() {}
 
   virtual ~BulletModel() {}
@@ -168,10 +171,6 @@ class BulletModel : public Model {
 
   static constexpr double kSmallMargin = 1e-9;
   static constexpr double kLargeMargin = 0.05;
-
-  // BulletModel objects are not copyable
-  BulletModel(const BulletModel&) = delete;
-  BulletModel& operator=(const BulletModel&) = delete;
 
   /**
    * \brief Finds the points where elements A and B are closest.

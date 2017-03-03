@@ -5,7 +5,7 @@ drake_add_cc_test(binding_test)
 target_link_libraries(binding_test drakeOptimization)
 
 drake_add_cc_test(mathematical_program_test)
-target_link_libraries(mathematical_program_test drakeOptimization)
+target_link_libraries(mathematical_program_test drakeOptimization drakeCommon)
 
 drake_add_cc_test(moby_lcp_solver_test)
 target_link_libraries(moby_lcp_solver_test drakeOptimization)
@@ -19,10 +19,14 @@ target_link_libraries(constraint_test drakeOptimization drakeCommon)
 set(drakeOptimizationTestSources
         add_solver_util.cc
         optimization_examples.cc
+        linear_program_examples.cc
+        quadratic_program_examples.cc
         mathematical_program_test_util.cc)
 set(drakeOptimizationHeaders
         add_solver_util.h
         optimization_examples.h
+        linear_program_examples.h
+        quadratic_program_examples.h
         mathematical_program_test_util.h)
 add_library_with_exports(LIB_NAME drakeOptimizationTest
         SOURCE_FILES ${drakeOptimizationTestSources} ${drakeOptimizationHeaders})
@@ -55,6 +59,12 @@ target_link_libraries(mosek_solver_test drakeCommon drakeOptimizationTest)
 
 drake_add_cc_test(linear_complementary_problem_test)
 target_link_libraries(linear_complementary_problem_test drakeOptimization)
+
+drake_add_cc_test(ipopt_solver_test)
+target_link_libraries(ipopt_solver_test drakeOptimizationTest)
+
+drake_add_cc_test(snopt_solver_test)
+target_link_libraries(snopt_solver_test drakeOptimizationTest)
 
 if(dreal_FOUND)
   drake_add_cc_test(dreal_solver_test)

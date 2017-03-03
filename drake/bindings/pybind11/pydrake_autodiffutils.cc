@@ -42,40 +42,40 @@ PYBIND11_PLUGIN(_pydrake_autodiffutils) {
     .def("cos", [](const AutoDiffXd& self) { return eval(cos(self)); })
     .def("__add__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
       return eval(self + other);
-    })
+    }, py::is_operator())
     .def("__add__", [](const AutoDiffXd& self, double other) {
       return eval(self + other);
-    })
+    }, py::is_operator())
     .def("__radd__", [](const AutoDiffXd& self, double other) {
       return eval(other + self);
-    })
+    }, py::is_operator())
     .def("__sub__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
       return eval(self - other);
-    })
+    }, py::is_operator())
     .def("__sub__", [](const AutoDiffXd& self, double other) {
       return eval(self - other);
-    })
+    }, py::is_operator())
     .def("__rsub__", [](const AutoDiffXd& self, double other) {
       return eval(other - self);
-    })
+    }, py::is_operator())
     .def("__mul__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
       return eval(self * other);
-    })
+    }, py::is_operator())
     .def("__mul__", [](const AutoDiffXd& self, double other) {
       return eval(self * other);
-    })
+    }, py::is_operator())
     .def("__rmul__", [](const AutoDiffXd& self, double other) {
       return eval(other * self);
-    })
+    }, py::is_operator())
     .def("__truediv__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
       return eval(self / other);
-    })
+    }, py::is_operator())
     .def("__truediv__", [](const AutoDiffXd& self, double other) {
       return eval(self / other);
-    })
+    }, py::is_operator())
     .def("__rtruediv__", [](const AutoDiffXd& self, double other) {
       return eval(other / self);
-    });
+    }, py::is_operator());
 
   return m.ptr();
 }

@@ -14,6 +14,8 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "generated_vectors",
     srcs = [
+        "gen/bicycle_car_parameters.cc",
+        "gen/bicycle_car_state.cc",
         "gen/driving_command.cc",
         "gen/endless_road_car_config.cc",
         "gen/endless_road_car_state.cc",
@@ -24,6 +26,8 @@ drake_cc_library(
         "gen/simple_car_state.cc",
     ],
     hdrs = [
+        "gen/bicycle_car_parameters.h",
+        "gen/bicycle_car_state.h",
         "gen/driving_command.h",
         "gen/endless_road_car_config.h",
         "gen/endless_road_car_state.h",
@@ -41,6 +45,8 @@ drake_cc_library(
 drake_cc_library(
     name = "generated_translators",
     srcs = [
+        "gen/bicycle_car_parameters_translator.cc",
+        "gen/bicycle_car_state_translator.cc",
         "gen/driving_command_translator.cc",
         "gen/endless_road_car_config_translator.cc",
         "gen/endless_road_car_state_translator.cc",
@@ -50,6 +56,8 @@ drake_cc_library(
         "gen/simple_car_state_translator.cc",
     ],
     hdrs = [
+        "gen/bicycle_car_parameters_translator.h",
+        "gen/bicycle_car_state_translator.h",
         "gen/driving_command_translator.h",
         "gen/endless_road_car_config_translator.h",
         "gen/endless_road_car_state_translator.h",
@@ -67,6 +75,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "bicycle_car",
+    srcs = ["bicycle_car.cc"],
+    hdrs = ["bicycle_car.h"],
+    deps = [
+        ":generated_vectors",
+        "//drake/common:symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "curve2",
     srcs = ["curve2.cc"],
     hdrs = ["curve2.h"],
@@ -80,13 +98,11 @@ drake_cc_library(
     srcs = ["dev/endless_road_car.cc"],
     hdrs = [
         "dev/endless_road_car.h",
-        "endless_road_car_to_euler_floating_joint.h",
+        "dev/endless_road_car_to_euler_floating_joint.h",
     ],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
-        "//drake/automotive/maliput/api:api",
-        "//drake/automotive/maliput/utility:utility",
+        ":infinite_circuit_road",
     ],
 )
 
@@ -97,11 +113,9 @@ drake_cc_library(
         "dev/endless_road_oracle-internal.h",
     ],
     hdrs = ["dev/endless_road_oracle.h"],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
-        "//drake/automotive/maliput/api:api",
-        "//drake/automotive/maliput/utility:utility",
+        ":infinite_circuit_road",
     ],
 )
 
@@ -126,6 +140,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "monolane_onramp_merge",
+    srcs = ["monolane_onramp_merge.cc"],
+    hdrs = ["monolane_onramp_merge.h"],
+    deps = [
+        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/monolane",
+    ],
+)
+
+drake_cc_library(
     name = "simple_car",
     srcs = ["simple_car.cc"],
     hdrs = [
@@ -134,7 +158,19 @@ drake_cc_library(
     ],
     deps = [
         ":generated_vectors",
+        "//drake/common:cond",
+        "//drake/common:double",
         "//drake/common:symbolic",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "simple_powertrain",
+    srcs = ["simple_powertrain.cc"],
+    hdrs = ["simple_powertrain.h"],
+    deps = [
+        "//drake/systems/primitives:linear_system",
     ],
 )
 
@@ -170,6 +206,8 @@ drake_cc_library(
         ":generated_vectors",
         ":simple_car",
         ":trajectory_car",
+        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/utility",
         "//drake/lcm",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
@@ -192,6 +230,35 @@ drake_cc_binary(
     ],
     deps = [
         ":automotive_simulator",
+        "//drake/automotive/maliput/dragway",
+        "//drake/common:text_logging_gflags",
+    ],
+)
+
+drake_cc_library(
+    name = "infinite_circuit_road",
+    srcs = ["dev/infinite_circuit_road.cc"],
+    hdrs = ["dev/infinite_circuit_road.h"],
+    visibility = [],
+    deps = [
+        "//drake/automotive/maliput/api",
+    ],
+)
+
+drake_cc_binary(
+    name = "dev_demo",
+    srcs = [
+        "create_trajectory_params.cc",
+        "create_trajectory_params.h",
+        "dev/dev_demo.cc",
+    ],
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":automotive_simulator",
+        ":infinite_circuit_road",
+        "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane:loader",
         "//drake/common:text_logging_gflags",
     ],
@@ -292,12 +359,12 @@ py_binary(
         "-road_path " + village_demo_path,
     ],
     data = [
-        ":automotive_demo",
+        ":dev_demo",
         ":lcm-spy",
         ":steering_command_driver",
+        "//drake/automotive/maliput/monolane:village.yaml",
         "@drake_visualizer//:drake-visualizer",
         "@lcm//:lcm-logger",
-        "//drake/automotive/maliput/monolane:village.yaml",
     ],
     main = "automotive_demo.py",
     deps = [
@@ -351,12 +418,12 @@ py_binary(
         "-road_path " + merging_demo_path,
     ],
     data = [
-        ":automotive_demo",
+        ":dev_demo",
         ":lcm-spy",
         ":steering_command_driver",
+        "//drake/automotive/maliput/monolane:village.yaml",
         "@drake_visualizer//:drake-visualizer",
         "@lcm//:lcm-logger",
-        "//drake/automotive/maliput/monolane:village.yaml",
     ],
     main = "automotive_demo.py",
     deps = [
@@ -397,6 +464,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "bicycle_car_test",
+    deps = [
+        "//drake/automotive:bicycle_car",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//drake/automotive:curve2",
@@ -409,7 +484,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:endless_road_car",
         "//drake/automotive/maliput/monolane:builder",
-        "//drake/automotive/maliput/utility:utility",
+        "//drake/automotive/maliput/utility",
     ],
 )
 
@@ -419,12 +494,13 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:endless_road_oracle",
         "//drake/automotive/maliput/monolane:builder",
-        "//drake/automotive/maliput/utility:utility",
+        "//drake/automotive/maliput/utility",
     ],
 )
 
 drake_cc_googletest(
     name = "endless_road_car_to_euler_floating_joint_test",
+    srcs = ["dev/test/endless_road_car_to_euler_floating_joint_test.cc"],
     deps = [
         "//drake/automotive:endless_road_car",
         "//drake/automotive/maliput/monolane:builder",
@@ -432,9 +508,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "monolane_onramp_merge_test",
+    deps = [
+        ":monolane_onramp_merge",
+        "//drake/automotive/maliput/utility",
+    ],
+)
+
+drake_cc_googletest(
     name = "simple_car_test",
     deps = [
         "//drake/automotive:simple_car",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 
@@ -449,6 +534,13 @@ drake_cc_googletest(
     name = "linear_car_test",
     deps = [
         "//drake/automotive:linear_car",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simple_powertrain_test",
+    deps = [
+        "//drake/automotive:simple_powertrain",
     ],
 )
 
@@ -474,10 +566,22 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simple_car_state_translator_test",
+    name = "infinite_circuit_road_test",
+    srcs = ["dev/test/infinite_circuit_road_test.cc"],
     deps = [
-        "//drake/automotive:generated_translators",
+        ":infinite_circuit_road",
+        "//drake/automotive/maliput/monolane:builder",
     ],
+)
+
+sh_test(
+    name = "car_sim_lcm_test",
+    srcs = ["//tools:exec.sh"],
+    args = [
+        "$(location :car_sim_lcm)",
+        " --simulation_sec=0.01",
+    ],
+    data = [":car_sim_lcm"],
 )
 
 cpplint()

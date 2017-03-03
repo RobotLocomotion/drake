@@ -89,14 +89,22 @@ class Lane {
     return DoToGeoPosition(lane_pos);
   }
 
-  /// Calculates position in the LANE-space domain of the Lane which maps to
-  /// the GEO-space point closest (per Cartesian metric) to the specified
-  /// @p geo_pos.
-  // TODO(maddog@tri.global)  UNDER CONSTRUCTION
-  // TODO(maddog@tri.global)  Return the minimal-distance, too?
-  // TODO(maddog@tri.global)  Select between lane_bounds and driveable_bounds?
-  LanePosition ToLanePosition(const GeoPosition& geo_pos) const {
-    return DoToLanePosition(geo_pos);
+  /// Determines the LanePosition corresponding to GeoPosition @p geo_position.
+  ///
+  /// The return value is the LanePosition of the point within the Lane's
+  /// driveable-bounds which is closest to @p geo_position (as measured by
+  /// the Cartesian metric in the world frame).  If @p nearest_point is
+  /// non-null, then it will be populated with the GeoPosition of that
+  /// nearest point.  If @p distance is non-null, then it will be populated
+  /// with the Cartesian distance from @p geo_position to that nearest point.
+  ///
+  /// This method guarantees that its result satisfies the condition that
+  /// `ToGeoPosition(result)` is within `linear_tolerance()` of
+  /// `*nearest_position`.
+  LanePosition ToLanePosition(const GeoPosition& geo_position,
+                              GeoPosition* nearest_point,
+                              double* distance) const {
+    return DoToLanePosition(geo_position, nearest_point, distance);
   }
 
   // TODO(maddog@tri.global) Method to convert LanePosition to that of
@@ -184,7 +192,9 @@ class Lane {
 
   virtual GeoPosition DoToGeoPosition(const LanePosition& lane_pos) const = 0;
 
-  virtual LanePosition DoToLanePosition(const GeoPosition& geo_pos) const = 0;
+  virtual LanePosition DoToLanePosition(const GeoPosition& geo_position,
+                                        GeoPosition* nearest_point,
+                                        double* distance) const = 0;
 
   virtual Rotation DoGetOrientation(const LanePosition& lane_pos) const = 0;
 

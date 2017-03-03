@@ -8,10 +8,10 @@
 
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/dev/endless_road_car.h"
+#include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
+#include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
-#include "drake/automotive/endless_road_car_to_euler_floating_joint.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
-#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
@@ -141,6 +141,12 @@ class AutomotiveSimulator {
       const maliput::api::LaneEnd& start,
       const std::vector<const maliput::api::Lane*>& path);
 
+  /// Sets the RoadGeometry for this simulation.
+  ///
+  /// @pre Start() has NOT been called.
+  const maliput::api::RoadGeometry* SetRoadGeometry(
+      std::unique_ptr<const maliput::api::RoadGeometry> road);
+
   /// Adds an LCM publisher for the given @p system.
   /// @pre Start() has NOT been called.
   void AddPublisher(const EndlessRoadCar<T>& system, int vehicle_number);
@@ -222,6 +228,11 @@ class AutomotiveSimulator {
   // model instances since each model instance has two entries: (1) its number
   // of position states and (2) its number of velocity states.
   std::vector<int> GetModelJointStateSizes() const;
+
+  // Generates the URDF model of the road network and loads it into the
+  // `RigidBodyTree`. Member variable `road_` must be set prior to calling this
+  // method.
+  void GenerateAndLoadRoadNetworkUrdf();
 
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{

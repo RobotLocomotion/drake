@@ -44,6 +44,18 @@ class TestMathematicalProgram(unittest.TestCase):
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
 
+    def test_symbolic_qp(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        prog.AddLinearConstraint(x[0] >= 1)
+        prog.AddLinearConstraint(x[1] >= 1)
+        prog.AddQuadraticCost(x[0]**2 + x[1]**2)
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+
+        x_expected = np.array([1, 1])
+        self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+
     def test_bindings(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")

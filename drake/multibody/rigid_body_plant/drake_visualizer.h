@@ -5,11 +5,11 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/lcmt_viewer_load_robot.hpp"
-#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/multibody/rigid_body_plant/viewer_draw_translator.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
@@ -82,7 +82,6 @@ class DrakeVisualizer : public LeafSystem<double> {
    */
   void set_publish_period(double period);
 
-
   // TODO(SeanCurtis-TRI): Optional features:
   //    1. Specify number of loops (<= 0 --> infinite looping)
   //    2. Specify range of playback [start, end] for cached data from times
@@ -95,11 +94,17 @@ class DrakeVisualizer : public LeafSystem<double> {
   //    5. Add a wall-clock scale factor; e.g., play faster than real time,
   //       slower than real time, etc.
   /**
-   * Cause the visualizer to playback its cached data at realtime.  If it has
+   * Causes the visualizer to playback its cached data at real time.  If it has
    * not been configured to record/playback, a warning message will be written
    * to the log, but otherwise, no work will be done.
    */
-  void ReplayCachedSimulation();
+  void ReplayCachedSimulation() const;
+
+  /**
+   * Plays back (at real time) a trajectory representing the input signal.
+   */
+  void PlaybackTrajectory(
+      const PiecewisePolynomial<double>& input_trajectory) const;
 
  private:
   void DoCalcOutput(const systems::Context<double>& context,
@@ -122,11 +127,6 @@ class DrakeVisualizer : public LeafSystem<double> {
   // A pointer to the LCM subsystem. It is through this object that LCM messages
   // are published.
   drake::lcm::DrakeLcmInterface* const lcm_;
-
-  // Performs the playback loop for the given trajectory up to the requested
-  // time.
-  void RunPlaybackLoop(const PiecewisePolynomial<double>& trajectory,
-                       const double kMaxTime) const;
 
   // Using 'mutable' here is OK since it's only used for assertion checking.
   mutable bool sent_load_robot_{false};

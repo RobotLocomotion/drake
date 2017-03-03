@@ -5,11 +5,11 @@
 #include <string>
 #include <utility>
 
+#include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/endless_road_car_config.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/gen/endless_road_oracle_output.h"
-#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -79,7 +79,6 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
 
  public:
   // System<T> overrides
-  bool has_any_direct_feedthrough() const override;
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
   void DoCalcTimeDerivatives(
@@ -100,6 +99,8 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::OutputPortDescriptor<T>& descriptor) const override;
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
+                              int input_port, int output_port) const override;
 
  private:
   struct Accelerations {

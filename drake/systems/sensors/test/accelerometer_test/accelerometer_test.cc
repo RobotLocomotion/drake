@@ -86,14 +86,6 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
       dut.get_plant_state_derivative_input_port().get_index(),
       make_unique<BasicVector<double>>(VectorX<double>::Zero(num_states)));
 
-  auto xc_vector = make_unique<BasicVector<double>>(
-      VectorX<double>::Zero(num_states).eval());
-  auto xc = make_unique<ContinuousState<double>>(move(xc_vector), num_positions,
-                                                 num_velocities,
-                                                 0 /* num other variables */);
-
-  dut_context->set_continuous_state(move(xc));
-
   unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*dut_context);
   ASSERT_EQ(output->get_num_ports(), 1);
   dut.CalcOutput(*dut_context, output.get());
