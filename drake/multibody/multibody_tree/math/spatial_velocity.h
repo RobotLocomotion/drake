@@ -22,8 +22,8 @@ template <typename T> class SpatialForce;
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class SpatialVelocity : public SpatialVector<SpatialVelocity<T>, T> {
-  typedef SpatialVector<SpatialVelocity<T>, T> Base;
+class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
+  typedef SpatialVector<SpatialVelocity, T> Base;
 
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity)

@@ -17,12 +17,17 @@ namespace multibody {
 /// For a more detailed introduction on spatial vectors please refer to
 /// section @ref multibody_spatial_vectors.
 ///
-/// @tparam Derived The type of the more specialized spatial vector class.
+/// @tparam SV The type of the more specialized spatial vector class.
+///            It must be a template on the scalar type `T`.
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-template <typename Derived, typename T>
+template <template <typename> class SV, typename T>
 class SpatialVector {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVector)
+
+  /// The more specialized spatial vector class templated on the scalar
+  /// type `T`.
+  using SpatialQuantity = SV<T>;
 
   /// Sizes for spatial quantities and its components in three dimensions.
   enum {
@@ -30,8 +35,10 @@ class SpatialVector {
     kRotationSize = 3,
     kTranslationSize = 3
   };
+
   /// The type of the underlying in-memory representation using an Eigen vector.
   typedef Vector6<T> CoeffsEigenType;
+
   // Make it available to implementations using SpatialVector.
   typedef T ScalarType;
 
@@ -124,7 +131,7 @@ class SpatialVector {
   /// The comparison is performed by comparing the angular (linear) component of
   /// `this` spatial vector with the angular (linear) component of @p other
   /// using the fuzzy comparison provided by Eigen's method isApprox().
-  bool IsApprox(const Derived& other,
+  bool IsApprox(const SpatialQuantity& other,
                 double tolerance = Eigen::NumTraits<T>::epsilon()) const {
     return translational().isApprox(other.translational(), tolerance) &&
            rotational().isApprox(other.rotational(), tolerance);
@@ -146,13 +153,13 @@ class SpatialVector {
 
   /// Multiplication of a spatial vector `V` from the left by a scalar `s`.
   /// @relates SpatialVector.
-  friend Derived operator*(const T& s, const Derived& V) {
-    return Derived(s * V.get_coeffs());
+  friend SpatialQuantity operator*(const T& s, const SpatialQuantity& V) {
+    return SpatialQuantity(s * V.get_coeffs());
   }
 
   /// Multiplication of a spatial vector `V` from the right by a scalar `s`.
   /// @relates SpatialVector.
-  friend Derived operator*(const Derived& V, const T& s) {
+  friend SpatialQuantity operator*(const SpatialQuantity& V, const T& s) {
     return s * V;  // Multiplication by scalar is commutative.
   }
 
@@ -163,8 +170,9 @@ class SpatialVector {
 /// Stream insertion operator to write SpatialVector objects into a
 /// `std::ostream`. Especially useful for debugging.
 /// @relates SpatialVector.
-template <typename Derived, typename T> inline
-std::ostream& operator<<(std::ostream& o, const SpatialVector<Derived, T>& V) {
+template <template <typename> class SpatialQuantity, typename T> inline
+std::ostream& operator<<(std::ostream& o,
+                         const SpatialVector<SpatialQuantity, T>& V) {
   o << "[" << V[0];
   for (int i = 1; i < V.size(); ++i) o << ", " << V[i];
   o << "]ᵀ";  // The "transpose" symbol.

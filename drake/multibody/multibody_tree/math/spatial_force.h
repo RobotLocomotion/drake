@@ -10,16 +10,27 @@
 namespace drake {
 namespace multibody {
 
+// Forward declaration to define dot product with a spatial velocity.
+template <typename T> class SpatialVelocity;
+
 /// This class is used to represent spatial forces. Spatial forces are 6-element
 /// quantities that are pairs of ordinary 3-vectors. Elements 0-2 are always the
 /// torque component while elements 3-5 are the force component.
-/// For a more detailed introduction on spatial vectors please refer to
-/// section @ref multibody_spatial_vectors.
+/// The translational force is understood to be applied at a specific point but
+/// that point is not stored within the SpatialForce class. Both the
+/// translational force and torque are expected to be expressed in the same
+/// frame however, this class does not offer any mechanism to track the
+/// expresseed-in frame. It is the responsibility of the user to keep track the
+/// point at which the spatial force is applied and the expressed-in frame. In
+/// source code the monogram notation `F_Po_E` is used to represent the spatial
+/// force `F` at a point `Po` expressed in frame `E`.
+/// For a more detailed introduction on spatial vectors and the monogram
+/// notation please refer to section @ref multibody_spatial_vectors.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class SpatialForce : public SpatialVector<SpatialForce<T>, T> {
-  typedef SpatialVector<SpatialForce<T>, T> Base;
+class SpatialForce : public SpatialVector<SpatialForce, T> {
+  typedef SpatialVector<SpatialForce, T> Base;
 
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForce)
