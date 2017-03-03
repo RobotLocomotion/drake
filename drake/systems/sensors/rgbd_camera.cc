@@ -1,5 +1,6 @@
 #include "drake/systems/sensors/rgbd_camera.h"
 
+#include <fstream>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -298,25 +299,31 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         break;
       }
       case DrakeShapes::MESH: {
-        auto m = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
+        const auto mesh_filename = dynamic_cast<const DrakeShapes::Mesh&>(
+            geometry).resolved_filename_.c_str();
 
         // TODO(kunimatsu-tri) Add support for other file formats.
         vtkNew<vtkOBJReader> mesh_reader;
-        mesh_reader->SetFileName(m.resolved_filename_.c_str());
+        mesh_reader->SetFileName(mesh_filename);
         mesh_reader->Update();
 
         // TODO(kunimatsu-tri) Add support for other file formats.
-        vtkNew<vtkPNGReader> texture_reader;
-        texture_reader->SetFileName(std::string(RemoveFileExtention(
-            m.resolved_filename_.c_str()) + ".png").c_str());
-        texture_reader->Update();
+        const std::string texture_file(
+            RemoveFileExtention(mesh_filename) + ".png");
+        std::ifstream file_exist(texture_file);
 
-        vtkNew<vtkTexture> texture;
-        texture->SetInputConnection(texture_reader->GetOutputPort());
-        texture->InterpolateOn();
+        if (file_exist) {
+          vtkNew<vtkPNGReader> texture_reader;
+          texture_reader->SetFileName(texture_file.c_str());
+          texture_reader->Update();
+
+          vtkNew<vtkTexture> texture;
+          texture->SetInputConnection(texture_reader->GetOutputPort());
+          texture->InterpolateOn();
+          actor->SetTexture(texture.GetPointer());
+        }
 
         mapper->SetInputConnection(mesh_reader->GetOutputPort());
-        actor->SetTexture(texture.GetPointer());
         break;
       }
       case DrakeShapes::CAPSULE: {

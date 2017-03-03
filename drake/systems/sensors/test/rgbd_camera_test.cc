@@ -226,10 +226,8 @@ class ImageTest {
 
   static void VerifySphere(const sensors::Image<uint8_t>& color_image,
                            const sensors::Image<float>& depth_image) {
-    // Assuming depth value provides 0.1 mm precision.
     const int kHalfWidth = color_image.width() / 2;
     const int kHalfHeight = color_image.height() / 2;
-
     // A location of the sphere surface is a crossing point of four pixels
     // adjacent to the optical axis.
     const float actual_sphere_depth_on_optical_axis = (
@@ -237,7 +235,7 @@ class ImageTest {
         depth_image.at(kHalfWidth, kHalfHeight + 1)[0] +
         depth_image.at(kHalfWidth + 1, kHalfHeight)[0] +
         depth_image.at(kHalfWidth + 1, kHalfHeight + 1)[0]) / 4.f;
-
+    // Assuming depth value provides 1 mm precision for the curved surface.
     ASSERT_NEAR(actual_sphere_depth_on_optical_axis, 1.f, 1e-3);
   }
 
