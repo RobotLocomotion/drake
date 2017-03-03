@@ -4,6 +4,8 @@
 #include "drake/common/drake_copyable.h"
 
 #include <iostream>
+#include <stdexcept>
+#include <string>
 
 namespace drake {
 namespace multibody {
@@ -36,7 +38,7 @@ class TypeSafeIndex {
   /// For Debug builds this constructor aborts if the provided input `int`
   /// `index` is negative. There is no check for Release builds.
   explicit TypeSafeIndex(int index) : index_(index) {
-    DRAKE_ASSERT(index_ >= 0);
+    DRAKE_ASSERT_VOID(CheckInvariants());
   }
 
   /// Implicit conversion to int operator.
@@ -62,7 +64,7 @@ class TypeSafeIndex {
   /// non-negative.
   const TypeSafeIndex& operator--() {
     --index_;
-    DRAKE_ASSERT(index_ >= 0);
+    DRAKE_ASSERT_VOID(CheckInvariants());
     return *this;
   }
 
@@ -71,7 +73,7 @@ class TypeSafeIndex {
   /// non-negative.
   TypeSafeIndex operator--(int) {
     --index_;
-    DRAKE_ASSERT(index_ >= 0);
+    DRAKE_ASSERT_VOID(CheckInvariants());
     return TypeSafeIndex(index_ + 1);
   }
   ///@}
@@ -82,7 +84,7 @@ class TypeSafeIndex {
   /// Addition assignment operator.
   TypeSafeIndex& operator+=(int i) {
     index_ += i;
-    DRAKE_ASSERT(index_ >= 0);
+    DRAKE_ASSERT_VOID(CheckInvariants());
     return *this;
   }
 
@@ -91,12 +93,21 @@ class TypeSafeIndex {
   /// non-negative.
   TypeSafeIndex& operator-=(int i) {
     index_ -= i;
-    DRAKE_ASSERT(index_ >= 0);
+    DRAKE_ASSERT_VOID(CheckInvariants());
     return *this;
   }
   ///@}
 
  private:
+  // Checks if this index is negative and if so it throws an exception.
+  void CheckInvariants() const {
+    if (index_ < 0) {
+      throw std::runtime_error(
+          "This is index has the negative value = " + std::to_string(index_) +
+              ". Negative indexes are not allowed");
+    }
+  }
+
   int index_{0};
 };
 
@@ -114,7 +125,7 @@ using MobilizerIndex = TypeSafeIndex<class MobilizerTag>;
 // Note:
 //   static global variables are strongly discouraged by the C++ style guide:
 // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
-BodyIndex world_id() { return BodyIndex(0); }
+inline BodyIndex world_index() { return BodyIndex(0); }
 
 }  // namespace multibody
 }  // namespace drake
