@@ -57,12 +57,15 @@ class RoadGeometry final : public api::RoadGeometry {
 
   ~RoadGeometry() final = default;
 
+  const Junction* junction(int index) const { return do_junction(index); }
+
+
  private:
   const api::RoadGeometryId do_id() const final { return id_; }
 
   int do_num_junctions() const final { return 1; }
 
-  const api::Junction* do_junction(int index) const final;
+  const Junction* do_junction(int index) const final;
 
   int do_num_branch_points() const final;
 

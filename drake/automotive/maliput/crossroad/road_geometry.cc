@@ -53,7 +53,7 @@ RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
   DRAKE_DEMAND(angular_tolerance >= 0);
 }
 
-const api::Junction* RoadGeometry::do_junction(int index) const {
+const Junction* RoadGeometry::do_junction(int index) const {
   DRAKE_DEMAND(index < num_junctions());
   return &junction_;
 }

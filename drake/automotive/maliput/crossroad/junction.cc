@@ -14,7 +14,9 @@ Junction::Junction(RoadGeometry* road_geometry,
     double lane_width,
     double shoulder_width)
   : id_({"Crossroad Junction"}),
-    road_geometry_(road_geometry) {
+    road_geometry_(road_geometry),
+    num_horizontal_lanes_(num_horizontal_lanes),
+    num_vertical_lanes_(num_vertical_lanes){
   DRAKE_DEMAND(road_geometry != nullptr);
   for (int i = 0; i < this->do_num_segments(); ++i) {
     auto segment = std::make_unique<Segment>(

@@ -40,12 +40,20 @@ class Junction final : public api::Junction {
   /// Return value is non-negative.
   int num_segments() const { return do_num_segments(); }
 
+  int num_horizontal_lanes() const {return do_num_horizontal_lanes(); }
+
+  int num_vertical_lanes() const {return do_num_vertical_lanes();}
+
  private:
   const api::JunctionId do_id() const final { return id_; }
 
   const api::RoadGeometry* do_road_geometry() const final;
 
   int do_num_segments() const final { return 2; }
+
+  int do_num_horizontal_lanes() const {return num_horizontal_lanes_;};
+
+  int do_num_vertical_lanes() const {return num_vertical_lanes_;};
 
   const api::Segment* do_segment(int index) const final;
 
@@ -54,6 +62,10 @@ class Junction final : public api::Junction {
   const RoadGeometry* const road_geometry_{};
 
   std::vector<std::unique_ptr<Segment>> segments_;
+
+  const int num_horizontal_lanes_;
+
+  const int num_vertical_lanes_;
 
 };
 
