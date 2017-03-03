@@ -52,8 +52,8 @@ class SpatialQuantityTest : public ::testing::Test {
 
 // Create a list of SpatialVector types to be tested.
 typedef ::testing::Types<
-    SpatialVelocity<double>, SpatialForce<double>,
-    SpatialVelocity<AutoDiffXd>, SpatialForce<AutoDiffXd>> SpatialQuantityTypes;
+    SpatialVelocity<double>, SpatialForce<double>> SpatialQuantityTypes;
+    //SpatialVelocity<AutoDiffXd>, SpatialForce<AutoDiffXd>> SpatialQuantityTypes;
 TYPED_TEST_CASE(SpatialQuantityTest, SpatialQuantityTypes);
 
 // Tests default construction and proper size at compile time.
@@ -209,7 +209,7 @@ TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
 }
 
 // Create a list of scalar types for the unit tests that follow below.
-typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
+typedef ::testing::Types<double> ScalarTypes;
 
 // SpatialVelocity specific unit tests.
 template <typename T>

@@ -30,7 +30,11 @@ template <typename T> class SpatialVelocity;
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class SpatialForce : public SpatialVector<SpatialForce, T> {
-  typedef SpatialVector<SpatialForce, T> Base;
+  // We need the fully qualified class name below for the clang compiler to
+  // work. Without qualifiers the code is legal according to the C++11 standard
+  // but the clang compiler still gets confused. See:
+  // http://stackoverflow.com/questions/17687459/clang-not-accepting-use-of-template-template-parameter-when-using-crtp
+  typedef SpatialVector<::drake::multibody::SpatialForce, T> Base;
 
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForce)
