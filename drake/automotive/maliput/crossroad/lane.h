@@ -108,7 +108,7 @@ class Lane final : public api::Lane {
   ///@}
 
   /// Returns the y-offset of this lane's frame relative to the world frame.
-  double y_offset() const { return y_offset_; }
+  double r_offset() const { return r_offset_; }
 
  private:
   const api::LaneId do_id() const final { return id_; }
@@ -157,7 +157,7 @@ class Lane final : public api::Lane {
   const api::LaneId id_;
   const int index_{};  // The index of this lane within a Segment.
   const double length_{};
-  const double y_offset_{};
+  const double r_offset_{};
   const api::RBounds lane_bounds_;
   const api::RBounds driveable_bounds_;
 

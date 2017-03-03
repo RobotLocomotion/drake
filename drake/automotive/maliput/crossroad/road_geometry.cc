@@ -35,12 +35,12 @@ double clamp(double value, double min, double max) {
 
 RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
   int num_horizontal_lanes,
-   int num_vertical_lanes,
-               double length,
-               double lane_width,
-               double shoulder_width,
-               double linear_tolerance,
-               double angular_tolerance)
+  int num_vertical_lanes,
+  double length,
+  double lane_width,
+  double shoulder_width,
+  double linear_tolerance,
+  double angular_tolerance)
   : id_(id),
     linear_tolerance_(linear_tolerance),
     angular_tolerance_(angular_tolerance),
@@ -59,8 +59,6 @@ const Junction* RoadGeometry::do_junction(int index) const {
 }
 
 
-
-
 int RoadGeometry::do_num_branch_points() const {
   // There is only one BranchPoint per lane. Thus, return the number of lanes.
   return (junction_.segment(0)->num_lanes()+
@@ -68,27 +66,28 @@ int RoadGeometry::do_num_branch_points() const {
 }
 
 
-// new method might
 bool RoadGeometry::IsGeoPositionOnCrossroad(const api::GeoPosition& geo_pos)
     const {
   const Lane* lane = dynamic_cast<const Lane*>(junction_.segment(0)->lane(0));
   DRAKE_ASSERT(lane != nullptr);
   const double length = lane->length();
   const api::RBounds lane_driveable_bounds = lane->driveable_bounds(0 /* s */);
-  const double min_y = lane->y_offset() + lane_driveable_bounds.r_min;
-  const double max_y = lane->y_offset() + lane_driveable_bounds.r_max;
+  const double min_r = lane->r_offset() + lane_driveable_bounds.r_min;
+  const double max_r = lane->r_offset() + lane_driveable_bounds.r_max;
 
   if (geo_pos.x < 0 || geo_pos.x > length ||
-      geo_pos.y > max_y || geo_pos.y < min_y) {
+      geo_pos.y > max_r || geo_pos.y < min_r) {
     drake::log()->trace(
         "crossroad::RoadGeometry::IsGeoPositionOnCrossroad(): The provided geo_pos "
-        "({}, {}) is not on the crossroad (length = {}, min_y = {}, max_y = {}).",
-        geo_pos.x, geo_pos.y, length, min_y, max_y);
+        "({}, {}) is not on the crossroad (length = {}, min_r = {}, max_r = {}).",
+        geo_pos.x, geo_pos.y, length, min_r, max_r);
     return false;
   } else {
     return true;
   }
 }
+
+
 
 int RoadGeometry::GetLaneIndex(const api::GeoPosition& geo_pos) const {
   DRAKE_ASSERT(IsGeoPositionOnCrossroad(geo_pos));

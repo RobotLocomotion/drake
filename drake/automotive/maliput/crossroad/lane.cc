@@ -14,13 +14,13 @@ namespace maliput {
 namespace crossroad{
 
 Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
-    double length, double y_offset, const api::RBounds& lane_bounds,
+    double length, double r_offset, const api::RBounds& lane_bounds,
     const api::RBounds& driveable_bounds)
     : segment_(segment),
       id_(id),
       index_(index),
       length_(length),
-      y_offset_(y_offset),
+      r_offset_(r_offset),
       lane_bounds_(lane_bounds),
       driveable_bounds_(driveable_bounds) {
   DRAKE_DEMAND(segment != nullptr);
@@ -81,7 +81,7 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
 
 api::GeoPosition Lane::DoToGeoPosition(
     const api::LanePosition& lane_pos) const {
-  return {lane_pos.s, lane_pos.r + Lane::y_offset(), lane_pos.h};
+  return {lane_pos.s, lane_pos.r + Lane::r_offset(), lane_pos.h};
 }
 
 
