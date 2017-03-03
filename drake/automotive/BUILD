@@ -271,9 +271,11 @@ drake_cc_binary(
         "car_sim_lcm_common.cc",
         "car_sim_lcm_common.h",
     ],
+    add_test_rule = 1,
     data = [
         ":models",
     ],
+    test_rule_args = [" --simulation_sec=0.01"],
     deps = [
         ":automotive_simulator",
         "//drake/common:text_logging_gflags",
@@ -572,16 +574,6 @@ drake_cc_googletest(
         ":infinite_circuit_road",
         "//drake/automotive/maliput/monolane:builder",
     ],
-)
-
-sh_test(
-    name = "car_sim_lcm_test",
-    srcs = ["//tools:exec.sh"],
-    args = [
-        "$(location :car_sim_lcm)",
-        " --simulation_sec=0.01",
-    ],
-    data = [":car_sim_lcm"],
 )
 
 cpplint()
