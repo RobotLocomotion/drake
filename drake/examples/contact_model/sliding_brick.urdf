@@ -42,6 +42,14 @@
         <box size="2 .5 1" />
       </geometry>
     </visual>
+
+    <!--
+    The brick's contact with the ground is modeled by explicit "point" contacts,
+    zero-radius spheres at fixed locations.  This is to account for certain
+    deficiencies in the collision detection algorithm.
+    TODO(SeanCurtis-TRI): Reference the link to the contact model documentation
+    for more details.
+    -->
     <collision group="brick">
       <origin rpy="0 0 0" xyz="-1 -0.25 -0.5"/>
       <geometry>
