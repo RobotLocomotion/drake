@@ -44,7 +44,8 @@ RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
   : id_(id),
     linear_tolerance_(linear_tolerance),
     angular_tolerance_(angular_tolerance),
-    junction_(this, num_horizontal_lanes, num_vertical_lanes, length, lane_width, shoulder_width) {
+    junction_(this, num_horizontal_lanes, num_vertical_lanes, length,
+     lane_width, shoulder_width) {
   DRAKE_DEMAND(length > 0);
   DRAKE_DEMAND(lane_width > 0);
   DRAKE_DEMAND(shoulder_width >= 0);
@@ -57,11 +58,15 @@ const api::Junction* RoadGeometry::do_junction(int index) const {
   return &junction_;
 }
 
+
+
+
 int RoadGeometry::do_num_branch_points() const {
   // There is only one BranchPoint per lane. Thus, return the number of lanes.
-  return junction_.segment(0)->num_lanes();
+  return (junction_.segment(0)->num_lanes()+
+    junction_.segment(0)->num_lanes());
 }
-
+// new method might
 bool RoadGeometry::IsGeoPositionOnCrossroad(const api::GeoPosition& geo_pos)
     const {
   const Lane* lane = dynamic_cast<const Lane*>(junction_.segment(0)->lane(0));
@@ -87,14 +92,14 @@ int RoadGeometry::GetLaneIndex(const api::GeoPosition& geo_pos) const {
   DRAKE_ASSERT(IsGeoPositionOnCrossroad(geo_pos));
   bool lane_found{false};
   int result{0};
-  for (int i = 0; !lane_found && i < junction_.segment(0)->num_lanes(); ++i) {
-    const Lane* lane = dynamic_cast<const Lane*>(junction_.segment(0)->lane(i));
-    DRAKE_ASSERT(lane != nullptr);
-    if (geo_pos.y <= lane->y_offset() + lane->lane_bounds(0).r_max) {
-      result = i;
-      lane_found = true;
-    }
-
+  for (int j = 0; !lane_found && j < junction_.num_segments(); ++j) {
+    for (int i = 0; !lane_found && i < junction_.segment(j)->num_lanes(); ++i) {
+      const Lane* lane = dynamic_cast<const Lane*>(junction_.segment(j)->lane(i));
+      DRAKE_ASSERT(lane != nullptr);
+      if (geo_pos.y <= lane->y_offset() + lane->lane_bounds(0).r_max) {
+        result = i;
+        lane_found = true;
+      }
     // Checks whether `geo_pos` is on the right shoulder. If it is, save the
     // index of the right-most lane in `result`.
     if (lane->to_right() == nullptr) {
@@ -115,6 +120,7 @@ int RoadGeometry::GetLaneIndex(const api::GeoPosition& geo_pos) const {
       }
     }
   }
+}
   if (!lane_found) {
     throw std::runtime_error("crossroad::RoadGeometry::GetLaneIndex: Failed to "
         "find lane for geo_pos (" + std::to_string(geo_pos.x) + ", " +
