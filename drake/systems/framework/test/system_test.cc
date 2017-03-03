@@ -294,6 +294,7 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
 
 class TestTypedVector : public BasicVector<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestTypedVector)
   explicit TestTypedVector(int size) : BasicVector(size) {}
 
  protected:
