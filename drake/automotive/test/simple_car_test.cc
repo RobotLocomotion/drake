@@ -10,6 +10,7 @@
 
 namespace drake {
 
+using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 
 namespace automotive {
@@ -54,6 +55,14 @@ class SimpleCarTest : public ::testing::Test {
     return pose;
   }
 
+  const FrameVelocity<double>* velocity_output() const {
+    auto velocity = dynamic_cast<const FrameVelocity<double>*>(
+        output_->get_vector_data(2));
+    DRAKE_DEMAND(velocity != nullptr);
+    return velocity;
+  }
+
+
   // Sets an arbitrary, nonzero state.
   void InitializeNonzeroState() {
     continuous_state()->set_x(1.0);
@@ -79,6 +88,15 @@ class SimpleCarTest : public ::testing::Test {
     EXPECT_EQ(std::sin(3.0 / 2), R_WC.z());
   }
 
+  // Checks that the velocity output has the correct values for the state that
+  // InitializeNonzeroState sets.
+  void VerifyNonzeroVelocity() {
+    const multibody::SpatialVelocity<double> v_WC =
+        velocity_output()->get_velocity();
+    EXPECT_EQ(std::cos(3.0) * 4.0, v_WC.translational()[0]);
+    EXPECT_EQ(std::sin(3.0) * 4.0, v_WC.translational()[1]);
+  }
+
   std::unique_ptr<SimpleCar<double>> dut_;  //< The device under test.
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
@@ -91,7 +109,7 @@ TEST_F(SimpleCarTest, Topology) {
   EXPECT_EQ(systems::kVectorValued, input_descriptor.get_data_type());
   EXPECT_EQ(DrivingCommandIndices::kNumCoordinates, input_descriptor.size());
 
-  ASSERT_EQ(2, dut_->get_num_output_ports());
+  ASSERT_EQ(3, dut_->get_num_output_ports());
   const auto& state_output = dut_->state_output();
   EXPECT_EQ(systems::kVectorValued, state_output.get_data_type());
   EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates, state_output.size());
@@ -99,6 +117,10 @@ TEST_F(SimpleCarTest, Topology) {
   const auto& pose_output = dut_->pose_output();
   EXPECT_EQ(systems::kVectorValued, pose_output.get_data_type());
   EXPECT_EQ(PoseVector<double>::kSize, pose_output.size());
+
+  const auto& velocity_output = dut_->velocity_output();
+  EXPECT_EQ(systems::kVectorValued, velocity_output.get_data_type());
+  EXPECT_EQ(FrameVelocity<double>::kSize, velocity_output.size());
 
   // This test covers a portion of the symbolic::Expression instantiation.
   ASSERT_FALSE(dut_->HasAnyDirectFeedthrough());
@@ -131,6 +153,7 @@ TEST_F(SimpleCarTest, StateAppearsInOutput) {
   EXPECT_EQ(3.0, state->heading());
   EXPECT_EQ(4.0, state->velocity());
   VerifyNonzeroPose();
+  VerifyNonzeroVelocity();
 }
 
 TEST_F(SimpleCarTest, InputDoesNotAffectOutput) {
@@ -147,6 +170,7 @@ TEST_F(SimpleCarTest, InputDoesNotAffectOutput) {
   EXPECT_EQ(3.0, state->heading());
   EXPECT_EQ(4.0, state->velocity());
   VerifyNonzeroPose();
+  VerifyNonzeroVelocity();
 }
 
 TEST_F(SimpleCarTest, OutputVelocityIsClamped) {
@@ -164,6 +188,9 @@ TEST_F(SimpleCarTest, OutputVelocityIsClamped) {
   EXPECT_EQ(3.0, state->heading());
   EXPECT_EQ(0.0, state->velocity());
   VerifyNonzeroPose();
+  for (int i = 0; i < FrameVelocity<double>::kSize; ++i) {
+    EXPECT_EQ(0.0, velocity_output()->GetAtIndex(i));
+  }
 }
 
 TEST_F(SimpleCarTest, Derivatives) {
