@@ -109,7 +109,10 @@ using MobilizerIndex = TaggedIndex<class MobilizerTag>;
 
 /// For every MultibodyTree<T> the **world** body _always_ has this unique
 /// identifier and it is always zero.
-static const BodyIndex kWorldBodyId{0};
+// Note:
+//   static global variables are strongly discouraged by the C++ style guide:
+// https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
+BodyIndex world_id() { return BodyIndex(0); }
 
 }  // namespace multibody
 }  // namespace drake

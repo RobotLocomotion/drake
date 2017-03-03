@@ -122,6 +122,8 @@ GTEST_TEST(MultibodyTreeIndexes, FrameIndex) {
 // Verifies the correct behavior of BodyIndex.
 GTEST_TEST(MultibodyTreeIndexes, BodyIndex) {
   RunMultibodyIndexTests<BodyIndex>();
+  // Verify the we can retrieve the "world" id.
+  EXPECT_EQ(world_id(), BodyIndex(0));
 }
 
 // Verifies the correct behavior of MobilizerIndex.
