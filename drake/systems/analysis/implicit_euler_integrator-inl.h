@@ -28,6 +28,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeADiffJacobian(
     const VectorX<T>& xt, const VectorX<T>& xtplus, double h) {
 
 /*
+  // Get the state vectors as AutoDiff types.
+
+  AutoDiffXd
 // Get the system and the context
 using Scalar = typename std::remove_reference<decltype(xt)>::type::Scalar;
 const auto& system = this->get_system();
