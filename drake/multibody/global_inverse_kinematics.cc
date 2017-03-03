@@ -1,7 +1,7 @@
-#include <drake/multibody/joints/drake_joints.h>
 #include "drake/multibody/global_inverse_kinematics.h"
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/joints/drake_joints.h"
 #include "drake/solvers/rotation_constraint.h"
 
 using Eigen::Isometry3d;

@@ -13,6 +13,21 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "global_inverse_kinematics",
+    srcs = [
+        "global_inverse_kinematics.cc",
+    ],
+    hdrs = [
+        "global_inverse_kinematics.h",
+    ],
+    deps = [
+        ":rigid_body_tree",
+        "//drake/solvers:mathematical_program",
+        "//drake/solvers:rotation_constraint",
+    ],
+)
+
+drake_cc_library(
     name = "inverse_kinematics",
     srcs = [
         "constraint_wrappers.cc",
@@ -268,6 +283,19 @@ drake_cc_test(
     data = ["//drake/examples/Atlas:models"],
     deps = [
         ":rigid_body_tree",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "global_inverse_kinematics_test",
+    size = "medium",
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    deps = [
+        ":global_inverse_kinematics",
+        ":rigid_body_tree_construction",
         "//drake/multibody/parsers",
     ],
 )

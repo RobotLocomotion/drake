@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
 

@@ -1,11 +1,11 @@
 #include "drake/multibody/global_inverse_kinematics.h"
 
 #include <gtest/gtest.h>
-#include <drake/solvers/gurobi_solver.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/solvers/gurobi_solver.h"
 
 using Eigen::Vector3d;
 using Eigen::Isometry3d;

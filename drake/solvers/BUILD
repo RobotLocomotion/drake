@@ -114,6 +114,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rotation_constraint",
+    srcs = [
+        "rotation_constraint.cc"
+    ],
+    hdrs = [
+        "rotation_constraint.h",
+        "rotation_constraint_internal.h",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/math:gradient",
+    ],
+)
+drake_cc_library(
     name = "add_solver_util",
     testonly = 1,
     srcs = ["test/add_solver_util.cc"],
