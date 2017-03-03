@@ -40,7 +40,7 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   EXPECT_EQ(kPpTrajFromVec.rows(), 1);
   EXPECT_EQ(kPpTrajFromVec.cols(), 1);
   EXPECT_EQ(kPpTrajFromVec.get_start_time(), times[0]);
-  EXPECT_EQ(kPpTrajFromVec.get_end_time(), times[times.size() - 1]);
+  EXPECT_EQ(kPpTrajFromVec.get_end_time(), times.back());
 
   // Test first segment 0 <= t < 3, returning the constant a=3.
 
