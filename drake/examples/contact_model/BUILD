@@ -45,14 +45,42 @@ drake_cc_binary(
     ],
     deps = [
         "//drake/common:drake_path",
-        "//drake/lcm:lcm",
-        "//drake/multibody/parsers:parsers",
+        "//drake/lcm",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/multibody/rigid_body_plant:rigid_body_plant",
-        "//drake/multibody:rigid_body_tree_construction",
         "//drake/systems/analysis",
         "@gflags//:gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "bowling_ball",
+    srcs = ["bowling_ball.cc"],
+    data = [
+        ":bowling_models",
+    ],
+    deps = [
+        "//drake/common:drake_path",
+        "//drake/lcm",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis",
+        "//drake/systems/lcm",
+        "@gflags//:gflags",
+    ],
+)
+
+filegroup(
+    name = "bowling_models",
+    srcs = [
+        "bowling_ball.urdf",
+        "pin.obj",
+        "pin.urdf",
     ],
 )
 
