@@ -40,8 +40,6 @@ drake_cc_binary(
     ],
     deps = [
         "//drake/common:drake_path",
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/lcm:lcm",
         "//drake/multibody/parsers:parsers",
         "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
@@ -49,9 +47,6 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:rigid_body_plant",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/systems/analysis",
-        "//drake/systems/controllers:pid_controlled_system",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:trajectory_source",
         "@gflags//:gflags",
     ],
 )
