@@ -379,7 +379,7 @@ std::tuple<Vector3d, Vector3d, Vector3d>
  *    On entry, context should be properly filled with all input to System
  *    (input ports, parameters, time = 0.0, state).  On output, context has been
  *    changed so its time = t_final and its state has been updated.
- * @param[in] dt
+ * @param[in] dt_max
  *    The maximum (fixed) step size taken by the integrator.  If  t_final
  *    is not an exact multiple of dt, the final integration step is adjusted.
  * @param[in] t_final
@@ -389,30 +389,27 @@ std::tuple<Vector3d, Vector3d, Vector3d>
  *    the numerical-integrator's internal time-step (which can shrink or grow).
  */
 void  IntegrateForwardWithVariableStepRungeKutta3(
-    const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-    drake::systems::Context<double>* context,
-    double dt, const double t_final,
-    const double maximum_absolute_error_per_integration_step) {
-  DRAKE_DEMAND(context != NULL  &&  dt >= 0.0);
+                 const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
+                 drake::systems::Context<double>* context,
+                 const double dt_max, const double t_final,
+                 const double maximum_absolute_error_per_integration_step) {
+  DRAKE_DEMAND(context != NULL  &&  dt_max >= 0.0);
 
-  // The initial value of time t is set from the context.
-  double t = context->get_time();
-  if ( t < t_final ) {
-    // Integrate with variable-step Runge-Kutta3 integrator.
-    systems::RungeKutta3Integrator<double> rk3(rigid_body_plant, context);
-    rk3.set_maximum_step_size(dt);  // Needed before Initialize (or exception).
-    rk3.set_target_accuracy(maximum_absolute_error_per_integration_step);
-    rk3.Initialize();
+  // Integrate with variable-step Runge-Kutta3 integrator.
+  systems::RungeKutta3Integrator<double> rk3(rigid_body_plant, context);
+  rk3.set_maximum_step_size(dt_max);  // Need before Initialize (or exception).
+  rk3.set_target_accuracy(maximum_absolute_error_per_integration_step);
+  rk3.Initialize();
 
-    // Integrate to within a small amount of dt of t_final.
-    const double epsilon_based_on_dt = 1.0E-9 * dt;
-    const double t_final_minus_epsilon = t_final - epsilon_based_on_dt;
-    do {
-      if ( t + dt > t_final ) dt = t_final - t;
-      rk3.StepOnceAtMost(dt, dt, dt);    // Step forward by dt.
-      t += dt;                           // Increment time by dt.
-    } while ( t < t_final_minus_epsilon );
+  // Integrate to within a small amount of dt of t_final.
+  const double epsilon_based_on_dt_max = 1.0E-11 * dt_max;
+  const double t_final_minus_epsilon = t_final - epsilon_based_on_dt_max;
+  double t;
+  while ( (t = context->get_time()) < t_final_minus_epsilon ) {
+    const double dt = (t + dt_max > t_final) ? (t_final - t) : dt_max;
+    rk3.StepOnceAtMost(dt, dt, dt);    // Step forward by at most dt.
   }
+  DRAKE_DEMAND(std::abs(t-t_final) < epsilon_based_on_dt_max);
 }
 
 
@@ -504,12 +501,12 @@ void  TestDrakeSolutionForSpecificInitialValue(
 
   // Maybe numerically integrate.
   if ( should_numerically_integrate ) {
-    const double dt = 0.2, t_final = 10.0;
-    const double maximum_absolute_error_per_integration_step = 1.0E-6;
+    const double dt_max = 0.2, t_final = 10.0;
+    const double maximum_absolute_error_per_integration_step = 1.0E-3;
 
     // Integrate forward, checking results frequently.
     IntegrateForwardWithVariableStepRungeKutta3(rigid_body_plant, context,
-                 dt, t_final, maximum_absolute_error_per_integration_step);
+                 dt_max, t_final, maximum_absolute_error_per_integration_step);
 
     // After numerically integrating to t = t_final, test Drake's simulation
     // accuracy at t = t_final versus exact analytical (closed-form) solution.
@@ -556,16 +553,16 @@ void  TestDrakeSolutionForVariousInitialValues(
   for (double thetaX = 0; thetaX <= 2*M_PI; thetaX += 0.02*M_PI) {
     for (double thetaY = 0; thetaY <= M_PI; thetaY += 0.05*M_PI) {
       const Vector3<double> spaceXYZ_angles = {thetaX, thetaY, 0};
-      const Vector4d vector4d_NB_initial = math::rpy2quat(spaceXYZ_angles);
-      Eigen::Quaterniond quat_NB_initial(vector4d_NB_initial(0),
-                                         vector4d_NB_initial(1),
-                                         vector4d_NB_initial(2),
-                                         vector4d_NB_initial(3));
+      const Vector4d drake_quat_NB_initial = math::rpy2quat(spaceXYZ_angles);
+      Eigen::Quaterniond quat_NB_initial(drake_quat_NB_initial(0),
+                                         drake_quat_NB_initial(1),
+                                         drake_quat_NB_initial(2),
+                                         drake_quat_NB_initial(3));
 
       // Since there are 100*20 = 2000 total tests of initial conditions, it is
       // time-consuming to numerically integrate for every initial condition.
       // Hence, numerical integration is only tested sporadically.
-      const bool also_numerically_integrate = (test_counter++ % 210 == 0);
+      const bool also_numerically_integrate = (test_counter++ == 120);
       TestDrakeSolutionForSpecificInitialValue(rigid_body_plant,
                                                context,
                                                stateDt_drake,
