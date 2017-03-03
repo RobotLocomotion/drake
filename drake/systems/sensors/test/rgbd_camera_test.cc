@@ -4,9 +4,6 @@
 #include <stdexcept>
 
 #include "gtest/gtest.h"
-#include <vtkImageData.h>
-#include <vtkNew.h>
-#include <vtkPNGReader.h>
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
@@ -188,7 +185,7 @@ class ImageTest {
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
         // We need kColorPixelTolerance because it is possible to have rendering
-        // errors dependeing on the hardware that VTK renderer uses.
+        // errors dependeing on the hardware that the rendering library uses.
         AssertLe(color_image.at(u, v)[0], 204u, kColorPixelTolerance);
         AssertLe(color_image.at(u, v)[1], 229u, kColorPixelTolerance);
         AssertLe(color_image.at(u, v)[2], 255u, kColorPixelTolerance);
