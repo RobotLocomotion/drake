@@ -61,21 +61,32 @@ class TestMathematicalProgram(unittest.TestCase):
         x = prog.NewContinuousVariables(2, "x")
         prog.AddLinearConstraint(x[0] >= 1)
         prog.AddLinearConstraint(x[1] >= 1)
+        prog.AddLinearConstraint(3 * x[0] - x[1] <= 2)
         prog.AddLinearConstraint(x[0] + 2 * x[1] == 3)
         cost = prog.AddQuadraticCost(0.5 * (x[0]**2 + x[1]**2))
         self.assertTrue(np.allclose(cost.constraint().Q(), np.eye(2)))
         self.assertTrue(np.allclose(cost.constraint().b(), np.zeros(2)))
 
-        lin_con_bindings = prog.linear_constraints()
-        for (i, binding) in enumerate(lin_con_bindings):
+        for (i, binding) in enumerate(prog.bounding_box_constraints()):
             constraint = binding.constraint()
             self.assertEqual(
                 prog.FindDecisionVariableIndex(binding.variables()[0]),
                 prog.FindDecisionVariableIndex(x[i]))
-            print("A", constraint.A())
             self.assertTrue(np.allclose(constraint.A(), np.ones(1)))
             self.assertEqual(constraint.lower_bound(), 1)
             self.assertEqual(constraint.upper_bound(), np.inf)
+
+        for (i, binding) in enumerate(prog.linear_constraints()):
+            constraint = binding.constraint()
+            self.assertEqual(
+                prog.FindDecisionVariableIndex(binding.variables()[0]),
+                prog.FindDecisionVariableIndex(x[0]))
+            self.assertEqual(
+                prog.FindDecisionVariableIndex(binding.variables()[1]),
+                prog.FindDecisionVariableIndex(x[1]))
+            self.assertTrue(np.allclose(constraint.A(), [-3, 1]))
+            self.assertTrue(constraint.lower_bound(), -2)
+            self.assertTrue(constraint.upper_bound(), np.inf)
 
         for (i, binding) in enumerate(prog.linear_equality_constraints()):
             constraint = binding.constraint()
