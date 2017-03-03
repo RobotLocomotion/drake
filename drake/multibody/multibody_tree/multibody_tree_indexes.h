@@ -28,8 +28,9 @@ class TypeSafeIndex {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TypeSafeIndex)
 
-  /// Default constructor intializes `this` to the zero index.
-  TypeSafeIndex() {}
+  /// Default constructor is disabled to force users to intialize their indexes
+  /// at creation.
+  TypeSafeIndex() = delete;
 
   /// Construction from an `int` value.
   /// For Debug builds this constructor aborts if the provided input `int`
@@ -38,7 +39,7 @@ class TypeSafeIndex {
     DRAKE_ASSERT(index_ >= 0);
   }
 
-  /// Converstion to int operator.
+  /// Implicit conversion to int operator.
   operator int() const { return index_; }
 
   /// @name Arithmetic operators.
@@ -81,6 +82,7 @@ class TypeSafeIndex {
   /// Addition assignment operator.
   TypeSafeIndex& operator+=(int i) {
     index_ += i;
+    DRAKE_ASSERT(index_ >= 0);
     return *this;
   }
 

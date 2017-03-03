@@ -24,12 +24,6 @@ void RunMultibodyIndexTests() {
 #endif
   }
 
-  // Default construction, makes a zero index.
-  {
-    IndexType index;
-    EXPECT_EQ(index, 0);
-  }
-
   // Conversion operator.
   {
     IndexType index(4);
