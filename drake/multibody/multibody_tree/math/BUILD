@@ -12,9 +12,9 @@ package(
 )
 
 drake_cc_library(
-    name = "spatial_velocity",
+    name = "spatial_algebra",
     srcs = [],
-    hdrs = ["spatial_velocity.h"],
+    hdrs = ["spatial_algebra.h"],
     deps = [
         "//drake/common",
     ],
@@ -23,5 +23,5 @@ drake_cc_library(
 drake_cc_googletest(
     name = "spatial_algebra_tests",
     srcs = ["test/spatial_algebra_tests.cc"],
-    deps = [":spatial_velocity"],
+    deps = [":spatial_algebra"],
 )
