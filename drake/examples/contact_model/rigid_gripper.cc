@@ -1,28 +1,27 @@
-// A simple example of a rigid gripper attempting to hold a block. The gripper
-// has rigid geometry: two fingers a fixed distance from each other. They
-// are positioned in a configuration *slightly* narrower than the box placed
-// between them.
-//
-// This is a test to evaluate/debug the contact model.  This configuration
-// simplifies the test by defining a known penetration and eliminating all
-// controller-dependent variation.
-//
-// This is an even simpler example of what is shown in schung_wsg_lift_test.
-// This eliminates the PID controller and ground contact.  At the end of the
-// simulation time, the box should have slipped an amount less than the duration
-// length times v_stiction_tolerance (i.e., the highest allowable slip speed
-// during stiction).
+/*! @file
+A simple example of a rigid gripper attempting to hold a block. The gripper
+has rigid geometry: two fingers at a fixed distance from each other. They
+are positioned in a configuration *slightly* narrower than the box placed
+between them.
+
+This is a test to evaluate/debug the contact model.  This configuration
+simplifies the test by defining a known penetration and eliminating all
+controller-dependent variation.
+
+This is an even simpler example of what is shown in schung_wsg_lift_test.
+This eliminates the PID controller and ground contact.  At the end of the
+simulation, the box should have slipped an amount less than the duration
+length times v_stiction_tolerance (i.e., the highest allowable slip speed
+during stiction).
+*/
 
 #include <memory>
 
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
-#include "drake/common/eigen_types.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
-#include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
@@ -32,11 +31,8 @@
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/trajectory_source.h"
 
 DEFINE_double(accuracy, 5e-5, "Sets the simulation accuracy");
 DEFINE_double(us, 0.9, "The coefficient of static friction");
@@ -58,8 +54,8 @@ using drake::systems::lcm::LcmPublisherSystem;
 std::unique_ptr<RigidBodyTreed> BuildTestTree() {
   std::unique_ptr<RigidBodyTreed> tree = std::make_unique<RigidBodyTreed>();
 
-  /// Add the gripper.  Offset it slightly back and up so that we can
-  // locate the bos at the origin.
+  // Add the gripper.  Offset it slightly back and up so that we can
+  // locate the box at the origin.
   auto gripper_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "gripper_pose_frame",
       &tree->world(), Eigen::Vector3d(0, -0.065, 0.05),
@@ -78,11 +74,9 @@ std::unique_ptr<RigidBodyTreed> BuildTestTree() {
       GetDrakePath() + "/multibody/models/box_small.urdf",
       multibody::joints::kQuaternion, box_frame, tree.get());
 
-  tree->compile();
   return tree;
 }
 
-// Simple scenario of gripper lifting box.
 int main() {
   systems::DiagramBuilder<double> builder;
 
@@ -108,7 +102,7 @@ int main() {
   builder.Connect(plant->state_output_port(),
                   viz_publisher->get_input_port(0));
 
-  // contact force visualization
+  // Enable contact force visualization.
   const ContactResultsToLcmSystem<double>& contact_viz =
   *builder.template AddSystem<ContactResultsToLcmSystem<double>>(
       plant->get_rigid_body_tree());
