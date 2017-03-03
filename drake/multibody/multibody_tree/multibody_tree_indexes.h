@@ -9,32 +9,32 @@ namespace drake {
 namespace multibody {
 
 /// A type-safe non-negative index that can be associated to a tag name.
-/// Different instantiations of TaggedIndex are not interconvertible.
-/// TaggedIndex allows for instantiations from an `int` as well as it allows to
-/// convert back to an `int` via its conversion operator. Negative index values
-/// are not allowed.
-/// TaggedIndex can be used in places where an index is needed and therefore
+/// Different instantiations of TypeSafeIndex are not interconvertible.
+/// TypeSafeIndex allows for instantiations from an `int` as well as it allows
+/// to convert back to an `int` via its conversion operator. Negative index
+/// values are not allowed.
+/// TypeSafeIndex can be used in places where an index is needed and therefore
 /// basic operations such as prefix and postfix increment/decrement are
-/// implemented. As an example, consider the creation of a tagged index
-/// associated with class `Foo`. This can be done in code as: <pre>
-///   using FooIndex = TaggedIndex<class FooTag>;
+/// implemented. As an example, consider the creation of an index associated
+/// with class `Foo`. This can be done in code as: <pre>
+///   using FooIndex = TypeSafeIndex<class FooTag>;
 /// </pre>
 /// where the class `FooTag` above should simply be a dummy argument, a
 /// never-defined type.
 ///
 /// @tparam Tag The name of the tag associated with a class type.
 template <class Tag>
-class TaggedIndex {
+class TypeSafeIndex {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TaggedIndex)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TypeSafeIndex)
 
   /// Default constructor intializes `this` to the zero index.
-  TaggedIndex() {}
+  TypeSafeIndex() {}
 
   /// Construction from an `int` value.
   /// For Debug builds this constructor aborts if the provided input `int`
   /// `index` is negative. There is no check for Release builds.
-  explicit TaggedIndex(int index) : index_(index) {
+  explicit TypeSafeIndex(int index) : index_(index) {
     DRAKE_ASSERT(index_ >= 0);
   }
 
@@ -45,21 +45,21 @@ class TaggedIndex {
   ///@{
 
   /// Prefix increment operator.
-  const TaggedIndex& operator++() {
+  const TypeSafeIndex& operator++() {
     ++index_;
     return *this;
   }
 
   /// Postfix increment operator.
-  TaggedIndex operator++(int) {
+  TypeSafeIndex operator++(int) {
     ++index_;
-    return TaggedIndex(index_ - 1);
+    return TypeSafeIndex(index_ - 1);
   }
 
   /// Prefix decrement operator.
   /// In Debug builds this method asserts that the resulting index is
   /// non-negative.
-  const TaggedIndex& operator--() {
+  const TypeSafeIndex& operator--() {
     --index_;
     DRAKE_ASSERT(index_ >= 0);
     return *this;
@@ -68,10 +68,10 @@ class TaggedIndex {
   /// Postfix decrement operator.
   /// In Debug builds this method asserts that the resulting index is
   /// non-negative.
-  TaggedIndex operator--(int) {
+  TypeSafeIndex operator--(int) {
     --index_;
     DRAKE_ASSERT(index_ >= 0);
-    return TaggedIndex(index_ + 1);
+    return TypeSafeIndex(index_ + 1);
   }
   ///@}
 
@@ -79,7 +79,7 @@ class TaggedIndex {
   ///@{
 
   /// Addition assignment operator.
-  TaggedIndex& operator+=(int i) {
+  TypeSafeIndex& operator+=(int i) {
     index_ += i;
     return *this;
   }
@@ -87,7 +87,7 @@ class TaggedIndex {
   /// Subtraction assignment operator.
   /// In Debug builds this method asserts that the resulting index is
   /// non-negative.
-  TaggedIndex& operator-=(int i) {
+  TypeSafeIndex& operator-=(int i) {
     index_ -= i;
     DRAKE_ASSERT(index_ >= 0);
     return *this;
@@ -99,13 +99,13 @@ class TaggedIndex {
 };
 
 /// Type used to identify frames by index in a multibody tree system.
-using FrameIndex = TaggedIndex<class FrameTag>;
+using FrameIndex = TypeSafeIndex<class FrameTag>;
 
 /// Type used to identify bodies by index in a multibody tree system.
-using BodyIndex = TaggedIndex<class BodyTag>;
+using BodyIndex = TypeSafeIndex<class BodyTag>;
 
 /// Type used to identify mobilizers by index in a multibody tree system.
-using MobilizerIndex = TaggedIndex<class MobilizerTag>;
+using MobilizerIndex = TypeSafeIndex<class MobilizerTag>;
 
 /// For every MultibodyTree<T> the **world** body _always_ has this unique
 /// identifier and it is always zero.

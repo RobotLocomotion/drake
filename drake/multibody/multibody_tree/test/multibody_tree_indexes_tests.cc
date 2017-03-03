@@ -20,7 +20,7 @@ void RunMultibodyIndexTests() {
     ASSERT_DEATH(
         { IndexType negative_index(-1); },
         R"(abort: failure at .*multibody_tree_indexes.h:..)"
-        R"( in TaggedIndex\(\): assertion 'index_ >= 0' failed)");
+        R"( in TypeSafeIndex\(\): assertion 'index_ >= 0' failed)");
 #endif
   }
 
@@ -115,7 +115,7 @@ void RunMultibodyIndexTests() {
     ASSERT_DEATH(
         { IndexType bad_index(index2 - index1); },
         R"(abort: failure at .*multibody_tree_indexes.h:.. )"
-        R"(in TaggedIndex\(\): assertion 'index_ >= 0' failed)");
+        R"(in TypeSafeIndex\(\): assertion 'index_ >= 0' failed)");
 #endif
   }
 
