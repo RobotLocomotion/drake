@@ -201,6 +201,11 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
                            velocity.eta_v);
 }
 
+api::GeoPosition Lane::DoEvalGeoMotionDerivatives(
+    const api::LanePosition& position,
+    const api::IsoLaneVelocity& velocity) const {
+  DRAKE_ABORT();  // TODO(maddog@tri.global) Implement me.
+}
 
 }  // namespace monolane
 }  // namespace maliput

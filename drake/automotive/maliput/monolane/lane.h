@@ -243,6 +243,10 @@ class Lane : public api::Lane {
       const api::LanePosition& position,
       const api::IsoLaneVelocity& velocity) const override;
 
+  api::GeoPosition DoEvalGeoMotionDerivatives(
+      const api::LanePosition& position,
+      const api::IsoLaneVelocity& velocity) const override;
+
   // The following virtual methods define a reference curve in the xy-plane
   // of the world frame (i.e., the Earth ground plane).  The curve is a
   // parametric curve:

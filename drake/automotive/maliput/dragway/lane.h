@@ -143,6 +143,10 @@ class Lane final : public api::Lane {
       const api::LanePosition& position,
       const api::IsoLaneVelocity& velocity) const final;
 
+  api::GeoPosition DoEvalGeoMotionDerivatives(
+      const api::LanePosition& position,
+      const api::IsoLaneVelocity& velocity) const final;
+
   api::GeoPosition DoToGeoPosition(const api::LanePosition& lane_pos) const
       final;
 
