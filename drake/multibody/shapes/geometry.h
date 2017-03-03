@@ -49,8 +49,8 @@ class Geometry {
   }
   /**
    * Returns the faces making up this geometry as a vector of triangles.
-   * Each triangle contains three indices into the vertex list return
-   * by the Geometry getPoints method.
+   * Each triangle contains three indices into the vertex list returned
+   * by the Geometry getPoints() method.
    * @param[out] faces Returns a vector of triangles describing 
    * this geometry.
    */

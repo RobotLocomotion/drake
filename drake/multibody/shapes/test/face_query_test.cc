@@ -47,7 +47,7 @@ void CheckAllNormalsFaceOutwards(Eigen::Matrix3Xd verts,
 
 // This checks that a given set of triangles is a closed manifold
 // (of nonzero volume) by confirming that each edge appears exactly twice --
-// once with one directionality, and once in the opposite directionality.
+// once with one directionality, and once with the opposite directionality.
 // - We recover edge directionality (and face normal direction) by assuming that
 //   vertices for a face are listed in CCW order when viewed from the outside.
 // - If a pair of faces share a directed edge, and the direction of the edge on
