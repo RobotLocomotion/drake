@@ -3,6 +3,7 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -31,7 +32,7 @@ struct EulerFloatingJointStateIndices {
 template <typename T>
 class EulerFloatingJointState : public systems::BasicVector<T> {
  public:
-  // An abbreviation for our row index constants.
+  /// An abbreviation for our row index constants.
   typedef EulerFloatingJointStateIndices K;
 
   /// Default constructor.  Sets all rows to zero.
@@ -66,6 +67,19 @@ class EulerFloatingJointState : public systems::BasicVector<T> {
   const T& yaw() const { return this->GetAtIndex(K::kYaw); }
   void set_yaw(const T& yaw) { this->SetAtIndex(K::kYaw, yaw); }
   //@}
+
+  /// Returns whether the current values of this vector are well-formed.
+  decltype(T() < T()) IsValid() const {
+    using std::isnan;
+    auto result = (T(0) == T(0));
+    result = result && !isnan(x());
+    result = result && !isnan(y());
+    result = result && !isnan(z());
+    result = result && !isnan(roll());
+    result = result && !isnan(pitch());
+    result = result && !isnan(yaw());
+    return result;
+  }
 };
 
 }  // namespace automotive

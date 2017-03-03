@@ -3,6 +3,7 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -28,7 +29,7 @@ struct AcrobotOutputVectorIndices {
 template <typename T>
 class AcrobotOutputVector : public systems::BasicVector<T> {
  public:
-  // An abbreviation for our row index constants.
+  /// An abbreviation for our row index constants.
   typedef AcrobotOutputVectorIndices K;
 
   /// Default constructor.  Sets all rows to zero.
@@ -51,6 +52,15 @@ class AcrobotOutputVector : public systems::BasicVector<T> {
   const T& theta2() const { return this->GetAtIndex(K::kTheta2); }
   void set_theta2(const T& theta2) { this->SetAtIndex(K::kTheta2, theta2); }
   //@}
+
+  /// Returns whether the current values of this vector are well-formed.
+  decltype(T() < T()) IsValid() const {
+    using std::isnan;
+    auto result = (T(0) == T(0));
+    result = result && !isnan(theta1());
+    result = result && !isnan(theta2());
+    return result;
+  }
 };
 
 }  // namespace acrobot

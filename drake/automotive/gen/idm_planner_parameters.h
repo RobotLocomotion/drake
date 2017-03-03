@@ -3,6 +3,7 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -31,7 +32,7 @@ struct IdmPlannerParametersIndices {
 template <typename T>
 class IdmPlannerParameters : public systems::BasicVector<T> {
  public:
-  // An abbreviation for our row index constants.
+  /// An abbreviation for our row index constants.
   typedef IdmPlannerParametersIndices K;
 
   /// Default constructor.  Sets all rows to zero.
@@ -68,6 +69,19 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   const T& delta() const { return this->GetAtIndex(K::kDelta); }
   void set_delta(const T& delta) { this->SetAtIndex(K::kDelta, delta); }
   //@}
+
+  /// Returns whether the current values of this vector are well-formed.
+  decltype(T() < T()) IsValid() const {
+    using std::isnan;
+    auto result = (T(0) == T(0));
+    result = result && !isnan(v_ref());
+    result = result && !isnan(a());
+    result = result && !isnan(b());
+    result = result && !isnan(s_0());
+    result = result && !isnan(time_headway());
+    result = result && !isnan(delta());
+    return result;
+  }
 };
 
 }  // namespace automotive

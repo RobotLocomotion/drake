@@ -33,6 +33,19 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
   EXPECT_NE(dynamic_cast<Sample<double>*>(cloned.get()), nullptr);
   EXPECT_EQ(cloned->GetAtIndex(0), 11.0);
   EXPECT_EQ(cloned->GetAtIndex(1), 22.0);
+
+  // IsValid.
+  {
+    Sample<double> dummy1;
+    EXPECT_TRUE(dummy1.IsValid());
+    dummy1.set_x(std::numeric_limits<double>::quiet_NaN());
+    EXPECT_FALSE(dummy1.IsValid());
+
+    Sample<double> dummy2;
+    EXPECT_TRUE(dummy2.IsValid());
+    dummy2.set_two_word(std::numeric_limits<double>::quiet_NaN());
+    EXPECT_FALSE(dummy2.IsValid());
+  }
 }
 
 }  // namespace
