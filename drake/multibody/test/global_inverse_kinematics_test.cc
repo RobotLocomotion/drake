@@ -57,9 +57,9 @@ TEST_F(KukaTest, ReachableTest) {
                                            0.2 * M_PI);
 
   solvers::GurobiSolver gurobi_solver;
-
-  global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
   if (gurobi_solver.available()) {
+    global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
+
     SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
@@ -116,8 +116,9 @@ TEST_F(KukaTest, UnreachableTest) {
 
   solvers::GurobiSolver gurobi_solver;
 
-  global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
   if (gurobi_solver.available()) {
+    global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
+
     SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 
     EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded
