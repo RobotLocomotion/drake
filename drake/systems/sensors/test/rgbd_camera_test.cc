@@ -143,6 +143,9 @@ void AssertLe(uint8_t value_a, uint8_t value_b, uint8_t tolerance) {
   ASSERT_LE(std::abs(a - b), t);
 }
 
+
+const std::array<uint8_t, 4> kBackgroundColor{204u, 229u, 255u, 255u};
+
 class ImageTest {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageTest)
@@ -178,62 +181,81 @@ class ImageTest {
     }
   }
 
+  static void VerifyUniformColorAndDepth(
+      const sensors::Image<uint8_t>& color_image,
+      const sensors::Image<float>& depth_image,
+      const std::array<uint8_t, 4>& color, float depth) {
+    // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
+    // assumption is any defects will be detected by sampling this amount.
+    for (int v = 0; v < color_image.height(); v += 20) {
+      for (int u = 0; u < color_image.width(); u += 20) {
+        for (int ch = 0; ch < 4; ++ch) {
+          AssertLe(color_image.at(u, v)[0], color[0], kColorPixelTolerance);
+        }
+        // Assuming depth value provides 0.1 mm precision.
+        ASSERT_NEAR(depth_image.at(u, v)[0], depth, 1e-4);
+      }
+    }
+  }
+
   static void VerifyTerrain(const sensors::Image<uint8_t>& color_image,
                             const sensors::Image<float>& depth_image) {
-    // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
-    // assumption is any defects will be detected by sampling this amount.
-    for (int v = 0; v < color_image.height(); v += 20) {
-      for (int u = 0; u < color_image.width(); u += 20) {
-        // We need kColorPixelTolerance because it is possible to have rendering
-        // errors dependeing on the hardware that the rendering library uses.
-        AssertLe(color_image.at(u, v)[0], 204u, kColorPixelTolerance);
-        AssertLe(color_image.at(u, v)[1], 229u, kColorPixelTolerance);
-        AssertLe(color_image.at(u, v)[2], 255u, kColorPixelTolerance);
-        AssertLe(color_image.at(u, v)[3], 255u, kColorPixelTolerance);
-
-        // Assuming depth value provides 0.1 mm precision.
-        ASSERT_NEAR(depth_image.at(u, v)[0], 4.999f, 1e-4);
-      }
-    }
+    VerifyUniformColorAndDepth(color_image, depth_image,
+                               kBackgroundColor, 4.999f);
   }
 
-  static void VerifyBox(const sensors::Image<uint8_t>& color_image,
-                        const sensors::Image<float>& depth_image) {
-    // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
-    // assumption is any defects will be detected by sampling this amount.
-    for (int v = 0; v < color_image.height(); v += 20) {
-      for (int u = 0; u < color_image.width(); u += 20) {
-        // Assuming depth value provides 0.1 mm precision.
-        ASSERT_NEAR(depth_image.at(u, v)[0], 1.f, 1e-4);
-      }
-    }
+  static void VerifyBox(
+      const sensors::Image<uint8_t>& color_image,
+      const sensors::Image<float>& depth_image) {
+    const std::array<uint8_t, 4> kPixelColor{255u, 255u, 255u, 255u};
+    VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
-  static void VerifyCylinder(const sensors::Image<uint8_t>& color_image,
-                             const sensors::Image<float>& depth_image) {
-    // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
-    // assumption is any defects will be detected by sampling this amount.
-    for (int v = 0; v < color_image.height(); v += 20) {
-      for (int u = 0; u < color_image.width(); u += 20) {
-        // Assuming depth value provides 0.1 mm precision.
-        ASSERT_NEAR(depth_image.at(u, v)[0], 1.f, 1e-4);
-      }
-    }
+  static void VerifyCylinder(
+      const sensors::Image<uint8_t>& color_image,
+      const sensors::Image<float>& depth_image) {
+    const std::array<uint8_t, 4> kPixelColor{255u, 255u, 255u, 255u};
+    VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
+  static void VerifyMeshBox(const sensors::Image<uint8_t>& color_image,
+                            const sensors::Image<float>& depth_image) {
+    const std::array<uint8_t, 4> kPixelColor{33u, 241u, 4u, 255u};
+    VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
+  }
+
+  struct UV {
+    int u;
+    int v;
+  };
+
+  // Verifies the color and depth of the image at the center and four corners.
   static void VerifySphere(const sensors::Image<uint8_t>& color_image,
                            const sensors::Image<float>& depth_image) {
+    // Verifies the four corner points.
+    UV kCorners[4] = {UV{0, 0},
+                      UV{color_image.width() - 1, 0},
+                      UV{0, color_image.height() - 1},
+                      UV{color_image.width() - 1,
+                         color_image.height() - 1}};
+
+    for (const auto& corner : kCorners) {
+      for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+        AssertLe(color_image.at(corner.u, corner.v)[ch],
+                 kBackgroundColor[ch], kColorPixelTolerance);
+      }
+      ASSERT_NEAR(depth_image.at(corner.u, corner.v)[0], 2.f, 1e-4);
+    }
+
+    // Verifies the center point's color.
     const int kHalfWidth = color_image.width() / 2;
     const int kHalfHeight = color_image.height() / 2;
-    // A location of the sphere surface is a crossing point of four pixels
-    // adjacent to the optical axis.
-    const float actual_sphere_depth_on_optical_axis = (
-        depth_image.at(kHalfWidth, kHalfHeight)[0] +
-        depth_image.at(kHalfWidth, kHalfHeight + 1)[0] +
-        depth_image.at(kHalfWidth + 1, kHalfHeight)[0] +
-        depth_image.at(kHalfWidth + 1, kHalfHeight + 1)[0]) / 4.f;
-    // Assuming depth value provides 1 mm precision for the curved surface.
-    ASSERT_NEAR(actual_sphere_depth_on_optical_axis, 1.f, 1e-3);
+    for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+      AssertLe(color_image.at(kHalfWidth, kHalfHeight)[ch],
+               255u, kColorPixelTolerance);
+    }
+    // Verifies the center point's depth.
+    ASSERT_NEAR(depth_image.at(kHalfWidth, kHalfHeight)[0], 1.f, 1e-4);
   }
 
  private:
@@ -258,15 +280,6 @@ GTEST_TEST(RenderingTest, BoxRenderingTest) {
                 ImageTest::VerifyBox);
 }
 
-// Verifies the rendered mesh box.
-GTEST_TEST(RenderingTest, MeshBoxRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/mesh_box.sdf");
-  ImageTest dut(sdf,
-                Eigen::Vector3d(0., 0., 3.),
-                Eigen::Vector3d(0., M_PI_2, 0.),
-                ImageTest::VerifyBox);
-}
-
 // Verifies the rendered cylinder.
 GTEST_TEST(RenderingTest, CylinderRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/cylinder.sdf");
@@ -274,6 +287,15 @@ GTEST_TEST(RenderingTest, CylinderRenderingTest) {
                 Eigen::Vector3d(0., 0., 2.),
                 Eigen::Vector3d(0., M_PI_2, 0.),
                 ImageTest::VerifyCylinder);
+}
+
+// Verifies the rendered mesh box.
+GTEST_TEST(RenderingTest, MeshBoxRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/mesh_box.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(0., 0., 3.),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifyMeshBox);
 }
 
 // Verifies the rendered sphere.
