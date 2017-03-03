@@ -27,6 +27,8 @@ DEFINE_int32(num_dragway_lanes, 0,
              "default zero to disable the dragway. A dragway road network is "
              "only enabled when the user specifies a number of lanes greater "
              "than zero.");
+
+
 DEFINE_int32(num_horizontal_crossroad_lanes, 0,
   // TODO:(shensquared) polish the definition
              "The number of horizontal lanes on the cross road. The number of"
@@ -151,7 +153,8 @@ void AddVehicles(RoadNetworkType road_network_type,
         dynamic_cast<const maliput::crossroad::RoadGeometry*>(road_geometry);
     DRAKE_DEMAND(crossroad_road_geometry != nullptr);
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
-      const int lane_index = i % FLAGS_num_horizontal_crossroad_lanes;
+      const int lane_index = i % (FLAGS_num_horizontal_crossroad_lanes + 
+        FLAGS_num_vertical_crossroad_lanes);
       const double speed = FLAGS_crossroad_base_speed +
           lane_index * FLAGS_crossroad_lane_speed_delta;
       const double start_time = i / FLAGS_num_horizontal_crossroad_lanes *

@@ -66,6 +66,8 @@ int RoadGeometry::do_num_branch_points() const {
   return (junction_.segment(0)->num_lanes()+
     junction_.segment(0)->num_lanes());
 }
+
+
 // new method might
 bool RoadGeometry::IsGeoPositionOnCrossroad(const api::GeoPosition& geo_pos)
     const {
