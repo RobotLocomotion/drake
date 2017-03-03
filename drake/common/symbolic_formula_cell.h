@@ -280,6 +280,21 @@ class FormulaForall : public FormulaCell {
   const Formula f_;       // Quantified formula.
 };
 
+/** Symbolic formula representing isnan predicate. */
+class FormulaIsnan : public FormulaCell {
+ public:
+  explicit FormulaIsnan(const Expression& e);
+  Variables GetFreeVariables() const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Less(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
+  Formula Substitute(const Substitution& s) const override;
+  std::ostream& Display(std::ostream& os) const override;
+
+ private:
+  const Expression e_;
+};
+
 /** Checks if @p f is structurally equal to False formula. */
 bool is_false(const FormulaCell& f);
 /** Checks if @p f is structurally equal to True formula. */
@@ -306,6 +321,8 @@ bool is_disjunction(const FormulaCell& f);
 bool is_negation(const FormulaCell& f);
 /** Checks if @p f is a Forall formula (∀). */
 bool is_forall(const FormulaCell& f);
+/** Checks if @p f is an isnan formula. */
+bool is_isnan(const FormulaCell& f);
 
 /** Casts @p f_ptr of shared_ptr<FormulaCell> to
  * @c shared_ptr<RelationalFormulaCell>.
@@ -353,6 +370,17 @@ std::shared_ptr<FormulaForall> to_forall(
  *  \pre{@c is_forall(f) is true.}
  */
 std::shared_ptr<FormulaForall> to_forall(const Formula& f);
+
+/** Casts @p f_ptr of shared_ptr<FormulaCell> to @c shared_ptr<FormulaIsnan>.
+ *  \pre{@c is_isnan(*f_ptr) is true.}
+ */
+std::shared_ptr<FormulaIsnan> to_isnan(
+    const std::shared_ptr<FormulaCell> f_ptr);
+
+/** Casts @p f of Formula to @c shared_ptr<FormulaIsnan>.
+ *  \pre{@c is_isnan(f) is true.}
+ */
+std::shared_ptr<FormulaIsnan> to_isnan(const Formula& f);
 
 }  // namespace symbolic
 }  // namespace drake

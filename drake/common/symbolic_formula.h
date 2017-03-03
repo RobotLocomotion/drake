@@ -20,18 +20,19 @@ namespace symbolic {
 
 /** Kinds of symbolic formulas. */
 enum class FormulaKind {
-  False,  ///< ⊥
-  True,   ///< ⊤
-  Eq,     ///< =
-  Neq,    ///< !=
-  Gt,     ///< >
-  Geq,    ///< >=
-  Lt,     ///< <
-  Leq,    ///< <=
-  And,    ///< Conjunction (∧)
-  Or,     ///< Disjunction (∨)
-  Not,    ///< Negation (¬)
-  Forall  ///< Universal quantification (∀)
+  False,   ///< ⊥
+  True,    ///< ⊤
+  Eq,      ///< =
+  Neq,     ///< !=
+  Gt,      ///< >
+  Geq,     ///< >=
+  Lt,      ///< <
+  Leq,     ///< <=
+  And,     ///< Conjunction (∧)
+  Or,      ///< Disjunction (∨)
+  Not,     ///< Negation (¬)
+  Forall,  ///< Universal quantification (∀)
+  Isnan,   ///< NaN check predicate
 };
 
 // Total ordering between FormulaKinds
@@ -42,6 +43,7 @@ class RelationalFormulaCell;  // In drake/common/symbolic_formula_cell.h
 class NaryFormulaCell;        // In drake/common/symbolic_formula_cell.h
 class FormulaNot;             // In drake/common/symbolic_formula_cell.h
 class FormulaForall;          // In drake/common/symbolic_formula_cell.h
+class FormulaIsnan;           // In drake/common/symbolic_formula_cell.h
 
 /** Represents a symbolic form of a first-order logic formula.
 
@@ -171,6 +173,7 @@ class Formula {
   friend bool is_disjunction(const Formula& f);
   friend bool is_negation(const Formula& f);
   friend bool is_forall(const Formula& f);
+  friend bool is_isnan(const Formula& f);
 
   // Note that the following cast functions are only for low-level operations
   // and not exposed to the user of symbolic_formula.h. These functions are
@@ -179,6 +182,7 @@ class Formula {
   friend std::shared_ptr<NaryFormulaCell> to_nary(const Formula& f);
   friend std::shared_ptr<FormulaNot> to_negation(const Formula& f);
   friend std::shared_ptr<FormulaForall> to_forall(const Formula& f);
+  friend std::shared_ptr<FormulaIsnan> to_isnan(const Formula& f);
 
  private:
   std::shared_ptr<FormulaCell> ptr_;
@@ -197,13 +201,14 @@ Formula operator<=(const Expression& e1, const Expression& e2);
 Formula operator>(const Expression& e1, const Expression& e2);
 Formula operator>=(const Expression& e1, const Expression& e2);
 
-std::ostream& operator<<(std::ostream& os, const Formula& f);
+/** Returns a Formula for the predicate isnan(e) to the given expression. This
+ * serves as the argument-dependent lookup related to std::isnan(double). When
+ * evaluated, this Formula will return false when the e.Evaluate() is not NaN.
+ * @throws std::runtime_error if NaN is detected during evaluation.
+ */
+Formula isnan(const Expression& e);
 
-/** Returns a NaN check predicate on @p e. */
-// TODO(soonho-tri) This implementation is broken.
-inline Formula isnan(const Expression& e) {
-  return (e == Expression::NaN());
-}
+std::ostream& operator<<(std::ostream& os, const Formula& f);
 
 /** Checks if @p f is structurally equal to False formula. */
 bool is_false(const Formula& f);
@@ -233,6 +238,8 @@ bool is_nary(const Formula& f);
 bool is_negation(const Formula& f);
 /** Checks if @p f is a Forall formula (∀). */
 bool is_forall(const Formula& f);
+/** Checks if @p f is an isnan formula. */
+bool is_isnan(const Formula& f);
 
 /** Returns the lhs-argument of a relational formula @p f.
  *  \pre{@p f is a relational formula.}
