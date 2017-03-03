@@ -3,6 +3,7 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -31,7 +32,7 @@ struct BicycleCarParametersIndices {
 template <typename T>
 class BicycleCarParameters : public systems::BasicVector<T> {
  public:
-  // An abbreviation for our row index constants.
+  /// An abbreviation for our row index constants.
   typedef BicycleCarParametersIndices K;
 
   /// Default constructor.  Sets all rows to zero.
@@ -66,6 +67,19 @@ class BicycleCarParameters : public systems::BasicVector<T> {
   const T& Cr() const { return this->GetAtIndex(K::kCr); }
   void set_Cr(const T& Cr) { this->SetAtIndex(K::kCr, Cr); }
   //@}
+
+  /// Returns whether the current values of this vector are well-formed.
+  decltype(T() < T()) IsValid() const {
+    using std::isnan;
+    auto result = (T(0) == T(0));
+    result = result && !isnan(mass());
+    result = result && !isnan(lf());
+    result = result && !isnan(lr());
+    result = result && !isnan(Iz());
+    result = result && !isnan(Cf());
+    result = result && !isnan(Cr());
+    return result;
+  }
 };
 
 }  // namespace automotive

@@ -3,8 +3,10 @@
 #include <cmath>
 #include <memory>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
+
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/symbolic_formula.h"
 
 namespace drake {
 
