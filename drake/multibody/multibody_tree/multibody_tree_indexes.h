@@ -8,8 +8,8 @@
 namespace drake {
 namespace multibody {
 
-/// A type-safe positive index that can be associated to a tag name. Different
-/// instantiations of TaggedIndex are not interconvertible.
+/// A type-safe non-negative index that can be associated to a tag name.
+/// Different instantiations of TaggedIndex are not interconvertible.
 /// TaggedIndex allows for instantiations from an `int` as well as it allows to
 /// convert back to an `int` via its conversion operator. Negative index values
 /// are not allowed.
@@ -19,6 +19,8 @@ namespace multibody {
 /// associated with class `Foo`. This can be done in code as: <pre>
 ///   using FooIndex = TaggedIndex<class FooTag>;
 /// </pre>
+/// where the class `FooTag` above should simply be a dummy argument, a
+/// never-defined type.
 ///
 /// @tparam Tag The name of the tag associated with a class type.
 template <class Tag>
@@ -37,29 +39,7 @@ class TaggedIndex {
   }
 
   /// Converstion to int operator.
-  operator int() const { return index_;}
-
-  /// @name Relational operators
-  ///@{
-
-  /// Equal to operator.
-  bool operator==(int  i) const { return index_ == i;}
-
-  /// Not equal to operator.
-  bool operator!=(int  i) const { return !operator==(i);}
-
-  /// Less than operator.
-  bool operator< (int  i) const { return index_ < i;}
-
-  /// Greater than or equal to operator.
-  bool operator>=(int  i) const { return !operator<(i);}
-
-  /// Greater than operator.
-  bool operator> (int  i) const { return index_ > i;}
-
-  /// Less than or equal to operator.
-  bool operator<=(int  i) const { return !operator>(i);}
-  ///@}
+  operator int() const { return index_; }
 
   /// @name Arithmetic operators.
   ///@{
@@ -73,7 +53,7 @@ class TaggedIndex {
   /// Postfix increment operator.
   TaggedIndex operator++(int) {
     ++index_;
-    return TaggedIndex(index_-1);
+    return TaggedIndex(index_ - 1);
   }
 
   /// Prefix decrement operator.
@@ -91,7 +71,7 @@ class TaggedIndex {
   TaggedIndex operator--(int) {
     --index_;
     DRAKE_ASSERT(index_ >= 0);
-    return TaggedIndex(index_+1);
+    return TaggedIndex(index_ + 1);
   }
   ///@}
 
@@ -118,21 +98,18 @@ class TaggedIndex {
   int index_{0};
 };
 
-/// Stream insertion operator to write a TaggedIndex into a std::ostream.
-template <class Tag>
-inline std::ostream& operator<<(
-    std::ostream& o, const TaggedIndex<Tag>& index) {
-  o << int(index);
-  return o;
-}
-
+/// Type used to identify frames by index in a multibody tree system.
 using FrameIndex = TaggedIndex<class FrameTag>;
+
+/// Type used to identify bodies by index in a multibody tree system.
 using BodyIndex = TaggedIndex<class BodyTag>;
+
+/// Type used to identify mobilizers by index in a multibody tree system.
 using MobilizerIndex = TaggedIndex<class MobilizerTag>;
 
 /// For every MultibodyTree<T> the **world** body _always_ has this unique
 /// identifier and it is always zero.
-static const BodyIndex kWorldBodyId(0);
+static const BodyIndex kWorldBodyId{0};
 
 }  // namespace multibody
 }  // namespace drake

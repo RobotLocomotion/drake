@@ -79,6 +79,14 @@ void RunMultibodyIndexTests() {
     EXPECT_EQ(index_minus, IndexType(8));
   }
 
+  // Addition and Subtraction.
+  {
+    IndexType index1(8);
+    IndexType index2(5);
+    EXPECT_EQ(index1 + index2, IndexType(13));
+    EXPECT_EQ(index1 - index2, IndexType(3));
+  }
+
   // Addition assignment.
   {
     IndexType index(8);
