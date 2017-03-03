@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
   <model name="sphere">
-    <pose>0 0 0.5 0 0 0</pose>
+    <pose>0 0.02 0.5 0 0 0</pose>
     <link name="sphere">
       <pose>0 0 0 0 0 0</pose>
       <inertial>
