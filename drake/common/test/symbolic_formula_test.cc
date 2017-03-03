@@ -1,6 +1,8 @@
 #include "drake/common/symbolic_formula.h"
 
 #include <algorithm>
+#include <cmath>
+#include <exception>
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -103,6 +105,7 @@ class SymbolicFormulaTest : public ::testing::Test {
   const Formula f_or_{f1_ || f2_};
   const Formula not_f_or_{!f_or_};
   const Formula f_forall_{forall({var_x_, var_y_}, f_or_)};
+  const Formula f_isnan_{isnan(Expression::NaN())};
 
   const Environment env1_{{var_x_, 1}, {var_y_, 1}};
   const Environment env2_{{var_x_, 3}, {var_y_, 4}};
@@ -123,7 +126,9 @@ TEST_F(SymbolicFormulaTest, LessKind) {
         x_ <= y_,
         f1_ && f2_,
         f1_ || f2_,
-        !f1_, f_forall_});
+        !f1_,
+        f_forall_,
+        f_isnan_});
   // clang-format on
 }
 
@@ -215,6 +220,38 @@ TEST_F(SymbolicFormulaTest, False) {
   EXPECT_EQ(Formula::False().GetFreeVariables().size(), 0u);
   EXPECT_EQ(Formula::False().to_string(), "False");
   EXPECT_TRUE(is_false(Formula::False()));
+}
+
+TEST_F(SymbolicFormulaTest, IsNaN) {
+  // Things that aren't NaN are !isnan.
+  const Expression zero{0};
+  const Formula zero_is_nan{isnan(zero)};
+  EXPECT_FALSE(zero_is_nan.Evaluate());
+
+  // Things that _are_ NaN are exceptions, which is consistent with Expression
+  // disallowing NaNs to be evaluated at runtime.
+  const Expression nan{NAN};
+  const Formula nan_is_nan{isnan(nan)};
+  EXPECT_THROW(nan_is_nan.Evaluate(), std::runtime_error);
+
+  // Buried NaNs are safe.
+  const Formula ite_nan1{isnan(if_then_else(tt_, zero, nan))};
+  EXPECT_FALSE(ite_nan1.Evaluate());
+
+  // This case will be evaluated to NaN and we will have std::runtime_error.
+  const Formula ite_nan2{isnan(if_then_else(ff_, zero, nan))};
+  EXPECT_THROW(ite_nan2.Evaluate(), std::runtime_error);
+
+  // Formula isnan(x / y) should throw a std::runtime_error when evaluated with
+  // an environment mapping both of x and y to zero, because 0.0 / 0.0 = NaN.
+  const Expression x_div_y{x_ / y_};
+  const Environment env1{{var_x_, 0.0}, {var_y_, 0.0}};
+  EXPECT_THROW(isnan(x_div_y).Evaluate(env1), std::runtime_error);
+
+  // If the included expression `e` is not evaluated to NaN, `isnan(e)` should
+  // return false.
+  const Environment env2{{var_x_, 3.0}, {var_y_, 2.0}};
+  EXPECT_FALSE(isnan(x_div_y).Evaluate(env2));
 }
 
 TEST_F(SymbolicFormulaTest, EqualTo1) {
@@ -613,104 +650,112 @@ TEST_F(SymbolicFormulaTest, ToString) {
   EXPECT_EQ(f_or_.to_string(), "(((x + y) > 0) or ((x * y) < 5))");
   EXPECT_EQ(f_forall_.to_string(),
             "forall({x, y}. (((x + y) > 0) or ((x * y) < 5)))");
+  EXPECT_EQ(f_isnan_.to_string(), "isnan(NaN)");
 }
 
 TEST_F(SymbolicFormulaTest, IsTrue) {
   EXPECT_TRUE(is_true(tt_));
   EXPECT_FALSE(any_of({ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_},
                       is_true));
 }
 
 TEST_F(SymbolicFormulaTest, IsFalse) {
   EXPECT_TRUE(is_false(ff_));
   EXPECT_FALSE(any_of({tt_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_},
                       is_false));
 }
 
 TEST_F(SymbolicFormulaTest, IsEqualTo) {
   EXPECT_TRUE(is_equal_to(f_eq_));
   EXPECT_FALSE(any_of({tt_, ff_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_},
                       is_equal_to));
 }
 
 TEST_F(SymbolicFormulaTest, IsNotEqualTo) {
   EXPECT_TRUE(is_not_equal_to(f_neq_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_},
                       is_not_equal_to));
 }
 
 TEST_F(SymbolicFormulaTest, IsLessThan) {
   EXPECT_TRUE(is_less_than(f_lt_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lte_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_},
                       is_less_than));
 }
 
 TEST_F(SymbolicFormulaTest, IsLessThanOrEqualTo) {
   EXPECT_TRUE(is_less_than_or_equal_to(f_lte_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_},
                       is_less_than_or_equal_to));
 }
 
 TEST_F(SymbolicFormulaTest, IsGreaterThan) {
   EXPECT_TRUE(is_greater_than(f_gt_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_},
                       is_greater_than));
 }
 
 TEST_F(SymbolicFormulaTest, IsGreaterThanOrEqualTo) {
   EXPECT_TRUE(is_greater_than_or_equal_to(f_gte_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_and_,
-                       f_or_, not_f_or_, f_forall_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_},
                       is_greater_than_or_equal_to));
 }
 
 TEST_F(SymbolicFormulaTest, IsRelational) {
   EXPECT_TRUE(
       all_of({f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_}, is_relational));
-  EXPECT_FALSE(
-      any_of({tt_, ff_, f_and_, f_or_, not_f_or_, f_forall_}, is_relational));
+  EXPECT_FALSE(any_of({tt_, ff_, f_and_, f_or_, not_f_or_, f_forall_, f_isnan_},
+                      is_relational));
 }
 
 TEST_F(SymbolicFormulaTest, IsConjunction) {
   EXPECT_TRUE(is_conjunction(f_and_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       f_or_, not_f_or_, f_forall_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_},
                       is_conjunction));
 }
 
 TEST_F(SymbolicFormulaTest, IsDisjunction) {
   EXPECT_TRUE(is_disjunction(f_or_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       f_and_, not_f_or_, f_forall_},
+                       f_and_, not_f_or_, f_forall_, f_isnan_},
                       is_disjunction));
 }
 
 TEST_F(SymbolicFormulaTest, IsNary) {
   EXPECT_TRUE(all_of({f_and_, f_or_}, is_nary));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       not_f_or_, f_forall_},
+                       not_f_or_, f_forall_, f_isnan_},
                       is_nary));
 }
 
 TEST_F(SymbolicFormulaTest, IsNegation) {
   EXPECT_TRUE(is_negation(not_f_or_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       f_and_, f_or_, f_forall_},
+                       f_and_, f_or_, f_forall_, f_isnan_},
                       is_negation));
 }
 
 TEST_F(SymbolicFormulaTest, IsForall) {
   EXPECT_TRUE(is_forall(f_forall_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       f_and_, f_or_, not_f_or_},
+                       f_and_, f_or_, not_f_or_, f_isnan_},
                       is_forall));
+}
+
+TEST_F(SymbolicFormulaTest, IsIsnan) {
+  EXPECT_TRUE(is_isnan(f_isnan_));
+  EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
+                       f_and_, f_or_, not_f_or_, f_forall_},
+                      is_isnan));
 }
 
 TEST_F(SymbolicFormulaTest, GetLhsExpression) {
@@ -777,6 +822,7 @@ TEST_F(SymbolicFormulaTest, DrakeAssert) {
   DRAKE_ASSERT(f_or_);
   DRAKE_ASSERT(not_f_or_);
   DRAKE_ASSERT(f_forall_);
+  DRAKE_ASSERT(f_isnan_);
   DRAKE_ASSERT(mutable_f);
 
   DRAKE_DEMAND(f1_);
@@ -785,6 +831,7 @@ TEST_F(SymbolicFormulaTest, DrakeAssert) {
   DRAKE_DEMAND(f_or_);
   DRAKE_DEMAND(not_f_or_);
   DRAKE_DEMAND(f_forall_);
+  DRAKE_DEMAND(f_isnan_);
   DRAKE_DEMAND(mutable_f);
 
   DRAKE_THROW_UNLESS(f1_);
@@ -793,6 +840,7 @@ TEST_F(SymbolicFormulaTest, DrakeAssert) {
   DRAKE_THROW_UNLESS(f_or_);
   DRAKE_THROW_UNLESS(not_f_or_);
   DRAKE_THROW_UNLESS(f_forall_);
+  DRAKE_THROW_UNLESS(f_isnan_);
   DRAKE_THROW_UNLESS(mutable_f);
 }
 

@@ -262,6 +262,10 @@ Formula operator>=(const Expression& e1, const Expression& e2) {
   return Formula{make_shared<FormulaGeq>(e1, e2)};
 }
 
+Formula isnan(const Expression& e) {
+  return Formula{make_shared<FormulaIsnan>(e)};
+}
+
 bool is_false(const Formula& f) { return is_false(*f.ptr_); }
 bool is_true(const Formula& f) { return is_true(*f.ptr_); }
 bool is_equal_to(const Formula& f) { return is_equal_to(*f.ptr_); }
@@ -286,6 +290,7 @@ bool is_nary(const Formula& f) {
 }
 bool is_negation(const Formula& f) { return is_negation(*f.ptr_); }
 bool is_forall(const Formula& f) { return is_forall(*f.ptr_); }
+bool is_isnan(const Formula& f) { return is_isnan(*f.ptr_); }
 
 const Expression& get_lhs_expression(const Formula& f) {
   DRAKE_ASSERT(is_relational(f));
