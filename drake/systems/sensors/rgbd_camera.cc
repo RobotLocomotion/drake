@@ -69,10 +69,10 @@ double ConvertZbufferToMeters(float z_buffer_value) {
   return kB / (z_buffer_value - kA);
 }
 
-std::string RemoveFileExtention(const std::string& filepath) {
+std::string RemoveFileExtension(const std::string& filepath) {
   const size_t last_dot = filepath.find_last_of(".");
   if (last_dot == std::string::npos) {
-    DRAKE_ASSERT(false);
+    DRAKE_DEMAND(false);
   }
   return filepath.substr(0, last_dot);
 }
@@ -307,9 +307,12 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         mesh_reader->SetFileName(mesh_filename);
         mesh_reader->Update();
 
+        // TODO(kunimatsu-tri) Guessing the texture file name is bad.  Instead,
+        // get it from somewhere like `DrakeShapes::MeshWithTexture` when it's
+        // implemented.
         // TODO(kunimatsu-tri) Add support for other file formats.
         const std::string texture_file(
-            RemoveFileExtention(mesh_filename) + ".png");
+            RemoveFileExtension(mesh_filename) + ".png");
         std::ifstream file_exist(texture_file);
 
         if (file_exist) {
