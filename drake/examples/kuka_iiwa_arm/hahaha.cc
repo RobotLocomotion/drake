@@ -31,33 +31,21 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(std::vector<ModelInstanceInfo<
 }
 
 void main() {
-  systems::Diagram<double>* sim;
+  drake::lcm::DrakeLcm lcm;
   std::vector<ModelInstanceInfo<double>> iiwa_info;
   SimDiagramBuilder<double> builder;
 
-  systems::DiagramBuilder<double> Builder;
-
   {
-    std::unique_ptr<RigidBodyTree<double>> world_tree = build_tree(&iiwa_info);
+    builder.AddPlant(build_tree(&iiwa_info));
 
     VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
     SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
 
-    std::unordered_map<int, std::unique_ptr<systems::StateFeedbackController<double>>> controllers;
     for (const auto& info : iiwa_info) {
-      controllers.emplace(info.instance_id, std::make_unique<systems::InverseDynamicsController<double>>(
-        info.model_path, info.world_offset, iiwa_kp, iiwa_ki, iiwa_kd, true /* with feedforward acceleration */));
+      std::unique_ptr<systems::StateFeedbackController<double>> controller =
+          std::make_unique<systems::InverseDynamicsController<double>>(info.model_path, info.world_offset, iiwa_kp, iiwa_ki, iiwa_kd, true /* with feedforward acceleration */);
+      builder.AddController(info.instance_id, std::move(controller));
     }
-
-    builder.Setup(std::move(world_tree), controllers);
-
-    builder.ExposePlantOutputPortFullState();
-
-    for (const auto& info : iiwa_info) {
-      builder.ExposePlantOutputPortState(info.instance_id);
-    }
-
-    sim = Builder.template AddSystem<systems::Diagram<double>>(builder.Build());
   }
 
   // Connects desired trajs to the controllers.
@@ -71,42 +59,34 @@ void main() {
   PiecewisePolynomialTrajectory polyd_traj(polyd);
   PiecewisePolynomialTrajectory polydd_traj(polydd);
 
-  systems::TrajectorySource<double>* traj = Builder.template AddSystem<systems::TrajectorySource<double>>(poly_traj);
-  systems::TrajectorySource<double>* trajd = Builder.template AddSystem<systems::TrajectorySource<double>>(polyd_traj);
-  systems::TrajectorySource<double>* trajdd = Builder.template AddSystem<systems::TrajectorySource<double>>(polydd_traj);
+  systems::TrajectorySource<double>* traj = builder.template AddSystem<systems::TrajectorySource<double>>(poly_traj);
+  systems::TrajectorySource<double>* trajd = builder.template AddSystem<systems::TrajectorySource<double>>(polyd_traj);
+  systems::TrajectorySource<double>* trajdd = builder.template AddSystem<systems::TrajectorySource<double>>(polydd_traj);
 
   systems::Multiplexer<double>* input_mux =
-    Builder.template AddSystem<systems::Multiplexer<double>>(std::vector<int>{7, 7});
+      builder.template AddSystem<systems::Multiplexer<double>>(std::vector<int>{7, 7});
 
-  Builder.Connect(traj->get_output_port(), input_mux->get_input_port(0));
-  Builder.Connect(trajd->get_output_port(), input_mux->get_input_port(1));
+  builder.Connect(traj->get_output_port(), input_mux->get_input_port(0));
+  builder.Connect(trajd->get_output_port(), input_mux->get_input_port(1));
 
   for (const auto& info : iiwa_info) {
-    const std::vector<SimDiagramBuilder<double>::InputPortIdLookup>& inputs = builder.get_exposed_controller_input_index_pairs(info.instance_id);
     systems::InverseDynamicsController<double>* controller =
-      dynamic_cast<systems::InverseDynamicsController<double>*>(builder.get_controller(info.instance_id));
-    for (const auto& input : inputs) {
-      if (input.subsystem_input_idx == controller->get_input_port_desired_state().get_index()) {
-        Builder.Connect(input_mux->get_output_port(0), sim->get_input_port(input.diagram_input_idx));
-      } else if (input.subsystem_input_idx == controller->get_input_port_desired_acceleration().get_index()) {
-        Builder.Connect(trajdd->get_output_port(), sim->get_input_port(input.diagram_input_idx));
-      } else {
-        DRAKE_DEMAND(false);
-      }
-    }
+        dynamic_cast<systems::InverseDynamicsController<double>*>(builder.get_controller(info.instance_id));
+    builder.Connect(input_mux->get_output_port(0), controller->get_input_port_desired_state());
+    builder.Connect(trajdd->get_output_port(), controller->get_input_port_desired_acceleration());
   }
 
-  drake::lcm::DrakeLcm lcm;
   {
     // Connects visualizer.
-    systems::DrakeVisualizer* viz_publisher = Builder.template AddSystem<systems::DrakeVisualizer>(
+    systems::DrakeVisualizer* viz_publisher = builder.template AddSystem<systems::DrakeVisualizer>(
         builder.get_plant()->get_rigid_body_tree(), &lcm);
-    Builder.Connect(sim->get_output_port(builder.get_plant_full_state_output_port_index()),
+    builder.Connect(builder.get_plant()->get_output_port(0),
                     viz_publisher->get_input_port(0));
   }
 
-  // Makes a simulation.
-  std::unique_ptr<systems::Diagram<double>> diagram = Builder.Build();
+  // Makes a simulation
+  builder.WireThingsTogether();
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
   simulator.Initialize();
