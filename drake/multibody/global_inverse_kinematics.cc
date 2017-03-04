@@ -102,6 +102,30 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 // |u - v| <= 2*sin(α/2)
                 // which is a second order cone constraint.
 
+                // If the rotation angle θ satisfies
+                // a <= θ <= b
+                // This is equivalent to
+                // -(b-a)/2 <= θ - (a+b)/2 <= (b-a)/2
+                // where (a+b)/2 is the joint offset, such that the bounds on
+                // θ - (a+b)/2 are symmetric.
+                // We use the following notation:
+                // Rₚ       The parent rotation matrix.
+                // Rc       The child rotation matrix.
+                // ᵖRⱼ      The joint to parent rotation matrix.
+                // R(k, θ)  The rotation matrix along joint axis k by angle θ.
+                // The kinematics constraint is
+                // Rₚ * ᵖRⱼ * R(k, θ) = Rc.
+                // This is equivalent to
+                // Rₚ * ᵖRⱼ * R(k, (a+b)/2) * R(k, θ-(a+b)/2)) = Rc.
+                // So to constrain that -(b-a)/2 <= θ - (a+b)/2 <= (b-a)/2,
+                // we can constrain the angle between the two vectors
+                // Rc * v and Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v is no larger than
+                // (b-a)/2, where v is a unit length vector perpendicular to
+                // the rotation axis k.
+                // Thus we can constrain that
+                // |Rc * v - Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v | <= 2*sin ((b-a) / 4)
+                // as we explained above.
+
                 // First generate a vector that is perpendicular to rotation
                 // axis.
                 Vector3d revolute_vector = rotate_axis.cross(Vector3d(1, 0, 0));
@@ -114,30 +138,9 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 DRAKE_DEMAND(revolute_vector_norm >= 1E-2 - 1E-10);
                 // Normalizes the revolute vector.
                 revolute_vector /= revolute_vector_norm;
-                Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
 
-                // If the rotation angle θ satisfies
-                // a <= θ <= b
-                // This is equivalent to
-                // -(b-a)/2 <= θ - (a+b)/2 <= (b-a)/2
-                // where (a+b)/2 is the joint offset, such that the bounds on
-                // θ - (a+b)/2 are symmetric
-                // Denote the parent rotation matrix as Rₚ
-                // the child rotation matrix as Rc
-                // the joint to parent rotation matrix as ᵖRⱼ
-                // the rotation matrix along joint axis k by angle θ as
-                // R(k, θ), we know the kinematics constraint is
-                // Rₚ * ᵖRⱼ * R(k, v) = Rc.
-                // This is equivalent to
-                // Rₚ * ᵖRⱼ * R(k, (a+b)/2) * R(k, θ-(a+b)/2)) = Rc.
-                // So to constrain that -(b-a)/2 <= θ - (a+b)/2 <= (b-a)/2,
-                // we know that the angle between the two vectors
-                // Rc * v and Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v is no larger than
-                // (b-a)/2, where v is a unit length vector perpendicular to
-                // the rotation axis k.
-                // Thus we can constrain that
-                // |Rc * v - Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v | <= 2*sin ((b-a) / 4)
-                // As we explained above.
+                // joint_limit_expr is going to be within the Lorentz cone.
+                Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
                 joint_limit_expr(0) = 2 * sin(joint_bound / 2);
                 Matrix3d rotmat_joint_offset =
                     Eigen::AngleAxisd((joint_lb + joint_ub) / 2, rotate_axis)
