@@ -290,6 +290,7 @@ drake_cc_test(
 drake_cc_googletest(
     name = "global_inverse_kinematics_test",
     size = "medium",
+    tags = ["gurobi"],
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
     ],
