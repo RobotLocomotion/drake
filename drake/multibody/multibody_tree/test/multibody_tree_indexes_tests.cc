@@ -23,7 +23,7 @@ void RunMultibodyIndexTests() {
   {
     IndexType index(1);
     EXPECT_EQ(index, 1);  // This also tests operator==(int).
-    // In Debug builds construction from a negative int aborts.
+    // In Debug builds construction from a negative int throws.
 #ifndef DRAKE_ASSERT_IS_DISARMED
     try {
       IndexType negative_index(-1);

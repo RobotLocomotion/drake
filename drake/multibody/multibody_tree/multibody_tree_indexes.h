@@ -36,7 +36,7 @@ class TypeSafeIndex {
   TypeSafeIndex() = delete;
 
   /// Construction from an `int` value.
-  /// For Debug builds this constructor aborts if the provided input `int`
+  /// For Debug builds this constructor throws if the provided input `int`
   /// `index` is negative. There is no check for Release builds.
   explicit TypeSafeIndex(int index) : index_(index) {
     DRAKE_ASSERT_VOID(CheckInvariants());
