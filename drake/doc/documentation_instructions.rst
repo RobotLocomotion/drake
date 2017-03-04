@@ -16,6 +16,26 @@ which uses `Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_, and
 `Drake's website <http://drake.mit.edu>`_, which
 uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_.
 
+.. _documentation-generation-instructions-bazel:
+
+When using Bazel
+================
+
+At the moment, only the website (Sphinx) documentation is supported via the
+Bazel build::
+
+    $ bazel run //drake/doc:serve_sphinx
+
+This will rebuild the website content and serve it to your web browser for
+preview.  On Ubuntu, it will open a web browser tab using ``sensible-browser``;
+you can set ``$BROWSER`` to choose how to preview.  On OS X, it will display a
+``file://`` URL for the website preview.
+
+.. _documentation-generation-instructions-cmake:
+
+When using CMake
+================
+
 Drake's documentation is built using the ``documentation`` build target.
 After building Drake like normal, execute::
 
