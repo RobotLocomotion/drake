@@ -91,20 +91,15 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                       body_pos_[body_idx],
                   Vector3d::Zero());
 
-              // Now add the joint limits constraint -α ≤ θ ≤ α, where α is the
-              // maximal angle the joint can rotate. Notice we require that
-              // the joint lower and upper limits are symmetric.
+              // Now we process the joint limits constraint.
               double joint_lb = joint->getJointLimitMin()(0);
               double joint_ub = joint->getJointLimitMax()(0);
-              // joint_bound is the α mentioned above.
               double joint_bound = (joint_ub - joint_lb) / 2;
 
               if (joint_ub < M_PI) {
-                // To constrain a joint angle θ within revolute range [-α, α],
-                // we can consider a unit length vector v perpendicular to the
-                // rotation axis; after rotating v by angle θ we get another
-                // vector u, and
-                //    |u - v| <= 2*sin(α/2)
+                // We use the fact that if the angle between two unit length
+                // vectors u and v is smaller than α, it is equivalent to
+                // |u - v| <= 2*sin(α/2)
                 // which is a second order cone constraint.
 
                 // First generate a vector that is perpendicular to rotation
@@ -121,25 +116,28 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 revolute_vector /= revolute_vector_norm;
                 Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
 
-                // If the rotation angle γ satisfies
-                // a <= γ <= b
+                // If the rotation angle θ satisfies
+                // a <= θ <= b
                 // This is equivalent to
-                // -(b-a)/2 <= γ - (a+b)/2 <= (b-a)/2
-                // where (a+b)/2 is the joint offset, such that the joint
-                // lower and upper bounds are symmetric.
+                // -(b-a)/2 <= θ - (a+b)/2 <= (b-a)/2
+                // where (a+b)/2 is the joint offset, such that the bounds on
+                // θ - (a+b)/2 are symmetric
                 // Denote the parent rotation matrix as Rₚ
                 // the child rotation matrix as Rc
                 // the joint to parent rotation matrix as ᵖRⱼ
-                // the rotation matrix along joint axis k by angle γ as
-                // R(k, γ), we know the kinematics constraint is
-                // Rₚ * ᵖRⱼ * R(k, γ) = Rc.
-                // This is equivalent of
-                // Rₚ * ᵖRⱼ * R(k, (a+b)/2) * R(k, γ-(a+b)/2)) = Rc.
-                // So to constrain that -(b-a)/2 <= γ - (a+b)/2 <= (b-a)/2,
-                // we can constrain that
+                // the rotation matrix along joint axis k by angle θ as
+                // R(k, θ), we know the kinematics constraint is
+                // Rₚ * ᵖRⱼ * R(k, v) = Rc.
+                // This is equivalent to
+                // Rₚ * ᵖRⱼ * R(k, (a+b)/2) * R(k, θ-(a+b)/2)) = Rc.
+                // So to constrain that -(b-a)/2 <= θ - (a+b)/2 <= (b-a)/2,
+                // we know that the angle between the two vectors
+                // Rc * v and Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v is no larger than
+                // (b-a)/2, where v is a unit length vector perpendicular to
+                // the rotation axis k.
+                // Thus we can constrain that
                 // |Rc * v - Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v | <= 2*sin ((b-a) / 4)
-                // As we explained above, where v is the vector perpendicular
-                // to the rotation axis k.
+                // As we explained above.
                 joint_limit_expr(0) = 2 * sin(joint_bound / 2);
                 Matrix3d rotmat_joint_offset =
                     Eigen::AngleAxisd((joint_lb + joint_ub) / 2, rotate_axis)
