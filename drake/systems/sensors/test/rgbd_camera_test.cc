@@ -144,7 +144,7 @@ void AssertLe(uint8_t value_a, uint8_t value_b, uint8_t tolerance) {
 }
 
 
-const std::array<uint8_t, 4> kBackgroundColor{204u, 229u, 255u, 255u};
+const std::array<uint8_t, 4> kBackgroundColor{{204u, 229u, 255u, 255u}};
 
 class ImageTest {
  public:
@@ -207,20 +207,20 @@ class ImageTest {
   static void VerifyBox(
       const sensors::Image<uint8_t>& color_image,
       const sensors::Image<float>& depth_image) {
-    const std::array<uint8_t, 4> kPixelColor{255u, 255u, 255u, 255u};
+    const std::array<uint8_t, 4> kPixelColor{{255u, 255u, 255u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
   static void VerifyCylinder(
       const sensors::Image<uint8_t>& color_image,
       const sensors::Image<float>& depth_image) {
-    const std::array<uint8_t, 4> kPixelColor{255u, 255u, 255u, 255u};
+    const std::array<uint8_t, 4> kPixelColor{{255u, 255u, 255u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
   static void VerifyMeshBox(const sensors::Image<uint8_t>& color_image,
                             const sensors::Image<float>& depth_image) {
-    const std::array<uint8_t, 4> kPixelColor{33u, 241u, 4u, 255u};
+    const std::array<uint8_t, 4> kPixelColor{{33u, 241u, 4u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
