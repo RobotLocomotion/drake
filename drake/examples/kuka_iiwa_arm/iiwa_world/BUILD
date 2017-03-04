@@ -23,11 +23,20 @@ drake_cc_library(
 
 drake_cc_library(
     name = "world_sim_diagram_factory",
-    srcs = ["world_sim_diagram_factory.cc"],
-    hdrs = ["world_sim_diagram_factory.h"],
+    srcs = [
+        "iiwa_wsg_diagram_factory.cc",
+        "world_sim_diagram_factory.cc",
+    ],
+    hdrs = [
+        "iiwa_wsg_diagram_factory.h",
+        "world_sim_diagram_factory.h",
+    ],
+    visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
     deps = [
+        "world_sim_tree_builder",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:oracular_state_estimator",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
