@@ -67,10 +67,12 @@ drake_cc_library(
 drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
+    add_test_rule = 1,
     data = [
         ":models",
         "//drake/examples/schunk_wsg:models",
     ],
+    test_rule_args = ["--simulation_sec=0.01"],
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
@@ -135,16 +137,6 @@ cc_binary(
 )
 
 # === test/ ===
-
-sh_test(
-    name = "iiwa_wsg_simulation_test",
-    srcs = ["//tools:exec.sh"],
-    args = [
-        "$(location :iiwa_wsg_simulation)",
-        "--simulation_sec=0.01",
-    ],
-    data = [":iiwa_wsg_simulation"],
-)
 
 drake_cc_googletest(
     name = "iiwa_lcm_test",
