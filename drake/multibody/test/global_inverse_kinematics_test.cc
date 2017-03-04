@@ -64,10 +64,6 @@ TEST_F(KukaTest, ReachableTest) {
 
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
-    const auto &body_pos = global_ik_.body_pos();
-
-    const auto &body_rotmat = global_ik_.body_rotmat();
-
     Eigen::VectorXd q_global_ik = global_ik_.ReconstructPostureSolution();
 
     std::cout << "Reconstructed robot posture:\n" << q_global_ik << std::endl;
@@ -80,15 +76,16 @@ TEST_F(KukaTest, ReachableTest) {
       const auto &body_pose_fk = rigid_body_tree_->CalcFramePoseInWorldFrame(
           cache, rigid_body_tree_->get_body(i), Isometry3d::Identity());
 
-      const Eigen::Matrix3d body_Ri = global_ik_.GetSolution((body_rotmat[i]));
+      const Eigen::Matrix3d body_Ri =
+          global_ik_.GetSolution(global_ik_.body_rotmat(i));
       std::cout << rigid_body_tree_->get_body(i).get_name() << std::endl;
       std::cout << "rotation matrix:\n global_ik\n" << body_Ri << std::endl;
       std::cout << "forward kinematics\n" << body_pose_fk.linear() << std::endl;
       std::cout << "R * R':\n" << body_Ri * body_Ri.transpose() << std::endl;
       std::cout << "det(R) = " << body_Ri.determinant() << std::endl;
-      Vector3d body_pos_global_ik = global_ik_.GetSolution(body_pos[i]);
-      std::cout << "position:\n global_ik\n"
-                << body_pos_global_ik << std::endl;
+      Vector3d body_pos_global_ik =
+          global_ik_.GetSolution(global_ik_.body_pos(i));
+      std::cout << "position:\n global_ik\n" << body_pos_global_ik << std::endl;
       std::cout << "forward kinematics\n"
                 << body_pose_fk.translation() << std::endl;
       std::cout << std::endl;

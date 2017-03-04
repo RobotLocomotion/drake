@@ -28,12 +28,14 @@ GlobalInverseKinematics::GlobalInverseKinematics(
     const RigidBody<double>& body = robot_->get_body(body_idx);
     const string body_R_name = body.get_name() + "_R";
     const string body_pos_name = body.get_name() + "_pos";
-    body_rotmat_[body_idx] = NewContinuousVariables<3, 3>(body_R_name);
     body_pos_[body_idx] = NewContinuousVariables<3>(body_pos_name);
     // If the body is fixed to the world, then fix the decision variables on
     // the body position and orientation.
     if (body.IsRigidlyFixedToWorld()) {
+      body_rotmat_[body_idx] = NewContinuousVariables<3, 3>(body_R_name);
       Isometry3d body_pose = body.ComputeWorldFixedPose();
+      // TODO(hongkai.dai): clean up this for loop using elementwise matrix
+      // constraint when it is ready.
       for (int i = 0; i < 3; ++i) {
         AddBoundingBoxConstraint(body_pose.linear().col(i),
                                  body_pose.linear().col(i),
@@ -49,17 +51,39 @@ GlobalInverseKinematics::GlobalInverseKinematics(
       solvers::AddRotationMatrixOrthonormalSocpConstraint(
           this, body_rotmat_[body_idx]);
 
-      body_pos_[body_idx] = NewContinuousVariables<3>(body_pos_name);
-
       // If the body has a parent, then add the constraint to connect the
       // parent body with this body through a joint.
       if (body.has_parent_body()) {
         const RigidBody<double> *parent_body = body.get_parent();
         const int parent_idx = parent_body->get_body_index();
         const DrakeJoint* joint = &(body.getJoint());
+        DRAKE_DEMAND(joint != nullptr);
         const auto &joint_to_parent_transform =
             joint->get_transform_to_parent_body();
         switch (joint->get_num_velocities()) {
+          case 0 : {
+            // Fixed to the parent body.
+
+            // The position can be computed from the parent body pose.
+            // child_pos = parent_pos + parent_rotmat * joint_to_parent_pos.
+            AddLinearEqualityConstraint(
+                body_pos_[parent_idx] +
+                    body_rotmat_[parent_idx] *
+                        joint_to_parent_transform.translation() -
+                    body_pos_[body_idx],
+                Vector3d::Zero());
+
+            // The orientation can be computed from the parent body orientation.
+            // child_rotmat = parent_rotmat * joint_to_parent_rotmat.
+            Matrix3<Expression> orient_invariance =
+                body_rotmat_[parent_idx] * joint_to_parent_transform.linear() -
+                    body_rotmat_[body_idx];
+            for (int i = 0; i < 3; ++i) {
+              AddLinearEqualityConstraint(orient_invariance.col(i),
+                                          Vector3d::Zero());
+            }
+            break;
+          }
           case 1 : {
             // Should NOT do this evil dynamic cast here, but currently we do
             // not have a method to tell if a joint is revolute or not.
@@ -96,7 +120,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               double joint_ub = joint->getJointLimitMax()(0);
               double joint_bound = (joint_ub - joint_lb) / 2;
 
-              if (joint_ub < M_PI) {
+              if (joint_bound < M_PI) {
                 // We use the fact that if the angle between two unit length
                 // vectors u and v is smaller than α, it is equivalent to
                 // |u - v| <= 2*sin(α/2)
@@ -145,6 +169,9 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 Matrix3d rotmat_joint_offset =
                     Eigen::AngleAxisd((joint_lb + joint_ub) / 2, rotate_axis)
                         .toRotationMatrix();
+
+                // joint_limit_expr.tail<3> is
+                // Rc * v - Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v mentioned above.
                 joint_limit_expr.tail<3>() =
                     body_rotmat_[body_idx] * revolute_vector -
                     body_rotmat_[parent_idx] *
@@ -158,30 +185,11 @@ GlobalInverseKinematics::GlobalInverseKinematics(
             }
             break;
           }
-          case 0 : {
-            // Fixed to the parent body.
-
-            // The position can be computed from the parent body pose.
-            // child_pos = parent_pos + parent_rotmat * joint_to_parent_pos.
-            AddLinearEqualityConstraint(
-                body_pos_[parent_idx] +
-                    body_rotmat_[parent_idx] *
-                        joint_to_parent_transform.translation() -
-                    body_pos_[body_idx],
-                Vector3d::Zero());
-
-            // The orientation can be computed from the parent body orientation.
-            // child_rotmat = parent_rotmat * joint_to_parent_rotmat.
-            Matrix3<Expression> orient_invariance =
-                body_rotmat_[parent_idx] * joint_to_parent_transform.linear() -
-                body_rotmat_[body_idx];
-            for (int i = 0; i < 3; ++i) {
-              AddLinearEqualityConstraint(orient_invariance.col(i),
-                                          Vector3d::Zero());
-            }
-            break;
-          }
           case 6 : {
+            // This is the floating base case, just add the rotation matrix
+            // constraint.
+            solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+                this, body_rotmat_[body_idx], num_binary_vars_per_half_axis);
             break;
           }
           default : throw std::runtime_error("Unsupporte joint type.");
@@ -189,6 +197,22 @@ GlobalInverseKinematics::GlobalInverseKinematics(
       }
     }
   }
+}
+
+const solvers::MatrixDecisionVariable<3, 3>&
+GlobalInverseKinematics::body_rotmat(int body_index) const {
+  if (body_index >= robot_->get_num_bodies() || body_index <= 0) {
+    throw std::runtime_error("body index out of range.");
+  }
+  return body_rotmat_[body_index];
+}
+
+const solvers::VectorDecisionVariable<3>& GlobalInverseKinematics::body_pos(
+    int body_index) const {
+  if (body_index >= robot_->get_num_bodies() || body_index <= 0) {
+    throw std::runtime_error("body index out of range.");
+  }
+  return body_pos_[body_index];
 }
 
 Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
@@ -201,6 +225,7 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
       const Matrix3d
           parent_rotmat = GetSolution(body_rotmat_[parent->get_body_index()]);
       const DrakeJoint* joint = &(body.getJoint());
+      DRAKE_DEMAND(joint != nullptr);
       const auto& joint_to_parent_transform =
           joint->get_transform_to_parent_body();
 
@@ -218,11 +243,11 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
           q.segment<3>(body.get_position_start_index() + 3) =
               math::rotmat2rpy(normalized_rotmat);
         } else {
-          // The position order is qw-qx-qy-qz-x-y-z, namely quaternion first,
-          // and translation second.
-          q.segment<4>(body.get_position_start_index()) =
+          // The position order is x-y-z-qw-qx-qy-qz, namely translation first,
+          // and quaternion second.
+          q.segment<3>(body.get_position_start_index()) = body_pos;
+          q.segment<4>(body.get_position_start_index() + 3) =
               math::rotmat2quat(normalized_rotmat);
-          q.segment<3>(body.get_position_start_index() + 4) = body_pos;
         }
       } else if (num_positions == 1) {
         // Should NOT do this evil dynamic cast here, but currently we do

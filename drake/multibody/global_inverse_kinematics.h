@@ -6,8 +6,7 @@
 
 namespace drake {
 namespace multibody {
-/**
- * Solves the inverse kinematics problem as a mixed integer convex optimization
+/** Solves the inverse kinematics problem as a mixed integer convex optimization
  * problem.
  * We use a convex relaxation of the rotation matrix. So if this global inverse
  * kinematics problem says the solution is infeasible, then it is guaranteed
@@ -32,27 +31,34 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
 
   ~GlobalInverseKinematics() override {}
 
-  /** Getter for the decision variables on the rotation matrices of each body.
+  /** Getter for the decision variables on the rotation matrix for body with
+   * the specified index.
+   * @param body_index  The index of the queried body. Notice that body 0 is
+   * the world, and thus not a decision variable. Throws a runtime error if
+   * the index is smaller than 1, or no smaller than the total number of bodies
+   * in the robot.
    */
-  const std::vector<solvers::MatrixDecisionVariable<3, 3>>& body_rotmat()
-      const {
-    return body_rotmat_;
-  }
+  const solvers::MatrixDecisionVariable<3, 3>& body_rotmat(int body_index)
+      const;
 
-  /** Getter for the decision variables on the position of each body. */
-  const std::vector<solvers::VectorDecisionVariable<3>>& body_pos() const {
-    return body_pos_;
-  }
+  /** Getter for the decision variables on the position of the body with the
+   * specified index.
+   * @param body_index  The index of the queried body. Notice that body 0 is
+   * the world, and thus not a decision variable. Throws a runtime error if
+   * the index is smaller than 1, or no smaller than the total number of bodies
+   * in the robot.
+   */
+  const solvers::VectorDecisionVariable<3>& body_pos(int body_index) const;
 
   /**
    * After solving the inverse kinematics problem and find out the pose of each
    * body, reconstruct the robot posture (joint angles, etc) that matches with
-   * the body poses.
-   * Notice that since the rotation matrix is approximated, that
+   * the body poses. Notice that since the rotation matrix is approximated, that
    * the solution of body_rotmat might not be on so(3) exactly, the
    * reconstructed body posture might not match with the body poses exactly, and
    * the kinematics constraint might not be satisfied exactly with this
    * reconstructed posture.
+   * Do not call this method if the problem is not solved successfully!
    * @return The reconstructed posture.
    */
   Eigen::VectorXd ReconstructPostureSolution() const;
@@ -60,7 +66,13 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
   /**
    * Adds the constraint that position of a point `body_pt` on a body
    * (whose index is `body_idx`), is within a box in a specified frame.
-   * where the inequality is elementwise.
+   * where the inequality is elementwise. The constrain is that the point
+   * position, computed as
+   *   x = body_pos + body_rotmat * body_pt
+   * should lie within a bounding box in the specified `measured_frame`.
+   * Notice that since the body_rotmat does not lie exactly on the so(3), due
+   * to the McCormick envelope relaxation, this constraint is subject to the
+   * accumulated error from the root of the kinematics tree.
    * @param body_idx The index of the body on which the position of a point is
    * constrained.
    * @param body_pt The position of the point measured in the body `body_idx`.
