@@ -158,12 +158,6 @@ lcm_cc_library(
     lcm_srcs = ["lcmt_drake_signal.lcm"],
 )
 
-lcm_py_library(
-    name = "drake_signal-py",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_drake_signal.lcm"],
-)
-
 _VIEWER_LCM_SRCS = [
     "lcmt_viewer_command.lcm",
     "lcmt_viewer_draw.lcm",
@@ -208,12 +202,6 @@ lcm_java_library(
     lcm_srcs = _AUTOMOTIVE_LCM_SRCS,
 )
 
-lcm_py_library(
-    name = "automotive-py",
-    lcm_package = "drake",
-    lcm_srcs = _AUTOMOTIVE_LCM_SRCS,
-)
-
 lcm_cc_library(
     name = "iiwa",
     lcm_package = "drake",
@@ -241,4 +229,20 @@ lcm_cc_library(
     ],
 )
 
-# TODO(jwnimmer-tri) Many more messages are missing ...
+# TODO(jwnimmer-tri) Many more C++ messages are missing ...
+
+lcm_py_library(
+    name = "lcmtypes-py",
+    lcm_package = "drake",
+    lcm_srcs = glob(["*.lcm"]),
+)
+
+# === test/ ===
+
+py_test(
+    name = "polynomial_matrix_test",
+    srcs = ["test/polynomial_matrix_test.py"],
+    deps = [
+        ":lcmtypes-py",
+    ],
+)
