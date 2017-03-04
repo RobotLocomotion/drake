@@ -57,7 +57,6 @@ GlobalInverseKinematics::GlobalInverseKinematics(
         const RigidBody<double> *parent_body = body.get_parent();
         const int parent_idx = parent_body->get_body_index();
         const DrakeJoint* joint = &(body.getJoint());
-        DRAKE_DEMAND(joint != nullptr);
         const auto &joint_to_parent_transform =
             joint->get_transform_to_parent_body();
         switch (joint->get_num_velocities()) {
@@ -87,15 +86,14 @@ GlobalInverseKinematics::GlobalInverseKinematics(
           case 1 : {
             // Should NOT do this evil dynamic cast here, but currently we do
             // not have a method to tell if a joint is revolute or not.
-            if (dynamic_cast<const RevoluteJoint*>(joint)
-                == static_cast<const RevoluteJoint*>(joint)) {
+            if (dynamic_cast<const RevoluteJoint*>(joint) != nullptr) {
               // Adding McCormick Envelope will add binary variables into
               // the program.
               solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                   this, body_rotmat_[body_idx], num_binary_vars_per_half_axis);
 
               const RevoluteJoint
-                  *revolute_joint = static_cast<const RevoluteJoint*>(joint);
+                  *revolute_joint = dynamic_cast<const RevoluteJoint*>(joint);
               const Vector3d rotate_axis =
                   revolute_joint->joint_axis().head<3>();
               // The rotation joint is the same in both child body and the
@@ -225,7 +223,6 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
       const Matrix3d
           parent_rotmat = GetSolution(body_rotmat_[parent->get_body_index()]);
       const DrakeJoint* joint = &(body.getJoint());
-      DRAKE_DEMAND(joint != nullptr);
       const auto& joint_to_parent_transform =
           joint->get_transform_to_parent_body();
 
@@ -252,10 +249,9 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
       } else if (num_positions == 1) {
         // Should NOT do this evil dynamic cast here, but currently we do
         // not have a method to tell if a joint is revolute or not.
-        if (dynamic_cast<const RevoluteJoint *>(joint)
-            == static_cast<const RevoluteJoint *>(joint)) {
+        if (dynamic_cast<const RevoluteJoint *>(joint) != nullptr) {
           const RevoluteJoint* revolute_joint =
-              static_cast<const RevoluteJoint*>(joint);
+              dynamic_cast<const RevoluteJoint*>(joint);
           Matrix3d joint_rotmat =
               joint_to_parent_transform.linear().transpose() *
               parent_rotmat.transpose() * body_rotmat;

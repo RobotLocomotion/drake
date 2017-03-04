@@ -93,7 +93,7 @@ TEST_F(KukaTest, ReachableTest) {
                                   body_pos_global_ik,
                                   0.03,
                                   MatrixCompareType::absolute));
-      EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, 0.2,
+      EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, 0.1,
                                   MatrixCompareType::absolute));
     }
   }
