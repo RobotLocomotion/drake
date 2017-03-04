@@ -1,8 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
   <model name="box">
-    <!-- This box is placed 10 m underground and is thus expected to not be
-    visible. -->
     <pose>0 0 0.5 0 0 0</pose>
     <link name="box">
       <pose>0 0 0 0 0 0</pose>
