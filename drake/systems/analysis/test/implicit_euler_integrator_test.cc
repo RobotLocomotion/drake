@@ -18,16 +18,24 @@ template <class T>
 class SpringMassDamperSystem : public SpringMassSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassDamperSystem);
-  SpringMassDamperSystem(const T& spring_constant_N_per_m,
-                         const T& damping_constant_N_per_m,
-                         const T& mass_kg) :
+  SpringMassDamperSystem(double spring_constant_N_per_m,
+                         double damping_constant_N_per_m,
+                         double mass_kg) :
     SpringMassSystem<T>(spring_constant_N_per_m, mass_kg, false /* unforced */),
     damping_constant_N_per_m_(damping_constant_N_per_m) { }
 
   /// Returns the damping constant that was provided at construction in N/m
-  const T& get_damping_constant() const { return damping_constant_N_per_m_; }
+  double get_damping_constant() const { return damping_constant_N_per_m_; }
 
  protected:
+  System<AutoDiffXd>* DoToAutoDiffXd() const override {
+    SpringMassDamperSystem<AutoDiffXd>* adiff_spring =
+        new SpringMassDamperSystem<AutoDiffXd>(this->get_spring_constant(),
+                                               get_damping_constant(),
+                                               this->get_mass());
+    return adiff_spring;
+  }
+
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override {
     // Get the current state of the spring.
@@ -40,8 +48,8 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
     // Compute the force acting on the mass. There is always a constant
     // force pushing the mass toward -inf. The spring and damping forces are
     // only active when x <= 0; the spring setpoint is x = 0.
-    const T k = this->get_spring_constant();
-    const T b = get_damping_constant();
+    const double k = this->get_spring_constant();
+    const double b = get_damping_constant();
     const T x0 = 0;
     const T x = state[0];
     T force = -k * (x - x0) - b * xd;
@@ -51,7 +59,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   }
 
  private:
-  T damping_constant_N_per_m_;
+  double damping_constant_N_per_m_;
 };
 
 // This is a modified spring-mass-damper system that is only active in a small
@@ -60,19 +68,29 @@ template <class T>
 class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModifiedSpringMassDamperSystem);
-  ModifiedSpringMassDamperSystem(const T& spring_constant_N_per_m,
-                                 const T& damping_constant_N_per_m,
-                                 const T& mass_kg,
-                                 const T& constant_force) :
+  ModifiedSpringMassDamperSystem(double spring_constant_N_per_m,
+                                 double damping_constant_N_per_m,
+                                 double mass_kg,
+                                 double constant_force) :
     SpringMassDamperSystem<T>(spring_constant_N_per_m,
                               damping_constant_N_per_m,
                               mass_kg),
     constant_force_(constant_force) { }
 
   /// Gets the magnitude of the constant force acting on the system.
-  const T& get_constant_force() const { return constant_force_; }
+  double get_constant_force() const { return constant_force_; }
 
  protected:
+  System<AutoDiffXd>* DoToAutoDiffXd() const override {
+    ModifiedSpringMassDamperSystem<AutoDiffXd>* adiff_spring =
+        new ModifiedSpringMassDamperSystem<AutoDiffXd>(
+            this->get_spring_constant(),
+            this->get_damping_constant(),
+            this->get_mass(),
+            get_constant_force());
+    return adiff_spring;
+  }
+
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override {
     // Get the current state of the spring.
@@ -86,8 +104,8 @@ class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
     // force pushing the mass toward -inf. The spring and damping forces are
     // only active when x <= 0; the spring setpoint is x = 0.
     T force = -constant_force_;
-    const T k = this->get_spring_constant();
-    const T b = this->get_damping_constant();
+    const double k = this->get_spring_constant();
+    const double b = this->get_damping_constant();
     const T x0 = 0;
     const T x = state[0];
     if (x <= x0)
@@ -98,7 +116,7 @@ class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
   }
 
  private:
-  T constant_force_;
+  double constant_force_;
 };
 
 class ImplicitIntegratorTest : public ::testing::Test {

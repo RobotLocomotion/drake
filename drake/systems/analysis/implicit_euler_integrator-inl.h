@@ -8,6 +8,7 @@
 #include <limits>
 #include <utility>
 
+#include "drake/math/autodiff.h"
 #include "drake/systems/analysis/line_search.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 
@@ -24,11 +25,61 @@ void ImplicitEulerIntegrator<T>::DoResetStatistics() {
 // Computes the Jacobian of the residual "error" with respect to the state
 // variables using automatic differentiation.
 template <class T>
-MatrixX<T> ImplicitEulerIntegrator<T>::ComputeADiffJacobian(
-    const VectorX<T>& xt, const VectorX<T>& xtplus, double h) {
+Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobian(
+    const Eigen::VectorXd& xt, const Eigen::VectorXd& xtplus, double h) {
 
+  // Create AutoDiff versions of the state vectors.
+  typedef Eigen::AutoDiffScalar<Eigen::VectorXd> Scalar;
+  VectorX<Scalar> a_xt = xt;
+  VectorX<Scalar> a_xtplus = xtplus;
+
+  // Set the size of the derivatives and prepare for Jacobian calculation.
+  const int n_state_dim = xt.size();
+  for (int i = 0; i < n_state_dim; ++i)
+    a_xtplus[i].derivatives() = VectorX<T>::Unit(n_state_dim, i);
+
+  // Get the system and the context in AutoDiffable format.
+  const auto system = this->get_system().ToAutoDiffXd();
+  std::unique_ptr<Context<Scalar>> context = system->AllocateContext();
+  context->SetTimeStateAndParametersFrom(this->get_context());
+
+  // Set the continuous state in the context.
+  context->get_mutable_continuous_state()->get_mutable_vector()->
+      SetFromVector(a_xtplus);
+
+  // Evaluate the derivatives at that state.
+  std::unique_ptr<ContinuousState<Scalar>> derivs =
+      system->AllocateTimeDerivatives();
+
+  system->CalcTimeDerivatives(*context, derivs.get());
+
+  // Get the Jacobian.
+  /*
+  auto result = a_xtplus;
+  auto result1 = derivs->CopyToVector();
+  result1 = result1*h;
+  result = result - a_xt;
+  result = result - result1;
+   */
+  auto result = a_xtplus;
+  result = result - a_xt;
+  result = result - derivs->CopyToVector()*h;
+//  auto result = a_xtplus  - (a_xt - (derivs->CopyToVector()*h));
+  DRAKE_DEMAND(result.size() == n_state_dim);
+  MatrixX<double> J(n_state_dim, n_state_dim);
+  for (int i = 0; i < n_state_dim; ++i) {
+    DRAKE_DEMAND(result[i].derivatives().size() == n_state_dim);
+    const auto& grad = result[i].derivatives();
+    J.row(i) = grad;
+  }
+  return J;
+  // Causes a segfault.
+  // = math::autoDiffToGradientMatrix(result);
 /*
-  // Get the state vectors as AutoDiff types.
+  return xtplus - xt - h*derivs_->CopyToVector();
+*/
+//  auto result = this->EvaluateNonlinearEquations(a_xt, a_xtplus, h);
+/*
 
   AutoDiffXd
 // Get the system and the context
@@ -71,7 +122,7 @@ Context<T>* context = this->get_mutable_context();
   return math::autoDiffToGradientMatrix(result); 
 //  return math::jacobian(g, xtplus_copy).template cast<Scalar>();
 */
-  return MatrixX<T>();
+//  return math::autoDiffToGradientMatrix(vec);
 }
 
 // Computes the Jacobian of the residual "error" with respect to the state
@@ -233,7 +284,8 @@ bool ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
   // Evaluate the objective function.
   while (f_last > convergence_tol_) {
     // Form the Jacobian matrix ∂g/∂xtplus.
-    MatrixX<T> J = ComputeN2DiffJacobian(xt, xtplus, dt);
+    MatrixX<T> JN = ComputeN2DiffJacobian(xt, xtplus, dt);
+    MatrixX<T> J = ComputeADiffJacobian(xt, xtplus, dt);
 
     // The Jacobian matrix yields the relationship J dxtplus/dt = dg/dt.
     // Converting this from a derivative into a differential yields

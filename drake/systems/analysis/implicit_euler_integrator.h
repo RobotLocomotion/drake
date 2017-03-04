@@ -139,9 +139,9 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   MatrixX<T> ComputeN2DiffJacobian(const VectorX<T>& xt,
                                    const VectorX<T>& xtplus,
                                    double h);
-  MatrixX<T> ComputeADiffJacobian(const VectorX<T>& xt,
-                                  const VectorX<T>& xtplus,
-                                  double h);
+  Eigen::MatrixXd ComputeADiffJacobian(const Eigen::VectorXd& xt,
+                                       const Eigen::VectorXd& xtplus,
+                                       double h);
 
   // The Euclidean norm tolerance at which the nonlinear system solving
   // process will halt.

@@ -244,10 +244,12 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   MM += Eigen::Matrix<T, 8, 8>::Identity() * cfm;
 
   // Solve the LCP.
+/*
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz);
   DRAKE_DEMAND(success);
-
+*/
+VectorX<T> zz(qq.size());
   // Obtain the normal and frictional contact forces.
   VectorX<T> fN = zz.segment(0, 2);
   VectorX<T> fF_pos = zz.segment(2, 2);
@@ -645,9 +647,9 @@ Vector2<T> Rod2D<T>::CalcStickingContactForces(
   const double r = 2 * half_length_;
   const double g = get_gravitational_acceleration();
   const double J = J_;
-  const double fX = input(0);
-  const double fY = input(1);
-  const double tau = input(2);
+  const T& fX = input(0);
+  const T& fY = input(1);
+  const T& tau = input(2);
   const T fN = (-(1/(8*J +
       2 * k * k * mass * r * r)) * (8 * fY * J + 8 * g * J * mass +
       fY * k * k * mass * r * r +  g * k * k * mass * mass * r * r +
@@ -791,7 +793,8 @@ Vector3<T> Rod2D<T>::CalcCompliantContactForces(
       const int sign_v = v < 0 ? -1 : 1;
       const T fK = get_stiffness() * h;  // See method comment above.
       const T fD = fK * get_dissipation() * hdot;
-      const T fN = max(fK + fD, T(0));
+      const T fK_plus_fD = fK + fD;
+      const T fN = max(fK_plus_fD, T(0));
       const T mu = CalcMuStribeck(get_mu_static(), get_mu_coulomb(),
                                   abs(v) / get_stiction_speed_tolerance());
       const T fF = -mu * fN * T(sign_v);
@@ -854,9 +857,9 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   // Get the inputs.
   const int port_index = 0;
   const auto input = this->EvalEigenVectorInput(context, port_index);
-  const double fX = input(0);
-  const double fY = input(1);
-  const double tau = input(2);
+  const T& fX = input(0);
+  const T& fY = input(1);
+  const T& tau = input(2);
 
   // These equations were determined by issuing the following
   // commands in Mathematica:
@@ -960,9 +963,9 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
   // Get the inputs.
   const int port_index = 0;
   const auto input = this->EvalEigenVectorInput(context, port_index);
-  const double fX = input(0);
-  const double fY = input(1);
-  const double tau = input(2);
+  const T& fX = input(0);
+  const T& fY = input(1);
+  const T& tau = input(2);
 
   // Recompute fF if it does not lie within the friction cone.
   // Constrain F such that it lies on the edge of the friction cone.
@@ -1221,6 +1224,7 @@ template <typename T>
 void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
                                   systems::State<T>* state) const {
   using std::sqrt;
+  using std::sin;
 
   // Initial state corresponds to an inconsistent configuration for piecewise
   // DAE.
@@ -1243,8 +1247,8 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
           Rod2D<T>::kSlidingSingleContact;
 
       // Determine and set the point of contact.
-      const double theta = x0(2);
-      const int k = (std::sin(theta) > 0) ? -1 : 1;
+      const T& theta = x0(2);
+      const int k = (sin(theta) > 0) ? -1 : 1;
       state->get_mutable_abstract_state()->get_mutable_abstract_state(1).
           template GetMutableValue<int>() = k;
     }

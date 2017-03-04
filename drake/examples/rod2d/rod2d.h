@@ -345,6 +345,12 @@ class Rod2D : public systems::LeafSystem<T> {
       const systems::Context<T>& context) const;
 
  protected:
+  systems::System<AutoDiffXd>* DoToAutoDiffXd() const override {
+      Rod2D<AutoDiffXd>* adiff_sys =
+          new Rod2D<AutoDiffXd>(static_cast<Rod2D<AutoDiffXd>::SimulationType>(simulation_type_), dt_);
+      return adiff_sys;
+  }
+
   int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractState> AllocateAbstractState()
                                             const override;
