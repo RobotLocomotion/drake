@@ -6,6 +6,7 @@
 #include <ostream>
 #include <set>
 #include <unordered_map>
+#include <utility>
 
 #include <Eigen/Core>
 
@@ -33,10 +34,13 @@ constexpr int NChooseK(int n, int k) {
 class Monomial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Monomial)
+
   /** Constructs a monomial equal to 1. Namely the total degree is zero. */
   Monomial();
+
   /** Constructs a Monomial from @p powers. */
   explicit Monomial(const std::map<Variable::Id, int>& powers);
+
   /** Constructs a Monomial from @p var and @exponent. */
   Monomial(const Variable& var, int exponent);
 
@@ -49,15 +53,28 @@ class Monomial {
 
   /** Returns the total degree of this Monomial. */
   int total_degree() const { return total_degree_; }
+
   /** Returns hash value. */
   size_t GetHash() const;
+
+  /** Returns the internal representation of Monomial, the map from a base
+   * (Variable ID) to its exponent (int).*/
   const std::map<Variable::Id, int>& get_powers() const { return powers_; }
+
+  /** Evaluates under a given environment. */
+  double Evaluate(const std::unordered_map<Variable::Id, double>& env) const;
+
+  /** Substitutes using a given environment. */
+  std::pair<double, Monomial> Substitute(
+      const std::unordered_map<Variable::Id, double>& env) const;
+
   /** Returns a symbolic expression representing this monomial. Since, this
    * class only includes the ID of a variable, not a variable itself, we need
    * @id_to_var_map, a map from a variable ID to a variable as an argument of
    * this method to build an expression. */
   Expression ToExpression(
       const std::unordered_map<Variable::Id, Variable>& id_to_var_map) const;
+
   /** Checks if this monomial and @p m represent the same monomial.
    * Two monomials are equal iff they contain the same variable ID
    * raised to the same exponent. */
@@ -267,13 +284,12 @@ Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
  * \pre{<tt>vars.size()</tt> == @p.}
  */
 template <int n, int degree>
-Eigen::Matrix<Expression, NChooseK(n + degree, degree), 1>
-MonomialBasis(const Variables& vars) {
+Eigen::Matrix<Expression, NChooseK(n + degree, degree), 1> MonomialBasis(
+    const Variables& vars) {
   static_assert(n > 0, "n should be a positive integer.");
   static_assert(degree >= 0, "degree should be a non-negative integer.");
   DRAKE_ASSERT(vars.size() == n);
-  return ComputeMonomialBasis<NChooseK(n + degree, degree)>(
-      vars, degree);
+  return ComputeMonomialBasis<NChooseK(n + degree, degree)>(vars, degree);
 }
 
 typedef std::unordered_map<Expression, Expression, hash_value<Expression>>
@@ -331,9 +347,7 @@ MonomialAsExpressionToCoefficientMap DecomposePolynomialIntoExpression(
 /** Computes the hash value of a Monomial. */
 template <>
 struct hash_value<symbolic::Monomial> {
-  size_t operator()(const symbolic::Monomial& m) const {
-    return m.GetHash();
-  }
+  size_t operator()(const symbolic::Monomial& m) const { return m.GetHash(); }
 };
 
 namespace symbolic {
