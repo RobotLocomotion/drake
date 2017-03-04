@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/nice_type_name.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -103,7 +104,9 @@ class TypeSafeIndex {
   void CheckInvariants() const {
     if (index_ < 0) {
       throw std::runtime_error(
-          "This is index has the negative value = " + std::to_string(index_) +
+          "This index, of type \"" +
+              drake::NiceTypeName::Get<TypeSafeIndex<Tag>>() +
+              "\", has the negative value = " + std::to_string(index_) +
               ". Negative indexes are not allowed");
     }
   }
@@ -120,8 +123,8 @@ using BodyIndex = TypeSafeIndex<class BodyTag>;
 /// Type used to identify mobilizers by index in a multibody tree system.
 using MobilizerIndex = TypeSafeIndex<class MobilizerTag>;
 
-/// For every MultibodyTree<T> the **world** body _always_ has this unique
-/// identifier and it is always zero.
+/// For every MultibodyTree the **world** body _always_ has this unique index
+/// and it is always zero.
 // Note:
 //   static global variables are strongly discouraged by the C++ style guide:
 // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
