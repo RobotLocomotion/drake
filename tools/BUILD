@@ -2,10 +2,6 @@
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files([
-    "exec.sh",
-])
-
 sh_binary(
     name = "valgrind",
     srcs = ["valgrind.sh"],
@@ -201,5 +197,13 @@ config_setting(
     values = {
         "compiler": "clang-3.9",
         "cpu": "k8",
+    },
+)
+
+config_setting(
+    name = "apple_debug",
+    values = {
+        "compilation_mode": "dbg",
+        "cpu": "darwin",
     },
 )

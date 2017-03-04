@@ -9,6 +9,7 @@ namespace systems {
 
 template class ZeroOrderHold<double>;
 template class ZeroOrderHold<AutoDiffXd>;
+template class ZeroOrderHold<symbolic::Expression>;
 
 }  // namespace systems
 }  // namespace drake

@@ -91,6 +91,8 @@ class ExpressionCell {
   ExpressionCell& operator=(const ExpressionCell& e) = delete;
   /** Constructs ExpressionCell of kind @p k with @p hash and @p is_poly . */
   ExpressionCell(ExpressionKind k, size_t hash, bool is_poly);
+  /** Default destructor. */
+  virtual ~ExpressionCell() = default;
 
  private:
   const ExpressionKind kind_{};

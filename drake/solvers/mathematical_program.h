@@ -233,6 +233,7 @@ class MathematicalProgram {
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
 
   MathematicalProgram();
+  virtual ~MathematicalProgram() {}
 
   /**
    * Adds new variables to MathematicalProgram.
@@ -902,6 +903,17 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& b,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a cost in the symbolic form.
+   * Note that the constant part of the cost is ignored. So if you set
+   * `e = x + 2`, then only the cost on `x` is added, the constant term 2 is
+   * ignored.
+   * @param e The linear or quadratic expression of the cost.
+   * @pre `e` is linear or `e` is quadratic. Otherwise throws a runtime error.
+   * @return The newly created cost, together with the bound variables.
+   */
+  Binding<Constraint> AddCost(const symbolic::Expression& e);
 
   /**
    * Adds a generic constraint to the program.  This should
@@ -2353,25 +2365,27 @@ class MathematicalProgram {
                                        const std::vector<std::string>& names);
 
   /*
-   * Given a matrix of decision variables, return true if every entry in the
-   * matrix is a decision variable in the program; otherwise return false.
-   * @tparam  A Eigen::Matrix type of symbolic Variable.
-   * @param vars A matrix of variable.
+   * Given a matrix of decision variables, checks if every entry in the
+   * matrix is a decision variable in the program; throws a runtime
+   * error if any variable is not a decision variable in the program.
+   * @tparam Derived An Eigen::Matrix type of symbolic Variable.
+   * @param vars A matrix of variables.
    */
   template <typename Derived>
   typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
-      bool>::type
-  IsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) {
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value>::type
+  CheckIsDecisionVariable(const Eigen::MatrixBase<Derived> &vars) {
     for (int i = 0; i < vars.rows(); ++i) {
       for (int j = 0; j < vars.cols(); ++j) {
         if (decision_variable_index_.find(vars(i, j).get_id()) ==
             decision_variable_index_.end()) {
-          return false;
+          std::ostringstream oss;
+          oss << vars(i, j)
+              << " is not a decision variable of the mathematical program.\n";
+          throw std::runtime_error(oss.str());
         }
       }
     }
-    return true;
   }
 
   Binding<LinearEqualityConstraint> DoAddLinearEqualityConstraint(

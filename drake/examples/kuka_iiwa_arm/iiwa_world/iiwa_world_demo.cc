@@ -34,7 +34,7 @@ int DoMain() {
 
   iiwa_world->StoreModel(
       "iiwa",
-      "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf");
 
   iiwa_world->StoreModel(
       "table", "/examples/kuka_iiwa_arm/models/table/"
@@ -77,7 +77,7 @@ int DoMain() {
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
   const double kStictionSlipTolerance = 0.01;
-  auto visualized_plant = std::make_unique<VisualizedPlant<double>>(
+  auto visualized_plant = std::make_unique<PlantAndVisualizerDiagram<double>>(
       iiwa_world->Build(), kStiffness, kDissipation,
       kStaticFriction, kDynamicFriction, kStictionSlipTolerance, &lcm);
 

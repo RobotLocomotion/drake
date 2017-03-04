@@ -2,12 +2,12 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_library", "drake_cc_binary")
+load("//tools:drake.bzl", "drake_cc_binary", "drake_cc_googletest", "drake_cc_library")
 
 drake_cc_library(
-    name = "robot_state_decoder_system",
-    srcs = ["robot_state_decoder_system.cc"],
-    hdrs = ["robot_state_decoder_system.h"],
+    name = "humanoid_status_translator_system",
+    srcs = ["humanoid_status_translator_system.cc"],
+    hdrs = ["humanoid_status_translator_system.h"],
     deps = [
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
         "//drake/examples/QPInverseDynamicsForHumanoids:lcm_utils",
@@ -25,6 +25,15 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
         "@bot_core_lcmtypes//:lib",
+    ],
+)
+
+drake_cc_library(
+    name = "atlas_joint_level_controller_system",
+    srcs = ["atlas_joint_level_controller_system.cc"],
+    hdrs = ["atlas_joint_level_controller_system.h"],
+    deps = [
+        ":joint_level_controller_system",
     ],
 )
 
@@ -47,6 +56,7 @@ drake_cc_library(
     hdrs = ["qp_controller_system.h"],
     deps = [
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
+        "//drake/lcmtypes:inverse_dynamics_debug_info",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
     ],
@@ -67,10 +77,10 @@ drake_cc_binary(
         "local",
     ],
     deps = [
-        ":joint_level_controller_system",
+        ":atlas_joint_level_controller_system",
         ":plan_eval_system",
         ":qp_controller_system",
-        ":robot_state_decoder_system",
+        ":humanoid_status_translator_system",
         "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/lcm",
         "//drake/multibody/parsers",
@@ -78,6 +88,45 @@ drake_cc_binary(
         "//drake/systems/lcm",
         "//drake/systems/primitives:constant_value_source",
         "@bot_core_lcmtypes//:lib",
+    ],
+)
+
+drake_cc_googletest(
+    name = "qp_controller_system_test",
+    srcs = ["test/qp_controller_system_test.cc"],
+    data = [
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    deps = [
+        ":qp_controller_system",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/multibody/parsers",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework",
+        "//drake/systems/primitives:constant_value_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "joint_level_controller_system_test",
+    srcs = ["test/joint_level_controller_system_test.cc"],
+    data = [
+        "//drake/examples/Valkyrie:models",
+    ],
+    deps = [
+        ":atlas_joint_level_controller_system",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework",
+        "//drake/multibody/parsers",
     ],
 )
 

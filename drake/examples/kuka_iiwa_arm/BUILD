@@ -6,6 +6,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
+    "drake_cc_googletest",
 )
 
 package(
@@ -36,6 +37,8 @@ drake_cc_library(
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
+        "@bot_core_lcmtypes//:lib",
+        "@robotlocomotion_lcmtypes//:lib",
     ],
 )
 
@@ -64,20 +67,24 @@ drake_cc_library(
 drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
+    add_test_rule = 1,
     data = [
         ":models",
         "//drake/examples/schunk_wsg:models",
     ],
+    test_rule_args = ["--simulation_sec=0.01"],
     deps = [
+        ":iiwa_common",
         ":iiwa_lcm",
         ":oracular_state_estimator",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
-        "//drake/systems/analysis:simulator",
+        "//drake/systems/analysis",
+        "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/controllers:pid_controller",
-        "//drake/systems/controllers:pid_with_gravity_compensator",
+        "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:matrix_gain",
         "//drake/util:lcm_util",
         "@gflags//:gflags",
@@ -95,7 +102,7 @@ drake_cc_binary(
         "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:pid_with_gravity_compensator",
+        "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/primitives:constant_vector_source",
         "@gflags//:gflags",
     ],
@@ -118,6 +125,7 @@ cc_binary(
     srcs = ["kuka_ik_demo.cc"],
     data = [":models"],
     deps = [
+        ":iiwa_common",
         "//drake/lcm",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
@@ -130,14 +138,13 @@ cc_binary(
 
 # === test/ ===
 
-sh_test(
-    name = "iiwa_wsg_simulation_test",
-    srcs = ["//tools:exec.sh"],
-    args = [
-        "$(location :iiwa_wsg_simulation)",
-        "--simulation_sec=0.01",
+drake_cc_googletest(
+    name = "iiwa_lcm_test",
+    deps = [
+        ":iiwa_lcm",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework",
     ],
-    data = [":iiwa_wsg_simulation"],
 )
 
 cpplint()

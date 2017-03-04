@@ -12,6 +12,7 @@ drake_cc_library(
     hdrs = ["pose_aggregator.h"],
     deps = [
         ":pose_bundle",
+        ":pose_vector",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/multibody:rigid_body_tree",
@@ -44,10 +45,10 @@ drake_cc_library(
     srcs = ["drake_visualizer_client.cc"],
     hdrs = ["drake_visualizer_client.h"],
     deps = [
-        "@eigen//:eigen",
         "//drake/lcmtypes:viewer",
         "//drake/math:geometric_transform",
         "//drake/multibody/shapes",
+        "@eigen//:eigen",
     ],
 )
 

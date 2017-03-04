@@ -19,18 +19,6 @@ namespace {
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
-class InitialCost {
- public:
-  static size_t numInputs() { return 2; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    y(0) = x(1) * x(1);
-  }
-};
-
 class FinalCost {
  public:
   static size_t numInputs() { return 3; }
@@ -173,7 +161,12 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   // we're going to try to minimize next time.
   direct_traj.GetResultSamples(&inputs, &states, &times_out);
 
-  direct_traj.AddInitialCostFunc(InitialCost());
+  // Tests adding constrainst to the original mathematical program, via
+  // the state variable accessor and symbolic formula.
+  direct_traj.AddLinearConstraint(direct_traj.x(0)(0) == 0.0);
+  direct_traj.AddLinearConstraint(direct_traj.x(0)(1) == 0.0);
+
+  // Adds a final cost
   direct_traj.AddFinalCostFunc(FinalCost());
   result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)

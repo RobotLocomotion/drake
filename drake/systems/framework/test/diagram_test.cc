@@ -253,6 +253,24 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
   EXPECT_EQ(27, integrator1_xcdot->get_vector().GetAtIndex(2));
 }
 
+// Tests the AllocateInput logic.
+TEST_F(DiagramTest, AllocateInputs) {
+  auto context = diagram_->CreateDefaultContext();
+
+  for (int port = 0; port < 3; port++) {
+    const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
+    EXPECT_EQ(vec, nullptr);
+  }
+
+  diagram_->AllocateFreestandingInputs(context.get());
+
+  for (int port = 0; port < 3; port++) {
+    const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
+    EXPECT_NE(vec, nullptr);
+    EXPECT_EQ(vec->size(), kSize);
+  }
+}
+
 /// Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
   std::unique_ptr<System<AutoDiffXd>> ad_diagram =
@@ -609,6 +627,13 @@ class SecondOrderStateVector : public BasicVector<double> {
 
   void set_q(double q) { SetAtIndex(0, q); }
   void set_v(double v) { SetAtIndex(1, v); }
+
+ protected:
+  BasicVector<double>* DoClone() const override {
+    auto result = new SecondOrderStateVector;
+    result->set_value(this->get_value());
+    return result;
+  }
 };
 
 // A minimal system that has second-order state.

@@ -47,7 +47,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 template <typename T>
-VisualizedPlant<T>::VisualizedPlant(
+PlantAndVisualizerDiagram<T>::PlantAndVisualizerDiagram(
     std::unique_ptr<RigidBodyTree<T>> rigid_body_tree,
     double penetration_stiffness, double penetration_dissipation,
     double static_friction_coefficient, double dynamic_friction_coefficient,
@@ -87,14 +87,14 @@ VisualizedPlant<T>::VisualizedPlant(
 
   builder.BuildInto(this);
 }
-template class VisualizedPlant<double>;
+template class PlantAndVisualizerDiagram<double>;
 
 template <typename T>
 PassiveVisualizedPlant<T>::PassiveVisualizedPlant(
-    std::unique_ptr<VisualizedPlant<T>> visualized_plant) {
+    std::unique_ptr<PlantAndVisualizerDiagram<T>> visualized_plant) {
   // Sets up a builder for the demo.
   DiagramBuilder<T> builder;
-  visualized_plant_ = builder.template AddSystem<VisualizedPlant<T>>(
+  visualized_plant_ = builder.template AddSystem<PlantAndVisualizerDiagram<T>>(
       std::move(visualized_plant));
 
   // Fixes constant sources to all inputs.
@@ -175,13 +175,13 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   SetPositionControlledIiwaGains(&kp, &ki, &kd);
 
   controller_ =
-      builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
-          robot_tree, kp, ki, kd);
+      builder.template AddSystem<systems::InverseDynamicsController<T>>(
+          robot_tree, kp, ki, kd, false /* no feedforward acceleration */);
 
   // Connect robot (not the entire plant) and controller
   builder.Connect(robot_output_port,
-                  controller_->get_estimated_state_input_port());
-  builder.Connect(controller_->get_control_output_port(),
+                  controller_->get_input_port_estimated_state());
+  builder.Connect(controller_->get_output_port_control(),
                   robot_input_port);
 
   // Create a multiplexer to handle the fact that we'll be getting
@@ -205,7 +205,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
                   input_mux_->get_input_port(1));
 
   builder.Connect(input_mux_->get_output_port(0),
-                  controller_->get_desired_state_input_port());
+                  controller_->get_input_port_desired_state());
 
   // Creates a plan and wraps it into a source system.
   desired_plan_ =

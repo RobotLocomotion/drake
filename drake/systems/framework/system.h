@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "drake/common/autodiff_overloads.h"
@@ -109,6 +110,33 @@ class System {
   /// to nullptr.
   virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
 
+  /// Given a port descriptor, allocates the vector storage.  The default
+  /// implementation in this class allocates a BasicVector.  Subclasses must
+  /// override the NVI implementation of this function, DoAllocateInputVector,
+  /// to return input vector types other than BasicVector. The @p descriptor
+  /// must match a port declared via DeclareInputPort.
+  std::unique_ptr<BasicVector<T>> AllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const {
+    DRAKE_ASSERT(descriptor.get_data_type() == kVectorValued);
+    const int index = descriptor.get_index();
+    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
+    DRAKE_ASSERT(get_input_port(index).get_data_type() == kVectorValued);
+    return std::unique_ptr<BasicVector<T>>(DoAllocateInputVector(descriptor));
+  }
+
+  /// Given a port descriptor, allocates the abstract storage. Subclasses with a
+  /// abstract input ports must override the NVI implementation of this
+  /// function, DoAllocateInputAbstract, to return an appropriate AbstractValue.
+  /// The @p descriptor must match a port declared via DeclareInputPort.
+  std::unique_ptr<AbstractValue> AllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const {
+    DRAKE_ASSERT(descriptor.get_data_type() == kAbstractValued);
+    const int index = descriptor.get_index();
+    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
+    DRAKE_ASSERT(get_input_port(index).get_data_type() == kAbstractValued);
+    return std::unique_ptr<AbstractValue>(DoAllocateInputAbstract(descriptor));
+  }
+
   /// Returns a default output, initialized with the correct number of
   /// concrete output ports for this System. @p context is provided as
   /// an argument to support some specialized use cases. Most typical
@@ -152,6 +180,20 @@ class System {
   // Sets Context fields to their default values.  User code should not
   // override.
   virtual void SetDefaults(Context<T>* context) const = 0;
+
+  /// For each input port, allocates a freestanding input of the concrete type
+  /// that this System requires, and binds it to the port, disconnecting any
+  /// prior input. Does not assign any values to the freestanding inputs.
+  void AllocateFreestandingInputs(Context<T>* context) const {
+    for (const auto& port : input_ports_) {
+      if (port->get_data_type() == kVectorValued) {
+        context->FixInputPort(port->get_index(), AllocateInputVector(*port));
+      } else {
+        DRAKE_DEMAND(port->get_data_type() == kAbstractValued);
+        context->FixInputPort(port->get_index(), AllocateInputAbstract(*port));
+      }
+    }
+  }
 
   // This method is DEPRECATED. Legacy overrides will be respected, but should
   // migrate to override LeafSystem::DoHasDirectFeedthrough.
@@ -265,12 +307,21 @@ class System {
   /// up-to-date, delegating to our parent Diagram if necessary. Returns
   /// the port's value, or nullptr if the port is not connected.
   ///
-  /// Throws std::bad_cast if the port is not vector-valued. Aborts if the port
+  /// Throws std::bad_cast if the port is not vector-valued. Returns nullptr if
+  /// the port is vector valued, but not of type Vec. Aborts if the port
   /// does not exist.
-  const BasicVector<T>* EvalVectorInput(const Context<T>& context,
-                                        int port_index) const {
+  ///
+  /// @tparam Vec The template type of the input vector, which must be a
+  ///             subclass of BasicVector.
+  template <template<typename> class Vec = BasicVector>
+  const Vec<T>* EvalVectorInput(const Context<T>& context,
+                                int port_index) const {
+    static_assert(
+        std::is_base_of<BasicVector<T>, Vec<T>>::value,
+        "In EvalVectorInput<Vec>, Vec must be a subclass of BasicVector.");
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalVectorInput(parent_, get_input_port(port_index));
+    return dynamic_cast<const Vec<T>*>(
+        context.EvalVectorInput(parent_, get_input_port(port_index)));
   }
 
   /// Causes the vector-valued input port with the given `port_index` to become
@@ -880,6 +931,22 @@ class System {
   const OutputPortDescriptor<T>& DeclareAbstractOutputPort() {
     return DeclareOutputPort(kAbstractValued, 0 /* size */);
   }
+  //@}
+
+  //----------------------------------------------------------------------------
+  /// @name               Virtual methods for input allocation
+  /// Authors of derived %Systems should override these methods to self-describe
+  /// acceptable inputs to the %System.
+
+  /// Allocates an input vector of the leaf type that the System requires on
+  /// the port specified by @p descriptor. Caller owns the returned memory.
+  virtual BasicVector<T>* DoAllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const = 0;
+
+  /// Allocates an abstract input of the leaf type that the System requires on
+  /// the port specified by @p descriptor. Caller owns the returned memory.
+  virtual AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const = 0;
   //@}
 
   //----------------------------------------------------------------------------

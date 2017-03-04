@@ -202,6 +202,13 @@ systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
 }
 
 template <typename T>
+systems::BasicVector<T>* SimpleCar<T>::DoAllocateInputVector(
+    const systems::InputPortDescriptor<T>& descriptor) const {
+  DRAKE_DEMAND(descriptor.get_index() == 0);
+  return new DrivingCommand<T>();
+}
+
+template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>
 SimpleCar<T>::AllocateContinuousState() const {
   return std::make_unique<systems::ContinuousState<T>>(

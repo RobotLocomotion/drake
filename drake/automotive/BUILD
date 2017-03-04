@@ -14,6 +14,8 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "generated_vectors",
     srcs = [
+        "gen/bicycle_car_parameters.cc",
+        "gen/bicycle_car_state.cc",
         "gen/driving_command.cc",
         "gen/endless_road_car_config.cc",
         "gen/endless_road_car_state.cc",
@@ -24,6 +26,8 @@ drake_cc_library(
         "gen/simple_car_state.cc",
     ],
     hdrs = [
+        "gen/bicycle_car_parameters.h",
+        "gen/bicycle_car_state.h",
         "gen/driving_command.h",
         "gen/endless_road_car_config.h",
         "gen/endless_road_car_state.h",
@@ -41,6 +45,8 @@ drake_cc_library(
 drake_cc_library(
     name = "generated_translators",
     srcs = [
+        "gen/bicycle_car_parameters_translator.cc",
+        "gen/bicycle_car_state_translator.cc",
         "gen/driving_command_translator.cc",
         "gen/endless_road_car_config_translator.cc",
         "gen/endless_road_car_state_translator.cc",
@@ -50,6 +56,8 @@ drake_cc_library(
         "gen/simple_car_state_translator.cc",
     ],
     hdrs = [
+        "gen/bicycle_car_parameters_translator.h",
+        "gen/bicycle_car_state_translator.h",
         "gen/driving_command_translator.h",
         "gen/endless_road_car_config_translator.h",
         "gen/endless_road_car_state_translator.h",
@@ -63,6 +71,16 @@ drake_cc_library(
         "//drake/lcmtypes:automotive",
         "//drake/systems/framework",
         "//drake/systems/lcm:translator",
+    ],
+)
+
+drake_cc_library(
+    name = "bicycle_car",
+    srcs = ["bicycle_car.cc"],
+    hdrs = ["bicycle_car.h"],
+    deps = [
+        ":generated_vectors",
+        "//drake/common:symbolic",
     ],
 )
 
@@ -144,6 +162,15 @@ drake_cc_library(
         "//drake/common:double",
         "//drake/common:symbolic",
         "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "simple_powertrain",
+    srcs = ["simple_powertrain.cc"],
+    hdrs = ["simple_powertrain.h"],
+    deps = [
+        "//drake/systems/primitives:linear_system",
     ],
 )
 
@@ -244,9 +271,11 @@ drake_cc_binary(
         "car_sim_lcm_common.cc",
         "car_sim_lcm_common.h",
     ],
+    add_test_rule = 1,
     data = [
         ":models",
     ],
+    test_rule_args = [" --simulation_sec=0.01"],
     deps = [
         ":automotive_simulator",
         "//drake/common:text_logging_gflags",
@@ -437,6 +466,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "bicycle_car_test",
+    deps = [
+        "//drake/automotive:bicycle_car",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//drake/automotive:curve2",
@@ -503,6 +540,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "simple_powertrain_test",
+    deps = [
+        "//drake/automotive:simple_powertrain",
+    ],
+)
+
+drake_cc_googletest(
     name = "simple_car_to_euler_floating_joint_test",
     deps = [
         "//drake/automotive:simple_car",
@@ -524,29 +568,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simple_car_state_translator_test",
-    deps = [
-        "//drake/automotive:generated_translators",
-    ],
-)
-
-drake_cc_googletest(
     name = "infinite_circuit_road_test",
     srcs = ["dev/test/infinite_circuit_road_test.cc"],
     deps = [
         ":infinite_circuit_road",
         "//drake/automotive/maliput/monolane:builder",
     ],
-)
-
-sh_test(
-    name = "car_sim_lcm_test",
-    srcs = ["//tools:exec.sh"],
-    args = [
-        "$(location :car_sim_lcm)",
-        " --simulation_sec=0.01",
-    ],
-    data = [":car_sim_lcm"],
 )
 
 cpplint()

@@ -233,7 +233,10 @@ drake_cc_library(
     # TODO(jwnimmer-tri) Ideally, gflags BUILD would do this for us.  Figure
     # out what's going on.  Definitely don't let "-pthread" get copy-pasta'd
     # throughout our code.
-    linkopts = ["-pthread"],
+    linkopts = select({
+        "//tools:linux": ["-pthread"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":common",
         "@gflags//:gflags",
