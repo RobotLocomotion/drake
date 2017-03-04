@@ -100,10 +100,10 @@ api::GeoPosition Lane::DoToGeoPosition(
     const api::LanePosition& lane_pos) const {
   api::SegmentId segment_id= this->segment()->id();
   if (strcmp(segment_id.id.c_str(), "Crossroad_Horizontal_Segment")==0){
-  return {lane_pos.s, lane_pos.r + Lane::r_offset(), lane_pos.h};
+  return {lane_pos.s - length_/2, lane_pos.r + Lane::r_offset(), lane_pos.h};
   }
   else if (strcmp(segment_id.id.c_str(), "Crossroad_Vertical_Segment")==0){
-  return {lane_pos.r + Lane::r_offset(), lane_pos.s, lane_pos.h};
+  return {lane_pos.r + Lane::r_offset(), lane_pos.s - length_/2, lane_pos.h};
   }
   else{
     throw std::runtime_error("Segment ID not recogonized");  
