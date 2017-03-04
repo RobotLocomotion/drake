@@ -1,7 +1,7 @@
 function testMassSpringDamperForceGradients()
 % Tests user gradients vs numerical gradients for consistency
 
-p = RigidBodyManipulator('../../../../multibody/rigid_body_system1/test/MassSpringDamper.urdf');
+p = RigidBodyManipulator('./MassSpringDamper.urdf');
 fun = @(q,qd)vectorComputeSpatialForce(p,q,qd);
 
 % some random states to test
