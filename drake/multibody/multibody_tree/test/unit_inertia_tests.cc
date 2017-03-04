@@ -253,8 +253,8 @@ GTEST_TEST(UnitInertia, AutoDiff) {
   extract_derivatives(R_WB, Rvalue_WB, Rdot_WB);
 
   // The time derivative of the rotation matrix should be:
-  //  Rdot = [w] * R, with w the angular velocity.
-  // Therefore we have [w] = Rdot * R.transpose().
+  //  Rdot = w× * R, with w the angular velocity.
+  // Therefore we have w× = Rdot * R.transpose().
   Matrix3<double> wcross = Rdot_WB * Rvalue_WB.transpose();
   Matrix3<double> wcross_expected;
   wcross_expected << 0.0,  -wz, 0.0,

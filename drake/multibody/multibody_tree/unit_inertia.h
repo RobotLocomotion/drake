@@ -27,6 +27,8 @@ namespace multibody {
 /// matrix of a unit-mass body. However, as previously noted, once a unit
 /// inertia is created, a number of operations are dissallowed to ensure the
 /// unit-mass invariant.
+/// Also notice that once a unit inertia is created, it _is_ the unit inertia
+/// of _some_ body, perhaps with scaled geometry from the user's intention.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -35,7 +37,7 @@ class UnitInertia : public RotationalInertia<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
 
   /// Default UnitInertia constructor. All entries are set to NaN for a
-  /// quick detection of un-initialized values.
+  /// quick detection of un initialized values.
   UnitInertia() {}
 
   /// Creates a principal unit inertia with identical diagonal elements
@@ -60,7 +62,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// Creates a general unit inertia matrix with non-zero off-diagonal
   /// elements where the six components of the rotational intertia in a given
   /// frame `E` need to be provided.
-  /// @throws std::runtime_exception if the resulting inertia is invalid
+  /// @throws std::runtime_error if the resulting inertia is invalid
   /// according to RotationalInertia::CouldBePhysicallyValid().
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz,
               const T& Ixy, const T& Ixz, const T& Iyz) :
@@ -75,25 +77,18 @@ class UnitInertia : public RotationalInertia<T> {
   explicit UnitInertia(const RotationalInertia<T>& I) :
       RotationalInertia<T>(I) {}
 
-  /// Given `this` rotational inertia `G_Po_E` about `Po` and expressed in frame
-  /// `E`, this method computes the same unit inertia re-expressed in another
-  /// frame `F` as `G_Po_F = R_FE * G_Po_E * (R_FE)ᵀ`.
-  /// This operation is performed in place, modifying the original object.
-  /// @param[in] R_FE Rotation matrix from frame `E` to frame `F`.
-  /// @returns A reference to `this` unit inertia about `Po` but now
-  ///          re-expressed in frame `F`.
-  /// @warning This method does not check whether the input matrix `R_FE`
-  /// represents a valid rotation or not. It is the resposibility of users to
-  /// provide valid rotation matrices.
+  /// Re-express a unit inertia in a different frame, performing the operation
+  /// in place and modifying the original object. @see ReExpress() for details.
   UnitInertia<T>& ReExpressInPlace(const Matrix3<T>& R_FE) {
     return RotationalInertia<T>::ReExpressInPlace(R_FE);
   }
 
-  /// Given `this` rotational inertia `G_Po_E` about `Po` and expressed in frame
-  /// `E`, this method computes the same unit inertia re-expressed in another
-  /// frame `F` as `G_Po_F = R_FE * G_Po_E * (R_FE)ᵀ`.
-  /// @param[in] R_FE Rotation matrix from frame `E` to frame `F`.
-  /// @retval G_Po_F The same rotational inertia about `Po` but now
+  /// Given `this` unit inertia `G_BP_E` of a body `B` about a point `P` and
+  /// expressed in frame `E`, this method computes the same unit inertia
+  /// re-expressed in another frame `F` as `G_BP_F = R_FE * G_BP_E * (R_FE)ᵀ`.
+  /// @param[in] R_FE Rotation matrix from the basis of frame `E` to the basis
+  ///                 of frame `F`.
+  /// @retval G_BP_F The same unit inertia for body `B` about point `P` but now
   ///                re-expressed in frame`F`.
   /// @warning This method does not check whether the input matrix `R_FE`
   /// represents a valid rotation or not. It is the resposibility of users to
@@ -128,7 +123,7 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia<T>(*this).ShiftFromCenterOfMassInPlace(p_BcmQo_E);
   }
 
-  /// @name Unit inertiae for common 3D objects.
+  /// @name Unit inertia for common 3D objects.
   /// The following methods assist in the construction of UnitInertia instances
   /// for common 3D objects such as boxes, spheres, rods and others.
   /// This method computes a UnitInertia for body with unit mass, typically
@@ -144,16 +139,23 @@ class UnitInertia : public RotationalInertia<T> {
   /// measured and expressed in frame `F`.
   /// The unit inertia `G_Fo_F` about the origin `Fo` of frame `F` and expressed
   /// in `F` for this unit mass point equals the square of the cross product
-  /// matrix of `p_F`: <pre>
-  ///   G_Fo_F = [p_F]² = [p_F]ᵀ * [p_F] = -[p_F] * [p_F]
+  /// matrix of `p_F`:
+  /// \f[
+  ///   [G^{F_o}]_F = [p^\times]_F^2 = [p^\times]_F^T \, [p^\times]_F =
+  ///                -[p^\times]_F \, [p^\times]_F
+  /// \f]
+  /// where @f$[p^\times]_F@f$ is the cross product matrix of point `p`
+  /// expressed in frame `F`. In source code the above expression is written as:
+  /// <pre>
+  ///   G_Fo_F = px_F² = px_Fᵀ * px_F = -px_F * px_F
   /// </pre>
-  /// where `[v]` denotes the cross product matrix of a vector `v` such that the
+  /// where `px` denotes the cross product matrix of of point `p` such that the
   /// cross product with another vector `a` can be obtained as
-  /// `v.cross(a) = [v] * a`. The cross product matrix `[v]` is skew-symmetric.
+  /// `px.cross(a) = px * a`. The cross product matrix `px` is skew-symmetric.
   /// The square of the cross product matrix is a symmetric matrix with
   /// non-negative diagonals and obeys the triangle inequality.
-  /// Matrix `[v]²` can be used to compute the triple vector product
-  /// `-v x (v x a) = -v.cross(v.cross(a)) = [v]² * a`.
+  /// Matrix `px²` can be used to compute the triple vector product as
+  /// `-p x (p x a) = -p.cross(p.cross(a)) = px² * a`.
   static UnitInertia<T> PointMass(const Vector3<T>& p_F) {
     const Vector3<T> p2m = p_F.cwiseAbs2();
     const T mp0 = -p_F(0);
