@@ -28,6 +28,21 @@ alias(
     actual = "@com_github_bazelbuild_buildifier//buildifier",
 )
 
+# This pulls the otherwise-unused libbot targets into the "//..." label tree.
+genrule(
+    name = "force_libbot",
+    srcs = [
+        "@libbot//:bot-lcm-logfilter",
+        "@libbot//:bot-lcm-logsplice",
+        "@libbot//:bot-lcm-tunnel",
+        "@libbot//:bot-spy",
+        "@libbot//:lcmtypes_bot2-core-py",
+    ],
+    outs = ["force_libbot.touch"],
+    cmd = "touch $(@)",
+    visibility = ["//visibility:private"],
+)
+
 # === CROSSTOOL rules ===
 
 # The default toolchain selector for Drake.
