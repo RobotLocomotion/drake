@@ -96,11 +96,8 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               // the joint lower and upper limits are symmetric.
               double joint_lb = joint->getJointLimitMin()(0);
               double joint_ub = joint->getJointLimitMax()(0);
-
-              // TODO(hongkai.dai): add the function to change
-              // joint_to_parent_transform if the joint lower bound and the
-              // joint upper bound do not adds up to 0.
-              DRAKE_DEMAND(joint_lb + joint_ub == 0);
+              // joint_bound is the α mentioned above.
+              double joint_bound = (joint_ub - joint_lb) / 2;
 
               if (joint_ub < M_PI) {
                 // To constrain a joint angle θ within revolute range [-α, α],
@@ -124,13 +121,34 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 revolute_vector /= revolute_vector_norm;
                 Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
 
-                // clang-format off
-                joint_limit_expr << 2 * sin(joint_ub),
+                // If the rotation angle γ satisfies
+                // a <= γ <= b
+                // This is equivalent to
+                // -(b-a)/2 <= γ - (a+b)/2 <= (b-a)/2
+                // where (a+b)/2 is the joint offset, such that the joint
+                // lower and upper bounds are symmetric.
+                // Denote the parent rotation matrix as Rₚ
+                // the child rotation matrix as Rc
+                // the joint to parent rotation matrix as ᵖRⱼ
+                // the rotation matrix along joint axis k by angle γ as
+                // R(k, γ), we know the kinematics constraint is
+                // Rₚ * ᵖRⱼ * R(k, γ) = Rc.
+                // This is equivalent of
+                // Rₚ * ᵖRⱼ * R(k, (a+b)/2) * R(k, γ-(a+b)/2)) = Rc.
+                // So to constrain that -(b-a)/2 <= γ - (a+b)/2 <= (b-a)/2,
+                // we can constrain that
+                // |Rc * v - Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v | <= 2*sin ((b-a) / 4)
+                // As we explained above, where v is the vector perpendicular
+                // to the rotation axis k.
+                joint_limit_expr(0) = 2 * sin(joint_bound / 2);
+                Matrix3d rotmat_joint_offset =
+                    Eigen::AngleAxisd((joint_lb + joint_ub) / 2, rotate_axis)
+                        .toRotationMatrix();
+                joint_limit_expr.tail<3>() =
                     body_rotmat_[body_idx] * revolute_vector -
-                        body_rotmat_[parent_idx] *
-                            joint_to_parent_transform.linear() *
-                            revolute_vector;
-                // clang-format on
+                    body_rotmat_[parent_idx] *
+                        joint_to_parent_transform.linear() *
+                        rotmat_joint_offset * revolute_vector;
                 AddLorentzConeConstraint(joint_limit_expr);
               }
             } else {
@@ -178,13 +196,16 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
     const RigidBody<double>& body = robot_->get_body(body_idx);
     const Matrix3d body_rotmat = GetSolution(body_rotmat_[body_idx]);
     if (!body.IsRigidlyFixedToWorld() && body.has_parent_body()) {
-      const RigidBody<double> *parent = body.get_parent();
+      const RigidBody<double>* parent = body.get_parent();
       const Matrix3d
           parent_rotmat = GetSolution(body_rotmat_[parent->get_body_index()]);
-      const DrakeJoint *joint = &(body.getJoint());
-      const auto &joint_to_parent_transform =
+      const DrakeJoint* joint = &(body.getJoint());
+      const auto& joint_to_parent_transform =
           joint->get_transform_to_parent_body();
+
       int num_positions = joint->get_num_positions();
+      // For each different type of joints, use a separate branch to compute
+      // the posture for that joint.
       if (num_positions == 6 || num_positions == 7) {
         // Question: Is there a function to determine if a body is floating?
         Vector3d body_pos = GetSolution(body_pos_[body_idx]);
@@ -207,11 +228,11 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
         // not have a method to tell if a joint is revolute or not.
         if (dynamic_cast<const RevoluteJoint *>(joint)
             == static_cast<const RevoluteJoint *>(joint)) {
-          const RevoluteJoint
-              *revolute_joint = static_cast<const RevoluteJoint *>(joint);
+          const RevoluteJoint* revolute_joint =
+              static_cast<const RevoluteJoint*>(joint);
           Matrix3d joint_rotmat =
-              joint_to_parent_transform.linear().transpose()
-                  * parent_rotmat.transpose() * body_rotmat;
+              joint_to_parent_transform.linear().transpose() *
+              parent_rotmat.transpose() * body_rotmat;
           // The joint_angle_axis computed from the body orientation is very
           // likely not being aligned with the real joint axis. The reason is
           // that we use a relaxation of the rotation matrix, and thus
@@ -220,9 +241,13 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
           Eigen::AngleAxisd joint_angle_axis(normalized_rotmat);
 
           const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
+          // There can be two possible angle-axis combination, negating the
+          // both angle and axis will result in the same rotation.
           q(body.get_position_start_index()) =
               joint_angle_axis.axis().dot(rotate_axis) > 0
               ? joint_angle_axis.angle() : -joint_angle_axis.angle();
+          // TODO(hongkai.dai): check if the joint is within the limit, shift
+          // it by 2 * PI if it is out of range.
         } else {
           // TODO(hongkai.dai): add prismatic and helical joints.
           throw std::runtime_error("Unsupported joint type.");

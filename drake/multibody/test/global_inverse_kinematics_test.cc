@@ -94,9 +94,9 @@ TEST_F(KukaTest, ReachableTest) {
       std::cout << std::endl;
       EXPECT_TRUE(CompareMatrices(body_pose_fk.translation(),
                                   body_pos_global_ik,
-                                  0.1,
+                                  0.03,
                                   MatrixCompareType::absolute));
-      EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, 0.3,
+      EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, 0.2,
                                   MatrixCompareType::absolute));
     }
   }
@@ -105,14 +105,15 @@ TEST_F(KukaTest, ReachableTest) {
 TEST_F(KukaTest, UnreachableTest) {
   // Test a cartesian pose that we know is not reachable.
   int ee_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_ee");
-  Eigen::Vector3d ee_pos_lb(0.4, -0.1, 0.4);
-  Eigen::Vector3d ee_pos_ub(0.6, 0.1, 0.6);
+  Eigen::Vector3d ee_pos_lb(0.6, 0, 0.7);
+  Eigen::Vector3d ee_pos_ub(0.6, 0, 0.7);
   global_ik_.AddWorldPositionConstraint(ee_idx, Vector3d::Zero(), ee_pos_lb,
                                         ee_pos_ub);
 
-  Eigen::Quaterniond ee_desired_orient(0.5, 0.5, 0.5, 0.5);
+  Eigen::Quaterniond ee_desired_orient(
+      Eigen::AngleAxisd(-M_PI, Vector3d(0, 1, 0)));
   global_ik_.AddWorldOrientationConstraint(ee_idx, ee_desired_orient,
-                                           0.1 * M_PI);
+                                           0.0 * M_PI);
 
   solvers::GurobiSolver gurobi_solver;
 
