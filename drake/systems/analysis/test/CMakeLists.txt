@@ -22,10 +22,26 @@ if(Bullet_FOUND)
   drake_add_cc_test(NAME semi_explicit_euler_integrator_test SIZE medium)
   target_link_libraries(semi_explicit_euler_integrator_test
           drakeSystemAnalysis drakeSystemFramework drakeCommon
-          drakeSpringMassSystemPlant drakeRigidBodyPlant drakeRBSystem)
+          drakeSpringMassSystemPlant drakeRigidBodyPlant
+          drakeIK
+          drakeMultibodyParsers
+          drakeOptimization
+          drakeRBM
+          drakeRigidBodyConstraint
+          Eigen3::Eigen
+          spruce
+          )          
 
   drake_add_cc_test(NAME runge_kutta3_integrator_test SIZE medium)
   target_link_libraries(runge_kutta3_integrator_test
           drakeSystemAnalysis drakeSystemFramework drakeCommon
-          drakeSpringMassSystemPlant drakeRigidBodyPlant drakeRBSystem)
+          drakeSpringMassSystemPlant drakeRigidBodyPlant
+          drakeIK
+          drakeMultibodyParsers
+          drakeOptimization
+          drakeRBM
+          drakeRigidBodyConstraint
+          Eigen3::Eigen
+          spruce
+          )          
 endif()
