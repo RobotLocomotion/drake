@@ -165,6 +165,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 // joint_limit_expr is going to be within the Lorentz cone.
                 Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
                 joint_limit_expr(0) = 2 * sin(joint_bound / 2);
+                // rotmat_joint_offset is R(k, (a+b)/2) explained above.
                 Matrix3d rotmat_joint_offset =
                     Eigen::AngleAxisd((joint_lb + joint_ub) / 2, rotate_axis)
                         .toRotationMatrix();
@@ -218,11 +219,11 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
   Eigen::VectorXd q(robot_->get_num_positions());
   for (int body_idx = 1; body_idx < robot_->get_num_bodies(); ++body_idx) {
     const RigidBody<double>& body = robot_->get_body(body_idx);
-    const Matrix3d body_rotmat = GetSolution(R_WB_[body_idx]);
+    const Matrix3d R_WBi = GetSolution(R_WB_[body_idx]);
     if (!body.IsRigidlyFixedToWorld() && body.has_parent_body()) {
       const RigidBody<double>* parent = body.get_parent();
-      const Matrix3d
-          parent_rotmat = GetSolution(R_WB_[parent->get_body_index()]);
+      // R_WBp is the rotation matrix of parent frame to the world frame.
+      const Matrix3d R_WBp = GetSolution(R_WB_[parent->get_body_index()]);
       const DrakeJoint* joint = &(body.getJoint());
       const auto& joint_to_parent_transform =
           joint->get_transform_to_parent_body();
@@ -232,18 +233,19 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
       // the posture for that joint.
       if (num_positions == 6 || num_positions == 7) {
         // Question: Is there a function to determine if a body is floating?
-        Vector3d body_pos = GetSolution(p_WB_[body_idx]);
-        Matrix3d normalized_rotmat = math::ProjectMatToRotMat(body_rotmat);
 
+        // p_WBi is the position of the body frame in the world frame.
+        Vector3d p_WBi = GetSolution(p_WB_[body_idx]);
+        Matrix3d normalized_rotmat = math::ProjectMatToRotMat(R_WBi);
+
+        q.segment<3>(body.get_position_start_index()) = p_WBi;
         if (num_positions == 6) {
           // The position order is x-y-z-roll-pitch-yaw.
-          q.segment<3>(body.get_position_start_index()) = body_pos;
           q.segment<3>(body.get_position_start_index() + 3) =
               math::rotmat2rpy(normalized_rotmat);
         } else {
           // The position order is x-y-z-qw-qx-qy-qz, namely translation first,
           // and quaternion second.
-          q.segment<3>(body.get_position_start_index()) = body_pos;
           q.segment<4>(body.get_position_start_index() + 3) =
               math::rotmat2quat(normalized_rotmat);
         }
@@ -255,11 +257,11 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
               dynamic_cast<const RevoluteJoint*>(joint);
           Matrix3d joint_rotmat =
               joint_to_parent_transform.linear().transpose() *
-              parent_rotmat.transpose() * body_rotmat;
+              R_WBp.transpose() * R_WBi;
           // The joint_angle_axis computed from the body orientation is very
           // likely not being aligned with the real joint axis. The reason is
           // that we use a relaxation of the rotation matrix, and thus
-          // body_rotmat might not lie on so(3) exactly.
+          // R_WBi might not lie on so(3) exactly.
           Matrix3d normalized_rotmat = math::ProjectMatToRotMat(joint_rotmat);
           Eigen::AngleAxisd joint_angle_axis(normalized_rotmat);
 
