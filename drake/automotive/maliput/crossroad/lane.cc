@@ -27,11 +27,7 @@ Lane::Lane(const Segment* segment, const api::LaneId& id, int index,
   DRAKE_DEMAND(segment != nullptr);
   DRAKE_DEMAND(lane_bounds_.r_min >= driveable_bounds_.r_min);
   DRAKE_DEMAND(lane_bounds_.r_max <= driveable_bounds_.r_max);
-  // TODO(liang.fok) Consider initializing this variable in the constructor's
-  // initializer list so branch_point_ can be declared `const`.
 
-  // TODO(shensquared) Possible place things break down, double check the
-  // BranchPoint API
   branch_point_ =
       make_unique<BranchPoint>(api::BranchPointId({id.id + "_Branch_Point"}),
                                this, segment->junction()->road_geometry());
@@ -94,14 +90,7 @@ api::GeoPosition Lane::DoToGeoPosition(
 }
 
 api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
-  api::SegmentId segment_id = this->segment()->id();
-  if (strcmp(segment_id.id.c_str(), "Crossroad_Horizontal_Segment") == 0) {
     return api::Rotation(0, 0, 0);  // roll, pitch, yaw.
-  } else if (strcmp(segment_id.id.c_str(), "Crossroad_Vertical_Segment") == 0) {
-    return api::Rotation(0, 0, 90);  // roll, pitch, yaw.
-  } else {
-    throw std::runtime_error("Segment ID not recogonized");
-  }
 }
 
 api::LanePosition Lane::DoToLanePosition(const api::GeoPosition& geo_pos,

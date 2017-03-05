@@ -27,41 +27,6 @@ DEFINE_int32(num_dragway_lanes, 0,
              "default zero to disable the dragway. A dragway road network is "
              "only enabled when the user specifies a number of lanes greater "
              "than zero.");
-
-DEFINE_int32(num_horizontal_crossroad_lanes, 0,
-             // TODO:(shensquared) polish the definition
-             "The number of horizontal lanes on the cross road. The number of"
-             "lanes is by default zero to disable the horizontal sections,"
-             "egenerated cross road that reduces to just a dragway. A"
-             "dragway road network is "
-             "only enabled when the user specifies a number of lanes greater "
-             "than zero.");
-DEFINE_int32(num_vertical_crossroad_lanes, 0,
-             // TODO:(shensquared) polish the definition
-             "The number of horizontal lanes on the cross road. The number of"
-             "lanes is by default zero to disable the horizontal sections,"
-             "egenerated cross road that reduces to just a dragway. A"
-             "dragway road network is "
-             "only enabled when the user specifies a number of lanes greater "
-             "than zero.");
-// TODO:(shensquared) polish the definition
-DEFINE_double(crossroad_length, 100, "The length of the crossroad.");
-DEFINE_double(crossroad_lane_width, 3.7, "The crossroad lane width.");
-DEFINE_double(crossroad_shoulder_width, 3.0, "The crossroad's shoulder width.");
-DEFINE_double(crossroad_base_speed, 4.0,
-              "The speed of the vehicles on the right-most lane of the "
-              "crossroad.");
-DEFINE_double(crossroad_lane_speed_delta, 2,
-              "The change in vehicle speed in the left-adjacent lane. For "
-              "example, suppose the crossroad has 3 lanes. Vehicles in the "
-              "right-most lane will travel at crossroad_base_speed m/s. "
-              "Vehicles in the middle lane will travel at "
-              "crossroad_base_speed + crossroad_lane_speed_delta m/s. Finally, "
-              "vehicles in the left-most lane will travel at "
-              "crossroad_base_speed + 2 * crossroad_lane_speed_delta m/s.");
-DEFINE_double(crossroad_vehicle_delay, 3,
-              "The starting time delay between consecutive vehicles on a "
-              "lane.");
 DEFINE_double(dragway_length, 100, "The length of the dragway.");
 DEFINE_double(dragway_lane_width, 3.7, "The dragway lane width.");
 DEFINE_double(dragway_shoulder_width, 3.0, "The dragway's shoulder width.");
@@ -77,6 +42,34 @@ DEFINE_double(dragway_lane_speed_delta, 2,
               "vehicles in the left-most lane will travel at "
               "dragway_base_speed + 2 * dragway_lane_speed_delta m/s.");
 DEFINE_double(dragway_vehicle_delay, 3,
+              "The starting time delay between consecutive vehicles on a "
+              "lane.");
+
+DEFINE_int32(num_horizontal_crossroad_lanes, 0,
+             "The number of horizontal lanes on the crossroad. The number of"
+             "lanes is by default zero to disable the crossroad. A crossroad is"
+             "only enabled when the user specifies a number of lanes greater "
+             "than zero.");
+DEFINE_int32(num_vertical_crossroad_lanes, 0,
+             "The number of vertical lanes on the crossroad. The number of"
+             "lanes is by default zero to disable the crossroad. A crossroad is"
+             "only enabled when the user specifies a number of lanes greater "
+             "than zero.");
+DEFINE_double(crossroad_length, 100, "The length of the crossroad lanes.");
+DEFINE_double(crossroad_lane_width, 3.7, "The crossroad lane width.");
+DEFINE_double(crossroad_shoulder_width, 3.0, "The crossroad's shoulder width.");
+DEFINE_double(crossroad_base_speed, 4.0,
+              "The speed of the vehicles on the right-most horizontal lane of "
+              "the crossroad.");
+DEFINE_double(crossroad_lane_speed_delta, 2,
+              "The change in vehicle speed in the left-adjacent lane. For "
+              "example, suppose the crossroad has 3 horizontal and 5 vertical"
+              "lanes. Vehicles in the right-most horizontal lane will travel at"
+              "crossroad_base_speed m/s. Vehicles in the middle lane will"
+              "travel at crossroad_base_speed + crossroad_lane_speed_delta m/s."
+              "Finally,vehicles in the left-most lane will travel at "
+              "crossroad_base_speed + 2 * crossroad_lane_speed_delta m/s.");
+DEFINE_double(crossroad_vehicle_delay, 3,
               "The starting time delay between consecutive vehicles on a "
               "lane.");
 
@@ -96,14 +89,15 @@ std::string MakeChannelName(const std::string& name) {
 
 // Initializes the provided `simulator` with user-specified numbers of
 // `SimpleCar` vehicles and `TrajectoryCar` vehicles. If parameter
-// `road_network_type` equals `RoadNetworkType::dragway`, the provided
-// `road_geometry` parameter must not be `nullptr`.
+// `road_network_type` equals `RoadNetworkType::dragway` or
+// `RoadNetworkType::crossroad`, the provided `road_geometry` parameter must not
+// be `nullptr`.
 void AddVehicles(RoadNetworkType road_network_type,
                  const maliput::api::RoadGeometry* road_geometry,
                  AutomotiveSimulator<double>* simulator) {
   // TODO(liang.fok): Generalize this demo to allow arbitrary models to be
   // specified via command line parameters. This will involve removing some
-  // hard-coded assumptions about the model's geometry. For exeample, the call
+  // hard-coded assumptions about the model's geometry. For example, the call
   // to CreateTrajectoryParams() below expects a "car" to have a particular
   // length and width.
   const std::string kSdfFile =
@@ -141,7 +135,9 @@ void AddVehicles(RoadNetworkType road_network_type,
                                          std::get<1>(params),
                                          std::get<2>(params));
     }
-  } else if (road_network_type == RoadNetworkType::crossroad) {
+  }
+
+  else if (road_network_type == RoadNetworkType::crossroad) {
     DRAKE_DEMAND(road_geometry != nullptr);
     const maliput::crossroad::RoadGeometry* crossroad_road_geometry =
         dynamic_cast<const maliput::crossroad::RoadGeometry*>(road_geometry);
@@ -173,7 +169,7 @@ void AddVehicles(RoadNetworkType road_network_type,
 
 // Adds a flat terrain to the provided `simulator`.
 void AddFlatTerrain(AutomotiveSimulator<double>* simulator) {
-  // Intentially do nothing. This is possible since only non-physics-based
+  // Intentionally do nothing. This is possible since only non-physics-based
   // vehicles are supported and they will not fall through the "ground" when no
   // flat terrain is present.
   //
@@ -197,9 +193,9 @@ const maliput::api::RoadGeometry* AddDragway(
   return simulator->SetRoadGeometry(std::move(road_geometry));
 }
 
-// Adds a crossroad to the provided `simulator`. The number of lanes, lane
-// width, lane length, and the shoulder width are all user-specifiable via
-// command line flags.
+// Adds a crossroad to the provided `simulator`. The number of horizontal and
+// vertical lanes, lane width, lane length, and the shoulder width are all
+// user-specifiable via command line flags.
 const maliput::api::RoadGeometry* AddCrossroad(
     AutomotiveSimulator<double>* simulator) {
   std::unique_ptr<const maliput::api::RoadGeometry> road_geometry =
@@ -240,8 +236,7 @@ const maliput::api::RoadGeometry* AddTerrain(
 RoadNetworkType DetermineRoadNetworkType() {
   if (FLAGS_num_dragway_lanes > 0) {
     return RoadNetworkType::dragway;
-  }
-  if (FLAGS_num_horizontal_crossroad_lanes > 0) {
+  } else if (FLAGS_num_horizontal_crossroad_lanes > 0) {
     return RoadNetworkType::crossroad;
   } else {
     return RoadNetworkType::flat;

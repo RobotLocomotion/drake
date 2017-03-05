@@ -1,5 +1,5 @@
 #pragma once
-  
+
 #include <memory>
 #include <vector>
 
@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace maliput {
-namespace crossroad{
+namespace crossroad {
 
 class RoadGeometry;
 
@@ -20,29 +20,23 @@ class RoadGeometry;
 class Junction final : public api::Junction {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Junction)
-  /// Constructs a Junction with a two Segments (one horizontal and one
+  /// Constructs a Junction with a two Segments, one horizontal and the other
   /// vertical.
   ///
   /// @p road_geometry must remain valid for the lifetime of this class,
   /// and must refer to the RoadGeometry which will contain this newly
   /// constructed Junction instance.
-  Junction(RoadGeometry* road_geometry,
-      int num_horizontal_lanes,
-      int num_vertical_lanes,
-      double length,
-      double lane_width,
-      double shoulder_width);
+  Junction(RoadGeometry* road_geometry, int num_horizontal_lanes,
+           int num_vertical_lanes, double length, double lane_width,
+           double shoulder_width);
 
   ~Junction() final = default;
 
-  /// Returns the number of Segments contained in this Junction.
-  ///
-  /// Return value is non-negative.
   int num_segments() const { return do_num_segments(); }
 
-  int num_horizontal_lanes() const {return do_num_horizontal_lanes(); }
+  int num_horizontal_lanes() const { return do_num_horizontal_lanes(); }
 
-  int num_vertical_lanes() const {return do_num_vertical_lanes();}
+  int num_vertical_lanes() const { return do_num_vertical_lanes(); }
 
  private:
   const api::JunctionId do_id() const final { return id_; }
@@ -51,9 +45,9 @@ class Junction final : public api::Junction {
 
   int do_num_segments() const final { return 2; }
 
-  int do_num_horizontal_lanes() const {return num_horizontal_lanes_;};
+  int do_num_horizontal_lanes() const { return num_horizontal_lanes_; };
 
-  int do_num_vertical_lanes() const {return num_vertical_lanes_;};
+  int do_num_vertical_lanes() const { return num_vertical_lanes_; };
 
   const api::Segment* do_segment(int index) const final;
 
@@ -66,7 +60,6 @@ class Junction final : public api::Junction {
   const int num_horizontal_lanes_;
 
   const int num_vertical_lanes_;
-
 };
 
 }  // namespace crossroad

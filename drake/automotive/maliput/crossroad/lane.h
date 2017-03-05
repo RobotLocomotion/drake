@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace maliput {
-namespace crossroad{
+namespace crossroad {
 
 // Forward declarations.
 class BranchPoint;
@@ -40,19 +40,19 @@ class Segment;
     |                    :                    |   |
     |                    :                    |   |
     |                    :                    |   |
-    |                    :                    |   |           world
-    |                    :                    |   |           frame:
     |                    :                    |   |
-    |                    :                    |   |                X
-    |                    :                    |   |                ^
-    |                    :                    |   |                |
-    |                    :                    |   v                |
-    ---------------------o---------------------  ———  s = 0   Y <--o
+    |                    :                    |   |
+    |                    :                    |   |
+    |                    :                    |   |
+    |                    :                    |   |
+    |                    :                    |   |
+    |                    :                    |   v
+    ---------------------o---------------------  ———  s = 0
 
             r_max                r_min
     |<-------------------|------------------->|
 
-                                            y_offset
+                                            r_offset
                          |<----------------------------------------|
   </pre>
 
@@ -61,8 +61,10 @@ class Segment;
   the lane. Coordinate `r` is a value between `r_min` and `r_max`. It specifies
   the lateral traversal at a particular `s`. Coordinate `h` specifies the
   height above the lane's surface at a particular `s` and `r` (the lane's
-  surface itself is always at `h = 0`). Since Crossroad lanes are flat and level,
-  `z = h` for all values of `s` and `r` and, in the Crossroad's case, `z = 0` for
+  surface itself is always at `h = 0`). Since Crossroad lanes are flat and
+level,
+  `z = h` for all values of `s` and `r` and, in the Crossroad's case, `z = 0`
+for
   the surface itself. The origin of the lane's frame is defined by the `o` along
   the above-shown `s = 0` line.
 **/
@@ -80,7 +82,7 @@ class Lane final : public api::Lane {
   ///
   /// @param length The total length of the lane.
   ///
-  /// @param y_offset The vector from the world frame's origin to the
+  /// @param r_offset The vector from the world frame's origin to the
   /// lane's `s = 0` and `r = 0`. This value is positive when the lane's
   /// `s = 0` and `r = 0` is to the left of the world frame's origin, and is
   /// negative otherwise.
@@ -91,9 +93,9 @@ class Lane final : public api::Lane {
   /// @param driveable_bounds The driveable bounds of the lane, uniform along
   ///        the entire reference path.
   ///
-  Lane(const Segment* segment, const api::LaneId& id,  int index, double length,
-      double y_offset, const api::RBounds& lane_bounds,
-      const api::RBounds& driveable_bounds);
+  Lane(const Segment* segment, const api::LaneId& id, int index, double length,
+       double r_offset, const api::RBounds& lane_bounds,
+       const api::RBounds& driveable_bounds);
 
   ~Lane() final = default;
 
@@ -107,7 +109,7 @@ class Lane final : public api::Lane {
 
   ///@}
 
-  /// Returns the y-offset of this lane's frame relative to the world frame.
+  /// Returns the r-offset of this lane's frame relative to the world frame.
   double r_offset() const { return r_offset_; }
 
  private:
@@ -143,11 +145,10 @@ class Lane final : public api::Lane {
       const api::LanePosition& position,
       const api::IsoLaneVelocity& velocity) const final;
 
-  api::GeoPosition DoToGeoPosition(const api::LanePosition& lane_pos) const
-      final;
+  api::GeoPosition DoToGeoPosition(
+      const api::LanePosition& lane_pos) const final;
 
-  api::Rotation DoGetOrientation(const api::LanePosition& lane_pos) const
-      final;
+  api::Rotation DoGetOrientation(const api::LanePosition& lane_pos) const final;
 
   api::LanePosition DoToLanePosition(const api::GeoPosition& geo_pos,
                                      api::GeoPosition* nearest_point,
@@ -163,11 +164,9 @@ class Lane final : public api::Lane {
 
   // The following variable is actually `const` after construction.
   std::unique_ptr<api::BranchPoint> branch_point_;
-
   const api::Lane* lane_to_left_{};
   const api::Lane* lane_to_right_{};
 };
-
 
 }  // namespace crossroad
 }  // namespace maliput

@@ -14,25 +14,6 @@ namespace drake {
 namespace maliput {
 namespace crossroad {
 
-// namespace {
-// // Clamps the provided `value` by the provided `min` and `max` values.
-// Returns
-// // the clamped result.
-// //
-// // TODO(liang.fok) Once c++17 or later is used, switch to std::clamp().
-// //
-// double clamp(double value, double min, double max) {
-//   double result = value;
-//   if (value < min) {
-//     result = min;
-//   }
-//   if (value > max) {
-//     result = max;
-//   }
-//   return result;
-// }
-// }  // namespace
-
 RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
                            int num_horizontal_lanes, int num_vertical_lanes,
                            double length, double lane_width,

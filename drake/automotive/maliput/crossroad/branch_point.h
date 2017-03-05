@@ -11,12 +11,13 @@
 
 namespace drake {
 namespace maliput {
-namespace crossroad{
+namespace crossroad {
 
 class BranchPoint;
 class Lane;
 
-/// Crossroad's implementation of api::LaneEndSet. Since a Crossroad::Lane connects
+/// Crossroad's implementation of api::LaneEndSet. Since a Crossroad::Lane
+/// connects
 /// to itself, this LaneEndSet only contains one api::LaneEnd.
 class LaneEndSet final : public api::LaneEndSet {
  public:
@@ -34,7 +35,6 @@ class LaneEndSet final : public api::LaneEndSet {
 
   const api::LaneEnd end_;
 };
-
 
 /// Crossroad's implementation of api::BranchPoint.
 class BranchPoint final : public api::BranchPoint {
@@ -54,7 +54,7 @@ class BranchPoint final : public api::BranchPoint {
   /// this class's instance.
   ///
   BranchPoint(const api::BranchPointId& id, const Lane* lane,
-      const api::RoadGeometry* road_geometry);
+              const api::RoadGeometry* road_geometry);
 
   ~BranchPoint() final = default;
 

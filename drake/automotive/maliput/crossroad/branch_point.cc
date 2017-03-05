@@ -12,8 +12,7 @@ BranchPoint::BranchPoint(const api::BranchPointId& id, const Lane* lane,
     : id_(id),
       road_geometry_(road_geometry),
       start_side_lane_end_set_(lane, api::LaneEnd::kStart),
-      finish_side_lane_end_set_(lane, api::LaneEnd::kFinish) {
-}
+      finish_side_lane_end_set_(lane, api::LaneEnd::kFinish) {}
 
 const api::RoadGeometry* BranchPoint::do_road_geometry() const {
   return road_geometry_;

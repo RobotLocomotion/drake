@@ -7,40 +7,37 @@
 
 namespace drake {
 namespace maliput {
-namespace crossroad{
+namespace crossroad {
 namespace {
 
 // To understand the characteristics of the geometry, consult the
-// dragway::Segment and dragway::Lane detailed class overview docs.
-class MaliputDragwayLaneTest : public ::testing::Test {
+// crossroad::Segment and crossroad::Lane detailed class overview docs.
+class MaliputCrossroadLaneTest : public ::testing::Test {
  public:
-  MaliputDragwayLaneTest()
-      : length_(100.0),
-        lane_width_(6.0),
-        shoulder_width_(0.5) {
-  }
+  MaliputCrossroadLaneTest()
+      : length_(100.0), lane_width_(6.0), shoulder_width_(0.5) {}
 
-  // Contains expected driveable r_min, driveable r_max, and y_offset parameters
-  // of a Dragway Lane.
+  // Contains expected driveable r_min, driveable r_max, and r_offset parameters
+  // of a Crossroad Lane.
   struct ExpectedLaneParameters {
-    double y_offset{};
+    double r_offset{};
     double driveable_r_min{};
     double driveable_r_max{};
   };
 
-  ExpectedLaneParameters GetExpectedLaneParameters(
-      int num_lanes, int lane_index) const {
+  ExpectedLaneParameters GetExpectedLaneParameters(int num_lanes,
+                                                   int lane_index) const {
     ExpectedLaneParameters result{};
     if (num_lanes == 1) {
-      result.y_offset = 0.0;
+      result.r_offset = 0.0;
       result.driveable_r_min = -3.5;
       result.driveable_r_max = 3.5;
     } else if ((num_lanes == 2) && (lane_index == 0)) {
-      result.y_offset = -3.0;
+      result.r_offset = -3.0;
       result.driveable_r_min = -3.5;
       result.driveable_r_max = 9.5;
     } else if ((num_lanes == 2) && (lane_index == 1)) {
-      result.y_offset = 3.0;
+      result.r_offset = 3.0;
       result.driveable_r_min = -9.5;
       result.driveable_r_max = 3.5;
     } else {
@@ -55,7 +52,7 @@ class MaliputDragwayLaneTest : public ::testing::Test {
         GetExpectedLaneParameters(num_lanes, lane->index());
 
     // Tests Lane::lane_bounds().
-    for (double s = 0 ; s < length_; s += length_ / 100) {
+    for (double s = 0; s < length_; s += length_ / 100) {
       const api::RBounds lane_bounds = lane->lane_bounds(s);
       EXPECT_EQ(lane_bounds.r_min, -lane_width_ / 2);
       EXPECT_EQ(lane_bounds.r_max, lane_width_ / 2);
@@ -64,7 +61,7 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     EXPECT_EQ(lane->length(), length_);
 
     // Tests Lane::driveable_bounds().
-    for (double s = 0 ; s < length_; s += length_ / 100) {
+    for (double s = 0; s < length_; s += length_ / 100) {
       const api::RBounds driveable_bounds = lane->driveable_bounds(s);
       EXPECT_EQ(driveable_bounds.r_min, expected.driveable_r_min);
       EXPECT_EQ(driveable_bounds.r_max, expected.driveable_r_max);
@@ -78,10 +75,10 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     // state space and only check those points in the hopes that they are
     // representative of the entire state space.
     const double driveable_width =
-      expected.driveable_r_max - expected.driveable_r_min;
+        expected.driveable_r_max - expected.driveable_r_min;
     for (double s = 0; s < length_; s += length_ / 100) {
       for (double r = expected.driveable_r_min; r <= expected.driveable_r_max;
-          r += driveable_width / 100) {
+           r += driveable_width / 100) {
         for (double h = 0; h < 1; h += 0.1) {
           const api::LanePosition lane_position(s, r, h);
 
@@ -91,12 +88,11 @@ class MaliputDragwayLaneTest : public ::testing::Test {
           const double linear_tolerance =
               lane->segment()->junction()->road_geometry()->linear_tolerance();
           EXPECT_DOUBLE_EQ(geo_position.x, s);
-          EXPECT_NEAR(geo_position.y, expected.y_offset + r, linear_tolerance);
+          EXPECT_NEAR(geo_position.y, expected.r_offset + r, linear_tolerance);
           EXPECT_DOUBLE_EQ(geo_position.z, h);
 
           // Tests Lane::GetOrientation().
-          const api::Rotation rotation =
-              lane->GetOrientation(lane_position);
+          const api::Rotation rotation = lane->GetOrientation(lane_position);
           EXPECT_DOUBLE_EQ(rotation.roll, 0);
           EXPECT_DOUBLE_EQ(rotation.pitch, 0);
           EXPECT_DOUBLE_EQ(rotation.yaw, 0);
@@ -111,7 +107,8 @@ class MaliputDragwayLaneTest : public ::testing::Test {
           const double kEta_v = 3.3;
 
           const api::LanePosition motion_derivatives =
-              lane->EvalMotionDerivatives(lane_position,
+              lane->EvalMotionDerivatives(
+                  lane_position,
                   api::IsoLaneVelocity(kSigma_v, kRho_v, kEta_v));
           EXPECT_DOUBLE_EQ(motion_derivatives.s, kSigma_v);
           EXPECT_DOUBLE_EQ(motion_derivatives.r, kRho_v);
@@ -124,8 +121,9 @@ class MaliputDragwayLaneTest : public ::testing::Test {
   // Verifies that the branches within the provided `lane` are correct. The
   // provided `lane` must be in the provided `road_geometry`.
   void VerifyBranches(const api::Lane* lane,
-      const RoadGeometry* road_geometry) const {
-    // Verifies that the same BranchPoint covers both ends of the dragway lane.
+                      const RoadGeometry* road_geometry) const {
+    // Verifies that the same BranchPoint covers both ends of the crossroad
+    // lane.
     EXPECT_EQ(lane->GetBranchPoint(api::LaneEnd::kStart),
               lane->GetBranchPoint(api::LaneEnd::kFinish));
 
@@ -145,11 +143,11 @@ class MaliputDragwayLaneTest : public ::testing::Test {
       EXPECT_EQ(lane_end_set_finish->size(), 1);
 
       const api::LaneEnd& lane_end_start =
-        lane->GetConfluentBranches(api::LaneEnd::kStart)->get(0);
+          lane->GetConfluentBranches(api::LaneEnd::kStart)->get(0);
       EXPECT_EQ(lane_end_start.lane, lane);
       EXPECT_EQ(lane_end_start.end, api::LaneEnd::kStart);
       const api::LaneEnd& lane_end_finish =
-        lane->GetConfluentBranches(api::LaneEnd::kFinish)->get(0);
+          lane->GetConfluentBranches(api::LaneEnd::kFinish)->get(0);
       EXPECT_EQ(lane_end_finish.lane, lane);
       EXPECT_EQ(lane_end_finish.end, api::LaneEnd::kFinish);
     }
@@ -164,11 +162,11 @@ class MaliputDragwayLaneTest : public ::testing::Test {
       EXPECT_EQ(lane_end_set_finish->size(), 1);
 
       const api::LaneEnd& lane_end_start =
-        lane->GetOngoingBranches(api::LaneEnd::kStart)->get(0);
+          lane->GetOngoingBranches(api::LaneEnd::kStart)->get(0);
       EXPECT_EQ(lane_end_start.lane, lane);
       EXPECT_EQ(lane_end_start.end, api::LaneEnd::kFinish);
       const api::LaneEnd& lane_end_finish =
-        lane->GetOngoingBranches(api::LaneEnd::kFinish)->get(0);
+          lane->GetOngoingBranches(api::LaneEnd::kFinish)->get(0);
       EXPECT_EQ(lane_end_finish.lane, lane);
       EXPECT_EQ(lane_end_finish.end, api::LaneEnd::kStart);
     }
@@ -195,8 +193,8 @@ class MaliputDragwayLaneTest : public ::testing::Test {
 };
 
 /*
- Tests a dragway containing one lane. It is arranged as shown below in the world
- frame:
+ Tests a crossroad containing one lane. It is arranged as shown below in the
+ world frame:
 
                x
                ^
@@ -211,8 +209,8 @@ class MaliputDragwayLaneTest : public ::testing::Test {
                |
                V
  */
-TEST_F(MaliputDragwayLaneTest, SingleLane) {
-  const api::RoadGeometryId road_geometry_id({"OneLaneDragwayRoadGeometry"});
+TEST_F(MaliputCrossroadLaneTest, SingleLane) {
+  const api::RoadGeometryId road_geometry_id({"OneLaneCrossroadRoadGeometry"});
   const int kNumLanes = 1;
   // The following linear tolerance was empirically derived on a 64-bit Ubuntu
   // system. It is necessary due to inaccuracies in floating point calculations
@@ -220,7 +218,7 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
   const double kLinearTolerance = 1e-15;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
-      shoulder_width_, kLinearTolerance);
+                             shoulder_width_, kLinearTolerance);
 
   const api::Junction* junction = road_geometry.junction(0);
   ASSERT_NE(junction, nullptr);
@@ -228,7 +226,7 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
   ASSERT_NE(segment, nullptr);
   EXPECT_EQ(segment->lane(0)->length(), length_);
   EXPECT_EQ(segment->num_lanes(), 1);
-  EXPECT_EQ(segment->id().id, "Dragway_Segment_ID");
+  EXPECT_EQ(segment->id().id, "Crossroad_Segment_ID");
 
   const int kLaneIndex = 0;
   const api::Lane* lane = segment->lane(kLaneIndex);
@@ -239,9 +237,9 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
   VerifyBranches(lane, &road_geometry);
 }
 
-
 /*
- Tests a dragway containing two lanes. The two lanes are arranged as shown below
+ Tests a crossroad containing two lanes. The two lanes are arranged as shown
+ below
  in the world frame:
 
                               x
@@ -259,16 +257,16 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
                     index 1   |    index 0
                               V
  */
-TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
-  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+TEST_F(MaliputCrossroadLaneTest, TwoLaneCrossroad) {
+  const api::RoadGeometryId road_geometry_id({"TwoLaneCrossroadRoadGeometry"});
   const int kNumLanes = 2;
   // The following linear tolerance was empirically derived on a 64-bit Ubuntu
   // system. It is necessary due to inaccuracies in floating point calculations
   // and different ways of computing the driveable r_min and r_max.
   const double kLinearTolerance = 1e-15;
 
-  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
-      lane_width_, shoulder_width_, kLinearTolerance);
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
+                             shoulder_width_, kLinearTolerance);
 
   const api::Junction* junction = road_geometry.junction(0);
   ASSERT_NE(junction, nullptr);
@@ -278,7 +276,7 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
   ASSERT_NE(lane_zero, nullptr);
   EXPECT_EQ(lane_zero->length(), length_);
   EXPECT_EQ(segment->num_lanes(), kNumLanes);
-  EXPECT_EQ(segment->id().id, "Dragway_Segment_ID");
+  EXPECT_EQ(segment->id().id, "Crossroad_Segment_ID");
 
   for (int i = 0; i < kNumLanes; ++i) {
     const api::Lane* lane = segment->lane(i);

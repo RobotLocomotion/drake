@@ -29,7 +29,11 @@ class RoadGeometry final : public api::RoadGeometry {
   /// @param[in] id The ID of this RoadGeometry. This can be any user-selectable
   /// value.
   ///
-  /// @param[in] num_lanes The number of lanes. This must be greater than zero.
+  /// @param[in] num_horizontal_lanes The number of horizontal lanes. This must
+  /// be greater than zero.
+  ///
+  /// @param[in] num_vertical_lanes The number of vertical lanes. This must be
+  /// greater than zero.
   ///
   /// @param[in] length The length of the crossroad.
   ///
