@@ -244,12 +244,10 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   MM += Eigen::Matrix<T, 8, 8>::Identity() * cfm;
 
   // Solve the LCP.
-/*
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz);
   DRAKE_DEMAND(success);
-*/
-VectorX<T> zz(qq.size());
+
   // Obtain the normal and frictional contact forces.
   VectorX<T> fN = zz.segment(0, 2);
   VectorX<T> fF_pos = zz.segment(2, 2);
@@ -717,9 +715,9 @@ T Rod2D<T>::step5(const T& x) {
 //   s=0      1           3
 //
 template <class T>
-T Rod2D<T>::CalcMuStribeck(const T& mu_s, const T& mu_d, const T& s) {
+T Rod2D<T>::CalcMuStribeck(double mu_s, double mu_d, const T& s) {
   DRAKE_ASSERT(mu_s >= 0 && mu_d >= 0 && s >= 0);
-  T mu_stribeck;
+  T mu_stribeck = s;
   if (s >= 3)
     mu_stribeck = mu_d;  // sliding
   else if (s >= 1)
@@ -797,7 +795,7 @@ Vector3<T> Rod2D<T>::CalcCompliantContactForces(
       const T fN = max(fK_plus_fD, T(0));
       const T mu = CalcMuStribeck(get_mu_static(), get_mu_coulomb(),
                                   abs(v) / get_stiction_speed_tolerance());
-      const T fF = -mu * fN * T(sign_v);
+      const T fF = -mu * fN * sign_v;
 
       // Find the point Rc of the rod that is coincident with the contact point
       // C, measured from Ro but expressed in W.

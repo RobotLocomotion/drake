@@ -6,8 +6,10 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 
+using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::VectorBase;
 using drake::systems::BasicVector;
 using drake::systems::ContinuousState;
@@ -1059,6 +1061,53 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
   Vector3d F_Ro_W_both = dut_->CalcCompliantContactForces(*context_);
   EXPECT_TRUE(F_Ro_W_both.isApprox(F_Ro_W_left+F_Ro_W_right, kTightTol));
   EXPECT_NEAR(F_Ro_W_both[2], 0., kTightTol);
+}
+
+// Integrates the rod system starting from the Painleve configuration. This is
+// a stiff system.
+GTEST_TEST(StiffTest, Rod2d) {
+  const double inf = std::numeric_limits<double>::infinity();
+  examples::rod2d::Rod2D<double> rod(
+      examples::rod2d::Rod2D<double>::SimulationType::kCompliant,
+      0.0 /* no time stepping */);
+
+  // Make the system stiff.
+  rod.set_mu_coulomb(1);
+  rod.set_stiffness(1e8);
+  rod.set_dissipation(1e3);
+  rod.set_stiction_speed_tolerance(1e-4);
+  rod.set_mu_static(1.5);
+
+  // Create the context.
+  auto context = rod.CreateDefaultContext();
+
+  // Set a zero input force (this is the default).
+  std::unique_ptr<systems::BasicVector<double>> ext_input =
+      std::make_unique<systems::BasicVector<double>>(3);
+  ext_input->SetAtIndex(0, 0.0);
+  ext_input->SetAtIndex(1, 0.0);
+  ext_input->SetAtIndex(2, 0.0);
+  context->FixInputPort(0, std::move(ext_input));
+
+  // Use a relatively large step size.
+  const double dt = 1e-2;
+
+  // Create and initialize the integrator.
+  ImplicitEulerIntegrator<double> integrator(rod, dt, context.get());
+  integrator.Initialize();
+  integrator.set_convergence_tolerance(1e-3);
+
+  // Integrate for 1 second.
+  const double t_final = 1.0;
+  double t;
+//  int last_obj_inc = 0;
+  for (t = 0.0; std::abs(t - t_final) >= dt; t = context->get_time()) {
+    const VectorBase<double>& xc = context->get_continuous_state_vector();
+    std::cerr << t << " " << xc.CopyToVector().transpose() << std::endl;
+//   std::cout << (integrator.get_num_objective_function_increases() - last_obj_inc) << " objective function increases for xc=" << xc.GetAtIndex(0) << ", " << xc.GetAtIndex(1) << " at " << context->get_time() << std::endl;
+//    last_obj_inc = integrator.get_num_objective_function_increases();
+    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
+  }
 }
 
 }  // namespace

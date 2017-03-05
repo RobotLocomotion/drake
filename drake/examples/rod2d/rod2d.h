@@ -424,7 +424,7 @@ class Rod2D : public systems::LeafSystem<T> {
   static T step5(const T& x);
 
   // Friction model used in compliant contact.
-  static T CalcMuStribeck(const T& us, const T& ud, const T& v);
+  static T CalcMuStribeck(double us, double ud, const T& v);
 
   // Solves linear complementarity problems for time stepping.
   solvers::MobyLCPSolver lcp_;

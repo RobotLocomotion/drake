@@ -5,7 +5,6 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/examples/rod2d/rod2d.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
@@ -350,52 +349,6 @@ TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
-}
-
-// Integrates the two-dimensional rod system.
-GTEST_TEST(ImplicitIntegratorGTest, Rod2d) {
-  const double inf = std::numeric_limits<double>::infinity();
-  examples::rod2d::Rod2D<double> rod(
-      examples::rod2d::Rod2D<double>::SimulationType::kCompliant,
-      0.0 /* no time stepping */);
-
-  // Make the system stiff.
-  rod.set_mu_coulomb(1);
-  rod.set_stiffness(1e8);
-  rod.set_dissipation(1e3);
-  rod.set_stiction_speed_tolerance(1e-4);
-  rod.set_mu_static(1.5);
-
-  // Create the context.
-  auto context = rod.CreateDefaultContext();
-
-  // Set a zero input force (this is the default).
-  std::unique_ptr<systems::BasicVector<double>> ext_input =
-      std::make_unique<systems::BasicVector<double>>(3);
-  ext_input->SetAtIndex(0, 0.0);
-  ext_input->SetAtIndex(1, 0.0);
-  ext_input->SetAtIndex(2, 0.0);
-  context->FixInputPort(0, std::move(ext_input));
-
-  // Use a relatively large step size.
-  const double dt = 1e-2;
-
-  // Create and initialize the integrator.
-  ImplicitEulerIntegrator<double> integrator(rod, dt, context.get());
-  integrator.Initialize();
-  integrator.set_convergence_tolerance(1e-3);
-
-  // Integrate for 1 second.
-  const double t_final = 1.0;
-  double t;
-//  int last_obj_inc = 0;
-  for (t = 0.0; std::abs(t - t_final) >= dt; t = context->get_time()) {
-    const VectorBase<double>& xc = context->get_continuous_state_vector();
-    std::cerr << t << " " << xc.CopyToVector().transpose() << std::endl;
-//   std::cout << (integrator.get_num_objective_function_increases() - last_obj_inc) << " objective function increases for xc=" << xc.GetAtIndex(0) << ", " << xc.GetAtIndex(1) << " at " << context->get_time() << std::endl;
-//    last_obj_inc = integrator.get_num_objective_function_increases();
-    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
-  }
 }
 
 }  // namespace

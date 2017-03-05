@@ -13,7 +13,7 @@ target_link_libraries(explicit_euler_integrator_test
 drake_add_cc_test(implicit_euler_integrator_test)
 target_link_libraries(implicit_euler_integrator_test
         drakeSystemAnalysis drakeSystemFramework drakeCommon
-        drakeSpringMassSystemPlant drakeRod2D)
+        drakeSpringMassSystemPlant)
 
 drake_add_cc_test(runge_kutta2_integrator_test)
 target_link_libraries(runge_kutta2_integrator_test

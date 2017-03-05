@@ -50,79 +50,29 @@ Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobian(
   // Evaluate the derivatives at that state.
   std::unique_ptr<ContinuousState<Scalar>> derivs =
       system->AllocateTimeDerivatives();
-
   system->CalcTimeDerivatives(*context, derivs.get());
 
   // Get the Jacobian.
-  /*
-  auto result = a_xtplus;
-  auto result1 = derivs->CopyToVector();
-  result1 = result1*h;
-  result = result - a_xt;
-  result = result - result1;
-   */
+/*
   auto result = a_xtplus;
   result = result - a_xt;
   result = result - derivs->CopyToVector()*h;
-//  auto result = a_xtplus  - (a_xt - (derivs->CopyToVector()*h));
-  DRAKE_DEMAND(result.size() == n_state_dim);
-  MatrixX<double> J(n_state_dim, n_state_dim);
-  for (int i = 0; i < n_state_dim; ++i) {
-    DRAKE_DEMAND(result[i].derivatives().size() == n_state_dim);
-    const auto& grad = result[i].derivatives();
-    J.row(i) = grad;
-  }
-  return J;
-  // Causes a segfault.
-  // = math::autoDiffToGradientMatrix(result);
-/*
-  return xtplus - xt - h*derivs_->CopyToVector();
 */
-//  auto result = this->EvaluateNonlinearEquations(a_xt, a_xtplus, h);
-/*
+  auto result = (a_xtplus.eval() - a_xt.eval() - (derivs->CopyToVector().eval()*h).eval()).eval();
+  return math::autoDiffToGradientMatrix(result);
 
-  AutoDiffXd
-// Get the system and the context
-using Scalar = typename std::remove_reference<decltype(xt)>::type::Scalar;
-const auto& system = this->get_system();
-Context<T>* context = this->get_mutable_context();
-
-  // TODO(edrumwri): Fix this.
-
-  // Must make copies (?).
-  VectorX<T> xt_copy = xt;
-  VectorX<T> xtplus_copy = xtplus; 
-*/
-  // Set g
-/*
-  MatrixX<T> M(5,3);
-  VectorX<T> q(3);
-  auto g = [&](const auto& x) {
-    using Scalar = typename std::remove_reference<decltype(x)>::type::Scalar;
-//    return (M.template cast<Scalar>().eval() * x).eval();
-    return x;
-  };
-  VectorX<T> v(3);
-  math::jacobian(g, v);
-  return MatrixX<T>();
-*/
+// NOTE: This is the chunking AutoDiff version, currently disabled.
 /*
   auto g = [&](const auto& x) {
-//    return this->EvaluateNonlinearEquations(xt_copy, x, h).eval();
-//    using Scalar = typename std::remove_reference<decltype(x)>::type::Scalar;
-//    return (xt_copy - x).eval();
+    // Set the continuous state in the context.
     context->get_mutable_continuous_state()->get_mutable_vector()->
-      SetFromVector(x.template cast<T>());
-    system.CalcTimeDerivatives(*context, derivs_.get());
-
-  return (x - xt_copy - h*derivs_->CopyToVector()).eval();
-
+      SetFromVector(x);
+    system->CalcTimeDerivatives(*context, derivs.get());
+    return (x.eval() - xt.eval() - (derivs->CopyToVector().eval()*h).eval()).eval();
   };
-  auto result = math::jacobian(g, xtplus_copy);
-  return math::autoDiffToGradientMatrix(result); 
-//  return math::jacobian(g, xtplus_copy).template cast<Scalar>();
-*/
-//  return math::autoDiffToGradientMatrix(vec);
+  auto result = math::jacobian(g, xtplus);
+  return math::autoDiffToGradientMatrix(result);
+*/ 
 }
 
 // Computes the Jacobian of the residual "error" with respect to the state
@@ -284,7 +234,6 @@ bool ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
   // Evaluate the objective function.
   while (f_last > convergence_tol_) {
     // Form the Jacobian matrix ∂g/∂xtplus.
-    MatrixX<T> JN = ComputeN2DiffJacobian(xt, xtplus, dt);
     MatrixX<T> J = ComputeADiffJacobian(xt, xtplus, dt);
 
     // The Jacobian matrix yields the relationship J dxtplus/dt = dg/dt.
