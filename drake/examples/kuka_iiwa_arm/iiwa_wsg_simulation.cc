@@ -15,9 +15,9 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
@@ -78,8 +78,8 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   tree_builder->StoreModel(
       "box",
       "/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf");
-  tree_builder->StoreModel(
-      "wsg", "/examples/schunk_wsg/models/schunk_wsg_50.sdf");
+  tree_builder->StoreModel("wsg",
+                           "/examples/schunk_wsg/models/schunk_wsg_50.sdf");
 
   // Build a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
@@ -134,8 +134,9 @@ int DoMain() {
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
       BuildCombinedPlant<double>(&iiwa_instance, &wsg_instance, &box_instance);
 
-  auto model = builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
-      std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
+  auto model =
+      builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
+          std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
 
   const RigidBodyTree<double>& tree = model->get_plant().get_rigid_body_tree();
 
@@ -146,21 +147,21 @@ int DoMain() {
 
   // Create the command subscriber and status publisher.
   auto iiwa_command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
-          "IIWA_COMMAND", &lcm));
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
+                                                                 &lcm));
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
 
   auto iiwa_status_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
-          "IIWA_STATUS", &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
+                                                               &lcm));
   iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
 
   // TODO(siyuan): Connect this to kuka_planner runner once it generates
   // reference acceleration.
   auto iiwa_zero_acceleration_source =
-        builder.template AddSystem<systems::ConstantVectorSource<double>>(
-            Eigen::VectorXd::Zero(7));
+      builder.template AddSystem<systems::ConstantVectorSource<double>>(
+          Eigen::VectorXd::Zero(7));
 
   builder.Connect(iiwa_command_sub->get_output_port(0),
                   iiwa_command_receiver->get_input_port(0));
