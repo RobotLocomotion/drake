@@ -23,6 +23,11 @@ py_binary(
     srcs = ["drakelint.py"],
 )
 
+exports_files(
+    ["nlopt-gen-hpp.sh"],
+    visibility = ["@nlopt//:__pkg__"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildifier//buildifier",

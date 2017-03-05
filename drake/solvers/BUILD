@@ -52,12 +52,12 @@ drake_cc_library(
 # - linear_system_solver
 # - moby_lcp_solver
 # - IPOPT
+# - NLOPT
 # - SNOPT
 # - Gurobi (on Ubuntu only)
 
 # Unsupported solvers:
 # - dReal
-# - NLOPT
 # - MOSEK
 
 # TODO(jwnimmer-tri, david-german-tri): Support more solvers.
@@ -71,7 +71,6 @@ drake_cc_library(
         "moby_lcp_solver.cc",
         "no_dreal.cc",
         "no_mosek.cc",
-        "no_nlopt.cc",
     ],
     hdrs = [
         "dreal_solver.h",
@@ -81,7 +80,6 @@ drake_cc_library(
         "mathematical_program_solver_interface.h",
         "moby_lcp_solver.h",
         "mosek_solver.h",
-        "nlopt_solver.h",
         "snopt_solver.h",
     ],
     deps = [
@@ -91,6 +89,7 @@ drake_cc_library(
         ":function",
         ":gurobi_solver",
         ":ipopt_solver",
+        ":nlopt_solver",
         ":snopt_solver",
         "//drake/common",
         "//drake/common:autodiff",
@@ -251,6 +250,18 @@ drake_cc_library(
         ":mathematical_program_api",
         "//drake/math:autodiff",
         "@ipopt//:lib",
+    ],
+)
+
+drake_cc_library(
+    name = "nlopt_solver",
+    srcs = ["nlopt_solver.cc"],
+    hdrs = ["nlopt_solver.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/math:autodiff",
+        "@nlopt//:lib",
     ],
 )
 
