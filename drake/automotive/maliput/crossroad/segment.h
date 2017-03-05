@@ -70,24 +70,18 @@ class Segment final : public api::Segment {
   ///
   /// @param[in] shoulder_width The width of the shoulders on each side of the
   /// road.
-  Segment(Junction* junction,
-      int index,
-      int num_lanes,
-      double length,
-      double lane_width,
-      double shoulder_width,
-      api::SegmentId segment_id);
+  Segment(Junction* junction, int index, int num_lanes, double length,
+          double lane_width, double shoulder_width, api::SegmentId segment_id);
 
   ~Segment() final = default;
 
   /// Returns the index of this Segment within the Junction which owns it.
   int index() const { return do_index(); }
 
-
  private:
   const int index_{};  // The index of this segment within a Junction.
 
-  int do_index() const {return index_;};
+  int do_index() const { return index_; };
 
   const api::SegmentId do_id() const final { return id_; }
 
