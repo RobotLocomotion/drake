@@ -30,7 +30,11 @@ drake_cc_library(
         "xml_util.h",
     ],
     deps = [
+        "//drake/common:drake_path",
         "//drake/multibody:rigid_body_tree",
+        "//drake/thirdParty:spruce",
+        "//drake/thirdParty:tinydir",
+        "//drake/thirdParty:tinyxml2",
     ],
 )
 

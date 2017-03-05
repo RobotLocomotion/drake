@@ -136,6 +136,7 @@ drake_cc_googletest(
     data = ["//drake/multibody/collision:test_models"],
     deps = [
         ":drake_visualizer",
+        "//drake/common:drake_path",
         "//drake/lcm:mock",
         "//drake/systems/analysis",
     ],
