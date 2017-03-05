@@ -56,6 +56,8 @@ drake_cc_googletest(
     name = "sample_test",
     deps = [
         ":sample",
+        "//drake/common:autodiff",
+        "//drake/common:symbolic",
     ],
 )
 
