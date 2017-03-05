@@ -15,6 +15,8 @@ namespace multibody {
  * satisfy the kinematics constraints, with some error.
  */
 class GlobalInverseKinematics : public solvers::MathematicalProgram {
+// TODO(hongkai.dai): create a function globalIK, with interface similar to
+// inverseKin(), that accepts RigidBodyConstraint objects and cost function.
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GlobalInverseKinematics)
 
@@ -26,7 +28,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * @param robot The robot on which the inverse kinematics problem is solved.
    * @param num_binary_vars_per_half_axis The number of binary variable for
    * each half axis, to segment the unit circle.
-   * @see AddRotationMatrixMcCormickEnvelopeMilpConstraints for more details.
+   * @see AddRotationMatrixMcCormickEnvelopeMilpConstraints() for more details
+   * on num_binary_vars_per_half_axis.
    */
   GlobalInverseKinematics(const RigidBodyTreed& robot,
                           int num_binary_vars_per_half_axis = 2);
@@ -80,7 +83,7 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * @param body_idx The index of the body on which the position of a point is
    * constrained.
    * @param body_pt The position of the point measured and expressed in the body
-   * frame. 
+   * frame.
    * @param box_lb The lower bound of the box.
    * @param box_ub The upper bound of the box.
    * @param measured_frame. The frame in which the box is specified. Namely if

@@ -132,25 +132,25 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 // where (a+b)/2 is the joint offset, such that the bounds on
                 // θ - (a+b)/2 are symmetric.
                 // We use the following notation:
-                // Rₚ       The parent rotation matrix.
-                // Rc       The child rotation matrix.
-                // ᵖRⱼ      The joint to parent rotation matrix.
+                // R_wp     The rotation matrix of parent frame to world frame.
+                // R_wc     The rotation matrix of child frame to world frame.
+                // R_pj     The rotation matrix of joint frame to parent frame.
                 // R(k, θ)  The rotation matrix along joint axis k by angle θ.
                 // The kinematics constraint is
-                // Rₚ * ᵖRⱼ * R(k, θ) = Rc.
+                // R_wp * R_pj * R(k, θ) = R_wc.
                 // This is equivalent to
-                // Rₚ * ᵖRⱼ * R(k, (a+b)/2) * R(k, θ-(a+b)/2)) = Rc.
+                // R_wp * R_pj * R(k, (a+b)/2) * R(k, θ-(a+b)/2)) = R_wc.
                 // So to constrain that -(b-a)/2 <= θ - (a+b)/2 <= (b-a)/2,
                 // we can constrain the angle between the two vectors
-                // Rc * v and Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v is no larger than
+                // R_wc * v and R_wp * R_pj * R(k,(a+b)/2) * v is no larger than
                 // (b-a)/2, where v is a unit length vector perpendicular to
-                // the rotation axis k.
+                // the rotation axis k, in the joint frame.
                 // Thus we can constrain that
-                // |Rc * v - Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v | <= 2*sin ((b-a) / 4)
+                // |R_wc*v - R_wp * R_pj * R(k,(a+b)/2)*v | <= 2*sin ((b-a) / 4)
                 // as we explained above.
 
                 // First generate a vector that is perpendicular to rotation
-                // axis.
+                // axis, in the joint frame.
                 Vector3d revolute_vector = rotate_axis.cross(Vector3d(1, 0, 0));
                 double revolute_vector_norm = revolute_vector.norm();
                 if (revolute_vector_norm < 1E-2) {
@@ -170,7 +170,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                         .toRotationMatrix();
 
                 // joint_limit_expr.tail<3> is
-                // Rc * v - Rₚ * ᵖRⱼ * R(k,(a+b)/2) * v mentioned above.
+                // R_wc * v - R_wp * R_pj * R(k,(a+b)/2) * v mentioned above.
                 joint_limit_expr.tail<3>() =
                     R_WB_[body_idx] * revolute_vector -
                     R_WB_[parent_idx] *
