@@ -6,6 +6,7 @@
 #include "gtest/gtest.h"
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/parsers/sdf_parser.h"
@@ -26,7 +27,7 @@ namespace {
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Macintosh OSX.
 const double kTolerance = 1e-12;
-
+const uint8_t kColorPixelTolerance = 1u;
 const double kFovY = M_PI_4;
 const bool kShowWindow = true;
 
@@ -98,6 +99,8 @@ TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
 
 class RenderingSim : public systems::Diagram<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderingSim)
+
   RenderingSim() { this->set_name("rendering_sim"); }
 
   void Init(const std::string& sdf_file,
@@ -133,57 +136,182 @@ class RenderingSim : public systems::Diagram<double> {
   RgbdCamera* rgbd_camera_;
 };
 
+void AssertLe(uint8_t value_a, uint8_t value_b, uint8_t tolerance) {
+  int a = static_cast<int>(value_a);
+  int b = static_cast<int>(value_b);
+  int t = static_cast<int>(tolerance);
+  ASSERT_LE(std::abs(a - b), t);
+}
 
-// Verifies rendered terrain.
-GTEST_TEST(RenderingTest, TerrainRenderingTest) {
-  RenderingSim diagram;
-  // The following SDF includes a box that is located under the flat terrain.
-  // Thus, only the terrain is visible to the RGBD camera.
-  const std::string sdf("/systems/sensors/test/box.sdf");
-  diagram.Init(GetDrakePath() + sdf,
-               Eigen::Vector3d(0., 0., 4.999),
-               Eigen::Vector3d(0., M_PI_2, 0.));
 
-  std::unique_ptr<systems::Context<double>> context =
-      diagram.CreateDefaultContext();
-  std::unique_ptr<systems::SystemOutput<double>> output =
-      diagram.AllocateOutput(*context);
-  systems::Simulator<double> simulator(diagram, std::move(context));
-  simulator.Initialize();
+const std::array<uint8_t, 4> kBackgroundColor{{204u, 229u, 255u, 255u}};
 
-  const double kDuration = 0.03;
-  for (double time = 0.; time < kDuration ; time += 0.01) {
-    simulator.StepTo(time);
-    diagram.CalcOutput(simulator.get_context(), output.get());
+class ImageTest {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageTest)
 
-    systems::AbstractValue* mutable_data = output->GetMutableData(0);
-    systems::AbstractValue* mutable_data_d = output->GetMutableData(1);
-    auto color_image =
-        mutable_data->GetMutableValue<sensors::Image<uint8_t>>();
-    auto depth_image =
-        mutable_data_d->GetMutableValue<sensors::Image<float>>();
+  typedef std::function<void(
+      const sensors::Image<uint8_t>& color_image,
+      const sensors::Image<float>& depth_image)> Verifier;
 
+  ImageTest(const std::string& sdf, const Eigen::Vector3d& position,
+            const Eigen::Vector3d& orientation, Verifier verifier) {
+    diagram_.Init(GetDrakePath() + sdf, position, orientation);
+
+    std::unique_ptr<systems::Context<double>> context =
+        diagram_.CreateDefaultContext();
+    std::unique_ptr<systems::SystemOutput<double>> output =
+        diagram_.AllocateOutput(*context);
+    systems::Simulator<double> simulator(diagram_, std::move(context));
+    simulator.Initialize();
+
+    const double kDuration = 0.01;
+    for (double time = 0.; time < kDuration ; time += 0.01) {
+      simulator.StepTo(time);
+      diagram_.CalcOutput(simulator.get_context(), output.get());
+
+      systems::AbstractValue* mutable_data = output->GetMutableData(0);
+      systems::AbstractValue* mutable_data_d = output->GetMutableData(1);
+      auto color_image =
+          mutable_data->GetMutableValue<sensors::Image<uint8_t>>();
+      auto depth_image =
+          mutable_data_d->GetMutableValue<sensors::Image<float>>();
+
+      verifier(color_image, depth_image);
+    }
+  }
+
+  static void VerifyUniformColorAndDepth(
+      const sensors::Image<uint8_t>& color_image,
+      const sensors::Image<float>& depth_image,
+      const std::array<uint8_t, 4>& color, float depth) {
     // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
     // assumption is any defects will be detected by sampling this amount.
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
-        ASSERT_NEAR(color_image.at(u, v)[0], 204u, 1.);
-        ASSERT_NEAR(color_image.at(u, v)[1], 229u, 1.);
-        ASSERT_NEAR(color_image.at(u, v)[2], 255u, 1.);
-        ASSERT_NEAR(color_image.at(u, v)[3], 255u, 1.);
-
-        // Assuming depth value provides 0.1mm precision.
-        ASSERT_NEAR(depth_image.at(u, v)[0], 4.999f, 1e-4);
+        for (int ch = 0; ch < 4; ++ch) {
+          AssertLe(color_image.at(u, v)[0], color[0], kColorPixelTolerance);
+        }
+        // Assuming depth value provides 0.1 mm precision.
+        ASSERT_NEAR(depth_image.at(u, v)[0], depth, 1e-4);
       }
     }
   }
+
+  static void VerifyTerrain(const sensors::Image<uint8_t>& color_image,
+                            const sensors::Image<float>& depth_image) {
+    VerifyUniformColorAndDepth(color_image, depth_image,
+                               kBackgroundColor, 4.999f);
+  }
+
+  static void VerifyBox(
+      const sensors::Image<uint8_t>& color_image,
+      const sensors::Image<float>& depth_image) {
+    const std::array<uint8_t, 4> kPixelColor{{255u, 255u, 255u, 255u}};
+    VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
+  }
+
+  static void VerifyCylinder(
+      const sensors::Image<uint8_t>& color_image,
+      const sensors::Image<float>& depth_image) {
+    const std::array<uint8_t, 4> kPixelColor{{255u, 255u, 255u, 255u}};
+    VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
+  }
+
+  static void VerifyMeshBox(const sensors::Image<uint8_t>& color_image,
+                            const sensors::Image<float>& depth_image) {
+    const std::array<uint8_t, 4> kPixelColor{{33u, 241u, 4u, 255u}};
+    VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
+  }
+
+  struct UV {
+    int u;
+    int v;
+  };
+
+  // Verifies the color and depth of the image at the center and four corners.
+  static void VerifySphere(const sensors::Image<uint8_t>& color_image,
+                           const sensors::Image<float>& depth_image) {
+    // Verifies the four corner points.
+    UV kCorners[4] = {UV{0, 0},
+                      UV{color_image.width() - 1, 0},
+                      UV{0, color_image.height() - 1},
+                      UV{color_image.width() - 1,
+                         color_image.height() - 1}};
+
+    for (const auto& corner : kCorners) {
+      for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+        AssertLe(color_image.at(corner.u, corner.v)[ch],
+                 kBackgroundColor[ch], kColorPixelTolerance);
+      }
+      ASSERT_NEAR(depth_image.at(corner.u, corner.v)[0], 2.f, 1e-4);
+    }
+
+    // Verifies the center point's color.
+    const int kHalfWidth = color_image.width() / 2;
+    const int kHalfHeight = color_image.height() / 2;
+    for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+      AssertLe(color_image.at(kHalfWidth, kHalfHeight)[ch],
+               255u, kColorPixelTolerance);
+    }
+    // Verifies the center point's depth.
+    ASSERT_NEAR(depth_image.at(kHalfWidth, kHalfHeight)[0], 1.f, 1e-4);
+  }
+
+ private:
+  RenderingSim diagram_;
+};
+
+// Verifies the rendered terrain.
+GTEST_TEST(RenderingTest, TerrainRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/nothing.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(0., 0., 4.999),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifyTerrain);
+}
+
+// Verifies the rendered box.
+GTEST_TEST(RenderingTest, BoxRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/box.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(0., 0., 2.),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifyBox);
+}
+
+// Verifies the rendered cylinder.
+GTEST_TEST(RenderingTest, CylinderRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/cylinder.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(0., 0., 2.),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifyCylinder);
+}
+
+// Verifies the rendered mesh box.
+GTEST_TEST(RenderingTest, MeshBoxRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/mesh_box.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(0., 0., 3.),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifyMeshBox);
+}
+
+// Verifies the rendered sphere.
+GTEST_TEST(RenderingTest, SphereRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/sphere.sdf");
+  ImageTest dut(sdf,
+                Eigen::Vector3d(0., 0., 2.),
+                Eigen::Vector3d(0., M_PI_2, 0.),
+                ImageTest::VerifySphere);
 }
 
 // Verifies an exception is thrown if a link has more than two visuals.
 GTEST_TEST(RenderingTest, MultipleVisualsTest) {
   RenderingSim diagram;
   // The following SDF includes a link that has more than two visuals.
-  const std::string sdf("/systems/sensors/test/bad.sdf");
+  const std::string sdf("/systems/sensors/test/models/bad.sdf");
   EXPECT_THROW(diagram.Init(GetDrakePath() + sdf,
                             Eigen::Vector3d(0., 0., 1.),
                             Eigen::Vector3d(0., 0., 0.)),
