@@ -47,14 +47,16 @@ DEFINE_double(dragway_vehicle_delay, 3,
 
 DEFINE_int32(num_horizontal_crossroad_lanes, 0,
              "The number of horizontal lanes on the crossroad. The number of"
-             "lanes is by default zero to disable the crossroad. A crossroad is"
-             "only enabled when the user specifies a number of lanes greater "
-             "than zero.");
+             "horizontal lanes is by default zero to disable the crossroad. A "
+             "crossroad is only enabled when the user specifies a number of "
+             "horizontal lanes and a number of vertical lanes, to be defined "
+             "below, greater than zero.");
 DEFINE_int32(num_vertical_crossroad_lanes, 0,
              "The number of vertical lanes on the crossroad. The number of"
-             "lanes is by default zero to disable the crossroad. A crossroad is"
-             "only enabled when the user specifies a number of lanes greater "
-             "than zero.");
+             "vertical lanes is by default zero to disable the crossroad. A "
+             "crossroad is only enabled when the user specifies a number of "
+             "horizontal lanes and a number of vertical lanes, both of which"
+             "greater than zero.");
 DEFINE_double(crossroad_length, 100, "The length of the crossroad lanes.");
 DEFINE_double(crossroad_lane_width, 3.7, "The crossroad lane width.");
 DEFINE_double(crossroad_shoulder_width, 3.0, "The crossroad's shoulder width.");
@@ -145,20 +147,28 @@ void AddVehicles(RoadNetworkType road_network_type,
         dynamic_cast<const maliput::crossroad::RoadGeometry*>(road_geometry);
     DRAKE_DEMAND(crossroad_road_geometry != nullptr);
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
-      const int lane_index = i % (FLAGS_num_horizontal_crossroad_lanes +
-                                  FLAGS_num_vertical_crossroad_lanes);
+      const int segmentless_lane_idx =
+          i % (FLAGS_num_horizontal_crossroad_lanes +
+               FLAGS_num_vertical_crossroad_lanes);
+      const int segment_index =
+          segmentless_lane_idx < FLAGS_num_horizontal_crossroad_lanes ? 0 : 1;
+      const int lane_index =
+          segmentless_lane_idx -
+          segment_index * FLAGS_num_horizontal_crossroad_lanes;
       const double speed = FLAGS_crossroad_base_speed +
                            lane_index * FLAGS_crossroad_lane_speed_delta;
-      const double start_time = i / FLAGS_num_horizontal_crossroad_lanes *
+      const double start_time = i / (FLAGS_num_horizontal_crossroad_lanes +
+                                     FLAGS_num_vertical_crossroad_lanes) *
                                 FLAGS_crossroad_vehicle_delay;
       const auto& params = CreateTrajectoryParamsForCrossroad(
-          *crossroad_road_geometry, lane_index, speed, start_time);
+          *crossroad_road_geometry, segment_index, lane_index, speed,
+          start_time);
       simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
                                          std::get<1>(params),
                                          std::get<2>(params));
     }
   }
-
+  
   else {
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
@@ -239,6 +249,7 @@ RoadNetworkType DetermineRoadNetworkType() {
   if (FLAGS_num_dragway_lanes > 0) {
     return RoadNetworkType::dragway;
   } else if (FLAGS_num_horizontal_crossroad_lanes > 0) {
+    DRAKE_DEMAND(FLAGS_num_vertical_crossroad_lanes > 0);
     return RoadNetworkType::crossroad;
   } else {
     return RoadNetworkType::flat;

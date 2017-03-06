@@ -86,7 +86,6 @@ class Lane {
   /// @pre The r component of @p lane_pos must be in domain [Rmin, Rmax]
   ///      derived from Lane::driveable_bounds().
   GeoPosition ToGeoPosition(const LanePosition& lane_pos) const {
-
     return DoToGeoPosition(lane_pos);
   }
 
@@ -115,16 +114,14 @@ class Lane {
   //           LanePosition ToOtherLane(const LanePosition& in_this_lane,
   //                                    const Lane* other_lane) const;
 
-  /// Return the rotation which expresses the orientation of the
+  /// Returns the rotation which expresses the orientation of the
   /// LANE-space basis at @p lane_pos with regards to the (single, global)
   /// GEO-space basis.
   Rotation GetOrientation(const LanePosition& lane_pos) const {
-// check the api for getting the segment id that's assossiated
-// with the current lane 
     return DoGetOrientation(lane_pos);
   }
 
-  /// Compute derivatives of LanePosition given a velocity vector @p velocity.
+  /// Computes derivatives of LanePosition given a velocity vector @p velocity.
   /// @p velocity is a isometric velocity vector oriented in the LANE-space
   /// reference frame at @p position.
   ///
