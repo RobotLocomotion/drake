@@ -15,7 +15,7 @@
  There are physical artifacts that are *not* captured in this simulation.
  This doesn't model the change in the coefficient of friction due to position; a
  real bowling lane is oiled in for the first 2/3 of its length.
- As such, the parameters has to be tweaked to get the desired outcome.
+ As such, the parameters have to be tweaked to get the desired outcome.
  Rotational velocity has been modified (pointing straight back with a lower
  magnitude) and higher initial linear velocity.
  The lane is oriented along the x-axis (on the x-y plane).
@@ -45,7 +45,7 @@ using drake::multibody::joints::kQuaternion;
 using Eigen::VectorXd;
 using std::make_unique;
 
-// Simulation parameters
+// Simulation parameters.
 DEFINE_double(v, 12, "The ball's initial linear speed down the lane");
 DEFINE_double(timestep, 2e-4, "The simulator time step");
 DEFINE_double(w, 25, "The ball's initial angular speed (around [-1, 0 ,0].");
@@ -84,22 +84,20 @@ int main(int argc, char**argv) {
 
   // Create RigidBodyTree.
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() +
-            "/examples/contact_model/bowling_ball.urdf",
-        kQuaternion, nullptr /* weld to frame */, tree_ptr.get());
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::GetDrakePath() + "/examples/contact_model/bowling_ball.urdf",
+      kQuaternion, nullptr /* weld to frame */, tree_ptr.get());
 
   for (int i = 0; i < FLAGS_pin_count; ++i) {
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() +
-            "/examples/contact_model/pin.urdf",
-        kQuaternion, nullptr /* weld to frame */, tree_ptr.get());
+        drake::GetDrakePath() + "/examples/contact_model/pin.urdf", kQuaternion,
+        nullptr /* weld to frame */, tree_ptr.get());
   }
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
-  // Contact parameters set arbitrarily.
+
   plant.set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
   plant.set_friction_contact_parameters(FLAGS_us, FLAGS_ud, FLAGS_v_tol);
   const auto& tree = plant.get_rigid_body_tree();
