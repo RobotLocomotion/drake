@@ -141,18 +141,6 @@ drake_cc_binary(
     ],
 )
 
-drake_cc_binary(
-    name = "kuka_plan_runner",
-    srcs = ["kuka_plan_runner.cc"],
-    data = [":models"],
-    deps = [
-        ":iiwa_common",
-        ":iiwa_lcm",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
-    ],
-)
-
 cc_binary(
     name = "kuka_ik_demo",
     srcs = ["kuka_ik_demo.cc"],
