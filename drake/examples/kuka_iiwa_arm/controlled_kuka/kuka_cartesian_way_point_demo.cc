@@ -71,7 +71,7 @@ int DoMain() {
       builder.AddController<systems::InverseDynamicsController<double>>(
           RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
           GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
-          true /* without feedforward acceleration */);
+          true /* feedforward acceleration */);
 
   // Adds a trajectory source for desired state and accelerations.
   systems::DiagramBuilder<double>* diagram_builder = builder.get_mutable_builder();

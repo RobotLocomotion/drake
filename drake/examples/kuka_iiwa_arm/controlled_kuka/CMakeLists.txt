@@ -2,6 +2,7 @@ if(lcm_FOUND)
   add_executable(controlled_kuka_demo
       controlled_kuka_demo.cc)
   target_link_libraries(controlled_kuka_demo
+      drakeIiwaDiagramBuilderTools
       drakeKukaIiwaArmCommon
       drakeLcmSystem
       drakeMultibodyParsers
@@ -14,6 +15,7 @@ if(lcm_FOUND)
   add_executable(kuka_cartesian_way_point_demo
       kuka_cartesian_way_point_demo.cc)
   target_link_libraries(kuka_cartesian_way_point_demo
+      drakeIiwaDiagramBuilderTools
       drakeKukaIiwaArmCommon
       drakeLcmSystem
       drakeRigidBodyPlant

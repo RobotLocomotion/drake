@@ -119,6 +119,7 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":oracular_state_estimator",
+        ":sim_diagram_builder",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/examples/schunk_wsg:schunk_wsg_constants",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
@@ -141,6 +142,7 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
+        ":sim_diagram_builder",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/multibody/rigid_body_plant",

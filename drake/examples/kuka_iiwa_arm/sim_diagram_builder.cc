@@ -48,9 +48,6 @@ void SimDiagramBuilder<T>::WireThingsTogether() {
     // Connects the state port to the controller.
     const auto& instance_state_output_port =
         plant_->model_instance_state_output_port(instance_id);
-    std::cout << instance_state_output_port.size() << ", "
-              << controller->get_input_port_estimated_state().size()
-              << std::endl;
     builder_.Connect(instance_state_output_port,
                      controller->get_input_port_estimated_state());
 
