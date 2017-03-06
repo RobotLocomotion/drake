@@ -10,6 +10,15 @@ load(
 )
 
 drake_cc_library(
+    name = "schunk_wsg_constants",
+    hdrs = ["schunk_wsg_constants.h"],
+    visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
+    deps = [
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "schunk_wsg_trajectory_generator_state_vector",
     srcs = ["gen/schunk_wsg_trajectory_generator_state_vector.cc"],
     hdrs = ["gen/schunk_wsg_trajectory_generator_state_vector.h"],
@@ -50,6 +59,7 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
+        ":schunk_wsg_constants",
         ":schunk_wsg_lcm",
         ":simulated_schunk_wsg_system",
         "//drake/lcm",
@@ -68,6 +78,20 @@ drake_cc_binary(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "schunk_wsg_constants_test",
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":schunk_wsg_constants",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+    ],
+)
 
 drake_cc_googletest(
     name = "schunk_wsg_lift_test",
