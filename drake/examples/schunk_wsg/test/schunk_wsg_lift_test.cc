@@ -198,8 +198,9 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const int plant_output_port = builder.ExportOutput(plant->get_output_port(0));
   // Expose the RBPlant kinematics results as a diagram output for body state
   // validation.
-  const int kinematrics_results_index = builder.ExportOutput(plant->get_output_port(
-      plant->kinematics_results_output_port().get_index()));
+  const int kinematrics_results_index =
+      builder.ExportOutput(plant->get_output_port(
+          plant->kinematics_results_output_port().get_index()));
 
   // Set up the model and simulator and set their starting state.
   const std::unique_ptr<systems::Diagram<double>> model = builder.Build();
