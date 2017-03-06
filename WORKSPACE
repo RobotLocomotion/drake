@@ -113,6 +113,14 @@ github_archive(
 )
 
 github_archive(
+    name = "nlopt",
+    repository = "stevengj/nlopt",
+    commit = "516aca7e96405939726648e00faeb26bd2c9b29f",
+    build_file = "tools/nlopt.BUILD",
+    sha256 = "6041ca30072b354ed3c235743779bf17dacf6199b2b30746c499f65082665d5f",
+)
+
+github_archive(
     name = "pybind11",
     repository = "pybind/pybind11",
     commit = "7830e8509f2adc97ce9ee32bf99cd4b82089cc4c",
