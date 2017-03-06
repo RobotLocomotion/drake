@@ -231,9 +231,7 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
       int num_positions = joint->get_num_positions();
       // For each different type of joints, use a separate branch to compute
       // the posture for that joint.
-      if (num_positions == 6 || num_positions == 7) {
-        // Question: Is there a function to determine if a body is floating?
-
+      if (joint->is_floating()) {
         // p_WBi is the position of the body frame in the world frame.
         Vector3d p_WBi = GetSolution(p_WB_[body_idx]);
         Matrix3d normalized_rotmat = math::ProjectMatToRotMat(R_WBi);
