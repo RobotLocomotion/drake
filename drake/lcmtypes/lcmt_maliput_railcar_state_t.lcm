@@ -1,0 +1,12 @@
+// GENERATED FILE DO NOT EDIT
+// See drake/tools/lcm_vector_gen.py.
+
+package drake;
+
+struct lcmt_maliput_railcar_state_t {
+  // The timestamp in milliseconds.
+  int64_t timestamp;
+
+  double s;  // The position along the lane's s-axis.
+  double s_dot;  // The speed along the lane's s-axis.
+}

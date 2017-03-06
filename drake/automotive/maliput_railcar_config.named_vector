@@ -1,0 +1,12 @@
+element {
+    name: "r"
+    doc: "The vehicle's position on the lane's r-axis."
+}
+element {
+    name: "h"
+    doc: "The vehicle's height above the lane's surface."
+}
+element {
+    name: "initial_speed"
+    doc: "The vehicle's initial speed along the lane's s-axis."
+}
