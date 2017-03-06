@@ -12,7 +12,12 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_binary(
     name = "sliding_bricks",
     srcs = ["sliding_bricks.cc"],
+    add_test_rule = 1,
     data = ["sliding_brick.urdf"],
+    test_rule_args = [
+        " --sim_duration=0.01",
+        " --playback=false",
+    ],
     deps = [
         "//drake/common:drake_path",
         "//drake/lcm",
@@ -24,18 +29,6 @@ drake_cc_binary(
         "//drake/systems/primitives:constant_vector_source",
         "@gflags//:gflags",
     ],
-)
-
-# A test to guarantee the example doesn't fall out of sync with Drake.
-sh_test(
-    name = "sliding_bricks_test",
-    srcs = ["//tools:exec.sh"],
-    args = [
-        "$(location :sliding_bricks)",
-        " --sim_duration=0.01",
-        " --no_playback=true",
-    ],
-    data = [":sliding_bricks"],
 )
 
 cpplint()
