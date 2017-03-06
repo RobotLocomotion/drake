@@ -12,7 +12,12 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_binary(
     name = "sliding_bricks",
     srcs = ["sliding_bricks.cc"],
+    add_test_rule = 1,
     data = ["sliding_brick.urdf"],
+    test_rule_args = [
+        " --sim_duration=0.01",
+        " --playback=false",
+    ],
     deps = [
         "//drake/common:drake_path",
         "//drake/lcm",

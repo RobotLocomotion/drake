@@ -44,6 +44,8 @@ DEFINE_double(v_tol, 0.01,
               "The maximum slipping speed allowed during stiction");
 DEFINE_double(dissipation, 1.0, "The contact model's dissipation");
 DEFINE_double(sim_duration, 3, "The simulation duration");
+DEFINE_bool(playback, true,
+            "If true, enters looping playback after sim finished");
 
 // Simple scenario of two blocks being pushed across a plane.  The first block
 // has zero initial velocity.  The second has a small initial velocity in the
@@ -125,14 +127,9 @@ int main(int argc, char**argv) {
                    FLAGS_v, 0, 0, 0, 0, 0;     // brick 2 velocity
   plant.set_state_vector(plant_context, initial_state);
 
-  double time = 0.0;
-  while (time < FLAGS_sim_duration) {
-    time = context->get_time();
-    SPDLOG_TRACE(drake::log(), "Time is now {}", time);
-    simulator->StepTo(time + FLAGS_timestep);
-  }
+  simulator->StepTo(FLAGS_sim_duration);
 
-  while (true) visualizer_publisher->ReplayCachedSimulation();
+  while (FLAGS_playback) visualizer_publisher->ReplayCachedSimulation();
 
   return 0;
 }
