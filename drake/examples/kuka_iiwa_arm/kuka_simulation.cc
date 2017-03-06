@@ -51,7 +51,7 @@ int DoMain() {
   drake::lcm::DrakeLcm lcm;
   SimDiagramBuilder<double> builder;
 
-  // Adds a plant
+  // Adds a plant.
   RigidBodyPlant<double>* plant = nullptr;
   const std::string kModelPath =
       "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";

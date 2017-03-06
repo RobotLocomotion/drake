@@ -15,6 +15,14 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+/// Computes the lumped inertia parameters of the gripper and the end effector
+/// link expressed in the end effector frame.
+/// @param world_tree The RigidBodyTree that contains the arm and the gripper
+/// models.
+/// @param iiwa_instance Identifier for the arm in @p world_tree.
+/// @param end_effector_link_name Link name of the end effector.
+/// @param wsg_instance Identifier for the gripper in @p world_tree.
+/// @return Lumped inertia parameters.
 template <typename T>
 Matrix6<T> ComputeLumpedGripperInertiaInEndEffectorFrame(
     const RigidBodyTree<T>& world_tree,

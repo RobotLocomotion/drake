@@ -69,12 +69,12 @@ int DoMain() {
           GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
           false /* no feedforward acceleration */);
 
-  // Adds a trajectory source for desired state and accelerations.
+  // Adds a trajectory source for desired state.
   systems::DiagramBuilder<double>* diagram_builder =
       builder.get_mutable_builder();
   auto traj_src =
       diagram_builder->template AddSystem<systems::TrajectorySource<double>>(
-          *cartesian_trajectory, 1);
+          *cartesian_trajectory, 1 /* outputs q + v */);
 
   diagram_builder->Connect(traj_src->get_output_port(),
                   controller->get_input_port_desired_state());
