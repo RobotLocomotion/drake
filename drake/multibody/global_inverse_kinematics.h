@@ -140,6 +140,31 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       int body_idx, const Eigen::Quaterniond& desired_orientation,
       double angle_tol);
 
+  /** Penalizes the deviation to the desired posture.
+   * For each body in the kinematic tree, we impose the constraint
+   * body_position_cost(i) * body_position_error(i) + body_orientation_cost(i) * body_orientation_error(i)
+   * where body_position_error(i) is computed as the Euclidean distance error
+   * (p_WBo(i) - p_WBo_desired(i))^T * (p_WBo(i) - p_WBo_desired(i))
+   * p_WBo(i)         : position of body i'th frame in the world frame.
+   * p_WB_desired(i) : position of body i'th frame in the world frame, computed
+   * from the desired posture `q_desired`.
+   * body_orientation_error(i) is computed as (1 - cos(θ)), where θ is the
+   * angle between the orientation of body i'th frame in the world frame, and
+   * body i'th frame in the world frame using the desired posture.
+   * @param q_desired  The desired posture.
+   * @param body_position_cost  The cost for each body's position error.
+   * @pre{1. body_position_cost.rows() == robot_->get_num_bodies() - 1.
+   *         since the body 0 is the world frame, and we should not impose a cost
+   *         on the world frame position.
+   *      2. body_position_cost(i) is non-negative.}
+   *      Throw a runtime error if the precondition is not satisfied.
+   * @param body_orientation_cost The cost for each body's orientation error.
+   * @pre{1. body_orientation_cost.rows() == robot_->get_num_bodies() - 1.
+   *      2. body_position_cost(i) is non-negative.}
+   *      Throws a runtime error if the precondition is not satisfied.
+   */
+  void AddPostureCost(const Eigen::VectorXd& q_desired, const Eigen::VectorXd& body_position_cost, const Eigen::VectorXd& body_orientation_cost);
+
  private:
   const RigidBodyTree<double> *robot_;
 
