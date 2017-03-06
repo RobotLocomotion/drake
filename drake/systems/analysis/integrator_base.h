@@ -385,8 +385,7 @@ class IntegratorBase {
     do {
       StepOnceAtMost(inf, inf, t_remaining);
       t_remaining = t_final - context.get_time();
-    }
-    while (t_remaining > 0);
+    } while (t_remaining > 0);
   }
 
   /// Stepping function for integrators operating outside of simulation
