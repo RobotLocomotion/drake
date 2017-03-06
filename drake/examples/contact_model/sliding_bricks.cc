@@ -44,7 +44,7 @@ DEFINE_double(v_tol, 0.01,
               "The maximum slipping speed allowed during stiction");
 DEFINE_double(dissipation, 1.0, "The contact model's dissipation");
 DEFINE_double(sim_duration, 3, "The simulation duration");
-DEFINE_bool(no_playback, false, "Set to false to avoid looping playback");
+DEFINE_bool(sim_only, false, "Set to simulate without looping playback");
 
 // Simple scenario of two blocks being pushed across a plane.  The first block
 // has zero initial velocity.  The second has a small initial velocity in the
@@ -128,7 +128,7 @@ int main(int argc, char**argv) {
 
   simulator->StepTo(FLAGS_sim_duration);
 
-  while (!FLAGS_no_playback) visualizer_publisher->ReplayCachedSimulation();
+  while (!FLAGS_sim_only) visualizer_publisher->ReplayCachedSimulation();
 
   return 0;
 }
