@@ -8,6 +8,7 @@ if(lcm_FOUND)
   target_link_libraries(drakeKukaIiwaWorld
       drakeKukaIiwaArmCommon
       drakeLcmSystem
+      drakeLCMUtil
       drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis
@@ -20,7 +21,8 @@ if(lcm_FOUND)
   drake_install_headers(
       world_sim_tree_builder.h
       world_sim_diagram_factory.h
-      iiwa_wsg_diagram_factory.h)
+      iiwa_wsg_diagram_factory.h
+      ../oracular_state_estimator.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-world
       TARGET drakeKukaIiwaWorld
       LIBS
