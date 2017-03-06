@@ -21,6 +21,7 @@
  The lane is oriented along the x-axis (on the x-y plane).
 */
 
+#include <cmath>
 #include <iomanip>
 #include <limits>
 #include <memory>
@@ -63,17 +64,18 @@ DEFINE_bool(playback, true, "If true, loops playback of simulation");
 // Bowling ball rolled down a conceptual lane to strike pins.
 int main(int argc, char**argv) {
   using std::cerr;
+  using std::cout;
 
-  std::cout << "Parameters:\n";
-  std::cout << "\ttimestep:         " << FLAGS_timestep << "\n";
-  std::cout << "\tv:                " << FLAGS_v << "\n";
-  std::cout << "\tω:                " << FLAGS_w << "\n";
-  std::cout << "\tstiffness:        " << FLAGS_stiffness << "\n";
-  std::cout << "\tstatic friction:  " << FLAGS_us << "\n";
-  std::cout << "\tdynamic friction: " << FLAGS_ud << "\n";
-  std::cout << "\tslip threshold:   " << FLAGS_v_tol << "\n";
-  std::cout << "\tdissipation:      " << FLAGS_dissipation << "\n";
-  std::cout << "\tpin count:        " << FLAGS_pin_count << "\n";
+  cout << "Parameters:\n";
+  cout << "\ttimestep:         " << FLAGS_timestep << "\n";
+  cout << "\tv:                " << FLAGS_v << "\n";
+  cout << "\tω:                " << FLAGS_w << "\n";
+  cout << "\tstiffness:        " << FLAGS_stiffness << "\n";
+  cout << "\tstatic friction:  " << FLAGS_us << "\n";
+  cout << "\tdynamic friction: " << FLAGS_ud << "\n";
+  cout << "\tslip threshold:   " << FLAGS_v_tol << "\n";
+  cout << "\tdissipation:      " << FLAGS_dissipation << "\n";
+  cout << "\tpin count:        " << FLAGS_pin_count << "\n";
 
   if (FLAGS_pin_count < 0 || FLAGS_pin_count > 10) {
     cerr << "Bad number of pins specified.  Must be in the range [0, 10]\n";
@@ -149,7 +151,7 @@ int main(int argc, char**argv) {
   // The pin's geometric origin is 0.109 m above the "bottom" of the pin.
   const double kPinZ = 0.109;
   const double kCos60 = std::cos(60.0 / 180 * M_PI) * 12 * 0.0254;
-  const double kSin60 = std::cos(60.0 / 180 * M_PI) * 12 * 0.0254;
+  const double kSin60 = std::sin(60.0 / 180 * M_PI) * 12 * 0.0254;
   double pins_pos[] = { 0, 0,
                         -kCos60, kSin60,
                         kCos60, kSin60,
