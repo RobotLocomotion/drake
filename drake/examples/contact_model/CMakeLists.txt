@@ -29,5 +29,5 @@ if (lcm_FOUND AND Bullet_FOUND)
       drakeSystemAnalysis
       drakeSystemFramework
       )
-
+  drake_add_test(NAME bowling_ball COMMAND bowling_ball --sim_duration=0.01 --playback=false)
 endif()

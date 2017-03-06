@@ -59,8 +59,13 @@ drake_cc_binary(
 drake_cc_binary(
     name = "bowling_ball",
     srcs = ["bowling_ball.cc"],
+    add_test_rule = 1,
     data = [
         ":bowling_models",
+    ],
+    test_rule_args = [
+        " --sim_duration=0.01",
+        " --playback=false",
     ],
     deps = [
         "//drake/common:drake_path",
