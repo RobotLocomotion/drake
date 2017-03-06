@@ -1,23 +1,11 @@
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_common.h"
 
-//#include <iostream>
 #include <list>
 #include <memory>
 
-//#include <lcm/lcm-cpp.hpp>
-
-//#include "bot_core/robot_state_t.hpp"
-//#include "drake/common/drake_path.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
-//#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/action.h"
-//#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/world_state.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-//#include "drake/lcmt_iiwa_status.hpp"
-
-//#include "drake/lcmt_schunk_wsg_command.hpp"
-//#include "drake/lcmt_schunk_wsg_status.hpp"
-//#include "drake/util/lcmUtil.h"
 
 namespace drake {
 namespace examples {
