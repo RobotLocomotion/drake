@@ -30,6 +30,9 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   // Test that setting the target accuracy or initial step size target fails.
   EXPECT_THROW(int_dbl.set_target_accuracy(1.0), std::logic_error);
   EXPECT_THROW(int_dbl.request_initial_step_size_target(1.0), std::logic_error);
+
+  // Verify that attempting to integrate in variable step mode fails.
+  EXPECT_THROW(int_dbl.StepExactlyVariable(1.0), std::logic_error);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
@@ -200,7 +203,7 @@ GTEST_TEST(IntegratorTest, StepSize) {
   // The step ends on the simulation end time.
   {
     const double boundary_dt = 0.0009;
-    integrator.StepOnceExactly(boundary_dt);
+    integrator.StepExactlyFixed(boundary_dt);
     EXPECT_EQ(t + boundary_dt, context->get_time());
     t = context->get_time();
   }
