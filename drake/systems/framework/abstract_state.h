@@ -30,6 +30,9 @@ class AbstractState {
   /// Constructs a abstract state that does not own the underlying data.
   explicit AbstractState(const std::vector<AbstractValue*>& data);
 
+  /// Constructs a abstract state that owns a single @p datum.
+  explicit AbstractState(std::unique_ptr<AbstractValue> datum);
+
   virtual ~AbstractState();
 
   /// Returns the number of elements of abstract state.
