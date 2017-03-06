@@ -19,6 +19,7 @@ drake_cc_library(
         ":accelerometer",
         ":camera_info",
         ":depth_sensor",
+        ":global_collision_sensor",
         ":rotary_encoders",
     ],
 )
@@ -33,6 +34,20 @@ drake_cc_library(
     ],
     deps = [
         "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "global_collision_sensor",
+    srcs = [
+        "global_collision_sensor.cc",
+    ],
+    hdrs = [
+        "global_collision_sensor.h",
+    ],
+    deps = [
+        "//drake/systems/framework",
+        "//drake/multibody/rigid_body_plant",
     ],
 )
 
@@ -154,6 +169,17 @@ drake_cc_googletest(
     deps = [
         ":camera_info",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "global_collision_sensor_test",
+    data = [
+        "//drake/multibody:models",
+    ],
+    deps = [
+        ":global_collision_sensor",
+        "//drake/multibody/parsers",
     ],
 )
 
