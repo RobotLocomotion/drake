@@ -38,12 +38,10 @@ GTEST_TEST(RBTFaceExtractionTests, ExtractVertsAndFaces) {
   // can access.
   bool found_box = false;
   bool found_sphere = false;
-  for (auto iter = tree.bodies.begin(); iter != tree.bodies.end(); iter++) {
-    auto collision_elems = (*iter)->get_collision_element_ids();
-    for (auto collision_elem = collision_elems.begin();
-              collision_elem != collision_elems.end();
-              collision_elem++) {
-      auto element = tree.FindCollisionElement(*collision_elem);
+  for (const auto& body : tree.bodies) {
+    auto collision_elems = body->get_collision_element_ids();
+    for (const auto& collision_elem : collision_elems) {
+      auto element = tree.FindCollisionElement(collision_elem);
       EXPECT_TRUE(element->hasGeometry());
       // It is extremely important that this geometry object is
       // a reference or pointer so that whatever subclass the
