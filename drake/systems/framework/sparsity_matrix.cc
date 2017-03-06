@@ -48,7 +48,7 @@ void SparsityMatrix::InitializeVectorInputs(
   for (int i = 0; i < system.get_num_input_ports(); ++i) {
     DRAKE_ASSERT(system.get_input_port(i).get_data_type() == kVectorValued);
     const int n = system.get_input_port(i).size();
-    auto value = std::make_unique<BasicVector<symbolic::Expression>>(n);
+    auto value = system.AllocateInputVector(system.get_input_port(i));
     for (int j = 0; j < n; ++j) {
       std::ostringstream name;
       name << "u" << i << "_" << j;
