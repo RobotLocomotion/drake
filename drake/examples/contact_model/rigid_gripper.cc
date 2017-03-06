@@ -39,10 +39,11 @@ DEFINE_double(us, 0.9, "The coefficient of static friction");
 DEFINE_double(ud, 0.5, "The coefficient of dynamic friction");
 DEFINE_double(stiffness, 10000, "The contact material stiffness");
 DEFINE_double(dissipation, 2.0, "The contact material dissipation");
-DEFINE_double(slip, 0.01,
+DEFINE_double(v_stiction_tolerance, 0.01,
               "The maximum slipping speed allowed during stiction");
+DEFINE_double(sim_duration, 5, "Amount of time to simulate");
 DEFINE_bool(playback, true,
-            "If true, simulation beings looping playback when complete");
+            "If true, simulation begins looping playback when complete");
 
 namespace drake {
 namespace examples {
@@ -88,10 +89,12 @@ int main() {
   std::cout << "\tStiffness:                " << FLAGS_stiffness << "\n";
   std::cout << "\tstatic friction:          " << FLAGS_us << "\n";
   std::cout << "\tdynamic friction:         " << FLAGS_ud << "\n";
-  std::cout << "\tAllowed stiction speed:   " << FLAGS_slip  << "\n";
+  std::cout << "\tAllowed stiction speed:   " << FLAGS_v_stiction_tolerance
+            << "\n";
   std::cout << "\tDissipation:              " << FLAGS_dissipation << "\n";
   plant->set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
-  plant->set_friction_contact_parameters(FLAGS_us, FLAGS_ud, FLAGS_slip);
+  plant->set_friction_contact_parameters(FLAGS_us, FLAGS_ud,
+                                         FLAGS_v_stiction_tolerance);
 
   // Creates and adds LCM publisher for visualization.  The test doesn't
   // require `drake_visualizer` but it is convenient to have when debugging.
@@ -128,10 +131,11 @@ int main() {
 
   simulator.Initialize();
 
-  const double kDuration = 5;  // Comparable with schunk_wsg_lift_test.
-  // Print a time stamp update every tenth of a second.
+  // Print a time stamp update every tenth of a second.  This helps communicate
+  // progress in the event that the integrator crawls to a very small timestep.
   const double kPrintPeriod = 0.1;
-  int step_count = static_cast<int>(std::ceil(kDuration / kPrintPeriod));
+  int step_count =
+      static_cast<int>(std::ceil(FLAGS_sim_duration / kPrintPeriod));
   for (int i = 1; i <= step_count; ++i) {
     double t = context->get_time();
     std::cout << "time: " << t << "\n";

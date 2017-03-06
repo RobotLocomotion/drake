@@ -17,4 +17,6 @@ if (lcm_FOUND AND Bullet_FOUND)
       drakeRigidBodyPlant
       drakeSystemAnalysis
       )
+  drake_add_test(NAME rigid_gripper COMMAND rigid_gripper --simulation_sec 0.01 --playback=false)
+
 endif()

@@ -11,7 +11,7 @@
   <link name="gripper">
     <inertial>
       <origin xyz="0 -0.03525 0" rpy="0 0 0" />
-      <!-- The mass of the schunk gripper -->
+      <!-- The mass of the schunk gripper; mass of body plus two fingers. -->
       <mass value="1.088882"/>
       <!-- The inertia of the schunk gripper *body* (ignoring fingers). -->
         <inertia>
