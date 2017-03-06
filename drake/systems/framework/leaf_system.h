@@ -143,7 +143,8 @@ class LeafSystem : public System<T> {
     // Set the default parameters, checking that the number of parameters does
     // not change.
     const int num_params = leaf_context->num_numeric_parameters();
-    SetDefaultParameters(*leaf_context, leaf_context->get_mutable_parameters());
+    SetDefaultParameters(*leaf_context,
+                         &leaf_context->get_mutable_parameters());
     DRAKE_DEMAND(num_params == leaf_context->num_numeric_parameters());
   }
 

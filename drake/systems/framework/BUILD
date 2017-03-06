@@ -202,6 +202,7 @@ drake_cc_library(
     hdrs = ["context.h"],
     deps = [
         ":input_port_evaluator_interface",
+        ":parameters",
         ":state",
         ":system_input",
         "//drake/common",

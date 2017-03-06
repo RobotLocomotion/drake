@@ -36,6 +36,12 @@ TEST_F(AbstractStateTest, UnownedState) {
   EXPECT_EQ(76, UnpackIntValue(xm.get_abstract_state(1)));
 }
 
+TEST_F(AbstractStateTest, SingleValueConstructor) {
+  AbstractState xm(PackValue<int>(1000));
+  ASSERT_EQ(1, xm.size());
+  EXPECT_EQ(1000, UnpackIntValue(xm.get_abstract_state(0)));
+}
+
 TEST_F(AbstractStateTest, Clone) {
   AbstractState xm(std::move(data_));
   std::unique_ptr<AbstractState> clone = xm.Clone();

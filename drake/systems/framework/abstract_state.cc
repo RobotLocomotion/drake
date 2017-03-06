@@ -21,6 +21,12 @@ AbstractState::AbstractState(std::vector<std::unique_ptr<AbstractValue>>&& data)
 AbstractState::AbstractState(const std::vector<AbstractValue*>& data)
       : data_(data) {}
 
+AbstractState::AbstractState(std::unique_ptr<AbstractValue> datum)
+    : AbstractState() {
+  data_.push_back(datum.get());
+  owned_data_.push_back(std::move(datum));
+}
+
 int AbstractState::size() const {
   return static_cast<int>(data_.size());
 }

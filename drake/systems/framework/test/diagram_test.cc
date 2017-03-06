@@ -900,13 +900,13 @@ TEST_F(DiscreteStateTest, Publish) {
   EXPECT_EQ(true, diagram_.publisher()->published());
 }
 
-class AbstractStateSystem : public LeafSystem<double> {
+class SystemWithAbstractState : public LeafSystem<double> {
  public:
-  AbstractStateSystem(int id, double update_period) : id_(id) {
+  SystemWithAbstractState(int id, double update_period) : id_(id) {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
   }
 
-  ~AbstractStateSystem() override {}
+  ~SystemWithAbstractState() override {}
 
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
@@ -935,17 +935,17 @@ class AbstractStateDiagram : public Diagram<double> {
  public:
   AbstractStateDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
-    sys0_ = builder.template AddSystem<AbstractStateSystem>(0, 2.);
-    sys1_ = builder.template AddSystem<AbstractStateSystem>(1, 3.);
+    sys0_ = builder.template AddSystem<SystemWithAbstractState>(0, 2.);
+    sys1_ = builder.template AddSystem<SystemWithAbstractState>(1, 3.);
     builder.BuildInto(this);
   }
 
-  AbstractStateSystem* get_mutable_sys0() { return sys0_; }
-  AbstractStateSystem* get_mutable_sys1() { return sys1_; }
+  SystemWithAbstractState* get_mutable_sys0() { return sys0_; }
+  SystemWithAbstractState* get_mutable_sys1() { return sys1_; }
 
  private:
-  AbstractStateSystem* sys0_{nullptr};
-  AbstractStateSystem* sys1_{nullptr};
+  SystemWithAbstractState* sys0_{nullptr};
+  SystemWithAbstractState* sys1_{nullptr};
 };
 
 class AbstractStateDiagramTest : public ::testing::Test {
