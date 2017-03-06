@@ -30,7 +30,7 @@ if(Bullet_FOUND)
           drakeRigidBodyConstraint
           Eigen3::Eigen
           spruce
-          )          
+          )
 
   drake_add_cc_test(NAME runge_kutta3_integrator_test SIZE medium)
   target_link_libraries(runge_kutta3_integrator_test
@@ -43,5 +43,5 @@ if(Bullet_FOUND)
           drakeRigidBodyConstraint
           Eigen3::Eigen
           spruce
-          )          
+          )
 endif()
