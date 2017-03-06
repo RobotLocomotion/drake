@@ -90,7 +90,6 @@ add_subdirectory(joints)
 add_subdirectory(multibody_tree)
 add_subdirectory(parsers)
 add_subdirectory(rigid_body_plant)
-add_subdirectory(rigid_body_system1)
 add_subdirectory(shapes)
 
 if(BUILD_TESTING)
