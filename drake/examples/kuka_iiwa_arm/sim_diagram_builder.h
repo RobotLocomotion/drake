@@ -15,6 +15,12 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+/*
+ * A wrapper class around DiagramBuilder that facilitates diagram building for
+ * controlled simulation. This class provides three main utilities: adding /
+ * accessing RigidBodyPlant, systems::StateFeedbackController and
+ * systems::DrakeVisualizer.
+ */
 template <typename T>
 class SimDiagramBuilder {
  public:
@@ -22,6 +28,9 @@ class SimDiagramBuilder {
 
   SimDiagramBuilder() {}
 
+  /**
+   *
+   */
   std::unique_ptr<systems::Diagram<T>> Build() {
     WireThingsTogether();
     return builder_.Build();
@@ -52,6 +61,11 @@ class SimDiagramBuilder {
     controllers_.emplace(instance_id, controller_ptr);
 
     return controller_ptr;
+  }
+
+  template <class ControllerType>
+  ControllerType* AddController(std::unique_ptr<ControllerType> controller) {
+    return AddController(RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, std::move(controller));
   }
 
   template <class ControllerType, typename... Args>

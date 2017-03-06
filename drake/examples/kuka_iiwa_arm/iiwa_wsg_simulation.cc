@@ -13,6 +13,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
@@ -135,20 +136,16 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
  public:
   SimulatedIiwaWithWsg() {
     this->set_name("SimulatedIiwaWithWsg");
-    DiagramBuilder<T> builder;
+    SimDiagramBuilder<T> builder;
+    DiagramBuilder<T>* base_builder = builder.get_mutable_builder();
 
     ModelInstanceInfo<T> iiwa_info, wsg_info, box_info;
-    plant_ = builder.AddSystem(
+    plant_ = builder.AddPlant(
         BuildCombinedPlant<T>(&iiwa_info, &wsg_info, &box_info));
-    const auto& iiwa_input_port =
-        plant_->model_instance_actuator_command_input_port(
-            iiwa_info.instance_id);
+
     const auto& iiwa_output_port =
         plant_->model_instance_state_output_port(iiwa_info.instance_id);
 
-    const auto& wsg_input_port =
-        plant_->model_instance_actuator_command_input_port(
-            wsg_info.instance_id);
     const auto& wsg_output_port =
         plant_->model_instance_state_output_port(wsg_info.instance_id);
 
@@ -160,7 +157,8 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     // Exposing feedforward acceleration. Should help with more dynamic
     // motions.
     auto iiwa_controller =
-        builder.template AddSystem<systems::InverseDynamicsController<T>>(
+        builder.template AddController<systems::InverseDynamicsController<T>>(
+            iiwa_info.instance_id,
             iiwa_info.model_path, iiwa_info.world_offset, iiwa_kp, iiwa_ki,
             iiwa_kd, true /* with feedforward acceleration */);
 
@@ -199,16 +197,10 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
         iiwa_controller->get_robot_for_control().FindBody("iiwa_link_7");
     controller_ee->set_spatial_inertia(lumped_gripper_inertia_EE);
 
-    // Connect iiwa controller and robot.
-    builder.Connect(iiwa_output_port,
-                    iiwa_controller->get_input_port_estimated_state());
-    builder.Connect(iiwa_controller->get_output_port_control(),
-                    iiwa_input_port);
-
     // Export iiwa's desired state input, and state output.
-    builder.ExportInput(iiwa_controller->get_input_port_desired_state());
-    builder.ExportInput(iiwa_controller->get_input_port_desired_acceleration());
-    builder.ExportOutput(iiwa_output_port);
+    base_builder->ExportInput(iiwa_controller->get_input_port_desired_state());
+    base_builder->ExportInput(iiwa_controller->get_input_port_desired_acceleration());
+    base_builder->ExportOutput(iiwa_output_port);
 
     // Sets up the WSG gripper part.
     std::unique_ptr<systems::MatrixGain<T>> feedback_selector =
@@ -223,28 +215,24 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     const VectorX<T> wsg_ki = VectorX<T>::Constant(kWsgActDim, 0.0);
     const VectorX<T> wsg_kd = VectorX<T>::Constant(kWsgActDim, 5.0);
 
-    auto wsg_controller = builder.template AddSystem<systems::PidController<T>>(
+    auto wsg_controller = builder.template AddController<systems::PidController<T>>(
+        wsg_info.instance_id,
         std::move(feedback_selector), wsg_kp, wsg_ki, wsg_kd);
 
-    // Connects WSG and controller.
-    builder.Connect(wsg_output_port,
-                    wsg_controller->get_input_port_estimated_state());
-    builder.Connect(wsg_controller->get_output_port_control(), wsg_input_port);
-
     //  Export wsg's desired state input, and state output.
-    builder.ExportInput(wsg_controller->get_input_port_desired_state());
-    builder.ExportOutput(wsg_output_port);
+    base_builder->ExportInput(wsg_controller->get_input_port_desired_state());
+    base_builder->ExportOutput(wsg_output_port);
 
-    builder.ExportOutput(plant_->get_output_port(0));
+    base_builder->ExportOutput(plant_->get_output_port(0));
 
     // Sets up a "state estimator" for iiwa that generates
     // bot_core::robot_state_t messages.
     auto iiwa_state_est =
-        builder.template AddSystem<OracularStateEstimation<T>>(
+        base_builder->template AddSystem<OracularStateEstimation<T>>(
             iiwa_controller->get_robot_for_control(),
             iiwa_controller->get_robot_for_control().get_body(1));
-    builder.Connect(iiwa_output_port, iiwa_state_est->get_input_port_state());
-    builder.ExportOutput(iiwa_state_est->get_output_port_msg());
+    base_builder->Connect(iiwa_output_port, iiwa_state_est->get_input_port_state());
+    base_builder->ExportOutput(iiwa_state_est->get_output_port_msg());
 
     // Sets up a "state estimator" for the box that generates
     // bot_core::robot_state_t messages.
@@ -253,12 +241,12 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     parsers::urdf::AddModelInstanceFromUrdfFile(
         box_info.model_path, multibody::joints::kQuaternion,
         box_info.world_offset, object_.get());
-    auto box_state_est = builder.template AddSystem<OracularStateEstimation<T>>(
+    auto box_state_est = base_builder->template AddSystem<OracularStateEstimation<T>>(
         *object_, object_->get_body(1));
-    builder.Connect(
+    base_builder->Connect(
         plant_->model_instance_state_output_port(box_info.instance_id),
         box_state_est->get_input_port_state());
-    builder.ExportOutput(box_state_est->get_output_port_msg());
+    base_builder->ExportOutput(box_state_est->get_output_port_msg());
 
     builder.BuildInto(this);
   }
