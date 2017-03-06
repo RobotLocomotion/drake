@@ -12,7 +12,7 @@ $ ./bazel-bin/drake/examples/kuka_iiwa_arm/iiwa_wsg_simulation
 
 tty2:
 ```
-$ ./bazel-bin/drake/examples/kuka_iiwa_arm/kuka_plan_runner
+$ ./bazel-bin/drake/examples/kuka_iiwa_arm/iiwa_controller
 ```
 
 tty3:
