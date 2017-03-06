@@ -16,27 +16,20 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 template <typename T>
-class SimDiagramBuilder : public systems::DiagramBuilder<T> {
+class SimDiagramBuilder {
  public:
-  struct Connection {
-    const systems::OutputPortDescriptor<T>& output;
-    const systems::InputPortDescriptor<T>& input;
-
-    Connection(const systems::OutputPortDescriptor<T>& out,
-               const systems::InputPortDescriptor<T>& in)
-        : output(out), input(in) {}
-  };
-
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimDiagramBuilder)
 
   SimDiagramBuilder() {}
 
-  void WireThingsTogether();
+  std::unique_ptr<systems::Diagram<T>> Build() {
+    WireThingsTogether();
+    return builder_.Build();
+  }
 
-  void ConnectAll(const std::vector<Connection>& connections) {
-    for (const auto& connection : connections) {
-      this->Connect(connection.output, connection.input);
-    }
+  void BuildInto(systems::Diagram<T>* target) {
+    WireThingsTogether();
+    builder_.BuildInto(target);
   }
 
   systems::RigidBodyPlant<T>* AddPlant(
@@ -47,14 +40,24 @@ class SimDiagramBuilder : public systems::DiagramBuilder<T> {
 
   systems::DrakeVisualizer* AddVisualizer(drake::lcm::DrakeLcmInterface* lcm);
 
-  systems::StateFeedbackController<T>* AddController(
-      const int instance_id,
-      std::unique_ptr<systems::StateFeedbackController<T>> controller);
+  template <class ControllerType>
+  ControllerType* AddController(int instance_id,
+                                std::unique_ptr<ControllerType> controller) {
+    DRAKE_DEMAND(controllers_.find(instance_id) == controllers_.end());
+    DRAKE_DEMAND(dynamic_cast<systems::StateFeedbackController<T>*>(
+                     controller.get()) != nullptr);
 
-  systems::StateFeedbackController<T>* AddController(
-      std::unique_ptr<systems::StateFeedbackController<T>> controller) {
-    return AddController(RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
-                         std::move(controller));
+    ControllerType* controller_ptr =
+        builder_.template AddSystem<ControllerType>(std::move(controller));
+    controllers_.emplace(instance_id, controller_ptr);
+
+    return controller_ptr;
+  }
+
+  template <class ControllerType, typename... Args>
+  ControllerType* AddController(int instance_id, Args&&... args) {
+    return AddController(instance_id, std::make_unique<ControllerType>(
+                                          std::forward<Args>(args)...));
   }
 
   systems::StateFeedbackController<T>* get_controller(int instance_id) const {
@@ -68,7 +71,13 @@ class SimDiagramBuilder : public systems::DiagramBuilder<T> {
 
   systems::RigidBodyPlant<T>* get_plant() const { return plant_; }
 
+  systems::DiagramBuilder<T>* get_mutable_builder() { return &builder_; }
+
  private:
+  void WireThingsTogether();
+
+  systems::DiagramBuilder<T> builder_;
+
   systems::RigidBodyPlant<T>* plant_{nullptr};
   std::unordered_map<int, systems::StateFeedbackController<T>*> controllers_;
 

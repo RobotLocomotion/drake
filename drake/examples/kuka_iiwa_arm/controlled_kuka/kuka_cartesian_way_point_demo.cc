@@ -58,8 +58,6 @@ int DoMain() {
       SimpleCartesianWayPointPlanner(*tree, "iiwa_link_ee", way_points,
                                      time_stamps);
 
-  const int kInstanceId = RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
-
   drake::lcm::DrakeLcm lcm;
   SimDiagramBuilder<double> builder;
   // Adds a plant
@@ -69,25 +67,20 @@ int DoMain() {
   // Adds a iiwa controller
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
-  auto controller = dynamic_cast<systems::InverseDynamicsController<double>*>(
-      builder.AddController(
-          kInstanceId,
-          std::make_unique<systems::InverseDynamicsController<double>>(
-              GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
-              true /* without feedforward acceleration */)));
+  auto controller =
+      builder.AddController<systems::InverseDynamicsController<double>>(
+          RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
+          GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
+          true /* without feedforward acceleration */);
 
   // Adds a trajectory source for desired state and accelerations.
-  auto traj_src = builder.template AddSystem<DesiredTrajectorySource<double>>(
-      std::make_unique<DesiredTrajectorySource<double>>(
-          std::move(cartesian_trajectory), 2));
+  systems::DiagramBuilder<double>* diagram_builder = builder.get_mutable_builder();
+  auto traj_src = diagram_builder->template AddSystem<DesiredTrajectorySource<double>>(std::move(cartesian_trajectory), 2);
 
-  builder.Connect(traj_src->get_output_port_state(),
+  diagram_builder->Connect(traj_src->get_output_port_state(),
                   controller->get_input_port_desired_state());
-  builder.Connect(traj_src->get_output_port_acceleration(),
+  diagram_builder->Connect(traj_src->get_output_port_acceleration(),
                   controller->get_input_port_desired_acceleration());
-
-  // Finishes wiring.
-  builder.WireThingsTogether();
 
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
   Simulator<double> simulator(*diagram);

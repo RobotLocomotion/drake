@@ -12,7 +12,7 @@ systems::DrakeVisualizer* SimDiagramBuilder<T>::AddVisualizer(
   DRAKE_DEMAND(visualizer_ == nullptr);
   DRAKE_DEMAND(plant_ != nullptr);
 
-  visualizer_ = this->template AddSystem<systems::DrakeVisualizer>(
+  visualizer_ = builder_.template AddSystem<systems::DrakeVisualizer>(
       plant_->get_rigid_body_tree(), lcm);
 
   return visualizer_;
@@ -23,7 +23,7 @@ systems::RigidBodyPlant<T>* SimDiagramBuilder<T>::AddPlant(
     std::unique_ptr<systems::RigidBodyPlant<T>> plant) {
   DRAKE_DEMAND(plant_ == nullptr);
   plant_ =
-      this->template AddSystem<systems::RigidBodyPlant<T>>(std::move(plant));
+      builder_.template AddSystem<systems::RigidBodyPlant<T>>(std::move(plant));
   return plant_;
 }
 
@@ -32,19 +32,6 @@ systems::RigidBodyPlant<T>* SimDiagramBuilder<T>::AddPlant(
     std::unique_ptr<RigidBodyTree<T>> world_tree) {
   return AddPlant(
       std::make_unique<systems::RigidBodyPlant<T>>(std::move(world_tree)));
-}
-
-template <typename T>
-systems::StateFeedbackController<T>* SimDiagramBuilder<T>::AddController(
-    const int instance_id,
-    std::unique_ptr<systems::StateFeedbackController<T>> controller) {
-  DRAKE_DEMAND(controllers_.find(instance_id) == controllers_.end());
-
-  systems::StateFeedbackController<T>* controller_ptr =
-      this->template AddSystem(std::move(controller));
-  controllers_.emplace(instance_id, controller_ptr);
-
-  return controller_ptr;
 }
 
 template <typename T>
@@ -64,18 +51,19 @@ void SimDiagramBuilder<T>::WireThingsTogether() {
     std::cout << instance_state_output_port.size() << ", "
               << controller->get_input_port_estimated_state().size()
               << std::endl;
-    this->Connect(instance_state_output_port,
-                  controller->get_input_port_estimated_state());
+    builder_.Connect(instance_state_output_port,
+                     controller->get_input_port_estimated_state());
 
     // Connects the controller torque output to plant.
     const auto& instance_torque_input_port =
         plant_->model_instance_actuator_command_input_port(instance_id);
-    this->Connect(controller->get_output_port_control(),
-                  instance_torque_input_port);
+    builder_.Connect(controller->get_output_port_control(),
+                     instance_torque_input_port);
   }
 
   if (visualizer_) {
-    this->Connect(plant_->get_output_port(0), visualizer_->get_input_port(0));
+    builder_.Connect(plant_->get_output_port(0),
+                     visualizer_->get_input_port(0));
   }
 }
 
