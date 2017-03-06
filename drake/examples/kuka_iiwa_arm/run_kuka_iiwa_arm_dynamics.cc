@@ -53,7 +53,8 @@ int main(int argc, char* argv[]) {
 
   // Adds a plant
   RigidBodyPlant<double>* plant = nullptr;
-  const std::string kModelPath = "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf";
+  const std::string kModelPath =
+      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf";
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     drake::multibody::AddFlatTerrainToWorld(tree.get());
@@ -66,8 +67,9 @@ int main(int argc, char* argv[]) {
   // Feed in constant inputs of zero into the RigidBodyPlant.
   systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
   VectorX<double> zero_value = VectorX<double>::Zero(plant->get_input_size());
-  auto zero_source = base_builder->template AddSystem<ConstantVectorSource<double>>(
-      zero_value);
+  auto zero_source =
+      base_builder->template AddSystem<ConstantVectorSource<double>>(
+          zero_value);
   base_builder->Connect(zero_source->get_output_port(),
                         plant->get_input_port(0));
 

@@ -35,7 +35,7 @@ systems::RigidBodyPlant<T>* SimDiagramBuilder<T>::AddPlant(
 }
 
 template <typename T>
-void SimDiagramBuilder<T>::WireThingsTogether() {
+void SimDiagramBuilder<T>::ConnectControllersAndVisualizer() {
   DRAKE_DEMAND(plant_);
 
   // Wires plant state output to controller state input, and controller torque

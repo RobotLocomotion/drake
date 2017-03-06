@@ -2,6 +2,7 @@
 
 #include <memory.h>
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -17,6 +18,8 @@
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 
+#include "drake/util/drakeGeometryUtil.h"
+
 using Eigen::Vector3d;
 using Eigen::Vector2d;
 using Eigen::VectorXd;
@@ -30,6 +33,45 @@ using std::make_unique;
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
+
+template <typename T>
+Matrix6<T> ComputeLumpedGripperInertiaInEndEffectorFrame(
+    const RigidBodyTree<T>& world_tree,
+    int iiwa_instance, const std::string& end_effector_link_name,
+    int wsg_instance) {
+  KinematicsCache<T> world_cache = world_tree.CreateKinematicsCache();
+  world_cache.initialize(world_tree.getZeroConfiguration());
+  world_tree.doKinematics(world_cache);
+
+  const RigidBody<T>* end_effector = world_tree.FindBody(
+      end_effector_link_name, "iiwa14", iiwa_instance);
+  Isometry3<T> X_WEE =
+    world_tree.CalcBodyPoseInWorldFrame(world_cache, *end_effector);
+
+  // The inertia of the added gripper is lumped into the last link of the
+  // controller's iiwa arm model. This is motivated by the fact that the
+  // gripper inertia is relatively large compared to the last couple links
+  // in the iiwa arm model. And to completely rely on using feedback to cope
+  // with added inertia, we need to either rely on larger gains (which will
+  // cause simulation to explode without the gripper), or wait longer for
+  // the integrator to kick in.
+
+  // Computes the lumped inertia for the gripper.
+  std::set<int> gripper_instance_set = {wsg_instance};
+  Matrix6<T> lumped_gripper_inertia_W =
+    world_tree.LumpedSpatialInertiaInWorldFrame(
+        world_cache, gripper_instance_set);
+  // Transfer it to the last iiwa link's body frame.
+  Matrix6<T> lumped_gripper_inertia_EE =
+      transformSpatialInertia(X_WEE.inverse(), lumped_gripper_inertia_W);
+  lumped_gripper_inertia_EE += end_effector->get_spatial_inertia();
+
+  return lumped_gripper_inertia_EE;
+}
+
+template Matrix6<double>
+ComputeLumpedGripperInertiaInEndEffectorFrame(
+    const RigidBodyTree<double>&, int, const std::string&, int);
 
 void VerifyIiwaTree(const RigidBodyTree<double>& tree) {
   std::map<std::string, int> name_to_idx = tree.computePositionNameToIndexMap();

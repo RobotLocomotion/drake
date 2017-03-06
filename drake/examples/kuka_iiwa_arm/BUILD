@@ -91,21 +91,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "sim_diagram_building_util",
-    srcs = ["sim_diagram_building_util.cc"],
-    hdrs = [
-        "sim_diagram_building_util.h",
-    ],
-    deps = [
-        "//drake/systems/framework",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:multiplexer",
-        "//drake/systems/primitives:trajectory_source",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-    ],
-)
-
 drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
@@ -160,27 +145,6 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
-    ],
-)
-
-drake_cc_binary(
-    name = "hahaha",
-    srcs = ["hahaha.cc"],
-    data = [":models"],
-    deps = [
-        ":iiwa_common",
-        ":iiwa_lcm",
-        ":sim_diagram_builder",
-        ":sim_diagram_building_util",
-        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
-        "//drake/systems/analysis",
-        "//drake/systems/controllers:inverse_dynamics_controller",
-        "//drake/systems/controllers:pid_controller",
-        "//drake/systems/primitives:multiplexer",
-        "//drake/systems/primitives:trajectory_source",
-        "//drake/lcm",
         "@bot_core_lcmtypes//:lib",
         "@robotlocomotion_lcmtypes//:lib",
     ],

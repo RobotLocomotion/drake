@@ -15,6 +15,12 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+template <typename T>
+Matrix6<T> ComputeLumpedGripperInertiaInEndEffectorFrame(
+    const RigidBodyTree<T>& world_tree,
+    int iiwa_instance, const std::string& end_effector_link_name,
+    int wsg_instance);
+
 /// Verifies that @p tree matches assumptions about joint indices.
 /// Aborts if the tree isn't as expected.
 void VerifyIiwaTree(const RigidBodyTree<double>& tree);
