@@ -32,6 +32,9 @@ const double kPlanUpdateInterval = 0.1;
 // outputting the derivatives in value(), we could avoid keeping track
 // of multiple polynomials below.
 struct IiwaPlanSource::PlanData {
+  PlanData() {}
+  ~PlanData() {}
+
   double start_time{0};
   std::vector<char> encoded_msg;
   PiecewisePolynomial<double> pp;
