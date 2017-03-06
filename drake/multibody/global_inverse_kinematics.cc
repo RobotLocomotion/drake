@@ -21,14 +21,14 @@ GlobalInverseKinematics::GlobalInverseKinematics(
     : robot_(&robot) {
   const int num_bodies = robot_->get_num_bodies();
   R_WB_.resize(num_bodies);
-  p_WB_.resize(num_bodies);
+  p_WBo_.resize(num_bodies);
   // Loop through each body in the robot, to add the constraint that the bodies
   // are welded by joints.
   for (int body_idx = 1; body_idx < num_bodies; ++body_idx) {
     const RigidBody<double>& body = robot_->get_body(body_idx);
     const string body_R_name = body.get_name() + "_R";
     const string body_pos_name = body.get_name() + "_pos";
-    p_WB_[body_idx] = NewContinuousVariables<3>(body_pos_name);
+    p_WBo_[body_idx] = NewContinuousVariables<3>(body_pos_name);
     // If the body is fixed to the world, then fix the decision variables on
     // the body position and orientation.
     if (body.IsRigidlyFixedToWorld()) {
@@ -43,7 +43,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
       }
       AddBoundingBoxConstraint(body_pose.translation(),
                                body_pose.translation(),
-                               p_WB_[body_idx]);
+                               p_WBo_[body_idx]);
     } else {
       R_WB_[body_idx] =
           solvers::NewRotationMatrixVars(this, body_R_name);
@@ -66,10 +66,10 @@ GlobalInverseKinematics::GlobalInverseKinematics(
             // The position can be computed from the parent body pose.
             // child_pos = parent_pos + parent_rotmat * joint_to_parent_pos.
             AddLinearEqualityConstraint(
-                p_WB_[parent_idx] +
+                p_WBo_[parent_idx] +
                     R_WB_[parent_idx] *
                         joint_to_parent_transform.translation() -
-                    p_WB_[body_idx],
+                    p_WBo_[body_idx],
                 Vector3d::Zero());
 
             // The orientation can be computed from the parent body orientation.
@@ -108,10 +108,10 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               // The position of the rotation axis is the same on both child and
               // parent bodies.
               AddLinearEqualityConstraint(
-                  p_WB_[parent_idx] +
+                  p_WBo_[parent_idx] +
                       R_WB_[parent_idx] *
                           joint_to_parent_transform.translation() -
-                      p_WB_[body_idx],
+                      p_WBo_[body_idx],
                   Vector3d::Zero());
 
               // Now we process the joint limits constraint.
@@ -212,7 +212,7 @@ const solvers::VectorDecisionVariable<3>& GlobalInverseKinematics::body_pos(
   if (body_index >= robot_->get_num_bodies() || body_index <= 0) {
     throw std::runtime_error("body index out of range.");
   }
-  return p_WB_[body_index];
+  return p_WBo_[body_index];
 }
 
 Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
@@ -233,7 +233,7 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
       // the posture for that joint.
       if (joint->is_floating()) {
         // p_WBi is the position of the body frame in the world frame.
-        Vector3d p_WBi = GetSolution(p_WB_[body_idx]);
+        Vector3d p_WBi = GetSolution(p_WBo_[body_idx]);
         Matrix3d normalized_rotmat = math::ProjectMatToRotMat(R_WBi);
 
         q.segment<3>(body.get_position_start_index()) = p_WBi;
@@ -289,7 +289,7 @@ void GlobalInverseKinematics::AddWorldPositionConstraint(
     int body_idx, const Eigen::Vector3d& body_pt, const Eigen::Vector3d& box_lb,
     const Eigen::Vector3d& box_ub, const Isometry3d& measured_transform) {
   Vector3<Expression> body_pt_pos =
-      p_WB_[body_idx] + R_WB_[body_idx] * body_pt;
+      p_WBo_[body_idx] + R_WB_[body_idx] * body_pt;
   Vector3<Expression> body_pt_in_measured_frame =
       measured_transform.linear().transpose() *
       (body_pt_pos - measured_transform.translation());
