@@ -26,7 +26,7 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
 
   // Construct a vector of polynomials.
   const std::vector<Polynomiald> p_vec {a, y, y2};
-  const std::vector<double> times {0.0, 3, 7, 9};  // Knot points.
+  const std::vector<double> times {1.0, 3, 7, 9};  // Knot points.
 
   // Test the constructor that takes a PiecewisePolynomial (PP).
   // The PiecewisePolynomial can be either a vector of polynomials or a matrix
@@ -39,6 +39,9 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   const PiecewisePolynomialTrajectory kPpTrajFromVec {kPpFromVec};
   EXPECT_EQ(kPpTrajFromVec.rows(), 1);
   EXPECT_EQ(kPpTrajFromVec.cols(), 1);
+  EXPECT_EQ(kPpTrajFromVec.get_start_time(), times[0]);
+  EXPECT_EQ(kPpTrajFromVec.get_end_time(), times.back());
+
   // Test first segment 0 <= t < 3, returning the constant a=3.
 
   EXPECT_EQ(kPpTrajFromVec.value(0.0).value(), 3);
@@ -57,6 +60,12 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   // Test derivative()
   EXPECT_TRUE(CompareMatrices(kPpFromVec.derivative(1).value(1),
                               kPpTrajFromVec.derivative(1)->value(1), 1e-10,
+                              MatrixCompareType::absolute));
+
+  // Test Clone().
+  std::unique_ptr<Trajectory> clone = kPpTrajFromVec.Clone();
+  EXPECT_TRUE(CompareMatrices(kPpTrajFromVec.value(1),
+                              clone->value(1), 1e-10,
                               MatrixCompareType::absolute));
 
   // Test: construct a PiecewisePolynomialTrajectory from a PP matrix.
