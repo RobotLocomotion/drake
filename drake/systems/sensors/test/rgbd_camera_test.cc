@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <stdexcept>
+#include <functional>
 
 #include "gtest/gtest.h"
 #include <Eigen/Dense>
@@ -101,39 +102,62 @@ class RenderingSim : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderingSim)
 
-  RenderingSim() { this->set_name("rendering_sim"); }
+  explicit RenderingSim(const std::string& sdf_file) {
+    this->set_name("rendering_sim");
 
-  void Init(const std::string& sdf_file,
-            const Eigen::Vector3d& position,
-            const Eigen::Vector3d& orientation) {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::sdf::AddModelInstancesFromSdfFileToWorld(
         sdf_file, multibody::joints::kQuaternion, tree.get());
 
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
-    systems::DiagramBuilder<double> builder;
-
-    plant_ = builder.AddSystem<RigidBodyPlant<double>>(std::move(tree));
+    plant_ = builder_.AddSystem<RigidBodyPlant<double>>(std::move(tree));
     const double kPenetrationStiffness = 3000.;
-    const double kPenetrationDamping = 30.;
+    const double kPenetrationDamping = 10.;
+    const double kStaticFriction = 0.9;
+    const double kDynamicFriction = 0.5;
+    const double kStictionSlipTolerance = 0.01;
     plant_->set_normal_contact_parameters(kPenetrationStiffness,
                                           kPenetrationDamping);
+    plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+                                            kStictionSlipTolerance);
+  }
 
-    rgbd_camera_ = builder.AddSystem<RgbdCamera>(
+  // For fixed camera base.
+  void InitFixedCamera(const Eigen::Vector3d& position,
+                       const Eigen::Vector3d& orientation) {
+    rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
         "rgbd_camera", plant_->get_rigid_body_tree(),
         position, orientation, kFovY, kShowWindow);
+    Connect();
+  }
 
-    builder.Connect(plant_->state_output_port(),
-                    rgbd_camera_->state_input_port());
-    builder.ExportOutput(rgbd_camera_->color_image_output_port());
-    builder.ExportOutput(rgbd_camera_->depth_image_output_port());
-    builder.BuildInto(this);
+  // For movable camera base.
+  void InitMovableCamera(const Eigen::Isometry3d& transformation) {
+    rgbd_camera_frame_ = std::allocate_shared<RigidBodyFrame<double>>(
+        Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+        "rgbd camera frame", plant_->get_rigid_body_tree().FindBody("sphere"),
+        transformation);
+
+    rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
+        "rgbd_camera", plant_->get_rigid_body_tree(), *rgbd_camera_frame_.get(),
+        kFovY, kShowWindow);
+    Connect();
   }
 
  private:
+  void Connect() {
+    builder_.Connect(plant_->state_output_port(),
+                    rgbd_camera_->state_input_port());
+    builder_.ExportOutput(rgbd_camera_->color_image_output_port());
+    builder_.ExportOutput(rgbd_camera_->depth_image_output_port());
+    builder_.BuildInto(this);
+  }
+
+  systems::DiagramBuilder<double> builder_;
   RigidBodyPlant<double>* plant_;
   RgbdCamera* rgbd_camera_;
+  std::shared_ptr<RigidBodyFrame<double>> rgbd_camera_frame_;
 };
 
 void AssertLe(uint8_t value_a, uint8_t value_b, uint8_t tolerance) {
@@ -154,31 +178,21 @@ class ImageTest {
       const sensors::Image<uint8_t>& color_image,
       const sensors::Image<float>& depth_image)> Verifier;
 
+  // For fixed camera base.
   ImageTest(const std::string& sdf, const Eigen::Vector3d& position,
-            const Eigen::Vector3d& orientation, Verifier verifier) {
-    diagram_.Init(GetDrakePath() + sdf, position, orientation);
+            const Eigen::Vector3d& orientation)
+      : diagram_(GetDrakePath() + sdf) {
+    diagram_.InitFixedCamera(position, orientation);
+  }
 
-    std::unique_ptr<systems::Context<double>> context =
-        diagram_.CreateDefaultContext();
-    std::unique_ptr<systems::SystemOutput<double>> output =
-        diagram_.AllocateOutput(*context);
-    systems::Simulator<double> simulator(diagram_, std::move(context));
-    simulator.Initialize();
+  // For moving camera base.
+  ImageTest(const std::string& sdf, const Eigen::Isometry3d& transformation)
+      : diagram_(GetDrakePath() + sdf) {
+    diagram_.InitMovableCamera(transformation);
+  }
 
-    const double kDuration = 0.01;
-    for (double time = 0.; time < kDuration ; time += 0.01) {
-      simulator.StepTo(time);
-      diagram_.CalcOutput(simulator.get_context(), output.get());
-
-      systems::AbstractValue* mutable_data = output->GetMutableData(0);
-      systems::AbstractValue* mutable_data_d = output->GetMutableData(1);
-      auto color_image =
-          mutable_data->GetMutableValue<sensors::Image<uint8_t>>();
-      auto depth_image =
-          mutable_data_d->GetMutableValue<sensors::Image<float>>();
-
-      verifier(color_image, depth_image);
-    }
+  void Verify(Verifier verifier, double duration = 0.1) {
+    DoVerification(verifier, duration);
   }
 
   static void VerifyUniformColorAndDepth(
@@ -190,7 +204,7 @@ class ImageTest {
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
         for (int ch = 0; ch < 4; ++ch) {
-          AssertLe(color_image.at(u, v)[0], color[0], kColorPixelTolerance);
+          AssertLe(color_image.at(u, v)[ch], color[ch], kColorPixelTolerance);
         }
         // Assuming depth value provides 0.1 mm precision.
         ASSERT_NEAR(depth_image.at(u, v)[0], depth, 1e-4);
@@ -258,8 +272,52 @@ class ImageTest {
     ASSERT_NEAR(depth_image.at(kHalfWidth, kHalfHeight)[0], 1.f, 1e-4);
   }
 
+  void VerifyMovingCamera(const sensors::Image<uint8_t>& color_image,
+                          const sensors::Image<float>& depth_image) {
+    int horizon = 0;
+    std::array<uint8_t, 4> color{{0u, 0u, 0u, 0u}};
+    for (int v = 0; v < color_image.height(); ++v) {
+      if ((color[0] != color_image.at(0, v)[0]) ||
+          (color[1] != color_image.at(0, v)[1]) ||
+          (color[2] != color_image.at(0, v)[2]) ||
+          (color[3] != color_image.at(0, v)[3])) {
+        for (int ch = 0; ch < 4; ++ch) {
+          color[ch] = color_image.at(0, v)[ch];
+        }
+        horizon = v;
+      }
+    }
+
+    EXPECT_NE(horizon, previous_horizon_);
+    previous_horizon_ = horizon;
+  }
+
  private:
+  void DoVerification(Verifier verifier, double duration) {
+    std::unique_ptr<systems::Context<double>> context =
+        diagram_.CreateDefaultContext();
+    std::unique_ptr<systems::SystemOutput<double>> output =
+        diagram_.AllocateOutput(*context);
+    systems::Simulator<double> simulator(diagram_, std::move(context));
+    simulator.Initialize();
+
+    for (double time = 0.; time < duration ; time += 0.1) {
+      simulator.StepTo(time);
+      diagram_.CalcOutput(simulator.get_context(), output.get());
+
+      systems::AbstractValue* mutable_data = output->GetMutableData(0);
+      systems::AbstractValue* mutable_data_d = output->GetMutableData(1);
+      auto color_image =
+          mutable_data->GetMutableValue<sensors::Image<uint8_t>>();
+      auto depth_image =
+          mutable_data_d->GetMutableValue<sensors::Image<float>>();
+
+      verifier(color_image, depth_image);
+    }
+  }
+
   RenderingSim diagram_;
+  int previous_horizon_{0};
 };
 
 // Verifies the rendered terrain.
@@ -267,8 +325,8 @@ GTEST_TEST(RenderingTest, TerrainRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/nothing.sdf");
   ImageTest dut(sdf,
                 Eigen::Vector3d(0., 0., 4.999),
-                Eigen::Vector3d(0., M_PI_2, 0.),
-                ImageTest::VerifyTerrain);
+                Eigen::Vector3d(0., M_PI_2, 0.));
+  dut.Verify(ImageTest::VerifyTerrain);
 }
 
 // Verifies the rendered box.
@@ -276,8 +334,8 @@ GTEST_TEST(RenderingTest, BoxRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/box.sdf");
   ImageTest dut(sdf,
                 Eigen::Vector3d(0., 0., 2.),
-                Eigen::Vector3d(0., M_PI_2, 0.),
-                ImageTest::VerifyBox);
+                Eigen::Vector3d(0., M_PI_2, 0.));
+  dut.Verify(ImageTest::VerifyBox);
 }
 
 // Verifies the rendered cylinder.
@@ -285,8 +343,8 @@ GTEST_TEST(RenderingTest, CylinderRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/cylinder.sdf");
   ImageTest dut(sdf,
                 Eigen::Vector3d(0., 0., 2.),
-                Eigen::Vector3d(0., M_PI_2, 0.),
-                ImageTest::VerifyCylinder);
+                Eigen::Vector3d(0., M_PI_2, 0.));
+  dut.Verify(ImageTest::VerifyCylinder);
 }
 
 // Verifies the rendered mesh box.
@@ -294,8 +352,8 @@ GTEST_TEST(RenderingTest, MeshBoxRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/mesh_box.sdf");
   ImageTest dut(sdf,
                 Eigen::Vector3d(0., 0., 3.),
-                Eigen::Vector3d(0., M_PI_2, 0.),
-                ImageTest::VerifyMeshBox);
+                Eigen::Vector3d(0., M_PI_2, 0.));
+  dut.Verify(ImageTest::VerifyMeshBox);
 }
 
 // Verifies the rendered sphere.
@@ -303,18 +361,38 @@ GTEST_TEST(RenderingTest, SphereRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/sphere.sdf");
   ImageTest dut(sdf,
                 Eigen::Vector3d(0., 0., 2.),
-                Eigen::Vector3d(0., M_PI_2, 0.),
-                ImageTest::VerifySphere);
+                Eigen::Vector3d(0., M_PI_2, 0.));
+  dut.Verify(ImageTest::VerifySphere);
 }
+
+// Verifies the camera pose update.
+// RgbdCamera's base is attached to a sphere falling from the sky.  RgbdCamera's
+// optical axis is parallel to the flat terrain, so the camera sees the horizon.
+// This test verifies the horizon's pixel location changes as the sphere falls.
+GTEST_TEST(RenderingTest, CameraPoseUpdateTest) {
+  const std::string sdf("/systems/sensors/test/models/falling_sphere.sdf");
+  // Attaches the camera to 1 m above the sphere.
+  Eigen::Isometry3d transformation((Eigen::Matrix4d() <<
+                                    1., 0., 0., 0.,
+                                    0., 1., 0., 0.,
+                                    0., 0., 1., 1.,
+                                    0., 0., 0., 1.).finished());
+
+  const double kDuration = 0.8;
+  ImageTest dut(sdf, transformation);
+  auto verifier = std::bind(&ImageTest::VerifyMovingCamera, &dut,
+                            std::placeholders::_1, std::placeholders::_2);
+  dut.Verify(verifier, kDuration);
+}
+
 
 // Verifies an exception is thrown if a link has more than two visuals.
 GTEST_TEST(RenderingTest, MultipleVisualsTest) {
-  RenderingSim diagram;
   // The following SDF includes a link that has more than two visuals.
   const std::string sdf("/systems/sensors/test/models/bad.sdf");
-  EXPECT_THROW(diagram.Init(GetDrakePath() + sdf,
-                            Eigen::Vector3d(0., 0., 1.),
-                            Eigen::Vector3d(0., 0., 0.)),
+  RenderingSim diagram(GetDrakePath() + sdf);
+  EXPECT_THROW(diagram.InitFixedCamera(Eigen::Vector3d(0., 0., 1.),
+                                       Eigen::Vector3d(0., 0., 0.)),
                std::runtime_error);
 }
 
