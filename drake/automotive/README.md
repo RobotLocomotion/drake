@@ -73,8 +73,8 @@ The following demos are available:
        --num_dragway_lanes=3 \
        --num_trajectory_car=12
    ```
- * An 'X'-shaped crossroad composed of 3 horizontal lanes and 5 vertical lanes,
-   with two `TrajectoryCar` vehicles traveling down each lane at different
+ * An 'X'-shaped multi-lane crossroad (e.g. 3 horizontal and 5 vertical lanes), 
+   with two `TrajectoryCar` vehicles traveling down each lane at different 
    speeds plus one `SimpleCar`:
    ```
    bazel run //drake/automotive:demo -- \

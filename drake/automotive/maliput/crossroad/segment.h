@@ -21,11 +21,13 @@ class Junction;
   Crossroad's implementation of api::Segment. It contains multiple straight
   lanes. For the lane semantics, see the class descriptions of Lane.
 
-  The following ASCII art shows how N lanes are arranged in a segment.
+  The following ASCII art shows how N lanes are arranged in a segment. For the
+  horizontal segment, its lanes are parallel to the X-axis in the world frame,
+  and for the vertical segment, the Y-axis.
 
   <pre>
 
-              lane_bounds ---     X         -------- lane index 1
+              lane_bounds ---     X/(Y)      -------- lane index 1
                             |     ^         |
      lane index n ---       |     |         |   --- lane index 0
                     |       |     |         |   |
@@ -37,19 +39,20 @@ class Junction;
                 | | : | : | : | : | : | : | : | : | |
                 | | : | : | : | : | : | : | : | : | |
                 | | : | : | : | : | : | : | : | : | |
-  Y <-----------------------------o----------------------------->
+  Y <-----------------------------o-----------------------------> (X)
                 ^                 |             ^   ^
                 |                 |             |   |
-              y_max               |             |  y_min
+              r_max               |             |  r_min
                                   |             |
-                                  V             --- y offset of lane 0
+                                  V             --- r_offset of lane 0
 
                 |<--------------------------------->|
                               road_width
 
   </pre>
 
-   Note that lane indices increase to the left, which matches the fact that
+   Note that lane index starts from the right-most (relative to the
+   corresponding axis), and increases to the left, which matches the fact that
    within a Lane, `r` increases to the left.
 **/
 class Segment final : public api::Segment {
@@ -58,7 +61,7 @@ class Segment final : public api::Segment {
 
   /// Constructs a new crossroad Segment.
   ///
-  /// @param index The index of the segment with its Junction.
+  /// @param[in] index The index of the segment with its Junction.
 
   /// @param[in] junction The junction to which this Segment belongs.
   ///

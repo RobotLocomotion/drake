@@ -62,11 +62,9 @@ class Segment;
   the lateral traversal at a particular `s`. Coordinate `h` specifies the
   height above the lane's surface at a particular `s` and `r` (the lane's
   surface itself is always at `h = 0`). Since Crossroad lanes are flat and
-level,
-  `z = h` for all values of `s` and `r` and, in the Crossroad's case, `z = 0`
-for
-  the surface itself. The origin of the lane's frame is defined by the `o` along
-  the above-shown `s = 0` line.
+  level, `z = h` for all values of `s` and `r` and, in the Crossroad's case,
+  `z = 0` for the surface itself. The origin of the lane's frame is defined by
+  the `o` along the above-shown `s = 0` line.
 **/
 class Lane final : public api::Lane {
  public:
@@ -90,7 +88,7 @@ class Lane final : public api::Lane {
   /// @param lane_bounds nominal bounds of the lane, uniform along the entire
   ///        reference path, which must be a subset of @p driveable_bounds.
   ///
-  /// @param driveable_bounds The driveable bounds of the lane, uniform along
+  /// @param driveable_bounds The drivable bounds of the lane, uniform along
   ///        the entire reference path.
   ///
   Lane(const Segment* segment, const api::LaneId& id, int index, double length,
@@ -109,7 +107,11 @@ class Lane final : public api::Lane {
 
   ///@}
 
-  /// Returns the r-offset of this lane's frame relative to the world frame.
+  /// Returns the r-offset of this lane's frame relative to the world frame. The
+  /// offset is with respect to the Y-axis if this lane is in the horizontal
+  /// segment, and X-axis if it is in the vertical segment. See
+  /// `crossroad/segment.h` for an visual illustration.
+
   double r_offset() const { return r_offset_; }
 
  private:
@@ -156,7 +158,7 @@ class Lane final : public api::Lane {
 
   const Segment* segment_{};  // The segment to which this lane belongs.
   const api::LaneId id_;
-  const int index_{};  // The index of this lane within a Segment.
+  const int index_{};  // The index of this lane within its Segment.
   const double length_{};
   const double r_offset_{};
   const api::RBounds lane_bounds_;

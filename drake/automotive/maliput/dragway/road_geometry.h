@@ -79,13 +79,12 @@ class RoadGeometry final : public api::RoadGeometry {
 
   // Returns true iff `geo_pos` is "on" the dragway. It is on the dragway iff
   // `geo_pos.x` and `geo_pos.y` fall within the dragway's driveable region.
-
-  // bool IsGeoPositionOnDragway(const api::GeoPosition& geo_pos) const;
+  bool IsGeoPositionOnDragway(const api::GeoPosition& geo_pos) const;
 
   // Returns the index of the lane on which the provided `geo_pos` resides. This
   // method requires that the provided `geo_pos` be on the dragway as determined
   // by IsGeoPositionOnDragway().
-  // int GetLaneIndex(const api::GeoPosition& geo_pos) const;
+  int GetLaneIndex(const api::GeoPosition& geo_pos) const;
 
   const api::RoadGeometryId id_;
   const double linear_tolerance_{};

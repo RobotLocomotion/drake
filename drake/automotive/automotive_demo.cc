@@ -59,16 +59,18 @@ DEFINE_double(crossroad_length, 100, "The length of the crossroad lanes.");
 DEFINE_double(crossroad_lane_width, 3.7, "The crossroad lane width.");
 DEFINE_double(crossroad_shoulder_width, 3.0, "The crossroad's shoulder width.");
 DEFINE_double(crossroad_base_speed, 4.0,
-              "The speed of the vehicles on the right-most horizontal lane of "
-              "the crossroad.");
+              "The speed of the vehicles on the right-most lane of each segment"
+              "in the crossroad.");
 DEFINE_double(crossroad_lane_speed_delta, 2,
               "The change in vehicle speed in the left-adjacent lane. For "
-              "example, suppose the crossroad has 3 horizontal and 5 vertical"
-              "lanes. Vehicles in the right-most horizontal lane will travel at"
-              "crossroad_base_speed m/s. Vehicles in the middle lane will"
-              "travel at crossroad_base_speed + crossroad_lane_speed_delta m/s."
-              "Finally,vehicles in the left-most lane will travel at "
-              "crossroad_base_speed + 2 * crossroad_lane_speed_delta m/s.");
+              "example, suppose the crossroad has 3 lanes in the horizontal "
+              "segment, and 5 lanes in the vertical segment. Vehicles in the "
+              "right-most horizontal/vertical lane will travel at "
+              "crossroad_base_speed m/s. Vehicles in the left-most horizontal "
+              "lane will travel at crossroad_base_speed + 2 * "
+              "crossroad_lane_speed_delta m/s, and vehicles in the left-most "
+              "vertical lane will travel at crossroad_base_speed + 4 * "
+              "crossroad_lane_speed_delta m/s.");
 DEFINE_double(crossroad_vehicle_delay, 3,
               "The starting time delay between consecutive vehicles on a "
               "lane.");
