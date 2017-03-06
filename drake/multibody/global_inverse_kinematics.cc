@@ -13,6 +13,7 @@ using Eigen::Matrix3d;
 using std::string;
 
 using drake::symbolic::Expression;
+using drake::solvers::VectorDecisionVariable;
 
 namespace drake {
 namespace multibody {
@@ -315,6 +316,47 @@ void GlobalInverseKinematics::AddWorldOrientationConstraint(
   desired_orientation.toRotationMatrix() * R_WB_[body_idx].transpose();
   double lb = angle_tol < M_PI ? 2 * cos(angle_tol) + 1 : -1;
   AddLinearConstraint(rotation_matrix_err.trace(), lb, 3);
+}
+
+void GlobalInverseKinematics::AddPostureCost(const Eigen::VectorXd &q_desired,
+                                             const Eigen::VectorXd &body_position_cost,
+                                             const Eigen::VectorXd &body_orientation_cost) {
+  const int num_bodies = robot_->get_num_bodies();
+  if (body_position_cost.rows() != num_bodies - 1) {
+    throw std::runtime_error("body_position_cost should have " + num_bodies - 1 + " rows.");
+  }
+  if (body_orientation_cost.rows() != num_bodies - 1) {
+    throw std::runtime_error("body_orientation_cost should have " + num_bodies - 1 + " rows.");
+  }
+  for (int i = 0; i < num_bodies - 1; ++i) {
+    if (body_position_cost(i) < 0) {
+      throw std::runtime_error("body_position_cost(" << i << ") is negative.");
+    }
+    if (body_orientation_cost(i) < 0) {
+      throw std::runtime_error("body_orientation_cost(" << i << ") is negative.");
+    }
+  }
+  KinematicsCache<double> cache = robot_->doKinematics(q_desired);
+
+  // sum up the pose error for each body to pose_err_expr.
+  Expression pose_err_expr(0);
+  for (int i = 1; i < num_bodies; ++i) {
+    const auto& T_WB_desired = robot_->CalcFramePoseInWorldFrame(cache, robot_->get_body(i), Isometry3d::Identity());
+    // The position error is just the Euclidean distance from the body origin
+    // to the desired body origin.
+    pose_err_expr += body_position_cost(i - 1) * (p_WBo_[i] - T_WB_desired.translation()).squaredNorm();
+    // The orientation error is on the angle θ between the body orientation and
+    // the desired orientation, namely 1 - cos(θ).
+    // cos(θ) can be computed as (trace(R_WB_[i]ᵀ * R_WB_desired) - 1) / 2
+    pose_err_expr += body_orientation_cost(i - 1) * (1 - ((R_WB_[i].transpose() * T_WB_desired.linear()).trace() - 1)/ 2);
+  }
+
+  // Now adds a slack variable pose_err with the Lorentz cone constraint
+  // pose_err >= pose_err_expr
+  // min pose_err
+  VectorDecisionVariable<1> pose_err = NewContinuousVariables<1>("pose_error");
+  
+
 }
 }  // namespace multibody
 }  // namespace drake
