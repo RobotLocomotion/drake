@@ -5,8 +5,8 @@ group "0.sim" {
     host = "localhost";
   }
 
-  cmd "1.kuka_plan_runner" {
-    exec = "build/drake/examples/kuka_iiwa_arm/kuka_plan_runner";
+  cmd "1.iiwa_controller" {
+    exec = "build/drake/examples/kuka_iiwa_arm/iiwa_controller";
     host = "localhost";
   }
 
