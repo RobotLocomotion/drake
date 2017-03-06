@@ -253,10 +253,13 @@ void Polynomial<CoefficientType>::Subs(const VarType& orig,
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::Derivative(
     unsigned int derivative_order) const {
+  DRAKE_DEMAND(derivative_order >= 0);
   if (!is_univariate_)
     throw runtime_error(
         "Derivative is only defined for univariate polynomials");
-
+  if (derivative_order == 0) {
+    return *this;
+  }
   Polynomial<CoefficientType> ret;
 
   for (typename vector<Monomial>::const_iterator iter = monomials_.begin();

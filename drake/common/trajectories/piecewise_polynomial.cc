@@ -47,7 +47,11 @@ PiecewisePolynomial<CoefficientType>::PiecewisePolynomial() {
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::derivative(int derivative_order) const {
+  DRAKE_DEMAND(derivative_order >= 0);
   PiecewisePolynomial ret = *this;
+  if (derivative_order == 0) {
+    return *this;
+  }
   for (auto it = ret.polynomials_.begin(); it != ret.polynomials_.end(); ++it) {
     PolynomialMatrix& matrix = *it;
     for (Eigen::Index row = 0; row < rows(); row++) {
