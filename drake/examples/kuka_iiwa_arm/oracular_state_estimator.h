@@ -111,6 +111,8 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
   int output_port_index_msg_{0};
 };
 
+// template class OracularStateEstimation<double>;
+
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
