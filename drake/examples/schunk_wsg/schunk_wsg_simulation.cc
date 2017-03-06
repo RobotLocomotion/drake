@@ -12,6 +12,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 #include "drake/lcm/drake_lcm.h"
@@ -67,20 +68,7 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
     auto zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
         Eigen::VectorXd::Zero(1));
 
-    const RigidBodyTree<T>& tree = plant->get_rigid_body_tree();
-    const std::map<std::string, int> index_map =
-        tree.computePositionNameToIndexMap();
-    const int left_finger_position_index =
-        index_map.at("left_finger_sliding_joint");
-    position_index_ = left_finger_position_index;
-    velocity_index_ = left_finger_position_index +
-        plant->get_num_positions();
-
-    Eigen::MatrixXd feedback_matrix = Eigen::MatrixXd::Zero(
-        2 * plant->get_num_actuators(),
-        2 * plant->get_num_positions());
-    feedback_matrix(0, position_index_) = 1.;
-    feedback_matrix(1, velocity_index_) = 1.;
+    const Eigen::MatrixXd feedback_matrix = GetSchunkWsgFeedbackSelector<T>();
     std::unique_ptr<MatrixGain<T>> feedback_selector =
         std::make_unique<MatrixGain<T>>(feedback_matrix);
 

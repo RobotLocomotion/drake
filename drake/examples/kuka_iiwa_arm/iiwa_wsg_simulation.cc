@@ -17,6 +17,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
+#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -210,38 +211,19 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     builder.ExportOutput(iiwa_output_port);
 
     // Sets up the WSG gripper part.
-    const std::map<std::string, int> index_map =
-        world_tree.computePositionNameToIndexMap();
-    const int left_finger_position_index =
-        index_map.at("left_finger_sliding_joint");
-    const int position_index = plant_->FindInstancePositionIndexFromWorldIndex(
-        wsg_info.instance_id, left_finger_position_index);
-    const int velocity_index =
-        position_index + plant_->get_num_positions(wsg_info.instance_id);
-
-    Eigen::MatrixXd feedback_matrix = Eigen::MatrixXd::Zero(
-        2 * plant_->get_num_actuators(wsg_info.instance_id),
-        2 * plant_->get_num_positions(wsg_info.instance_id));
-    feedback_matrix(0, position_index) = 1.;
-    feedback_matrix(1, velocity_index) = 1.;
     std::unique_ptr<systems::MatrixGain<T>> feedback_selector =
-        std::make_unique<systems::MatrixGain<T>>(feedback_matrix);
-
-    // TODO(sam.creasey) The choice of constants below is completely
-    // arbitrary and may not match the performance of the actual
-    // gripper.
-    const T wsg_kp = 300.0;   // This seems very high, for some grasps
-                              // it's actually in the right power of
-                              // two.  We'll need to revisit this once
-                              // we're using the force command sent to
-                              // the gripper properly.
-    const T wsg_ki = 0.0;
-    const T wsg_kd = 5.0;
-    const VectorX<T> wsg_v = VectorX<T>::Ones(wsg_input_port.size());
+        std::make_unique<systems::MatrixGain<T>>(
+            schunk_wsg::GetSchunkWsgFeedbackSelector<T>());
+    // TODO(sam.creasey) The choice of position gains below is completely
+    // arbitrary. We'll need to revisit this once we switch to force control
+    // for the gripper.
+    const int kWsgActDim = schunk_wsg::kSchunkWsgNumActuators;
+    const VectorX<T> wsg_kp = VectorX<T>::Constant(kWsgActDim, 300.0);
+    const VectorX<T> wsg_ki = VectorX<T>::Constant(kWsgActDim, 0.0);
+    const VectorX<T> wsg_kd = VectorX<T>::Constant(kWsgActDim, 5.0);
 
     auto wsg_controller = builder.template AddSystem<systems::PidController<T>>(
-        std::move(feedback_selector), wsg_v * wsg_kp, wsg_v * wsg_ki,
-        wsg_v * wsg_kd);
+        std::move(feedback_selector), wsg_kp, wsg_ki, wsg_kd);
 
     // Connects WSG and controller.
     builder.Connect(wsg_output_port,
