@@ -255,7 +255,7 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::Derivative(
     unsigned int derivative_order) const {
   if (!is_univariate_)
     throw runtime_error(
-        "getCoefficients is only defined for univariate polynomials");
+        "Derivative is only defined for univariate polynomials");
 
   Polynomial<CoefficientType> ret;
 
@@ -282,7 +282,7 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::Integral(
     const CoefficientType& integration_constant) const {
   if (!is_univariate_)
     throw runtime_error(
-        "getCoefficients is only defined for univariate polynomials");
+        "Integral is only defined for univariate polynomials");
   Polynomial<CoefficientType> ret = *this;
 
   for (typename vector<Monomial>::iterator iter = ret.monomials_.begin();
@@ -484,7 +484,7 @@ typename Polynomial<CoefficientType>::RootsType
 Polynomial<CoefficientType>::Roots() const {
   if (!is_univariate_)
     throw runtime_error(
-        "getCoefficients is only defined for univariate polynomials");
+        "Roots is only defined for univariate polynomials");
 
   auto coefficients = GetCoefficients();
 

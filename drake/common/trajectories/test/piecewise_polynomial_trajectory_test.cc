@@ -62,6 +62,12 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
                               kPpTrajFromVec.derivative(1)->value(1), 1e-10,
                               MatrixCompareType::absolute));
 
+  // Test Clone().
+  std::unique_ptr<Trajectory> clone = kPpTrajFromVec.Clone();
+  EXPECT_TRUE(CompareMatrices(kPpTrajFromVec.value(1),
+                              clone->value(1), 1e-10,
+                              MatrixCompareType::absolute));
+
   // Test: construct a PiecewisePolynomialTrajectory from a PP matrix.
 
   // Construct a matrix of polynomials.

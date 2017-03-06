@@ -11,7 +11,8 @@ TrajectorySource<T>::TrajectorySource(const Trajectory& trajectory,
                                       bool zero_derivatives_beyond_limits)
     : SingleOutputVectorSource<T>(trajectory.rows() *
                                   (1 + output_derivative_order)),
-      trajectory_(trajectory),
+      // Make a copy of the input trajectory.
+      trajectory_(trajectory.Clone()),
       clamp_derivatives_(zero_derivatives_beyond_limits) {
   // This class does not currently support trajectories which output
   // more complicated matrices.
@@ -20,7 +21,7 @@ TrajectorySource<T>::TrajectorySource(const Trajectory& trajectory,
 
   for (int i = 0; i < output_derivative_order; i++) {
     if (i == 0)
-      derivatives_.push_back(trajectory_.derivative());
+      derivatives_.push_back(trajectory_->derivative());
     else
       derivatives_.push_back(derivatives_[i - 1]->derivative());
   }
@@ -29,12 +30,12 @@ TrajectorySource<T>::TrajectorySource(const Trajectory& trajectory,
 template <typename T>
 void TrajectorySource<T>::DoCalcVectorOutput(
     const Context<T>& context, Eigen::VectorBlock<VectorX<T>>* output) const {
-  int len = trajectory_.rows();
-  output->head(len) = trajectory_.value(context.get_time());
+  int len = trajectory_->rows();
+  output->head(len) = trajectory_->value(context.get_time());
 
   double time = context.get_time();
-  bool set_zero = clamp_derivatives_ && (time > trajectory_.get_end_time() ||
-      time < trajectory_.get_start_time());
+  bool set_zero = clamp_derivatives_ && (time > trajectory_->get_end_time() ||
+      time < trajectory_->get_start_time());
 
   for (size_t i = 0; i < derivatives_.size(); ++i) {
     if (set_zero) {

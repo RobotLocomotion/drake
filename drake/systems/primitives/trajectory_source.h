@@ -29,8 +29,7 @@ class TrajectorySource : public SingleOutputVectorSource<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectorySource)
 
-  /// @param trajectory Trajectory used by the system.  This reference is
-  /// aliased, and must remain valid for the lifetime of the system.
+  /// @param trajectory Trajectory used by the system.
   /// @param output_derivative_order The number of times to take the derivative.
   /// Must be greater than or equal to zero.
   /// @param zero_derivatives_beyond_limits All derivatives will be zero before
@@ -52,7 +51,7 @@ class TrajectorySource : public SingleOutputVectorSource<T> {
       Eigen::VectorBlock<VectorX<T>>* output) const override;
 
  private:
-  const Trajectory& trajectory_;
+  const std::unique_ptr<Trajectory> trajectory_;
   const bool clamp_derivatives_;
   std::vector<std::unique_ptr<Trajectory>> derivatives_;
 };

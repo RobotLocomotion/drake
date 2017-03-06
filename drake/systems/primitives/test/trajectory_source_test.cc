@@ -67,7 +67,8 @@ TEST_F(TrajectorySourceTest, OutputTest) {
                         MatrixCompareType::absolute));
   }
 
-  // Test first derivative (first segment) f`(y^4) = 4 * y^3.
+  // Test first derivative (which is in second segment):
+  // f`(yyyy) = f`(y^4) = 4 * y^3.  y = kTestTime.
   EXPECT_NEAR(output_vector->get_value().segment(len, len)(0), 21.4375, 1e-6);
 }
 

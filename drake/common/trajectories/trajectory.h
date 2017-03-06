@@ -14,6 +14,12 @@ class Trajectory {
   virtual ~Trajectory() {}
 
   /**
+   *
+   * @return A deep copy of this Trajectory.
+   */
+  virtual std::unique_ptr<Trajectory> Clone() const = 0;
+
+  /**
    * Evaluates the trajectory at the given time \p t.
    * @param t The time at which to evaluate the trajectory.
    * @return The matrix of evaluated values.
