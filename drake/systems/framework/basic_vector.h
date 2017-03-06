@@ -121,17 +121,20 @@ class BasicVector : public VectorBase<T> {
   /// Uses the Non-Virtual Interface idiom because smart pointers do not have
   /// type covariance.
   std::unique_ptr<BasicVector<T>> Clone() const {
-    return std::unique_ptr<BasicVector<T>>(DoClone());
+    auto clone = std::unique_ptr<BasicVector<T>>(DoClone());
+    clone->set_value(this->get_value());
+    return clone;
   }
 
  protected:
   /// Returns a new BasicVector containing a copy of the entire vector.
-  /// Caller must take ownership.
+  /// Caller must take ownership, and may rely on the NVI wrapper to initialize
+  /// the clone elementwise.
   ///
   /// Subclasses of BasicVector must override DoClone to return their covariant
   /// type.
   virtual BasicVector<T>* DoClone() const {
-    return new BasicVector<T>(this->get_value());
+    return new BasicVector<T>(this->size());
   }
 
  private:
