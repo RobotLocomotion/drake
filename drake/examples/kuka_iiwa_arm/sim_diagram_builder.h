@@ -72,7 +72,8 @@ class SimDiagramBuilder {
       std::unique_ptr<RigidBodyTree<T>> world_tree);
 
   /**
-   * Adds a DrakeVisualizer. Can be called at most once.
+   * Adds a DrakeVisualizer. Can be called at most once. Must be called after
+   * AddPlant().
    * @param lcm Pointer to a lcm interface.
    * @return Pointer to the added visualizer.
    */

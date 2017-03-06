@@ -186,4 +186,22 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "sim_diagram_builder_test",
+    data = [":models"],
+    deps = [
+        ":iiwa_common",
+        ":sim_diagram_builder",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
+        "//drake/lcm",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/analysis",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/framework",
+    ],
+)
+
 cpplint()
