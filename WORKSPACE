@@ -73,6 +73,14 @@ github_archive(
 )
 
 github_archive(
+    name = "libbot",
+    repository = "RobotLocomotion/libbot2",
+    commit = "495ae366d5e380b58254368217fc5c798e72aadd",
+    build_file = "tools/libbot.BUILD",
+    sha256 = "c463460a4dd6133d6d21e6ab6e493fdcdca442d2df86bcb56749f6740bc61db5",
+)
+
+github_archive(
     name = "bullet",
     repository = "RobotLocomotion/bullet3",
     commit = "ae2c4ca0618d55c6a29900aed75b958604149fdb",
