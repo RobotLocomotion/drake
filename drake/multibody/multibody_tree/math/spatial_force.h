@@ -19,11 +19,11 @@ template <typename T> class SpatialVelocity;
 /// The translational force is understood to be applied at a specific point but
 /// that point is not stored within the SpatialForce class. Both the
 /// translational force and torque are expected to be expressed in the same
-/// frame however, this class does not offer any mechanism to track the
-/// expresseed-in frame. It is the responsibility of the user to keep track the
+/// frame; however, this class does not offer any mechanism to track the
+/// expressed-in frame. It is the responsibility of the user to keep track the
 /// point at which the spatial force is applied and the expressed-in frame. In
-/// source code the monogram notation `F_Po_E` is used to represent the spatial
-/// force `F` at a point `Po` expressed in frame `E`.
+/// source code the monogram notation `F_P_E` is used to represent the spatial
+/// force `F` at a point `P` expressed in frame `E`.
 /// For a more detailed introduction on spatial vectors and the monogram
 /// notation please refer to section @ref multibody_spatial_vectors.
 ///
@@ -58,30 +58,30 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   template <typename Derived>
   explicit SpatialForce(const Eigen::MatrixBase<Derived>& V) : Base(V) {}
 
-  /// Given `this` spatial force `F_Ao_E` applied at the origin of a frame `A`
-  /// and expressed in a frame `E`, this method computes the spatial force
-  /// applied at the origin `Bo` of another frame `B` rigidly moving with `A`
-  /// but offset by a vector `p_AB_E` from the orgin of frame `Ao` to the origin
-  /// of frame `B` and expressed in the same frame `E`.
+  /// Given `this` spatial force `F_A_E` applied on frame `A` and expressed in
+  /// a frame `E`, this method computes the spatial force applied on frame `B`
+  /// rigidly moving with frame `A` but offset by a vector `p_AB_E` from the
+  /// orgin `Ao` of frame `A` to the origin `Bo` of frame `B` and expressed in
+  /// the same frame `E`.
   ///
   /// The operation performed, in coordinate-free form, is: <pre>
-  ///   τ_Bo = τ_Ao -  p_AB x f_Ao
-  ///   f_Bo = f_Ao,  i.e. the force as applied on B equals the force
-  ///                 as applied on A.
+  ///   τ_B = τ_A -  p_AB x f_A
+  ///   f_B = f_A,  i.e. the force as applied on B equals the force as applied
+  ///               on A.
   /// </pre>
   /// where τ and f represent the torque and force components respectively.
   ///
   /// All quantities above must be expressed in a common frame `E` i.e: <pre>
-  ///   τ_Bo_E = τ_Ao_E -  p_AB_E x f_Ao_E
-  ///   f_Bo_E = f_Ao_E
+  ///   τ_B_E = τ_A_E -  p_AB_E x f_A_E
+  ///   f_B_E = f_A_E
   /// </pre>
   ///
   /// This operation is performed in-place modifying the original object.
   ///
   /// @param[in] p_AB_E Shift vector from `Ao` to `Bo` and expressed in
   ///                   frame `E`.
-  /// @returns A reference to `this` spatial force `F_Bo_E` now as applied about
-  ///          `Bo` expressed in frame `A`.
+  /// @returns A reference to `this` spatial force `F_B_E` now as applied on
+  ///          `B` expressed in frame `E`.
   ///
   /// @see Shift() to compute the shifted spatial force without modifying
   ///              this original object.
@@ -90,16 +90,16 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     return *this;
   }
 
-  /// Given `this` spatial force `F_Ao_E` applied at the origin of a frame `A`
-  /// and expressed in a frame `E`, this method computes the spatial force
-  /// applied at the origin `Bo` of another frame `B` rigidly moving with `A`
-  /// but offset by a vector `p_AB_E` from the orgin of frame `Ao` to the origin
-  /// of frame `B` and expressed in the same frame `E`.
+  /// Given `this` spatial force `F_A_E` applied on frame `A` and expressed in
+  /// a frame `E`, this method computes the spatial force applied on frame `B`
+  /// rigidly moving with frame `A` but offset by a vector `p_AB_E` from the
+  /// orgin `Ao` of frame `A` to the origin `Bo` of frame `B` and expressed in
+  /// the same frame `E`.
   ///
   /// @param[in] p_AB_E Shift vector from `Ao` to `Bo` and expressed in
   ///                   frame `E`.
-  /// @retval F_Bo_E The spatial force as applied about `Bo` expressed in
-  ///                frame `A`.
+  /// @retval F_B_E The spatial force as applied on frame `B` expressed in
+  ///               frame `E`.
   ///
   /// @see ShiftInPlace() to compute the shifted spatial force in-place
   ///                     modifying the original object.
@@ -107,16 +107,18 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     return SpatialForce<T>(*this).ShiftInPlace(p_AB_E);
   }
 
-  /// Given `this` spatial force `F_Q_E` applied about the origin of frame `Q`
-  /// and expressed in a frame `E`, this method computes the 6-dimensional dot
-  /// product with the spatial velocity `V_IQ_E` of frame `Q` measured in an
-  /// inertial frame `I` and expressed in the same frame `E` in which the
-  /// spatial force is expressed.
+  /// Given `this` spatial force `F_Q_E` applied to frame `Q` and expressed in a
+  /// frame `E`, this method computes the 6-dimensional dot product with the
+  /// spatial velocity `V_IQ_E` of frame `Q` measured in an inertial frame `I`
+  /// and expressed in the same frame `E` in which the spatial force is
+  /// expressed.
   /// This dot-product represents the power generated by `this` spatial force
-  /// `F_Q_E` when applied about the origin of frame `Q` moving with spatial
-  /// velocity `V_IQ_E`.
+  /// `F_Q_E` when applied to frame `Q` moving with spatial velocity `V_IQ_E`.
   /// Both spatial quantities must be expressed in the same frame `E` with the
   /// result being independent of this frame `E` in which they are expressed.
+  ///
+  /// @warning The result of this method cannot be interpreted as power unless
+  /// the spatial velocity is measured in an inertial frame `I`.
   T dot(const SpatialVelocity<T>& V_IQ_E) const;
 };
 

@@ -127,9 +127,11 @@ class SpatialVector {
   /// data[1], etc.
   T* mutable_data() { return V_.data(); }
 
+  /// Compares `this` spatial vector to the provided spatial vector `other`
+  /// within a specified precision.
   /// @returns `true` if `other` is within a precision given by @p tolerance.
-  /// The comparison is performed by comparing the angular (linear) component of
-  /// `this` spatial vector with the angular (linear) component of @p other
+  /// The comparison is performed by comparing the translational component of
+  /// `this` spatial vector with the rotational component of @p other
   /// using the fuzzy comparison provided by Eigen's method isApprox().
   bool IsApprox(const SpatialQuantity& other,
                 double tolerance = Eigen::NumTraits<T>::epsilon()) const {
