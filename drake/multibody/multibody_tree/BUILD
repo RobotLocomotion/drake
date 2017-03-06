@@ -19,7 +19,7 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
-        "//drake/common:extract_double"
+        "//drake/common:extract_double",
     ],
 )
 
@@ -28,7 +28,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["unit_inertia.h"],
     deps = [
-        ":rotational_inertia"
+        ":rotational_inertia",
     ],
 )
 
@@ -36,14 +36,14 @@ drake_cc_googletest(
     name = "mass_properties_test",
     deps = [
         ":rotational_inertia",
-        "//drake/common:autodiff"
+        "//drake/common:autodiff",
     ],
 )
 
 drake_cc_googletest(
     name = "unit_inertia_tests",
     deps = [
-        ":unit_inertia"
+        ":unit_inertia",
     ],
 )
 
