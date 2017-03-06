@@ -78,9 +78,9 @@ drake_cc_binary(
     ],
     deps = [
         ":atlas_joint_level_controller_system",
+        ":humanoid_status_translator_system",
         ":plan_eval_system",
         ":qp_controller_system",
-        ":humanoid_status_translator_system",
         "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/lcm",
         "//drake/multibody/parsers",
@@ -125,8 +125,8 @@ drake_cc_googletest(
     deps = [
         ":atlas_joint_level_controller_system",
         "//drake/common:eigen_matrix_compare",
-        "//drake/systems/framework",
         "//drake/multibody/parsers",
+        "//drake/systems/framework",
     ],
 )
 

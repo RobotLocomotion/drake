@@ -327,9 +327,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":gurobi_solver",
+        ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
-        ":linear_program_examples",
         ":quadratic_program_examples",
         "//drake/common:eigen_matrix_compare",
     ],
@@ -437,8 +437,8 @@ drake_cc_googletest(
         ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
-        ":quadratic_program_examples",
         ":optimization_examples",
+        ":quadratic_program_examples",
         "//drake/common:eigen_matrix_compare",
     ],
 )
