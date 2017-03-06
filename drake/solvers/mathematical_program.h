@@ -1477,6 +1477,24 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
 
   /**
+   * Adds Lorentz cone constraint on the linear expression v1 and quadratic
+   * expression v2, such that v1 >= sqrt(v2)
+   * @param linear_expr     The linear expression v1.
+   * @param quadratic_expr  The quadratic expression v2.
+   * @retval binding The newly added Lorentz cone constraint, together with the
+   * bound variables.
+   * @pre{1. `linear_expr` is a linear expression, in the form of c'*x + d.
+   *      2. `quadratic_expr` is a quadratic expression, in the form of
+   *          0.5 * x'*Q*x + b'x + a
+   *          Also the quadratic expression has to be convex, namely Q is a
+   *          positive semidefinite matrix.}
+   * Throws a runtime error if the preconditions are not satisfied.
+   * Notice we will add additional variables z into the program, with the linear
+   * constraint z = R * x + b, where R is the matrix satisfying R'*R = Q.
+   */
+  Binding<LorentzConeConstraint> AddLorentzConeConstraint(const symbolic::Expression& linear_expr, const symbolic::Expression& quadratic_expr);
+
+  /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables.
    */
