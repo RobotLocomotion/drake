@@ -16,10 +16,10 @@ cc_binary(
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
-        "//drake/examples/kuka_iiwa_arm:sim_diagram_building_util",
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/primitives:trajectory_source",
         "@gflags//:gflags",
     ],
 )
@@ -31,10 +31,10 @@ cc_binary(
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
-        "//drake/examples/kuka_iiwa_arm:sim_diagram_building_util",
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/primitives:trajectory_source",
         "@gflags//:gflags",
     ],
 )

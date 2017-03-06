@@ -1,17 +1,17 @@
 if(lcm_FOUND)
-  add_library_with_exports(LIB_NAME drakeIiwaDiagramBuilderTools SOURCE_FILES
-      sim_diagram_builder.cc sim_diagram_building_util.cc)
-  target_link_libraries(drakeIiwaDiagramBuilderTools
+  add_library_with_exports(LIB_NAME drakeSimDiagramBuilder SOURCE_FILES
+      sim_diagram_builder.cc)
+  target_link_libraries(drakeSimDiagramBuilder
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers
       drakeLcmSystem)
-  drake_install_libraries(drakeIiwaDiagramBuilderTools)
+  drake_install_libraries(drakeSimDiagramBuilder)
   drake_install_headers(
-      sim_diagram_builder.h sim_diagram_building_util.h)
+      sim_diagram_builder.h)
   drake_install_pkg_config_file(drake-iiwa-diagram-builder-tools
-      TARGET drakeIiwaDiagramBuilderTools
-      LIBS -ldrakeIiwaDiagramBuilderTools
+      TARGET drakeSimDiagramBuilder
+      LIBS -ldrakeSimDiagramBuilder
       REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rbm eigen3)
 
   # Defines a shared library for use by KUKA iiwa demos based on System 2.0.
@@ -34,7 +34,7 @@ if(lcm_FOUND)
 
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
   target_link_libraries(run_kuka_iiwa_arm_dynamics
-      drakeIiwaDiagramBuilderTools
+      drakeSimDiagramBuilder
       drakeKukaIiwaArmCommon
       drakeLcmSystem
       drakeMultibodyParsers
@@ -68,7 +68,7 @@ if(lcm_FOUND)
 
   add_executable(kuka_simulation kuka_simulation.cc)
   target_link_libraries(kuka_simulation
-    drakeIiwaDiagramBuilderTools
+    drakeSimDiagramBuilder
     drakeKukaIiwaArmCommon
     drakeLcmSystem
     drakeMultibodyParsers
@@ -80,7 +80,7 @@ if(lcm_FOUND)
 
   add_executable(iiwa_wsg_simulation iiwa_wsg_simulation.cc)
   target_link_libraries(iiwa_wsg_simulation
-    drakeIiwaDiagramBuilderTools
+    drakeSimDiagramBuilder
     drakeKukaIiwaArmCommon
     drakeKukaIiwaWorld
     drakeLcmSystem

@@ -162,44 +162,21 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
             iiwa_info.model_path, iiwa_info.world_offset, iiwa_kp, iiwa_ki,
             iiwa_kd, true /* with feedforward acceleration */);
 
-    // Sets a zero configuration and computes spatial inertia for the gripper
-    // as well as the pose of the end effector link of iiwa using the world
-    // tree.
-    const RigidBodyTree<T>& world_tree = plant_->get_rigid_body_tree();
-    KinematicsCache<T> world_cache = world_tree.CreateKinematicsCache();
-    world_cache.initialize(world_tree.getZeroConfiguration());
-    world_tree.doKinematics(world_cache);
-
-    const RigidBody<T>* end_effector = world_tree.FindBody("iiwa_link_7");
-    Isometry3<T> X_WEE =
-        world_tree.CalcBodyPoseInWorldFrame(world_cache, *end_effector);
-
-    // The inertia of the added gripper is lumped into the last link of the
-    // controller's iiwa arm model. This is motivated by the fact that the
-    // gripper inertia is relatively large compared to the last couple links
-    // in the iiwa arm model. And to completely rely on using feedback to cope
-    // with added inertia, we need to either rely on larger gains (which will
-    // cause simulation to explode without the gripper), or wait longer for
-    // the integrator to kick in.
-
-    // Computes the lumped inertia for the gripper.
-    std::set<int> gripper_instance_set = {wsg_info.instance_id};
-    Matrix6<T> lumped_gripper_inertia_W =
-        world_tree.LumpedSpatialInertiaInWorldFrame(
-            world_cache, gripper_instance_set);
-    // Transfer it to the last iiwa link's body frame.
+    // Updates the controller's model's end effector's inertia to include
+    // the added gripper.
+    const std::string kEndEffectorLinkName = "iiwa_link_7";
     Matrix6<T> lumped_gripper_inertia_EE =
-        transformSpatialInertia(X_WEE.inverse(), lumped_gripper_inertia_W);
-    lumped_gripper_inertia_EE += end_effector->get_spatial_inertia();
-
-    // Changes the controller's iiwa end effector's link to the lumped inertia.
+        ComputeLumpedGripperInertiaInEndEffectorFrame(
+            plant_->get_rigid_body_tree(),
+            iiwa_info.instance_id, kEndEffectorLinkName, wsg_info.instance_id);
     RigidBody<T>* controller_ee =
-        iiwa_controller->get_robot_for_control().FindBody("iiwa_link_7");
+        iiwa_controller->get_robot_for_control().FindBody(kEndEffectorLinkName);
     controller_ee->set_spatial_inertia(lumped_gripper_inertia_EE);
 
     // Export iiwa's desired state input, and state output.
     base_builder->ExportInput(iiwa_controller->get_input_port_desired_state());
-    base_builder->ExportInput(iiwa_controller->get_input_port_desired_acceleration());
+    base_builder->ExportInput(
+        iiwa_controller->get_input_port_desired_acceleration());
     base_builder->ExportOutput(iiwa_output_port);
 
     // Sets up the WSG gripper part.
@@ -215,9 +192,10 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     const VectorX<T> wsg_ki = VectorX<T>::Constant(kWsgActDim, 0.0);
     const VectorX<T> wsg_kd = VectorX<T>::Constant(kWsgActDim, 5.0);
 
-    auto wsg_controller = builder.template AddController<systems::PidController<T>>(
-        wsg_info.instance_id,
-        std::move(feedback_selector), wsg_kp, wsg_ki, wsg_kd);
+    auto wsg_controller =
+        builder.template AddController<systems::PidController<T>>(
+            wsg_info.instance_id,
+            std::move(feedback_selector), wsg_kp, wsg_ki, wsg_kd);
 
     //  Export wsg's desired state input, and state output.
     base_builder->ExportInput(wsg_controller->get_input_port_desired_state());
@@ -231,7 +209,8 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
         base_builder->template AddSystem<OracularStateEstimation<T>>(
             iiwa_controller->get_robot_for_control(),
             iiwa_controller->get_robot_for_control().get_body(1));
-    base_builder->Connect(iiwa_output_port, iiwa_state_est->get_input_port_state());
+    base_builder->Connect(iiwa_output_port,
+        iiwa_state_est->get_input_port_state());
     base_builder->ExportOutput(iiwa_state_est->get_output_port_msg());
 
     // Sets up a "state estimator" for the box that generates
@@ -241,8 +220,9 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     parsers::urdf::AddModelInstanceFromUrdfFile(
         box_info.model_path, multibody::joints::kQuaternion,
         box_info.world_offset, object_.get());
-    auto box_state_est = base_builder->template AddSystem<OracularStateEstimation<T>>(
-        *object_, object_->get_body(1));
+    auto box_state_est =
+        base_builder->template AddSystem<OracularStateEstimation<T>>(
+            *object_, object_->get_body(1));
     base_builder->Connect(
         plant_->model_instance_state_output_port(box_info.instance_id),
         box_state_est->get_input_port_state());

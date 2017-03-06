@@ -12,21 +12,17 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
-#include "drake/examples/kuka_iiwa_arm/sim_diagram_building_util.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/primitives/trajectory_source.h"
 
 DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
 
 using std::unique_ptr;
 
 namespace drake {
-
-using systems::Context;
-using systems::Simulator;
-
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
@@ -71,19 +67,20 @@ int DoMain() {
       builder.AddController<systems::InverseDynamicsController<double>>(
           RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
           GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
-          true /* feedforward acceleration */);
+          false /* no feedforward acceleration */);
 
   // Adds a trajectory source for desired state and accelerations.
-  systems::DiagramBuilder<double>* diagram_builder = builder.get_mutable_builder();
-  auto traj_src = diagram_builder->template AddSystem<DesiredTrajectorySource<double>>(std::move(cartesian_trajectory), 2);
+  systems::DiagramBuilder<double>* diagram_builder =
+      builder.get_mutable_builder();
+  auto traj_src =
+      diagram_builder->template AddSystem<systems::TrajectorySource<double>>(
+          *cartesian_trajectory, 1);
 
-  diagram_builder->Connect(traj_src->get_output_port_state(),
+  diagram_builder->Connect(traj_src->get_output_port(),
                   controller->get_input_port_desired_state());
-  diagram_builder->Connect(traj_src->get_output_port_acceleration(),
-                  controller->get_input_port_desired_acceleration());
 
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
-  Simulator<double> simulator(*diagram);
+  systems::Simulator<double> simulator(*diagram);
 
   simulator.Initialize();
   simulator.set_target_realtime_rate(1.0);

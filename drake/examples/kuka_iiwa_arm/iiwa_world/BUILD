@@ -69,4 +69,26 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "multi_arm_with_gripper_demo",
+    srcs = ["multi_arm_with_gripper_demo.cc"],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/examples/schunk_wsg:models",
+    ],
+    deps = [
+        ":world_sim_tree_builder",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
+        "//drake/examples/schunk_wsg:schunk_wsg_constants",
+        "//drake/systems/analysis",
+        "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/primitives:trajectory_source",
+        "//drake/lcm",
+        "@bot_core_lcmtypes//:lib",
+        "@robotlocomotion_lcmtypes//:lib",
+    ],
+)
+
 cpplint()
