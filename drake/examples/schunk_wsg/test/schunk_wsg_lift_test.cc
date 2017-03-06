@@ -195,10 +195,10 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   builder.Connect(contact_viz.get_output_port(0),
                   contact_results_publisher.get_input_port(0));
 
-  builder.ExportOutput(plant->get_output_port(0));
+  const int plant_output_port = builder.ExportOutput(plant->get_output_port(0));
   // Expose the RBPlant kinematics results as a diagram output for body state
   // validation.
-  builder.ExportOutput(plant->get_output_port(
+  const int kinematrics_results_index = builder.ExportOutput(plant->get_output_port(
       plant->kinematics_results_output_port().get_index()));
 
   // Set up the model and simulator and set their starting state.
@@ -249,7 +249,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   auto state_output = model->AllocateOutput(simulator.get_context());
   model->CalcOutput(simulator.get_context(), state_output.get());
   const auto final_output_data =
-      state_output->get_vector_data(0)->get_value();
+      state_output->get_vector_data(plant_output_port)->get_value();
 
   drake::log()->debug("Final state:");
   const int num_movable_links = plant->get_num_positions();
@@ -268,7 +268,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // This is a bound on the expected behavior and implicitly defines what we
   // consider to be "acceptable" stiction behavior.
   //
-  // The box starts resting on the ground; it's center is at the position
+  // The box starts resting on the ground; its center is at the position
   // <0, 0, h/2> (where h is the height of the box).
   // Ostensibly, the box is picked up in stiction and lifted a specific amount
   // (kLiftHeight).  Ideally, the final position of the box should be
@@ -301,23 +301,19 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   //     introduced by this assumption seems to lie safely below a meaningful
   //     threshold.
   //   - We allow a fair amount of slippage (at a rate of 0.01 m/s for a box
-  //     whose scale is on the same order of magnitude.  This is a testing
+  //     whose scale is on the same order of magnitude).  This is a testing
   //     expediency to allow for timely execution.  This does not *prove* that
-  //     the behavior is correct smaller thresholds (and the corresponding
-  //     more precise integrator settings.
+  //     the behavior is correct for smaller thresholds (and the corresponding
+  //     more precise integrator settings).
   const double kBoxZ0 = 0.075;  // Half the box height.
   const double kIdealBoxHeight = kBoxZ0 + kLiftHeight;
   Vector3d ideal_pos;
   ideal_pos << 0.0, 0.0, kIdealBoxHeight;
   // Expect that the box is off of the ground.
-  // TODO(SeanCurtis-TRI): Provide a better basis for acquiring exported output
-  // port index. Currently, *assuming* the second exported output has index 1
-  // and that kinematics results *are* the second, exported output.
-  const int kinematrics_results_index = 1;
-  auto& kinematics_results2 = state_output->get_data(kinematrics_results_index)
+  auto& kinematics_results = state_output->get_data(kinematrics_results_index)
       ->GetValue<KinematicsResults<double>>();
   const int box_index = tree.FindBodyIndex("box");
-  Vector3d final_pos = kinematics_results2.get_body_position(box_index);
+  Vector3d final_pos = kinematics_results.get_body_position(box_index);
   Vector3d displacement = final_pos - ideal_pos;
   double distance = displacement.norm();
 
