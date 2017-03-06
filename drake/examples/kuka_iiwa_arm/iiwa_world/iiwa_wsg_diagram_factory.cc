@@ -175,6 +175,8 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
 
   builder.BuildInto(this);
 }
+template class IiwaAndWsgPlantWithStateEstimator<double>;
+template class OracularStateEstimation<double>;
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
