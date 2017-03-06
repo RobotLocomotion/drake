@@ -1,0 +1,8 @@
+element {
+    name: "s"
+    doc: "The position along the lane's s-axis."
+}
+element {
+    name: "s_dot"
+    doc: "The speed along the lane's s-axis."
+}

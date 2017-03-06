@@ -21,6 +21,8 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/endless_road_oracle_output.cc
   gen/euler_floating_joint_state.cc
   gen/idm_planner_parameters.cc
+  gen/maliput_railcar_config.cc
+  gen/maliput_railcar_state.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
   idm_planner.cc
@@ -37,6 +39,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   maliput/monolane/segment.cc
   maliput/utility/generate_obj.cc
   maliput/utility/generate_urdf.cc
+  maliput_railcar.cc
   monolane_onramp_merge.cc
   simple_car.cc
   simple_powertrain.cc
@@ -59,6 +62,7 @@ drake_install_headers(
   curve2.h
   idm_planner.h
   linear_car.h
+  maliput_railcar.h
   monolane_onramp_merge.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
@@ -91,6 +95,8 @@ if(lcm_FOUND)
     gen/endless_road_car_state_translator.cc
     gen/endless_road_oracle_output_translator.cc
     gen/euler_floating_joint_state_translator.cc
+    gen/maliput_railcar_config_translator.cc
+    gen/maliput_railcar_state_translator.cc
     gen/simple_car_config_translator.cc
     gen/simple_car_state_translator.cc
     )
