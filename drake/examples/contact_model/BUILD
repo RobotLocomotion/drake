@@ -34,9 +34,14 @@ drake_cc_binary(
 drake_cc_binary(
     name = "rigid_gripper",
     srcs = ["rigid_gripper.cc"],
+    add_test_rule = 1,
     data = [
         "rigid_gripper.urdf",
         "//drake/multibody:models",
+    ],
+    test_rule_args = [
+        " --sim_duration=0.01",
+        " --playback=false",
     ],
     deps = [
         "//drake/common:drake_path",
