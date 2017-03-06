@@ -171,6 +171,7 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":sim_diagram_builder",
+        ":sim_diagram_building_util",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/systems/analysis",
         "//drake/systems/controllers:inverse_dynamics_controller",

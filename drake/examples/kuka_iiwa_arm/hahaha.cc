@@ -1,6 +1,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
+#include "drake/examples/kuka_iiwa_arm/sim_diagram_building_util.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
@@ -39,69 +40,35 @@ void main() {
   std::vector<ModelInstanceInfo<double>> iiwa_info;
   SimDiagramBuilder<double> builder;
 
-  {
-    builder.AddPlant(build_tree(&iiwa_info));
+  builder.AddPlant(build_tree(&iiwa_info));
+  builder.AddVisualizer(&lcm);
 
-    VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
-    SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
-
-    for (const auto& info : iiwa_info) {
-      std::unique_ptr<systems::StateFeedbackController<double>> controller =
-          std::make_unique<systems::InverseDynamicsController<double>>(
-              info.model_path, info.world_offset, iiwa_kp, iiwa_ki, iiwa_kd,
-              true /* with feedforward acceleration */);
-      builder.AddController(info.instance_id, std::move(controller));
-    }
-  }
-
-  // Connects desired trajs to the controllers.
+  // Generates a desired plan.
   std::vector<double> times = {0, 2, 4};
   std::vector<MatrixX<double>> knots(times.size(), MatrixX<double>::Zero(7, 1));
   knots[1] << M_PI, 0, 0, M_PI / 2., 0, 0, 0;
   PiecewisePolynomial<double> poly = PiecewisePolynomial<double>::Cubic(
       times, knots, MatrixX<double>::Zero(7, 1), MatrixX<double>::Zero(7, 1));
-  PiecewisePolynomial<double> polyd = poly.derivative();
-  PiecewisePolynomial<double> polydd = polyd.derivative();
-  PiecewisePolynomialTrajectory poly_traj(poly);
-  PiecewisePolynomialTrajectory polyd_traj(polyd);
-  PiecewisePolynomialTrajectory polydd_traj(polydd);
+  std::unique_ptr<PiecewisePolynomialTrajectory> traj = std::make_unique<PiecewisePolynomialTrajectory>(poly);
 
-  systems::TrajectorySource<double>* traj =
-      builder.template AddSystem<systems::TrajectorySource<double>>(poly_traj);
-  systems::TrajectorySource<double>* trajd =
-      builder.template AddSystem<systems::TrajectorySource<double>>(polyd_traj);
-  systems::TrajectorySource<double>* trajdd =
-      builder.template AddSystem<systems::TrajectorySource<double>>(
-          polydd_traj);
+  // Adds a trajectory source for desired state and accelerations.
+  systems::DiagramBuilder<double>* diagram_builder = builder.get_mutable_builder();
+  auto traj_src = diagram_builder->template AddSystem<DesiredTrajectorySource<double>>(std::move(traj), 2);
 
-  systems::Multiplexer<double>* input_mux =
-      builder.template AddSystem<systems::Multiplexer<double>>(
-          std::vector<int>{7, 7});
-
-  builder.Connect(traj->get_output_port(), input_mux->get_input_port(0));
-  builder.Connect(trajd->get_output_port(), input_mux->get_input_port(1));
-
+  // Adds controllers for all the iiwa arms.
+  VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+  SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
   for (const auto& info : iiwa_info) {
-    systems::InverseDynamicsController<double>* controller =
-        dynamic_cast<systems::InverseDynamicsController<double>*>(
-            builder.get_controller(info.instance_id));
-    builder.Connect(input_mux->get_output_port(0),
-                    controller->get_input_port_desired_state());
-    builder.Connect(trajdd->get_output_port(),
-                    controller->get_input_port_desired_acceleration());
+    auto controller = builder.AddController<systems::InverseDynamicsController<double>>(
+        info.instance_id,
+        info.model_path, info.world_offset, iiwa_kp, iiwa_ki, iiwa_kd,
+        true /* with feedforward acceleration */);
+    diagram_builder->Connect(traj_src->get_output_port_state(),
+                             controller->get_input_port_desired_state());
+    diagram_builder->Connect(traj_src->get_output_port_acceleration(),
+                             controller->get_input_port_desired_acceleration());
   }
 
-  {
-    // Connects visualizer.
-    systems::DrakeVisualizer* viz_publisher =
-        builder.template AddSystem<systems::DrakeVisualizer>(
-            builder.get_plant()->get_rigid_body_tree(), &lcm);
-    builder.Connect(builder.get_plant()->get_output_port(0),
-                    viz_publisher->get_input_port(0));
-  }
-
-  // Makes a simulation
-  builder.WireThingsTogether();
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
