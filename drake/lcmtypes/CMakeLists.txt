@@ -46,6 +46,8 @@ lcm_wrap_types(
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
   lcmt_joint_pd_override.lcm
+  lcmt_maliput_railcar_config_t.lcm
+  lcmt_maliput_railcar_state_t.lcm
   lcmt_matlab_array.lcm
   lcmt_call_matlab.lcm
   lcmt_piecewise_polynomial.lcm
