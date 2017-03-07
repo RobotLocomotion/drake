@@ -4,13 +4,6 @@
 
 namespace drake {
 namespace solvers {
-template class MobyLCPSolver<double>;
-
-template class
-    drake::solvers::MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>;
-
-// TODO(edrumwri): Move all code below to moby_lcp_solver-inl.h once it has
-// been appropriately reviewed.
 
 namespace {
 template <typename Derived, typename T>
@@ -71,7 +64,8 @@ MobyLCPSolver<T>::MobyLCPSolver()
       log_enabled_(false) {}
 
 template <typename T>
-void MobyLCPSolver<T>::SetLoggingEnabled(bool enabled) { log_enabled_ = enabled; }
+void MobyLCPSolver<T>::SetLoggingEnabled(bool enabled) {
+  log_enabled_ = enabled; }
 
 template <typename T>
 std::ostream& MobyLCPSolver<T>::Log() const {
@@ -1332,6 +1326,13 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
   // still here?  failure...
   return false;
 }
+
+// TODO(edrumwri): Move all code above to moby_lcp_solver-inl.h once it has
+// been appropriately reviewed.
+template class MobyLCPSolver<double>;
+
+template class
+    drake::solvers::MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>;
 
 }  // namespace solvers
 }  // namespace drake
