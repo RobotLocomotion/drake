@@ -27,10 +27,6 @@ void testIntegralAndDerivative() {
                               poly.Derivative(0).GetCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 
-  EXPECT_FALSE(CompareMatrices(poly.GetCoefficients(),
-                              poly.Derivative(-1).GetCoefficients(), 1e-14,
-                              MatrixCompareType::absolute));
-
   Polynomial<CoefficientType> third_derivative = poly.Derivative(3);
 
   Polynomial<CoefficientType> third_derivative_check =
