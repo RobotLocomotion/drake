@@ -102,8 +102,8 @@ TEST_F(KukaTest, ReachableTest) {
 TEST_F(KukaTest, UnreachableTest) {
   // Test a cartesian pose that we know is not reachable.
   int ee_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_ee");
-  Eigen::Vector3d ee_pos_lb(0.6, 0, 0.7);
-  Eigen::Vector3d ee_pos_ub(0.6, 0, 0.7);
+  Eigen::Vector3d ee_pos_lb(0.6, -0.1, 0.7);
+  Eigen::Vector3d ee_pos_ub(0.6, 0.1, 0.7);
   global_ik_.AddWorldPositionConstraint(ee_idx, Vector3d::Zero(), ee_pos_lb,
                                         ee_pos_ub);
 

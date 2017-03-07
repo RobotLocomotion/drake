@@ -132,21 +132,21 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 // where (a+b)/2 is the joint offset, such that the bounds on
                 // θ - (a+b)/2 are symmetric.
                 // We use the following notation:
-                // R_wp     The rotation matrix of parent frame to world frame.
-                // R_wc     The rotation matrix of child frame to world frame.
-                // R_pj     The rotation matrix of joint frame to parent frame.
+                // R_WP     The rotation matrix of parent frame to world frame.
+                // R_WC     The rotation matrix of child frame to world frame.
+                // R_PJ     The rotation matrix of joint frame to parent frame.
                 // R(k, θ)  The rotation matrix along joint axis k by angle θ.
                 // The kinematics constraint is
-                // R_wp * R_pj * R(k, θ) = R_wc.
+                // R_WP * R_PJ * R(k, θ) = R_WC.
                 // This is equivalent to
-                // R_wp * R_pj * R(k, (a+b)/2) * R(k, θ-(a+b)/2)) = R_wc.
+                // R_WP * R_PJ * R(k, (a+b)/2) * R(k, θ-(a+b)/2)) = R_WC.
                 // So to constrain that -(b-a)/2 <= θ - (a+b)/2 <= (b-a)/2,
                 // we can constrain the angle between the two vectors
-                // R_wc * v and R_wp * R_pj * R(k,(a+b)/2) * v is no larger than
+                // R_WC * v and R_WP * R_PJ * R(k,(a+b)/2) * v is no larger than
                 // (b-a)/2, where v is a unit length vector perpendicular to
                 // the rotation axis k, in the joint frame.
                 // Thus we can constrain that
-                // |R_wc*v - R_wp * R_pj * R(k,(a+b)/2)*v | <= 2*sin ((b-a) / 4)
+                // |R_WC*v - R_WP * R_PJ * R(k,(a+b)/2)*v | <= 2*sin ((b-a) / 4)
                 // as we explained above.
 
                 // First generate a vector that is perpendicular to rotation
@@ -171,7 +171,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                         .toRotationMatrix();
 
                 // joint_limit_expr.tail<3> is
-                // R_wc * v - R_wp * R_pj * R(k,(a+b)/2) * v mentioned above.
+                // R_WC * v - R_WP * R_PJ * R(k,(a+b)/2) * v mentioned above.
                 joint_limit_expr.tail<3>() =
                     R_WB_[body_idx] * revolute_vector -
                     R_WB_[parent_idx] *
@@ -259,7 +259,7 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
           // The joint_angle_axis computed from the body orientation is very
           // likely not being aligned with the real joint axis. The reason is
           // that we use a relaxation of the rotation matrix, and thus
-          // R_WBi might not lie on so(3) exactly.
+          // R_WBi might not lie on SO(3) exactly.
           Matrix3d normalized_rotmat = math::ProjectMatToRotMat(joint_rotmat);
           Eigen::AngleAxisd joint_angle_axis(normalized_rotmat);
 
