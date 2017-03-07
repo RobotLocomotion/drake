@@ -334,8 +334,13 @@ class Context {
     parent_ = parent;
   }
 
-  // Throws an exception unless the given @p descriptor matches this context.
-  void VerifyInputPort(const InputPortDescriptor<T>& descriptor) const {
+  /// Throws an exception unless the given @p descriptor matches the inputs
+  /// actually connected to this context in shape.
+  /// Supports any scalar type of `descriptor`, but expects T by default.
+  ///
+  /// @tparam T1 the scalar type of the InputPortDescriptor to check.
+  template<typename T1 = T>
+  void VerifyInputPort(const InputPortDescriptor<T1>& descriptor) const {
     const int i = descriptor.get_index();
     const InputPort* port = GetInputPort(i);
     // If the port isn't connected, we don't have anything else to check.
@@ -344,7 +349,8 @@ class Context {
 
     // In the vector-valued case, check the size.
     if (descriptor.get_data_type() == kVectorValued) {
-      const BasicVector<T>* input_vector = port->template get_vector_data<T>();
+      const BasicVector<T>* input_vector =
+          port->template get_vector_data<T>();
       DRAKE_THROW_UNLESS(input_vector != nullptr);
       DRAKE_THROW_UNLESS(input_vector->size() == descriptor.size());
     }
