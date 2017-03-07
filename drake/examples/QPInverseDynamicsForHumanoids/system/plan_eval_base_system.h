@@ -2,11 +2,11 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -15,14 +15,11 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * A base block that generates qp input for the qp inverse dynamics controller.
- * This class must be extended to implement the desired behaviors. Due to its
- * discrete time nature, control is computed in DoCalcUnrestrictedUpdate(),
- * and the result is stored in its AbstractState. DoCalcOutput() merely copies
- * the latest result from its AbstractState and sends it through the output
- * port. Context's time must be properly maintained. The internal states of
- * the plan are also stored in its AbstractState, and can be modified in
- * DoCalcUnrestrictedUpdate().
+ * A base class that outputs QpInput for the qp inverse dynamics controller.
+ * This class must be extended to implement custom behaviors. It is designed as
+ * a discrete time system. QpInput is stored inside the AbstractState, and
+ * updated in DoCalcUnrestrictedUpdate(). Custom plan types are also stored and
+ * updated in the same way.
  */
 class PlanEvalBaseSystem : public systems::LeafSystem<double> {
  public:
@@ -41,24 +38,37 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
                      const std::string& alias_groups_file_name,
                      const std::string& param_file_name, double dt);
 
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
-  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override {
-    throw std::runtime_error(
-        "Subclass need to implememt DoCalcUnrestrictedUpdate.");
-  }
-
+  /**
+   * Allocates abstract value types for output @p descriptor. This function
+   * allocates QpInput when @p matches the port for QpInput, and calls
+   * ExtendedAllocateOutputAbstract() to allocate all the other derived class'
+   * custom output types.
+   */
   std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
+      const systems::OutputPortDescriptor<double>& descriptor) const final;
 
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
-      const override {
-    throw std::runtime_error(
-        "Subclass need to implememt AllocateOutputAbstract.");
-    return std::make_unique<systems::AbstractState>();
+  /**
+   * Copies QpInput from abstract state to the corresponding output port. Then
+   * calls DoExtendedCalcOutput() to handle all the other derived class' custom
+   * outputs.
+   */
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const final;
+
+  /**
+   * Calls DoExtendedCalcUnrestrictedUpdate().
+   */
+  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
+                                systems::State<double>* state) const final {
+    DoExtendedCalcUnrestrictedUpdate(context, state);
   }
+
+  /**
+   * Calls ExtendedAllocateAbstractState() first to allocate derived class'
+   * custom abstract states, then appends a QpInput to the end.
+   * @return The combined AbstractState.
+   */
+  std::unique_ptr<systems::AbstractState> AllocateAbstractState() const final;
 
   /**
    * Returns input port for HumanoidStatus.
@@ -76,11 +86,18 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
     return get_output_port(output_port_index_qp_input_);
   }
 
+  /**
+   * Returns the size of the abstract state.
+   */
+  int get_num_abstract_states() const {
+    return 1 + get_num_extended_abstract_states();
+  }
+
   /// @name Accessors
   /// @{
   const RigidBodyTree<double>& get_robot() const { return robot_; }
 
-  double get_control_dt() const { return kControlDt; }
+  double get_control_dt() const { return control_dt_; }
 
   const param_parsers::RigidBodyTreeAliasGroups<double>& get_alias_groups()
       const {
@@ -91,41 +108,68 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   /// @}
 
  protected:
-  // Returns a mutable reference of custom plan in abstract state.
-  template <typename PlanType>
-  PlanType& get_mutable_plan(systems::State<double>* state) const {
+  /**
+   * Returns the size of extended abstract state.
+   */
+  virtual int get_num_extended_abstract_states() const = 0;
+
+  /**
+   * Derived class need to implement this to computed custom outputs.
+   */
+  virtual void DoExtendedCalcOutput(
+      const systems::Context<double>& context,
+      systems::SystemOutput<double>* output) const = 0;
+
+  /**
+   * Derived class need to implement this to allocate custom outputs.
+   */
+  virtual std::unique_ptr<systems::AbstractValue>
+  ExtendedAllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const = 0;
+
+  /**
+   * Derived class need to implement this for custom behaviors.
+   */
+  virtual void DoExtendedCalcUnrestrictedUpdate(
+      const systems::Context<double>& context,
+      systems::State<double>* state) const = 0;
+
+  /**
+   * Derived class need to implement this to allocate custom abstract states.
+   */
+  virtual std::vector<std::unique_ptr<systems::AbstractValue>>
+  ExtendedAllocateAbstractState() const = 0;
+
+  /**
+   * Returns a mutable reference of Type in @p state at @p index
+   */
+  template <typename Type>
+  Type& get_mutable_abstract_value(systems::State<double>* state,
+                                   int index) const {
     return state->get_mutable_abstract_state()
-        ->get_mutable_abstract_state(kAbsStateIdxPlan)
-        .GetMutableValue<PlanType>();
+        ->get_mutable_abstract_state(index)
+        .GetMutableValue<Type>();
   }
 
-  // Returns a mutable reference of QpInput in abstract state.
+  /**
+   * Returns a mutable reference to QpInput in @p state.
+   */
   QpInput& get_mutable_qp_input(systems::State<double>* state) const {
+    int size = state->get_mutable_abstract_state()->size();
     return state->get_mutable_abstract_state()
-        ->get_mutable_abstract_state(kAbsStateIdxQpInput)
+        ->get_mutable_abstract_state(size - 1)
         .GetMutableValue<QpInput>();
   }
 
-  int get_input_port_index_humanoid_status() const {
-    return input_port_index_humanoid_status_;
-  }
-  int get_output_port_index_qp_input() const {
-    return output_port_index_qp_input_;
-  }
-  int get_abstract_state_index_qp_input() const { return kAbsStateIdxQpInput; }
-  int get_abstract_state_index_plan() const { return kAbsStateIdxPlan; }
-
  private:
   const RigidBodyTree<double>& robot_;
-  const double kControlDt;
+  const double control_dt_{};
 
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups_;
   param_parsers::ParamSet paramset_;
 
-  int input_port_index_humanoid_status_{0};
-  int output_port_index_qp_input_{0};
-  const int kAbsStateIdxQpInput{0};
-  const int kAbsStateIdxPlan{0};
+  int input_port_index_humanoid_status_{};
+  int output_port_index_qp_input_{};
 };
 
 }  // namespace qp_inverse_dynamics

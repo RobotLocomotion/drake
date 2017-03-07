@@ -28,19 +28,33 @@ HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
     const RigidBodyTree<double>& robot,
     const std::string& alias_groups_file_name,
     const std::string& param_file_name, double dt)
-    : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt) {
+    : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt),
+      abs_state_index_plan_(0) {
   set_name("HumanoidPlanEval");
 }
 
-void HumanoidPlanEvalSystem::DoCalcUnrestrictedUpdate(
+void HumanoidPlanEvalSystem::DoExtendedCalcOutput(
+    const systems::Context<double>& context,
+    systems::SystemOutput<double>* output) const {
+}
+
+std::unique_ptr<systems::AbstractValue>
+HumanoidPlanEvalSystem::ExtendedAllocateOutputAbstract(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
+  DRAKE_DEMAND(false);
+  return nullptr;
+}
+
+void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
   // Gets the plan from abstract state.
-  SimpleStandingPlan& plan = get_mutable_plan<SimpleStandingPlan>(state);
+  SimpleStandingPlan& plan = get_mutable_abstract_value<SimpleStandingPlan>(
+      state, abs_state_index_plan_);
 
   // Gets the robot state from input.
   const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
-      context, get_input_port_index_humanoid_status());
+      context, get_input_port_humanoid_status().get_index());
 
   // Mutates the plan given the current state.
   // This can be much more complicated like replanning trajectories, etc.
@@ -81,24 +95,21 @@ void HumanoidPlanEvalSystem::DoCalcUnrestrictedUpdate(
           robot_status->torso().pose(), robot_status->torso().velocity());
 }
 
-std::unique_ptr<systems::AbstractState>
-HumanoidPlanEvalSystem::AllocateAbstractState() const {
-  std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
-  abstract_vals[get_abstract_state_index_plan()] =
+std::vector<std::unique_ptr<systems::AbstractValue>>
+HumanoidPlanEvalSystem::ExtendedAllocateAbstractState() const {
+  std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(
+      get_num_extended_abstract_states());
+  abstract_vals[abs_state_index_plan_] =
       std::unique_ptr<systems::AbstractValue>(
           new systems::Value<SimpleStandingPlan>(SimpleStandingPlan()));
-  abstract_vals[get_abstract_state_index_qp_input()] =
-      std::unique_ptr<systems::AbstractValue>(new systems::Value<QpInput>(
-          get_paramset().MakeQpInput({"feet"},            /* contacts */
-                                     {"pelvis", "torso"}, /* tracked bodies */
-                                     get_alias_groups())));
-  return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
+  return abstract_vals;
 }
 
-void HumanoidPlanEvalSystem::SetDesired(const VectorX<double>& q_d,
+void HumanoidPlanEvalSystem::Initialize(const VectorX<double>& q_d,
                                         systems::State<double>* state) {
   // Gets the plan.
-  SimpleStandingPlan& plan = get_mutable_plan<SimpleStandingPlan>(state);
+  SimpleStandingPlan& plan = get_mutable_abstract_value<SimpleStandingPlan>(
+      state, abs_state_index_plan_);
 
   KinematicsCache<double> cache = get_robot().doKinematics(q_d);
 

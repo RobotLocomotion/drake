@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_base_system.h"
@@ -32,25 +33,13 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
                             const std::string& alias_groups_file_name,
                             const std::string& param_file_name, double dt);
 
-  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
-
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
-      const override;
-
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   /**
-   * Initializes the internal states.
+   * Initializes the plan and gains. Must be called before execution.
    */
   void Initialize(systems::State<double>* state);
 
   /**
-   * Initializes the internal states.
+   * Initializes the plan and gains. Must be called before execution.
    */
   void Initialize(systems::Context<double>* context) {
     systems::State<double>* servo_state = context->get_mutable_state();
@@ -82,11 +71,26 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
   }
 
  private:
-  int input_port_index_desired_state_{0};
-  int input_port_index_desired_acceleration_{0};
-  int output_port_index_debug_info_{0};
+  int get_num_extended_abstract_states() const { return 2; }
 
-  const int kAbsStateIdxDebug;
+  void DoExtendedCalcUnrestrictedUpdate(const systems::Context<double>& context,
+                                        systems::State<double>* state) const;
+
+  void DoExtendedCalcOutput(const systems::Context<double>& context,
+                            systems::SystemOutput<double>* output) const;
+
+  std::vector<std::unique_ptr<systems::AbstractValue>>
+  ExtendedAllocateAbstractState() const;
+
+  std::unique_ptr<systems::AbstractValue> ExtendedAllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const;
+
+  int input_port_index_desired_state_{};
+  int input_port_index_desired_acceleration_{};
+  int output_port_index_debug_info_{};
+
+  const int abs_state_index_plan_{};
+  const int abs_state_index_debug_{};
 };
 
 }  // namespace qp_inverse_dynamics
