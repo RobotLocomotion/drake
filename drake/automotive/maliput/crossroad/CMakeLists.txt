@@ -18,13 +18,6 @@ drake_install_headers(
   road_geometry.h
   segment.h)
 
-add_executable(crossroad_to_urdf crossroad_to_urdf.cc)
-target_link_libraries(crossroad_to_urdf
-    drakeAutomotive
-    drakeCommon
-    drakeMaliputCrossroad
-    spruce)
-
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
