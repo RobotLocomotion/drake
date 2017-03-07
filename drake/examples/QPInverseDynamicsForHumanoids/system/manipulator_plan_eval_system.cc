@@ -16,7 +16,8 @@ ManipulatorPlanEvalSystem::ManipulatorPlanEvalSystem(
     const std::string& alias_groups_file_name,
     const std::string& param_file_name, double dt)
     : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt),
-      kAbsStateIdxDebug(2) {
+      abs_state_index_plan_(0),
+      abs_state_index_debug_(1) {
   DRAKE_DEMAND(get_robot().get_num_velocities() ==
                get_robot().get_num_positions());
   const int kStateDim =
@@ -34,7 +35,8 @@ ManipulatorPlanEvalSystem::ManipulatorPlanEvalSystem(
 
 void ManipulatorPlanEvalSystem::Initialize(systems::State<double>* state) {
   VectorSetpoint<double>& plan =
-      get_mutable_plan<VectorSetpoint<double>>(state);
+      get_mutable_abstract_value<VectorSetpoint<double>>(state,
+                                                         abs_state_index_plan_);
   plan = VectorSetpoint<double>(get_robot().get_num_velocities());
   get_paramset().LookupDesiredDofMotionGains(&(plan.mutable_Kp()),
                                              &(plan.mutable_Kd()));
@@ -45,44 +47,38 @@ void ManipulatorPlanEvalSystem::Initialize(systems::State<double>* state) {
                                         get_alias_groups());
 }
 
-void ManipulatorPlanEvalSystem::DoCalcOutput(
+void ManipulatorPlanEvalSystem::DoExtendedCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
-  // Does the normal plan eval step.
-  PlanEvalBaseSystem::DoCalcOutput(context, output);
-
   // Copies additional debugging info from abstract state to output.
   lcmt_plan_eval_debug_info& debug =
       output->GetMutableData(output_port_index_debug_info_)
           ->GetMutableValue<lcmt_plan_eval_debug_info>();
-  debug =
-      context.get_abstract_state<lcmt_plan_eval_debug_info>(kAbsStateIdxDebug);
+  debug = context.get_abstract_state<lcmt_plan_eval_debug_info>(
+      abs_state_index_debug_);
 }
 
-void ManipulatorPlanEvalSystem::DoCalcUnrestrictedUpdate(
+void ManipulatorPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
   // Gets the plan from abstract state.
   VectorSetpoint<double>& plan =
-      get_mutable_plan<VectorSetpoint<double>>(state);
+      get_mutable_abstract_value<VectorSetpoint<double>>(state,
+                                                         abs_state_index_plan_);
 
   // Gets the robot state from input.
   const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
-      context, get_input_port_index_humanoid_status());
+      context, get_input_port_humanoid_status().get_index());
 
   // Gets the desired position and velocity.
-  const systems::BasicVector<double>* state_d = EvalVectorInput(
-      context, input_port_index_desired_state_);
+  const systems::BasicVector<double>* state_d =
+      EvalVectorInput(context, input_port_index_desired_state_);
 
   // Gets the desired acceleration.
-  const systems::BasicVector<double>* acc_d = EvalVectorInput(
-      context, input_port_index_desired_acceleration_);
+  const systems::BasicVector<double>* acc_d =
+      EvalVectorInput(context, input_port_index_desired_acceleration_);
 
-  QpInput& qp_input = get_mutable_qp_input(state);
-  qp_input = get_paramset().MakeQpInput({}, /* contacts */
-                                        {}, /* tracked bodies */
-                                        get_alias_groups());
-
+  // Updates the plan.
   const int kDim = get_robot().get_num_positions();
   for (int i = 0; i < kDim; i++) {
     plan.mutable_desired_position()[i] = state_d->GetAtIndex(i);
@@ -90,16 +86,17 @@ void ManipulatorPlanEvalSystem::DoCalcUnrestrictedUpdate(
     plan.mutable_desired_acceleration()[i] = acc_d->GetAtIndex(i);
   }
 
-  // Update desired accelerations.
+  // Updates the desired accelerations.
+  QpInput& qp_input = get_mutable_qp_input(state);
   qp_input.mutable_desired_dof_motions().mutable_values() =
       plan.ComputeTargetAcceleration(robot_status->position(),
                                      robot_status->velocity());
 
   // Generates debugging info.
   lcmt_plan_eval_debug_info& debug =
-      state->get_mutable_abstract_state()
-          ->get_mutable_abstract_state(kAbsStateIdxDebug)
-          .GetMutableValue<lcmt_plan_eval_debug_info>();
+      get_mutable_abstract_value<lcmt_plan_eval_debug_info>(
+          state, abs_state_index_debug_);
+
   debug.timestamp = static_cast<int64_t>(context.get_time() * 1e6);
   debug.num_dof = kDim;
   debug.dof_names.resize(kDim);
@@ -115,33 +112,27 @@ void ManipulatorPlanEvalSystem::DoCalcUnrestrictedUpdate(
   }
 }
 
-std::unique_ptr<systems::AbstractState>
-ManipulatorPlanEvalSystem::AllocateAbstractState() const {
-  std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(3);
+std::vector<std::unique_ptr<systems::AbstractValue>>
+ManipulatorPlanEvalSystem::ExtendedAllocateAbstractState() const {
+  std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(
+      get_num_extended_abstract_states());
 
-  abstract_vals[get_abstract_state_index_plan()] =
+  abstract_vals[abs_state_index_plan_] =
       std::unique_ptr<systems::AbstractValue>(
           new systems::Value<VectorSetpoint<double>>(VectorSetpoint<double>()));
 
-  abstract_vals[get_abstract_state_index_qp_input()] =
-      std::unique_ptr<systems::AbstractValue>(new systems::Value<QpInput>(
-          get_paramset().MakeQpInput({}, /* contacts */
-                                     {}, /* tracked bodies */
-                                     get_alias_groups())));
+  abstract_vals[abs_state_index_debug_] =
+      std::unique_ptr<systems::AbstractValue>(
+          new systems::Value<lcmt_plan_eval_debug_info>(
+              lcmt_plan_eval_debug_info()));
 
-  abstract_vals[kAbsStateIdxDebug] = std::unique_ptr<systems::AbstractValue>(
-      new systems::Value<lcmt_plan_eval_debug_info>(
-          lcmt_plan_eval_debug_info()));
-
-  return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
+  return abstract_vals;
 }
 
 std::unique_ptr<systems::AbstractValue>
-ManipulatorPlanEvalSystem::AllocateOutputAbstract(
+ManipulatorPlanEvalSystem::ExtendedAllocateOutputAbstract(
     const systems::OutputPortDescriptor<double>& descriptor) const {
-  if (descriptor.get_index() == get_output_port_index_qp_input()) {
-    return PlanEvalBaseSystem::AllocateOutputAbstract(descriptor);
-  } else if (descriptor.get_index() == output_port_index_debug_info_) {
+  if (descriptor.get_index() == output_port_index_debug_info_) {
     return systems::AbstractValue::Make<lcmt_plan_eval_debug_info>(
         lcmt_plan_eval_debug_info());
   } else {

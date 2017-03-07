@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_base_system.h"
@@ -14,7 +15,7 @@ namespace qp_inverse_dynamics {
  * This class extends PlanEvalBaseSystem. The implemented behavior moves the
  * robot's pelvis height following a sine wave while holding everything else
  * stationary. It assumes the robot is in double stance, and the stationary
- * set point is set by SetDesired().
+ * set point is set by Initialize().
  */
 class HumanoidPlanEvalSystem : public PlanEvalBaseSystem {
  public:
@@ -33,19 +34,30 @@ class HumanoidPlanEvalSystem : public PlanEvalBaseSystem {
                          const std::string& alias_groups_file_name,
                          const std::string& param_file_name, double dt);
 
-  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
-
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
-      const override;
-
   /**
-   * Initializes the internal plan in @p state to track the desired
+   * Initializes the plan in @p state to track the desired
    * configuration @p q.
    * @param q_d Desired generalized position.
    * @param state State
    */
-  void SetDesired(const VectorX<double>& q, systems::State<double>* state);
+  void Initialize(const VectorX<double>& q, systems::State<double>* state);
+
+ private:
+  int get_num_extended_abstract_states() const { return 1; }
+
+  void DoExtendedCalcUnrestrictedUpdate(const systems::Context<double>& context,
+                                        systems::State<double>* state) const;
+
+  void DoExtendedCalcOutput(const systems::Context<double>& context,
+                            systems::SystemOutput<double>* output) const;
+
+  std::vector<std::unique_ptr<systems::AbstractValue>>
+  ExtendedAllocateAbstractState() const;
+
+  std::unique_ptr<systems::AbstractValue> ExtendedAllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const;
+
+  const int abs_state_index_plan_{};
 };
 
 }  // namespace qp_inverse_dynamics
