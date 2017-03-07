@@ -42,6 +42,7 @@ drake_cc_library(
     srcs = ["plan_eval_system.cc"],
     hdrs = ["plan_eval_system.h"],
     deps = [
+        "//drake/common:drake_path",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
