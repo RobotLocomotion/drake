@@ -761,9 +761,13 @@ class System {
     }
   }
 
-  /// Checks that @p context is consistent for this system.
+  /// Checks that @p context is consistent for this System template. Supports
+  /// any scalar type, but expects T by default.
+  ///
   /// @throw exception unless `context` is valid for this system.
-  void CheckValidContext(const Context<T>& context) const {
+  /// @tparam T1 the scalar type of the Context to check.
+  template <typename T1 = T>
+  void CheckValidContext(const Context<T1>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
     DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
@@ -890,6 +894,49 @@ class System {
     return std::unique_ptr<S<symbolic::Expression>>(
         dynamic_cast<S<symbolic::Expression>*>(clone.release()));
   }
+  //@}
+
+
+  //----------------------------------------------------------------------------
+  /// @name                Transmogrification utilities
+
+  /// Fixes all of the input ports in @p target_context to their current values
+  /// in @p other_context, as evaluated by @p other_system. Throws an exception
+  /// unless `other_context` and `target_context` both have the same shape as
+  /// this System, and the `other_system`. Ignores disconnected inputs.
+  void FixInputPortsFrom(const System<double>& other_system,
+                         const Context<double>& other_context,
+                         Context<T>* target_context) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(other_context));
+    DRAKE_ASSERT_VOID(CheckValidContext(*target_context));
+    DRAKE_ASSERT_VOID(other_system.CheckValidContext(other_context));
+    DRAKE_ASSERT_VOID(other_system.CheckValidContext(*target_context));
+
+    for (int i = 0; i < get_num_input_ports(); ++i) {
+      const auto& descriptor = get_input_port(i);
+
+      if (descriptor.get_data_type() == kVectorValued) {
+        // For vector-valued input ports, we placewise initialize a fixed input
+        // vector using the explicit conversion from double to T.
+        const BasicVector<double>* other_vec =
+            other_system.EvalVectorInput(other_context, i);
+        if (other_vec == nullptr) continue;
+        auto our_vec = this->AllocateInputVector(descriptor);
+        for (int j = 0; j < our_vec->size(); ++j) {
+          our_vec->SetAtIndex(j, T(other_vec->GetAtIndex(j)));
+        }
+        target_context->FixInputPort(i, std::move(our_vec));
+      } else if (descriptor.get_data_type() == kAbstractValued) {
+        // For abstract-valued input ports, we just clone the value and fix
+        // it to the port.
+        const AbstractValue* other_value = other_system.EvalAbstractInput(
+            other_context, i);
+        if (other_value == nullptr) continue;
+        target_context->FixInputPort(i, other_value->Clone());
+      }
+    }
+  }
+
   //@}
 
  protected:

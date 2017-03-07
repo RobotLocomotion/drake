@@ -292,65 +292,67 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
-class TestTypedVector : public BasicVector<double> {
+template <typename T>
+class TestTypedVector : public BasicVector<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestTypedVector)
-  explicit TestTypedVector(int size) : BasicVector(size) {}
+  explicit TestTypedVector(int size) : BasicVector<T>(size) {}
 
  protected:
   TestTypedVector* DoClone() const {
-    return new TestTypedVector(size());
+    return new TestTypedVector(this->size());
   }
 };
 
-// A shell System for AbstractValue IO test
-class ValueIOTestSystem : public System<double> {
+// A shell System for AbstractValue IO test.
+template <typename T>
+class ValueIOTestSystem : public System<T> {
  public:
   // Has 2 input and 2 output ports.
   // The first input / output pair are abstract type, but assumed to be
   // std::string.
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
-    DeclareAbstractInputPort();
-    DeclareAbstractOutputPort();
+    this->DeclareAbstractInputPort();
+    this->DeclareAbstractOutputPort();
 
-    DeclareInputPort(kVectorValued, 1);
-    DeclareOutputPort(kVectorValued, 1);
+    this->DeclareInputPort(kVectorValued, 1);
+    this->DeclareOutputPort(kVectorValued, 1);
 
-    set_name("ValueIOTestSystem");
+    this->set_name("ValueIOTestSystem");
   }
 
   ~ValueIOTestSystem() override {}
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<double>& descriptor) const override {
+      const InputPortDescriptor<T>& descriptor) const override {
     // Should only get called for the first input.
     EXPECT_EQ(descriptor.get_index(), 0);
     return AbstractValue::Make<std::string>("").release();
   }
 
-  BasicVector<double>* DoAllocateInputVector(
-      const InputPortDescriptor<double>& descriptor) const override {
+  BasicVector<T>* DoAllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const override {
     // Should only get called for the second input.
     EXPECT_EQ(descriptor.get_index(), 1);
-    return new TestTypedVector(1);
+    return new TestTypedVector<T>(1);
   }
 
-  std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
+  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives()
       const override {
     return nullptr;
   }
 
-  std::unique_ptr<Context<double>> AllocateContext() const override {
-    std::unique_ptr<LeafContext<double>> context(new LeafContext<double>);
+  std::unique_ptr<Context<T>> AllocateContext() const override {
+    std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     context->SetNumInputPorts(this->get_num_input_ports());
-    return std::unique_ptr<Context<double>>(context.release());
+    return std::unique_ptr<Context<T>>(context.release());
   }
 
-  void SetDefaultState(const Context<double>& context,
-                       State<double>* state) const override {}
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override {}
 
-  void SetDefaults(Context<double>* context) const override {}
+  void SetDefaults(Context<T>* context) const override {}
 
   bool HasAnyDirectFeedthrough() const override {
     return true;
@@ -365,78 +367,104 @@ class ValueIOTestSystem : public System<double> {
   }
 
   // Append "output" to input(0), and sets output(1) = 2 * input(1).
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {
-    const std::string* str_in = EvalInputValue<std::string>(context, 0);
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {
+    const std::string* str_in =
+        this->template EvalInputValue<std::string>(context, 0);
 
     std::string& str_out =
-        output->GetMutableData(0)->GetMutableValue<std::string>();
+        output->GetMutableData(0)->template GetMutableValue<std::string>();
     str_out = *str_in + "output";
 
-    const BasicVector<double>* vec_in = EvalVectorInput(context, 1);
-    BasicVector<double>* vec_out = output->GetMutableVectorData(1);
+    const BasicVector<T>* vec_in = this->EvalVectorInput(context, 1);
+    BasicVector<T>* vec_out = output->GetMutableVectorData(1);
 
     vec_out->get_mutable_value() = 2 * vec_in->get_value();
   }
 
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override {
-    std::unique_ptr<LeafSystemOutput<double>> output(
-        new LeafSystemOutput<double>);
+  std::unique_ptr<SystemOutput<T>> AllocateOutput(
+      const Context<T>& context) const override {
+    std::unique_ptr<LeafSystemOutput<T>> output(
+        new LeafSystemOutput<T>);
     output->add_port(
         std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
 
     output->add_port(std::make_unique<OutputPort>(
-        std::make_unique<BasicVector<double>>(1)));
+        std::make_unique<BasicVector<T>>(1)));
 
-    return std::unique_ptr<SystemOutput<double>>(output.release());
+    return std::unique_ptr<SystemOutput<T>>(output.release());
   }
 };
 
-GTEST_TEST(SystemIOTest, SystemValueIOTest) {
-  ValueIOTestSystem test_sys;
+class SystemIOTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    context_ = test_sys_.CreateDefaultContext();
+    output_ = test_sys_.AllocateOutput(*context_);
 
-  std::unique_ptr<Context<double>> context = test_sys.CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output =
-      test_sys.AllocateOutput(*context);
+    // make string input
+    std::unique_ptr<Value<std::string>> str_input =
+        std::make_unique<Value<std::string>>("input");
+    context_->SetInputPort(
+        0, std::make_unique<FreestandingInputPort>(std::move(str_input)));
 
-  // make string input
-  std::unique_ptr<Value<std::string>> str_input =
-      std::make_unique<Value<std::string>>("input");
-  context->SetInputPort(
-      0, std::make_unique<FreestandingInputPort>(std::move(str_input)));
+    // make vector input
+    std::unique_ptr<BasicVector<double>> vec_input =
+        std::make_unique<BasicVector<double>>(1);
+    vec_input->SetAtIndex(0, 2);
+    context_->SetInputPort(
+        1, std::make_unique<FreestandingInputPort>(std::move(vec_input)));
+  }
 
-  // make vector input
-  std::unique_ptr<BasicVector<double>> vec_input =
-      std::make_unique<BasicVector<double>>(1);
-  vec_input->SetAtIndex(0, 2);
-  context->SetInputPort(
-      1, std::make_unique<FreestandingInputPort>(std::move(vec_input)));
+  ValueIOTestSystem<double> test_sys_;
+  std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<SystemOutput<double>> output_;
+};
 
-  test_sys.CalcOutput(*context, output.get());
+TEST_F(SystemIOTest, SystemValueIOTest) {
+  test_sys_.CalcOutput(*context_, output_.get());
 
-  EXPECT_EQ(context->get_num_input_ports(), 2);
-  EXPECT_EQ(output->get_num_ports(), 2);
+  EXPECT_EQ(context_->get_num_input_ports(), 2);
+  EXPECT_EQ(output_->get_num_ports(), 2);
 
-  EXPECT_EQ(output->get_data(0)->GetValue<std::string>(),
+  EXPECT_EQ(output_->get_data(0)->GetValue<std::string>(),
             std::string("inputoutput"));
-  EXPECT_EQ(output->get_vector_data(1)->get_value()(0), 4);
+  EXPECT_EQ(output_->get_vector_data(1)->get_value()(0), 4);
 
   // Test AllocateInput*
   // Second input is not (yet) a TestTypedVector, since I haven't called the
   // Allocate methods directly yet.
-  EXPECT_EQ(dynamic_cast<const TestTypedVector*>(
-                test_sys.EvalVectorInput(*context, 1)),
+  EXPECT_EQ(dynamic_cast<const TestTypedVector<double>*>(
+                test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
   // Now allocate.
-  test_sys.AllocateFreestandingInputs(context.get());
+  test_sys_.AllocateFreestandingInputs(context_.get());
   // First input should have been re-allocated to the empty string.
-  EXPECT_EQ(test_sys.EvalAbstractInput(*context, 0)->GetValue<std::string>(),
-            std::string(""));
+  EXPECT_EQ(test_sys_.EvalAbstractInput(*context_, 0)->GetValue<std::string>(),
+            "");
   // Second input should now be of type TestTypedVector.
-  EXPECT_NE(dynamic_cast<const TestTypedVector*>(
-                test_sys.EvalVectorInput(*context, 1)),
+  EXPECT_NE(dynamic_cast<const TestTypedVector<double>*>(
+                test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
+}
+
+// Tests that FixInputPortsFrom allocates ports of the same dimension as the
+// source context, with the values computed by the source system, and that
+// double values in vector-valued ports are explicitly converted to AutoDiffXd.
+TEST_F(SystemIOTest, TransmogrifyAndFix) {
+  ValueIOTestSystem<AutoDiffXd> dest_system;
+  auto dest_context = dest_system.AllocateContext();
+  dest_system.FixInputPortsFrom(test_sys_, *context_, dest_context.get());
+
+  EXPECT_EQ(
+      dest_system.EvalAbstractInput(*dest_context, 0)->GetValue<std::string>(),
+      "input");
+
+  auto fixed_vec = dynamic_cast<const TestTypedVector<AutoDiffXd>*>(
+      dest_system.EvalVectorInput(*dest_context, 1));
+  EXPECT_NE(fixed_vec, nullptr);
+  EXPECT_EQ(2, fixed_vec->GetAtIndex(0).value());
+  EXPECT_EQ(0, fixed_vec->GetAtIndex(0).derivatives().size());
 }
 
 }  // namespace
