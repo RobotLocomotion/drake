@@ -54,8 +54,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   // Uses integral gains to deal with the added mass from the grasped object.
   iiwa_ki << 1, 1, 1, 1, 1, 1, 1;
 
-  // Exposing feedforward acceleration. Should help with more dynamic
-  // motions.
+  // Exposing feedforward acceleration. Should help with more dynamic motions.
   iiwa_controller =
       builder.template AddSystem<systems::InverseDynamicsController<T>>(
           iiwa_info.model_path, iiwa_info.world_offset, iiwa_kp, iiwa_ki,
@@ -176,7 +175,6 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   builder.BuildInto(this);
 }
 template class IiwaAndWsgPlantWithStateEstimator<double>;
-template class OracularStateEstimation<double>;
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
