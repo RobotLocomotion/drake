@@ -58,60 +58,64 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   template <typename Derived>
   explicit SpatialForce(const Eigen::MatrixBase<Derived>& V) : Base(V) {}
 
-  /// Given `this` spatial force `F_A_E` applied on frame `A` and expressed in
-  /// a frame `E`, this method computes the spatial force applied on frame `B`
-  /// rigidly moving with frame `A` but offset by a vector `p_AB_E` from the
-  /// orgin `Ao` of frame `A` to the origin `Bo` of frame `B` and expressed in
-  /// the same frame `E`.
+  /// Given `this` spatial force `F_Bp_E` with its rotational component applied
+  /// on body frame `B` as a whole and its translational component refering to
+  /// point `p` on this body, this method computes the equivalent spatial force
+  /// `F_Bq_E` with its rotational component applied to the same body frame `B`
+  /// and its translational component applied to a point `q` on the same body
+  /// `B` but offset from `q` by a vector `p_BpBq_E`. All quantities must be
+  /// expressed in the same frame `E`.
   ///
   /// The operation performed, in coordinate-free form, is: <pre>
-  ///   τ_B = τ_A -  p_AB x f_A
-  ///   f_B = f_A,  i.e. the force as applied on B equals the force as applied
-  ///               on A.
+  ///   τ_Bq = τ_Bp -  p_BpBq x f_Bp
+  ///   f_Bq = f_Bp,  i.e. the force as applied to Bq equals the force as
+  ///                 applied on Bp.
   /// </pre>
   /// where τ and f represent the torque and force components respectively.
   ///
   /// All quantities above must be expressed in a common frame `E` i.e: <pre>
-  ///   τ_B_E = τ_A_E -  p_AB_E x f_A_E
-  ///   f_B_E = f_A_E
+  ///   τ_Bq_E = τ_Bq_E -  p_BpBq_E x f_Bp_E
+  ///   f_Bq_E = f_Bp_E
   /// </pre>
   ///
   /// This operation is performed in-place modifying the original object.
   ///
-  /// @param[in] p_AB_E Shift vector from `Ao` to `Bo` and expressed in
-  ///                   frame `E`.
-  /// @returns A reference to `this` spatial force `F_B_E` now as applied on
-  ///          `B` expressed in frame `E`.
+  /// @param[in] p_BpBq_E Shift vector from point `p` to point `q` and expressed
+  ///                     in frame `E`.
+  /// @returns A reference to `this` spatial force `F_Bq_E` now as applied about
+  ///          point `q` on body frame `B`, expressed in frame `E`.
   ///
   /// @see Shift() to compute the shifted spatial force without modifying
   ///              this original object.
-  SpatialForce<T>& ShiftInPlace(const Vector3<T>& p_AB_E) {
-    this->rotational() -= p_AB_E.cross(this->translational());
+  SpatialForce<T>& ShiftInPlace(const Vector3<T>& p_BpBq_E) {
+    this->rotational() -= p_BpBq_E.cross(this->translational());
     return *this;
   }
 
-  /// Given `this` spatial force `F_A_E` applied on frame `A` and expressed in
-  /// a frame `E`, this method computes the spatial force applied on frame `B`
-  /// rigidly moving with frame `A` but offset by a vector `p_AB_E` from the
-  /// orgin `Ao` of frame `A` to the origin `Bo` of frame `B` and expressed in
-  /// the same frame `E`.
+  /// Given `this` spatial force `F_Bp_E` with its rotational component applied
+  /// on body frame `B` as a whole and its translational component refering to
+  /// point `p` on this body, this method computes the equivalent spatial force
+  /// `F_Bq_E` with its rotational component applied to the same body frame `B`
+  /// and its translational component applied to a point `q` on the same body
+  /// `B` but offset from `q` by a vector `p_BpBq_E`. All quantities must be
+  /// expressed in the same frame `E`.
   ///
-  /// @param[in] p_AB_E Shift vector from `Ao` to `Bo` and expressed in
-  ///                   frame `E`.
-  /// @retval F_B_E The spatial force as applied on frame `B` expressed in
-  ///               frame `E`.
+  /// @param[in] p_BpBq_E Shift vector from point `p` to point `q` and expressed
+  ///                     in frame `E`.
+  /// @retval F_Bq_E The spatial force as applied about point `q` on body frame
+  ///                `B`, expressed in frame `E`.
   ///
   /// @see ShiftInPlace() to compute the shifted spatial force in-place
   ///                     modifying the original object.
-  SpatialForce<T> Shift(const Vector3<T>& p_AB_E) const {
-    return SpatialForce<T>(*this).ShiftInPlace(p_AB_E);
+  SpatialForce<T> Shift(const Vector3<T>& p_BpBq_E) const {
+    return SpatialForce<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
-  /// Given `this` spatial force `F_Q_E` applied to frame `Q` and expressed in a
-  /// frame `E`, this method computes the 6-dimensional dot product with the
-  /// spatial velocity `V_IQ_E` of frame `Q` measured in an inertial frame `I`
-  /// and expressed in the same frame `E` in which the spatial force is
-  /// expressed.
+  /// Given `this` spatial force `F_Q_E` applied at the origin of frame `Q` and
+  /// expressed in a frame `E`, this method computes the 6-dimensional dot
+  /// product with the spatial velocity `V_IQ_E` of frame `Q` measured in an
+  /// inertial frame `I` and expressed in the same frame `E` in which the
+  /// spatial force is expressed.
   /// This dot-product represents the power generated by `this` spatial force
   /// `F_Q_E` when applied to frame `Q` moving with spatial velocity `V_IQ_E`.
   /// Both spatial quantities must be expressed in the same frame `E` with the
