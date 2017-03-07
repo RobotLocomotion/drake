@@ -40,8 +40,9 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
   /// and the box object respectively.
   IiwaAndWsgPlantWithStateEstimator(
       std::unique_ptr<systems::RigidBodyPlant<T>> combined_plant,
-      ModelInstanceInfo<T> iiwa_info, ModelInstanceInfo<T> wsg_info,
-      ModelInstanceInfo<T> box_info);
+      const ModelInstanceInfo<T>& iiwa_info, 
+      const ModelInstanceInfo<T>& wsg_info,
+      const ModelInstanceInfo<T>& box_info);
 
   const systems::RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
