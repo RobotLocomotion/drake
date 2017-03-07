@@ -24,7 +24,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * Parses the robot kinematics tree. The decision variables include the
    * pose for each body (position/orientation). This constructor loops through
    * each body inside the robot kinematics tree, adds the constraint on each
-   * body pose, so that the adjacent bodies are welded correctly by the joint.
+   * body pose, so that the adjacent bodies are connected correctly by the joint
+   * in between the bodies.
    * @param robot The robot on which the inverse kinematics problem is solved.
    * @param num_binary_vars_per_half_axis The number of binary variables for
    * each half axis, to segment the unit circle.
@@ -36,25 +37,25 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
 
   ~GlobalInverseKinematics() override {}
 
-  /** Getter for the decision variables on the rotation matrix R_WB for body
-   * with the specified index. This is the orientation of body i's frame in the
-   * world frame.
+  /** Getter for the decision variables on the rotation matrix `R_WB` for a body
+   * with the specified index. This is the orientation of body i's frame measured
+   * and expressed in the world frame.
    * @param body_index  The index of the queried body. Notice that body 0 is
-   * the world, and thus not a decision variable. Throws a runtime error if
+   * the world, and thus not a decision variable. Throws a runtime_error if
    * the index is smaller than 1, or no smaller than the total number of bodies
    * in the robot.
    */
-  const solvers::MatrixDecisionVariable<3, 3>& body_rotmat(int body_index)
-      const;
+  const solvers::MatrixDecisionVariable<3, 3>& body_rotation_matrix(
+      int body_index) const;
 
   /** Getter for the decision variables on the position p_WBo of the body B's
-   * origin in the world frame.
-   * @param body_index  The index of the queried body. Notice that body 0 is
-   * the world, and thus not a decision variable. Throws a runtime error if
-   * the index is smaller than 1, or no smaller than the total number of bodies
-   * in the robot.
+   * origin measured and expressed in the world frame.
+   * @param body_index The index of the queried body. Notice that body 0 is
+   * the world, and thus not a decision variable. Throws a runtime_error if
+   * the index is smaller than 1, or greater than or equal to the total number
+   * of bodies in the robot.
    */
-  const solvers::VectorDecisionVariable<3>& body_pos(int body_index) const;
+  const solvers::VectorDecisionVariable<3>& body_position(int body_index) const;
 
   /**
    * After solving the inverse kinematics problem and finding out the pose of
@@ -67,58 +68,66 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * @warning Do not call this method if the problem is not solved successfully!
    * The returned value can be NaN or meaningless number if the problem is
    * not solved.
-   * @retval q The reconstructed posture of the robot. q.cols() is the same as
-   * robot_->get_num_positions().
+   * @retval q The reconstructed posture of the robot of the generalized
+   * coordinates, corresponding to the RigidBodyTree on which the inverse
+   * kinematics problem is solved.
    */
   Eigen::VectorXd ReconstructPostureSolution() const;
 
   /**
-   * Adds the constraint that position of a point Q on a body
-   * (whose index is `body_idx`), is within a box in a specified frame.
+   * Adds the constraint that the position of a point `Q` on a body `B`
+   * (whose index is `body_idx`), is within a box in a specified frame `F`.
    * The constrain is that the point position, computed as
+   * <pre>
    *   p_WQ = p_WBo + R_WB * p_BQ
+   * </pre>
    * where
-   *   p_WQ is the position of the body point Q in the world frame.
-   *   p_WBo is the position of the body origin O in the world frame.
-   *   R_WB is the rotation matrix of the body in the world frame.
-   *   p_BQ is the position of the body point Q in the body frame.
-   * p_WQ should lie within a bounding box in the specified `constraint_frame`.
-   * Notice that since the body_rotmat does not lie exactly on the SO(3), due
-   * to the McCormick envelope relaxation, this constraint is subject to the
-   * accumulated error from the root of the kinematics tree.
+   *   - p_WQ is the position of the body point Q measured and expressed in the world frame `W`.
+   *   - p_WBo is the position of the body origin Bo measured and expressed in the world frame `W`.
+   *   - R_WB is the rotation matrix of the body measured and expressed in the world frame `W`.
+   *   - p_BQ is the position of the body point Q measured and expressed in the body frame `B`.
+   * p_WQ should lie within a bounding box in the frame `F`. Namely
+   * <pre>
+   *   box_lb_F <= p_FQ <= box_ub_F
+   * </pre>
+   * where p_FQ is the position of the point Q measured and expressed in the `F`.
+   * The inequality is imposed elementwisely.
+   *
+   * Notice that since the rotation matrix `R_WB` does not lie exactly on the
+   * SO(3), due to the McCormick envelope relaxation, this constraint is subject
+   * to the accumulated error from the root of the kinematics tree.
    * @param body_idx The index of the body on which the position of a point is
    * constrained.
-   * @param body_pt The position of the point measured and expressed in the body
-   * frame.
-   * @param box_lb The lower bound of the box in frame `constraint_frame`.
-   * @param box_ub The upper bound of the box in frame `constraint_frame`.
+   * @param body_pt `p_BQ`, the position of the point Q measured and expressed
+   * in the body frame `B`.
+   * @param box_lb_F The lower bound of the box in frame `F`.
+   * @param box_ub_F The upper bound of the box in frame `F`.
    * @param constraint_frame. The frame in which the box is specified. This
-   * frame is represented by an isometry transform T_WF, the transform from
-   * the constraint frame F to the world frame W. Namely if the position of
-   * `body_pt` in the world frame is x, then the constraint is
-   * box_lb <= T_WF.linear().transpose() * (x - T_WF.translation()) <= box_ub.
+   * frame is specified by an its pose `X_WF`, measured and expressed in the
+   * world frame `W`.
    * @default is the identity transform.
    */
   void AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& body_pt,
-                                  const Eigen::Vector3d& box_lb,
-                                  const Eigen::Vector3d& box_ub,
+                                  const Eigen::Vector3d& box_lb_F,
+                                  const Eigen::Vector3d& box_ub_F,
                                   const Eigen::Isometry3d& constraint_frame =
                                       Eigen::Isometry3d::Identity());
 
   /**
    * Add a constraint that the angle between the body orientation and the
-   * desired orientation should not be larger than `angle_tol`. The angle
-   * between two rotation matrix R1 and R2 is computed as
-   * AngleAxis(R1'*R2).angle(). Namely the angle of the rotation matrix
-   * R1'*R2.
-   * The actual constraint imposed is on cos(angle_tol). The math is
+   * desired orientation should not be larger than `angle_tol`. If we denote the
+   * angle between two rotation matrices `R1` and `R2` as `θ`, namely θ is the
+   * angle of the angle-axis representation of the rotation matrix `R1ᵀ * R2`,
+   * we then know
    * <pre>
-   * 2 * cos(angle_tol) + 1 <= trace(R_error) <= 3
+   *    trace(R1ᵀ * R2) = 2 * cos(θ) + 1
    * </pre>
-   * where R_error is the error rotation matrix, between the body orientation
-   * and the desired orientation.
-   * Suppose in the angle axis representation for R_error, the angle is θ, it is
-   * easy to prove that trace(R_error) = 2 * cos(θ) + 1.
+   * as in http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
+   * To constraint `θ < angle_tol`, we can impose the following constraint
+   * <pre>
+   *    2 * cos(angle_tol) + 1 <= trace(R1ᵀ * R2) <= 3
+   * </pre>
+   *
    * @param body_idx The index of the body whose orientation will be
    * constrained.
    * @param desired_orientation The desired orientation of the body.

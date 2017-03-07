@@ -77,14 +77,14 @@ TEST_F(KukaTest, ReachableTest) {
           cache, rigid_body_tree_->get_body(i), Isometry3d::Identity());
 
       const Eigen::Matrix3d body_Ri =
-          global_ik_.GetSolution(global_ik_.body_rotmat(i));
+          global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
       std::cout << rigid_body_tree_->get_body(i).get_name() << std::endl;
       std::cout << "rotation matrix:\n global_ik\n" << body_Ri << std::endl;
       std::cout << "forward kinematics\n" << body_pose_fk.linear() << std::endl;
       std::cout << "R * R':\n" << body_Ri * body_Ri.transpose() << std::endl;
       std::cout << "det(R) = " << body_Ri.determinant() << std::endl;
       Vector3d body_pos_global_ik =
-          global_ik_.GetSolution(global_ik_.body_pos(i));
+          global_ik_.GetSolution(global_ik_.body_position(i));
       std::cout << "position:\n global_ik\n" << body_pos_global_ik << std::endl;
       std::cout << "forward kinematics\n"
                 << body_pose_fk.translation() << std::endl;

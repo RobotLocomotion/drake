@@ -57,25 +57,30 @@ GlobalInverseKinematics::GlobalInverseKinematics(
         const RigidBody<double> *parent_body = body.get_parent();
         const int parent_idx = parent_body->get_body_index();
         const DrakeJoint* joint = &(body.getJoint());
-        const auto &joint_to_parent_transform =
+        // Frame `J` is the inbound frame of the joint, before rotating about
+        // the axis.
+        const auto &X_BpJ =
             joint->get_transform_to_parent_body();
         switch (joint->get_num_velocities()) {
           case 0 : {
             // Fixed to the parent body.
 
             // The position can be computed from the parent body pose.
-            // child_pos = parent_pos + parent_rotmat * joint_to_parent_pos.
+            // p_WBc = p_WBp + R_WBp * p_BpBc
+            // where Bc is the child body frame.
+            //       Bp is the parent body frame.
+            //       W is the world frame.
             AddLinearEqualityConstraint(
                 p_WBo_[parent_idx] +
                     R_WB_[parent_idx] *
-                        joint_to_parent_transform.translation() -
+                        X_BpJ.translation() -
                     p_WBo_[body_idx],
                 Vector3d::Zero());
 
             // The orientation can be computed from the parent body orientation.
-            // child_rotmat = parent_rotmat * joint_to_parent_rotmat.
+            // R_WBp * R_BpBc = R_WBc
             Matrix3<Expression> orient_invariance =
-                R_WB_[parent_idx] * joint_to_parent_transform.linear() -
+                R_WB_[parent_idx] * X_BpJ.linear() -
                     R_WB_[body_idx];
             for (int i = 0; i < 3; ++i) {
               AddLinearEqualityConstraint(orient_invariance.col(i),
@@ -94,15 +99,17 @@ GlobalInverseKinematics::GlobalInverseKinematics(
 
               const RevoluteJoint
                   *revolute_joint = dynamic_cast<const RevoluteJoint*>(joint);
-              const Vector3d rotate_axis =
+              // axis_J is the vector of the rotation axis in the joint
+              // inbound/outbound frame.
+              const Vector3d axis_J =
                   revolute_joint->joint_axis().head<3>();
               // The rotation joint is the same in both child body and the
               // parent body. Compute the rotation axis in the world frame
               // in the following constraint.
               AddLinearEqualityConstraint(
-                  R_WB_[body_idx] * rotate_axis -
+                  R_WB_[body_idx] * axis_J -
                       R_WB_[parent_idx] *
-                          joint_to_parent_transform.linear() * rotate_axis,
+                          X_BpJ.linear() * axis_J,
                   Vector3d::Zero());
 
               // The position of the rotation axis is the same on both child and
@@ -110,7 +117,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               AddLinearEqualityConstraint(
                   p_WBo_[parent_idx] +
                       R_WB_[parent_idx] *
-                          joint_to_parent_transform.translation() -
+                          X_BpJ.translation() -
                       p_WBo_[body_idx],
                   Vector3d::Zero());
 
@@ -151,11 +158,11 @@ GlobalInverseKinematics::GlobalInverseKinematics(
 
                 // First generate a vector that is perpendicular to rotation
                 // axis, in the joint frame.
-                Vector3d revolute_vector = rotate_axis.cross(Vector3d(1, 0, 0));
+                Vector3d revolute_vector = axis_J.cross(Vector3d(1, 0, 0));
                 double revolute_vector_norm = revolute_vector.norm();
                 if (revolute_vector_norm < 1E-2) {
-                  // rotate_axis is almost parallel to [1; 0; 0].
-                  revolute_vector = rotate_axis.cross(Vector3d(0, 1, 0));
+                  // axis_J is almost parallel to [1; 0; 0].
+                  revolute_vector = axis_J.cross(Vector3d(0, 1, 0));
                   revolute_vector_norm = revolute_vector.norm();
                 }
                 DRAKE_DEMAND(revolute_vector_norm >= 1E-2 - 1E-10);
@@ -167,7 +174,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 joint_limit_expr(0) = 2 * sin(joint_bound / 2);
                 // rotmat_joint_offset is R(k, (a+b)/2) explained above.
                 Matrix3d rotmat_joint_offset =
-                    Eigen::AngleAxisd((joint_lb + joint_ub) / 2, rotate_axis)
+                    Eigen::AngleAxisd((joint_lb + joint_ub) / 2, axis_J)
                         .toRotationMatrix();
 
                 // joint_limit_expr.tail<3> is
@@ -175,7 +182,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 joint_limit_expr.tail<3>() =
                     R_WB_[body_idx] * revolute_vector -
                     R_WB_[parent_idx] *
-                        joint_to_parent_transform.linear() *
+                        X_BpJ.linear() *
                         rotmat_joint_offset * revolute_vector;
                 AddLorentzConeConstraint(joint_limit_expr);
               }
@@ -200,15 +207,15 @@ GlobalInverseKinematics::GlobalInverseKinematics(
 }
 
 const solvers::MatrixDecisionVariable<3, 3>&
-GlobalInverseKinematics::body_rotmat(int body_index) const {
+GlobalInverseKinematics::body_rotation_matrix(int body_index) const {
   if (body_index >= robot_->get_num_bodies() || body_index <= 0) {
     throw std::runtime_error("body index out of range.");
   }
   return R_WB_[body_index];
 }
 
-const solvers::VectorDecisionVariable<3>& GlobalInverseKinematics::body_pos(
-    int body_index) const {
+const solvers::VectorDecisionVariable<3>&
+GlobalInverseKinematics::body_position(int body_index) const {
   if (body_index >= robot_->get_num_bodies() || body_index <= 0) {
     throw std::runtime_error("body index out of range.");
   }
