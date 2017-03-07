@@ -32,7 +32,7 @@ namespace kuka_iiwa_arm {
 template <typename T>
 IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
     std::unique_ptr<RigidBodyPlant<T>> combined_plant,
-    const ModelInstanceInfo<T>& iiwa_info, 
+    const ModelInstanceInfo<T>& iiwa_info,
     const ModelInstanceInfo<T>& wsg_info,
     const ModelInstanceInfo<T>& box_info) {
   this->set_name("IiwaAndWsgPlantWithStateEstimator");
