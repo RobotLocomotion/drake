@@ -24,16 +24,6 @@ target_link_libraries(debug_manipulator_dynamics
     drakeMultibodyParsers
     drakeRBM)
 
-if(gurobi_FOUND)
-drake_add_cc_test(global_inverse_kinematics_test)
-set_tests_properties(global_inverse_kinematics_test PROPERTIES TIMEOUT 400)
-target_link_libraries(global_inverse_kinematics_test
-        drakeGlobalIK
-        drakeRigidBodyPlant
-        drakeMultibodyParsers
-        drakeCommon)
-endif()
-
 # Inverse kinematics unit tests.
 macro(add_ik_cpp)
   drake_add_cc_test(${ARGV})

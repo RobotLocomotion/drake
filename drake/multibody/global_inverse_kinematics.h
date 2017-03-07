@@ -38,7 +38,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
   ~GlobalInverseKinematics() override {}
 
   /** Getter for the decision variables on the rotation matrix `R_WB` for a body
-   * with the specified index. This is the orientation of body i's frame measured
+   * with the specified index. This is the orientation of body i's frame
+   * measured
    * and expressed in the world frame.
    * @param body_index  The index of the queried body. Notice that body 0 is
    * the world, and thus not a decision variable. Throws a runtime_error if

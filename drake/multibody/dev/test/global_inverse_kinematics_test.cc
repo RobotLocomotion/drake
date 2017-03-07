@@ -45,11 +45,12 @@ class KukaTest : public ::testing::Test {
 
 TEST_F(KukaTest, ReachableTest) {
   // Test the case that global IK should find a solution.
+  // "ee" stands for "end effector".
   int ee_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_ee");
-  Eigen::Vector3d ee_pos_lb(0.4, -0.1, 0.4);
-  Eigen::Vector3d ee_pos_ub(0.6, 0.1, 0.6);
-  global_ik_.AddWorldPositionConstraint(ee_idx, Vector3d::Zero(), ee_pos_lb,
-                                        ee_pos_ub);
+  Eigen::Vector3d ee_pos_lb_W(0.4, -0.1, 0.4);
+  Eigen::Vector3d ee_pos_ub_W(0.6, 0.1, 0.6);
+  global_ik_.AddWorldPositionConstraint(ee_idx, Vector3d::Zero(), ee_pos_lb_W,
+                                        ee_pos_ub_W);
 
   Eigen::Quaterniond ee_desired_orient(
       Eigen::AngleAxisd(-M_PI / 2, Vector3d(0, 1, 0)));
@@ -73,6 +74,7 @@ TEST_F(KukaTest, ReachableTest) {
     // derived a rigorous bound on the rotation matrix relaxation yet. Should be
     // able to get a more meaningful bound when we have some theoretical proof.
     for (int i = 1; i < rigid_body_tree_->get_num_bodies(); ++i) {
+      // Compute forward kinematics.
       const auto &body_pose_fk = rigid_body_tree_->CalcFramePoseInWorldFrame(
           cache, rigid_body_tree_->get_body(i), Isometry3d::Identity());
 
