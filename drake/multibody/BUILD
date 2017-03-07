@@ -357,7 +357,20 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_test(
+drake_cc_googletest(
+    name = "rigid_body_tree_face_extraction_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_face_extraction_test.cc"],
+    data = [
+        "test/rigid_body_tree/small_sphere_on_large_box.sdf",
+    ],
+    deps = [
+        ":rigid_body_tree",
+        "//drake/common:drake_path",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
     name = "test_kinematics_cache_checks",
     data = ["//drake/examples/Atlas:models"],
     deps = [
