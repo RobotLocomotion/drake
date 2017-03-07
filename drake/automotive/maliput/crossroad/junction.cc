@@ -3,6 +3,9 @@
 #include "drake/automotive/maliput/crossroad/road_geometry.h"
 #include "drake/automotive/maliput/crossroad/segment.h"
 
+#include <utility>
+#include <string>
+
 namespace drake {
 namespace maliput {
 namespace crossroad {

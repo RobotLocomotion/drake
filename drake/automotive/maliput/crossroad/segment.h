@@ -84,7 +84,7 @@ class Segment final : public api::Segment {
  private:
   const int index_{};  // The index of this segment within a Junction.
 
-  int do_index() const { return index_; };
+  int do_index() const { return index_; }
 
   const api::SegmentId do_id() const final { return id_; }
 

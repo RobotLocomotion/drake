@@ -47,7 +47,8 @@ class MaliputCrossroadLaneTest : public ::testing::Test {
   }
 
   // Verifies the correctness of the provided `lane`.
-  void VerifyLaneCorrectness(const api::Lane* lane, int num_lanes) {
+  void VerifyLaneCorrectness(const api::Lane* lane, int segment_index,
+                             int num_lanes) {
     const ExpectedLaneParameters expected =
         GetExpectedLaneParameters(num_lanes, lane->index());
 
@@ -87,10 +88,20 @@ class MaliputCrossroadLaneTest : public ::testing::Test {
               lane->ToGeoPosition(lane_position);
           const double linear_tolerance =
               lane->segment()->junction()->road_geometry()->linear_tolerance();
-          EXPECT_DOUBLE_EQ(geo_position.x, s);
-          EXPECT_NEAR(geo_position.y, expected.r_offset + r, linear_tolerance);
-          EXPECT_DOUBLE_EQ(geo_position.z, h);
-
+          if (segment_index == 0) {
+            EXPECT_DOUBLE_EQ(geo_position.x, s - length_ / 2);
+            EXPECT_NEAR(geo_position.y, expected.r_offset + r,
+                        linear_tolerance);
+            EXPECT_DOUBLE_EQ(geo_position.z, h);
+          } else if (segment_index == 1) {
+            EXPECT_DOUBLE_EQ(geo_position.y, s - length_ / 2);
+            EXPECT_NEAR(geo_position.x, expected.r_offset + r,
+                        linear_tolerance);
+            EXPECT_DOUBLE_EQ(geo_position.z, h);
+          } else {
+            throw std::runtime_error(
+                "VerifyLaneCorrectness: invalid segment index");
+          }
           // Tests Lane::GetOrientation().
           const api::Rotation rotation = lane->GetOrientation(lane_position);
           EXPECT_DOUBLE_EQ(rotation.roll, 0);
@@ -193,95 +204,127 @@ class MaliputCrossroadLaneTest : public ::testing::Test {
 };
 
 /*
- Tests a crossroad containing one lane. It is arranged as shown below in the
+ Tests a crossroad containing one horizontal lane and one vertical lane. It is
+ arranged as shown below in the
  world frame:
 
-               x
-               ^
-      |<-------|------->|    driveable r_max / r_min
-      | |<-----|----->| |    lane      r_max / r_min
-      -------------------    s = length_
-      | |      ^      | |
-      | |      :      | |
-      | |      ^      | |
-      | |      :      | |
-  y <----------o---------->  s = 0
-               |
-               V
+
+                             ^
+                    |<-------|------->|    driveable r_max / r_min
+                    | |<-----|----->| |    lane      r_max / r_min
+                    -------------------    s = length_
+                    | |      ^      | |
+  ------------------| |      :      | |------------------
+  -▲----------------|-|------^------| |------------------
+   |  ▲             | |      :      | |
+   |  |             | |      ^      | |
+   |  |  <--<--<--<-| | <--<--<--<- | | <--<--<--<-
+   |  |             | |      ^      | |
+   |  ▼             | |      :      | |
+  -▼----------------|-|------:------|-|------------------
+  ------------------| |------^------| |------------------
+                    | |      ^      | |
+                  <----------o---------->  s = 0
+                             |
+                             V
  */
 TEST_F(MaliputCrossroadLaneTest, SingleLane) {
   const api::RoadGeometryId road_geometry_id({"OneLaneCrossroadRoadGeometry"});
-  const int kNumLanes = 1;
+  const int kNumHorizontalLanes = 1;
+  const int kNumVerticalLanes = 1;
+
   // The following linear tolerance was empirically derived on a 64-bit Ubuntu
   // system. It is necessary due to inaccuracies in floating point calculations
   // and different ways of computing the driveable r_min and r_max.
   const double kLinearTolerance = 1e-15;
 
-  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
+  RoadGeometry road_geometry(road_geometry_id, kNumHorizontalLanes,
+                             kNumVerticalLanes, length_, lane_width_,
                              shoulder_width_, kLinearTolerance);
 
   const api::Junction* junction = road_geometry.junction(0);
   ASSERT_NE(junction, nullptr);
-  const api::Segment* segment = junction->segment(0);
-  ASSERT_NE(segment, nullptr);
-  EXPECT_EQ(segment->lane(0)->length(), length_);
-  EXPECT_EQ(segment->num_lanes(), 1);
-  EXPECT_EQ(segment->id().id, "Crossroad_Segment_ID");
 
-  const int kLaneIndex = 0;
-  const api::Lane* lane = segment->lane(kLaneIndex);
-  ASSERT_NE(lane, nullptr);
-  EXPECT_EQ(lane->segment(), segment);
+  const int horizontal_segment_idx = 0;
+  const api::Segment* horizontal_segment =
+      junction->segment(horizontal_segment_idx);
+  ASSERT_NE(horizontal_segment, nullptr);
+  EXPECT_EQ(horizontal_segment->lane(0)->length(), length_);
+  EXPECT_EQ(horizontal_segment->num_lanes(), 1);
+  EXPECT_EQ(horizontal_segment->id().id, "Crossroad_Horizontal_Segment");
 
-  VerifyLaneCorrectness(lane, kNumLanes);
-  VerifyBranches(lane, &road_geometry);
+  const int vertical_segment_idx = 1;
+  const api::Segment* vertical_segment =
+      junction->segment(vertical_segment_idx);
+  ASSERT_NE(vertical_segment, nullptr);
+  EXPECT_EQ(vertical_segment->lane(0)->length(), length_);
+  EXPECT_EQ(vertical_segment->num_lanes(), 1);
+  EXPECT_EQ(vertical_segment->id().id, "Crossroad_Vertical_Segment");
+
+  const int kHorizontalLaneIndex = 0;
+  const api::Lane* horizontal_lane =
+      horizontal_segment->lane(kHorizontalLaneIndex);
+  ASSERT_NE(horizontal_lane, nullptr);
+  EXPECT_EQ(horizontal_lane->segment(), horizontal_segment);
+
+  VerifyLaneCorrectness(horizontal_lane, horizontal_segment_idx,
+                        kNumHorizontalLanes);
+  VerifyBranches(horizontal_lane, &road_geometry);
+
+  const int kVerticalLaneIndex = 0;
+  const api::Lane* vertical_lane = vertical_segment->lane(kVerticalLaneIndex);
+  ASSERT_NE(vertical_lane, nullptr);
+  EXPECT_EQ(vertical_lane->segment(), vertical_segment);
+
+  VerifyLaneCorrectness(vertical_lane, vertical_segment_idx, kNumVerticalLanes);
+  VerifyBranches(vertical_lane, &road_geometry);
 }
 
 /*
- Tests a crossroad containing two lanes. The two lanes are arranged as shown
- below
- in the world frame:
-
-                              x
-                              ^
-                              |
-              |<-------|--------------------->|  lane 1 driveable r_max / r_min
-              |<---------------------|------->|  lane 0 driveable r_max / r_min
-              | |<-----|----->|<-----|----->| |  lane             r_max / r_min
-              ----------------|----------------  s = length_
-              | |      ^      |      ^      | |
-              | |      :      |      :      | |
-              | |      ^      |      ^      | |
-              | |      :      |      :      | |  s = 0
-      y <---------------------o------------------------------>
-                    index 1   |    index 0
-                              V
+ Tests a crossroad containing two lanes within each segment.
  */
 TEST_F(MaliputCrossroadLaneTest, TwoLaneCrossroad) {
   const api::RoadGeometryId road_geometry_id({"TwoLaneCrossroadRoadGeometry"});
-  const int kNumLanes = 2;
+  const int kNumHorizontalLanes = 2;
+  const int kNumVerticalLanes = 2;
   // The following linear tolerance was empirically derived on a 64-bit Ubuntu
   // system. It is necessary due to inaccuracies in floating point calculations
   // and different ways of computing the driveable r_min and r_max.
   const double kLinearTolerance = 1e-15;
 
-  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
+  RoadGeometry road_geometry(road_geometry_id, kNumHorizontalLanes,
+                             kNumVerticalLanes, length_, lane_width_,
                              shoulder_width_, kLinearTolerance);
 
   const api::Junction* junction = road_geometry.junction(0);
   ASSERT_NE(junction, nullptr);
-  const api::Segment* segment = junction->segment(0);
-  ASSERT_NE(segment, nullptr);
-  const api::Lane* lane_zero = segment->lane(0);
-  ASSERT_NE(lane_zero, nullptr);
-  EXPECT_EQ(lane_zero->length(), length_);
-  EXPECT_EQ(segment->num_lanes(), kNumLanes);
-  EXPECT_EQ(segment->id().id, "Crossroad_Segment_ID");
 
-  for (int i = 0; i < kNumLanes; ++i) {
-    const api::Lane* lane = segment->lane(i);
+  const int horizontal_segment_idx = 0;
+  const api::Segment* horizontal_segment =
+      junction->segment(horizontal_segment_idx);
+  ASSERT_NE(horizontal_segment, nullptr);
+  EXPECT_EQ(horizontal_segment->lane(0)->length(), length_);
+  EXPECT_EQ(horizontal_segment->num_lanes(), 2);
+  EXPECT_EQ(horizontal_segment->id().id, "Crossroad_Horizontal_Segment");
+
+  const int vertical_segment_idx = 1;
+  const api::Segment* vertical_segment =
+      junction->segment(vertical_segment_idx);
+  ASSERT_NE(vertical_segment, nullptr);
+  EXPECT_EQ(vertical_segment->lane(0)->length(), length_);
+  EXPECT_EQ(vertical_segment->num_lanes(), 2);
+  EXPECT_EQ(vertical_segment->id().id, "Crossroad_Vertical_Segment");
+
+  for (int i = 0; i < kNumHorizontalLanes; ++i) {
+    const api::Lane* lane = horizontal_segment->lane(i);
     ASSERT_NE(lane, nullptr);
-    VerifyLaneCorrectness(lane, kNumLanes);
+    VerifyLaneCorrectness(lane, horizontal_segment_idx, kNumHorizontalLanes);
+    VerifyBranches(lane, &road_geometry);
+  }
+  for (int i = 0; i < kNumVerticalLanes; ++i) {
+    const api::Lane* lane = vertical_segment->lane(i);
+    ASSERT_NE(lane, nullptr);
+    VerifyLaneCorrectness(lane, vertical_segment_idx, kNumVerticalLanes);
     VerifyBranches(lane, &road_geometry);
   }
 }

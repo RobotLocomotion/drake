@@ -14,7 +14,7 @@
 
 namespace drake {
 namespace maliput {
-namespace crossroad{
+namespace crossroad {
 
 /// Crossroad's implementation of api::RoadGeometry.
 ///
@@ -48,21 +48,16 @@ class RoadGeometry final : public api::RoadGeometry {
   /// @param[in] angular_tolerance The tolerance guaranteed for angular
   /// measurements (orientations).
   ///
-  RoadGeometry(const api::RoadGeometryId& id,
-              int num_horizontal_lanes,
-               int num_vertical_lanes,
-               double length,
-               double lane_width,
-               double shoulder_width,
-               double linear_tolerance =
-                   std::numeric_limits<double>::epsilon(),
-               double angular_tolerance =
-                   std::numeric_limits<double>::epsilon());
+  RoadGeometry(
+      const api::RoadGeometryId& id, int num_horizontal_lanes,
+      int num_vertical_lanes, double length, double lane_width,
+      double shoulder_width,
+      double linear_tolerance = std::numeric_limits<double>::epsilon(),
+      double angular_tolerance = std::numeric_limits<double>::epsilon());
 
   ~RoadGeometry() final = default;
 
   const Junction* junction(int index) const { return do_junction(index); }
-
 
  private:
   const api::RoadGeometryId do_id() const final { return id_; }
@@ -75,11 +70,10 @@ class RoadGeometry final : public api::RoadGeometry {
 
   const api::BranchPoint* do_branch_point(int index) const final;
 
-  api::RoadPosition DoToRoadPosition(
-      const api::GeoPosition& geo_position,
-      const api::RoadPosition* hint,
-      api::GeoPosition* nearest_position,
-      double* distance) const final;
+  api::RoadPosition DoToRoadPosition(const api::GeoPosition& geo_position,
+                                     const api::RoadPosition* hint,
+                                     api::GeoPosition* nearest_position,
+                                     double* distance) const final;
 
   double do_linear_tolerance() const final { return linear_tolerance_; }
 

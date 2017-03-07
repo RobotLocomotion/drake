@@ -45,9 +45,9 @@ class Junction final : public api::Junction {
 
   int do_num_segments() const final { return 2; }
 
-  int do_num_horizontal_lanes() const { return num_horizontal_lanes_; };
+  int do_num_horizontal_lanes() const { return num_horizontal_lanes_; }
 
-  int do_num_vertical_lanes() const { return num_vertical_lanes_; };
+  int do_num_vertical_lanes() const { return num_vertical_lanes_; }
 
   const api::Segment* do_segment(int index) const final;
 

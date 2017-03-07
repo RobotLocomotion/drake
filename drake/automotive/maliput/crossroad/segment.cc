@@ -28,7 +28,6 @@ Segment::Segment(Junction* junction, int index, int num_lanes, double length,
     const double r_offset =
         r_min + shoulder_width + i * lane_width + lane_width / 2;
     const api::RBounds driveable_bounds({r_min - r_offset, r_max - r_offset});
-    
     auto lane = std::make_unique<Lane>(
         this, api::LaneId({"Crossroad_Lane_Section" + std::to_string(i)}), i,
         length, r_offset, lane_bounds, driveable_bounds);
