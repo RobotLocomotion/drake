@@ -887,8 +887,8 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
               << " is negative, cannot call AddLorentzConeConstraint.\n";
           throw std::runtime_error(oss.str());
         }
-        Vector2<Expression> expr(linear_expr, std::sqrt(a));
-        return AddLorentzConeConstraint(expr);
+        Vector2<Expression> expr_constant_quadratic(linear_expr, std::sqrt(a));
+        return AddLorentzConeConstraint(expr_constant_quadratic);
       }
     }
     // Q is not strictly positive, nor is it zero. Use LDLT to decompose Q
