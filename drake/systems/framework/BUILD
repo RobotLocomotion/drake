@@ -235,6 +235,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "model_values",
+    srcs = ["model_values.cc"],
+    hdrs = ["model_values.h"],
+    visibility = [":__subpackages__"],
+    deps = [
+        ":value",
+        ":vector",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "leaf_system",
     srcs = ["leaf_system.cc"],
     hdrs = ["leaf_system.h"],
@@ -417,6 +429,15 @@ drake_cc_googletest(
         ":leaf_system",
         "//drake/common",
         "//drake/systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "model_values_test",
+    deps = [
+        ":model_values",
+        "//drake/common:autodiff",
+        "//drake/common:symbolic",
     ],
 )
 
