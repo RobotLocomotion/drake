@@ -61,7 +61,7 @@ def setupToolbar():
 
 
 # create a default mainwindow app
-app = mainwindowapp.construct()
+app = mainwindowapp.construct(globalsDict=globals())
 
 # load a minimal robot system with ik planning
 robotSystem = robotsystem.create(app.view, planningOnly=True)
