@@ -324,6 +324,15 @@ drake_cc_library(
 
 # === test/ ===
 
+drake_cc_library(
+    name = "my_vector2",
+    testonly = 1,
+    hdrs = ["test/my_vector2.h"],
+    deps = [
+        ":vector",
+    ],
+)
+
 drake_cc_googletest(
     name = "basic_vector_test",
     deps = [
@@ -483,6 +492,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "value_test",
     deps = [
+        ":my_vector2",
         ":value",
         "//drake/common",
     ],
