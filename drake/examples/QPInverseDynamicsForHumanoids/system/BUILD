@@ -52,16 +52,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "manipulator_plan_eval_system",
-    srcs = ["manipulator_plan_eval_system.cc"],
-    hdrs = ["manipulator_plan_eval_system.h"],
-    deps = [
-        ":plan_eval_base_system",
-        "//drake/lcmtypes:plan_eval_debug_info",
-    ],
-)
-
-drake_cc_library(
     name = "humanoid_plan_eval_system",
     srcs = ["humanoid_plan_eval_system.cc"],
     hdrs = ["humanoid_plan_eval_system.h"],
@@ -112,6 +102,25 @@ drake_cc_binary(
 )
 
 drake_cc_googletest(
+    name = "humanoid_plan_eval_test",
+    srcs = ["test/humanoid_plan_eval_system_test.cc"],
+    data = [
+        "//drake/examples/Valkyrie:models",
+    ],
+    deps = [
+        ":humanoid_plan_eval_system",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/examples/Valkyrie:valkyrie_constants",
+        "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
+        "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/multibody/parsers",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
     name = "qp_controller_system_test",
     srcs = ["test/qp_controller_system_test.cc"],
     data = [
@@ -133,23 +142,6 @@ drake_cc_googletest(
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
         "//drake/systems/primitives:constant_value_source",
-    ],
-)
-
-drake_cc_googletest(
-    name = "manipulator_plan_eval_test",
-    srcs = ["test/manipulator_plan_eval_system_test.cc"],
-    data = [
-    ],
-    deps = [
-        ":manipulator_plan_eval_system",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
-        "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/multibody/parsers",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/framework",
     ],
 )
 

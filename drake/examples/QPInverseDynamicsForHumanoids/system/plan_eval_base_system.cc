@@ -53,7 +53,7 @@ PlanEvalBaseSystem::AllocateAbstractState() const {
       ExtendedAllocateAbstractState();
 
   abstract_vals.push_back(systems::AbstractValue::Make<QpInput>(
-      GetDofNames(robot_));
+      QpInput()));
   return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
 }
 
