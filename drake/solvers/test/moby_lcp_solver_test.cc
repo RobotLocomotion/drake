@@ -36,7 +36,7 @@ Eigen::SparseMatrix<double> MakeSparseMatrix(
 template <typename Derived>
 void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
                  const Eigen::VectorXd& expected_z_in, bool expect_fast_pass) {
-  MobyLCPSolver l;
+  MobyLCPSolver<double> l;
   l.SetLoggingEnabled(verbose);
 
   Eigen::VectorXd expected_z = expected_z_in;
@@ -77,7 +77,7 @@ void RunRegularizedLcp(const Eigen::MatrixBase<Derived>& M,
                        const Eigen::VectorXd& q,
                        const Eigen::VectorXd& expected_z_in,
                        bool expect_fast_pass) {
-  MobyLCPSolver l;
+  MobyLCPSolver<double> l;
   l.SetLoggingEnabled(verbose);
 
   Eigen::VectorXd expected_z = expected_z_in;
@@ -143,6 +143,72 @@ GTEST_TEST(testMobyLCP, testTrivial) {
   // Mangle the input matrix so that some regularization occurs.
   M(0, 8) = 10;
   RunRegularizedLcp(M, q, empty_z, true);
+}
+
+GTEST_TEST(testMobyLCP, testAutoDiffTrivial) {
+  typedef Eigen::AutoDiffScalar<Vector1d> Scalar;
+  Eigen::Matrix<Scalar, 9, 9> M;
+  // clang-format off
+  M <<
+      1, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 2, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 3, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 4, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 5, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 6, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 7, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 8, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 9;
+  // clang-format on
+
+  // Set the LCP vector and indicate that we are interested in how the solution changes as
+  // the first element changes.
+  VectorX<Scalar> q(9);
+  q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
+  q(0).derivatives()(0) = 1;
+  VectorX<Scalar> fast_z, lemke_z;
+
+  // Attempt to compute the solution using both "fast" and Lemke algorithms.
+  MobyLCPSolver<Scalar> l;
+  l.SetLoggingEnabled(verbose);
+  bool result = l.SolveLcpFast(M, q, &fast_z);
+  EXPECT_TRUE(result);
+  result = l.SolveLcpLemke(M, q, &lemke_z);
+  EXPECT_TRUE(result);
+
+  // Since the LCP matrix is diagonal and the first number is 1.0, a unit increase in q(1)
+  // will result in a unit decrease in z(1).
+  const double tol = std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(fast_z(0).derivatives()(0), -1, tol);
+
+  // Check the solutions.
+  EXPECT_NEAR(fast_z[0].value(), lemke_z[0].value(), tol);
+  EXPECT_NEAR(fast_z[1].value(), lemke_z[1].value(), tol);
+  EXPECT_NEAR(fast_z[2].value(), lemke_z[2].value(), tol);
+  EXPECT_NEAR(fast_z[3].value(), lemke_z[3].value(), tol);
+  EXPECT_NEAR(fast_z[4].value(), lemke_z[4].value(), tol);
+  EXPECT_NEAR(fast_z[5].value(), lemke_z[5].value(), tol);
+  EXPECT_NEAR(fast_z[6].value(), lemke_z[6].value(), tol);
+  EXPECT_NEAR(fast_z[7].value(), lemke_z[7].value(), tol);
+  EXPECT_NEAR(fast_z[8].value(), lemke_z[8].value(), tol);
+
+  // Mangle the input matrix so that some regularization occurs.
+  fast_z.setZero();
+  lemke_z.setZero();
+  M(0, 8) = 10;
+  result = l.SolveLcpFastRegularized(M, q, &fast_z);
+  EXPECT_TRUE(result);
+  result = l.SolveLcpLemkeRegularized(M, q, &lemke_z);
+  EXPECT_TRUE(result);
+  EXPECT_NEAR(fast_z[0].value(), lemke_z[0].value(), tol);
+  EXPECT_NEAR(fast_z[1].value(), lemke_z[1].value(), tol);
+  EXPECT_NEAR(fast_z[2].value(), lemke_z[2].value(), tol);
+  EXPECT_NEAR(fast_z[3].value(), lemke_z[3].value(), tol);
+  EXPECT_NEAR(fast_z[4].value(), lemke_z[4].value(), tol);
+  EXPECT_NEAR(fast_z[5].value(), lemke_z[5].value(), tol);
+  EXPECT_NEAR(fast_z[6].value(), lemke_z[6].value(), tol);
+  EXPECT_NEAR(fast_z[7].value(), lemke_z[7].value(), tol);
+  EXPECT_NEAR(fast_z[8].value(), lemke_z[8].value(), tol);
 }
 
 GTEST_TEST(testMobyLCP, testProblem1) {
@@ -223,7 +289,7 @@ GTEST_TEST(testMobyLCP, testProblem4) {
   Eigen::VectorXd z(4);
   z << 1. / 90., 2. / 45., 1. / 90., 2. / 45.;
 
-  MobyLCPSolver l;
+  MobyLCPSolver<double> l;
   l.SetLoggingEnabled(verbose);
 
   Eigen::VectorXd fast_z;
@@ -287,7 +353,7 @@ GTEST_TEST(testMobyLCP, testEmpty) {
   Eigen::MatrixXd empty_M(0, 0);
   Eigen::VectorXd empty_q(0);
   Eigen::VectorXd z;
-  MobyLCPSolver l;
+  MobyLCPSolver<double> l;
   l.SetLoggingEnabled(verbose);
 
   bool result = l.SolveLcpFast(empty_M, empty_q, &z);

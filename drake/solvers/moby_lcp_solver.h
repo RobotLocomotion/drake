@@ -15,6 +15,7 @@
 namespace drake {
 namespace solvers {
 
+template <class T>
 class MobyLCPSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLCPSolver)
@@ -25,20 +26,20 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
   void SetLoggingEnabled(bool enabled);
 
-  bool SolveLcpFast(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
-                    Eigen::VectorXd* z, double zero_tol = -1.0) const;
-  bool SolveLcpFastRegularized(const Eigen::MatrixXd& M,
-                               const Eigen::VectorXd& q, Eigen::VectorXd* z,
+  bool SolveLcpFast(const MatrixX<T>& M, const VectorX<T>& q,
+                    VectorX<T>* z, T zero_tol = T(-1)) const;
+  bool SolveLcpFastRegularized(const MatrixX<T>& M,
+                               const VectorX<T>& q, VectorX<T>* z,
                                int min_exp = -20, unsigned step_exp = 4,
-                               int max_exp = 20, double zero_tol = -1.0) const;
-  bool SolveLcpLemke(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
-                     Eigen::VectorXd* z, double piv_tol = -1.0,
-                     double zero_tol = -1.0) const;
-  bool SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
-                                const Eigen::VectorXd& q, Eigen::VectorXd* z,
+                               int max_exp = 20, T zero_tol = T(-1)) const;
+  bool SolveLcpLemke(const MatrixX<T>& M, const VectorX<T>& q,
+                     VectorX<T>* z, T piv_tol = T(-1),
+                     T zero_tol = T(-1)) const;
+  bool SolveLcpLemkeRegularized(const MatrixX<T>& M,
+                                const VectorX<T>& q, VectorX<T>* z,
                                 int min_exp = -20, unsigned step_exp = 1,
-                                int max_exp = 1, double piv_tol = -1.0,
-                                double zero_tol = -1.0) const;
+                                int max_exp = 1, T piv_tol = T(-1),
+                                T zero_tol = T(-1)) const;
   bool SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
                      const Eigen::VectorXd& q, Eigen::VectorXd* z,
                      double piv_tol = -1.0, double zero_tol = -1.0) const;
@@ -52,20 +53,27 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
+  /// Returns the number of pivoting operations made by the last LCP solve.
+  int get_num_pivots() const { return pivots_; }
+
  private:
   void ClearIndexVectors() const;
-  bool CheckLemkeTrivial(int n, double zero_tol, const Eigen::VectorXd& q,
-                         Eigen::VectorXd* z) const;
-  template <typename MatrixType>
-  void FinishLemkeSolution(const MatrixType& M, const Eigen::VectorXd& q,
-                           Eigen::VectorXd* z) const;
+
+  template <typename Scalar>
+  bool CheckLemkeTrivial(int n, const Scalar& zero_tol,
+                         const VectorX<Scalar>& q,
+                         VectorX<Scalar>* z) const;
+
+  template <typename MatrixType, typename Scalar>
+  void FinishLemkeSolution(const MatrixType& M, const VectorX<Scalar>& q,
+                           const VectorX<Scalar>& x, VectorX<Scalar>* z) const;
 
   // TODO(sammy-tri) replace this with a proper logging hookup
   std::ostream& Log() const;
   bool log_enabled_;
   mutable std::ofstream null_stream_;
 
-  // TODO(sammy-tri) why is this a member variable?
+  // Records the number of pivoting operations used during the last solve.
   mutable unsigned pivots_;
 
   // NOTE:  The temporaries below are stored in the class to minimize
@@ -73,16 +81,16 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   // semantic const'ness of the class under its methods.
 
   // temporaries for regularized solver
-  mutable Eigen::MatrixXd MM_;
-  mutable Eigen::VectorXd wx_;
+  mutable MatrixX<T> MM_;
+  mutable VectorX<T> wx_;
 
   // temporaries for fast pivoting solver
-  mutable Eigen::VectorXd z_, w_, qbas_;
-  mutable Eigen::MatrixXd Msub_, Mmix_;
+  mutable VectorX<T> z_, w_, qbas_;
+  mutable MatrixX<T> Msub_, Mmix_;
 
   // temporaries for Lemke solver
-  mutable Eigen::VectorXd d_, Be_, u_, z0_, x_, dl_, xj_, dj_, wl_, result_;
-  mutable Eigen::MatrixXd Bl_, Al_, t1_, t2_;
+  mutable VectorX<T> d_, Be_, u_, z0_, x_, dl_, xj_, dj_, wl_, result_;
+  mutable MatrixX<T> Bl_, t1_, t2_;
 
   // Vectors which correspond to indices into other data.
   mutable std::vector<unsigned> all_, tlist_, bas_, nonbas_, j_;
