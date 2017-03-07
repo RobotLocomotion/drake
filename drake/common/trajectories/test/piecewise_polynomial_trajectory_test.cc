@@ -92,6 +92,9 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   EXPECT_EQ(kPpTrajFromPpMatrix.value(3)(2), 6);
 
   // Test derivative()
+  EXPECT_TRUE(CompareMatrices(kPpFromMatrix.derivative(0).value(1.5),
+                              kPpTrajFromPpMatrix.derivative(0)->value(1.5),
+                              1e-10, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(kPpFromMatrix.derivative(1).value(1.5),
                               kPpTrajFromPpMatrix.derivative(1)->value(1.5),
                               1e-10, MatrixCompareType::absolute));
