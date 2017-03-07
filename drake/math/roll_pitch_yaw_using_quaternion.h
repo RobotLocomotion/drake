@@ -32,5 +32,28 @@ Vector4<typename Derived::Scalar> rpy2axis(
   // the range problem in Eigen
   return quat2axis(rpy2quat(rpy));
 }
+
+/**
+ * Computes the Quaternion representation of a rotation given the set of Euler
+ * angles describing this rotation. These angles follow the Tait–Bryan formalism
+ * about body-fixed z-y'-x'' axes.
+ * @param rpy A vector in ℝ³ with the Euler angles `rpy = [roll, pitch, yaw]`.
+ *            These are defined such that they represent the rotations about the
+ *            body-fixed z-y'-x'' axes.
+ * @return A Quaternion representing the same rotation given by the input Euler
+ *         angles `rpy`.
+ */
+template <typename Derived>
+Quaternion<typename Derived::Scalar> RollPitchYawToQuaternion(
+    const Eigen::MatrixBase<Derived>& rpy) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  auto quaternion_as_vector4 = rpy2quat(rpy);
+  return Quaternion<typename Derived::Scalar>(
+      quaternion_as_vector4[0],
+      quaternion_as_vector4[1],
+      quaternion_as_vector4[2],
+      quaternion_as_vector4[3]);
+}
+
 }  // namespace math
 }  // namespace drake
