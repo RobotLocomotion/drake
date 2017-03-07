@@ -109,6 +109,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":humanoid_plan_eval_system",
+        ":qp_controller_system",
         "//drake/common:eigen_matrix_compare",
         "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
@@ -117,6 +118,7 @@ drake_cc_googletest(
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
+        "//drake/systems/primitives:constant_value_source",
     ],
 )
 

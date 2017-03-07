@@ -60,14 +60,10 @@ void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
   // This can be much more complicated like replanning trajectories, etc.
   // Moves desired com height in a sine wave.
   plan.com_servo.mutable_desired_position()[2] =
-      plan.initial_com[2] + 0.1 * std::sin(robot_status->time() * 2 * M_PI);
+      plan.initial_com[2] + 0.1 * std::sin(context.get_time() * 2 * M_PI);
 
   // Generates a QpInput and stores it in AbstractState.
   QpInput& qp_input = get_mutable_qp_input(state);
-  qp_input =
-      get_paramset().MakeQpInput({"feet"},            /* contacts */
-                                 {"pelvis", "torso"}, /* tracked bodies */
-                                 get_alias_groups());
 
   // Does acceleration feedback based on the plan.
   qp_input.mutable_desired_centroidal_momentum_dot()
@@ -139,6 +135,13 @@ void HumanoidPlanEvalSystem::Initialize(const VectorX<double>& q_d,
   get_paramset().LookupDesiredCentroidalMomentumDotGains(&Kp, &Kd);
   plan.com_servo.mutable_Kp() = Kp.tail<3>();
   plan.com_servo.mutable_Kd() = Kd.tail<3>();
+
+  // Initializes qp input.
+  QpInput& qp_input = get_mutable_qp_input(state);
+  qp_input =
+      get_paramset().MakeQpInput({"feet"},            /* contacts */
+                                 {"pelvis", "torso"}, /* tracked bodies */
+                                 get_alias_groups());
 }
 
 }  // namespace qp_inverse_dynamics
