@@ -49,40 +49,134 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "rigid_body_tree",
-    srcs = [
-        "kinematics_cache.cc",
-        "rigid_body.cc",
-        "rigid_body_actuator.cc",
-        "rigid_body_frame.cc",
-        "rigid_body_loop.cc",
-        "rigid_body_tree.cc",
-        "rigid_body_tree_contact.cc",
+    name = "kinematics_cache",
+    srcs = ["kinematics_cache.cc"],
+    hdrs = [
+        "kinematics_cache.h",
+        "kinematics_cache-inl.h",
     ],
+    deps = [
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/multibody/joints",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body",
+    srcs = ["rigid_body.cc"],
+    hdrs = ["rigid_body.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/multibody/collision",
+        "//drake/multibody/joints",
+        "//drake/util",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_actuator",
+    srcs = ["rigid_body_actuator.cc"],
+    hdrs = ["rigid_body_actuator.h"],
+    deps = [
+        ":rigid_body",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_frame",
+    srcs = ["rigid_body_frame.cc"],
+    hdrs = ["rigid_body_frame.h"],
+    deps = [
+        ":rigid_body",
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_loop",
+    srcs = ["rigid_body_loop.cc"],
+    hdrs = ["rigid_body_loop.h"],
+    deps = [
+        ":rigid_body_frame",
+        "//drake/common",
+        "//drake/common:autodiff",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_tree_datatypes",
+    srcs = [],
     hdrs = [
         "force_torque_measurement.h",
         "kinematic_path.h",
-        "kinematics_cache.h",
-        "kinematics_cache-inl.h",
         "material_map.h",
         "pose_map.h",
-        "rigid_body.h",
-        "rigid_body_actuator.h",
-        "rigid_body_frame.h",
-        "rigid_body_loop.h",
-        "rigid_body_tree.h",
     ],
+    visibility = [],
     deps = [
-        "//drake/common:drake_path",
+        "//drake/common",
+    ],
+)
+
+# The rigid_body_tree.h implementation is in two files: rigid_body_tree.cc and
+# rigid_body_tree_contact.cc.  This is the rule for the first file.
+drake_cc_library(
+    name = "rigid_body_tree_cc",
+    srcs = ["rigid_body_tree.cc"],
+    hdrs = ["rigid_body_tree.h"],
+    visibility = [],
+    deps = [
+        ":kinematics_cache",
+        ":rigid_body",
+        ":rigid_body_actuator",
+        ":rigid_body_frame",
+        ":rigid_body_loop",
+        ":rigid_body_tree_datatypes",
+        "//drake/common",
+        "//drake/common:autodiff",
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
         "//drake/multibody/collision",
         "//drake/multibody/joints",
         "//drake/multibody/shapes",
-        "//drake/thirdParty:spruce",
-        "//drake/thirdParty:tinydir",
-        "//drake/thirdParty:tinyxml2",
         "//drake/util",
+    ],
+)
+
+# The rigid_body_tree.h implementation is in two files: rigid_body_tree.cc and
+# rigid_body_tree_contact.cc.  This is the rule for the second file.
+drake_cc_library(
+    name = "rigid_body_tree_contact",
+    srcs = ["rigid_body_tree_contact.cc"],
+    hdrs = ["rigid_body_tree.h"],
+    visibility = [],
+    deps = [
+        ":kinematics_cache",
+        ":rigid_body",
+        ":rigid_body_actuator",
+        ":rigid_body_frame",
+        ":rigid_body_loop",
+        ":rigid_body_tree_datatypes",
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/collision",
+        "//drake/multibody/joints",
+        "//drake/multibody/shapes",
+    ],
+)
+
+# This provides a public label for the whole RigidBodyTree.
+drake_cc_library(
+    name = "rigid_body_tree",
+    deps = [
+        ":rigid_body_tree_cc",
+        ":rigid_body_tree_contact",
     ],
 )
 
