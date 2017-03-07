@@ -13,6 +13,7 @@ set(sources
   input_port_evaluator_interface.cc
   leaf_context.cc
   leaf_system.cc
+  model_values.cc
   output_port_listener_interface.cc
   parameters.cc
   single_output_vector_source.cc
@@ -52,6 +53,7 @@ set(installed_headers
   input_port_evaluator_interface.h
   leaf_context.h
   leaf_system.h
+  model_values.h
   output_port_listener_interface.h
   parameters.h
   single_output_vector_source.h
