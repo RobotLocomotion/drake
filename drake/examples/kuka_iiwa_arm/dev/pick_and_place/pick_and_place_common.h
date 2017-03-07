@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
