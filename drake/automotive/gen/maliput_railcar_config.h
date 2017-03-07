@@ -22,7 +22,7 @@ struct MaliputRailcarConfigIndices {
   // The index of each individual coordinate.
   static const int kR = 0;
   static const int kH = 1;
-  static const int kInitialSpeed = 2;
+  static const int kInitialSDot = 2;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -51,10 +51,11 @@ class MaliputRailcarConfig : public systems::BasicVector<T> {
   /// The vehicle's height above the lane's surface.
   const T& h() const { return this->GetAtIndex(K::kH); }
   void set_h(const T& h) { this->SetAtIndex(K::kH, h); }
-  /// The vehicle's initial speed along the lane's s-axis.
-  const T& initial_speed() const { return this->GetAtIndex(K::kInitialSpeed); }
-  void set_initial_speed(const T& initial_speed) {
-    this->SetAtIndex(K::kInitialSpeed, initial_speed);
+  /// The initial time derivative of the vehicle's `s` coordinate. See
+  /// MaliputRailcar's class description for more details.
+  const T& initial_s_dot() const { return this->GetAtIndex(K::kInitialSDot); }
+  void set_initial_s_dot(const T& initial_s_dot) {
+    this->SetAtIndex(K::kInitialSDot, initial_s_dot);
   }
   //@}
 
@@ -64,7 +65,7 @@ class MaliputRailcarConfig : public systems::BasicVector<T> {
     auto result = (T(0) == T(0));
     result = result && !isnan(r());
     result = result && !isnan(h());
-    result = result && !isnan(initial_speed());
+    result = result && !isnan(initial_s_dot());
     return result;
   }
 };

@@ -17,14 +17,17 @@ namespace automotive {
 /// predetermined speed.
 ///
 /// Configuration (for more details, see MaliputRailcarConfig):
-///   * A `const` reference to a maliput::api::Lane that it should follow.
-///   * An `h` height above the lane's surface.
-///   * An `r` offset from the lane's `s` axis.
-///   * An `initial_speed` at which the vehicle should initially move.
+///   * `lane` - the initial maliput::api::Lane that should be followed.
+///   * `h` - the vehicle's height above the lane's surface.
+///   * `r` - the vehicle's r-coordinate in lane space.
+///   * `initial_s_dot` - the initial time derivative of the vehicle's
+///     s-coordinate.
 ///
 /// State vector (for more details, see MaliputRailcarState):
-///   * position: `s`
-///   * speed: `s_dot`
+///   * `s` - the vehicle's s-coordinate in lane-space.
+///   * `s_dot` - the time derivative of `s`. This is the rate at which the
+///      vehicle's `s`-coordinate changes over time. It is not necessarily equal
+///      to the vehicle speed especially when r != 0 and the lane is curved.
 ///
 /// <B>Input Port Accessors:</B>
 ///
@@ -84,7 +87,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
 
   static constexpr double kDefaultR = 0;      // meters
   static constexpr double kDefaultH = 0;      // meters
-  static constexpr double kDefaultSpeed = 1;  // meters / second
+  static constexpr double kDefaultSDot = 1;   // time derivative of `s`
 
  protected:
   // LeafSystem<T> overrides.
