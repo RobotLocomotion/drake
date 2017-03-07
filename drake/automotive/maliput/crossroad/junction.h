@@ -32,8 +32,6 @@ class Junction final : public api::Junction {
 
   ~Junction() final = default;
 
-  int num_segments() const { return do_num_segments(); }
-
   int num_horizontal_lanes() const { return do_num_horizontal_lanes(); }
 
   int num_vertical_lanes() const { return do_num_vertical_lanes(); }
