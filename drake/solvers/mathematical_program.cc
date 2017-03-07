@@ -347,6 +347,7 @@ void DecomposeLinearExpression(const Eigen::Ref<const VectorX<Expression>>& v,
   for (int i{0}; i < v.size(); ++i) {
     const Expression& e_i{v(i)};
     DecomposeLinearExpression(e_i, map_var_to_index, A->row(i), b->data() + i);
+    std::cout << "A(i):\n" << A->row(i) << "\n b(i):" << (*b)(i) << std::endl;
   }
 }
 
@@ -836,19 +837,29 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   // R is the matrix satisfying Rᵀ * R = Q
 
   // First compute R.
-  Eigen::LLT<Eigen::MatrixXd> llt_Q(Q);
-  if (llt_Q.info() != Eigen::Success) {
+  Eigen::LDLT<Eigen::MatrixXd> ldlt_Q(Q);
+  if (ldlt_Q.info() != Eigen::Success || !ldlt_Q.isPositive()) {
     std::ostringstream oss;
-    oss << "Expression" << quadratic_expr << " does not have a positive definite Hessian. Cannot be called with AddLorentzConeConstraint.\n";
+    oss << "Expression" << quadratic_expr << " does not have a positive semidefinite Hessian. Cannot be called with AddLorentzConeConstraint.\n";
     throw std::runtime_error(oss.str());
   }
-  Eigen::MatrixXd R = llt_Q.matrixU();
+  Eigen::MatrixXd R1 = ldlt_Q.matrixU();
+  for (int i = 0; i < R1.rows(); ++i) {
+    for (int j = 0; j < i; ++j) {
+      R1(i, j) = 0;
+    }
+    double d_sqrt = std::sqrt(ldlt_Q.vectorD()(i));
+    for (int j = 0; j < R1.cols(); ++j) {
+      R1(i, j) *= d_sqrt;
+    }
+  }
+  Eigen::MatrixXd R = R1 * ldlt_Q.transpositionsP();
 
-  VectorX<Expression> expr(2 + R.rows());
+  VectorX<Expression> expr(2 + R1.rows());
   expr(0) = linear_expr;
-  expr.segment(1, R.rows()) =
-      1.0 / std::sqrt(2) * (R * quadratic_vars + llt_Q.matrixL().solve(b));
-  double constant = a - 0.5 * b.dot(llt_Q.solve(b));
+  expr.segment(1, R1.rows()) =
+      1.0 / std::sqrt(2) * (R * quadratic_vars + R.transpose().inverse() * b);
+  double constant = a - 0.5 * b.dot(ldlt_Q.solve(b));
   if (constant < 0) {
     std::ostringstream oss;
     oss << "Expression " << quadratic_expr

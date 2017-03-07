@@ -1256,6 +1256,16 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint4) {
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint5) {
   // Add Lorentz cone constraint:
+  // [x(0); x(1); x(2); 0] is in the Lorentz cone.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Vector4<Expression> e;
+  e << x(0), x(1), x(2), 0;
+  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint6) {
+  // Add Lorentz cone constraint:
   // [x(0); x(1) + x(2)] is in the Lorentz cone.
 
   MathematicalProgram prog;
@@ -1265,7 +1275,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint5) {
   CheckParsedSymbolicLorentzConeConstraint(&prog, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint6) {
+GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint7) {
   // Check the cases to add with invalid quadratic expression.
 
   MathematicalProgram prog;
