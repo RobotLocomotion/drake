@@ -15,14 +15,14 @@ if(lcm_FOUND)
       drakeSystemFramework
       drakeSystemPrimitives
       drakeSystemControllers
+      oracularStateEstimator
       gflags
       spruce)
   drake_install_libraries(drakeKukaIiwaWorld)
   drake_install_headers(
       world_sim_tree_builder.h
       world_sim_diagram_factory.h
-      iiwa_wsg_diagram_factory.h
-      ../oracular_state_estimator.h)
+      iiwa_wsg_diagram_factory.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-world
       TARGET drakeKukaIiwaWorld
       LIBS
@@ -36,6 +36,7 @@ if(lcm_FOUND)
         drake-system-analysis
         drake-system-framework
         drake-system-primitives
+        oracular-state-estimator
         spruce)
 
   add_executable(iiwa_world_demo iiwa_world_demo.cc)
