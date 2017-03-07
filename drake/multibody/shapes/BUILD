@@ -52,4 +52,16 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "face_query_test",
+    srcs = ["test/face_query_test.cc"],
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":shapes",
+        "//drake/common:drake_path",
+    ],
+)
+
 cpplint()

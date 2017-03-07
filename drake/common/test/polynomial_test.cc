@@ -23,6 +23,10 @@ void testIntegralAndDerivative() {
   VectorXd coefficients = VectorXd::Random(5);
   Polynomial<CoefficientType> poly(coefficients);
 
+  EXPECT_TRUE(CompareMatrices(poly.GetCoefficients(),
+                              poly.Derivative(0).GetCoefficients(), 1e-14,
+                              MatrixCompareType::absolute));
+
   Polynomial<CoefficientType> third_derivative = poly.Derivative(3);
 
   Polynomial<CoefficientType> third_derivative_check =

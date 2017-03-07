@@ -36,7 +36,9 @@ drake_cc_library(
 drake_cc_binary(
     name = "pendulum_run_swing_up",
     srcs = ["pendulum_run_swing_up.cc"],
+    add_test_rule = 1,
     data = [":models"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         "pendulum_swing_up",
         "//drake/common:drake_path",
@@ -83,16 +85,6 @@ drake_cc_googletest(
         ":pendulum_swing_up",
         "//drake/common:eigen_matrix_compare",
     ],
-)
-
-sh_test(
-    name = "pendulum_run_swing_up_test",
-    srcs = ["//tools:exec.sh"],
-    args = [
-        "$(location :pendulum_run_swing_up)",
-        "--target_realtime_rate=0.0",
-    ],
-    data = [":pendulum_run_swing_up"],
 )
 
 filegroup(

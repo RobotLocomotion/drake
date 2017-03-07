@@ -220,6 +220,23 @@ class LeafSystem : public System<T> {
     DoCalcNextUpdateTimeImpl(context, events);
   }
 
+  /// Returns a BasicVector of the size specified in @p descriptor. Concrete
+  /// subclasses that require a more specific type of vector input should
+  /// override this function to provide that type.
+  BasicVector<T>* DoAllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const override {
+    return new BasicVector<T>(descriptor.size());
+  }
+
+  /// Aborts.
+  /// Concrete subclasses that require an abstract input should override this
+  /// function to provide the appropriate type.
+  AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const override {
+    DRAKE_ABORT_MSG("A concrete leaf system with abstract input ports should "
+                    "override AllocateInputAbstract.");
+  }
+
   // =========================================================================
   // New methods for subclasses to override
 

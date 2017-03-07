@@ -3,6 +3,7 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -27,7 +28,7 @@ struct AcrobotInputVectorIndices {
 template <typename T>
 class AcrobotInputVector : public systems::BasicVector<T> {
  public:
-  // An abbreviation for our row index constants.
+  /// An abbreviation for our row index constants.
   typedef AcrobotInputVectorIndices K;
 
   /// Default constructor.  Sets all rows to zero.
@@ -47,6 +48,14 @@ class AcrobotInputVector : public systems::BasicVector<T> {
   const T& tau() const { return this->GetAtIndex(K::kTau); }
   void set_tau(const T& tau) { this->SetAtIndex(K::kTau, tau); }
   //@}
+
+  /// Returns whether the current values of this vector are well-formed.
+  decltype(T() < T()) IsValid() const {
+    using std::isnan;
+    auto result = (T(0) == T(0));
+    result = result && !isnan(tau());
+    return result;
+  }
 };
 
 }  // namespace acrobot

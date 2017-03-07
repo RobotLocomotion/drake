@@ -279,7 +279,7 @@ class Polynomial {
    * If derivative_order is given, takes the nth derivative of this
    * Polynomial.
    */
-  Polynomial Derivative(unsigned int derivative_order = 1) const;
+  Polynomial Derivative(int derivative_order = 1) const;
 
   /** Takes the integral of this (univariate, non-constant) Polynomial.
    *

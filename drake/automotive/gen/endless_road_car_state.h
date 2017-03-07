@@ -3,6 +3,7 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -29,7 +30,7 @@ struct EndlessRoadCarStateIndices {
 template <typename T>
 class EndlessRoadCarState : public systems::BasicVector<T> {
  public:
-  // An abbreviation for our row index constants.
+  /// An abbreviation for our row index constants.
   typedef EndlessRoadCarStateIndices K;
 
   /// Default constructor.  Sets all rows to zero.
@@ -58,6 +59,17 @@ class EndlessRoadCarState : public systems::BasicVector<T> {
   const T& speed() const { return this->GetAtIndex(K::kSpeed); }
   void set_speed(const T& speed) { this->SetAtIndex(K::kSpeed, speed); }
   //@}
+
+  /// Returns whether the current values of this vector are well-formed.
+  decltype(T() < T()) IsValid() const {
+    using std::isnan;
+    auto result = (T(0) == T(0));
+    result = result && !isnan(s());
+    result = result && !isnan(r());
+    result = result && !isnan(heading());
+    result = result && !isnan(speed());
+    return result;
+  }
 };
 
 }  // namespace automotive

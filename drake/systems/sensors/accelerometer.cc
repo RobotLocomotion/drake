@@ -1,6 +1,7 @@
 #include "drake/systems/sensors/accelerometer.h"
 
 #include <cmath>
+#include <vector>
 
 #include "drake/math/quaternion.h"
 #include "drake/systems/sensors/accelerometer_output.h"

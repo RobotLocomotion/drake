@@ -53,5 +53,4 @@ drake_cc_googletest(
     ],
 )
 
-
 cpplint()

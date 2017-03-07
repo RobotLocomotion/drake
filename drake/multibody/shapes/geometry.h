@@ -40,6 +40,25 @@ class Geometry {
 
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  /**
+   * @returns `true` if this geometry can return faces.
+   */
+  virtual bool hasFaces() const {
+    // By default, arbitary geometry doesn't know how to provide faces.
+    return false;
+  }
+  /**
+   * Returns the faces making up this geometry as a vector of triangles.
+   * Each triangle contains three indices into the vertex list returned
+   * by the Geometry getPoints() method.
+   * @param[out] faces Returns a vector of triangles describing 
+   * this geometry.
+   */
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  virtual void getFaces(TrianglesVector* faces) const {
+    throw std::runtime_error("Error: getFaces() not implemented"
+      " for this geometry type.\n");
+  }
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -88,13 +107,18 @@ class Box : public Geometry {
  public:
   explicit Box(const Eigen::Vector3d& size);
   virtual ~Box() {}
-  virtual Box* clone() const;
+  Box* clone() const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  void getPoints(Eigen::Matrix3Xd& points) const override;
+  bool hasFaces() const override {
+    return true;
+  }
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  void getFaces(TrianglesVector* faces) const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
+  void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const override;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  void getTerrainContactPoints(Eigen::Matrix3Xd& points) const override;
 
   /**
    * A toString method for this class.
@@ -158,11 +182,16 @@ class Mesh : public Geometry {
   with BotVisualizer. **/
   Mesh(const std::string& uri, const std::string& resolved_filename);
   virtual ~Mesh() {}
-  virtual Mesh* clone() const;
+  Mesh* clone() const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  void getPoints(Eigen::Matrix3Xd& points) const override;
+  bool hasFaces() const override {
+    return true;
+  }
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  void getFaces(TrianglesVector* faces) const override;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const override;
 
   /**
    * A toString method for this class.
