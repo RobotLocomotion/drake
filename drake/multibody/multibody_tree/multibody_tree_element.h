@@ -34,6 +34,8 @@ template <template <typename> class ElementType,
     typename T, typename ElementIndexType>
 class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
  public:
+  virtual ~MultibodyTreeElement() {}
+
   /// Returns a constant reference to the parent MultibodyTree that owns
   /// this element.
   const MultibodyTree<T>& get_parent_tree() const {
@@ -47,7 +49,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// Checks if this MultibodyTreeElement has been registered into a
   /// MultibodyTree. If not, it throws an exception of type std::runtime_error.
   void HasParentTreeOrThrows() const {
-    if (parent_tree_ == nullptr || get_id().is_invalid()) {
+    if (parent_tree_ == nullptr) {
       throw std::runtime_error(
           "This multibody component was not added to a MultibodyTree.");
     }
@@ -79,7 +81,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
 
  protected:
   const MultibodyTree<T>* parent_tree_{nullptr};
-  ElementIndexType id_{ElementIndexType::Invalid()};
+  ElementIndexType id_{0};  // ElementIndexType requires a valid initialization.
 
   // Only derived sub-classes can set these within their Create() factories.
   void set_parent_tree(const MultibodyTree<T>* tree) { parent_tree_ = tree; }

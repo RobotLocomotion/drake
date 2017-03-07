@@ -65,7 +65,7 @@ class MultibodyTree {
   /// Returns a constant reference to the body with unique identifier
   /// @p body_id.
   const Body<T>& get_body(BodyIndex body_id) const {
-    DRAKE_ASSERT(body_id.is_valid() && body_id < get_num_bodies());
+    DRAKE_ASSERT(body_id < get_num_bodies());
     return *bodies_[body_id];
   }
 

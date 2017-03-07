@@ -1,6 +1,6 @@
 add_library_with_exports(LIB_NAME drakeMultibodyTree SOURCE_FILES
-  rigid_body.cc
-  multibody_tree.cc)
+  multibody_tree.cc
+  rigid_body.cc)
 
 target_link_libraries(drakeMultibodyTree
   drakeCommon
@@ -9,7 +9,7 @@ drake_install_libraries(drakeMultibodyTree)
 drake_install_headers(
   body.h
   multibody_tree_element.h
-  multibody_indexes.h
+  multibody_tree_indexes.h
   multibody_tree.h
   rigid_body.h)
 

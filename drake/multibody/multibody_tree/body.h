@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/multibody_tree/multibody_indexes.h"
+#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 
 namespace drake {
