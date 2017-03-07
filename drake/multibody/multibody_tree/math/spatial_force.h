@@ -21,7 +21,7 @@ template <typename T> class SpatialVelocity;
 /// Both vectors must be expressed in the same frame, and the translational
 /// force is applied to a particular point of a body, but neither the frame nor
 /// the point are stored with a %SpatialForce object; they must be understood
-/// from context. It is the responsibility of the user to keep track the
+/// from context. It is the responsibility of the user to keep track of the
 /// application point and the expressed-in frame. That is best accomplished
 /// through disciplined notation. In source code we use monogram notation
 /// where capital `F` is used to designate a spatial force quantity. We write
@@ -67,18 +67,18 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   explicit SpatialForce(const Eigen::MatrixBase<Derived>& V) : Base(V) {}
 
   /// In-place shift of a %SpatialForce from one application point to another.
-  /// Given `this` spatial force `F_Bp_E` which applies its translational
-  /// force component to point `P` of body `B`, find the equivalent spatial
-  /// force `F_Bq_E` that considers the force to be applied to point `Q` of
-  /// body `B` instead (see class comment for more about this notation).
+  /// `this` spatial force `F_Bp_E`, which applies its translational force
+  /// component to point `P` of body `B`, is modified to become the equivalent
+  /// spatial force `F_Bq_E` that considers the force to be applied to point
+  /// `Q` of body `B` instead (see class comment for more about this notation).
   /// This requires adjusting the torque component to account
   /// for the change in moment caused by the force shift.
+  ///
   /// We are given the vector from point `P` to point `Q`, as a position vector
   /// `p_BpBq_E` (or `p_PQ_E`) expressed in the same frame `E` as the
-  /// spatial force.
-  ///
-  /// The operation performed, in coordinate-free form, is: <pre>
-  ///   τ_B = τ_B -  p_BpBq x f_Bp
+  /// spatial force. The operation performed, in coordinate-free form, is:
+  /// <pre>
+  ///   τ_B  = τ_B -  p_BpBq x f_Bp
   ///   f_Bq = f_Bp,  i.e. the force as applied to body B at Q is the
   ///                 same as was applied to B at P.
   /// </pre>
