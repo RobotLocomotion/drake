@@ -76,10 +76,11 @@ GTEST_TEST(SampleTest, AutoDiffXdIsValid) {
 // Cover Simple<Expression>::IsValid.
 GTEST_TEST(SampleTest, SymbolicIsValid) {
   Sample<symbolic::Expression> dut;
-  dut.set_x(symbolic::Variable("x"));
-  dut.set_two_word(symbolic::Variable("two_word"));
-  EXPECT_EQ(dut.IsValid().to_string(),
-            "(!((x = NaN)) and !((two_word = NaN)))");
+  const symbolic::Variable x{"x"};
+  const symbolic::Variable two_word{"two_word"};
+  dut.set_x(x);
+  dut.set_two_word(two_word);
+  EXPECT_TRUE(dut.IsValid().EqualTo(!isnan(x) && !isnan(two_word)));
 }
 
 }  // namespace

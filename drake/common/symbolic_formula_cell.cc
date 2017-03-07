@@ -422,6 +422,38 @@ ostream& FormulaForall::Display(ostream& os) const {
   return os << "forall(" << vars_ << ". " << f_ << ")";
 }
 
+FormulaIsnan::FormulaIsnan(const Expression& e)
+    : FormulaCell{FormulaKind::Isnan, e.get_hash()}, e_{e} {}
+
+Variables FormulaIsnan::GetFreeVariables() const { return e_.GetVariables(); }
+
+bool FormulaIsnan::EqualTo(const FormulaCell& f) const {
+  // Formula::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
+  const FormulaIsnan& f_isnan{static_cast<const FormulaIsnan&>(f)};
+  return e_.EqualTo(f_isnan.e_);
+}
+
+bool FormulaIsnan::Less(const FormulaCell& f) const {
+  // Formula::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
+  const FormulaIsnan& f_isnan{static_cast<const FormulaIsnan&>(f)};
+  return e_.Less(f_isnan.e_);
+}
+
+bool FormulaIsnan::Evaluate(const Environment& env) const {
+  // Note that it throws std::runtime_error if it detects NaN during evaluation.
+  return std::isnan(e_.Evaluate(env));
+}
+
+Formula FormulaIsnan::Substitute(const Substitution& s) const {
+  return isnan(e_.Substitute(s));
+}
+
+ostream& FormulaIsnan::Display(ostream& os) const {
+  return os << "isnan(" << e_ << ")";
+}
+
 bool is_false(const FormulaCell& f) {
   return f.get_kind() == FormulaKind::False;
 }
@@ -478,6 +510,10 @@ bool is_forall(const FormulaCell& f) {
   return f.get_kind() == FormulaKind::Forall;
 }
 
+bool is_isnan(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Isnan;
+}
+
 shared_ptr<RelationalFormulaCell> to_relational(
     const shared_ptr<FormulaCell> f_ptr) {
   DRAKE_ASSERT(is_relational(*f_ptr));
@@ -514,6 +550,13 @@ shared_ptr<FormulaForall> to_forall(const shared_ptr<FormulaCell> f_ptr) {
 shared_ptr<FormulaForall> to_forall(const Formula& f) {
   return to_forall(f.ptr_);
 }
+
+shared_ptr<FormulaIsnan> to_isnan(const shared_ptr<FormulaCell> f_ptr) {
+  DRAKE_ASSERT(is_isnan(*f_ptr));
+  return static_pointer_cast<FormulaIsnan>(f_ptr);
+}
+
+shared_ptr<FormulaIsnan> to_isnan(const Formula& f) { return to_isnan(f.ptr_); }
 
 }  // namespace symbolic
 }  // namespace drake
