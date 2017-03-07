@@ -46,7 +46,7 @@ const api::BranchPoint* RoadGeometry::do_branch_point(int index) const {
   DRAKE_DEMAND(index < num_branch_points());
   // The same BranchPoint is at the start versus end of a Lane, thus it doesn't
   // matter whether the start or finish BranchPoint is returned.
-  if (index <= junction_.num_horizontal_lanes()) {
+  if (index < junction_.num_horizontal_lanes()) {
     return junction_.segment(0)->lane(index)->GetBranchPoint(
         api::LaneEnd::kStart);
   }
