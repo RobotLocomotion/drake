@@ -26,6 +26,8 @@ lcm_wrap_types(
   lcmt_body_acceleration.lcm
   lcmt_body_motion_data.lcm
   lcmt_body_wrench_data.lcm
+  lcmt_bicycle_car_parameters_t.lcm
+  lcmt_bicycle_car_state_t.lcm
   lcmt_constrained_values.lcm
   lcmt_contact_information.lcm
   lcmt_contact_info_for_viz.lcm
@@ -44,6 +46,8 @@ lcm_wrap_types(
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
   lcmt_joint_pd_override.lcm
+  lcmt_maliput_railcar_config_t.lcm
+  lcmt_maliput_railcar_state_t.lcm
   lcmt_matlab_array.lcm
   lcmt_call_matlab.lcm
   lcmt_piecewise_polynomial.lcm

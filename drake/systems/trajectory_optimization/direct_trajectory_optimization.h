@@ -33,9 +33,41 @@ namespace systems {
  * implementation assumes that all constraints and costs are
  * time-invariant.
  */
-class DirectTrajectoryOptimization {
+class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTrajectoryOptimization)
+
+  ~DirectTrajectoryOptimization() override {}
+
+  /// Returns the decision variable associated with the timestep, h, at time
+  /// index @p index.
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> h(
+      int index) const {
+    DRAKE_DEMAND(index >= 0 && index < N_);
+    return h_vars_.segment(index,
+                           1);  // TODO(russt): Replace with segment<1>(index).
+  }
+  /// Returns the decision variables associated with the state, x, at time
+  /// index @p index.
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> x(
+      int index) const {
+    DRAKE_DEMAND(index >= 0 && index < N_);
+    return x_vars_.segment(index * num_states_, num_states_);
+  }
+  /// Returns the decision variables associated with the input, u, at time
+  /// index @p index.
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> u(
+      int index) const {
+    DRAKE_DEMAND(index >= 0 && index < N_);
+    return u_vars_.segment(index * num_inputs_, num_inputs_);
+  }
+
+  // TODO(russt): Remove the methods below that add constraints without
+  // requesting the variable list to be passed in.  We should force the user
+  // to specify the variables to provide clarity and robustness.
+  // The "add to a list of times" utilities are still useful... we can replace
+  // them with methods of the form AddCost(..., MatrixXDecisionVariable), which
+  // adds the same constraint to each column of the variable matrix.
 
   /**
    * Adds an integrated cost to all time steps.
@@ -83,8 +115,7 @@ class DirectTrajectoryOptimization {
                           const std::vector<int>& time_indices) {
     for (const int i : time_indices) {
       DRAKE_ASSERT(i < N_);
-      opt_problem_.AddConstraint(
-          constraint, u_vars_.segment(i * num_inputs_, num_inputs_));
+      AddConstraint(constraint, u_vars_.segment(i * num_inputs_, num_inputs_));
     }
   }
 
@@ -101,8 +132,7 @@ class DirectTrajectoryOptimization {
                           const std::vector<int>& time_indices) {
     for (const int i : time_indices) {
       DRAKE_ASSERT(i < N_);
-      opt_problem_.AddConstraint(
-          constraint, x_vars_.segment(i * num_states_, num_states_));
+      AddConstraint(constraint, x_vars_.segment(i * num_states_, num_states_));
     }
   }
 
@@ -131,30 +161,6 @@ class DirectTrajectoryOptimization {
    */
   void AddTimeIntervalBounds(const Eigen::VectorXd& lower_bound,
                              const Eigen::VectorXd& upper_bound);
-
-  /**
-   * Add a cost to the initial state.
-   */
-  template <typename ConstraintT>
-  void AddInitialCost(std::shared_ptr<ConstraintT> constraint) {
-    opt_problem_.AddCost(constraint, x_vars_.head(num_states_));
-  }
-
-  /**
-   * Add a cost to the initial state.
-   *
-   * @param f A callable which meets the requirments of
-   * MathematicalProgram::AddCost().
-  */
-  template <typename F>
-  typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
-      std::shared_ptr<solvers::Constraint>>::type
-  AddInitialCostFunc(F&& f) {
-    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
-    AddInitialCost(c);
-    return c;
-  }
 
   /**
    * Add a cost to the final state and total time.
@@ -267,7 +273,6 @@ class DirectTrajectoryOptimization {
   int num_inputs() const { return num_inputs_; }
   int num_states() const { return num_states_; }
   int N() const { return N_; }
-  solvers::MathematicalProgram* opt_problem() { return &opt_problem_; }
   const solvers::VectorXDecisionVariable& h_vars() const { return h_vars_; }
   const solvers::VectorXDecisionVariable& u_vars() const { return u_vars_; }
   const solvers::VectorXDecisionVariable& x_vars() const { return x_vars_; }
@@ -291,15 +296,14 @@ class DirectTrajectoryOptimization {
                       const PiecewisePolynomial<double>& traj_init_u,
                       const PiecewisePolynomial<double>& traj_init_x);
 
-  const int num_inputs_;
-  const int num_states_;
-  const int N_;  // Number of time samples
+  const int num_inputs_{};
+  const int num_states_{};
+  const int N_{};  // Number of time samples
 
-  solvers::MathematicalProgram opt_problem_;
   solvers::VectorXDecisionVariable h_vars_;  // Time deltas between each
                                              // input/state sample.
-  solvers::VectorXDecisionVariable u_vars_;
   solvers::VectorXDecisionVariable x_vars_;
+  solvers::VectorXDecisionVariable u_vars_;
 };
 
 }  // namespace systems

@@ -17,7 +17,10 @@ cc_library(
         "GTEST_DONT_DEFINE_TEST=1",
     ],
     includes = ["include"],
-    linkopts = ["-pthread"],
+    linkopts = select({
+        "@//tools:linux": ["-pthread"],
+        "@//conditions:default": [],
+    }),
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )

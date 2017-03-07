@@ -636,6 +636,26 @@ class Diagram : public System<T>,
         subsystem_converter).release();
   }
 
+  BasicVector<T>* DoAllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const override {
+    // Ask the subsystem to perform the allocation.
+    const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
+    const System<T>* subsystem = id.first;
+    const int subindex = id.second;
+    return subsystem->AllocateInputVector(
+        subsystem->get_input_port(subindex)).release();
+  }
+
+  AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const override {
+    // Ask the subsystem to perform the allocation.
+    const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
+    const System<T>* subsystem = id.first;
+    const int subindex = id.second;
+    return subsystem->AllocateInputAbstract(
+        subsystem->get_input_port(subindex)).release();
+  }
+
  private:
   /// Uses this Diagram<double> to manufacture a Diagram<NewType>, given a
   /// @p converter for subsystems from System<double> to System<NewType>.

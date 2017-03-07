@@ -167,24 +167,59 @@ void CreateTreedFromFixedModelAtPose(const std::string& model_file_name,
 void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd) {
-  // TODO(naveenoid) : Update the gains pending careful system identification
-  // of the real KUKA iiwa arm's (hidden) low level control.
-
-  // These values for the position gains Kp were chosen from a
-  // combination of intuition based on the inertias / masses of the
-  // links and some trial and error to achieve reasonably quick
-  // critically damped position control when used along with the
-  // gravity compensator.
+  // All the gains are for acceleration, not directly responsible for generating
+  // torques. These are set to high values to ensure good tracking. These gains
+  // are picked arbitrarily.
   Kp->resize(7);
-  *Kp << 100, 100, 100, 20, 10, 20, 1;
+  *Kp << 100, 100, 100, 100, 100, 100, 100;
   Kd->resize(Kp->size());
   for (int i = 0; i < Kp->size(); i++) {
-    // Derivative gains are computed as the square-root of the corresponding
-    // position gains as a reasonable approximation of critically damped
-    // behaviour.
-    (*Kd)[i] = std::sqrt((*Kp)[i]);
+    // Critical damping gains.
+    (*Kd)[i] = 2 * std::sqrt((*Kp)[i]);
   }
   *Ki = Eigen::VectorXd::Zero(7);
+}
+
+robotlocomotion::robot_plan_t EncodeKeyFrames(
+    const RigidBodyTree<double>& robot,
+    const std::vector<double>& time,
+    const std::vector<int>& info,
+    const MatrixX<double>& keyframes) {
+  DRAKE_DEMAND(info.size() == time.size());
+  DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time.size()));
+  DRAKE_DEMAND(keyframes.rows() == robot.get_num_positions());
+
+  const int num_time_steps = keyframes.cols();
+
+  robotlocomotion::robot_plan_t plan{};
+  plan.utime = 0;  // I (sam.creasey) don't think this is used?
+  plan.robot_name = "iiwa";  // Arbitrary, probably ignored
+  plan.num_states = num_time_steps;
+  const bot_core::robot_state_t default_robot_state{};
+  plan.plan.resize(num_time_steps, default_robot_state);
+  plan.plan_info.resize(num_time_steps, 0);
+  /// Encode the q_sol returned for each timestep into the vector of
+  /// robot states.
+  for (int i = 0; i < num_time_steps; i++) {
+    bot_core::robot_state_t& step = plan.plan[i];
+    step.utime = time[i] * 1e6;
+    step.num_joints = keyframes.rows();
+    for (int j = 0; j < step.num_joints; j++) {
+      step.joint_name.push_back(robot.get_position_name(j));
+      step.joint_position.push_back(keyframes(j, i));
+      step.joint_velocity.push_back(0);
+      step.joint_effort.push_back(0);
+    }
+    plan.plan_info[i] = info[i];
+  }
+  plan.num_grasp_transitions = 0;
+  plan.left_arm_control_type = plan.POSITION;
+  plan.right_arm_control_type = plan.NONE;
+  plan.left_leg_control_type = plan.NONE;
+  plan.right_leg_control_type = plan.NONE;
+  plan.num_bytes = 0;
+
+  return plan;
 }
 
 }  // namespace kuka_iiwa_arm

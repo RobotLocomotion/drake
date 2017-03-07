@@ -61,3 +61,9 @@ target_link_libraries(rigid_body_tree_dynamics_test
 drake_add_cc_test(rigid_body_tree_completeness_test)
 target_link_libraries(rigid_body_tree_completeness_test
     drakeRBM)
+
+drake_add_cc_test(rigid_body_tree_face_extraction_test)
+target_link_libraries(rigid_body_tree_face_extraction_test
+    drakeRBM 
+    drakeMultibodyParsers
+    drakeShapes)

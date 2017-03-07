@@ -77,6 +77,16 @@ class TestSystem : public System<double> {
   }
 
  protected:
+  BasicVector<double>* DoAllocateInputVector(
+      const InputPortDescriptor<double>& descriptor) const override {
+    return nullptr;
+  }
+
+  AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<double>& descriptor) const override {
+    return nullptr;
+  }
+
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
@@ -282,11 +292,22 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
+class TestTypedVector : public BasicVector<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestTypedVector)
+  explicit TestTypedVector(int size) : BasicVector(size) {}
+
+ protected:
+  TestTypedVector* DoClone() const {
+    return new TestTypedVector(size());
+  }
+};
+
 // A shell System for AbstractValue IO test
 class ValueIOTestSystem : public System<double> {
  public:
   // Has 2 input and 2 output ports.
-  // The first input / output pair are abstractu type, but assumed to be
+  // The first input / output pair are abstract type, but assumed to be
   // std::string.
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
@@ -300,6 +321,20 @@ class ValueIOTestSystem : public System<double> {
   }
 
   ~ValueIOTestSystem() override {}
+
+  AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<double>& descriptor) const override {
+    // Should only get called for the first input.
+    EXPECT_EQ(descriptor.get_index(), 0);
+    return AbstractValue::Make<std::string>("").release();
+  }
+
+  BasicVector<double>* DoAllocateInputVector(
+      const InputPortDescriptor<double>& descriptor) const override {
+    // Should only get called for the second input.
+    EXPECT_EQ(descriptor.get_index(), 1);
+    return new TestTypedVector(1);
+  }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
@@ -386,6 +421,22 @@ GTEST_TEST(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(output->get_data(0)->GetValue<std::string>(),
             std::string("inputoutput"));
   EXPECT_EQ(output->get_vector_data(1)->get_value()(0), 4);
+
+  // Test AllocateInput*
+  // Second input is not (yet) a TestTypedVector, since I haven't called the
+  // Allocate methods directly yet.
+  EXPECT_EQ(dynamic_cast<const TestTypedVector*>(
+                test_sys.EvalVectorInput(*context, 1)),
+            nullptr);
+  // Now allocate.
+  test_sys.AllocateFreestandingInputs(context.get());
+  // First input should have been re-allocated to the empty string.
+  EXPECT_EQ(test_sys.EvalAbstractInput(*context, 0)->GetValue<std::string>(),
+            std::string(""));
+  // Second input should now be of type TestTypedVector.
+  EXPECT_NE(dynamic_cast<const TestTypedVector*>(
+                test_sys.EvalVectorInput(*context, 1)),
+            nullptr);
 }
 
 }  // namespace

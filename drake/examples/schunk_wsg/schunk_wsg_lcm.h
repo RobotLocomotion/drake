@@ -76,8 +76,9 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
   SchunkWsgStatusSender(int input_size,
                         int position_index, int velocity_index);
 
-  std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
-      const systems::Context<double>& context) const override;
+ protected:
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
 
  private:
   void DoCalcOutput(const systems::Context<double>& context,

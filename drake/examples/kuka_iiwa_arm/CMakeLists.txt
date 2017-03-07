@@ -1,19 +1,21 @@
 if(lcm_FOUND)
   # Defines a shared library for use by KUKA iiwa demos based on System 2.0.
   add_library_with_exports(LIB_NAME drakeKukaIiwaArmCommon SOURCE_FILES
-      iiwa_common.cc iiwa_lcm.cc)
+      iiwa_common.cc iiwa_lcm.cc iiwa_plan_source.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
-    drakeIK
-    drakeLcmSystem
-    drakeRBM
-    drakeMultibodyParsers)
+      drakeIK
+      drakeLcmSystem
+      drakeRBM
+      drakeMultibodyParsers
+      robotlocomotion-lcmtypes-cpp
+      Eigen3::Eigen)
   drake_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
-      iiwa_common.h iiwa_lcm.h)
+      iiwa_common.h iiwa_lcm.h iiwa_plan_source.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm-common
       TARGET drakeKukaIiwaArmCommon
       LIBS -ldrakeKukaIiwaArmCommon
-      REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rbm)
+      REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rbm eigen3)
 
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
   target_link_libraries(run_kuka_iiwa_arm_dynamics
@@ -32,6 +34,7 @@ if(lcm_FOUND)
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
   target_link_libraries(kuka_ik_demo
     drakeIK
+    drakeKukaIiwaArmCommon
     drakeMultibodyParsers
     drakeRBM
     robotlocomotion-lcmtypes-cpp
@@ -76,6 +79,7 @@ endif()
 
 add_subdirectory(controlled_kuka)
 add_subdirectory(iiwa_world)
+add_subdirectory(dev)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

@@ -2,7 +2,6 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 
 #include <iomanip>

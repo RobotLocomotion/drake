@@ -9,6 +9,8 @@
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 
+#include "robotlocomotion/robot_plan_t.hpp"
+
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
@@ -56,6 +58,12 @@ void CreateTreedFromFixedModelAtPose(
 void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd);
+
+/// Makes a robotlocomotion::robot_plan_t message.
+robotlocomotion::robot_plan_t EncodeKeyFrames(
+    const RigidBodyTree<double>& robot, const std::vector<double>& time,
+    const std::vector<int>& info, const MatrixX<double>& keyframes);
+
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

@@ -1,5 +1,10 @@
 drake_add_cc_test(mass_properties_test)
 target_link_libraries(mass_properties_test Eigen3::Eigen drakeCommon)
 
-drake_add_cc_test(multibody_tree_creation_tests multibody_tree_creation_tests.cc)
+drake_add_cc_test(multibody_tree_creation_tests
+  multibody_tree_creation_tests.cc)
 target_link_libraries(multibody_tree_creation_tests drakeMultibodyTree)
+
+drake_add_cc_test(multibody_tree_indexes_tests multibody_tree_indexes_tests.cc)
+target_link_libraries(multibody_tree_indexes_tests drakeCommon)
+

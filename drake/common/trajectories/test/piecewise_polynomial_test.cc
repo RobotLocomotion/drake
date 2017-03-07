@@ -38,6 +38,12 @@ void testIntegralAndDerivative() {
       test::MakeRandomPiecewisePolynomial<CoefficientType>(
           rows, cols, num_coefficients, segment_times);
 
+  // derivative(0) should be same as original piecewise.
+  EXPECT_TRUE(
+      CompareMatrices(piecewise.value(piecewise.getStartTime()),
+                      piecewise.derivative(0).value(piecewise.getStartTime()),
+                      1e-10, MatrixCompareType::absolute));
+
   // differentiate integral, get original back
   PiecewisePolynomialType piecewise_back = piecewise.integral().derivative();
   if (!piecewise.isApprox(piecewise_back, 1e-10)) throw runtime_error("wrong");

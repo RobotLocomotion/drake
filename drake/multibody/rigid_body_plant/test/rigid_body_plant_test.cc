@@ -189,7 +189,8 @@ class KukaArmTest : public ::testing::Test {
   void SetUp() override {
     auto tree = make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+        drake::GetDrakePath() +
+        "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
         drake::multibody::joints::kFixed, nullptr /* weld to frame */,
         tree.get());
 

@@ -13,22 +13,25 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
+#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/pid_controller.h"
-#include "drake/systems/controllers/pid_with_gravity_compensator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/matrix_gain.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
@@ -58,8 +61,9 @@ using systems::RigidBodyPlant;
 using systems::Simulator;
 
 const char* const kIiwaUrdf =
-    "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf";
+    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
 
+// TODO(naveen): refactor this to reduce duplicate code.
 template <typename T>
 std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
     ModelInstanceInfo<T>* iiwa_instance, ModelInstanceInfo<T>* wsg_instance,
@@ -119,15 +123,7 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   *wsg_instance = tree_builder->get_model_info_for_instance(id);
 
   auto plant = std::make_unique<RigidBodyPlant<T>>(tree_builder->Build());
-  // Contact parameters
-  const double kStiffness = 10000;
-  const double kDissipation = 5.0;
-  const double kStaticFriction = 0.9;
-  const double kDynamicFriction = 0.5;
-  const double kStictionSlipTolerance = 0.01;
-  plant->set_normal_contact_parameters(kStiffness, kDissipation);
-  plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
-                                         kStictionSlipTolerance);
+
   return plant;
 }
 
@@ -156,27 +152,17 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     const auto& wsg_output_port =
         plant_->model_instance_state_output_port(wsg_info.instance_id);
 
-    // Connect the pid controllers for each device.
+    VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+    SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+    // Uses integral gains to deal with the added mass from the grasped object.
+    iiwa_ki << 1, 1, 1, 1, 1, 1, 1;
 
-    // Constants are chosen by trial and error to qualitatively match
-    // an experimental run with the same initial conditions and
-    // planner.  It's still not a very good match.  Quantitative
-    // comparisons would require torque control and a more careful
-    // estimation of the model parameters such as friction in the
-    // joints.
-    Eigen::VectorXd iiwa_kp = Eigen::VectorXd::Zero(7);
-    Eigen::VectorXd iiwa_kd = Eigen::VectorXd::Zero(7);
-    Eigen::VectorXd iiwa_ki = Eigen::VectorXd::Zero(7);
-    iiwa_kp << 100, 200, 100, 200, 10, 100, 1;
-    iiwa_ki << 0, 2, 0, 1, 0, 0.5, 0;
-    for (int i = 0; i < iiwa_kp.size(); i++) {
-      iiwa_kd[i] = 2 * std::sqrt(iiwa_kp[i]);
-    }
-
+    // Exposing feedforward acceleration. Should help with more dynamic
+    // motions.
     auto iiwa_controller =
-        builder.template AddSystem<systems::PidWithGravityCompensator<T>>(
+        builder.template AddSystem<systems::InverseDynamicsController<T>>(
             iiwa_info.model_path, iiwa_info.world_offset, iiwa_kp, iiwa_ki,
-            iiwa_kd);
+            iiwa_kd, true /* with feedforward acceleration */);
 
     // Sets a zero configuration and computes spatial inertia for the gripper
     // as well as the pose of the end effector link of iiwa using the world
@@ -215,55 +201,37 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
 
     // Connect iiwa controller and robot.
     builder.Connect(iiwa_output_port,
-                    iiwa_controller->get_estimated_state_input_port());
-    builder.Connect(iiwa_controller->get_control_output_port(),
+                    iiwa_controller->get_input_port_estimated_state());
+    builder.Connect(iiwa_controller->get_output_port_control(),
                     iiwa_input_port);
 
     // Export iiwa's desired state input, and state output.
-    builder.ExportInput(iiwa_controller->get_desired_state_input_port());
+    builder.ExportInput(iiwa_controller->get_input_port_desired_state());
+    builder.ExportInput(iiwa_controller->get_input_port_desired_acceleration());
     builder.ExportOutput(iiwa_output_port);
 
     // Sets up the WSG gripper part.
-    const std::map<std::string, int> index_map =
-        world_tree.computePositionNameToIndexMap();
-    const int left_finger_position_index =
-        index_map.at("left_finger_sliding_joint");
-    const int position_index = plant_->FindInstancePositionIndexFromWorldIndex(
-        wsg_info.instance_id, left_finger_position_index);
-    const int velocity_index =
-        position_index + plant_->get_num_positions(wsg_info.instance_id);
-
-    Eigen::MatrixXd feedback_matrix = Eigen::MatrixXd::Zero(
-        2 * plant_->get_num_actuators(wsg_info.instance_id),
-        2 * plant_->get_num_positions(wsg_info.instance_id));
-    feedback_matrix(0, position_index) = 1.;
-    feedback_matrix(1, velocity_index) = 1.;
     std::unique_ptr<systems::MatrixGain<T>> feedback_selector =
-        std::make_unique<systems::MatrixGain<T>>(feedback_matrix);
-
-    // TODO(sam.creasey) The choice of constants below is completely
-    // arbitrary and may not match the performance of the actual
-    // gripper.
-    const T wsg_kp = 300.0;   // This seems very high, for some grasps
-                              // it's actually in the right power of
-                              // two.  We'll need to revisit this once
-                              // we're using the force command sent to
-                              // the gripper properly.
-    const T wsg_ki = 0.0;
-    const T wsg_kd = 5.0;
-    const VectorX<T> wsg_v = VectorX<T>::Ones(wsg_input_port.size());
+        std::make_unique<systems::MatrixGain<T>>(
+            schunk_wsg::GetSchunkWsgFeedbackSelector<T>());
+    // TODO(sam.creasey) The choice of position gains below is completely
+    // arbitrary. We'll need to revisit this once we switch to force control
+    // for the gripper.
+    const int kWsgActDim = schunk_wsg::kSchunkWsgNumActuators;
+    const VectorX<T> wsg_kp = VectorX<T>::Constant(kWsgActDim, 300.0);
+    const VectorX<T> wsg_ki = VectorX<T>::Constant(kWsgActDim, 0.0);
+    const VectorX<T> wsg_kd = VectorX<T>::Constant(kWsgActDim, 5.0);
 
     auto wsg_controller = builder.template AddSystem<systems::PidController<T>>(
-        std::move(feedback_selector), wsg_v * wsg_kp, wsg_v * wsg_ki,
-        wsg_v * wsg_kd);
+        std::move(feedback_selector), wsg_kp, wsg_ki, wsg_kd);
 
     // Connects WSG and controller.
     builder.Connect(wsg_output_port,
-                    wsg_controller->get_estimated_state_input_port());
-    builder.Connect(wsg_controller->get_control_output_port(), wsg_input_port);
+                    wsg_controller->get_input_port_estimated_state());
+    builder.Connect(wsg_controller->get_output_port_control(), wsg_input_port);
 
     //  Export wsg's desired state input, and state output.
-    builder.ExportInput(wsg_controller->get_desired_state_input_port());
+    builder.ExportInput(wsg_controller->get_input_port_desired_state());
     builder.ExportOutput(wsg_output_port);
 
     builder.ExportOutput(plant_->get_output_port(0));
@@ -296,8 +264,12 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
 
   const RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
-  const InputPortDescriptor<T>& get_iiwa_input_port() const {
+  const InputPortDescriptor<T>& get_iiwa_state_input_port() const {
     return this->get_input_port(0);
+  }
+
+  const InputPortDescriptor<T>& get_iiwa_acceleration_input_port() const {
+    return this->get_input_port(1);
   }
 
   const OutputPortDescriptor<T>& get_iiwa_state_port() const {
@@ -305,7 +277,7 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
   }
 
   const InputPortDescriptor<T>& get_wsg_input_port() const {
-    return this->get_input_port(1);
+    return this->get_input_port(2);
   }
 
   const OutputPortDescriptor<T>& get_wsg_state_port() const {
@@ -342,19 +314,29 @@ int DoMain() {
 
   // Create the command subscriber and status publisher.
   auto iiwa_command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
-                                                                 &lcm));
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
+          "IIWA_COMMAND", &lcm));
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
 
   auto iiwa_status_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
-                                                               &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
+          "IIWA_STATUS", &lcm));
+  iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
+
+  // TODO(siyuan): Connect this to kuka_planner runner once it generates
+  // reference acceleration.
+  auto iiwa_zero_acceleration_source =
+        builder.template AddSystem<systems::ConstantVectorSource<double>>(
+            Eigen::VectorXd::Zero(7));
 
   builder.Connect(iiwa_command_sub->get_output_port(0),
                   iiwa_command_receiver->get_input_port(0));
   builder.Connect(iiwa_command_receiver->get_output_port(0),
-                  model->get_iiwa_input_port());
+                  model->get_iiwa_state_input_port());
+  builder.Connect(iiwa_zero_acceleration_source->get_output_port(),
+                  model->get_iiwa_acceleration_input_port());
+
   builder.Connect(model->get_iiwa_state_port(),
                   iiwa_status_sender->get_state_input_port());
   builder.Connect(iiwa_command_receiver->get_output_port(0),

@@ -19,10 +19,14 @@ target_link_libraries(constraint_test drakeOptimization drakeCommon)
 set(drakeOptimizationTestSources
         add_solver_util.cc
         optimization_examples.cc
+        linear_program_examples.cc
+        quadratic_program_examples.cc
         mathematical_program_test_util.cc)
 set(drakeOptimizationHeaders
         add_solver_util.h
         optimization_examples.h
+        linear_program_examples.h
+        quadratic_program_examples.h
         mathematical_program_test_util.h)
 add_library_with_exports(LIB_NAME drakeOptimizationTest
         SOURCE_FILES ${drakeOptimizationTestSources} ${drakeOptimizationHeaders})
@@ -56,6 +60,12 @@ target_link_libraries(mosek_solver_test drakeCommon drakeOptimizationTest)
 drake_add_cc_test(linear_complementary_problem_test)
 target_link_libraries(linear_complementary_problem_test drakeOptimization)
 
+drake_add_cc_test(ipopt_solver_test)
+target_link_libraries(ipopt_solver_test drakeOptimizationTest)
+
+drake_add_cc_test(snopt_solver_test)
+target_link_libraries(snopt_solver_test drakeOptimizationTest)
+
 if(dreal_FOUND)
   drake_add_cc_test(dreal_solver_test)
   target_link_libraries(dreal_solver_test drakeOptimization)
@@ -68,8 +78,8 @@ endif(mosek_FOUND)
 
 if (lcm_FOUND)
   add_executable(plot_feasible_rotation_matrices plot_feasible_rotation_matrices.cc)
-  target_link_libraries(plot_feasible_rotation_matrices 
-    drakeOptimization 
+  target_link_libraries(plot_feasible_rotation_matrices
+    drakeOptimization
     drakeLCMTypes
     drakeLcm)
 endif(lcm_FOUND)
