@@ -50,7 +50,7 @@ PiecewisePolynomial<CoefficientType>::derivative(int derivative_order) const {
   DRAKE_DEMAND(derivative_order >= 0);
   PiecewisePolynomial ret = *this;
   if (derivative_order == 0) {
-    return *this;
+    return ret;
   }
   for (auto it = ret.polynomials_.begin(); it != ret.polynomials_.end(); ++it) {
     PolynomialMatrix& matrix = *it;
