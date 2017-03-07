@@ -26,6 +26,7 @@ drake_cc_library(
     hdrs = ["spatial_velocity.h"],
     deps = [
         "//drake/common",
+        ":spatial_vector",
     ],
 )
 
@@ -35,6 +36,7 @@ drake_cc_library(
     hdrs = ["spatial_force.h"],
     deps = [
         "//drake/common",
+        ":spatial_vector",
     ],
 )
 
