@@ -1,8 +1,8 @@
 #include "drake/systems/sensors/rgbd_camera.h"
 
 #include <cmath>
-#include <stdexcept>
 #include <functional>
+#include <stdexcept>
 
 #include "gtest/gtest.h"
 #include <Eigen/Dense>
@@ -368,10 +368,11 @@ GTEST_TEST(RenderingTest, SphereRenderingTest) {
 // Verifies the camera pose update.
 // RgbdCamera's base is attached to a sphere falling from the sky.  RgbdCamera's
 // optical axis is parallel to the flat terrain, so the camera sees the horizon.
-// This test verifies the horizon's pixel location changes as the sphere falls.
+// This test verifies that the horizon's pixel location changes as the sphere
+// falls.
 GTEST_TEST(RenderingTest, CameraPoseUpdateTest) {
   const std::string sdf("/systems/sensors/test/models/falling_sphere.sdf");
-  // Attaches the camera to 1 m above the sphere.
+  // Attaches the camera to a location that is 1 m above the sphere.
   Eigen::Isometry3d transformation((Eigen::Matrix4d() <<
                                     1., 0., 0., 0.,
                                     0., 1., 0., 0.,

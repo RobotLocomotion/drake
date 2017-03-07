@@ -380,12 +380,12 @@ void RgbdCamera::Impl::UpdateModelPoses(
   KinematicsCache<double> cache = tree_.doKinematics(q);
 
   if (!kCameraFixed) {
-    // Updates camera pose.
+    // Updates the camera's pose.
     X_WB_ = tree_.CalcFramePoseInWorldFrame(cache, frame_);
     X_WC_ = X_WB_ * X_BC_;
     X_WD_ = X_WB_ * X_BD_;
 
-    // Updates terrain.
+    // Updates the terrain.
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(X_WC_.inverse());
     terrain_actor_->SetUserTransform(vtk_transform);
@@ -448,7 +448,7 @@ void RgbdCamera::Impl::DoCalcOutput(
       image.at(u, kHeightReversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
       image.at(u, kHeightReversed)[3] = *(static_cast<uint8_t*>(color_ptr) + 3);
 
-      // Depth image
+      // Updates the depth image.
       const float z_buffer_value = *static_cast<float*>(
           depth_buffer_->GetOutput()->GetScalarPointer(u, v, 0));
       depth_image.at(u, kHeightReversed)[0] =
@@ -464,7 +464,7 @@ float RgbdCamera::Impl::CheckRangeAndConvertToMeters(float z_buffer_value) {
   if (z_buffer_value == 1.f) {
     checked_depth = InvalidDepth::kError;
   } else {
-    // TODO(kunimatsu-tri) Calculate this in vertex shader.
+    // TODO(kunimatsu-tri) Calculate this in a vertex shader.
     float depth = static_cast<float>(kB / (z_buffer_value - kA));
 
     if (depth > kDepthRangeFar) {

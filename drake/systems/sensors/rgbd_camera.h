@@ -75,7 +75,7 @@ class RgbdCamera : public LeafSystem<double> {
 
   /// A constructor for %RgbdCamera that defines `B` using Euler angles.
   /// The pose of %RgbdCamera will be fixed to the world coordinate system
-  /// troughtout the simulation.
+  /// throughtout the simulation.
   ///
   /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
@@ -103,7 +103,8 @@ class RgbdCamera : public LeafSystem<double> {
              bool show_window);
 
   /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
-  /// The pose of %RgbdCamera will be updated during the simulation.
+  /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
+  /// updated during the simulation.
   ///
   /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
