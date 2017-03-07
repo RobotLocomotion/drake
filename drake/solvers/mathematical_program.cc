@@ -371,6 +371,7 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
   b->resize(num_variables);
   Q->setZero();
   b->setZero();
+  *c = 0;
   for (const auto& p : monomial_to_coeff_map) {
     DRAKE_ASSERT(is_constant(p.second));
     DRAKE_DEMAND(!is_zero(p.second));
@@ -410,6 +411,9 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
         // constant term.
         *c += coefficient;
       }
+    } else {
+      // constant term.
+      *c += coefficient;
     }
   }
 }
@@ -809,15 +813,52 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   return Binding<LorentzConeConstraint>(AddLorentzConeConstraint(A, b, vars),
                                         vars);
 }
-/*
+
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
-    const symbolic::Expression &linear_expr,
-    const symbolic::Expression &quadratic_expr) {
+    const symbolic::Expression& linear_expr,
+    const symbolic::Expression& quadratic_expr) {
   const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);
   const auto& quadratic_vars = quadratic_p.first;
   const auto& quadratic_var_to_index_map = quadratic_p.second;
+  const auto& monomial_to_coeff_map = symbolic::DecomposePolynomialIntoMonomial(
+      quadratic_expr, quadratic_expr.GetVariables());
+  Eigen::MatrixXd Q(quadratic_vars.size(), quadratic_vars.size());
+  Eigen::VectorXd b(quadratic_vars.size());
+  double a;
+  DecomposeQuadraticExpressionWithMonomialToCoeffMap(
+      monomial_to_coeff_map, quadratic_var_to_index_map, quadratic_vars.size(),
+      &Q, &b, &a);
+  // The constraint that the linear expression v1 satisfying
+  // v1 >= sqrt(0.5 * x' * Q * x + b' * x + a), is equivalent to the vector
+  // [z; y] being within a Lorentz cone, where
+  // z = v1
+  // y = [1/sqrt(2) * (R * x + R⁻ᵀb); sqrt(a - 0.5 * bᵀ * Q⁻¹ * a)]
+  // R is the matrix satisfying Rᵀ * R = Q
 
-}*/
+  // First compute R.
+  Eigen::LLT<Eigen::MatrixXd> llt_Q(Q);
+  if (llt_Q.info() != Eigen::Success) {
+    std::ostringstream oss;
+    oss << "Expression" << quadratic_expr << " does not have a positive definite Hessian. Cannot be called with AddLorentzConeConstraint.\n";
+    throw std::runtime_error(oss.str());
+  }
+  Eigen::MatrixXd R = llt_Q.matrixU();
+
+  VectorX<Expression> expr(2 + R.rows());
+  expr(0) = linear_expr;
+  expr.segment(1, R.rows()) =
+      1.0 / std::sqrt(2) * (R * quadratic_vars + llt_Q.matrixL().solve(b));
+  double constant = a - 0.5 * b.dot(llt_Q.solve(b));
+  if (constant < 0) {
+    std::ostringstream oss;
+    oss << "Expression " << quadratic_expr
+        << " is not guaranteed to be non-negative, cannot call it with "
+           "AddLorentzConeConstraint.\n";
+    throw std::runtime_error(oss.str());
+  }
+  expr(expr.rows() - 1) = std::sqrt(constant);
+  return AddLorentzConeConstraint(expr);
+}
 
 void MathematicalProgram::AddConstraint(
     std::shared_ptr<LorentzConeConstraint> con,

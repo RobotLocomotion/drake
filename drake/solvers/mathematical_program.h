@@ -1487,10 +1487,14 @@ class MathematicalProgram {
    *      2. `quadratic_expr` is a quadratic expression, in the form of
    *          0.5 * x'*Q*x + b'x + a
    *          Also the quadratic expression has to be convex, namely Q is a
-   *          positive semidefinite matrix.}
+   *          positive semidefinite matrix, and the quadratic expression needs
+   *          to be non-negative for any x.}
    * Throws a runtime error if the preconditions are not satisfied.
-   * Notice we will add additional variables z into the program, with the linear
-   * constraint z = R * x + b, where R is the matrix satisfying R'*R = Q.
+   * Notice this constraint is equivalent to the vector [z;y] is within a
+   * Lorentz cone, where
+   * z = v1
+   * y = [1 / sqrt(2) * R * x + R⁻ᵀb; sqrt(a - 0.5 * bᵀ * Q⁻¹ * a)]
+   * where R satisfies Rᵀ * R = Q
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(const symbolic::Expression& linear_expr, const symbolic::Expression& quadratic_expr);
 

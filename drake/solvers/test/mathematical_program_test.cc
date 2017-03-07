@@ -5,6 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/monomial.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
@@ -358,10 +359,9 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
       CompareMatrices(constraint5->upper_bound(), constraint6->upper_bound()));
 }
 
-/* A generic cost derived from Constraint class. This is meant for testing
- * adding a cost to optimization program, and the cost is in the form of a
- * derived class of Constraint.
- */
+// A generic cost derived from Constraint class. This is meant for testing
+// adding a cost to optimization program, and the cost is in the form of a
+// derived class of Constraint.
 class GenericTrivialCost1 : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialCost1)
@@ -388,11 +388,9 @@ class GenericTrivialCost1 : public Constraint {
   double private_val_{0};
 };
 
-/* A generic cost. This class is meant for testing adding a cost to the
- * optimization program, by calling `MathematicalProgram::MakeCost` to
- * convert this class to a ConstraintImpl object.
- *
- */
+// A generic cost. This class is meant for testing adding a cost to the
+// optimization program, by calling `MathematicalProgram::MakeCost` to
+// convert this class to a ConstraintImpl object.
 class GenericTrivialCost2 {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericTrivialCost2)
@@ -1123,6 +1121,30 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint4) {
 }
 
 namespace {
+bool AreTwoPolynomialsNear(
+    const symbolic::MonomialToCoefficientMap &poly1,
+    const symbolic::MonomialToCoefficientMap &poly2,
+    double tol = std::numeric_limits<double>::epsilon()) {
+  // TODO(hongkai.dai): rewrite this part when we have function to add and
+  // subtract two polynomials.
+  symbolic::MonomialToCoefficientMap poly_diff;
+  poly_diff.reserve(poly1.size() + poly2.size());
+  poly_diff.insert(poly1.begin(), poly1.end());
+  for (const auto& p2 : poly2) {
+    const auto it = poly_diff.find(p2.first);
+    if (it == poly_diff.end()) {
+      poly_diff.emplace_hint(it, p2.first, -p2.second);
+    } else {
+      it->second -= p2.second;
+    }
+  }
+  for (const auto& p : poly_diff) {
+    if (std::abs(symbolic::get_constant_value(p.second)) > tol) {
+      return false;
+    }
+  }
+  return true;
+}
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const Eigen::Matrix<Expression, Eigen::Dynamic, 1>>& e) {
@@ -1136,6 +1158,31 @@ void CheckParsedSymbolicLorentzConeConstraint(
   EXPECT_EQ(binding2.constraint()->A() * binding2.variables() +
                 binding2.constraint()->b(),
             e);
+
+  const auto& binding3 =
+      prog->AddLorentzConeConstraint(e(0), e.tail(e.rows() - 1).squaredNorm());
+  const auto& binding4 = prog->lorentz_cone_constraints().back();
+  EXPECT_EQ(binding3.constraint(), binding4.constraint());
+  EXPECT_EQ(binding3.variables(), binding4.variables());
+  // Now check if the linear and quadratic constraints are parsed correctly.
+  const VectorX<Expression> e_parsed =
+      binding3.constraint()->A() * binding3.variables() +
+      binding3.constraint()->b();
+  EXPECT_PRED2(ExprEqual, (e_parsed(0) * e_parsed(0)).Expand(),
+               (e(0) * e(0)).Expand());
+  Expression expr_parsed = e_parsed.tail(e_parsed.rows() - 1).squaredNorm();
+  Expression expr = e.tail(e.rows() - 1).squaredNorm();
+  // Due to the small numerical error, expr and expr_parsed do not match
+  // exactly.So we will compare each term in the two polynomials, and regard
+  // them to beequal if the error in the coefficient is sufficiently small.
+  const auto& monomial_to_coeff_map_parsed =
+      symbolic::DecomposePolynomialIntoMonomial(expr_parsed,
+                                                expr_parsed.GetVariables());
+  const auto& monomial_to_coeff_map =
+      symbolic::DecomposePolynomialIntoMonomial(expr, expr.GetVariables());
+  double tol = 1E-10;
+  EXPECT_TRUE(AreTwoPolynomialsNear(monomial_to_coeff_map_parsed,
+                                    monomial_to_coeff_map, tol));
 }
 
 void CheckParsedSymbolicRotatedLorentzConeConstraint(
@@ -1205,6 +1252,33 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint4) {
 
   // clang-format on
   CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint5) {
+  // Add Lorentz cone constraint:
+  // [x(0); x(1) + x(2)] is in the Lorentz cone.
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Vector2<Expression> e;
+  e << x(0), x(1) + x(2);
+  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint6) {
+  // Check the cases to add with invalid quadratic expression.
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+
+  // The Hessian matrix is not positive definite.
+  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3, x(1) * x(1) - x(2) * x(2)), std::runtime_error);
+  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3, x(1) * x(1) + x(2) * x(2) + 3 * x(1) * x(2)), std::runtime_error);
+  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3, x(1) * x(1) + x(2) * x(2) + 3 * x(0) * x(2)), std::runtime_error);
+
+  // The quadratic expression is not always non-negative.
+  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3, x(1) * x(1) + x(2) * x(2) - 1), std::runtime_error);
+  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3, pow(2 * x(0) + 3 * x(1) + 2, 2) - 1), std::runtime_error);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint1) {
