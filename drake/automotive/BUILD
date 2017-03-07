@@ -161,6 +161,7 @@ drake_cc_library(
         "//drake/common:cond",
         "//drake/common:double",
         "//drake/common:symbolic",
+        "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_vector",
     ],
 )

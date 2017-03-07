@@ -7,6 +7,7 @@
 #include "drake/automotive/gen/simple_car_state.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/rendering/frame_velocity.h"
 #include "drake/systems/rendering/pose_vector.h"
 
 namespace drake {
@@ -34,6 +35,7 @@ namespace automotive {
 ///
 /// output port 0: same as state vector.
 /// output port 1: A PoseVector containing X_WC, where C is the car frame.
+/// output port 2: A FrameVelocity containing Xdot_WC, where C is the car frame.
 ///
 /// @tparam T must support certain arithmetic operations;
 /// for details, see drake::symbolic::Expression.
@@ -69,6 +71,7 @@ class SimpleCar : public systems::LeafSystem<T> {
 
   const systems::OutputPortDescriptor<T>& state_output() const;
   const systems::OutputPortDescriptor<T>& pose_output() const;
+  const systems::OutputPortDescriptor<T>& velocity_output() const;
 
  protected:
   // System<T> overrides
@@ -88,10 +91,14 @@ class SimpleCar : public systems::LeafSystem<T> {
   void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
   void ImplCalcPose(const SimpleCarState<T>& state,
                     systems::rendering::PoseVector<T>* pose) const;
-  void ImplCalcTimeDerivatives(const SimpleCarConfig<T>&,
-                               const SimpleCarState<T>&,
-                               const DrivingCommand<T>&,
-                               SimpleCarState<T>*) const;
+  void ImplCalcVelocity(const SimpleCarConfig<T>& config,
+                        const SimpleCarState<T>& state,
+                        const DrivingCommand<T>& input,
+                        systems::rendering::FrameVelocity<T>* velocity) const;
+  void ImplCalcTimeDerivatives(const SimpleCarConfig<T>& config,
+                               const SimpleCarState<T>& state,
+                               const DrivingCommand<T>& input,
+                               SimpleCarState<T>* rates) const;
 };
 
 }  // namespace automotive
