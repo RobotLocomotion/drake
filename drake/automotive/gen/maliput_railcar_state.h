@@ -44,10 +44,11 @@ class MaliputRailcarState : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  /// The position along the lane's s-axis.
+  /// The s-coordinate of the vehicle in lane-space.
   const T& s() const { return this->GetAtIndex(K::kS); }
   void set_s(const T& s) { this->SetAtIndex(K::kS, s); }
-  /// The speed along the lane's s-axis.
+  /// The time derivative of the vehicle's `s` coordinate. See MaliputRailcar's
+  /// class description for more details.
   const T& s_dot() const { return this->GetAtIndex(K::kSDot); }
   void set_s_dot(const T& s_dot) { this->SetAtIndex(K::kSDot, s_dot); }
   //@}
