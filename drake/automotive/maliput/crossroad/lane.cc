@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <memory>
-#include <string>
 
 #include "drake/automotive/maliput/crossroad/branch_point.h"
 #include "drake/automotive/maliput/crossroad/road_geometry.h"
@@ -79,10 +78,10 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
 api::GeoPosition Lane::DoToGeoPosition(
     const api::LanePosition& lane_pos) const {
   api::SegmentId segment_id = this->segment()->id();
-  if (strcmp(segment_id.id.c_str(), "Crossroad_Horizontal_Segment") == 0) {
+  if (segment_id.id == "Crossroad_Horizontal_Segment") {
     return {lane_pos.s - length_ / 2, lane_pos.r + Lane::r_offset(),
             lane_pos.h};
-  } else if (strcmp(segment_id.id.c_str(), "Crossroad_Vertical_Segment") == 0) {
+  } else if (segment_id.id == "Crossroad_Vertical_Segment") {
     return {lane_pos.r + Lane::r_offset(), lane_pos.s - length_ / 2,
             lane_pos.h};
   }
