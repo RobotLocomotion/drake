@@ -13,17 +13,25 @@ namespace multibody {
 // Forward declaration to define dot product with a spatial velocity.
 template <typename T> class SpatialVelocity;
 
-/// This class is used to represent spatial forces. Spatial forces are 6-element
-/// quantities that are pairs of ordinary 3-vectors. Elements 0-2 are always the
-/// torque component while elements 3-5 are the force component.
-/// The translational force is understood to be applied at a specific point but
-/// that point is not stored within the SpatialForce class. Both the
-/// translational force and torque are expected to be expressed in the same
-/// frame; however, this class does not offer any mechanism to track the
-/// expressed-in frame. It is the responsibility of the user to keep track the
-/// point at which the spatial force is applied and the expressed-in frame. In
-/// source code the monogram notation `F_P_E` is used to represent the spatial
-/// force `F` at a point `P` expressed in frame `E`.
+/// This class is used to represent a _spatial force_ (also called a _wrench_)
+/// that combines both rotational (torque) and translational force components.
+/// Spatial forces
+/// are 6-element quantities that are pairs of ordinary 3-vectors. Elements 0-2
+/// are the torque component while elements 3-5 are the force component.
+/// Both vectors must be expressed in the same frame, and the translational
+/// force is applied to a particular point of a body, but neither the frame nor
+/// the point are stored with a %SpatialForce object; they must be understood
+/// from context. It is the responsibility of the user to keep track the
+/// application point and the expressed-in frame. That is best accomplished
+/// through disciplined notation. In source code we use monogram notation
+/// where capital `F` is used to designate a spatial force quantity. We write
+/// a point P fixed to body (or frame) B as @f$B_P@f$ which appears in
+/// code and comments as `Bp`. Then we write a particular spatial force as
+/// `F_Bp_E` where the `_E` suffix indicates that the expressed-in frame
+/// is E. This symbol represents a torque applied to body B, and a force
+/// applied to point P on B, with both vectors expressed in E. Very often
+/// the application point will be the body origin `Bo`; if no point is
+/// shown the origin is understood, so `F_B_E` means `F_Bo_E`.
 /// For a more detailed introduction on spatial vectors and the monogram
 /// notation please refer to section @ref multibody_spatial_vectors.
 ///
@@ -58,32 +66,37 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   template <typename Derived>
   explicit SpatialForce(const Eigen::MatrixBase<Derived>& V) : Base(V) {}
 
-  /// Given `this` spatial force `F_Bp_E` with its rotational component applied
-  /// on body frame `B` as a whole and its translational component refering to
-  /// point `p` on this body, this method computes the equivalent spatial force
-  /// `F_Bq_E` with its rotational component applied to the same body frame `B`
-  /// and its translational component applied to a point `q` on the same body
-  /// `B` but offset from `q` by a vector `p_BpBq_E`. All quantities must be
-  /// expressed in the same frame `E`.
+  /// In-place shift of a %SpatialForce from one application point to another.
+  /// Given `this` spatial force `F_Bp_E` which applies its translational
+  /// force component to point P of body B, find the equivalent spatial
+  /// force `F_Bq_E` that considers the force to be applied to point Q of
+  /// body B instead (see class comment for more about this notation).
+  /// This requires adjusting the torque component to account
+  /// for the change in moment caused by the force shift.
+  /// We are given the vector from point P to point Q, as a position vector
+  /// `p_BpBq_E` (or `p_PQ_E`) expressed in the same frame E as the
+  /// spatial force.
   ///
   /// The operation performed, in coordinate-free form, is: <pre>
-  ///   τ_Bq = τ_Bp -  p_BpBq x f_Bp
-  ///   f_Bq = f_Bp,  i.e. the force as applied to Bq equals the force as
-  ///                 applied on Bp.
+  ///   τ_B = τ_B -  p_BpBq x f_Bp
+  ///   f_Bq = f_Bp,  i.e. the force as applied to body B at Q is the
+  ///                 same as was applied to B at P.
   /// </pre>
   /// where τ and f represent the torque and force components respectively.
   ///
-  /// All quantities above must be expressed in a common frame `E` i.e: <pre>
-  ///   τ_Bq_E = τ_Bq_E -  p_BpBq_E x f_Bp_E
-  ///   f_Bq_E = f_Bp_E
-  /// </pre>
+  /// For computation, all quantities above must be expressed in a common
+  /// frame E; we add an `_E` suffix to each symbol to indicate that.
   ///
   /// This operation is performed in-place modifying the original object.
   ///
-  /// @param[in] p_BpBq_E Shift vector from point `p` to point `q` and expressed
-  ///                     in frame `E`.
-  /// @returns A reference to `this` spatial force `F_Bq_E` now as applied about
-  ///          point `q` on body frame `B`, expressed in frame `E`.
+  /// @param[in] p_BpBq_E
+  ///   Shift vector from point P of body B to point Q of the same body,
+  ///   expressed in frame `E`. The "from" point Bp must be the
+  ///   current application point of `this` spatial force, and E must be
+  ///   the same expressed-in frame as for this spatial force.
+  ///
+  /// @returns A reference to `this` spatial force which is now `F_Bq_E`,
+  ///   that is, the force is now applied at point Q rather than P.
   ///
   /// @see Shift() to compute the shifted spatial force without modifying
   ///              this original object.
@@ -92,18 +105,20 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     return *this;
   }
 
-  /// Given `this` spatial force `F_Bp_E` with its rotational component applied
-  /// on body frame `B` as a whole and its translational component refering to
-  /// point `p` on this body, this method computes the equivalent spatial force
-  /// `F_Bq_E` with its rotational component applied to the same body frame `B`
-  /// and its translational component applied to a point `q` on the same body
-  /// `B` but offset from `q` by a vector `p_BpBq_E`. All quantities must be
-  /// expressed in the same frame `E`.
+  /// Shift of a %SpatialForce from one application point to another.
+  /// This is an alternate signature for shifting a spatial force's
+  /// application point that does not change the original object. See
+  /// ShiftInPlace() for more information.
   ///
-  /// @param[in] p_BpBq_E Shift vector from point `p` to point `q` and expressed
-  ///                     in frame `E`.
-  /// @retval F_Bq_E The spatial force as applied about point `q` on body frame
-  ///                `B`, expressed in frame `E`.
+  /// @param[in] p_BpBq_E
+  ///   Shift vector from point P of body B to point Q of the same body,
+  ///   expressed in frame `E`. The "from" point Bp must be the
+  ///   current application point of `this` spatial force, and E must be
+  ///   the same expressed-in frame as for this spatial force.
+  ///
+  /// @retval F_Bq_E
+  ///   The equivalent shifted spatial force, now applied at point Q
+  ///   rather than P.
   ///
   /// @see ShiftInPlace() to compute the shifted spatial force in-place
   ///                     modifying the original object.
@@ -111,19 +126,19 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     return SpatialForce<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
-  /// Given `this` spatial force `F_Q_E` applied at the origin of frame `Q` and
-  /// expressed in a frame `E`, this method computes the 6-dimensional dot
-  /// product with the spatial velocity `V_IQ_E` of frame `Q` measured in an
-  /// inertial frame `I` and expressed in the same frame `E` in which the
-  /// spatial force is expressed.
+  /// Given `this` spatial force `F_Bp_E` applied at point P of body B and
+  /// expressed in a frame E, this method computes the 6-dimensional dot
+  /// product with the spatial velocity `V_IBp_E` of body B at point P,
+  /// measured in an inertial frame I and expressed in the same frame E
+  /// in which the spatial force is expressed.
   /// This dot-product represents the power generated by `this` spatial force
-  /// `F_Q_E` when applied to frame `Q` moving with spatial velocity `V_IQ_E`.
-  /// Both spatial quantities must be expressed in the same frame `E` with the
-  /// result being independent of this frame `E` in which they are expressed.
+  /// when its body and application point have the given spatial velocity.
+  /// Although the two spatial vectors must be expressed in the same frame,
+  /// the result is independent of that frame.
   ///
   /// @warning The result of this method cannot be interpreted as power unless
   /// the spatial velocity is measured in an inertial frame `I`.
-  T dot(const SpatialVelocity<T>& V_IQ_E) const;
+  T dot(const SpatialVelocity<T>& V_IBp_E) const;
 };
 
 }  // namespace multibody
