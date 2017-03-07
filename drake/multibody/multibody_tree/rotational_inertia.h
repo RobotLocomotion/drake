@@ -57,9 +57,15 @@ namespace multibody {
 /// keep track of frames in which operations are performed.
 ///
 /// In code we use the monogram notation as described
-/// in @ref multibody_notation_basics. For a rotational inertia computed about
-/// point `Bo` and expressed in frame `E` the monogram notation would
-/// read `I_Bo_E`.
+/// in @ref multibody_spatial_inertia. For a rotational inertia of a system `S`
+/// computed about a point `p` and expressed in frame `E` the monogram notation
+/// would read `I_Sp_E`. When the system is a body `B` and the about point `p`
+/// is a fixed to body `B`, the monogram notation reads `I_BBp_E`, which can be
+/// abbreviated to `I_Bp_E` since the about point `Bp` also identifies the
+/// system. Specials cases include the case when the about point is the origin
+/// `Bo` of the body and when the about point is the center of mass `Bcm` of
+/// the body, for which the rotational inertia in monogram notation would read
+/// as `I_Bo_E` and `I_Bcm_E`, respectively.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -104,7 +110,7 @@ class RotationalInertia {
   }
 
   /// Creates a general rotational inertia matrix with non-zero off-diagonal
-  /// elements where the six components of the rotational intertia in a given
+  /// elements where the six components of the rotational inertia in a given
   /// frame `E` need to be provided.
   /// Throws an exception if the resulting inertia is invalid according to
   /// CouldBePhysicallyValid().
@@ -181,7 +187,7 @@ class RotationalInertia {
     return *this;
   }
 
-  /// Disallow the substraction of another inertia from `this` inertia since
+  /// Disallow the subtraction of another inertia from `this` inertia since
   /// this operation might lead to invalid (non physical) results.
   // TODO(amcastro-tri): Consider allowing this operation to, for instance,
   // compute the inertia for an object that has a hole of a known shape in it.
@@ -189,15 +195,19 @@ class RotationalInertia {
   RotationalInertia<T>& operator-=(const RotationalInertia<T>&) = delete;
 
   /// In-place multiplication of `this` rotational inertia by a `scalar`
-  /// modifying the original object.
+  /// modifying the original object. `scalar` must be non-negative or this
+  /// method aborts in Debug builds.
   RotationalInertia<T>& operator*=(const T& scalar) {
+    DRAKE_ASSERT(scalar >= 0);
     this->get_mutable_triangular_view() *= scalar;
     return *this;
   }
 
   /// In-place division of `this` rotational inertia by a `scalar` modifying the
-  /// original object.
+  /// original object.`scalar` must be non-negative or this
+  /// method aborts in Debug builds.
   RotationalInertia<T>& operator/=(const T& scalar) {
+    DRAKE_ASSERT(scalar >= 0);
     this->get_mutable_triangular_view() /= scalar;
     return *this;
   }
@@ -310,7 +320,7 @@ class RotationalInertia {
     // rotations. See below for details on how a "slop" is needed for specific
     // floating point comparisons.
     const double precision = Eigen::NumTraits<double>::epsilon();
-    const double slop = precision * std::abs(d.sum());
+    const double slop = precision * d.norm();
 
     // Principal moments must be non-negative.
     // This comparison actually allows for very small (equal to -slop) negative
