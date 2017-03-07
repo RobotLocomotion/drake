@@ -1145,6 +1145,37 @@ bool AreTwoPolynomialsNear(
   }
   return true;
 }
+
+void CheckParsedSymbolicLorentzConeConstraint(
+    MathematicalProgram* prog, const Expression& linear_expr,
+    const Expression& quadratic_expr) {
+  const auto& binding1 =
+      prog->AddLorentzConeConstraint(linear_expr, quadratic_expr);
+  const auto& binding2 = prog->lorentz_cone_constraints().back();
+  EXPECT_EQ(binding1.constraint(), binding2.constraint());
+  EXPECT_EQ(binding1.variables(), binding2.variables());
+  // Now check if the linear and quadratic constraints are parsed correctly.
+  const VectorX<Expression> e_parsed =
+      binding1.constraint()->A() * binding1.variables() +
+      binding1.constraint()->b();
+  EXPECT_PRED2(ExprEqual, (e_parsed(0) * e_parsed(0)).Expand(),
+               (linear_expr * linear_expr).Expand());
+  Expression quadratic_expr_parsed =
+      e_parsed.tail(e_parsed.rows() - 1).squaredNorm();
+  // Due to the small numerical error, quadratic_expr and quadratic_expr_parsed
+  // do not match
+  // exactly.So we will compare each term in the two polynomials, and regard
+  // them to beequal if the error in the coefficient is sufficiently small.
+  const auto& monomial_to_coeff_map_parsed =
+      symbolic::DecomposePolynomialIntoMonomial(
+          quadratic_expr_parsed, quadratic_expr_parsed.GetVariables());
+  const auto& monomial_to_coeff_map = symbolic::DecomposePolynomialIntoMonomial(
+      quadratic_expr, quadratic_expr.GetVariables());
+  double tol = 1E-10;
+  EXPECT_TRUE(AreTwoPolynomialsNear(monomial_to_coeff_map_parsed,
+                                    monomial_to_coeff_map, tol));
+}
+
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const Eigen::Matrix<Expression, Eigen::Dynamic, 1>>& e) {
@@ -1159,30 +1190,8 @@ void CheckParsedSymbolicLorentzConeConstraint(
                 binding2.constraint()->b(),
             e);
 
-  const auto& binding3 =
-      prog->AddLorentzConeConstraint(e(0), e.tail(e.rows() - 1).squaredNorm());
-  const auto& binding4 = prog->lorentz_cone_constraints().back();
-  EXPECT_EQ(binding3.constraint(), binding4.constraint());
-  EXPECT_EQ(binding3.variables(), binding4.variables());
-  // Now check if the linear and quadratic constraints are parsed correctly.
-  const VectorX<Expression> e_parsed =
-      binding3.constraint()->A() * binding3.variables() +
-      binding3.constraint()->b();
-  EXPECT_PRED2(ExprEqual, (e_parsed(0) * e_parsed(0)).Expand(),
-               (e(0) * e(0)).Expand());
-  Expression expr_parsed = e_parsed.tail(e_parsed.rows() - 1).squaredNorm();
-  Expression expr = e.tail(e.rows() - 1).squaredNorm();
-  // Due to the small numerical error, expr and expr_parsed do not match
-  // exactly.So we will compare each term in the two polynomials, and regard
-  // them to beequal if the error in the coefficient is sufficiently small.
-  const auto& monomial_to_coeff_map_parsed =
-      symbolic::DecomposePolynomialIntoMonomial(expr_parsed,
-                                                expr_parsed.GetVariables());
-  const auto& monomial_to_coeff_map =
-      symbolic::DecomposePolynomialIntoMonomial(expr, expr.GetVariables());
-  double tol = 1E-10;
-  EXPECT_TRUE(AreTwoPolynomialsNear(monomial_to_coeff_map_parsed,
-                                    monomial_to_coeff_map, tol));
+  CheckParsedSymbolicLorentzConeConstraint(prog, e(0),
+                                           e.tail(e.rows() - 1).squaredNorm());
 }
 
 void CheckParsedSymbolicRotatedLorentzConeConstraint(
@@ -1200,104 +1209,147 @@ void CheckParsedSymbolicRotatedLorentzConeConstraint(
 }
 }  // namespace
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint1) {
+class SymbolicLorentzConeTest : public ::testing::Test {
+ public:
+  SymbolicLorentzConeTest() : prog_(), x_() {
+    x_ = prog_.NewContinuousVariables<3>("x");
+  }
+
+ protected:
+  MathematicalProgram prog_;
+  VectorDecisionVariable<3> x_;
+};
+
+TEST_F(SymbolicLorentzConeTest, Test1) {
   // Add Lorentz cone constraint:
   // x is in Lorentz cone
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>("x");
   Matrix<Expression, 3, 1> e;
-  e << 1 * x(0), 1.0 * x(1), 1.0 * x(2);
-  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+  e << 1 * x_(0), 1.0 * x_(1), 1.0 * x_(2);
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint2) {
+TEST_F(SymbolicLorentzConeTest, Test2) {
   // Add Lorentz cone constraint:
   // x + [1, 2, 0] is in Lorentz cone.
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>("x");
   Matrix<Expression, 3, 1> e;
-  e << x(0) + 1, x(1) + 2, +x(2);
-  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+  e << x_(0) + 1, x_(1) + 2, +x_(2);
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint3) {
+TEST_F(SymbolicLorentzConeTest, Test3) {
   // Add Lorentz cone constraint:
   // [2 * x(0) + 3 * x(2)]
   // [  - x(0) + 2 * x(2)]    is in Lorentz cone
   // [               x(2)]
   // [  -x(1)            ]
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>("x");
   Matrix<Expression, 4, 1> e;
   // clang-format on
-  e << 2 * x(0) + 3 * x(2), -x(0) + 2 * x(2), +x(2), -x(1);
+  e << 2 * x_(0) + 3 * x_(2), -x_(0) + 2 * x_(2), +x_(2), -x_(1);
   // clang-format off;
-  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint4) {
+TEST_F(SymbolicLorentzConeTest, Test4) {
   // Add Lorentz cone constraint:
   // [ 2 * x(0) + 3 * x(1) +            5]
   // [ 4 * x(0)            + 4 * x(2) - 7]
   // [                                 10]
   // [                       2 * x(2)    ]
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>("x");
   Matrix<Expression, 4, 1> e;
   // clang-format off
-  e << 2 * x(0) + 3 * x(1) + 5,
-       4 * x(0) + 4 * x(2) - 7,
+  e << 2 * x_(0) + 3 * x_(1) + 5,
+       4 * x_(0) + 4 * x_(2) - 7,
        10,
-       2 * x(2);
-
+       2 * x_(2);
   // clang-format on
-  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint5) {
+TEST_F(SymbolicLorentzConeTest, Test5) {
   // Add Lorentz cone constraint:
   // [x(0); x(1); x(2); 0] is in the Lorentz cone.
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>("x");
   Vector4<Expression> e;
-  e << x(0), x(1), x(2), 0;
-  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+  e << x_(0), x_(1), x_(2), 0;
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint6) {
+TEST_F(SymbolicLorentzConeTest, Test6) {
   // Add Lorentz cone constraint:
   // [x(0); x(1) + x(2)] is in the Lorentz cone.
-
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>("x");
   Vector2<Expression> e;
-  e << x(0), x(1) + x(2);
-  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+  e << x_(0), x_(1) + x_(2);
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint7) {
+TEST_F(SymbolicLorentzConeTest, Test7) {
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, x_(0) + 2, pow(x_(0), 2) + 4 * x_(0) * x_(1) + 4 * pow(x_(1), 2));
+}
+
+TEST_F(SymbolicLorentzConeTest, Test8) {
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, x_(0) + 2,
+      pow(x_(0), 2) - (x_(0) - x_(1)) * (x_(0) + x_(1)) + 2 * x_(1) + 3);
+}
+
+TEST_F(SymbolicLorentzConeTest, Test9) {
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, 2,
+                                           pow(x_(0), 2) + pow(x_(1), 2));
+}
+
+TEST_F(SymbolicLorentzConeTest, TestLinearConstraint) {
+  // Actually adding linear constraint, that the quadratic expression is
+  // actually a constant.
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, x_(0) + 2, 1);
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, x_(0) + 2,
+                                           x_(0) - 2 * (0.5 * x_(0) + 1) + 3);
+}
+
+TEST_F(SymbolicLorentzConeTest, TestError) {
   // Check the cases to add with invalid quadratic expression.
 
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>("x");
+  // Check polynomial with order no smaller than 2
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) + 3, pow(x_(1), 3)),
+               std::runtime_error);
+
+  // The quadratic expression is actually affine.
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0), 3 * x_(1) + 2),
+               std::runtime_error);
+  EXPECT_THROW(
+      prog_.AddLorentzConeConstraint(
+          2 * x_(0), x_(1) * x_(1) - (x_(1) - x_(0)) * (x_(1) + x_(0)) -
+                         x_(0) * x_(0) + 2 * x_(1) + 3),
+      std::runtime_error);
 
   // The Hessian matrix is not positive semidefinite.
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
+                                              x_(1) * x_(1) - x_(2) * x_(2)),
+               std::runtime_error);
   EXPECT_THROW(
-      prog.AddLorentzConeConstraint(2 * x(0) + 3, x(1) * x(1) - x(2) * x(2)),
+      prog_.AddLorentzConeConstraint(
+          2 * x_(0) + 3, x_(1) * x_(1) + x_(2) * x_(2) + 3 * x_(1) * x_(2)),
       std::runtime_error);
-  EXPECT_THROW(prog.AddLorentzConeConstraint(
-                   2 * x(0) + 3, x(1) * x(1) + x(2) * x(2) + 3 * x(1) * x(2)),
-               std::runtime_error);
-  EXPECT_THROW(prog.AddLorentzConeConstraint(
-                   2 * x(0) + 3, x(1) * x(1) + x(2) * x(2) + 3 * x(0) * x(2)),
-               std::runtime_error);
+  EXPECT_THROW(
+      prog_.AddLorentzConeConstraint(
+          2 * x_(0) + 3, x_(1) * x_(1) + x_(2) * x_(2) + 3 * x_(0) * x_(2)),
+      std::runtime_error);
 
   // The quadratic expression is not always non-negative.
-  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3,
-                                             x(1) * x(1) + x(2) * x(2) - 1),
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
+                                             x_(1) * x_(1) + x_(2) * x_(2) - 1),
                std::runtime_error);
-  EXPECT_THROW(prog.AddLorentzConeConstraint(
-                   2 * x(0) + 3, pow(2 * x(0) + 3 * x(1) + 2, 2) - 1),
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(
+                   2 * x_(0) + 3, pow(2 * x_(0) + 3 * x_(1) + 2, 2) - 1),
+               std::runtime_error);
+
+  // The quadratic expression is a negative constant.
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(
+                   2 * x_(0) + 3, pow(x_(0), 2) - pow(x_(1), 2) -
+                                      (x_(0) + x_(1)) * (x_(0) - x_(1)) - 1),
+               std::runtime_error);
+
+  // The first expression is not actually linear.
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) * x_(1), pow(x_(0), 2)),
                std::runtime_error);
 }
 

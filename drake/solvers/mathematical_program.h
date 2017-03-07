@@ -1496,7 +1496,9 @@ class MathematicalProgram {
    * y = [1 / sqrt(2) * R * x + R⁻ᵀb; sqrt(a - 0.5 * bᵀ * Q⁻¹ * a)]
    * where R satisfies Rᵀ * R = Q
    */
-  Binding<LorentzConeConstraint> AddLorentzConeConstraint(const symbolic::Expression& linear_expr, const symbolic::Expression& quadratic_expr);
+  Binding<LorentzConeConstraint> AddLorentzConeConstraint(
+      const symbolic::Expression& linear_expr,
+      const symbolic::Expression& quadratic_expr);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset

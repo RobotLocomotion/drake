@@ -837,41 +837,98 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   // y = [1/sqrt(2) * (R * x + R⁻ᵀb); sqrt(a - 0.5 * bᵀ * Q⁻¹ * a)]
   // R is the matrix satisfying Rᵀ * R = Q
 
-  // First compute R.
-  // Question: is there a better way to compute R * x and R⁻ᵀb? The following
-  // code is really ugly.
-  Eigen::LDLT<Eigen::MatrixXd> ldlt_Q(Q.selfadjointView<Eigen::Upper>());
-  if (ldlt_Q.info() != Eigen::Success || !ldlt_Q.isPositive()) {
-    std::ostringstream oss;
-    oss << "Expression" << quadratic_expr
-        << " does not have a positive semidefinite Hessian. Cannot be called "
-           "with AddLorentzConeConstraint.\n";
-    throw std::runtime_error(oss.str());
-  }
-  Eigen::MatrixXd R1 = ldlt_Q.matrixU();
-  for (int i = 0; i < R1.rows(); ++i) {
-    for (int j = 0; j < i; ++j) {
-      R1(i, j) = 0;
-    }
-    double d_sqrt = std::sqrt(ldlt_Q.vectorD()(i));
-    for (int j = 0; j < R1.cols(); ++j) {
-      R1(i, j) *= d_sqrt;
-    }
-  }
-  Eigen::MatrixXd R = R1 * ldlt_Q.transpositionsP();
+  VectorX<Expression> expr{};
 
-  VectorX<Expression> expr(2 + R1.rows());
-  expr(0) = linear_expr;
-  // expr.segment(1, R1.rows()) = 1/sqrt(2) * (R * x + R⁻ᵀb)
-  expr.segment(1, R1.rows()) =
-      1.0 / std::sqrt(2) *
-      (R * quadratic_vars + R.transpose().fullPivHouseholderQr().solve(b));
-  double constant = a - 0.5 * b.dot(ldlt_Q.solve(b));
+  double constant;  // constant is a - 0.5 * bᵀ * Q⁻¹ * a
+  // If Q is strictly positive definite, then use LLT
+  Eigen::LLT<Eigen::MatrixXd> llt_Q(Q.selfadjointView<Eigen::Upper>());
+  if (llt_Q.info() == Eigen::Success) {
+    Eigen::MatrixXd R = llt_Q.matrixU();
+    expr.resize(2 + R.rows());
+    expr(0) = linear_expr;
+    expr.segment(1, R.rows()) =
+        1.0 / std::sqrt(2) * (R * quadratic_vars + llt_Q.matrixL().solve(b));
+    constant = a - 0.5 * b.dot(llt_Q.solve(b));
+  } else {
+    // Q is not strictly positive definite.
+    // First check if Q is zero.
+    bool is_Q_zero = true;
+    for (int i = 0; i < Q.rows(); ++i) {
+      for (int j = 0; j <=i; ++j) {
+        if (Q(i, j) != 0) {
+          is_Q_zero = false;
+          break;
+        }
+      }
+      if (!is_Q_zero) {
+        break;
+      }
+    }
+    if (is_Q_zero) {
+      // Now check if the linear term b is zero. If both Q and b are zero, then
+      // add the linear constraint linear_expr >= sqrt(a); otherwise throw a
+      // runtime error.
+      bool is_b_zero = true;
+      for (int i = 0; i < b.rows(); ++i) {
+        if (b(i) != 0) {
+          is_b_zero = false;
+          break;
+        }
+      }
+      if (!is_b_zero) {
+        ostringstream oss;
+        oss << "Expression " << quadratic_expr
+            << " is not quadratic, cannot call AddLorentzConeConstraint.\n";
+        throw std::runtime_error(oss.str());
+      } else {
+        if (a < 0) {
+          ostringstream oss;
+          oss << "Expression " << quadratic_expr
+              << " is negative, cannot call AddLorentzConeConstraint.\n";
+          throw std::runtime_error(oss.str());
+        }
+        Vector2<Expression> expr(linear_expr, std::sqrt(a));
+        return AddLorentzConeConstraint(expr);
+      }
+    }
+    // Q is not strictly positive, nor is it zero. Use LDLT to decompose Q
+    // into R * Rᵀ.
+    // Question: is there a better way to compute R * x and R⁻ᵀb? The following
+    // code is really ugly.
+    Eigen::LDLT<Eigen::MatrixXd> ldlt_Q(Q.selfadjointView<Eigen::Upper>());
+    if (ldlt_Q.info() != Eigen::Success || !ldlt_Q.isPositive()) {
+      std::ostringstream oss;
+      oss << "Expression" << quadratic_expr
+          << " does not have a positive semidefinite Hessian. Cannot be called "
+              "with AddLorentzConeConstraint.\n";
+      throw std::runtime_error(oss.str());
+    }
+    Eigen::MatrixXd R1 = ldlt_Q.matrixU();
+    for (int i = 0; i < R1.rows(); ++i) {
+      for (int j = 0; j < i; ++j) {
+        R1(i, j) = 0;
+      }
+      double d_sqrt = std::sqrt(ldlt_Q.vectorD()(i));
+      for (int j = 0; j < R1.cols(); ++j) {
+        R1(i, j) *= d_sqrt;
+      }
+    }
+    Eigen::MatrixXd R = R1 * ldlt_Q.transpositionsP();
+
+    expr.resize(2 + R1.rows());
+    expr(0) = linear_expr;
+    // expr.segment(1, R1.rows()) = 1/sqrt(2) * (R * x + R⁻ᵀb)
+    expr.segment(1, R1.rows()) =
+        1.0 / std::sqrt(2) *
+            (R * quadratic_vars
+                + R.transpose().fullPivHouseholderQr().solve(b));
+    constant = a - 0.5 * b.dot(ldlt_Q.solve(b));
+  }
   if (constant < 0) {
     std::ostringstream oss;
     oss << "Expression " << quadratic_expr
         << " is not guaranteed to be non-negative, cannot call it with "
-           "AddLorentzConeConstraint.\n";
+            "AddLorentzConeConstraint.\n";
     throw std::runtime_error(oss.str());
   }
   expr(expr.rows() - 1) = std::sqrt(constant);
