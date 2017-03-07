@@ -347,7 +347,6 @@ void DecomposeLinearExpression(const Eigen::Ref<const VectorX<Expression>>& v,
   for (int i{0}; i < v.size(); ++i) {
     const Expression& e_i{v(i)};
     DecomposeLinearExpression(e_i, map_var_to_index, A->row(i), b->data() + i);
-    std::cout << "A(i):\n" << A->row(i) << "\n b(i):" << (*b)(i) << std::endl;
   }
 }
 
@@ -498,7 +497,9 @@ Binding<QuadraticConstraint> AddQuadraticCostWithMonomialToCoeffMap(
   Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
   Eigen::VectorXd b(vars_vec.size());
   double constant_term;
-  DecomposeQuadraticExpressionWithMonomialToCoeffMap(monomial_to_coeff_map, map_var_to_index, vars_vec.size(), &Q, &b, &constant_term);
+  DecomposeQuadraticExpressionWithMonomialToCoeffMap(
+      monomial_to_coeff_map, map_var_to_index, vars_vec.size(), &Q, &b,
+      &constant_term);
   // Now add the quadratic constraint 0.5 * x' * Q * x + b' * x
   return Binding<QuadraticConstraint>(prog->AddQuadraticCost(Q, b, vars_vec),
                                       vars_vec);
@@ -837,10 +838,14 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   // R is the matrix satisfying Rᵀ * R = Q
 
   // First compute R.
-  Eigen::LDLT<Eigen::MatrixXd> ldlt_Q(Q);
+  // Question: is there a better way to compute R * x and R⁻ᵀb? The following
+  // code is really ugly.
+  Eigen::LDLT<Eigen::MatrixXd> ldlt_Q(Q.selfadjointView<Eigen::Upper>());
   if (ldlt_Q.info() != Eigen::Success || !ldlt_Q.isPositive()) {
     std::ostringstream oss;
-    oss << "Expression" << quadratic_expr << " does not have a positive semidefinite Hessian. Cannot be called with AddLorentzConeConstraint.\n";
+    oss << "Expression" << quadratic_expr
+        << " does not have a positive semidefinite Hessian. Cannot be called "
+           "with AddLorentzConeConstraint.\n";
     throw std::runtime_error(oss.str());
   }
   Eigen::MatrixXd R1 = ldlt_Q.matrixU();
@@ -857,8 +862,10 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
 
   VectorX<Expression> expr(2 + R1.rows());
   expr(0) = linear_expr;
+  // expr.segment(1, R1.rows()) = 1/sqrt(2) * (R * x + R⁻ᵀb)
   expr.segment(1, R1.rows()) =
-      1.0 / std::sqrt(2) * (R * quadratic_vars + R.transpose().inverse() * b);
+      1.0 / std::sqrt(2) *
+      (R * quadratic_vars + R.transpose().fullPivHouseholderQr().solve(b));
   double constant = a - 0.5 * b.dot(ldlt_Q.solve(b));
   if (constant < 0) {
     std::ostringstream oss;

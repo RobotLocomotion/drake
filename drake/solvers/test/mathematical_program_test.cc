@@ -1281,14 +1281,24 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint7) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
 
-  // The Hessian matrix is not positive definite.
-  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3, x(1) * x(1) - x(2) * x(2)), std::runtime_error);
-  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3, x(1) * x(1) + x(2) * x(2) + 3 * x(1) * x(2)), std::runtime_error);
-  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3, x(1) * x(1) + x(2) * x(2) + 3 * x(0) * x(2)), std::runtime_error);
+  // The Hessian matrix is not positive semidefinite.
+  EXPECT_THROW(
+      prog.AddLorentzConeConstraint(2 * x(0) + 3, x(1) * x(1) - x(2) * x(2)),
+      std::runtime_error);
+  EXPECT_THROW(prog.AddLorentzConeConstraint(
+                   2 * x(0) + 3, x(1) * x(1) + x(2) * x(2) + 3 * x(1) * x(2)),
+               std::runtime_error);
+  EXPECT_THROW(prog.AddLorentzConeConstraint(
+                   2 * x(0) + 3, x(1) * x(1) + x(2) * x(2) + 3 * x(0) * x(2)),
+               std::runtime_error);
 
   // The quadratic expression is not always non-negative.
-  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3, x(1) * x(1) + x(2) * x(2) - 1), std::runtime_error);
-  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3, pow(2 * x(0) + 3 * x(1) + 2, 2) - 1), std::runtime_error);
+  EXPECT_THROW(prog.AddLorentzConeConstraint(2 * x(0) + 3,
+                                             x(1) * x(1) + x(2) * x(2) - 1),
+               std::runtime_error);
+  EXPECT_THROW(prog.AddLorentzConeConstraint(
+                   2 * x(0) + 3, pow(2 * x(0) + 3 * x(1) + 2, 2) - 1),
+               std::runtime_error);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint1) {
