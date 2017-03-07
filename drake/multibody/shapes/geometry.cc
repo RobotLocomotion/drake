@@ -68,6 +68,14 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
   // Return axis-aligned bounding-box vertices
   points.resize(3, NUM_BBOX_POINTS);
 
+  // Order:                +y
+  //       3------2          |
+  //      /|     /|          |
+  //     / 4----/-5          ------  +x
+  //    0------1 /          /
+  //    |/     |/          /
+  //    7------6        +z
+
   RowVectorXd cx(NUM_BBOX_POINTS), cy(NUM_BBOX_POINTS), cz(NUM_BBOX_POINTS);
   cx << -1, 1, 1, -1, -1, 1, 1, -1;
   cy << 1, 1, 1, 1, -1, -1, -1, -1;
@@ -116,6 +124,32 @@ Box* Box::clone() const { return new Box(*this); }
 void Box::getPoints(Matrix3Xd& points) const {
   Geometry::getBoundingBoxPoints(size(0) / 2.0, size(1) / 2.0, size(2) / 2.0,
                                  points);
+}
+
+void Box::getFaces(TrianglesVector* faces) const {
+  faces->resize(12);
+  // Here, the vertex indices index into the getBoundingBox vertex order.
+  // (See the documentation in that function for a picture.) For each face,
+  // vertices are supplied in counterclockwise order when viewed from
+  // the "outside" of the face.
+  // +y face:
+  faces->at(0) = Vector3i(0, 1, 2);
+  faces->at(1) = Vector3i(0, 2, 3);
+  // +x face:
+  faces->at(2) = Vector3i(5, 2, 1);
+  faces->at(3) = Vector3i(6, 5, 1);
+  // +z face:
+  faces->at(4) = Vector3i(7, 6, 1);
+  faces->at(5) = Vector3i(7, 1, 0);
+  // -y face:
+  faces->at(6) = Vector3i(4, 5, 6);
+  faces->at(7) = Vector3i(4, 6, 7);
+  // -x face:
+  faces->at(8) = Vector3i(3, 4, 7);
+  faces->at(9) = Vector3i(0, 3, 7);
+  // -z face:
+  faces->at(10) = Vector3i(5, 4, 2);
+  faces->at(11) = Vector3i(4, 3, 2);
 }
 
 void Box::getBoundingBoxPoints(Matrix3Xd& points) const { getPoints(points); }
@@ -417,6 +451,11 @@ Mesh* Mesh::clone() const { return new Mesh(*this); }
 
 void Mesh::getPoints(Eigen::Matrix3Xd& point_matrix) const {
   extractMeshVertices(point_matrix);
+}
+
+void Mesh::getFaces(TrianglesVector* faces) const {
+  PointsVector points;
+  LoadObjFile(&points, faces, Mesh::TriangulatePolicy::kTry);
 }
 
 void Mesh::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {

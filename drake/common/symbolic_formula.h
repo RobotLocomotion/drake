@@ -199,6 +199,12 @@ Formula operator>=(const Expression& e1, const Expression& e2);
 
 std::ostream& operator<<(std::ostream& os, const Formula& f);
 
+/** Returns a NaN check predicate on @p e. */
+// TODO(soonho-tri) This implementation is broken.
+inline Formula isnan(const Expression& e) {
+  return (e == Expression::NaN());
+}
+
 /** Checks if @p f is structurally equal to False formula. */
 bool is_false(const Formula& f);
 /** Checks if @p f is structurally equal to True formula. */

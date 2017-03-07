@@ -158,12 +158,6 @@ lcm_cc_library(
     lcm_srcs = ["lcmt_drake_signal.lcm"],
 )
 
-lcm_py_library(
-    name = "drake_signal-py",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_drake_signal.lcm"],
-)
-
 _VIEWER_LCM_SRCS = [
     "lcmt_viewer_command.lcm",
     "lcmt_viewer_draw.lcm",
@@ -192,6 +186,8 @@ _AUTOMOTIVE_LCM_SRCS = [
     "lcmt_endless_road_car_state_t.lcm",
     "lcmt_endless_road_oracle_output_t.lcm",
     "lcmt_euler_floating_joint_state_t.lcm",
+    "lcmt_maliput_railcar_config_t.lcm",
+    "lcmt_maliput_railcar_state_t.lcm",
     "lcmt_simple_car_config_t.lcm",
     "lcmt_simple_car_state_t.lcm",
 ]
@@ -204,12 +200,6 @@ lcm_cc_library(
 
 lcm_java_library(
     name = "automotive-java",
-    lcm_package = "drake",
-    lcm_srcs = _AUTOMOTIVE_LCM_SRCS,
-)
-
-lcm_py_library(
-    name = "automotive-py",
     lcm_package = "drake",
     lcm_srcs = _AUTOMOTIVE_LCM_SRCS,
 )
@@ -241,4 +231,20 @@ lcm_cc_library(
     ],
 )
 
-# TODO(jwnimmer-tri) Many more messages are missing ...
+# TODO(jwnimmer-tri) Many more C++ messages are missing ...
+
+lcm_py_library(
+    name = "lcmtypes-py",
+    lcm_package = "drake",
+    lcm_srcs = glob(["*.lcm"]),
+)
+
+# === test/ ===
+
+py_test(
+    name = "polynomial_matrix_test",
+    srcs = ["test/polynomial_matrix_test.py"],
+    deps = [
+        ":lcmtypes-py",
+    ],
+)
