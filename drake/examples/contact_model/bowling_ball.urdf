@@ -29,6 +29,8 @@
     </inertial>
     <visual>
       <geometry>
+        <!-- Note: This radius must agree with the radius referenced in
+        the collision sphere below and in bowling_ball.cc -->
         <sphere radius=".1085" />
       </geometry>
     </visual>
@@ -93,6 +95,8 @@
 
     <collision group="ball">
       <geometry>
+        <!-- Note: This radius must agree with the radius referenced in
+        the visualization sphere above and in bowling_ball.cc -->
         <sphere radius="0.1085" />
       </geometry>
     </collision>

@@ -100,6 +100,8 @@ int main(int argc, char**argv) {
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
 
+  // Note: this sets identical contact parameters across all object pairs:
+  // ball-lane, ball-pin, and pin-pin.  :(
   plant.set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
   plant.set_friction_contact_parameters(FLAGS_us, FLAGS_ud, FLAGS_v_tol);
   const auto& tree = plant.get_rigid_body_tree();
@@ -152,16 +154,16 @@ int main(int argc, char**argv) {
   const double kPinZ = 0.109;
   const double kCos60 = std::cos(60.0 / 180 * M_PI) * 12 * 0.0254;
   const double kSin60 = std::sin(60.0 / 180 * M_PI) * 12 * 0.0254;
-  double pins_pos[] = { 0, 0,
-                        -kCos60, kSin60,
-                        kCos60, kSin60,
-                        -kCos60 * 2, kSin60 * 2,
-                        0, kSin60 * 2,
-                        kCos60 * 2, kSin60 * 2,
-                        -kCos60 * 3, kSin60 * 3,
-                        -kCos60, kSin60 * 3,
-                        kCos60, kSin60 * 3,
-                        kCos60 * 3, kSin60 * 3};
+  const double pins_pos[] = { 0, 0,
+                              -kCos60, kSin60,
+                              kCos60, kSin60,
+                              -kCos60 * 2, kSin60 * 2,
+                              0, kSin60 * 2,
+                              kCos60 * 2, kSin60 * 2,
+                              -kCos60 * 3, kSin60 * 3,
+                              -kCos60, kSin60 * 3,
+                              kCos60, kSin60 * 3,
+                              kCos60 * 3, kSin60 * 3};
 
   for (int i = 0; i < FLAGS_pin_count; ++i) {
     double y = pins_pos[i * 2] + kPinOriginY;
