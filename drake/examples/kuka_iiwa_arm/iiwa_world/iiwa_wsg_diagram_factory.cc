@@ -69,7 +69,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   world_tree.doKinematics(world_cache);
 
   const RigidBody<T>* end_effector = world_tree.FindBody("iiwa_link_7");
-  Isometry3<T> X_WEE =
+  const Isometry3<T> X_WEE =
       world_tree.CalcBodyPoseInWorldFrame(world_cache, *end_effector);
 
   // The inertia of the added gripper is lumped into the last link of the
@@ -81,8 +81,8 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   // the integrator to kick in.
 
   // Computes the lumped inertia for the gripper.
-  std::set<int> gripper_instance_set = {wsg_info.instance_id};
-  Matrix6<T> lumped_gripper_inertia_W =
+  const std::set<int> gripper_instance_set = {wsg_info.instance_id};
+  const Matrix6<T> lumped_gripper_inertia_W =
       world_tree.LumpedSpatialInertiaInWorldFrame(world_cache,
                                                   gripper_instance_set);
   // Transfer it to the last iiwa link's body frame.
