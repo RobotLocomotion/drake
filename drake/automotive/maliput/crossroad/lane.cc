@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <memory>
+#include <string>
 
 #include "drake/automotive/maliput/crossroad/branch_point.h"
 #include "drake/automotive/maliput/crossroad/road_geometry.h"
@@ -84,13 +85,12 @@ api::GeoPosition Lane::DoToGeoPosition(
   } else if (strcmp(segment_id.id.c_str(), "Crossroad_Vertical_Segment") == 0) {
     return {lane_pos.r + Lane::r_offset(), lane_pos.s - length_ / 2,
             lane_pos.h};
-  } else {
-    throw std::runtime_error("Segment ID not recogonized");
   }
+  throw std::runtime_error("Segment ID not recogonized");
 }
 
 api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
-    return api::Rotation(0, 0, 0);  // roll, pitch, yaw.
+  return api::Rotation(0, 0, 0);  // roll, pitch, yaw.
 }
 
 api::LanePosition Lane::DoToLanePosition(const api::GeoPosition& geo_pos,

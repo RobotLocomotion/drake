@@ -139,9 +139,7 @@ void AddVehicles(RoadNetworkType road_network_type,
                                          std::get<1>(params),
                                          std::get<2>(params));
     }
-  }
-
-  else if (road_network_type == RoadNetworkType::crossroad) {
+  } else if (road_network_type == RoadNetworkType::crossroad) {
     DRAKE_DEMAND(road_geometry != nullptr);
     const maliput::crossroad::RoadGeometry* crossroad_road_geometry =
         dynamic_cast<const maliput::crossroad::RoadGeometry*>(road_geometry);
@@ -167,9 +165,7 @@ void AddVehicles(RoadNetworkType road_network_type,
                                          std::get<1>(params),
                                          std::get<2>(params));
     }
-  }
-  
-  else {
+  } else {
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
       simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
