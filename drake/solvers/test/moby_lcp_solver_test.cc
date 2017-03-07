@@ -161,8 +161,8 @@ GTEST_TEST(testMobyLCP, testAutoDiffTrivial) {
       0, 0, 0, 0, 0, 0, 0, 0, 9;
   // clang-format on
 
-  // Set the LCP vector and indicate that we are interested in how the solution changes as
-  // the first element changes.
+  // Set the LCP vector and indicate that we are interested in how the solution
+  // changes as the first element changes.
   VectorX<Scalar> q(9);
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
   q(0).derivatives()(0) = 1;
@@ -176,8 +176,8 @@ GTEST_TEST(testMobyLCP, testAutoDiffTrivial) {
   result = l.SolveLcpLemke(M, q, &lemke_z);
   EXPECT_TRUE(result);
 
-  // Since the LCP matrix is diagonal and the first number is 1.0, a unit increase in q(1)
-  // will result in a unit decrease in z(1).
+  // Since the LCP matrix is diagonal and the first number is 1.0, a unit
+  // increase in q(1) will result in a unit decrease in z(1).
   const double tol = std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(fast_z(0).derivatives()(0), -1, tol);
 
