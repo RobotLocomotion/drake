@@ -85,17 +85,17 @@ void MobyLCPSolver<T>::ClearIndexVectors() const {
   j_.clear();
 }
 
-// NOLINTNEXTLINE(*)  Don't lint the deliberately evil macro below
 template <>
 SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
+// NOLINTNEXTLINE(*)  Don't lint the deliberately evil macro below
     MathematicalProgram& prog) const {
   DRAKE_ABORT_MSG("MobyLCPSolver cannot yet be used in a MathematicalProgram "
                   "while templatized as an AutoDiff");
   return SolutionResult::kUnknownError;
 }
 
-// NOLINTNEXTLINE(*)  Don't lint the deliberately evil macro below
 template <typename T>
+// NOLINTNEXTLINE(*)  Don't lint the deliberately evil macro below
 SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   // TODO(ggould-tri) This solver currently imposes restrictions that its
   // problem:
