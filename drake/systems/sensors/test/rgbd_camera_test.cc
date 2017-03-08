@@ -191,17 +191,14 @@ class ImageTest {
     systems::Simulator<double> simulator(diagram_, std::move(context));
     simulator.Initialize();
 
-    double kDuration = 0.1;
-    for (double time = 0.; time < kDuration ; time += 0.1) {
-      simulator.StepTo(time);
-      diagram_.CalcOutput(simulator.get_context(), output.get());
+    simulator.StepTo(0.);
+    diagram_.CalcOutput(simulator.get_context(), output.get());
 
-      systems::AbstractValue* mutable_data = output->GetMutableData(2);
-      auto camera_base_pose =
-          mutable_data->GetMutableValue<Eigen::Isometry3d>();
+    systems::AbstractValue* mutable_data = output->GetMutableData(2);
+    auto camera_base_pose =
+        mutable_data->GetMutableValue<Eigen::Isometry3d>();
 
-      verifier(camera_base_pose);
-    }
+    verifier(camera_base_pose);
   }
 
   static void VerifyCameraPose(const Eigen::Isometry3d& pose_actual) {

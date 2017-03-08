@@ -143,7 +143,7 @@ class RgbdCamera::Impl {
   void CreateRenderingWorld();
 
   void UpdateModelPoses(const KinematicsCache<double>& cache,
-                        const Eigen::Isometry3d& camera_to_world) const;
+                        const Eigen::Isometry3d& X_CW) const;
 
   void UpdateRenderWindow() const;
 
@@ -237,7 +237,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
 
 
 void RgbdCamera::Impl::CreateRenderingWorld() {
-  auto camera_to_world = (X_WB_initial_ * X_BC_).inverse();
+  auto X_CW = (X_WB_initial_ * X_BC_).inverse();
 
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
@@ -254,7 +254,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
     const auto& visual = body->get_visual_elements().at(0);
     // Converts visual's pose in the world to the one in the camera coordinate
     // system.
-    auto pose = camera_to_world * visual.getWorldTransform();
+    auto pose = X_CW * visual.getWorldTransform();
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(pose);
 
@@ -359,7 +359,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
       kTerrainSize);
 
   vtkSmartPointer<vtkTransform> transform =
-      VtkUtil::ConvertToVtkTransform(camera_to_world);
+      VtkUtil::ConvertToVtkTransform(X_CW);
 
   vtkNew<vtkPolyDataMapper> mapper;
   mapper->SetInput(plane->GetOutput());
@@ -377,13 +377,13 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
 
 void RgbdCamera::Impl::UpdateModelPoses(
     const KinematicsCache<double>& cache,
-    const Eigen::Isometry3d& camera_to_world) const {
+    const Eigen::Isometry3d& X_CW) const {
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
     }
 
-    auto const camera_to_body = camera_to_world * tree_.relativeTransform(
+    auto const camera_to_body = X_CW * tree_.relativeTransform(
         cache, 0, body->get_body_index());
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(camera_to_body);
@@ -397,7 +397,7 @@ void RgbdCamera::Impl::UpdateModelPoses(
   if (!kCameraFixed) {
     // Updates terrain.
     vtkSmartPointer<vtkTransform> vtk_transform =
-        VtkUtil::ConvertToVtkTransform(camera_to_world);
+        VtkUtil::ConvertToVtkTransform(X_CW);
     // `terrain_actor_` is modified here, but this is OK.  For the detail, see
     // the comment above for `id_object_pairs_`.
     terrain_actor_->SetUserTransform(vtk_transform);
@@ -425,17 +425,14 @@ void RgbdCamera::Impl::DoCalcOutput(
   Eigen::Isometry3d& X_WB =
       mutable_data_base_pose->GetMutableValue<Eigen::Isometry3d>();
 
-  Eigen::Isometry3d X_WC;
   if (kCameraFixed) {
     X_WB = X_WB_initial_;
-    X_WC = X_WB * X_BC_;
   } else {
     // Updates camera pose.
     X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
-    X_WC = X_WB * X_BC_;
   }
 
-  UpdateModelPoses(cache, X_WC.inverse());
+  UpdateModelPoses(cache, (X_WB * X_BC_).inverse());
 
   UpdateRenderWindow();
 
