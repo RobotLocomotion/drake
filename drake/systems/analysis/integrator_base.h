@@ -1268,12 +1268,15 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
-  // Verify that update dt is positive
-  DRAKE_DEMAND(update_dt > 0.0);
+  // Verify that update dt is positive.
+  if (update_dt <= 0.0)
+    throw std::logic_error("Update dt must be non-negative.");
 
-  // Verify that other dt's are non-negative
-  DRAKE_DEMAND(publish_dt >= 0.0);
-  DRAKE_DEMAND(boundary_dt >= 0.0);
+  // Verify that other dt's are non-negative.
+  if (publish_dt < 0.0)
+    throw std::logic_error("Publish dt is negative.");
+  if (boundary_dt < 0.0)
+    throw std::logic_error("Boundary dt is negative.");
 
   // The size of the integration step is the minimum of the time until the next
   // update event, the time until the next publish event, the boundary time

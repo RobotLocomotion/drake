@@ -57,6 +57,22 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_THROW(integrator.StepOnceAtMost(dt, dt, dt), std::logic_error);
 }
 
+/// Checks that the integrator can catch invalid dt's.
+GTEST_TEST(IntegratorTest, InvalidDts) {
+  // Spring-mass system is necessary only to setup the problem.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  const double dt = 1e-3;
+  auto context = spring_mass.CreateDefaultContext();
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, dt, context.get());
+  integrator.Initialize();
+
+  EXPECT_NO_THROW(integrator.StepOnceAtMost(dt, dt, dt));
+  EXPECT_THROW(integrator.StepOnceAtMost(dt, 0.0, dt), std::logic_error);
+  EXPECT_THROW(integrator.StepOnceAtMost(-1, dt, dt), std::logic_error);
+  EXPECT_THROW(integrator.StepOnceAtMost(dt, dt, -1), std::logic_error);
+}
+
 /// Verifies error estimation is unsupported.
 GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   // Spring-mass system is necessary only to setup the problem.
