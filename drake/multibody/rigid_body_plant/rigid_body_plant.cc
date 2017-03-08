@@ -812,31 +812,15 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       // TODO(SeanCurtis-TRI): Move this documentation to the larger doxygen
       // discussion and simply reference it here.
 
-      // Normal force:
-      // This is the implementation of the Hunt-Crossley dissipation model
-      // with a linear stiffness model.  Generally, f(x, ẋ) = kxⁿ(1 + dẋ).
-      // For Hertz stiffness, n = 3/2.  Here n = 1.  The variables have the
-      // following interpretation:
-      //    x: is the penetration depth.
-      //    ẋ: is the rate of change of penetration, ẋ > 0 --> increasing
-      //        penetration.
-      //    k: penetration stiffness, k > 0
-      //    d: dissipation factor, d > 0
-      // f(x, ẋ) > 0 provides a repulsive force.
-      // It is possible for this force to become attractive if there is a
-      // sufficiently large separating velocity.  In fact, this occurs if
-      // ẋ < -1 / d.  In these cases, we simply clamp the force to zero.
-      // For analysis, we break it down as follows:
-      //  fK = kx -- force due to stiffness
-      //  fD = fk dẋ -- force due to dissipation
-      //  fN = fK + fD  -- total normal force; (skipped if fN < 0).
-      //  fF = mu(v) fN  - friction force magnitude.
-
-      // pair.distance is the signed distance (with negative values indicating
-      // collision).  Therefore, x = -pair.distance.
-      // Given the previous definition of rv_BcAc_C, if the objects are
-      // getting closer (i.e., increasing penetration depth), then A is
-      // moving *against* the normal direction. That means, ẋ = -rv_BcAc_C(2).
+      // See contact_model_doxygen.h for the details of this contact model.
+      // Normal force fN = kx(1 + dẋ).  We map the equation to the
+      // local variables as follows:
+      //  x = -pair.distance -- penetration depth.
+      //  ̇ẋ = -rv_BcAc_C(2)  -- change of penetration (in normal direction).
+      //  fK = kx -- force due to stiffness.
+      //  fD = fk dẋ -- force due to dissipation.
+      //  fN = max(0, fK + fD ) -- total normal force; (skipped if fN < 0).
+      //  fF = mu(v) * fN  - friction force magnitude.
 
       const T x = T(-pair.distance);
       const T x_dot = -rv_BcAc_C(2);
