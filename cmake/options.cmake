@@ -265,7 +265,7 @@ macro(drake_setup_options)
 
   drake_optional_external(BULLET ON "Bullet library for collision detection")
 
-  drake_optional_external(CCD ON "Convex shape Collision Detection library")
+  drake_optional_external(CCD OFF "Convex shape Collision Detection library")
 
   drake_optional_external(DIRECTOR ON
     DEPENDS "HAVE_VTK\;HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"

@@ -181,7 +181,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
 bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
                                  const Eigen::VectorXd& q, Eigen::VectorXd* z,
                                  double zero_tol) const {
-  const unsigned N = q.rows();
+  const int N = q.rows();
   const unsigned UINF = std::numeric_limits<unsigned>::max();
 
   Log() << "MobyLCPSolver::SolveLcpFast() entered" << std::endl;
@@ -208,7 +208,7 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
     Log() << "MobyLCPSolver::SolveLcpFast() - warm starting activated"
           << std::endl;
 
-    for (unsigned i = 0; i < z->size(); i++) {
+    for (int i = 0; i < z->size(); i++) {
       if (std::fabs((*z)[i]) < zero_tol) {
         bas_.push_back(i);
       } else {
@@ -237,7 +237,8 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
     // setup basic and nonbasic variable indices
     nonbas_.push_back(minw);
     bas_.resize(N - 1);
-    for (unsigned i = 0, j = 0; i < N; i++) {
+    unsigned j = 0;
+    for (int i = 0; i < N; i++) {
       if (i != minw) {
         bas_[j++] = i;
       }
@@ -417,7 +418,7 @@ bool MobyLCPSolver::SolveLcpFastRegularized(const Eigen::MatrixXd& M,
 
     // regularize M
     MM_ = M;
-    for (unsigned i = 0; i < M.rows(); i++) {
+    for (int i = 0; i < M.rows(); i++) {
       MM_(i, i) += lambda;
     }
 
@@ -531,8 +532,8 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
     Log() << "  q: " << q << std::endl;
   }
 
-  const unsigned n = q.size();
-  const unsigned MAXITER = std::min((unsigned)1000, 50 * n);
+  const int n = q.size();
+  const unsigned MAXITER = std::min(1000, 50 * n);
 
   // update the pivots
   pivots_ = 0;
@@ -569,10 +570,10 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
   // initialize variables
   z->resize(n * 2);
   z->fill(0);
-  unsigned t = 2 * n;
+  int t = 2 * n;
   unsigned entering = t;
-  unsigned leaving = 0;
-  for (unsigned i = 0; i < n; i++) {
+  int leaving = 0;
+  for (int i = 0; i < n; i++) {
     all_.push_back(i);
   }
   unsigned lvindex;
@@ -582,9 +583,9 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
   // determine initial basis
   if (z0_.size() != n) {
     // setup the nonbasic indices
-    for (unsigned i = 0; i < n; i++) nonbas_.push_back(i);
+    for (int i = 0; i < n; i++) nonbas_.push_back(i);
   } else {
-    for (unsigned i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       if (z0_[i] > 0) {
         bas_.push_back(i);
       } else {
@@ -666,7 +667,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
   // pivot in the artificial variable
   *iiter = t;  // replace w var with _z0 in basic indices
   u_.resize(n);
-  for (unsigned i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++) {
     u_[i] = (x_[i] < 0.0) ? 1.0 : 0.0;
   }
   Be_ = (Bl_ * u_) * -1;
@@ -714,7 +715,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
 
     // ** find new leaving variable
     j_.clear();
-    for (unsigned i = 0; i < dl_.size(); i++) {
+    for (int i = 0; i < dl_.size(); i++) {
       if (dl_[i] > PIV_TOL) {
         j_.push_back(i);
       }
@@ -898,7 +899,7 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
 
     // regularize M
     MM_ = M;
-    for (unsigned i = 0; i < M.rows(); i++) {
+    for (int i = 0; i < M.rows(); i++) {
       MM_(i, i) += lambda;
     }
 
@@ -973,8 +974,8 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
     Log() << "  q: " << q << std::endl;
   }
 
-  const unsigned n = q.size();
-  const unsigned MAXITER = std::min((unsigned)1000, 50 * n);
+  const int n = q.size();
+  const unsigned MAXITER = std::min(1000, 50 * n);
 
   // look for immediate exit
   if (n == 0) {
@@ -1003,10 +1004,10 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   // initialize variables
   z->resize(n * 2);
   z->fill(0);
-  unsigned t = 2 * n;
+  int t = 2 * n;
   unsigned entering = t;
-  unsigned leaving = 0;
-  for (unsigned i = 0; i < n; i++) {
+  int leaving = 0;
+  for (int i = 0; i < n; i++) {
     all_.push_back(i);
   }
   unsigned lvindex;
@@ -1015,11 +1016,11 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
 
   // determine initial basis
   if (z0_.size() != n) {
-    for (unsigned i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       nonbas_.push_back(i);
     }
   } else {
-    for (unsigned i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       if (z0_[i] > 0) {
         bas_.push_back(i);
       } else {
@@ -1086,7 +1087,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   // pivot in the artificial variable
   *iiter = t;  // replace w var with _z0 in basic indices
   u_.resize(n);
-  for (unsigned i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++) {
     u_[i] = (x_[i] < 0.0) ? 1.0 : 0.0;
   }
   Be_ = (sBl_ * u_) * -1;
@@ -1127,7 +1128,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
 
     // ** find new leaving variable
     j_.clear();
-    for (unsigned i = 0; i < dl_.size(); i++) {
+    for (int i = 0; i < dl_.size(); i++) {
       if (dl_[i] > PIV_TOL) {
         j_.push_back(i);
       }

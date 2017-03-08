@@ -263,7 +263,7 @@ macro(drake_setup_platform)
   drake_setup_compiler()
   drake_setup_matlab()
   drake_setup_java()
-  drake_setup_python()
+  #drake_setup_python()
 
   # Set default build type
   if(NOT CMAKE_BUILD_TYPE)
