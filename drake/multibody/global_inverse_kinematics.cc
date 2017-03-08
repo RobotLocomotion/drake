@@ -318,45 +318,57 @@ void GlobalInverseKinematics::AddWorldOrientationConstraint(
   AddLinearConstraint(rotation_matrix_err.trace(), lb, 3);
 }
 
-void GlobalInverseKinematics::AddPostureCost(const Eigen::VectorXd &q_desired,
-                                             const Eigen::VectorXd &body_position_cost,
-                                             const Eigen::VectorXd &body_orientation_cost) {
+void GlobalInverseKinematics::AddPostureCost(
+    const Eigen::Ref<const Eigen::VectorXd>& q_desired,
+    const Eigen::Ref<const Eigen::VectorXd>& body_position_cost,
+    const Eigen::Ref<const Eigen::VectorXd>& body_orientation_cost) {
   const int num_bodies = robot_->get_num_bodies();
   if (body_position_cost.rows() != num_bodies - 1) {
-    throw std::runtime_error("body_position_cost should have " + num_bodies - 1 + " rows.");
+    std::ostringstream oss;
+    oss << "body_position_cost should have " << num_bodies - 1 << " rows.";
+    throw std::runtime_error(oss.str());
   }
   if (body_orientation_cost.rows() != num_bodies - 1) {
-    throw std::runtime_error("body_orientation_cost should have " + num_bodies - 1 + " rows.");
+    std::ostringstream oss;
+    oss << "body_orientation_cost should have " << num_bodies - 1 << " rows.";
+    throw std::runtime_error(oss.str());
   }
   for (int i = 0; i < num_bodies - 1; ++i) {
     if (body_position_cost(i) < 0) {
-      throw std::runtime_error("body_position_cost(" << i << ") is negative.");
+      std::ostringstream oss;
+      oss << "body_position_cost(" << i << ") is negative.";
+      throw std::runtime_error(oss.str());
     }
     if (body_orientation_cost(i) < 0) {
-      throw std::runtime_error("body_orientation_cost(" << i << ") is negative.");
+      std::ostringstream oss;
+      oss << "body_orientation_cost(" << i << ") is negative.";
+      throw std::runtime_error(oss.str());
     }
   }
-  KinematicsCache<double> cache = robot_->doKinematics(q_desired);
+  auto cache = robot_->CreateKinematicsCache();
+  cache.initialize(q_desired);
+  robot_->doKinematics(cache);
 
-  // sum up the pose error for each body to pose_err_expr.
-  Expression pose_err_expr(0);
+  // sum up the orientation error for each body to orient_err_sum.
+  Expression orient_err_sum(0);
+  // p_WBo_err(i) is the slack variable, representing the position error for
+  // the (i+1)'th body.
+  solvers::VectorXDecisionVariable p_WBo_err = NewContinuousVariables(num_bodies - 1, "p_WBo_error");
   for (int i = 1; i < num_bodies; ++i) {
     const auto& T_WB_desired = robot_->CalcFramePoseInWorldFrame(cache, robot_->get_body(i), Isometry3d::Identity());
-    // The position error is just the Euclidean distance from the body origin
-    // to the desired body origin.
-    pose_err_expr += body_position_cost(i - 1) * (p_WBo_[i] - T_WB_desired.translation()).squaredNorm();
+    // Add the constraint p_WBo_err(i-1) >= body_position_cost(i - 1) * | p_WBo(i) - p_WBo_desired(i) |
+    Vector4<symbolic::Expression> pos_error_expr;
+    pos_error_expr << p_WBo_err(i-1), body_position_cost(i - 1) * (p_WBo_[i] - T_WB_desired.translation());
+    AddLorentzConeConstraint(pos_error_expr);
+
     // The orientation error is on the angle θ between the body orientation and
     // the desired orientation, namely 1 - cos(θ).
     // cos(θ) can be computed as (trace(R_WB_[i]ᵀ * R_WB_desired) - 1) / 2
-    pose_err_expr += body_orientation_cost(i - 1) * (1 - ((R_WB_[i].transpose() * T_WB_desired.linear()).trace() - 1)/ 2);
+    orient_err_sum += body_orientation_cost(i - 1) * (1 - ((R_WB_[i].transpose() * T_WB_desired.linear()).trace() - 1)/ 2);
   }
 
-  // Now adds a slack variable pose_err with the Lorentz cone constraint
-  // pose_err >= pose_err_expr
-  // min pose_err
-  VectorDecisionVariable<1> pose_err = NewContinuousVariables<1>("pose_error");
-  
-
+  // The total cost is the summation of the position error and the orientation error.
+  AddCost(p_WBo_err.cast<Expression>().sum() + orient_err_sum);
 }
 }  // namespace multibody
 }  // namespace drake
