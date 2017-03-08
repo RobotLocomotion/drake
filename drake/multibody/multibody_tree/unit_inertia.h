@@ -10,7 +10,7 @@ namespace multibody {
 
 /// This class is used to represent rotational inertias for unit mass bodies.
 /// Therefore, unlike RotationalInertia whose units are kg⋅m², the units of a
-/// UnitInertia are those of length squared. A unit inertia is a useful concept
+/// %UnitInertia are those of length squared. A unit inertia is a useful concept
 /// to represent the geometric distribution of mass in a body regardless of the
 /// actual value of the body mass. The rotational inertia of a body can
 /// therefore be obtained by multiplying its unit inertia by its mass.
@@ -36,8 +36,8 @@ class UnitInertia : public RotationalInertia<T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
 
-  /// Default UnitInertia constructor. All entries are set to NaN for a
-  /// quick detection of uninitialized values.
+  /// Default %UnitInertia constructor sets all entries to NaN for quick
+  /// detection of uninitialized values.
   UnitInertia() {}
 
   /// Creates a principal unit inertia with identical diagonal elements
@@ -140,24 +140,23 @@ class UnitInertia : public RotationalInertia<T> {
   /// (that is, p_FoQ_F).
   /// The unit inertia `G_QFo_F` of point mass `Q` about the origin `Fo` of
   /// frame `F` and expressed in `F` for this unit mass point equals the square
-  /// of the cross product matrix of `p_FQ`:
+  /// of the cross product matrix of `p_FQ`. In coordinate-free form:
   /// \f[
-  ///   [G^{F_o}]_F = [p^\times]_{FQ}^2 = [p^\times]_{FQ}^T \, [p^\times]_{FQ} =
-  ///                -[p^\times]_{FQ} \, [p^\times]_{FQ}
+  ///   G^{Q/F_o} = (^Fp^Q_\times)^2 = (^Fp^Q_\times)^T \, ^Fp^Q_\times =
+  ///               -^Fp^Q_\times \, ^Fp^Q_\times
   /// \f]
-  /// where @f$[p^\times]_{FQ}@f$ is the cross product matrix of vector `p_FQ`
-  /// expressed in frame `F`. In source code the above expression is written as:
+  /// where @f$ ^Fp^Q_\times @f$ is the cross product matrix of vector
+  /// @f$ ^Fp^Q @f$. In source code the above expression is written as:
   /// <pre>
   ///   G_QFo_F = px_FQ² = px_FQᵀ * px_FQ = -px_FQ * px_FQ
   /// </pre>
   /// where `px_FQ` denotes the cross product matrix of the position vector
-  /// `p_FQ` such that the cross product with another vector `a` can be obtained
-  /// as `px.cross(a) = px * a`. The cross product matrix `px` is
-  /// skew-symmetric.
-  /// The square of the cross product matrix is a symmetric matrix with
-  /// non-negative diagonals and obeys the triangle inequality.
-  /// Matrix `px²` can be used to compute the triple vector product as
-  /// `-p x (p x a) = -p.cross(p.cross(a)) = px² * a`.
+  /// `p_FQ` (expressed in `F`) such that the cross product with another vector
+  /// `a` can be obtained as `px.cross(a) = px * a`. The cross product matrix
+  /// `px` is skew-symmetric. The square of the cross product matrix is a
+  /// symmetric matrix with non-negative diagonals and obeys the triangle
+  /// inequality. Matrix `px²` can be used to compute the triple vector product
+  /// as `-p x (p x a) = -p.cross(p.cross(a)) = px² * a`.
   static UnitInertia<T> PointMass(const Vector3<T>& p_FQ) {
     const Vector3<T> p2m = p_FQ.cwiseAbs2();
     const T mp0 = -p_FQ(0);
