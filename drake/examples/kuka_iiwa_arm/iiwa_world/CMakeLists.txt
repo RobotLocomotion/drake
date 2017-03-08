@@ -11,6 +11,7 @@ if(lcm_FOUND)
       drakeLCMUtil
       drakeMultibodyParsers
       drakeRigidBodyPlant
+      drakeSimDiagramBuilder
       drakeSystemAnalysis
       drakeSystemFramework
       drakeSystemPrimitives
@@ -33,6 +34,7 @@ if(lcm_FOUND)
         drake-lcm-system2
         drake-multibody-parsers
         drake-rigid-body-plant
+        drake-sim-diagram-builder
         drake-system-analysis
         drake-system-framework
         drake-system-primitives
@@ -53,4 +55,15 @@ if(lcm_FOUND)
         NAME controlled_iiwa_world_demo
         COMMAND controlled_iiwa_world_demo --simulation_sec 0.1)
   endif()
+
+  add_executable(multi_arm_with_gripper_demo multi_arm_with_gripper_demo.cc)
+  target_link_libraries(multi_arm_with_gripper_demo
+      drakeKukaIiwaArmCommon
+      drakeKukaIiwaWorld
+      drakeSimDiagramBuilder
+      drakeLcmSystem
+      drakeMultibodyParsers
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeSystemControllers)
 endif()

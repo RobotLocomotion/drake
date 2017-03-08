@@ -13,6 +13,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
+#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -46,100 +47,55 @@ using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 
-// TODO(sam.creasey) We should de-duplicate this with kuka_demo.cc.
-// I'm holding off for now because I still need to investigate how to
-// create the combined Schunk+iiwa system, and I'm not sure what
-// allowances I'll need in the simulation setup to get that to work.
-template<typename T>
-class SimulatedKuka : public systems::Diagram<T> {
- public:
-  SimulatedKuka() {
-    this->set_name("SimulatedKuka");
-    DiagramBuilder<T> builder;
-
-    // Instantiates a model of the world.
-    auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
-    const std::string model_path = drake::GetDrakePath() +
-        "/examples/kuka_iiwa_arm/models/iiwa14/"
-        "iiwa14_simplified_collision.urdf";
-
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        model_path,
-        drake::multibody::joints::kFixed,
-        nullptr /* weld to frame */, rigid_body_tree.get());
-
-    drake::multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
-
-    plant_ = builder.template AddSystem<systems::RigidBodyPlant<double>>(
-        std::move(rigid_body_tree));
-
-    DRAKE_ASSERT(plant_->actuator_command_input_port().size() ==
-        plant_->get_num_positions());
-
-    Eigen::VectorXd kp;
-    Eigen::VectorXd ki;
-    Eigen::VectorXd kd;
-    SetPositionControlledIiwaGains(&kp, &ki, &kd);
-
-    controller_ =
-        builder.template AddSystem<systems::InverseDynamicsController<T>>(
-            plant_->get_rigid_body_tree(), kp, ki, kd,
-            false /* no feedforward acceleration */);
-
-    // Connects plant and controller.
-    builder.Connect(plant_->state_output_port(),
-                    controller_->get_input_port_estimated_state());
-    builder.Connect(controller_->get_output_port_control(),
-                    plant_->actuator_command_input_port());
-
-    // Exposes desired state input port.
-    builder.ExportInput(controller_->get_input_port_desired_state());
-    builder.ExportOutput(plant_->state_output_port());
-    builder.BuildInto(this);
-  }
-
-  const RigidBodyPlant<T>& get_plant() const { return *plant_; }
-
- private:
-  RigidBodyPlant<T>* plant_{nullptr};
-  systems::InverseDynamicsController<T>* controller_{nullptr};
-};
-
 int DoMain() {
-  systems::DiagramBuilder<double> builder;
-  auto model = builder.AddSystem<SimulatedKuka<double>>();
+  drake::lcm::DrakeLcm lcm;
+  SimDiagramBuilder<double> builder;
 
-  const RigidBodyTree<double>& tree =
-      model->get_plant().get_rigid_body_tree();
+  // Adds a plant.
+  RigidBodyPlant<double>* plant = nullptr;
+  const std::string kModelPath =
+      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
+  {
+    auto tree = std::make_unique<RigidBodyTree<double>>();
+    CreateTreedFromFixedModelAtPose(kModelPath, tree.get());
+    plant = builder.AddPlant(std::move(tree));
+  }
+  // Creates and adds LCM publisher for visualization.
+  builder.AddVisualizer(&lcm);
+
+  // Adds a iiwa controller
+  VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+  SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+  auto controller =
+      builder.AddController<systems::InverseDynamicsController<double>>(
+          RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
+          GetDrakePath() + kModelPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
+          false /* without feedforward acceleration */);
+
+  const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
   VerifyIiwaTree(tree);
 
-  // Creates and adds LCM publisher for visualization.
-  drake::lcm::DrakeLcm lcm;
-  DrakeVisualizer* visualizer =
-      builder.AddSystem<DrakeVisualizer>(tree, &lcm);
-
   // Create the command subscriber and status publisher.
-  auto command_sub = builder.AddSystem(
+  systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
+  auto command_sub = base_builder->AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
           "IIWA_COMMAND", &lcm));
-  auto command_receiver = builder.AddSystem<IiwaCommandReceiver>();
-  auto status_pub = builder.AddSystem(
+  auto command_receiver = base_builder->AddSystem<IiwaCommandReceiver>();
+  auto status_pub = base_builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm));
   status_pub->set_publish_period(kIiwaLcmStatusPeriod);
-  auto status_sender = builder.AddSystem<IiwaStatusSender>();
+  auto status_sender = base_builder->AddSystem<IiwaStatusSender>();
 
-  builder.Connect(command_sub->get_output_port(0),
+  base_builder->Connect(command_sub->get_output_port(0),
                   command_receiver->get_input_port(0));
-  builder.Connect(command_receiver->get_output_port(0),
-                  model->get_input_port(0));
-  builder.Connect(model->get_output_port(0),
-                  visualizer->get_input_port(0));
-  builder.Connect(model->get_output_port(0),
+  base_builder->Connect(command_receiver->get_output_port(0),
+                  controller->get_input_port_desired_state());
+  base_builder->Connect(plant->get_output_port(0),
                   status_sender->get_state_input_port());
-  builder.Connect(command_receiver->get_output_port(0),
+  base_builder->Connect(command_receiver->get_output_port(0),
                   status_sender->get_command_input_port());
-  builder.Connect(status_sender->get_output_port(0),
+  base_builder->Connect(status_sender->get_output_port(0),
                   status_pub->get_input_port(0));
   auto sys = builder.Build();
 

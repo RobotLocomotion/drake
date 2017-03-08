@@ -6,6 +6,7 @@ if(lcm_FOUND)
       drakeLcmSystem
       drakeMultibodyParsers
       drakeRigidBodyPlant
+      drakeSimDiagramBuilder
       drakeSystemAnalysis
       drakeSystemControllers
       drakeTrajectories
@@ -17,6 +18,7 @@ if(lcm_FOUND)
       drakeKukaIiwaArmCommon
       drakeLcmSystem
       drakeRigidBodyPlant
+      drakeSimDiagramBuilder
       drakeSystemAnalysis
       drakeSystemControllers
       drakeTrajectories
