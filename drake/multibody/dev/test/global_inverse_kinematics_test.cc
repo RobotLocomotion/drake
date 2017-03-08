@@ -82,6 +82,9 @@ TEST_F(KukaTest, ReachableTest) {
 
       const Eigen::Matrix3d body_Ri =
           global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
+      EXPECT_TRUE((body_Ri.array().abs() <= 1).all());
+      EXPECT_LE(body_Ri.trace(), 3);
+      EXPECT_GE(body_Ri.trace(), -1);
       // TODO(hongkai.dai): We will have a more meaningful bound on the
       // relaxation of rotation matrix. Then clean up this print out with
       // the check on the error bound.
@@ -101,7 +104,7 @@ TEST_F(KukaTest, ReachableTest) {
       double orient_tol = 0.1;
       EXPECT_TRUE(CompareMatrices(body_pose_fk.translation(),
                                   body_pos_global_ik,
-                                  pose_tol,
+                                  pos_tol,
                                   MatrixCompareType::absolute));
       EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, orient_tol,
                                   MatrixCompareType::absolute));
