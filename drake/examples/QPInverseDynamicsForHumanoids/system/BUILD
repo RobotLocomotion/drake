@@ -79,6 +79,7 @@ drake_cc_binary(
     ],
     data = [
         "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.id_controller_config",
         "//drake/examples/Valkyrie:models",
     ],
     tags = [
@@ -105,6 +106,8 @@ drake_cc_googletest(
     name = "humanoid_plan_eval_test",
     srcs = ["test/humanoid_plan_eval_system_test.cc"],
     data = [
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.id_controller_config",
         "//drake/examples/Valkyrie:models",
     ],
     deps = [
