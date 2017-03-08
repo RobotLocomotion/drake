@@ -39,8 +39,7 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
 
   /** Getter for the decision variables on the rotation matrix `R_WB` for a body
    * with the specified index. This is the orientation of body i's frame
-   * measured
-   * and expressed in the world frame.
+   * measured and expressed in the world frame.
    * @param body_index  The index of the queried body. Notice that body 0 is
    * the world, and thus not a decision variable. Throws a runtime_error if
    * the index is smaller than 1, or no smaller than the total number of bodies
@@ -99,19 +98,21 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * to the accumulated error from the root of the kinematics tree.
    * @param body_idx The index of the body on which the position of a point is
    * constrained.
-   * @param body_pt `p_BQ`, the position of the point Q measured and expressed
-   * in the body frame `B`.
+   * @param p_BQ The position of the point Q measured and expressed in the
+   * body frame B.
    * @param box_lb_F The lower bound of the box in frame `F`.
    * @param box_ub_F The upper bound of the box in frame `F`.
-   * @param constraint_frame. The frame in which the box is specified. This
-   * frame is specified by an its pose `X_WF`, measured and expressed in the
-   * world frame `W`.
+   * @param X_WF. The frame in which the box is specified. This
+   * frame is represented by an isometry transform X_WF, the transform from
+   * the constraint frame F to the world frame W. Namely if the position of
+   * p_BQ in the world frame is p_WQ, then the constraint is
+   * box_lb <= X_WF.linear().transpose() * (p_WQ - X_WF.translation()) <= box_ub
    * @default is the identity transform.
    */
-  void AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& body_pt,
-                                  const Eigen::Vector3d& box_lb_F,
-                                  const Eigen::Vector3d& box_ub_F,
-                                  const Eigen::Isometry3d& constraint_frame =
+  void AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& g_BQ,
+                                  const Eigen::Vector3d& box_lb,
+                                  const Eigen::Vector3d& box_ub,
+                                  const Eigen::Isometry3d& X_WF =
                                       Eigen::Isometry3d::Identity());
 
   /**

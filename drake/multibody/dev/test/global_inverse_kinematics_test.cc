@@ -47,6 +47,7 @@ TEST_F(KukaTest, ReachableTest) {
   // Test the case that global IK should find a solution.
   // "ee" stands for "end effector".
   int ee_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_ee");
+  // Deliberately uses a large box.
   Eigen::Vector3d ee_pos_lb_W(0.4, -0.1, 0.4);
   Eigen::Vector3d ee_pos_ub_W(0.6, 0.1, 0.6);
   global_ik_.AddWorldPositionConstraint(ee_idx, Vector3d::Zero(), ee_pos_lb_W,
@@ -54,6 +55,7 @@ TEST_F(KukaTest, ReachableTest) {
 
   Eigen::Quaterniond ee_desired_orient(
       Eigen::AngleAxisd(-M_PI / 2, Vector3d(0, 1, 0)));
+  // Deliberately uses a large bound.
   global_ik_.AddWorldOrientationConstraint(ee_idx, ee_desired_orient,
                                            0.2 * M_PI);
 
@@ -80,6 +82,9 @@ TEST_F(KukaTest, ReachableTest) {
 
       const Eigen::Matrix3d body_Ri =
           global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
+      // TODO(hongkai.dai): We will have a more meaningful bound on the
+      // relaxation of rotation matrix. Then clean up this print out with
+      // the check on the error bound.
       std::cout << rigid_body_tree_->get_body(i).get_name() << std::endl;
       std::cout << "rotation matrix:\n global_ik\n" << body_Ri << std::endl;
       std::cout << "forward kinematics\n" << body_pose_fk.linear() << std::endl;
@@ -91,11 +96,14 @@ TEST_F(KukaTest, ReachableTest) {
       std::cout << "forward kinematics\n"
                 << body_pose_fk.translation() << std::endl;
       std::cout << std::endl;
+      // This error bound is chosen as tight as possible.
+      double pos_tol = 0.03;
+      double orient_tol = 0.1;
       EXPECT_TRUE(CompareMatrices(body_pose_fk.translation(),
                                   body_pos_global_ik,
-                                  0.03,
+                                  pose_tol,
                                   MatrixCompareType::absolute));
-      EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, 0.1,
+      EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, orient_tol,
                                   MatrixCompareType::absolute));
     }
   }
