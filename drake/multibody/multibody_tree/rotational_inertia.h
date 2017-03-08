@@ -230,7 +230,7 @@ class RotationalInertia {
   ///   frame `E` as `this` inertia matrix.
   /// @returns The product from the right of `this` inertia with `w_E`.
   Vector3<T> operator*(const Vector3<T>& w_E) const {
-    return Vector3<T>(get_symmetric_matrix_view() * w);
+    return Vector3<T>(get_symmetric_matrix_view() * w_E);
   }
 
   /// Sets this inertia to have NaN entries. Typically used to quickly detect
