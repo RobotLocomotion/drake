@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
@@ -271,6 +273,46 @@ const Variables& get_quantified_variables(const Formula& f);
  */
 const Formula& get_quantified_formula(const Formula& f);
 
+/** Returns an Eigen array of symbolic formula where each element
+    includes element-wise symbolic-equality of two symbolic
+    arrays @p m1 and @p m2. */
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+        std::is_same<typename DerivedA::Scalar, Expression>::value &&
+        std::is_same<typename DerivedB::Scalar, Expression>::value,
+    Eigen::Array<Formula, DerivedA::RowsAtCompileTime,
+                 DerivedB::ColsAtCompileTime>>::type
+operator==(const DerivedA& m1, const DerivedB& m2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  const auto expr_equal = [](const Expression& e1, const Expression& e2) {
+    return e1 == e2;
+  };
+  return m1.binaryExpr(m2, expr_equal);
+}
+
+// Returns a symbolic formula checking if two matrices of symbolic expression @p
+// m1 and @p m2 are equal.
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+        std::is_same<typename DerivedA::Scalar, Expression>::value &&
+        std::is_same<typename DerivedB::Scalar, Expression>::value,
+    Formula>::type
+operator==(const DerivedA& m1, const DerivedB& m2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  const auto expr_equal = [](const Expression& e1, const Expression& e2) {
+    return e1 == e2;
+  };
+  const auto logic_and = [](const Formula& f1, const Formula& f2) {
+    return f1 && f2;
+  };
+  return m1.binaryExpr(m2, expr_equal).redux(logic_and);
+}
 }  // namespace symbolic
 
 /** Computes the hash value of a symbolic formula. */
