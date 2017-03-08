@@ -27,7 +27,7 @@ namespace utility {
 /// The produced mesh covers the area within the lane-bounds of every
 /// api::Lane in the RoadGeometry.
 void GenerateUrdfFile(const api::RoadGeometry* road_geometry,
-                      const std::string& dirname,
+                      const std::string& dirpath,
                       const std::string& fileroot,
                       const ObjFeatures& features);
 

@@ -64,6 +64,13 @@ class ContactResultTest : public ::testing::Test {
   unique_ptr<SystemOutput<double>> output_{};
   const double kRadius = 1.0;
 
+  // Contact parameters
+  const double kStiffness = 150;
+  const double kDissipation = 2.0;
+  const double kStaticFriction = 0.9;
+  const double kDynamicFriction = 0.5;
+  const double kVStictionTolerance = 0.01;
+
   // Places two spheres are on the x-y plane mirrored across the origin from
   //  each other such there is 2 * `distance` units gap between them.  Negative
   //  numbers imply collision.
@@ -83,6 +90,9 @@ class ContactResultTest : public ::testing::Test {
     // Note: This is done here instead of the SetUp method because it appears
     //  the plant requires a *compiled* tree at constructor time.
     plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
+    plant_->set_normal_contact_parameters(kStiffness, kDissipation);
+    plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+                                            kVStictionTolerance);
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
     plant_->CalcOutput(*context_.get(), output_.get());
@@ -152,11 +162,13 @@ TEST_F(ContactResultTest, SingleCollision) {
   // Confirms the contact details are as expected.
   const auto& resultant = info.get_resultant_force();
   SpatialForce<double> expected_spatial_force;
-  // Note: This is fragile.  This is the value copied from rigid_body_plant.h
-  //  If the hard-coded value changes, or the code changes for the value to
-  //  be set in some other manner, then this test may fail.
-  const double stiffness = 150.0;
-  double force = stiffness * offset * 2;
+  // Note: This is fragile. It assumes a particular collision model.  Once the
+  // model has been generalized, this will have to adapt to account for that.
+
+  // NOTE: Because there is zero velocity, there is no frictional force and no
+  // damping on the normal force.  Simply the kx term.  Penetration is twice
+  // the offset.
+  double force = kStiffness * offset * 2;
   expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
   ASSERT_TRUE(
       CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));

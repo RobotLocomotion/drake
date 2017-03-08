@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
@@ -16,6 +18,21 @@ template <typename T>
 class DepthSensorOutput : public BasicVector<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensorOutput)
+
+  /// The depth value when an error occurs in obtaining the measurement.
+  static constexpr double kError{std::numeric_limits<double>::quiet_NaN()};
+
+  /// The depth value when the max sensing range is exceeded.
+  static constexpr double kTooFar{std::numeric_limits<double>::infinity()};
+
+  /// The depth value when the min sensing range is violated because the object
+  /// being sensed is too close. Note that this
+  /// <a href="http://www.ros.org/reps/rep-0117.html">differs from ROS</a>,
+  /// which uses negative infinity in this scenario. Drake uses zero because it
+  /// results in less devastating bugs when users fail to check for the lower
+  /// limit being hit and using negative infinity does not prevent users from
+  /// writing bad code.
+  static constexpr double kTooClose{0};
 
   /// Default constructor.  Sets all rows to zero.
   ///
@@ -58,6 +75,9 @@ class DepthSensorOutput : public BasicVector<T> {
   Eigen::Matrix3Xd GetPointCloud() const;
 
   //@}
+
+ protected:
+  DepthSensorOutput* DoClone() const override;
 
  private:
   const DepthSensorSpecification& spec_;

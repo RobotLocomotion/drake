@@ -12,13 +12,6 @@ using Eigen::Map;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-std::unique_ptr<DrakeJoint> RollPitchYawFloatingJoint::Clone() const {
-  auto joint = std::make_unique<RollPitchYawFloatingJoint>(
-      get_name(),
-      get_transform_to_parent_body());
-  return std::move(joint);
-}
-
 std::string RollPitchYawFloatingJoint::get_position_name(int index) const {
   switch (index) {
     case 0:
@@ -61,4 +54,11 @@ VectorXd RollPitchYawFloatingJoint::randomConfiguration(
 std::string RollPitchYawFloatingJoint::getPositionName(int index)
     const {
   return get_position_name(index);
+}
+
+std::unique_ptr<DrakeJoint> RollPitchYawFloatingJoint::DoClone() const {
+  auto joint = std::make_unique<RollPitchYawFloatingJoint>(
+      get_name(),
+      get_transform_to_parent_body());
+  return std::move(joint);
 }

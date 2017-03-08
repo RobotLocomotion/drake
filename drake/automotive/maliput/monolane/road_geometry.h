@@ -50,7 +50,9 @@ class RoadGeometry : public api::RoadGeometry {
 
   api::RoadPosition DoToRoadPosition(
       const api::GeoPosition& geo_pos,
-      const api::RoadPosition& hint) const override;
+      const api::RoadPosition* hint,
+      api::GeoPosition* nearest_position,
+      double* distance) const override;
 
   double do_linear_tolerance() const override { return linear_tolerance_; }
 

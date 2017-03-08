@@ -23,8 +23,8 @@ namespace {
 // to the existing vector in @p map. This function also guarantees the newly
 // inserted elements do no introduce duplicates.
 template <typename Type>
-void InsertOrMergeVectorWithoutDuplicates(const std::string key,
-    const std::vector<Type>& vec,
+void InsertOrMergeVectorWithoutDuplicates(
+    const std::string& key, const std::vector<Type>& vec,
     std::unordered_map<std::string, std::vector<Type>>* mapping) {
   DRAKE_DEMAND(mapping);
   std::set<Type> inserted;
@@ -99,17 +99,21 @@ void RigidBodyTreeAliasGroups<T>::AddJointGroup(
     for (int i = v_start; i < v_end; ++i) v_indices.push_back(i);
   }
 
-  InsertOrMergeVectorWithoutDuplicates(
-      group_name, q_indices, &position_groups_);
-  InsertOrMergeVectorWithoutDuplicates(
-      group_name, v_indices, &velocity_groups_);
+  InsertOrMergeVectorWithoutDuplicates(group_name, q_indices,
+                                       &position_groups_);
+  InsertOrMergeVectorWithoutDuplicates(group_name, v_indices,
+                                       &velocity_groups_);
 }
 
 template <typename T>
 void RigidBodyTreeAliasGroups<T>::LoadFromFile(
-    const std::string& config) {
+    const std::string& file_path) {
   AliasGroups alias_groups;
-  google::protobuf::io::FileInputStream istream(open(config.data(), O_RDONLY));
+  int fid = open(file_path.data(), O_RDONLY);
+  if (fid < 0) {
+    throw std::runtime_error("Cannot open file " + file_path);
+  }
+  google::protobuf::io::FileInputStream istream(fid);
   google::protobuf::TextFormat::Parse(&istream, &alias_groups);
   istream.Close();
 

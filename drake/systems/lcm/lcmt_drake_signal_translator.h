@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/vector_base.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
@@ -19,6 +20,8 @@ namespace lcm {
  */
 class LcmtDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmtDrakeSignalTranslator)
+
   /**
    * A constructor that sets the expected sizes of the LCM message and the
    * VectorBase. Both the LCM message and VectorBase must be the same size.

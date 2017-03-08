@@ -30,7 +30,7 @@ double ExtractDoubleOrThrow(const T& scalar) {
                            " cannot be converted to a double");
 }
 
-/// Returns the @p scalar a double.  Never throws.
+/// Returns @p scalar as a double.  Never throws.
 inline double ExtractDoubleOrThrow(double scalar) { return scalar; }
 
 }  // namespace drake

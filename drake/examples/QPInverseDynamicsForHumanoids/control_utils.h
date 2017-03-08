@@ -146,7 +146,8 @@ inline std::ostream& operator<<(std::ostream& out,
                                 const CartesianSetpoint<Scalar>& setpoint) {
   Vector3<Scalar> rpy = math::rotmat2rpy(setpoint.desired_pose().linear());
   out << "pose: (" << setpoint.desired_pose().translation().transpose()
-      << "), (" << rpy.transpose() << ")" << "\n";
+      << "), (" << rpy.transpose() << ")"
+      << "\n";
   out << "velocity: " << setpoint.desired_velocity().transpose() << "\n";
   out << "acceleration: " << setpoint.desired_acceleration().transpose()
       << "\n";

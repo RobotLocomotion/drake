@@ -36,14 +36,6 @@ class KukaSimInfoLabel(object):
                                                                   simTime)
 
 
-def makeRobotSystem(view):
-    factory = robotsystem.RobotSystemFactory()
-    options = factory.getDisabledOptions()
-    factory.setDependentOptions(options, usePlannerPublisher=True,
-                                useTeleop=True)
-    return factory.construct(view=view, options=options)
-
-
 def sendGripperCommand(targetPositionMM, force):
     msg = lcmdrake.lcmt_schunk_wsg_command()
     msg.utime = int(time.time() * 1e6)
@@ -69,11 +61,10 @@ def setupToolbar():
 
 
 # create a default mainwindow app
-app = mainwindowapp.MainWindowAppFactory().construct()
-mainwindowapp.MainWindowPanelFactory().construct(app=app.app, view=app.view)
+app = mainwindowapp.construct()
 
 # load a minimal robot system with ik planning
-robotSystem = makeRobotSystem(app.view)
+robotSystem = robotsystem.create(app.view, planningOnly=True)
 
 # add the teleop and playback panels to the mainwindow
 app.app.addWidgetToDock(robotSystem.teleopPanel.widget,
@@ -88,14 +79,18 @@ infoLabel = KukaSimInfoLabel(app.mainWindow.statusBar())
 
 # use pydrake ik backend
 ikPlanner = robotSystem.ikPlanner
-ikPlanner.planningMode = 'pydrake'
-ikPlanner.plannerPub._setupLocalServer()
+if ikPlanner.planningMode == 'pydrake':
+    ikPlanner.plannerPub._setupLocalServer()
 
 # change the default animation mode of the playback panel
 robotSystem.playbackPanel.animateOnExecute = True
 
 # disable pointwise ik by default
-robotSystem.ikPlanner.getIkOptions().setProperty('Use pointwise', False)
+ikPlanner.getIkOptions().setProperty('Use pointwise', False)
+ikPlanner.getIkOptions().setProperty('Max joint degrees/s', 60)
+
+# initialize the listener for the pose gui
+ikPlanner.addPostureGoalListener(robotSystem.robotStateJointController)
 
 # set the default camera view
 applogic.resetCamera(viewDirection=[-1, 0, 0], view=app.view)

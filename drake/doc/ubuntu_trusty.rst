@@ -79,8 +79,8 @@ installed as follows::
 
     sudo apt-get update
     sudo apt-get install --no-install-recommends \
-      libgl1-mesa-dri libqt4-dev libqt4-opengl-dev libqwt-dev \
-      libvtk-java libvtk5-qt4-dev python-lxml python-vtk xvfb
+      libqt4-dev libqt4-opengl-dev libqwt-dev \
+      libvtk-java libvtk5-qt4-dev python-lxml python-scipy python-vtk
 
 Note that the above installs an old version of VTK that is required by Drake. If
 a different version needs to be installed, Drake's build system can be

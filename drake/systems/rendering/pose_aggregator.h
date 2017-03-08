@@ -21,7 +21,8 @@ namespace rendering {
 /// PoseAggregator is a multiplexer for heterogeneous sources of poses.
 /// Supported sources are:
 /// - The state output of a RigidBodyPlant.
-/// - An abstract PoseBundle input.
+/// - A PoseVector input, which is a single pose {R, p}, and vector-valued.
+/// - A PoseBundle input, which is a collection of poses, and abstract-valued.
 ///
 /// PoseAggregator is stateless.
 ///
@@ -29,14 +30,17 @@ namespace rendering {
 /// inputs, except for the "world" bodies in a RigidBodyTree. By convention,
 /// each aggregated pose is in the same world frame of reference.
 ///
-/// The output poses are named in the form "<source>::<pose>".
-/// - For poses derived from a RigidBodyPlant input, <source> is the name of
-/// the RigidBodyTree model, concatenated with the instance ID, and <pose>
+/// The output poses are named in the form `<source>` or `<source>::<pose>`.
+/// - For poses derived from a RigidBodyPlant input, `<source>` is the name of
+/// the RigidBodyTree model, concatenated with the instance ID, and `<pose>`
 /// is the name of the body.  For instance, if the model is named "model", the
-/// pose of the link named "foo" in the first insance of that model is
+/// pose of the link named "foo" in the first instance of that model is
 /// "model_0::foo".
 ///
-/// - For poses derived from a generic input, <source> is the bundle name
+/// - For poses derived from a PoseVector input, <source> is the bundle name
+/// provided at construction time, and "::<pose>" is omitted.
+///
+/// - For poses derived from a PoseBundle input, <source> is the bundle name
 /// provided at construction time, and <pose> is the name found in the input
 /// PoseBundle at output evaluation time. In any sane use case, the input
 /// names will be stable during a simulation, but PoseAggregator is stateless
@@ -44,8 +48,8 @@ namespace rendering {
 ///
 /// In typical usage, Diagrams should contain just one PoseAggregator, and
 /// every pose in the Diagram should appear as an input to it. Then,
-/// Systems that need to ingest every pose in the universe, such as renderers,
-/// can simply depend on the output.
+/// Systems that need to ingest every pose in the universe, such as renderers
+/// or sensor models, can simply depend on the output.
 ///
 /// This class is explicitly instantiated for the following scalar types. No
 /// other scalar types are supported.
@@ -57,6 +61,8 @@ namespace rendering {
 template <typename T>
 class PoseAggregator : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseAggregator)
+
   PoseAggregator();
   ~PoseAggregator() override;
 
@@ -64,6 +70,9 @@ class PoseAggregator : public LeafSystem<T> {
   /// tree, which must live at least as long as this system.
   const InputPortDescriptor<T>& AddRigidBodyPlantInput(
       const RigidBodyTree<double> &tree);
+
+  /// Adds an input for a PoseVector.
+  const InputPortDescriptor<T>& AddSingleInput(const std::string& name);
 
   /// Adds an input for a PoseBundle containing @p num_poses poses.
   const InputPortDescriptor<T>& AddBundleInput(const std::string& bundle_name,
@@ -82,8 +91,9 @@ class PoseAggregator : public LeafSystem<T> {
  private:
   enum PoseInputType {
     kUnknown = 0,
-    kBundle = 1,
-    kRigidBodyTree = 2,
+    kSingle = 1,
+    kBundle = 2,
+    kRigidBodyTree = 3,
   };
 
   struct InputRecord {
@@ -94,16 +104,22 @@ class PoseAggregator : public LeafSystem<T> {
           num_poses(tree_in->get_num_bodies() - 1),
           tree(tree_in) {}
 
+    // Constructs an InputRecord for a generic single pose input.
+    explicit InputRecord(const std::string& name_in)
+        : type(kSingle),
+          num_poses(1),
+          name(name_in) {}
+
     // Constructs an InputRecord for a generic PoseBundle input.
     InputRecord(const std::string& bundle_name_in, const int num_poses_in)
         : type(kBundle),
           num_poses(num_poses_in),
-          bundle_name(bundle_name_in) {}
+          name(bundle_name_in) {}
 
     PoseInputType type{kUnknown};
     int num_poses{0};
-    // bundle_name is only valid if type is kBundle.
-    std::string bundle_name{};
+    // name is only valid if type is kSingle or kBundle.
+    std::string name{};
     // tree is only valid if type is kRigidBodyTree.
     const RigidBodyTree<double>* tree{};
   };

@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/rigid_body_plant/contact_info.h"
 
@@ -24,12 +25,9 @@ class RigidBodyPlant;
 template <typename T>
 class ContactResults {
  public:
-  ContactResults();
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactResults)
 
-  ContactResults(const ContactResults<T>& other) = default;
-  ContactResults<T>& operator=(const ContactResults<T>& other) = default;
-  ContactResults(ContactResults<T>&& other) = delete;
-  ContactResults<T>& operator=(ContactResults<T>&& other) = delete;
+  ContactResults();
 
   /** Returns the number of unique collision element pairs in contact. */
   int get_num_contacts() const;

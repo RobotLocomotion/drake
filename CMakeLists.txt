@@ -28,7 +28,6 @@ drake_add_external(qt_property_browser CMAKE QT)
 drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE MATLAB)
-drake_add_external(swigmake PUBLIC CMAKE MATLAB PYTHON)
 drake_add_external(xfoil PUBLIC CMAKE FORTRAN)
 drake_add_external(yalmip PUBLIC CMAKE MATLAB)
 
@@ -175,12 +174,6 @@ drake_add_external(fcl PUBLIC CMAKE
   CMAKE_ARGS -DFCL_BUILD_TESTS=OFF
   DEPENDS ccd eigen octomap)
 
-# swig_matlab
-drake_add_external(swig_matlab PUBLIC AUTOTOOLS
-  PATCH_COMMAND ./autogen.sh
-  AUTOTOOLS_CONFIGURE_ARGS
-    --without-alllang)
-
 # textbook
 drake_add_external(textbook PUBLIC CMAKE MATLAB PYTHON
   CMAKE_ARGS -DBUILD_TESTING=${Matlab_FOUND}
@@ -268,7 +261,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
-    -DWITH_HSRB_DESCRIPTION:BOOL=${WITH_HSRB_DESCRIPTION}
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_IRIS:BOOL=${WITH_IRIS}
     -DWITH_LCM:BOOL=${WITH_LCM}
@@ -284,8 +276,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_SNOPT:BOOL=${WITH_SNOPT}
     -DWITH_SPDLOG:BOOL=${WITH_SPDLOG}
     -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
-    -DWITH_SWIG:BOOL=${WITH_SWIG_MATLAB}   # TODO(jamiesnape): Fix naming inconsistency
-    -DWITH_SWIGMAKE:BOOL=${WITH_SWIGMAKE}
     -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
@@ -321,8 +311,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     snopt
     spdlog
     spotless
-    swig_matlab
-    swigmake
     textbook
     vtk
     xfoil
@@ -366,17 +354,6 @@ drake_add_example(LittleDog OFF
 # END examples
 ###############################################################################
 # BEGIN ros packages
-
-# hsrb_description is a ROS package that contains a model of Toyota's Human
-# Support Robot (HSR). The following method call downloads hsrb_description as a
-# submodule in drake-distro/ros/ but does not build or install it since it uses
-# the Catkin build system and should only be compiled when Drake is installed as
-# a ROS Catkin package. For details on how to do this, see:
-# http://drake.mit.edu/from_source_ros.html.
-drake_add_external(hsrb_description PUBLIC
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/ros/hsrb_description
-  BUILD_COMMAND :
-  INSTALL_COMMAND :)
 
 # END ros packages
 ###############################################################################

@@ -71,7 +71,7 @@ Eigen::Index ExponentialPlusPiecewisePolynomial<CoefficientType>::cols() const {
 template <typename CoefficientType>
 void ExponentialPlusPiecewisePolynomial<CoefficientType>::shiftRight(
     double offset) {
-  for (auto it = segment_times.begin(); it != segment_times.end(); ++it) {
+  for (auto it = breaks.begin(); it != breaks.end(); ++it) {
     *it += offset;
   }
   piecewise_polynomial_part_.shiftRight(offset);

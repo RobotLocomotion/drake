@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -26,6 +27,8 @@ namespace systems {
 template <typename T>
 class SpringMassStateVector : public BasicVector<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassStateVector)
+
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
   SpringMassStateVector(const T& initial_position, const T& initial_velocity);
@@ -73,6 +76,8 @@ class SpringMassStateVector : public BasicVector<T> {
 template <typename T>
 class SpringMassSystem : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassSystem)
+
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
   /// @param[in] name The name of the system.

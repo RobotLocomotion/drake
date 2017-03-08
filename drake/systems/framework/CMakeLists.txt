@@ -16,6 +16,8 @@ set(sources
   output_port_listener_interface.cc
   parameters.cc
   single_output_vector_source.cc
+  siso_vector_system.cc
+  sparsity_matrix.cc
   state.cc
   subvector.cc
   supervector.cc
@@ -53,6 +55,8 @@ set(installed_headers
   output_port_listener_interface.h
   parameters.h
   single_output_vector_source.h
+  siso_vector_system.h
+  sparsity_matrix.h
   state.h
   subvector.h
   supervector.h
@@ -62,6 +66,7 @@ set(installed_headers
   system_port_descriptor.h
   systems.h
   value.h
+  value_checker.h
   vector_base.h
   )
 

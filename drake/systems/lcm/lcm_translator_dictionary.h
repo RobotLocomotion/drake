@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
@@ -18,6 +19,8 @@ namespace lcm {
  */
 class LcmTranslatorDictionary {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmTranslatorDictionary)
+
   /**
    * The constructor. The dictionary is initially empty.
    */
@@ -55,10 +58,6 @@ class LcmTranslatorDictionary {
    */
   const LcmAndVectorBaseTranslator& GetTranslator(
       const std::string& channel_name) const;
-
-  // Disable copy and assign.
-  LcmTranslatorDictionary(const LcmTranslatorDictionary&) = delete;
-  LcmTranslatorDictionary& operator=(const LcmTranslatorDictionary&) = delete;
 
  private:
   // This is the internal data structure for holding the translators and their

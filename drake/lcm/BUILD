@@ -12,7 +12,6 @@ drake_cc_library(
         "drake_lcm_interface.h",
         "drake_lcm_message_handler_interface.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
@@ -23,7 +22,6 @@ drake_cc_library(
     testonly = 1,
     srcs = ["drake_mock_lcm.cc"],
     hdrs = ["drake_mock_lcm.h"],
-    linkstatic = 1,
     deps = [
         ":interface",
     ],
@@ -39,7 +37,6 @@ drake_cc_library(
         "drake_lcm.h",
         "lcm_receive_thread.h",
     ],
-    linkstatic = 1,
     deps = [
         ":interface",
         "//drake/common",
@@ -52,7 +49,6 @@ drake_cc_library(
     testonly = 1,
     srcs = ["lcmt_drake_signal_utils.cc"],
     hdrs = ["lcmt_drake_signal_utils.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/lcmtypes:drake_signal",
@@ -64,7 +60,6 @@ drake_cc_library(
     testonly = 1,
     srcs = ["lcm_call_matlab.cc"],
     hdrs = ["lcm_call_matlab.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/lcmtypes:call_matlab",

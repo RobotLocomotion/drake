@@ -1,6 +1,7 @@
 #include "drake/multibody/rigid_body_loop.h"
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/text_logging.h"
 
 template <typename T>
 RigidBodyLoop<T>::RigidBodyLoop(std::shared_ptr<RigidBodyFrame<T>> frameA,

@@ -5,6 +5,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/multibody/test/rigid_body_frame_compare_to_clone.h"
+
 using Eigen::Vector3d;
 
 namespace drake {
@@ -32,11 +34,11 @@ GTEST_TEST(RigidBodyFrameTest, TestClone) {
 
   auto cloned_body = original_body.Clone();
   auto cloned_frame = original_frame.Clone(cloned_body.get());
-  EXPECT_TRUE(original_frame.CompareToClone(*cloned_frame));
+  EXPECT_TRUE(rigid_body_frame::CompareToClone(original_frame, *cloned_frame));
 
   // Ensures that a modified clone does not match.
   cloned_frame->set_name(kName + "_mismatch");
-  EXPECT_FALSE(original_frame.CompareToClone(*cloned_frame));
+  EXPECT_FALSE(rigid_body_frame::CompareToClone(original_frame, *cloned_frame));
 }
 
 }  // namespace

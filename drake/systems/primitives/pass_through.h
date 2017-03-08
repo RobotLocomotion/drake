@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/siso_vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -34,9 +34,8 @@ namespace systems {
 ///
 /// They are already available to link against in the containing library.
 /// @ingroup primitive_systems
-
 template <typename T>
-class PassThrough : public LeafSystem<T> {
+class PassThrough : public SisoVectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PassThrough)
 
@@ -44,10 +43,13 @@ class PassThrough : public LeafSystem<T> {
   /// @param size number of elements in the signal to be processed.
   explicit PassThrough(int size);
 
- private:
-  // Sets the output port to equal the input port.
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
+ protected:
+  /// Sets the output port to equal the input port.
+  void DoCalcVectorOutput(
+      const Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* output) const override;
 };
 
 }  // namespace systems

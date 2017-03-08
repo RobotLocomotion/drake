@@ -22,9 +22,17 @@ def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
 
     # Assemble the expected output paths, inferring struct names from what we
     # got in lcm_srcs, if necessary.
-    return [
+    struct_outs = [
         dirname + lcm_package + "/" + lcm_struct + extension
         for lcm_struct in (lcm_structs or lcm_basenames)]
+
+    # Some languages have extra metadata.
+    extra_outs = []
+    (extension in [".hpp", ".py", ".java"]) or fail(extension)
+    if extension == ".py":
+        extra_outs.append(dirname + lcm_package + "/__init__.py")
+
+    return struct_outs + extra_outs
 
 def _lcmgen_impl(ctx):
     """The implementation actions to invoke lcm-gen.
@@ -40,22 +48,22 @@ def _lcmgen_impl(ctx):
     # package-name-derived directory name (which we do via slicing off striplen
     # characters), including the '/' right before it (thus the "+ 1" below).
     striplen = len(ctx.attr.lcm_package) + 1
-    for lcm_src, output in zip(ctx.files.lcm_srcs, ctx.outputs.outs):
-        outpath = output.dirname[:-striplen]
-        if ctx.attr.language == "cc":
-            arguments = ["--cpp", "--cpp-std=c++11", "--cpp-hpath=" + outpath]
-        elif ctx.attr.language == "py":
-            arguments = ["--python", "--ppath=" + outpath]
-        elif ctx.attr.language == "java":
-            arguments = ["--java", "--jpath=" + outpath]
-        else:
-            fail("Unknown language")
-        ctx.action(
-            inputs = [lcm_src],
-            outputs = [output],
-            arguments = arguments + [lcm_src.path],
-            executable = ctx.executable.lcmgen,
-            )
+    outpath = ctx.outputs.outs[0].dirname[:-striplen]
+    if ctx.attr.language == "cc":
+        arguments = ["--cpp", "--cpp-std=c++11", "--cpp-hpath=" + outpath]
+    elif ctx.attr.language == "py":
+        arguments = ["--python", "--ppath=" + outpath]
+    elif ctx.attr.language == "java":
+        arguments = ["--java", "--jpath=" + outpath]
+    else:
+        fail("Unknown language")
+    ctx.action(
+        inputs = ctx.files.lcm_srcs,
+        outputs = ctx.outputs.outs,
+        arguments = arguments + [
+            lcm_src.path for lcm_src in ctx.files.lcm_srcs],
+        executable = ctx.executable.lcmgen,
+    )
     return struct()
 
 # Create rule to invoke lcm-gen on some lcm_srcs.
@@ -81,6 +89,7 @@ def lcm_cc_library(
         lcm_srcs=None,
         lcm_package=None,
         lcm_structs=None,
+        linkstatic=1,
         **kwargs):
     """Declares a cc_library on message classes generated from `*.lcm` files.
 
@@ -96,6 +105,9 @@ def lcm_cc_library(
     structs per file, then the parameter is required and must list every
     `struct ...;` declared by lcm_srcs.
 
+    By default, we produce only static libraries, to reduce compilation time
+    on all platforms, and to avoid mysterious dyld errors on OS X. This default
+    could be revisited if binary size becomes a concern.
     """
     if not lcm_srcs:
         fail("lcm_srcs is required")
@@ -117,6 +129,7 @@ def lcm_cc_library(
         hdrs=outs,
         deps=deps,
         includes=includes,
+        linkstatic=linkstatic,
         **kwargs)
 
 def lcm_py_library(
@@ -130,6 +143,9 @@ def lcm_py_library(
     The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
     in lcm_cc_library.
 
+    This library has an ${lcm_package}/__init__.py, which means that this macro
+    should only be used once for a given lcm_package in a given subdirectory.
+    (Bazel will fail-fast with a "duplicate file" error if this is violated.)
     """
     if not lcm_srcs:
         fail("lcm_srcs is required")

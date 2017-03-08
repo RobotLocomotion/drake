@@ -1,4 +1,5 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
+
 #include <algorithm>
 
 #include "drake/common/drake_assert.h"
@@ -9,9 +10,9 @@ using std::vector;
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(
     std::vector<PolynomialMatrix> const& polynomials,
-    std::vector<double> const& segment_times)
-    : PiecewisePolynomialBase(segment_times), polynomials_(polynomials) {
-  DRAKE_ASSERT(segment_times.size() == (polynomials.size() + 1));
+    std::vector<double> const& breaks)
+    : PiecewisePolynomialBase(breaks), polynomials_(polynomials) {
+  DRAKE_ASSERT(breaks.size() == (polynomials.size() + 1));
   for (int i = 1; i < getNumberOfSegments(); i++) {
     if (polynomials[i].rows() != polynomials[0].rows())
       throw std::runtime_error(
@@ -27,9 +28,9 @@ PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(
     std::vector<PolynomialType> const& polynomials,
-    std::vector<double> const& segment_times)
-    : PiecewisePolynomialBase(segment_times) {
-  DRAKE_ASSERT(segment_times.size() == (polynomials.size() + 1));
+    std::vector<double> const& breaks)
+    : PiecewisePolynomialBase(breaks) {
+  DRAKE_ASSERT(breaks.size() == (polynomials.size() + 1));
 
   for (size_t i = 0; i < polynomials.size(); i++) {
     PolynomialMatrix matrix(1, 1);
@@ -46,7 +47,11 @@ PiecewisePolynomial<CoefficientType>::PiecewisePolynomial() {
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::derivative(int derivative_order) const {
+  DRAKE_DEMAND(derivative_order >= 0);
   PiecewisePolynomial ret = *this;
+  if (derivative_order == 0) {
+    return ret;
+  }
   for (auto it = ret.polynomials_.begin(); it != ret.polynomials_.end(); ++it) {
     PolynomialMatrix& matrix = *it;
     for (Eigen::Index row = 0; row < rows(); row++) {
@@ -260,7 +265,7 @@ bool PiecewisePolynomial<CoefficientType>::isApprox(
 
 template <typename CoefficientType>
 void PiecewisePolynomial<CoefficientType>::shiftRight(double offset) {
-  for (auto it = segment_times.begin(); it != segment_times.end(); ++it) {
+  for (auto it = breaks.begin(); it != breaks.end(); ++it) {
     *it += offset;
   }
 }
@@ -282,10 +287,10 @@ PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
   segmentNumberRangeCheck(start_segment_index);
   segmentNumberRangeCheck(start_segment_index + num_segments - 1);
 
-  auto segment_times_start_it = segment_times.begin() + start_segment_index;
-  auto segment_times_slice = vector<double>(
-      segment_times_start_it,
-      segment_times_start_it + num_segments +
+  auto breaks_start_it = breaks.begin() + start_segment_index;
+  auto breaks_slice = vector<double>(
+      breaks_start_it,
+      breaks_start_it + num_segments +
           1);  // + 1 because there's one more segment times than segments.
 
   auto polynomials_start_it = polynomials_.begin() + start_segment_index;
@@ -293,7 +298,7 @@ PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
       polynomials_start_it, polynomials_start_it + num_segments);
 
   return PiecewisePolynomial<CoefficientType>(polynomials_slice,
-                                              segment_times_slice);
+                                              breaks_slice);
 }
 
 template <typename CoefficientType>

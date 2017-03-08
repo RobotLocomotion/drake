@@ -47,17 +47,12 @@ AcrobotCommandSender::AcrobotCommandSender() {
   this->DeclareAbstractOutputPort();
 }
 
-std::unique_ptr<systems::SystemOutput<double>>
-AcrobotCommandSender::AllocateOutput(
-    const systems::Context<double>& context) const {
-  auto output = std::make_unique<systems::LeafSystemOutput<double>>();
+std::unique_ptr<systems::AbstractValue>
+AcrobotCommandSender::AllocateOutputAbstract(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
   lcmt_acrobot_u msg{};
   msg.tau = 0;
-
-  output->get_mutable_ports()->emplace_back(
-      std::make_unique<systems::OutputPort>(
-          std::make_unique<systems::Value<lcmt_acrobot_u>>(msg)));
-  return std::unique_ptr<SystemOutput<double>>(output.release());
+  return std::make_unique<systems::Value<lcmt_acrobot_u>>(msg);
 }
 
 void AcrobotCommandSender::DoCalcOutput(const Context<double>& context,
@@ -96,20 +91,16 @@ AcrobotStateSender::AcrobotStateSender() {
   this->DeclareAbstractOutputPort();
 }
 
-std::unique_ptr<systems::SystemOutput<double>>
-AcrobotStateSender::AllocateOutput(
-    const systems::Context<double>& context) const {
+std::unique_ptr<systems::AbstractValue>
+AcrobotStateSender::AllocateOutputAbstract(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
   auto output = std::make_unique<systems::LeafSystemOutput<double>>();
   lcmt_acrobot_x msg{};
   msg.theta1 = 0;
   msg.theta2 = 0;
   msg.theta1Dot = 0;
   msg.theta2Dot = 0;
-
-  output->get_mutable_ports()->emplace_back(
-      std::make_unique<systems::OutputPort>(
-          std::make_unique<systems::Value<lcmt_acrobot_x>>(msg)));
-  return std::unique_ptr<SystemOutput<double>>(output.release());
+  return std::make_unique<systems::Value<lcmt_acrobot_x>>(msg);
 }
 
 void AcrobotStateSender::DoCalcOutput(const Context<double>& context,

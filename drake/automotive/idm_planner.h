@@ -1,17 +1,29 @@
 #pragma once
 
-#include <memory>
-
+#include "drake/automotive/gen/idm_planner_parameters.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace automotive {
 
-/// IdmPlanner -- an IDM (Intelligent Driver Model) planner.
+/// IdmPlanner -- an IDM (Intelligent Driver Model) planner.  The IDM is a
+/// simple model governing longitudinal accelerations of a vehicle in
+/// single-lane traffic [1, 2].  It is derived based on qualitative observations
+/// of actual driving behavior and captures objectives such as keeping a safe
+/// distance behind a lead vehicle, maintaining a desired speed, and
+/// accelerating and decelerating within comfortable limits.
 ///
-/// IDM: Intelligent Driver Model:
-///    https://en.wikipedia.org/wiki/Intelligent_driver_model
+/// The IDM equation produces accelerations that realize smooth transitions
+/// between the following three modes:
+///  - Free-road behavior: when the distance to the leading car is large, the
+///    IDM regulates acceleration to match the desired speed `v_0`.
+///  - Fast-closing-speed behavior: when the target distance decreases, an
+///    interaction term compensates for the velocity difference, while keeping
+///    deceleration comfortable according to parameter `b`.
+///  - Small-distance behavior: within small net distances to the lead vehicle,
+///    comfort is ignored in favor of increasing this distance to `s_0`.
+///
+/// See the corresponding .cc file for details about the IDM equation.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -20,44 +32,28 @@ namespace automotive {
 ///
 /// They are already available to link against in the containing library.
 ///
-/// @ingroup automotive_systems
+/// [1] Martin Treiber and Arne Kesting. Traffic Flow Dynamics, Data, Models,
+///     and Simulation. Springer, 2013.
 ///
-/// Inputs:
-///   0: @p x_ego ego car position (scalar) [m]
-///   1: @p v_ego ego car velocity (scalar) [m/s]
-///   2: @p x_agent agent car position (scalar) [m]
-///   3: @p v_agent agent car velocity (scalar) [m/s]
-/// Outputs:
-///   0: @p vdot_ego linear acceleration of the ego car (scalar) [m/s^2].
+/// [2] https://en.wikipedia.org/wiki/Intelligent_driver_model.
+///
+/// @ingroup automotive_systems
 template <typename T>
-class IdmPlanner : public systems::LeafSystem<T> {
+class IdmPlanner {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdmPlanner)
+  IdmPlanner() = delete;
 
-  /// @p v_ref desired velocity of the ego car in units of m/s.
-  explicit IdmPlanner(const T& v_ref);
-  ~IdmPlanner() override;
+  /// Evaluates the IDM equation for the chosen planner parameters @p params,
+  /// given the current velocity @p ego_velocity, distance to the lead car @p
+  /// target_distance, and the closing velocity @p target_distance_dot.  The
+  /// returned value is a longitudinal acceleration.
+  static const T Evaluate(const IdmPlannerParameters<T>& params,
+                          const T& ego_velocity, const T& target_distance,
+                          const T& target_distance_dot);
 
-  /// Returns the port to the ego car input subvector.
-  const systems::InputPortDescriptor<T>& get_ego_port() const;
-
-  /// Returns the port to the agent car input subvector.
-  const systems::InputPortDescriptor<T>& get_agent_port() const;
-
-  // System<T> overrides.
-  // The output of this system is an algebraic relation of its inputs.
-  bool has_any_direct_feedthrough() const override { return true; }
-
-  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
-
-  void SetDefaultParameters(const systems::LeafContext<T>& context,
-                            systems::Parameters<T>* params) const override;
-
- private:
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
-
-  const T v_ref_;  // Desired vehicle velocity.
+  /// Sets defaults for all parameters.
+  static void SetDefaultParameters(IdmPlannerParameters<T>* params);
 };
 
 }  // namespace automotive

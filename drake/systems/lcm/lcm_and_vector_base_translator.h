@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -16,6 +17,8 @@ namespace lcm {
  */
 class LcmAndVectorBaseTranslator {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmAndVectorBaseTranslator)
+
   /**
    * The constructor.
    *
@@ -80,12 +83,6 @@ class LcmAndVectorBaseTranslator {
  private:
   // The size of the vector in the VectorBase.
   const int size_;
-
-  // Disable copy and assign.
-  LcmAndVectorBaseTranslator(const LcmAndVectorBaseTranslator&) =
-      delete;
-  LcmAndVectorBaseTranslator& operator=(
-      const LcmAndVectorBaseTranslator&) = delete;
 };
 
 }  // namespace lcm

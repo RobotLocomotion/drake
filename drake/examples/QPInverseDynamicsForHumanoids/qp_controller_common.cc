@@ -192,8 +192,9 @@ MatrixX<double> ContactInformation::ComputeJacobianAtContactPoints(
   for (int i = 0; i < contact_points_.cols(); ++i) {
     offset.translation() = contact_points_.col(i);
     J.block(3 * i, 0, 3, robot.get_num_velocities()) =
-      robot.CalcFrameSpatialVelocityJacobianInWorldFrame(
-          cache, *body_, offset).bottomRows<3>();
+        robot
+            .CalcFrameSpatialVelocityJacobianInWorldFrame(cache, *body_, offset)
+            .bottomRows<3>();
   }
   return J;
 }
@@ -206,8 +207,10 @@ VectorX<double> ContactInformation::ComputeJacobianDotTimesVAtContactPoints(
   for (int i = 0; i < contact_points_.cols(); ++i) {
     offset.translation() = contact_points_.col(i);
     Jdv.segment<3>(3 * i) =
-      robot.CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
-          cache, *body_, offset).bottomRows<3>();
+        robot
+            .CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+                cache, *body_, offset)
+            .bottomRows<3>();
   }
   return Jdv;
 }
@@ -219,8 +222,9 @@ VectorX<double> ContactInformation::ComputeLinearVelocityAtContactPoints(
   Isometry3<double> offset(Isometry3<double>::Identity());
   for (int i = 0; i < contact_points_.cols(); ++i) {
     offset.translation() = contact_points_.col(i);
-    vel.segment<3>(3 * i) = robot.CalcFrameSpatialVelocityInWorldFrame(
-        cache, *body_, offset).bottomRows<3>();
+    vel.segment<3>(3 * i) =
+        robot.CalcFrameSpatialVelocityInWorldFrame(cache, *body_, offset)
+            .bottomRows<3>();
   }
   return vel;
 }
@@ -282,7 +286,8 @@ bool ContactInformation::operator==(const ContactInformation& other) const {
 
 std::ostream& operator<<(std::ostream& out, const ContactInformation& contact) {
   out << "contact: " << contact.body_name() << "\n";
-  out << "contact points in body frame: " << "\n";
+  out << "contact points in body frame: "
+      << "\n";
   for (int j = 0; j < contact.contact_points().cols(); ++j)
     out << contact.contact_points().col(j).transpose() << "\n";
   out << "normal in body frame: " << contact.normal().transpose() << "\n";
@@ -296,8 +301,7 @@ std::ostream& operator<<(std::ostream& out, const ContactInformation& contact) {
 std::string DesiredBodyMotion::get_row_name(int i) const {
   static constexpr const char* row_name[6] = {"[WX]", "[WY]", "[WZ]",
                                               "[X]",  "[Y]",  "[Z]"};
-  if (i < 0 || i >= 6)
-    throw std::runtime_error("index must be within [0, 5]");
+  if (i < 0 || i >= 6) throw std::runtime_error("index must be within [0, 5]");
   return std::string(row_name[i]);
 }
 
@@ -353,8 +357,7 @@ std::string DesiredCentroidalMomentumDot::get_row_name(int i) const {
   static constexpr const char* row_name[6] = {"AngMom[X]", "AngMom[Y]",
                                               "AngMom[Z]", "LinMom[X]",
                                               "LinMom[Y]", "LinMom[Z]"};
-  if (i < 0 || i >= 6)
-    throw std::runtime_error("index must be within [0, 5]");
+  if (i < 0 || i >= 6) throw std::runtime_error("index must be within [0, 5]");
   return std::string(row_name[i]);
 }
 
@@ -503,10 +506,12 @@ bool ResolvedContact::operator==(const ResolvedContact& other) const {
 
 std::ostream& operator<<(std::ostream& out, const ResolvedContact& contact) {
   out << "contact: " << contact.body_name() << "\n";
-  out << "contact points in world frame: " << "\n";
+  out << "contact points in world frame: "
+      << "\n";
   for (int j = 0; j < contact.contact_points().cols(); ++j)
     out << contact.contact_points().col(j).transpose() << "\n";
-  out << "point forces in world frame: " << "\n";
+  out << "point forces in world frame: "
+      << "\n";
   for (int j = 0; j < contact.point_forces().cols(); ++j)
     out << contact.point_forces().col(j).transpose() << "\n";
   out << "equivalent wrench in world aligned body frame: "

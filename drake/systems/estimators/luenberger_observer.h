@@ -4,6 +4,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -23,6 +24,8 @@ namespace estimators {
 template <typename T>
 class LuenbergerObserver : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LuenbergerObserver)
+
   /// Constructs the oberver.
   ///
   /// @param observed_system  The forward model for the observer.  Currently,
@@ -40,10 +43,6 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
       std::unique_ptr<systems::System<T>> observed_system,
       std::unique_ptr<systems::Context<T>> observed_system_context,
       const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
-
-  /// Non-copyable.
-  LuenbergerObserver(const LuenbergerObserver<T>&) = delete;
-  LuenbergerObserver& operator=(const LuenbergerObserver<T>&) = delete;
 
   /// This system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }

@@ -10,7 +10,6 @@ drake_cc_library(
     name = "analysis",
     srcs = [],
     hdrs = [],
-    linkstatic = 1,
     deps = [
         ":explicit_euler_integrator",
         ":runge_kutta2_integrator",
@@ -23,7 +22,6 @@ drake_cc_library(
 drake_cc_library(
     name = "integrator_base",
     hdrs = ["integrator_base.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework:context",
         "//drake/systems/framework:system",
@@ -34,7 +32,6 @@ drake_cc_library(
     name = "explicit_euler_integrator",
     srcs = [],
     hdrs = ["explicit_euler_integrator.h"],
-    linkstatic = 1,
     deps = [
         ":integrator_base",
     ],
@@ -44,7 +41,6 @@ drake_cc_library(
     name = "runge_kutta2_integrator",
     srcs = [],
     hdrs = ["runge_kutta2_integrator.h"],
-    linkstatic = 1,
     deps = [
         ":integrator_base",
     ],
@@ -57,7 +53,6 @@ drake_cc_library(
         "runge_kutta3_integrator.h",
         "runge_kutta3_integrator-inl.h",
     ],
-    linkstatic = 1,
     deps = [
         ":integrator_base",
         ":runge_kutta2_integrator",
@@ -70,7 +65,6 @@ drake_cc_library(
     hdrs = [
         "semi_explicit_euler_integrator.h",
     ],
-    linkstatic = 1,
     deps = [
         ":integrator_base",
     ],
@@ -80,7 +74,6 @@ drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
-    linkstatic = 1,
     deps = [
         ":runge_kutta2_integrator",
         "//drake/common:extract_double",
@@ -95,7 +88,6 @@ drake_cc_library(
     name = "my_spring_mass_system",
     testonly = 1,
     hdrs = ["test/my_spring_mass_system.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/plants/spring_mass_system",
     ],

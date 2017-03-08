@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 import os
 import numpy as np
 import pydrake
@@ -99,4 +101,4 @@ results = ik.InverseKin(robot, q_seed, q_seed, constraints, options)
 # optimizer.
 assert results.info[0] == 1
 
-print repr(results.q_sol[0])
+print(repr(results.q_sol[0]))

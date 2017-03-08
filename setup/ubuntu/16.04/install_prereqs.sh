@@ -59,6 +59,7 @@ apt update -y
 # TODO(david-german-tri): Can we remove libvtk-java?
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
+alien
 autoconf
 automake
 bash-completion
@@ -66,6 +67,7 @@ bison
 clang-format
 default-jdk
 doxygen
+fakeroot
 flex
 freeglut3-dev
 g++
@@ -77,7 +79,6 @@ gfortran-5
 gfortran-5-multilib
 git
 graphviz
-libgl1-mesa-dri
 libgtk2.0-dev
 libhtml-form-perl
 libmpfr-dev
@@ -100,12 +101,12 @@ python-gtk2
 python-html5lib
 python-lxml
 python-numpy
+python-scipy
 python-sphinx
 python-vtk
 python-yaml
 unzip
 valgrind
-xvfb
 zip
 zlib1g-dev
 
@@ -122,6 +123,11 @@ else
 fi
 
 rm /tmp/bazel_0.4.3-linux-x86_64.deb
+
+# Repair a bad Bazel/ccache interaction.
+# See https://github.com/RobotLocomotion/drake/issues/4464.
+# See https://github.com/bazelbuild/bazel/issues/1322.
+$(dirname $0)/ccache-bazel-wrapper-mkdeb.sh --install
 
 # TODO(david-german-tri): Do we need to munge the MATLAB C++ libraries?
 # http://drake.mit.edu/ubuntu.html#matlab

@@ -103,6 +103,20 @@ Cheat sheet for operating on specific portions of the project::
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 - For the definitions of the "``--config``" options see ``drake-distro/tools/bazel.rc``.
 
+Debugging on OS X
+-----------------
+
+On OS X, DWARF debug symbols are emitted to a ``.dSYM`` file. The Bazel
+``cc_binary`` and ``cc_test`` rules do not natively generate or expose this
+file, so we have implemented a workaround in Drake, ``--config=apple_debug``.
+This config turns off sandboxing, which allows a ``genrule`` to access the
+``.o`` files and process them into a ``.dSYM``.  Use as follows::
+
+  bazel build --config=apple_debug drake/path/to/my:binary_or_test_dsym
+  lldb ./bazel_bin/drake/path/to/my/binary_or_test
+
+For more information, see https://github.com/bazelbuild/bazel/issues/2537.
+
 Updating BUILD files
 ====================
 
@@ -120,6 +134,7 @@ Proprietary Solvers
 The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi (on Ubuntu only)
+ * SNOPT
 
 Gurobi
 ------
@@ -130,10 +145,30 @@ Gurobi
 4. Unzip it in a local directory, e.g. ``/home/myuser/bin/gurobi``
 5. ``export GUROBI_PATH=/home/myuser/bin/gurobi/gurobi605/linux64``
 
-To confirm that your setup was successful, run the tests that require Gurobi.
-Note that this config includes *only* the tests that require Gurobi::
 
-  ``bazel test --config gurobi ...``
+To confirm that your setup was successful, run the tests that require Gurobi.
+
+  ``bazel test --config gurobi --test_tag_filters=gurobi ...``
+
+The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
+these tests. If you will be developing with Gurobi regularly, you may wish
+to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
+See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
+
+SNOPT
+-----
+
+1. Obtain access to the private RobotLocomotion/snopt GitHub repository.
+2. `Set up SSH access to github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_.
+
+To confirm that your setup was successful, run the tests that require SNOPT.
+
+  ``bazel test --config snopt --test_tag_filters=snopt ...``
+
+The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
+these tests. If you will be developing with SNOPT regularly, you may wish
+to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
+See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
 
 Optional Tools
 ==============
@@ -155,6 +190,10 @@ To analyze test coverage, run the tests under ``kcov``::
 
   bazel test --config kcov //...
 
+Note that it disables compiler-optimization (``-O0``) to have a better and more
+precise coverage report. If you have trouble with kcov and unoptimized programs,
+you can turn it back on by also supplying ``--copt -O2``.
+
 The coverage report is written to the ``drake-distro/bazel-kcov`` directory. To
 view it, browse to ``drake-distro/bazel-kcov/index.html``.
 
@@ -166,8 +205,8 @@ view it, browse to ``drake-distro/bazel-kcov/index.html``.
 FAQ
 ===
 
-Q. What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
+Q: What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
 
-   A. Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
+   A: Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
       Update your dotfiles so that something like ``/usr/lib/ccache`` is not on
       your ``$PATH``.

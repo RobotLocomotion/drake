@@ -43,8 +43,8 @@ class BodyOfInterest {
               const KinematicsCache<double>& cache) {
     pose_ = robot.CalcFramePoseInWorldFrame(cache, *body_, offset_);
     vel_ = robot.CalcFrameSpatialVelocityInWorldFrame(cache, *body_, offset_);
-    J_ = robot.CalcFrameSpatialVelocityJacobianInWorldFrame(
-        cache, *body_, offset_);
+    J_ = robot.CalcFrameSpatialVelocityJacobianInWorldFrame(cache, *body_,
+                                                            offset_);
     Jdot_times_v_ = robot.CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
         cache, *body_, offset_);
   }
@@ -103,34 +103,31 @@ class HumanoidStatus {
   /**
    * Do kinematics and compute useful information based on kinematics and
    * measured force torque information.
-   * @param time is in seconds
-   * @param q is the vector or generalized positions.
-   * @param v is the vector of generalized velocities.
-   * @param joint_torque is joint torque, should be in the same order as @p v,
-   * not
-   * in robot->actuators order
-   * @param l_wrench is wrench measured in the sensor frame.
-   * @param r_wrench is wrench measured in the sensor frame.
+   * @param time In seconds
+   * @param q Generalized positions.
+   * @param v Generalized velocities.
+   * @param joint_torque Joint torque, should be in the same order as @p v,
+   * not in the actuator order
+   * @param l_wrench Wrench measured in the sensor frame.
+   * @param r_wrench Wrench measured in the sensor frame.
    */
   void Update(double t, const Eigen::Ref<const VectorX<double>>& q,
               const Eigen::Ref<const VectorX<double>>& v,
               const Eigen::Ref<const VectorX<double>>& joint_torque,
               const Eigen::Ref<const Vector6<double>>& l_wrench,
-              const Eigen::Ref<const Vector6<double>>& r_wrench) {
-    if (q.size() != position_.size() || v.size() != velocity_.size() ||
-        joint_torque.size() != joint_torque_.size()) {
-      throw std::runtime_error("robot state update dimension mismatch.");
-    }
-    time_ = t;
-    position_ = q;
-    velocity_ = v;
-    joint_torque_ = joint_torque;
-    foot_wrench_raw_[Side::LEFT] = l_wrench;
-    foot_wrench_raw_[Side::RIGHT] = r_wrench;
-    Update();
-  }
+              const Eigen::Ref<const Vector6<double>>& r_wrench);
 
-  void Update();
+  /**
+   * Time @p t and the generalized position @p q and velocity @p v are set and
+   * used to generate kinematics related information. Joint torque and all
+   * quantities based on external wrench measurements such as foot force torque
+   * sensor values and center of pressure are set to zero.
+   * @param time In seconds
+   * @param q Generalized positions.
+   * @param v Generalized velocities.
+   */
+  void UpdateKinematics(double t, const Eigen::Ref<const VectorX<double>>& q,
+                        const Eigen::Ref<const VectorX<double>>& v);
 
   // Getters
   inline const RigidBodyTree<double>& robot() const { return *robot_; }
@@ -231,6 +228,10 @@ class HumanoidStatus {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
+  // Do kinematics first using position_ and velocity_. Force torque information
+  // in foot_wrench_raw_ are used to compute center of pressure if appropriate.
+  void Update();
+
   const RigidBodyTree<double>* robot_;
   KinematicsCache<double> cache_;
 

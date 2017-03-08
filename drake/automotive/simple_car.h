@@ -7,6 +7,8 @@
 #include "drake/automotive/gen/simple_car_state.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/rendering/frame_velocity.h"
+#include "drake/systems/rendering/pose_vector.h"
 
 namespace drake {
 namespace automotive {
@@ -31,10 +33,12 @@ namespace automotive {
 /// * throttle (0-1)
 /// * brake (0-1)
 ///
-/// output vector: same as state vector.
+/// output port 0: same as state vector.
+/// output port 1: A PoseVector containing X_WC, where C is the car frame.
+/// output port 2: A FrameVelocity containing Xdot_WC, where C is the car frame.
 ///
 /// @tparam T must support certain arithmetic operations;
-/// for details, see ./test/simple_car_scalartype_test.cc.
+/// for details, see drake::symbolic::Expression.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double
@@ -52,7 +56,6 @@ class SimpleCar : public systems::LeafSystem<T> {
   SimpleCar();
 
   // System<T> overrides
-  bool has_any_direct_feedthrough() const override;
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
   void DoCalcTimeDerivatives(
@@ -66,7 +69,17 @@ class SimpleCar : public systems::LeafSystem<T> {
   /// Sets `config` to contain the default parameters for SimpleCar.
   static void SetDefaultParameters(SimpleCarConfig<T>* config);
 
+  const systems::OutputPortDescriptor<T>& state_output() const;
+  const systems::OutputPortDescriptor<T>& pose_output() const;
+  const systems::OutputPortDescriptor<T>& velocity_output() const;
+
  protected:
+  // System<T> overrides
+  systems::System<AutoDiffXd>* DoToAutoDiffXd() const override;
+  systems::System<symbolic::Expression>* DoToSymbolic() const override;
+  systems::BasicVector<T>* DoAllocateInputVector(
+      const systems::InputPortDescriptor<T>& descriptor) const override;
+
   // LeafSystem<T> overrides
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;
@@ -76,10 +89,16 @@ class SimpleCar : public systems::LeafSystem<T> {
 
  private:
   void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
-  void ImplCalcTimeDerivatives(const SimpleCarConfig<T>&,
-                               const SimpleCarState<T>&,
-                               const DrivingCommand<T>&,
-                               SimpleCarState<T>*) const;
+  void ImplCalcPose(const SimpleCarState<T>& state,
+                    systems::rendering::PoseVector<T>* pose) const;
+  void ImplCalcVelocity(const SimpleCarConfig<T>& config,
+                        const SimpleCarState<T>& state,
+                        const DrivingCommand<T>& input,
+                        systems::rendering::FrameVelocity<T>* velocity) const;
+  void ImplCalcTimeDerivatives(const SimpleCarConfig<T>& config,
+                               const SimpleCarState<T>& state,
+                               const DrivingCommand<T>& input,
+                               SimpleCarState<T>* rates) const;
 };
 
 }  // namespace automotive

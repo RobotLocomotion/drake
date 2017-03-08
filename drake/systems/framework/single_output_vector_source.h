@@ -44,8 +44,14 @@ class SingleOutputVectorSource : public LeafSystem<T> {
     return LeafSystem<T>::AllocateContext();
   }
 
-  /// Sanity checks the context and output, then delegates to
-  /// DoCalcOutput(const Context<T>&, Eigen::VectorBlock<VectorX<T>>*) const
+ protected:
+  /// Creates a source with the given sole output port configuration.
+  explicit SingleOutputVectorSource(int size) {
+    this->DeclareOutputPort(kVectorValued, size);
+  }
+
+  /// Converts the parameters to Eigen::VectorBlock form, then delegates to
+  /// DoCalcVectorOutput().
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const final {
     Eigen::VectorBlock<VectorX<T>> block =
@@ -53,18 +59,10 @@ class SingleOutputVectorSource : public LeafSystem<T> {
     DoCalcVectorOutput(context, &block);
   }
 
- protected:
-  /// Creates a source with the given sole output port configuration.
-  explicit SingleOutputVectorSource(int size) {
-    this->DeclareOutputPort(kVectorValued, size);
-  }
-
-  /// Convenience overload supplied for subclasses.  This method performs the
-  /// same logical operation as
-  ///   System::DoCalcOutput(const Context<T>&, SystemOutput<T>*) const
-  /// but this overload provides the single output's VectorBlock instead.
-  /// Subclasses should override this method, and not the base class method
-  /// (which is `final`).
+  /// Provides a convenience method for %SingleOutputVectorSource subclasses.
+  /// This method performs the same logical operation as System::DoCalcOutput
+  /// but provides the single output's VectorBlock instead.  Subclasses should
+  /// override this method, and not the base class method (which is `final`).
   virtual void DoCalcVectorOutput(
       const Context<T>& context,
       Eigen::VectorBlock<VectorX<T>>* output) const = 0;

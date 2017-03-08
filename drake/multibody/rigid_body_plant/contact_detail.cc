@@ -4,6 +4,9 @@ namespace drake {
 namespace systems {
 
 template <typename T>
+ContactDetail<T>::ContactDetail() {}
+
+template <typename T>
 ContactDetail<T>::~ContactDetail() {}
 
 // Explicitly instantiates on the most common scalar types.

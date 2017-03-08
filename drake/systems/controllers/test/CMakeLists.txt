@@ -1,8 +1,28 @@
-drake_add_cc_test(gravity_compensator_test)
-target_link_libraries(gravity_compensator_test
+drake_add_cc_test(inverse_dynamics_test)
+target_link_libraries(inverse_dynamics_test
     drakeSystemControllers
     drakeSystemFramework
-    drakeRBSystem)
+    drakeIK
+    drakeMultibodyParsers
+    drakeOptimization
+    drakeRBM
+    drakeRigidBodyConstraint
+    Eigen3::Eigen
+    spruce
+    )
+
+drake_add_cc_test(inverse_dynamics_controller_test)
+target_link_libraries(inverse_dynamics_controller_test
+    drakeSystemControllers
+    drakeSystemFramework
+    drakeIK
+    drakeMultibodyParsers
+    drakeOptimization
+    drakeRBM
+    drakeRigidBodyConstraint
+    Eigen3::Eigen
+    spruce
+    )
 
 drake_add_cc_test(pid_controlled_system_test)
 target_link_libraries(pid_controlled_system_test

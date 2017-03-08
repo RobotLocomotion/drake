@@ -9,6 +9,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
@@ -25,10 +26,10 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
                        const Eigen::Isometry3d& transform_to_parent_body,
                        const drake::TwistVector<double>& _joint_axis)
       : DrakeJointImpl<Derived>(derived, name, transform_to_parent_body, 1, 1),
-        joint_axis(_joint_axis),
-        damping(0.0),
-        coulomb_friction(0.0),
-        coulomb_window(0.0) {}
+        joint_axis_(_joint_axis),
+        damping_(0.0),
+        coulomb_friction_(0.0),
+        coulomb_window_(0.0) {}
 
  public:
   virtual ~FixedAxisOneDoFJoint() {}
@@ -43,7 +44,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
-    motion_subspace = joint_axis.cast<typename DerivedQ::Scalar>();
+    motion_subspace = joint_axis_.cast<typename DerivedQ::Scalar>();
     if (dmotion_subspace) {
       dmotion_subspace->setZero(motion_subspace.size(), get_num_positions());
     }
@@ -108,11 +109,11 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     typedef typename DerivedV::Scalar Scalar;
     Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(get_num_velocities(), 1);
     using std::abs;
-    ret[0] = damping * v[0];
-    Scalar coulomb_window_fraction = v[0] / coulomb_window;
+    ret[0] = damping_ * v[0];
+    Scalar coulomb_window_fraction = v[0] / coulomb_window_;
     Scalar coulomb =
         std::min(Scalar(1), std::max(Scalar(-1), coulomb_window_fraction)) *
-        coulomb_friction;
+        coulomb_friction_;
     ret[0] += coulomb;
     return ret;
   }
@@ -171,11 +172,11 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return q;
   }
 
-  void setDynamics(double damping_in, double coulomb_friction_in,
-                   double coulomb_window_in) {
-    damping = damping_in;
-    coulomb_friction = coulomb_friction_in;
-    coulomb_window = coulomb_window_in;
+  void setDynamics(double damping, double coulomb_friction,
+      double coulomb_window) {
+    damping_ = damping;
+    coulomb_friction_ = coulomb_friction;
+    coulomb_window_ = coulomb_window;
   }
 
   std::string get_position_name(int index) const override {
@@ -184,70 +185,35 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_position_name().")
-#endif
   std::string getPositionName(int index) const override {
     return get_position_name(index);
   }
 
-  bool CompareToClone(const DrakeJoint& other) const override {
-    if (!DrakeJoint::CompareToClone(other)) return false;
-    const FixedAxisOneDoFJoint* downcasted_joint =
-        dynamic_cast<const FixedAxisOneDoFJoint*>(&other);
-    if (downcasted_joint == nullptr) {
-      drake::log()->debug(
-        "FixedAxisOneDoFJoint::CompareToClone: "
-        "other is not of type FixedAxisOneDoFJoint.");
-      return false;
-    }
-    if (joint_axis != downcasted_joint->joint_axis) {
-      drake::log()->debug(
-          "FixedAxisOneDoFJoint::CompareToClone: joint_axis mismatch:\n"
-          "  - this: {}\n"
-          "  - other: {}",
-          joint_axis,
-          downcasted_joint->joint_axis);
-      return false;
-    }
-    if (damping != downcasted_joint->damping) {
-        drake::log()->debug(
-          "FixedAxisOneDoFJoint::CompareToClone: damping mismatch:\n"
-          "  - this: {}\n"
-          "  - other: {}",
-          damping,
-          downcasted_joint->damping);
-      return false;
-    }
-    if (coulomb_friction != downcasted_joint->coulomb_friction) {
-        drake::log()->debug(
-          "FixedAxisOneDoFJoint::CompareToClone: "
-          "coulomb_friction mismatch:\n"
-          "  - this: {}\n"
-          "  - other: {}",
-          coulomb_friction,
-          downcasted_joint->coulomb_friction);
-      return false;
-    }
-    if (coulomb_window != downcasted_joint->coulomb_window) {
-        drake::log()->debug(
-          "FixedAxisOneDoFJoint::CompareToClone: "
-          "coulomb_window mismatch:\n"
-          "  - this: {}\n"
-          "  - other: {}",
-          coulomb_window,
-          downcasted_joint->coulomb_window);
-      return false;
-    }
-    return true;
-  }
+  const drake::TwistVector<double>& joint_axis() const { return joint_axis_; }
+
+  double damping() const { return damping_; }
+  double coulomb_friction() const { return coulomb_friction_; }
+  double coulomb_window() const { return coulomb_window_; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+ protected:
+  /// Initializes the private member variables within the provided `clone`.
+  void DoInitializeClone(DrakeJoint* clone) const override {
+    FixedAxisOneDoFJoint* fixed_axis_one_dof_joint =
+        dynamic_cast<FixedAxisOneDoFJoint*>(clone);
+    DRAKE_DEMAND(fixed_axis_one_dof_joint != nullptr);
+    fixed_axis_one_dof_joint->joint_axis_ = this->joint_axis_;
+    fixed_axis_one_dof_joint->damping_ = this->damping_;
+    fixed_axis_one_dof_joint->coulomb_friction_ = this->coulomb_friction_;
+    fixed_axis_one_dof_joint->coulomb_window_ = this->coulomb_window_;
+  }
+
  private:
-  drake::TwistVector<double> joint_axis;
-  double damping;
-  double coulomb_friction;
-  double coulomb_window;
+  drake::TwistVector<double> joint_axis_;
+  double damping_{};
+  double coulomb_friction_{};
+  double coulomb_window_{};
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

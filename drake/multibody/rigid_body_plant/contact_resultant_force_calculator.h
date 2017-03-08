@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
 
@@ -138,6 +139,8 @@ namespace systems {
 template <typename T>
 class ContactResultantForceCalculator {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultantForceCalculator)
+
   /** Default constructor -- no accumulation.  As contact forces are added to
    the calculator, the force will be added to the set of forces for calculation,
    but they will be destroyed when the calculator is destroyed.
@@ -240,16 +243,6 @@ class ContactResultantForceCalculator {
    @param reference_point is in the same frame as all the individual forces.
    */
   ContactForce<T> ComputeResultant(const Vector3<T>& reference_point) const;
-
-  // Neither movable or copyable.
-  ContactResultantForceCalculator(
-      const ContactResultantForceCalculator& other) = delete;
-  ContactResultantForceCalculator& operator=(
-      const ContactResultantForceCalculator& other) = delete;
-  ContactResultantForceCalculator(ContactResultantForceCalculator&& other) =
-      delete;
-  ContactResultantForceCalculator& operator=(
-      ContactResultantForceCalculator&& other) = delete;
 
  private:
   // Aggregator for the force data that has been added.

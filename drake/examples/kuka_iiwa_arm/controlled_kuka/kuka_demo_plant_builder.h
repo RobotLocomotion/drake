@@ -13,8 +13,7 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/systems/controllers/gravity_compensator.h"
-#include "drake/systems/controllers/pid_controlled_system.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -29,7 +28,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 const char kUrdfPath[] =
-    "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf";
+    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
 
 /// A systems::Diagram of a Kuka iiwa arm with position controller using
 /// gravity compensation and a PID controller. A plan may be passed in as
@@ -54,9 +53,8 @@ class KukaDemo : public systems::Diagram<T> {
     systems::DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
-    auto plant =
-        std::make_unique<systems::RigidBodyPlant<T>>(move(tree));
-    plant_ = plant.get();
+    plant_ = builder.template AddSystem<systems::RigidBodyPlant<double>>(
+        std::move(tree));
 
     DRAKE_ASSERT(plant_->get_input_port(0).size() ==
                  plant_->get_num_positions());
@@ -67,16 +65,13 @@ class KukaDemo : public systems::Diagram<T> {
     Eigen::VectorXd kd;
     SetPositionControlledIiwaGains(&kp, &ki, &kd);
 
-    controller_ = builder.template AddSystem<systems::PidControlledSystem<T>>(
-        std::move(plant), kp, ki, kd);
+    controller_ =
+        builder.template AddSystem<systems::InverseDynamicsController<T>>(
+            GetDrakePath() + kUrdfPath, nullptr, kp, ki, kd,
+            false /* no feedforward acceleration */);
 
-    // The iiwa's control protocol doesn't have any way to express the
-    // desired velocity for the arm, so this simulation doesn't take
-    // target velocities as an input.  The PidControlledSystem does
-    // want target velocities to calculate the D term.  Since we don't
-    // have any logic to calculate the desired target velocity (yet!)
-    // set the D term (to stabilize the arm near the commanded
-    // position) and feed a desired velocity vector of zero.
+    // TODO(siyuan): should be able to easily compute derivatives once
+    // #5215 is in.
     auto zero_source =
         builder.template AddSystem<systems::ConstantVectorSource<T>>(
             Eigen::VectorXd::Zero(plant_->get_num_velocities()));
@@ -85,20 +80,18 @@ class KukaDemo : public systems::Diagram<T> {
             plant_->get_num_positions(), plant_->get_num_velocities()});
     builder.Connect(zero_source->get_output_port(),
                     input_mux->get_input_port(1));
+
+    // Connects desired state to the controller.
     builder.Connect(input_mux->get_output_port(0),
-                    controller_->get_input_port(1));
+                    controller_->get_input_port_desired_state());
 
-    gravity_compensator_ =
-        builder.template AddSystem<systems::GravityCompensator<T>>(
-            plant_->get_rigid_body_tree());
+    // Connects RBP state to the controller.
+    builder.Connect(plant_->state_output_port(),
+                    controller_->get_input_port_estimated_state());
 
-    // Split the input state into two signals one with the positions and one
-    // with the velocities.
-    // For Kuka:
-    // -  get_num_states() = 14
-    // -  get_num_positions() = 7
-    rbp_state_demux_ = builder.template AddSystem<systems::Demultiplexer<T>>(
-        plant_->get_num_states(), plant_->get_num_positions());
+    // Connects controller's output to RBP.
+    builder.Connect(controller_->get_output_port_control(),
+                    plant_->actuator_command_input_port());
 
     // Creates a plan and wraps it into a source system.
     desired_plan_ = builder.template AddSystem<systems::TrajectorySource<T>>(
@@ -111,21 +104,11 @@ class KukaDemo : public systems::Diagram<T> {
     builder.Connect(desired_plan_->get_output_port(),
                     input_mux->get_input_port(0));
 
-    // Splits the RBP output into positions (q) and velocities (v).
-    builder.Connect(controller_->get_output_port(0),
-                    rbp_state_demux_->get_input_port(0));
-
-    // Connects the gravity compensator to the output generalized positions.
-    builder.Connect(rbp_state_demux_->get_output_port(0),
-                    gravity_compensator_->get_input_port(0));
-    builder.Connect(gravity_compensator_->get_output_port(0),
-                    controller_->get_input_port(0));
-
     // Connects to publisher for visualization.
-    builder.Connect(controller_->get_output_port(0),
+    builder.Connect(plant_->state_output_port(),
                     viz_publisher_->get_input_port(0));
 
-    builder.ExportOutput(controller_->get_output_port(0));
+    builder.ExportOutput(plant_->state_output_port());
 
     drake::log()->debug("Demo Kuka Plant Diagram built...");
 
@@ -135,16 +118,13 @@ class KukaDemo : public systems::Diagram<T> {
   const systems::RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
 
   systems::Context<T>* get_kuka_context(systems::Context<T>* context) const {
-    systems::Context<T>* controller_context =
-        this->GetMutableSubsystemContext(context, controller_);
-    return controller_->GetMutableSubsystemContext(controller_context, plant_);
+    return this->GetMutableSubsystemContext(context, plant_);
   }
 
  private:
   systems::RigidBodyPlant<T>* plant_{nullptr};
-  systems::PidControlledSystem<T>* controller_{nullptr};
+  systems::InverseDynamicsController<T>* controller_{nullptr};
   systems::Demultiplexer<T>* rbp_state_demux_{nullptr};
-  systems::GravityCompensator<T>* gravity_compensator_{nullptr};
   systems::TrajectorySource<T>* desired_plan_{nullptr};
   std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory_;
   systems::DrakeVisualizer* viz_publisher_{nullptr};

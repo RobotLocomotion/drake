@@ -11,8 +11,10 @@ build --output_filter="^//"
 # Default test options.
 test --test_output=errors
 
-# By default, disable targets that require proprietary software.
-build --build_tag_filters=-gurobi,-snopt
+# By default, disable execution of tests that require proprietary software.
+# Individual targets that use proprietary software are responsible for ensuring
+# they can also build without it, typically by using a select statement.
+# config_setting rules for proprietary software are provided in //tools.
 test --test_tag_filters=-gurobi,-snopt
 
 ### A configuration that enables Gurobi. ###
@@ -25,25 +27,26 @@ test --test_tag_filters=-gurobi,-snopt
 # -- the tag "exclusive", to rate-limit license servers with a small number of
 # -- licenses.
 # -- TODO(david-german-tri): Find a better fix for the license server problem.
+#
+# -- To run tests that require Gurobi, also specify a custom set of
+# -- test_tag_filters that does not exclude the "gurobi" tag.
 build:gurobi --define=WITH_GUROBI=ON
 # -- By default, Gurobi looks for the license file in the homedir.
 test:gurobi --test_env=HOME
 # -- If set, the GRB_LICENSE_FILE path takes precedence.
 test:gurobi --test_env=GRB_LICENSE_FILE
-# -- This configuration runs only tests that require Gurobi.
-test:gurobi --test_tag_filters=gurobi
 
 
 ### A configuration that enables SNOPT. ###
 # -- To use this config, you must have access to the private repository
 # -- RobotLocomotion/snopt on GitHub, and your local git must be configured
 # -- with SSH keys as documented at http://drake.mit.edu/from_source.html.
+#
+# -- To run tests that require SNOPT, also specify a set of test_tag_filters
+# -- that does not exclude the "snopt" tag.
 build:snopt --define=WITH_SNOPT=ON
-# -- This configuration runs only tests that require SNOPT.
-test:snopt --test_tag_filters=snopt
 
 ### A configuration that enables all optional dependencies. ###
-# This is probably only useful for CI.
 test:everything --test_tag_filters=
 
 # -- Options for Gurobi.
@@ -58,6 +61,15 @@ build:everything --define=WITH_SNOPT=ON
 # This may be useful for developers with unsupported workstation configurations.
 build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 
+### git submodules
+# If a CMake build is performed from the same source tree, it will checkout git
+# submodules, and if they have BUILD files then `bazel build //...` will find
+# them and complain that the paths don't line up correctly anymore.  Here, we
+# manually list out all git submodule externals' BUILD files.
+#
+# TODO(jwnimmer-tri) Remove this once git submodules are no longer used.
+build --deleted_packages=externals/snopt,externals/snopt/cppsrc,externals/snopt/csrc,externals/snopt/libf2c
+
 ### Cpplint. ###
 # By default, cpplint tests are run as part of `bazel test` alongside all of
 # the other compilation and test targets.  This is a convenience shortcut to
@@ -65,8 +77,20 @@ build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 test:cpplint --build_tests_only
 test:cpplint --test_tag_filters=cpplint
 
+### Debug symbols on OS X. ###
+# See https://github.com/bazelbuild/bazel/issues/2537
+build:apple_debug --spawn_strategy=standalone
+build:apple_debug --genrule_strategy=standalone
+build:apple_debug --compilation_mode=dbg
+
+# We don't actually use APPLE_DEBUG in code. It's just here to invalidate any
+# sandboxed .o files that might be in cache if a developer tried to build
+# with --compilation_mode=dbg instead of --config=apple_debug.
+build:apple_debug --copt="-DAPPLE_DEBUG"
+
 ### Kcov coverage build. ###
 build:kcov --copt -g
+build:kcov --copt -O0
 test:kcov --spawn_strategy=standalone
 test:kcov --run_under //tools:kcov
 test:kcov --local_test_jobs=1

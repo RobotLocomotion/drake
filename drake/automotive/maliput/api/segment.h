@@ -43,13 +43,12 @@ class Segment {
   int num_lanes() const { return do_num_lanes(); }
 
   /// Returns the Lane indexed by @p index.
+  ///
   /// The indexing order is meaningful; numerically adjacent indices correspond
-  /// to geometrically adjacent Lanes.
+  /// to geometrically adjacent Lanes.  Indices increase "to the left", i.e.,
+  /// in the direction of increasing `r` coordinate.
   ///
   /// @pre @p index must be >= 0 and < num_lanes().
-  // TODO(maddog@tri.global) Does increasing index value mean "to left" or
-  //                         "to right"?  Resolve this by the first multilane
-  //                         implementation.
   const Lane* lane(int index) const { return do_lane(index); }
 
  protected:

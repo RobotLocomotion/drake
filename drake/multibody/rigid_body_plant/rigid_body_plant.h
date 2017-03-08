@@ -7,9 +7,10 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -112,21 +113,35 @@ namespace systems {
 template <typename T>
 class RigidBodyPlant : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyPlant)
+
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in `tree`.  `tree` must not be `nullptr`.
   ///
   /// @param[in] tree the dynamic model to use with this plant.
+  /// @param[in] timestep a non-negative value specifying the update period of
+  ///   the model; 0.0 implies continuous-time dynamics with derivatives, and
+  ///   values > 0.0 result in discrete-time dynamics implementing a
+  ///   time-stepping approximation to the dynamics.  @default 0.0.
   // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
   // already.  Confirm/deny and document that result.
-  explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree);
+  explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
+                          double timestep = 0.0);
 
   ~RigidBodyPlant() override;
 
-  // TODO(liang.fok) Remove this method once a more advanced contact modeling
-  // framework is available.
-  /// Sets the contact parameters.
-  void set_contact_parameters(double penetration_stiffness,
-      double penetration_damping, double friction_coefficient);
+  // TODO(SeanCurtis-TRI): Link to documentation explaining these parameters
+  // in detail.  To come in a subsequent PR.
+  /// Sets only the parameters for *normal* contact.  This is a convenience
+  /// function to allow for more targeted parameter tuning.
+  void set_normal_contact_parameters(double penetration_stiffness,
+                                     double dissipation);
+
+  /// Sets only the parameters for *friction* contact.  This is a convenience
+  /// function to allow for more targeted parameter tuning.
+  void set_friction_contact_parameters(double static_friction_coef,
+                                       double dynamic_friction_coef,
+                                       double v_stiction_tolerance);
 
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
@@ -178,13 +193,11 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   /// Sets the generalized coordinate `position_index` to the value
   /// `position`.
-  void set_position(Context<T>* context,
-                    int position_index, T position) const;
+  void set_position(Context<T>* context, int position_index, T position) const;
 
   /// Sets the generalized velocity `velocity_index` to the value
   /// `velocity`.
-  void set_velocity(Context<T>* context,
-                    int velocity_index, T velocity) const;
+  void set_velocity(Context<T>* context, int velocity_index, T velocity) const;
 
   /// Sets the continuous state vector of the system to be `x`.
   void set_state_vector(Context<T>* context,
@@ -199,23 +212,30 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// identity (or equivalently a zero rotation).
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {
-    // Extract a pointer to continuous state from the context.
     DRAKE_DEMAND(state != nullptr);
-    ContinuousState<T>* xc = state->get_mutable_continuous_state();
-    DRAKE_DEMAND(xc != nullptr);
 
-    // Write the zero configuration into the continuous state.
     VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
     x0.head(get_num_positions()) = tree_->getZeroConfiguration();
-    xc->SetFromVector(x0);
+
+    if (timestep_ == 0.0) {
+      // Extract a pointer to continuous state from the context.
+      ContinuousState<T>* xc = state->get_mutable_continuous_state();
+      DRAKE_DEMAND(xc != nullptr);
+
+      // Write the zero configuration into the continuous state.
+      xc->SetFromVector(x0);
+    } else {
+      // Extract a pointer to the discrete state from the context.
+      BasicVector<T>* xd =
+          state->get_mutable_discrete_state()->get_mutable_discrete_state(0);
+      DRAKE_DEMAND(xd != nullptr);
+
+      // Write the zero configuration into the discrete state.
+      xd->SetFromVector(x0);
+    }
   }
 
   // System<T> overrides.
-  /// Allocates the output ports. See this class' description for details of
-  /// these ports.
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override;
-
   bool has_any_direct_feedthrough() const override;
 
   /// Computes the force exerted by the stop when a joint hits its limit,
@@ -224,15 +244,15 @@ class RigidBodyPlant : public LeafSystem<T> {
   ///
   /// Linear stiffness formula (and definition of "dissipation") from:
   /// https://simtk.org/api_docs/simbody/latest/classSimTK_1_1Force_1_1MobilityLinearStop.html#details
-  static T JointLimitForce(const DrakeJoint& joint,
-                           const T& position, const T& velocity);
+  static T JointLimitForce(const DrakeJoint& joint, const T& position,
+                           const T& velocity);
 
   /// Returns the index into the output port for `model_instance_id`
   /// which corresponds to the world position index of
   /// `world_position_index`, or throws if the position index does not
   /// correspond to the model id.
-  int FindInstancePositionIndexFromWorldIndex(
-      int model_instance_id, int world_position_index);
+  int FindInstancePositionIndexFromWorldIndex(int model_instance_id,
+                                              int world_position_index);
 
   /// Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
   /// and y-axis such that the basis is orthonormal. The basis is R_WL, where W
@@ -257,14 +277,16 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// parameter RigidBodyTreeConstants::kFirstNonWorldModelInstanceId.
   const InputPortDescriptor<T>& actuator_command_input_port() const {
     if (get_num_model_instances() != 1) {
-      throw std::runtime_error("RigidBodyPlant::actuator_command_input_port(): "
+      throw std::runtime_error(
+          "RigidBodyPlant::actuator_command_input_port(): "
           "ERROR: This method can only called when there is only one model "
           "instance in the RigidBodyTree. There are currently " +
-          std::to_string(get_num_model_instances()) + " model instances in the "
+          std::to_string(get_num_model_instances()) +
+          " model instances in the "
           "RigidBodyTree.");
     }
     return model_instance_actuator_command_input_port(
-                         RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
+        RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
   }
 
   /// Returns true if and only if the model instance with the provided
@@ -311,14 +333,39 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
   ///@}
 
+  /// Computes the generalized forces on all bodies due to contact.
+  ///
+  /// @param kinsol         The kinematics of the rigid body system at the time
+  ///                       of contact evaluation.
+  /// @param[out] contacts  The optional contact results.  If non-null, stores
+  ///                       the contact information for consuming on the output
+  ///                       port.
+  /// @returns              The generalized forces across all the bodies due to
+  ///                       contact response.
+  VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
+                                 ContactResults<T>* contacts = nullptr) const;
+
  protected:
-  // LeafSystem<T> override.
+  // LeafSystem<T> overrides.
+
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
+  std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const override;
+
+  /// Allocates the data for the abstract-valued output port specified by
+  /// @p descriptor.
+  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<T>& descriptor) const override;
+  /// Allocates the data for the vector-valued output port specified by
+  /// @p descriptor.
+  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
+      const OutputPortDescriptor<T>& descriptor) const override;
 
   // System<T> overrides.
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
+  void DoCalcDiscreteVariableUpdates(const Context<T>& context,
+                                     DiscreteState<T>* updates) const override;
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
 
@@ -342,14 +389,14 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
 
   void DoMapVelocityToQDot(
-      const Context<T> &context,
-      const Eigen::Ref<const VectorX<T>> &generalized_velocity,
-      VectorBase<T> *positions_derivative) const override;
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      VectorBase<T>* positions_derivative) const override;
 
   void DoMapQDotToVelocity(
-      const Context<T> &context,
-      const Eigen::Ref<const VectorX<T>> &configuration_dot,
-      VectorBase<T> *generalized_velocity) const override;
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& configuration_dot,
+      VectorBase<T>* generalized_velocity) const override;
 
  private:
   void ExportModelInstanceCentricPorts();
@@ -358,29 +405,67 @@ class RigidBodyPlant : public LeafSystem<T> {
   void ComputeContactResults(const Context<T>& context,
                              ContactResults<T>* contacts) const;
 
-  // Computes the generalized forces on all bodies due to contact.
+  // Evaluates the actuator command input ports and throws a runtime_error
+  // exception if at least one of the ports is not connected.
+  VectorX<T> EvaluateActuatorInputs(const Context<T>& context) const;
+
+  // Computes the friction coefficient based on the relative tangential
+  // *speed* of the contact point on Ac relative to B (expressed in B), v_BAc.
   //
-  // @param kinsol         The kinematics of the rigid body system at the time
-  //                       of contact evaluation.
-  // @param[out] contacts  The optional contact results.  If non-null, stores
-  //                       the contact information for consuming on the output
-  //                       port.
-  // @return               The generalized forces across all the bodies due to
-  //                       contact response.
-  VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
-                                 ContactResults<T>* contacts = nullptr) const;
+  // Specifically, this creates a velocity-dependent coefficient of friction
+  // based a Stribeck curve using values of static (us) and dynamic (ud)
+  // coefficients of friction.  The input relative speed, is transformed to be a
+  // dimensionless multiple of a *stiction tolerance speed*, v.
+  //
+  // The curve is a piecewise smooth curve with three intervals (given v >= 0):
+  //  (a) v=0..1: smooth interpolation from 0 to us
+  //  (b) v=1..3: smooth interpolation from us to ud
+  //  (c) v=3..inf: ud
+  //
+  // Graph looks like this:
+  //
+  //    |
+  //    |
+  // us |     **
+  //    |    *  *
+  //    |    *   *
+  // ud |   *      **********
+  //    |   *
+  //    |   *
+  //    |   *
+  //    |  *
+  //    |*____________________
+  //    0     1     2     3
+  //        multiple of v
+  //
+  T ComputeFrictionCoefficient(T v_tangent_BAc) const;
+
+  // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
+  // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
+  static T step5(T x);
 
   std::unique_ptr<const RigidBodyTree<T>> tree_;
 
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
-  T penetration_stiffness_{150.0};  // An arbitrarily large number.
-  T penetration_damping_{penetration_stiffness_ / 10.0};
-  T friction_coefficient_{1.0};
+  // These default values are all semi-arbitrary.  They seem to produce,
+  // generally, plausible results. They are in *no* way universally valid or
+  // meaningful.
+  T penetration_stiffness_{10000.0};
+  T dissipation_{2};
+  // Note: this is the *inverse* of the v_stiction_tolerance parameter to
+  // optimize for the division.
+  T inv_v_stiction_tolerance_{100};  // inverse of 1 cm/s.
+  T static_friction_coef_{0.9};
+  T dynamic_friction_ceof_{0.5};
 
   int state_output_port_index_{};
   int kinematics_output_port_index_{};
   int contact_output_port_index_{};
+
+  // timestep == 0.0 implies continuous-time dynamics,
+  // timestep > 0.0 implies a discrete-time dynamics approximation.
+  const double timestep_{0.0};
 
   // Maps model instance ids to input port indices.  A value of
   // kInvalidPortIdentifier indicates that a model instance has no actuators,

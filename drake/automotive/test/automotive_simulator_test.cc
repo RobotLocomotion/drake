@@ -47,7 +47,8 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   // Set up a basic simulation with just SimpleCar and its hangers-on.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
-  const int model_instance_id = simulator->AddSimpleCarFromSdf(sdf_filename);
+  const int model_instance_id =
+      simulator->AddSimpleCarFromSdf(sdf_filename, "", kCommandChannelName);
 
   // Obtain the number of bodies belonging to the model.
   const int num_vehicle_bodies_in_tree =

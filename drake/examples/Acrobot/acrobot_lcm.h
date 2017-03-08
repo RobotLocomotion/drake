@@ -19,6 +19,7 @@ class AcrobotStateReceiver : public systems::LeafSystem<double> {
  public:
   AcrobotStateReceiver();
 
+ protected:
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
@@ -33,8 +34,9 @@ class AcrobotCommandSender : public systems::LeafSystem<double> {
  public:
   AcrobotCommandSender();
 
-  std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
-      const systems::Context<double>& context) const override;
+ protected:
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
@@ -47,6 +49,7 @@ class AcrobotCommandReceiver : public systems::LeafSystem<double> {
  public:
   AcrobotCommandReceiver();
 
+ protected:
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 };
@@ -58,8 +61,9 @@ class AcrobotStateSender : public systems::LeafSystem<double> {
  public:
   AcrobotStateSender();
 
-  std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
-      const systems::Context<double>& context) const override;
+ protected:
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;

@@ -1,6 +1,7 @@
 #include "drake/systems/sensors/accelerometer.h"
 
 #include <cmath>
+#include <vector>
 
 #include "drake/math/quaternion.h"
 #include "drake/systems/sensors/accelerometer_output.h"
@@ -137,13 +138,6 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
       output->GetMutableVectorData(output_port_index_);
 
   output_vector->SetFromVector(a_WF_F);
-}
-
-std::ostream& operator<<(std::ostream& out, const Accelerometer& sensor) {
-  out << "Accelerometer:\n"
-      << "  - name = " << sensor.get_name() << "\n"
-      << "  - frame = " << sensor.get_frame().get_name() << "\n";
-  return out;
 }
 
 }  // namespace sensors

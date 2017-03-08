@@ -1,11 +1,15 @@
 #include "drake/solvers/test/optimization_examples.h"
 
-#include "drake/common/eigen_matrix_compare.h"
+#include <gtest/gtest.h>
 
-using Eigen::Matrix4d;
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/solvers/test/mathematical_program_test_util.h"
+
 using Eigen::Vector4d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::Matrix4d;
+using Eigen::Matrix3d;
 using Eigen::Matrix2d;
 using Eigen::RowVector2d;
 using Eigen::MatrixXd;
@@ -17,6 +21,56 @@ using drake::symbolic::Expression;
 namespace drake {
 namespace solvers {
 namespace test {
+std::set<CostForm> linear_cost_form() {
+  return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
+}
+
+std::set<ConstraintForm> linear_constraint_form() {
+  return std::set<ConstraintForm>{ConstraintForm::kNonSymbolic,
+                                  ConstraintForm::kSymbolic,
+                                  ConstraintForm::kFormula};
+}
+
+std::set<CostForm> quadratic_cost_form() {
+  return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
+}
+
+OptimizationProgram::OptimizationProgram(CostForm cost_form,
+                                         ConstraintForm cnstr_form)
+    : prog_(std::make_unique<MathematicalProgram>()) {}
+
+void OptimizationProgram::RunProblem(
+    MathematicalProgramSolverInterface* solver) {
+  if (solver->available()) {
+    RunSolver(prog_.get(), *solver);
+    CheckSolution(solver->solver_type());
+  }
+}
+
+double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
+    SolverType solver_type) const {
+  switch (solver_type) {
+    case SolverType::kMosek : {
+      return 1E-10;
+    }
+    case SolverType::kGurobi : {
+      return 1E-10;
+    }
+    case SolverType::kSnopt : {
+      return 1E-8;
+    }
+    case SolverType::kIpopt : {
+      return 1E-6;
+    }
+    case SolverType::kNlopt : {
+      return 1E-6;
+    }
+    default : {
+      throw std::runtime_error("Unsupported solver type.");
+    }
+  }
+}
+
 LinearSystemExample1::LinearSystemExample1()
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, b_{}, con_{} {
   x_ = prog_->NewContinuousVariables<4>();
@@ -108,11 +162,11 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
   x_ = prog_->NewContinuousVariables<5>("x");
   prog_->AddBoundingBoxConstraint(0, 1, x_);
   switch (cost_form) {
-    case kGenericCost: {
+    case CostForm::kGeneric: {
       prog_->AddCost(TestProblem1Cost(), x_);
       break;
     }
-    case kQuadraticCost: {
+    case CostForm::kNonSymbolic: {
       AddQuadraticCost();
       break;
     }
@@ -120,11 +174,11 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
       throw std::runtime_error("unsupported cost form");
   }
   switch (constraint_form) {
-    case kSymbolicConstraint: {
+    case ConstraintForm::kSymbolic: {
       AddSymbolicConstraint();
       break;
     }
-    case kNonSymbolicConstraint: {
+    case ConstraintForm::kNonSymbolic: {
       AddConstraint();
       break;
     }
@@ -173,11 +227,11 @@ NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
   prog_->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_(5));
 
   switch (cost_form) {
-    case kGenericCost: {
+    case CostForm::kGeneric: {
       prog_->AddCost(TestProblem2Cost(), x_);
       break;
     }
-    case kQuadraticCost: {
+    case CostForm::kNonSymbolic: {
       AddQuadraticCost();
       break;
     }
@@ -186,11 +240,11 @@ NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
   }
 
   switch (cnstr_form) {
-    case kNonSymbolicConstraint: {
+    case ConstraintForm::kNonSymbolic: {
       AddNonSymbolicConstraint();
       break;
     }
-    case kSymbolicConstraint: {
+    case ConstraintForm::kSymbolic: {
       AddSymbolicConstraint();
       break;
     }
@@ -256,11 +310,11 @@ LowerBoundedProblem::LowerBoundedProblem(ConstraintForm cnstr_form)
   prog_->AddConstraint(con2, x_);
 
   switch (cnstr_form) {
-    case kNonSymbolic: {
+    case ConstraintForm::kNonSymbolic: {
       AddNonSymbolicConstraint();
       break;
     }
-    case kSymbolic: {
+    case ConstraintForm::kSymbolic: {
       AddSymbolicConstraint();
       break;
     }
@@ -327,15 +381,15 @@ GloptiPolyConstrainedMinimizationProblem::
       Eigen::Vector3d(2, std::numeric_limits<double>::infinity(), 3), y_);
 
   switch (cost_form) {
-    case kGenericCost: {
+    case CostForm::kGeneric: {
       AddGenericCost();
       break;
     }
-    case kNonSymbolicCost: {
+    case CostForm::kNonSymbolic: {
       AddNonSymbolicCost();
       break;
     }
-    case kSymbolicCost: {
+    case CostForm::kSymbolic: {
       AddSymbolicCost();
       break;
     }
@@ -350,11 +404,11 @@ GloptiPolyConstrainedMinimizationProblem::
   prog_->AddConstraint(qp_con, y_);
 
   switch (cnstr_form) {
-    case kNonSymbolicConstraint: {
+    case ConstraintForm::kNonSymbolic: {
       AddNonSymbolicConstraint();
       break;
     }
-    case kSymbolicConstraint: {
+    case ConstraintForm::kSymbolic: {
       AddSymbolicConstraint();
       break;
     }
@@ -441,12 +495,12 @@ MinDistanceFromPlaneToOrigin::MinDistanceFromPlaneToOrigin(
       prog_rotated_lorentz_->NewContinuousVariables(kXdim, "x");
 
   switch (cost_form) {
-    case kNonSymbolicCost: {
+    case CostForm::kNonSymbolic: {
       prog_lorentz_->AddLinearCost(Vector1d(1), t_lorentz_);
       prog_rotated_lorentz_->AddLinearCost(Vector1d(1), t_rotated_lorentz_);
       break;
     }
-    case kSymbolicCost: {
+    case CostForm::kSymbolic: {
       prog_lorentz_->AddLinearCost(+t_lorentz_(0));
       prog_rotated_lorentz_->AddLinearCost(+t_rotated_lorentz_(0));
       break;
@@ -456,11 +510,11 @@ MinDistanceFromPlaneToOrigin::MinDistanceFromPlaneToOrigin(
   }
 
   switch (cnstr_form) {
-    case kNonSymbolicConstraint: {
+    case ConstraintForm::kNonSymbolic: {
       AddNonSymbolicConstraint();
       break;
     }
-    case kSymbolicConstraint: {
+    case ConstraintForm::kSymbolic: {
       AddSymbolicConstraint();
       break;
     }

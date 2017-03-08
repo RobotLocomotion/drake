@@ -28,7 +28,6 @@ drake_cc_library(
         "point_contact_detail.h",
         "rigid_body_plant.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/solvers:mathematical_program",
@@ -44,7 +43,6 @@ drake_cc_library(
     hdrs = [
         "contact_results_to_lcm.h",
     ],
-    linkstatic = 1,
     deps = [
         ":rigid_body_plant",
         "//drake/lcmtypes:contact_info_for_viz",
@@ -60,7 +58,6 @@ drake_cc_library(
     hdrs = [
         "rigid_body_plant_that_publishes_xdot.h",
     ],
-    linkstatic = 1,
     deps = [
         ":rigid_body_plant",
         "//drake/lcm",
@@ -78,11 +75,13 @@ drake_cc_library(
         "drake_visualizer.h",
         "viewer_draw_translator.h",
     ],
-    linkstatic = 1,
     deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
         "//drake/lcmtypes:viewer",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/lcm",
+        "//drake/systems/primitives:signal_log",
+        "//drake/systems/rendering:drake_visualizer_client",
     ],
 )
 
@@ -110,6 +109,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "contact_force_formula_test",
+    deps = [
+        ":rigid_body_plant",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "contact_info_test",
     deps = [
         ":rigid_body_plant",
@@ -129,6 +136,7 @@ drake_cc_googletest(
     data = ["//drake/multibody/collision:test_models"],
     deps = [
         ":drake_visualizer",
+        "//drake/common:drake_path",
         "//drake/lcm:mock",
         "//drake/systems/analysis",
     ],
@@ -149,6 +157,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/multibody:models",
         "//drake/multibody:test_models",
     ],
     deps = [

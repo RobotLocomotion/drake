@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/vector_base.h"
@@ -19,6 +20,8 @@ namespace systems {
  */
 class ViewerDrawTranslator : public lcm::LcmAndVectorBaseTranslator {
  public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ViewerDrawTranslator)
+
   /**
    * A constructor that sets the expected sizes of both the LCM message and
    * VectorBase vector to be the size of the state vector of @p tree,

@@ -47,8 +47,6 @@ template <typename T>
 void QuadrotorPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T> &context,
     systems::ContinuousState<T> *derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-
   VectorX<T> state = context.get_continuous_state_vector().CopyToVector();
 
   VectorX<T> u = this->EvalVectorInput(context, 0)->get_value();
@@ -57,10 +55,10 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   Vector3<T> rpy = state.segment(3, 3);
   Vector3<T> rpy_dot = state.segment(9, 3);
 
-  // Convert orientation to a rotation matrix
+  // Convert orientation to a rotation matrix.
   Matrix3<T> R = drake::math::rpy2rotmat(rpy);
 
-  // Computing the net input forces and moments.
+  // Compute the net input forces and moments.
   VectorX<T> uF = kF_ * u;
   VectorX<T> uM = kM_ * u;
 
@@ -118,7 +116,8 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
   quad_context_goal->FixInputPort(0, u0);
   quadrotor_plant->set_state(quad_context_goal.get(), x0);
 
-  // Setup LQR Cost matrices (penalize position error 10x more than velocity.
+  // Setup LQR cost matrices (penalize position error 10x more than velocity
+  // error).
   Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(12, 12);
   Q.topLeftCorner<6, 6>() = 10 * Eigen::MatrixXd::Identity(6, 6);
 

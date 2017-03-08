@@ -3,6 +3,7 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -28,7 +29,7 @@ struct DrivingCommandIndices {
 template <typename T>
 class DrivingCommand : public systems::BasicVector<T> {
  public:
-  // An abbreviation for our row index constants.
+  /// An abbreviation for our row index constants.
   typedef DrivingCommandIndices K;
 
   /// Default constructor.  Sets all rows to zero.
@@ -44,8 +45,8 @@ class DrivingCommand : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  /// The desired steering angle of a virtual center wheel, positive results in
-  /// the vehicle turning left.
+  /// The desired steering angle [radians] of a virtual center wheel, positive
+  /// results in the vehicle turning left.
   const T& steering_angle() const {
     return this->GetAtIndex(K::kSteeringAngle);
   }
@@ -61,6 +62,16 @@ class DrivingCommand : public systems::BasicVector<T> {
   const T& brake() const { return this->GetAtIndex(K::kBrake); }
   void set_brake(const T& brake) { this->SetAtIndex(K::kBrake, brake); }
   //@}
+
+  /// Returns whether the current values of this vector are well-formed.
+  decltype(T() < T()) IsValid() const {
+    using std::isnan;
+    auto result = (T(0) == T(0));
+    result = result && !isnan(steering_angle());
+    result = result && !isnan(throttle());
+    result = result && !isnan(brake());
+    return result;
+  }
 };
 
 }  // namespace automotive

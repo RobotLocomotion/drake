@@ -72,9 +72,9 @@ class Element : public DrakeShapes::Element {
           const Eigen::Isometry3d& T_element_to_local,
           const RigidBody<double>* body);
 
-  virtual ~Element() {}
+  ~Element() override {}
 
-  virtual Element* clone() const;
+  Element* clone() const override;
 
   ElementId getId() const;
 
@@ -98,7 +98,7 @@ class Element : public DrakeShapes::Element {
    * with the @p other object.  CanCollideWith() is commutative;
    * A can collide with B implies B can collide with A.
    */
-  virtual bool CanCollideWith(const Element *other) const;
+  bool CanCollideWith(const Element *other) const;
 
   /**
    * Adds this element to the clique specified by the given clique id.
@@ -150,11 +150,14 @@ class Element : public DrakeShapes::Element {
    */
   friend std::ostream& operator<<(std::ostream&, const Element&);
 
- protected:
-  Element(const Element& other);
-
  private:
-  ElementId id;
+  // Provide a copy constructor for use by our clone() implementation.
+  // Delete all of the other operations.
+  Element(const Element&) = default;
+  void operator=(const Element&) = delete;
+  Element(Element&&) = delete;
+  void operator=(Element&&) = delete;
+
   bool is_anchored_{false};
   const RigidBody<double>* body_{};
 

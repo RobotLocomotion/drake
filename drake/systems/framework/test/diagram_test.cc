@@ -47,16 +47,16 @@ class ExampleDiagram : public Diagram<double> {
     builder.Connect(adder1_->get_output_port(), adder2_->get_input_port(1));
 
     builder.Connect(adder0_->get_output_port(),
-                    integrator0_->get_input_port(0));
-    builder.Connect(integrator0_->get_output_port(0),
-                    integrator1_->get_input_port(0));
+                    integrator0_->get_input_port());
+    builder.Connect(integrator0_->get_output_port(),
+                    integrator1_->get_input_port());
 
     builder.ExportInput(adder0_->get_input_port(0));
     builder.ExportInput(adder0_->get_input_port(1));
     builder.ExportInput(adder1_->get_input_port(1));
     builder.ExportOutput(adder1_->get_output_port());
     builder.ExportOutput(adder2_->get_output_port());
-    builder.ExportOutput(integrator1_->get_output_port(0));
+    builder.ExportOutput(integrator1_->get_output_port());
 
     builder.BuildInto(this);
   }
@@ -186,7 +186,11 @@ TEST_F(DiagramTest, Topology) {
   }
 
   // The diagram has direct feedthrough.
-  EXPECT_TRUE(diagram_->has_any_direct_feedthrough());
+  EXPECT_TRUE(diagram_->HasAnyDirectFeedthrough());
+  // Specifically, outputs 0 and 1 have direct feedthrough, but not output 2.
+  EXPECT_TRUE(diagram_->HasDirectFeedthrough(0));
+  EXPECT_TRUE(diagram_->HasDirectFeedthrough(1));
+  EXPECT_FALSE(diagram_->HasDirectFeedthrough(2));
 }
 
 TEST_F(DiagramTest, Path) {
@@ -247,6 +251,24 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
   EXPECT_EQ(3, integrator1_xcdot->get_vector().GetAtIndex(0));
   EXPECT_EQ(9, integrator1_xcdot->get_vector().GetAtIndex(1));
   EXPECT_EQ(27, integrator1_xcdot->get_vector().GetAtIndex(2));
+}
+
+// Tests the AllocateInput logic.
+TEST_F(DiagramTest, AllocateInputs) {
+  auto context = diagram_->CreateDefaultContext();
+
+  for (int port = 0; port < 3; port++) {
+    const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
+    EXPECT_EQ(vec, nullptr);
+  }
+
+  diagram_->AllocateFreestandingInputs(context.get());
+
+  for (int port = 0; port < 3; port++) {
+    const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
+    EXPECT_NE(vec, nullptr);
+    EXPECT_EQ(vec->size(), kSize);
+  }
 }
 
 /// Tests that a diagram can be transmogrified to AutoDiffXd.
@@ -508,7 +530,6 @@ class PublishingSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoPublish(const Context<double>& context) const override {
-    CheckValidContext(context);
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
 
@@ -560,8 +581,8 @@ class FeedbackDiagram : public Diagram<double> {
 
     DiagramBuilder<double> integrator_builder;
     integrator_ = integrator_builder.AddSystem<Integrator>(1 /* size */);
-    integrator_builder.ExportInput(integrator_->get_input_port(0));
-    integrator_builder.ExportOutput(integrator_->get_output_port(0));
+    integrator_builder.ExportInput(integrator_->get_input_port());
+    integrator_builder.ExportOutput(integrator_->get_output_port());
     integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
 
     DiagramBuilder<double> gain_builder;
@@ -585,7 +606,7 @@ class FeedbackDiagram : public Diagram<double> {
 // Tests that since there are no outputs, there is no direct feedthrough.
 GTEST_TEST(FeedbackDiagramTest, HasDirectFeedthrough) {
   FeedbackDiagram diagram;
-  EXPECT_FALSE(diagram.has_any_direct_feedthrough());
+  EXPECT_FALSE(diagram.HasAnyDirectFeedthrough());
 }
 
 // Tests that a FeedbackDiagram's context can be deleted without accessing
@@ -606,6 +627,13 @@ class SecondOrderStateVector : public BasicVector<double> {
 
   void set_q(double q) { SetAtIndex(0, q); }
   void set_v(double v) { SetAtIndex(1, v); }
+
+ protected:
+  BasicVector<double>* DoClone() const override {
+    auto result = new SecondOrderStateVector;
+    result->set_value(this->get_value());
+    return result;
+  }
 };
 
 // A minimal system that has second-order state.
@@ -748,8 +776,8 @@ class DiscreteStateDiagram : public Diagram<double> {
     hold1_ = builder.template AddSystem<ZeroOrderHold<double>>(2.0, kSize);
     hold2_ = builder.template AddSystem<ZeroOrderHold<double>>(3.0, kSize);
     publisher_ = builder.template AddSystem<TestPublishingSystem>();
-    builder.ExportInput(hold1_->get_input_port(0));
-    builder.ExportInput(hold2_->get_input_port(0));
+    builder.ExportInput(hold1_->get_input_port());
+    builder.ExportInput(hold2_->get_input_port());
     builder.BuildInto(this);
   }
 

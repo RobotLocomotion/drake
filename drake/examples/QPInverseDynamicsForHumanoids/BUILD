@@ -12,7 +12,6 @@ drake_cc_library(
     name = "control_utils",
     srcs = [],
     hdrs = ["control_utils.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/math:geometric_transform",
@@ -27,7 +26,6 @@ drake_cc_library(
     name = "humanoid_status",
     srcs = ["humanoid_status.cc"],
     hdrs = ["humanoid_status.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
@@ -40,7 +38,6 @@ drake_cc_library(
     name = "qp_controller_common",
     srcs = ["qp_controller_common.cc"],
     hdrs = ["qp_controller_common.h"],
-    linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
     ],
@@ -51,7 +48,6 @@ drake_cc_library(
     srcs = ["lcm_utils.cc"],
     hdrs = ["lcm_utils.h"],
     deps = [
-        "@bot_core_lcmtypes//:lib",
         ":qp_controller_common",
         "//drake/lcmtypes:body_acceleration",
         "//drake/lcmtypes:constrained_values",
@@ -62,6 +58,7 @@ drake_cc_library(
         "//drake/lcmtypes:qp_input",
         "//drake/lcmtypes:resolved_contact",
         "//drake/util:lcm_util",
+        "@bot_core_lcmtypes//:lib",
     ],
 )
 
@@ -69,7 +66,6 @@ drake_cc_library(
     name = "qp_controller",
     srcs = ["qp_controller.cc"],
     hdrs = ["qp_controller.h"],
-    linkstatic = 1,
     deps = [
         ":humanoid_status",
         ":qp_controller_common",
@@ -103,10 +99,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "valkyrie_balancing_test",
+    size = "medium",
     srcs = ["test/valkyrie_balancing_test.cc"],
     data = [
-        "config/alias_groups.yaml",
-        "config/controller.yaml",
+        "config/valkyrie.alias_groups",
+        "config/valkyrie.id_controller_config",
         "//drake/examples/Valkyrie:models",
     ],
     tags = [
@@ -120,6 +117,28 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/examples/Valkyrie:valkyrie_constants",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_inverse_dynamics_test",
+    srcs = ["test/iiwa_inverse_dynamics_test.cc"],
+    data = [
+        "config/iiwa.alias_groups",
+        "config/iiwa.id_controller_config",
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    deps = [
+        ":control_utils",
+        ":qp_controller",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/multibody/parsers",
     ],
 )

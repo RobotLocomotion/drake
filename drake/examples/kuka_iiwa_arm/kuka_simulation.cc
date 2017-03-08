@@ -19,16 +19,13 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/gravity_compensator.h"
-#include "drake/systems/controllers/pid_controlled_system.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/demultiplexer.h"
-#include "drake/systems/primitives/multiplexer.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -43,13 +40,9 @@ namespace {
 
 using systems::ConstantVectorSource;
 using systems::Context;
-using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
-using systems::GravityCompensator;
-using systems::Multiplexer;
-using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 
@@ -64,70 +57,44 @@ class SimulatedKuka : public systems::Diagram<T> {
     this->set_name("SimulatedKuka");
     DiagramBuilder<T> builder;
 
-    // The following curly brace defines a scope that quarantines local
-    // variables `rigid_body_tree` and `plant`, which are of type
-    // `std::unique_ptr`. Ownership of `rigid_body_tree` is passed to `plant`
-    // and ownership of `plant` is passed to `controller`. We quarantine these
-    // local variables to prevent downstream code from seg faulting by trying to
-    // access `rigid_body_tree` or `plant` after ownership is transferred.
-    {
-      // Instantiates a model of the world.
-      auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
-      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-          drake::GetDrakePath() +
-          "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf",
-          drake::multibody::joints::kFixed,
-          nullptr /* weld to frame */, rigid_body_tree.get());
+    // Instantiates a model of the world.
+    auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
+    const std::string model_path = drake::GetDrakePath() +
+        "/examples/kuka_iiwa_arm/models/iiwa14/"
+        "iiwa14_simplified_collision.urdf";
 
-      drake::multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
+    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+        model_path,
+        drake::multibody::joints::kFixed,
+        nullptr /* weld to frame */, rigid_body_tree.get());
 
-      // Instantiates a RigidBodyPlant from an MBD model of the world.
-      auto plant = std::make_unique<RigidBodyPlant<T>>(
-          std::move(rigid_body_tree));
-      plant_ = plant.get();
+    drake::multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
 
-      DRAKE_ASSERT(plant_->actuator_command_input_port().size() ==
-                   plant_->get_num_positions());
+    plant_ = builder.template AddSystem<systems::RigidBodyPlant<double>>(
+        std::move(rigid_body_tree));
 
-      Eigen::VectorXd kp;
-      Eigen::VectorXd ki;
-      Eigen::VectorXd kd;
-      SetPositionControlledIiwaGains(&kp, &ki, &kd);
+    DRAKE_ASSERT(plant_->actuator_command_input_port().size() ==
+        plant_->get_num_positions());
 
-      controller_ = builder.template AddSystem<PidControlledSystem<T>>(
-          std::move(plant), kp, ki, kd);
-    }
-    DRAKE_DEMAND(controller_ != nullptr);
-    const RigidBodyTreed& tree = plant_->get_rigid_body_tree();
+    Eigen::VectorXd kp;
+    Eigen::VectorXd ki;
+    Eigen::VectorXd kd;
+    SetPositionControlledIiwaGains(&kp, &ki, &kd);
 
-    // TODO(liang.fok): Modify controller to provide named accessors to these
-    // ports.
-    const int kControllerFeedforwardInputPort = 0;
-    const int kControllerFeedbackInputPort = 1;
+    controller_ =
+        builder.template AddSystem<systems::InverseDynamicsController<T>>(
+            plant_->get_rigid_body_tree(), kp, ki, kd,
+            false /* no feedforward acceleration */);
 
-    auto gravity_compensator =
-        builder.template AddSystem<GravityCompensator<T>>(tree);
+    // Connects plant and controller.
+    builder.Connect(plant_->state_output_port(),
+                    controller_->get_input_port_estimated_state());
+    builder.Connect(controller_->get_output_port_control(),
+                    plant_->actuator_command_input_port());
 
-    // Split the input state into two signals one with the positions and one
-    // with the velocities.
-    // For Kuka:
-    // -  get_num_states() = 14
-    // -  get_num_positions() = 7
-    auto rbp_state_demux = builder.template AddSystem<Demultiplexer<T>>(
-        plant_->get_num_states(), plant_->get_num_positions());
-    builder.Connect(controller_->get_output_port(0),
-                    rbp_state_demux->get_input_port(0));
-
-    // Connects the gravity compensator to the output generalized positions.
-    builder.Connect(rbp_state_demux->get_output_port(0),
-                    gravity_compensator->get_input_port(0));
-    builder.Connect(gravity_compensator->get_output_port(0),
-                    controller_->get_input_port(
-                        kControllerFeedforwardInputPort));
-
-    builder.ExportInput(
-        controller_->get_input_port(kControllerFeedbackInputPort));
-    builder.ExportOutput(controller_->get_output_port(0));
+    // Exposes desired state input port.
+    builder.ExportInput(controller_->get_input_port_desired_state());
+    builder.ExportOutput(plant_->state_output_port());
     builder.BuildInto(this);
   }
 
@@ -135,7 +102,7 @@ class SimulatedKuka : public systems::Diagram<T> {
 
  private:
   RigidBodyPlant<T>* plant_{nullptr};
-  PidControlledSystem<T>* controller_{nullptr};
+  systems::InverseDynamicsController<T>* controller_{nullptr};
 };
 
 int DoMain() {
@@ -159,6 +126,7 @@ int DoMain() {
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm));
+  status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto status_sender = builder.AddSystem<IiwaStatusSender>();
 
   builder.Connect(command_sub->get_output_port(0),

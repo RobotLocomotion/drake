@@ -8,6 +8,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/common/test/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
@@ -17,6 +18,7 @@ using Eigen::Dynamic;
 using Eigen::Ref;
 using Eigen::Matrix;
 using Eigen::Matrix2d;
+using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -28,6 +30,7 @@ using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
 using drake::symbolic::Expression;
 using drake::symbolic::Variable;
+using drake::symbolic::test::ExprEqual;
 
 using std::numeric_limits;
 
@@ -266,6 +269,16 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
   CheckGetSolution(prog, X2, X2_value);
   CheckGetSolution(prog, x3, x3_value);
   CheckGetSolution(prog, x4, x4_value);
+
+  // Check a variable that is not a decision variable of the mathematical
+  // program.
+  symbolic::Variable z1("z1");
+  symbolic::Variable z2("z2");
+  EXPECT_THROW(prog.GetSolution(z1), std::runtime_error);
+  EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, z2)),
+               std::runtime_error);
+  EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, X1(0, 0))),
+               std::runtime_error);
 }
 
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
@@ -491,14 +504,17 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
                    Eigen::Vector2d(1, 2), num_generic_costs);
 }
 
-void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
-                                  const Expression& e) {
-  int num_linear_costs = prog->linear_costs().size();
-  const auto& binding = prog->AddLinearCost(e);
-  EXPECT_EQ(prog->linear_costs().size(), num_linear_costs + 1);
-  EXPECT_EQ(prog->linear_costs().back().constraint(), binding.constraint());
+void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
+                                         const Expression& e,
+                                         const Binding<Constraint>& binding,
+                                         int num_linear_costs) {
+  EXPECT_EQ(prog.linear_costs().size(), num_linear_costs);
+  EXPECT_EQ(prog.linear_costs().back().constraint(), binding.constraint());
+  EXPECT_EQ(prog.linear_costs().back().variables(), binding.variables());
   EXPECT_EQ(binding.constraint()->num_constraints(), 1);
-  const Expression cx{(binding.constraint()->A() * binding.variables())(0)};
+  auto cnstr = prog.linear_costs().back().constraint();
+  auto vars = prog.linear_costs().back().variables();
+  const Expression cx{(cnstr->A() * vars)(0)};
   double constant_term{0};
   if (is_addition(e)) {
     constant_term = get_constant_in_addition(e);
@@ -506,6 +522,15 @@ void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
     constant_term = get_constant_value(e);
   }
   EXPECT_TRUE((e - cx).EqualTo(constant_term));
+}
+
+void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
+                                  const Expression& e) {
+  int num_linear_costs = prog->linear_costs().size();
+  auto binding1 = prog->AddLinearCost(e);
+  CheckAddedSymbolicLinearCostUserFun(*prog, e, binding1, ++num_linear_costs);
+  auto binding2 = prog->AddCost(e);
+  CheckAddedSymbolicLinearCostUserFun(*prog, e, binding2, ++num_linear_costs);
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
@@ -521,16 +546,18 @@ GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
   CheckAddedSymbolicLinearCost(&prog, 2 * x(0) + 3 * x(1) + 2);
   // Add linear cost 2 * x(1)
   CheckAddedSymbolicLinearCost(&prog, 2 * x(1));
-  // Add Linear (constant) cost 3
+  // Add linear (constant) cost 3
   CheckAddedSymbolicLinearCost(&prog, 3);
-  // Add Linear cost -x(0)
+  // Add linear cost -x(0)
   CheckAddedSymbolicLinearCost(&prog, -x(0));
-  // Add Linear cost -(x(1) + 3 * x(0))
+  // Add linear cost -(x(1) + 3 * x(0))
   CheckAddedSymbolicLinearCost(&prog, -(x(1) + 3 * x(0)));
+  // Add linear cost x(1)*x(1) + x(0) - x(1)*x(1)
+  CheckAddedSymbolicLinearCost(&prog, x(1) * x(1) + x(0) - x(1) * x(1));
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
-  // Add Linear Constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
+  // Add linear constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(3, "x");
   auto y = prog.NewContinuousVariables(3, "y");
@@ -551,7 +578,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
-  // Add Linear Constraint: -10 <= x0 <= 10
+  // Add linear constraint: -10 <= x0 <= 10
   // Note that this constraint is a bounding-box constraint which is a sub-class
   // of linear-constraint.
   MathematicalProgram prog;
@@ -576,7 +603,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
-  // Add Linear Constraints
+  // Add linear constraints
   //     3 <=  3 - 5*x0 +      + 10*x2        - 7*y1        <= 9
   //   -10 <=                       x2                      <= 10
   //    -7 <= -5 + 2*x0 + 3*x2         + 3*y0 - 2*y1 + 6*y2 <= 12
@@ -626,8 +653,10 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
 
-  EXPECT_EQ(M_e - M_lb, Ax - lb_in_ctr);
-  EXPECT_EQ(M_e - M_ub, Ax - ub_in_ctr);
+  for (int i = 0; i < M_e.size(); ++i) {
+    EXPECT_PRED2(ExprEqual, M_e(i) - M_lb(i), Ax(i) - lb_in_ctr(i));
+    EXPECT_PRED2(ExprEqual, M_e(i) - M_ub(i), Ax(i) - ub_in_ctr(i));
+  }
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
@@ -692,6 +721,199 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic6) {
       CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
 }
 
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic7) {
+  // Checks the linear constraints
+  // 1 <= -2 * x0 <= 3
+  // 3 <= 4 * x0 + 2<= 5
+  // 2 <= x1 + 2 * (x2 - 0.5*x1) + 3 <= 4;
+  // 3 <= -4 * x1 + 3 <= inf
+  // Note: these are all bounding box constraints.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  Vector4<Expression> e;
+  // clang-format off
+  e << -2 * x(0),
+    4 * x(0) + 2,
+    x(1) + 2 * (x(2) - 0.5 * x(1)) + 3,
+    -4 * x(1) + 3;
+  // clang-format on
+  prog.AddLinearConstraint(
+      e, Vector4d(1, 3, 2, 3),
+      Vector4d(3, 5, 4, numeric_limits<double>::infinity()));
+
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  const auto& binding = prog.bounding_box_constraints().back();
+  EXPECT_EQ(binding.variables(),
+            VectorDecisionVariable<4>(x(0), x(0), x(2), x(1)));
+  EXPECT_TRUE(CompareMatrices(
+      binding.constraint()->lower_bound(),
+      Vector4d(-1.5, 0.25, -0.5, -numeric_limits<double>::infinity())));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                              Vector4d(-0.5, 0.75, 0.5, 0)));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic8) {
+  // Test the failure cases for adding linear constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // Non-polynomial.
+  EXPECT_THROW(prog.AddLinearConstraint(sin(x(0)), 1, 2), std::runtime_error);
+
+  // Non-linear.
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) * x(0), 1, 2), std::runtime_error);
+
+  // Trivial (and infeasible) case 1 <= 0 <= 2
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) - x(0), 1, 2), std::runtime_error);
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic9) {
+  // Test trivial constraint with no variables, such as 1 <= 2 <= 3
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  prog.AddLinearConstraint(Expression(2), 1, 3);
+  EXPECT_EQ(prog.linear_constraints().size(), 1);
+  auto binding = prog.linear_constraints().back();
+  EXPECT_EQ(binding.constraint()->A().rows(), 1);
+  EXPECT_EQ(binding.constraint()->A().cols(), 0);
+
+  Vector2<Expression> expr;
+  expr << 2, x(0);
+  prog.AddLinearConstraint(expr, Vector2d(1, 2), Vector2d(3, 4));
+  EXPECT_EQ(prog.linear_constraints().size(), 2);
+  binding = prog.linear_constraints().back();
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->A(), Eigen::Vector2d(0, 1)));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+                              Eigen::Vector2d(-1, 2)));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                              Eigen::Vector2d(1, 4)));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_bounding_box_constraint = 0;
+
+  // x(0) <= 3
+  std::vector<symbolic::Formula> f;
+  f.push_back(x(0) <= 3);
+  f.push_back(3 >= x(0));
+  f.push_back(x(0) + 2 <= 5);
+  f.push_back(4 + x(0) >= 1 + 2 * x(0));
+  f.push_back(2 * x(0) + 1 <= 4 + x(0));
+  f.push_back(3 * x(0) + x(1) <= 6 + x(0) + x(1));
+  for (const auto &fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_bounding_box_constraint,
+              prog.bounding_box_constraints().size());
+    EXPECT_EQ(prog.linear_constraints().size(), 0);
+    EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+    auto binding = prog.bounding_box_constraints().back();
+    EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                                Vector1d(3)));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+                                Vector1d(-numeric_limits<double>::infinity())));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula2) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_bounding_box_constraint = 0;
+  // x0 >= 2
+  std::vector<symbolic::Formula> f;
+  f.push_back(x(0) >= 2);
+  f.push_back(2 <= x(0));
+  f.push_back(-x(0) <= -2);
+  f.push_back(-2 >= -x(0));
+  f.push_back(2 + 2 * x(0) >= x(0) + 4);
+  f.push_back(3 + 3 * x(0) >= x(0) + 7);
+  f.push_back(x(0) + 7 + 2 * x(1) <= 3 * x(0) + 3 + 2 * x(1));
+  for (const auto& fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_bounding_box_constraint,
+              prog.bounding_box_constraints().size());
+    EXPECT_EQ(prog.linear_constraints().size(), 0);
+    EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+    auto binding = prog.bounding_box_constraints().back();
+    EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+                                Vector1d(2)));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                                Vector1d(numeric_limits<double>::infinity())));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula3) {
+  // x(0) + x(2) == 1
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_linear_equality_constraint = 0;
+
+  std::vector<symbolic::Formula> f;
+  f.push_back(x(0) + x(2) == 1);
+  f.push_back(x(0) + 2 * x(2) == 1 + x(2));
+  for (const auto& fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_linear_equality_constraint,
+              prog.linear_equality_constraints().size());
+    EXPECT_EQ(prog.linear_constraints().size(), 0);
+    EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
+    auto binding = prog.linear_equality_constraints().back();
+    EXPECT_TRUE(
+        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
+
+    VectorX<Expression> expr = binding.constraint()->A() * binding.variables()
+        - binding.constraint()->lower_bound();
+    EXPECT_EQ(expr.size(), 1);
+    EXPECT_PRED2(ExprEqual, expr(0), x(0) + x(2) - 1);
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
+  // x(0) + 2 * x(2) <= 1
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_linear_constraint = 0;
+
+  std::vector<symbolic::Formula> f;
+  f.push_back(x(0) + 2 * x(2) <= 1);
+  f.push_back(x(0) + 3 * x(2) <= 1 + x(2));
+  f.push_back(-1 <= -x(0) - 2 * x(2));
+  f.push_back(-1 - x(2) <= -x(0) - 3 * x(2));
+  f.push_back(2 * (x(0) + x(2)) - x(0) <= 1);
+  f.push_back(1 >= x(0) + 2 * x(2));
+  f.push_back(1 + x(2) >= x(0) + 3 * x(2));
+  f.push_back(-x(0) - 2 * x(2) >= -1);
+  f.push_back(-x(0) - 3 * x(2) >= -1 - x(2));
+  f.push_back(1 >= 2 * (x(0) + x(2)) - x(0));
+  for (const auto& fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_linear_constraint,
+              prog.linear_constraints().size());
+    EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+    EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
+    auto binding = prog.linear_constraints().back();
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                                Vector1d(numeric_limits<double>::infinity())));
+    EXPECT_TRUE(
+        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-1)));
+
+    VectorX<Expression> expr = binding.constraint()->A() * binding.variables()
+        - binding.constraint()->lower_bound();
+    EXPECT_EQ(expr.size(), 1);
+    EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
+  }
+}
+
 namespace {
 void CheckAddedLinearEqualityConstraintCommon(
     const Binding<LinearEqualityConstraint>& binding,
@@ -725,9 +947,14 @@ void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
   VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
                                binding.constraint()->lower_bound();
 
+  EXPECT_EQ(flat_V.size(), v.size());
   MatrixX<Expression> v_resize = flat_V;
   v_resize.resize(v.rows(), v.cols());
-  EXPECT_EQ(v_resize, v - b);
+  for (int i = 0; i < v.rows(); ++i) {
+    for (int j = 0; j < v.cols(); ++j) {
+      EXPECT_EQ(v_resize(i, j).Expand(), (v(i, j) - b(i, j)).Expand());
+    }
+  }
 }
 
 template <typename DerivedV, typename DerivedB>
@@ -802,6 +1029,9 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   // Checks -(x(0) + 2 * x(1)) = 2
   CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog,
                                                          -(x(0) + 2 * x(1)), 2);
+
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, x(0) + 2 * (x(0) + x(2)) + 3 * (x(0) - x(1)), 3);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
@@ -1095,7 +1325,150 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   // clang-format off
   Y << Matrix2d::Identity() * X.topLeftCorner<2, 2>(), Matrix2d::Zero(),
        Matrix2d::Zero(), Matrix2d::Identity() * X.bottomRightCorner<2, 2>();
+  // clang-format on
   CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog, Y);
+}
+
+void CheckAddedQuadraticCost(MathematicalProgram* prog,
+                             const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
+                             const VectorXDecisionVariable& x) {
+  int num_quadratic_cost = prog->quadratic_costs().size();
+  auto cnstr = prog->AddQuadraticCost(Q, b, x);
+
+  EXPECT_EQ(++num_quadratic_cost, prog->quadratic_costs().size());
+  // Check if the newly added quadratic constraint, and the returned
+  // quadratic constraint, both match 0.5 * x' * Q * x + b' * x
+  EXPECT_EQ(cnstr, prog->quadratic_costs().back().constraint());
+  EXPECT_EQ(cnstr->Q(), Q);
+  EXPECT_EQ(cnstr->b(), b);
+}
+
+GTEST_TEST(testMathematicalProgram, AddQuadraticCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d::Zero(), x);
+
+  CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d(1, 2, 3), x);
+}
+
+void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
+                                            const Expression& e,
+                                            double constant,
+                                            const Binding<Constraint>& binding,
+                                            int num_quadratic_cost) {
+  EXPECT_EQ(num_quadratic_cost, prog.quadratic_costs().size());
+  EXPECT_EQ(binding.constraint(), prog.quadratic_costs().back().constraint());
+  EXPECT_EQ(binding.variables(), prog.quadratic_costs().back().variables());
+
+  auto cnstr = prog.quadratic_costs().back().constraint();
+  // Check the added cost is 0.5 * x' * Q * x + b' * x
+  const auto& x_bound = binding.variables();
+  const Expression e_added =
+      0.5 * x_bound.dot(cnstr->Q() * x_bound) + cnstr->b().dot(x_bound);
+  EXPECT_PRED2(ExprEqual, e_added.Expand() + constant, e.Expand());
+}
+
+void CheckAddedSymbolicQuadraticCost(MathematicalProgram* prog,
+                                     const Expression& e, double constant) {
+  int num_quadratic_cost = prog->quadratic_costs().size();
+  auto binding1 = prog->AddQuadraticCost(e);
+  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding1,
+                                         ++num_quadratic_cost);
+  auto binding2 = prog->AddCost(e);
+  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding2,
+                                         ++num_quadratic_cost);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicQuadraticCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  // Identity diagonal term.
+  Expression e1 = x.transpose() * x;
+  CheckAddedSymbolicQuadraticCost(&prog, e1, 0);
+
+  // Identity diagonal term.
+  Expression e2 = x.transpose() * x + 1;
+  CheckAddedSymbolicQuadraticCost(&prog, e2, 1);
+
+  // Identity diagonal term.
+  Expression e3 = x(0) * x(0) + x(1) * x(1) + 2;
+  CheckAddedSymbolicQuadraticCost(&prog, e3, 2);
+
+  // Non-identity diagonal term.
+  Expression e4 = x(0) * x(0) + 2 * x(1) * x(1) + 3 * x(2) * x(2) + 3;
+  CheckAddedSymbolicQuadraticCost(&prog, e4, 3);
+
+  // Cross terms.
+  Expression e5 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0) * x(1) + 2;
+  CheckAddedSymbolicQuadraticCost(&prog, e5, 2);
+
+  // Linear terms.
+  Expression e6 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0);
+  CheckAddedSymbolicQuadraticCost(&prog, e6, 0);
+
+  // Cross terms and linear terms.
+  Expression e7 = (x(0) + 2 * x(1) + 3) * (x(0) + x(1) + 4) + 3 * x(0) * x(0) +
+                  6 * pow(x(1) + 1, 2);
+  CheckAddedSymbolicQuadraticCost(&prog, e7, 18);
+
+  // Cubic polynomial case.
+  Expression e8 = pow(x(0), 3) + 1;
+  EXPECT_THROW(prog.AddQuadraticCost(e8), std::runtime_error);
+}
+
+GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // |Ax - b|^2 = (x-xd)'Q(x-xd) => Q = A'*A and b = A*xd.
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  Eigen::Matrix2d Q = A.transpose() * A;
+  Eigen::Vector2d x_desired;
+  x_desired << 5, 6;
+  Eigen::Vector2d b = A * x_desired;
+
+  std::shared_ptr<QuadraticConstraint> obj1 =
+      prog.AddQuadraticErrorCost(Q, x_desired, x);
+  std::shared_ptr<QuadraticConstraint> obj2 = prog.AddL2NormCost(A, b, x);
+
+  // Test the objective at a 6 arbitrary values (to guarantee correctness
+  // of the six-parameter quadratic form.
+  Eigen::Vector2d x0;
+  Eigen::VectorXd y1, y2;
+  x0 << 7, 8;
+
+  for (int i = 0; i < 6; i++) {
+    obj1->Eval(x0, y1);
+    obj2->Eval(x0, y2);
+
+    EXPECT_TRUE(CompareMatrices(y1, y2));
+    EXPECT_TRUE(CompareMatrices(
+        y2, (A * x0 - b).transpose() * (A * x0 - b) - b.transpose() * b));
+    // Note: Currently have to subtract out the constant term (b'*b) due to
+    // issue #3500.
+
+    x0 += Eigen::Vector2d::Constant(2);
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // Add a non-polynomial cost.
+  EXPECT_THROW(prog.AddCost(sin(x(0))), std::runtime_error);
+
+  // Add a third order polynomial cost.
+  EXPECT_THROW(prog.AddCost(x(0) * x(0) * x(1)), std::runtime_error);
+  EXPECT_THROW(prog.AddCost(pow(x(0), 3)), std::runtime_error);
+
+  // Add a cost containing variable not included in the mathematical program.
+  symbolic::Variable y("y");
+  EXPECT_THROW(prog.AddCost(x(0) + y), std::runtime_error);
+  EXPECT_THROW(prog.AddCost(x(0) * x(0) + y), std::runtime_error);
 }
 }  // namespace test
 }  // namespace solvers

@@ -1,0 +1,3 @@
+drake_add_cc_test(bead_on_a_wire_test)
+target_link_libraries(bead_on_a_wire_test drakeBeadOnAWire)
+

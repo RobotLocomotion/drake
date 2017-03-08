@@ -4,6 +4,8 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/multiplexer.h"
 
 using std::make_unique;
 
@@ -25,45 +27,40 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
 
   plant_ = builder.template
       AddSystem<SpringMassSystem>(spring_stiffness, mass, true /* is forced */);
-  controller_ = builder.template
-      AddSystem<PidController>(Kp, Ki, Kd, 1 /* size */);
-  pid_inverter_ = builder.template
-      AddSystem<Gain>(-1 /* gain */, 1 /* size */);
-  target_inverter_ = builder.template
-      AddSystem<Gain>(-1 /* gain */, 1 /* size */);
-  target_ = builder.template AddSystem<ConstantVectorSource>(target_position);
-  state_minus_target_ = builder.template
-      AddSystem<Adder>(2 /* num inputs */, 1 /* size */);
+  controller_ = builder.template AddSystem<PidController>(
+      VectorX<T>::Constant(1, Kp),
+      VectorX<T>::Constant(1, Ki),
+      VectorX<T>::Constant(1, Kd));
+  VectorX<T> desired(2);
+  desired << target_position, 0;
+  target_ = builder.template AddSystem<ConstantVectorSource>(desired);
 
   // A demultiplexer is used to split the output from the spring-mass system
   // into three ports. One port with the mass position and another port with the
   // mass velocity so that they can be connected to the controller.
   // The third output from the demultiplexer is the spring-mass system's energy
   // and it is left unconnected.
-  demux_ = builder.template AddSystem<Demultiplexer>(3);
+  auto demux = builder.template AddSystem<Demultiplexer>(3);
+  auto mux = builder.template AddSystem<Multiplexer>(2);
 
   builder.Connect(plant_->get_output_port(),
-                  demux_->get_input_port(0));
+                  demux->get_input_port(0));
 
-  // Subtracts the target position from the spring position to obtain the error
-  // signal.
+  builder.Connect(demux->get_output_port(0),
+                  mux->get_input_port(0));
+  builder.Connect(demux->get_output_port(1),
+                  mux->get_input_port(1));
+
+  // Connects the estimated state to PID.
+  builder.Connect(mux->get_output_port(0),
+                  controller_->get_input_port_estimated_state());
+
+  // Connects the desired state to PID.
   builder.Connect(target_->get_output_port(),
-                  target_inverter_->get_input_port());
-  builder.Connect(target_inverter_->get_output_port(),
-                  state_minus_target_->get_input_port(0));
-  builder.Connect(demux_->get_output_port(0),
-                  state_minus_target_->get_input_port(1));
-
-  // Connects the input error and rate signals to the PID controller.
-  builder.Connect(state_minus_target_->get_output_port(),
-                  controller_->get_error_port());
-  builder.Connect(demux_->get_output_port(1),
-                  controller_->get_error_derivative_port());
+                  controller_->get_input_port_desired_state());
 
   // Closes the feedback loop.
-  builder.Connect(controller_->get_control_output_port(),
-                  pid_inverter_->get_input_port());
-  builder.Connect(pid_inverter_->get_output_port(),
+  builder.Connect(controller_->get_output_port_control(),
                   plant_->get_force_port());
 
   // The output to this system is the output of the spring-mass system which

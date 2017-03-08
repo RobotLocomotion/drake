@@ -50,15 +50,23 @@ class Launcher(object):
     script, prefixed by process-specific labels.
     """
     def __init__(self):
+        self.dry_run = False
         self.children = []  # list of TrackedProcess
         self.devnull = open('/dev/null')
         self.returncode = None  # First one to exit wins.
         self.name = os.path.basename(__file__)
 
+    def set_dry_run(self, dry_run_value):
+        self.dry_run = dry_run_value
+
     def launch(self, command, label=None):
         """Launch a process to be managed with the group. If no label is
         supplied, a label is synthesized from the supplied command line.
         """
+        if self.dry_run:
+            print ' '.join(command)
+            return
+
         if label is None:
             label = os.path.basename(command[0])
         if not os.path.exists(command[0]):
@@ -128,6 +136,9 @@ class Launcher(object):
         code as that of the first-exiting process, or 0 for keyboard
         interrupt or timeout.
         """
+        if self.dry_run:
+            return
+
         try:
             self._wait(duration)
         except KeyboardInterrupt:
@@ -183,18 +194,34 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--duration", type=float, default=float('Inf'),
                         help="demo run duration in seconds")
+    parser.add_argument("--steering-command-driver", action='store_true',
+                        dest='launch_steering_command_driver', default=True,
+                        help="launch steering_command_driver (default)")
+    parser.add_argument("--no-steering-command-driver", action='store_false',
+                        dest='launch_steering_command_driver', default=True,
+                        help="don't launch steering_command_driver")
     parser.add_argument("--visualizer", action='store_true',
                         dest='launch_visualizer',
                         default=True, help="launch drake-visualizer (default)")
     parser.add_argument("--no-visualizer", action='store_false',
                         dest='launch_visualizer',
                         default=True, help="don't launch drake-visualizer")
+    parser.add_argument("--dry-run", action='store_true',
+                        default=False,
+                        help="print commands instead of running them")
     args, tail = parser.parse_known_args()
+
+    # TODO(jwnimmer-tri) Remove this magic once dev_demo is gone.
+    if '-road_path' in tail:
+        demo_path = "drake/automotive/dev_demo"
 
     if '--help' in tail:
         parser.print_help(file=sys.stderr)
         subprocess.call([demo_path, "--help"])
         sys.exit(1)
+
+    if args.dry_run:
+        the_launcher.set_dry_run(True)
 
     try:
         print "*** LCM logs will be in", os.getcwd()
@@ -204,12 +231,18 @@ def main():
         if args.launch_visualizer:
             the_launcher.launch([drake_visualizer_path])
             # Await a message on the DRAKE_VIEWER_STATUS channel indicating
-            # that drake-visualizer is ready. This ensures that the demo app's
-            # LOAD_ROBOT message will be seen and processed.
-            wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')
+            # that drake-visualizer is ready. This ensures that the demo
+            # app's LOAD_ROBOT message will be seen and processed.
+            if args.dry_run:
+                print(
+                    "# wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')")
+            else:
+                wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')
 
         the_launcher.launch([demo_path] + tail)
-        the_launcher.launch([steering_command_driver_path])
+
+        if args.launch_steering_command_driver:
+            the_launcher.launch([steering_command_driver_path])
 
         the_launcher.wait(args.duration)
 

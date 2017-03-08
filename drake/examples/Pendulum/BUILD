@@ -2,13 +2,12 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library", "drake_cc_binary")
 
 drake_cc_library(
     name = "pendulum_state_vector",
     srcs = ["gen/pendulum_state_vector.cc"],
     hdrs = ["gen/pendulum_state_vector.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework:vector",
     ],
@@ -18,7 +17,6 @@ drake_cc_library(
     name = "pendulum_plant",
     srcs = ["pendulum_plant.cc"],
     hdrs = ["pendulum_plant.h"],
-    linkstatic = 1,
     deps = [
         ":pendulum_state_vector",
         "//drake/systems/framework",
@@ -32,6 +30,29 @@ drake_cc_library(
     deps = [
         ":pendulum_plant",
         "//drake/systems/trajectory_optimization:direct_collocation",
+    ],
+)
+
+drake_cc_binary(
+    name = "pendulum_run_swing_up",
+    srcs = ["pendulum_run_swing_up.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
+    deps = [
+        "pendulum_swing_up",
+        "//drake/common:drake_path",
+        "//drake/common:is_approx_equal_abstol",
+        "//drake/lcm",
+        "//drake/multibody/joints",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:pid_controlled_system",
+        "//drake/systems/framework",
+        "//drake/systems/primitives:trajectory_source",
+        "//drake/systems/trajectory_optimization:direct_collocation",
+        "@gflags//:gflags",
     ],
 )
 

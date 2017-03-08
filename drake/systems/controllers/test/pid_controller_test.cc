@@ -23,14 +23,14 @@ class PidControllerTest : public ::testing::Test {
     output_ = controller_.AllocateOutput(*context_);
     derivatives_ = controller_.AllocateTimeDerivatives();
 
-    // Error signal input port.
-    auto vec0 = std::make_unique<BasicVector<double>>(port_size_);
-    vec0->get_mutable_value() << error_signal_;
+    // State:
+    auto vec0 = std::make_unique<BasicVector<double>>(port_size_ * 2);
+    vec0->get_mutable_value().setZero();
     context_->FixInputPort(0, std::move(vec0));
 
-    // Error signal rate input port.
-    auto vec1 = std::make_unique<BasicVector<double>>(port_size_);
-    vec1->get_mutable_value() << error_rate_signal_;
+    // Desired state:
+    auto vec1 = std::make_unique<BasicVector<double>>(port_size_ * 2);
+    vec1->get_mutable_value() << error_signal_, error_rate_signal_;
     context_->FixInputPort(1, std::move(vec1));
   }
 
@@ -43,6 +43,7 @@ class PidControllerTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
+  // Error = estimated - desired.
   Vector3d error_signal_{1.0, 2.0, 3.0};
   Vector3d error_rate_signal_{1.3, 0.9, 3.14};
 };
@@ -53,9 +54,9 @@ TEST_F(PidControllerTest, Getters) {
   ASSERT_EQ(ki_, controller_.get_Ki_vector());
   ASSERT_EQ(kd_, controller_.get_Kd_vector());
 
-  EXPECT_NO_THROW(controller_.get_Kp());
-  EXPECT_NO_THROW(controller_.get_Ki());
-  EXPECT_NO_THROW(controller_.get_Kd());
+  EXPECT_NO_THROW(controller_.get_Kp_singleton());
+  EXPECT_NO_THROW(controller_.get_Ki_singleton());
+  EXPECT_NO_THROW(controller_.get_Kd_singleton());
 }
 
 TEST_F(PidControllerTest, GetterVectors) {
@@ -72,9 +73,9 @@ TEST_F(PidControllerTest, GetterVectors) {
   ASSERT_EQ(ki, controller.get_Ki_vector());
   ASSERT_EQ(kd, controller.get_Kd_vector());
 
-  EXPECT_DEATH(controller.get_Kp(), ".*");
-  EXPECT_DEATH(controller.get_Ki(), ".*");
-  EXPECT_DEATH(controller.get_Kd(), ".*");
+  EXPECT_DEATH(controller.get_Kp_singleton(), ".*");
+  EXPECT_DEATH(controller.get_Ki_singleton(), ".*");
+  EXPECT_DEATH(controller.get_Kd_singleton(), ".*");
 }
 
 // Evaluates the output and asserts correctness.
@@ -117,7 +118,9 @@ TEST_F(PidControllerTest, CalcTimeDerivatives) {
 
   // The only state in the PID controller_ is the integral of the input signal.
   // Therefore the time derivative of the state equals the input error signal.
-  EXPECT_EQ(error_signal_, derivatives_->CopyToVector());
+  // TODO(siyuanfeng): need to get rid of the - once we switch the integrator
+  // to be int(q_d - q), right not it's (q - q_d). so the derivative is flipped.
+  EXPECT_EQ(error_signal_, -derivatives_->CopyToVector());
 }
 
 }  // namespace

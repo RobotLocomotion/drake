@@ -34,17 +34,30 @@ drake_cc_library(
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:gravity_compensator",
-        "//drake/systems/controllers:pid_controlled_system",
+        "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/framework",
+        "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:multiplexer",
         "//drake/systems/primitives:trajectory_source",
     ],
 )
 
 drake_cc_binary(
+    name = "iiwa_world_demo",
+    srcs = ["iiwa_world_demo.cc"],
+    data = ["//drake/examples/kuka_iiwa_arm:models"],
+    deps = [
+        ":world_sim_diagram_factory",
+        ":world_sim_tree_builder",
+        "//drake/common",
+        "@gflags//:gflags",
+    ],
+)
+
+drake_cc_binary(
     name = "controlled_iiwa_world_demo",
     srcs = ["controlled_iiwa_world_demo.cc"],
+    data = ["//drake/examples/kuka_iiwa_arm:models"],
     deps = [
         ":world_sim_diagram_factory",
         ":world_sim_tree_builder",

@@ -148,20 +148,26 @@ class DiagramBuilder {
 
   /// Declares that the given @p input port of a constituent system is an input
   /// to the entire Diagram.
-  void ExportInput(const InputPortDescriptor<T>& input) {
+  /// @return The index of the exported input port of the entire diagram.
+  int ExportInput(const InputPortDescriptor<T>& input) {
     PortIdentifier id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
     ThrowIfSystemNotRegistered(input.get_system());
+    int return_id = static_cast<int>(input_port_ids_.size());
     input_port_ids_.push_back(id);
     diagram_input_set_.insert(id);
+    return return_id;
   }
 
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.
-  void ExportOutput(const OutputPortDescriptor<T>& output) {
+  /// @return The index of the exported output port of the entire diagram.
+  int ExportOutput(const OutputPortDescriptor<T>& output) {
     ThrowIfSystemNotRegistered(output.get_system());
+    int return_id = static_cast<int>(output_port_ids_.size());
     output_port_ids_.push_back(
         PortIdentifier{output.get_system(), output.get_index()});
+    return return_id;
   }
 
   /// Builds the Diagram that has been described by the calls to Connect,
@@ -220,13 +226,39 @@ class DiagramBuilder {
     for (const auto& connection : dependency_graph_) {
       const System<T>* src = connection.second.first;
       const System<T>* dest = connection.first.first;
-      // If a system is not direct-feedthrough, the connections to its inputs
-      // are not relevant for detecting algebraic loops or determining
-      // execution order.
-      //
       // TODO(david-german-tri): Make direct-feedthrough resolution more
-      // fine-grained once #3170 is resolved.
-      if (dest->has_any_direct_feedthrough()) {
+      // fine-grained once #2890 is resolved. Until then, avoiding false
+      // positives in algebraic loop detection here would simply lead to
+      // spurious infinite loops at diagram execution time.
+      //
+      // To understand this, consider the following diagram:
+      //
+      //  input A0--[A]-----output A0--input B0-X---[B]--output B0-|
+      //     ^          |-X-output A1--input B1---|                |
+      //     |-----------------------------------------------------|
+      //
+      // Suppose there is direct feedthrough from input A0 to output A0, but not
+      // output A1.  Similarly, suppose there is direct feedthrough from input
+      // B1 to output B0, but not from input B0 to output B0. (The X character
+      // above indicates absence of direct-feedthrough.) There is no algebraic
+      // loop in this diagram, and we could detect that there is no algebraic
+      // loop at diagram build time. To detect it, we would construct a graph
+      // where the vertices are input and output ports, and the edges are
+      // direct-feedthrough connections (input to output) and Diagram edges
+      // (output to input). Observing that this graph contains no cycles is
+      // equivalent to observing that there is no algebraic loop.
+      //
+      // However, this observation does us no good without per-port evaluation
+      // from #2890, because #3455 made the execution order implicit instead of
+      // explicit. When we need to compute input A0, we will pull on output B0,
+      // which will pull on both outputs of A. Pulling on output A0 in
+      // particular will spuriously pull on input A0, yielding an infinite loop.
+      //
+      // Consequently, this function remains for now a topological sort of
+      // Systems, not of ports, and we must restrict ourselves to considering
+      // an entire System direct-feedthrough if it has direct feedthrough from
+      // any input to any output.
+      if (dest->HasAnyDirectFeedthrough()) {
         dependents[src].insert(dest);
         dependencies[dest].insert(src);
       }

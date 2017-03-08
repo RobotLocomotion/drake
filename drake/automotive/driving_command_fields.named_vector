@@ -1,6 +1,6 @@
 element {
      name: "steering_angle"
-     doc: "The desired steering angle of a virtual center wheel, positive results in the vehicle turning left."
+     doc: "The desired steering angle [radians] of a virtual center wheel, positive results in the vehicle turning left."
 }
 element {
      name: "throttle"

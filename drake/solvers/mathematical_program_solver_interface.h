@@ -13,7 +13,9 @@ enum SolutionResult {
   kSolutionFound = 0,
   kInvalidInput = -1,
   kInfeasibleConstraints = -2,
-  kUnknownError = -3,
+  kUnbounded = -3,
+  kUnknownError = -4,
+  kInfeasible_Or_Unbounded = -5,
 };
 
 enum class SolverType {

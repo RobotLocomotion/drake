@@ -50,10 +50,13 @@ GTEST_TEST(BasicVectorTest, SymbolicInitiallyNaN) {
 // Tests that BasicVector<symbolic::Expression>::Make does what it says on
 // the tin.
 GTEST_TEST(BasicVectorTest, MakeSymbolic) {
-  auto vec = BasicVector<symbolic::Expression>::Make("x", "y", "z");
+  auto vec = BasicVector<symbolic::Expression>::Make(
+      symbolic::Variable("x"),
+      2.0,
+      symbolic::Variable("y") + 2.0);
   EXPECT_EQ("x", vec->GetAtIndex(0).to_string());
-  EXPECT_EQ("y", vec->GetAtIndex(1).to_string());
-  EXPECT_EQ("z", vec->GetAtIndex(2).to_string());
+  EXPECT_EQ("2", vec->GetAtIndex(1).to_string());
+  EXPECT_EQ("(2 + y)", vec->GetAtIndex(2).to_string());
 }
 
 // Tests that the BasicVector has a size as soon as it is constructed.

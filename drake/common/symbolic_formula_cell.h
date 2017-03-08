@@ -25,18 +25,6 @@ namespace symbolic {
  */
 class FormulaCell {
  public:
-  /** Default constructor (deleted). */
-  FormulaCell() = delete;
-  /** Move-construct a set from an rvalue. */
-  FormulaCell(FormulaCell&& f) = default;
-  /** Copy-construct a set from an lvalue. */
-  FormulaCell(const FormulaCell& f) = default;
-  /** Move-assign (DELETED). */
-  FormulaCell& operator=(FormulaCell&& f) = delete;
-  /** Copy-assign (DELETED). */
-  FormulaCell& operator=(const FormulaCell& f) = delete;
-  /** Construct FormulaCell of kind @p k with @p hash. */
-  FormulaCell(FormulaKind k, size_t hash);
   /** Returns kind of formula. */
   FormulaKind get_kind() const { return kind_; }
   /** Returns hash of formula. */
@@ -57,6 +45,22 @@ class FormulaCell {
   /** Outputs string representation of formula into output stream @p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
+ protected:
+  /** Default constructor (deleted). */
+  FormulaCell() = delete;
+  /** Move-construct a formula from an rvalue. */
+  FormulaCell(FormulaCell&& f) = default;
+  /** Copy-construct a formula from an lvalue. */
+  FormulaCell(const FormulaCell& f) = default;
+  /** Move-assign (DELETED). */
+  FormulaCell& operator=(FormulaCell&& f) = delete;
+  /** Copy-assign (DELETED). */
+  FormulaCell& operator=(const FormulaCell& f) = delete;
+  /** Construct FormulaCell of kind @p k with @p hash. */
+  FormulaCell(FormulaKind k, size_t hash);
+  /** Default destructor. */
+  virtual ~FormulaCell() = default;
+
  private:
   const FormulaKind kind_{};
   const size_t hash_{};
@@ -68,9 +72,9 @@ class RelationalFormulaCell : public FormulaCell {
  public:
   /** Default constructor (deleted). */
   RelationalFormulaCell() = delete;
-  /** Move-construct a set from an rvalue. */
+  /** Move-construct a formula from an rvalue. */
   RelationalFormulaCell(RelationalFormulaCell&& f) = default;
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-construct a formula from an lvalue. */
   RelationalFormulaCell(const RelationalFormulaCell& f) = default;
   /** Move-assign (DELETED). */
   RelationalFormulaCell& operator=(RelationalFormulaCell&& f) = delete;
@@ -102,9 +106,9 @@ class NaryFormulaCell : public FormulaCell {
  public:
   /** Default constructor (deleted). */
   NaryFormulaCell() = delete;
-  /** Move-construct a set from an rvalue. */
+  /** Move-construct a formula from an rvalue. */
   NaryFormulaCell(NaryFormulaCell&& f) = default;
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-construct a formula from an lvalue. */
   NaryFormulaCell(const NaryFormulaCell& f) = default;
   /** Move-assign (DELETED). */
   NaryFormulaCell& operator=(NaryFormulaCell&& f) = delete;
@@ -276,6 +280,21 @@ class FormulaForall : public FormulaCell {
   const Formula f_;       // Quantified formula.
 };
 
+/** Symbolic formula representing isnan predicate. */
+class FormulaIsnan : public FormulaCell {
+ public:
+  explicit FormulaIsnan(const Expression& e);
+  Variables GetFreeVariables() const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Less(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
+  Formula Substitute(const Substitution& s) const override;
+  std::ostream& Display(std::ostream& os) const override;
+
+ private:
+  const Expression e_;
+};
+
 /** Checks if @p f is structurally equal to False formula. */
 bool is_false(const FormulaCell& f);
 /** Checks if @p f is structurally equal to True formula. */
@@ -302,6 +321,8 @@ bool is_disjunction(const FormulaCell& f);
 bool is_negation(const FormulaCell& f);
 /** Checks if @p f is a Forall formula (∀). */
 bool is_forall(const FormulaCell& f);
+/** Checks if @p f is an isnan formula. */
+bool is_isnan(const FormulaCell& f);
 
 /** Casts @p f_ptr of shared_ptr<FormulaCell> to
  * @c shared_ptr<RelationalFormulaCell>.
@@ -349,6 +370,17 @@ std::shared_ptr<FormulaForall> to_forall(
  *  \pre{@c is_forall(f) is true.}
  */
 std::shared_ptr<FormulaForall> to_forall(const Formula& f);
+
+/** Casts @p f_ptr of shared_ptr<FormulaCell> to @c shared_ptr<FormulaIsnan>.
+ *  \pre{@c is_isnan(*f_ptr) is true.}
+ */
+std::shared_ptr<FormulaIsnan> to_isnan(
+    const std::shared_ptr<FormulaCell> f_ptr);
+
+/** Casts @p f of Formula to @c shared_ptr<FormulaIsnan>.
+ *  \pre{@c is_isnan(f) is true.}
+ */
+std::shared_ptr<FormulaIsnan> to_isnan(const Formula& f);
 
 }  // namespace symbolic
 }  // namespace drake

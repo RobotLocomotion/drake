@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -17,6 +18,8 @@ struct AccelerometerOutputConstants {
 template <typename T>
 class AccelerometerOutput : public BasicVector<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AccelerometerOutput)
+
   /// Default constructor.  Sets all rows to zero.
   AccelerometerOutput();
 
@@ -27,6 +30,9 @@ class AccelerometerOutput : public BasicVector<T> {
   /// frame. The ordering of the values in this 3-vector are `[x, y, z]`.
   Vector3<T> get_accel() const;
   //@}
+
+ protected:
+  AccelerometerOutput* DoClone() const override;
 };
 
 }  // namespace sensors

@@ -43,11 +43,15 @@ class LinearCar : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
-  // System<T> overrides.
-  // Declare that the outputs are all algebraically isolated from the input.
-  bool has_any_direct_feedthrough() const override { return false; }
+ protected:
+  // Declares that the outputs are all algebraically isolated from the input.
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
+                              int input_port, int output_port) const override {
+    return false;
+  }
 
  private:
+  // System<T> overrides.
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
 

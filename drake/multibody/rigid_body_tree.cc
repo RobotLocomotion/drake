@@ -13,6 +13,7 @@
 #include "drake/common/constants.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
@@ -123,6 +124,86 @@ RigidBodyTree<T>::RigidBodyTree()
 
 template <typename T>
 RigidBodyTree<T>::~RigidBodyTree() {}
+
+template <>
+unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
+  auto clone = make_unique<RigidBodyTree<double>>();
+  // The following is necessary to remove the world link from the clone. The
+  // world link will be re-added when the bodies are cloned below.
+  clone->bodies.clear();
+
+  clone->joint_limit_min = this->joint_limit_min;
+  clone->joint_limit_max = this->joint_limit_max;
+  clone->a_grav = this->a_grav;
+  clone->B = this->B;
+  clone->num_positions_ = this->num_positions_;
+  clone->num_velocities_ = this->num_velocities_;
+  clone->num_model_instances_ = this->num_model_instances_;
+  clone->initialized_ = this->initialized_;
+
+  // Clones the rigid bodies.
+  for (const auto& body : bodies) {
+    clone->bodies.push_back(body->Clone());
+  }
+
+  // Clones the joints and adds them to the cloned RigidBody objects.
+  for (const auto& original_body : bodies) {
+    const int body_index = original_body->get_body_index();
+    if (body_index == RigidBodyTreeConstants::kWorldBodyIndex) {
+      continue;
+    }
+
+    RigidBody<double>* cloned_body = clone->get_mutable_body(body_index);
+    DRAKE_DEMAND(cloned_body != nullptr);
+    DRAKE_DEMAND(cloned_body->get_body_index() == body_index);
+
+    const RigidBody<double>* original_body_parent = original_body->get_parent();
+    DRAKE_DEMAND(original_body_parent != nullptr);
+
+    const int parent_body_index = original_body_parent->get_body_index();
+
+    RigidBody<double>* cloned_body_parent =
+        clone->get_mutable_body(parent_body_index);
+    DRAKE_DEMAND(cloned_body_parent != nullptr);
+
+    cloned_body->add_joint(cloned_body_parent,
+                           original_body->getJoint().Clone());
+  }
+
+  for (const auto& original_frame : frames) {
+    const RigidBody<double>& original_frame_body =
+        original_frame->get_rigid_body();
+    const int cloned_frame_body_index =
+        clone->FindBodyIndex(original_frame_body.get_name(),
+                             original_frame_body.get_model_instance_id());
+    RigidBody<double>* cloned_frame_body =
+        clone->get_mutable_body(cloned_frame_body_index);
+    DRAKE_DEMAND(cloned_frame_body != nullptr);
+    std::shared_ptr<RigidBodyFrame<double>> cloned_frame =
+        original_frame->Clone(cloned_frame_body);
+    clone->frames.push_back(cloned_frame);
+  }
+
+  for (const auto& actuator : actuators) {
+    const RigidBody<double>& cloned_body =
+        clone->get_body(actuator.body_->get_body_index());
+    clone->actuators.emplace_back(
+        actuator.name_, &cloned_body, actuator.reduction_,
+        actuator.effort_limit_min_, actuator.effort_limit_max_);
+  }
+
+  for (const auto& loop : loops) {
+    std::shared_ptr<RigidBodyFrame<double>> frame_a =
+        clone->findFrame(loop.frameA_->get_name(),
+            loop.frameA_->get_model_instance_id());
+    std::shared_ptr<RigidBodyFrame<double>> frame_b =
+        clone->findFrame(loop.frameB_->get_name(),
+            loop.frameB_->get_model_instance_id());
+    clone->loops.emplace_back(frame_a, frame_b, loop.axis_);
+  }
+
+  return clone;
+}
 
 template <typename T>
 bool RigidBodyTree<T>::transformCollisionFrame(
@@ -1482,6 +1563,35 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree<T>::centerOfMass(
 }
 
 template <typename T>
+drake::Matrix6<T> RigidBodyTree<T>::LumpedSpatialInertiaInWorldFrame(
+      const KinematicsCache<T>& cache,
+      const std::set<int>& model_instance_id_set) const {
+  drake::Matrix6<T> I_W = drake::Matrix6<T>::Zero();
+  for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
+    const RigidBody<T>& body = *bodies[i];
+    if (is_part_of_model_instances(body, model_instance_id_set)) {
+      const Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, body);
+      I_W += transformSpatialInertia(
+          X_WB, body.get_spatial_inertia().template cast<T>());
+    }
+  }
+  return I_W;
+}
+
+template <typename T>
+drake::Matrix6<T> RigidBodyTree<T>::LumpedSpatialInertiaInWorldFrame(
+      const KinematicsCache<T>& cache,
+      const std::vector<const RigidBody<T>*>& bodies_of_interest) const {
+  drake::Matrix6<T> I_W = drake::Matrix6<T>::Zero();
+  for (const RigidBody<T>* body : bodies_of_interest) {
+    const Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, *body);
+    I_W += transformSpatialInertia(
+        X_WB, body->get_spatial_inertia().template cast<T>());
+  }
+  return I_W;
+}
+
+template <typename T>
 VectorX<T> RigidBodyTree<T>::transformVelocityToQDot(
     const KinematicsCache<T>& cache,
     const VectorX<T>& v) {
@@ -2760,9 +2870,14 @@ int RigidBodyTree<T>::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
 
 template <typename T>
 const RigidBody<T>& RigidBodyTree<T>::get_body(int body_index) const {
-  DRAKE_DEMAND(body_index >= 0 &&
-      body_index < get_num_bodies());
+  DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
   return *bodies[body_index].get();
+}
+
+template <typename T>
+RigidBody<T>* RigidBodyTree<T>::get_mutable_body(int body_index) {
+  DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
+  return bodies[body_index].get();
 }
 
 template <typename T>
@@ -2774,6 +2889,11 @@ int RigidBodyTree<T>::get_num_bodies() const {
 template <typename T>
 int RigidBodyTree<T>::get_number_of_bodies() const {
   return get_num_bodies();
+}
+
+template <typename T>
+int RigidBodyTree<T>::get_num_frames() const {
+  return static_cast<int>(frames.size());
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
@@ -3625,4 +3745,3 @@ RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffUpTo73d>() const;
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyTree<double>;
-template class RigidBodyTree<AutoDiffXd>;

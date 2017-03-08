@@ -7,6 +7,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcmt_drake_signal.hpp"
 #include "drake/multibody/rigid_body_tree.h"
@@ -25,6 +26,8 @@ namespace systems {
 template <typename T>
 class RigidBodyPlantThatPublishesXdot : public RigidBodyPlant<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyPlantThatPublishesXdot)
+
   /// Instantiates a %RigidBodyPlantThatPublishesXdot.
   ///
   /// @param[in] tree The RigidBodyTree. This defines the multi-body dynamics of

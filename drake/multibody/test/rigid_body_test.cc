@@ -7,6 +7,7 @@
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/test/rigid_body_compare_to_clone.h"
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -96,11 +97,13 @@ GTEST_TEST(RigidBodyTest, TestClone) {
   original_body.set_spatial_inertia(spatial_inertia);
 
   auto cloned_body = original_body.Clone();
-  EXPECT_TRUE(original_body.CompareToClone(*cloned_body));
+  EXPECT_TRUE(multibody::test::rigid_body::CompareToClone(original_body,
+      *cloned_body));
 
   // Ensures that a modified clone does not match.
   cloned_body->set_mass(kMass + 1);
-  EXPECT_FALSE(original_body.CompareToClone(*cloned_body));
+  EXPECT_FALSE(multibody::test::rigid_body::CompareToClone(original_body,
+      *cloned_body));
 }
 
 }  // namespace

@@ -41,9 +41,6 @@ class RobotStateEncoder final : public LeafSystem<double> {
 
   RobotStateEncoder& operator=(const RobotStateEncoder&) = delete;
 
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override;
-
   /// Returns descriptor of output port on which the LCM message is presented.
   const OutputPortDescriptor<double>& lcm_message_port() const;
 
@@ -56,6 +53,10 @@ class RobotStateEncoder final : public LeafSystem<double> {
   /// Returns descriptor of effort input port corresponding to @param actuator.
   const InputPortDescriptor<double>& effort_port(
       const RigidBodyActuator& actuator) const;
+
+ protected:
+  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<double>& descriptor) const override;
 
  private:
   void DoCalcOutput(const Context<double>& context,

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -26,6 +27,8 @@ namespace lcm {
 class LcmSubscriberSystem : public LeafSystem<double>,
     public drake::lcm::DrakeLcmMessageHandlerInterface  {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem)
+
   /**
    * Factory method that returns a subscriber System that provides
    * Value<LcmMessage> message objects on its sole abstract-valued output port.
@@ -102,9 +105,6 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   const std::string& get_channel_name() const;
 
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override;
-
   /**
    * Returns the translator used by this subscriber. This translator can be used
    * to translate a BasicVector into a serialized LCM message, which is then
@@ -114,13 +114,12 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
 
-  // Disable copy and assign.
-  LcmSubscriberSystem(const LcmSubscriberSystem&) = delete;
-  LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
-
  protected:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;
+
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<double>& descriptor) const override;
 
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const OutputPortDescriptor<double>& descriptor) const override;

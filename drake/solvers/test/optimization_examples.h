@@ -2,6 +2,11 @@
 
 #include <limits>
 #include <memory>
+#include <set>
+#include <tuple>
+#include <vector>
+
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
@@ -9,6 +14,39 @@
 namespace drake {
 namespace solvers {
 namespace test {
+enum class CostForm {
+  kGeneric = 0,
+  kNonSymbolic = 1,
+  kSymbolic = 2,
+};
+
+enum class ConstraintForm {
+  kGeneric = 0,
+  kNonSymbolic = 1,
+  kSymbolic = 2,
+  kFormula = 3,
+};
+
+class OptimizationProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptimizationProgram)
+
+  OptimizationProgram(CostForm cost_form, ConstraintForm cnstr_form);
+
+  virtual ~OptimizationProgram() {}
+
+  MathematicalProgram* prog() const { return prog_.get(); }
+
+  virtual void CheckSolution(SolverType solver_type) const = 0;
+
+  double GetSolverSolutionDefaultCompareTolerance(SolverType solver_type) const;
+
+  void RunProblem(MathematicalProgramSolverInterface* solver);
+
+ private:
+  std::unique_ptr<MathematicalProgram> prog_;
+};
+
 /**
  * Simple example x = b
  */
@@ -17,6 +55,7 @@ class LinearSystemExample1 {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample1)
 
   LinearSystemExample1();
+  virtual ~LinearSystemExample1() {}
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
@@ -49,6 +88,7 @@ class LinearSystemExample2 : public LinearSystemExample1 {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample2)
 
   LinearSystemExample2();
+  ~LinearSystemExample2() override {}
 
   VectorDecisionVariable<2> y() const { return y_; }
 
@@ -69,6 +109,7 @@ class LinearSystemExample3 : public LinearSystemExample2 {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample3)
 
   LinearSystemExample3();
+  ~LinearSystemExample3() override {}
 
   bool CheckSolution() const override;
 };
@@ -106,20 +147,16 @@ class NonConvexQPproblem1 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem1)
 
-  enum CostForm {
-    kCostBegin = 0,
-    kGenericCost = 0,
-    kQuadraticCost = 1,
-    kCostEnd = 1
-    // TODO(hongkai.dai) Add quadratic symbolic cost
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic};
+    return costs;
+  }
 
-  enum ConstraintForm {
-    kConstraintBegin = 0,
-    kSymbolicConstraint = 0,
-    kNonSymbolicConstraint = 1,
-    kConstraintEnd = 1
-  };
+  static ::std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kSymbolic,
+                                      ConstraintForm::kNonSymbolic};
+    return cnstr;
+  }
 
   NonConvexQPproblem1(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -169,20 +206,16 @@ class NonConvexQPproblem2 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem2)
 
-  enum CostForm {
-    kCostBegin = 0,
-    kGenericCost = 0,
-    kQuadraticCost = 1,
-    // TODO(hongkai.dai): Add symbolic quadratic cost
-    kCostEnd = 1
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic};
+    return costs;
+  }
 
-  enum ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolicConstraint = 0,
-    kSymbolicConstraint = 1,
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
+    return cnstr;
+  }
 
   NonConvexQPproblem2(CostForm cost_form, ConstraintForm cnstr_form);
 
@@ -232,12 +265,11 @@ class LowerBoundedProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem)
 
-  enum ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolic = 0,
-    kSymbolic = 1,
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
+    return cnstr;
+  }
 
   explicit LowerBoundedProblem(ConstraintForm cnstr_form);
 
@@ -330,21 +362,17 @@ class GloptiPolyConstrainedMinimizationProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem)
 
-  enum CostForm {
-    kCostBegin = 0,
-    kGenericCost = 0,
-    kNonSymbolicCost = 1,
-    kSymbolicCost = 2,
-    kCostEnd = 2
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic,
+                                CostForm::kSymbolic};
+    return costs;
+  }
 
-  enum ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolicConstraint = 0,
-    kSymbolicConstraint = 1,
-    // TODO(hongkai.dai): add quadratic constraint
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
+    return cnstr;
+  }
 
   GloptiPolyConstrainedMinimizationProblem(CostForm cost_form,
                                            ConstraintForm cnstr_form);
@@ -445,19 +473,16 @@ class MinDistanceFromPlaneToOrigin {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinDistanceFromPlaneToOrigin)
 
-  enum CostForm {
-    kCostBegin = 0,
-    kNonSymbolicCost = 0,
-    kSymbolicCost = 1,
-    kCostEnd = 1
-  };
+  static std::vector<CostForm> cost_forms() {
+    std::vector<CostForm> costs{CostForm::kNonSymbolic, CostForm::kSymbolic};
+    return costs;
+  }
 
-  enum ConstraintForm {
-    kConstraintBegin = 0,
-    kNonSymbolicConstraint = 0,
-    kSymbolicConstraint = 1,
-    kConstraintEnd = 1
-  };
+  static std::vector<ConstraintForm> constraint_forms() {
+    std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
+                                      ConstraintForm::kSymbolic};
+    return cnstr;
+  }
 
   MinDistanceFromPlaneToOrigin(const Eigen::MatrixXd& A,
                                const Eigen::VectorXd& b, CostForm cost_form,
@@ -487,6 +512,12 @@ class MinDistanceFromPlaneToOrigin {
   VectorXDecisionVariable x_rotated_lorentz_;
   Eigen::VectorXd x_expected_;
 };
+
+std::set<CostForm> linear_cost_form();
+
+std::set<CostForm> quadratic_cost_form();
+
+std::set<ConstraintForm> linear_constraint_form();
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

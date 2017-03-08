@@ -275,9 +275,6 @@ macro(drake_setup_options)
     DEPENDS "NOT DISABLE_PYTHON"
     "Google code style tools for cpplint.py style checking" ON)
 
-  drake_optional_external(HSRB_DESCRIPTION ON
-    "A ROS package containing a model of Toyota's HSR version B robot.")
-
   # IPOPT is currently disabled on Mac when MATLAB is enabled due to MATLAB
   # compatibility issues:
   # https://github.com/RobotLocomotion/drake/issues/2578
@@ -302,15 +299,6 @@ macro(drake_setup_options)
 
   drake_optional_external(SPDLOG ON
     "Fast C++ text logging facility\; disabling will turn off text logging")
-
-  drake_optional_external(SWIG_MATLAB ON
-    DEPENDS "NOT DISABLE_MATLAB OR NOT DISABLE_PYTHON"
-    "A version of SWIG with MATLAB support")
-
-  drake_optional_external(SWIGMAKE ON
-    DEPENDS "NOT DISABLE_MATLAB OR NOT DISABLE_PYTHON\;WITH_SWIG_MATLAB"
-    "Helper tools to build Python & MATLAB wrappers"
-    "for C++ libraries with Eigen")
 
   # END external projects that are ON by default
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

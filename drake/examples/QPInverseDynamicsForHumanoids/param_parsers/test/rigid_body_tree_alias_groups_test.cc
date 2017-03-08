@@ -38,7 +38,7 @@ const char* const kTestDir =
 void TestFullConfig(multibody::joints::FloatingBaseType type) {
   std::string urdf = drake::GetDrakePath()
       + "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-  std::string config = drake::GetDrakePath() + kTestDir + "full.alias_groups";
+  std::string config = drake::GetDrakePath() + kTestDir + "test.alias_groups";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());

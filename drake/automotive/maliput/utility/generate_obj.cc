@@ -571,7 +571,7 @@ void GenerateObjFile(const api::RoadGeometry* rg,
                                               features.max_grid_unit,
                                               features.min_grid_resolution);
         if (features.draw_lane_haze) {
-          CoverLaneWithQuads(&lane_mesh, segment->lane(0), grid_unit,
+          CoverLaneWithQuads(&lane_mesh, lane, grid_unit,
                              false,
                              features.lane_haze_elevation);
         }

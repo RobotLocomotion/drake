@@ -1,16 +1,16 @@
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 import unittest
 import numpy as np
 import pydrake
-from pydrake.autodiffutils import toAutoDiff
+import pydrake.forwarddiff as fd
 import os.path
 
 
 class TestRBMForwardKin(unittest.TestCase):
     def test_value(self):
-        r = pydrake.rbtree.RigidBodyTree(
-            os.path.join(pydrake.getDrakePath(),
-                         "examples/Pendulum/Pendulum.urdf"))
+        r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
+                                         "examples/Pendulum/Pendulum.urdf"))
         self.assertEqual(r.number_of_positions(), 7)
         self.assertEqual(r.number_of_velocities(), 7)
 
@@ -21,37 +21,42 @@ class TestRBMForwardKin(unittest.TestCase):
 
     def test_gradient(self):
         r = pydrake.rbtree.RigidBodyTree(
-            os.path.join(pydrake.getDrakePath(),
-                         "examples/Pendulum/Pendulum.urdf"))
+            os.path.join(pydrake.getDrakePath(), "examples/Pendulum/Pendulum.urdf"),
+            pydrake.rbtree.FloatingBaseType.kRollPitchYaw)
 
-        q = toAutoDiff(np.zeros((7, 1)), np.eye(7, 7))
-        v = toAutoDiff(np.zeros((7, 1)), np.zeros((7, 7)))
-        kinsol = r.doKinematics(q, v)
+        def do_transform(q):
+            kinsol = r.doKinematics(q)
+            point = np.ones((3, 1))
+            return r.transformPoints(kinsol, point, 2, 0)
 
-        point = np.ones((3, 1))
-        p = r.transformPoints(kinsol, point, 2, 0)
-        self.assertTrue(np.allclose(p.value(), np.ones((3, 1))))
-        self.assertTrue(np.allclose(p.derivatives(),
-                                    np.array([[1, 0, 0, 0, 1, -1, 1],
-                                              [0, 1, 0, -1, 0, 1, 0],
-                                              [0, 0, 1, 1, -1, 0, -1]])))
+        q = np.zeros(7)
 
-    def test_big_gradient(self):
-        r = pydrake.rbtree.RigidBodyTree(
-            os.path.join(pydrake.getDrakePath(),
-                         "examples/Pendulum/Pendulum.urdf"))
+        value = do_transform(q)
+        self.assertTrue(np.allclose(value, np.ones((3, 1))))
 
-        q = toAutoDiff(np.zeros((7, 1)), np.eye(7, 100))
-        v = toAutoDiff(np.zeros((7, 1)), np.zeros((7, 100)))
-        kinsol = r.doKinematics(q, v)
+        g = fd.jacobian(do_transform, q)
+        self.assertTrue(np.allclose(g,
+                                    np.array([[[1, 0, 0, 0, 1, -1, 1]],
+                                              [[0, 1, 0, -1, 0, 1, 0]],
+                                              [[0, 0, 1, 1, -1, 0, -1]]])))
 
-        point = np.ones((3, 1))
-        p = r.transformPoints(kinsol, point, 2, 0)
-        self.assertTrue(np.allclose(p.value(), np.ones((3, 1))))
-        self.assertTrue(np.allclose(p.derivatives()[:3, :7],
-                                    np.array([[1, 0, 0, 0, 1, -1, 1],
-                                              [0, 1, 0, -1, 0, 1, 0],
-                                              [0, 0, 1, 1, -1, 0, -1]])))
+    def test_relative_transform(self):
+        r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
+                                         "examples/Pendulum/Pendulum.urdf"))
+
+
+        q = np.zeros(7)
+        q[6] = np.pi / 2
+        kinsol = r.doKinematics(q)
+        T = r.relativeTransform(kinsol, 1, 2)
+        self.assertTrue(np.allclose(T,
+                                    np.array([[0, 0, 1, 0],
+                                              [0, 1, 0, 0],
+                                              [-1, 0, 0, 0],
+                                              [0, 0, 0, 1]])))
+
+
+
 
 
 if __name__ == '__main__':

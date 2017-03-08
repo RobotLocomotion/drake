@@ -15,7 +15,10 @@ _SOURCE_EXTENSIONS = [source_ext for source_ext in """
 """.split("\n") if len(source_ext)]
 
 # Do not lint generated protocol buffer files.
-_IGNORE_EXTENSIONS = [".pb.h", ".pb.cc"]
+_IGNORE_EXTENSIONS = [
+    ".pb.h",
+    ".pb.cc",
+]
 
 # The cpplint.py command-line argument so it doesn't skip our files!
 _EXTENSIONS_ARGS = ["--extensions=" + ",".join(
@@ -54,7 +57,7 @@ def _add_linter_rules(source_labels, source_filenames, name, data=None):
     srcs = ["@google_styleguide//:cpplint"],
     data = data + cpplint_cfg + source_labels,
     args = _EXTENSIONS_ARGS + source_filenames,
-    main = "cpplint.py",
+    main = "@google_styleguide//:cpplint/cpplint.py",
     size = size,
     tags = tags,
   )
@@ -65,7 +68,7 @@ def _add_linter_rules(source_labels, source_filenames, name, data=None):
     srcs = ["//tools:drakelint"],
     data = data + source_labels,
     args = source_filenames,
-    main = "drakelint.py",
+    main = "//tools:drakelint.py",
     size = size,
     tags = tags,
   )

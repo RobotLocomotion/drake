@@ -73,6 +73,14 @@ github_archive(
 )
 
 github_archive(
+    name = "libbot",
+    repository = "RobotLocomotion/libbot2",
+    commit = "495ae366d5e380b58254368217fc5c798e72aadd",
+    build_file = "tools/libbot.BUILD",
+    sha256 = "c463460a4dd6133d6d21e6ab6e493fdcdca442d2df86bcb56749f6740bc61db5",
+)
+
+github_archive(
     name = "bullet",
     repository = "RobotLocomotion/bullet3",
     commit = "ae2c4ca0618d55c6a29900aed75b958604149fdb",
@@ -110,6 +118,14 @@ github_archive(
     commit = "11649b7a063e03af38fcc59cf8cdb0694735c84c",
     build_file = "tools/ipopt.BUILD",
     sha256 = "e497c849f0787c8eb3a918d72cf4b4ae48117a183d2b3ae800049cc09e102c8d",
+)
+
+github_archive(
+    name = "nlopt",
+    repository = "stevengj/nlopt",
+    commit = "516aca7e96405939726648e00faeb26bd2c9b29f",
+    build_file = "tools/nlopt.BUILD",
+    sha256 = "6041ca30072b354ed3c235743779bf17dacf6199b2b30746c499f65082665d5f",
 )
 
 github_archive(
@@ -184,7 +200,7 @@ gfortran_repository(
 git_repository(
   name = "snopt",
   remote = "git@github.com:RobotLocomotion/snopt.git",
-  commit = "9f8c7972fa257d2341ecefcf58617e11b9ebb504",
+  commit = "d08d0ea5454349d252b2bc355c6d7c7237090a46",
 )
 
 # Python Libraries

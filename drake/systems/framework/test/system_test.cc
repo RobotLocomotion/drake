@@ -55,6 +55,17 @@ class TestSystem : public System<double> {
     return this->DeclareAbstractOutputPort();
   }
 
+  bool HasAnyDirectFeedthrough() const override {
+    return true;
+  }
+
+  bool HasDirectFeedthrough(int output_port) const override {
+    return true;
+  }
+
+  bool HasDirectFeedthrough(int input_port, int output_port) const override {
+    return true;
+  }
 
   int get_publish_count() const { return publish_count_; }
   int get_update_count() const { return update_count_; }
@@ -66,6 +77,16 @@ class TestSystem : public System<double> {
   }
 
  protected:
+  BasicVector<double>* DoAllocateInputVector(
+      const InputPortDescriptor<double>& descriptor) const override {
+    return nullptr;
+  }
+
+  AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<double>& descriptor) const override {
+    return nullptr;
+  }
+
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
@@ -140,26 +161,6 @@ class SystemTest : public ::testing::Test {
   TestSystem system_;
   LeafContext<double> context_;
 };
-
-TEST_F(SystemTest, Feedthrough) {
-  // No inputs or outputs.
-  EXPECT_FALSE(system_.has_any_direct_feedthrough());
-
-  // Both inputs and outputs.
-  system_.AddAbstractInputPort();
-  system_.AddAbstractOutputPort();
-  EXPECT_TRUE(system_.has_any_direct_feedthrough());
-
-  // Only inputs.
-  TestSystem input_only;
-  input_only.AddAbstractInputPort();
-  EXPECT_FALSE(input_only.has_any_direct_feedthrough());
-
-  // Only outputs.
-  TestSystem output_only;
-  output_only.AddAbstractOutputPort();
-  EXPECT_FALSE(output_only.has_any_direct_feedthrough());
-}
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
@@ -291,11 +292,22 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
+class TestTypedVector : public BasicVector<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestTypedVector)
+  explicit TestTypedVector(int size) : BasicVector(size) {}
+
+ protected:
+  TestTypedVector* DoClone() const {
+    return new TestTypedVector(size());
+  }
+};
+
 // A shell System for AbstractValue IO test
 class ValueIOTestSystem : public System<double> {
  public:
   // Has 2 input and 2 output ports.
-  // The first input / output pair are abstractu type, but assumed to be
+  // The first input / output pair are abstract type, but assumed to be
   // std::string.
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
@@ -309,6 +321,20 @@ class ValueIOTestSystem : public System<double> {
   }
 
   ~ValueIOTestSystem() override {}
+
+  AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<double>& descriptor) const override {
+    // Should only get called for the first input.
+    EXPECT_EQ(descriptor.get_index(), 0);
+    return AbstractValue::Make<std::string>("").release();
+  }
+
+  BasicVector<double>* DoAllocateInputVector(
+      const InputPortDescriptor<double>& descriptor) const override {
+    // Should only get called for the second input.
+    EXPECT_EQ(descriptor.get_index(), 1);
+    return new TestTypedVector(1);
+  }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
@@ -325,6 +351,18 @@ class ValueIOTestSystem : public System<double> {
                        State<double>* state) const override {}
 
   void SetDefaults(Context<double>* context) const override {}
+
+  bool HasAnyDirectFeedthrough() const override {
+    return true;
+  }
+
+  bool HasDirectFeedthrough(int output_port) const override {
+    return true;
+  }
+
+  bool HasDirectFeedthrough(int input_port, int output_port) const override {
+    return true;
+  }
 
   // Append "output" to input(0), and sets output(1) = 2 * input(1).
   void DoCalcOutput(const Context<double>& context,
@@ -348,9 +386,8 @@ class ValueIOTestSystem : public System<double> {
     output->add_port(
         std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
 
-    std::unique_ptr<OutputPort> vec_out_port(
-        new OutputPort(std::make_unique<BasicVector<double>>(1)));
-    output->get_mutable_ports()->push_back(std::move(vec_out_port));
+    output->add_port(std::make_unique<OutputPort>(
+        std::make_unique<BasicVector<double>>(1)));
 
     return std::unique_ptr<SystemOutput<double>>(output.release());
   }
@@ -384,6 +421,22 @@ GTEST_TEST(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(output->get_data(0)->GetValue<std::string>(),
             std::string("inputoutput"));
   EXPECT_EQ(output->get_vector_data(1)->get_value()(0), 4);
+
+  // Test AllocateInput*
+  // Second input is not (yet) a TestTypedVector, since I haven't called the
+  // Allocate methods directly yet.
+  EXPECT_EQ(dynamic_cast<const TestTypedVector*>(
+                test_sys.EvalVectorInput(*context, 1)),
+            nullptr);
+  // Now allocate.
+  test_sys.AllocateFreestandingInputs(context.get());
+  // First input should have been re-allocated to the empty string.
+  EXPECT_EQ(test_sys.EvalAbstractInput(*context, 0)->GetValue<std::string>(),
+            std::string(""));
+  // Second input should now be of type TestTypedVector.
+  EXPECT_NE(dynamic_cast<const TestTypedVector*>(
+                test_sys.EvalVectorInput(*context, 1)),
+            nullptr);
 }
 
 }  // namespace

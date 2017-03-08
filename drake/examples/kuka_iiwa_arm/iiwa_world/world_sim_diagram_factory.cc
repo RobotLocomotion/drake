@@ -14,8 +14,6 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/gravity_compensator.h"
-#include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -35,13 +33,11 @@ namespace drake {
 using lcm::DrakeLcmInterface;
 using systems::ConstantVectorSource;
 using systems::Context;
-using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
 using systems::InputPortDescriptor;
 using systems::Multiplexer;
-using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::System;
@@ -51,18 +47,22 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 template <typename T>
-VisualizedPlant<T>::VisualizedPlant(
+PlantAndVisualizerDiagram<T>::PlantAndVisualizerDiagram(
     std::unique_ptr<RigidBodyTree<T>> rigid_body_tree,
-    double penetration_stiffness, double penetration_damping,
-    double friction_coefficient, lcm::DrakeLcmInterface* lcm) {
+    double penetration_stiffness, double penetration_dissipation,
+    double static_friction_coefficient, double dynamic_friction_coefficient,
+    double v_stiction_tolerance, lcm::DrakeLcmInterface* lcm) {
   DiagramBuilder<T> builder;
 
   rigid_body_plant_ =
       builder.template AddSystem<RigidBodyPlant<T>>(std::move(rigid_body_tree));
 
   DRAKE_DEMAND(rigid_body_plant_ != nullptr);
-  rigid_body_plant_->set_contact_parameters(
-      penetration_stiffness, penetration_damping, friction_coefficient);
+  rigid_body_plant_->set_normal_contact_parameters(penetration_stiffness,
+                                                   penetration_dissipation);
+  rigid_body_plant_->set_friction_contact_parameters(
+      static_friction_coefficient, dynamic_friction_coefficient,
+      v_stiction_tolerance);
 
   DRAKE_DEMAND(rigid_body_plant_->get_num_actuators() > 0);
 
@@ -87,14 +87,14 @@ VisualizedPlant<T>::VisualizedPlant(
 
   builder.BuildInto(this);
 }
-template class VisualizedPlant<double>;
+template class PlantAndVisualizerDiagram<double>;
 
 template <typename T>
 PassiveVisualizedPlant<T>::PassiveVisualizedPlant(
-    std::unique_ptr<VisualizedPlant<T>> visualized_plant) {
+    std::unique_ptr<PlantAndVisualizerDiagram<T>> visualized_plant) {
   // Sets up a builder for the demo.
   DiagramBuilder<T> builder;
-  visualized_plant_ = builder.template AddSystem<VisualizedPlant<T>>(
+  visualized_plant_ = builder.template AddSystem<PlantAndVisualizerDiagram<T>>(
       std::move(visualized_plant));
 
   // Fixes constant sources to all inputs.
@@ -132,8 +132,9 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
     std::unique_ptr<RigidBodyTree<T>> world_tree,
     std::unique_ptr<PiecewisePolynomialTrajectory> pp_traj,
     int robot_instance_id, const RigidBodyTree<T>& robot_tree,
-    double penetration_stiffness, double penetration_damping,
-    double friction_coefficient, lcm::DrakeLcmInterface* lcm)
+    double penetration_stiffness, double penetration_dissipation,
+    double static_friction_coefficient, double dynamic_friction_coefficient,
+    double v_stiction_tolerance, lcm::DrakeLcmInterface* lcm)
     : poly_trajectory_(std::move(pp_traj)) {
   DiagramBuilder<T> builder;
 
@@ -145,10 +146,14 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
           robot_instance_id);
   const auto& robot_output_port =
       rigid_body_plant_->model_instance_state_output_port(robot_instance_id);
+
   const auto& plant_output_port = rigid_body_plant_->state_output_port();
 
-  rigid_body_plant_->set_contact_parameters(
-      penetration_stiffness, penetration_damping, friction_coefficient);
+  rigid_body_plant_->set_normal_contact_parameters(penetration_stiffness,
+                                                   penetration_dissipation);
+  rigid_body_plant_->set_friction_contact_parameters(
+      static_friction_coefficient, dynamic_friction_coefficient,
+      v_stiction_tolerance);
 
   // Creates and adds a DrakeVisualizer publisher.
   drake_visualizer_ = builder.template AddSystem<DrakeVisualizer>(
@@ -168,9 +173,16 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   Eigen::VectorXd kd = Eigen::VectorXd::Zero(num_robot_actuators);
 
   SetPositionControlledIiwaGains(&kp, &ki, &kd);
-  auto pid_controller = PidControlledSystem<T>::ConnectController(
-      robot_input_port, robot_output_port, nullptr /* feedback */, kp, ki, kd,
-      &builder);
+
+  controller_ =
+      builder.template AddSystem<systems::InverseDynamicsController<T>>(
+          robot_tree, kp, ki, kd, false /* no feedforward acceleration */);
+
+  // Connect robot (not the entire plant) and controller
+  builder.Connect(robot_output_port,
+                  controller_->get_input_port_estimated_state());
+  builder.Connect(controller_->get_output_port_control(),
+                  robot_input_port);
 
   // Create a multiplexer to handle the fact that we'll be getting
   // the input state for the positions and velocities from different
@@ -193,10 +205,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
                   input_mux_->get_input_port(1));
 
   builder.Connect(input_mux_->get_output_port(0),
-                  pid_controller.state_input_port);
-
-  gravity_compensator_ =
-      builder.template AddSystem<systems::GravityCompensator<T>>(robot_tree);
+                  controller_->get_input_port_desired_state());
 
   // Creates a plan and wraps it into a source system.
   desired_plan_ =
@@ -204,19 +213,9 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   builder.Connect(desired_plan_->get_output_port(),
                   input_mux_->get_input_port(0));
 
-  auto rbp_state_demux = builder.template AddSystem<Demultiplexer<T>>(
-      num_robot_positions + num_robot_velocities, num_robot_positions);
-  builder.Connect(robot_output_port, rbp_state_demux->get_input_port(0));
-
-  // Connects the gravity compensator to the output generalized positions
-  // corresponding to the robot.
-  builder.Connect(rbp_state_demux->get_output_port(0),
-                  gravity_compensator_->get_input_port(0));
-  builder.Connect(gravity_compensator_->get_output_port(0),
-                  pid_controller.control_input_port);
-
   // Connects the plant to the publisher for visualization.
-  builder.Connect(plant_output_port, drake_visualizer_->get_input_port(0));
+  builder.Connect(plant_output_port,
+                  drake_visualizer_->get_input_port(0));
 
   builder.ExportOutput(plant_output_port);
 

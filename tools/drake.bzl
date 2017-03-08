@@ -6,6 +6,7 @@ CLANG_FLAGS = [
     "-Werror=all",
     "-Werror=inconsistent-missing-override",
     "-Werror=sign-compare",
+    "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
 ]
 
@@ -15,6 +16,7 @@ GCC_FLAGS = [
     "-Werror=all",
     "-Werror=extra",
     "-Werror=return-local-addr",
+    "-Werror=non-virtual-dtor",
     "-Wno-unused-parameter",
     "-Wno-missing-field-initializers",
 ]
@@ -29,20 +31,35 @@ def _platform_copts(rule_copts):
       "//conditions:default": rule_copts,
   })
 
+def _dsym_command(name):
+  """Returns the command to produce .dSYM on OS X, or a no-op on Linux."""
+  return select({
+      "//tools:apple_debug":
+          "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null",
+      "//conditions:default": "touch $@",
+  })
+
 def drake_cc_library(
         name,
         hdrs=None,
         srcs=None,
         deps=None,
         copts=[],
+        linkstatic=1,
         **kwargs):
-    """Creates a rule to declare a C++ library."""
+    """Creates a rule to declare a C++ library.
+
+    By default, we produce only static libraries, to reduce compilation time
+    on all platforms, and to avoid mysterious dyld errors on OS X. This default
+    could be revisited if binary size becomes a concern.
+    """
     native.cc_library(
         name=name,
         hdrs=hdrs,
         srcs=srcs,
         deps=deps,
         copts=_platform_copts(copts),
+        linkstatic=linkstatic,
         **kwargs)
 
 def drake_cc_binary(
@@ -51,25 +68,65 @@ def drake_cc_binary(
         srcs=None,
         deps=None,
         copts=[],
+        linkstatic=1,
+        testonly=0,
+        add_test_rule=0,
+        test_rule_args=[],
         **kwargs):
-    """Creates a rule to declare a C++ binary."""
+    """Creates a rule to declare a C++ binary.
+
+    By default, we prefer to link static libraries whenever they are available.
+    This default could be revisited if binary size becomes a concern.
+
+    If you wish to create a smoke-test demonstrating that your binary runs
+    without crashing, supply add_test_rule=1, and any necessary arguments
+    with test_rule_args=["-f", "--bar=42"]. Note that if you wish to do this,
+    you should consider suppressing that urge, and instead writing real tests.
+    The smoke-test will be named <name>_test.
+    """
     native.cc_binary(
         name=name,
         hdrs=hdrs,
         srcs=srcs,
         deps=deps,
         copts=_platform_copts(copts),
+        testonly=testonly,
+        linkstatic=linkstatic,
         **kwargs)
 
-def drake_cc_googletest(
+    # Also generate the OS X debug symbol file for this binary.
+    native.genrule(
+        name=name + "_dsym",
+        srcs=[":" + name],
+        outs=[name + ".dSYM"],
+        output_to_bindir=1,
+        testonly=testonly,
+        tags=["dsym"],
+        visibility=["//visibility:private"],
+        cmd=_dsym_command(name),
+    )
+
+    if add_test_rule:
+        drake_cc_test(
+            name=name + "_test",
+            hdrs=hdrs,
+            srcs=srcs,
+            deps=deps,
+            copts=copts,
+            testonly=testonly,
+            linkstatic=linkstatic,
+            args=test_rule_args,
+            **kwargs)
+
+def drake_cc_test(
         name,
         size=None,
         srcs=None,
-        deps=None,
+        copts=[],
         disable_in_compilation_mode_dbg=False,
         **kwargs):
-    """Creates a rule to declare a C++ unit test using googletest.  Always adds a
-    deps= entry for googletest main (@gtest//:main).
+    """Creates a rule to declare a C++ unit test.  Note that for almost all
+    cases, drake_cc_googletest should be used, instead of this rule.
 
     By default, sets size="small" because that indicates a unit test.
     By default, sets name="test/${name}.cc" per Drake's filename convention.
@@ -86,12 +143,43 @@ def drake_cc_googletest(
         # Remove the test declarations from the test in debug mode.
         # TODO(david-german-tri): Actually suppress the test rule.
         srcs = select({"//tools:debug" : [], "//conditions:default" : srcs})
-    if deps == None:
-        deps = []
-    deps.append("@gtest//:main")
     native.cc_test(
         name=name,
         size=size,
         srcs=srcs,
+        copts=_platform_copts(copts),
+        **kwargs)
+
+    # Also generate the OS X debug symbol file for this test.
+    native.genrule(
+        name=name + "_dsym",
+        srcs=[":" + name],
+        outs=[name + ".dSYM"],
+        output_to_bindir=1,
+        testonly=1,
+        tags=["dsym"],
+        visibility=["//visibility:private"],
+        cmd=_dsym_command(name),
+    )
+
+def drake_cc_googletest(
+        name,
+        deps=None,
+        **kwargs):
+    """Creates a rule to declare a C++ unit test using googletest.  Always adds
+    a deps= entry for googletest main (@gtest//:main).
+
+    By default, sets size="small" because that indicates a unit test.
+    By default, sets name="test/${name}.cc" per Drake's filename convention.
+
+    If disable_in_compilation_mode_dbg is True, the srcs will be suppressed
+    in debug-mode builds, so the test will trivially pass. This option should
+    be used only rarely, and the reason should always be documented.
+    """
+    if deps == None:
+        deps = []
+    deps.append("@gtest//:main")
+    drake_cc_test(
+        name=name,
         deps=deps,
         **kwargs)

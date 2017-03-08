@@ -74,6 +74,13 @@ using Matrix6X = Eigen::Matrix<Scalar, 6, Eigen::Dynamic>;
 template <typename Scalar>
 using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
+/// A matrix of dynamic size templated on scalar type, up to a maximum of 6 rows
+/// and 6 columns. Rectangular matrices, with different number of rows and
+/// columns, are allowed.
+template <typename Scalar>
+using MatrixUpTo6 =
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 6>;
+
 /// A quaternion templated on scalar type.
 template <typename Scalar>
 using Quaternion = Eigen::Quaternion<Scalar>;

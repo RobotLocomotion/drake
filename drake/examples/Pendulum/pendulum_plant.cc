@@ -60,8 +60,6 @@ template <typename T>
 void PendulumPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-
   const PendulumStateVector<T>& state = get_state(context);
   PendulumStateVector<T>* derivative_vector = get_mutable_state(derivatives);
 

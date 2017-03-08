@@ -12,8 +12,7 @@ const int SimpleCarConfigIndices::kTrack;
 const int SimpleCarConfigIndices::kMaxAbsSteeringAngle;
 const int SimpleCarConfigIndices::kMaxVelocity;
 const int SimpleCarConfigIndices::kMaxAcceleration;
-const int SimpleCarConfigIndices::kVelocityLookaheadTime;
-const int SimpleCarConfigIndices::kVelocityKp;
+const int SimpleCarConfigIndices::kVelocityLimitKp;
 
 }  // namespace automotive
 }  // namespace drake
