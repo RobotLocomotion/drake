@@ -14,7 +14,7 @@ namespace multibody {
 template <typename T> class SpatialForce;
 
 /// This class is used to represent a _spatial velocity_ (also called a
-/// _twist_) that combines rotational (angular) and translational 
+/// _twist_) that combines rotational (angular) and translational
 /// (linear) velocity components. Spatial velocities are 6-element
 /// quantities that are pairs of ordinary 3-vectors. Elements 0-2 are
 /// the angular velocity component while elements 3-5 are the translational
@@ -99,14 +99,14 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// This operation is performed in-place modifying the original object.
   ///
   /// @param[in] p_BpBq_E
-  ///   Shift vector from point `P` of body `B` to point Q of the same body,
+  ///   Shift vector from point `P` of body `B` to point `Q` of `B`,
   ///   expressed in frame `E`. The "from" point `Bp` must be the point
   ///   whose velocity is currently represented in this spatial velocity,
   ///   and `E` must be the same expressed-in frame as for this spatial
   ///   velocity.
   ///
   /// @returns A reference to `this` spatial velocity which is now `V_ABq_E`,
-  ///   that is, the spatial velocity of frame `B` at point `Q`, still 
+  ///   that is, the spatial velocity of frame `B` at point `Q`, still
   ///   measured in frame `A` and expressed in frame `E`.
   ///
   /// @see Shift() to compute the shifted spatial velocity without modifying
@@ -116,14 +116,14 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return *this;
   }
 
-  /// Shift of a %SpatialVelocity from one from one point on a rigid body
+  /// Shift of a %SpatialVelocity from one point on a rigid body
   /// or frame to another point on the same body or frame.
   /// This is an alternate signature for shifting a spatial velocity's
   /// point that does not change the original object. See
   /// ShiftInPlace() for more information.
   ///
   /// @param[in] p_BpBq_E
-  ///   Shift vector from point `P` of body `B` to point Q of the same body,
+  ///   Shift vector from point `P` of body `B` to point `Q` of `B`,
   ///   expressed in frame `E`. The "from" point `Bp` must be the point
   ///   whose velocity is currently represented in this spatial velocity,
   ///   and `E` must be the same expressed-in frame as for this spatial
