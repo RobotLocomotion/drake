@@ -87,7 +87,7 @@ TEST_F(KukaTest, ReachableTest) {
       EXPECT_GE(body_Ri.trace(), -1);
       // TODO(hongkai.dai): We will have a more meaningful bound on the
       // relaxation of rotation matrix. Then clean up this print out with
-      // the check on the error bound.
+      // the check on the error bound, and move this file out of dev folder.
       std::cout << rigid_body_tree_->get_body(i).get_name() << std::endl;
       std::cout << "rotation matrix:\n global_ik\n" << body_Ri << std::endl;
       std::cout << "forward kinematics\n" << body_pose_fk.linear() << std::endl;
