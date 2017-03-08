@@ -13,6 +13,16 @@ package(
 )
 
 drake_cc_library(
+    name = "multibody_tree_indexes",
+    srcs = [],
+    hdrs = ["multibody_tree_indexes.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "rotational_inertia",
     srcs = [],
     hdrs = ["rotational_inertia.h"],
@@ -30,6 +40,11 @@ drake_cc_library(
     deps = [
         ":rotational_inertia",
     ],
+)
+
+drake_cc_googletest(
+    name = "multibody_tree_indexes_tests",
+    deps = [":multibody_tree_indexes"],
 )
 
 drake_cc_googletest(

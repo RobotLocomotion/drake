@@ -23,9 +23,29 @@ py_binary(
     srcs = ["drakelint.py"],
 )
 
+exports_files(
+    ["nlopt-gen-hpp.sh"],
+    visibility = ["@nlopt//:__pkg__"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildifier//buildifier",
+)
+
+# This pulls the otherwise-unused libbot targets into the "//..." label tree.
+genrule(
+    name = "force_libbot",
+    srcs = [
+        "@libbot//:bot-lcm-logfilter",
+        "@libbot//:bot-lcm-logsplice",
+        "@libbot//:bot-lcm-tunnel",
+        "@libbot//:bot-spy",
+        "@libbot//:lcmtypes_bot2-core-py",
+    ],
+    outs = ["force_libbot.touch"],
+    cmd = "touch $(@)",
+    visibility = ["//visibility:private"],
 )
 
 # === CROSSTOOL rules ===

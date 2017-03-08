@@ -78,8 +78,8 @@ endif(mosek_FOUND)
 
 if (lcm_FOUND)
   add_executable(plot_feasible_rotation_matrices plot_feasible_rotation_matrices.cc)
-  target_link_libraries(plot_feasible_rotation_matrices 
-    drakeOptimization 
+  target_link_libraries(plot_feasible_rotation_matrices
+    drakeOptimization
     drakeLCMTypes
     drakeLcm)
 endif(lcm_FOUND)

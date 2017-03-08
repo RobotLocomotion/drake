@@ -24,4 +24,3 @@ cc_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )
-

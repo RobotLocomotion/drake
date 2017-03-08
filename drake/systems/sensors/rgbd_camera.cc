@@ -1,5 +1,6 @@
 #include "drake/systems/sensors/rgbd_camera.h"
 
+#include <fstream>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -22,6 +23,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkSphereSource.h>
 #include <vtkTransform.h>
+#include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
 #include <Eigen/Dense>
 
@@ -67,10 +69,10 @@ double ConvertZbufferToMeters(float z_buffer_value) {
   return kB / (z_buffer_value - kA);
 }
 
-std::string RemoveFileExtention(const std::string& filepath) {
+std::string RemoveFileExtension(const std::string& filepath) {
   const size_t last_dot = filepath.find_last_of(".");
   if (last_dot == std::string::npos) {
-    DRAKE_ASSERT(false);
+    DRAKE_DEMAND(false);
   }
   return filepath.substr(0, last_dot);
 }
@@ -284,29 +286,47 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         vtk_cylinder->SetRadius(cylinder.radius);
         vtk_cylinder->SetResolution(50);
 
-        mapper->SetInputConnection(vtk_cylinder->GetOutputPort());
+        // Since the cylinder in vtkCylinderSource is y-axis aligned, we need to
+        // rotate it to be z-axis aligned because that is what Drake uses.
+        vtkNew<vtkTransform> transform;
+        transform->RotateX(90);
+        vtkNew<vtkTransformPolyDataFilter> transform_filter;
+        transform_filter->SetInput(vtk_cylinder->GetOutput());
+        transform_filter->SetTransform(transform.GetPointer());
+        transform_filter->Update();
+
+        mapper->SetInputConnection(transform_filter->GetOutputPort());
         break;
       }
       case DrakeShapes::MESH: {
-        auto m = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
+        const auto mesh_filename = dynamic_cast<const DrakeShapes::Mesh&>(
+            geometry).resolved_filename_.c_str();
 
         // TODO(kunimatsu-tri) Add support for other file formats.
         vtkNew<vtkOBJReader> mesh_reader;
-        mesh_reader->SetFileName(m.resolved_filename_.c_str());
+        mesh_reader->SetFileName(mesh_filename);
         mesh_reader->Update();
 
+        // TODO(kunimatsu-tri) Guessing the texture file name is bad.  Instead,
+        // get it from somewhere like `DrakeShapes::MeshWithTexture` when it's
+        // implemented.
         // TODO(kunimatsu-tri) Add support for other file formats.
-        vtkNew<vtkPNGReader> texture_reader;
-        texture_reader->SetFileName(std::string(RemoveFileExtention(
-            m.resolved_filename_.c_str()) + ".png").c_str());
-        texture_reader->Update();
+        const std::string texture_file(
+            RemoveFileExtension(mesh_filename) + ".png");
+        std::ifstream file_exist(texture_file);
 
-        vtkNew<vtkTexture> texture;
-        texture->SetInputConnection(texture_reader->GetOutputPort());
-        texture->InterpolateOn();
+        if (file_exist) {
+          vtkNew<vtkPNGReader> texture_reader;
+          texture_reader->SetFileName(texture_file.c_str());
+          texture_reader->Update();
+
+          vtkNew<vtkTexture> texture;
+          texture->SetInputConnection(texture_reader->GetOutputPort());
+          texture->InterpolateOn();
+          actor->SetTexture(texture.GetPointer());
+        }
 
         mapper->SetInputConnection(mesh_reader->GetOutputPort());
-        actor->SetTexture(texture.GetPointer());
         break;
       }
       case DrakeShapes::CAPSULE: {

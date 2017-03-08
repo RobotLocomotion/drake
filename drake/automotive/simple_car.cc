@@ -19,6 +19,7 @@
 
 namespace drake {
 
+using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 
 namespace automotive {
@@ -30,6 +31,7 @@ SimpleCar<T>::SimpleCar() {
   this->DeclareOutputPort(systems::kVectorValued,
                           SimpleCarStateIndices::kNumCoordinates);
   this->DeclareOutputPort(systems::kVectorValued, PoseVector<T>::kSize);
+  this->DeclareOutputPort(systems::kVectorValued, FrameVelocity<T>::kSize);
 }
 
 template <typename T>
@@ -43,8 +45,22 @@ const systems::OutputPortDescriptor<T>& SimpleCar<T>::pose_output() const {
 }
 
 template <typename T>
+const systems::OutputPortDescriptor<T>& SimpleCar<T>::velocity_output() const {
+  return this->get_output_port(2);
+}
+
+template <typename T>
 void SimpleCar<T>::DoCalcOutput(const systems::Context<T>& context,
                                 systems::SystemOutput<T>* output) const {
+  // Obtain the parameters.
+  const SimpleCarConfig<T>& config =
+      this->template GetNumericParameter<SimpleCarConfig>(context, 0);
+
+  // Obtain the input.
+  const DrivingCommand<T>* const input =
+      this->template EvalVectorInput<DrivingCommand>(context, 0);
+  DRAKE_ASSERT(input);
+
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
@@ -56,14 +72,17 @@ void SimpleCar<T>::DoCalcOutput(const systems::Context<T>& context,
   SimpleCarState<T>* const output_vector =
       dynamic_cast<SimpleCarState<T>*>(output->GetMutableVectorData(0));
   DRAKE_ASSERT(output_vector != nullptr);
-
   ImplCalcOutput(*state, output_vector);
 
   PoseVector<T>* const pose =
       dynamic_cast<PoseVector<T>*>(output->GetMutableVectorData(1));
   DRAKE_ASSERT(pose != nullptr);
-
   ImplCalcPose(*state, pose);
+
+  FrameVelocity<T>* const velocity =
+      dynamic_cast<FrameVelocity<T>*>(output->GetMutableVectorData(2));
+  DRAKE_ASSERT(pose != nullptr);
+  ImplCalcVelocity(config, *state, *input, velocity);
 }
 
 template <typename T>
@@ -86,6 +105,29 @@ void SimpleCar<T>::ImplCalcPose(const SimpleCarState<T>& state,
 }
 
 template <typename T>
+void SimpleCar<T>::ImplCalcVelocity(
+    const SimpleCarConfig<T>& config, const SimpleCarState<T>& state,
+    const DrivingCommand<T>& input,
+    systems::rendering::FrameVelocity<T>* velocity) const {
+  // Calculate the derivatives.
+  SimpleCarState<T> rates;
+  ImplCalcTimeDerivatives(config, state, input, &rates);
+
+  // Convert the state derivatives into a spatial velocity.
+  multibody::SpatialVelocity<T> output;
+  output.translational().x() = rates.x();
+  output.translational().y() = rates.y();
+  output.translational().z() = T(0);
+  output.rotational().x() = T(0);
+  output.rotational().y() = T(0);
+  // The rotational velocity around the z-axis is actually rates.heading(),
+  // which is a function of the input steering angle. We set it to zero so that
+  // this system is not direct-feedthrough.
+  output.rotational().z() = T(0);
+  velocity->set_velocity(output);
+}
+
+template <typename T>
 void SimpleCar<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
@@ -94,18 +136,13 @@ void SimpleCar<T>::DoCalcTimeDerivatives(
       this->template GetNumericParameter<SimpleCarConfig>(context, 0);
 
   // Obtain the state.
-  const systems::VectorBase<T>& context_state =
-      context.get_continuous_state_vector();
-  const SimpleCarState<T>* const state =
-      dynamic_cast<const SimpleCarState<T>*>(&context_state);
+  const SimpleCarState<T>* const state = dynamic_cast<const SimpleCarState<T>*>(
+      &context.get_continuous_state_vector());
   DRAKE_ASSERT(state);
 
   // Obtain the input.
-  const systems::VectorBase<T>* const vector_input =
-      this->EvalVectorInput(context, 0);
-  DRAKE_ASSERT(vector_input);
   const DrivingCommand<T>* const input =
-      dynamic_cast<const DrivingCommand<T>*>(vector_input);
+      this->template EvalVectorInput<DrivingCommand>(context, 0);
   DRAKE_ASSERT(input);
 
   // Obtain the result structure.
@@ -218,12 +255,14 @@ SimpleCar<T>::AllocateContinuousState() const {
 template <typename T>
 std::unique_ptr<systems::BasicVector<T>> SimpleCar<T>::AllocateOutputVector(
     const systems::OutputPortDescriptor<T>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_index() <= 1);
+  DRAKE_DEMAND(descriptor.get_index() <= 2);
   switch (descriptor.get_index()) {
     case 0:
       return std::make_unique<SimpleCarState<T>>();
     case 1:
       return std::make_unique<PoseVector<T>>();
+    case 2:
+      return std::make_unique<FrameVelocity<T>>();
     default:
       return nullptr;
   }
