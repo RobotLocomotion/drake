@@ -245,8 +245,8 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
 
   // Solve the LCP.
   VectorX<T> zz;
-  bool success = lcp_.SolveLcpLemke(MM, qq, &zz);
-  DRAKE_DEMAND(success);
+//  bool success = lcp_.SolveLcpLemke(MM, qq, &zz);
+//  DRAKE_DEMAND(success);
 
   // Obtain the normal and frictional contact forces.
   VectorX<T> fN = zz.segment(0, 2);

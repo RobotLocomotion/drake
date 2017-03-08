@@ -58,7 +58,8 @@ Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobian(
   result = result - a_xt;
   result = result - derivs->CopyToVector()*h;
 */
-  auto result = (a_xtplus.eval() - a_xt.eval() - (derivs->CopyToVector().eval()*h).eval()).eval();
+  auto result = (a_xtplus.eval() - a_xt.eval() -
+      (derivs->CopyToVector().eval()*h).eval()).eval();
   return math::autoDiffToGradientMatrix(result);
 
 // NOTE: This is the chunking AutoDiff version, currently disabled.
@@ -234,7 +235,24 @@ bool ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
   // Evaluate the objective function.
   while (f_last > convergence_tol_) {
     // Form the Jacobian matrix ∂g/∂xtplus.
-    MatrixX<T> J = ComputeADiffJacobian(xt, xtplus, dt);
+    MatrixX<T> J;
+    switch (jacobian_scheme_) {
+      case JacobianComputationScheme::kForwardDifference:
+        J = ComputeNDiffJacobian(xt, xtplus, dt);
+        break;
+
+      case JacobianComputationScheme::kCentralDifference:
+        J = ComputeN2DiffJacobian(xt, xtplus, dt);
+        break;
+
+      case JacobianComputationScheme::kAutomatic:
+        J = ComputeADiffJacobian(xt, xtplus, dt);
+        break;
+
+      default:
+        // Should never get here.
+        DRAKE_ABORT();
+    }
 
     // The Jacobian matrix yields the relationship J dxtplus/dt = dg/dt.
     // Converting this from a derivative into a differential yields

@@ -87,6 +87,48 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     derivs_ = system.AllocateTimeDerivatives();
   }
 
+  ///
+  /// @name Methods for getting and setting the scheme used to determine the
+  ///       Jacobian matrix necessary for solving the requisite nonlinear system
+  ///       if equations.
+  /// @{
+  /// Selecting the wrong such Jacobian determination scheme will slow (possibly
+  /// critically) the implicit integration process. Automatic differentiation is
+  /// recommended if the System supports it for reasons of both higher
+  /// accuracy and increased speed. Forward differencing (i.e., numerical
+  /// differentiation) yields the best Jacobian accuracy for a given unit of
+  /// computational time: the total error in the forward-difference
+  /// approximation is close to √ε, where ε is machine epsilon, from n forward
+  /// dynamics calls (where n is the number of state variables). Central
+  /// differencing yields the most accurate numerically differentiated Jacobian
+  /// matrix: the total error in the central-difference approximation is close
+  /// to ε^(2/3), from 2n forward dynamics calls. See
+  /// [Nocedal 2004, pp. 167-169].
+  ///
+  /// [Nocedal 2004] J. Nocedal and S. Wright. Numerical Optimization. Springer,
+  ///                2004.
+  enum class JacobianComputationScheme {
+    /// O(h) Forward differencing.
+    kForwardDifference,
+
+    /// O(h²) Central differencing.
+    kCentralDifference,
+
+    /// Automatic differentiation.
+    kAutomatic
+  };
+
+  /// Sets the Jacobian computation scheme. The integrator need not be
+  /// re-initialized after setting the scheme.
+  void set_jacobian_computation_scheme(JacobianComputationScheme scheme) {
+    jacobian_scheme_ = scheme;
+  }
+
+  JacobianComputationScheme get_jacobian_computation_scheme() const {
+    return jacobian_scheme_;
+  }
+  /// @}
+
   /**
    * The integrator does not support error estimation.
    */
@@ -155,6 +197,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   // system of linear equations that is somewhat robust.
   Eigen::FullPivLU<MatrixX<T>> LU_;
 
+  JacobianComputationScheme jacobian_scheme_{
+      JacobianComputationScheme::kForwardDifference};
   int num_overly_small_updates_{0};
   int num_objective_function_increases_{0};
   int num_misdirected_descents_{0};
