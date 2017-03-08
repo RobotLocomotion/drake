@@ -20,7 +20,7 @@ namespace multibody {
 /// mass rotational inertias.
 /// This class restricts the set of allowed operations on a unit inertia to
 /// ensure the unit-mass invariant. For instance, multiplication by a scalar can
-/// only return a general RotationalInertia but not a UnitInertia.
+/// only return a general RotationalInertia but not a %UnitInertia.
 ///
 /// @note This class has no means to check at construction from user provided
 /// parameters whether it actually represents the unit inertia or gyration
@@ -43,9 +43,9 @@ class UnitInertia : public RotationalInertia<T> {
   /// Creates a principal unit inertia with identical diagonal elements
   /// equal to `I` and zero products of inertia. Rotational inertias with this
   /// property are called **triaxially symmetric** and their moment of inertia
-  /// about all lines passing through the object's centroid are equal.
-  /// For example, UnitInertias of this form arise for simple shapes such as
-  /// sphere and cube solids or shells.
+  /// about all lines passing through the object's centroid are equal. For
+  /// example, %UnitInertia matrices of this form arise for simple shapes such
+  /// as sphere and cube solids or shells.
   /// Throws an exception if `I` is negative.
   /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube() for examples
   /// of **triaxially symmetric**.
@@ -53,7 +53,7 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Creates a principal unit inertia for which the products of inertia are
   /// zero and the moments of inertia are given by `Ixx`, `Iyy` and `Izz`.
-  /// @throws std::runtime_exception if any of the provided moments are negative
+  /// @throws std::runtime_error if any of the provided moments are negative
   /// or the resulting inertia is not physically valid according to
   /// RotationalInertia::CouldBePhysicallyValid().
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz) :
@@ -68,8 +68,8 @@ class UnitInertia : public RotationalInertia<T> {
               const T& Ixy, const T& Ixz, const T& Iyz) :
       RotationalInertia<T>(Ixx, Iyy, Izz, Ixy, Ixz, Iyz) {}
 
-  /// Constructs a UnitInertia from a RotationalInertia. This constructor has no
-  /// way to verify that the input rotational inertia actually is a unit
+  /// Constructs a %UnitInertia from a RotationalInertia. This constructor has
+  /// no way to verify that the input rotational inertia actually is a unit
   /// inertia. But the construction will nevertheless succeed, and the values of
   /// the input rotational inertia will henceforth be considered a valid unit
   /// inertia.
@@ -97,51 +97,50 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
   }
 
-  /// For a central unit inertia `G_Bc_E` computed about a body's centroid `Bc`
-  /// and expressed in a frame `E`, this method shifts this inertia using the
-  /// parallel axis theorem to be computed about a point `Q`.
-  /// This operation is performed in place, modifying the original object which
-  /// is no longer a central inertia.
-  /// @param[in] p_BcQ_E A vector from the body's centroid `Bc` to point `Q`
-  ///                    expressed in the same frame `E` in which `this` inertia
-  ///                    is expressed.
-  /// @returns A reference to `this` unit inertia `G_Q_E` but now computed about
-  ///          point `Q` and expressed in frame `E`.
+  /// For a central unit inertia `G_Bcm_E` computed about a body's center of
+  /// mass (or centroid) `Bcm` and expressed in a frame `E`, this method shifts
+  /// this inertia using the parallel axis theorem to be computed about a
+  /// point `Q`. This operation is performed in place, modifying the original
+  /// object which is no longer a central inertia.
+  /// @param[in] p_BcmQ_E A vector from the body's centroid `Bcm` to point `Q`
+  ///                     expressed in the same frame `E` in which `this`
+  ///                     inertia is expressed.
+  /// @returns A reference to `this` unit inertia, which has now been taken
+  ///          about point `Q` so can be written `G_BQ_E`.
   UnitInertia<T>& ShiftFromCentroidInPlace(const Vector3<T>& p_BcQ_E) {
     RotationalInertia<T>::operator+=(PointMass(p_BcQ_E));
     return *this;
   }
 
-  /// For a central unit inertia `G_Bc_E` computed about a body's centroid `Bc`
-  /// and expressed in a frame `E`, this method shifts this inertia using the
-  /// parallel axis theorem to be computed about a point `Q`.
-  /// @param[in] p_BcQ_E A vector from the body's centroid `Bc` to point `Q`
-  ///                    expressed in the same frame `E` in which `this` inertia
-  ///                    is expressed.
-  /// @retval G_Q_E This same unit inertia computed about a point `Q` and
-  ///               expressed in frame `E`.
+  /// Shifts this central unit inertia to a different point, and returns the
+  /// result. See ShiftFromCentroidInPlace() for details.
+  /// @param[in] p_BcmQ_E A vector from the body's centroid `Bcm` to point `Q`
+  ///                     expressed in the same frame `E` in which `this`
+  ///                     inertia is expressed.
+  /// @retval G_BQ_E This same unit inertia taken about a point `Q` instead of
+  //                 the centroid `Bcm`.
   UnitInertia<T> ShiftFromCentroid(const Vector3<T>& p_BcQ_E) const {
     return UnitInertia<T>(*this).ShiftFromCentroidInPlace(p_BcQ_E);
   }
 
-  /// @name Unit inertia for common 3D objects.
-  /// The following methods assist in the construction of UnitInertia instances
+  /// @name            Unit inertia for common 3D objects
+  /// The following methods assist in the construction of %UnitInertia instances
   /// for common 3D objects such as boxes, spheres, rods and others.
-  /// This method computes a UnitInertia for body with unit mass, typically
+  /// This method computes a %UnitInertia for body with unit mass, typically
   /// around its centroid, and in a frame aligned with its principal axes.
-  /// To construct general UnitInertia objects use these methods along with
+  /// To construct general %UnitInertia objects use these methods along with
   /// ShiftFromCentroidInPlace() to move the point about which the inertia
   /// is computed and use ReExpress() to express in a different frame.
   /// A non-unit RotationalInertia is obtained by multiplying the generated
-  /// UnitInertia by a non-unit mass value.
+  /// %UnitInertia by a non-unit mass value.
   //@{
 
   /// Construct a unit inertia for a point mass of unit mass located at point Q,
   /// whose location in a frame F is given by the position vector `p_FQ`
   /// (that is, p_FoQ_F).
-  /// The unit inertia `G_Fo_F` about the origin `Fo` of frame `F` and expressed
-  /// in `F` for this unit mass point equals the square of the cross product
-  /// matrix of `p_FQ`:
+  /// The unit inertia `G_QFo_F` of point mass `Q` about the origin `Fo` of
+  /// frame `F` and expressed in `F` for this unit mass point equals the square
+  /// of the cross product matrix of `p_FQ`:
   /// \f[
   ///   [G^{F_o}]_F = [p^\times]_{FQ}^2 = [p^\times]_{FQ}^T \, [p^\times]_{FQ} =
   ///                -[p^\times]_{FQ} \, [p^\times]_{FQ}
@@ -149,7 +148,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// where @f$[p^\times]_{FQ}@f$ is the cross product matrix of vector `p_FQ`
   /// expressed in frame `F`. In source code the above expression is written as:
   /// <pre>
-  ///   G_Fo_F = px_FQ² = px_FQᵀ * px_FQ = -px_FQ * px_FQ
+  ///   G_QFo_F = px_FQ² = px_FQᵀ * px_FQ = -px_FQ * px_FQ
   /// </pre>
   /// where `px_FQ` denotes the cross product matrix of the position vector
   /// `p_FQ` such that the cross product with another vector `a` can be obtained
@@ -229,7 +228,7 @@ class UnitInertia : public RotationalInertia<T> {
   // End of Doxygen group
   //@}
 
-  /// @name Operations not allowed for unit inertias.
+  /// @name        Operations not allowed for unit inertias
   // Disable here operations that while well defined for the general
   // RotationalInertia class, would otherwise result, in general, in non-unit
   // inertias.
