@@ -87,8 +87,8 @@ class Formula {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Formula)
 
-  /** Default constructor (deleted). */
-  Formula() = delete;
+  /** Default constructor. */
+  Formula() { *this = True(); }
 
   explicit Formula(const std::shared_ptr<FormulaCell> ptr);
 
@@ -313,3 +313,15 @@ struct equal_to<drake::symbolic::Formula> {
   }
 };
 }  // namespace std
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+// Define Eigen traits needed for Matrix<drake::symbolic::Formula>.
+namespace Eigen {
+// Eigen scalar type traits for Matrix<drake::symbolic::Formula>.
+template <>
+struct NumTraits<drake::symbolic::Formula>
+    : GenericNumTraits<drake::symbolic::Formula> {
+  static inline int digits10() { return 0; }
+};
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)
