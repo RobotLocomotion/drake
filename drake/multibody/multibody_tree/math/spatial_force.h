@@ -90,7 +90,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// This operation is performed in-place modifying the original object.
   ///
   /// @param[in] p_BpBq_E
-  ///   Shift vector from point `P` of body `B` to point Q of the same body,
+  ///   Shift vector from point `P` of body `B` to point `Q` of `B`,
   ///   expressed in frame `E`. The "from" point `Bp` must be the
   ///   current application point of `this` spatial force, and `E` must be
   ///   the same expressed-in frame as for this spatial force.
@@ -111,7 +111,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// ShiftInPlace() for more information.
   ///
   /// @param[in] p_BpBq_E
-  ///   Shift vector from point `P` of body `B` to point `Q` of the same body,
+  ///   Shift vector from point `P` of body `B` to point `Q` of `B`,
   ///   expressed in frame `E`. The "from" point `Bp` must be the
   ///   current application point of `this` spatial force, and `E` must be
   ///   the same expressed-in frame as for this spatial force.
