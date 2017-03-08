@@ -80,6 +80,9 @@ TEST_F(KukaTest, ReachableTest) {
 
       const Eigen::Matrix3d body_Ri =
           global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
+      EXPECT_TRUE((body_Ri.array().abs() <= 1).all());
+      EXPECT_LE(body_Ri.trace(), 3);
+      EXPECT_GE(body_Ri.trace(), -1);
       std::cout << rigid_body_tree_->get_body(i).get_name() << std::endl;
       std::cout << "rotation matrix:\n global_ik\n" << body_Ri << std::endl;
       std::cout << "forward kinematics\n" << body_pose_fk.linear() << std::endl;

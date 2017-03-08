@@ -159,17 +159,17 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 // |R_WC*v - R_WP * R_PF * R(k,(a+b)/2)*v | <= 2*sin ((b-a) / 4)
                 // as we explained above.
 
-                // First generate a vector that is perpendicular to rotation
-                // axis, in the joint frame.
-                Vector3d revolute_vector = axis_F.cross(Vector3d(1, 0, 0));
-                double revolute_vector_norm = revolute_vector.norm();
-                if (revolute_vector_norm < sqrt(2) / 2) {
+                // First generate a vector v_C that is perpendicular to rotation
+                // axis, in child frame.
+                Vector3d v_C = axis_F.cross(Vector3d(1, 0, 0));
+                double v_C_norm = v_C.norm();
+                if (v_C_norm < sqrt(2) / 2) {
                   // axis_F is almost parallel to [1; 0; 0].
-                  revolute_vector = axis_F.cross(Vector3d(0, 1, 0));
-                  revolute_vector_norm = revolute_vector.norm();
+                  v_C = axis_F.cross(Vector3d(0, 1, 0));
+                  v_C_norm = v_C.norm();
                 }
                 // Normalizes the revolute vector.
-                revolute_vector /= revolute_vector_norm;
+                v_C /= v_C_norm;
 
                 // joint_limit_expr is going to be within the Lorentz cone.
                 Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
@@ -180,12 +180,10 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                         .toRotationMatrix();
 
                 // joint_limit_expr.tail<3> is
-                // R_WC * v - R_WP * R_PJ * R(k,(a+b)/2) * v mentioned above.
-                joint_limit_expr.tail<3>() =
-                    R_WB_[body_idx] * revolute_vector -
-                    R_WB_[parent_idx] *
-                        X_PF.linear() *
-                        rotmat_joint_offset * revolute_vector;
+                // R_WC * v - R_WP * R_PF * R(k,(a+b)/2) * v mentioned above.
+                joint_limit_expr.tail<3>() = R_WB_[body_idx] * v_C -
+                                             R_WB_[parent_idx] * X_PF.linear() *
+                                                 rotmat_joint_offset * v_C;
                 AddLorentzConeConstraint(joint_limit_expr);
               }
             } else {
