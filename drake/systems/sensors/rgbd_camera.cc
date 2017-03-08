@@ -91,14 +91,12 @@ class RgbdCamera::Impl {
   void DoCalcOutput(const BasicVector<double>& input_vector,
                     systems::SystemOutput<double>* output) const;
 
-  const Eigen::Isometry3d& base_pose() const { return X_WB_; }
-
   const Eigen::Isometry3d& color_camera_optical_pose() const {
-    return X_WC_;
+    return X_BC_;
   }
 
   const Eigen::Isometry3d& depth_camera_optical_pose() const {
-    return X_WD_;
+    return X_BD_;
   }
 
   const CameraInfo& color_camera_info() const { return color_camera_info_; }
@@ -131,10 +129,21 @@ class RgbdCamera::Impl {
     return depth_image_output_port_index_;
   }
 
+  void set_camera_base_pose_output_port_index(int port_index) {
+    camera_base_pose_output_port_index_ = port_index;
+  }
+
+  int camera_base_pose_output_port_index() const {
+    return camera_base_pose_output_port_index_;
+  }
+
+
+
  private:
   void CreateRenderingWorld();
 
-  void UpdateModelPoses(const VectorBase<double>& vector_base) const;
+  void UpdateModelPoses(const KinematicsCache<double>& cache,
+                        const Eigen::Isometry3d& camera_to_world) const;
 
   void UpdateRenderWindow() const;
 
@@ -142,14 +151,13 @@ class RgbdCamera::Impl {
   const RigidBodyFrame<double>& frame_;
   const CameraInfo color_camera_info_;
   const CameraInfo depth_camera_info_;
-  mutable Eigen::Isometry3d X_WB_;  // World to Base
-  mutable Eigen::Isometry3d X_WC_;  // World to Color optical
-  mutable Eigen::Isometry3d X_WD_;  // World to Depth optical
-  const Eigen::Isometry3d X_BC_;  // Base to Color optical
-  const Eigen::Isometry3d X_BD_;  // Base to Depth optical
+  const Eigen::Isometry3d X_BC_;  // Base to Color optical.
+  const Eigen::Isometry3d X_BD_;  // Base to Depth optical.
+  const Eigen::Isometry3d X_WB_initial_;  // Initial World to Base pose.
   int state_input_port_index_{};
   int color_image_output_port_index_{};
   int depth_image_output_port_index_{};
+  int camera_base_pose_output_port_index_{};
   const bool kCameraFixed;
 
   std::map<int, vtkSmartPointer<vtkActor>> id_object_pairs_;
@@ -181,17 +189,12 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
       X_BD_(Eigen::Translation3d(0., 0.02, 0.) *
             (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
              Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))),
+      X_WB_initial_(
+          Eigen::Translation3d(position[0], position[1], position[2]) *
+          (Eigen::AngleAxisd(orientation[0], Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd(orientation[1], Eigen::Vector3d::UnitY()) *
+           Eigen::AngleAxisd(orientation[2], Eigen::Vector3d::UnitZ()))),
       kCameraFixed(fix_camera) {
-  // The RgbdCamera's base pose in the world.
-  auto axis_angle = drake::math::rpy2axis(orientation);
-  X_WB_ = Eigen::AngleAxisd(axis_angle[3],
-      Eigen::Vector3d(axis_angle[0], axis_angle[1], axis_angle[2]));
-  X_WB_.translation() = Eigen::Vector3d(
-      position[0], position[1], position[2]);
-
-  X_WC_ = X_WB_ * X_BC_;
-  X_WD_ = X_WB_ * X_BD_;
-
   if (!show_window) {
     render_window_->SetOffScreenRendering(1);
   }
@@ -234,7 +237,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
 
 
 void RgbdCamera::Impl::CreateRenderingWorld() {
-  auto camera_to_world = X_WC_.inverse();
+  auto camera_to_world = (X_WB_initial_ * X_BC_).inverse();
 
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
@@ -372,38 +375,32 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
   renderer_->AddActor(terrain_actor_.GetPointer());
 }
 
-
 void RgbdCamera::Impl::UpdateModelPoses(
-    const VectorBase<double>& vector_base) const {
-  const Eigen::VectorXd q = vector_base.CopyToVector().head(
-      tree_.get_num_positions());
-  KinematicsCache<double> cache = tree_.doKinematics(q);
-
-  if (!kCameraFixed) {
-    // Updates the camera's pose.
-    X_WB_ = tree_.CalcFramePoseInWorldFrame(cache, frame_);
-    X_WC_ = X_WB_ * X_BC_;
-    X_WD_ = X_WB_ * X_BD_;
-
-    // Updates the terrain.
-    vtkSmartPointer<vtkTransform> vtk_transform =
-        VtkUtil::ConvertToVtkTransform(X_WC_.inverse());
-    terrain_actor_->SetUserTransform(vtk_transform);
-  }
-
-  const auto camera_to_world = X_WC_.inverse();
+    const KinematicsCache<double>& cache,
+    const Eigen::Isometry3d& camera_to_world) const {
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
     }
 
-    auto camera_to_body = camera_to_world * tree_.relativeTransform(
+    auto const camera_to_body = camera_to_world * tree_.relativeTransform(
         cache, 0, body->get_body_index());
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(camera_to_body);
-
+    // `id_object_pairs_` is modified here.  This is OK because 1) we are just
+    // copying data to the memory space allocated at the construction time and
+    // 2) we are not outputting this data to outside the class.
     auto& actor = id_object_pairs_.at(body->get_model_instance_id());
     actor->SetUserTransform(vtk_transform);
+  }
+
+  if (!kCameraFixed) {
+    // Updates terrain.
+    vtkSmartPointer<vtkTransform> vtk_transform =
+        VtkUtil::ConvertToVtkTransform(camera_to_world);
+    // `terrain_actor_` is modified here, but this is OK.  For the detail, see
+    // the comment above for `id_object_pairs_`.
+    terrain_actor_->SetUserTransform(vtk_transform);
   }
 }
 
@@ -418,7 +415,27 @@ void RgbdCamera::Impl::UpdateRenderWindow() const {
 void RgbdCamera::Impl::DoCalcOutput(
     const BasicVector<double>& input_vector,
     systems::SystemOutput<double>* output) const {
-  UpdateModelPoses(input_vector);
+  const Eigen::VectorXd q = input_vector.CopyToVector().head(
+      tree_.get_num_positions());
+  KinematicsCache<double> cache = tree_.doKinematics(q);
+
+  // Outputs the camera's base pose.
+  systems::AbstractValue* mutable_data_base_pose = output->GetMutableData(
+      camera_base_pose_output_port_index_);
+  Eigen::Isometry3d& X_WB =
+      mutable_data_base_pose->GetMutableValue<Eigen::Isometry3d>();
+
+  Eigen::Isometry3d X_WC;
+  if (kCameraFixed) {
+    X_WB = X_WB_initial_;
+    X_WC = X_WB * X_BC_;
+  } else {
+    // Updates camera pose.
+    X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
+    X_WC = X_WB * X_BC_;
+  }
+
+  UpdateModelPoses(cache, X_WC.inverse());
 
   UpdateRenderWindow();
 
@@ -511,6 +528,8 @@ void RgbdCamera::Init(const std::string& name) {
       this->DeclareAbstractOutputPort().get_index());
   impl_->set_depth_image_output_port_index(
       this->DeclareAbstractOutputPort().get_index());
+  impl_->set_camera_base_pose_output_port_index(
+      this->DeclareAbstractOutputPort().get_index());
 }
 
 RgbdCamera::~RgbdCamera() {}
@@ -521,10 +540,6 @@ const CameraInfo& RgbdCamera::color_camera_info() const {
 
 const CameraInfo& RgbdCamera::depth_camera_info() const {
   return impl_->depth_camera_info();
-}
-
-const Eigen::Isometry3d& RgbdCamera::base_pose() const {
-  return impl_->base_pose();
 }
 
 const Eigen::Isometry3d& RgbdCamera::color_camera_optical_pose() const {
@@ -559,6 +574,12 @@ RgbdCamera::depth_image_output_port() const {
       impl_->depth_image_output_port_index());
 }
 
+const OutputPortDescriptor<double>&
+RgbdCamera::camera_base_pose_output_port() const {
+  return System<double>::get_output_port(
+      impl_->camera_base_pose_output_port_index());
+}
+
 
 std::unique_ptr<AbstractValue> RgbdCamera::AllocateOutputAbstract(
     const OutputPortDescriptor<double>& descriptor) const {
@@ -570,7 +591,12 @@ std::unique_ptr<AbstractValue> RgbdCamera::AllocateOutputAbstract(
   } else if (descriptor.get_index() == depth_image_output_port().get_index()) {
     Image<float> depth_image(kImageWidth, kImageHeight, kDepthImageChannel);
     return std::make_unique<systems::Value<sensors::Image<float>>>(depth_image);
+  } else if (descriptor.get_index() ==
+             camera_base_pose_output_port().get_index()) {
+    Eigen::Isometry3d pose;
+    return std::make_unique<systems::Value<Eigen::Isometry3d>>(pose);
   }
+
   DRAKE_ABORT_MSG("Unknown output port.");
   return nullptr;
 }

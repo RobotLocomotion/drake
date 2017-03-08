@@ -134,13 +134,10 @@ class RgbdCamera : public LeafSystem<double> {
   /// Reterns the depth sensor's info.
   const CameraInfo& depth_camera_info() const;
 
-  /// Returns `X_WB`.
-  const Eigen::Isometry3d& base_pose() const;
-
-  /// Returns `X_WC`.
+  /// Returns `X_BC`.
   const Eigen::Isometry3d& color_camera_optical_pose() const;
 
-  /// Returns `X_WD`.
+  /// Returns `X_BD`.
   const Eigen::Isometry3d& depth_camera_optical_pose() const;
 
   /// Returns the RigidBodyFrame to which this RgbdCamera is attached.
@@ -161,6 +158,10 @@ class RgbdCamera : public LeafSystem<double> {
   /// Returns a descriptor of the abstract valued output port that contains an
   /// Image<float>.
   const OutputPortDescriptor<double>& depth_image_output_port() const;
+
+  /// Returns a descriptor of the abstract valued output port that contains an
+  /// Eigen::Isometry3d.
+  const OutputPortDescriptor<double>& camera_base_pose_output_port() const;
 
  protected:
   /// Allocates the outputs.  See class description.

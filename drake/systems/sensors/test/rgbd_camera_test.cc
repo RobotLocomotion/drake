@@ -65,20 +65,6 @@ TEST_F(RgbdCameraTest, InstantiateTest) {
   Verify(dut_.depth_camera_info());
 }
 
-// Verifies the initial camera base pose.
-TEST_F(RgbdCameraTest, InitialCameraBasePoseTest) {
-  // This is calculated by hand.
-  const Eigen::Isometry3d expected((
-      Eigen::Matrix4d() <<
-      0.9362933635841, -0.2750958473182,  0.2183506631463, 1.,
-      0.2896294776255,  0.9564250858492, -0.0369570135246, 2.,
-      -0.1986693307950,  0.0978433950072,  0.9751703272018, 3.,
-      0., 0., 0., 1.).finished());
-
-  EXPECT_TRUE(CompareMatrices(expected.matrix(),
-                              dut_.base_pose().matrix(), kTolerance));
-}
-
 TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
   // This is calculated by hand.
   const Eigen::Isometry3d expected_base_to_optical((
@@ -89,11 +75,9 @@ TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
        0.,  0., 0., 1.).finished());
 
   EXPECT_TRUE(CompareMatrices(expected_base_to_optical.matrix(),
-                              dut_.base_pose().inverse().matrix() *
                               dut_.color_camera_optical_pose().matrix(),
                               kTolerance));
   EXPECT_TRUE(CompareMatrices(expected_base_to_optical.matrix(),
-                              dut_.base_pose().inverse().matrix() *
                               dut_.depth_camera_optical_pose().matrix(),
                               kTolerance));
 }
@@ -148,9 +132,10 @@ class RenderingSim : public systems::Diagram<double> {
  private:
   void Connect() {
     builder_.Connect(plant_->state_output_port(),
-                    rgbd_camera_->state_input_port());
+                     rgbd_camera_->state_input_port());
     builder_.ExportOutput(rgbd_camera_->color_image_output_port());
     builder_.ExportOutput(rgbd_camera_->depth_image_output_port());
+    builder_.ExportOutput(rgbd_camera_->camera_base_pose_output_port());
     builder_.BuildInto(this);
   }
 
@@ -178,6 +163,9 @@ class ImageTest {
       const sensors::Image<uint8_t>& color_image,
       const sensors::Image<float>& depth_image)> Verifier;
 
+  typedef std::function<void(
+      const Eigen::Isometry3d& pose)> CameraBasePoseVerifier;
+
   // For fixed camera base.
   ImageTest(const std::string& sdf, const Eigen::Vector3d& position,
             const Eigen::Vector3d& orientation)
@@ -193,6 +181,39 @@ class ImageTest {
 
   void Verify(Verifier verifier, double duration = 0.1) {
     DoVerification(verifier, duration);
+  }
+
+  void Verify(CameraBasePoseVerifier verifier) {
+    std::unique_ptr<systems::Context<double>> context =
+        diagram_.CreateDefaultContext();
+    std::unique_ptr<systems::SystemOutput<double>> output =
+        diagram_.AllocateOutput(*context);
+    systems::Simulator<double> simulator(diagram_, std::move(context));
+    simulator.Initialize();
+
+    double kDuration = 0.1;
+    for (double time = 0.; time < kDuration ; time += 0.1) {
+      simulator.StepTo(time);
+      diagram_.CalcOutput(simulator.get_context(), output.get());
+
+      systems::AbstractValue* mutable_data = output->GetMutableData(2);
+      auto camera_base_pose =
+          mutable_data->GetMutableValue<Eigen::Isometry3d>();
+
+      verifier(camera_base_pose);
+    }
+  }
+
+  static void VerifyCameraPose(const Eigen::Isometry3d& pose_actual) {
+    const Eigen::Isometry3d expected(
+        Eigen::Translation3d(0., 0., 4.999) *
+        (Eigen::AngleAxisd(0., Eigen::Vector3d::UnitX()) *
+         Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()) *
+         Eigen::AngleAxisd(0., Eigen::Vector3d::UnitZ())));
+
+    EXPECT_TRUE(CompareMatrices(expected.matrix(),
+                                pose_actual.matrix(),
+                                kTolerance));
   }
 
   static void VerifyUniformColorAndDepth(
@@ -320,13 +341,15 @@ class ImageTest {
   int previous_horizon_{0};
 };
 
-// Verifies the rendered terrain.
+// Verifies the rendered terrain and the camera's pose.
 GTEST_TEST(RenderingTest, TerrainRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/nothing.sdf");
   ImageTest dut(sdf,
                 Eigen::Vector3d(0., 0., 4.999),
                 Eigen::Vector3d(0., M_PI_2, 0.));
   dut.Verify(ImageTest::VerifyTerrain);
+
+  dut.Verify(ImageTest::VerifyCameraPose);
 }
 
 // Verifies the rendered box.
