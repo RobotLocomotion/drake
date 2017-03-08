@@ -72,9 +72,12 @@ drake_cc_library(
 
 drake_cc_library(
     name = "oracular_state_estimator",
+    srcs = ["oracular_state_estimator.cc"],
     hdrs = ["oracular_state_estimator.h"],
     deps = [
         "//drake/systems/framework:leaf_system",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/util:lcm_util",
         "@bot_core_lcmtypes//:lib",
     ],
 )
@@ -92,6 +95,8 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":oracular_state_estimator",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_diagram_factory",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/examples/schunk_wsg:schunk_wsg_constants",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
