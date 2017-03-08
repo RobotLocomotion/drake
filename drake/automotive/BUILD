@@ -532,9 +532,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "maliput_railcar_test",
-    data = [
-        ":test/flat_curved_lane.yaml",
-    ],
     deps = [
         "//drake/automotive:maliput_railcar",
         "//drake/automotive/maliput/api",

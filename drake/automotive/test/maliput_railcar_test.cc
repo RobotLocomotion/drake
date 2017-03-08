@@ -8,13 +8,18 @@
 
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/automotive/maliput/monolane/loader.h"
+#include "drake/automotive/maliput/monolane/builder.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
+
+using maliput::monolane::ArcOffset;
+using maliput::monolane::Endpoint;
+using maliput::monolane::EndpointXy;
+using maliput::monolane::EndpointZ;
 
 using systems::BasicVector;
 using systems::LeafContext;
@@ -38,9 +43,18 @@ class MaliputRailcarTest : public ::testing::Test {
   }
 
   void InitializeCurvedMonoLane() {
-    const std::string filename = GetDrakePath() +
-                               "/automotive/test/flat_curved_lane.yaml";
-    Initialize(maliput::monolane::LoadFile(filename));
+    maliput::monolane::Builder builder(
+        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
+        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
+        0.01,                           /* linear tolerance  */
+        0.5 * M_PI / 180.0);            /* angular_tolerance */
+    builder.Connect(
+        "point.0",                                             /* id    */
+        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),  /* start */
+        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
+        EndpointZ(0, 0, 0, 0));                                /* z_end */
+    Initialize(
+        builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})));
   }
 
   void Initialize(std::unique_ptr<const maliput::api::RoadGeometry> road) {
@@ -91,10 +105,10 @@ class MaliputRailcarTest : public ::testing::Test {
     config->set_initial_s_dot(initial_s_dot);
   }
 
-  // The arc radius of the road's s-axis when the road is created using
-  // InitializeCurvedMonoLane(). This value must match the value specified in
-  // `flat_curved_lane.yaml`.
+  // The arc radius and theta of the road when it is created using
+  // InitializeCurvedMonoLane().
   const double kCurvedRoadRadius{10};
+  const double kCurvedRoadTheta{M_PI_2};
 
   std::unique_ptr<const maliput::api::RoadGeometry> road_;
   std::unique_ptr<MaliputRailcar<double>> dut_;  //< The device under test.
@@ -171,7 +185,7 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
   {
-    const Eigen::Vector3d rpy(0, 0, M_PI_2);
+    const Eigen::Vector3d rpy(0, 0, kCurvedRoadTheta);
     const Eigen::Vector3d xyz(kCurvedRoadRadius, kCurvedRoadRadius, 0);
     expected_pose.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
@@ -182,27 +196,32 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
 
 TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputDragway) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
+  const double kR{1.5};
+  const double kH{8.2};
+
   // Sets the parameters to be non-zero values.
-  SetConfig(1.5 /* r */, 8.2 /* h */, 1 /* initial s_dot */);
+  SetConfig(kR, kH, 1 /* initial s_dot */);
   dut_->CalcOutput(*context_, output_.get());
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
-  expected_pose.translation() = Eigen::Vector3d(0, 1.5, 8.2);
+  expected_pose.translation() = Eigen::Vector3d(0, kR, kH);
   EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
                               expected_pose.matrix()));
 }
 
 TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
   EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane());
+  const double kR{1.5};
+  const double kH{8.2};
 
   // Sets the parameters to be non-zero values.
-  SetConfig(1.5 /* r */, 8.2 /* h */, 1 /* initial s_dot */);
+  SetConfig(kR, kH, 1 /* initial s_dot */);
   dut_->CalcOutput(*context_, output_.get());
   auto start_pose = pose_output();
   Eigen::Isometry3d expected_start_pose = Eigen::Isometry3d::Identity();
   {
     const Eigen::Vector3d rpy(0, 0, 0);
-    const Eigen::Vector3d xyz(0, 1.5, 8.2);
+    const Eigen::Vector3d xyz(0, kR, kH);
     expected_start_pose.matrix()
         << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
@@ -220,7 +239,7 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
   Eigen::Isometry3d expected_end_pose = Eigen::Isometry3d::Identity();
   {
     const Eigen::Vector3d rpy(0, 0, M_PI_2);
-    const Eigen::Vector3d xyz(kCurvedRoadRadius - 1.5, kCurvedRoadRadius, 8.2);
+    const Eigen::Vector3d xyz(kCurvedRoadRadius - kR, kCurvedRoadRadius, kH);
     expected_end_pose.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
   // The following tolerance was determined emperically.
