@@ -74,7 +74,6 @@ template <class T>
 class ImplicitEulerIntegrator : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitEulerIntegrator)
-
   ~ImplicitEulerIntegrator() override = default;
 
   // TODO(edrumwri): consider making the convergence tolerance a parameter
@@ -86,6 +85,26 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
     derivs_ = system.AllocateTimeDerivatives();
   }
+
+  enum class JacobianComputationScheme {
+    /// √ε where ε is machine epsilon.
+    kFowardDifference,
+
+    kCentralDifference,
+
+    kAutomatic
+  };
+
+  /// Sets the Jacobian computation scheme.
+  void set_jacobian_computation_scheme(JacobianComputationScheme scheme) {
+    jacobian_scheme_ = scheme; }
+
+  /// Gets the Jacobian computation scheme.
+  JacobianComputationScheme get_jacobian_computation_scheme() const {
+    return jacobian_scheme_;
+  }
+
+
 
   /**
    * The integrator does not support error estimation.
@@ -155,6 +174,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   // system of linear equations that is somewhat robust.
   Eigen::FullPivLU<MatrixX<T>> LU_;
 
+  JacobianComputationScheme jacobian_scheme_{kAutomatic};
   int num_overly_small_updates_{0};
   int num_objective_function_increases_{0};
   int num_misdirected_descents_{0};
