@@ -8,7 +8,7 @@
 
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/common/drake_assert.h"
-#include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
+#include "drake/math/roll_pitch_yaw_using_quaternion.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -94,11 +94,8 @@ void MaliputRailcar<T>::ImplCalcPose(const MaliputRailcarConfig<T>& config,
 
   pose->set_translation(
       Eigen::Translation<T, 3>(geo_position.x, geo_position.y, geo_position.z));
-
-  const Vector4<T> quaternion =
-      math::rpy2quat(Vector3<T>(rotation.roll, rotation.pitch, rotation.yaw));
-  pose->set_rotation(Eigen::Quaternion<T>(
-      quaternion(0), quaternion(1), quaternion(2), quaternion(3)));
+  pose->set_rotation(math::RollPitchYawToQuaternion(
+      Vector3<T>(rotation.roll, rotation.pitch, rotation.yaw)));
 }
 
 template <typename T>
