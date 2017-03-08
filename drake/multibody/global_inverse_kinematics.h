@@ -105,13 +105,13 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * @param X_WF. The frame in which the box is specified. This
    * frame is represented by an isometry transform X_WF, the transform from
    * the constraint frame F to the world frame W. Namely if the position of
-   * p_BQ in the world frame is p_WQ, then the constraint is
+   * the point `Q` in the world frame is `p_WQ`, then the constraint is
    * box_lb <= X_WF.linear().transpose() * (p_WQ - X_WF.translation()) <= box_ub
    * @default is the identity transform.
    */
-  void AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& g_BQ,
-                                  const Eigen::Vector3d& box_lb,
-                                  const Eigen::Vector3d& box_ub,
+  void AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& p_BQ,
+                                  const Eigen::Vector3d& box_lb_F,
+                                  const Eigen::Vector3d& box_ub_F,
                                   const Eigen::Isometry3d& X_WF =
                                       Eigen::Isometry3d::Identity());
 
