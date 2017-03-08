@@ -3,7 +3,6 @@
 # https://www.bazel.io/versions/master/docs/skylark/repository_rules.html
 
 # GUROBI_PATH should be the linux64 directory in the Gurobi 6.05 release.
-# TODO(david-german-tri): Add support for OS X.
 def _gurobi_impl(repository_ctx):
     # TODO(jwnimmer-tri) Once bazelbuild/bazel#1595 is fixed, expose our
     # dependency on GUROBI_PATH.
@@ -27,22 +26,58 @@ def _gurobi_impl(repository_ctx):
     # in the Bazel sandbox, because the NEEDED statements in the executable
     # will not square with the RPATH statements. I don't really know why this
     # happens, but I suspect it might be a Bazel bug.
-    BUILD = """
-    hdrs = glob([
+    hdrs = [
         "gurobi-distro/include/gurobi_c.h",
         "gurobi-distro/include/gurobi_c++.h",
-    ])
-    print("{warning}") if not hdrs else cc_library(
-        name = "lib",
-        srcs = ["gurobi-distro/lib/libgurobi60.so"],
-        hdrs = hdrs,
-        includes = ["gurobi-distro/include"],
-        linkstatic = 1,
-        visibility = ["//visibility:public"],
-    )
-    """.format(warning=warning)
-    BUILD = BUILD.replace("\n    ", "\n")  # Strip leading indent from lines.
-    repository_ctx.file("BUILD", content=BUILD)
+    ]
+
+    if repository_ctx.os.name == "mac os x":
+        install_name_tool = repository_ctx.which("install_name_tool")
+
+        libraries = ["gurobi-distro/lib/libgurobi60.so"]
+
+        for library in libraries:
+            library_path = repository_ctx.path(library)
+
+            result = repository_ctx.execute([
+                install_name_tool,
+                "-id",
+                library_path,
+                library_path,
+            ])
+
+            if result.return_code != 0:
+                fail("Could NOT change shared library identification name",
+                     attr=result.stderr)
+
+            repository_ctx.file("empty.cc", executable=False)
+
+            srcs = ["empty.cc"]
+
+            bin_path = repository_ctx.path("bin")
+
+            linkopts = [
+                "-L{}".format(bin_path),
+                "-lgurobi60",
+            ]
+    else:
+        srcs = ["gurobi-distro/lib/libgurobi60.so"]
+
+        linkopts = []
+
+    file_content = """
+cc_library(
+    name = "lib",
+    srcs = {},
+    hdrs = {},
+    includes = ["gurobi-distro/include"],
+    linkopts = {},
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+)
+    """.format(srcs, hdrs, linkopts)
+
+    repository_ctx.file("BUILD", content=file_content, executable=False)
 
 gurobi_repository = repository_rule(
     local = True,
