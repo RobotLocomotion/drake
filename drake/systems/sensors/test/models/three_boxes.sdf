@@ -1,0 +1,90 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <model name="mesh_box1">
+    <pose>0 0 1 0 0 0</pose>
+    <link name="box1">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.5</mass>
+      </inertial>
+      <visual name="mesh_box">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <material/>
+      </visual>
+      <collision name="mesh_box">
+        <laser_retro>0</laser_retro>
+        <max_contacts>10</max_contacts>
+        <pose frame="">0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <static>1</static>
+  </model>
+  <model name="mesh_box2">
+    <pose>0 -2.5 1 0 0 0</pose>
+    <link name="box2">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.5</mass>
+      </inertial>
+      <visual name="mesh_box">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <material/>
+      </visual>
+      <collision name="mesh_box">
+        <laser_retro>0</laser_retro>
+        <max_contacts>10</max_contacts>
+        <pose frame="">0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <static>1</static>
+  </model>
+  <model name="mesh_box3">
+    <pose>0 2.5 1 0 0 0</pose>
+    <link name="box3">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.5</mass>
+      </inertial>
+      <visual name="mesh_box">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <material/>
+      </visual>
+      <collision name="mesh_box">
+        <laser_retro>0</laser_retro>
+        <max_contacts>10</max_contacts>
+        <pose frame="">0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <static>1</static>
+  </model>
+</sdf>
