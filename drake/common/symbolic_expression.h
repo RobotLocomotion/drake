@@ -830,5 +830,19 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 /// @pre {@p vars is non-empty}.
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
+
+/// Checks if two Eigen::Matrix<Expression> @p m1 and @p m2 are structurally
+/// equal.
+template <typename Matrix>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<Matrix>, Matrix>::value &&
+        std::is_same<typename Matrix::Scalar, Expression>::value,
+    bool>::type
+CheckStructuralEquality(const Matrix& m1, const Matrix& m2) {
+  // Note that std::equal_to<Expression> calls Expression::EqualTo which checks
+  // structural equality between two expressions.
+  return m1.binaryExpr(m2, std::equal_to<Expression>{}).all();
+}
+
 }  // namespace symbolic
 }  // namespace drake

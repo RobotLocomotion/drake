@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
@@ -271,6 +273,38 @@ const Variables& get_quantified_variables(const Formula& f);
  */
 const Formula& get_quantified_formula(const Formula& f);
 
+/** Returns an Eigen array of symbolic formula where each element
+    includes element-wise symbolic-equality of two symbolic
+    arrays @p m1 and @p m2. */
+template <typename Array>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<Array>, Array>::value &&
+        std::is_same<typename Array::Scalar, Expression>::value,
+    Eigen::Array<Formula, Array::RowsAtCompileTime,
+                 Array::ColsAtCompileTime>>::type
+operator==(const Array& m1, const Array& m2) {
+  const auto expr_equal = [](const Expression& e1, const Expression& e2) {
+    return e1 == e2;
+  };
+  return m1.binaryExpr(m2, expr_equal);
+}
+
+// Returns a symbolic formula checking if two matrices of symbolic expression @p
+// m1 and @p m2 are equal.
+template <typename Matrix>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<Matrix>, Matrix>::value &&
+        std::is_same<typename Matrix::Scalar, Expression>::value,
+    Formula>::type
+operator==(const Matrix& m1, const Matrix& m2) {
+  const auto expr_equal = [](const Expression& e1, const Expression& e2) {
+    return e1 == e2;
+  };
+  const auto logic_and = [](const Formula& f1, const Formula& f2) {
+    return f1 && f2;
+  };
+  return m1.binaryExpr(m2, expr_equal).redux(logic_and);
+}
 }  // namespace symbolic
 
 /** Computes the hash value of a symbolic formula. */
