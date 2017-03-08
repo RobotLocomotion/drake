@@ -114,28 +114,28 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   virtual int get_num_extended_abstract_states() const = 0;
 
   /**
-   * Derived class need to implement this to computed custom outputs.
+   * Derived classes need to implement this to computed custom outputs.
    */
   virtual void DoExtendedCalcOutput(
       const systems::Context<double>& context,
       systems::SystemOutput<double>* output) const = 0;
 
   /**
-   * Derived class need to implement this to allocate custom outputs.
+   * Derived classes need to implement this to allocate custom outputs.
    */
   virtual std::unique_ptr<systems::AbstractValue>
   ExtendedAllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const = 0;
 
   /**
-   * Derived class need to implement this for custom behaviors.
+   * Derived classes need to implement this for custom behaviors.
    */
   virtual void DoExtendedCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
       systems::State<double>* state) const = 0;
 
   /**
-   * Derived class need to implement this to allocate custom abstract states.
+   * Derived classes need to implement this to allocate custom abstract states.
    */
   virtual std::vector<std::unique_ptr<systems::AbstractValue>>
   ExtendedAllocateAbstractState() const = 0;
