@@ -45,7 +45,8 @@ bin
 drake.jar
 *.out
 pod-build
-build
+/BUILD
+/build
 cmake-build-*
 mlint_output.html
 .#*
