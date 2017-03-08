@@ -7,6 +7,6 @@ element {
     doc: "The vehicle's height above the lane's surface."
 }
 element {
-    name: "initial_s_dot"
-    doc: "The initial time derivative of the vehicle's `s` coordinate. See MaliputRailcar's class description for more details."
+    name: "initial_speed"
+    doc: "The initial speed of the vehicle."
 }
