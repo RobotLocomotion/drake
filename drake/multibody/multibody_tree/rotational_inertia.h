@@ -67,7 +67,7 @@ namespace multibody {
 /// point as @f$ B_P @f$ which appears in code and comments as `Bp`. So if the
 /// system is a body `B` and the about point is `Bp`, the monogram notation
 /// reads `I_BBp_E`, which can be abbreviated to `I_Bp_E` since the about point
-/// `Bp` also identifies the system. Common cases include are that the
+/// `Bp` also identifies the system. Common cases are that the
 /// about point is the origin `Bo` of the body, or its the center of mass `Bcm`
 /// for which the rotational inertia in monogram notation would read
 /// as `I_Bo_E` and `I_Bcm_E`, respectively.
@@ -83,14 +83,14 @@ class RotationalInertia {
   RotationalInertia() {}
 
   /// Creates a principal rotational inertia with identical diagonal elements
-  /// equal to @p I and zero products of inertia.
+  /// equal to `I` and zero products of inertia.
   /// As examples, consider the moments of inertia taken about their geometric
   /// center for a sphere or a cube.
   /// Throws an exception if `I` is negative.
   explicit RotationalInertia(const T& I) {
     DRAKE_THROW_UNLESS(I >= T(0));
     SetZero();
-    I_Bo_F_.diagonal().setConstant(I);
+    I_SP_E_.diagonal().setConstant(I);
   }
 
   /// Creates a principal axes rotational inertia matrix for which the products
@@ -110,7 +110,7 @@ class RotationalInertia {
     DRAKE_THROW_UNLESS(Iyy >= T(0));
     DRAKE_THROW_UNLESS(Izz >= T(0));
     SetZero();
-    I_Bo_F_.diagonal() = Vector3<T>(Ixx, Iyy, Izz);
+    I_SP_E_.diagonal() = Vector3<T>(Ixx, Iyy, Izz);
     DRAKE_THROW_UNLESS(CouldBePhysicallyValid());
   }
 
@@ -122,8 +122,8 @@ class RotationalInertia {
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
                     const T& Ixy, const T& Ixz, const T& Iyz) {
     // The upper part is left initialized to NaN.
-    I_Bo_F_(0, 0) = Ixx; I_Bo_F_(1, 1) = Iyy; I_Bo_F_(2, 2) = Izz;
-    I_Bo_F_(1, 0) = Ixy; I_Bo_F_(2, 0) = Ixz; I_Bo_F_(2, 1) = Iyz;
+    I_SP_E_(0, 0) = Ixx; I_SP_E_(1, 1) = Iyy; I_SP_E_(2, 2) = Izz;
+    I_SP_E_(1, 0) = Ixy; I_SP_E_(2, 0) = Ixz; I_SP_E_(2, 1) = Iyz;
     DRAKE_THROW_UNLESS(CouldBePhysicallyValid());
   }
 
@@ -138,7 +138,7 @@ class RotationalInertia {
   /// Returns a three-dimensional vector containing the diagonal elements of
   /// this rotational inertia.
   /// @retval moments The vector of principal moments `[Ixx Iyy Izz]`.
-  Vector3<T> get_moments() const { return I_Bo_F_.diagonal(); }
+  Vector3<T> get_moments() const { return I_SP_E_.diagonal(); }
 
   /// Returns a three-dimensional vector containing the products of inertia of
   /// this rotational inertia.
@@ -160,35 +160,41 @@ class RotationalInertia {
   const T& operator()(int i, int j) const {
     // Overwrites local copies of i and j.
     check_and_swap(&i, &j);
-    return I_Bo_F_(i, j);
+    return I_SP_E_(i, j);
   }
 
   /// Get a copy to a full Matrix3 representation for this rotational inertia
   /// including both lower and upper triangular parts.
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
-  /// Compares `this` inertia to @p other rotational inertia within the
-  /// specified @p precision.
+  /// Compares `this` inertia to `other` rotational inertia within the
+  /// specified `precision`.
   /// The comparison is performed using the fuzzy comparison provided by Eigen's
   /// method isApprox() returning `true` if: <pre>
   ///   get_moments().isApprox(other.get_moments(), precision) &&
   ///   get_products().isApprox(other.get_products(), precision);
   /// </pre>
-  /// @returns `true` if `other` is within the specified @p precision. Returns
-  /// `false` otherwise.
+  /// @returns `true` if `other` is within the specified `precision`. Returns
+  ///   `false` otherwise.
   bool IsApprox(const RotationalInertia& other,
                 double precision = Eigen::NumTraits<T>::epsilon()) {
     return get_moments().isApprox(other.get_moments(), precision) &&
            get_products().isApprox(other.get_products(), precision);
   }
 
-  /// Adds rotational inertia `I_Bo_F` to `this` rotational inertia. This
+  /// Adds in a rotational inertia to `this` rotational inertia. This
   /// operation is only valid if both inertias are computed about the same
-  /// center `Bo` and expressed in the same frame `F`.
-  /// @param[in] I_Bo_F A rotational inertia to be added to this inertia.
-  /// @returns A reference to `this` rotational inetia.
-  RotationalInertia<T>& operator+=(const RotationalInertia<T>& I_Bo_F) {
-    this->get_mutable_triangular_view() += I_Bo_F.get_matrix();
+  /// point `P` and expressed in the same frame `E`. Considering `this` inertia
+  /// to be `I_SP_E` for some system `S`, taken about some point `P`, the
+  /// supplied inertia must be for some system `B` taken about the *same* point
+  /// `P`; `B`'s inertia is then included in `S`.
+  /// @param[in] I_BP_E A rotational inertia of some body `B` to be added to
+  ///   `this` inertia. It must have been taken about the same point `P` as
+  ///   `this` inertia, and expressed in the same frame `E`.
+  /// @returns A reference to `this` rotational inertia, which has been updated
+  ///   to include the given inertia.
+  RotationalInertia<T>& operator+=(const RotationalInertia<T>& I_BP_E) {
+    this->get_mutable_triangular_view() += I_BP_E.get_matrix();
     return *this;
   }
 
@@ -217,12 +223,13 @@ class RotationalInertia {
     return *this;
   }
 
-  /// Computes the product from the right between this rotational inertia with
-  /// vector @p w.
-  /// This inertia and vector @p w must both be expressed in the same frame.
-  /// @param[in] w Vector to multiply from the right.
-  /// @returns The product from the right of `this` inertia with @p w.
-  Vector3<T> operator*(const Vector3<T>& w) const {
+  /// Computes the product from the right `I*w` of this rotational inertia
+  /// matrix `I` with a vector `w`.
+  /// This inertia and vector `w` must both be expressed in the same frame.
+  /// @param[in] w_E Vector to multiply from the right, expressed in the same
+  ///   frame `E` as `this` inertia matrix.
+  /// @returns The product from the right of `this` inertia with `w_E`.
+  Vector3<T> operator*(const Vector3<T>& w_E) const {
     return Vector3<T>(get_symmetric_matrix_view() * w);
   }
 
@@ -230,28 +237,29 @@ class RotationalInertia {
   /// uninitialized values since NaN will trigger a chain of invalid
   /// computations that can then be tracked to the source.
   void SetToNaN() {
-    I_Bo_F_.setConstant(std::numeric_limits<
+    I_SP_E_.setConstant(std::numeric_limits<
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
-  /// Sets this rotational inertia to have zero entries. This results in a
+  /// Sets this rotational inertia to have all-zero entries. This results in a
   /// non-physical inertia that could only mathematically correspond to the mass
-  /// distribution of a point. However this method is useful when performing
-  /// initializations for a given computation.
+  /// distribution of a point mass. However this method is useful when
+  /// performing initializations for a given computation.
   void SetZero() {
     // The strictly-upper triangle is left initialized to NaN to quickly detect
     // if this part is mistakenly used.
-    I_Bo_F_.template triangularView<Eigen::Lower>() = Matrix3<T>::Zero();
+    I_SP_E_.template triangularView<Eigen::Lower>() = Matrix3<T>::Zero();
   }
 
   /// Returns `true` if any of the elements in this rotational inertia is NaN
   /// and `false` otherwise.
   bool IsNaN() const {
     using std::isnan;
-    // Only check the lower entries.
+    // Only check the lower entries; the upper ones really are NaN but we want
+    // them that way.
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j <= i; ++j) {
-        if (isnan(I_Bo_F_(i, j))) return true;
+        if (isnan(I_SP_E_(i, j))) return true;
       }
     }
     return false;
@@ -277,12 +285,12 @@ class RotationalInertia {
     //   2. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffScalar.
     //      Therefore we use a local copy to a Matrix3<double>.
     Matrix3<double> Id;  // Only the lower triangle is used.
-    Id(0, 0) = ExtractDoubleOrThrow(I_Bo_F_(0, 0));
-    Id(1, 0) = ExtractDoubleOrThrow(I_Bo_F_(1, 0));
-    Id(2, 0) = ExtractDoubleOrThrow(I_Bo_F_(2, 0));
-    Id(1, 1) = ExtractDoubleOrThrow(I_Bo_F_(1, 1));
-    Id(2, 1) = ExtractDoubleOrThrow(I_Bo_F_(2, 1));
-    Id(2, 2) = ExtractDoubleOrThrow(I_Bo_F_(2, 2));
+    Id(0, 0) = ExtractDoubleOrThrow(I_SP_E_(0, 0));
+    Id(1, 0) = ExtractDoubleOrThrow(I_SP_E_(1, 0));
+    Id(2, 0) = ExtractDoubleOrThrow(I_SP_E_(2, 0));
+    Id(1, 1) = ExtractDoubleOrThrow(I_SP_E_(1, 1));
+    Id(2, 1) = ExtractDoubleOrThrow(I_SP_E_(2, 1));
+    Id(2, 2) = ExtractDoubleOrThrow(I_SP_E_(2, 2));
     Eigen::SelfAdjointEigenSolver<Matrix3<double>> solver(
         Id, Eigen::EigenvaluesOnly);
     if (solver.info() != Eigen::Success) {
@@ -294,7 +302,7 @@ class RotationalInertia {
     return solver.eigenvalues();
   }
 
-  /// Performs a number of checks to verify that this could be a physically
+  /// Performs a number of checks to verify that this *could* be a physically
   /// valid rotational inertia.
   /// The checks performed are:
   /// - No NaN entries.
@@ -354,14 +362,15 @@ class RotationalInertia {
     return true;  // All tests passed.
   }
 
-  /// Given this rotational inertia `I_Bp_F` about `Bp` and expressed in frame
-  /// `F`, this method computes the same inertia re-expressed in another
-  /// frame `A` as `I_Bp_A = R_AF * I_Bp_F * (R_AF)ᵀ`.
+  /// Given `this` rotational inertia `I_SP_E` for some system or body `S`,
+  /// taken about a point `P` and expressed in frame
+  /// `E`, this method computes the same inertia re-expressed in another
+  /// frame `A` as `I_SP_A = R_AE * I_SP_E * (R_AE)ᵀ`.
   /// This operation is performed in-place modifying the original object.
-  /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
-  /// @returns A reference to `this` rotational inertia about `Bp` but now
-  ///          re-expressed in frame `A`.
-  RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AF) {
+  /// @param[in] R_AE Rotation matrix from frame `E` to frame `A`.
+  /// @returns A reference to `this` rotational inertia about `P` but now
+  ///          re-expressed in frame `A`, that is, `I_SP_A`.
+  RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AE) {
     // There is an interesting discussion on Eigen's forum here:
     // https://forum.kde.org/viewtopic.php?f=74&t=97282
     // That discussion tell us that really here we don't have a significant
@@ -371,43 +380,44 @@ class RotationalInertia {
 
     // Local copy to avoid aliasing since there is aliasing when using the
     // triangular view.
-    Matrix3<T> I_Bo_A;
-    I_Bo_A.noalias() =
-        R_AF * I_Bo_F_.template selfadjointView<Eigen::Lower>() *
-            R_AF.transpose();
+    Matrix3<T> I_SP_A;
+    I_SP_A.noalias() =
+        R_AE * I_SP_E_.template selfadjointView<Eigen::Lower>() *
+            R_AE.transpose();
 
-    // Notice that there is no guarantee on having a symmetric result in I_Bo_A,
+    // Notice that there is no guarantee on having a symmetric result in I_SP_A,
     // though it should be symmetric to round-off error. Here we are simply
     // dropping the upper triangle elements, which could be slightly different
     // than their lower triangle equivalents.
-    this->get_mutable_triangular_view() = I_Bo_A;
+    this->get_mutable_triangular_view() = I_SP_A;
     return *this;
   }
 
-  /// Given this rotational inertia `I_Bo_F` about `Bo` and expressed in
-  /// frame `F`, this method computes the same inertia re-expressed in another
-  /// frame `A`.
-  /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
-  /// @retval I_Bo_A The same rotational inertia about `Bo` but now
+  /// Re-express `this` inertia `I_SP_E` from frame `E` to frame `A` and return
+  /// the result. See ReExpressInPlace() for details.
+  ///
+  /// @param[in] R_AE Rotation matrix from frame `E` to frame `A`.
+  /// @retval I_SP_A The same rotational inertia of `S` about `P` but now
   ///                re-expressed in frame`A`.
+  /// @see ReExpressInPlace()
   RotationalInertia<T> ReExpress(const Matrix3<T>& R_AF) const {
     return RotationalInertia(*this).ReExpressInPlace(R_AF);
   }
 
-  /// Multiplication of a RotationalInertia @p I_Bo_F from the left by a
-  /// scalar @p s. Multiplication by scalar is commutative.
+  /// Multiplies a %RotationalInertia from the left by a
+  /// scalar `s`. Multiplication by scalar is commutative.
   friend RotationalInertia<T> operator*(const T& s,
-                                        const RotationalInertia<T>& I_Bo_F) {
+                                        const RotationalInertia<T>& I_BP_E) {
     RotationalInertia<T> sxI;
-    sxI.get_mutable_triangular_view() = s * I_Bo_F.get_matrix();
+    sxI.get_mutable_triangular_view() = s * I_BP_E.get_matrix();
     return sxI;
   }
 
-  /// Multiplication of a RotationalInertia @p I_Bo_F from the rigth by a
-  /// scalar @p s. Multiplication by scalar is commutative.
-  friend RotationalInertia<T> operator*(const RotationalInertia<T>& I_Bo_F,
+  /// Multiplies `this` %RotationalInertiafrom the right by a
+  /// scalar `s`. Multiplication by scalar is commutative.
+  friend RotationalInertia<T> operator*(const RotationalInertia<T>& I_BP_E,
                                         const T& s) {
-    return s * I_Bo_F;  // Multiplication by a scalar is commutative.
+    return s * I_BP_E;  // Multiplication by a scalar is commutative.
   }
 
  private:
@@ -420,13 +430,13 @@ class RotationalInertia {
   // since RotationalInertia only uses the lower portion of this matrix, the
   // strictly upper part will be set to have NaN entries.
   // Most users won't call this method.
-  const Matrix3<T>& get_matrix() const { return I_Bo_F_; }
+  const Matrix3<T>& get_matrix() const { return I_SP_E_; }
 
   // Returns a const Eigen view expression to the symmetric part of the matrix
   // in use by this RotationalInertia.
   const Eigen::SelfAdjointView<const Matrix3<T>, Eigen::Lower>
   get_symmetric_matrix_view() const {
-    return I_Bo_F_.template selfadjointView<Eigen::Lower>();
+    return I_SP_E_.template selfadjointView<Eigen::Lower>();
   }
 
   // Returns a mutable Eigen view expression to the symmetric part of the
@@ -435,21 +445,23 @@ class RotationalInertia {
   // we need to return a TriangularView here.
   Eigen::TriangularView<Matrix3<T>, Eigen::Lower>
   get_mutable_triangular_view() {
-    return I_Bo_F_.template triangularView<Eigen::Lower>();
+    return I_SP_E_.template triangularView<Eigen::Lower>();
   }
 
-  // Inertia matrix about frame B's origin Bo expressed in frame F.
-  // Frame F and origin Bo are implicit here, RotationalInertia only keeps track
-  // of the inertia measures in this frame F. Users are responsible for keeping
+  // Inertia matrix of a system S about point P, expressed in frame E. The
+  // system, point, and frame are implicit here. RotationalInertia only keeps
+  // track of the inertia measures, which are assumed to correspond to some
+  // S, P, and E. Users are responsible for keeping
   // track of the frame in which a particular inertia is expressed in.
   // Initially set to NaN to aid finding when by mistake we use the strictly
   // upper portion of the matrix. Only the lower portion should be used.
-  Matrix3<T> I_Bo_F_{Matrix3<T>::Constant(std::numeric_limits<
+  Matrix3<T> I_SP_E_{Matrix3<T>::Constant(std::numeric_limits<
       typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
 };
 
-/// Insertion operator to write RotationalInertia's into a `std::ostream`.
+/// Insertion operator to write %RotationalInertia's into a `std::ostream`.
 /// Especially useful for debugging.
+/// @relates RotationalInertia
 template <typename T> inline
 std::ostream& operator<<(std::ostream& o,
                          const RotationalInertia<T>& I) {
