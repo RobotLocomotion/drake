@@ -1,3 +1,6 @@
+#include "drake/solvers/mathematical_program.h"
+
+#include <algorithm>
 #include <typeinfo>
 
 #include "gtest/gtest.h"
@@ -12,7 +15,6 @@
 #include "drake/common/test/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
-#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Dynamic;
@@ -1138,12 +1140,9 @@ bool AreTwoPolynomialsNear(
       it->second -= p2.second;
     }
   }
-  for (const auto& p : poly_diff) {
-    if (std::abs(symbolic::get_constant_value(p.second)) > tol) {
-      return false;
-    }
-  }
-  return true;
+  return std::all_of(poly_diff.begin(), poly_diff.end(), [&tol](const auto& p) {
+    return std::abs(symbolic::get_constant_value(p.second)) <= tol;
+  });
 }
 
 void CheckParsedSymbolicLorentzConeConstraint(
@@ -1163,15 +1162,15 @@ void CheckParsedSymbolicLorentzConeConstraint(
   Expression quadratic_expr_parsed =
       e_parsed.tail(e_parsed.rows() - 1).squaredNorm();
   // Due to the small numerical error, quadratic_expr and quadratic_expr_parsed
-  // do not match
-  // exactly.So we will compare each term in the two polynomials, and regard
-  // them to beequal if the error in the coefficient is sufficiently small.
+  // do not match exactly.So we will compare each term in the two polynomials,
+  // and regard them to be equal if the error in the coefficient is sufficiently
+  // small.
   const auto& monomial_to_coeff_map_parsed =
       symbolic::DecomposePolynomialIntoMonomial(
           quadratic_expr_parsed, quadratic_expr_parsed.GetVariables());
   const auto& monomial_to_coeff_map = symbolic::DecomposePolynomialIntoMonomial(
       quadratic_expr, quadratic_expr.GetVariables());
-  double tol = 1E-10;
+  double tol = 100 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(AreTwoPolynomialsNear(monomial_to_coeff_map_parsed,
                                     monomial_to_coeff_map, tol));
 }

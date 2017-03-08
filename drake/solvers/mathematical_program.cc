@@ -351,15 +351,18 @@ void DecomposeLinearExpression(const Eigen::Ref<const VectorX<Expression>>& v,
 }
 
 /**
- * Given a quadratic expression e, decompose it into the form
+ * Given a quadratic expression `e` represented by its monomial to coefficient
+ * map, decompose it into the form
  * e = 0.5 * x' * Q * x + b' * x + c
- * @param[in] monomial_to_coeff_map. Map the monomial to the coefficient, this is
- * the result of calling DecomposePolynomialIntoMonomial(e).
- * @param[in] map_var_to_index maps variables in monomial_to_coeff_map.GetVariables()
- * to the index in the vector `x`.
+ * @param[in] monomial_to_coeff_map. Map the monomial to the coefficient, this
+ * is the result of calling DecomposePolynomialIntoMonomial(e).
+ * @param[in] map_var_to_index maps variables in
+ * monomial_to_coeff_map.GetVariables() to the index in the vector `x`.
  * @param[in] num_variables The number of variables in the expression.
- * @param Q[out] The Hessian of the quadratic expression.
- * @param b[out] The linear term of the quadratic expression.
+ * @param Q[out] The Hessian of the quadratic expression. @pre The size of Q
+ * should be `num_variables * num_variables`.
+ * @param b[out] The linear term of the quadratic expression. @pre The size of
+ * `b` should be `num_variables * 1`.
  * @param c[out] The constant term of the quadratic expression.
  */
 void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
@@ -367,8 +370,9 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
     const unordered_map<Variable::Id, int>& map_var_to_index,
     int num_variables,
     Eigen::MatrixXd* Q, Eigen::VectorXd* b, double* c) {
-  Q->resize(num_variables, num_variables);
-  b->resize(num_variables);
+  DRAKE_DEMAND(Q->rows() == num_variables);
+  DRAKE_DEMAND(Q->cols() == num_variables);
+  DRAKE_DEMAND(b->rows() == num_variables);
   Q->setZero();
   b->setZero();
   *c = 0;
@@ -395,11 +399,11 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
       (*Q)(x1_index, x2_index) += coefficient;
       (*Q)(x2_index, x1_index) = (*Q)(x1_index, x2_index);
     } else if (monomial_powers.size() == 1) {
-      // Three cases
+      // Two cases
       // 1. quadratic term a*x^2
       // 2. linear term b*x
-      // 3. constant term.
       auto it = monomial_powers.begin();
+      DRAKE_DEMAND(it->second == 2 || it->second == 1);
       const int x_index = map_var_to_index.at(it->first);
       if (it->second == 2) {
         // quadratic term a * x^2
@@ -407,9 +411,6 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
       } else if (it->second == 1) {
         // linear term b * x.
         (*b)(x_index) += coefficient;
-      } else {
-        // constant term.
-        *c += coefficient;
       }
     } else {
       // constant term.
@@ -852,29 +853,13 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   } else {
     // Q is not strictly positive definite.
     // First check if Q is zero.
-    bool is_Q_zero = true;
-    for (int i = 0; i < Q.rows(); ++i) {
-      for (int j = 0; j <=i; ++j) {
-        if (Q(i, j) != 0) {
-          is_Q_zero = false;
-          break;
-        }
-      }
-      if (!is_Q_zero) {
-        break;
-      }
-    }
+    const bool is_Q_zero = (Q.array() == 0).all();
+
     if (is_Q_zero) {
       // Now check if the linear term b is zero. If both Q and b are zero, then
       // add the linear constraint linear_expr >= sqrt(a); otherwise throw a
       // runtime error.
-      bool is_b_zero = true;
-      for (int i = 0; i < b.rows(); ++i) {
-        if (b(i) != 0) {
-          is_b_zero = false;
-          break;
-        }
-      }
+      const bool is_b_zero = (b.array() == 0).all();
       if (!is_b_zero) {
         ostringstream oss;
         oss << "Expression " << quadratic_expr
@@ -908,8 +893,8 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
       for (int j = 0; j < i; ++j) {
         R1(i, j) = 0;
       }
-      double d_sqrt = std::sqrt(ldlt_Q.vectorD()(i));
-      for (int j = 0; j < R1.cols(); ++j) {
+      const double d_sqrt = std::sqrt(ldlt_Q.vectorD()(i));
+      for (int j = i; j < R1.cols(); ++j) {
         R1(i, j) *= d_sqrt;
       }
     }

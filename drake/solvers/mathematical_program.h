@@ -1479,26 +1479,32 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint on the linear expression v1 and quadratic
    * expression v2, such that v1 >= sqrt(v2)
-   * @param linear_expr     The linear expression v1.
-   * @param quadratic_expr  The quadratic expression v2.
+   * @param v1     The linear expression.
+   * @param v2  The quadratic expression.
    * @retval binding The newly added Lorentz cone constraint, together with the
    * bound variables.
-   * @pre{1. `linear_expr` is a linear expression, in the form of c'*x + d.
-   *      2. `quadratic_expr` is a quadratic expression, in the form of
+   * @pre
+   * 1. `linear_expr` is a linear expression, in the form of c'*x + d.
+   * 2. `quadratic_expr` is a quadratic expression, in the form of
+   *    <pre>
    *          0.5 * x'*Q*x + b'x + a
-   *          Also the quadratic expression has to be convex, namely Q is a
-   *          positive semidefinite matrix, and the quadratic expression needs
-   *          to be non-negative for any x.}
-   * Throws a runtime error if the preconditions are not satisfied.
+   *    </pre>
+   *    Also the quadratic expression has to be convex, namely Q is a
+   *    positive semidefinite matrix, and the quadratic expression needs
+   *    to be non-negative for any x.
+   * Throws a runtime_error if the preconditions are not satisfied.
+   *
    * Notice this constraint is equivalent to the vector [z;y] is within a
    * Lorentz cone, where
-   * z = v1
-   * y = [1 / sqrt(2) * R * x + R⁻ᵀb; sqrt(a - 0.5 * bᵀ * Q⁻¹ * a)]
-   * where R satisfies Rᵀ * R = Q
+   * <pre>
+   *  z = v1
+   *  y = [1 / sqrt(2) * R * x + R⁻ᵀb; sqrt(a - 0.5 * bᵀ * Q⁻¹ * a)]
+   * </pre>
+   * while R satisfies Rᵀ * R = Q
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
-      const symbolic::Expression& linear_expr,
-      const symbolic::Expression& quadratic_expr);
+      const symbolic::Expression& v1,
+      const symbolic::Expression& v2);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset
