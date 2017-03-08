@@ -16,15 +16,11 @@ namespace automotive {
 /// it were on rails and neglecting all physics. It can only move forward at a
 /// predetermined speed.
 ///
-/// Configuration (for more details, see MaliputRailcarConfig):
-///   * A `const` reference to a maliput::api::Lane that it should follow.
-///   * An `h` height above the lane's surface.
-///   * An `r` offset from the lane's `s` axis.
-///   * An `initial_speed` at which the vehicle should initially move.
+/// Configuration:
+///   * See MaliputRailcarConfig.
 ///
-/// State vector (for more details, see MaliputRailcarState):
-///   * position: `s`
-///   * speed: `s_dot`
+/// State vector:
+///   * See MaliputRailcarState.
 ///
 /// <B>Input Port Accessors:</B>
 ///
@@ -84,7 +80,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
 
   static constexpr double kDefaultR = 0;      // meters
   static constexpr double kDefaultH = 0;      // meters
-  static constexpr double kDefaultSpeed = 1;  // meters / second
+  static constexpr double kDefaultSDot = 1;   // time derivative of `s`
 
  protected:
   // LeafSystem<T> overrides.

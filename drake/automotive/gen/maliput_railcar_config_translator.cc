@@ -25,7 +25,7 @@ void MaliputRailcarConfigTranslator::Serialize(
   message.timestamp = static_cast<int64_t>(time * 1000);
   message.r = vector->r();
   message.h = vector->h();
-  message.initial_speed = vector->initial_speed();
+  message.initial_s_dot = vector->initial_s_dot();
   const int lcm_message_length = message.getEncodedSize();
   lcm_message_bytes->resize(lcm_message_length);
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
@@ -47,7 +47,7 @@ void MaliputRailcarConfigTranslator::Deserialize(
   }
   my_vector->set_r(message.r);
   my_vector->set_h(message.h);
-  my_vector->set_initial_speed(message.initial_speed);
+  my_vector->set_initial_s_dot(message.initial_s_dot);
 }
 
 }  // namespace automotive

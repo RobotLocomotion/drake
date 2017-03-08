@@ -25,7 +25,7 @@ namespace automotive {
 // Linkage for MaliputRailcar constants.
 template <typename T> constexpr double MaliputRailcar<T>::kDefaultR;
 template <typename T> constexpr double MaliputRailcar<T>::kDefaultH;
-template <typename T> constexpr double MaliputRailcar<T>::kDefaultSpeed;
+template <typename T> constexpr double MaliputRailcar<T>::kDefaultSDot;
 
 template <typename T>
 MaliputRailcar<T>::MaliputRailcar(const Lane& lane, double start_time)
@@ -134,14 +134,13 @@ void MaliputRailcar<T>::ImplCalcTimeDerivatives(
     const MaliputRailcarConfig<T>& config,
     const MaliputRailcarState<T>& state,
     MaliputRailcarState<T>* rates) const {
-  const T speed = config.initial_speed();
+  const T s_dot = config.initial_s_dot();
   if (state.s() < 0 || state.s() >= lane_.length()) {
     rates->set_s(0);
   } else {
-    rates->set_s(speed);
+    rates->set_s(s_dot);
   }
-  // TODO(liang.fok): Set this to the desired acceleration once it is an input
-  // into this system.
+  // TODO(liang.fok): Set this to s_dot_dot once it is a system input.
   rates->set_s_dot(0);
 }
 
@@ -187,7 +186,7 @@ void MaliputRailcar<T>::SetDefaultParameters(MaliputRailcarConfig<T>* config) {
   DRAKE_DEMAND(config != nullptr);
   config->set_r(kDefaultR);
   config->set_h(kDefaultH);
-  config->set_initial_speed(kDefaultSpeed);
+  config->set_initial_s_dot(kDefaultSDot);
 }
 
 // This section must match the API documentation in maliput_railcar.h.
