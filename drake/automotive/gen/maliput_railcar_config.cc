@@ -9,7 +9,7 @@ namespace automotive {
 const int MaliputRailcarConfigIndices::kNumCoordinates;
 const int MaliputRailcarConfigIndices::kR;
 const int MaliputRailcarConfigIndices::kH;
-const int MaliputRailcarConfigIndices::kInitialSDot;
+const int MaliputRailcarConfigIndices::kInitialSpeed;
 
 }  // namespace automotive
 }  // namespace drake

@@ -9,5 +9,5 @@ struct lcmt_maliput_railcar_config_t {
 
   double r;  // The vehicle's position on the lane's r-axis.
   double h;  // The vehicle's height above the lane's surface.
-  double initial_s_dot;  // The initial time derivative of the vehicle's `s` coordinate. See MaliputRailcar's class description for more details.
+  double initial_speed;  // The initial speed of the vehicle.
 }

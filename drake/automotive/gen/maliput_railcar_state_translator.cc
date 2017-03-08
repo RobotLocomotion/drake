@@ -24,7 +24,7 @@ void MaliputRailcarStateTranslator::Serialize(
   drake::lcmt_maliput_railcar_state_t message;
   message.timestamp = static_cast<int64_t>(time * 1000);
   message.s = vector->s();
-  message.s_dot = vector->s_dot();
+  message.speed = vector->speed();
   const int lcm_message_length = message.getEncodedSize();
   lcm_message_bytes->resize(lcm_message_length);
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
@@ -45,7 +45,7 @@ void MaliputRailcarStateTranslator::Deserialize(
         "Failed to decode LCM message maliput_railcar_state.");
   }
   my_vector->set_s(message.s);
-  my_vector->set_s_dot(message.s_dot);
+  my_vector->set_speed(message.speed);
 }
 
 }  // namespace automotive

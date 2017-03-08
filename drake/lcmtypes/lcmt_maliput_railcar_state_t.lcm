@@ -8,5 +8,5 @@ struct lcmt_maliput_railcar_state_t {
   int64_t timestamp;
 
   double s;  // The s-coordinate of the vehicle in lane-space.
-  double s_dot;  // The time derivative of the vehicle's `s` coordinate. See MaliputRailcar's class description for more details.
+  double speed;  // The speed of the vehicle in physical space.
 }

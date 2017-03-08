@@ -3,6 +3,6 @@ element {
     doc: "The s-coordinate of the vehicle in lane-space."
 }
 element {
-    name: "s_dot"
-    doc: "The time derivative of the vehicle's `s` coordinate. See MaliputRailcar's class description for more details."
+    name: "speed"
+    doc: "The speed of the vehicle in physical space."
 }

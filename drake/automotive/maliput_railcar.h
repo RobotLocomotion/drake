@@ -80,7 +80,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
 
   static constexpr double kDefaultR = 0;      // meters
   static constexpr double kDefaultH = 0;      // meters
-  static constexpr double kDefaultSDot = 1;   // time derivative of `s`
+  static constexpr double kDefaultSpeed = 1;  // meters per second
 
  protected:
   // LeafSystem<T> overrides.
