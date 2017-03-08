@@ -6,9 +6,15 @@ if(lcm_FOUND)
   target_link_libraries(pickAndPlaceCommon
       drakeCommon
       drakeIK
+      drakeKukaIiwaArmCommon
+      drakeKukaIiwaArmIK
+      drakeLcmSystem
+      drakeLCMTypes
+      drakeLCMUtil
       drakeRBM
       drakeMultibodyParsers
-      drakeTrajectories)
+      drakeTrajectories
+      robotlocomotion-lcmtypes-cpp)
   drake_install_libraries(pickAndPlaceCommon)
   drake_install_headers(
       action.h
@@ -17,12 +23,14 @@ if(lcm_FOUND)
   drake_install_pkg_config_file(pick-and-place-common
       TARGET pickAndPlaceCommon
       LIBS -lpickAndPlaceCommon
-      REQUIRES drake-common drake-ik drake-lcm-system drake-lcmtypes-cpp drake-rbm)
+      REQUIRES drake-common drake-ik drake-kuka-iiwa-arm-common
+      drake-lcm-system drake-lcmtypes-cpp drake-lcm-utils drake-rbm 
+      robotlocomotion-lcmtypes-cpp)
 
 
   add_executable(pick_and_place_demo
     pick_and_place_state_machine.cc)
-  target_link_liabraries(pick_and_place_demo
+  target_link_libraries(pick_and_place_demo
     drakeKukaIiwaArmCommon
     drakeKukaIiwaArmIK
     drakeLCMTypes
