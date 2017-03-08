@@ -35,9 +35,8 @@ class LeafContextTest : public ::testing::Test {
     // Input
     context_.SetNumInputPorts(kNumInputPorts);
     for (int i = 0; i < kNumInputPorts; ++i) {
-      auto port_data = std::make_unique<BasicVector<double>>(kInputSize[i]);
-      auto port = std::make_unique<FreestandingInputPort>(std::move(port_data));
-      context_.SetInputPort(i, std::move(port));
+      context_.FixInputPort(
+          i, std::make_unique<BasicVector<double>>(kInputSize[i]));
     }
 
     // Reserve a continuous state with five elements.
@@ -129,6 +128,7 @@ void VerifyClonedState(const State<double>& clone) {
   EXPECT_EQ(1, clone.get_abstract_state()->size());
   EXPECT_EQ(42,
             clone.get_abstract_state()->get_abstract_state(0).GetValue<int>());
+  EXPECT_EQ(42, clone.get_abstract_state<int>(0));
 
   // Verify that the state type was preserved.
   const BasicVector<double>* xc_data =
@@ -191,11 +191,7 @@ TEST_F(LeafContextTest, GetVectorInput) {
   context.SetNumInputPorts(2);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
-  std::unique_ptr<BasicVector<double>> vec(new BasicVector<double>(2));
-  vec->get_mutable_value() << 5, 6;
-  std::unique_ptr<FreestandingInputPort> port(
-      new FreestandingInputPort(std::move(vec)));
-  context.SetInputPort(0, std::move(port));
+  context.FixInputPort(0, BasicVector<double>::Make({5, 6}));
 
   // Test that port 0 is retrievable.
   VectorX<double> expected(2);
@@ -211,10 +207,7 @@ TEST_F(LeafContextTest, GetAbstractInput) {
   context.SetNumInputPorts(2);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
-  std::unique_ptr<AbstractValue> value(new Value<std::string>("foo"));
-  std::unique_ptr<FreestandingInputPort> port(
-      new FreestandingInputPort(std::move(value)));
-  context.SetInputPort(0, std::move(port));
+  context.FixInputPort(0, AbstractValue::Make<std::string>("foo"));
 
   // Test that port 0 is retrievable.
   EXPECT_EQ("foo", *ReadStringInputPort(context, 0));
@@ -272,6 +265,9 @@ TEST_F(LeafContextTest, Clone) {
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_abstract_state<int>(0));
+  EXPECT_EQ(42, context_.get_abstract_state()->get_abstract_state(0).
+                    GetValue<int>());
+  EXPECT_EQ(2048, clone->get_abstract_state<int>(0));
 
   // Verify that the parameters were copied.
   LeafContext<double>* leaf_clone =

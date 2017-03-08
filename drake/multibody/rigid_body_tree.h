@@ -14,12 +14,14 @@
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
+#include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/force_torque_measurement.h"
 #include "drake/multibody/kinematic_path.h"
 #include "drake/multibody/kinematics_cache-inl.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
+#include "drake/multibody/collision/collision_filter.h"
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -33,6 +35,36 @@
 #define EPSILON 10e-8
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
+
+/**
+ * Defines RigidBodyTree constants. A separate struct is necessary to avoid
+ * having these constants being templated on `<T>`. For more details about the
+ * problem with having these templated on `<T>`, see #4169.
+ */
+struct RigidBodyTreeConstants {
+  /**
+   * Defines the name of the RigidBody within a RigidBodyTree that represents
+   * the world.
+   */
+  static const char* const kWorldName;
+
+  /**
+   * Defines the index of the RigidBody within a RigidBodyTree that represents
+   * the world.
+   */
+  static const int kWorldBodyIndex;
+
+  /**
+   * The ID of the first non-world model instance in the tree.
+   */
+  static const int kFirstNonWorldModelInstanceId;
+
+  /**
+   * Defines the default model instance ID set. This is a set containing the
+   * model instance ID of the first model instance that is added to the tree.
+   */
+  static const std::set<int> default_model_instance_id_set;
+};
 
 /**
  * Maintains a vector of RigidBody objects that are arranged into a kinematic
@@ -74,24 +106,12 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 template <typename T>
 class RigidBodyTree {
  public:
-  /**
-   * Defines the name of the rigid body within a rigid body tree that represents
-   * the world.
-   */
-  static const char* const kWorldName;
-
-  /**
-   * Defines the index of the body that represents the world within a
-   * RigidBodyTree.
-   */
-  static const int kWorldBodyIndex;
-
   /// A constructor that initializes the gravity vector to be [0, 0, -9.81] and
   /// a single RigidBody named "world". This RigidBody can be accessed by
   /// calling RigidBodyTree::world().
-  RigidBodyTree(void);
+  RigidBodyTree();
 
-  virtual ~RigidBodyTree(void);
+  virtual ~RigidBodyTree();
 
   /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
@@ -105,7 +125,7 @@ class RigidBodyTree {
   int get_next_clique_id() { return next_available_clique_++; }
 
   /**
-   * Returns the number of model instances in the tree.
+   * Returns the number of model instances in the tree, not including the world.
    */
   int get_num_model_instances() const;
 
@@ -116,6 +136,12 @@ class RigidBodyTree {
 
   void addFrame(std::shared_ptr<RigidBodyFrame<T>> frame);
 
+  /**
+   * Returns a map from DOF position name to DOF index within the output vector
+   * of this RigidBodyTree.
+   *
+   * <b>WARNING:</b> There is a known bug in this method, see: #4697.
+   */
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
   void surfaceTangents(
@@ -131,7 +157,7 @@ class RigidBodyTree {
    * This is important to the parsing code to maintain a Drake RigidBodyTree
    * invariant.  RigidBody instances do not maintain their own pose relative
    * to their in-board joint.  The joint's space is considered to be the body's
-   * space.  So, if a urdf/sdf file defines the body with a non-identity pose
+   * space.  So, if a URDF or SDF file defines the body with a non-identity pose
    * relative to the parent, the parser uses this to move the collision elements
    * relative to the effective body frame -- that of the parent joint.
    *
@@ -144,7 +170,7 @@ class RigidBodyTree {
       RigidBody<T>* body,
       const Eigen::Isometry3d& displace_transform);
 
-  void compile(void);  // call me after the model is loaded
+  void compile();  // call me after the model is loaded
 
   Eigen::VectorXd getZeroConfiguration() const;
 
@@ -244,7 +270,7 @@ class RigidBodyTree {
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.
   ///
-  /// This method is explicitly instantiated in RigidBodyTree.cpp for a
+  /// This method is explicitly instantiated in rigid_body_tree.cc for a
   /// small set of supported `DerivedQ`.
   template <typename DerivedQ>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(
@@ -253,7 +279,7 @@ class RigidBodyTree {
   /// Initializes a `KinematicsCache` with the given configuration @p q
   /// and velocity @p v, computes the kinematics, and returns the cache.
   ///
-  /// This method is explicitly instantiated in RigidBodyTree.cpp for a
+  /// This method is explicitly instantiated in rigid_body_tree.cc for a
   /// small set of supported `DerivedQ` and `DerivedV`.
   template <typename DerivedQ, typename DerivedV>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(
@@ -262,7 +288,7 @@ class RigidBodyTree {
 
   /// Computes the kinematics on the given @p cache.
   ///
-  /// This method is explicitly instantiated in RigidBodyTree.cpp for a
+  /// This method is explicitly instantiated in rigid_body_tree.cc for a
   /// small set of supported Scalar types.
   template <typename Scalar>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -288,14 +314,193 @@ class RigidBodyTree {
    * @p model_instance_id_set.
    */
   double getMass(const std::set<int>& model_instance_id_set =
-                     default_model_instance_id_set) const;
+      RigidBodyTreeConstants::default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      KinematicsCache<Scalar>& cache,
+      const KinematicsCache<Scalar>& cache,
       const std::set<int>& model_instance_id_set =
-          default_model_instance_id_set) const;
+          RigidBodyTreeConstants::default_model_instance_id_set) const;
+
+  /// Computes the pose `X_WB` of @p body's frame B in the world frame W.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @retval `X_WB`
+  drake::Isometry3<T> CalcBodyPoseInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body) const {
+    return CalcFramePoseInWorldFrame(
+        cache, body, drake::Isometry3<T>::Identity());
+  }
+
+  /// Computes the pose `X_WF` of @p frame_F in the world frame W. @p frame_F
+  /// does not necessarily need to be owned by this RigidBodyTree. However,
+  /// the RigidBody to which @p frame_F attaches to has to be owned by this
+  /// RigidBodyTree.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param frame_F Reference to the RigidBodyFrame.
+  /// @retval `X_WF`
+  drake::Isometry3<T> CalcFramePoseInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F) const {
+    return CalcFramePoseInWorldFrame(cache, frame_F.get_rigid_body(),
+        frame_F.get_transform_to_body().template cast<T>());
+  }
+
+  /// Computes the pose `X_WF` of the rigid body frame F in the world frame W.
+  /// Frame F is rigidly attached to @p body.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @param X_BF The pose of frame F in body frame B.
+  /// @retval `X_WF`
+  drake::Isometry3<T> CalcFramePoseInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      const drake::Isometry3<T>& X_BF) const;
+
+  /// Computes the spatial velocity `V_WB` of @p body's frame B measured and
+  /// expressed in the world frame W.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @retval `V_WB`
+  drake::Vector6<T> CalcBodySpatialVelocityInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body) const;
+
+  /// Computes the spatial velocity `V_WF` of RigidBodyFrame @p frame_F measured
+  /// and expressed in the world frame W. @p frame_F does not necessarily need
+  /// to be owned by this RigidBodyTree. However, the RigidBody to which
+  /// @p frame_F attaches to has to be owned by this RigidBodyTree.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param frame_F Reference to the RigidBodyFrame.
+  /// @retval `V_WF`
+  drake::Vector6<T> CalcFrameSpatialVelocityInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F) const {
+    return CalcFrameSpatialVelocityInWorldFrame(
+        cache, frame_F.get_rigid_body(),
+        frame_F.get_transform_to_body().template cast<T>());
+  }
+
+  /// Computes the spatial velocity `V_WF` of the frame F measured and expressed
+  /// in the world frame W. Frame F is rigidly attached to @p body.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @param X_BF The pose of frame F in body frame B.
+  /// @retval `V_WF`
+  drake::Vector6<T> CalcFrameSpatialVelocityInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      const drake::Isometry3<T>& X_BF) const;
+
+  /// Computes the Jacobian `J_WF` of the spatial velocity `V_WF` of frame F
+  /// measured and expressed in the world frame W such that `V_WF = J_WF * v`,
+  /// where `v` is the generalized velocity. Frame F is rigidly attached to
+  /// @p body.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param B Reference to the RigidBody.
+  /// @param X_BF The pose of frame F in body frame B.
+  /// @param in_terms_of_qdot `true` for `J_WF` computed with respect to the
+  /// time derivative of the generalized position such that
+  /// `V_WF = J_WF * qdot`. `false` for `J_WF` computed with respect to `v`.
+  /// @retval `J_WF`
+  drake::Matrix6X<T> CalcFrameSpatialVelocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      const drake::Isometry3<T>& X_BF,
+      bool in_terms_of_qdot = false) const;
+
+  /// Computes the Jacobian `J_WF` of the spatial velocity `V_WF` of frame F
+  /// measured and expressed in the world frame W such that `V_WF = J_WF * v`,
+  /// where `v` is the generalized velocity. @p frame_F does not necessarily
+  /// need to be owned by this RigidBodyTree. However, the RigidBody to which
+  /// @p frame_F attaches to has to be owned by this RigidBodyTree.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param frame_F Reference to the RigidBodyFrame.
+  /// @param in_terms_of_qdot `true` for `J_WF` computed with respect to the
+  /// time derivative of the generalized position such that
+  /// `V_WF = J_WF * qdot`. `false` for `J_WF` computed with respect to `v`.
+  /// @retval `J_WF`
+  drake::Matrix6X<T> CalcFrameSpatialVelocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F,
+      bool in_terms_of_qdot = false) const {
+    return CalcFrameSpatialVelocityJacobianInWorldFrame(
+        cache, frame_F.get_rigid_body(),
+        frame_F.get_transform_to_body().template cast<T>(), in_terms_of_qdot);
+  }
+
+  /// Computes the Jacobian `J_WB` of the spatial velocity `V_WB` of body
+  /// frame B measured and expressed in the world frame `W` such that
+  /// `V_WB = J_WB * v`, where `v` is the generalized velocity.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @param in_terms_of_qdot `true` for `J_WB` computed with respect to the
+  /// time derivative of the generalized position such that
+  /// `V_WB = J_WB * qdot`. `false` for `J_WB` computed with respect to `v`.
+  /// @retval `J_WB`
+  drake::Matrix6X<T> CalcBodySpatialVelocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      bool in_terms_of_qdot = false) const {
+    return CalcFrameSpatialVelocityJacobianInWorldFrame(
+        cache, body, drake::Isometry3<T>::Identity(), in_terms_of_qdot);
+  }
+
+  /// Computes `Jdot_WF * v`, where `J_WF` is the Jacobian of spatial velocity,
+  /// `V_WF`, of frame F measured and expressed in the world frame W, and
+  /// `v` is the generalized velocity. Frame F is rigidly attached to @p body.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @param X_BF The pose of frame F in body frame B.
+  /// @retval `Jdot_WF * v`
+  drake::Vector6<T> CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      const drake::Isometry3<T>& X_BF) const;
+
+  /// Computes `Jdot_WF * v`, where `J_WF` is the Jacobian of spatial velocity
+  /// `V_WF` of frame F measured and expressed in the world frame W, and
+  /// `v` is the generalized velocity. @p frame_F does not necessarily need to
+  /// be owned by this RigidBodyTree. However, the RigidBody to which @p frame_F
+  /// attaches to has to be owned by this RigidBodyTree.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param frame_F Reference to the RigidBodyFrame.
+  /// @retval `Jdot_WF * v`
+  drake::Vector6<T> CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F) const {
+    return CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+        cache, frame_F.get_rigid_body(),
+        frame_F.get_transform_to_body().template cast<T>());
+  }
+
+  /// Computes `Jdot_WB * v`, where `J_WB` is the Jacobian of the spatial
+  /// velocity `V_WB` of body frame B measured and expressed in the world
+  /// frame W, and `v` is the generalized velocity.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @retval `Jdot_WB * v`
+  drake::Vector6<T> CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body) const {
+    return CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+        cache, body, drake::Isometry3<T>::Identity());
+  }
+
+  /// Converts a vector of the time derivative of generalized coordinates (qdot)
+  /// to generalized velocity (v).
+  /// @param cache the kinematics cache, which is assumed to be up-to-date with
+  ///        respect to the state
+  /// @param qdot a `nq` dimensional vector, where `nq` is the dimension of the
+  ///      generalized coordinates.
+  /// @returns a `nv` dimensional vector, where `nv` is the dimension of the
+  ///      generalized velocities.
+  /// @sa transformVelocityToQDot()
+  static drake::VectorX<T> transformQDotToVelocity(
+      const KinematicsCache<T>& cache,
+      const drake::VectorX<T>& qdot);
+
+  /// Converts a vector of generalized velocities (v) to the time
+  /// derivative of generalized coordinates (qdot).
+  /// @param cache the kinematics cache, which is assumed to be up-to-date with
+  ///        respect to the state
+  /// @param v a `nv` dimensional vector, where `nv` is the dimension of the
+  ///      generalized velocities.
+  /// @retval qdot a `nq` dimensional vector, where `nq` is the dimension of the
+  ///      generalized coordinates.
+  /// @sa transformQDotToVelocity()
+  static drake::VectorX<T> transformVelocityToQDot(
+      const KinematicsCache<T>& cache,
+      const drake::VectorX<T>& v);
 
   /**
    * Converts a matrix B, which transforms generalized velocities (v) to an
@@ -355,22 +560,22 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
       const std::set<int>& model_instance_id_set =
-          default_model_instance_id_set,
+          RigidBodyTreeConstants::default_model_instance_id_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> worldMomentumMatrixDotTimesV(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& model_instance_id_set =
-          default_model_instance_id_set) const;
+      const std::set<int>& model_instance_id_set  =
+          RigidBodyTreeConstants::default_model_instance_id_set) const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> centroidalMomentumMatrix(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
       const std::set<int>& model_instance_id_set =
-          default_model_instance_id_set,
+          RigidBodyTreeConstants::default_model_instance_id_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
@@ -378,15 +583,15 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
       const std::set<int>& model_instance_id_set =
-          default_model_instance_id_set) const;
+          RigidBodyTreeConstants::default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, Eigen::Dynamic>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   centerOfMassJacobian(KinematicsCache<Scalar>& cache,
-                       const std::set<int>& model_instance_id_set =
-                           default_model_instance_id_set,
-                       bool in_terms_of_qdot = false) const;
+      const std::set<int>& model_instance_id_set =
+          RigidBodyTreeConstants::default_model_instance_id_set,
+      bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1>
@@ -394,7 +599,7 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
       const std::set<int>& model_instance_id_set =
-          default_model_instance_id_set) const;
+          RigidBodyTreeConstants::default_model_instance_id_set) const;
 
   template <typename DerivedA, typename DerivedB, typename DerivedC>
   void jointLimitConstraints(
@@ -635,10 +840,10 @@ class RigidBodyTree {
   relativeTransform(const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
                     int body_or_frame_ind) const;
 
-  /** computeContactJacobians
-   * @brief Computes the jacobian for many points in the format currently used
-   * by matlab.  (possibly should be scheduled for deletion, taking
-   * accumulateContactJacobians with it)
+  /**
+   * Computes the Jacobian for many points in the format currently used by
+   * MATLAB.  (possibly should be scheduled for deletion, taking
+   * accumulateContactJacobians() with it)
    */
   template <typename Scalar>
   void computeContactJacobians(
@@ -666,7 +871,7 @@ class RigidBodyTree {
       RigidBody<T>& body,
       const std::string& group_name);
 
-  /// Retrieve a (const) pointer to an element of the collision model.
+  /// Retrieve a `const` pointer to an element of the collision model.
   /// Note: The use of Find (instead of get) and the use of CamelCase both
   /// imply a potential runtime cost are carried over from the collision model
   /// accessor method.
@@ -732,9 +937,9 @@ class RigidBodyTree {
                         Eigen::VectorXd& distances, Eigen::Matrix3Xd& normals,
                         bool use_margins = false);
 
-  /** collisionDetectFromPoints
-   * @brief Computes the (signed) distance from the given points to the nearest
-   * body in the RigidBodyTree.
+  /**
+   * Computes the *signed* distance from the given points to the nearest body in
+   * the RigidBodyTree.
    */
   void collisionDetectFromPoints(
       const KinematicsCache<double>& cache,
@@ -918,7 +1123,7 @@ class RigidBodyTree {
    * @param[in] model_instance_id The ID of the model instance whose rigid
    * bodies are being searched for.
    *
-   * @return A vector of pointers to every rigid body belonging to the sepcified
+   * @return A vector of pointers to every rigid body belonging to the specified
    * model instance.
    */
   std::vector<const RigidBody<T>*>
@@ -995,7 +1200,7 @@ class RigidBodyTree {
    * @param[in] model_instance_id The ID of the model instance that owns the
    * rigid body to find. This parameter is optional. If supplied, the set of
    * rigid bodies to search through is restricted to those that belong to the
-   * speified model instance. Otherwise, all rigid bodies in this tree are
+   * specified model instance. Otherwise, all rigid bodies in this tree are
    * searched.
    *
    * @return A pointer to the rigid body whose parent joint is named
@@ -1025,7 +1230,7 @@ class RigidBodyTree {
    * @param[in] model_instance_id The ID of the model instance that owns the
    * rigid body to find. This parameter is optional. If supplied, the set of
    * rigid bodies to search through is restricted to those that belong to the
-   * speified model instance. Otherwise, all rigid bodies in this tree are
+   * specified model instance. Otherwise, all rigid bodies in this tree are
    * searched.
    *
    * @return The index of the rigid body whose parent joint is named
@@ -1048,9 +1253,14 @@ class RigidBodyTree {
    * specified \p model_id.
    *
    * @param[in] frame_name The name of the frame to find.
+   *
    * @param[in] model_id The ID of the model to which the frame belongs. If this
    * value is -1, search all models.
-   * @throws std::logic_error if multiple matching frames are found.
+   *
+   * @return The frame with the specified name and model instance ID.
+   *
+   * @throws std::logic_error if either multiple matching frames are found or no
+   * matching frame is found.
    */
   std::shared_ptr<RigidBodyFrame<T>> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
@@ -1161,6 +1371,57 @@ class RigidBodyTree {
   RigidBody<T>* add_rigid_body(std::unique_ptr<RigidBody<T>> body);
 
   /**
+   * Attempts to define a new collision filter group.  The given name *must*
+   * be unique in the current session (see CollisionFilterGroupManager for more
+   * detail).  Duplicate names or attempting to add more collision filter groups
+   * than the system can handle will lead to failure. In the event of failure,
+   * an exception is thrown.  kMaxNumCollisionFilterGroups defines the limit.
+   * @param name        The unique name of the new group.
+   */
+  void DefineCollisionFilterGroup(const std::string& name);
+
+  /**
+   * Adds a RigidBody to a collision filter group.  The RigidBody is referenced
+   * by name and model instance id. The process will fail if the body cannot be
+   * found, if the group cannot be found, or if the indicated body already has
+   * *registered* collision elements (see Model::AddElement() for more details).
+   * An exception is thrown in the event of failure.
+   * @param group_name      The collision filter group name to add the body to.
+   * @param body_name       The name of the body to add.
+   * @param model_id        The id of the model instance to which this body
+   *                        belongs.
+   */
+  void AddCollisionFilterGroupMember(const std::string& group_name,
+                                     const std::string& body_name,
+                                     int model_id);
+
+  /**
+   * Adds a collision group to the set of groups ignored by the specified
+   * collision filter group.  Will fail if the specified group name
+   * does not refer to an existing collision filter group.  (The
+   * target group name need not exist at this time.)  An exception is thrown
+   * upon failure.
+   * @param group_name
+   * @param target_group_name
+   */
+  void AddCollisionFilterIgnoreTarget(const std::string& group_name,
+                                      const std::string& target_group_name);
+
+  // TODO(SeanCurtis-TRI): Kill this method when matlab dependencies are
+  // removed.  There is a corresponding method on CollisionFilterGroupManager.
+  /**
+   Directly set the masks for a body.  The values will remain in the current
+   session (i.e., until CollisionFilterGroupManager::Clear() is called).
+   This is a convenience function for Matlab integration.  The Matlab parser
+   handles the mapping of collision filter group names to ids and passes the
+   mapped ids directly the manager for when the tree gets compiled.  It relies
+   on correct encoding of groups into bitmasks.
+   */
+  void SetBodyCollisionFilters(const RigidBody<T>& body,
+                               const DrakeCollision::bitmask& group,
+                               const DrakeCollision::bitmask& ignores);
+
+  /**
    * @brief Returns a mutable reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
@@ -1198,8 +1459,6 @@ class RigidBodyTree {
   int get_num_actuators() const;
 
  public:
-  static const std::set<int> default_model_instance_id_set;
-
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
 
@@ -1306,43 +1565,44 @@ class RigidBodyTree {
   RigidBodyTree(const RigidBodyTree&);
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
 
-  std::set<std::string> already_printed_warnings;
   // TODO(SeanCurtis-TRI): This isn't properly used.
-  // No query operations should work if it hasn't been
-  // initialized.  Calling compile is the only thing that should set this.
-  // Furthermore, any operation that changes the tree (e.g., adding a body,
-  // collision element, etc.) should clear the bit again, requiring another
-  // call to compile.
+  // No query operations should work if it hasn't been initialized.  Calling
+  // compile() is the only thing that should set this. Furthermore, any
+  // operation that changes the tree (e.g., adding a body, collision element,
+  // etc.) should clear the bit again, requiring another call to compile().
   bool initialized_{false};
 
   int next_available_clique_ = 0;
 
  private:
-  // Utility class for storing body collision data during RBT instantiation.
+  // A utility class for storing body collision data during RBT instantiation.
   struct BodyCollisionItem {
-    BodyCollisionItem(const std::string& grp_name,
-                      size_t element_index) {
-      group_name = grp_name;
-      element = element_index;
+    BodyCollisionItem(const std::string& grp_name, size_t element_index)
+        : group_name(grp_name), element(element_index) {
     }
     std::string group_name;
     size_t element;
   };
 
   typedef std::vector<BodyCollisionItem> BodyCollisions;
-  // This data structures supports an orderly instantiation of the collision
+  // This data structure supports an orderly instantiation of the collision
   // elements.  It is populated during tree construction, exercised during
-  // RigidBodyTree::compile at the conclusion of which, it is emptied.
+  // RigidBodyTree::compile() at the conclusion of which it is emptied.
   // It has no run-time value.  This is a hacky alternative to having a
-  // proper, intermediate representation.
-  std::unordered_map<RigidBody<T>*, BodyCollisions>
-      body_collision_map_;
+  // proper Intermediate Representation (IR).
+  std::unordered_map<RigidBody<T>*, BodyCollisions> body_collision_map_;
+
   // Bullet's collision results are affected by the order in which the collision
   // elements are added. This queues the collision elements in the added order
-  // so that when actually registered with the collision engine, they'll be
+  // so that when they are registered with the collision engine, they'll be
   // submitted in the invocation order.
-  // See https://github.com/bulletphysics/bullet3/issues/888
+  //
+  // For more information, see:
+  //     https://github.com/bulletphysics/bullet3/issues/888
   std::vector< std::unique_ptr<DrakeCollision::Element>> element_order_;
+
+  // A manager for instantiating and managing collision filter groups.
+  DrakeCollision::CollisionFilterGroupManager<T> collision_group_manager_{};
 };
 
 typedef RigidBodyTree<double> RigidBodyTreed;

@@ -20,11 +20,16 @@ lcm_wrap_types(
   CPP_HEADERS cpp_install_headers
   ${java_args}
   ${python_args}
+  lcmt_acrobot_u.lcm
+  lcmt_acrobot_x.lcm
+  lcmt_acrobot_y.lcm
   lcmt_body_acceleration.lcm
   lcmt_body_motion_data.lcm
   lcmt_body_wrench_data.lcm
   lcmt_constrained_values.lcm
   lcmt_contact_information.lcm
+  lcmt_contact_info_for_viz.lcm
+  lcmt_contact_results_for_viz.lcm
   lcmt_desired_body_motion.lcm
   lcmt_desired_centroidal_momentum_dot.lcm
   lcmt_desired_dof_motions.lcm

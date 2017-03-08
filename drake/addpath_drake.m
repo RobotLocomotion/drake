@@ -59,11 +59,6 @@ addpath(fullfile(root,'matlab','solvers','qpSpline'));
 addpath(fullfile(root,'matlab','util'));
 addpath(fullfile(root,'matlab','util','geometry'));
 addpath(fullfile(root,'matlab','util','visualization'));
-addpath(fullfile(root,'bindings','matlab'));
-bindings_dir = fullfile(get_drake_binary_dir(),'bindings','matlab');
-if exist(bindings_dir, 'dir')
-  addpath(bindings_dir);
-end
 
 
 % OSX platform-specific

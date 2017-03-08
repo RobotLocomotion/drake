@@ -21,13 +21,13 @@ using std::unordered_set;
 using std::vector;
 
 // Provides common variables that are used by the following tests.
-class SymbolicVariableTest : public ::testing::Test {
+class VariableTest : public ::testing::Test {
  protected:
   const Variable x_{"x"};
   const Variable y_{"y"};
   const Variable z_{"z"};
   const Variable w_{"w"};
-  Eigen::Matrix<symbolic::Variable, 2, 2> M_;
+  Eigen::Matrix<Variable, 2, 2> M_;
 
   void SetUp() override {
     // clang-format off
@@ -37,17 +37,21 @@ class SymbolicVariableTest : public ::testing::Test {
   }
 };
 
-TEST_F(SymbolicVariableTest, GetId) {
+TEST_F(VariableTest, GetId) {
+  const Variable dummy{};
   const Variable x_prime{"x"};
+  EXPECT_TRUE(dummy.is_dummy());
+  EXPECT_FALSE(x_.is_dummy());
+  EXPECT_FALSE(x_prime.is_dummy());
   EXPECT_NE(x_.get_id(), x_prime.get_id());
 }
 
-TEST_F(SymbolicVariableTest, GetName) {
+TEST_F(VariableTest, GetName) {
   const Variable x_prime{"x"};
   EXPECT_EQ(x_.get_name(), x_prime.get_name());
 }
 
-TEST_F(SymbolicVariableTest, MoveCopyPreserveId) {
+TEST_F(VariableTest, MoveCopyPreserveId) {
   Variable x{"x"};
   const size_t x_id{x.get_id()};
   const size_t x_hash{x.get_hash()};
@@ -59,7 +63,7 @@ TEST_F(SymbolicVariableTest, MoveCopyPreserveId) {
   EXPECT_EQ(x_hash, x_moved.get_hash());
 }
 
-TEST_F(SymbolicVariableTest, Lt) {
+TEST_F(VariableTest, Lt) {
   EXPECT_FALSE(x_ < x_);
   EXPECT_TRUE(x_ < y_);
   EXPECT_TRUE(x_ < z_);
@@ -81,7 +85,7 @@ TEST_F(SymbolicVariableTest, Lt) {
   EXPECT_FALSE(w_ < w_);
 }
 
-TEST_F(SymbolicVariableTest, Eq) {
+TEST_F(VariableTest, Eq) {
   EXPECT_TRUE(x_ == x_);
   EXPECT_FALSE(x_ == y_);
   EXPECT_FALSE(x_ == z_);
@@ -103,42 +107,39 @@ TEST_F(SymbolicVariableTest, Eq) {
   EXPECT_TRUE(w_ == w_);
 }
 
-TEST_F(SymbolicVariableTest, ToString) {
+TEST_F(VariableTest, ToString) {
   EXPECT_EQ(x_.to_string(), "x");
   EXPECT_EQ(y_.to_string(), "y");
   EXPECT_EQ(z_.to_string(), "z");
   EXPECT_EQ(w_.to_string(), "w");
 }
 
-// This test checks whether symbolic::Variable is compatible with
-// std::unordered_set.
-TEST_F(SymbolicVariableTest, CompatibleWithUnorderedSet) {
+// This test checks whether Variable is compatible with std::unordered_set.
+TEST_F(VariableTest, CompatibleWithUnorderedSet) {
   unordered_set<Variable, hash_value<Variable>> uset;
   uset.emplace(x_);
   uset.emplace(y_);
 }
 
-// This test checks whether symbolic::Variable is compatible with
-// std::unordered_map.
-TEST_F(SymbolicVariableTest, CompatibleWithUnorderedMap) {
+// This test checks whether Variable is compatible with std::unordered_map.
+TEST_F(VariableTest, CompatibleWithUnorderedMap) {
   unordered_map<Variable, Variable, hash_value<Variable>> umap;
   umap.emplace(x_, y_);
 }
 
-// This test checks whether symbolic::Variable is compatible with
-// std::vector.
-TEST_F(SymbolicVariableTest, CompatibleWithVector) {
+// This test checks whether Variable is compatible with std::vector.
+TEST_F(VariableTest, CompatibleWithVector) {
   vector<Variable> vec;
   vec.push_back(x_);
 }
 
-TEST_F(SymbolicVariableTest, EigenVariableMatrix) {
+TEST_F(VariableTest, EigenVariableMatrix) {
   EXPECT_EQ(M_(0, 0), x_);
   EXPECT_EQ(M_(0, 1), y_);
   EXPECT_EQ(M_(1, 0), z_);
   EXPECT_EQ(M_(1, 1), w_);
 }
-TEST_F(SymbolicVariableTest, EigenVariableMatrixOutput) {
+TEST_F(VariableTest, EigenVariableMatrixOutput) {
   ostringstream oss1;
   oss1 << M_;
 

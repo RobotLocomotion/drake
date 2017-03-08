@@ -1,0 +1,89 @@
+<robot name="simple_anchored">
+    <!--
+        A chain of spheres. Each sphere's center is displaced exactly 2R
+        from its parent.  They are connected by a revolute joint centered on
+        the center of the parent sphere.
+
+        At q = 0, this has been pre-posed as:
+                     ____
+                    /    \            z  y
+                   |   B  |           | /
+                  __\____/__          |/____x
+                 /    \/    \
+                |  A  ||  C  |
+                 \____/\____/
+
+        Where the chain is A -> B -> C.  A is centered on the world origin
+
+        A and C are overlapping with a penetration depth of 0.1 units.  Their
+        centers both lie on the x-axis at a distance of 2R - d, where id is 0.1
+        units (the penetration depth).
+
+        The robot *may* appear overly complex for the test.  But collision
+        cliques already exclude possible collisions between pairs (A, B) and
+        (B, C) due to their adjacency.  The collision between pair (A, C) will
+        *not* be dismissed due to cliques.  Only the collision filter groups
+        will prevent a reported collision.
+
+        There are two variants of this file to test two aspects of collision
+        filter groups.  This variant tests that multiple *bodies* in a single
+        group will lead to the correct filtering behavior.
+    -->
+ <link name="body1">
+   <collision>
+     <origin xyz="0 0 0" rpy="0 0 0"/>
+     <geometry>
+       <sphere radius="1" />
+     </geometry>
+   </collision>
+  </link>
+
+  <link name="body2">
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="body3">
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="fixed21" type="revolute">
+    <origin rpy="0 0 0" xyz="0.95 0 1.7599715906798041"/>
+    <axis xyz="0 1 0"/>
+    <parent link="body1"/>
+    <child link="body2"/>
+  </joint>
+
+  <joint name="fixed32" type="revolute">
+    <origin rpy="0 0 0" xyz="0.95 0 -1.7599715906798041"/>
+    <axis xyz="0 1 0"/>
+    <parent link="body2"/>
+    <child link="body3"/>
+  </joint>
+
+  <!-- This prevents self-collision between bodies 1 and 3.  -->
+  <collision_filter_group name="self_group">
+    <member link="body1"/>
+    <member link="body2"/>
+    <member link="body3"/>
+    <ignored_collision_filter_group collision_filter_group="self_group"/>
+  </collision_filter_group>
+
+</robot>

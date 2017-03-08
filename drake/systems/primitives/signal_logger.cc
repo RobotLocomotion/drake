@@ -1,7 +1,6 @@
 #include "drake/systems/primitives/signal_logger.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace systems {

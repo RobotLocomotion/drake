@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <string>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace lcm {
 
@@ -14,7 +16,9 @@ namespace lcm {
  */
 class DrakeLcmMessageHandlerInterface {
  public:
-  virtual ~DrakeLcmMessageHandlerInterface() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcmMessageHandlerInterface)
+  DrakeLcmMessageHandlerInterface() = default;
+  virtual ~DrakeLcmMessageHandlerInterface() = default;
 
   /**
    * This method is called when an LCM message arrives over the subscribed

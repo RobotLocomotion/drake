@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include <Eigen/Dense>
@@ -23,7 +24,7 @@ class XMLElement;
 /// - AutoDiffXd
 /// - AutoDiffUpTo73d
 ///
-/// They are already available to link against in drakeRBM.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
 class RigidBodyFrame {
@@ -56,6 +57,35 @@ class RigidBodyFrame {
   // described in #4407.
   RigidBodyFrame()
       : RigidBodyFrame("", nullptr, Eigen::Isometry3d::Identity()) {}
+
+  // The following preprocessor condition is necessary because wrapping method
+  // Clone() in SWIG causes the following build error to occur:
+  //
+  //     "call to implicitly-deleted copy constructor"
+  //
+  // Unfortunately, adding "%ignore RigidBodyFrame<double>::Clone()" to
+  // drake-distro/drake/bindings/swig/rbtree.i does not work.
+#ifndef SWIG
+  // TODO(liang.fok) Update this to return a unique_ptr. This is related to
+  // #3093.
+  /**
+   * Returns a clone of this RigidBodyFrame. It is admittedly awkward for a
+   * clone method to have an input parameter. This parameter, however, is
+   * necessary to ensure the returned clone is fully initialized.
+   *
+   * @param[in] body A pointer to the body to include in the returned clone.
+   * This pointer must remain valid for the duration of the clone's lifetime.
+   */
+  virtual std::shared_ptr<RigidBodyFrame<T>> Clone(RigidBody<T>* body) const;
+#endif
+
+  /**
+   * Compares this %RigidBodyFrame with a clone. Since this method is intended
+   * to compare a clone, an *exact* match is performed. This method will only
+   * return `true` if the provided `other` %RigidBodyFrame is exactly the same
+   * as this %RigidBodyFrame.
+   */
+  bool CompareToClone(const RigidBodyFrame& other) const;
 
   /**
    * Returns the ID of the model instance to which this rigid body frame

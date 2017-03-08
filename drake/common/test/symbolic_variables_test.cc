@@ -9,7 +9,7 @@ namespace symbolic {
 namespace {
 
 // Provides common variables that are used by the following tests.
-class SymbolicVariablesTest : public ::testing::Test {
+class VariablesTest : public ::testing::Test {
  protected:
   const Variable x_{"x"};
   const Variable y_{"y"};
@@ -18,14 +18,14 @@ class SymbolicVariablesTest : public ::testing::Test {
   const Variable v_{"v"};
 };
 
-TEST_F(SymbolicVariablesTest, HashEq) {
+TEST_F(VariablesTest, HashEq) {
   const Variables vars1{x_, y_, z_};
   const Variables vars2{z_, y_, x_};
   EXPECT_EQ(vars1.get_hash(), vars2.get_hash());
   EXPECT_EQ(vars1, vars2);
 }
 
-TEST_F(SymbolicVariablesTest, InsertSize) {
+TEST_F(VariablesTest, InsertSize) {
   Variables vars1{x_, y_, z_};
   EXPECT_EQ(vars1.size(), 3u);
 
@@ -35,7 +35,7 @@ TEST_F(SymbolicVariablesTest, InsertSize) {
   EXPECT_EQ(vars1.size(), 3u);
 }
 
-TEST_F(SymbolicVariablesTest, Plus) {
+TEST_F(VariablesTest, Plus) {
   Variables vars1{x_, y_, z_};
   EXPECT_EQ(vars1.size(), 3u);
   EXPECT_TRUE(vars1.include(x_));
@@ -56,7 +56,7 @@ TEST_F(SymbolicVariablesTest, Plus) {
   EXPECT_TRUE(vars1.include(z_));
 }
 
-TEST_F(SymbolicVariablesTest, Erase) {
+TEST_F(VariablesTest, Erase) {
   Variables vars1{x_, y_, z_};
   Variables vars2{y_, z_, w_};
   EXPECT_EQ(vars1.size(), 3u);
@@ -72,7 +72,7 @@ TEST_F(SymbolicVariablesTest, Erase) {
   EXPECT_FALSE(vars1.include(z_));
 }
 
-TEST_F(SymbolicVariablesTest, Minus) {
+TEST_F(VariablesTest, Minus) {
   Variables vars1{x_, y_, z_};
   EXPECT_EQ(vars1.size(), 3u);
   EXPECT_TRUE(vars1.include(x_));
@@ -98,7 +98,7 @@ TEST_F(SymbolicVariablesTest, Minus) {
   EXPECT_TRUE(vars2.include(x_));
 }
 
-TEST_F(SymbolicVariablesTest, IsSubsetOf) {
+TEST_F(VariablesTest, IsSubsetOf) {
   const Variables vars1{x_, y_, z_, w_, v_};
   const Variables vars2{x_, y_};
   const Variables vars3{x_, y_, z_};
@@ -141,7 +141,7 @@ TEST_F(SymbolicVariablesTest, IsSubsetOf) {
   EXPECT_TRUE(vars5.IsSubsetOf(vars5));
 }
 
-TEST_F(SymbolicVariablesTest, IsStrictSubsetOf) {
+TEST_F(VariablesTest, IsStrictSubsetOf) {
   const Variables vars1{x_, y_, z_, w_, v_};
   const Variables vars2{x_, y_};
   const Variables vars3{x_, y_, z_};
@@ -184,7 +184,7 @@ TEST_F(SymbolicVariablesTest, IsStrictSubsetOf) {
   EXPECT_FALSE(vars5.IsStrictSubsetOf(vars5));
 }
 
-TEST_F(SymbolicVariablesTest, IsSuperSetOf) {
+TEST_F(VariablesTest, IsSuperSetOf) {
   const Variables vars1{x_, y_, z_, w_, v_};
   const Variables vars2{x_, y_};
   const Variables vars3{x_, y_, z_};
@@ -227,7 +227,7 @@ TEST_F(SymbolicVariablesTest, IsSuperSetOf) {
   EXPECT_TRUE(vars5.IsSupersetOf(vars5));
 }
 
-TEST_F(SymbolicVariablesTest, IsStrictSuperSetOf) {
+TEST_F(VariablesTest, IsStrictSuperSetOf) {
   const Variables vars1{x_, y_, z_, w_, v_};
   const Variables vars2{x_, y_};
   const Variables vars3{x_, y_, z_};
@@ -270,7 +270,7 @@ TEST_F(SymbolicVariablesTest, IsStrictSuperSetOf) {
   EXPECT_FALSE(vars5.IsStrictSupersetOf(vars5));
 }
 
-TEST_F(SymbolicVariablesTest, ToString) {
+TEST_F(VariablesTest, ToString) {
   const Variables vars0{};
   const Variables vars1{x_, y_, z_, w_, v_};
   const Variables vars2{x_, y_};

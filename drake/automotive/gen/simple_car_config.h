@@ -40,43 +40,58 @@ class SimpleCarConfig : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  SimpleCarConfig<T>* DoClone() const override {
+    auto result = new SimpleCarConfig;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
-  /// wheelbase
+  /// The distance between the front and rear axles of the vehicle, in meters;
+  /// this element must be positive.
   const T& wheelbase() const { return this->GetAtIndex(K::kWheelbase); }
   void set_wheelbase(const T& wheelbase) {
     this->SetAtIndex(K::kWheelbase, wheelbase);
   }
-  /// track
+  /// The distance between the center of two wheels on the same axle, in meters;
+  /// this element must be positive.
   const T& track() const { return this->GetAtIndex(K::kTrack); }
   void set_track(const T& track) { this->SetAtIndex(K::kTrack, track); }
-  /// max_abs_steering_angle
+  /// The limit on the driving_command.steering angle input (the desired
+  /// steering angle of a virtual center wheel), in radians; this element must
+  /// be positive, and is applied symmetrically to both left- and right-turn
+  /// limits.
   const T& max_abs_steering_angle() const {
     return this->GetAtIndex(K::kMaxAbsSteeringAngle);
   }
   void set_max_abs_steering_angle(const T& max_abs_steering_angle) {
     this->SetAtIndex(K::kMaxAbsSteeringAngle, max_abs_steering_angle);
   }
-  /// max_velocity
+  /// The limit on the car's forward speed, in meters per second; this element
+  /// must be positive.
   const T& max_velocity() const { return this->GetAtIndex(K::kMaxVelocity); }
   void set_max_velocity(const T& max_velocity) {
     this->SetAtIndex(K::kMaxVelocity, max_velocity);
   }
-  /// max_acceleration
+  /// The limit on the car's acceleration and deceleration, in meters per second
+  /// per second; this element must be positive.
   const T& max_acceleration() const {
     return this->GetAtIndex(K::kMaxAcceleration);
   }
   void set_max_acceleration(const T& max_acceleration) {
     this->SetAtIndex(K::kMaxAcceleration, max_acceleration);
   }
-  /// velocity_lookahead_time
+  /// The smoothing constant for velocity changes, in seconds; this element must
+  /// be positive.  This is deprecated and will eventually be removed.
   const T& velocity_lookahead_time() const {
     return this->GetAtIndex(K::kVelocityLookaheadTime);
   }
   void set_velocity_lookahead_time(const T& velocity_lookahead_time) {
     this->SetAtIndex(K::kVelocityLookaheadTime, velocity_lookahead_time);
   }
-  /// velocity_kp
+  /// The smoothing constant for velocity changes, in Hz; this element must be
+  /// positive.  This is deprecated and will eventually be removed.
   const T& velocity_kp() const { return this->GetAtIndex(K::kVelocityKp); }
   void set_velocity_kp(const T& velocity_kp) {
     this->SetAtIndex(K::kVelocityKp, velocity_kp);

@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
@@ -34,11 +35,10 @@ struct StepInfo {
 template <typename T>
 class Context {
  public:
-  virtual ~Context() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Context)
 
   Context() = default;
-  Context(const Context&) = delete;
-  Context& operator=(const Context&) = delete;
+  virtual ~Context() = default;
 
   // =========================================================================
   // Accessors and Mutators for Time.
@@ -147,6 +147,12 @@ class Context {
     return get_state().get_abstract_state()->size();
   }
 
+  /// Returns a pointer to the abstract component of the state, which
+  /// may be of size zero.
+  const AbstractState* get_abstract_state() const {
+    return get_state().get_abstract_state();
+  }
+
   /// Returns a mutable pointer to the abstract component of the state,
   /// which may be of size zero.
   AbstractState* get_mutable_abstract_state() {
@@ -187,9 +193,16 @@ class Context {
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
 
-  /// Connects a FreestandingInputPort with the given @p value at the given
-  /// @p index. Asserts if @p index is out of range.
+  /// Connects a FreestandingInputPort with the given vector @p value at the
+  /// given @p index. Asserts if @p index is out of range.
   void FixInputPort(int index, std::unique_ptr<BasicVector<T>> value) {
+    SetInputPort(index,
+                 std::make_unique<FreestandingInputPort>(std::move(value)));
+  }
+
+  /// Connects a FreestandingInputPort with the given abstract @p value at the
+  /// given @p index. Asserts if @p index is out of range.
+  void FixInputPort(int index, std::unique_ptr<AbstractValue> value) {
     SetInputPort(index,
                  std::make_unique<FreestandingInputPort>(std::move(value)));
   }

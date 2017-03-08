@@ -20,16 +20,16 @@ GCC 4.9::
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install g++-4.9-multilib gfortran-4.9
+    sudo apt-get install g++-4.9-multilib gfortran-4.9 gfortran
 
 Clang 3.9::
 
     sudo apt-get install --no-install-recommends lsb-core software-properties-common wget
     wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
-    sudo add-apt-repository -y "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main"
+    sudo add-apt-repository -y "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main"
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install clang-3.9
+    sudo apt-get install clang-3.9 gfortran
 
 .. _cmake:
 
@@ -67,13 +67,25 @@ Other Prerequisites
 Other prerequisites may be installed as follows::
 
     sudo apt-get update
-    sudo apt-get install --no-install-recommends autoconf automake bison \
-      doxygen freeglut3-dev git graphviz libgtk2.0-dev \
-      libhtml-form-perl libjpeg-dev libmpfr-dev libpng-dev libqt4-dev \
-      libqt4-opengl-dev libqwt-dev libterm-readkey-perl libtool libvtk-java \
-      libvtk5-dev libvtk5-qt4-dev libwww-perl make ninja-build perl pkg-config \
-      python-bs4 python-dev python-gtk2 python-html5lib python-numpy \
-      python-pip python-sphinx python-vtk python-yaml unzip valgrind
+    sudo apt-get install --no-install-recommends \
+      autoconf automake bison doxygen freeglut3-dev git graphviz \
+      libgtk2.0-dev libhtml-form-perl libjpeg-dev libmpfr-dev libpng-dev \
+      libterm-readkey-perl libtool libvtk5-dev libwww-perl make ninja-build \
+      perl pkg-config python-bs4 python-dev python-gtk2 python-html5lib \
+      python-numpy python-pip python-sphinx python-yaml unzip valgrind
+
+If you will be building/using Director, some additional prerequisites may be
+installed as follows::
+
+    sudo apt-get update
+    sudo apt-get install --no-install-recommends \
+      libgl1-mesa-dri libqt4-dev libqt4-opengl-dev libqwt-dev \
+      libvtk-java libvtk5-qt4-dev python-lxml python-vtk xvfb
+
+Note that the above installs an old version of VTK that is required by Drake. If
+a different version needs to be installed, Drake's build system can be
+configured to use its own version as described
+:ref:`here <faq_cmake_vtk_version_crash>`.
 
 Environment
 -----------

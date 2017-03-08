@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -17,14 +19,17 @@ namespace systems {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
 
 template <typename T>
 class Integrator : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Integrator)
+
   /// Constructs an %Integrator system.
   /// @param size number of elements in the signal to be processed.
   explicit Integrator(int size);
@@ -55,6 +60,9 @@ class Integrator : public LeafSystem<T> {
   // Returns an Integrator<AutoDiffXd> with the same dimensions as this
   // Integrator.
   Integrator<AutoDiffXd>* DoToAutoDiffXd() const override;
+  // Returns an Integrator<symbolic::Expression> with the same dimensions as
+  // this Integrator.
+  Integrator<symbolic::Expression>* DoToSymbolic() const override;
 
   // LeafSystem<T> override
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;

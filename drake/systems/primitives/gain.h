@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -19,7 +20,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in drakeSystemFramework.
+/// They are already available to link against in the containing library.
 ///
 /// To use other specific scalar types see gain-inl.h.
 ///
@@ -28,6 +29,8 @@ namespace systems {
 template <typename T>
 class Gain : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gain)
+
   /// Constructs a %Gain system where the same gain is applied to every input
   /// value.
   ///

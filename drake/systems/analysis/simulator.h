@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
@@ -52,7 +53,7 @@ namespace systems {
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
  * Instantiated templates for the following kinds of T's are provided and
- * available to link against in libdrakeSystemAnalysis:
+ * available to link against in the containing library:
  * - double
  * - AutoDiffXd
  *
@@ -63,6 +64,8 @@ namespace systems {
 template <typename T>
 class Simulator {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Simulator)
+
   /** Create a %Simulator that can advance a given System through time to
    * produce a trajectory consisting of a sequence of Context values. The System
    * must not have unresolved input ports if the values of those ports are
@@ -281,9 +284,6 @@ class Simulator {
   using Clock = std::chrono::steady_clock;
   using Duration = std::chrono::duration<double>;
   using TimePoint = std::chrono::time_point<Clock, Duration>;
-
-  Simulator(const Simulator& s) = delete;
-  Simulator& operator=(const Simulator& s) = delete;
 
   // If the simulated time in the context is ahead of real time, pause long
   // enough to let real time catch up (approximately).

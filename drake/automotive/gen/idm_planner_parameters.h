@@ -40,6 +40,12 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  IdmPlannerParameters<T>* DoClone() const override {
+    auto result = new IdmPlannerParameters;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
   /// desired velocity in free traffic

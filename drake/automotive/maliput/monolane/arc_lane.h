@@ -4,6 +4,7 @@
 
 #include "drake/automotive/maliput/monolane/lane.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -13,6 +14,8 @@ namespace monolane {
 /// in the xy-plane (the ground plane) of the world frame.
 class ArcLane : public Lane {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ArcLane)
+
   /// Constructs an ArcLane, specified by a circular arc defined in the
   /// xy-plane (the ground plane) of the world frame.
   ///
@@ -25,7 +28,7 @@ class ArcLane : public Lane {
   ///
   /// @param id,segment,lane_bounds,driveable_bounds,elevation,superelevation
   ///        See documentation for the Lane base class.
-  ArcLane(const api::LaneId& id, const Segment* segment,
+  ArcLane(const api::LaneId& id, const api::Segment* segment,
           const V2& center, double radius,
           double theta0, double d_theta,
           const api::RBounds& lane_bounds,
@@ -33,7 +36,7 @@ class ArcLane : public Lane {
           const CubicPolynomial& elevation,
           const CubicPolynomial& superelevation);
 
-  virtual ~ArcLane() {}
+  ~ArcLane() override = default;
 
  private:
   api::LanePosition DoToLanePosition(

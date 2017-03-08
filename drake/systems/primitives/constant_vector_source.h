@@ -1,12 +1,9 @@
 #pragma once
 
-#include <cstdint>
-#include <memory>
-
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/single_output_vector_source.h"
 
 namespace drake {
 namespace systems {
@@ -20,11 +17,13 @@ namespace systems {
 /// - AutoDiffXd
 /// - symbolic::Expression
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
-class ConstantVectorSource : public LeafSystem<T> {
+class ConstantVectorSource : public SingleOutputVectorSource<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantVectorSource)
+
   /// Constructs a system with a vector output that is constant and equals the
   /// supplied @p source_value at all times.
   /// @param source_value the constant value of the output so that
@@ -38,15 +37,15 @@ class ConstantVectorSource : public LeafSystem<T> {
   /// `y = source_value` at all times.
   explicit ConstantVectorSource(const T& source_value);
 
+  ~ConstantVectorSource() override;
 
-  /// Returns the output port to the constant source.
-  const OutputPortDescriptor<T>& get_output_port() const;
+ protected:
+  /// Outputs a signal with a fixed value as specified by the user.
+  void DoCalcVectorOutput(
+      const Context<T>& context,
+      Eigen::VectorBlock<VectorX<T>>* output) const override;
 
  private:
-  // Outputs a signal with a fixed value as specified by the user.
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
-
   // TODO(amcastro-tri): move source_value_ to the system's parameters.
   const VectorX<T> source_value_;
 };

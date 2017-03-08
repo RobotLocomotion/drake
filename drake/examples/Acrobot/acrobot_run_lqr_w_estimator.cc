@@ -92,7 +92,7 @@ int do_main(int argc, char* argv[]) {
   }
 
   // Make the LQR Controller.
-  auto controller = builder.AddSystem(BalancingLQRController(acrobot));
+  auto controller = builder.AddSystem(BalancingLQRController(*acrobot));
   builder.Connect(observer->get_output_port(0), controller->get_input_port());
   builder.Connect(controller->get_output_port(),
                   acrobot_w_encoder->get_input_port(0));

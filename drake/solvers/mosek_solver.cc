@@ -15,9 +15,9 @@ namespace drake {
 namespace solvers {
 namespace {
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
-template <typename Binding>
+template <typename C>
 MSKrescodee AddLinearConstraintsFromBindings(
-    MSKtask_t* task, const std::vector<Binding>& constraint_list,
+    MSKtask_t* task, const std::vector<Binding<C>>& constraint_list,
     bool is_equality_constraint, const MathematicalProgram& prog) {
   for (const auto& binding : constraint_list) {
     auto constraint = binding.constraint();
@@ -65,19 +65,15 @@ MSKrescodee AddLinearConstraintsFromBindings(
       std::vector<double> A_nonzero_val;
       A_nonzero_col_idx.reserve(A.cols());
       A_nonzero_val.reserve(A.cols());
-      int A_col_idx = 0;
-      for (const DecisionVariableMatrixX& var :
-           binding.variable_list().variables()) {
-        DRAKE_ASSERT(var.cols() == 1);
-        for (int k = 0; k < static_cast<int>(var.rows()); ++k) {
-          if (std::abs(A(i, A_col_idx)) > Eigen::NumTraits<double>::epsilon()) {
-            A_nonzero_col_idx.push_back(
-                prog.FindDecisionVariableIndex(var(k, 0)));
-            A_nonzero_val.push_back(A(i, A_col_idx));
-          }
-          ++A_col_idx;
+
+      for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+        if (std::abs(A(i, k)) > Eigen::NumTraits<double>::epsilon()) {
+          A_nonzero_col_idx.push_back(
+              prog.FindDecisionVariableIndex(binding.variables()(k)));
+          A_nonzero_val.push_back(A(i, k));
         }
       }
+
       rescode = MSK_putarow(*task, constraint_idx + i, A_nonzero_val.size(),
                             A_nonzero_col_idx.data(), A_nonzero_val.data());
       if (rescode != MSK_RES_OK) {
@@ -113,16 +109,11 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
     const auto& constraint = binding.constraint();
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
-    int var_count = 0;
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        size_t x_idx = prog.FindDecisionVariableIndex(var(i, 0));
-        x_lb[x_idx] = std::max(x_lb[x_idx], lower_bound[var_count]);
-        x_ub[x_idx] = std::min(x_ub[x_idx], upper_bound[var_count]);
-        var_count++;
-      }
+
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      size_t x_idx = prog.FindDecisionVariableIndex(binding.variables()(i));
+      x_lb[x_idx] = std::max(x_lb[x_idx], lower_bound[i]);
+      x_ub[x_idx] = std::min(x_ub[x_idx], upper_bound[i]);
     }
   }
 
@@ -160,22 +151,23 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
  * @param is_new_variable  Refer to the documentation on is_new_variable in
  * MosekSolver::Solve() function
  */
-template <typename Bindings>
+template <typename C>
 MSKrescodee AddSecondOrderConeConstraints(
     const MathematicalProgram& prog,
-    const std::vector<Bindings>& second_order_cone_constraints,
-    bool is_rotated_cone, MSKtask_t* task, std::vector<bool>* is_new_variable) {
+    const std::vector<Binding<C>>& second_order_cone_constraints,
+    MSKtask_t* task, std::vector<bool>* is_new_variable) {
+  static_assert(std::is_same<C, LorentzConeConstraint>::value ||
+                    std::is_same<C, RotatedLorentzConeConstraint>::value,
+                "Should be either Lorentz cone constraint or rotated Lorentz "
+                "cone constraint");
+  bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
   MSKrescodee rescode = MSK_RES_OK;
   for (auto const& binding : second_order_cone_constraints) {
     std::vector<MSKint32t> cone_var_indices(binding.GetNumElements());
-    int var_count = 0;
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        cone_var_indices[var_count] = prog.FindDecisionVariableIndex(var(i, 0));
-        ++var_count;
-      }
+
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      cone_var_indices[i] =
+          prog.FindDecisionVariableIndex(binding.variables()(i));
     }
 
     const auto& A = binding.constraint()->A();
@@ -334,9 +326,7 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
                                                MSKtask_t* task) {
   MSKrescodee rescode = MSK_RES_OK;
   for (const auto& binding : prog.positive_semidefinite_constraints()) {
-    DRAKE_ASSERT(binding.variable_list().variables().size() == 1);
-    const auto& symmetric_matrix_variable =
-        binding.variable_list().variables().front();
+    const auto& symmetric_matrix_variable = binding.variables();
 
     int num_linear_constraint = 0;
     rescode = MSK_getnumcon(*task, &num_linear_constraint);
@@ -346,9 +336,9 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
     // Add S_bar as new variables. Mosek needs to create so called "bar
     // variable"
     // for matrix in positive semidefinite cones.
-    int rows = symmetric_matrix_variable.rows();
+    int matrix_rows = binding.constraint()->matrix_rows();
 
-    AddBarVariable(rows, task);
+    AddBarVariable(matrix_rows, task);
 
     // Add the constraint S = S_bar
     // This linear constraint is imposed as
@@ -360,13 +350,14 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
     int new_linear_constraint_count = 0;
     // It is important to use the same for-loop order as in
     // AddBarVariable().
-    for (int j = 0; j < rows; ++j) {
-      for (int i = j; i < rows; ++i) {
+    for (int j = 0; j < matrix_rows; ++j) {
+      for (int i = j; i < matrix_rows; ++i) {
         int linear_constraint_index =
             num_linear_constraint + new_linear_constraint_count;
         double symmetric_matrix_val = 1.0;
         MSKint32t symmetric_matrix_var_ij_index =
-            prog.FindDecisionVariableIndex(symmetric_matrix_variable(i, j));
+            prog.FindDecisionVariableIndex(
+                symmetric_matrix_variable(j * matrix_rows + i));
         rescode =
             MSK_putarow(*task, linear_constraint_index, 1,
                         &symmetric_matrix_var_ij_index, &symmetric_matrix_val);
@@ -420,13 +411,12 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
 
         Eigen::SparseVector<double, Eigen::RowMajor> A_row(prog.num_vars());
         A_row.setZero();
-        A_row.reserve(binding.variable_list().size());
-        for (const auto& var : binding.variable_list().variables()) {
-          for (int k = 0; k < static_cast<int>(var.rows()); ++k) {
-            A_row.coeffRef(prog.FindDecisionVariableIndex(var(k, 0))) +=
-                (*F_it)(i, j);
-            ++F_it;
-          }
+        A_row.reserve(binding.GetNumElements());
+
+        for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+          A_row.coeffRef(prog.FindDecisionVariableIndex(
+              binding.variables()(k))) += (*F_it)(i, j);
+          ++F_it;
         }
 
         DRAKE_ASSERT(F_it == F.end());
@@ -458,16 +448,11 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
     const auto& Q = constraint->Q();
     const auto& b = constraint->b();
     std::vector<int> var_indices(Q.rows());
-    {
-      int var_count = 0;
-      for (const auto& var : binding.variable_list().variables()) {
-        DRAKE_ASSERT(var.cols() == 1);
-        for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-          var_indices[var_count] = prog.FindDecisionVariableIndex(var(i, 0));
-          ++var_count;
-        }
-      }
+
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      var_indices[i] = prog.FindDecisionVariableIndex(binding.variables()(i));
     }
+
     for (int i = 0; i < Q.rows(); ++i) {
       int var_index_i = var_indices[i];
       for (int j = 0; j < i; ++j) {
@@ -493,17 +478,11 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
     }
   }
   for (const auto& binding : prog.linear_costs()) {
-    int var_count = 0;
     const auto& c = binding.constraint()->A();
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        if (std::abs(c(var_count)) > Eigen::NumTraits<double>::epsilon()) {
-          linear_term_triplets.push_back(Eigen::Triplet<double>(
-              prog.FindDecisionVariableIndex(var(i, 0)), 0, c(var_count)));
-        }
-        var_count++;
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      if (std::abs(c(i)) > Eigen::NumTraits<double>::epsilon()) {
+        linear_term_triplets.push_back(Eigen::Triplet<double>(
+            prog.FindDecisionVariableIndex(binding.variables()(i)), 0, c(i)));
       }
     }
   }
@@ -631,14 +610,13 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   // Add Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
     rescode = AddSecondOrderConeConstraints(
-        prog, prog.lorentz_cone_constraints(), false, &task, &is_new_variable);
+        prog, prog.lorentz_cone_constraints(), &task, &is_new_variable);
   }
 
   // Add rotated Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
     rescode = AddSecondOrderConeConstraints(
-        prog, prog.rotated_lorentz_cone_constraints(), true, &task,
-        &is_new_variable);
+        prog, prog.rotated_lorentz_cone_constraints(), &task, &is_new_variable);
   }
 
   // Add positive semidefinite constraints.
@@ -723,7 +701,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult(SolverName(), result);
+  prog.SetSolverResult(solver_type(), result);
   if (rescode != MSK_RES_OK) {
     result = SolutionResult::kUnknownError;
   }

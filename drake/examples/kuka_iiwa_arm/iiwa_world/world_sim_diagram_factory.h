@@ -40,6 +40,9 @@ class VisualizedPlant : public systems::Diagram<T> {
                   double penetration_stiffness, double penetration_damping,
                   double friction_coefficient, lcm::DrakeLcmInterface* lcm);
 
+  const systems::RigidBodyPlant<T>& plant() const {
+    return *rigid_body_plant_;
+  }
  private:
   systems::RigidBodyPlant<T>* rigid_body_plant_{nullptr};
   systems::DrakeVisualizer* drake_visualizer{nullptr};
@@ -58,7 +61,6 @@ class PassiveVisualizedPlant : public systems::Diagram<T> {
 
  private:
   VisualizedPlant<T>* visualized_plant_{nullptr};
-  systems::ConstantVectorSource<T>* constant_vector_source_{nullptr};
 };
 
 /// A custom `systems::Diagram` consisting of a `systems::PidControlledSystem`

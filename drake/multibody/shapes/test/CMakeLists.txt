@@ -1,0 +1,2 @@
+drake_add_cc_test(mesh_triangulate_test)
+target_link_libraries(mesh_triangulate_test drakeShapes)

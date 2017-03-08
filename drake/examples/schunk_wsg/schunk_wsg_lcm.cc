@@ -27,7 +27,7 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
   this->DeclareOutputPort(systems::kVectorValued, 2);
   // The update period below matches the polling rate from
   // drake-schunk-driver.
-  this->DeclareUpdatePeriodSec(0.05);
+  this->DeclareDiscreteUpdatePeriodSec(0.05);
 }
 
 void SchunkWsgTrajectoryGenerator::DoCalcOutput(

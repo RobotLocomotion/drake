@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 #include <Eigen/Geometry>
 
@@ -18,28 +19,11 @@ namespace drake {
 namespace automotive {
 
 template <typename T>
-SimpleCar<T>::SimpleCar(const SimpleCarConfig<T>& config)
-    : config_(config) {
+SimpleCar<T>::SimpleCar() {
   this->DeclareInputPort(systems::kVectorValued,
                          DrivingCommandIndices::kNumCoordinates);
   this->DeclareOutputPort(systems::kVectorValued,
                           SimpleCarStateIndices::kNumCoordinates);
-}
-
-template <typename T>
-SimpleCarConfig<T> SimpleCar<T>::get_default_config() {
-  constexpr double kInchToMeter = 0.0254;
-  constexpr double kDegToRadian = 0.0174532925199;
-  // This approximates a 2010 Toyota Prius.
-  SimpleCarConfig<T> result;
-  result.set_wheelbase(static_cast<T>(106.3 * kInchToMeter));
-  result.set_track(static_cast<T>(59.9 * kInchToMeter));
-  result.set_max_abs_steering_angle(static_cast<T>(27 * kDegToRadian));
-  result.set_max_velocity(static_cast<T>(45.0));  // meters/second
-  result.set_max_acceleration(static_cast<T>(4.0));  // meters/second**2
-  result.set_velocity_lookahead_time(static_cast<T>(1.0));  // second
-  result.set_velocity_kp(static_cast<T>(1.0));  // Hz
-  return result;
 }
 
 template <typename T>
@@ -80,6 +64,10 @@ void SimpleCar<T>::DoCalcTimeDerivatives(
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
+  // Obtain the parameters.
+  const SimpleCarConfig<T>& config =
+      this->template GetNumericParameter<SimpleCarConfig>(context, 0);
+
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
@@ -104,11 +92,12 @@ void SimpleCar<T>::DoCalcTimeDerivatives(
       dynamic_cast<SimpleCarState<T>*>(vector_derivatives);
   DRAKE_ASSERT(rates);
 
-  ImplCalcTimeDerivatives(*state, *input, rates);
+  ImplCalcTimeDerivatives(config, *state, *input, rates);
 }
 
 template <typename T>
-void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarState<T>& state,
+void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarConfig<T>& config,
+                                           const SimpleCarState<T>& state,
                                            const DrivingCommand<T>& input,
                                            SimpleCarState<T>* rates) const {
   using std::max;
@@ -116,13 +105,13 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarState<T>& state,
 
   // Apply simplistic throttle.
   T new_velocity =
-      state.velocity() + (input.throttle() * config_.max_acceleration() *
-                          config_.velocity_lookahead_time());
-  new_velocity = min(new_velocity, config_.max_velocity());
+      state.velocity() + (input.throttle() * config.max_acceleration() *
+                          config.velocity_lookahead_time());
+  new_velocity = min(new_velocity, config.max_velocity());
 
   // Apply simplistic brake.
-  new_velocity += input.brake() * -config_.max_acceleration() *
-                  config_.velocity_lookahead_time();
+  new_velocity += input.brake() * -config.max_acceleration() *
+                  config.velocity_lookahead_time();
   new_velocity = max(new_velocity, static_cast<T>(0.));
 
   // Apply steering.
@@ -130,16 +119,16 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarState<T>& state,
   DRAKE_ASSERT(static_cast<T>(-M_PI) < sane_steering_angle);
   DRAKE_ASSERT(sane_steering_angle < static_cast<T>(M_PI));
   sane_steering_angle = min(
-      sane_steering_angle, config_.max_abs_steering_angle());
+      sane_steering_angle, config.max_abs_steering_angle());
   sane_steering_angle = max(
-      sane_steering_angle, static_cast<T>(-config_.max_abs_steering_angle()));
-  const T curvature = tan(sane_steering_angle) / config_.wheelbase();
+      sane_steering_angle, static_cast<T>(-config.max_abs_steering_angle()));
+  const T curvature = tan(sane_steering_angle) / config.wheelbase();
 
   rates->set_x(state.velocity() * cos(state.heading()));
   rates->set_y(state.velocity() * sin(state.heading()));
   rates->set_heading(curvature * state.velocity());
   rates->set_velocity((new_velocity - state.velocity()) *
-                      config_.velocity_kp());
+                      config.velocity_kp());
 }
 
 template <typename T>
@@ -153,6 +142,37 @@ template <typename T>
 std::unique_ptr<systems::BasicVector<T>> SimpleCar<T>::AllocateOutputVector(
     const systems::OutputPortDescriptor<T>& descriptor) const {
   return std::make_unique<SimpleCarState<T>>();
+}
+
+template <typename T>
+std::unique_ptr<systems::Parameters<T>>
+SimpleCar<T>::AllocateParameters() const {
+  auto params = std::make_unique<SimpleCarConfig<T>>();
+  return std::make_unique<systems::Parameters<T>>(std::move(params));
+}
+
+template <typename T>
+void SimpleCar<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
+                                        systems::Parameters<T>* params) const {
+  SimpleCarConfig<T>* config = dynamic_cast<SimpleCarConfig<T>*>(
+      params->get_mutable_numeric_parameter(0));
+  DRAKE_DEMAND(config != nullptr);
+  SetDefaultParameters(config);
+}
+
+template <typename T>
+void SimpleCar<T>::SetDefaultParameters(SimpleCarConfig<T>* config) {
+  DRAKE_DEMAND(config != nullptr);
+  constexpr double kInchToMeter = 0.0254;
+  constexpr double kDegToRadian = 0.0174532925199;
+  // This approximates a 2010 Toyota Prius.
+  config->set_wheelbase(static_cast<T>(106.3 * kInchToMeter));
+  config->set_track(static_cast<T>(59.9 * kInchToMeter));
+  config->set_max_abs_steering_angle(static_cast<T>(27 * kDegToRadian));
+  config->set_max_velocity(static_cast<T>(45.0));            // meters/second
+  config->set_max_acceleration(static_cast<T>(4.0));         // meters/second**2
+  config->set_velocity_lookahead_time(static_cast<T>(1.0));  // second
+  config->set_velocity_kp(static_cast<T>(1.0));              // Hz
 }
 
 // These instantiations must match the API documentation in simple_car.h.

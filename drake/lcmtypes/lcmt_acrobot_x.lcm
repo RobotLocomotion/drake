@@ -1,0 +1,11 @@
+package drake;
+
+struct lcmt_acrobot_x
+{
+	int64_t timestamp;
+
+	double theta1;       // radians
+	double theta1Dot;    // radians/sec
+	double theta2;
+	double theta2Dot;
+}

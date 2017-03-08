@@ -8,14 +8,17 @@
 #include <ostream>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 
 #include <Eigen/Core>
 
 #include "drake/common/cond.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
+#include "drake/common/polynomial.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
@@ -28,7 +31,6 @@ namespace symbolic {
 enum class ExpressionKind {
   Constant,    ///< constant (double)
   Var,         ///< variable
-  Neg,         ///< unary minus
   Add,         ///< addition (+)
   Mul,         ///< multiplication (*)
   Div,         ///< division (/)
@@ -50,6 +52,7 @@ enum class ExpressionKind {
   Min,         ///< min
   Max,         ///< max
   IfThenElse,  ///< if then else
+  NaN,         ///< NaN
   // TODO(soonho): add Integral
 };
 
@@ -66,15 +69,22 @@ class ExpressionMul;         // In drake/common/symbolic_expression_cell.h
 class ExpressionIfThenElse;  // In drake/common/symbolic_expression_cell.h
 class Formula;               // In drake/common/symbolic_formula.h
 
+class Expression;
+
+// Substitution is a map from a Variable to a symbolic expression. It is used in
+// Expression::Substitute and Formula::Substitute methods as an argument.
+using Substitution =
+    std::unordered_map<Variable, Expression, hash_value<Variable>>;
+
 /** Represents a symbolic form of an expression.
 
 Its syntax tree is as follows:
 
 @verbatim
-    E := Var | Constant | - E | E + ... + E | E * ... * E | E / E | log(E)
+    E := Var | Constant | E + ... + E | E * ... * E | E / E | log(E)
        | abs(E) | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E)
        | asin(E) | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
-       | min(E, E) | max(E, E) | if_then_else(F, E, E)
+       | min(E, E) | max(E, E) | if_then_else(F, E, E) | NaN
 @endverbatim
 
 In the implementation, Expression is a simple wrapper including a shared pointer
@@ -85,8 +95,9 @@ allow sharing sub-expressions.
 
 @note The sharing of sub-expressions is not yet implemented.
 
-@note A subtraction E1 - E2 is represented with an addition and unary minus,
-that is, E1 + (-E2).
+@note -E is represented as -1 * E internally.
+
+@note A subtraction E1 - E2 is represented as E1 + (-1 * E2) internally.
 
 The following simple simplifications are implemented:
 @verbatim
@@ -96,8 +107,6 @@ The following simple simplifications are implemented:
     E - E             ->  0
     E * 1             ->  E
     1 * E             ->  E
-    E * -1            -> -E
-   -1 * E             -> -E
     E * 0             ->  0
     0 * E             ->  0
     E / 1             ->  E
@@ -132,26 +141,18 @@ symbolic::Expression can be used as a scalar type of Eigen types.
 */
 class Expression {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Expression)
+
   /** Default constructor. It constructs Zero(). */
   Expression() { *this = Zero(); }
-
-  /** Move-constructs an Expression from an rvalue. */
-  Expression(Expression&& e) = default;
-
-  /** Copy-constructs an Expression from an lvalue. */
-  Expression(const Expression& e) = default;
-
-  /** Move-assigns an Expression from an rvalue. */
-  Expression& operator=(Expression&& e) = default;
-
-  /** Copy-assigns an Expression from an lvalue. */
-  Expression& operator=(const Expression& e) = default;
 
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(double d);
-  /** Constructs a variable expression from symbolic::Variable. */
+  /** Constructs a variable expression from Variable. */
   explicit Expression(const Variable& var);
+  /** Constructs a variable expression from string @p name. */
+  explicit Expression(const std::string& name);
   /** Returns expression kind. */
   ExpressionKind get_kind() const;
   /** Returns hash value. */
@@ -166,8 +167,61 @@ class Expression {
       set<Expression> via std::less<drake::symbolic::Expression>. */
   bool Less(const Expression& e) const;
 
-  /** Evaluates under a given environment (by default, an empty environment). */
+  /** Checks if this symbolic expression is convertible to Polynomial. */
+  bool is_polynomial() const;
+
+  /** Returns a Polynomial representing this expression.
+   *  Note that the ID of a variable is preserved in this translation.
+   *  \pre{is_polynomial() is true.}
+   */
+  Polynomial<double> ToPolynomial() const;
+
+ /**
+  * Returns the total degrees of the polynomial w.r.t the variables in
+  * @p vars. For example, the total degree of
+  * e = x^2*y + 2 * x*y*z^3 + x * z^2
+  * w.r.t (x, y) is 3 (from x^2 * y)
+  * w.r.t (x, z) is 4 (from x*y*z^3)
+  * w.r.t (z)    is 3 (from x*y*z^3)
+  * Throws a runtime error if is_polynomial() is false.
+  * @param vars A set of variables.
+  * @return The total degree.
+  */
+  int Degree(const Variables& vars) const;
+
+  /**
+   * Returns the total degress of all the variables in the polynomial.
+   * For example, the total degree of
+   * x^2*y + 2*x*y*z^3 + x*z^2
+   * is 5, from x*y*z^3
+   * Throws a runtime error is is_polynomial() is false.
+   * @return The total degree.
+   */
+  int Degree() const;
+  /** Evaluates under a given environment (by default, an empty environment).
+   *  @throws std::runtime_error if NaN is detected during evaluation.
+   */
   double Evaluate(const Environment& env = Environment{}) const;
+
+  /** Returns a copy of this expression replacing all occurrences of @p var
+   * with @p e.
+   * @throws std::runtime_error if NaN is detected during substitution.
+   */
+  Expression Substitute(const Variable& var, const Expression& e) const;
+
+  /** Returns a copy of this expression replacing all occurrences of the
+   * variables in @p s with corresponding expressions in @p s. Note that the
+   * substitutions occur simultaneously. For example, (x / y).Substitute({{x,
+   * y}, {y, x}}) gets (y / x).
+   * @throws std::runtime_error if NaN is detected during substitution.
+   */
+  Expression Substitute(const Substitution& s) const;
+
+  /** Differentiates this symbolic expression with respect to the variable @p
+   * var.
+   * @throws std::runtime_error if it is not differentiable.
+   */
+  Expression Differentiate(const Variable& x) const;
 
   /** Returns string representation of Expression. */
   std::string to_string() const;
@@ -180,6 +234,8 @@ class Expression {
   static Expression Pi();
   /** Return e, the base of natural logarithms. */
   static Expression E();
+  /** Returns NaN (Not-a-Number). */
+  static Expression NaN();
 
   friend Expression operator+(Expression lhs, const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
@@ -230,25 +286,25 @@ class Expression {
   /** Constructs if-then-else expression.
 
     @verbatim
-      if_then_else(cond, exp_then, exp_else)
+      if_then_else(cond, expr_then, expr_else)
     @endverbatim
 
-    The value returned by the above if-then-else expression is @p exp_then if @p
-    cond is evaluated to true. Otherwise, it returns @p exp_else.
+    The value returned by the above if-then-else expression is @p expr_then if
+    @p cond is evaluated to true. Otherwise, it returns @p expr_else.
 
     The semantics is similar to the C++'s conditional expression constructed by
     its ternary operator, @c ?:. However, there is a key difference between the
     C++'s conditional expression and our @c if_then_else expression in a way the
     arguments are evaluated during the construction.
 
-     - In case of the C++'s conditional expression, <tt> cond ? exp_then :
-       exp_else</tt>, the then expression @c exp_then (respectively, the else
-       expression @c exp_else) is \b only evaluated when the conditional
+     - In case of the C++'s conditional expression, <tt> cond ? expr_then :
+       expr_else</tt>, the then expression @c expr_then (respectively, the else
+       expression @c expr_else) is \b only evaluated when the conditional
        expression @c cond is evaluated to \b true (respectively, when @c cond is
        evaluated to \b false).
 
-     - In case of the symbolic expression, <tt>if_then_else(cond, exp_then,
-       exp_else)</tt>, however, \b both arguments @c exp_then and @c exp_else
+     - In case of the symbolic expression, <tt>if_then_else(cond, expr_then,
+       expr_else)</tt>, however, \b both arguments @c expr_then and @c expr_else
        are evaluated first and then passed to the @c if_then_else function.
 
      @note This function returns an \b expression and it is different from the
@@ -273,7 +329,6 @@ class Expression {
 
   friend bool is_constant(const Expression& e);
   friend bool is_variable(const Expression& e);
-  friend bool is_unary_minus(const Expression& e);
   friend bool is_addition(const Expression& e);
   friend bool is_multiplication(const Expression& e);
   friend bool is_division(const Expression& e);
@@ -312,10 +367,6 @@ class Expression {
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
 
-  /** Checks whether @p v is NaN or not. If @p is NaN, it throws a std::runtime
-   * exception. */
-  static void check_nan(double v);
-
  private:
   explicit Expression(const std::shared_ptr<ExpressionCell> ptr);
 
@@ -335,33 +386,6 @@ Expression& operator*=(Expression& lhs, const Expression& rhs);
 Expression operator/(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator/=(Expression& lhs, const Expression& rhs);
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator+=(Expression& lhs, const Variable& rhs);
-Expression operator+(const Variable& lhs, const Variable& rhs);
-Expression operator+(Expression lhs, const Variable& rhs);
-Expression operator+(const Variable& lhs, Expression rhs);
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator-=(Expression& lhs, const Variable& rhs);
-Expression operator-(const Variable& lhs, const Variable& rhs);
-Expression operator-(Expression lhs, const Variable& rhs);
-Expression operator-(const Variable& lhs, Expression rhs);
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator*=(Expression& lhs, const Variable& rhs);
-Expression operator*(const Variable& lhs, const Variable& rhs);
-Expression operator*(Expression lhs, const Variable& rhs);
-Expression operator*(const Variable& lhs, Expression rhs);
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator/=(Expression& lhs, const Variable& rhs);
-Expression operator/(const Variable& lhs, const Variable& rhs);
-Expression operator/(Expression lhs, const Variable& rhs);
-Expression operator/(const Variable& lhs, const Expression& rhs);
-
-Expression operator+(const Variable& var);
-Expression operator-(const Variable& var);
 
 Expression log(const Expression& e);
 Expression abs(const Expression& e);
@@ -398,10 +422,10 @@ bool is_one(const Expression& e);
 bool is_neg_one(const Expression& e);
 /** Checks if @p e is 2.0. */
 bool is_two(const Expression& e);
+/** Checks if @p e is NaN. */
+bool is_nan(const Expression& e);
 /** Checks if @p e is a variable expression. */
 bool is_variable(const Expression& e);
-/** Checks if @p e is a unary-minus expression. */
-bool is_unary_minus(const Expression& e);
 /** Checks if @p e is an addition expression. */
 bool is_addition(const Expression& e);
 /** Checks if @p e is a multiplication expression. */
@@ -446,51 +470,155 @@ bool is_max(const Expression& e);
 bool is_if_then_else(const Expression& e);
 
 /** Returns the constant value of the constant expression @p e.
- *  \pre{@e is a constant expression.}
+ *  \pre{@p e is a constant expression.}
  */
 double get_constant_value(const Expression& e);
-/** Returns the embedded symbolic variable in the variable expression @p e.
- *  \pre{@e is a variable expression.}
+/** Returns the embedded variable in the variable expression @p e.
+ *  \pre{@p e is a variable expression.}
  */
 const Variable& get_variable(const Expression& e);
 /** Returns the argument in the unary expression @p e.
- *  \pre{@e is a unary expression.}
+ *  \pre{@p e is a unary expression.}
 */
 const Expression& get_argument(const Expression& e);
 /** Returns the first argument of the binary expression @p e.
- *  \pre{@e is a binary expression.}
+ *  \pre{@p e is a binary expression.}
 */
 const Expression& get_first_argument(const Expression& e);
 /** Returns the second argument of the binary expression @p e.
- *  \pre{@e is a binary expression.}
+ *  \pre{@p e is a binary expression.}
 */
 const Expression& get_second_argument(const Expression& e);
-/** Returns the constant term in the addition expression @p e. For instance,
+/** Returns the constant part of the addition expression @p e. For instance,
  *  given 7 + 2 * x + 3 * y, it returns 7.
- *  \pre{@e is an addition expression.}
+ *  \pre{@p e is an addition expression.}
 */
-double get_constant_term_in_addition(const Expression& e);
-/** Returns the terms in the expression @p e. @note This function assumes that
- *  @p e is an addition expression. The return value is a std::map from a
- *  symbolic expression to its coefficient in the summation. For instance, given
- *  7 + 2 * x + 3 * y, the return value maps 'x' to 2 and 'y' to 3.
- *  \pre{@e is an addition expression.}
+double get_constant_in_addition(const Expression& e);
+/** Returns the map from an expression to its coefficient in the addition
+ *  expression @p e. For instance, given 7 + 2 * x + 3 * y, the return value
+ *  maps 'x' to 2 and 'y' to 3.
+ *  \pre{@p e is an addition expression.}
 */
-const std::map<Expression, double>& get_terms_in_addition(const Expression& e);
-/** Returns the constant factor in the multiplication expression @p e. For
- *  instance, given 7 * x^2 * y^3, it returns 7.
- *  \pre{@e is a multiplication expression.}
-*/
-double get_constant_factor_in_multiplication(const Expression& e);
-/** Returns the products in the expression @p e. @note This function assumes
- *  that @p e is a multiplication expression. The return value is a std::map
- *  from a base (symbolic expression) to its exponent (symbolic expression) in
- *  the product. For instance, given 7 * x^2 * y^3, the return value maps 'x' to
- *  2 and 'y' to 3.
- *  \pre{@e is a multiplication expression.}
-*/
-const std::map<Expression, Expression>& get_products_in_multiplication(
+const std::map<Expression, double>& get_expr_to_coeff_map_in_addition(
     const Expression& e);
+/** Returns the constant part of the multiplication expression @p e. For
+ *  instance, given 7 * x^2 * y^3, it returns 7.
+ *  \pre{@p e is a multiplication expression.}
+*/
+double get_constant_in_multiplication(const Expression& e);
+/** Returns the map from a base expression to its exponent expression in the
+ * multiplication expression @p e. For instance, given 7 * x^2 * y^3 * z^x, the
+ * return value maps 'x' to 2, 'y' to 3, and 'z' to 'x'.
+ *  \pre{@p e is a multiplication expression.}
+*/
+const std::map<Expression, Expression>&
+get_base_to_exponent_map_in_multiplication(const Expression& e);
+
+// Matrix<Expression> * Matrix<double> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
+// Matrix<double> * Matrix<Expression> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, double>::value &&
+        std::is_same<typename MatrixR::Scalar, Expression>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator+=(Expression& lhs, const Variable& rhs);
+Expression operator+(const Variable& lhs, const Variable& rhs);
+Expression operator+(Expression lhs, const Variable& rhs);
+Expression operator+(const Variable& lhs, Expression rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator-=(Expression& lhs, const Variable& rhs);
+Expression operator-(const Variable& lhs, const Variable& rhs);
+Expression operator-(Expression lhs, const Variable& rhs);
+Expression operator-(const Variable& lhs, const Expression& rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator*=(Expression& lhs, const Variable& rhs);
+Expression operator*(const Variable& lhs, const Variable& rhs);
+Expression operator*(Expression lhs, const Variable& rhs);
+Expression operator*(const Variable& lhs, Expression rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator/=(Expression& lhs, const Variable& rhs);
+Expression operator/(const Variable& lhs, const Variable& rhs);
+Expression operator/(Expression lhs, const Variable& rhs);
+Expression operator/(const Variable& lhs, const Expression& rhs);
+
+Expression operator+(const Variable& var);
+Expression operator-(const Variable& var);
+
+// Matrix<Expression> * Matrix<Variable> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value &&
+        std::is_same<typename MatrixR::Scalar, Variable>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs * rhs.template cast<Expression>();
+}
+
+// Matrix<Variable> * Matrix<Expression> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Variable>::value &&
+        std::is_same<typename MatrixR::Scalar, Expression>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs;
+}
+
+// Matrix<Variable> * Matrix<double> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Variable>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
+// Matrix<double> * Matrix<Variable> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, double>::value &&
+        std::is_same<typename MatrixR::Scalar, Variable>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
 }  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
@@ -507,11 +635,7 @@ symbolic::Expression cond(const symbolic::Formula& f_cond, double v_then,
 /// Specializes common/dummy_value.h.
 template <>
 struct dummy_value<symbolic::Expression> {
-  static symbolic::Expression get() {
-    // TODO(jwnimmer-tri) It would be nice to have a Cell type like 'undefined'
-    // (or null) here, so that we could fail-faster.
-    return symbolic::Expression{};
-  }
+  static symbolic::Expression get() { return symbolic::Expression::NaN(); }
 };
 
 /** Computes the hash value of a symbolic expression. */
@@ -547,6 +671,23 @@ struct equal_to<drake::symbolic::Expression> {
     return lhs.EqualTo(rhs);
   }
 };
+
+#if !EIGEN_VERSION_AT_LEAST(3, 2, 93)
+/// Provides std::max<drake::symbolic::Expression>. There is nothing about this
+/// hack that is not horrible.
+template <>
+inline const drake::symbolic::Expression& max(
+    const drake::symbolic::Expression& lhs,
+    const drake::symbolic::Expression& rhs) {
+  static constexpr char doom[] = R"doom(
+Eigen algebra over drake::symbolic::Expressions cannot be safely implemented
+using Eigen 3.2. If you need this, use a platform that supports Eigen 3.3 or
+later.
+)doom";
+  DRAKE_ABORT_MSG(doom);
+}
+#endif  // EIGEN_VERSION_AT_LEAST(3, 2, 93)
+
 }  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -559,10 +700,12 @@ struct NumTraits<drake::symbolic::Expression>
   static inline int digits10() { return 0; }
 };
 
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)
 // Informs Eigen that Variable op Variable gets Expression.
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable,
                             drake::symbolic::Variable, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
@@ -570,6 +713,7 @@ struct ScalarBinaryOpTraits<drake::symbolic::Variable,
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable,
                             drake::symbolic::Expression, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
@@ -577,19 +721,38 @@ struct ScalarBinaryOpTraits<drake::symbolic::Variable,
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Expression,
                             drake::symbolic::Variable, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
 // Informs Eigen that Variable op double gets Expression.
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable, double, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
 // Informs Eigen that double op Variable gets Expression.
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<double, drake::symbolic::Variable, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
+
+// Informs Eigen that Expression op double gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Expression, double, BinaryOp> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that double op Expression gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Expression ReturnType;
+};
+#endif  // EIGEN_VERSION_AT_LEAST(3, 2, 93)
+
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)

@@ -2,11 +2,16 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "generated_vectors",
     srcs = [
         "gen/driving_command.cc",
@@ -28,7 +33,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "generated_translators",
     srcs = [
         "gen/driving_command_translator.cc",
@@ -51,7 +56,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "curve2",
     srcs = ["curve2.cc"],
     hdrs = ["curve2.h"],
@@ -61,7 +66,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "linear_car",
     srcs = ["linear_car.cc"],
     hdrs = ["linear_car.h"],
@@ -72,7 +77,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "idm_planner",
     srcs = ["idm_planner.cc"],
     hdrs = ["idm_planner.h"],
@@ -83,7 +88,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "simple_car",
     srcs = ["simple_car.cc"],
     hdrs = [
@@ -97,7 +102,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "single_lane_ego_and_agent",
     srcs = ["single_lane_ego_and_agent.cc"],
     hdrs = ["single_lane_ego_and_agent.h"],
@@ -109,7 +114,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "trajectory_car",
     srcs = ["trajectory_car.cc"],
     hdrs = ["trajectory_car.h"],
@@ -120,7 +125,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "automotive_simulator",
     srcs = ["automotive_simulator.cc"],
     hdrs = ["automotive_simulator.h"],
@@ -140,28 +145,32 @@ cc_library(
     ],
 )
 
-cc_binary(
+drake_cc_binary(
     name = "automotive_demo",
     srcs = [
         "automotive_demo.cc",
         "create_trajectory_params.cc",
         "create_trajectory_params.h",
     ],
-    linkstatic = 1,
+    data = [
+        ":models",
+    ],
     deps = [
         ":automotive_simulator",
         "//drake/common:text_logging_gflags",
     ],
 )
 
-cc_binary(
+drake_cc_binary(
     name = "car_sim_lcm",
     srcs = [
         "car_sim_lcm.cc",
         "car_sim_lcm_common.cc",
         "car_sim_lcm_common.h",
     ],
-    linkstatic = 1,
+    data = [
+        ":models",
+    ],
     deps = [
         ":automotive_simulator",
         "//drake/common:text_logging_gflags",
@@ -171,29 +180,63 @@ cc_binary(
     ],
 )
 
-py_library(
-    name = "drake_paths",
-    srcs = ["drake_paths.py"],
-)
-
 py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
     deps = [
-        ":drake_paths",
         "//drake/lcmtypes:automotive-py",
         "@lcm//:lcm-python",
     ],
 )
 
+java_binary(
+    name = "lcm-spy",
+    main_class = "lcm.spy.Spy",
+    runtime_deps = [
+        "//drake/lcmtypes:automotive-java",
+        "//drake/lcmtypes:viewer-java",
+    ],
+)
+
+py_binary(
+    name = "demo",
+    srcs = ["automotive_demo.py"],
+    data = [
+        ":automotive_demo",
+        ":lcm-spy",
+        ":steering_command_driver",
+        "@drake_visualizer//:drake-visualizer",
+        "@lcm//:lcm-logger",
+    ],
+    main = "automotive_demo.py",
+    deps = [
+        "@lcm//:lcm-python",
+    ],
+)
+
+genrule(
+    name = "speed_bump_genrule",
+    srcs = ["models/speed_bump/speed_bump.yaml"],
+    outs = ["models/speed_bump/speed_bump.obj"],
+    cmd = " ".join([
+        "$(location //drake/automotive/maliput/utility:yaml_to_obj)",
+        "--yaml_file '$<'",
+        "--obj_dir `dirname '$@'`",
+        "--obj_file `basename '$@' .obj`",
+    ]),
+    tools = ["//drake/automotive/maliput/utility:yaml_to_obj"],
+)
+
 filegroup(
     name = "models",
-    srcs = glob(["models/**"]),
+    srcs = glob(["models/**"]) + [
+        "models/speed_bump/speed_bump.obj",
+    ],
 )
 
 # === test/ ===
 
-cc_googletest(
+drake_cc_googletest(
     name = "automotive_simulator_test",
     data = ["//drake/automotive:models"],
     local = 1,
@@ -203,56 +246,56 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//drake/automotive:curve2",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "simple_car_test",
     deps = [
         "//drake/automotive:simple_car",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "idm_planner_test",
     deps = [
         "//drake/automotive:idm_planner",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "linear_car_test",
     deps = [
         "//drake/automotive:linear_car",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "simple_car_to_euler_floating_joint_test",
     deps = [
         "//drake/automotive:simple_car",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "single_lane_ego_and_agent_test",
     deps = [
         "//drake/automotive:single_lane_ego_and_agent",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "trajectory_car_test",
     deps = [
         "//drake/automotive:trajectory_car",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "simple_car_state_translator_test",
     deps = [
         "//drake/automotive:generated_translators",

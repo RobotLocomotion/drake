@@ -1,9 +1,10 @@
 #pragma once
 
-#include "drake/automotive/maliput/api/lane_data.h"
-
 #include <memory>
 #include <string>
+
+#include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -24,7 +25,9 @@ class LaneEndSet {
   // E.g., it could very well be a view into a database or tiled storage or
   // something.
  public:
-  virtual ~LaneEndSet() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LaneEndSet)
+
+  virtual ~LaneEndSet() = default;
 
   /// Returns the number of LaneEnds in this set.
   ///
@@ -36,15 +39,8 @@ class LaneEndSet {
   /// @pre @p index must be >= 0 and < size().
   const LaneEnd& get(int index) const { return do_get(index); }
 
-  /// @name Deleted Copy/Move Operations
-  /// LaneEndSet is neither copyable nor moveable.
-  ///@{
-  explicit LaneEndSet(const LaneEndSet&) = delete;
-  LaneEndSet& operator=(const LaneEndSet&) = delete;
-  ///@}
-
  protected:
-  LaneEndSet() {}
+  LaneEndSet() = default;
 
  private:
   /// @name NVI implementations of the public methods.
@@ -69,7 +65,9 @@ class LaneEndSet {
 /// to those of LaneEnds on the other side.
 class BranchPoint {
  public:
-  virtual ~BranchPoint() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BranchPoint)
+
+  virtual ~BranchPoint() = default;
 
   /// Returns the persistent identifier.
   const BranchPointId id() const { return do_id(); }
@@ -116,15 +114,8 @@ class BranchPoint {
   /// Returns the set of LaneEnds grouped together on the "B-side".
   const LaneEndSet* GetBSide() const { return DoGetBSide(); }
 
-  /// @name Deleted Copy/Move Operations
-  /// BranchPoint is neither copyable nor moveable.
-  ///@{
-  explicit BranchPoint(const BranchPoint&) = delete;
-  BranchPoint& operator=(const BranchPoint&) = delete;
-  ///@}
-
  protected:
-  BranchPoint() {}
+  BranchPoint() = default;
 
  private:
   /// @name NVI implementations of the public methods.

@@ -26,7 +26,7 @@ using systems::RigidBodyPlant;
 
 namespace automotive {
 
-std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
+std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
     const DrivingCommandTranslator& driving_command_translator,
     std::unique_ptr<RigidBodyTree<double>> tree, lcm::DrakeLcmInterface* lcm) {
   DiagramBuilder<double> builder;

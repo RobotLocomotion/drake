@@ -1,3 +1,11 @@
+/// @file
+/// For details about this demo, see README.md in this same directory, section
+/// "Running the dynamics". Or, point your favorite web browser to:
+///
+/// https://github.com/RobotLocomotion/drake/blob/master/drake/automotive/README.md#running-the-dynamics
+///
+///
+
 #include <gflags/gflags.h>
 
 #include "drake/automotive/car_sim_lcm_common.h"
@@ -88,9 +96,9 @@ int main(int argc, char* argv[]) {
   multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
   if (FLAGS_with_speed_bump) {
     AddModelInstancesFromSdfFile(
-      drake::GetDrakePath() + "/automotive/models/speed_bump/speed_bump.sdf",
-      multibody::joints::kFixed, nullptr /* weld to frame */,
-      rigid_body_tree.get());
+        drake::GetDrakePath() + "/automotive/models/speed_bump/speed_bump.sdf",
+        multibody::joints::kFixed, nullptr /* weld to frame */,
+        rigid_body_tree.get());
     VerifyCarSimLcmTree(*rigid_body_tree, 19);
   } else {
     VerifyCarSimLcmTree(*rigid_body_tree, 18);
@@ -99,7 +107,7 @@ int main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
   DrivingCommandTranslator driving_command_translator;
   std::unique_ptr<systems::Diagram<double>> diagram =
-      CreatCarSimLcmDiagram(driving_command_translator, move(rigid_body_tree),
+      CreateCarSimLcmDiagram(driving_command_translator, move(rigid_body_tree),
                             &lcm);
   lcm.StartReceiveThread();
   Simulator<double> simulator(*diagram);

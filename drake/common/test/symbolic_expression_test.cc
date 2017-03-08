@@ -8,8 +8,10 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -19,14 +21,17 @@
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
+#include "drake/common/test/symbolic_test_util.h"
 
 using std::count_if;
 using std::domain_error;
 using std::equal_to;
 using std::map;
 using std::ostringstream;
+using std::pair;
 using std::runtime_error;
 using std::set;
+using std::string;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -35,21 +40,10 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-static bool ExprEqual(const Expression& e1, const Expression& e2) {
-  return e1.EqualTo(e2);
-}
-
-static bool ExprNotEqual(const Expression& e1, const Expression& e2) {
-  return !ExprEqual(e1, e2);
-}
-
-static bool ExprLess(const Expression& e1, const Expression& e2) {
-  return e1.Less(e2);
-}
-
-static bool ExprNotLess(const Expression& e1, const Expression& e2) {
-  return !ExprLess(e1, e2);
-}
+using test::ExprEqual;
+using test::ExprLess;
+using test::ExprNotEqual;
+using test::ExprNotLess;
 
 // Checks if a given 'expressions' is ordered by Expression::Less.
 static void CheckOrdering(const vector<Expression>& expressions) {
@@ -114,8 +108,8 @@ class SymbolicExpressionTest : public ::testing::Test {
 
   const Expression e_constant_{1.0};
   const Expression e_var_{var_x_};
-  const Expression e_neg_{-x_};
   const Expression e_add_{x_ + y_};
+  const Expression e_neg_{-x_};  // -1 * x_
   const Expression e_mul_{x_ * y_};
   const Expression e_div_{x_ / y_};
   const Expression e_log_{log(x_)};
@@ -138,15 +132,15 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression e_ite_{if_then_else(x_ < y_, x_, y_)};
 
   const vector<Expression> collection_{
-      e_constant_, e_var_,  e_neg_,  e_add_,  e_mul_,  e_div_,
-      e_log_,      e_abs_,  e_exp_,  e_sqrt_, e_pow_,  e_sin_,
-      e_cos_,      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_,
-      e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_};
+      e_constant_, e_var_,  e_add_,   e_neg_,  e_mul_,
+      e_div_,      e_log_,  e_abs_,   e_exp_,  e_sqrt_,
+      e_pow_,      e_sin_,  e_cos_,   e_tan_,  e_asin_,
+      e_acos_,     e_atan_, e_atan2_, e_sinh_, e_cosh_,
+      e_tanh_,     e_min_,  e_max_,   e_ite_,  Expression::NaN()};
 };
 
 TEST_F(SymbolicExpressionTest, Dummy) {
-  // TODO(jwnimmer-tri) We'd prefer 'undefined' instead of zero.
-  EXPECT_TRUE(is_zero(dummy_value<Expression>::get()));
+  EXPECT_TRUE(is_nan(dummy_value<Expression>::get()));
 }
 
 TEST_F(SymbolicExpressionTest, IsConstant1) {
@@ -175,19 +169,24 @@ TEST_F(SymbolicExpressionTest, IsOne) {
 TEST_F(SymbolicExpressionTest, IsNegOne) { EXPECT_TRUE(is_neg_one(neg_one_)); }
 TEST_F(SymbolicExpressionTest, IsTwo) { EXPECT_TRUE(is_two(two_)); }
 
+TEST_F(SymbolicExpressionTest, NaN) {
+  // It's OK to have NaN expression.
+  const Expression nan{NAN};
+  EXPECT_TRUE(is_nan(nan));
+  EXPECT_TRUE(nan.EqualTo(Expression::NaN()));
+  // It's OK to have an expression including NaN inside.
+  const Expression e1{1.0 + nan};
+  // It's OK to display an expression including NaN inside.
+  EXPECT_EQ(e1.to_string(), "(1 + NaN)");
+  // It throws when we evaluate an expression including NaN.
+  EXPECT_THROW(e1.Evaluate(), runtime_error);
+}
+
 TEST_F(SymbolicExpressionTest, IsVariable) {
   EXPECT_TRUE(is_variable(e_var_));
   const vector<Expression>::difference_type cnt{
       count_if(collection_.begin(), collection_.end(),
                [](const Expression& e) { return is_variable(e); })};
-  EXPECT_EQ(cnt, 1);
-}
-
-TEST_F(SymbolicExpressionTest, IsUnaryMinus) {
-  EXPECT_TRUE(is_unary_minus(e_neg_));
-  const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_unary_minus(e); })};
   EXPECT_EQ(cnt, 1);
 }
 
@@ -204,7 +203,7 @@ TEST_F(SymbolicExpressionTest, IsMultiplication) {
   const vector<Expression>::difference_type cnt{
       count_if(collection_.begin(), collection_.end(),
                [](const Expression& e) { return is_multiplication(e); })};
-  EXPECT_EQ(cnt, 1);
+  EXPECT_EQ(cnt, 2);
 }
 
 TEST_F(SymbolicExpressionTest, IsDivision) {
@@ -370,7 +369,6 @@ TEST_F(SymbolicExpressionTest, GetVariable) {
 }
 
 TEST_F(SymbolicExpressionTest, GetArgument) {
-  EXPECT_PRED2(ExprEqual, get_argument(e_neg_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_log_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_abs_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_exp_), x_);
@@ -403,42 +401,258 @@ TEST_F(SymbolicExpressionTest, GetSecondArgument) {
 }
 
 TEST_F(SymbolicExpressionTest, GetConstantTermInAddition) {
-  EXPECT_PRED2(ExprEqual, get_constant_term_in_addition(2 * x_ + 3 * y_), 0.0);
-  EXPECT_PRED2(ExprEqual, get_constant_term_in_addition(3 + 2 * x_ + 3 * y_),
-               3);
-  EXPECT_PRED2(ExprEqual, get_constant_term_in_addition(-2 + 2 * x_ + 3 * y_),
-               -2);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(2 * x_ + 3 * y_), 0.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(3 + 2 * x_ + 3 * y_), 3);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(-2 + 2 * x_ + 3 * y_), -2);
 }
 
 TEST_F(SymbolicExpressionTest, GetTermsInAddition) {
   const Expression e{3 + 2 * x_ + 3 * y_};
-  const map<Expression, double> terms{get_terms_in_addition(e)};
+  const map<Expression, double> terms{get_expr_to_coeff_map_in_addition(e)};
   EXPECT_EQ(terms.at(x_), 2.0);
   EXPECT_EQ(terms.at(y_), 3.0);
 }
 
 TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
-  EXPECT_PRED2(ExprEqual, get_constant_factor_in_multiplication(x_ * y_ * y_),
-               1.0);
-  EXPECT_PRED2(ExprEqual,
-               get_constant_factor_in_multiplication(2 * x_ * y_ * y_), 2.0);
-  EXPECT_PRED2(ExprEqual,
-               get_constant_factor_in_multiplication(-3 * x_ * y_ * y_), -3.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(e_neg_), -1.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(x_ * y_ * y_), 1.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(2 * x_ * y_ * y_),
+               2.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(-3 * x_ * y_ * y_),
+               -3.0);
 }
 
 TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
   const Expression e{2 * x_ * y_ * y_ * pow(z_, y_)};
-  const map<Expression, Expression> products{get_products_in_multiplication(e)};
+  const map<Expression, Expression> products{
+      get_base_to_exponent_map_in_multiplication(e)};
   EXPECT_PRED2(ExprEqual, products.at(x_), 1.0);
   EXPECT_PRED2(ExprEqual, products.at(y_), 2.0);
   EXPECT_PRED2(ExprEqual, products.at(z_), y_);
 }
 
+TEST_F(SymbolicExpressionTest, IsPolynomial) {
+  const vector<pair<Expression, bool>> test_vec{{e_constant_, true},
+                                                {e_var_, true},
+                                                {e_neg_, true},
+                                                {e_add_, true},
+                                                {e_mul_, true},
+                                                {e_div_, false},
+                                                {e_log_, false},
+                                                {e_abs_, false},
+                                                {e_exp_, false},
+                                                {e_sqrt_, false},
+                                                {e_pow_, false},
+                                                {e_sin_, false},
+                                                {e_cos_, false},
+                                                {e_tan_, false},
+                                                {e_asin_, false},
+                                                {e_acos_, false},
+                                                {e_atan_, false},
+                                                {e_atan2_, false},
+                                                {e_sinh_, false},
+                                                {e_cosh_, false},
+                                                {e_tanh_, false},
+                                                {e_min_, false},
+                                                {e_max_, false},
+                                                {e_ite_, false},
+                                                {Expression::NaN(), false}};
+  for (const pair<Expression, bool>& p : test_vec) {
+    EXPECT_EQ(p.first.is_polynomial(), p.second);
+  }
+
+  // x^2 -> polynomial
+  EXPECT_TRUE(pow(x_, 2).is_polynomial());
+  // 3 + x + y + z -> polynomial
+  EXPECT_TRUE((3 + x_ + y_ + z_).is_polynomial());
+  // 1 + x^2 + y^2 -> polynomial
+  EXPECT_TRUE((1 + pow(x_, 2) + pow(y_, 2)).is_polynomial());
+  // x^2 * y^2 -> polynomial
+  EXPECT_TRUE((pow(x_, 2) * pow(y_, 2)).is_polynomial());
+  // (x + y + z)^3 -> polynomial
+  EXPECT_TRUE(pow(x_ + y_ + z_, 3).is_polynomial());
+  // (x + y + z)^3 / 10 -> polynomial
+  EXPECT_TRUE((pow(x_ + y_ + z_, 3) / 10).is_polynomial());
+  // (x^3)^(1/3) -> x -> polynomial
+  EXPECT_TRUE(pow(pow(x_, 3), 1 / 3).is_polynomial());
+
+  // x^-1 -> not polynomial
+  EXPECT_FALSE(pow(x_, -1).is_polynomial());
+  // x^2.1 -> not polynomial
+  EXPECT_FALSE(pow(x_, 2.1).is_polynomial());
+  // x^y -> not polynomial
+  EXPECT_FALSE(pow(x_, y_).is_polynomial());
+  // 3 + x^y -> not polynomial
+  EXPECT_FALSE((3 + pow(x_, y_)).is_polynomial());
+  // 3 + x^2.1 -> not polynomial
+  EXPECT_FALSE((3 + pow(x_, 2.1)).is_polynomial());
+  // x^y / 10 -> not polynomial
+  EXPECT_FALSE((pow(x_, y_) / 10).is_polynomial());
+  // x^2 * y^ 2.1 -> not polynomial
+  EXPECT_FALSE((pow(x_, 2) * pow(y_, 2.1)).is_polynomial());
+  // x^2 * y^ -1 -> not polynomial
+  EXPECT_FALSE((pow(x_, 2) * pow(y_, -1)).is_polynomial());
+  // x^2 * y^ 2 * x^y / 10 -> not polynomial
+  EXPECT_FALSE((pow(x_, 2) * pow(y_, 2) * pow(x_, y_) / 10).is_polynomial());
+  // (x + y + z)^3 / x -> not polynomial
+  EXPECT_FALSE((pow(x_ + y_ + z_, 3) / x_).is_polynomial());
+  // sqrt(x^2) -> |x| -> not polynomial
+  EXPECT_FALSE(sqrt(pow(x_, 2)).is_polynomial());
+}
+
+TEST_F(SymbolicExpressionTest, ToPolynomial1) {
+  Environment env{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}};
+  const map<Polynomial<double>::VarType, double> eval_point{
+      {var_x_.get_id(), env[var_x_]},
+      {var_y_.get_id(), env[var_y_]},
+      {var_z_.get_id(), env[var_z_]}};
+
+  const Expression e0{42.0};
+  const Expression e1{pow(x_, 2)};
+  const Expression e2{3 + x_ + y_ + z_};
+  const Expression e3{1 + pow(x_, 2) + pow(y_, 2)};
+  const Expression e4{pow(x_, 2) * pow(y_, 2)};
+  const Expression e5{pow(x_ + y_ + z_, 3)};
+  const Expression e6{pow(x_ + y_ + z_, 3) / 10};
+  const Expression e7{-pow(y_, 3)};
+  const Expression e8{pow(pow(x_, 3), 1.0 / 3)};
+
+  EXPECT_NEAR(e0.Evaluate(env),
+              e0.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e1.Evaluate(env),
+              e1.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e2.Evaluate(env),
+              e2.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e3.Evaluate(env),
+              e3.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e4.Evaluate(env),
+              e4.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e5.Evaluate(env),
+              e5.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e6.Evaluate(env),
+              e6.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e7.Evaluate(env),
+              e7.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e8.Evaluate(env),
+              e8.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+}
+
+TEST_F(SymbolicExpressionTest, ToPolynomial2) {
+  const vector<Expression> test_vec{
+      e_log_,  e_abs_,  e_exp_,  e_sqrt_, e_sin_,   e_cos_,
+      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_, e_sinh_,
+      e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_,   Expression::NaN()};
+  for (const Expression& e : test_vec) {
+    EXPECT_FALSE(e.is_polynomial());
+    EXPECT_THROW(e.ToPolynomial(), runtime_error);
+  }
+}
+
+TEST_F(SymbolicExpressionTest, Degree) {
+  const Expression e0{42.0};
+  EXPECT_EQ(e0.Degree({var_x_, var_y_}), 0);
+  EXPECT_EQ(e0.Degree(), 0);
+
+  const Expression e1{pow(x_, 2)};
+  EXPECT_EQ(e1.Degree({var_x_}), 2);
+  EXPECT_EQ(e1.Degree({var_y_}), 0);
+  EXPECT_EQ(e1.Degree({var_x_, var_y_}), 2);
+  EXPECT_EQ(e1.Degree(), 2);
+
+  const Expression e2{pow(x_, 2) * pow(y_, 3)};
+  EXPECT_EQ(e2.Degree({var_x_}), 2);
+  EXPECT_EQ(e2.Degree({var_y_}), 3);
+  EXPECT_EQ(e2.Degree({var_z_}), 0);
+  EXPECT_EQ(e2.Degree({var_x_, var_y_}), 5);
+  EXPECT_EQ(e2.Degree({var_x_, var_z_}), 2);
+  EXPECT_EQ(e2.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e2.Degree({var_x_, var_y_, var_z_}), 5);
+  EXPECT_EQ(e2.Degree(), 5);
+
+  const Expression e3{3 + x_ + y_ + z_};
+  EXPECT_EQ(e3.Degree({var_x_}), 1);
+  EXPECT_EQ(e3.Degree({var_y_}), 1);
+  EXPECT_EQ(e3.Degree({var_z_}), 1);
+  EXPECT_EQ(e3.Degree({var_x_, var_y_}), 1);
+  EXPECT_EQ(e3.Degree({var_x_, var_y_, var_z_}), 1);
+  EXPECT_EQ(e3.Degree(), 1);
+
+  const Expression e4{1 + pow(x_, 2) + pow(y_, 3)};
+  EXPECT_EQ(e4.Degree({var_x_}), 2);
+  EXPECT_EQ(e4.Degree({var_y_}), 3);
+  EXPECT_EQ(e4.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e4.Degree({var_x_, var_z_}), 2);
+  EXPECT_EQ(e4.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e4.Degree(), 3);
+
+  const Expression e5{1 + pow(x_, 2) * y_ + x_ * y_ * y_ * z_};
+  EXPECT_EQ(e5.Degree({var_x_}), 2);
+  EXPECT_EQ(e5.Degree({var_y_}), 2);
+  EXPECT_EQ(e5.Degree({var_z_}), 1);
+  EXPECT_EQ(e5.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e5.Degree({var_x_, var_z_}), 2);
+  EXPECT_EQ(e5.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e5.Degree({var_x_, var_y_, var_z_}), 4);
+  EXPECT_EQ(e5.Degree(), 4);
+
+  const Expression e6{pow(x_ + y_ + z_, 3)};
+  EXPECT_EQ(e6.Degree({var_x_}), 3);
+  EXPECT_EQ(e6.Degree({var_y_}), 3);
+  EXPECT_EQ(e6.Degree({var_z_}), 3);
+  EXPECT_EQ(e6.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e6.Degree({var_x_, var_z_}), 3);
+  EXPECT_EQ(e6.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e6.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e6.Degree(), 3);
+
+  const Expression e7{pow(x_ + x_ * y_ * y_, 2) * y_ +
+                      pow(x_ + pow(y_ + x_ * z_, 2), 3)};
+  EXPECT_EQ(e7.Degree({var_x_}), 6);
+  EXPECT_EQ(e7.Degree({var_y_}), 6);
+  EXPECT_EQ(e7.Degree({var_z_}), 6);
+  EXPECT_EQ(e7.Degree({var_x_, var_y_}), 7);
+  EXPECT_EQ(e7.Degree({var_x_, var_z_}), 12);
+  EXPECT_EQ(e7.Degree({var_y_, var_z_}), 6);
+  EXPECT_EQ(e7.Degree({var_x_, var_y_, var_z_}), 12);
+  EXPECT_EQ(e7.Degree(), 12);
+
+  const Expression e8{pow(x_ + y_ + z_, 3) / 10};
+  EXPECT_EQ(e8.Degree({var_x_}), 3);
+  EXPECT_EQ(e8.Degree({var_y_}), 3);
+  EXPECT_EQ(e8.Degree({var_z_}), 3);
+  EXPECT_EQ(e8.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e8.Degree({var_x_, var_z_}), 3);
+  EXPECT_EQ(e8.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e8.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e8.Degree(), 3);
+
+  const Expression e9{-pow(y_, 3)};
+  EXPECT_EQ(e9.Degree({var_x_}), 0);
+  EXPECT_EQ(e9.Degree({var_y_}), 3);
+  EXPECT_EQ(e9.Degree({var_z_}), 0);
+  EXPECT_EQ(e9.Degree({var_x_, var_y_}), 3);
+  EXPECT_EQ(e9.Degree({var_x_, var_z_}), 0);
+  EXPECT_EQ(e9.Degree({var_y_, var_z_}), 3);
+  EXPECT_EQ(e9.Degree({var_x_, var_y_, var_z_}), 3);
+  EXPECT_EQ(e9.Degree(), 3);
+
+  const Expression e10{pow(pow(x_, 3), 1.0 / 3)};
+  EXPECT_EQ(e10.Degree({var_x_}), 1);
+  EXPECT_EQ(e10.Degree({var_y_}), 0);
+  EXPECT_EQ(e10.Degree({var_z_}), 0);
+  EXPECT_EQ(e10.Degree({var_x_, var_y_}), 1);
+  EXPECT_EQ(e10.Degree({var_x_, var_z_}), 1);
+  EXPECT_EQ(e10.Degree({var_y_, var_z_}), 0);
+  EXPECT_EQ(e10.Degree({var_x_, var_y_, var_z_}), 1);
+  EXPECT_EQ(e10.Degree(), 1);
+}
+
 TEST_F(SymbolicExpressionTest, LessKind) {
-  CheckOrdering({e_constant_, e_var_,  e_neg_,  e_add_,  e_mul_,  e_div_,
-                 e_log_,      e_abs_,  e_exp_,  e_sqrt_, e_pow_,  e_sin_,
-                 e_cos_,      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_,
-                 e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_});
+  CheckOrdering({e_constant_, e_var_,  e_add_,   e_neg_,  e_mul_,
+                 e_div_,      e_log_,  e_abs_,   e_exp_,  e_sqrt_,
+                 e_pow_,      e_sin_,  e_cos_,   e_tan_,  e_asin_,
+                 e_acos_,     e_atan_, e_atan2_, e_sinh_, e_cosh_,
+                 e_tanh_,     e_min_,  e_max_,   e_ite_,  Expression::NaN()});
 }
 
 TEST_F(SymbolicExpressionTest, LessConstant) { CheckOrdering({c1_, c2_, c3_}); }
@@ -656,7 +870,7 @@ TEST_F(SymbolicExpressionTest, Constant) {
   EXPECT_EQ(c2_.Evaluate(), 1);
   EXPECT_EQ(c3_.Evaluate(), 3.14159);
   EXPECT_EQ(c4_.Evaluate(), -2.718);
-  EXPECT_THROW(Expression{NAN}, runtime_error);
+  EXPECT_THROW(Expression{NAN}.Evaluate(), runtime_error);
 }
 
 TEST_F(SymbolicExpressionTest, StaticConstant) {
@@ -736,7 +950,7 @@ TEST_F(SymbolicExpressionTest, UnaryMinus) {
 
   EXPECT_PRED2(ExprEqual, -(x_plus_y_ + x_plus_z_ + pi_),
                -x_plus_y_ + (-x_plus_z_) + (-pi_));
-  EXPECT_EQ((-(x_)).to_string(), "-(x)");
+  EXPECT_EQ((-(x_)).to_string(), "(-1 * x)");
 }
 
 TEST_F(SymbolicExpressionTest, Add1) {
@@ -1188,10 +1402,13 @@ TEST_F(SymbolicExpressionTest, Pow2) {
   EXPECT_DOUBLE_EQ(pow(neg_pi_, neg_one_).Evaluate(), std::pow(-3.141592, -1));
   EXPECT_THROW(pow(neg_pi_, neg_pi_).Evaluate(), domain_error);
 
-  const Expression e{pow(x_ * y_ * pi_, x_ + y_ + pi_)};
+  const Expression e1{pow(x_ * y_ * pi_, x_ + y_ + pi_)};
+  const Expression e2{(pow(x_, 2) * pow(y_, 2) * pow(x_, y_))};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+  EXPECT_DOUBLE_EQ(e1.Evaluate(env),
                    std::pow(2 * 3.2 * 3.141592, 2 + 3.2 + 3.141592));
+  EXPECT_DOUBLE_EQ(e2.Evaluate(env),
+                   std::pow(2, 2) * std::pow(3.2, 2) * std::pow(2, 3.2));
 }
 
 TEST_F(SymbolicExpressionTest, Sin) {
@@ -1604,435 +1821,6 @@ TEST_F(SymbolicExpressionTest, ToString) {
 
   EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
   EXPECT_EQ(e2.to_string(), "cos(((pow(y, 2) * z) + pow(x, 2)))");
-}
-
-class SymbolicExpressionMatrixTest : public ::testing::Test {
- protected:
-  const Variable var_x_{"x"};
-  const Variable var_y_{"y"};
-  const Variable var_z_{"z"};
-  const Expression x_{var_x_};
-  const Expression y_{var_y_};
-  const Expression z_{var_z_};
-
-  const Expression zero_{0.0};
-  const Expression one_{1.0};
-  const Expression two_{2.0};
-  const Expression neg_one_{-1.0};
-  const Expression pi_{3.141592};
-  const Expression neg_pi_{-3.141592};
-  const Expression e_{2.718};
-
-  Eigen::Matrix<Expression, 3, 2> A_;
-  Eigen::Matrix<Expression, 2, 3> B_;
-  Eigen::Matrix<Expression, 3, 2> C_;
-
-  void SetUp() override {
-    // clang-format off
-    A_ << x_, one_,       //  [x  1]
-          y_, neg_one_,   //  [y -1]
-          z_, pi_;        //  [z  3.141592]
-
-    B_ << x_, y_,  z_,    //  [x     y        z]
-          e_, pi_, two_;  //  [2.718 3.141592 2]
-
-    C_ << z_, two_,       //  [z  2]
-          x_, e_,         //  [x -2.718]
-          y_, pi_;        //  [y  3.141592]
-    // clang-format on
-  }
-};
-
-TEST_F(SymbolicExpressionMatrixTest, EigenAdd) {
-  auto const M(A_ + A_);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  // clang-format off
-  M_expected << (x_ + x_), (one_ + one_),
-                (y_ + y_), (neg_one_ + neg_one_),
-                (z_ + z_), (pi_ + pi_);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenSub1) {
-  auto const M(A_ - A_);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  EXPECT_EQ(M, M_expected);  // should be all zero.
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenSub2) {
-  auto const M(A_ - C_);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  // clang-format off
-  M_expected << (x_ - z_), (one_ - two_),
-                (y_ - x_), (neg_one_ - e_),
-                (z_ - y_), (pi_ - pi_);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);  // should be all zero.
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenMul1) {
-  auto const M(A_ * B_);
-  Eigen::Matrix<Expression, 3, 3> M_expected;
-  // clang-format off
-  M_expected <<
-    (x_ * x_ + e_),       (x_ * y_ + pi_),       (x_ * z_ + two_),
-    (y_ * x_ + -e_),      (y_ * y_ + - pi_),     (y_ * z_ + - two_),
-    (z_ * x_ + pi_ * e_), (z_ * y_ + pi_ * pi_), (z_ * z_ + pi_ * two_);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenMul2) {
-  auto const M(B_ * A_);
-  Eigen::Matrix<Expression, 2, 2> M_expected;
-  // clang-format off
-  M_expected <<
-    (x_ * x_ + (y_ * y_ + z_ * z_)),    (x_ + (-y_ + z_ * pi_)),
-    (e_ * x_ + (pi_ * y_ + two_ * z_)), (e_ * one_ + pi_ * - one_ + two_ * pi_);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenMul3) {
-  auto const M(2.0 * A_);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  // clang-format off
-  M_expected << (2 * x_), (2 * one_),
-                (2 * y_), (2 * neg_one_),
-                (2 * z_), (2 * pi_);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
-  auto const M(A_ * 2.0);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  // clang-format off
-  M_expected << (x_ * 2), (one_ * 2),
-                (y_ * 2), (neg_one_ * 2),
-                (z_ * 2), (pi_ * 2);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenDiv) {
-  auto const M(A_ / 2.0);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  // clang-format off
-  M_expected << (x_ / 2), (one_ / 2),
-                (y_ / 2), (neg_one_ / 2),
-                (z_ / 2), (pi_ / 2);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-// Provides common variables and matrices that are used by the
-// following tests.
-class SymbolicVariableTest : public ::testing::Test {
- protected:
-  const Variable x_{"x"};
-  const Variable y_{"y"};
-  const Variable z_{"z"};
-  const Variable w_{"w"};
-
-  Eigen::Matrix<double, 2, 2> double_mat_;
-  Eigen::Matrix<symbolic::Variable, 2, 2> var_mat_;
-  Eigen::Matrix<symbolic::Expression, 2, 2> expr_mat_;
-
-  void SetUp() override {
-    // clang-format off
-    double_mat_ << 1.0, 2.0,
-                   3.0, 4.0;
-    var_mat_ << x_, y_,
-                z_, w_;
-    expr_mat_ << (x_ + z_), (x_ + w_),
-                 (y_ + z_), (y_ + w_);
-    // clang-format on
-  }
-};
-
-TEST_F(SymbolicVariableTest, OperatorOverloadingArithmetic) {
-  // Variable op Variable.
-  const Expression e1{x_ + y_};
-  const Expression e2{x_ - y_};
-  const Expression e3{x_ * y_};
-  const Expression e4{x_ / y_};
-  EXPECT_EQ(e1.to_string(), "(x + y)");
-  EXPECT_EQ(e2.to_string(), "(x - y)");
-  EXPECT_EQ(e3.to_string(), "(x * y)");
-  EXPECT_EQ(e4.to_string(), "(x / y)");
-
-  // Expression op Variable.
-  const Expression e5{e1 + z_};  // (x + y) + z
-  const Expression e6{e2 - z_};  // (x - y) - z
-  const Expression e7{e3 * z_};  // (x * y) * z
-  const Expression e8{e4 / z_};  // (x / y) / z
-  EXPECT_EQ(e5.to_string(), "(x + y + z)");
-  EXPECT_EQ(e6.to_string(), "(x - y - z)");
-  EXPECT_EQ(e7.to_string(), "(x * y * z)");
-  EXPECT_EQ(e8.to_string(), "((x / y) / z)");
-
-  // Variable op Expression.
-  const Expression e9{w_ + e1};   // w + (x + y) -> x + y + w
-  const Expression e10{w_ - e2};  // w - (x - y) -> w -x + y -> -x + y + w
-  const Expression e11{w_ * e3};  // w * (x * y) -> x * y * w
-  const Expression e12{w_ / e4};  // w / (x / y)
-  EXPECT_EQ(e9.to_string(), "(x + y + w)");
-  EXPECT_EQ(e10.to_string(), "( - x + y + w)");
-  EXPECT_EQ(e11.to_string(), "(x * y * w)");
-  EXPECT_EQ(e12.to_string(), "(w / (x / y))");
-
-  // Variable op double.
-  const Expression e13{x_ + 5.0};  // x + 5 -> 5 + x
-  const Expression e14{x_ - 5.0};  // x - 5 -> -5 + x
-  const Expression e15{x_ * 5.0};  // x * 5 -> 5 * x
-  const Expression e16{x_ / 5.0};
-  EXPECT_EQ(e13.to_string(), "(5 + x)");
-  EXPECT_EQ(e14.to_string(), "(-5 + x)");
-  EXPECT_EQ(e15.to_string(), "(5 * x)");
-  EXPECT_EQ(e16.to_string(), "(x / 5)");
-
-  // double op Variable.
-  const Expression e17{5.0 + y_};
-  const Expression e18{5.0 - y_};
-  const Expression e19{5.0 * y_};
-  const Expression e20{5.0 / y_};
-  EXPECT_EQ(e17.to_string(), "(5 + y)");
-  EXPECT_EQ(e18.to_string(), "(5 - y)");
-  EXPECT_EQ(e19.to_string(), "(5 * y)");
-  EXPECT_EQ(e20.to_string(), "(5 / y)");
-}
-
-TEST_F(SymbolicVariableTest, OperatorOverloadingArithmeticAssignment) {
-  Expression e{x_ + y_};
-  e += z_;  // x + y + z
-  EXPECT_EQ(e.to_string(), "(x + y + z)");
-  e -= x_;  // y + z
-  EXPECT_EQ(e.to_string(), "(y + z)");
-  e *= w_;  // w * (y + z)
-  EXPECT_EQ(e.to_string(), "(w * (y + z))");
-  e /= y_;  // (w * (y + z)) / y
-  EXPECT_EQ(e.to_string(), "((w * (y + z)) / y)");
-}
-
-TEST_F(SymbolicVariableTest, OperatorOverloadingEigenTestSanityCheck) {
-  // [1.0  2.0]
-  // [3.0  4.0]
-  EXPECT_EQ(double_mat_(0, 0), 1.0);
-  EXPECT_EQ(double_mat_(0, 1), 2.0);
-  EXPECT_EQ(double_mat_(1, 0), 3.0);
-  EXPECT_EQ(double_mat_(1, 1), 4.0);
-
-  // [x  y]
-  // [z  w]
-  EXPECT_EQ(var_mat_(0, 0), x_);
-  EXPECT_EQ(var_mat_(0, 1), y_);
-  EXPECT_EQ(var_mat_(1, 0), z_);
-  EXPECT_EQ(var_mat_(1, 1), w_);
-
-  // [x + z  x + w]
-  // [y + z  y + w]
-  EXPECT_PRED2(ExprEqual, expr_mat_(0, 0), x_ + z_);
-  EXPECT_PRED2(ExprEqual, expr_mat_(0, 1), x_ + w_);
-  EXPECT_PRED2(ExprEqual, expr_mat_(1, 0), y_ + z_);
-  EXPECT_PRED2(ExprEqual, expr_mat_(1, 1), y_ + w_);
-}
-
-TEST_F(SymbolicVariableTest, OperatorOverloadingEigenVariableOpVariable) {
-  const Eigen::Matrix<Expression, 2, 2> m1{var_mat_ + var_mat_};
-  const Eigen::Matrix<Expression, 2, 2> m2{var_mat_ - var_mat_};
-  const Eigen::Matrix<Expression, 2, 2> m3{var_mat_ * var_mat_};
-
-  // [x  y] + [x  y] = [x + x    y + y]
-  // [z  w]   [z  w]   [z + z    w + w]
-  EXPECT_PRED2(ExprEqual, m1(0, 0), x_ + x_);
-  EXPECT_PRED2(ExprEqual, m1(0, 1), y_ + y_);
-  EXPECT_PRED2(ExprEqual, m1(1, 0), z_ + z_);
-  EXPECT_PRED2(ExprEqual, m1(1, 1), w_ + w_);
-
-  // [x  y] - [x  y] = [x - x    y - y] = [0 0]
-  // [z  w]   [z  w]   [z - z    w - w]   [0 0]
-  EXPECT_PRED2(ExprEqual, m2(0, 0), 0.0);
-  EXPECT_PRED2(ExprEqual, m2(0, 1), 0.0);
-  EXPECT_PRED2(ExprEqual, m2(1, 0), 0.0);
-  EXPECT_PRED2(ExprEqual, m2(1, 1), 0.0);
-
-  // [x  y] * [x  y] = [x * x + y * z    x * y + y * w]
-  // [z  w]   [z  w]   [z * x + w * z    z * y + w * w]
-  EXPECT_PRED2(ExprEqual, m3(0, 0), x_ * x_ + y_ * z_);
-  EXPECT_PRED2(ExprEqual, m3(0, 1), x_ * y_ + y_ * w_);
-  EXPECT_PRED2(ExprEqual, m3(1, 0), z_ * x_ + w_ * z_);
-  EXPECT_PRED2(ExprEqual, m3(1, 1), z_ * y_ + w_ * w_);
-}
-
-TEST_F(SymbolicVariableTest, OperatorOverloadingEigenVariableOpExpression) {
-  const Eigen::Matrix<Expression, 2, 2> m1{var_mat_ + expr_mat_};
-  const Eigen::Matrix<Expression, 2, 2> m2{var_mat_ - expr_mat_};
-  const Eigen::Matrix<Expression, 2, 2> m3{var_mat_ * expr_mat_};
-
-  // [x  y] + [x + z  x + w] = [x + x + z    y + x + w]
-  // [z  w]   [y + z  y + w]   [z + y + z    w + y + w]
-  EXPECT_PRED2(ExprEqual, m1(0, 0), x_ + x_ + z_);
-  EXPECT_PRED2(ExprEqual, m1(0, 1), y_ + x_ + w_);
-  EXPECT_PRED2(ExprEqual, m1(1, 0), z_ + y_ + z_);
-  EXPECT_PRED2(ExprEqual, m1(1, 1), w_ + y_ + w_);
-
-  // [x  y] - [x + z  x + w] = [x - (x + z)    y - (x + w)]
-  // [z  w]   [y + z  y + w]   [z - (y + z)    w - (y + w)]
-  EXPECT_PRED2(ExprEqual, m2(0, 0), x_ - (x_ + z_));
-  EXPECT_PRED2(ExprEqual, m2(0, 1), y_ - (x_ + w_));
-  EXPECT_PRED2(ExprEqual, m2(1, 0), z_ - (y_ + z_));
-  EXPECT_PRED2(ExprEqual, m2(1, 1), w_ - (y_ + w_));
-
-  // [x  y] * [x + z  x + w]
-  // [z  w]   [y + z  y + w]
-  // = [x * (x + z) + y * (y + z)    x * (x + w) + y * (y + w)]
-  //   [z * (x + z) + w * (y + z)    z * (x + w) + w * (y + w)]
-  EXPECT_PRED2(ExprEqual, m3(0, 0), x_ * (x_ + z_) + y_ * (y_ + z_));
-  EXPECT_PRED2(ExprEqual, m3(0, 1), x_ * (x_ + w_) + y_ * (y_ + w_));
-  EXPECT_PRED2(ExprEqual, m3(1, 0), z_ * (x_ + z_) + w_ * (y_ + z_));
-  EXPECT_PRED2(ExprEqual, m3(1, 1), z_ * (x_ + w_) + w_ * (y_ + w_));
-}
-
-TEST_F(SymbolicVariableTest, OperatorOverloadingEigenExpressionOpVariable) {
-  const Eigen::Matrix<Expression, 2, 2> m1{expr_mat_ + var_mat_};
-  const Eigen::Matrix<Expression, 2, 2> m2{expr_mat_ - var_mat_};
-  const Eigen::Matrix<Expression, 2, 2> m3{expr_mat_ * var_mat_};
-
-  // [x + z  x + w] + [x  y] = [x + z + x    x + w + y]
-  // [y + z  y + w]   [z  w]   [y + z + z    y + w + w]
-  EXPECT_PRED2(ExprEqual, m1(0, 0), x_ + z_ + x_);
-  EXPECT_PRED2(ExprEqual, m1(0, 1), x_ + w_ + y_);
-  EXPECT_PRED2(ExprEqual, m1(1, 0), y_ + z_ + z_);
-  EXPECT_PRED2(ExprEqual, m1(1, 1), y_ + w_ + w_);
-
-  // [x + z  x + w] - [x  y] = [x + z - x    x + w - y]
-  // [y + z  y + w]   [z  w]   [y + z - z    y + w - w]
-  EXPECT_PRED2(ExprEqual, m2(0, 0), x_ + z_ - x_);
-  EXPECT_PRED2(ExprEqual, m2(0, 1), x_ + w_ - y_);
-  EXPECT_PRED2(ExprEqual, m2(1, 0), y_ + z_ - z_);
-  EXPECT_PRED2(ExprEqual, m2(1, 1), y_ + w_ - w_);
-
-  // [x + z  x + w] * [x  y]
-  // [y + z  y + w]   [z  w]
-  //
-  // = [(x + z) * x + (x + w) * z    (x + z) * y + (x + w) * w]
-  //   [(y + z) * x + (y + w) * z    (y + z) * y + (y + w) * w]
-  EXPECT_PRED2(ExprEqual, m3(0, 0), (x_ + z_) * x_ + (x_ + w_) * z_);
-  EXPECT_PRED2(ExprEqual, m3(0, 1), (x_ + z_) * y_ + (x_ + w_) * w_);
-  EXPECT_PRED2(ExprEqual, m3(1, 0), (y_ + z_) * x_ + (y_ + w_) * z_);
-  EXPECT_PRED2(ExprEqual, m3(1, 1), (y_ + z_) * y_ + (y_ + w_) * w_);
-}
-
-TEST_F(SymbolicVariableTest, OperatorOverloadingEigenVariableOpDouble) {
-  const Eigen::Matrix<Expression, 2, 2> m1{var_mat_ + double_mat_};
-  const Eigen::Matrix<Expression, 2, 2> m2{var_mat_ - double_mat_};
-  const Eigen::Matrix<Expression, 2, 2> m3{var_mat_ * double_mat_};
-
-  // [x  y] + [1.0  2.0] = [x + 1.0    y + 2.0]
-  // [z  w]   [3.0  4.0]   [z + 3.0    w + 4.0]
-  EXPECT_PRED2(ExprEqual, m1(0, 0), x_ + 1.0);
-  EXPECT_PRED2(ExprEqual, m1(0, 1), y_ + 2.0);
-  EXPECT_PRED2(ExprEqual, m1(1, 0), z_ + 3.0);
-  EXPECT_PRED2(ExprEqual, m1(1, 1), w_ + 4.0);
-
-  // [x  y] - [1.0  2.0] = [x - 1.0    y - 2.0]
-  // [z  w]   [3.0  4.0]   [z - 3.0    w - 4.0]
-  EXPECT_PRED2(ExprEqual, m2(0, 0), x_ - 1.0);
-  EXPECT_PRED2(ExprEqual, m2(0, 1), y_ - 2.0);
-  EXPECT_PRED2(ExprEqual, m2(1, 0), z_ - 3.0);
-  EXPECT_PRED2(ExprEqual, m2(1, 1), w_ - 4.0);
-
-  // [x  y] * [1.0  2.0] = [x * 1.0 + y * 3.0    x * 2.0 + y * 4.0]
-  // [z  w]   [3.0  4.0]   [z * 1.0 + w * 3.0    z * 2.0 + y * 4.0]
-  EXPECT_PRED2(ExprEqual, m3(0, 0), x_ * 1.0 + y_ * 3.0);
-  EXPECT_PRED2(ExprEqual, m3(0, 1), x_ * 2.0 + y_ * 4.0);
-  EXPECT_PRED2(ExprEqual, m3(1, 0), z_ * 1.0 + w_ * 3.0);
-  EXPECT_PRED2(ExprEqual, m3(1, 1), z_ * 2.0 + w_ * 4.0);
-}
-
-TEST_F(SymbolicVariableTest, OperatorOverloadingEigenDoubleOpVariable) {
-  const Eigen::Matrix<Expression, 2, 2> m1{double_mat_ + var_mat_};
-  const Eigen::Matrix<Expression, 2, 2> m2{double_mat_ - var_mat_};
-  const Eigen::Matrix<Expression, 2, 2> m3{double_mat_ * var_mat_};
-
-  // [1.0  2.0] + [x  y] = [1.0 + x    2.0 + y]
-  // [3.0  4.0]   [z  w]   [3.0 + z    4.0 + w]
-  EXPECT_PRED2(ExprEqual, m1(0, 0), 1.0 + x_);
-  EXPECT_PRED2(ExprEqual, m1(0, 1), 2.0 + y_);
-  EXPECT_PRED2(ExprEqual, m1(1, 0), 3.0 + z_);
-  EXPECT_PRED2(ExprEqual, m1(1, 1), 4.0 + w_);
-
-  // [1.0  2.0] - [x  y] = [1.0 - x    2.0 - y]
-  // [3.0  4.0]   [z  w]   [3.0 - z    4.0 - w]
-  EXPECT_PRED2(ExprEqual, m2(0, 0), 1.0 - x_);
-  EXPECT_PRED2(ExprEqual, m2(0, 1), 2.0 - y_);
-  EXPECT_PRED2(ExprEqual, m2(1, 0), 3.0 - z_);
-  EXPECT_PRED2(ExprEqual, m2(1, 1), 4.0 - w_);
-
-  // [1.0  2.0] * [x  y] = [1.0 * x + 2.0 * z    1.0 * y + 2.0 * w]
-  // [3.0  4.0]   [z  w]   [3.0 * x + 4.0 * z    3.0 * y + 4.0 * w]
-  EXPECT_PRED2(ExprEqual, m3(0, 0), 1.0 * x_ + 2.0 * z_);
-  EXPECT_PRED2(ExprEqual, m3(0, 1), 1.0 * y_ + 2.0 * w_);
-  EXPECT_PRED2(ExprEqual, m3(1, 0), 3.0 * x_ + 4.0 * z_);
-  EXPECT_PRED2(ExprEqual, m3(1, 1), 3.0 * y_ + 4.0 * w_);
-}
-
-TEST_F(SymbolicVariableTest, OperatorOverloadingEigenDivideByVariable) {
-  const Eigen::Matrix<Expression, 2, 2> m1{double_mat_ / x_};
-  const Eigen::Matrix<Expression, 2, 2> m2{var_mat_ / x_};
-  const Eigen::Matrix<Expression, 2, 2> m3{expr_mat_ / x_};
-
-  // [1.0  2.0] / x = [1.0 / x    2.0 / x]
-  // [3.0  4.0]       [3.0 / x    4.0 / x]
-  EXPECT_PRED2(ExprEqual, m1(0, 0), 1.0 / x_);
-  EXPECT_PRED2(ExprEqual, m1(0, 1), 2.0 / x_);
-  EXPECT_PRED2(ExprEqual, m1(1, 0), 3.0 / x_);
-  EXPECT_PRED2(ExprEqual, m1(1, 1), 4.0 / x_);
-
-  // [x  y] / x = [x / x    y / x]
-  // [z  w]       [z / x    w / x]
-  EXPECT_PRED2(ExprEqual, m2(0, 0), x_ / x_);
-  EXPECT_PRED2(ExprEqual, m2(0, 1), y_ / x_);
-  EXPECT_PRED2(ExprEqual, m2(1, 0), z_ / x_);
-  EXPECT_PRED2(ExprEqual, m2(1, 1), w_ / x_);
-
-  // [x + z  x + w] / x = [(x + z) / x    (x + w) / x]
-  // [y + z  y + w]       [(y + z) / x    (y + w) / x]
-  EXPECT_PRED2(ExprEqual, m3(0, 0), (x_ + z_) / x_);
-  EXPECT_PRED2(ExprEqual, m3(0, 1), (x_ + w_) / x_);
-  EXPECT_PRED2(ExprEqual, m3(1, 0), (y_ + z_) / x_);
-  EXPECT_PRED2(ExprEqual, m3(1, 1), (y_ + w_) / x_);
-}
-TEST_F(SymbolicVariableTest, OperatorOverloadingEigenDivideVariable) {
-  const Eigen::Matrix<Expression, 2, 2> m1{var_mat_ / 3.0};
-  const Eigen::Matrix<Expression, 2, 2> m2{var_mat_ / (x_ + y_)};
-
-  // [x  y] / 3.0 = [x / 3.0    y / 3.0]
-  // [z  w]         [z / 3.0    w / 3.0]
-  EXPECT_PRED2(ExprEqual, m1(0, 0), x_ / 3.0);
-  EXPECT_PRED2(ExprEqual, m1(0, 1), y_ / 3.0);
-  EXPECT_PRED2(ExprEqual, m1(1, 0), z_ / 3.0);
-  EXPECT_PRED2(ExprEqual, m1(1, 1), w_ / 3.0);
-
-  // [x  y] / (x + y) = [x / (x + y)    y / (x + y)]
-  // [z  w]             [z / (x + y)    w / (x + y)]
-  EXPECT_PRED2(ExprEqual, m2(0, 0), x_ / (x_ + y_));
-  EXPECT_PRED2(ExprEqual, m2(0, 1), y_ / (x_ + y_));
-  EXPECT_PRED2(ExprEqual, m2(1, 0), z_ / (x_ + y_));
-  EXPECT_PRED2(ExprEqual, m2(1, 1), w_ / (x_ + y_));
-}
-
-TEST_F(SymbolicVariableTest, EigenExpressionMatrixOutput) {
-  ostringstream oss1;
-  oss1 << expr_mat_;
-
-  ostringstream oss2;
-  oss2 << "      (x + z)       (x + w)\n"
-       << "      (y + z)       (y + w)";
-
-  EXPECT_EQ(oss1.str(), oss2.str());
 }
 
 }  // namespace

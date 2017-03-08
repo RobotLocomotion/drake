@@ -84,7 +84,9 @@ const double NEAR_ZERO = std::sqrt(std::numeric_limits<double>::epsilon());
 }  // anonymous namespace
 
 // Sole constructor
-MobyLCPSolver::MobyLCPSolver() : log_enabled_(false) {}
+MobyLCPSolver::MobyLCPSolver()
+    : MathematicalProgramSolverInterface(SolverType::kMobyLCP),
+      log_enabled_(false) {}
 
 void MobyLCPSolver::SetLoggingEnabled(bool enabled) { log_enabled_ = enabled; }
 
@@ -158,7 +160,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   // internally.
 
   // We don't actually indicate different results.
-  prog.SetSolverResult(SolverName(), 0);
+  prog.SetSolverResult(solver_type(), 0);
 
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
@@ -169,7 +171,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
     if (!solved) {
       return SolutionResult::kUnknownError;
     }
-    prog.SetDecisionVariableValueFromBinding(constraint_solution, binding);
+    prog.SetDecisionVariableValues(binding.variables(), constraint_solution);
   }
   return SolutionResult::kSolutionFound;
 }

@@ -37,16 +37,22 @@ class SchunkWsgTrajectoryGeneratorStateVector : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  SchunkWsgTrajectoryGeneratorStateVector<T>* DoClone() const override {
+    auto result = new SchunkWsgTrajectoryGeneratorStateVector;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
-  // last_target_position
+  /// last_target_position
   const T& last_target_position() const {
     return this->GetAtIndex(K::kLastTargetPosition);
   }
   void set_last_target_position(const T& last_target_position) {
     this->SetAtIndex(K::kLastTargetPosition, last_target_position);
   }
-  // trajectory_start_time
+  /// trajectory_start_time
   const T& trajectory_start_time() const {
     return this->GetAtIndex(K::kTrajectoryStartTime);
   }

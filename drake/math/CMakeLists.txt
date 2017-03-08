@@ -5,6 +5,7 @@ set(sources
   axis_angle.cc
   continuous_algebraic_ricatti_equation.cc
   cross_product.cc
+  discrete_algebraic_riccati_equation.cc
   eigen_sparse_triplet.cc
   expmap.cc
   gradient.cc
@@ -12,7 +13,6 @@ set(sources
   matrix_util.cc
   normalize_vector.cc
   quaternion.cc
-  random_rotation.cc
   roll_pitch_yaw.cc
   rotation_conversion_gradient.cc
   rotation_matrix.cc)
@@ -25,6 +25,7 @@ set(installed_headers
   axis_angle.h
   continuous_algebraic_ricatti_equation.h
   cross_product.h
+  discrete_algebraic_riccati_equation.h
   eigen_sparse_triplet.h
   expmap.h
   gradient.h

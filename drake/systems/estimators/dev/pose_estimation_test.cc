@@ -57,13 +57,13 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   auto W = prog.NewContinuousVariables(vertices.cols(), points.cols(), "W");
 
   // Forall i,j, 0 <= W(i,j) <= 1.
-  prog.AddBoundingBoxConstraint(0, 1, {W});
+  prog.AddBoundingBoxConstraint(0, 1, W);
 
   // Forall k, sum_j W(j,k) = 1.
   // Note: Adding constraints one at a time because W is not a column vector.
   for (int k = 0; k < points.cols(); k++) {
     prog.AddLinearEqualityConstraint(Eigen::MatrixXd::Ones(1, vertices.cols()),
-                                     1, {W.col(k)});
+                                     1, W.col(k));
   }
 
   enum RotationType {
@@ -74,7 +74,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
 
   const RotationType rotation_type = kTranslationOnly;
   //  const RotationType rotation_type = kSdpRelaxationSpectrahedron;
-  drake::solvers::DecisionVariableMatrixX R;
+  drake::solvers::MatrixXDecisionVariable R;
 
   switch (rotation_type) {
     case kTranslationOnly: {
@@ -143,7 +143,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
       }
 
       // min sum_k sigma_k
-      prog.AddLinearCost(Eigen::VectorXd::Ones(points.cols()), {sigma});
+      prog.AddLinearCost(Eigen::VectorXd::Ones(points.cols()), sigma);
     } break;
     default:
       throw std::runtime_error("Unsupported rotation type.");
@@ -156,7 +156,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
     for (int k = 0; k < points.cols(); k++) {
       // Sum_i B(i,k) = 1 (each point must be assigned to exactly one face).
       prog.AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(faces.cols()),
-                                       1, {B.col(k)});
+                                       1, B.col(k));
     }
 
     // W(v,k) <= sum_j B(j,k) for all faces j that contain vertex v.
@@ -184,10 +184,10 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
 
   prog.PrintSolution();
 
-  std::string solver_name;
+  drake::solvers::SolverType solver_type;
   int solver_result;
-  prog.GetSolverResult(&solver_name, &solver_result);
-  std::cout << solver_name << " exit code = " << static_cast<int>(r)
+  prog.GetSolverResult(&solver_type, &solver_result);
+  std::cout << solver_type << " exit code = " << static_cast<int>(r)
             << std::endl;
   Eigen::Isometry3d T;
   T.translation() = prog.GetSolution(t);

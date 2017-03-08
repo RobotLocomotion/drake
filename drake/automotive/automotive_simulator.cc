@@ -97,7 +97,9 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(const std::string& sdf_filename,
 
 template <typename T>
 int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
-    const std::string& sdf_filename, const Curve2<double>& curve, double speed,
+    const std::string& sdf_filename,
+    const Curve2<double>& curve,
+    double speed,
     double start_time) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();

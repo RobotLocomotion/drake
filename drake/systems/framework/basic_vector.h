@@ -24,6 +24,11 @@ namespace systems {
 template <typename T>
 class BasicVector : public VectorBase<T> {
  public:
+  // BasicVector cannot be copied or moved; use Clone instead.  (We cannot
+  // support copy or move because of the slicing problem, and also because
+  // assignment of a BasicVector could change its size.)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BasicVector)
+
   /// Initializes with the given @p size using the drake::dummy_value<T>, which
   /// is NaN when T = double.
   explicit BasicVector(int size)
@@ -32,6 +37,7 @@ class BasicVector : public VectorBase<T> {
   /// Constructs a BasicVector with the specified @p data.
   explicit BasicVector(const VectorX<T>& data) : values_(data) {}
 
+  /// Constructs a BasicVector whose elements are the elements of @p data.
   static std::unique_ptr<BasicVector<T>> Make(
       const std::initializer_list<T>& data) {
     auto vec = std::make_unique<BasicVector<T>>(data.size());
@@ -40,6 +46,17 @@ class BasicVector : public VectorBase<T> {
       vec->SetAtIndex(i++, datum);
     }
     return vec;
+  }
+
+  /// Constructs a BasicVector where each element is constructed using the
+  /// placewise-corresponding member of @p args as the sole constructor
+  /// argument.  For instance:
+  ///   BasicVector<symbolic::Expression>::Make("x", "y", "z");
+  template<typename... Fargs>
+  static std::unique_ptr<BasicVector<T>> Make(Fargs&&... args) {
+    auto data = std::make_unique<BasicVector<T>>(sizeof...(args));
+    BasicVector<T>::MakeRecursive(data.get(), 0, args...);
+    return std::move(data);
   }
 
   int size() const override { return static_cast<int>(values_.rows()); }
@@ -107,25 +124,35 @@ class BasicVector : public VectorBase<T> {
     return std::unique_ptr<BasicVector<T>>(DoClone());
   }
 
-  // Assignment of BasicVectors could change size, so we forbid it.
-  BasicVector& operator=(const BasicVector& other) = delete;
-
-  // BasicVector objects are not moveable.
-  BasicVector(BasicVector&& other) = delete;
-  BasicVector& operator=(BasicVector&& other) = delete;
-
  protected:
-  explicit BasicVector(const BasicVector& other)
-      : VectorBase<T>(), values_(other.values_) {}
-
   /// Returns a new BasicVector containing a copy of the entire vector.
   /// Caller must take ownership.
   ///
   /// Subclasses of BasicVector must override DoClone to return their covariant
   /// type.
-  virtual BasicVector<T>* DoClone() const { return new BasicVector<T>(*this); }
+  virtual BasicVector<T>* DoClone() const {
+    return new BasicVector<T>(this->get_value());
+  }
 
  private:
+  // Sets @p data at @p index to an object of type T, which must have a
+  // single-argument constructor invoked via @p constructor_arg, and then
+  // recursively invokes itself on the next index with @p recursive args.
+  // Helper for BasicVector<T>::Make.
+  template<typename F, typename... Fargs>
+  static void MakeRecursive(BasicVector<T>* data, int index,
+                            F constructor_arg, Fargs&&... recursive_args) {
+    data->SetAtIndex(index++, T(constructor_arg));
+    BasicVector<T>::MakeRecursive(data, index, recursive_args...);
+  }
+
+  // Base case for the MakeRecursive template recursion.
+  template<typename F, typename... Fargs>
+  static void MakeRecursive(BasicVector<T>* data, int index,
+                            F constructor_arg) {
+    data->SetAtIndex(index++, T(constructor_arg));
+  }
+
   // Add in multiple scaled vectors to this vector. All vectors
   // must be the same size. This function overrides the default DoPlusEqScaled()
   // implementation toward maximizing speed. This implementation should be able
@@ -140,6 +167,9 @@ class BasicVector : public VectorBase<T> {
 
   // The column vector of T values.
   VectorX<T> values_;
+  // N.B. Do not add more member fields without considering the effect on
+  // subclasses.  Derived class's Clone() methods currently assume that the
+  // BasicVector(const VectorX<T>&) constructor is all that is needed.
 };
 
 // Allows a BasicVector<T> to be streamed into a string. This is useful for

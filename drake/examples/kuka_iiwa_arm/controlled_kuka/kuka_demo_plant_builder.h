@@ -51,8 +51,6 @@ class KukaDemo : public systems::Diagram<T> {
     drake::multibody::AddFlatTerrainToWorld(tree.get());
     VerifyIiwaTree(*tree);
 
-    const int kNumActuators = tree->get_num_actuators();
-
     systems::DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
@@ -64,23 +62,10 @@ class KukaDemo : public systems::Diagram<T> {
                  plant_->get_num_positions());
 
     // Create and add PID controller.
-    // Constants are chosen by trial and error to qualitatively match an
-    // experimental run with the same initial conditions and planner.
-    // Quantitative comparisons would require torque control and a more careful
-    // estimation of the model constants such as friction in the joints.
-
-    // proportional constant.
-    Eigen::VectorXd kp = Eigen::VectorXd::Zero(kNumActuators);
-    kp << 100, 100, 100, 20, 10, 20, 1;
-
-    // integral constant.
-    Eigen::VectorXd ki = Eigen::VectorXd::Zero(kNumActuators);
-
-    // derivative constant.
-    Eigen::VectorXd kd = Eigen::VectorXd::Zero(kNumActuators);
-    for (int i = 0; i < kp.rows(); ++i) {
-      kd[i] = std::sqrt(kp[i]);
-    }
+    Eigen::VectorXd kp;
+    Eigen::VectorXd ki;
+    Eigen::VectorXd kd;
+    SetPositionControlledIiwaGains(&kp, &ki, &kd);
 
     controller_ = builder.template AddSystem<systems::PidControlledSystem<T>>(
         std::move(plant), kp, ki, kd);
@@ -123,7 +108,7 @@ class KukaDemo : public systems::Diagram<T> {
     viz_publisher_ = builder.template AddSystem<systems::DrakeVisualizer>(
         plant_->get_rigid_body_tree(), &lcm_);
 
-    builder.Connect(desired_plan_->get_output_port(0),
+    builder.Connect(desired_plan_->get_output_port(),
                     input_mux->get_input_port(0));
 
     // Splits the RBP output into positions (q) and velocities (v).

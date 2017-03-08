@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+# Do not run this program directly; only use the compiled form in bazel-bin.
 
 """Launch the `automotive_demo` simulation with the following supporting
 applications:
 
  * steering_command_driver.py for interactive input
  * drake-visualizer to see things move
- * bot-spy to see LCM traffic of state and visualization
+ * lcm-spy to see LCM traffic of state and visualization
  * lcm-logger to capture LCM activity to disk
 
 To kill all the processes, just kill the script in the console with
@@ -21,15 +21,7 @@ import subprocess
 import sys
 import time
 
-from drake_paths import (add_module_search_paths, DRAKE_DIST_BUILD_DIR,
-                         DRAKE_INSTALL_BIN_DIR, DRAKE_DRAKE_BUILD_DIR)
-
-add_module_search_paths()  # so we can find lcm stuff.
-
 import lcm
-
-_THIS_FILE = os.path.abspath(__file__)
-_THIS_DIR = os.path.dirname(_THIS_FILE)
 
 _epilog = """
 All remaining arguments are passed to the %s program:
@@ -61,7 +53,7 @@ class Launcher(object):
         self.children = []  # list of TrackedProcess
         self.devnull = open('/dev/null')
         self.returncode = None  # First one to exit wins.
-        self.name = os.path.basename(_THIS_FILE)
+        self.name = os.path.basename(__file__)
 
     def launch(self, command, label=None):
         """Launch a process to be managed with the group. If no label is
@@ -69,6 +61,12 @@ class Launcher(object):
         """
         if label is None:
             label = os.path.basename(command[0])
+        if not os.path.exists(command[0]):
+            print "[%s] Missing file %s; available files are:" % (
+                self.name, command[0])
+            sys.stdout.flush()
+            subprocess.call(["/usr/bin/find", "-L", "."])
+            raise RuntimeError(command[0] + " not found")
         process = subprocess.Popen(
             command,
             stdin=self.devnull,
@@ -76,6 +74,14 @@ class Launcher(object):
         flags = fcntl.fcntl(process.stdout, fcntl.F_GETFL)
         fcntl.fcntl(process.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
         self.children.append(TrackedProcess(label, process))
+
+        # Fail-fast on infant mortality.
+        time.sleep(0.05)
+        self._poll()
+        if self.returncode is not None:
+            print process.stdout.read(),
+            print "[%s] %s failed to launch" % (self.name, label)
+            sys.exit(self.returncode or 1)
 
     def _poll(self):
         for child in self.children:
@@ -140,16 +146,6 @@ class Launcher(object):
 the_launcher = Launcher()
 
 
-def bot_spy_that_actually_works():
-    # Workaround for #3231.
-    jar_dir = os.path.join(DRAKE_DIST_BUILD_DIR, "install", "share", "java")
-    jar_glob = os.path.join(jar_dir, "*.jar")
-    classpath = ':'.join(glob.glob(jar_glob) +
-                         [os.environ.get("CLASSPATH", "")])
-    the_launcher.launch(["java", "-cp", classpath, "lcm.spy.Spy"],
-                        label="bot-spy")
-
-
 def wait_for_lcm_message_on_channel(channel):
     """Wait for a single message to arrive on the specified LCM channel.
     """
@@ -160,9 +156,13 @@ def wait_for_lcm_message_on_channel(channel):
         raise StopIteration()
 
     sub = m.subscribe(channel, receive)
+    start_time = time.time()
     try:
         while True:
-            rlist, _, _ = select.select([m], [], [])
+            if time.time() - start_time > 10.:
+                raise RuntimeError(
+                    "Timeout waiting for channel %s" % channel)
+            rlist, _, _ = select.select([m], [], [], 0.1)
             if m in rlist:
                 m.handle()
     except StopIteration:
@@ -172,11 +172,14 @@ def wait_for_lcm_message_on_channel(channel):
 
 
 def main():
-    demo_name = "automotive/automotive_demo"
-    demo_path = os.path.join(DRAKE_DRAKE_BUILD_DIR, demo_name)
+    demo_path = "drake/automotive/automotive_demo"
+    steering_command_driver_path = "drake/automotive/steering_command_driver"
+    drake_visualizer_path = "external/drake_visualizer/drake-visualizer"
+    lcm_spy_path = "drake/automotive/lcm-spy"
+    lcm_logger_path = "external/lcm/lcm-logger"
 
     parser = argparse.ArgumentParser(
-        add_help=False, description=__doc__, epilog=_epilog % demo_name,
+        add_help=False, description=__doc__, epilog=_epilog % demo_path,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--duration", type=float, default=float('Inf'),
                         help="demo run duration in seconds")
@@ -194,28 +197,19 @@ def main():
         sys.exit(1)
 
     try:
-        # TODO(#3231) Use installed program once it works again.
-        # the_launcher.launch([os.path.join(_DRAKE_INSTALL_BIN, "lcm-logger")])
-        the_launcher.launch(
-            [os.path.join(DRAKE_DIST_BUILD_DIR,
-                          "externals", "lcm", "lcm-logger", "lcm-logger")])
-
-        # TODO(#3231) Use this shell script once it works again.
-        # the_launcher.launch(os.path.join(_DRAKE_INSTALL_BIN, "bot-spy")
-        bot_spy_that_actually_works()
+        print "*** LCM logs will be in", os.getcwd()
+        the_launcher.launch([lcm_logger_path])
+        the_launcher.launch([lcm_spy_path])
 
         if args.launch_visualizer:
-            the_launcher.launch(
-                [os.path.join(DRAKE_INSTALL_BIN_DIR, "drake-visualizer")])
-
+            the_launcher.launch([drake_visualizer_path])
             # Await a message on the DRAKE_VIEWER_STATUS channel indicating
             # that drake-visualizer is ready. This ensures that the demo app's
             # LOAD_ROBOT message will be seen and processed.
             wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')
 
         the_launcher.launch([demo_path] + tail)
-        the_launcher.launch(
-            [os.path.join(_THIS_DIR, "steering_command_driver.py")])
+        the_launcher.launch([steering_command_driver_path])
 
         the_launcher.wait(args.duration)
 

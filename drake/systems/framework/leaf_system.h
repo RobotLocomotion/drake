@@ -11,6 +11,7 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/systems/framework/abstract_state.h"
@@ -45,6 +46,9 @@ struct PeriodicEvent {
 template <typename T>
 class LeafSystem : public System<T> {
  public:
+  // LeafSystem objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystem)
+
   ~LeafSystem() override {}
 
   // =========================================================================
@@ -124,12 +128,15 @@ class LeafSystem : public System<T> {
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
-    for (const auto& descriptor : this->get_output_ports()) {
-      // TODO(liang.fok) Generalize this method to support ports of type
-      // kAbstractValued.
-      DRAKE_DEMAND(descriptor.get_data_type() == kVectorValued);
-      output->get_mutable_ports()->emplace_back(
-          new OutputPort(AllocateOutputVector(descriptor)));
+    for (int i = 0; i < this->get_num_output_ports(); ++i) {
+      const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
+      if (descriptor.get_data_type() == kVectorValued) {
+        output->get_mutable_ports()->emplace_back(
+            new OutputPort(AllocateOutputVector(descriptor)));
+      } else {
+        output->get_mutable_ports()->emplace_back(
+            new OutputPort(AllocateOutputAbstract(descriptor)));
+      }
     }
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
@@ -144,12 +151,6 @@ class LeafSystem : public System<T> {
       const override {
     return AllocateDiscreteState();
   }
-
-  // LeafSystem objects are neither copyable nor moveable.
-  explicit LeafSystem(const System<T>& other) = delete;
-  LeafSystem& operator=(const System<T>& other) = delete;
-  explicit LeafSystem(System<T>&& other) = delete;
-  LeafSystem& operator=(System<T>&& other) = delete;
 
  protected:
   LeafSystem() {}
@@ -213,6 +214,16 @@ class LeafSystem : public System<T> {
     return std::make_unique<BasicVector<T>>(descriptor.size());
   }
 
+  /// Given a port descriptor, allocates the abstract storage.  The default
+  /// implementation in this class aborts.  Subclasses with abstract output
+  /// ports must override. The descriptor must match a port declared via
+  /// DeclareOutputPort.
+  virtual std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<T>& descriptor) const {
+    DRAKE_ABORT_MSG("A concrete leaf system with abstract output ports must "
+                    "override AllocateOutputAbstract.");
+  }
+
   // =========================================================================
   // New methods for subclasses to use
 
@@ -231,25 +242,45 @@ class LeafSystem : public System<T> {
     return *params;
   }
 
-  /// Declares that this System has a simple, fixed-period discrete update.
+  /// Declares that this System has a simple, fixed-period discrete action.
   /// The first tick will be at t = period_sec, and it will recur at every
-  /// period_sec thereafter. On the discrete tick, the system may update
-  /// the discrete state. Clobbers any other periodic behaviors previously
-  /// declared.
-  void DeclareUpdatePeriodSec(const T& period_sec) {
-    DeclarePeriodicUpdate(period_sec, 0.0);
-  }
-
-  /// Declares that this System has a simple, fixed-period discrete update.
-  /// The first tick will be at t= offset_sec, and it will recur at every
-  /// period_sec thereafter. On the discrete tick, the system may update the
-  /// discrete state.
-  void DeclarePeriodicUpdate(const T& period_sec, const T& offset_sec) {
+  /// period_sec thereafter. On the discrete tick, the system may perform
+  /// the given type of action.
+  void DeclarePeriodicAction(const T& period_sec, const T& offset_sec,
+      const typename DiscreteEvent<T>::ActionType& action) {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.offset_sec = offset_sec;
-    event.event.action = DiscreteEvent<T>::kDiscreteUpdateAction;
+    event.event.action = action;
     periodic_events_.push_back(event);
+  }
+
+  /// Declares that this System has a simple, fixed-period discrete update.
+  /// The first tick will be at t = period_sec, and it will recur at every
+  /// period_sec thereafter. On the discrete tick, the system may update
+  /// the discrete state.
+  void DeclareDiscreteUpdatePeriodSec(const T& period_sec) {
+    DeclarePeriodicAction(period_sec, 0.0,
+        DiscreteEvent<T>::kDiscreteUpdateAction);
+  }
+
+  /// Declares that this System has a simple, fixed-period discrete update.
+  /// The first tick will be at t = offset_sec, and it will recur at every
+  /// period_sec thereafter. On the discrete tick, the system may update the
+  /// discrete state.
+  void DeclarePeriodicDiscreteUpdate(const T& period_sec, const T& offset_sec) {
+    DeclarePeriodicAction(period_sec, offset_sec,
+        DiscreteEvent<T>::kDiscreteUpdateAction);
+  }
+
+  /// Declares that this System has a simple, fixed-period unrestricted state
+  /// update. The first tick will be at t = offset_sec, and it will recur at
+  /// every period_sec thereafter. On the discrete tick, the system may perform
+  /// unrestricted updates.
+  void DeclarePeriodicUnrestrictedUpdate(const T& period_sec,
+      const T& offset_sec) {
+    DeclarePeriodicAction(period_sec, offset_sec,
+        DiscreteEvent<T>::kUnrestrictedUpdateAction);
   }
 
   /// Declares that this System has a simple, fixed-period publish.
@@ -257,10 +288,7 @@ class LeafSystem : public System<T> {
   /// period_sec thereafter. On the discrete tick, the system may update
   /// the discrete state.
   void DeclarePublishPeriodSec(const T& period_sec) {
-    PeriodicEvent<T> event;
-    event.period_sec = period_sec;
-    event.event.action = DiscreteEvent<T>::kPublishAction;
-    periodic_events_.push_back(event);
+    DeclarePeriodicAction(period_sec, 0, DiscreteEvent<T>::kPublishAction);
   }
 
   /// Declares that this System should reserve continuous state with

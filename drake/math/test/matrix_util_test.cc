@@ -61,8 +61,8 @@ GTEST_TEST(TestMatrixUtil, TestToSymmetricMatrixFromLowerTriangularColumns) {
         2, 4, 5,
         3, 5, 6;
   // clang-format on
-  EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x2),
-                              X2));
+  EXPECT_TRUE(
+      CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x2), X2));
 }
 }  // namespace test
 }  // namespace math

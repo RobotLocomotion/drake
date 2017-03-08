@@ -136,13 +136,15 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     int wsg_instance_id{};
     plant_ = builder.AddSystem(BuildCombinedPlant<T>(&iiwa_instance_id,
                                                      &wsg_instance_id));
-    const auto& iiwa_input_port = plant_->model_input_port(iiwa_instance_id);
+    const auto& iiwa_input_port =
+        plant_->model_instance_actuator_command_input_port(iiwa_instance_id);
     const auto& iiwa_output_port =
-        plant_->model_state_output_port(iiwa_instance_id);
+        plant_->model_instance_state_output_port(iiwa_instance_id);
 
-    const auto& wsg_input_port = plant_->model_input_port(wsg_instance_id);
+    const auto& wsg_input_port =
+        plant_->model_instance_actuator_command_input_port(wsg_instance_id);
     const auto& wsg_output_port =
-            plant_->model_state_output_port(wsg_instance_id);
+            plant_->model_instance_state_output_port(wsg_instance_id);
 
     // Connect the pid controllers for each device.
 
@@ -206,28 +208,6 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
         drake::multibody::joints::kFixed,
         nullptr /* weld to frame */, &iiwa_tree_);
 
-    // Create a multiplexer to handle the fact that we'll be getting
-    // the input state for the positions and velocities from different
-    // sources.  Port 0 (positions) will be exported as an input to
-    // the diagram.  Port 1 (velocities) is connected below).
-    auto input_mux = builder.template AddSystem<Multiplexer<T>>(
-        std::vector<int>{iiwa_tree_.get_num_positions(),
-              iiwa_tree_.get_num_velocities()});
-    builder.Connect(input_mux->get_output_port(0),
-                    iiwa_pid_ports.state_input_port);
-
-    // The iiwa's control protocol doesn't have any way to express the
-    // desired velocity for the arm, so this simulation doesn't take
-    // target velocities as an input.  The PidControlledSystem does
-    // want target velocities to calculate the D term.  Since we don't
-    // have any logic to calculate the desired target velocity (yet!)
-    // set the D term (to stabilize the arm near the commanded
-    // position) and feed a desired velocity vector of zero.
-    auto zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
-        Eigen::VectorXd::Zero(iiwa_tree_.get_num_velocities()));
-    builder.Connect(zero_source->get_output_port(),
-                    input_mux->get_input_port(1));
-
     auto gravity_compensator =
         builder.template AddSystem<GravityCompensator<T>>(iiwa_tree_);
 
@@ -248,7 +228,7 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     builder.Connect(gravity_compensator->get_output_port(0),
                     iiwa_pid_ports.control_input_port);
 
-    builder.ExportInput(input_mux->get_input_port(0));
+    builder.ExportInput(iiwa_pid_ports.state_input_port);
     builder.ExportOutput(iiwa_output_port);
 
     // Now finish building the WSG's part of the diagram.

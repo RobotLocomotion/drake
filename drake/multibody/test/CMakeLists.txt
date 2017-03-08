@@ -9,6 +9,9 @@ target_link_libraries(benchmark_rigid_body_tree
     drakeMultibodyParsers
     drakeRBM)
 
+drake_add_cc_test(rigid_body_frame_test)
+target_link_libraries(rigid_body_frame_test drakeRBM)
+
 drake_add_cc_test(rigid_body_test)
 target_link_libraries(rigid_body_test drakeRBM)
 
@@ -29,7 +32,6 @@ endmacro()
 macro(add_ik_gtest)
   drake_add_cc_test(${ARGV})
   target_link_libraries(${ARGV}
-    GTest::GTest GTest::Main
     drakeIK
     drakeMultibodyParsers
     drakeRigidBodyConstraint)

@@ -1,10 +1,15 @@
 #include <iostream>
 
+#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
+
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
 
 namespace drake {
 namespace systems {
@@ -63,7 +68,41 @@ GTEST_TEST(RigidBodyTest, TestAdjacency) {
   rigid_body_ptrC->setJoint(move(floating_joint));
   EXPECT_FALSE(rigid_body_ptrC->adjacentTo(*rigid_body_ptrD));
   EXPECT_FALSE(rigid_body_ptrD->adjacentTo(*rigid_body_ptrC));
-};
+}
+
+// Tests ability to clone a RigidBody.
+GTEST_TEST(RigidBodyTest, TestClone) {
+  const std::string kName = "MyRigidBody";
+  const std::string kModelName = "MyModelName";
+  const int kModelInstanceId = 738021;
+  const int kBodyIndex = 2947;
+  const int kPositionStartIndex = 81433;
+  const int kVelocityStartIndex = 901261;
+  const double kMass = 3.14;
+  const Vector3d kCom(3.893, 8.223, 0.33);
+  drake::SquareTwistMatrix<double> spatial_inertia =
+      drake::SquareTwistMatrix<double>::Zero();
+  spatial_inertia.block(3, 3, 3, 3) << kMass * Matrix3d::Identity();
+
+  RigidBody<double> original_body;
+  original_body.set_name(kName);
+  original_body.set_model_name(kModelName);
+  original_body.set_model_instance_id(kModelInstanceId);
+  original_body.set_body_index(kBodyIndex);
+  original_body.set_position_start_index(kPositionStartIndex);
+  original_body.set_velocity_start_index(kVelocityStartIndex);
+  original_body.set_mass(kMass);
+  original_body.set_center_of_mass(kCom);
+  original_body.set_spatial_inertia(spatial_inertia);
+
+  auto cloned_body = original_body.Clone();
+  EXPECT_TRUE(original_body.CompareToClone(*cloned_body));
+
+  // Ensures that a modified clone does not match.
+  cloned_body->set_mass(kMass + 1);
+  EXPECT_FALSE(original_body.CompareToClone(*cloned_body));
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace plants

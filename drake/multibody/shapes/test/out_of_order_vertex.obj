@@ -1,0 +1,8 @@
+# This is a valid obj file, but it references vertices before they've been
+# defined.  Our simple parser considers this an error.
+v 0 0 0
+v 0 0 1
+v 1 0 1
+vn 0 1 0
+f 1//1 2//1 3//1 4//1
+v 1 0 0

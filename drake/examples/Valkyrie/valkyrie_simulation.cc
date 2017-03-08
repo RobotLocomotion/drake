@@ -7,7 +7,9 @@
 #include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
@@ -110,6 +112,11 @@ int main(int argc, const char** argv) {
   // Visualizer.
   const DrakeVisualizer& visualizer_publisher =
       *builder.template AddSystem<DrakeVisualizer>(tree, &lcm);
+  const ContactResultsToLcmSystem<double>& contact_viz =
+      *builder.template AddSystem<ContactResultsToLcmSystem<double>>(tree);
+  auto& contact_results_publisher = *builder.AddSystem(
+      LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
+          "CONTACT_RESULTS", &lcm));
 
   // Connections.
   // LCM message to desired effort conversion.
@@ -163,6 +170,12 @@ int main(int argc, const char** argv) {
   // Contact results to robot state encoder.
   builder.Connect(plant.contact_results_output_port(),
                   robot_state_encoder.contact_results_port());
+
+  // Contact results to lcm msg.
+  builder.Connect(plant.contact_results_output_port(),
+                  contact_viz.get_input_port(0));
+  builder.Connect(contact_viz.get_output_port(0),
+                  contact_results_publisher.get_input_port(0));
 
   // Robot state encoder to robot state publisher.
   builder.Connect(robot_state_encoder, robot_state_publisher);

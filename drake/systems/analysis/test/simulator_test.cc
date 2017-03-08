@@ -1,4 +1,5 @@
 #include "drake/systems/analysis/simulator.h"
+
 #include <cmath>
 #include <complex>
 #include <functional>
@@ -7,6 +8,7 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
@@ -262,6 +264,8 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 namespace {
 class UnrestrictedUpdater : public LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater)
+
   explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {
   }
 
@@ -438,11 +442,13 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 // DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives.
 class DiscreteSystem : public LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteSystem)
+
   DiscreteSystem() {
     // Deliberately choose a period that is identical to, and therefore courts
     // floating-point error with, the default max step size.
     const double offset = 0.0;
-    this->DeclarePeriodicUpdate(kUpdatePeriod, offset);
+    this->DeclarePeriodicDiscreteUpdate(kUpdatePeriod, offset);
     this->DeclarePublishPeriodSec(kPublishPeriod);
 
     set_name("TestSystem");

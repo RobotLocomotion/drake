@@ -14,21 +14,25 @@ set(source_files
 set(lcm_dependent_header_files)
 if (lcm_FOUND)
   set(lcm_dependent_header_files
+    contact_results_to_lcm.h
     drake_visualizer.h
+    rigid_body_plant_that_publishes_xdot.h
     viewer_draw_translator.h)
 endif ()
 
 set(lcm_dependent_source_files)
 if (lcm_FOUND)
   set(lcm_dependent_source_files
+    contact_results_to_lcm.cc
     drake_visualizer.cc
+    rigid_body_plant_that_publishes_xdot.cc
     viewer_draw_translator.cc)
 endif ()
 
 set(lcm_dependent_link_libraries)
 set(lcm_dependent_requires)
 if (lcm_FOUND)
-  set(lcm_dependent_link_libraries drakeLCMSystem2)
+  set(lcm_dependent_link_libraries drakeLcmSystem)
   set(lcm_dependent_requires drake-lcm-system2)
 endif ()
 

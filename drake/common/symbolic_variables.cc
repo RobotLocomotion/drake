@@ -114,7 +114,7 @@ Variables operator-(Variables vars, const Variable& var) {
   return vars;
 }
 
-ostream& operator<<(ostream& os, const symbolic::Variables& vars) {
+ostream& operator<<(ostream& os, const Variables& vars) {
   os << "{";
   if (!vars.vars_.empty()) {
     // output 1st ... N-1th elements by adding ", " at the end

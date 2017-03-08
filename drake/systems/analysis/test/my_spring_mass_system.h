@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 namespace drake {
@@ -12,11 +13,13 @@ namespace analysis_test {
 template <class T>
 class MySpringMassSystem : public SpringMassSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySpringMassSystem)
+
   // Pass through to SpringMassSystem, except add update rate
   MySpringMassSystem(double stiffness, double mass, double update_rate)
       : SpringMassSystem<T>(stiffness, mass, false /*no input force*/) {
     if (update_rate > 0.0) {
-      this->DeclareUpdatePeriodSec(1.0 / update_rate);
+      this->DeclareDiscreteUpdatePeriodSec(1.0 / update_rate);
     }
   }
 

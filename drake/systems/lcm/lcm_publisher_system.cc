@@ -78,6 +78,10 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
   return channel_;
 }
 
+void LcmPublisherSystem::set_publish_period(double period) {
+  LeafSystem<double>::DeclarePublishPeriodSec(period);
+}
+
 void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));

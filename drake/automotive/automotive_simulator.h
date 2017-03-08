@@ -9,6 +9,7 @@
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
@@ -25,10 +26,12 @@ namespace automotive {
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double
 ///
-/// They are already available to link against in libdrakeAutomotive.
+/// They are already available to link against in the containing library.
 template <typename T>
 class AutomotiveSimulator {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutomotiveSimulator)
+
   /// A constructor that configures this object to use DrakeLcm, which
   /// encapsulates a _real_ LCM instance.
   AutomotiveSimulator();
@@ -83,7 +86,8 @@ class AutomotiveSimulator {
   /// @return The model instance ID of the TrajectoryCar that was just added to
   /// the simulation.
   int AddTrajectoryCarFromSdf(const std::string& sdf_filename,
-                              const Curve2<double>& curve, double speed,
+                              const Curve2<double>& curve,
+                              double speed,
                               double start_time);
 
   /// Adds an LCM publisher for the given @p system.
@@ -133,10 +137,6 @@ class AutomotiveSimulator {
 
   /// Advance simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
-
-  // We are neither copyable nor moveable.
-  AutomotiveSimulator(const AutomotiveSimulator<T>& other) = delete;
-  AutomotiveSimulator& operator=(const AutomotiveSimulator<T>& other) = delete;
 
  private:
   int allocate_vehicle_number();

@@ -21,6 +21,39 @@ class RigidBody {
  public:
   RigidBody();
 
+  // The following preprocessor condition is necessary because wrapping method
+  // Clone() in SWIG causes the following build error to occur:
+  //
+  //     "call to implicitly-deleted copy constructor"
+  //
+  // Unfortunately, adding "%ignore RigidBody<double>::Clone()" to
+  // drake-distro/drake/bindings/swig/rbtree.i does not work.
+#ifndef SWIG
+  /**
+   * Returns a clone of this RigidBody.
+   *
+   * *Important note!* The following are not cloned:
+   *    - the joint
+   *    - the parent %RigidBody
+   *    - the visual elements
+   *    - the collision elements
+   *
+   * The parent is *not* cloned because the reference to it can only be
+   * determined by the RigidBodyTree (which owns both this body and the parent
+   * body). Both the parent and the joint are expected to be set by calling
+   * add_joint().
+   *
+   * The visual and collision elements will be cloned pending identified need.
+   */
+  std::unique_ptr<RigidBody<T>> Clone() const;
+#endif
+
+  /// Compares this %RigidBody with a clone. Since this method is intended to
+  /// compare a clone, an *exact* match is performed. This method will only
+  /// return `true` if the provided `other` %RigidBody is exactly the same as
+  /// this %RigidBody.
+  virtual bool CompareToClone(const RigidBody& other) const;
+
   /**
    * Returns the name of this rigid body.
    */
@@ -274,23 +307,6 @@ class RigidBody {
    */
   Eigen::Isometry3d ComputeWorldFixedPose() const;
 
-  void setCollisionFilter(const DrakeCollision::bitmask& group,
-                          const DrakeCollision::bitmask& ignores);
-
-  const DrakeCollision::bitmask& getCollisionFilterGroup() const;
-
-  void setCollisionFilterGroup(const DrakeCollision::bitmask& group);
-
-  const DrakeCollision::bitmask& getCollisionFilterIgnores() const;
-
-  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores);
-
-  void addToCollisionFilterGroup(const DrakeCollision::bitmask& group);
-
-  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group);
-
-  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group);
-
   // TODO(amcastro-tri): Change to is_adjacent_to().
   // TODO(SeanCurtis-TRI): This method is only used by the collision clique
   // calculation.  Maybe it would be better if the name reflected this: e.g.,
@@ -411,6 +427,14 @@ class RigidBody {
     return collision_elements_.end();
   }
 
+  /**
+   * Reports the total number of *registered* collision elements attached to
+   * this body. See Model::AddElement() for definition of "registered".
+   */
+  int get_num_collision_elements() const {
+    return static_cast<int>(collision_elements_.size());
+  }
+
  private:
   // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
   // currently (independently) at the RigidBodyTree level to represent the
@@ -419,16 +443,6 @@ class RigidBody {
   // The "parent" joint of this rigid body. This is the joint through which this
   // rigid body connects to the rest of the rigid body tree.
   std::unique_ptr<DrakeJoint> joint_;
-
-  // A bitmask that determines the collision groups that this rigid body is part
-  // of. If the i-th bit is set this rigid body belongs to the i-th collision
-  // group. A rigid body can belong to several collision groups.
-  DrakeCollision::bitmask collision_filter_group_;
-
-  // A bitmask that determines which collision groups this rigid body does not
-  // collide with. Thus, if the i-th bit is set this rigid body is not checked
-  // for collisions with bodies in the i-th group.
-  DrakeCollision::bitmask collision_filter_ignores_;
 
   // The name of this rigid body.
   std::string name_;

@@ -595,7 +595,7 @@ void Polynomial<CoefficientType>::MakeMonomialsUnique(void) {
         }
       }
     }
-    for (int j = 0; j < (i - 1); j++) {
+    for (int j = 0; j <= (i - 1); j++) {
       Monomial& mj = monomials_[j];
       if (mi.HasSameExponents(mj)) {
         // it's a match, so delete monomial i

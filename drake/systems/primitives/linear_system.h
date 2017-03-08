@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/primitives/affine_system.h"
 
 namespace drake {
@@ -28,7 +29,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 ///
 /// @ingroup primitive_systems
@@ -38,6 +39,8 @@ namespace systems {
 template <typename T>
 class LinearSystem : public AffineSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystem)
+
   /// Constructs a %LinearSystem with a fixed set of coefficient matrices `A`,
   /// `B`,`C`, and `D`.
   /// The coefficient matrices must obey the following dimensions:

@@ -70,7 +70,7 @@ def multiprocess_cpplint(cmdline, files, args):
 
     # Lint the files N at a time, to amortize interpreter start-up.
     N = 10
-    files_groups = [files[i:i+N] for i in xrange(0, len(files), N)]
+    files_groups = [files[i:i + N] for i in xrange(0, len(files), N)]
     cmdlines = [cmdline + some_files for some_files in files_groups]
 
     # Farm out each chunk to a process in a Pool.

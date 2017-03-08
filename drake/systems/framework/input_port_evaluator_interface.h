@@ -2,6 +2,7 @@
 
 #include <sstream>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -25,6 +26,9 @@ namespace detail {
 template <typename T>
 class InputPortEvaluatorInterface {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPortEvaluatorInterface)
+
+  InputPortEvaluatorInterface() {}
   virtual ~InputPortEvaluatorInterface() {}
 
   /// Evaluates the input port with the given @p id in the given @p context.

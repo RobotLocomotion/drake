@@ -1,0 +1,3 @@
+drake_add_cc_test(painleve_test)
+target_link_libraries(painleve_test drakePainleve drakeSystemAnalysis)
+

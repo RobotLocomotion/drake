@@ -36,12 +36,18 @@ class AcrobotOutputVector : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  AcrobotOutputVector<T>* DoClone() const override {
+    auto result = new AcrobotOutputVector;
+    result->set_value(this->get_value());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
-  // theta1
+  /// theta1
   const T& theta1() const { return this->GetAtIndex(K::kTheta1); }
   void set_theta1(const T& theta1) { this->SetAtIndex(K::kTheta1, theta1); }
-  // theta2
+  /// theta2
   const T& theta2() const { return this->GetAtIndex(K::kTheta2); }
   void set_theta2(const T& theta2) { this->SetAtIndex(K::kTheta2, theta2); }
   //@}

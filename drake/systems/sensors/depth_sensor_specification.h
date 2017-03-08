@@ -4,6 +4,8 @@
 #include <limits>
 #include <string>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace systems {
 namespace sensors {
@@ -13,6 +15,8 @@ namespace sensors {
 /// @see DepthSensor.
 class DepthSensorSpecification {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensorSpecification)
+
   /// Constructs a %DepthsensorSpecification with all default values.
   DepthSensorSpecification() {}
 
@@ -48,14 +52,6 @@ class DepthSensorSpecification {
                            double min_pitch, double max_pitch,
                            int num_yaw_values, int num_pitch_values,
                            double min_range, double max_range);
-
-  // Non-copyable.
-  /// @name Deleted Copy/Move Operations
-  /// DepthSensorSpecification is neither copyable nor moveable.
-  ///@{
-  explicit DepthSensorSpecification(const DepthSensorSpecification&) = delete;
-  DepthSensorSpecification& operator=(const DepthSensorSpecification&) = delete;
-  ///@}
 
   /// @name Accessors to manually specified parameters.
   ///

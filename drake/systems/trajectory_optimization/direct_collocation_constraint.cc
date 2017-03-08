@@ -23,22 +23,23 @@ Eigen::MatrixXd ExtractDerivativesMatrix(const TaylorVecXd& vec_in) {
 
 DirectCollocationConstraint::DirectCollocationConstraint(int num_states,
                                                          int num_inputs)
-    : Constraint(num_states, Eigen::VectorXd::Zero(num_states),
+    : Constraint(num_states, 1 + (2 * num_states) + (2 * num_inputs),
+                 Eigen::VectorXd::Zero(num_states),
                  Eigen::VectorXd::Zero(num_states)),
       num_states_(num_states),
       num_inputs_(num_inputs) {}
 
 DirectCollocationConstraint::~DirectCollocationConstraint() {}
 
-void DirectCollocationConstraint::Eval(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+void DirectCollocationConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
   TaylorVecXd y_t;
   Eval(math::initializeAutoDiff(x), y_t);
   y = math::autoDiffToValueMatrix(y_t);
 }
 
-void DirectCollocationConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
-                                       TaylorVecXd& y) const {
+void DirectCollocationConstraint::DoEval(
+    const Eigen::Ref<const TaylorVecXd> &x, TaylorVecXd &y) const {
   DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
 
   // Extract our input variables:

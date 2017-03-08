@@ -65,12 +65,6 @@ string ReadTextFile(const string& file) {
   return buffer.str();
 }
 
-// TODO(liang.fok) Combine with near-identical code in rigid_body_plant_test.cc.
-template <class T>
-unique_ptr<FreestandingInputPort> MakeInput(unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(move(data));
-}
-
 const char* kModelFileName = "/examples/toyota_hsrb/test/test_model.urdf";
 const int kNumPositions{8};   // 7 floating DOFs and 1 regular DOF.
 const int kNumVelocities{7};  // 6 floating DOFs and 1 regular DOF.
@@ -132,10 +126,7 @@ class ToyotaHsrbTests : public ::testing::Test {
 // Verifies that @p message_bytes is correct. Only a few key fields are checked.
 // The rest of the message is assumed to be correct.
 // See drake_visualizer_test.cc for a more comprehensive test.
-void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
-  drake::lcmt_viewer_load_robot message;
-  ASSERT_EQ(message.decode(message_bytes.data(), 0, message_bytes.size()),
-            static_cast<int>(message_bytes.size()));
+void VerifyLoadMessage(const lcmt_viewer_load_robot& message) {
   ASSERT_EQ(message.num_links, 3);
   EXPECT_EQ(message.link.at(0).name, "world");
   EXPECT_EQ(message.link.at(1).name, "link1");
@@ -151,11 +142,7 @@ void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
 // Verifies that @p message_bytes is correct. Only a few key fields are checked.
 // The rest of the message is assumed to be correct. See
 // drake_visualizer_test.cc for a more comprehensive test.
-void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
-  drake::lcmt_viewer_draw expected_message;
-  ASSERT_EQ(
-      expected_message.decode(message_bytes.data(), 0, message_bytes.size()),
-      static_cast<int>(message_bytes.size()));
+void VerifyDrawMessage(const lcmt_viewer_draw& expected_message) {
   ASSERT_EQ(expected_message.num_links, 3);
   EXPECT_EQ(expected_message.timestamp, 0);
   EXPECT_EQ(expected_message.link_name.at(0), "world");
@@ -190,8 +177,11 @@ void VerifyDiagram(const Diagram<double>& dut, const VectorXd& desired_state,
   EXPECT_EQ(desired_state, output_state->get_value());
 
   // Evaluates the correctness of the kinematics results port.
+  const int kinematics_results_port =
+      plant.kinematics_results_output_port().get_index();
   auto& kinematics_results =
-      output->get_data(1)->GetValue<KinematicsResults<double>>();
+      output->get_data(kinematics_results_port)->
+          GetValue<KinematicsResults<double>>();
   ASSERT_EQ(kinematics_results.get_num_positions(), kNumPositions);
   ASSERT_EQ(kinematics_results.get_num_velocities(), kNumVelocities);
 
@@ -216,8 +206,10 @@ void VerifyDiagram(const Diagram<double>& dut, const VectorXd& desired_state,
   }
 
   // // Verifies that the correct LCM messages were published
-  VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
-  VerifyDrawMessage(lcm.get_last_published_message("DRAKE_VIEWER_DRAW"));
+  VerifyLoadMessage(lcm.DecodeLastPublishedMessageAs<lcmt_viewer_load_robot>(
+                        "DRAKE_VIEWER_LOAD_ROBOT"));
+  VerifyDrawMessage(lcm.DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
+                        "DRAKE_VIEWER_DRAW"));
 }
 
 // Tests BuildPlantAndVisualizerDiagram().
@@ -234,11 +226,7 @@ TEST_F(ToyotaHsrbTests, TestBuildPlantAndVisualizerDiagram) {
   ASSERT_EQ(plant_->get_num_actuators(), kNumActuators);
   ASSERT_EQ(dut->get_input_port(0).size(), kNumActuators);
 
-  // Connect to a "fake" free standing input.
-  // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
-  // derivatives per #3218.
-  context->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(
-                                         plant_->get_num_actuators())));
+  context->FixInputPort(0, Eigen::VectorXd::Zero(plant_->get_num_actuators()));
 
   // Sets the state to a non-zero value.
   VectorXd desired_state(kNumStates);

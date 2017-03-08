@@ -2,16 +2,16 @@
 CLion IDE setup (experimental)
 *****************************************
 
-This guide describes how to set up Drake in the new JetBrains CLion IDE and has
-been tested with CLion 1.1. It is assumed that ``drake-distro`` is
+This guide describes how to set up Drake in the new JetBrains CLion IDE.
+It is assumed that ``drake-distro`` is
 :ref:`already installed <installation_and_quick_start>`. CLion support is
-currently experimental. I wrote this guide based on my OSX setup. I tried it on
-Ubuntu, and CLion got stuck loading the CMake Project forever on my
-machine. This happened because a call to Matlab wouldn't return and required
-setting _matlab_root manually in mex.cmake.
+currently experimental.
+
+Using CLion with CMake
+======================
 
 Installing CLion
-================
+----------------
 
 1. Go to https://www.jetbrains.com/clion/download/. Download the latest version
    of CLion. For OSX, choose the version with bundled custom JDK.
@@ -21,7 +21,7 @@ Installing CLion
    academic license `here <https://www.jetbrains.com/shop/eform/students>`_.
 
 Setting up Drake in CLion
-=========================
+-------------------------
 
 We'll set up CLion to build Drake only. The dependencies will just be built
 from the command line. It is assumed Drake was cloned into a ``drake-distro``
@@ -60,7 +60,7 @@ directory as described in the :ref:`installation instructions <getting_drake>`.
 10. If CLion asks you about unregistered VCS roots, you can just add them.
 
 Building
-========
+--------
 
 To build Drake (and only Drake, this assumes that dependencies were already
 built!):
@@ -74,8 +74,127 @@ Configurations menu. This can come in very handy when you want to quickly
 iterate on a e.g. a specific executable without building all of Drake all the
 time.
 
+Running a C++ executable
+------------------------
+1. Go to Run > Run...
+2. Click an executable, or start typing to find your favorite executable and hit enter.
+
+Debugging .mex functions in OSX
+-------------------------------
+
+1. Go to Run > Edit Configurations
+2. Click the + in the top left corner to create a new Run/Debug Configuration.
+3. Name it Matlab
+4. Use All targets as the Target
+5. For Executable, click on the drop-down menu, scroll all the way down and
+   click Select Other...
+6. Browse to your Matlab executable. For OSX you can just use
+   Applications/MATLAB_R2014a.app or something similar.
+7. As the working directory, use ``drake-distro/drake``.
+8. Under Environment Variables, add a variable GRB_LICENSE_FILE and set it to
+   the absolute path of your Gurobi license file. If you don't do this, Gurobi
+   will not be able to find the license file since Gurobi relies on either the
+   GRB_LICENSE_FILE or the HOME environment variable (if the license file is in
+   the default location) to find it.
+9. Leave everything else as is. Click OK to save the Run/Debug Configuration.
+10. Click Run > Debug Matlab.
+11. Once CLion is done building and you're in the Debug pane, click the
+    Debugger tab and then the LLDB subtab.
+12. Enter the following: ``process handle -p true -n false -s false SIGSEGV
+    SIGBUS`` (taken from
+    http://www.mathworks.com/help/matlab/matlab_external/debugging-on-mac-platforms.html)
+    and hit enter.
+13. Click Resume Program (play button) twice. Matlab should start up. Once it's
+    started, you can run whatever Matlab code you like. You can set breakpoints
+    in the C++ code in CLion, and if that code is called from Matlab and the
+    breakpoint is hit, you'll be able to step through in CLion and inspect
+    variables.
+
+Note: if Matlab asks for activation, you'll need to copy the license (.lic)
+file from ~/.matlab/R2014b_licenses (or whatever version of Matlab you have) to
+the licenses subfolder of your Matlab installation
+(e.g. /Applications/MATLAB_R2014b.app/licenses). If the licenses subfolder does
+not exist, create it.
+
+Using CLion with Bazel
+======================
+
+First, install Bazel and build Drake with Bazel, following
+:ref:`the Drake Bazel instructions <bazel>`
+
+Installing CLion and the Bazel Plugin
+-------------------------------------
+
+To use CLion with Bazel, we require an experimental plugin that the Bazel team
+supplies in source form only.
+
+1. Download and install CLion 2016.2.3 from the CLion
+   `previous releases <https://www.jetbrains.com/clion/download/previous.html>`_.
+   No other version of CLion is compatible with the Bazel plugin.
+
+2. Adjust your JVM options to increase CLion's memory limits.
+   Edit ``bin/clion64.vmoptions`` so that ``-Xms`` is ``1024m`` and
+   ``-Xmx`` is ``16384m``.
+
+3. Clone the `bazelbuild/intellij <https://github.com/bazelbuild/intellij>`_
+   project from GitHub, and build the CLion plugin with
+   ``bazel build --define=ij_product=clion-latest //clwb:clwb_bazel``.
+
+4. Launch CLion, and install the Bazel plugin from disk. Open
+   ``File > Settings``. Select ``Plugins``, then ``Install plugin from disk...``.
+   In the file browser, select ``bazel-genfiles/clwb/clwb_bazel.jar``.
+   Click "OK".
+
+Setting up Drake in CLion
+-------------------------
+CLion will invoke Bazel to build Drake, including the external dependencies
+specified in the WORKSPACE file.
+
+1. ``File > Import Bazel Project``
+2. Select Workspace: Use an existing Bazel workspace, and provide the path to
+   your ``drake-distro`` directory.
+3. (Sometimes) Select Bazel Executable: If prompted, specify the path to your
+   Bazel executable. The default is probably correct.
+4. Select Project View: choose "Import from workspace", and
+   select the file ``drake-distro/.bazelproject``
+5. Project View: Pick a ``project data directory`` of your choice for the
+   CLion project files. It must not be a subdirectory of ``drake-distro``.
+6. (Advanced) Project View: If you only wish to develop a subset of Drake,
+   you can specify only those files and targets in the project view file.
+   Most users should leave it as-is.
+7. Click "Finish".  CLion will begin ingesting the Drake source and building
+   symbols. This will take several minutes.
+
+Building and Running Targets
+----------------------------
+
+To build all of Drake with default Bazel options, select
+``Bazel > Make Project``.
+
+To build or run a specific target go to ``Run > Edit Configurations``. Click
+``+`` to create a new Bazel command.  Specify the configuration name and Bazel
+options, then click OK.  Launch the configuration from the ``Run`` menu.
+
+To run a specific target in the debugger, create a configuration as above,
+using the ``bazel run`` command. Then launch it from ``Run > Debug``.
+
+Keeping CLion Up-to-Date with the Bazel Build
+---------------------------------------------
+
+Changes to BUILD files can add or remove source files from the Bazel build.
+To propagate those changes into the CLion project structure, select
+``Bazel > Sync Project With BUILD Files``.
+
+Known Limitations
+-----------------
+CLion does not index symbols from any Bazel ``WORKSPACE`` externals, although
+those externals do participate as usual in Bazel builds initiated from CLion.
+
+Integrating External Tools with CLion
+=====================================
+
 Code formatter settings
-=======================
+-----------------------
 
 1. Make sure you have installed ``clang-format`` (see :doc:`code_style_tools`)
 2. Go to File > Settings > Tools > External Tools
@@ -101,13 +220,13 @@ You can also set the coding style through the following steps
 .. _integrating_cpplint_with_clion:
 
 Integrating Cpplint in CLion
-============================
+----------------------------
 This will give you the ability to execute ``cpplint`` on a single file or the full
 project and have the result presented in the CLion console with each warning
 a clickable hyperlink.
 
 Creating the External Tools
----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. role:: raw-html(raw)
    :format: html
@@ -177,46 +296,3 @@ in two ways:
 To check the whole project, in the menu bar, select ``Tools`` > 
 ``External Tools`` > ``Cpplint Project``. Alternatively, this can also be
 done through the right-click context menu.
-
-Running a C++ executable
-========================
-1. Go to Run > Run...
-2. Click an executable, or start typing to find your favorite executable and hit enter.
-
-Debugging .mex functions in OSX
-===============================
-
-1. Go to Run > Edit Configurations
-2. Click the + in the top left corner to create a new Run/Debug Configuration.
-3. Name it Matlab
-4. Use All targets as the Target
-5. For Executable, click on the drop-down menu, scroll all the way down and
-   click Select Other...
-6. Browse to your Matlab executable. For OSX you can just use
-   Applications/MATLAB_R2014a.app or something similar.
-7. As the working directory, use /Users/twan/code/drake-distro/drake (adapted
-   to your system)
-8. Under Environment Variables, add a variable GRB_LICENSE_FILE and set it to
-   the absolute path of your Gurobi license file. If you don't do this, Gurobi
-   will not be able to find the license file since Gurobi relies on either the
-   GRB_LICENSE_FILE or the HOME environment variable (if the license file is in
-   the default location) to find it.
-9. Leave everything else as is. Click OK to save the Run/Debug Configuration.
-10. Click Run > Debug Matlab.
-11. Once CLion is done building and you're in the Debug pane, click the
-    Debugger tab and then the LLDB subtab.
-12. Enter the following: ``process handle -p true -n false -s false SIGSEGV
-    SIGBUS`` (taken from
-    http://www.mathworks.com/help/matlab/matlab_external/debugging-on-mac-platforms.html)
-    and hit enter.
-13. Click Resume Program (play button) twice. Matlab should start up. Once it's
-    started, you can run whatever Matlab code you like. You can set breakpoints
-    in the C++ code in CLion, and if that code is called from Matlab and the
-    breakpoint is hit, you'll be able to step through in CLion and inspect
-    variables.
-
-Note: if Matlab asks for activation, you'll need to copy the license (.lic)
-file from ~/.matlab/R2014b_licenses (or whatever version of Matlab you have) to
-the licenses subfolder of your Matlab installation
-(e.g. /Applications/MATLAB_R2014b.app/licenses). If the licenses subfolder does
-not exist, create it.

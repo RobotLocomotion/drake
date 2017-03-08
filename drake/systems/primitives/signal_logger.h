@@ -1,6 +1,12 @@
 #pragma once
 
+#include <Eigen/Dense>
+
+#include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace systems {
@@ -18,15 +24,13 @@ namespace systems {
 template <typename T>
 class SignalLogger : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SignalLogger)
+
   /// Construct the signal logger system.
   /// @param input_size Dimension of the (single) input port.
   /// @param batch_allocation_size Storage is (re)allocated in blocks of
   /// input_size-by-batch_allocation_size.
   explicit SignalLogger(int input_size, int batch_allocation_size = 1000);
-
-  // Non-copyable.
-  SignalLogger(const SignalLogger<T>&) = delete;
-  SignalLogger& operator=(const SignalLogger<T>&) = delete;
 
   /// Access the (simulation) time of the logged data.
   Eigen::VectorBlock<const VectorX<T>> sample_times() const {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
@@ -20,7 +21,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 ///
 /// @ingroup primitive_systems
@@ -30,6 +31,8 @@ namespace systems {
 template <typename T>
 class MatrixGain : public LinearSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MatrixGain)
+
   /**
    * A constructor where the gain matrix `D` is a square identity matrix of size
    * @p size.

@@ -411,9 +411,6 @@ else % then try to evaluate the dependency now...
 
     case 'iris'
       conf.iris_enabled = logical(exist('+iris/inflate_region.m','file'));
-      if (~conf.iris_enabled)
-        conf.iris_enabled = pod_pkg_config('iris');
-      end
       if ~conf.iris_enabled && nargout<1
         disp(' ');
         disp(' iris (Iterative Regional Inflation by SDP) is disabled. To enable it, install the IRIS matlab package from here: https://github.com/rdeits/iris-distro and re-run addpath_drake.');

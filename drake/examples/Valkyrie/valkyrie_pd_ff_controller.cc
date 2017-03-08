@@ -21,7 +21,7 @@
 
 namespace drake {
 using lcm::DrakeLcm;
-using examples::valkyrie::kRPYValkyrieDoF;
+using examples::valkyrie::kRPYValkyrieDof;
 
 namespace systems {
 
@@ -136,7 +136,7 @@ void run_valkyrie_pd_ff_controller() {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf, multibody::joints::kRollPitchYaw, robot.get());
 
-  VectorX<double> Kp(kRPYValkyrieDoF);
+  VectorX<double> Kp(kRPYValkyrieDof);
   Kp << 0, 0, 0, 0, 0, 0,            // base
       100, 300, 300,                 // spine
       10,                            // neck
@@ -147,7 +147,7 @@ void run_valkyrie_pd_ff_controller() {
       100, 100, 300, 300, 300, 100,  // r leg
       100, 100, 300, 300, 300, 100;  // l leg
 
-  VectorX<double> Kd(kRPYValkyrieDoF);
+  VectorX<double> Kd(kRPYValkyrieDof);
   Kd << 0, 0, 0, 0, 0, 0,      // base
       10, 10, 10,              // spine
       3,                       // neck
@@ -165,7 +165,7 @@ void run_valkyrie_pd_ff_controller() {
   ValkyriePDAndFeedForwardController* controller =
       builder.AddSystem(std::make_unique<ValkyriePDAndFeedForwardController>(
           *robot, examples::valkyrie::RPYValkyrieFixedPointState().head(
-                     kRPYValkyrieDoF),
+                     kRPYValkyrieDof),
           examples::valkyrie::RPYValkyrieFixedPointTorque(), Kp, Kd));
 
   // lcm

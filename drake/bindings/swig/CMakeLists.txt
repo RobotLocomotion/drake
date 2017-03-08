@@ -59,38 +59,3 @@ if(NOT DISABLE_PYTHON)
     SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
     DESTINATION ${python_install_subdir})
 endif()
-
-if(Matlab_FOUND)
-  if(SWIG_HAS_MATLAB_SUPPORT)
-    # TODO: we can remove this check when mainline SWIG gets MATLAB support someday, or when we figure out how to build swig-matlab on Windows
-    set(matlab_install_subdir ${CMAKE_BINARY_DIR}/bindings/matlab)
-    file(MAKE_DIRECTORY ${matlab_install_subdir}) # so that swig -MM can put dependency lists there at configure-time
-    message("Found Swig with Matlab support")
-    include(SwigMatlab)
-    add_swig_matlab_module(autodiffMatlab autodiffutils_matlab.i
-      CPLUSPLUS
-      INCLUDE_DIRS ${EIGEN3_INCLUDE_DIRS}
-      LINK_LIBRARIES Eigen3::Eigen
-      SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
-      DESTINATION ${matlab_install_subdir})
-
-    add_swig_matlab_module(rbtMatlab rbtree_matlab.i
-      CPLUSPLUS
-      LINK_LIBRARIES
-        drakeMultibodyParsers
-        drakeRBM
-        Eigen3::Eigen
-      SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
-      DESTINATION ${matlab_install_subdir})
-
-    add_swig_matlab_module(ikMatlab ik_matlab.i
-      CPLUSPLUS
-      LINK_LIBRARIES
-        drakeIK
-        Eigen3::Eigen
-      SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
-      DESTINATION ${matlab_install_subdir})
-  else()
-    message("Could NOT find Swig with Matlab support; not generating Matlab bindings")
-  endif()
-endif()

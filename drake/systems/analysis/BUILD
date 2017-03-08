@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "analysis",
     srcs = [],
     hdrs = [],
@@ -15,11 +15,12 @@ cc_library(
         ":explicit_euler_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
+        ":semi_explicit_euler_integrator",
         ":simulator",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "integrator_base",
     hdrs = ["integrator_base.h"],
     linkstatic = 1,
@@ -29,7 +30,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "explicit_euler_integrator",
     srcs = [],
     hdrs = ["explicit_euler_integrator.h"],
@@ -39,7 +40,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "runge_kutta2_integrator",
     srcs = [],
     hdrs = ["runge_kutta2_integrator.h"],
@@ -49,7 +50,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "runge_kutta3_integrator",
     srcs = ["runge_kutta3_integrator.cc"],
     hdrs = [
@@ -63,7 +64,19 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
+    name = "semi_explicit_euler_integrator",
+    srcs = [],
+    hdrs = [
+        "semi_explicit_euler_integrator.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":integrator_base",
+    ],
+)
+
+drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
@@ -78,7 +91,7 @@ cc_library(
 
 # === test/ ===
 
-cc_library(
+drake_cc_library(
     name = "my_spring_mass_system",
     testonly = 1,
     hdrs = ["test/my_spring_mass_system.h"],
@@ -88,7 +101,7 @@ cc_library(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "simulator_test",
     deps = [
         ":explicit_euler_integrator",
@@ -98,7 +111,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "explicit_euler_integrator_test",
     deps = [
         ":explicit_euler_integrator",
@@ -106,7 +119,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "runge_kutta2_integrator_test",
     deps = [
         ":my_spring_mass_system",
@@ -114,7 +127,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "runge_kutta3_integrator_test",
     deps = [
         ":my_spring_mass_system",
@@ -122,6 +135,17 @@ cc_googletest(
         "//drake/common:drake_path",
         "//drake/math:geometric_transform",
         "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "semi_explicit_euler_integrator_test",
+    deps = [
+        ":explicit_euler_integrator",
+        ":my_spring_mass_system",
+        ":semi_explicit_euler_integrator",
+        "//drake/multibody/joints",
         "//drake/multibody/rigid_body_plant",
     ],
 )

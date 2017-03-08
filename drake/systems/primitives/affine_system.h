@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -8,18 +9,19 @@ namespace systems {
 
 /// A discrete OR continuous affine system.
 ///
-/// If time_period>0.0, then the affine system will have the following discrete-
-/// time state update:
+/// Let `u` denote the input vector, `x` denote the state vector, and
+/// `y` denote the output vector.
+///
+/// If `time_period > 0.0`, the affine system will have the following
+/// discrete-time state update:
 ///   @f[ x[n+1] = A x[n] + B u[n] + f_0, @f]
 ///
-/// or if time_period==0.0, then the affine system will have the following
+/// or if `time_period == 0.0`, the affine system will have the following
 /// continuous-time state update:
 ///   @f[\dot{x} = A x + B u + f_0. @f]
 ///
 /// In both cases, the system will have the output:
 ///   @f[y = C x + D u + y_0, @f]
-/// where `u` denotes the input vector, `x` denotes the state vector, and
-/// `y` denotes the output vector.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -27,7 +29,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 ///
 /// @ingroup primitive_systems
@@ -37,6 +39,8 @@ namespace systems {
 template <typename T>
 class AffineSystem : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineSystem)
+
   /// Constructs an Affine system with a fixed set of coefficient matrices `A`,
   /// `B`,`C`, and `D` as well as fixed initial velocity offset `xDot0` and
   /// output offset `y0`.

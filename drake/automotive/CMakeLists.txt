@@ -25,6 +25,9 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   maliput/monolane/loader.cc
   maliput/monolane/road_geometry.cc
   maliput/monolane/segment.cc
+  maliput/utility/generate_obj.cc
+  maliput/utility/generate_urdf.cc
+  maliput/utility/infinite_circuit_road.cc
   simple_car.cc
   single_lane_ego_and_agent.cc
   trajectory_car.cc
@@ -94,10 +97,10 @@ if(lcm_FOUND)
   add_executable(car_sim_lcm car_sim_lcm.cc car_sim_lcm_common.cc)
   target_link_libraries(car_sim_lcm
       drakeAutomotiveLcm
+      drakeLcmSystem
       drakeRigidBodyPlant
       drakeSystemAnalysis
-      drakeSystemControllers
-      drakeLCMSystem2)
+      drakeSystemControllers)
   drake_add_test(NAME car_sim_lcm COMMAND car_sim_lcm --simulation_sec 0.1)
 
   # TODO(liang.fok) Enable the following unit test once the build system is able

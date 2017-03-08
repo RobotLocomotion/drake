@@ -17,11 +17,33 @@ GTEST_TEST(TestLcmCallMatlab, DispEigenMatrix) {
   Eigen::Matrix2d m;
   m << 1, 2, 3, 4;
   LcmCallMatlab("disp", m);
+
+  Eigen::Matrix<bool, 2, 2> b;
+  b << true, false, true, false;
+  LcmCallMatlab("disp", b);
 }
 
 GTEST_TEST(TestLcmCallMatlab, RemoteVarTest) {
-  auto m = LcmCallMatlab(1, "eye", 2);
-  LcmCallMatlab("disp", m[0]);  // Should display eye(2).
+  auto magic = LcmCallMatlabSingleOutput("magic", 4);
+  LcmCallMatlab("disp", magic);
+  LcmCallMatlab("disp", "element(1,1) is ");
+  LcmCallMatlab("disp", magic(1, 1));
+  LcmCallMatlab("disp", "element(3,2) is ");
+  LcmCallMatlab("disp", magic(3, 2));
+  LcmCallMatlab("disp", "elements (1:2) are");
+  LcmCallMatlab("disp", magic(Eigen::Vector2d(1, 2)));
+  LcmCallMatlab("disp", "row 3 is ");
+  LcmCallMatlab("disp", magic(3, ":"));
+  LcmCallMatlab("disp", "elements (1:5) are");
+  LcmCallMatlab("disp", magic(Eigen::VectorXd::LinSpaced(5, 1, 5)));
+
+  LcmCallMatlab("disp", "row 2 (accessed via logicals) is");
+  LcmCallMatlab(
+      "disp", magic(Eigen::Matrix<bool, 4, 1>(false, true, false, false), ":"));
+
+  LcmCallMatlab("disp", "Second column should now be 1,2,3,4: ");
+  auto n = magic.subsasgn(Eigen::Vector4d(1, 2, 3, 4), ":", 2);
+  LcmCallMatlab("disp", n);
 }
 
 GTEST_TEST(TestLcmCallMatlab, SimplePlot) {

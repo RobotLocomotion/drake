@@ -1,7 +1,7 @@
 #pragma once
 
-#include <iostream>
 #include <Eigen/Dense>
+#include <iostream>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
@@ -11,7 +11,7 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * This is used to compute target task space acceleration, which is the input
+ * This is used to compute target spatial acceleration, which is the input
  * to the inverse dynamics controller.
  * The target acceleration is computed by:
  * acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + xdd*,
@@ -146,11 +146,11 @@ inline std::ostream& operator<<(std::ostream& out,
                                 const CartesianSetpoint<Scalar>& setpoint) {
   Vector3<Scalar> rpy = math::rotmat2rpy(setpoint.desired_pose().linear());
   out << "pose: (" << setpoint.desired_pose().translation().transpose()
-      << "), (" << rpy.transpose() << ")" << std::endl;
-  out << "velocity: " << setpoint.desired_velocity().transpose() << std::endl;
+      << "), (" << rpy.transpose() << ")" << "\n";
+  out << "velocity: " << setpoint.desired_velocity().transpose() << "\n";
   out << "acceleration: " << setpoint.desired_acceleration().transpose()
-      << std::endl;
-  out << "Kp: " << setpoint.Kp().transpose() << std::endl;
+      << "\n";
+  out << "Kp: " << setpoint.Kp().transpose() << "\n";
   out << "Kd: " << setpoint.Kd().transpose() << std::endl;
   return out;
 }
@@ -269,10 +269,10 @@ class VectorSetpoint {
 template <typename Scalar>
 std::ostream& operator<<(std::ostream& out,
                          const VectorSetpoint<Scalar>& setpoint) {
-  out << "pos: " << setpoint.desired_position().transpose() << std::endl;
-  out << "vel: " << setpoint.desired_velocity().transpose() << std::endl;
-  out << "acc: " << setpoint.desired_acceleration().transpose() << std::endl;
-  out << "Kp: " << setpoint.Kp().transpose() << std::endl;
+  out << "pos: " << setpoint.desired_position().transpose() << "\n";
+  out << "vel: " << setpoint.desired_velocity().transpose() << "\n";
+  out << "acc: " << setpoint.desired_acceleration().transpose() << "\n";
+  out << "Kp: " << setpoint.Kp().transpose() << "\n";
   out << "Kd: " << setpoint.Kd().transpose() << std::endl;
   return out;
 }

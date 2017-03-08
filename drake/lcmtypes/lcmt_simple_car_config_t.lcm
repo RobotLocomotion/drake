@@ -7,11 +7,11 @@ struct lcmt_simple_car_config_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 
-  double wheelbase;  // wheelbase
-  double track;  // track
-  double max_abs_steering_angle;  // max_abs_steering_angle
-  double max_velocity;  // max_velocity
-  double max_acceleration;  // max_acceleration
-  double velocity_lookahead_time;  // velocity_lookahead_time
-  double velocity_kp;  // velocity_kp
+  double wheelbase;  // The distance between the front and rear axles of the vehicle, in meters; this element must be positive.
+  double track;  // The distance between the center of two wheels on the same axle, in meters; this element must be positive.
+  double max_abs_steering_angle;  // The limit on the driving_command.steering angle input (the desired steering angle of a virtual center wheel), in radians; this element must be positive, and is applied symmetrically to both left- and right-turn limits.
+  double max_velocity;  // The limit on the car's forward speed, in meters per second; this element must be positive.
+  double max_acceleration;  // The limit on the car's acceleration and deceleration, in meters per second per second; this element must be positive.
+  double velocity_lookahead_time;  // The smoothing constant for velocity changes, in seconds; this element must be positive.  This is deprecated and will eventually be removed.
+  double velocity_kp;  // The smoothing constant for velocity changes, in Hz; this element must be positive.  This is deprecated and will eventually be removed.
 }

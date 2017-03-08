@@ -98,9 +98,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
   // world at offset x = 1, y = 1, z = 1.
   Eigen::Isometry3d T_r1and2_to_world;
   {
-    Eigen::Vector3d xyz, rpy;
-    xyz << 1, 1, 1;
-    rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz = Eigen::Vector3d::Ones();
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     T_r1and2_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
@@ -139,9 +138,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   Eigen::Isometry3d T_r2_to_r1;
   {
-    Eigen::Vector3d xyz, rpy;
-    xyz << 1, 1, 1;
-    rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz = Eigen::Vector3d::Ones();
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     T_r2_to_r1.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
@@ -156,9 +154,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   Eigen::Isometry3d T_r3_and_r4_to_r2;
   {
-    Eigen::Vector3d xyz, rpy;
-    xyz << 2, 2, 2;
-    rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz(2, 2, 2);
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     T_r3_and_r4_to_r2.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
@@ -361,7 +358,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   // Obtains a list of the world's children. Verifies that this list is
   // identical to base_body_list.
   std::vector<int> children_of_world_list =
-      tree_->FindChildrenOfBody(RigidBodyTree<double>::kWorldBodyIndex);
+      tree_->FindChildrenOfBody(RigidBodyTreeConstants::kWorldBodyIndex);
 
   EXPECT_EQ(base_body_list.size(), children_of_world_list.size());
 

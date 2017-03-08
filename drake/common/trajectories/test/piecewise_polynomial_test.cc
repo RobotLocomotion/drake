@@ -95,6 +95,7 @@ void testBasicFunctionality() {
     PiecewisePolynomialType piecewise1_minus_offset = piecewise1 - offset;
     PiecewisePolynomialType piecewise1_shifted = piecewise1;
     piecewise1_shifted.shiftRight(shift);
+    PiecewisePolynomialType product = piecewise1 * piecewise2;
 
     uniform_real_distribution<double> uniform(piecewise1.getStartTime(),
                                               piecewise1.getEndTime());
@@ -119,6 +120,11 @@ void testBasicFunctionality() {
     EXPECT_TRUE(CompareMatrices(piecewise1_shifted.value(t),
                                 piecewise1.value(t - shift), 1e-8,
                                 MatrixCompareType::absolute));
+
+    EXPECT_TRUE(CompareMatrices(
+        product.value(t),
+        (piecewise1.value(t).array() * piecewise2.value(t).array()).matrix(),
+        1e-8, MatrixCompareType::absolute));
   }
 }
 

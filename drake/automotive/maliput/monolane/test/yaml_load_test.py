@@ -13,8 +13,10 @@ import sys
 _THIS_FILE = os.path.abspath(__file__)
 _THIS_DIR = os.path.dirname(_THIS_FILE)
 
+
 class TestYamlLoading(unittest.TestCase):
     YAML_LOAD = "yaml_load"
+
     def test_yaml_files(self):
         yaml_dir = os.path.dirname(_THIS_DIR)
 

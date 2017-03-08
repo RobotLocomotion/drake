@@ -3,6 +3,8 @@
 #include <functional>
 #include <string>
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace maliput {
 namespace api {
@@ -28,7 +30,7 @@ struct LaneEnd {
   };
 
   /// Default constructor.
-  LaneEnd() {}
+  LaneEnd() = default;
 
   /// Construct a LaneEnd specifying the @p end of @p lane.
   LaneEnd(const Lane* _lane, Which _end) : lane(_lane), end(_end) {}
@@ -42,7 +44,7 @@ struct LaneEnd {
 /// by pitch around Y, followed by yaw around Z.
 struct Rotation {
   /// Default constructor.
-  Rotation() {}
+  Rotation() = default;
 
   /// Fully parameterized constructor.
   Rotation(double _roll, double _pitch, double _yaw)
@@ -57,7 +59,7 @@ struct Rotation {
 /// A position in 3-dimensional geographical Cartesian space.
 struct GeoPosition {
   /// Default constructor.
-  GeoPosition() {}
+  GeoPosition() = default;
 
   /// Fully parameterized constructor.
   GeoPosition(double _x, double _y, double _z) : x(_x), y(_y), z(_z) {}
@@ -74,7 +76,7 @@ struct GeoPosition {
 ///  * h is height above the road surface.
 struct LanePosition {
   /// Default constructor.
-  LanePosition() {}
+  LanePosition() = default;
 
   /// Fully parameterized constructor.
   LanePosition(double _s, double _r, double _h) : s(_s), r(_r), h(_h) {}
@@ -95,7 +97,7 @@ struct LanePosition {
 /// with an orientation relative to the road surface).
 struct IsoLaneVelocity {
   /// Default constructor.
-  IsoLaneVelocity() {}
+  IsoLaneVelocity() = default;
 
   /// Fully parameterized constructor.
   IsoLaneVelocity(double _sigma_v, double _rho_v, double _eta_v)
@@ -111,7 +113,7 @@ struct IsoLaneVelocity {
 /// Lane and a LANE-space position on that Lane.
 struct RoadPosition {
   /// Default constructor.
-  RoadPosition() {}
+  RoadPosition() = default;
 
   /// Fully parameterized constructor.
   RoadPosition(const Lane* _lane, const LanePosition& _pos)
@@ -123,13 +125,17 @@ struct RoadPosition {
 
 
 /// Bounds in the lateral dimension (r component) of LANE-space, consisting
-/// of a pair of minimum and maximum r value.
+/// of a pair of minimum and maximum r value.  The bounds must straddle r = 0,
+/// i.e., the minimum must be <= 0 and the maximum must be >= 0.
 struct RBounds {
   /// Default constructor.
-  RBounds() {}
+  RBounds() = default;
 
   /// Fully parameterized constructor.
-  RBounds(double rmin, double rmax) : r_min(rmin), r_max(rmax) {}
+  RBounds(double rmin, double rmax) : r_min(rmin), r_max(rmax) {
+    DRAKE_DEMAND(r_min <= 0.);
+    DRAKE_DEMAND(r_max >= 0.);
+  }
 
   double r_min{};
   double r_max{};

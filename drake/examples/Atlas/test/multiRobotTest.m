@@ -11,7 +11,7 @@ warning(w);
 
 % add a quick test of the multi frames
 % which finds a transform from the full state
-% to the position vector of the first atlas
+% to the position vector of the second atlas
 options.throw_error_if_fail = true;
 tf = findTransform(getStateFrame(r),getPositionFrame(r,2),options);
 valuecheck(tf.output(0,[],(1:getNumStates(r))'),(15:28)');

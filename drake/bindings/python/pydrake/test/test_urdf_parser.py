@@ -2,9 +2,12 @@ import unittest
 import pydrake
 import os.path
 
-# Tests that an instance of a URDF model can be loaded into a RigidBodyTree by
-# passing a complete set of arguments to Drake's URDF parser.
+
 class TestUrdfParser(unittest.TestCase):
+    """Test that an instance of a URDF model can be loaded into a
+    RigidBodyTree by passing a complete set of arguments to Drake's URDF
+    parser.
+    """
     def testAddModelInstanceFromUrdfStringSearchingInRosPackages(self):
         urdf_file = os.path.join(pydrake.getDrakePath(),
                                  "examples/PR2/pr2.urdf")
@@ -25,8 +28,8 @@ class TestUrdfParser(unittest.TestCase):
 
         expected_num_bodies = 83
         self.assertEqual(robot.get_num_bodies(), expected_num_bodies,
-            msg='Incorrect number of bodies: {0} vs. {1}'.format(
-                robot.get_num_bodies(), expected_num_bodies))
+                         msg='Incorrect number of bodies: {0} vs. {1}'.format(
+                             robot.get_num_bodies(), expected_num_bodies))
 
 if __name__ == '__main__':
     unittest.main()

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/value.h"
@@ -20,6 +21,9 @@ namespace systems {
 /// meaning those ports will resolve to nullptr.
 class OutputPort {
  public:
+  // OutputPort objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPort)
+
   /// Constructs a vector-valued OutputPort.
   /// Takes ownership of @p vec.
   ///
@@ -99,12 +103,6 @@ class OutputPort {
  private:
   void InvalidateAndIncrement();
 
-  // OutputPort objects are neither copyable nor moveable.
-  OutputPort(const OutputPort& other) = delete;
-  OutputPort& operator=(const OutputPort& other) = delete;
-  OutputPort(OutputPort&& other) = delete;
-  OutputPort& operator=(OutputPort&& other) = delete;
-
   // The port data.
   std::unique_ptr<AbstractValue> data_;
 
@@ -121,6 +119,9 @@ class OutputPort {
 template <typename T>
 class SystemOutput {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemOutput)
+
+  SystemOutput() {}
   virtual ~SystemOutput() {}
 
   virtual int get_num_ports() const = 0;
@@ -177,10 +178,10 @@ class SystemOutput {
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
 template <typename T>
 struct LeafSystemOutput : public SystemOutput<T> {
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystemOutput)
+
   LeafSystemOutput() = default;
-  LeafSystemOutput(const LeafSystemOutput&) = delete;
-  LeafSystemOutput& operator=(const LeafSystemOutput&) = delete;
-  ~LeafSystemOutput() override {}
+  ~LeafSystemOutput() override = default;
 
   int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 

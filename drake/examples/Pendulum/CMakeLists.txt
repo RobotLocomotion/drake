@@ -49,7 +49,8 @@ if(lcm_FOUND)
     drakePendulumPlant
     drakeRigidBodyPlant
     drakeSystemControllers
-    drakeSystemAnalysis)
+    drakeSystemAnalysis
+    GTest::GTest)
 
   if(ipopt_FOUND OR NLopt_FOUND OR snopt_FOUND)
     drake_add_test(NAME pendulum_run_swing_up

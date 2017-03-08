@@ -51,9 +51,9 @@ TEST_F(SingleLaneEgoAndAgentTest, Topology) {
             dut_.get_num_output_ports());
 
   const auto& output_ego_car_pos =
-      dut_.get_output_ports().at(diagram_outport_ego_);
+      dut_.get_output_port(diagram_outport_ego_);
   const auto& output_agent_car_pos =
-      dut_.get_output_ports().at(diagram_outport_agent_);
+      dut_.get_output_port(diagram_outport_agent_);
 
   EXPECT_EQ(systems::kVectorValued, output_ego_car_pos.get_data_type());
   EXPECT_EQ(systems::kVectorValued, output_agent_car_pos.get_data_type());

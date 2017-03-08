@@ -4,7 +4,9 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
 
@@ -139,6 +141,34 @@ TEST_F(SubvectorTest, SetZero) {
 TEST_F(SubvectorTest, InfNorm) {
   Subvector<int> subvec(vector_.get(), 0, kSubVectorLength);
   EXPECT_EQ(subvec.NormInf(), 2);
+}
+
+// Tests the infinity norm for an autodiff type.
+TEST_F(SubvectorTest, InfNormAutodiff) {
+  AutoDiffXd element0;
+  element0.value() = -11.5;
+  element0.derivatives() = Eigen::Vector2d(1.5, -2.5);
+  AutoDiffXd element1;
+  element1.value() = 22.5;
+  element1.derivatives() = Eigen::Vector2d(-3.5, 4.5);
+  auto basic_vector = BasicVector<AutoDiffXd>::Make({element0, element1});
+  Subvector<AutoDiffXd> subvec(basic_vector.get(), 0, 2);
+
+  // The element1 has the max absolute value of the AutoDiffScalar's scalar.
+  // It is positive, so the sign of its derivatives remains unchanged.
+  AutoDiffXd expected_norminf;
+  expected_norminf.value() = 22.5;
+  expected_norminf.derivatives() = Eigen::Vector2d(-3.5, 4.5);
+  EXPECT_EQ(subvec.NormInf().value(), expected_norminf.value());
+  EXPECT_EQ(subvec.NormInf().derivatives(), expected_norminf.derivatives());
+
+  // The element0 has the max absolute value of the AutoDiffScalar's scalar.
+  // It is negative, so the sign of its derivatives gets flipped.
+  basic_vector->GetAtIndex(0).value() = -33.5;
+  expected_norminf.value() = 33.5;
+  expected_norminf.derivatives() = Eigen::Vector2d(-1.5, 2.5);
+  EXPECT_EQ(subvec.NormInf().value(), expected_norminf.value());
+  EXPECT_EQ(subvec.NormInf().derivatives(), expected_norminf.derivatives());
 }
 
 // Tests all += * operations for VectorBase.

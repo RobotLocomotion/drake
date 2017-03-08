@@ -1,0 +1,10 @@
+package drake;
+
+struct lcmt_acrobot_y
+{
+	int64_t timestamp;
+
+	double theta1;       // measured position
+	double theta2;
+	double tau;         // measured actual torque
+}

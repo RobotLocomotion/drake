@@ -1,0 +1,28 @@
+element {
+     name: "v_ref"
+     doc: "desired velocity in free traffic"
+}
+element {
+     name: "a"
+     doc: "max acceleration"
+}
+element {
+     name: "b"
+     doc: "comfortable braking deceleration"
+}
+element {
+     name: "s_0"
+     doc: "minimum desired net distance"
+}
+element {
+     name: "time_headway"
+     doc: "desired time headway to vehicle in front"
+}
+element {
+     name: "delta"
+     doc: "free-road exponent"
+}
+element {
+     name: "l_a"
+     doc: "length of leading car"
+}

@@ -9,6 +9,7 @@
 
 #include <Eigen/SparseCore>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -16,8 +17,12 @@ namespace solvers {
 
 class MobyLCPSolver : public MathematicalProgramSolverInterface {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLCPSolver)
+
   MobyLCPSolver();
-  virtual ~MobyLCPSolver() {}
+
+  ~MobyLCPSolver() override = default;
+
   void SetLoggingEnabled(bool enabled);
 
   bool SolveLcpFast(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
@@ -44,8 +49,6 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
                                 double zero_tol = -1.0) const;
 
   bool available() const override { return true; }
-
-  std::string SolverName() const override {return "MobyLCP"; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 

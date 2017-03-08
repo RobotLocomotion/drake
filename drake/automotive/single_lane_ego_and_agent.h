@@ -4,6 +4,7 @@
 
 #include "drake/automotive/idm_planner.h"
 #include "drake/automotive/linear_car.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -38,12 +39,14 @@ namespace automotive {
 /// - AutoDiffXd
 /// - drake::symbolic::Expression
 ///
-/// They are already available to link against in libdrakeAutomotive.
+/// They are already available to link against in the containing library.
 ///
 /// @ingroup automotive_systems
 template <typename T>
 class SingleLaneEgoAndAgent : public systems::Diagram<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingleLaneEgoAndAgent)
+
   /// Constructs a two-car system.
   ///
   /// @p v_ref desired velocity of the ego (controlled) car.
@@ -52,18 +55,12 @@ class SingleLaneEgoAndAgent : public systems::Diagram<T> {
                         const T& x_agent_init, const T& v_agent_init,
                         const T& v_ref, const T& a_agent);
 
-  ~SingleLaneEgoAndAgent() override {}
+  ~SingleLaneEgoAndAgent() override = default;
 
   /// Getters for the ego and agent car systems.
   const LinearCar<T>* get_ego_car_system() const { return ego_car_; }
   const LinearCar<T>* get_agent_car_system() const { return agent_car_; }
   const IdmPlanner<T>* get_planner_system() const { return planner_; }
-
-  // Disable copy and assignment.
-  SingleLaneEgoAndAgent(const SingleLaneEgoAndAgent<T>&) = delete;
-  SingleLaneEgoAndAgent& operator=(const SingleLaneEgoAndAgent<T>&) = delete;
-  SingleLaneEgoAndAgent(SingleLaneEgoAndAgent<T>&&) = delete;
-  SingleLaneEgoAndAgent& operator=(SingleLaneEgoAndAgent<T>&&) = delete;
 
  private:
   const LinearCar<T>* ego_car_ = nullptr;

@@ -7,40 +7,71 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+using systems::BasicVector;
 using systems::Context;
+using systems::DiscreteState;
 using systems::SystemOutput;
 
 static const int kNumJoints = 7;
 
+// This value is chosen to match the value in getSendPeriodMilliSec()
+// when initializing the FRI configuration on the iiwa's control
+// cabinet.
+static const double kReceiverUpdatePeriod = 0.005;
+
 IiwaCommandReceiver::IiwaCommandReceiver() {
   this->DeclareAbstractInputPort();
-  this->DeclareOutputPort(systems::kVectorValued, kNumJoints);
+  this->DeclareOutputPort(systems::kVectorValued, kNumJoints * 2);
+  this->DeclareDiscreteUpdatePeriodSec(kReceiverUpdatePeriod);
+  this->DeclareDiscreteState(kNumJoints * 2);
+}
+
+void IiwaCommandReceiver::set_initial_position(
+    Context<double>* context,
+    const Eigen::Ref<const VectorX<double>> x) const {
+  auto state_value =
+      context->get_mutable_discrete_state(0)->get_mutable_value();
+  DRAKE_ASSERT(x.size() == kNumJoints);
+  state_value.head(kNumJoints) = x;
+  state_value.tail(kNumJoints) = VectorX<double>::Zero(kNumJoints);
+}
+
+void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
+    const Context<double>& context,
+    DiscreteState<double>* discrete_state) const {
+  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  DRAKE_ASSERT(input != nullptr);
+  const auto& command = input->GetValue<lcmt_iiwa_command>();
+  // TODO(sam.creasey) Support torque control.
+  DRAKE_ASSERT(command.num_torques == 0);
+
+
+  // If we're using a default constructed message (haven't received
+  // a command yet), keep using the initial state.
+  if (command.num_joints != 0) {
+    DRAKE_DEMAND(command.num_joints == kNumJoints);
+    VectorX<double> new_positions(kNumJoints);
+    for (int i = 0; i < command.num_joints; ++i) {
+      new_positions(i) = command.joint_position[i];
+    }
+
+    BasicVector<double>* state = discrete_state->get_mutable_discrete_state(0);
+    auto state_value = state->get_mutable_value();
+    state_value.tail(kNumJoints) =
+        (new_positions - state_value.head(kNumJoints)) / kReceiverUpdatePeriod;
+    state_value.head(kNumJoints) = new_positions;
+  }
 }
 
 void IiwaCommandReceiver::DoCalcOutput(const Context<double>& context,
                                        SystemOutput<double>* output) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& command = input->GetValue<lcmt_iiwa_command>();
-  auto output_vec = this->GetMutableOutputVector(output, 0);
-
-  // If we're using a default constructed message (haven't received
-  // a command yet), just return zeros.
-  if (command.num_joints == 0) {
-    output_vec.fill(0);
-  } else {
-    DRAKE_ASSERT(command.num_joints == kNumJoints);
-    for (int i = 0; i < command.num_joints; ++i) {
-      output_vec(i) = command.joint_position[i];
-    }
-  }
-
-  // TODO(sam.creasey) Support torque control.
-  DRAKE_ASSERT(command.num_torques == 0);
+  Eigen::VectorBlock<VectorX<double>> output_vec =
+      this->GetMutableOutputVector(output, 0);
+  output_vec = context.get_discrete_state(0)->get_value();
 }
 
 IiwaStatusSender::IiwaStatusSender() {
-  this->DeclareInputPort(systems::kVectorValued, kNumJoints);
+  this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2);
   this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2);
   this->DeclareAbstractOutputPort();
 }

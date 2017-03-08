@@ -33,7 +33,9 @@ list(APPEND optimization_files
   equality_constrained_qp_solver.cc
   linear_system_solver.cc
   mathematical_program.cc
+  mathematical_program_solver_interface.cc
   moby_lcp_solver.cc
+  rotation_constraint.cc
   system_identification.cc
   )
 if(ipopt_FOUND)
@@ -78,11 +80,13 @@ target_link_libraries(drakeOptimization
   drakeCommon
   Eigen3::Eigen)
 drake_install_headers(
+  binding.h
   constraint.h
   function.h
   mathematical_program.h
   mathematical_program_solver_interface.h
   decision_variable.h
+  rotation_constraint.h
   system_identification.h
   )
 drake_install_libraries(drakeOptimization)

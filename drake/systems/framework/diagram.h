@@ -11,7 +11,9 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/number_traits.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
@@ -57,6 +59,10 @@ bool HasEvent(const UpdateActions<T> actions,
 template <typename T>
 class DiagramOutput : public SystemOutput<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramOutput)
+
+  DiagramOutput() = default;
+
   int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 
   OutputPort* get_mutable_port(int index) override {
@@ -89,6 +95,8 @@ class DiagramOutput : public SystemOutput<T> {
 template <typename T>
 class DiagramTimeDerivatives : public DiagramContinuousState<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramTimeDerivatives)
+
   explicit DiagramTimeDerivatives(
       std::vector<std::unique_ptr<ContinuousState<T>>>&& substates)
       : DiagramContinuousState<T>(Unpack(substates)),
@@ -106,6 +114,8 @@ class DiagramTimeDerivatives : public DiagramContinuousState<T> {
 template <typename T>
 class DiagramDiscreteVariables : public DiscreteState<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramDiscreteVariables)
+
   explicit DiagramDiscreteVariables(
       std::vector<std::unique_ptr<DiscreteState<T>>>&& subdiscretes)
       : DiscreteState<T>(Flatten(Unpack(subdiscretes))),
@@ -146,6 +156,9 @@ template <typename T>
 class Diagram : public System<T>,
                 public detail::InputPortEvaluatorInterface<T> {
  public:
+  // Diagram objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Diagram)
+
   typedef typename std::pair<const System<T>*, int> PortIdentifier;
 
   ~Diagram() override {}
@@ -545,7 +558,7 @@ class Diagram : public System<T>,
   }
 
   /// Creates a deep copy of this Diagram<double>, converting the scalar type
-  /// to AutoDiffXd, and preserving all internal structure. Diagram subclasses
+  /// to AutoDiffXd, and preserving all internal structure. Subclasses
   /// may wish to override to initialize additional member data, or to return a
   /// more specific covariant type.
   /// This is the NVI implementation of ToAutoDiffXd.
@@ -557,6 +570,22 @@ class Diagram : public System<T>,
         return subsystem.ToAutoDiffXd();
       }};
     return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
+  }
+
+  /// Creates a deep copy of this Diagram<double>, converting the scalar type
+  /// to symbolic::Expression, and preserving all internal structure. Subclasses
+  /// may wish to override to initialize additional member data, or to return a
+  /// more specific covariant type.
+  /// This is the NVI implementation of ToSymbolic.
+  Diagram<symbolic::Expression>* DoToSymbolic() const override {
+    using FromType = System<double>;
+    using ToType = std::unique_ptr<System<symbolic::Expression>>;
+    std::function<ToType(const FromType&)> subsystem_converter{
+        [](const FromType& subsystem) {
+          return subsystem.ToSymbolic();
+        }};
+    return ConvertScalarType<symbolic::Expression>(
+        subsystem_converter).release();
   }
 
  private:
@@ -681,6 +710,7 @@ class Diagram : public System<T>,
 
     std::vector<std::pair<int, UpdateActions<T1>>> publishers;
     std::vector<std::pair<int, UpdateActions<T1>>> updaters;
+    std::vector<std::pair<int, UpdateActions<T1>>> unrestricted_updaters;
     for (int i = 0; i < num_subsystems(); i++) {
       // Ignore the subsystems that aren't among the most imminent updates.
       if (sub_actions[i].time > actions->time) continue;
@@ -692,8 +722,13 @@ class Diagram : public System<T>,
                              DiscreteEvent<T1>::kDiscreteUpdateAction)) {
         updaters.emplace_back(i, sub_actions[i]);
       }
+      if (internal::HasEvent(sub_actions[i],
+                             DiscreteEvent<T1>::kUnrestrictedUpdateAction)) {
+        unrestricted_updaters.emplace_back(i, sub_actions[i]);
+      }
     }
-    DRAKE_ASSERT(!publishers.empty() || !updaters.empty());
+    DRAKE_ASSERT(!publishers.empty() || !updaters.empty() ||
+                 !unrestricted_updaters.empty());
 
     // Request a publish event, if our subsystems want it.
     if (!publishers.empty()) {
@@ -715,6 +750,19 @@ class Diagram : public System<T>,
                                   std::placeholders::_1, /* context */
                                   std::placeholders::_2, /* difference state */
                                   updaters);
+      actions->events.push_back(event);
+    }
+
+    // Request an unrestricted update event, if our subsystems want it.
+    if (!unrestricted_updaters.empty()) {
+      DiscreteEvent<T1> event;
+      event.action = DiscreteEvent<T1>::kUnrestrictedUpdateAction;
+      event.do_unrestricted_update = std::bind(
+                                  &Diagram<T1>::HandleUnrestrictedUpdate,
+                                  this,
+                                  std::placeholders::_1, /* context */
+                                  std::placeholders::_2, /* state */
+                                  unrestricted_updaters);
       actions->events.push_back(event);
     }
   }
@@ -803,12 +851,7 @@ class Diagram : public System<T>,
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_ports = sys->get_input_ports();
-    if (port_index < 0 ||
-        port_index >= static_cast<int>(subsystem_ports.size())) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    const auto& subsystem_descriptor = subsystem_ports[port_index];
+    const auto& subsystem_descriptor = sys->get_input_port(port_index);
     this->DeclareInputPort(subsystem_descriptor.get_data_type(),
                            subsystem_descriptor.size());
   }
@@ -821,12 +864,7 @@ class Diagram : public System<T>,
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_ports = sys->get_output_ports();
-    if (port_index < 0 ||
-        port_index >= static_cast<int>(subsystem_ports.size())) {
-      throw std::out_of_range("Output port out of range.");
-    }
-    const auto& subsystem_descriptor = subsystem_ports[port_index];
+    const auto& subsystem_descriptor = sys->get_output_port(port_index);
     this->DeclareOutputPort(subsystem_descriptor.get_data_type(),
                             subsystem_descriptor.size());
   }
@@ -1045,15 +1083,46 @@ class Diagram : public System<T>,
     }
   }
 
+  /// Handles Update callbacks that were registered in DoCalcNextUpdateTime.
+  /// Dispatches the UnrestrictedUpdate events to the subsystems that requested
+  /// them.
+  void HandleUnrestrictedUpdate(
+      const Context<T>& context, State<T>* state,
+      const std::vector<std::pair<int, UpdateActions<T>>>& sub_actions) const {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
+
+    // No need to set state to context's state, since it has already been done
+    // in System::CalcUnrestrictedUpdate().
+
+    for (const auto& action : sub_actions) {
+      const int index = action.first;
+      const UpdateActions<T>& action_details = action.second;
+      DRAKE_DEMAND(index >= 0 && index < num_subsystems());
+
+      // Get the context and the state for the specified system.
+      const Context<T>* subcontext =
+          diagram_context->GetSubsystemContext(index);
+      DRAKE_DEMAND(subcontext != nullptr);
+      State<T>* substate = diagram_state->get_mutable_substate(index);
+      DRAKE_DEMAND(substate != nullptr);
+
+      // Do that system's update actions.
+      for (const DiscreteEvent<T>& event : action_details.events) {
+        if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
+          sorted_systems_[index]->CalcUnrestrictedUpdate(*subcontext,
+                                                         event,
+                                                         substate);
+        }
+      }
+    }
+  }
+
   int num_subsystems() const {
     return static_cast<int>(sorted_systems_.size());
   }
-
-  // Diagram objects are neither copyable nor moveable.
-  Diagram(const Diagram<T>& other) = delete;
-  Diagram& operator=(const Diagram<T>& other) = delete;
-  Diagram(Diagram<T>&& other) = delete;
-  Diagram& operator=(Diagram<T>&& other) = delete;
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems on which they depend.

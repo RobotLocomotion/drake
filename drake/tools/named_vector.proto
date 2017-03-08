@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package tools;
+
+// NamedVector is a descriptor for a vector of elements, each of which has
+// a uniquely-identifying name and a docstring. NamedVector is the input format
+// for lcm_vector_gen.py, a code generator that produces LCM messages and
+// System Framework data structures.
+message NamedVector {
+    repeated NamedVectorElement element = 1;
+}
+
+message NamedVectorElement {
+    // The short name of this element. Should typically contain only lowercase
+    // a-z and underscores, since it appears in generated code.
+    string name = 1;
+    // A free-text description of this element's purpose. Only appears in
+    // comments.
+    string doc = 2;
+}

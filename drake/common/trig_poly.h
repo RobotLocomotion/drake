@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <map>
 #include <set>
 #include <string>
@@ -128,15 +129,22 @@ class TrigPoly {
    * entries in its SinCosMap.
    */
   friend TrigPoly sin(const TrigPoly& p) {
-    if (p.poly_.GetDegree() > 1)
-      throw std::runtime_error(
-          "sin of polynomials with degree > 1 is not supported");
+    using std::abs;
+    using std::copysign;
+    using std::floor;
 
     const std::vector<typename PolyType::Monomial>& m = p.poly_.GetMonomials();
+    if (m.empty()) {
+      return TrigPoly(Polynomial<CoefficientType>(sin(CoefficientType(0))));
+    } else if (p.poly_.GetDegree() > 1) {
+      throw std::runtime_error(
+          "sin of polynomials with degree > 1 is not supported");
+    }
 
-    if (m.size() == 1) {
+    // Base case of recursion is one mononomial with coefficient of 1.
+    if (m.size() == 1 && abs(m[0].coefficient) == CoefficientType(1)) {
       TrigPoly ret = p;
-      if (m[0].terms.size() == 0) {  // then it's a constant
+      if (m[0].terms.empty()) {  // then it's a constant
         ret.poly_ = Polynomial<CoefficientType>(sin(m[0].coefficient));
       } else {
         typename SinCosMap::iterator iter =
@@ -145,22 +153,30 @@ class TrigPoly {
           throw std::runtime_error(
               "tried taking the sin of a variable that does not exist in my "
               "sin_cos_map");
-
-        if (std::abs(m[0].coefficient) != (CoefficientType)1)
-          throw std::runtime_error(
-              "Drake:TrigPoly:PleaseImplementMe.  need to handle this case "
-              "(like I do in the matlab version");
-
         ret.poly_.Subs(m[0].terms[0].var, iter->second.s);
       }
       return ret;
     }
 
-    // otherwise handle the multi-monomial case recursively
+    Polynomial<CoefficientType> pa;
+    Polynomial<CoefficientType> pb(m.begin() + 1, m.end());
+    if (abs(m[0].coefficient) == CoefficientType(1)) {
+      pa = Polynomial<CoefficientType>(m[0].coefficient, m[0].terms);
+    } else if (m[0].coefficient - floor(m[0].coefficient) ==
+               CoefficientType(0)) {
+      // If the coefficient has integer magnitude greater than 1, recurse by
+      // expanding out a term with coefficient of magnitude 1.
+      auto unit = copysign(CoefficientType(1), m[0].coefficient);
+      pa = Polynomial<CoefficientType>(unit, m[0].terms);
+      pb += Polynomial<CoefficientType>(m[0].coefficient - unit, m[0].terms);
+    } else {
+      throw std::runtime_error("Fractional coefficients not supported");
+    }
+
+    // Now handle the multi-monomial case recursively
     // sin(a+b+...) = sin(a)cos(b+...) + cos(a)sin(b+...)
-    Polynomial<CoefficientType> pa(m[0].coefficient, m[0].terms),
-        pb(m.begin() + 1, m.end());
-    TrigPoly a(pa, p.sin_cos_map_), b(pb, p.sin_cos_map_);
+    TrigPoly a(pa, p.sin_cos_map_);
+    TrigPoly b(pb, p.sin_cos_map_);
     return sin(a) * cos(b) + cos(a) * sin(b);
   }
 
@@ -172,15 +188,22 @@ class TrigPoly {
    * entries in its SinCosMap.
    */
   friend TrigPoly cos(const TrigPoly& p) {
-    if (p.poly_.GetDegree() > 1)
-      throw std::runtime_error(
-          "cos of polynomials with degree > 1 is not supported");
+    using std::abs;
+    using std::copysign;
+    using std::floor;
 
     const std::vector<typename PolyType::Monomial>& m = p.poly_.GetMonomials();
+    if (m.empty()) {
+      return TrigPoly(Polynomial<CoefficientType>(cos(CoefficientType(0))));
+    } else if (p.poly_.GetDegree() > 1) {
+      throw std::runtime_error(
+          "cos of polynomials with degree > 1 is not supported");
+    }
 
-    if (m.size() == 1) {
+    // Base case of recursion is one mononomial with coefficient of 1.
+    if (m.size() == 1 && abs(m[0].coefficient) == CoefficientType(1)) {
       TrigPoly ret = p;
-      if (m[0].terms.size() == 0) {  // then it's a constant
+      if (m[0].terms.empty()) {  // then it's a constant
         ret.poly_ = Polynomial<CoefficientType>(cos(m[0].coefficient));
       } else {
         typename SinCosMap::iterator iter =
@@ -189,25 +212,33 @@ class TrigPoly {
           throw std::runtime_error(
               "tried taking the sin of a variable that does not exist in my "
               "sin_cos_map");
-
-        if (std::abs(m[0].coefficient) != (CoefficientType)1)
-          throw std::runtime_error(
-              "Drake:TrigPoly:PleaseImplementMe.  need to handle this case "
-              "(like I do in the matlab version");
-
         ret.poly_.Subs(m[0].terms[0].var, iter->second.c);
-        if (m[0].coefficient == (CoefficientType)-1) {
+        if (m[0].coefficient == CoefficientType(-1)) {
           ret *= -1;
         }  // cos(-q) => cos(q) => c (instead of -c)
       }
       return ret;
     }
 
-    // otherwise handle the multi-monomial case recursively
+    Polynomial<CoefficientType> pa;
+    Polynomial<CoefficientType> pb(m.begin() + 1, m.end());
+    if (abs(m[0].coefficient) == CoefficientType(1)) {
+      pa = Polynomial<CoefficientType>(m[0].coefficient, m[0].terms);
+    } else if (m[0].coefficient - floor(m[0].coefficient) ==
+               CoefficientType(0)) {
+      // If the coefficient has integer magnitude greater than 1, recurse by
+      // expanding out a term with coefficient of magnitude 1.
+      auto unit = copysign(CoefficientType(1), m[0].coefficient);
+      pa = Polynomial<CoefficientType>(unit, m[0].terms);
+      pb += Polynomial<CoefficientType>(m[0].coefficient - unit, m[0].terms);
+    } else {
+      throw std::runtime_error("Fractional coefficients not supported");
+    }
+
+    // Now handle the multi-monomial case recursively
     // cos(a+b+...) = cos(a)cos(b+...) - sin(a)sin(b+...)
-    Polynomial<CoefficientType> pa(m[0].coefficient, m[0].terms),
-        pb(m.begin() + 1, m.end());
-    TrigPoly a(pa, p.sin_cos_map_), b(pb, p.sin_cos_map_);
+    TrigPoly a(pa, p.sin_cos_map_);
+    TrigPoly b(pb, p.sin_cos_map_);
     return cos(a) * cos(b) - sin(a) * sin(b);
   }
 
@@ -333,7 +364,7 @@ class TrigPoly {
   }
 
   const TrigPoly operator-() const {
-    TrigPoly ret = -(*this);
+    TrigPoly ret = (*this) * CoefficientType(-1);
     return ret;
   }
 

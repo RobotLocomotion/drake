@@ -1,0 +1,2 @@
+drake_add_cc_test(pose_aggregator_test)
+target_link_libraries(pose_aggregator_test drakeRendering)

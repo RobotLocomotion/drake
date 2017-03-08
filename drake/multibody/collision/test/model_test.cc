@@ -918,7 +918,7 @@ GTEST_TEST(ModelTest, PointDistanceToNonConvex) {
   std::vector<PointPair> results;
   model->collisionDetectFromPoints(points, false, results);
 
-  ASSERT_EQ(results.size(), 4);
+  ASSERT_EQ(results.size(), 4u);
   const double inf = std::numeric_limits<double>::infinity();
   for (auto& pair : results) {
     EXPECT_EQ(pair.distance, inf);
@@ -949,7 +949,7 @@ GTEST_TEST(ModelTest, PointDistanceToEmptyWorld) {
   std::vector<PointPair> results;
   model->collisionDetectFromPoints(points, false, results);
 
-  ASSERT_EQ(results.size(), 4);
+  ASSERT_EQ(results.size(), 4u);
   const double inf = std::numeric_limits<double>::infinity();
   for (auto& pair : results) {
     EXPECT_EQ(pair.distance, inf);
@@ -996,7 +996,7 @@ GTEST_TEST(ModelTest, DistanceToNonConvex) {
   std::vector<ElementIdPair> pairs;
   pairs.emplace_back(sphere->getId(), cap->getId());
   model->closestPointsPairwise(pairs, true, results);
-  EXPECT_EQ(results.size(), 0);
+  EXPECT_EQ(results.size(), 0u);
 }
 
 }  // namespace

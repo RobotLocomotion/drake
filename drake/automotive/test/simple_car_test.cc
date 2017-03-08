@@ -43,16 +43,14 @@ class SimpleCarTest : public ::testing::Test {
 
 TEST_F(SimpleCarTest, Topology) {
   ASSERT_EQ(1, dut_->get_num_input_ports());
-  const auto& input_descriptor = dut_->get_input_ports().at(0);
+  const auto& input_descriptor = dut_->get_input_port(0);
   EXPECT_EQ(systems::kVectorValued, input_descriptor.get_data_type());
-  EXPECT_EQ(DrivingCommandIndices::kNumCoordinates,
-            input_descriptor.size());
+  EXPECT_EQ(DrivingCommandIndices::kNumCoordinates, input_descriptor.size());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
-  const auto& output_descriptor = dut_->get_output_ports().at(0);
+  const auto& output_descriptor = dut_->get_output_port(0);
   EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
-  EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates,
-            output_descriptor.size());
+  EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates, output_descriptor.size());
 }
 
 TEST_F(SimpleCarTest, Output) {
@@ -91,6 +89,9 @@ TEST_F(SimpleCarTest, Output) {
 TEST_F(SimpleCarTest, Derivatives) {
   const double kTolerance = 1e-10;
 
+  SimpleCarConfig<double> default_config;
+  SimpleCar<double>::SetDefaultParameters(&default_config);
+
   // Grab a pointer to where the EvalTimeDerivatives results end up.
   const SimpleCarState<double>* const result =
       dynamic_cast<const SimpleCarState<double>*>(
@@ -105,8 +106,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   EXPECT_EQ(0.0, result->velocity());
 
   // Half throttle yields half of the max acceleration.
-  const double max_acceleration =
-      SimpleCar<double>::get_default_config().max_acceleration();
+  const double max_acceleration = default_config.max_acceleration();
   SetInputValue(0.0, 0.5, 0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->x());
@@ -126,7 +126,7 @@ TEST_F(SimpleCarTest, Derivatives) {
 
   // A non-zero steering_angle turns in the same direction.  We'd like to turn
   // at 0.1 rad/s at a speed of 10m/s, so we want a curvature of 0.01.
-  const double wheelbase = SimpleCar<double>::get_default_config().wheelbase();
+  const double wheelbase = default_config.wheelbase();
   const double steering_angle = std::atan(0.01 * wheelbase);
   SetInputValue(steering_angle, 0.0, 0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
@@ -147,8 +147,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   EXPECT_NEAR(10.0, result->x(), kTolerance);
   EXPECT_EQ(0.0, result->y());
   EXPECT_EQ(0.0, result->heading());
-  EXPECT_NEAR(-0.5 * SimpleCar<double>::get_default_config().max_acceleration(),
-              result->velocity(), kTolerance);
+  EXPECT_NEAR(-0.5 * max_acceleration, result->velocity(), kTolerance);
 
   // A heading of +90deg points us at +y.
   continuous_state()->set_heading(0.5 * M_PI);

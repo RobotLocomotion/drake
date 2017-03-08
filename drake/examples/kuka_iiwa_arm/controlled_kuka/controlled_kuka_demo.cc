@@ -25,7 +25,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
-DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
+DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -64,8 +64,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
 
   // Defines an end effector constraint and makes it active for the time span
   // from 1 to 3 seconds.
-  Vector3d pos_end;
-  pos_end << 0.6, 0, 0.325;
+  Vector3d pos_end(0.6, 0, 0.325);
   Vector3d pos_lb = pos_end - Vector3d::Constant(0.005);
   Vector3d pos_ub = pos_end + Vector3d::Constant(0.005);
   WorldPositionConstraint wpc1(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),

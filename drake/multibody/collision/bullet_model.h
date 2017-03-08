@@ -194,12 +194,16 @@ class BulletModel : public Model {
       const DrakeShapes::Capsule& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletMeshShape(
       const DrakeShapes::Mesh& geometry, bool use_margins);
-  static std::unique_ptr<btCollisionShape> newBulletStaticMeshShape(
+  std::unique_ptr<btCollisionShape> newBulletStaticMeshShape(
       const DrakeShapes::Mesh& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletMeshPointsShape(
       const DrakeShapes::MeshPoints& geometry, bool use_margins);
 
   std::vector<std::unique_ptr<btCollisionShape>> bt_collision_shapes_;
+  // Bullet doesn't clean up its own triangle meshes.  This collects up the
+  // meshes created by the model and gives the model responsibility for deleting
+  // them.
+  std::vector<std::unique_ptr<btTriangleMesh>> bt_triangle_meshes_{};
   BulletCollisionWorldWrapper bullet_world_;
   BulletCollisionWorldWrapper bullet_world_no_margin_;
   DispatchMethod dispatch_method_in_use_{kNotYetDecided};

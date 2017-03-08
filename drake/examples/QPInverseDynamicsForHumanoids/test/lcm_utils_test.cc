@@ -5,8 +5,6 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-// NOLINTNEXTLINE(whitespace/line_length)
-#include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -32,7 +30,7 @@ void TestEigenVectorAndStdVector(const Eigen::MatrixBase<Derived>& eigvec,
 // size).
 template <typename Derived, typename Scalar, size_t Size>
 void TestEigenVectorAndCArray(const Eigen::MatrixBase<Derived>& eigvec,
-                              const Scalar(&array)[Size]) {
+                              const Scalar (&array)[Size]) {
   EXPECT_TRUE(eigvec.rows() == 1 || eigvec.cols() == 1);
   EXPECT_EQ(static_cast<size_t>(eigvec.size()), Size);
   for (size_t i = 0; i < Size; ++i) {
@@ -123,9 +121,9 @@ static void TestEncodeDesiredBodyMotion(const DesiredBodyMotion& mot,
   TestConstrainedValuesMsg(mot, msg.constrained_accelerations);
 }
 
-// Test equality of the given DesiredDoFMotions and lcmt_desired_dof_motions
+// Test equality of the given DesiredDofMotions and lcmt_desired_dof_motions
 // message.
-static void TestEncodeDesiredDoFMotions(const DesiredDoFMotions& mot,
+static void TestEncodeDesiredDofMotions(const DesiredDofMotions& mot,
                                         const lcmt_desired_dof_motions& msg) {
   EXPECT_EQ(msg.num_dof, mot.size());
   EXPECT_EQ(static_cast<int>(msg.dof_names.size()), mot.size());
@@ -135,8 +133,8 @@ static void TestEncodeDesiredDoFMotions(const DesiredDoFMotions& mot,
   TestConstrainedValuesMsg(mot, msg.constrained_accelerations);
 }
 
-// Test equality of the given QPInput and lcmt_qp_input message.
-static void TestEncodeQPInput(const QPInput& qp_input,
+// Test equality of the given QpInput and lcmt_qp_input message.
+static void TestEncodeQpInput(const QpInput& qp_input,
                               const lcmt_qp_input& msg) {
   // Contacts
   EXPECT_EQ(msg.num_contacts,
@@ -159,7 +157,7 @@ static void TestEncodeQPInput(const QPInput& qp_input,
     TestEncodeDesiredBodyMotion(it->second, msg_mot);
   }
   // Dof motions
-  TestEncodeDesiredDoFMotions(qp_input.desired_dof_motions(),
+  TestEncodeDesiredDofMotions(qp_input.desired_dof_motions(),
                               msg.desired_dof_motions);
 
   // Centroidal momentum
@@ -200,7 +198,8 @@ class LcmUtilsTests : public ::testing::Test {
   virtual void SetUp() {
     tree_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
+        GetDrakePath() +
+            "/examples/Valkyrie/urdf/urdf/"
             "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
         multibody::joints::kRollPitchYaw, tree_.get());
   }
@@ -300,19 +299,19 @@ TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredBodyMotion) {
 }
 
 // Test encoding and decoding of
-// DesiredDoFMotions <-> lcmt_desired_dof_motions.
-TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredDoFMotions) {
-  DesiredDoFMotions mot({"a", "b", "c", "d"});
+// DesiredDofMotions <-> lcmt_desired_dof_motions.
+TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredDofMotions) {
+  DesiredDofMotions mot({"a", "b", "c", "d"});
   SetConstrainedValues(&mot, mot.size());
 
   // Test encode.
   lcmt_desired_dof_motions msg;
-  EncodeDesiredDoFMotions(mot, &msg);
-  TestEncodeDesiredDoFMotions(mot, msg);
+  EncodeDesiredDofMotions(mot, &msg);
+  TestEncodeDesiredDofMotions(mot, msg);
 
   // Test decode.
-  DesiredDoFMotions decoded_mot;
-  DecodeDesiredDoFMotions(msg, &decoded_mot);
+  DesiredDofMotions decoded_mot;
+  DecodeDesiredDofMotions(msg, &decoded_mot);
   EXPECT_EQ(decoded_mot, mot);
 }
 
@@ -333,19 +332,48 @@ TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredCentroidalMomentumDot) {
   EXPECT_EQ(Ld, decoded_Ld);
 }
 
-// Test encoding and decoding of QPInput <-> lcmt_qp_input.
-TEST_F(LcmUtilsTests, TestEncodeDecodeQPInput) {
-  HumanoidStatus tree_status(*tree_);
-  QPInput qp_input = MakeExampleQPInput(tree_status);
+// Test encoding and decoding of QpInput <-> lcmt_qp_input.
+TEST_F(LcmUtilsTests, TestEncodeDecodeQpInput) {
+  // Initialize QP input
+  QpInput qp_input(GetDofNames(*tree_));
+  ContactInformation contact(*tree_->FindBody("leftFoot"), 3);
+  contact.mutable_contact_points() = Vector3<double>(1, 2, 3);
+  contact.mutable_mu() = 0.2;
+  contact.mutable_weight() = -1;
+  contact.mutable_acceleration_constraint_type() = ConstraintType::Hard;
+  contact.mutable_Kd() = 1;
+  contact.mutable_normal() = Vector3<double>(3, 2, 1).normalized();
+  qp_input.mutable_contact_information().emplace("leftFoot", contact);
+
+  DesiredBodyMotion pelv_motion(*tree_->FindBody("pelvis"));
+  pelv_motion.mutable_weights() << 1, 0, -1, 20, 0, -99;
+  pelv_motion.mutable_values() << 1, 2, 3, 4, 5, 6;
+  pelv_motion.SetAllConstraintTypesBasedOnWeights();
+  qp_input.mutable_desired_body_motions().emplace("pelvis", pelv_motion);
+
+  for (int i = 0; i < tree_->get_num_velocities(); ++i) {
+    qp_input.mutable_desired_dof_motions().mutable_weights()[i] = i - 10;
+    qp_input.mutable_desired_dof_motions().mutable_values()[i] = i;
+  }
+  qp_input.mutable_desired_dof_motions().SetAllConstraintTypesBasedOnWeights();
+
+  qp_input.mutable_desired_centroidal_momentum_dot().mutable_weights() << -1, 0,
+      1, 2, 3, 4;
+  qp_input.mutable_desired_centroidal_momentum_dot().mutable_values() << -3, -2,
+      -1, 0, 1, 2;
+  qp_input.mutable_desired_centroidal_momentum_dot()
+      .SetAllConstraintTypesBasedOnWeights();
+
+  qp_input.mutable_w_basis_reg() = 1e-3;
 
   // Test encode.
   lcmt_qp_input msg;
-  EncodeQPInput(qp_input, &msg);
-  TestEncodeQPInput(qp_input, msg);
+  EncodeQpInput(qp_input, &msg);
+  TestEncodeQpInput(qp_input, msg);
 
   // Test decode.
-  QPInput decoded_qp_input(*tree_);
-  DecodeQPInput(*tree_, msg, &decoded_qp_input);
+  QpInput decoded_qp_input;
+  DecodeQpInput(*tree_, msg, &decoded_qp_input);
   EXPECT_EQ(qp_input, decoded_qp_input);
 }
 

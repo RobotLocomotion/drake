@@ -8,9 +8,11 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/shapes/geometry.h"
+#include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace systems {
@@ -186,7 +188,7 @@ void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
   // Ensures both messages have the same length.
   EXPECT_EQ(expected_message.getEncodedSize(),
       static_cast<int>(message_bytes.size()));
-  int byte_count = expected_message.getEncodedSize();
+  const int byte_count = expected_message.getEncodedSize();
 
   // Serialize the expected message.
   std::vector<uint8_t> expected_message_bytes(byte_count);
@@ -201,8 +203,8 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   // TODO(liang.fok): Replace the following two lines with
   // `Eigen::Quaterniond::Identity()` and a method in lcmUtil.h that converts it
   // into a std::vector<float>. Related issue: #3470.
-  std::vector<float> zero_position = {0, 0, 0};
-  std::vector<float> zero_quaternion = {1, 0, 0, 0};
+  const std::vector<float> zero_position = {0, 0, 0};
+  const std::vector<float> zero_quaternion = {1, 0, 0, 0};
 
   // Instantiates a `drake::lcmt_viewer_draw` message that contains the expected
   // state.
@@ -271,7 +273,7 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   }
 
   // Ensures both messages have the same length.
-  int byte_count = expected_message.getEncodedSize();
+  const int byte_count = expected_message.getEncodedSize();
   EXPECT_EQ(byte_count, static_cast<int>(message_bytes.size()));
 
   // Serializes the expected message.
@@ -297,20 +299,19 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
-    Eigen::Vector3d box_size(0.5, 0.5, 0.5);
-    Box shape(box_size);
-    Eigen::Vector4d material(0.3, 0.4, 0.5, 1.0);
+    const Eigen::Vector3d box_size(0.5, 0.5, 0.5);
+    const Box shape(box_size);
+    const Eigen::Vector4d material(0.3, 0.4, 0.5, 1.0);
 
-    DrakeShapes::VisualElement visual_element(
+    const DrakeShapes::VisualElement visual_element(
         shape, Eigen::Isometry3d::Identity(), material);
 
     body->AddVisualElement(visual_element);
 
     Eigen::Isometry3d joint_transform;
     {
-      Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-      xyz(0) = 1;
+      const Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      const Eigen::Vector3d xyz(1, 0, 0);
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
@@ -330,19 +331,18 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
-    Capsule shape(0.1, 0.5);
-    Eigen::Vector4d material(0.7, 0.7, 0.7, 1.0);
+    const Capsule shape(0.1, 0.5);
+    const Eigen::Vector4d material(0.7, 0.7, 0.7, 1.0);
 
-    DrakeShapes::VisualElement visual_element(
+    const DrakeShapes::VisualElement visual_element(
         shape, Eigen::Isometry3d::Identity(), material);
 
     body->AddVisualElement(visual_element);
 
     Eigen::Isometry3d joint_transform;
     {
-      Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-      xyz(0) = 2;
+      const Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      const Eigen::Vector3d xyz(2, 0, 0);
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
@@ -362,10 +362,10 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
-    Cylinder shape(0.2, 0.25);
-    Eigen::Vector4d material(0.9, 0.0, 0.7, 1.0);
+    const Cylinder shape(0.2, 0.25);
+    const Eigen::Vector4d material(0.9, 0.0, 0.7, 1.0);
 
-    DrakeShapes::VisualElement visual_element(
+    const DrakeShapes::VisualElement visual_element(
         shape, Eigen::Isometry3d::Identity(), material);
 
     body->AddVisualElement(visual_element);
@@ -373,8 +373,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     Eigen::Isometry3d joint_transform;
     {
       Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-      xyz(0) = -1;
+      Eigen::Vector3d xyz(-1, 0, 0);
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
@@ -395,21 +394,20 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
-    Mesh shape("spherical_cap.obj",
+    const Mesh shape("spherical_cap.obj",
         drake::GetDrakePath() +
         "/multibody/collision/test/spherical_cap.obj");
-    Eigen::Vector4d material(0.2, 0.7, 0.3, 1.0);
+    const Eigen::Vector4d material(0.2, 0.7, 0.3, 1.0);
 
-    DrakeShapes::VisualElement visual_element(
+    const DrakeShapes::VisualElement visual_element(
         shape, Eigen::Isometry3d::Identity(), material);
 
     body->AddVisualElement(visual_element);
 
     Eigen::Isometry3d joint_transform;
     {
-      Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-      xyz(1) = -2;
+      const Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      const Eigen::Vector3d xyz(0, -2, 0);
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
@@ -429,18 +427,18 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
-    Sphere shape(0.54);  // The sphere has a radius of 0.54 meters.
-    Eigen::Vector4d material(0.8, 0.7, 0.6, 1.0);
+    const Sphere shape(0.54);  // The sphere has a radius of 0.54 meters.
+    const Eigen::Vector4d material(0.8, 0.7, 0.6, 1.0);
 
-    DrakeShapes::VisualElement visual_element(
+    const DrakeShapes::VisualElement visual_element(
         shape, Eigen::Isometry3d::Identity(), material);
 
     body->AddVisualElement(visual_element);
 
     Eigen::Isometry3d joint_transform;
     {
-      Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+      const Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      const Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
@@ -459,7 +457,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
 GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
   drake::lcm::DrakeMockLcm lcm;
-  DrakeVisualizer dut(*tree, &lcm);
+  const DrakeVisualizer dut(*tree, &lcm);
 
   EXPECT_EQ("drake_visualizer", dut.get_name());
 
@@ -475,7 +473,8 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   EXPECT_EQ(1, context->get_num_input_ports());
 
   // Initializes the system's input vector to contain all zeros.
-  int vector_size = tree->get_num_positions() + tree->get_num_velocities();
+  const int vector_size =
+      tree->get_num_positions() + tree->get_num_velocities();
   auto input_data = make_unique<BasicVector<double>>(vector_size);
   input_data->set_value(Eigen::VectorXd::Zero(vector_size));
 
@@ -488,6 +487,39 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   // Verifies that the correct messages were actually transmitted.
   VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
   VerifyDrawMessage(lcm.get_last_published_message("DRAKE_VIEWER_DRAW"));
+}
+
+// Tests that the published LCM message has the expected timestamps.
+GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
+  const double kPublishPeriod = 1.5;  // Seconds between publications.
+
+  unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
+  drake::lcm::DrakeMockLcm lcm;
+
+  // Instantiates the "device under test".
+  DrakeVisualizer dut(*tree, &lcm);
+  dut.set_publish_period(kPublishPeriod);
+  unique_ptr<Context<double>> context = dut.AllocateContext();
+
+  const int kPortNumber = 0;
+  const int num_inputs = tree->get_num_positions() + tree->get_num_velocities();
+  context->FixInputPort(kPortNumber,
+      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(num_inputs)));
+
+  // Prepares to integrate.
+  drake::systems::Simulator<double> simulator(dut, std::move(context));
+  simulator.set_publish_every_time_step(false);
+  simulator.Initialize();
+
+  for (double time = 0; time < 4; time += 0.01) {
+    simulator.StepTo(time);
+    EXPECT_NEAR(simulator.get_mutable_context()->get_time(), time, 1e-10);
+    // Note that the expected time is in milliseconds.
+    const double expected_time =
+        std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
+    EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
+        "DRAKE_VIEWER_DRAW").timestamp, expected_time);
+  }
 }
 
 }  // namespace

@@ -2,21 +2,19 @@
 
 namespace drake {
 namespace solvers {
-VariableList::VariableList(const VariableListRef& variable_list) {
-  variables_.resize(variable_list.size());
-  auto variable_list_it = variable_list.begin();
-  for (auto& var : variables_) {
-    var = *variable_list_it;
-    ++variable_list_it;
-    size_ += var.size();
-    column_vectors_only_ &= (var.cols() == 1);
-
-    for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-      for (int j = 0; j < static_cast<int>(var.cols()); ++j) {
-        unique_variable_indices_.insert(var(i, j));
-      }
-    }
+VectorXDecisionVariable ConcatenateVariableRefList(
+    const VariableRefList &var_list) {
+  int dim = 0;
+  for (const auto& var : var_list) {
+    dim += var.size();
   }
+  VectorXDecisionVariable stacked_var(dim);
+  int var_count = 0;
+  for (const auto& var : var_list) {
+    stacked_var.segment(var_count, var.rows()) = var;
+    var_count += var.rows();
+  }
+  return stacked_var;
 }
 }  // namespace solvers
 }  // namespace drake

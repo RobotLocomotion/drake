@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
@@ -23,12 +24,14 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 /// @ingroup rigid_body_systems
 template <typename T>
 class PidControlledSpringMassSystem : public Diagram<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidControlledSpringMassSystem)
+
   /// Constructs a spring-mass system with a fixed spring constant and given
   /// mass controlled by a PID controller to achieve a specified target
   /// position.

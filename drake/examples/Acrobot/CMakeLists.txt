@@ -7,6 +7,42 @@ target_link_libraries(drakeAcrobotPlant
     drakeSystemFramework)
 
 if(lcm_FOUND)
+  add_library_with_exports(LIB_NAME drakeAcrobotLcm SOURCE_FILES
+          acrobot_lcm.cc)
+  target_link_libraries(drakeAcrobotLcm
+          drakeLcmSystem)
+  drake_install_libraries(drakeAcrobotLcm)
+  drake_install_headers(
+          acrobot_lcm.h)
+  drake_install_pkg_config_file(drake-acrobot-lcm
+          TARGET drakeAcrobotLcm
+          LIBS -drakeAcrobotLcm
+          REQUIRES drake-lcm-system drake-lcmtypes-cpp)
+
+  add_executable(acrobot_lcm_msg_generator acrobot_lcm_msg_generator.cpp)
+  target_link_libraries(acrobot_lcm_msg_generator
+            drakeLCMTypes
+            drakeLcm)
+
+  add_executable(acrobot_plant_w_lcm acrobot_plant_w_lcm.cc)
+  target_link_libraries(acrobot_plant_w_lcm
+          drakeSystemAnalysis
+          drakeLcmSystem
+          drakeAcrobotLcm
+          drakeAcrobotPlant
+          drakeMultibodyParsers
+          drakeRigidBodyPlant
+          drakeSystemAnalysis
+          drakeLinearControl)
+
+  add_executable(acrobot_spong_controller_w_lcm
+          acrobot_spong_controller_w_lcm.cc)
+  target_link_libraries(acrobot_spong_controller_w_lcm
+          drakeSystemAnalysis
+          drakeLcmSystem
+          drakeAcrobotLcm
+          drakeAcrobotPlant)
+
   add_executable(acrobot_run_passive acrobot_run_passive.cc)
   target_link_libraries(acrobot_run_passive
       drakeAcrobotPlant
@@ -31,6 +67,15 @@ if(lcm_FOUND)
       drakeSensors
       drakeSystemAnalysis)
   drake_add_test(NAME acrobot_run_lqr_w_estimator COMMAND acrobot_run_lqr_w_estimator -realtime_factor 0.0)
+
+  add_executable(acrobot_run_swing_up acrobot_run_swing_up.cc)
+  target_link_libraries(acrobot_run_swing_up
+          drakeAcrobotPlant
+          drakeMultibodyParsers
+          drakeRigidBodyPlant
+          drakeSystemAnalysis
+          drakeLinearControl)
+
 
 endif(lcm_FOUND)
 

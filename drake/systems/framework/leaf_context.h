@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/cache.h"
@@ -29,8 +30,11 @@ namespace systems {
 template <typename T>
 class LeafContext : public Context<T> {
  public:
+  // LeafContext objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafContext)
+
   LeafContext() : state_(std::make_unique<State<T>>()) {}
-  virtual ~LeafContext() {}
+  ~LeafContext() override {}
 
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
@@ -190,12 +194,6 @@ class LeafContext : public Context<T> {
   }
 
  private:
-  // LeafContext objects are neither copyable nor moveable.
-  LeafContext(const LeafContext& other) = delete;
-  LeafContext& operator=(const LeafContext& other) = delete;
-  LeafContext(LeafContext&& other) = delete;
-  LeafContext& operator=(LeafContext&& other) = delete;
-
   // The external inputs to the System.
   std::vector<std::unique_ptr<InputPort>> inputs_;
 

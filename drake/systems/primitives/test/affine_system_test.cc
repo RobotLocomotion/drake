@@ -153,8 +153,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   auto context = system.CreateDefaultContext();
   EXPECT_TRUE(context->has_only_discrete_state());
 
-  Eigen::Vector3d x0;
-  x0 << 26, 27, 28;
+  Eigen::Vector3d x0(26, 27, 28);
 
   context->get_mutable_discrete_state(0)->SetFromVector(x0);
   double u0 = 29;

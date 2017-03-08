@@ -52,7 +52,7 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   } else {
     this->DeclareContinuousState(0);
     this->DeclareDiscreteState(num_states_);
-    this->DeclarePeriodicUpdate(time_period_, 0.0);
+    this->DeclarePeriodicDiscreteUpdate(time_period_, 0.0);
   }
 }
 

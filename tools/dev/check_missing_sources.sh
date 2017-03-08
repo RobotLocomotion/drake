@@ -8,7 +8,7 @@ git ls-files |
     sort > /tmp/git_files.txt
 
 # Files covered by cc_ something.
-bazel query 'kind("source file", deps(kind("cc_.* rule", //...)))' |
+bazel query 'kind("source file", deps(kind("cc_.* rule", //... except //externals/...)))' |
     grep -v '^@' | grep -v '^//externals' | grep -v '/thirdParty' |
     egrep '\.(h|cc)$' |
     perl -pe 's#^//:?##g; s#:#/#g;' |

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "drake/common/eigen_types.h"
@@ -8,14 +9,6 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
 class HelicalJoint : public FixedAxisOneDoFJoint<HelicalJoint> {
-  // disable copy construction and assignment
-  // HelicalJoint(const HelicalJoint&) = delete;
-  // HelicalJoint& operator=(const HelicalJoint&) = delete;
-
- private:
-  const Eigen::Vector3d axis_;
-  const double pitch_;
-
  public:
   HelicalJoint(const std::string& name,
                const Eigen::Isometry3d& transform_to_parent_body,
@@ -28,6 +21,8 @@ class HelicalJoint : public FixedAxisOneDoFJoint<HelicalJoint> {
 
   virtual ~HelicalJoint() {}
 
+  std::unique_ptr<DrakeJoint> Clone() const final;
+
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
@@ -39,11 +34,15 @@ class HelicalJoint : public FixedAxisOneDoFJoint<HelicalJoint> {
     return ret;
   }
 
+  bool CompareToClone(const DrakeJoint& other) const final;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  private:
   static drake::TwistVector<double> spatialJointAxis(
       const Eigen::Vector3d& axis, double pitch);
 
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  const Eigen::Vector3d axis_;
+  const double pitch_;
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

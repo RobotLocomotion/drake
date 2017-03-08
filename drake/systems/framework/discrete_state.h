@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/value.h"
 
@@ -26,6 +27,9 @@ namespace systems {
 template <typename T>
 class DiscreteState {
  public:
+  // DiscreteState is not copyable or moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteState)
+
   /// Constructs an empty discrete state.
   DiscreteState() {}
 
@@ -93,12 +97,6 @@ class DiscreteState {
     }
     return std::make_unique<DiscreteState>(std::move(cloned_data));
   }
-
-  // DiscreteState is not copyable or moveable.
-  DiscreteState(const DiscreteState& other) = delete;
-  DiscreteState& operator=(const DiscreteState& other) = delete;
-  DiscreteState(DiscreteState&& other) = delete;
-  DiscreteState& operator=(DiscreteState&& other) = delete;
 
  private:
   // Pointers to the data comprising the state. If the data is owned, these

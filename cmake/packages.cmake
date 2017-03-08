@@ -126,9 +126,18 @@ macro(drake_find_packages)
   # BEGIN required packages
 
   drake_find_package(Eigen3 CONFIG REQUIRED)
-  add_definitions(-DEIGEN_MPL2_ONLY)  # Per #4065.
+  set_property(TARGET Eigen3::Eigen APPEND PROPERTY
+    INTERFACE_COMPILE_DEFINITIONS EIGEN_MPL2_ONLY)  # Per #4065.
+
   drake_find_package(gflags CONFIG REQUIRED)
+
+  set(GTEST_DEFINITIONS
+    GTEST_DONT_DEFINE_FAIL=1
+    GTEST_DONT_DEFINE_SUCCEED=1
+    GTEST_DONT_DEFINE_TEST=1)
   drake_find_package(GTest MODULE REQUIRED)
+  set_property(TARGET GTest::GTest APPEND PROPERTY
+    INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
 
   # END required packages
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -148,9 +157,11 @@ macro(drake_find_packages)
   drake_find_package(mosek CONFIG)
   drake_find_package(NLopt CONFIG)
   drake_find_package(octomap CONFIG)
+  drake_find_package(pybind11 CONFIG)
   drake_find_package(robotlocomotion-lcmtypes CONFIG)
   drake_find_package(snopt CONFIG)
   drake_find_package(spdlog CONFIG)
+  drake_find_package(VTK CONFIG)
   drake_find_package(xfoil CONFIG)
   drake_find_package(yaml-cpp CONFIG)
 

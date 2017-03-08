@@ -1,0 +1,4 @@
+To run drake-visualizer with the contact force visualization:
+
+$ cd drake-distro
+$ ./build/install/bin/drake-visualizer --script ./drake/multibody/rigid_body_plant/visualization/contact_viz.py

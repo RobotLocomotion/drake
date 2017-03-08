@@ -60,8 +60,7 @@ void ParseInertial(RigidBody<double>* body, XMLElement* node) {
     body->set_mass(body_mass);
   }
 
-  Eigen::Vector3d com;
-  com << T(0, 3), T(1, 3), T(2, 3);
+  Eigen::Vector3d com(T(0, 3), T(1, 3), T(2, 3));
   body->set_center_of_mass(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
@@ -492,7 +491,7 @@ bool ParseBody(RigidBodyTree<double>* tree, string robot_name, XMLElement* node,
 
   // World links are handled by ParseWorldJoint().
   body->set_name(attr);
-  if (body->get_name() == string(RigidBodyTree<double>::kWorldName))
+  if (body->get_name() == string(RigidBodyTreeConstants::kWorldName))
     return false;
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
@@ -535,6 +534,57 @@ void SetDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
     parseScalarAttribute(dynamics_node, "friction", coulomb_friction);
     parseScalarAttribute(dynamics_node, "coulomb_window", coulomb_window);
     fjoint->setDynamics(damping, coulomb_friction, coulomb_window);
+  }
+}
+
+/**
+ * Parses the URDF collision filter group specification. Attempts to add
+ * collision filter groups (with their member lists and ignore lists) to the
+ * tree specification.  Inconsistent definitions will lead to thrown
+ * exceptions.
+ *
+ * @param tree                  The rigid body tree containing the bodies to
+ *                              which the filters will be applied.
+ * @param node                  The XML node containing the filter details.
+ * @param model_instance_id     The id of the current model instance.
+ */
+void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
+                               int model_instance_id) {
+  const char* attr = node->Attribute("drake_ignore");
+  if (attr && (std::strcmp(attr, "true") == 0)) return;
+
+  // TODO(SeanCurtis-TRI): After upgrading to newest tinyxml, add line numbers
+  // to error messages.
+  attr = node->Attribute("name");
+  if (!attr)
+    throw runtime_error(
+        "Collision filter group specification missing name attribute.");
+  string group_name(attr);
+
+  tree->DefineCollisionFilterGroup(group_name);
+
+  for (XMLElement* member_node = node->FirstChildElement("member"); member_node;
+       member_node = member_node->NextSiblingElement("member")) {
+    const char* link_name = member_node->Attribute("link");
+    if (!link_name)
+      throw runtime_error("Collision filter group " + group_name +
+                          " provides a member tag "
+                          "without specifying the \"link\" attribute.");
+    tree->AddCollisionFilterGroupMember(group_name, link_name,
+                                        model_instance_id);
+  }
+
+  for (XMLElement* ignore_node =
+           node->FirstChildElement("ignored_collision_filter_group");
+       ignore_node; ignore_node = ignore_node->NextSiblingElement(
+                        "ignored_collision_filter_group")) {
+    const char* target_name = ignore_node->Attribute("collision_filter_group");
+    if (!target_name)
+      throw runtime_error(
+          "Collision filter group provides a tag specifying a group to ignore "
+          "without specifying the \"collision_filter_group\" attribute.");
+
+    tree->AddCollisionFilterIgnoreTarget(group_name, target_name);
   }
 }
 
@@ -609,7 +659,7 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
   // Checks if this joint connects to the world and, if so, terminates this
   // method call. This is because joints that connect to the world are processed
   // separately.
-  if (parent_name == string(RigidBodyTree<double>::kWorldName)) return;
+  if (parent_name == string(RigidBodyTreeConstants::kWorldName)) return;
 
   int parent_index = tree->FindBodyIndex(parent_name, model_instance_id);
   if (parent_index < 0) {
@@ -635,8 +685,7 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
     originAttributesToTransform(origin, transform_to_parent_body);
   }
 
-  Vector3d axis;
-  axis << 1, 0, 0;
+  Vector3d axis(1, 0, 0);
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
       type.compare("floating") != 0) {
@@ -833,8 +882,7 @@ void ParseTransmission(RigidBodyTree<double>* tree,
 
 void ParseLoop(RigidBodyTree<double>* tree, XMLElement* node,
                int model_instance_id) {
-  Vector3d axis;
-  axis << 1.0, 0.0, 0.0;
+  Vector3d axis(1.0, 0.0, 0.0);
 
   if (!node || !node->Attribute("name"))
     throw runtime_error("ERROR: loop is missing a name element");
@@ -910,7 +958,7 @@ void ParseWorldJoint(XMLElement* node,
     ParseJointKeyParams(joint_node, joint_name, joint_type, parent_name,
                         child_name);
 
-    if (parent_name == string(RigidBodyTree<double>::kWorldName)) {
+    if (parent_name == string(RigidBodyTreeConstants::kWorldName)) {
       // Ensures only one joint connects the model to the world.
       if (found_world_joint)
         throw runtime_error(
@@ -931,7 +979,7 @@ void ParseWorldJoint(XMLElement* node,
       if (weld_to_frame == nullptr)
         weld_to_frame.reset(new RigidBodyFrame<double>());
 
-      weld_to_frame->set_name(string(RigidBodyTree<double>::kWorldName));
+      weld_to_frame->set_name(string(RigidBodyTreeConstants::kWorldName));
       weld_to_frame->set_transform_to_body(
           weld_to_frame->get_transform_to_body() * transform_to_parent_body);
 
@@ -1008,7 +1056,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
       if (!name_attr)
         throw runtime_error("ERROR: link tag is missing name attribute");
 
-      if (string(name_attr) == string(RigidBodyTree<double>::kWorldName)) {
+      if (string(name_attr) == string(RigidBodyTreeConstants::kWorldName)) {
         // Since a world link was specified within the URDF, there must be
         // a  joint that connects the world to the robot's root node. The
         // following method parses the information contained within this
@@ -1029,7 +1077,13 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   //}
   // END_DEBUG
 
-  // todo: parse collision filter groups
+  // Parses the collision filter groups.
+  for (XMLElement* group_node =
+           node->FirstChildElement("collision_filter_group");
+       group_node;
+       group_node = group_node->NextSiblingElement("collision_filter_group")) {
+    ParseCollisionFilterGroup(tree, group_node, model_instance_id);
+  }
 
   // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
@@ -1246,7 +1300,8 @@ std::shared_ptr<RigidBodyFrame<double>> MakeRigidBodyFrameFromUrdfNode(
                         "\" referenced in frame \"" + name + "\".");
   }
 
-  Vector3d xyz = Vector3d::Zero(), rpy = Vector3d::Zero();
+  Vector3d xyz = Vector3d::Zero();
+  Vector3d rpy = Vector3d::Zero();
   if (pose) {
     parseVectorAttribute(pose, "xyz", xyz);
     parseVectorAttribute(pose, "rpy", rpy);

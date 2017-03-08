@@ -4,7 +4,7 @@ if(lcm_FOUND)
       iiwa_common.cc iiwa_lcm.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
     drakeIK
-    drakeLCMSystem2
+    drakeLcmSystem
     drakeRBM
     drakeMultibodyParsers)
   drake_install_libraries(drakeKukaIiwaArmCommon)
@@ -18,11 +18,11 @@ if(lcm_FOUND)
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
   target_link_libraries(run_kuka_iiwa_arm_dynamics
       drakeKukaIiwaArmCommon
+      drakeLcmSystem
       drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers
-      drakeLCMSystem2
       gflags)
   drake_add_test(
       NAME run_kuka_iiwa_arm_dynamics
@@ -40,21 +40,21 @@ if(lcm_FOUND)
   add_executable(kuka_plan_runner kuka_plan_runner.cc)
   target_link_libraries(kuka_plan_runner
     drakeKukaIiwaArmCommon
+    drakeLCMTypes
     drakeTrajectories
     drakeMultibodyParsers
     drakeRBM
-    drakeLCMTypes
     robotlocomotion-lcmtypes-cpp
     lcm)
 
   add_executable(kuka_simulation kuka_simulation.cc)
   target_link_libraries(kuka_simulation
     drakeKukaIiwaArmCommon
+    drakeLcmSystem
     drakeMultibodyParsers
     drakeRigidBodyPlant
     drakeSystemAnalysis
-    drakeSystemControllers
-    drakeLCMSystem2)
+    drakeSystemControllers)
   drake_add_test(
       NAME kuka_simulation COMMAND kuka_simulation -simulation_sec 0.1)
 
@@ -62,7 +62,7 @@ if(lcm_FOUND)
   target_link_libraries(iiwa_wsg_simulation
     drakeKukaIiwaArmCommon
     drakeKukaIiwaWorld
-    drakeLCMSystem2
+    drakeLcmSystem
     drakeRigidBodyPlant
     drakeSchunkWsg
     drakeSystemAnalysis

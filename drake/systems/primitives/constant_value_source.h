@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
@@ -21,10 +22,12 @@ namespace systems {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 template <typename T>
 class ConstantValueSource : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantValueSource)
+
   /// @p value The constant value to emit.
   explicit ConstantValueSource(std::unique_ptr<AbstractValue> value);
 

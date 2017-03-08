@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -89,6 +90,8 @@ namespace sensors {
 ///
 class DepthSensor : public systems::LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensor)
+
   /// The depth value when an error occurs in obtaining the measurement.
   static constexpr double kError{std::numeric_limits<double>::quiet_NaN()};
 
@@ -124,14 +127,6 @@ class DepthSensor : public systems::LeafSystem<double> {
   DepthSensor(const std::string& name, const RigidBodyTree<double>& tree,
               const RigidBodyFrame<double>& frame,
               const DepthSensorSpecification& specification);
-
-  // Non-copyable.
-  /// @name Deleted Copy/Move Operations
-  /// DepthSensor is neither copyable nor moveable.
-  ///@{
-  explicit DepthSensor(const DepthSensor&) = delete;
-  DepthSensor& operator=(const DepthSensor&) = delete;
-  ///@}
 
   /// Returns the name of this sensor. The name can be any user-specified value.
   const std::string& get_name() const { return name_; }

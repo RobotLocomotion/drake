@@ -301,7 +301,7 @@ bool ParseSdfLink(RigidBodyTree<double>* model, string model_name,
   }
   body->set_name(string(attr));
 
-  if (body->get_name() == string(RigidBodyTree<double>::kWorldName)) {
+  if (body->get_name() == string(RigidBodyTreeConstants::kWorldName)) {
     throw runtime_error(
         string(__FILE__) + ": " + __func__ +
         ": ERROR: Do not name a link 'world' because it is a reserved name.");
@@ -502,8 +502,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
     pose_map.insert(pair<string, Isometry3d>(child_name, transform_to_model));
   }
 
-  Vector3d axis;
-  axis << 1, 0, 0;
+  Vector3d axis(1, 0, 0);
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
       type.compare("floating") != 0) {
@@ -763,7 +762,7 @@ void ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
     if (weld_to_frame == nullptr) {
       weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
           Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-          string(RigidBodyTree<double>::kWorldName),
+          string(RigidBodyTreeConstants::kWorldName),
           nullptr,  // Valid since the robot is attached to the world.
           Eigen::Isometry3d::Identity());
     }
@@ -814,11 +813,11 @@ ModelInstanceIdTable ParseSdf(XMLDocument* xml_doc,
 
   // Loads the world if it is defined.
   XMLElement* world_node =
-      node->FirstChildElement(RigidBodyTree<double>::kWorldName);
+      node->FirstChildElement(RigidBodyTreeConstants::kWorldName);
   if (world_node) {
     // If we have more than one world, it is ambiguous which one the user
     // wishes to use.
-    if (world_node->NextSiblingElement(RigidBodyTree<double>::kWorldName)) {
+    if (world_node->NextSiblingElement(RigidBodyTreeConstants::kWorldName)) {
       throw runtime_error(string(__FILE__) + ": " + __func__ +
                           ": ERROR: Multiple worlds in one file.");
     }

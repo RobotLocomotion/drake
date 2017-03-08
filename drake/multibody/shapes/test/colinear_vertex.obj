@@ -1,0 +1,8 @@
+# This OBJ file contains a face which requires triangulation, but the three
+# successive vertices are co-linear
+v 0 0 0
+v 0 0 1
+v 0 0 2
+v 0 1 0
+vn 1 0 0
+f 1//1 2//1 3//1 4//1

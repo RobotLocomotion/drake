@@ -117,7 +117,7 @@ std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
   // Adds a box to the world at the specified location.
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-      RigidBodyTree<double>::kWorldName, nullptr, box_xyz,
+      RigidBodyTreeConstants::kWorldName, nullptr, box_xyz,
       Vector3d::Zero() /* rpy */);
 
   DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxWidth));
@@ -192,10 +192,7 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
   expected_depths(26) = box_distance / cos(specification.min_yaw() +
                                            26 * specification.yaw_increment());
 
-  std::string message;
-  EXPECT_TRUE(CompareMatrices(depth_measurements, expected_depths, 1e-8,
-                              MatrixCompareType::absolute, &message))
-      << message;
+  EXPECT_TRUE(CompareMatrices(depth_measurements, expected_depths, 1e-8));
 
   const Matrix3Xd point_cloud = std::get<1>(result);
 
@@ -248,10 +245,8 @@ GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
       box_distance /
       sin(specification.min_pitch() + 49 * specification.pitch_increment());
 
-  std::string message;
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
-                              MatrixCompareType::absolute, &message))
-      << message;
+                              MatrixCompareType::absolute));
 }
 
 // Tests that the sensor will return negative infinity when the object is less
@@ -272,10 +267,8 @@ GTEST_TEST(TestDepthSensor, TestTooClose) {
   Eigen::VectorXd expected_output =
       VectorXd::Constant(depth_measurements.size(), DepthSensor::kTooClose);
 
-  std::string message;
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
-                              MatrixCompareType::absolute, &message))
-      << message;
+                              MatrixCompareType::absolute));
 
   const Matrix3Xd point_cloud = std::get<1>(result);
   EXPECT_EQ(point_cloud.cols(), 0);

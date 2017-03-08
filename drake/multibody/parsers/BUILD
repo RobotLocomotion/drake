@@ -2,11 +2,16 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "parsers",
     srcs = [
         "model_instance_id_table.cc",
@@ -31,7 +36,7 @@ cc_library(
 )
 
 # TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-cc_binary(
+drake_cc_binary(
     name = "urdf_kinematics_test",
     testonly = 1,
     srcs = ["test/urdf_kinematics_test.cc"],
@@ -44,7 +49,7 @@ cc_binary(
 )
 
 # TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-cc_binary(
+drake_cc_binary(
     name = "urdf_collision_test",
     testonly = 1,
     srcs = ["test/urdf_collision_test.cc"],
@@ -57,7 +62,7 @@ cc_binary(
 )
 
 # TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-cc_binary(
+drake_cc_binary(
     name = "urdf_manipulator_dynamics_test",
     srcs = ["test/urdf_manipulator_dynamics_test.cc"],
     linkstatic = 1,
@@ -68,7 +73,7 @@ cc_binary(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "package_map_test",
     srcs = ["test/package_map_test/package_map_test.cc"],
     data = [
@@ -79,7 +84,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "parser_common_test",
     srcs = ["test/parser_common_test/parser_common_test.cc"],
     data = ["test/parser_common_test/test_file.txt"],
@@ -88,7 +93,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "urdf_parser_test",
     srcs = ["test/urdf_parser_test/urdf_parser_test.cc"],
     data = [
@@ -100,7 +105,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "xml_util_test",
     deps = [
         ":parsers",

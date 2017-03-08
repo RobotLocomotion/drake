@@ -1,152 +1,81 @@
 #pragma once
 
 #include <memory>
-#include <string>
-#include <utility>
 
-#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-// TODO(siyuan.feng): Extend this class properly to support various different
-// plans. This class currently only supports tracking a stationary fixed point.
-
 /**
  * A simple PlanEval block that generates qp input for the qp inverse dynamics
  * controller.
- * The controller is set up to track a stationary fixed point assuming the
- * robot is in double support, and the desired set point is set by SetDesired.
+ * The controller moves the robot's pelvis height following a sine wave while
+ * holding everything else stationary. It assumes the robot is in double
+ * stance, and the stationary setpoint can be set by SetDesired().
+ *
+ * Since this block is a discrete time controller, control is performed in
+ * DoCalcUnrestrictedUpdate(), and the result is stored in AbstractState.
+ * DoCalcOutput() merely copies the latest result from the AbstractState and
+ * sends it through the output port. Context's time must be properly maintained.
+ * The internal states of the plan are also stored in the AbstractState, and
+ * can be modified in DoCalcUnrestrictedUpdate().
  *
  * Input: HumanoidStatus
- * Output: QPInput
+ * Output: QpInput
  */
 class PlanEvalSystem : public systems::LeafSystem<double> {
  public:
-  explicit PlanEvalSystem(const RigidBodyTree<double>& robot) : robot_(robot) {
-    input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
-    output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
+  explicit PlanEvalSystem(const RigidBodyTree<double>& robot);
 
-    set_name("plan_eval");
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const override;
 
-    // TODO(siyuan.feng): Move these to some param / config file eventually.
-    // Set up gains.
-    int dim = robot_.get_num_positions();
-    Kp_com_ = Vector3<double>::Constant(40);
-    Kd_com_ = Vector3<double>::Constant(12);
-    Kp_pelvis_ = Vector6<double>::Constant(20);
-    Kd_pelvis_ = Vector6<double>::Constant(8);
-    Kp_torso_ = Vector6<double>::Constant(20);
-    Kd_torso_ = Vector6<double>::Constant(8);
-    Kp_joints_ = VectorX<double>::Constant(dim, 20);
-    Kd_joints_ = VectorX<double>::Constant(dim, 8);
-    // Don't do feedback on pelvis in the generalized coordinates.
-    Kp_joints_.head<6>().setZero();
-    Kd_joints_.head<6>().setZero();
-  }
+  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
+                                systems::State<double>* state) const override;
 
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {
-    // Input:
-    const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
-        context, input_port_index_humanoid_status_);
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
 
-    // Output:
-    lcmt_qp_input& msg = output->GetMutableData(output_port_index_qp_input_)
-                             ->GetMutableValue<lcmt_qp_input>();
-
-    Vector3<double> com_err = desired_com_ - robot_status->com();
-    Vector3<double> comd_err = -robot_status->comd();
-
-    // Update desired accelerations.
-    QPInput qp_input = MakeExampleQPInput(*robot_status);
-    qp_input.mutable_desired_centroidal_momentum_dot()
-        .mutable_values().tail<3>() = robot_.getMass() *
-        (Kp_com_.array() * com_err.array() +
-         Kd_com_.array() * comd_err.array()).matrix();
-
-    qp_input.mutable_desired_dof_motions().mutable_values() =
-        joint_PDff_.ComputeTargetAcceleration(robot_status->position(),
-                                              robot_status->velocity());
-    qp_input.mutable_desired_body_motions().at("pelvis").mutable_values() =
-        pelvis_PDff_.ComputeTargetAcceleration(
-            robot_status->pelvis().pose(), robot_status->pelvis().velocity());
-    qp_input.mutable_desired_body_motions().at("torso").mutable_values() =
-        torso_PDff_.ComputeTargetAcceleration(robot_status->torso().pose(),
-                                              robot_status->torso().velocity());
-
-    // Encode and send.
-    EncodeQPInput(qp_input, &msg);
-  }
-
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override {
-    std::unique_ptr<LeafSystemOutput<double>> output(
-        new LeafSystemOutput<double>);
-    output->add_port(std::unique_ptr<AbstractValue>(
-        new Value<lcmt_qp_input>(lcmt_qp_input())));
-    return std::move(output);
-  }
+  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
+      const override;
 
   /**
    * Set the set point for tracking.
-   * @param robot_status, desired robot state
+   * @param q_d Desired generalized position.
+   * @param state State that holds the plan.
    */
-  void SetDesired(const HumanoidStatus& robot_status) {
-    desired_com_ = robot_status.com();
-    pelvis_PDff_ = CartesianSetpoint<double>(
-        robot_status.pelvis().pose(), Vector6<double>::Zero(),
-        Vector6<double>::Zero(), Kp_pelvis_, Kd_pelvis_);
-    torso_PDff_ = CartesianSetpoint<double>(
-        robot_status.torso().pose(), Vector6<double>::Zero(),
-        Vector6<double>::Zero(), Kp_torso_, Kd_torso_);
-    int dim = robot_status.position().size();
-    joint_PDff_ = VectorSetpoint<double>(
-        robot_status.position(), VectorX<double>::Zero(dim),
-        VectorX<double>::Zero(dim), Kp_joints_, Kd_joints_);
-  }
+  void SetDesired(const VectorX<double>& q, systems::State<double>* state);
 
   /**
    * @return Port for the input: HumanoidStatus.
    */
-  inline const InputPortDescriptor<double>& get_input_port_humanoid_status()
-      const {
+  inline const systems::InputPortDescriptor<double>&
+  get_input_port_humanoid_status() const {
     return get_input_port(input_port_index_humanoid_status_);
   }
 
   /**
-   * @return Port for the output: QPInput.
+   * @return Port for the output: QpInput.
    */
-  inline const OutputPortDescriptor<double>& get_output_port_qp_input() const {
+  inline const systems::OutputPortDescriptor<double>& get_output_port_qp_input()
+      const {
     return get_output_port(output_port_index_qp_input_);
   }
 
  private:
   const RigidBodyTree<double>& robot_;
+  const double control_dt_{2e-3};
+
+  param_parsers::RigidBodyTreeAliasGroups<double> alias_groups_;
+  param_parsers::ParamSet paramset_;
 
   int input_port_index_humanoid_status_;
   int output_port_index_qp_input_;
-
-  // Gains and setpoints.
-  VectorSetpoint<double> joint_PDff_;
-  CartesianSetpoint<double> pelvis_PDff_;
-  CartesianSetpoint<double> torso_PDff_;
-
-  Vector3<double> desired_com_;
-  Vector3<double> Kp_com_;
-  Vector3<double> Kd_com_;
-
-  Vector6<double> Kp_pelvis_;
-  Vector6<double> Kd_pelvis_;
-  Vector6<double> Kp_torso_;
-  Vector6<double> Kd_torso_;
-  VectorX<double> Kp_joints_;
-  VectorX<double> Kd_joints_;
 };
 
 }  // namespace qp_inverse_dynamics

@@ -42,7 +42,6 @@ rmpath(fullfile(root,'matlab','solvers','qpSpline'));
 rmpath(fullfile(root,'matlab','util'));
 rmpath(fullfile(root,'matlab','util','geometry'));
 rmpath(fullfile(root,'matlab','util','visualization'));
-rmpath(fullfile(root,'bindings','matlab'));
 
 javarmpath(fullfile(drake_get_base_path,'share','java','drake.jar'));
 javarmpath(fullfile(drake_get_base_path,'share','java','lcmtypes_drake.jar'));

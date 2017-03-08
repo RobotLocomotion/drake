@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
@@ -30,6 +31,8 @@ solution, so must be avoided.
 template <class T>
 class IntegratorBase {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegratorBase)
+
   /**
    * Status returned by StepOnceAtMost().
    * When a step is successful, it will return an indication of what caused it
@@ -89,10 +92,6 @@ class IntegratorBase {
 
   /** Destructor. */
   virtual ~IntegratorBase() = default;
-
-  // Disable copy, assign, and move.
-  IntegratorBase(const IntegratorBase<T>& other) = delete;
-  IntegratorBase& operator=(const IntegratorBase<T>& other) = delete;
 
   /**
    * Indicates whether an integrator supports error estimation.
@@ -266,7 +265,6 @@ class IntegratorBase {
       throw std::logic_error("Integrator maximum step size is less than the "
                              "minimum step size");
     }
-
     if (req_initial_step_size_ > max_step_size_) {
       throw std::logic_error("Requested integrator initial step size is larger "
                              "than the maximum step size.");
@@ -353,10 +351,35 @@ class IntegratorBase {
    *                          of publish_dt, update_dt, or boundary_dt is
    *                          negative.
    * @return The reason for the integration step ending.
+   * @warning Users should generally not call this function directly; within
+   *          simulation circumstances, users will typically call
+   *          `Simulator::StepTo()`. In other circumstances, users will
+   *          typically call `IntegratorBase::StepOnceExactly()`.
    */
   // TODO(edrumwri): Make the stretch size configurable.
   StepResult StepOnceAtMost(const T& publish_dt, const T& update_dt,
                             const T& boundary_dt);
+
+  /// Stepping function for integrators operating outside of simulation
+  /// circumstances. This method is designed for integrator
+  /// users that do not wish to consider publishing or discontinuous,
+  /// mid-interval updates. One such example application is that of direct
+  /// transcription for trajectory optimization. In keeping with the naming
+  /// semantics of this function, error controlled integration is not supported
+  /// (though error estimates will be computed for integrators that support that
+  /// feature).
+  /// @warning Users should simulate systems using `Simulator::StepTo()` in
+  ///          place of this function (which was created for off-simulation
+  ///          purposes), generally.
+  /// @throws std::logic_error If the integrator has not been initialized or
+  ///                          boundary_dt is negative **or** if the integrator
+  ///                          is not operating in fixed step mode.
+  void StepOnceExactly(const T& boundary_dt) {
+    if (!this->get_fixed_step_mode())
+      throw std::logic_error("StepOnceExactly() requires fixed stepping.");
+    const T inf = std::numeric_limits<double>::infinity();
+    StepOnceAtMost(inf, inf, boundary_dt);
+  }
 
   /**
    * @name Integrator statistics methods.

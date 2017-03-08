@@ -4,6 +4,8 @@ namespace drake {
 namespace systems {
 namespace detail {
 
+OutputPortListenerInterface::OutputPortListenerInterface() {}
+
 OutputPortListenerInterface::~OutputPortListenerInterface() {}
 
 }  // namespace detail

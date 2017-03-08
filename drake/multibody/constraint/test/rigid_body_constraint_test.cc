@@ -24,11 +24,9 @@ GTEST_TEST(RigidBodyConstraintTest, TestWorldComConstraint) {
 
   ASSERT_NE(tree, nullptr);
 
-  Eigen::Vector2d tspan;
-  tspan << 0, 1;
-  Eigen::Vector3d kc1_lb, kc1_ub;
-  kc1_lb << 0, 0, 0;
-  kc1_ub << 0, 0, 0;
+  Eigen::Vector2d tspan(0, 1);
+  Eigen::Vector3d kc1_lb = Eigen::Vector3d::Zero();
+  Eigen::Vector3d kc1_ub = Eigen::Vector3d::Zero();
   std::unique_ptr<WorldCoMConstraint> world_com_constraint;
   EXPECT_NO_THROW(world_com_constraint =
       make_unique<WorldCoMConstraint>(tree.get(), kc1_lb, kc1_ub, tspan));

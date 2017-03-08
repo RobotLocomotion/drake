@@ -3,9 +3,10 @@
 #include <memory>
 #include <utility>
 
-#include "drake/systems/framework/leaf_system.h"
-
 #include "gtest/gtest.h"
+
+#include "drake/common/drake_copyable.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
@@ -13,6 +14,8 @@ namespace systems {
 // Base class for the tests on Affine and Linear Systems.
 class AffineLinearSystemTest : public ::testing::Test {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineLinearSystemTest)
+
   // Setup an arbitrary AffineSystem.
   AffineLinearSystemTest(double f0_0, double f0_1, double y0_0, double y0_1)
       : A_(make_2x2_matrix(1.5, 2.7, 3.5, -4.9)),

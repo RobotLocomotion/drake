@@ -1,9 +1,11 @@
+.. _bazel:
+
 ******************
 Bazel build system
 ******************
 
 The Bazel build system is officially supported for a subset of Drake on
-Ubuntu Xenial, and is being tested on Ubuntu Trusty and OS X.
+Ubuntu Xenial, Ubuntu Trusty, and OS X.
 For more information, see:
 
  * https://bazel.build/
@@ -13,7 +15,7 @@ Bazel Installation
 ==================
 
 The Ubuntu Xenial platform setup process installs Bazel for you. On other
-platforms, refer to the Bazel installation instructions. We use Bazel 0.4.2.
+platforms, refer to the Bazel installation instructions. We use Bazel 0.4.3.
 https://bazel.build/versions/master/docs/install.html
 
 Drake clone and platform setup
@@ -38,12 +40,16 @@ target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
 https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns.
 
+Under Bazel, Clang is the default compiler on all platforms, but command-line
+options are available to use GCC on Ubuntu.
+
 Cheat sheet for operating on the entire project::
 
   cd /path/to/drake-distro
-  bazel build //...                 # Build the entire project.
-  bazel test //...                  # Build and test the entire project.
-  bazel build --config=clang //...  # Build the entire project using clang (on Ubuntu).
+  bazel build //...                     # Build the entire project.
+  bazel test //...                      # Build and test the entire project.
+  bazel build --compiler=gcc-4.9 //...  # Build using gcc 4.9 on Trusty.
+  bazel build --compiler=gcc-5 //...    # Build using gcc 5.x on Xenial.
 
 - The "``//``" means "starting from the root of the project".
 - The "``...``" means "everything including the subdirectories' ``BUILD`` files".
@@ -85,6 +91,7 @@ Cheat sheet for operating on specific portions of the project::
   bazel test --config=memcheck common:polynomial_test  # Run one test under memcheck (valgrind).
   bazel test --config=fastmemcheck common:*            # Run common's tests under memcheck, with minimal recompiling.
   bazel test --config=asan common:polynomial_test      # Run one test under AddressSanitizer.
+  bazel test --config=kcov common:polynomial_test      # Run one test under kcov (see instructions below).
   bazel build -c dbg common:polynomial_test && \
     gdb ../bazel-bin/drake/common/polynomial_test      # Run one test under gdb.
 
@@ -128,6 +135,34 @@ Note that this config includes *only* the tests that require Gurobi::
 
   ``bazel test --config gurobi ...``
 
+Optional Tools
+==============
+
+The Drake Bazel build system has integration support for some optional
+development tools:
+
+ * kcov -- test coverage analysis
+
+kcov
+----
+
+``kcov`` can analyze coverage for any binary that contains DWARF format
+debuggging symbols, and produce nicely formatted browse-able coverage
+reports. It is supported on Ubuntu and OSX only. Install ``kcov`` from source
+following the instructions here: :ref:`Building kcov <building-kcov>`.
+
+To analyze test coverage, run the tests under ``kcov``::
+
+  bazel test --config kcov //...
+
+The coverage report is written to the ``drake-distro/bazel-kcov`` directory. To
+view it, browse to ``drake-distro/bazel-kcov/index.html``.
+
+.. toctree::
+   :hidden:
+
+   building_kcov
+
 FAQ
 ===
 
@@ -136,4 +171,3 @@ Q. What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
    A. Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
       Update your dotfiles so that something like ``/usr/lib/ccache`` is not on
       your ``$PATH``.
-

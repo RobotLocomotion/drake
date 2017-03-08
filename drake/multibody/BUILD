@@ -2,11 +2,16 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "inverse_kinematics",
     srcs = [
         "constraint_wrappers.cc",
@@ -34,7 +39,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "rigid_body_constraint",
     srcs = ["constraint/rigid_body_constraint.cc"],
     hdrs = ["constraint/rigid_body_constraint.h"],
@@ -44,7 +49,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "rigid_body_tree",
     srcs = [
         "kinematics_cache.cc",
@@ -83,7 +88,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "rigid_body_tree_construction",
     srcs = ["rigid_body_tree_construction.cc"],
     hdrs = ["rigid_body_tree_construction.h"],
@@ -94,7 +99,7 @@ cc_library(
 )
 
 # TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-cc_binary(
+drake_cc_binary(
     name = "benchmark_rigid_body_tree",
     testonly = 1,
     srcs = ["test/benchmark_rigid_body_tree.cc"],
@@ -108,7 +113,7 @@ cc_binary(
 )
 
 # TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-cc_binary(
+drake_cc_binary(
     name = "debug_manipulator_dynamics",
     testonly = 1,
     srcs = ["test/debug_manipulator_dynamics.cc"],
@@ -119,7 +124,7 @@ cc_binary(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rbt_collisions_test",
     srcs = ["test/rigid_body_tree/rbt_collisions_test.cc"],
     data = [":test_models"],
@@ -129,7 +134,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_collision_clique_test",
     srcs = ["test/rigid_body_tree/rigid_body_collision_clique_test.cc"],
     deps = [
@@ -138,7 +143,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_constraint_test",
     srcs = ["constraint/test/rigid_body_constraint_test.cc"],
     data = ["//drake/examples/Atlas:models"],
@@ -148,17 +153,23 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_tree_kinematics_test",
     srcs = ["test/rigid_body_tree/rigid_body_tree_kinematics_test.cc"],
-    data = ["test/rigid_body_tree/two_dof_robot.urdf"],
+    data = [
+        "test/rigid_body_tree/two_dof_robot.urdf",
+        "//drake/multibody/benchmarks:acrobot_models",
+    ],
     deps = [
         ":rigid_body_tree",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/benchmarks:acrobot",
         "//drake/multibody/parsers",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_tree_dynamics_test",
     srcs = ["test/rigid_body_tree/rigid_body_tree_dynamics_test.cc"],
     data = ["//drake/examples/Atlas:models"],
@@ -170,7 +181,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rigid_body_tree_creation_test",
     srcs = ["test/rigid_body_tree/rigid_body_tree_creation_test.cc"],
     data = glob(["test/rigid_body_tree/*.urdf"]),
@@ -180,7 +191,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "test_kinematics_cache_checks",
     data = ["//drake/examples/Atlas:models"],
     deps = [
@@ -189,8 +200,60 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "test_ik",
+    data = [
+        "//drake/examples/Atlas:models",
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "test_ik_pointwise",
+    data = ["//drake/examples/Atlas:models"],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "test_ik_more_constraints",
+    data = ["//drake/examples/Atlas:models"],
+    tags = ["snopt"],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "test_ik_traj",
+    data = ["//drake/examples/Atlas:models"],
+    tags = ["snopt"],
+    deps = [
+        ":inverse_kinematics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
     name = "rigid_body_test",
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_body_frame_test",
     deps = [
         ":rigid_body_tree",
     ],
@@ -205,6 +268,14 @@ filegroup(
         "test/**/*.urdf",
         "test/**/*.xml",
     ]),
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        "models/box.urdf",
+        "models/box_small.urdf",
+    ],
 )
 
 cpplint(data = [

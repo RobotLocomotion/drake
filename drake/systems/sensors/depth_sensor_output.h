@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
@@ -14,20 +15,14 @@ namespace sensors {
 template <typename T>
 class DepthSensorOutput : public BasicVector<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensorOutput)
+
   /// Default constructor.  Sets all rows to zero.
   ///
   /// @param[in] spec The sensor specification. A member variable alias is
   /// maintained. Thus, the lifespan of the reference object must exceed the
   /// lifespan of this class' instance.
   explicit DepthSensorOutput(const DepthSensorSpecification& spec);
-
-  // Non-copyable.
-  /// @name Deleted Copy/Move Operations
-  /// DepthSensorOutput is neither copyable nor moveable.
-  ///@{
-  explicit DepthSensorOutput(const DepthSensorOutput&) = delete;
-  DepthSensorOutput& operator=(const DepthSensorOutput&) = delete;
-  ///@}
 
   /// @name Getters and Setters
   //@{

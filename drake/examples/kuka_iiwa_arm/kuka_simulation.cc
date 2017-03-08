@@ -86,17 +86,14 @@ class SimulatedKuka : public systems::Diagram<T> {
           std::move(rigid_body_tree));
       plant_ = plant.get();
 
-      DRAKE_ASSERT(plant_->get_input_port(0).size() ==
+      DRAKE_ASSERT(plant_->actuator_command_input_port().size() ==
                    plant_->get_num_positions());
 
-      // Constants are chosen by trial and error to qualitatively match
-      // an experimental run with the same initial conditions and
-      // planner.  Quantitative comparisons would require torque control
-      // and a more careful estimation of the model constants such as
-      // friction in the joints.
-      const double kp = 2.0;  // proportional constant.
-      const double ki = 0.0;  // integral constant.
-      const double kd = 1.0;  // derivative constant.  See below!
+      Eigen::VectorXd kp;
+      Eigen::VectorXd ki;
+      Eigen::VectorXd kd;
+      SetPositionControlledIiwaGains(&kp, &ki, &kd);
+
       controller_ = builder.template AddSystem<PidControlledSystem<T>>(
           std::move(plant), kp, ki, kd);
     }
@@ -107,22 +104,6 @@ class SimulatedKuka : public systems::Diagram<T> {
     // ports.
     const int kControllerFeedforwardInputPort = 0;
     const int kControllerFeedbackInputPort = 1;
-
-    // The iiwa's control protocol doesn't have any way to express the
-    // desired velocity for the arm, so this simulation doesn't take
-    // target velocities as an input.  The PidControlledSystem does
-    // want target velocities to calculate the D term.  Since we don't
-    // have any logic to calculate the desired target velocity (yet!)
-    // set the D term (to stabilize the arm near the commanded
-    // position) and feed a desired velocity vector of zero.
-    auto zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
-        Eigen::VectorXd::Zero(tree.get_num_velocities()));
-    auto input_mux = builder.template AddSystem<Multiplexer<T>>(
-        std::vector<int>{tree.get_num_positions(), tree.get_num_velocities()});
-    builder.Connect(zero_source->get_output_port(),
-                    input_mux->get_input_port(1));
-    builder.Connect(input_mux->get_output_port(0),
-                    controller_->get_input_port(kControllerFeedbackInputPort));
 
     auto gravity_compensator =
         builder.template AddSystem<GravityCompensator<T>>(tree);
@@ -144,7 +125,8 @@ class SimulatedKuka : public systems::Diagram<T> {
                     controller_->get_input_port(
                         kControllerFeedforwardInputPort));
 
-    builder.ExportInput(input_mux->get_input_port(0));
+    builder.ExportInput(
+        controller_->get_input_port(kControllerFeedbackInputPort));
     builder.ExportOutput(controller_->get_output_port(0));
     builder.BuildInto(this);
   }
@@ -174,7 +156,6 @@ int DoMain() {
       systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
           "IIWA_COMMAND", &lcm));
   auto command_receiver = builder.AddSystem<IiwaCommandReceiver>();
-
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm));
@@ -198,6 +179,12 @@ int DoMain() {
 
   lcm.StartReceiveThread();
   simulator.Initialize();
+
+  command_receiver->set_initial_position(
+      sys->GetMutableSubsystemContext(simulator.get_mutable_context(),
+                                      command_receiver),
+      VectorX<double>::Zero(tree.get_num_positions()));
+
 
   // Simulate for a very long time.
   simulator.StepTo(FLAGS_simulation_sec);

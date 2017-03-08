@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -31,12 +32,14 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// @ingroup primitive_systems
 
 template <typename T>
 class PassThrough : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PassThrough)
+
   /// Constructs a pass thorough system (`y = u`).
   /// @param size number of elements in the signal to be processed.
   explicit PassThrough(int size);

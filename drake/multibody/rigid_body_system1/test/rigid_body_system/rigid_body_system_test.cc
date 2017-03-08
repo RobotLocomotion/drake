@@ -62,9 +62,8 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
 
   Eigen::Isometry3d T_second_model_to_world;
   {
-    Eigen::Vector3d xyz, rpy;
-    xyz << 1, 1, 1;
-    rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz = Eigen::Vector3d::Ones();
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     T_second_model_to_world.matrix()
         << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }

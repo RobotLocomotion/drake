@@ -17,13 +17,74 @@ const Vector3<double> HumanoidStatus::kFootToSensorPositionOffset =
 const Matrix3<double> HumanoidStatus::kFootToSensorRotationOffset =
     Matrix3<double>(AngleAxis<double>(-M_PI, Vector3<double>::UnitX()));
 
+HumanoidStatus::HumanoidStatus(
+    const RigidBodyTree<double>& robot,
+    const param_parsers::RigidBodyTreeAliasGroups<double>& alias_group)
+    : robot_(&robot), cache_(robot_->CreateKinematicsCache()) {
+  // TODO(siyuan.feng): The names of the links are hard coded for
+  // Valkyrie, and they should be specified in some separate config file.
+  bodies_of_interest_.emplace(
+      "pelvis",
+      BodyOfInterest("pelvis", *alias_group.get_body_group("pelvis").front(),
+                     Vector3<double>::Zero()));
+  bodies_of_interest_.emplace(
+      "torso",
+      BodyOfInterest("torso", *alias_group.get_body_group("torso").front(),
+                     Vector3<double>::Zero()));
+  bodies_of_interest_.emplace(
+      "left_foot",
+      BodyOfInterest("left_foot",
+                     *alias_group.get_body_group("left_foot").front(),
+                     Vector3<double>::Zero()));
+  bodies_of_interest_.emplace(
+      "right_foot",
+      BodyOfInterest("right_foot",
+                     *alias_group.get_body_group("right_foot").front(),
+                     Vector3<double>::Zero()));
+  bodies_of_interest_.emplace(
+      "left_foot_sensor",
+      BodyOfInterest("left_foot_sensor",
+                     *alias_group.get_body_group("left_foot").front(),
+                     kFootToSensorPositionOffset));
+  bodies_of_interest_.emplace(
+      "right_foot_sensor",
+      BodyOfInterest("right_foot_sensor",
+                     *alias_group.get_body_group("right_foot").front(),
+                     kFootToSensorPositionOffset));
+
+  time_ = 0;
+
+  position_.resize(robot_->get_num_positions());
+  velocity_.resize(robot_->get_num_velocities());
+  joint_torque_.resize(robot_->get_num_actuators());
+
+  // Build various lookup maps.
+  body_name_to_id_ = std::unordered_map<std::string, int>();
+  for (auto it = robot_->bodies.begin(); it != robot_->bodies.end(); ++it) {
+    body_name_to_id_[(*it)->get_name()] = it - robot_->bodies.begin();
+  }
+
+  name_to_position_index_ = std::unordered_map<std::string, int>();
+  for (int i = 0; i < robot_->get_num_positions(); ++i) {
+    name_to_position_index_[robot_->get_position_name(i)] = i;
+  }
+  name_to_velocity_index_ = std::unordered_map<std::string, int>();
+  for (int i = 0; i < robot_->get_num_velocities(); ++i) {
+    name_to_velocity_index_[robot_->get_velocity_name(i)] = i;
+  }
+  for (int i = 0; i < robot_->get_num_actuators(); ++i) {
+    actuator_name_to_actuator_index_[robot_->actuators.at(i).name_] = i;
+  }
+}
+
 void HumanoidStatus::Update() {
   cache_.initialize(position_, velocity_);
   robot_->doKinematics(cache_, true);
 
   M_ = robot_->massMatrix(cache_);
   drake::eigen_aligned_std_unordered_map<RigidBody<double> const*,
-                                         drake::TwistVector<double>> f_ext;
+                                         drake::TwistVector<double>>
+      f_ext;
   bias_term_ = robot_->dynamicsBiasTerm(cache_, f_ext);
 
   // com
@@ -37,8 +98,8 @@ void HumanoidStatus::Update() {
   centroidal_momentum_ = centroidal_momentum_matrix_ * velocity_;
 
   // body parts
-  for (BodyOfInterest& body_of_interest : bodies_of_interest_)
-    body_of_interest.Update(*robot_, cache_);
+  for (auto& body_of_interest_pair : bodies_of_interest_)
+    body_of_interest_pair.second.Update(*robot_, cache_);
 
   // ft sensor
   for (int i = 0; i < 2; ++i) {
@@ -97,14 +158,14 @@ void HumanoidStatus::Update() {
 
 std::ostream& operator<<(std::ostream& out,
                          const HumanoidStatus& robot_status) {
-  out << "Time: " << robot_status.time() << std::endl;
+  out << "Time: " << robot_status.time() << "\n";
   for (int i = 0; i < robot_status.position().size(); ++i) {
     out << robot_status.robot().get_position_name(i) << ": "
         << robot_status.position(i) << ", " << robot_status.velocity(i)
-        << std::endl;
+        << "\n";
   }
   out << "left foot vel: " << robot_status.foot(Side::LEFT).velocity()
-      << std::endl;
+      << "\n";
   out << "right foot vel: " << robot_status.foot(Side::RIGHT).velocity()
       << std::endl;
   return out;

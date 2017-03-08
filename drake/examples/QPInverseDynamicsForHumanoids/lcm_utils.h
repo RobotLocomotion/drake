@@ -1,13 +1,13 @@
 #pragma once
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "bot_core/atlas_command_t.hpp"
 #include "bot_core/robot_state_t.hpp"
 #include "drake/common/eigen_types.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 
 #include "drake/lcmt_body_acceleration.hpp"
 #include "drake/lcmt_constrained_values.hpp"
@@ -34,9 +34,9 @@ ConstraintType DecodeConstraintType(int8_t type);
  */
 int8_t EncodeConstraintType(ConstraintType type);
 
-void DecodeQPInput(const RigidBodyTree<double>& robot, const lcmt_qp_input& msg,
-                   QPInput* qp_input);
-void EncodeQPInput(const QPInput& qp_input, lcmt_qp_input* msg);
+void DecodeQpInput(const RigidBodyTree<double>& robot, const lcmt_qp_input& msg,
+                   QpInput* qp_input);
+void EncodeQpInput(const QpInput& qp_input, lcmt_qp_input* msg);
 
 void DecodeConstrainedValues(const lcmt_constrained_values& msg,
                              ConstrainedValues* val);
@@ -56,9 +56,9 @@ void EncodeDesiredCentroidalMomentumDot(
     const DesiredCentroidalMomentumDot& momdot,
     lcmt_desired_centroidal_momentum_dot* msg);
 
-void DecodeDesiredDoFMotions(const lcmt_desired_dof_motions& msg,
-                             DesiredDoFMotions* dof_motions);
-void EncodeDesiredDoFMotions(const DesiredDoFMotions& dof_motions,
+void DecodeDesiredDofMotions(const lcmt_desired_dof_motions& msg,
+                             DesiredDofMotions* dof_motions);
+void EncodeDesiredDofMotions(const DesiredDofMotions& dof_motions,
                              lcmt_desired_dof_motions* msg);
 
 void DecodeDesiredBodyMotion(const RigidBodyTree<double>& robot,

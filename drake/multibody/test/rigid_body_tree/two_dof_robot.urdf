@@ -70,6 +70,8 @@
     </collision>
   </link>
 
+  <frame link="link3" name="test_frame" rpy="-1 0.1 0.2" xyz="0.8 -0.2 0.3"/>
+
   <joint name="joint1" type="revolute">
     <parent link="link1"/>
     <child link="link2"/>
