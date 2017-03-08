@@ -177,8 +177,9 @@ GTEST_TEST(testMobyLCP, testAutoDiffTrivial) {
   EXPECT_TRUE(result);
 
   // Since the LCP matrix is diagonal and the first number is 1.0, a unit
-  // increase in q(1) will result in a unit decrease in z(1).
+  // increase in q(0) will result in a unit decrease in z(0).
   const double tol = std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(fast_z(0).value(), 1.0, tol);
   EXPECT_NEAR(fast_z(0).derivatives()(0), -1, tol);
 
   // Check the solutions.
