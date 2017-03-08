@@ -21,11 +21,13 @@ namespace drake {
 namespace multibody {
 
 /// This class provides an abstraction for the physical concept of the mass
-/// distribution of a body about a particular point. Given a point, the mass
+/// distribution of a body (or system of bodies), about a particular point.
+/// (We will say "body" throughout the documentation of this class, but the same
+/// concepts apply to a system of bodies as well.) Given a point, the mass
 /// distribution of a body is generally described by the first three mass
-/// weighted moments about that point. These moments are the mass of the body
-/// (or zeroth moment), the center of mass vector (or first order moment) and
-/// finally the rotational inertia (or second order moment).
+/// weighted moments about that point. These moments are: the mass of the body
+/// (or zeroth moment), the center of mass vector (or first moment) and
+/// finally the rotational inertia (or second moment).
 // TODO(amcastro-tri): Add reference to a book describing the concept of i-th
 // moments for those not familiar with it.
 /// We choose to use the term **rotational inertia** as used by [Jain 2010] to
@@ -54,17 +56,20 @@ namespace multibody {
 /// which an inertia is expressed or about what point is computed. Methods and
 /// operators on this class have no means to determine frame consistency through
 /// operations. It is therefore the responsability of users of this class to
-/// keep track of frames in which operations are performed.
+/// keep track of frames in which operations are performed. The best way to do
+/// that is to use a disciplined notation as described below.
 ///
-/// In code we use the monogram notation as described
-/// in @ref multibody_spatial_inertia. For a rotational inertia of a system `S`
-/// computed about a point `p` and expressed in frame `E` the monogram notation
-/// would read `I_Sp_E`. When the system is a body `B` and the about point `p`
-/// is a fixed to body `B`, the monogram notation reads `I_BBp_E`, which can be
-/// abbreviated to `I_Bp_E` since the about point `Bp` also identifies the
-/// system. Specials cases include the case when the about point is the origin
-/// `Bo` of the body and when the about point is the center of mass `Bcm` of
-/// the body, for which the rotational inertia in monogram notation would read
+/// In typeset material we use the symbol @f$ [I^{S/P}]_E @f$ to represent the
+/// rotational inertia of a system `S` about point `P`, expressed in frame `E`.
+/// In code and comments we use the monogram notation as described
+/// in @ref multibody_spatial_inertia. For this inertia, the monogram notation
+/// reads `I_SP_E`. If the point `P` is fixed to a body `B`, we write that
+/// point as @f$ B_P @f$ which appears in code and comments as `Bp`. So if the
+/// system is a body `B` and the about point is `Bp`, the monogram notation
+/// reads `I_BBp_E`, which can be abbreviated to `I_Bp_E` since the about point
+/// `Bp` also identifies the system. Common cases include are that the
+/// about point is the origin `Bo` of the body, or its the center of mass `Bcm`
+/// for which the rotational inertia in monogram notation would read
 /// as `I_Bo_E` and `I_Bcm_E`, respectively.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
