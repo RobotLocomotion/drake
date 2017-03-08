@@ -154,6 +154,7 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         "//drake/automotive/maliput/api",
+        "//drake/math:geometric_transform",
         "//drake/systems/rendering:pose_vector",
     ],
 )
