@@ -1,8 +1,10 @@
 #include "drake/systems/sensors/rgbd_camera.h"
 
+#include <array>
 #include <cmath>
-#include <functional>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -135,6 +137,7 @@ class RenderingSim : public systems::Diagram<double> {
                      rgbd_camera_->state_input_port());
     builder_.ExportOutput(rgbd_camera_->color_image_output_port());
     builder_.ExportOutput(rgbd_camera_->depth_image_output_port());
+    builder_.ExportOutput(rgbd_camera_->label_image_output_port());
     builder_.ExportOutput(rgbd_camera_->camera_base_pose_output_port());
     builder_.BuildInto(this);
   }
@@ -189,7 +192,7 @@ class ImageTest : public ::testing::Test {
         context_->get_mutable_continuous_state_vector();
 
     const double kZInitial = 1.;
-    std::array<double, 3> kZDiffs{{0., -0.2, -0.5}};
+    const std::array<double, 3> kZDiffs{{0., -0.2, -0.5}};
 
     for (int i = 0; i < 3; ++i) {
       cstate->SetAtIndex(2, kZDiffs[i]);
@@ -200,13 +203,37 @@ class ImageTest : public ::testing::Test {
     }
   }
 
+
   void Verify(CameraBasePoseVerifier verifier) {
     diagram_->CalcOutput(*context_, output_.get());
     rendering::PoseVector<double>* const camera_base_pose =
         dynamic_cast<rendering::PoseVector<double>*>(
-            output_->GetMutableVectorData(2));
+            output_->GetMutableVectorData(3));
 
     verifier(camera_base_pose->get_isometry());
+  }
+
+  void VerifyLabelImage(int expected_num_colors) {
+    diagram_->CalcOutput(*context_, output_.get());
+    auto label_image = output_->GetMutableData(2)->GetMutableValue<
+      sensors::Image<uint8_t>>();
+
+    typedef std::array<uint8_t, 3> Color;
+    std::vector<Color> actual_colors;
+
+    for (int v = 0; v < label_image.height(); ++v) {
+      for (int u = 0; u < label_image.width(); ++u) {
+        Color color{{label_image.at(u, v)[0],
+                     label_image.at(u, v)[1],
+                     label_image.at(u, v)[2]}};
+        auto it = std::find(actual_colors.begin(), actual_colors.end(), color);
+        if (it == actual_colors.end()) {
+          actual_colors.push_back(color);
+        }
+      }
+    }
+
+    EXPECT_EQ(expected_num_colors, actual_colors.size());
   }
 
   static void VerifyCameraPose(const Eigen::Isometry3d& pose_actual) {
@@ -229,7 +256,7 @@ class ImageTest : public ::testing::Test {
     // assumption is any defects will be detected by sampling this amount.
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
-        for (int ch = 0; ch < 4; ++ch) {
+        for (int ch = 0; ch < color_image.num_channels(); ++ch) {
           ASSERT_NEAR(color_image.at(u, v)[ch], color[ch],
                       kColorPixelTolerance);
         }
@@ -289,14 +316,14 @@ class ImageTest : public ::testing::Test {
     }
 
     // Verifies the center point's color.
-    const int kHalfWidth = color_image.width() / 2;
-    const int kHalfHeight = color_image.height() / 2;
+    const int half_width = color_image.width() / 2;
+    const int half_height = color_image.height() / 2;
     for (int ch = 0; ch < color_image.num_channels(); ++ch) {
-      ASSERT_NEAR(color_image.at(kHalfWidth, kHalfHeight)[ch],
+      ASSERT_NEAR(color_image.at(half_width, half_height)[ch],
                   255u, kColorPixelTolerance);
     }
     // Verifies the center point's depth.
-    ASSERT_NEAR(depth_image.at(kHalfWidth, kHalfHeight)[0], 1.f, 1e-4);
+    ASSERT_NEAR(depth_image.at(half_width, half_height)[0], 1.f, 1e-4);
   }
 
   static void VerifyMovingCamera(const sensors::Image<uint8_t>& color_image,
@@ -309,7 +336,7 @@ class ImageTest : public ::testing::Test {
           (color[1] != color_image.at(0, v)[1]) ||
           (color[2] != color_image.at(0, v)[2]) ||
           (color[3] != color_image.at(0, v)[3])) {
-        for (int ch = 0; ch < 4; ++ch) {
+        for (int ch = 0; ch < color_image.num_channels(); ++ch) {
           color[ch] = color_image.at(0, v)[ch];
         }
         actual_horizon = v;
@@ -410,6 +437,14 @@ TEST_F(ImageTest, CameraPoseUpdateTest) {
   VerifyPoseUpdate(ImageTest::VerifyMovingCamera);
 }
 
+// Verifies the number of colors in a label image.
+TEST_F(ImageTest, LabelRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/three_boxes.sdf");
+  SetUp(sdf,
+        Eigen::Vector3d(-10., 0., 2.),
+        Eigen::Vector3d(0., M_PI_4 * 0.2, 0.));
+  VerifyLabelImage(5);  // We have three objects plus the sky and the terrain.
+}
 
 // Verifies an exception is thrown if a link has more than two visuals.
 GTEST_TEST(RenderingTest, MultipleVisualsTest) {

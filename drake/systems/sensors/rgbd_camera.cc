@@ -5,6 +5,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <vtkActor.h>
@@ -48,17 +49,6 @@ struct Color {
   double b;
 };
 
-Color kColorPalette[24] {
-  Color{1., 0., 0.}, Color{0., 1., 0.}, Color{0., 0., 1.},
-  Color{1., 1., 0.}, Color{0., 1., 1.}, Color{1., 0., 1.},
-  Color{0.5, 0., 0.}, Color{0., 0.5, 0.}, Color{0., 0., 0.5},
-  Color{0.5, 0.5, 0.}, Color{0., 0.5, 0.5}, Color{0.5, 0., 0.5},
-  Color{0.75, 0., 0.}, Color{0., 0.75, 0.}, Color{0., 0., 0.75},
-  Color{0.75, 0.75, 0.}, Color{0., 0.75, 0.75}, Color{0.75, 0., 0.75},
-  Color{0.25, 0., 0.}, Color{0., 0.25, 0.}, Color{0., 0., 0.25},
-  Color{0.25, 0.25, 0.}, Color{0., 0.25, 0.25}, Color{0.25, 0., 0.25}
-};
-
 const int kPortCameraPose = 3;
 
 const int kColorImageChannel = 4;
@@ -70,8 +60,6 @@ const int kLabelImageChannel = 3;
 const double kClippingPlaneNear = 0.01;
 const double kClippingPlaneFar = 100.;
 
-const Color kBackgroundColor{0.8, 0.898, 1.};
-
 // TODO(kunimatsu-tri) Add support for the arbitrary image size and the depth
 // ranges.
 const int kImageWidth = 640;  // In pixels
@@ -81,6 +69,7 @@ const float kDepthRangeFar = 5.0;
 
 const double kTerrainSize = 100.;
 const Color kTerrainColor{1., 0.898, 0.797};
+const Color kBackgroundColor{0.8, 0.898, 1.};
 
 // For Zbuffer value conversion.
 const double kA = kClippingPlaneFar / (kClippingPlaneFar - kClippingPlaneNear);
@@ -93,6 +82,37 @@ std::string RemoveFileExtension(const std::string& filepath) {
   }
   return filepath.substr(0, last_dot);
 }
+
+class ColorPalette {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ColorPalette)
+
+  explicit ColorPalette(int num_colors) {
+    const int num = std::ceil(num_colors / 6.);
+    DRAKE_DEMAND(num < 256);  // The maximum number of uint8_t.
+    for (int i = 0; i < num; ++i) {
+      // It is possible to have more colors, but we want the colors to be as
+      // distinguishable as possible for visualization purpose.  We can add more
+      // colors as needed.
+      const double intensity = 1. - i / static_cast<double>(num);
+      color_palette_.push_back(Color{intensity, 0., 0.});
+      color_palette_.push_back(Color{0., intensity, 0.});
+      color_palette_.push_back(Color{0., 0., intensity});
+      color_palette_.push_back(Color{intensity, intensity, 0.});
+      color_palette_.push_back(Color{0., intensity, intensity});
+      color_palette_.push_back(Color{intensity, 0., intensity});
+    }
+  }
+
+  Color& get_color(int index) {
+    DRAKE_DEMAND(index < static_cast<int>(color_palette_.size()));
+    return color_palette_[index];
+  }
+
+ private:
+  std::vector<Color> color_palette_;
+};
+
 
 }  // namespace
 
@@ -180,6 +200,7 @@ class RgbdCamera::Impl {
   int label_image_output_port_index_{};
   const bool kCameraFixed;
 
+  ColorPalette color_palette_;
   std::map<int, vtkSmartPointer<vtkActor>> id_object_pairs_;
   std::map<int, vtkSmartPointer<vtkActor>> id_label_object_pairs_;
   vtkNew<vtkActor> terrain_actor_;
@@ -218,9 +239,10 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
           (Eigen::AngleAxisd(orientation[0], Eigen::Vector3d::UnitX()) *
            Eigen::AngleAxisd(orientation[1], Eigen::Vector3d::UnitY()) *
            Eigen::AngleAxisd(orientation[2], Eigen::Vector3d::UnitZ()))),
-      kCameraFixed(fix_camera) {
+      kCameraFixed(fix_camera), color_palette_(tree.bodies.size()) {
   if (!show_window) {
     render_window_->SetOffScreenRendering(1);
+    label_render_window_->SetOffScreenRendering(1);
   }
 
   CreateRenderingWorld();
@@ -244,9 +266,11 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   label_renderer_->SetBackground(kBackgroundColor.r,
                                  kBackgroundColor.g,
                                  kBackgroundColor.b);
+
   label_render_window_->SetSize(color_camera_info_.width(),
                                 color_camera_info_.height());
   label_render_window_->AddRenderer(label_renderer_.GetPointer());
+  label_render_window_->SetMultiSamples(0);
 
   color_buffer_->SetInput(render_window_.GetPointer());
   color_buffer_->SetMagnification(1);
@@ -279,6 +303,10 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
 
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
+      continue;
+    }
+
+    if (body->get_visual_elements().empty()) {
       continue;
     }
 
@@ -391,12 +419,9 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
           vtkSmartPointer<vtkActor>(actor.GetPointer());
       renderer_->AddActor(actor.GetPointer());
 
-      const auto& color = kColorPalette[model_id];
+      const auto& color = color_palette_.get_color(model_id);
       actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
-      actor_for_label->GetProperty()->SetAmbient(1);
-      actor_for_label->GetProperty()->SetDiffuse(0);
-      actor_for_label->GetProperty()->SetSpecular(0);
-
+      actor_for_label->GetProperty()->LightingOff();
       actor_for_label->SetMapper(mapper.GetPointer());
       actor_for_label->SetUserTransform(vtk_transform);
       id_label_object_pairs_[model_id] =
@@ -417,10 +442,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
   terrain_actor_->GetProperty()->SetColor(kTerrainColor.r,
                                           kTerrainColor.g,
                                           kTerrainColor.b);
-  terrain_actor_->GetProperty()->SetAmbient(1);
-  terrain_actor_->GetProperty()->SetDiffuse(0);
-  terrain_actor_->GetProperty()->SetSpecular(0);
-
+  terrain_actor_->GetProperty()->LightingOff();
   terrain_actor_->SetUserTransform(transform);
   renderer_->AddActor(terrain_actor_.GetPointer());
   label_renderer_->AddActor(terrain_actor_.GetPointer());
@@ -438,9 +460,10 @@ void RgbdCamera::Impl::UpdateModelPoses(
         cache, 0, body->get_body_index());
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(X_CBody);
-    // `id_object_pairs_` is modified here.  This is OK because 1) we are just
-    // copying data to the memory space allocated at the construction time and
-    // 2) we are not outputting this data to outside the class.
+    // `id_object_pairs_` and 'id_label_object_pairs_` are modified here.
+    // This is OK because 1) we are just copying data to the memory spaces
+    // allocated at the construction time and 2) we are not outputting these
+    // data to outside the class.
     auto& actor = id_object_pairs_.at(body->get_model_instance_id());
     actor->SetUserTransform(vtk_transform);
 
@@ -535,11 +558,11 @@ void RgbdCamera::Impl::DoCalcOutput(
 
       // Updates the Label image.
       void* label_ptr = label_buffer_->GetOutput()->GetScalarPointer(u, v, 0);
-      label_image.at(u, kHeightReversed)[0] =
+      label_image.at(u, height_reversed)[0] =
           *(static_cast<uint8_t*>(label_ptr) + 2);  // B
-      label_image.at(u, kHeightReversed)[1] =
+      label_image.at(u, height_reversed)[1] =
           *(static_cast<uint8_t*>(label_ptr) + 1);  // G
-      label_image.at(u, kHeightReversed)[2] =
+      label_image.at(u, height_reversed)[2] =
           *(static_cast<uint8_t*>(label_ptr) + 0);  // R
     }
   }
