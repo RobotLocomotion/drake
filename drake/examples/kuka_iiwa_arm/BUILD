@@ -82,6 +82,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "sim_diagram_builder",
+    srcs = ["sim_diagram_builder.cc"],
+    hdrs = ["sim_diagram_builder.h"],
+    deps = [
+        "//drake/systems/controllers:state_feedback_controller_base",
+        "//drake/systems/framework",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+    ],
+)
+
 drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
@@ -119,6 +131,7 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
+        ":sim_diagram_builder",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
@@ -173,6 +186,24 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         ":iiwa_plan_source",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sim_diagram_builder_test",
+    data = [":models"],
+    deps = [
+        ":iiwa_common",
+        ":sim_diagram_builder",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
+        "//drake/lcm",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/analysis",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/framework",
     ],
 )
