@@ -46,7 +46,9 @@ drake_cc_library(
 drake_cc_binary(
     name = "schunk_wsg_simulation",
     srcs = ["schunk_wsg_simulation.cc"],
+    add_test_rule = 1,
     data = [":models"],
+    test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":schunk_wsg_lcm",
         ":simulated_schunk_wsg_system",
@@ -85,6 +87,7 @@ drake_cc_googletest(
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:pid_controlled_system",
@@ -92,16 +95,7 @@ drake_cc_googletest(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:trajectory_source",
     ],
-)
-
-sh_test(
-    name = "schunk_wsg_simulation_test",
-    srcs = ["//tools:exec.sh"],
-    args = [
-        "$(location :schunk_wsg_simulation)",
-        "--simulation_sec=0.1",
-    ],
-    data = [":schunk_wsg_simulation"],
+    size = "large",
 )
 
 filegroup(

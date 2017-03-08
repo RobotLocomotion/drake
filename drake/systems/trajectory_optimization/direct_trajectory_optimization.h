@@ -37,6 +37,8 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTrajectoryOptimization)
 
+  ~DirectTrajectoryOptimization() override {}
+
   /// Returns the decision variable associated with the timestep, h, at time
   /// index @p index.
   Eigen::VectorBlock<const solvers::VectorXDecisionVariable> h(

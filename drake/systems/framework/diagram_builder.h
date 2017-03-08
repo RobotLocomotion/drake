@@ -148,20 +148,26 @@ class DiagramBuilder {
 
   /// Declares that the given @p input port of a constituent system is an input
   /// to the entire Diagram.
-  void ExportInput(const InputPortDescriptor<T>& input) {
+  /// @return The index of the exported input port of the entire diagram.
+  int ExportInput(const InputPortDescriptor<T>& input) {
     PortIdentifier id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
     ThrowIfSystemNotRegistered(input.get_system());
+    int return_id = static_cast<int>(input_port_ids_.size());
     input_port_ids_.push_back(id);
     diagram_input_set_.insert(id);
+    return return_id;
   }
 
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.
-  void ExportOutput(const OutputPortDescriptor<T>& output) {
+  /// @return The index of the exported output port of the entire diagram.
+  int ExportOutput(const OutputPortDescriptor<T>& output) {
     ThrowIfSystemNotRegistered(output.get_system());
+    int return_id = static_cast<int>(output_port_ids_.size());
     output_port_ids_.push_back(
         PortIdentifier{output.get_system(), output.get_index()});
+    return return_id;
   }
 
   /// Builds the Diagram that has been described by the calls to Connect,

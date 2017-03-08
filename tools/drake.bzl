@@ -6,6 +6,7 @@ CLANG_FLAGS = [
     "-Werror=all",
     "-Werror=inconsistent-missing-override",
     "-Werror=sign-compare",
+    "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
 ]
 
@@ -15,6 +16,7 @@ GCC_FLAGS = [
     "-Werror=all",
     "-Werror=extra",
     "-Werror=return-local-addr",
+    "-Werror=non-virtual-dtor",
     "-Wno-unused-parameter",
     "-Wno-missing-field-initializers",
 ]
@@ -68,11 +70,19 @@ def drake_cc_binary(
         copts=[],
         linkstatic=1,
         testonly=0,
+        add_test_rule=0,
+        test_rule_args=[],
         **kwargs):
     """Creates a rule to declare a C++ binary.
 
     By default, we prefer to link static libraries whenever they are available.
     This default could be revisited if binary size becomes a concern.
+
+    If you wish to create a smoke-test demonstrating that your binary runs
+    without crashing, supply add_test_rule=1, and any necessary arguments
+    with test_rule_args=["-f", "--bar=42"]. Note that if you wish to do this,
+    you should consider suppressing that urge, and instead writing real tests.
+    The smoke-test will be named <name>_test.
     """
     native.cc_binary(
         name=name,
@@ -95,6 +105,18 @@ def drake_cc_binary(
         visibility=["//visibility:private"],
         cmd=_dsym_command(name),
     )
+
+    if add_test_rule:
+        drake_cc_test(
+            name=name + "_test",
+            hdrs=hdrs,
+            srcs=srcs,
+            deps=deps,
+            copts=copts,
+            testonly=testonly,
+            linkstatic=linkstatic,
+            args=test_rule_args,
+            **kwargs)
 
 def drake_cc_test(
         name,

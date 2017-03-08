@@ -48,6 +48,8 @@ def generate_indices(hh, caller_context, fields):
         # field is the LCM message field name
         # kname is the C++ kConstant name
         # kvalue is the C++ vector row index integer value
+        # TODO(jwnimmer-tri) The per-field context.update for name, kname, doc,
+        # etc. is copy-pasta'd throughout this file.  We should abbreviate it.
         context.update(kname=to_kname(field['name']))
         context.update(kvalue=kvalue)
         put(hh, INDICES_FIELD % context, 1)
@@ -125,11 +127,37 @@ def generate_accessors(hh, caller_context, fields):
     put(hh, ACCESSOR_END % context, 2)
 
 
+IS_VALID_BEGIN = """
+  /// Returns whether the current values of this vector are well-formed.
+  decltype(T() < T()) IsValid() const {
+    using std::isnan;
+    auto result = (T(0) == T(0));
+"""
+IS_VALID = """
+    result = result && !isnan(%(field)s());
+"""
+IS_VALID_END = """
+    return result;
+  }
+"""
+
+
+def generate_is_valid(hh, caller_context, fields):
+    context = dict(caller_context)
+    put(hh, IS_VALID_BEGIN % context, 1)
+    for field in fields:
+        context.update(field=field['name'])
+        context.update(kname=to_kname(field['name']))
+        put(hh, IS_VALID % context, 1)
+    put(hh, IS_VALID_END % context, 2)
+
+
 VECTOR_HH_PREAMBLE = """
 #pragma once
 
 %(generated_code_warning)s
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -146,7 +174,7 @@ VECTOR_CLASS_BEGIN = """
 template <typename T>
 class %(camel)s : public systems::BasicVector<T> {
  public:
-  // An abbreviation for our row index constants.
+  /// An abbreviation for our row index constants.
   typedef %(indices)s K;
 """
 
@@ -360,6 +388,7 @@ def generate_code(args):
         generate_default_ctor(hh, context, fields)
         generate_do_clone(hh, context, fields)
         generate_accessors(hh, context, fields)
+        generate_is_valid(hh, context, fields)
         put(hh, VECTOR_CLASS_END % context, 2)
         put(hh, VECTOR_HH_POSTAMBLE % context, 1)
 
