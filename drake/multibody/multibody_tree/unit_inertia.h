@@ -37,13 +37,13 @@ class UnitInertia : public RotationalInertia<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
 
   /// Default UnitInertia constructor. All entries are set to NaN for a
-  /// quick detection of un initialized values.
+  /// quick detection of uninitialized values.
   UnitInertia() {}
 
   /// Creates a principal unit inertia with identical diagonal elements
   /// equal to `I` and zero products of inertia. Rotational inertias with this
   /// property are called **triaxially symmetric** and their moment of inertia
-  /// about all lines passing through the object's center of mass are equal.
+  /// about all lines passing through the object's centroid are equal.
   /// For example, UnitInertias of this form arise for simple shapes such as
   /// sphere and cube solids or shells.
   /// Throws an exception if `I` is negative.
@@ -97,74 +97,77 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
   }
 
-  /// For a central unit inertia `G_Bcm_E` computed about a body's center of
-  /// mass `Bcm` and expressed in a frame `E`, this method shifts this inertia
-  /// using the parallel axis theorem to be computed about a point `Qo`.
-  /// This operation is performed in place, modifying the original object.
-  /// @param[in] p_BcmQo_E A vector from the body's center of mass `Bcm` to
-  ///                      point `Qo` expressed in the same frame `E` in which
-  ///                      `this` inertia is expressed.
-  /// @returns A reference to `this` unit inertia but now computed about
-  ///          point `Qo` and expressed in frame `E`.
-  UnitInertia<T>& ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcmQo_E) {
-    RotationalInertia<T>::operator+=(PointMass(p_BcmQo_E));
+  /// For a central unit inertia `G_Bc_E` computed about a body's centroid `Bc`
+  /// and expressed in a frame `E`, this method shifts this inertia using the
+  /// parallel axis theorem to be computed about a point `Q`.
+  /// This operation is performed in place, modifying the original object which
+  /// is no longer a central inertia.
+  /// @param[in] p_BcQ_E A vector from the body's centroid `Bc` to point `Q`
+  ///                    expressed in the same frame `E` in which `this` inertia
+  ///                    is expressed.
+  /// @returns A reference to `this` unit inertia `G_Q_E` but now computed about
+  ///          point `Q` and expressed in frame `E`.
+  UnitInertia<T>& ShiftFromCentroidInPlace(const Vector3<T>& p_BcQ_E) {
+    RotationalInertia<T>::operator+=(PointMass(p_BcQ_E));
     return *this;
   }
 
-  /// For a central unit inertia `G_Bcm_E` computed about a body's center of
-  /// mass `Bcm` and expressed in a frame `E`, this method shifts this inertia
-  /// using the parallel axis theorem to be computed about a point `Qo`.
-  /// @param[in] p_BcmQo_E A vector from the body's center of mass `Bcm` to
-  ///                      point `Qo` expressed in the same frame `E` in which
-  ///                      `this` inertia is expressed.
-  /// @retval G_Qo_E This same unit inertia computed about a point `Qo` and
-  ///                expressed in frame `E`.
-  UnitInertia<T> ShiftFromCenterOfMass(const Vector3<T>& p_BcmQo_E) const {
-    return UnitInertia<T>(*this).ShiftFromCenterOfMassInPlace(p_BcmQo_E);
+  /// For a central unit inertia `G_Bc_E` computed about a body's centroid `Bc`
+  /// and expressed in a frame `E`, this method shifts this inertia using the
+  /// parallel axis theorem to be computed about a point `Q`.
+  /// @param[in] p_BcQ_E A vector from the body's centroid `Bc` to point `Q`
+  ///                    expressed in the same frame `E` in which `this` inertia
+  ///                    is expressed.
+  /// @retval G_Q_E This same unit inertia computed about a point `Q` and
+  ///               expressed in frame `E`.
+  UnitInertia<T> ShiftFromCentroid(const Vector3<T>& p_BcQ_E) const {
+    return UnitInertia<T>(*this).ShiftFromCentroidInPlace(p_BcQ_E);
   }
 
   /// @name Unit inertia for common 3D objects.
   /// The following methods assist in the construction of UnitInertia instances
   /// for common 3D objects such as boxes, spheres, rods and others.
   /// This method computes a UnitInertia for body with unit mass, typically
-  /// around its center of mass, and in a frame aligned with its principal axes.
+  /// around its centroid, and in a frame aligned with its principal axes.
   /// To construct general UnitInertia objects use these methods along with
-  /// ShiftFromCenterOfMassInPlace() to move the point about which the inertia
+  /// ShiftFromCentroidInPlace() to move the point about which the inertia
   /// is computed and use ReExpress() to express in a different frame.
   /// A non-unit RotationalInertia is obtained by multiplying the generated
   /// UnitInertia by a non-unit mass value.
   //@{
 
-  /// Construct a unit inertia for a point of unit mass located at point `p_F`
-  /// measured and expressed in frame `F`.
+  /// Construct a unit inertia for a point mass of unit mass located at point Q,
+  /// whose location in a frame F is given by the position vector `p_FQ`
+  /// (that is, p_FoQ_F).
   /// The unit inertia `G_Fo_F` about the origin `Fo` of frame `F` and expressed
   /// in `F` for this unit mass point equals the square of the cross product
-  /// matrix of `p_F`:
+  /// matrix of `p_FQ`:
   /// \f[
-  ///   [G^{F_o}]_F = [p^\times]_F^2 = [p^\times]_F^T \, [p^\times]_F =
-  ///                -[p^\times]_F \, [p^\times]_F
+  ///   [G^{F_o}]_F = [p^\times]_{FQ}^2 = [p^\times]_{FQ}^T \, [p^\times]_{FQ} =
+  ///                -[p^\times]_{FQ} \, [p^\times]_{FQ}
   /// \f]
-  /// where @f$[p^\times]_F@f$ is the cross product matrix of point `p`
+  /// where @f$[p^\times]_{FQ}@f$ is the cross product matrix of vector `p_FQ`
   /// expressed in frame `F`. In source code the above expression is written as:
   /// <pre>
-  ///   G_Fo_F = px_F² = px_Fᵀ * px_F = -px_F * px_F
+  ///   G_Fo_F = px_FQ² = px_FQᵀ * px_FQ = -px_FQ * px_FQ
   /// </pre>
-  /// where `px` denotes the cross product matrix of of point `p` such that the
-  /// cross product with another vector `a` can be obtained as
-  /// `px.cross(a) = px * a`. The cross product matrix `px` is skew-symmetric.
+  /// where `px_FQ` denotes the cross product matrix of the position vector
+  /// `p_FQ` such that the cross product with another vector `a` can be obtained
+  /// as `px.cross(a) = px * a`. The cross product matrix `px` is
+  /// skew-symmetric.
   /// The square of the cross product matrix is a symmetric matrix with
   /// non-negative diagonals and obeys the triangle inequality.
   /// Matrix `px²` can be used to compute the triple vector product as
   /// `-p x (p x a) = -p.cross(p.cross(a)) = px² * a`.
-  static UnitInertia<T> PointMass(const Vector3<T>& p_F) {
-    const Vector3<T> p2m = p_F.cwiseAbs2();
-    const T mp0 = -p_F(0);
-    const T mp1 = -p_F(1);
+  static UnitInertia<T> PointMass(const Vector3<T>& p_FQ) {
+    const Vector3<T> p2m = p_FQ.cwiseAbs2();
+    const T mp0 = -p_FQ(0);
+    const T mp1 = -p_FQ(1);
     return UnitInertia<T>(
         /*          Ixx,             Iyy,             Izz */
         p2m[1] + p2m[2], p2m[0] + p2m[2], p2m[0] + p2m[1],
         /*       Ixy,          Ixz,          Iyz */
-        mp0 * p_F[1], mp0 * p_F[2], mp1 * p_F[2]);
+        mp0 * p_FQ[1], mp0 * p_FQ[2], mp1 * p_FQ[2]);
   }
 
   /// Computes the unit inertia for a unit-mass solid sphere of uniform density

@@ -190,22 +190,22 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
   EXPECT_TRUE(G.IsApprox(G_expected));
 }
 
-// Tests the methods ShiftFromCenterOfMassInPlace() and ShiftFromCenterOfMass().
-GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
+// Tests the methods ShiftFromCentroidInPlace() and ShiftFromCentroid().
+GTEST_TEST(UnitInertia, ShiftFromCentroidInPlace) {
   const double r = 2.5;
   const double L = 1.5;
   const UnitInertia<double> G_expected =
       UnitInertia<double>::SolidCylinderAboutEnd(r, L);
   UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
   EXPECT_FALSE(G.IsApprox(G_expected));  // Not equal yet.
-  G.ShiftFromCenterOfMassInPlace({0.0, 0.0, L / 2.0});
+  G.ShiftFromCentroidInPlace({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G.IsApprox(G_expected));  // Equal after shifting in place.
   EXPECT_TRUE(G.CouldBePhysicallyValid());
 
   // Create a new object.
   UnitInertia<double> G2 =
       UnitInertia<double>::
-      SolidCylinder(r, L).ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
+      SolidCylinder(r, L).ShiftFromCentroid({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G2.IsApprox(G_expected));
   EXPECT_TRUE(G2.CouldBePhysicallyValid());
 }

@@ -207,7 +207,7 @@ class RotationalInertia {
   /// original object.`scalar` must be non-negative or this
   /// method aborts in Debug builds.
   RotationalInertia<T>& operator/=(const T& scalar) {
-    DRAKE_ASSERT(scalar >= 0);
+    DRAKE_ASSERT(scalar > 0);
     this->get_mutable_triangular_view() /= scalar;
     return *this;
   }
@@ -315,12 +315,11 @@ class RotationalInertia {
 
     // Perform checks to machine precision instead of performing exact
     // comparisons. A "slop" value is chosen relative to the "size" of the
-    // inertia matrix which is measured by the magnitude of the absolute value
-    // of its trace. The trace is chosen since it's an invariant under
-    // rotations. See below for details on how a "slop" is needed for specific
+    // inertia matrix which is measured by the 2-norm of the vector of principal
+    // moments. See below for details on how a "slop" is needed for specific
     // floating point comparisons.
-    const double precision = Eigen::NumTraits<double>::epsilon();
-    const double slop = precision * d.norm();
+    const double precision = 10 * std::numeric_limits<double>::epsilon();
+    const double slop = std::max(precision * d.norm(), precision);
 
     // Principal moments must be non-negative.
     // This comparison actually allows for very small (equal to -slop) negative
@@ -350,12 +349,12 @@ class RotationalInertia {
     return true;  // All tests passed.
   }
 
-  /// Given this rotational inertia `I_Bo_F` about `Bo` and expressed in frame
+  /// Given this rotational inertia `I_Bp_F` about `Bp` and expressed in frame
   /// `F`, this method computes the same inertia re-expressed in another
-  /// frame `A` as `I_Bo_A = R_AF * I_Bo_F * (R_AF)ᵀ`.
+  /// frame `A` as `I_Bp_A = R_AF * I_Bp_F * (R_AF)ᵀ`.
   /// This operation is performed in-place modifying the original object.
   /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
-  /// @returns A reference to `this` rotational inertia about `Bo` but now
+  /// @returns A reference to `this` rotational inertia about `Bp` but now
   ///          re-expressed in frame `A`.
   RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AF) {
     // There is an interesting discussion on Eigen's forum here:
