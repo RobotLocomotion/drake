@@ -1,5 +1,19 @@
 #include "drake/solvers/moby_lcp_solver.h"
-#include "drake/solvers/moby_lcp_solver-inl.h"
+
+#include <Eigen/SparseCore>
+#include <Eigen/SparseLU>
+
+#include <algorithm>
+#include <cmath>
+#include <functional>
+#include <iostream>
+#include <limits>
+#include <memory>
+#include <sstream>
+#include <vector>
+
+#include "drake/common/drake_assert.h"
+
 #include <unsupported/Eigen/AutoDiff>
 
 namespace drake {
