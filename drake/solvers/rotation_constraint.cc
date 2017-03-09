@@ -701,21 +701,27 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
         // R(i,j) > phi(k) => Bpos[k](i,j) = 1
         // R(i,j) < phi(k) => Bpos[k](i,j) = 0
         // R(i,j) = phi(k) => Bpos[k](i,j) = 0 or 1
-        // -2 + 2*Bpos[k](i,j) <= R(i,j)-phi(k) <= Bpos[k](i,j)
+        // Since -s <= R(i, j) - phi(k) <= 1,
+        // where s = 2 - 1 / num_binary_vars_per_half_axis, the point
+        // [R(i,j) - phi(k), Bpos[k](i,j)] has to lie within the convex hull,
+        // whose vertices are (-s, 0), (0, 0), (1, 1), (0, 1). By computing the
+        // edges of this convex hull, we get
+        // -s + s*Bpos[k](i,j) <= R(i,j)-phi(k) <= Bpos[k](i,j)
+        double s = 2 - 1.0 / num_binary_vars_per_half_axis;
+        prog->AddLinearConstraint(R(i, j) - phi(k) >= -s + s * Bpos[k](i, j));
+        prog->AddLinearConstraint(R(i, j) - phi(k) <= Bpos[k](i, j));
 
-        // Tight on the lower bound:
-        prog->AddLinearConstraint(
-            Eigen::RowVector2d(1, -2), -2 + phi(k), phi(k),
-            VectorDecisionVariable<2>{R(i, j), Bpos[k](i, j)});
-        // Tight on the upper bound:
-        prog->AddLinearConstraint(
-            Eigen::RowVector2d(1, -1), -2 + phi(k), phi(k),
-            VectorDecisionVariable<2>{R(i, j), Bpos[k](i, j)});
-
-        // -R(i,j) >= phi(k) => Bneg[k](i,j) = 1
-        // -R(i,j) <= phi(k) => Bneg[k](i,j) = 0
+        // -R(i,j) > phi(k) => Bneg[k](i,j) = 1
+        // -R(i,j) < phi(k) => Bneg[k](i,j) = 0
         // -R(i,j) = phi(k) => Bneg[k](i,j) = 0 or 1
-        // -Bneg[k](i,j) <= R(i,j)+phi(k) <= 2-2*Bneg[k](i,j)
+        // Since -1 <= R(i, j) + phi(k) <= s,
+        // where s = 2 - 1 / num_binary_vars_per_half_axis, the point
+        // [R(i,j) + phi(k), Bneg[k](i,j)] has to lie within the convex hull
+        // whose vertices are (-1, 1), (0, 0), (s, 0), (0, 1). By computing the
+        // edges of the convex hull, we get
+        // -Bneg[k](i,j) <= R(i,j)+phi(k) <= s-s*Bneg[k](i,j)
+        prog->AddLinearConstraint(R(i, j) + phi(k) <= 2 - 2 * Bneg[k](i, j));
+        prog->AddLinearConstraint(R(i, j) + phi(k) >= -Bneg[k](i, j));
 
         // Tight on the lower bound:
         prog->AddLinearConstraint(R(i, j) + Bneg[k](i, j), -phi(k), 2- phi(k));

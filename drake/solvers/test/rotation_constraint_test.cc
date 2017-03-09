@@ -572,7 +572,7 @@ GTEST_TEST(RotationTest, TestMinimumDistance) {
   EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
   const Matrix3d R_val = prog.GetSolution(R);
-  EXPECT_GE((R_val.col(0) - R_val.col(1)).norm(), 0.1);
+  EXPECT_GE((R_val.col(0) - R_val.col(1)).norm(), 0.94);
 }
 }  // namespace
 }  // namespace solvers
