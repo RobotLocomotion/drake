@@ -74,7 +74,8 @@ void AddVehicles(RoadNetworkType road_network_type,
   // to CreateTrajectoryParams() below expects a "car" to have a particular
   // length and width.
   const std::string kSdfFile =
-      GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
+      GetDrakePath() +
+      "/automotive/models/prius/prius_with_lidar_rear_axle_root.sdf";
 
   if (FLAGS_simple_car_names.empty()) {
     const std::string name = "";
