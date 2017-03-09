@@ -14,7 +14,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/systems/analysis/explicit_euler_integrator.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
@@ -60,6 +60,7 @@ int DoMain() {
   auto command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_command>(
           kLcmCommandChannel, &lcm));
+  command_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto command_sender = builder.AddSystem<IiwaCommandSender>();
 
   builder.Connect(plan_sub->get_output_port(0),
@@ -88,77 +89,40 @@ int DoMain() {
                   command_pub->get_input_port(0));
   auto diagram = builder.Build();
 
-  auto context = diagram->CreateDefaultContext();
-  auto output = diagram->AllocateOutput(*context);
-  std::unique_ptr<systems::DiscreteState<double>> discrete_state =
-      diagram->AllocateDiscreteVariables();
-  std::unique_ptr<systems::State<double>> tmp_state = context->CloneState();
-
   lcm.StartReceiveThread();
   drake::log()->info("controller started");
 
-  // TODO(sam.creasey) All of the remaining code in this function is
-  // basically duplicative of a similar implementation in
-  // valkyrie_balancing_controller_system.cc, and I think they could
-  // easily be merged into a single function templated on the message
-  // type.  Do this once we get to rule-of-three.
-
   // Loops until the first status message arrives.
+  std::unique_ptr<systems::Context<double>> initial_context =
+      diagram->CreateDefaultContext();
   while (true) {
     // Sets Context's time to the timestamp in the bot_core::robot_state_t msg.
     const lcmt_iiwa_status* msg =
         status_receiver->EvalInputValue<lcmt_iiwa_status>(
-            diagram->GetSubsystemContext(*context, status_receiver), 0);
-    context->set_time(static_cast<double>(msg->utime) / 1e6);
-    if (context->get_time() != 0) break;
+            diagram->GetSubsystemContext(*initial_context, status_receiver), 0);
+    initial_context->set_time(static_cast<double>(msg->utime) / 1e6);
+    if (initial_context->get_time() != 0) break;
   }
+  double iiwa_time = initial_context->get_time();
   drake::log()->info("status received");
 
-  // Create an integrator to advance the state of the integrator
-  // portion of the PidControlledSystem above.  A basic euler
-  // integrator should do, precision is not critical for this
-  // application.
-  systems::ExplicitEulerIntegrator<double> integrator(
-      *diagram, kIiwaLcmStatusPeriod, context.get());
-  integrator.Initialize();
+  systems::Simulator<double> simulator(*diagram, std::move(initial_context));
+  simulator.Initialize();
 
-  systems::UpdateActions<double> update_actions;
-  double next_control_time =
-      diagram->CalcNextUpdateTime(*context, &update_actions);
-
-  // Loop forever, continuing to update the time based on the incoming
+  // Loop forever, continuing to update the simulation based on the incoming
   // status message.
   while (true) {
-    if (next_control_time <= context->get_time()) {
-      for (const systems::DiscreteEvent<double>& event :
-           update_actions.events) {
-        if (event.action ==
-            systems::DiscreteEvent<double>::kUnrestrictedUpdateAction) {
-          diagram->CalcUnrestrictedUpdate(*context, event, tmp_state.get());
-          context->get_mutable_state()->CopyFrom(*tmp_state);
-        } else if (event.action ==
-                   systems::DiscreteEvent<double>::kDiscreteUpdateAction) {
-          diagram->CalcDiscreteVariableUpdates(*context, event,
-                                               discrete_state.get());
-          context->get_mutable_discrete_state()->CopyFrom(*discrete_state);
-        }
-      }
-
-      diagram->Publish(*context);
-      next_control_time =
-          diagram->CalcNextUpdateTime(*context, &update_actions);
-
-      const double dt = next_control_time - context->get_time();
-      integrator.StepOnceAtMost(dt, dt, dt);
+    if (simulator.get_context().get_time() < iiwa_time) {
+      simulator.StepTo(iiwa_time);
     }
 
-    // TODO(siyuan): This is a busy polling loop on LCM message. Should switch
-    // to a descheduled version.
-    // Sets Context's time to the timestamp in the iiwa status msg.
-    const lcmt_iiwa_status* msg =
-        status_receiver->EvalInputValue<lcmt_iiwa_status>(
-            diagram->GetSubsystemContext(*context, status_receiver), 0);
-    context->set_time(static_cast<double>(msg->utime) / 1e6);
+    while (iiwa_time <= simulator.get_context().get_time()) {
+      const lcmt_iiwa_status* msg =
+          status_receiver->EvalInputValue<lcmt_iiwa_status>(
+              diagram->GetSubsystemContext(
+                  simulator.get_context(), status_receiver), 0);
+      iiwa_time = static_cast<double>(msg->utime) / 1e6;
+    }
   }
 }
 
