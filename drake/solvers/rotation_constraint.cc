@@ -180,13 +180,13 @@ void AddOrthogonalConstraint(
   Eigen::Matrix<double, 5, 1> b;
 
   // |v1+v2|^2 <= 2
-  // Implemented as a Lorenz cone using z = Ax+b = [ sqrt(2); v1+v2 ].
+  // Implemented as a Lorenz cone using z = [ sqrt(2); v1+v2 ].
   Vector4<symbolic::Expression> z;
   z << std::sqrt(2), v1 + v2;
   prog->AddLorentzConeConstraint(z);
 
   // |v1-v2|^2 <= 2
-  // Implemented as a Lorenz cone using z = Ax+b = [ sqrt(2); v1-v2 ].
+  // Implemented as a Lorenz cone using z = [ sqrt(2); v1-v2 ].
   z.tail<3>() = v1 - v2;
   prog->AddLorentzConeConstraint(z);
 }
