@@ -76,6 +76,12 @@ if (mosek_FOUND)
   target_link_libraries(rotation_constraint_test drakeOptimization)
 endif(mosek_FOUND)
 
+if (gurobi_FOUND)
+  drake_add_cc_test(rotation_constraint_limit_test)
+  set_tests_properties(rotation_constraint_limit_test PROPERTIES TIMEOUT 600)
+  target_link_libraries(rotation_constraint_limit_test drakeOptimization)
+endif(gurobi_FOUND)
+
 if (lcm_FOUND)
   add_executable(plot_feasible_rotation_matrices plot_feasible_rotation_matrices.cc)
   target_link_libraries(plot_feasible_rotation_matrices

@@ -626,33 +626,28 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
         // R(i,j) > phi(k) => Bpos[k](i,j) = 1
         // R(i,j) < phi(k) => Bpos[k](i,j) = 0
         // R(i,j) = phi(k) => Bpos[k](i,j) = 0 or 1
-        // Since -s <= R(i, j) - phi(k) <= 1,
-        // where s = 2 - 1 / num_binary_vars_per_half_axis, the point
+        // Since -s1 <= R(i, j) - phi(k) <= s2,
+        // where s1 = 1 + phi(k), s2 = 1 - phi(k). The point
         // [R(i,j) - phi(k), Bpos[k](i,j)] has to lie within the convex hull,
-        // whose vertices are (-s, 0), (0, 0), (1, 1), (0, 1). By computing the
-        // edges of this convex hull, we get
-        // -s + s*Bpos[k](i,j) <= R(i,j)-phi(k) <= Bpos[k](i,j)
-        double s = 2 - 1.0 / num_binary_vars_per_half_axis;
-        prog->AddLinearConstraint(R(i, j) - phi(k) >= -s + s * Bpos[k](i, j));
-        prog->AddLinearConstraint(R(i, j) - phi(k) <= Bpos[k](i, j));
+        // whose vertices are (-s1, 0), (0, 0), (s2, 1), (0, 1). By computing
+        // the edges of this convex hull, we get
+        // -s1 + s1*Bpos[k](i,j) <= R(i,j)-phi(k) <= s2 * Bpos[k](i,j)
+        double s1 = 1 + phi(k);
+        double s2 = 1 - phi(k);
+        prog->AddLinearConstraint(R(i, j) - phi(k) >= -s1 + s1 * Bpos[k](i, j));
+        prog->AddLinearConstraint(R(i, j) - phi(k) <= s2 * Bpos[k](i, j));
 
         // -R(i,j) > phi(k) => Bneg[k](i,j) = 1
         // -R(i,j) < phi(k) => Bneg[k](i,j) = 0
         // -R(i,j) = phi(k) => Bneg[k](i,j) = 0 or 1
-        // Since -1 <= R(i, j) + phi(k) <= s,
-        // where s = 2 - 1 / num_binary_vars_per_half_axis, the point
+        // Since -s2 <= R(i, j) + phi(k) <= s1,
+        // where s1 = 1 + phi(k), s2 = 1 - phi(k). The point
         // [R(i,j) + phi(k), Bneg[k](i,j)] has to lie within the convex hull
-        // whose vertices are (-1, 1), (0, 0), (s, 0), (0, 1). By computing the
-        // edges of the convex hull, we get
-        // -Bneg[k](i,j) <= R(i,j)+phi(k) <= s-s*Bneg[k](i,j)
-        prog->AddLinearConstraint(R(i, j) + phi(k) <= 2 - 2 * Bneg[k](i, j));
-        prog->AddLinearConstraint(R(i, j) + phi(k) >= -Bneg[k](i, j));
-
-        // Tight on the lower bound:
-        prog->AddLinearConstraint(R(i, j) + Bneg[k](i, j), -phi(k), 2- phi(k));
-
-        // Tight on the lower bound:
-        prog->AddLinearConstraint(R(i, j) + 2 * Bneg[k](i, j), -phi(k), 2 - phi(k));
+        // whose vertices are (-s2, 1), (0, 0), (s1, 0), (0, 1). By computing
+        // the edges of the convex hull, we get
+        // -s2 * Bneg[k](i,j) <= R(i,j)+phi(k) <= s1-s1*Bneg[k](i,j)
+        prog->AddLinearConstraint(R(i, j) + phi(k) <= s1 - s1 * Bneg[k](i, j));
+        prog->AddLinearConstraint(R(i, j) + phi(k) >= -s2 * Bneg[k](i, j));
 
         if (k == num_binary_vars_per_half_axis - 1) {
           //   Cpos[k](i,j) = Bpos[k](i,j)
@@ -662,9 +657,11 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
           prog->AddLinearEqualityConstraint(Cneg[k](i, j) - Bneg[k](i, j), 0);
         } else {
           //   Cpos[k](i,j) = Bpos[k](i,j) - Bpos[k+1](i,j)
-          prog->AddLinearConstraint(Cpos[k](i, j) == Bpos[k](i, j) - Bpos[k + 1](i, j));
+          prog->AddLinearConstraint(Cpos[k](i, j) ==
+                                    Bpos[k](i, j) - Bpos[k + 1](i, j));
           //   Cneg[k](i,j) = Bneg[k](i,j) - Bneg[k+1](i,j)
-          prog->AddLinearConstraint(Cneg[k](i, j) == Bneg[k](i, j) - Bneg[k + 1](i, j));
+          prog->AddLinearConstraint(Cneg[k](i, j) ==
+                                    Bneg[k](i, j) - Bneg[k + 1](i, j));
         }
       }
       // Bpos[0](i,j) + Bneg[0](i,j) = 1.  (have to pick a side).
@@ -678,21 +675,15 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
       for (int k = 1; k < num_binary_vars_per_half_axis; ++k) {
-        // Bpos[k-1](i,j) = 0 => R(i,j) <= phi(k-1) < phi(k) => Bpos[k](i,j) = 0
-        // Bpos[k](i,j) = 1 => R(i,j) >= phi(k) > phi(k-1) => Bpos[k-1](i,j) = 1
+        // Bpos[k-1](i,j) = 0 => R(i,j) ≤ phi(k-1) < phi(k) => Bpos[k](i,j) = 0
+        // Bpos[k](i,j) = 1 => R(i,j) ≥ phi(k) > phi(k-1) => Bpos[k-1](i,j) = 1
         // Thus Bpos[k](i, j) <= Bpos[k-1](i, j)
-        prog->AddLinearConstraint(Bpos[k](i, j) <= Bpos[k-1](i, j));
+        prog->AddLinearConstraint(Bpos[k](i, j) <= Bpos[k - 1](i, j));
 
-        // Bneg[k](i,j) = 1 => -R(i,j) >= phi(k) > phi(k-1) => Bneg[k-1](i,j) = 1
-        // Bneg[k-1](i,j) = 0 => -R(i,j) <= phi(k-1) < phi(k) => Bneg[k](i,j) = 0
+        // Bneg[k](i,j) = 1 => -R(i,j) ≥ phi(k) > phi(k-1) => Bneg[k-1](i,j) = 1
+        // Bneg[k-1](i,j) = 0 => -R(i,j) ≤ phi(k-1) < phi(k) => Bneg[k](i,j) = 0
         // Thus Bneg[k](i,j) <= Bneg[k-1](i,j)
         prog->AddLinearConstraint(Bneg[k](i, j) <= Bneg[k-1](i, j));
-
-        for (int l = 1; l < num_binary_vars_per_half_axis; ++l) {
-          // Either R(i, j) >= phi(k) or R(i, j) <= -phi(l).
-          // So Bpos[k](i,j) + Bneg[l](i,j) <= 1
-          prog->AddLinearConstraint(Bpos[k](i, j) + Bneg[l](i, j) <= 1);
-        }
       }
     }
   }
