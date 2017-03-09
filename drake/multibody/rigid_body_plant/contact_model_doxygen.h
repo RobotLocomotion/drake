@@ -96,7 +96,7 @@
  from `B` to `A`.  Furthermore, because the two forces are equal but opposite,
  we can discuss only the force acting on `A`.
 
- @image html multibody/rigid_body_plant/images/simple_contact.png "Figure 1: Illustration of contact scenario between two spheres."
+ @image html simple_contact.png "Figure 1: Illustration of contact scenario between two spheres."
 
  The computation of the contact force is most cleanly discussed in the
  _contact frame_, `C` (shown in Figure 1).  We define the contact frame such
@@ -123,13 +123,13 @@
 > Interpreted as Damping in Vibroimpact," ASME Journal of Applied Mechanics, pp.
 > 440-445, June 1975. This is a continuous model based on Hertz elastic contact
 > theory, which correctly reproduces the empirically observed dependence on
-> velocity of coefficient of restitution, where e=(1-cẋ) for (small) impact
-> velocity v and a material property c with units 1/ẋ. Note that c can be
+> velocity of coefficient of restitution, where e=(1-dẋ) for (small) impact
+> velocity v and a material property `d` with units 1/ẋ. Note that `d` can be
 > measured right off the coefficient of restitution-vs.-velocity curves: it is
 > the absolute value of the slope at low velocities.
 
 > Given a collision between two spheres, or a sphere and a plane, we can generate
-> a contact force from this equation `fₙ = kxᵐ(1 + mcẋ)` where `k` is a stiffness
+> a contact force from this equation `fₙ = kxᵐ(1 + mdẋ)` where `k` is a stiffness
 > constant incorporating material properties and geometry (to be defined below),
 > `x` is penetration depth and ẋ is penetration rate (positive during
 > penetration and negative during rebound). Exponent `m` depends on the surface
@@ -137,13 +137,14 @@
 > (or sphere-plane) interactions, which is all we are currently handling here,
 > `m=3/2`.
 
- For Drake, we don't liberally extend the application of this model in a more
+ For Drake, we liberally extend the application of this model in a more
  generic way across arbitrary contact.  One implication is that the exponent,
  `m` becomes 1.  So, for Drake, the normal component of the contact force is:
 
-   `fₙ = kx(1 + cẋ)`,
+   `fₙ = kx(1 + dẋ)`,
 
- where `k > 0` and `c > 0`.
+ where `k > 0` and `d > 0`. Please note, `d` is not a _damping_ factor, but as
+ _dissipation_ factor.
 
  By definition `fₙ` should always be positive, so that the contact force is
  a repulsive force. Mathematically, for arbitrary x and ẋ, it is possible for
@@ -165,12 +166,11 @@
  Static friction (or stiction) arises due to surface characteristics at the
  microscopic level (e.g., electrostatic and/or Van der Waals forces). Two
  objects in static contact need to have a force applied parallel to the surface
- of contact sufficient to _break_ stiction.  Once the objects are moving,
+ of contact sufficient, `fₚ`, to _break_ stiction.  Once the objects are moving,
  dynamic friction takes over.  It is possible to accelerate one body sliding
  across another body with a force that would have been too small to break
  stiction.  In essence, stiction will create a contrary force canceling out
- any force too small to break stiction; the size of the stiction force depends
- on the size of the parallel pushing force.
+ any force too small to break stiction (see Figure 2).
 
  <!--
      Pushing Force vs Tangent Force
@@ -186,8 +186,9 @@
     0 |___|________________________
           0                      Fₚ
                       fₚ
+      Figure 2: Ideal Stiction
  -->
- @image html multibody/rigid_body_plant/images/ideal_stiction.png "Figure 2: Ideal stiction"
+ @image html ideal_stiction.png "Figure 2: Ideal stiction"
 
  In _ideal_ stiction, the tangent force `fₜ` has magnitude equal to the pushing
  force `fₚ` up to the point where the force is sufficient to break stiction
@@ -197,14 +198,147 @@
  numerical integrators.  We use a Stribeck model to approximate this behavior
  in a way compatible with numerical integrators.
 
+ <!--
+   Stribeck function: u vs v_s
 
- @image html multibody/rigid_body_plant/images/stribeck.png "Figure 3: Stribeck function for stiction"
+      |
+      |
+   μs |     **
+      |    *  *
+      |    *   *
+   μd |   *      **********
+      |   *
+      |   *
+      |   *
+      |  *
+      |*____________________
+      0     1     2     3
+          multiple of vₛ
+
+   Figure 3: Stribeck function for stiction.
+ -->
+@image html stribeck.png "Figure 3: Stribeck function for stiction"
+
+ The Stribeck model is a variation of Coulomb friction, where the frictional
+ (aka _tangential_) force is proportional to the normal force as:
+
+ `fₜ = μ⋅fₙ`
+
+ In the Stribeck model, the coefficient of friction, μ, is replaced with a
+ speed-dependent function:
+
+ `fₜ = μ(v)⋅fₙ`,
+
+ where `v` is a unitless multiple of a _new_ parameter: _slip tolerance_ (`vₛ`).
+ Rather than modeling _perfect_ stiction, it makes use of an _allowable_ amount
+ of relative motion to approximate stiction.  When we refer to
+ "relative motion", we refer specifically to the relative motion of the two
+ points in the corresponding bodies that are coincident with the contact point
+ `P_C`, denoted as `rv_BcAc_C` for bodies `A` and `B`, respectively
+ (and, in this case, measured and expressed in the contact frame, `C`).
+
+ The function, as illustrated in Figure 3, is a function of the unitless
+ _multiple_ of `vₛ`. The domain is divided into three intervals:
+
+    - `v ∈ [0, 1)`: the coefficient of friction rises smoothly from zero to the
+    static coefficient of friction, μs.
+    - `v ∈ [1, 3)`: The coefficient of friction smooth falls from
+    μs to the dynamic coefficient of friction, μd.
+    - `v ∈ [3, ∞)`: Coefficient of friction is held constant at μd.
+
+ Next topic: @ref contact_engineering
 */
 
 /** @defgroup contact_engineering Working with Contacts in Drake
  @ingroup drake_contacts
 
+ The behavior of a simulation with contact will depend on three factors:
+
+ - the choice of integrator,
+ - contact parameters,
+ - nature of collision geometry.
+
+ The three factors are inter-dependent; specific choices for one factor may
+ require supporting changes in the other factors.
+
  Issues:
- - global contact parameters
- - point contact only fights with surface-to-surface contact.
+ - **Picking a good value for `vₛ`**
+
+   In selecting a value for `vₛ`, you must ask yourself the question, "When
+   two objects are ostensibly in stiction, how much slip am I willing to allow?"
+   There are two opposing design issues in picking a value for `vₛ`.  On the one
+   hand, small values of `vₛ` require integrators with _very_ small time steps
+   (or high accuracy for the error-controlled RK3).  On the other hand, it
+   should be picked to be appropriate for the scale of the problem. For example,
+   a car simulation could allow a "large" value for `vₛ` of 1e-2 m/s, but
+   grasping a 10 cm box might have to be at 1e-3 or 1e-4 m/s. Ultimately,
+   picking the largest viable value will allow your simulator to run faster.
+
+ - **Picking values for the contact parameters**
+
+   The contact model provides five parameters:
+     - Stiffness (`k`)
+     - Dissipation (`d`)
+     - static coefficient of friction (`μs`)
+     - dynamic coefficient of friction (`μd`)
+     - stiction slip tolerance (`vₛ`)
+     .
+     Empirical evidence suggests that the most important properties to tune will
+     be `k` and `vₛ`.  Modifying `d` can have subtle influence over softening
+     the behavior, but doesn't obviously contribute to improved stiction.
+     Increasing the coefficients of friction to unrealistic levels seems to
+     counterintuitively degrade the results. The previous note discusses the
+     importance of `vₛ`.
+
+     Tuning stiffness _does_ have value.  In a compliant model, penetration is
+     part of the stable equilibrium state. Imagine a box sitting on a half plane.
+     The stable penetration depth will, in principle, be equal to the box's mass
+     divided by the stiffness.  Appropriate stiffness for a 1 kg box is not the
+     same as for a 1000 kg car.  (In fact, with a small stiffness, the car will
+     pass right through the ground while attempting to find the equilibrium
+     distance).
+
+ - **Global contact parameters**
+
+   In its current incarnation, Drake does _not_ support per-object mechanical
+   material properties.  That means whatever parameter values you select will
+   be the same for all contacts in the world.
+
+ - **Surface-on-surface contacts**
+
+   Remember that the contact detection work produces a single, point to
+   represent contact between two collision elements.  If the contact is a
+   surface instead of a point (such as one box lying on another), the contact
+   point will *not* be temporally coherent.  This will lead to instability
+   artifacts which can only be addressed through smaller time steps.
+
+   An alternative is to represent the body's contact differently. For some
+   shapes (e.g., boxes), we can introduce two sets of collision elements:
+   discrete "points" at the corners, and a box capturing the volume (see
+   block_for_pick_and_place.urdf as an example). With this strategy, the
+   contact "points" are actually small-radius spheres.  The volume-capturing
+   box should actually be inset from those spheres such that when the box is
+   lying on a plane (such that the logical contact manifold would be a face),
+   only the contact points make contact, providing reliable points of contact.
+   However, for arbitrary configurations contact with the box will provide
+   more general contact.
+
+ - **Contact samples**
+
+   Because of weaknesses in the contact detection and characterization, we get
+   bet numerical performance in explicitly enumerating contact points on a body
+   (see previous issue).  However, each of those contact points are processed
+   without any knowledge of the others or the relationship.  Thus, for a fixed
+   penetration depth between two objects, increasing the number of explicit
+   contact spheres will increase the magnitude of the _overall_ contact force.
+
+ - **Choice of integrator**
+
+   Empirical evidence suggests that any integrator _except_ ExplicitEulerIntegrator
+   can work with the new contact model.  Generally, the RungeKutta2Integrator
+   and SemiExplicitEulerIntegrator require similar time steps to produce
+   equivalent behavior.  Generally, for a `vₛ` value of 1e-2 m/s, a timestep on
+   the order of 1e-4 is required for both of these.
+
+   Similarly, the error-controlled integrator, RungeKutta3Integrator, requires
  */
