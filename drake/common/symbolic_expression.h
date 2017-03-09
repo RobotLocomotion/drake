@@ -15,6 +15,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/cond.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/hash.h"
@@ -830,5 +831,24 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 /// @pre {@p vars is non-empty}.
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
+
+/// Checks if two Eigen::Matrix<Expression> @p m1 and @p m2 are structurally
+/// equal. That is, it returns true if and only if `m1(i, j)` is structurally
+/// equal to `m2(i, j)` for all `i`, `j`.
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+        std::is_same<typename DerivedA::Scalar, Expression>::value &&
+        std::is_same<typename DerivedB::Scalar, Expression>::value,
+    bool>::type
+CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  // Note that std::equal_to<Expression> calls Expression::EqualTo which checks
+  // structural equality between two expressions.
+  return m1.binaryExpr(m2, std::equal_to<Expression>{}).all();
+}
+
 }  // namespace symbolic
 }  // namespace drake
