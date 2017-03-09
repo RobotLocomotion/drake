@@ -21,11 +21,14 @@ MultibodyTree<T>::MultibodyTree() {
 
 template <typename T>
 BodyIndex MultibodyTree<T>::AddBody(std::unique_ptr<Body<T>> body) {
-  DRAKE_DEMAND(body != nullptr);
+  if (body == nullptr) {
+    throw std::logic_error("Input body is an invalid nullptr.");
+  }
+
   // If the topology is valid it means that this MultibodyTree was already
   // compiled. Thus throw an exception to alert users.
   if (topology_is_valid_) {
-    throw std::runtime_error(
+    throw std::logic_error(
         "Attempting to add a body to an already compiled MultibodyTree is not "
         "allowed. See MultibodyTree::Compile() for details.");
   }
@@ -45,7 +48,7 @@ void MultibodyTree<T>::Compile() {
   //     allocate a context and request the required cache entries.
   //   - Setup computational structures (BodyNode based).
 
-  // Give here bodies the chance to perform any compile-time setup.
+  // Here, give bodies the chance to perform any compile-time setup.
   for (const auto& body : bodies_) {
     body->Compile();
   }

@@ -46,7 +46,7 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   // Verify that no more bodies can be added to a MultibodyTree if it was
   // compiled already.
   model->Compile();
-  EXPECT_THROW(RigidBody<double>::Create(model), std::runtime_error);
+  EXPECT_THROW(RigidBody<double>::Create(model), std::logic_error);
 }
 
 // Tests the correctness of MultibodyTreeElement checks to verify one or more
@@ -63,7 +63,7 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   EXPECT_NO_THROW(body2.HasParentTreeOrThrows());
 
   // Tests the check to verify that two bodies belong to the same MultibodyTree.
-  EXPECT_THROW(body1.HasSameParentTreeOrThrows(body2), std::runtime_error);
+  EXPECT_THROW(body1.HasSameParentTreeOrThrows(body2), std::logic_error);
   EXPECT_NO_THROW(model1->get_world_body().HasSameParentTreeOrThrows(body1));
   EXPECT_NO_THROW(model2->get_world_body().HasSameParentTreeOrThrows(body2));
 }

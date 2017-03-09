@@ -13,14 +13,15 @@ namespace multibody {
 // Forward declarations.
 template<typename T> class MultibodyTree;
 
-/// Bodies are a bound interconnected aggregate of matter that moves together
-/// through space by translation and rotation and may or not undergo
+/// Bodies are a bound, interconnected aggregate of matter that moves together
+/// through space by translation and rotation and may or may not undergo
 /// deformations, [Mitiguy 2016].
 /// This class provides the general abstraction of a body with an API that
-/// makes no assumption on whether a body is rigid or deformable and neither
-/// makes an assumption on the underlying physical model or approximation.
+/// makes no assumption about whether a body is rigid or deformable and neither
+/// does it make any assumptions about on the underlying physical model or
+/// approximation.
 /// As an element or component of a MultibodyTree, a body is a
-/// MultibodyTreeElement and therefore it has a unique identifier within the
+/// MultibodyTreeElement, and therefore it has a unique identifier within the
 /// multibody tree it belongs to.
 ///
 /// -[Mitiguy 2016] P Mitiguy. Advanced Dynamics and Motion Simulation, 2016.
@@ -38,8 +39,8 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// Returns the number of generalized velocities associatted with this body.
   virtual int get_num_velocities() const = 0;
 
-  /// At MultibodyTree::Compile() time each body will retrieve its topology from
-  /// the parent MultibodyTree.
+  /// At MultibodyTree::Compile() time, each body will retrieve its topology
+  /// from the parent MultibodyTree.
   virtual void Compile() {}
  protected:
   // Default constructor. Only sub-classes can use it.

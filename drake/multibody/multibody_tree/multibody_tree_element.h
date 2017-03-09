@@ -12,12 +12,10 @@ template <class ElementType, typename ElementIndexType>
 class MultibodyTreeElement;
 
 /// A class representing an element or component of a MultibodyTree. Examples of
-/// multibody tree elements are bodies, joints, force elements and constraints.
+/// multibody tree elements are bodies, joints, force elements, and constraints.
 /// Multibody tree elements are owned and managed by a parent MultibodyTree.
 /// As part of their construction process they get assigned an id that uniquely
 /// identifies them within their parent MultibodyTree.
-/// Multibody tree elements have type safe index that is generated with the
-/// macro DrakeMultibody_DEFINE_INDEX_TYPE(IndexClass).
 /// A generic multibody tree element `MultibodyComponent` is derived from
 /// this class as: <pre>
 /// template <typename T>
@@ -38,6 +36,9 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
 
   /// Returns a constant reference to the parent MultibodyTree that owns
   /// this element.
+  /// By construction a %MultibodyTreeElement **always** has a parent
+  /// MultibodyTree. This method, however, asserts that this is the case in
+  /// Debug builds.
   const MultibodyTree<T>& get_parent_tree() const {
     DRAKE_ASSERT_VOID(HasParentTreeOrThrows());
     return *parent_tree_;
@@ -46,17 +47,17 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// Returns the unique identifier in its parent MultibodyTree to this element.
   ElementIndexType get_id() const { return id_;}
 
-  /// Checks if this MultibodyTreeElement has been registered into a
-  /// MultibodyTree. If not, it throws an exception of type std::runtime_error.
+  /// Checks whether this MultibodyTreeElement has been registered into a
+  /// MultibodyTree. If not, it throws an exception of type std::logic_error.
   void HasParentTreeOrThrows() const {
     if (parent_tree_ == nullptr) {
-      throw std::runtime_error(
+      throw std::logic_error(
           "This multibody component was not added to a MultibodyTree.");
     }
   }
 
-  /// Checks if `this` element has the same parent three as @p other.
-  /// If not, it throws an exception of type std::runtime_error.
+  /// Checks whether `this` element has the same parent tree as @p other.
+  /// If not, it throws an exception of type std::logic_error.
   template <template <typename> class OtherElementType,
       typename OtherElementIndexType>
   void HasSameParentTreeOrThrows(
@@ -65,7 +66,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
     this->HasParentTreeOrThrows();
     other.HasParentTreeOrThrows();
     if (parent_tree_ != other.parent_tree_) {
-      throw std::runtime_error(
+      throw std::logic_error(
           "These two MultibodyTreeElement's do not belong to "
           "the same MultibodyTree.");
     }
@@ -83,7 +84,8 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   const MultibodyTree<T>* parent_tree_{nullptr};
   ElementIndexType id_{0};  // ElementIndexType requires a valid initialization.
 
-  // Only derived sub-classes can set these within their Create() factories.
+  // Only derived sub-classes can call these set methods from within their
+  // Create() factories.
   void set_parent_tree(const MultibodyTree<T>* tree) { parent_tree_ = tree; }
   virtual void set_id(ElementIndexType id) { id_ = id; }
 };

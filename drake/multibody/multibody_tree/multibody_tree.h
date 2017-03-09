@@ -15,10 +15,10 @@ namespace multibody {
 /// the elements that belong to this world. Multibody dynamics elements
 /// constitute Body's, Mobilizer's, Joint's, ForceElement's and Constraint's.
 ///
-/// MultibodyTree provides a variaty of operations on this system of bodies as a
+/// MultibodyTree provides a variety of operations on this system of bodies as a
 /// whole. Queries on a per-component basis can be requested usually by
-/// component identifier, however it is generally easier, and recommended, to
-/// peform these per-component requests directly via the component itself
+/// component identifier; however, it is generally easier, and recommended, to
+/// perform these per-component requests directly via the component itself
 /// through its provided API. For instance, if the pose of a body is desired,
 /// users can request this information through the Body class provided API.
 ///
@@ -41,20 +41,21 @@ class MultibodyTree {
 
   /// Takes ownership of @p body and assigns a unique id to it.
   ///
-  /// @throws std::runtime_error if users attempt to add a body to an already
-  /// compiled multibody tree with MultibodyTree::Compile().
+  /// @throws std::logic_error if users attempt to add a body to an already
+  /// compiled multibody tree with MultibodyTree::Compile() or if `body` is a
+  /// nullptr.
   ///
   /// @note This method is an implementation detail and users do not need to
   /// call it. The only allowed mechanism to create bodies is through their
-  /// factory methods. For instace, see RigidBody::Create() to create a body
+  /// factory methods. For instance, see RigidBody::Create() to create a body
   /// and add it to a MultibodyTree.
   ///
   /// @returns The unique identifier of the body just added.
   BodyIndex AddBody(std::unique_ptr<Body<T>> body);
 
   /// Returns the number of bodies in the MultibodyTree including including the
-  /// *world* body. Therefore the minimum number of bodies in a MultibodyTree to
-  /// which no other bodies have been added, is one.
+  /// *world* body. Therefore the minimum number of bodies in a MultibodyTree is
+  /// one.
   int get_num_bodies() const { return static_cast<int>(bodies_.size()); }
 
   /// Returns a constant reference to the *world* body.
