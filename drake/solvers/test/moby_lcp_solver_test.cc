@@ -41,9 +41,11 @@ void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
 
   Eigen::VectorXd expected_z = expected_z_in;
 
+  // NOTE: We don't necessarily expect the unregularized fast solver to succeed,
+  //       hence we don't test the result.
   Eigen::VectorXd fast_z;
   bool result = l.SolveLcpFast(M, q, &fast_z);
-  (void)(result);  // TODO(sammy-tri) Either use, or remove.
+  EXPECT_GT(l.get_num_pivots(), 0);
   if (expected_z.size() == 0) {
     ASSERT_TRUE(expect_fast_pass)
         << "Expected Z not provided and expect_fast_pass unset.";
@@ -60,14 +62,22 @@ void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
 
   Eigen::VectorXd lemke_z;
   result = l.SolveLcpLemke(M, q, &lemke_z);
+  EXPECT_TRUE(result);
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
+  EXPECT_GT(l.get_num_pivots(), 0);
 
   Eigen::SparseMatrix<double> M_sparse = MakeSparseMatrix(M);
   lemke_z.setZero();
   result = l.SolveLcpLemke(M_sparse, q, &lemke_z);
+  EXPECT_GT(l.get_num_pivots(), 0);
+  EXPECT_TRUE(result);
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
+
+  // Verify that resetting the number of pivots works.
+  l.reset_num_pivots();
+  EXPECT_EQ(l.get_num_pivots(), 0);
 }
 
 /// Run all regularized solvers.  If @p expected_z is an empty
