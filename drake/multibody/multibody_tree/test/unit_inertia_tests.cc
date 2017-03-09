@@ -274,7 +274,7 @@ GTEST_TEST(UnitInertia, AutoDiff) {
   // known angular velocity. Since G_B is diagonal with entries Iᵢ, we can
   // expand the time derivative of I_W as:
   //  dI_W/dt = d/dt(R_WB * G_B * R_WBᵀ) = d/dt(∑ Iᵢ * x̂ᵢ * x̂ᵢᵀ) =
-  //          = ∑ Iᵢ * {[w] * x̂ᵢ * x̂ᵢᵀ + ([w] * x̂ᵢ * x̂ᵢᵀ)ᵀ}
+  //          = ∑ Iᵢ * {w× * x̂ᵢ * x̂ᵢᵀ + (w× * x̂ᵢ * x̂ᵢᵀ)ᵀ}
   const auto xhat = Rvalue_WB.col(0);
   const auto yhat = Rvalue_WB.col(1);
   const auto zhat = Rvalue_WB.col(2);
@@ -312,7 +312,7 @@ bool has_times_equal_helper(int) { return true; }
 // This overload gets chosen if the above can't compile.
 // It is made to take any other argument but the above is a better match to an
 // int argument if it got compiled, and therefore gets selected for a class with
-// an opeartor*=() defined.
+// an operator*=() defined.
 template <typename T>
 bool has_times_equal_helper(...) { return false; }
 

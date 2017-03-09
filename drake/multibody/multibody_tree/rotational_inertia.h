@@ -342,16 +342,26 @@ class RotationalInertia {
     if ((d.array() < -slop).any() ) return false;
 
     // Checks triangle inequality.
-    // To understand why a slop is needed consider a case in which the result
-    // from CalcPrincipalMomentsOfInertia() is d0 = -slop⁻ (since slop in the
-    // first comparison above actually is a lower bound, d0 can never be equal
-    // to slop but to an infinitesimally close value slop⁻ with slop⁻ < slop).
-    // For this case the first triangle inequality below becomes:
-    //   d0 + d1 >= d2 - slop
-    //   -slop⁻ + d1 >= d2 - slop
-    //   d1 >= d2 - (slop - slop⁻)
-    // which allows the >= comparision to succeed even for this degenerate case
-    // since (slop - slop⁻) > 0.
+    // To understand why a slop is needed consider a case for a degenerate
+    // inertia with one of its principal moments very close to zero (or zero).
+    // Say CalcPrincipalMomentsOfInertia() results in a very small negative
+    // value d0 = -slop⁻, with slop⁻ ∈ [0; slop) (notice closed and open bounds
+    // in this range) a very small floating point number that could be very
+    // close to slop but never equal since otherwise the first comparision
+    // above (d.array() < -slop) would not pass. d1 and d2 in this example case
+    // could take any values.
+    // For this case the triangle inequality d0 + d1 >= d2 becomes:
+    //   d0 + d1 >= d2
+    //   -slop⁻ + d1 >= d2
+    //   d1 >= d2 + slop⁻
+    // Therefore even if in the case d1=d2, this test would fail. To allow this
+    // test to succeed for this (actually common in practice) case we subtract
+    // slop from the right hand side above resulting in:
+    //   d0 + d1 >= d2 - slop ⇒ d1 >= d2 - (slop - slop⁻)
+    // which would succeed since (slop - slop⁻) > 0.
+    //
+    // TODO(amcastro-tri): analyze the case d0 = d1 = slop⁻ when (and if)
+    // needed, since in that case the inequality would require d2 <= -2 * slop⁻.
     //
     // Another case that requires to account for slop is when the addition of
     // two moments equals to the third one. Consider the case d0 = d1 = 50
