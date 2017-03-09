@@ -235,6 +235,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "model_values",
+    srcs = ["model_values.cc"],
+    hdrs = ["model_values.h"],
+    visibility = [":__subpackages__"],
+    deps = [
+        ":value",
+        ":vector",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "leaf_system",
     srcs = ["leaf_system.cc"],
     hdrs = ["leaf_system.h"],
@@ -323,6 +335,15 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_library(
+    name = "my_vector2",
+    testonly = 1,
+    hdrs = ["test/my_vector2.h"],
+    deps = [
+        ":vector",
+    ],
+)
 
 drake_cc_googletest(
     name = "basic_vector_test",
@@ -421,6 +442,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "model_values_test",
+    deps = [
+        ":model_values",
+        ":my_vector2",
+        "//drake/common:autodiff",
+        "//drake/common:symbolic",
+    ],
+)
+
+drake_cc_googletest(
     name = "abstract_state_test",
     deps = [
         ":abstract_state",
@@ -483,6 +514,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "value_test",
     deps = [
+        ":my_vector2",
         ":value",
         "//drake/common",
     ],
