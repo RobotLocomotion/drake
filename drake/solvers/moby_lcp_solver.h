@@ -15,6 +15,42 @@
 namespace drake {
 namespace solvers {
 
+/// A class for solving Linear Complementarity Problems (LCPs). Solving a LCP
+/// requires finding a solution to the problem:<pre>
+/// Mz + q = w
+/// z ≥ 0
+/// w ≥ 0
+/// zᵀw = 0
+/// </pre>
+/// (where M ∈ ℝⁿˣⁿ and q ∈ ℝⁿ are problem inputs and z ∈ ℝⁿ and w ∈ ℝⁿ are
+/// unknown vectors) or correctly reporting that such a solution does not exist.
+/// In spite of their linear structure, solving LCPs is NP-Hard [Cottle 1992].
+/// However, some LCPs are significantly easier to solve. For instance, it can
+/// be seen that the LCP is solvable in worst-case polynomial time for the case
+/// of symmetric positive-semi-definite M by formulating it as the following
+/// convex quadratic program:<pre>
+/// minimize:   f(z) = zᵀw = zᵀ(Mz + q)
+/// subject to: z ≥ 0
+///             Mz + q ≥ 0
+/// </pre>
+/// Note that this quadratic program's (QP) objective function at the minimum
+/// 'z' cannot be less than zero, and the LCP is only solved if the objective
+/// function at the minimum is equal to zero. Since the seminal result of
+/// Karmarkar, it has been known that convex QPs are solvable in polynomial
+/// time [Karmarkar 1984].
+///
+/// The difficulty of solving an LCP is characterized by the properties of its
+/// particular matrix, namely the class of matrices it belongs to. Classes
+/// include, for example, Q, Q₀, P, P₀, copositive, and Z matrices.
+/// [Cottle 1992] and [Murty 1998] (see pp. 224-230 in the latter) describe
+/// relevant matrix classes in more detail.
+///
+/// [Cottle 1992]     R. Cottle, J.-S. Pang, and R. Stone. The Linear
+///                   Complementarity Problem. Academic Press, 1992.
+/// [Karmarkar 1984]  N. Karmarkar. A New Polynomial-Time Algorithm for
+///                   Linear Programming. Combinatorica, 4(4), pp. 373-395.
+/// [Murty 1988]      K. Murty. Linear Complementarity, Linear and Nonlinear
+///                   Programming. Heldermann Verlag, 1988.
 template <class T>
 class MobyLCPSolver : public MathematicalProgramSolverInterface {
  public:

@@ -6,6 +6,11 @@ namespace drake {
 namespace solvers {
 
 namespace {
+
+// Utility function for copying part of a matrix (designated by the indices
+// in rows and cols) from in to a target matrix, out. This template approach
+// allows selecting parts of both sparse and dense matrices for input; only
+// a dense matrix is returned.
 template <typename Derived, typename T>
 void selectSubMat(const Eigen::MatrixBase<Derived>& in,
                   const std::vector<unsigned>& rows,
@@ -24,8 +29,8 @@ void selectSubMat(const Eigen::MatrixBase<Derived>& in,
 }
 
 // TODO(sammy-tri) this could also use a more efficient implementation.
-template <typename Derived, typename T>
-void selectSubVec(const Eigen::MatrixBase<Derived>& in,
+template <typename T>
+void selectSubVec(const VectorX<T>& in,
                   const std::vector<unsigned>& rows, VectorX<T>* out) {
   const int num_rows = rows.size();
   out->resize(num_rows);
@@ -166,8 +171,41 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   return SolutionResult::kSolutionFound;
 }
 
-/// Fast pivoting algorithm for degenerate, monotone LCPs with few nonzero,
-/// nonbasic variables
+/// Fast pivoting algorithm for LCPs of the form M = PAPᵀ, q = Pb, where b ∈ ℝᵐ,
+/// P ∈ ℝⁿˣᵐ, and A ∈ ℝᵐˣᵐ (where A is positive definite). Therefore, q is in
+/// the range of P and M is positive semi-definite. An LCP of this form is
+/// also guaranteed to have a solution [Cottle 1992].
+///
+/// This particular implementation focuses on the case where the solution
+/// requires few nonzero nonbasic variables, meaning that few 'z' variables need
+/// be nonzero to find a solution to Mz + q = w. This algorithm, which is based
+/// off of Dantzig's Principle Pivoting Method I [Cottle 1992] is described in
+/// [Drumwright 2015]. This algorithm is able to use "warm" starting-
+/// a solution to a "nearby" LCP can be used to find the solution to a given LCP
+/// more quickly.
+///
+/// Although this solver is theoretically guaranteed to give a solution to
+/// the LCPs described above, accumulated floating point error from pivoting
+/// operations could cause the solver to fail. Additionally, the solver can be
+/// applied with some success to problems outside of its guaranteed matrix
+/// class. For these reasons, the solver returns a flag indicating
+/// success/failure.
+/// @param[in] M the LCP matrix.
+/// @param[in] q the LCP vector.
+/// @param[in,out] z the solution to the LCP on return (if the solver succeeds).
+///                If the length of z is equal to the length of q, the solver
+///                will attempt to use z's value as a starting solution.
+/// @param[in] zero_tol The tolerance for testing against zero. If the tolerance
+///            is negative (default) the solver will determine a generally
+///            reasonable tolerance.
+/// @throws std::logic_error if M is non-square or M's dimensions do not
+///         equal q's dimension.
+/// @returns `true` if the solver succeeded and `false` otherwise.
+///
+/// [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
+///                    Complementarity Problem. Academic Press, 1992.
+/// [Drumwright 2015]  E. Drumwright. Rapidly computable viscous friction and
+///                    no-slip rigid contact models. arXiv: 1504.00719v1. 2015.
 template <typename T>
 bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
                                     const VectorX<T>& q, VectorX<T>* z,
@@ -176,6 +214,9 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
 
   const unsigned N = q.rows();
   const unsigned UINF = std::numeric_limits<unsigned>::max();
+
+  if (M.rows() != N || M.cols() != N)
+    throw std::logic_error("M's dimensions do not match that of q.");
 
   Log() << "MobyLCPSolver::SolveLcpFast() entered" << std::endl;
 
@@ -251,7 +292,7 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
 
     // Solve for nonbasic z. If the QR factorization reveals that the matrix
     // is singular, the basis (Msub_) has become degenerate. Recovering from
-    // a degenerate basis for Lemke's Algorithm is currently an open problem.
+    // a degenerate basis for pivoting algorithms is currently an open problem.
     // See http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf for
     // example. The algorithm would ideally terminate at this point, but
     // compilation with AutoDiff currently generates template errors.
@@ -331,7 +372,55 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
   return false;
 }
 
-/// Regularized wrapper around PPM I
+/// Regularized version of the fast pivoting algorithm for LCPs of the form
+/// M = PAPᵀ, q = Pb, where b ∈ ℝᵐ, P ∈ ℝⁿˣᵐ, and A ∈ ℝᵐˣᵐ (where A is positive
+/// definite). Therefore, q is in the range of P and M is positive
+/// semi-definite. Please see SolveLcpFast() for more documentation about the
+/// particular algorithm.
+///
+/// This implementation wraps that algorithm with a Tikhonov-type
+/// regularization approach. Specifically, this implementation repeatedly
+/// attempts to solve the LCP:<pre>
+/// (M + Iα)z + q = w
+/// z ≥ 0
+/// w ≥ 0
+/// zᵀw = 0
+/// </pre>
+/// where I is the identity matrix and α ≪ 1, using geometrically increasing
+/// values of α, until the LCP is solved. Cottle et al. describe how, for
+/// sufficiently large α, the LCP will always be solvable [Cottle 1992], p. 493.
+///
+/// Although this solver is theoretically guaranteed to give a solution to
+/// the LCPs described above, accumulated floating point error from pivoting
+/// operations could cause the solver to fail. Additionally, the solver can be
+/// applied with some success to problems outside of its guaranteed matrix
+/// class. For these reasons, the solver returns a flag indicating
+/// success/failure.
+/// @param[in] M the LCP matrix.
+/// @param[in] q the LCP vector.
+/// @param[in,out] z the solution to the LCP on return (if the solver succeeds).
+///                If the length of z is equal to the length of q, the solver
+///                will attempt to use z's value as a starting solution.
+/// @param[in] min_exp The minimum exponent for computing α over [10ᵝ, 10ᵞ] in
+///                    steps of 10ᵟ, where β is the minimum exponent, γ is the
+///                    maximum exponent, and δ is the stepping exponent.
+/// @param[in] step_exp The stepping exponent for computing α over [10ᵝ, 10ᵞ] in
+///                     steps of 10ᵟ, where β is the minimum exponent, γ is the
+///                     maximum exponent, and δ is the stepping exponent.
+/// @param[in] max_exp The maximum exponent for computing α over [10ᵝ, 10ᵞ] in
+///                    steps of 10ᵟ, where β is the minimum exponent, γ is the
+///                    maximum exponent, and δ is the stepping exponent.
+/// @param[in] zero_tol The tolerance for testing against zero. If the tolerance
+///            is negative (default) the solver will determine a generally
+///            reasonable tolerance.
+/// @throws std::logic_error if M is non-square or M's dimensions do not
+///         equal q's dimension.
+/// @returns `true` if the solver succeeded and `false` if the solver did not
+///          find a solution for α = 10ᵞ.
+/// @sa SolveLcpFast()
+///
+/// [Cottle, 1992]     R. Cottle, J.-S. Pang, and R. Stone. The Linear
+///                    Complementarity Problem. Academic Press, 1992.
 template <typename T>
 bool MobyLCPSolver<T>::SolveLcpFastRegularized(const MatrixX<T>& M,
                                                const VectorX<T>& q,
@@ -521,11 +610,46 @@ void MobyLCPSolver<T>::FinishLemkeSolution(const MatrixType& M,
   }
 }
 
-/// Lemke's algorithm for solving linear complementarity problems
-/**
- * \param z a vector "close" to the solution on input (optional); contains
- *        the solution on output
- */
+/// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
+/// all strictly semimonotone matrices, all P-matrices, and all strictly
+/// copositive matrices. Lemke's Algorithm is described in [Cottle 1992],
+/// Section 4.4. This implementation was adapted from the LEMKE Library
+/// [LEMKE] for Matlab; this particular implementation fixes a bug
+/// in LEMKE that could occur when multiple indices passed the minimum ratio
+/// test.
+///
+/// Although this solver is theoretically guaranteed to give a solution to
+/// the LCPs described above, accumulated floating point error from pivoting
+/// operations could cause the solver to fail. Additionally, the solver can be
+/// applied with some success to problems outside of its guaranteed matrix
+/// classes. For these reasons, the solver returns a flag indicating
+/// success/failure.
+/// @param[in] M the LCP matrix.
+/// @param[in] q the LCP vector.
+/// @param[in,out] z the solution to the LCP on return (if the solver succeeds).
+///                If the length of z is equal to the length of q, the solver
+///                will attempt to use z's value as a starting solution. **This
+///                warmstarting is generally not recommended**: it has a
+///                predisposition to lead to a failing pivoting sequence.
+/// @param[in] zero_tol The tolerance for testing against zero. If the tolerance
+///            is negative (default) the solver will determine a generally
+///            reasonable tolerance.
+/// @param[in] piv_tol The tolerance for testing against zero, specifically
+///            used for the purpose of finding variables for pivoting. If the
+///            tolerance is negative (default) the solver will determine a
+///            generally reasonable tolerance.
+/// @returns `true` if the solver **believes** it has computed a solution
+///          (which it determines by the ability to "pivot out" the "artificial"
+///          variable (see [Cottle 1992]) and `false` otherwise.
+/// @warning The caller should verify that the algorithm has solved the LCP to
+///          the desired tolerances on returns indicating success.
+/// @throws std::logic_error if M is not square or the dimensions of M do not
+///         match the length of q.
+///
+/// [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
+///                    Complementarity Problem. Academic Press, 1992.
+/// [LEMKE]            P. Fackler and M. Miranda. LEMKE.
+///                    http://people.sc.fsu.edu/~burkardt/m\_src/lemke/lemke.m
 template <typename T>
 bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
                                      const VectorX<T>& q, VectorX<T>* z,
@@ -540,6 +664,9 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
   const unsigned n = q.size();
   const unsigned max_iter = std::min((unsigned)1000, 50 * n);
+
+  if (M.rows() != n || M.cols() != n)
+    throw std::logic_error("M's dimensions do not match that of q.");
 
   // update the pivots
   pivots_ = 0;
@@ -627,12 +754,13 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     // Solve for nonbasic z. If the QR factorization reveals that the matrix
     // is singular, the basis (Msub_) has become degenerate. Recovering from
     // a degenerate basis for Lemke's Algorithm is currently an open problem.
-    // See http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf for
+    // See http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf, for
     // example. The algorithm would ideally terminate at this point, but
-    // compilation with AutoDiff currently generates template errors. Leaving
-    // this as-is means that the algorithm might continue on for some time and
-    // could conceivably even indicate success on return, though that is
-    // unlikely.
+    // compilation of householderQr().rank() with AutoDiff currently generates
+    // template errors. Leaving this as-is means that the algorithm might
+    // continue on for some time and could conceivably even indicate success on
+    // return, though return does not guarantee the solution is correct to
+    // desired tolerances anyway (see function documentation).
     x_ = Bl_.householderQr().solve(q);
   } else {
     Log() << "-- using basis of -1 (no warmstarting)" << std::endl;
@@ -821,8 +949,38 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   return false;
 }
 
-/// Regularized wrapper around Lemke's algorithm
-template <typename T>
+/// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
+/// all strictly semimonotone matrices, all P-matrices, and all strictly
+/// copositive matrices. Lemke's Algorithm is described in [Cottle 1992],
+/// Section 4.4.
+///
+/// This implementation wraps that algorithm with a Tikhonov-type
+/// regularization approach. Specifically, this implementation repeatedly
+/// attempts to solve the LCP:<pre>
+/// (M + Iα)z + q = w
+/// z ≥ 0
+/// w ≥ 0
+/// zᵀw = 0
+/// </pre>
+/// where I is the identity matrix and α ≪ 1, using geometrically increasing
+/// values of α, until the LCP is solved. See SolveLcpFastRegularized() for
+/// description of the regularization process and the function parameters,
+/// which are identical. See SolveLcpLemke() for a description of Lemke's
+/// Algorithm. See SolveLcpFastRegularized() for a description of all
+/// calling parameters other than @p z, which apply equally well to this
+/// function.
+/// @param[in,out] z the solution to the LCP on return (if the solver succeeds).
+///                If the length of z is equal to the length of q, the solver
+///                will attempt to use z's value as a starting solution. **This
+///                warmstarting is generally not recommended**: it has a
+///                predisposition to lead to a failing pivoting sequence.
+///
+/// @sa SolveLcpFastRegularized()
+/// @sa SolveLcpLemke()
+///
+/// [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
+///                    Complementarity Problem. Academic Press, 1992.
+template <class T>
 bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
                                                 const VectorX<T>& q,
                                                 VectorX<T>* z, int min_exp,
@@ -963,12 +1121,11 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
   return false;
 }
 
-/// Lemke's algorithm for solving linear complementarity problems using sparse
-/// matrices
-/**
- * \param z a vector "close" to the solution on input (optional); contains
- *        the solution on output
- */
+/// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
+/// all strictly semimonotone matrices, all P-matrices, and all strictly
+/// copositive matrices, for the special case of sparse matrices. See
+/// the non-sparse version of SolveLcpLemke() for descriptions of the calling
+/// and return parameters.
 template <typename T>
 bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
                                      const Eigen::VectorXd& q,
@@ -984,6 +1141,9 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
 
   const unsigned n = q.size();
   const unsigned max_iter = std::min((unsigned)1000, 50 * n);
+
+  if (M.rows() != n || M.cols() != n)
+    throw std::logic_error("M's dimensions do not match that of q.");
 
   // look for immediate exit
   if (n == 0) {
@@ -1233,7 +1393,9 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   return false;
 }
 
-/// Regularized wrapper around Lemke's algorithm for srpase matrices
+/// Regularized wrapper around Lemke's Algorithm for solving LCPs in the matrix
+/// class E. See the non-sparse version of SolveLcpLemkeRegularized() for
+/// descriptions of the calling and return parameters.
 template <typename T>
 bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
     const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q,
