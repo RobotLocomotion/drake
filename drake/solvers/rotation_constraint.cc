@@ -655,7 +655,6 @@ void AddMcCormickVectorConstraints(
     }
   }
 }
-
 }  // namespace
 
 std::pair<std::vector<MatrixDecisionVariable<3, 3>>,
@@ -720,40 +719,26 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
         // -Bneg[k](i,j) <= R(i,j)+phi(k) <= 2-2*Bneg[k](i,j)
 
         // Tight on the lower bound:
-        prog->AddLinearConstraint(
-            Eigen::RowVector2d(1, 1), -phi(k), 2 - phi(k),
-            VectorDecisionVariable<2>{R(i, j), Bneg[k](i, j)});
+        prog->AddLinearConstraint(R(i, j) + Bneg[k](i, j), -phi(k), 2- phi(k));
+
         // Tight on the lower bound:
-        prog->AddLinearConstraint(
-            Eigen::RowVector2d(1, 2), -phi(k), 2 - phi(k),
-            VectorDecisionVariable<2>{R(i, j), Bneg[k](i, j)});
+        prog->AddLinearConstraint(R(i, j) + 2 * Bneg[k](i, j), -phi(k), 2 - phi(k));
 
         if (k == num_binary_vars_per_half_axis - 1) {
           //   Cpos[k](i,j) = Bpos[k](i,j)
-          prog->AddLinearEqualityConstraint(
-              Eigen::RowVector2d(1, -1), 0,
-              {Cpos[k].block<1, 1>(i, j), Bpos[k].block<1, 1>(i, j)});
+          prog->AddLinearEqualityConstraint(Cpos[k](i, j) - Bpos[k](i, j), 0);
+
           //   Cneg[k](i,j) = Bneg[k](i,j)
-          prog->AddLinearEqualityConstraint(
-              Eigen::RowVector2d(1, -1), 0,
-              {Cneg[k].block<1, 1>(i, j), Bneg[k].block<1, 1>(i, j)});
+          prog->AddLinearEqualityConstraint(Cneg[k](i, j) - Bneg[k](i, j), 0);
         } else {
           //   Cpos[k](i,j) = Bpos[k](i,j) - Bpos[k+1](i,j)
-          prog->AddLinearEqualityConstraint(
-              Eigen::RowVector3d(1, -1, 1), 0,
-              {Cpos[k].block<1, 1>(i, j), Bpos[k].block<1, 1>(i, j),
-               Bpos[k + 1].block<1, 1>(i, j)});
+          prog->AddLinearConstraint(Cpos[k](i, j) == Bpos[k](i, j) - Bpos[k + 1](i, j));
           //   Cneg[k](i,j) = Bneg[k](i,j) - Bneg[k+1](i,j)
-          prog->AddLinearEqualityConstraint(
-              Eigen::RowVector3d(1, -1, 1), 0,
-              {Cneg[k].block<1, 1>(i, j), Bneg[k].block<1, 1>(i, j),
-               Bneg[k + 1].block<1, 1>(i, j)});
+          prog->AddLinearConstraint(Cneg[k](i, j) == Bneg[k](i, j) - Bneg[k + 1](i, j));
         }
       }
       // Bpos[0](i,j) + Bneg[0](i,j) = 1.  (have to pick a side).
-      prog->AddLinearEqualityConstraint(
-          Eigen::RowVector2d(1, 1), 1,
-          {Bpos[0].block<1, 1>(i, j), Bneg[0].block<1, 1>(i, j)});
+      prog->AddLinearConstraint(Bpos[0](i, j) + Bneg[0](i, j) == 1);
 
       // for debugging: constrain to positive orthant.
       //      prog->AddBoundingBoxConstraint(1,1,{Bpos[0].block<1,1>(i,j)});
