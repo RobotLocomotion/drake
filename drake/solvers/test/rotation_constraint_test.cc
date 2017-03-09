@@ -9,7 +9,6 @@
 #include "drake/math/random_rotation.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
 
 using Eigen::Vector3d;
@@ -450,25 +449,6 @@ GTEST_TEST(RotationTest, TestMcCormick) {
     else
       EXPECT_FALSE(IsFeasible(R_test));
   }
-}
-
-GTEST_TEST(RotationTest, TestMinimumDistance) {
-  // Compute the minimum distance of R.col(0) and R.col(1), if R satisfies
-  // the McCormick envelope constraint. This minimum distance cannot be 0.
-  MathematicalProgram prog;
-  auto R = NewRotationMatrixVars(&prog);
-  AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog, R, 2);
-
-  // Add the cost to minimize R.col(0) - R.col(1)
-  prog.AddCost((R.col(0) - R.col(1)).squaredNorm());
-
-  GurobiSolver gurobi_solver;
-  prog.SetSolverOption(SolverType::kGurobi, "OutputFlag", true);
-  SolutionResult sol_result = gurobi_solver.Solve(prog);
-  EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
-
-  const Matrix3d R_val = prog.GetSolution(R);
-  EXPECT_GE((R_val.col(0) - R_val.col(1)).norm(), 0.94);
 }
 }  // namespace solvers
 }  // namespace drake
