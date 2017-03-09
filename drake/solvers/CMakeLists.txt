@@ -20,7 +20,6 @@ set(private_headers
   ipopt_solver.h
   linear_system_solver.h
   moby_lcp_solver.h
-  moby_lcp_solver-inl.h
   mosek_solver.h
   nlopt_solver.h
   snopt_solver.h

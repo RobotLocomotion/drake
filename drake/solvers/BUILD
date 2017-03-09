@@ -80,7 +80,6 @@ drake_cc_library(
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
         "moby_lcp_solver.h",
-        "moby_lcp_solver-inl.h",
         "mosek_solver.h",
         "nlopt_solver.h",
         "snopt_solver.h",

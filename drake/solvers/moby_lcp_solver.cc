@@ -112,6 +112,8 @@ SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
   return SolutionResult::kUnknownError;
 }
 
+// TODO(edrumwri): Break the following code out into a special
+// MobyLcpMathematicalProgram class.
 template <typename T>
 // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
 SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
@@ -1358,10 +1360,8 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
   return false;
 }
 
-// TODO(edrumwri): Move all code above to moby_lcp_solver-inl.h once it has
-// been appropriately reviewed.
+// Instantiate templates.
 template class MobyLCPSolver<double>;
-
 template class
     drake::solvers::MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>;
 
