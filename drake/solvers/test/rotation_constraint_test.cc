@@ -142,7 +142,7 @@ GTEST_TEST(RotationTest, TestSpectralPsd) {
 // <pre>
 //    min_R  sum_{i,j} |R(i,j) - R_desired(i,j)|^2
 // </pre>
-// where the columans (and rows) of R_desired are outside the unit ball.
+// where the columns (and rows) of R_desired are outside the unit ball.
 // Confirms that the Orthonormal SOCP constraints result in a solution matrix
 // with columns and rows of unit length or less, and that the specific
 // orthogonality relaxation implemented by the routine is satisfied.
@@ -468,7 +468,7 @@ GTEST_TEST(RotationTest, TestMinimumDistance) {
   EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
   const Matrix3d R_val = prog.GetSolution(R);
-  EXPECT_GE((R_val.col(0) - R_val.col(1)).norm(), 0.1);
+  EXPECT_GE((R_val.col(0) - R_val.col(1)).norm(), 0.94);
 }
 }  // namespace solvers
 }  // namespace drake
