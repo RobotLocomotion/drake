@@ -106,7 +106,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///                     expressed in the same frame `E` in which `this`
   ///                     inertia is expressed.
   /// @returns A reference to `this` unit inertia, which has now been taken
-  ///          about point `Q` so can be written `G_BQ_E`.
+  ///          about point `Q` so can be written as `G_BQ_E`.
   UnitInertia<T>& ShiftFromCentroidInPlace(const Vector3<T>& p_BcQ_E) {
     RotationalInertia<T>::operator+=(PointMass(p_BcQ_E));
     return *this;

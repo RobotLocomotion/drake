@@ -182,17 +182,18 @@ class RotationalInertia {
            get_products().isApprox(other.get_products(), precision);
   }
 
-  /// Adds in a rotational inertia to `this` rotational inertia. This
-  /// operation is only valid if both inertias are computed about the same
-  /// point `P` and expressed in the same frame `E`. Considering `this` inertia
-  /// to be `I_SP_E` for some system `S`, taken about some point `P`, the
-  /// supplied inertia must be for some system `B` taken about the *same* point
-  /// `P`; `B`'s inertia is then included in `S`.
+  /// Adds in a rotational inertia to `this` rotational inertia. This operation
+  /// is only valid if both inertias are computed about the same point `P` and
+  /// expressed in the same frame `E`. Considering `this` inertia to be `I_SP_E`
+  /// for some system `S`, taken about some point `P`, the supplied inertia must
+  /// be for some system `B` taken about the *same* point `P`; `B`'s inertia is
+  /// then included in `S`.
   /// @param[in] I_BP_E A rotational inertia of some body `B` to be added to
-  ///   `this` inertia. It must have been taken about the same point `P` as
-  ///   `this` inertia, and expressed in the same frame `E`.
+  ///                  `this` inertia. It must have been taken about the same
+  ///                   point `P` as `this` inertia, and expressed in the same
+  ///                   frame `E`.
   /// @returns A reference to `this` rotational inertia, which has been updated
-  ///   to include the given inertia.
+  ///          to include the given inertia.
   RotationalInertia<T>& operator+=(const RotationalInertia<T>& I_BP_E) {
     this->get_mutable_triangular_view() += I_BP_E.get_matrix();
     return *this;
@@ -223,11 +224,11 @@ class RotationalInertia {
     return *this;
   }
 
-  /// Computes the product from the right `I*w` of this rotational inertia
+  /// Computes the product from the right `I * w` of this rotational inertia
   /// matrix `I` with a vector `w`.
   /// This inertia and vector `w` must both be expressed in the same frame.
   /// @param[in] w_E Vector to multiply from the right, expressed in the same
-  ///   frame `E` as `this` inertia matrix.
+  ///                frame `E` as `this` inertia matrix.
   /// @returns The product from the right of `this` inertia with `w_E`.
   Vector3<T> operator*(const Vector3<T>& w_E) const {
     return Vector3<T>(get_symmetric_matrix_view() * w_E);
@@ -400,12 +401,12 @@ class RotationalInertia {
   /// @retval I_SP_A The same rotational inertia of `S` about `P` but now
   ///                re-expressed in frame`A`.
   /// @see ReExpressInPlace()
-  RotationalInertia<T> ReExpress(const Matrix3<T>& R_AF) const {
-    return RotationalInertia(*this).ReExpressInPlace(R_AF);
+  RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const {
+    return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
-  /// Multiplies a %RotationalInertia from the left by a
-  /// scalar `s`. Multiplication by scalar is commutative.
+  /// Multiplies a %RotationalInertia from the left by a scalar `s`.
+  /// Multiplication by scalar is commutative.
   friend RotationalInertia<T> operator*(const T& s,
                                         const RotationalInertia<T>& I_BP_E) {
     RotationalInertia<T> sxI;
@@ -413,8 +414,8 @@ class RotationalInertia {
     return sxI;
   }
 
-  /// Multiplies `this` %RotationalInertiafrom the right by a
-  /// scalar `s`. Multiplication by scalar is commutative.
+  /// Multiplies `this` %RotationalInertiafrom the right by a scalar `s`.
+  /// Multiplication by scalar is commutative.
   friend RotationalInertia<T> operator*(const RotationalInertia<T>& I_BP_E,
                                         const T& s) {
     return s * I_BP_E;  // Multiplication by a scalar is commutative.
@@ -451,8 +452,8 @@ class RotationalInertia {
   // Inertia matrix of a system S about point P, expressed in frame E. The
   // system, point, and frame are implicit here. RotationalInertia only keeps
   // track of the inertia measures, which are assumed to correspond to some
-  // S, P, and E. Users are responsible for keeping
-  // track of the frame in which a particular inertia is expressed in.
+  // S, P, and E. Users are responsible for keeping track of the frame in which
+  // a particular inertia is expressed in.
   // Initially set to NaN to aid finding when by mistake we use the strictly
   // upper portion of the matrix. Only the lower portion should be used.
   Matrix3<T> I_SP_E_{Matrix3<T>::Constant(std::numeric_limits<
