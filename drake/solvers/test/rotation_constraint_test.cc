@@ -9,7 +9,6 @@
 #include "drake/math/random_rotation.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
 
 using Eigen::Vector3d;
