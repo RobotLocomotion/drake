@@ -306,7 +306,8 @@ class ImageTest {
       }
     }
 
-    EXPECT_NE(horizon, previous_horizon_);
+    // RgbdCamera goes down, so the horizon goes up.
+    EXPECT_LT(horizon, previous_horizon_);
     previous_horizon_ = horizon;
   }
 
@@ -335,7 +336,7 @@ class ImageTest {
   }
 
   RenderingSim diagram_;
-  int previous_horizon_{0};
+  int previous_horizon_{480};
 };
 
 // Verifies the rendered terrain and the camera's pose.
