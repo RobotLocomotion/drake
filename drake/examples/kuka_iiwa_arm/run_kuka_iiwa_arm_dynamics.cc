@@ -3,6 +3,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -43,77 +44,45 @@ namespace {
 
 DEFINE_double(duration, 5, "Total duration of the simulation in seconds.");
 
-// A demo of an uncontrolled KUKA iiwa arm.
-template<typename T>
-class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
- public:
-  KukaIiwaArmDynamicsSim() {
-    this->set_name("KukaIiwaArmDynamicsSim");
-
-    // Instantiates an Multibody Dynamics (MBD) model of the world.
-    auto tree = make_unique<RigidBodyTree<T>>();
-    ModelInstanceIdTable vehicle_instance_id_table =
-        drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-            drake::GetDrakePath() +
-            "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
-            kFixed, nullptr /* weld to frame */, tree.get());
-
-    drake::multibody::AddFlatTerrainToWorld(tree.get());
-
-    DiagramBuilder<T> builder;
-
-    // Instantiates a RigidBodyPlant from the MBD model of the world.
-    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(move(tree));
-
-    // Feed in constant inputs of zero into the RigidBodyPlant.
-    VectorX<T> constant_value(plant_->get_input_size());
-    constant_value.setZero();
-    const_source_ = builder.template AddSystem<ConstantVectorSource<T>>(
-        constant_value);
-
-    // Creates and adds LCM publisher for visualization.
-    viz_publisher_ = builder.template AddSystem<DrakeVisualizer>(
-        plant_->get_rigid_body_tree(), &lcm_);
-
-    // Connects the constant source output port to the RigidBodyPlant's input
-    // port. This effectively results in the robot being uncontrolled.
-    builder.Connect(const_source_->get_output_port(),
-                    plant_->get_input_port(0));
-
-    // Connects to publisher for visualization.
-    builder.Connect(plant_->get_output_port(0),
-                    viz_publisher_->get_input_port(0));
-
-    builder.ExportOutput(plant_->get_output_port(0));
-    builder.BuildInto(this);
-  }
-
-  const RigidBodyPlant<T>& get_rigid_body_plant() {
-    return *plant_;
-  }
-
- private:
-  RigidBodyPlant<T>* plant_;
-  DrakeVisualizer* viz_publisher_;
-  DrakeLcm lcm_;
-
-  ConstantVectorSource<T>* const_source_;
-};
-
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
 
-  KukaIiwaArmDynamicsSim<double> model;
-  Simulator<double> simulator(model);
+  drake::lcm::DrakeLcm lcm;
+  SimDiagramBuilder<double> builder;
+
+  // Adds a plant
+  RigidBodyPlant<double>* plant = nullptr;
+  const std::string kModelPath =
+      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf";
+  {
+    auto tree = std::make_unique<RigidBodyTree<double>>();
+    drake::multibody::AddFlatTerrainToWorld(tree.get());
+    CreateTreedFromFixedModelAtPose(kModelPath, tree.get());
+    plant = builder.AddPlant(std::move(tree));
+  }
+  // Creates and adds LCM publisher for visualization.
+  builder.AddVisualizer(&lcm);
+
+  // Feed in constant inputs of zero into the RigidBodyPlant.
+  systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
+  VectorX<double> zero_value = VectorX<double>::Zero(plant->get_input_size());
+  auto zero_source =
+      base_builder->template AddSystem<ConstantVectorSource<double>>(
+          zero_value);
+  base_builder->Connect(zero_source->get_output_port(),
+                        plant->get_input_port(0));
+
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  Simulator<double> simulator(*diagram);
 
   simulator.Initialize();
 
   // Simulate for the desired duration.
+  simulator.set_target_realtime_rate(1.0);
   simulator.StepTo(FLAGS_duration);
 
   // Ensures the simulation was successful.
-  const RigidBodyPlant<double>& rigid_body_plant = model.get_rigid_body_plant();
   const Context<double>& context = simulator.get_context();
   const ContinuousState<double>* state = context.get_continuous_state();
   const VectorBase<double>& position_vector = state->get_generalized_position();
@@ -123,18 +92,18 @@ int main(int argc, char* argv[]) {
   const int num_v = velocity_vector.size();
 
   // Ensures the sizes of the position and velocity vectors are correct.
-  if (num_q != rigid_body_plant.get_num_positions()) {
+  if (num_q != plant->get_num_positions()) {
     throw std::runtime_error(
         "ERROR: Size of position vector (" + std::to_string(num_q) + ") does "
         "not match number of positions in RigidBodyTree (" +
-        std::to_string(rigid_body_plant.get_num_positions()) + ").");
+        std::to_string(plant->get_num_positions()) + ").");
   }
 
-  if (num_v != rigid_body_plant.get_num_velocities()) {
+  if (num_v != plant->get_num_velocities()) {
     throw std::runtime_error(
         "ERROR: Size of velocity vector (" + std::to_string(num_v) + ") does "
         "not match number of velocities in RigidBodyTree (" +
-        std::to_string(rigid_body_plant.get_num_velocities()) + ").");
+        std::to_string(plant->get_num_velocities()) + ").");
   }
 
   // Ensures the number of position states equals the number of velocity states.
@@ -146,7 +115,7 @@ int main(int argc, char* argv[]) {
 
   // Ensures the robot's joints are within their position limits.
   const std::vector<std::unique_ptr<RigidBody<double>>>& bodies =
-      rigid_body_plant.get_rigid_body_tree().bodies;
+      plant->get_rigid_body_tree().bodies;
   for (int state_index = 0, i = 0; i < static_cast<int>(bodies.size()); ++i) {
     // Skips rigid bodies without a parent. This includes the world.
     if (!bodies[i]->has_parent_body()) continue;

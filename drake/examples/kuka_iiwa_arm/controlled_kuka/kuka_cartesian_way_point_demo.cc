@@ -9,24 +9,26 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
-#include "drake/examples/kuka_iiwa_arm/controlled_kuka/kuka_demo_plant_builder.h"
+#include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/primitives/trajectory_source.h"
 
 DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
 
 using std::unique_ptr;
 
 namespace drake {
-
-using systems::Context;
-using systems::Simulator;
-
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
+
+const char kUrdfPath[] =
+    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
 
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
@@ -45,18 +47,41 @@ int DoMain() {
 
   std::vector<double> time_stamps{1.0, 2.0, 3.0, 4.0, 5.0};
 
-  RigidBodyTreed tree;
-  CreateTreedFromFixedModelAtPose(kUrdfPath, &tree);
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  CreateTreedFromFixedModelAtPose(kUrdfPath, tree.get());
 
   std::unique_ptr<PiecewisePolynomialTrajectory> cartesian_trajectory =
-      SimpleCartesianWayPointPlanner(tree, "iiwa_link_ee", way_points,
+      SimpleCartesianWayPointPlanner(*tree, "iiwa_link_ee", way_points,
                                      time_stamps);
 
-  KukaDemo<double> model(std::move(cartesian_trajectory));
-  Simulator<double> simulator(model);
+  drake::lcm::DrakeLcm lcm;
+  SimDiagramBuilder<double> builder;
+  // Adds a plant
+  builder.AddPlant(std::move(tree));
+  builder.AddVisualizer(&lcm);
 
-  Context<double>* context = simulator.get_mutable_context();
-  model.SetDefaultState(*context, context->get_mutable_state());
+  // Adds a iiwa controller
+  VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+  SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+  auto controller =
+      builder.AddController<systems::InverseDynamicsController<double>>(
+          RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
+          GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
+          false /* no feedforward acceleration */);
+
+  // Adds a trajectory source for desired state.
+  systems::DiagramBuilder<double>* diagram_builder =
+      builder.get_mutable_builder();
+  auto traj_src =
+      diagram_builder->template AddSystem<systems::TrajectorySource<double>>(
+          *cartesian_trajectory, 1 /* outputs q + v */);
+
+  diagram_builder->Connect(traj_src->get_output_port(),
+                  controller->get_input_port_desired_state());
+
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  systems::Simulator<double> simulator(*diagram);
+
   simulator.Initialize();
   simulator.set_target_realtime_rate(1.0);
 
