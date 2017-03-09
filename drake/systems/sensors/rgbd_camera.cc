@@ -205,6 +205,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   camera->SetPosition(0., 0., 0.);
   camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward.
   camera->SetViewUp(0., -1, 0.);  // Sets y-down.
+  camera->SetViewAngle(fov_y * 180. / M_PI);
   camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
 
   renderer_->SetActiveCamera(camera.GetPointer());
