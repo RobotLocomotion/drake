@@ -151,9 +151,9 @@ class RgbdCamera::Impl {
   const RigidBodyFrame<double>& frame_;
   const CameraInfo color_camera_info_;
   const CameraInfo depth_camera_info_;
-  const Eigen::Isometry3d X_BC_;  // Base to Color optical.
-  const Eigen::Isometry3d X_BD_;  // Base to Depth optical.
-  const Eigen::Isometry3d X_WB_initial_;  // Initial World to Base pose.
+  const Eigen::Isometry3d X_BC_;
+  const Eigen::Isometry3d X_BD_;
+  const Eigen::Isometry3d X_WB_initial_;
   int state_input_port_index_{};
   int color_image_output_port_index_{};
   int depth_image_output_port_index_{};
@@ -383,10 +383,10 @@ void RgbdCamera::Impl::UpdateModelPoses(
       continue;
     }
 
-    auto const camera_to_body = X_CW * tree_.relativeTransform(
+    auto const X_CBody = X_CW * tree_.relativeTransform(
         cache, 0, body->get_body_index());
     vtkSmartPointer<vtkTransform> vtk_transform =
-        VtkUtil::ConvertToVtkTransform(camera_to_body);
+        VtkUtil::ConvertToVtkTransform(X_CBody);
     // `id_object_pairs_` is modified here.  This is OK because 1) we are just
     // copying data to the memory space allocated at the construction time and
     // 2) we are not outputting this data to outside the class.

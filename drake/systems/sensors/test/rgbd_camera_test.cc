@@ -67,17 +67,17 @@ TEST_F(RgbdCameraTest, InstantiateTest) {
 
 TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
   // This is calculated by hand.
-  const Eigen::Isometry3d expected_base_to_optical((
+  const Eigen::Isometry3d expected_X_BC((
       Eigen::Matrix4d() <<
        0.,  0., 1., 0.,
       -1.,  0., 0., 0.02,
        0., -1., 0., 0.,
        0.,  0., 0., 1.).finished());
 
-  EXPECT_TRUE(CompareMatrices(expected_base_to_optical.matrix(),
+  EXPECT_TRUE(CompareMatrices(expected_X_BC.matrix(),
                               dut_.color_camera_optical_pose().matrix(),
                               kTolerance));
-  EXPECT_TRUE(CompareMatrices(expected_base_to_optical.matrix(),
+  EXPECT_TRUE(CompareMatrices(expected_X_BC.matrix(),
                               dut_.depth_camera_optical_pose().matrix(),
                               kTolerance));
 }
