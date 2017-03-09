@@ -164,7 +164,8 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 Vector3d v_C = axis_F.cross(Vector3d(1, 0, 0));
                 double v_C_norm = v_C.norm();
                 if (v_C_norm < sqrt(2) / 2) {
-                  // axis_F is almost parallel to [1; 0; 0].
+                  // axis_F is almost parallel to [1; 0; 0]. Try another axis
+                  // [0, 1, 0]
                   v_C = axis_F.cross(Vector3d(0, 1, 0));
                   v_C_norm = v_C.norm();
                 }
@@ -199,7 +200,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 this, R_WB_[body_idx], num_binary_vars_per_half_axis);
             break;
           }
-          default : throw std::runtime_error("Unsupporte joint type.");
+          default : throw std::runtime_error("Unsupported joint type.");
         }
       }
     }
@@ -292,19 +293,19 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
 }
 
 void GlobalInverseKinematics::AddWorldPositionConstraint(
-    int body_idx, const Eigen::Vector3d& body_pt, const Eigen::Vector3d& box_lb,
-    const Eigen::Vector3d& box_ub, const Isometry3d& measured_transform) {
+    int body_idx, const Eigen::Vector3d& p_BQ, const Eigen::Vector3d& box_lb_F,
+    const Eigen::Vector3d& box_ub_F, const Isometry3d& X_WF) {
   Vector3<Expression> body_pt_pos =
-      p_WBo_[body_idx] + R_WB_[body_idx] * body_pt;
+      p_WBo_[body_idx] + R_WB_[body_idx] * p_BQ;
   Vector3<Expression> body_pt_in_measured_frame =
-      measured_transform.linear().transpose() *
-      (body_pt_pos - measured_transform.translation());
-  AddLinearConstraint(body_pt_in_measured_frame, box_lb, box_ub);
+      X_WF.linear().transpose() *
+      (body_pt_pos - X_WF.translation());
+  AddLinearConstraint(body_pt_in_measured_frame, box_lb_F, box_ub_F);
 }
 
 void GlobalInverseKinematics::AddWorldOrientationConstraint(
     int body_idx,
-    const Eigen::Quaterniond &desired_orientation,
+    const Eigen::Quaterniond& desired_orientation,
     double angle_tol) {
   // The rotation matrix error R_e satisfies
   // trace(R_e) = 2 * cos(θ) + 1, where θ is the rotation angle between

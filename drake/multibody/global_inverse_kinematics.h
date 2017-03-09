@@ -77,7 +77,7 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
   /**
    * Adds the constraint that the position of a point `Q` on a body `B`
    * (whose index is `body_idx`), is within a box in a specified frame `F`.
-   * The constrain is that the point position, computed as
+   * The constraint is that the point position, computed as
    * <pre>
    *   p_WQ = p_WBo + R_WB * p_BQ
    * </pre>
