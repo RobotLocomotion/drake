@@ -335,6 +335,28 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "rotate_prius",
+    srcs = [
+        "dev/rotate_prius.cc",
+    ],
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":generated_vectors",
+        "//drake/common:text_logging_gflags",
+        "//drake/lcm",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/analysis",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:multiplexer",
+    ],
+)
+
 py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
