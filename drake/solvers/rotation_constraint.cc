@@ -176,16 +176,15 @@ void AddOrthogonalConstraint(
   Eigen::Matrix<double, 5, 1> b;
 
   // |v1+v2|^2 <= 2
-  // Implemented as a rotated Lorenz cone using z = Ax+b = [ 1; 2; v1+v2 ].
-  A.topRows<2>() = Eigen::Matrix<double, 2, 6>::Zero();
-  A.bottomRows<3>() << Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity();
-  b << 1, 2, 0, 0, 0;
-  prog->AddRotatedLorentzConeConstraint(A, b, {v1, v2});
+  // Implemented as a Lorenz cone using z = Ax+b = [ sqrt(2); v1+v2 ].
+  Vector4<symbolic::Expression> z;
+  z << std::sqrt(2), v1 + v2;
+  prog->AddLorentzConeConstraint(z);
 
   // |v1-v2|^2 <= 2
-  // Implemented as a rotated Lorenz cone using z = Ax+b = [ 1; 2; v1-v2 ].
-  A.block<3, 3>(2, 3) = -Eigen::Matrix3d::Identity();
-  prog->AddRotatedLorentzConeConstraint(A, b, {v1, v2});
+  // Implemented as a Lorenz cone using z = Ax+b = [ sqrt(2); v1-v2 ].
+  z.tail<3>() = v1 - v2;
+  prog->AddLorentzConeConstraint(z);
 }
 
 }  // namespace
@@ -667,6 +666,28 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
 
       // for debugging: constrain to positive orthant.
       //      prog->AddBoundingBoxConstraint(1,1,{Bpos[0].block<1,1>(i,j)});
+    }
+  }
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      for (int k = 1; k < num_binary_vars_per_half_axis; ++k) {
+        // Bpos[k-1](i,j) = 0 => R(i,j) <= phi(k-1) < phi(k) => Bpos[k](i,j) = 0
+        // Bpos[k](i,j) = 1 => R(i,j) >= phi(k) > phi(k-1) => Bpos[k-1](i,j) = 1
+        // Thus Bpos[k](i, j) <= Bpos[k-1](i, j)
+        prog->AddLinearConstraint(Bpos[k](i, j) <= Bpos[k-1](i, j));
+
+        // Bneg[k](i,j) = 1 => -R(i,j) >= phi(k) > phi(k-1) => Bneg[k-1](i,j) = 1
+        // Bneg[k-1](i,j) = 0 => -R(i,j) <= phi(k-1) < phi(k) => Bneg[k](i,j) = 0
+        // Thus Bneg[k](i,j) <= Bneg[k-1](i,j)
+        prog->AddLinearConstraint(Bneg[k](i, j) <= Bneg[k-1](i, j));
+
+        for (int l = 1; l < num_binary_vars_per_half_axis; ++l) {
+          // Either R(i, j) >= phi(k) or R(i, j) <= -phi(l).
+          // So Bpos[k](i,j) + Bneg[l](i,j) <= 1
+          prog->AddLinearConstraint(Bpos[k](i, j) + Bneg[l](i, j) <= 1);
+        }
+      }
     }
   }
 
