@@ -48,7 +48,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "mass_properties_test",
+    name = "rotational_inertia_tests",
     deps = [
         ":rotational_inertia",
         "//drake/common:autodiff",
