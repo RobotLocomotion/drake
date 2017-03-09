@@ -10,8 +10,8 @@ namespace {
 const char * kUri = "";  // No specific URI is required for these tests.
 
 // Loads an origin-centered 2x2x2 cube from an .obj file,
-// and applies different scaling in the x, y, and z axes, and
-// checks that resulting vertex coordinates are correspondingly
+// applies different scaling in the x, y, and z axes, and
+// checks that the resulting vertex coordinates are correspondingly
 // scaled.
 GTEST_TEST(MeshScalingTests, ScaleCubeMesh) {
   const std::string kFileName = drake::GetDrakePath() +
@@ -25,26 +25,21 @@ GTEST_TEST(MeshScalingTests, ScaleCubeMesh) {
   // setter.
   mesh.scale_ = Eigen::Vector3d(2.0, 1.0, 0.5);
 
-  // Do vertex extraction directly via getPoints.
+  // Calling getPoints() causes the mesh file the be parsed to populate
+  // the vertex data, so vertices extracted will this call will
+  // have our new scaling applied.
   Eigen::Matrix3Xd verts;
   mesh.getPoints(verts);
 
   // Because this cube is centered on the origin,
   // and has side length 2, the vertices will be
-  // symmetrically arranged around the origin at at
-  // distances along each axis equal to the scaling
-  // of the mesh along that axis.
-  // We use EXPECT_NEAR() here instead of EXPECT_EQ
-  // because the mesh vertices in this mesh appear to
-  // have small but significant variations intentionally
-  // added, probably to test the robustness of
-  // triangulation and other algorithms. The variations
-  // are small enough that the mesh still suits our
-  // purposes to test gross scaling behavior.
+  // symmetrically arranged around the origin at
+  // distances along each axis equal to the scale factor
+  // along that axis.
   for (int i=0; i < verts.cols(); i++) {
-    EXPECT_NEAR(fabs(verts(0, i)), 2.0, 0.01);
-    EXPECT_NEAR(fabs(verts(1, i)), 1.0, 0.01);
-    EXPECT_NEAR(fabs(verts(2, i)), 0.5, 0.01);
+    EXPECT_EQ(fabs(verts(0, i)), 2.0);
+    EXPECT_EQ(fabs(verts(1, i)), 1.0);
+    EXPECT_EQ(fabs(verts(2, i)), 0.5);
   }
 
   // Do the same check as above, but using the more complete
@@ -56,9 +51,9 @@ GTEST_TEST(MeshScalingTests, ScaleCubeMesh) {
   // As above, given our scaling, we confirm that vertices
   // have been scaled in the appropriate directions.
   for (size_t i=0; i < vertices.size(); i++) {
-    EXPECT_NEAR(fabs(vertices[i][0]), 2.0, 0.01);
-    EXPECT_NEAR(fabs(vertices[i][1]), 1.0, 0.01);
-    EXPECT_NEAR(fabs(vertices[i][2]), 0.5, 0.01);
+    EXPECT_EQ(fabs(vertices[i][0]), 2.0);
+    EXPECT_EQ(fabs(vertices[i][1]), 1.0);
+    EXPECT_EQ(fabs(vertices[i][2]), 0.5);
   }
 }
 }  // namespace
