@@ -6,12 +6,15 @@
 
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/common/test/symbolic_test_util.h"
 
 namespace drake {
 namespace symbolic {
 namespace {
 
+using std::equal_to;
 using std::ptr_fun;
+using test::FormulaEqual;
 
 class SymbolicExpressionMatrixTest : public ::testing::Test {
  protected:
@@ -158,7 +161,7 @@ bool CheckArrayOperatorEq(const MatrixX<Expression>& m1,
   return true;
 }
 
-TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorEq) {
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorExprEqExpr) {
   const Eigen::Array<Formula, 3, 2> a1{A_.array() == A_.array()};
   const Eigen::Array<Formula, 2, 3> a2{B_.array() == B_.array()};
   const Eigen::Array<Formula, 3, 2> a3{C_.array() == C_.array()};
@@ -168,6 +171,76 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorEq) {
 
   EXPECT_TRUE(CheckArrayOperatorEq(A_, C_));
   EXPECT_TRUE(CheckArrayOperatorEq(B_ * A_, B_ * C_));
+}
+
+// Checks operator== between Array<Expression> and Array<Variable>
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorExprEqVar) {
+  Eigen::Array<Expression, 2, 2> m1;
+  Eigen::Array<Variable, 2, 2> m2;
+  m1 << x_, y_, z_, x_;
+  m2 << var_z_, var_x_, var_y_, var_z_;
+
+  Eigen::Array<Formula, 2, 2> expected_m1_m2;
+  expected_m1_m2 << (x_ == var_z_), (y_ == var_x_), (z_ == var_y_),
+      (x_ == var_z_);
+  EXPECT_TRUE(expected_m1_m2.binaryExpr(m1 == m2, equal_to<Formula>{}).all());
+
+  Eigen::Array<Formula, 2, 2> expected_m2_m1;
+  expected_m2_m1 << (var_z_ == x_), (var_x_ == y_), (var_y_ == z_),
+      (var_z_ == x_);
+  EXPECT_TRUE(expected_m2_m1.binaryExpr(m2 == m1, equal_to<Formula>{}).all());
+}
+
+// Checks operator== between Array<Expression> and Array<double>
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorExprEqDouble) {
+  Eigen::Array<Expression, 2, 2> m1;
+  Eigen::Array<double, 2, 2> m2;
+  m1 << x_, y_, z_, x_;
+  m2 << 1.0, 2.0, 3.0, 4.0;
+
+  Eigen::Array<Formula, 2, 2> expected_m1_m2;
+  expected_m1_m2 << (x_ == 1.0), (y_ == 2.0), (z_ == 3.0), (x_ == 4.0);
+  EXPECT_TRUE(expected_m1_m2.binaryExpr(m1 == m2, equal_to<Formula>{}).all());
+
+  Eigen::Array<Formula, 2, 2> expected_m2_m1;
+  expected_m2_m1 << (1.0 == x_), (2.0 == y_), (3.0 == z_), (4.0 == x_);
+  EXPECT_TRUE(expected_m2_m1.binaryExpr(m2 == m1, equal_to<Formula>{}).all());
+}
+
+// Checks operator== between Array<Variable> and Array<double>
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorVarEqDouble) {
+  Eigen::Array<Variable, 2, 2> m1;
+  Eigen::Array<double, 2, 2> m2;
+  m1 << var_x_, var_y_, var_z_, var_x_;
+  m2 << 1.0, 2.0, 3.0, 4.0;
+
+  Eigen::Array<Formula, 2, 2> expected_m1_m2;
+  expected_m1_m2 << (var_x_ == 1.0), (var_y_ == 2.0), (var_z_ == 3.0),
+      (var_x_ == 4.0);
+  EXPECT_TRUE(expected_m1_m2.binaryExpr(m1 == m2, equal_to<Formula>{}).all());
+
+  Eigen::Array<Formula, 2, 2> expected_m2_m1;
+  expected_m2_m1 << (1.0 == var_x_), (2.0 == var_y_), (3.0 == var_z_),
+      (4.0 == var_x_);
+  EXPECT_TRUE(expected_m2_m1.binaryExpr(m2 == m1, equal_to<Formula>{}).all());
+}
+
+// Checks operator== between Array<Variable> and Array<Variable>
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorVarEqVar) {
+  Eigen::Array<Variable, 2, 2> m1;
+  Eigen::Array<Variable, 2, 2> m2;
+  m1 << var_x_, var_y_, var_z_, var_x_;
+  m2 << var_y_, var_z_, var_x_, var_x_;
+
+  Eigen::Array<Formula, 2, 2> expected_m1_m2;
+  expected_m1_m2 << (var_x_ == var_y_), (var_y_ == var_z_), (var_z_ == var_x_),
+      (var_x_ == var_x_);
+  EXPECT_TRUE(expected_m1_m2.binaryExpr(m1 == m2, equal_to<Formula>{}).all());
+
+  Eigen::Array<Formula, 2, 2> expected_m2_m1;
+  expected_m2_m1 << (var_y_ == var_x_), (var_z_ == var_y_), (var_x_ == var_z_),
+      (var_x_ == var_x_);
+  EXPECT_TRUE(expected_m2_m1.binaryExpr(m2 == m1, equal_to<Formula>{}).all());
 }
 
 // Checks if m1 == m2 returns a formula which is a conjunction of
@@ -184,7 +257,7 @@ bool CheckMatrixOperatorEq(const MatrixX<Expression>& m1,
   return f.EqualTo(f_expected);
 }
 
-TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorEq1) {
+TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqExpr1) {
   Eigen::Matrix<Expression, 2, 2> m1;
   Eigen::Matrix<Expression, 2, 2> m2;
   m1 << x_, y_, z_, x_;
@@ -196,7 +269,7 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorEq1) {
   EXPECT_TRUE(CheckMatrixOperatorEq(m1, m2));
 }
 
-TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorEq2) {
+TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqExpr2) {
   Eigen::Matrix<Expression, 2, 2> m1;
   Eigen::Matrix<Expression, 2, 2> m2;
   m1 << x_, 1.0, z_, x_;
@@ -207,6 +280,58 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorEq2) {
   EXPECT_TRUE(is_false(f1));
   const Formula f2{m1 == m1};
   EXPECT_TRUE(is_true(f2));
+}
+
+// Checks operator== between Matrix<Expression> and Matrix<Variable>
+TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqVar) {
+  Eigen::Matrix<Expression, 2, 2> m1;
+  Eigen::Matrix<Variable, 2, 2> m2;
+  m1 << x_, 1.0, z_, x_;
+  m2 << var_x_, var_y_, var_z_, var_x_;
+  const Formula f1{m1 == m2};
+  const Formula f2{m2 == m1};
+  EXPECT_PRED2(FormulaEqual, f1, 1.0 == var_y_);
+  EXPECT_PRED2(FormulaEqual, f2, var_y_ == 1.0);
+}
+
+// Checks operator== between Matrix<Expression> and Matrix<double>
+TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqDouble) {
+  Eigen::Matrix<Expression, 2, 2> m1;
+  Eigen::Matrix<double, 2, 2> m2;
+  m1 << x_, 1.0, z_, x_;
+  m2 << 1.0, 1.0, 3.0, 1.0;
+  const Formula f1{m1 == m2};
+  const Formula f2{m2 == m1};
+  EXPECT_PRED2(FormulaEqual, f1, (x_ == 1.0) && (z_ == 3.0));
+  EXPECT_PRED2(FormulaEqual, f2, (1.0 == x_) && (3.0 == z_));
+}
+
+// Checks operator== between Matrix<Variable> and Matrix<double>
+TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorVarEqdouble) {
+  Eigen::Matrix<Variable, 2, 2> m1;
+  Eigen::Matrix<double, 2, 2> m2;
+  m1 << var_x_, var_y_, var_z_, var_x_;
+  m2 << 1.0, 2.0, 3.0, 1.0;
+  const Formula f1{m1 == m2};
+  const Formula f2{m2 == m1};
+  EXPECT_PRED2(FormulaEqual, f1,
+               (var_x_ == 1.0) && (var_y_ == 2.0) && (var_z_ == 3.0));
+  EXPECT_PRED2(FormulaEqual, f2,
+               (1.0 == var_x_) && (2.0 == var_y_) && (3.0 == var_z_));
+}
+
+// Checks operator== between Matrix<Variable> and Matrix<Variable>
+TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorVarEqVar) {
+  Eigen::Matrix<Variable, 2, 2> m1;
+  Eigen::Matrix<Variable, 2, 2> m2;
+  m1 << var_x_, var_y_, var_z_, var_x_;
+  m2 << var_y_, var_z_, var_x_, var_x_;
+  const Formula f1{m1 == m2};
+  const Formula f2{m2 == m1};
+  EXPECT_PRED2(FormulaEqual, f1,
+               (var_x_ == var_y_) && (var_y_ == var_z_) && (var_z_ == var_x_));
+  EXPECT_PRED2(FormulaEqual, f2,
+               (var_y_ == var_x_) && (var_z_ == var_y_) && (var_x_ == var_z_));
 }
 
 }  // namespace
