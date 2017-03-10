@@ -40,11 +40,7 @@ class BicycleCarState : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
-  BicycleCarState<T>* DoClone() const override {
-    auto result = new BicycleCarState;
-    result->set_value(this->get_value());
-    return result;
-  }
+  BicycleCarState<T>* DoClone() const override { return new BicycleCarState; }
 
   /// @name Getters and Setters
   //@{

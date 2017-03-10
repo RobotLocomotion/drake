@@ -89,9 +89,7 @@ def generate_default_ctor(hh, context, _):
 
 DO_CLONE = """
   %(camel)s<T>* DoClone() const override {
-    auto result = new %(camel)s;
-    result->set_value(this->get_value());
-    return result;
+    return new %(camel)s;
   }
 """
 

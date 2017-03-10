@@ -40,11 +40,7 @@ class SimpleCarConfig : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
-  SimpleCarConfig<T>* DoClone() const override {
-    auto result = new SimpleCarConfig;
-    result->set_value(this->get_value());
-    return result;
-  }
+  SimpleCarConfig<T>* DoClone() const override { return new SimpleCarConfig; }
 
   /// @name Getters and Setters
   //@{

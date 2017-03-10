@@ -38,9 +38,7 @@ class AcrobotOutputVector : public systems::BasicVector<T> {
   }
 
   AcrobotOutputVector<T>* DoClone() const override {
-    auto result = new AcrobotOutputVector;
-    result->set_value(this->get_value());
-    return result;
+    return new AcrobotOutputVector;
   }
 
   /// @name Getters and Setters

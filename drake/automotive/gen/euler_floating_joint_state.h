@@ -41,9 +41,7 @@ class EulerFloatingJointState : public systems::BasicVector<T> {
   }
 
   EulerFloatingJointState<T>* DoClone() const override {
-    auto result = new EulerFloatingJointState;
-    result->set_value(this->get_value());
-    return result;
+    return new EulerFloatingJointState;
   }
 
   /// @name Getters and Setters
