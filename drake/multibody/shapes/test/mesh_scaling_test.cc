@@ -36,7 +36,7 @@ GTEST_TEST(MeshScalingTests, ScaleCubeMesh) {
   // symmetrically arranged around the origin at
   // distances along each axis equal to the scale factor
   // along that axis.
-  for (int i=0; i < verts.cols(); i++) {
+  for (int i = 0; i < verts.cols(); i++) {
     EXPECT_EQ(fabs(verts(0, i)), 2.0);
     EXPECT_EQ(fabs(verts(1, i)), 1.0);
     EXPECT_EQ(fabs(verts(2, i)), 0.5);
@@ -50,7 +50,7 @@ GTEST_TEST(MeshScalingTests, ScaleCubeMesh) {
                    Mesh::TriangulatePolicy::kFailOnNonTri);
   // As above, given our scaling, we confirm that vertices
   // have been scaled in the appropriate directions.
-  for (size_t i=0; i < vertices.size(); i++) {
+  for (size_t i = 0; i < vertices.size(); i++) {
     EXPECT_EQ(fabs(vertices[i][0]), 2.0);
     EXPECT_EQ(fabs(vertices[i][1]), 1.0);
     EXPECT_EQ(fabs(vertices[i][2]), 0.5);
