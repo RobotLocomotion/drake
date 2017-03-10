@@ -9,5 +9,7 @@ struct lcmt_maliput_railcar_config_t {
 
   double r;  // The vehicle's position on the lane's r-axis.
   double h;  // The vehicle's height above the lane's surface.
-  double initial_speed;  // The initial speed of the vehicle.
+  double initial_speed;  // The initial speed of the vehicle. This must be positive.
+  double max_speed;  // The limit on the vehicle's forward speed, in meters per second; this element must be positive.
+  double velocity_limit_kp;  // The smoothing constant for min/max velocity limits, in Hz; this element must be positive.
 }
