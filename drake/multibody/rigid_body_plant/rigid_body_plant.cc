@@ -39,9 +39,11 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
       this->DeclareOutputPort(kVectorValued, get_num_states()).get_index();
   ExportModelInstanceCentricPorts();
   // Declares an abstract valued output port for kinematics results.
-  kinematics_output_port_index_ = this->DeclareAbstractOutputPort().get_index();
+  kinematics_output_port_index_ = this->DeclareAbstractOutputPort(
+      Value<KinematicsResults<T>>(tree_.get())).get_index();
   // Declares an abstract valued output port for contact information.
-  contact_output_port_index_ = this->DeclareAbstractOutputPort().get_index();
+  contact_output_port_index_ = this->DeclareAbstractOutputPort(
+      Value<ContactResults<T>>()).get_index();
 }
 
 template <typename T>
@@ -277,38 +279,6 @@ void RigidBodyPlant<T>::set_state_vector(
         ->SetFromVector(x);
   } else {
     state->get_mutable_continuous_state()->SetFromVector(x);
-  }
-}
-
-template <typename T>
-std::unique_ptr<AbstractValue> RigidBodyPlant<T>::AllocateOutputAbstract(
-    const OutputPortDescriptor<T>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_data_type() == kAbstractValued);
-  const int idx = descriptor.get_index();
-  if (idx == kinematics_results_output_port().get_index()) {
-    return make_unique<Value<KinematicsResults<T>>>(
-        KinematicsResults<T>(tree_.get()));
-  } else if (idx == contact_results_output_port().get_index()) {
-    return make_unique<Value<ContactResults<T>>>(ContactResults<T>());
-  }
-  DRAKE_ABORT_MSG("Unknown abstract output port.");
-  return nullptr;
-}
-
-template <typename T>
-std::unique_ptr<BasicVector<T>> RigidBodyPlant<T>::AllocateOutputVector(
-    const OutputPortDescriptor<T>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_data_type() == kVectorValued);
-  if (descriptor.get_index() == state_output_port().get_index()) {
-    // One vector-valued port is the plant-centric state vector.
-    return make_unique<BasicVector<T>>(get_num_states());
-  } else {
-    // The other vector-valued ports are the model instance state vectors.
-    auto it = std::find(output_map_.begin(), output_map_.end(),
-                        descriptor.get_index());
-    DRAKE_DEMAND(it != output_map_.end());
-    const int instance_id = it - output_map_.begin();
-    return make_unique<BasicVector<T>>(get_num_states(instance_id));
   }
 }
 
