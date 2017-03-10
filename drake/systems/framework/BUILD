@@ -336,15 +336,6 @@ drake_cc_library(
 
 # === test/ ===
 
-drake_cc_library(
-    name = "my_vector2",
-    testonly = 1,
-    hdrs = ["test/my_vector2.h"],
-    deps = [
-        ":vector",
-    ],
-)
-
 drake_cc_googletest(
     name = "basic_vector_test",
     deps = [
@@ -445,9 +436,9 @@ drake_cc_googletest(
     name = "model_values_test",
     deps = [
         ":model_values",
-        ":my_vector2",
         "//drake/common:autodiff",
         "//drake/common:symbolic",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -508,15 +499,16 @@ drake_cc_googletest(
         ":leaf_context",
         ":system",
         "//drake/common",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
 drake_cc_googletest(
     name = "value_test",
     deps = [
-        ":my_vector2",
         ":value",
         "//drake/common",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 

@@ -24,9 +24,7 @@ Vector3<T> AccelerometerOutput<T>::get_accel() const {
 
 template <typename T>
 AccelerometerOutput<T>* AccelerometerOutput<T>::DoClone() const {
-  auto result = new AccelerometerOutput;
-  result->set_value(this->get_value());
-  return result;
+  return new AccelerometerOutput;
 }
 
 template class AccelerometerOutput<double>;

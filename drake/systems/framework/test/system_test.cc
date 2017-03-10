@@ -10,6 +10,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
 namespace systems {
@@ -293,16 +294,7 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
 }
 
 template <typename T>
-class TestTypedVector : public BasicVector<T> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestTypedVector)
-  explicit TestTypedVector(int size) : BasicVector<T>(size) {}
-
- protected:
-  TestTypedVector* DoClone() const {
-    return new TestTypedVector(this->size());
-  }
-};
+using TestTypedVector = MyVector<1, T>;
 
 // A shell System for AbstractValue IO test.
 template <typename T>
@@ -335,7 +327,7 @@ class ValueIOTestSystem : public System<T> {
       const InputPortDescriptor<T>& descriptor) const override {
     // Should only get called for the second input.
     EXPECT_EQ(descriptor.get_index(), 1);
-    return new TestTypedVector<T>(1);
+    return new TestTypedVector<T>();
   }
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives()

@@ -12,6 +12,7 @@
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 
 namespace drake {
@@ -259,27 +260,16 @@ TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
 }
 
-class SizeNineBasicVector : public BasicVector<double> {
- public:
-  SizeNineBasicVector() : BasicVector<double>(4 + 3 + 2) {}
-  ~SizeNineBasicVector() override {}
-
- protected:
-  SizeNineBasicVector* DoClone() const override {
-    auto clone = new SizeNineBasicVector;
-    clone->set_value(this->get_value());
-    return clone;
-  }
-};
-
 // Tests that the leaf system reserved the declared continuous state, of
 // interesting custom type.
 TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
-  system_.AddContinuousState(std::make_unique<SizeNineBasicVector>());
+  using MyVector9d = MyVector<4 + 3 + 2, double>;
+
+  system_.AddContinuousState(std::make_unique<MyVector9d>());
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>* xc = context->get_continuous_state();
   // Check that type was preserved.
-  EXPECT_NE(nullptr, dynamic_cast<SizeNineBasicVector*>(
+  EXPECT_NE(nullptr, dynamic_cast<MyVector9d*>(
                          context->get_mutable_continuous_state_vector()));
   // Check that dimensions were preserved.
   EXPECT_EQ(4 + 3 + 2, xc->size());

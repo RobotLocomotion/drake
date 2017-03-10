@@ -9,14 +9,13 @@
 #include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/value.h"
-#include "drake/systems/framework/test/my_vector2.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
 namespace systems {
 namespace detail {
 namespace {
 
-using MyVector2d = systems::test::MyVector2<double>;
 using symbolic::Expression;
 
 /// Tests the AbstractValue basics.
