@@ -23,6 +23,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/idm_planner_parameters.cc
   gen/maliput_railcar_config.cc
   gen/maliput_railcar_state.cc
+  gen/railcar_command.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
   idm_planner.cc
@@ -44,6 +45,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   simple_car.cc
   simple_powertrain.cc
   single_lane_ego_and_agent.cc
+  smooth_acceleration_function.cc
   trajectory_car.cc
   )
 target_link_libraries(drakeAutomotive
@@ -68,6 +70,7 @@ drake_install_headers(
   simple_car_to_euler_floating_joint.h
   simple_powertrain.h
   single_lane_ego_and_agent.h
+  smooth_acceleration_function.h
   trajectory_car.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
   )

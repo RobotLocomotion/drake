@@ -17,12 +17,15 @@ namespace automotive {
 /// Describes the row indices of a MaliputRailcarConfig.
 struct MaliputRailcarConfigIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 3;
+  static const int kNumCoordinates = 6;
 
   // The index of each individual coordinate.
   static const int kR = 0;
   static const int kH = 1;
   static const int kInitialSpeed = 2;
+  static const int kMaxSpeed = 3;
+  static const int kMaxAcceleration = 4;
+  static const int kVelocityLimitKp = 5;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -54,6 +57,28 @@ class MaliputRailcarConfig : public systems::BasicVector<T> {
   void set_initial_speed(const T& initial_speed) {
     this->SetAtIndex(K::kInitialSpeed, initial_speed);
   }
+  /// The limit on the vehicle's forward speed, in meters per second; this
+  /// element must be positive.
+  const T& max_speed() const { return this->GetAtIndex(K::kMaxSpeed); }
+  void set_max_speed(const T& max_speed) {
+    this->SetAtIndex(K::kMaxSpeed, max_speed);
+  }
+  /// The limit on the vehicle's acceleration and deceleration, in meters per
+  /// second per second; this element must be positive.
+  const T& max_acceleration() const {
+    return this->GetAtIndex(K::kMaxAcceleration);
+  }
+  void set_max_acceleration(const T& max_acceleration) {
+    this->SetAtIndex(K::kMaxAcceleration, max_acceleration);
+  }
+  /// The smoothing constant for min/max velocity limits, in Hz; this element
+  /// must be positive.
+  const T& velocity_limit_kp() const {
+    return this->GetAtIndex(K::kVelocityLimitKp);
+  }
+  void set_velocity_limit_kp(const T& velocity_limit_kp) {
+    this->SetAtIndex(K::kVelocityLimitKp, velocity_limit_kp);
+  }
   //@}
 
   /// Returns whether the current values of this vector are well-formed.
@@ -63,6 +88,9 @@ class MaliputRailcarConfig : public systems::BasicVector<T> {
     result = result && !isnan(r());
     result = result && !isnan(h());
     result = result && !isnan(initial_speed());
+    result = result && !isnan(max_speed());
+    result = result && !isnan(max_acceleration());
+    result = result && !isnan(velocity_limit_kp());
     return result;
   }
 };

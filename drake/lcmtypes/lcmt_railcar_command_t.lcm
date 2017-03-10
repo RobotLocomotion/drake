@@ -1,0 +1,12 @@
+// GENERATED FILE DO NOT EDIT
+// See drake/tools/lcm_vector_gen.py.
+
+package drake;
+
+struct lcmt_railcar_command_t {
+  // The timestamp in milliseconds.
+  int64_t timestamp;
+
+  double throttle;  // The normalized desired acceleration (in the range [0.0..1.0]).
+  double brake;  // The normalized desired deceleration (in the range [0.0..1.0]).
+}

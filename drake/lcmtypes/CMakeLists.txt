@@ -57,6 +57,7 @@ lcm_wrap_types(
   lcmt_qp_input.lcm
   lcmt_quadrotor_input_t.lcm
   lcmt_quadrotor_output_t.lcm
+  lcmt_railcar_command_t.lcm
   lcmt_resolved_contact.lcm
   lcmt_robot_state.lcm
   lcmt_scope_data.lcm

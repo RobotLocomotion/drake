@@ -17,6 +17,7 @@ if(lcm_FOUND)
     maliput_railcar_config_translator.h
     maliput_railcar_state.h
     maliput_railcar_state_translator.h
+    railcar_command.h
     simple_car_config.h
     simple_car_config_translator.h
     simple_car_state.h

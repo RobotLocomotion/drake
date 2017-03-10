@@ -4,6 +4,7 @@
 
 #include "drake/automotive/gen/maliput_railcar_config.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
+#include "drake/automotive/gen/railcar_command.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -24,7 +25,7 @@ namespace automotive {
 ///
 /// <B>Input Port Accessors:</B>
 ///
-///   - None.
+///   - command_input(): Contains the acceleration command. See RailcarCommand.
 ///
 /// <B>Output Port Accessors:</B>
 ///
@@ -72,15 +73,19 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   /// Sets `config` to contain the default parameters for MaliputRailcar.
   static void SetDefaultParameters(MaliputRailcarConfig<T>* config);
 
-  /// Getter methods for output port descriptors.
+  /// Getter methods for input and output port descriptors.
   /// @{
+  const systems::InputPortDescriptor<T>& command_input() const;
   const systems::OutputPortDescriptor<T>& state_output() const;
   const systems::OutputPortDescriptor<T>& pose_output() const;
   /// @}
 
-  static constexpr double kDefaultR = 0;      // meters
-  static constexpr double kDefaultH = 0;      // meters
-  static constexpr double kDefaultSpeed = 1;  // meters per second
+  static constexpr double kDefaultR = 0;
+  static constexpr double kDefaultH = 0;
+  static constexpr double kDefaultSpeed = 1;
+  static constexpr double kDefaultMaxSpeed = 45;
+  static constexpr double kDefaultMaxAcceleration = 4;
+  static constexpr double kDefaultVelocityLimitKp = 10;
 
  protected:
   // LeafSystem<T> overrides.
@@ -103,6 +108,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   void ImplCalcTimeDerivatives(
       const MaliputRailcarConfig<T>& config,
       const MaliputRailcarState<T>& state,
+      const RailcarCommand<T>& command,
       MaliputRailcarState<T>* rates) const;
 
   void ImplCalcTimeDerivativesDouble(
@@ -112,6 +118,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
 
   const maliput::api::Lane& lane_;
   const double start_time_{};
+  int command_input_port_index_{};
   int state_output_port_index_{};
   int pose_output_port_index_{};
 };

@@ -1,0 +1,8 @@
+element {
+     name: "throttle"
+     doc: "The normalized desired acceleration (in the range [0.0..1.0])."
+}
+element {
+     name: "brake"
+     doc: "The normalized desired deceleration (in the range [0.0..1.0])."
+}
