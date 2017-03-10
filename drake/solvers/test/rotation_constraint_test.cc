@@ -450,5 +450,6 @@ GTEST_TEST(RotationTest, TestMcCormick) {
       EXPECT_FALSE(IsFeasible(R_test));
   }
 }
+
 }  // namespace solvers
 }  // namespace drake
