@@ -16,23 +16,23 @@ template<typename T> class MultibodyTree;
 /// The term **rigid body** implies that the deformations of the body under
 /// consideration are so small that have no effect on the overalll motions of
 /// the body and therefore deformations can be neglected.
-/// If deformations are neglected, the distance between any two of its particles
-/// remains constant at all times and configurations of the multibody system.
-/// This invariance of the distance between two arbitrary points is often taken
-/// as the definition of a rigid body in classical treatments of multibody
-/// mechanics [Goldstein 2001].
+/// If deformations are neglected, the distance between any two points on the
+/// rigid body remains constant at all times and configurations of the multibody
+/// system. This invariance of the distance between two arbitrary points is
+/// often taken as the definition of a rigid body in classical treatments of
+/// multibody mechanics [Goldstein 2001].
 /// It can be demonstrated that the unconstrained three-dimensional motions of a
-/// rigid body can be described by six generalized coordinates and thus it is
+/// rigid body can be described by six quasi coordinates and thus it is
 /// often said that a free body in space has six **degrees of freedom**.
 /// These generalized coordinates evolve according to a set of six equations;
-/// three equations are associated to the translational motion of the rigid
-/// body, and three equations are associated with its rotations. When described
+/// three equations dictate the translational motion of the rigid body, and
+/// three equations describe its rotations. When described
 /// in a frame of reference at the center of mass of the rigid body, or
-/// centroidal body frame, these equations take the form of the Newon-Euler
+/// centroidal body frame, these equations take the form of the Newton-Euler
 /// equations.
 /// Within a MultibodyTree, a RigidBody is assigned a given number of rigid
-/// degrees of freedom by a Mobilzer while at the same time its motions can be
-/// constrained by a given set of Constraint's.
+/// degrees of freedom by a Mobilizer while, at the same time, its motions can
+/// be constrained by a given set of Constraint's.
 ///
 /// - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
 ///                    (3rd Edition), Addison-Wesley, 2001.
@@ -53,22 +53,23 @@ class RigidBody : public Body<T> {
   /// Creates a new %RigidBody and adds it to the %MultibodyTree world.
   /// The MultibodyTree @p tree takes ownership of the newly created body.
   /// @param[in] tree The parent MultibodyTree to which this body will be added.
-  /// @param[in] mass_properties Default mass properties for this rigid body.
-  /// @returns A reference to the newly created rigid body.
+  /// @returns A constant reference to the newly created rigid body.
   // TODO(amcastro-tri): In a future PR this factory will take a MassProperties
   // object to:
   //   1. Force users to provide all the necessary information at creation.
   //   2. Perform all the necessary checks to ensure the supplied mass
   //      properties are physically valid.
-  static RigidBody<T>& Create(MultibodyTree<T>* tree);
+  static const RigidBody<T>& Create(MultibodyTree<T>* tree);
 
-  /// There are no degrees of freedom associated with a rigid body and thefore
-  /// this method returns zero. A rigid body has no state.
-  int get_num_positions() const final { return 0; }
+  /// There are no flexible degrees of freedom associated with a rigid body and
+  /// thefore this method returns zero. By definition, a rigid body has no state
+  /// associated with flexible deformations.
+  int get_num_flexible_positions() const final { return 0; }
 
-  /// There are no degrees of freedom associated with a rigid body and thefore
-  /// this method returns zero. A rigid body has no state.
-  int get_num_velocities() const final { return 0; }
+  /// There are no flexible degrees of freedom associated with a rigid body and
+  /// thefore this method returns zero. By definition, a rigid body has no state
+  /// associated with flexible deformations.
+  int get_num_flexible_velocities() const final { return 0; }
 
  private:
   // Do not allow users to create a rigid body using its public constructors

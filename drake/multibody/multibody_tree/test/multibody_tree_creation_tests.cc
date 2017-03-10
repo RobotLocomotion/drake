@@ -40,8 +40,8 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   EXPECT_EQ(model->get_mutable_body(BodyIndex(1))->get_id(), pendulum.get_id());
 
   // Rigid bodies have no generalized coordinates.
-  EXPECT_EQ(pendulum.get_num_positions(), 0);
-  EXPECT_EQ(pendulum.get_num_velocities(), 0);
+  EXPECT_EQ(pendulum.get_num_flexible_positions(), 0);
+  EXPECT_EQ(pendulum.get_num_flexible_velocities(), 0);
 
   // Verify that no more bodies can be added to a MultibodyTree if it was
   // compiled already.

@@ -9,7 +9,7 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-RigidBody<T>& RigidBody<T>::Create(MultibodyTree<T>* tree) {
+const RigidBody<T>& RigidBody<T>::Create(MultibodyTree<T>* tree) {
   // Notice that here we cannot use std::make_unique since constructors are made
   // private to avoid users creating bodies by other means other than calling
   // Create().

@@ -13,9 +13,6 @@ namespace multibody {
 // Forward declarations.
 template<typename T> class MultibodyTree;
 
-/// Bodies are a bound, interconnected aggregate of matter that moves together
-/// through space by translation and rotation and may or may not undergo
-/// deformations, [Mitiguy 2016].
 /// This class provides the general abstraction of a body with an API that
 /// makes no assumption about whether a body is rigid or deformable and neither
 /// does it make any assumptions about on the underlying physical model or
@@ -33,11 +30,13 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
 
-  /// Returns the number of generalized positions associated with this body.
-  virtual int get_num_positions() const = 0;
+  /// Returns the number of generalized positions describing flexible
+  /// deformations for this body. A rigid body will therefore return zero.
+  virtual int get_num_flexible_positions() const = 0;
 
-  /// Returns the number of generalized velocities associatted with this body.
-  virtual int get_num_velocities() const = 0;
+  /// Returns the number of generalized velocities describing flexible
+  /// deformations for this body. A rigid body will therefore return zero.
+  virtual int get_num_flexible_velocities() const = 0;
 
   /// At MultibodyTree::Compile() time, each body will retrieve its topology
   /// from the parent MultibodyTree.

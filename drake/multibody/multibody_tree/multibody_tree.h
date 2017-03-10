@@ -15,13 +15,6 @@ namespace multibody {
 /// the elements that belong to this world. Multibody dynamics elements
 /// constitute Body's, Mobilizer's, Joint's, ForceElement's and Constraint's.
 ///
-/// MultibodyTree provides a variety of operations on this system of bodies as a
-/// whole. Queries on a per-component basis can be requested usually by
-/// component identifier; however, it is generally easier, and recommended, to
-/// perform these per-component requests directly via the component itself
-/// through its provided API. For instance, if the pose of a body is desired,
-/// users can request this information through the Body class provided API.
-///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
