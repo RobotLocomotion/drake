@@ -679,12 +679,12 @@ std::pair<std::vector<MatrixDecisionVariable<3, 3>>, std::vector<MatrixDecisionV
         // Bpos[k-1](i,j) = 0 => R(i,j) ≤ phi(k-1) < phi(k) => Bpos[k](i,j) = 0
         // Bpos[k](i,j) = 1 => R(i,j) ≥ phi(k) > phi(k-1) => Bpos[k-1](i,j) = 1
         // Thus Bpos[k](i, j) <= Bpos[k-1](i, j)
-        prog->AddLinearConstraint(Bpos[k](i, j) - Bpos[k - 1](i, j), -1, 0);
+        prog->AddLinearConstraint(Eigen::RowVector2d(1, -1), -1.0, 0.0, Vector2<symbolic::Variable>(Bpos[k](i, j), Bpos[k-1](i, j)));
 
         // Bneg[k](i,j) = 1 => -R(i,j) ≥ phi(k) > phi(k-1) => Bneg[k-1](i,j) = 1
         // Bneg[k-1](i,j) = 0 => -R(i,j) ≤ phi(k-1) < phi(k) => Bneg[k](i,j) = 0
         // Thus Bneg[k](i,j) <= Bneg[k-1](i,j)
-        prog->AddLinearConstraint(Bneg[k](i, j) - Bneg[k-1](i, j), -1, 0);
+        prog->AddLinearConstraint(Eigen::RowVector2d(1, -1), -1.0, 0.0, Vector2<symbolic::Variable>(Bneg[k](i, j), Bneg[k-1](i, j)));
       }
     }
   }
