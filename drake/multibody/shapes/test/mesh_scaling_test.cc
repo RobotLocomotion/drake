@@ -11,7 +11,7 @@ const char * kUri = "";  // No specific URI is required for these tests.
 
 // Loads an origin-centered 2x2x2 cube from an .obj file,
 // applies different scaling in the x, y, and z axes, and
-// checks that the resulting vertex coordinates are correspondingly
+// checks that the resulting vertex coordinates are correctly
 // scaled.
 GTEST_TEST(MeshScalingTests, ScaleCubeMesh) {
   const std::string kFileName = drake::GetDrakePath() +
@@ -25,8 +25,8 @@ GTEST_TEST(MeshScalingTests, ScaleCubeMesh) {
   // setter.
   mesh.scale_ = Eigen::Vector3d(2.0, 1.0, 0.5);
 
-  // Calling getPoints() causes the mesh file the be parsed to populate
-  // the vertex data, so vertices extracted will this call will
+  // Calling getPoints() causes the mesh file to be parsed to populate
+  // the vertex data. So, vertices extracted by this call will
   // have our new scaling applied.
   Eigen::Matrix3Xd verts;
   mesh.getPoints(verts);
