@@ -153,6 +153,7 @@ drake_cc_library(
     hdrs = ["maliput_railcar.h",],
     deps = [
         ":generated_vectors",
+        ":smooth_acceleration_function",
         "//drake/automotive/maliput/api",
         "//drake/math:geometric_transform",
         "//drake/systems/rendering:pose_vector",
@@ -178,6 +179,7 @@ drake_cc_library(
     ],
     deps = [
         ":generated_vectors",
+        ":smooth_acceleration_function",
         "//drake/common:cond",
         "//drake/common:double",
         "//drake/common:symbolic",
@@ -204,6 +206,17 @@ drake_cc_library(
         ":linear_car",
         "//drake/systems/primitives:constant_vector_source",
     ],
+)
+
+drake_cc_library(
+    name = "smooth_acceleration_function",
+    srcs = ["smooth_acceleration_function.cc"],
+    hdrs = ["smooth_acceleration_function.h"],
+    deps = [
+        "//drake/common:autodiff",
+        "//drake/common:symbolic",
+    ],
+    visibility=[],
 )
 
 drake_cc_library(
@@ -591,6 +604,14 @@ drake_cc_googletest(
     name = "single_lane_ego_and_agent_test",
     deps = [
         "//drake/automotive:single_lane_ego_and_agent",
+    ],
+)
+
+drake_cc_googletest(
+    name = "smooth_acceleration_function_test",
+    deps = [
+        "//drake/automotive:smooth_acceleration_function",
+        "//drake/common",
     ],
 )
 
