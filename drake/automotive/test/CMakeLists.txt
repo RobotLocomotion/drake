@@ -1,6 +1,9 @@
 drake_add_cc_test(bicycle_car_test)
 target_link_libraries(bicycle_car_test drakeAutomotive)
 
+drake_add_cc_test(calc_smooth_acceleration_test)
+target_link_libraries(calc_smooth_acceleration_test drakeAutomotive)
+
 drake_add_cc_test(simple_powertrain_test)
 target_link_libraries(simple_powertrain_test drakeAutomotive)
 
