@@ -37,8 +37,8 @@ class KukaTest : public ::testing::Test {
  public:
   KukaTest()
       : rigid_body_tree_(ConstructKuka()),
-        global_ik_(*rigid_body_tree_, 2), // Test with 2 binary variables per
-                                          // half axis.
+        global_ik_(*rigid_body_tree_, 2),  // Test with 2 binary variables per
+                                           // half axis.
         ee_idx_(rigid_body_tree_->FindBodyIndex("iiwa_link_ee")) {}
 
   ~KukaTest() override {};
