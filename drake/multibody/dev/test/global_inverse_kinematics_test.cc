@@ -164,8 +164,8 @@ TEST_F(KukaTest, ReachableWithCost) {
   cache.initialize(q);
   rigid_body_tree_->doKinematics(cache);
 
-  Isometry3d ee_desired_pose = rigid_body_tree_->CalcFramePoseInWorldFrame(
-      cache, rigid_body_tree_->get_body(ee_idx_), Isometry3d::Identity());
+  Isometry3d ee_desired_pose = rigid_body_tree_->CalcBodyPoseInWorldFrame(
+      cache, rigid_body_tree_->get_body(ee_idx_));
   // Constrain the global IK to reach the exact end effector pose as the
   // posture q.
   global_ik_.AddWorldPositionConstraint(ee_idx_, Vector3d::Zero(),

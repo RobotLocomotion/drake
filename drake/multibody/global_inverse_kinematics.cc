@@ -357,21 +357,23 @@ void GlobalInverseKinematics::AddPostureCost(
   solvers::VectorXDecisionVariable p_WBo_err =
       NewContinuousVariables(num_bodies - 1, "p_WBo_error");
   for (int i = 1; i < num_bodies; ++i) {
-    const auto& T_WB_desired = robot_->CalcFramePoseInWorldFrame(
+    const auto& X_WB_desired = robot_->CalcFramePoseInWorldFrame(
         cache, robot_->get_body(i), Isometry3d::Identity());
     // Add the constraint p_WBo_err(i-1) >= body_position_cost(i - 1) * |
     // p_WBo(i) - p_WBo_desired(i) |
     Vector4<symbolic::Expression> pos_error_expr;
     pos_error_expr << p_WBo_err(i - 1),
-        body_position_cost(i - 1) * (p_WBo_[i] - T_WB_desired.translation());
+        body_position_cost(i - 1) * (p_WBo_[i] - X_WB_desired.translation());
     AddLorentzConeConstraint(pos_error_expr);
 
     // The orientation error is on the angle θ between the body orientation and
     // the desired orientation, namely 1 - cos(θ).
     // cos(θ) can be computed as (trace( R_WB_desired * R_WB_[i]ᵀ) - 1) / 2
+    // To see how the angle is computed from a rotation matrix, please refer to
+    // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
     orient_err_sum +=
         body_orientation_cost(i - 1) *
-        (1 - ((T_WB_desired.linear() * R_WB_[i].transpose()).trace() - 1) / 2);
+        (1 - ((X_WB_desired.linear() * R_WB_[i].transpose()).trace() - 1) / 2);
   }
 
   // The total cost is the summation of the position error and the orientation
