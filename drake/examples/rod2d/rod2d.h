@@ -360,6 +360,16 @@ class Rod2D : public systems::LeafSystem<T> {
                        systems::State<T>* state) const override;
 
  private:
+  T CalcSignedDistance(const Rod2d& rod, const systems::Context<T>& context)
+                        const;
+  T CalcEndpointDistance(const Rod2d& rod, const systems::Context<T>& context)
+                        const;
+  T CalcNormalAccelWithoutContactForces(const Rod2d& rod,
+                                        const systems::Context<T>& context)
+                        const;
+  T EvaluateSlidingDot(const Rod2d& rod, const systems::Context<T>& context)
+                        const;
+  int DetermineNumWitnessFunctions(const systems::Context<T>& context) const;
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
     const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;

@@ -52,6 +52,197 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
   this->DeclareOutputPort(systems::kVectorValued, 6);
 }
 
+/// The witness function for signed distance between the rod and the half-space.
+template <class T>
+T Rod2d<T>::CalcSignedDistance(const Rod2d<T>& rod,
+                                  const systems::Context<T>& context) const {
+  using std::sin;
+  using std::cos;
+  using std::min;
+
+  // Verify the system is not time stepping.
+  DRAKE_DEMAND(rod.get_simulation_type() != 
+               Rod2d<T>::SimulationType::kTimeStepping);
+
+  // Get the necessary parts of the state.
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const T x = state.GetAtIndex(0);
+  const T y = state.GetAtIndex(1);
+  const T theta = state.GetAtIndex(2);
+
+  // Get the two rod endpoints.
+  const T ctheta = cos(theta);
+  const T stheta = sin(theta);
+  int k1 = 1;
+  int k2 = -1;
+  const Vector2<T> ep1 = CalcRodEndpoint(x, y, k1, ctheta, stheta,
+                                         get_rod_half_length()); 
+  const Vector2<T> ep2 = CalcRodEndpoint(x, y, k2, ctheta, stheta,
+                                         get_rod_half_length()); 
+
+  return min(ep1[1], ep2[1]);
+}
+
+/// The witness function for the signed distance between one endpoint of the
+/// rod (not already touching the half-space) and the halfspace *for the case
+/// when the rod is contacting the ground with a single point of contact.
+/// @pre One endpoint of the rod is in contact with the ground, indicated by
+///      the mode variable being set to .
+template <class T>
+T Rod2d<T>::CalcEndpointDistance(const Rod2d<T>& rod,
+                                 const systems::Context<T>& context) const {
+  using std::sin;
+
+  // Verify the system is not time stepping.
+  DRAKE_DEMAND(rod.get_simulation_type() != 
+               Rod2d<T>::SimulationType::kTimeStepping);
+
+  // Get the necessary parts of the state.
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const T y = state.GetAtIndex(1);
+  const T theta = state.GetAtIndex(2);
+  const T stheta = sin(theta);
+
+ // Get the abstract variables that determine the current system mode and
+  // the endpoint in contact.
+  const Mode mode = context.template get_abstract_state<Mode>(0);
+  DRAKE_DEMAND(mode == Mode::kSlidingSingleContact ||
+               mode == Mode::kStickingSingleContact);
+  const int k = get_k(context); 
+
+  // Get the vertical position of the other rod endpoint.
+  const int k2 = -k;
+  return y + k2 * stheta * rod.get_rod_half_length();
+}
+
+/// The witness function that determines whether the rod should separate from
+/// the halfspace.
+/// @pre It is assumed that the vertical velocity at the point of contact will
+///      be approximately zero.
+template <class T>
+T Rod2d<T>::CalcNormalAccelWithoutContactForces(const Rod2d<T>& rod,
+                                                const systems::Context<T>&
+                                                     context) const {
+  DRAKE_ASSERT_VOID(rod.CheckValidContext(context));
+  using std::sin;
+  using std::cos;
+  using std::abs;
+
+  // Verify the system is not time stepping.
+  DRAKE_DEMAND(rod.get_simulation_type() != 
+               Rod2d<T>::SimulationType::kTimeStepping);
+
+  // Get the necessary parts of the state.
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const T theta = state.GetAtIndex(2);
+  const T thetadot = state.GetAtIndex(5);
+
+  // Get the abstract variables that determine the current system mode and
+  // the endpoint in contact.
+  const Mode mode = context.template get_abstract_state<Mode>(0);
+  DRAKE_DEMAND(mode != Mode::kBallisticMotion);
+  const int k = get_k(context); 
+  const T half_rod_length = rod.get_rod_half_length();
+  const T stheta = sin(theta);
+
+  // Compute the normal acceleration at the point of contact (yc_ddot),
+  // *assuming zero contact force*.
+  T ycddot = rod.get_gravitational_acceleration() -
+        k * half_rod_length * stheta * thetadot * thetadot;
+
+  return ycddot;
+}
+
+/// Evaluates the witness function for sliding direction changes.
+template <class T>
+T Rod2d<T>::EvaluateSlidingDot(const Rod2d<T>& rod,
+                               const systems::Context<T>& context) {
+  // Verify the system is not time stepping.
+  DRAKE_DEMAND(rod.get_simulation_type() != 
+               Rod2d<T>::SimulationType::kTimeStepping);
+
+  // Verify rod is undergoing sliding contact.
+  const Mode mode = context.template get_abstract_state<Mode>(0);
+  DRAKE_DEMAND(mode == Mode::kSlidingSingleContact ||
+               mode == Mode::kSlidingTwoContacts);
+
+  // Get the point of contact.
+  const int k = get_k(context); 
+
+  // Get the sliding velocity at the beginning of the interval.
+  const T xcdot_t0 = context.template get_abstract_state<T>(2);
+
+  // Get the relevant parts of the state.
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const T theta = state.GetAtIndex(2);
+  const T xdot = state.GetAtIndex(3);
+  const T thetadot = state.GetAtIndex(5);
+
+  // Compute the velocity at the point of contact
+  const T stheta = sin(theta);
+  const T half_rod_length = rod.get_rod_half_length();
+  const T xcdot = xdot - k * stheta * half_rod_length * thetadot;
+  return xcdot * xcdot_t0;
+}
+
+/// Gets the number of witness functions.
+template <class T>
+int Rod2d<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
+                                             context) const {
+  // No witness functions if this is the time stepping system.
+  if (simulation_type_ == SimulationType::kTimeStepping)
+    return 0;
+
+  // Get the abstract variable that determines the current system mode.
+  Mode mode = context.template get_abstract_state<Mode>(0);
+
+  switch (mode) {
+    case Rod2d::kBallisticMotion:
+      // The rod is in ballistic flight, there is just one witness function:
+      // the signed distance between the rod and the half-space.
+      return 1;
+
+    case Rod2d::kSlidingSingleContact:
+      // The rod is undergoing contact without impact and is sliding at a single
+      // point of contact. Three witness functions are necessary: one for
+      // checking whether the rod is to separate from the half-space, another
+      // for checking whether the direction of sliding has changed, and a third
+      // for checking for contact between the other rod endpoint and the ground.
+      return 3;
+
+    case Rod2d::kStickingSingleContact:
+      // The rod is undergoing contact without impact and is sticking at a
+      // single point of contact. Two witness functions are necessary: one for
+      // checking whether the rod is to separate from the half-space and a
+      // second for checking for contact between the other rod endpoint
+      // and the ground. We assume that a sticking contact cannot transition
+      // to a sliding contact, as this particular example lacks non-frictional
+      // tangential forces.
+      return 2;
+
+    case Rod2d::kSlidingTwoContacts:
+      // The rod is undergoing sliding contact without impact at two points of
+      // contact. Three witness functions are necessary: two for checking
+      // whether the rod is to separate from the half-space and one more to
+      // check whether the rod is to transition from sliding to sticking.
+      return 3;
+
+    case Rod2d::kStickingTwoContacts:
+      // The rod is undergoing sliding contact without impact at two points of
+      // contact. Two witness functions are necessary to check whether the rod
+      // is to separate from the half-space. We assume that a sticking contact
+      // cannot transition to a sliding contact, as this particular example
+      // lacks non-frictional tangential forces.
+      return 2;
+
+    default:
+      DRAKE_ABORT();
+  }
+
+  DRAKE_ABORT();
+  return 0;
+}
+
 /// Gets the integer variable 'k' used to determine the point of contact
 /// indicated by the current mode.
 /// @throws std::logic_error if this is a time-stepping system (implying that
