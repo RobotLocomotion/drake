@@ -111,7 +111,7 @@ void AddRotationMatrixOrthonormalSocpConstraint(
 ///     layered so that constraining one region provides establishes constraints
 ///     on large portions of O(3), and confers hopefully "useful" constraints
 ///     the on other binary variables.
-///
+/// TODO(russ, hongkai): add proper documentation for each input arguments.
 void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,

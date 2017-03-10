@@ -37,11 +37,7 @@ class Sample : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
-  Sample<T>* DoClone() const override {
-    auto result = new Sample;
-    result->set_value(this->get_value());
-    return result;
-  }
+  Sample<T>* DoClone() const override { return new Sample; }
 
   /// @name Getters and Setters
   //@{

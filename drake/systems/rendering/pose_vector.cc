@@ -59,9 +59,7 @@ void PoseVector<T>::set_rotation(const Eigen::Quaternion<T>& q) {
 
 template <typename T>
 PoseVector<T>* PoseVector<T>::DoClone() const {
-  PoseVector<T>* clone = new PoseVector<T>();
-  clone->set_value(this->get_value());
-  return clone;
+  return new PoseVector<T>();
 }
 
 template class PoseVector<double>;

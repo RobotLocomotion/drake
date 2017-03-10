@@ -8,5 +8,5 @@ element {
 }
 element {
     name: "initial_speed"
-    doc: "The vehicle's initial speed along the lane's s-axis."
+    doc: "The initial speed of the vehicle."
 }

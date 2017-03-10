@@ -8,7 +8,7 @@
 
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/common/drake_assert.h"
-#include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
+#include "drake/math/roll_pitch_yaw_using_quaternion.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -94,11 +94,8 @@ void MaliputRailcar<T>::ImplCalcPose(const MaliputRailcarConfig<T>& config,
 
   pose->set_translation(
       Eigen::Translation<T, 3>(geo_position.x, geo_position.y, geo_position.z));
-
-  const Vector4<T> quaternion =
-      math::rpy2quat(Vector3<T>(rotation.roll, rotation.pitch, rotation.yaw));
-  pose->set_rotation(Eigen::Quaternion<T>(
-      quaternion(0), quaternion(1), quaternion(2), quaternion(3)));
+  pose->set_rotation(math::RollPitchYawToQuaternion(
+      Vector3<T>(rotation.roll, rotation.pitch, rotation.yaw)));
 }
 
 template <typename T>
@@ -134,15 +131,24 @@ void MaliputRailcar<T>::ImplCalcTimeDerivatives(
     const MaliputRailcarConfig<T>& config,
     const MaliputRailcarState<T>& state,
     MaliputRailcarState<T>* rates) const {
-  const T speed = config.initial_speed();
   if (state.s() < 0 || state.s() >= lane_.length()) {
     rates->set_s(0);
   } else {
-    rates->set_s(speed);
+    const T speed = config.initial_speed();
+    const LanePosition motion_derivatives = lane_.EvalMotionDerivatives(
+        LanePosition(state.s(), config.r(), config.h()),
+        IsoLaneVelocity(speed /* sigma_v */, 0 /* rho_v */, 0 /* eta_v */));
+    // Since the railcar's IsoLaneVelocity's rho_v and eta_v values are both
+    // zero, we expect the resulting motion derivative's r and h values to
+    // also be zero. The IsoLaneVelocity's sigma_v, which may be non-zero, maps
+    // to the motion derivative's s value.
+    DRAKE_ASSERT(motion_derivatives.r == 0);
+    DRAKE_ASSERT(motion_derivatives.h == 0);
+    rates->set_s(motion_derivatives.s);
   }
-  // TODO(liang.fok): Set this to the desired acceleration once it is an input
-  // into this system.
-  rates->set_s_dot(0);
+  // TODO(liang.fok): Set this to the desired acceleration once it is a system
+  // input.
+  rates->set_speed(0);
 }
 
 template <typename T>

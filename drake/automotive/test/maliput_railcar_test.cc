@@ -8,13 +8,18 @@
 
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/automotive/maliput/monolane/loader.h"
+#include "drake/automotive/maliput/monolane/builder.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
+
+using maliput::monolane::ArcOffset;
+using maliput::monolane::Endpoint;
+using maliput::monolane::EndpointXy;
+using maliput::monolane::EndpointZ;
 
 using systems::BasicVector;
 using systems::LeafContext;
@@ -38,9 +43,18 @@ class MaliputRailcarTest : public ::testing::Test {
   }
 
   void InitializeCurvedMonoLane() {
-    const std::string filename = GetDrakePath() +
-                               "/automotive/test/flat_curved_lane.yaml";
-    Initialize(maliput::monolane::LoadFile(filename));
+    maliput::monolane::Builder builder(
+        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
+        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
+        0.01,                           /* linear tolerance  */
+        0.5 * M_PI / 180.0);            /* angular_tolerance */
+    builder.Connect(
+        "point.0",                                             /* id    */
+        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),  /* start */
+        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
+        EndpointZ(0, 0, 0, 0));                                /* z_end */
+    Initialize(
+        builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})));
   }
 
   void Initialize(std::unique_ptr<const maliput::api::RoadGeometry> road) {
@@ -86,15 +100,15 @@ class MaliputRailcarTest : public ::testing::Test {
     MaliputRailcarConfig<double>* config =
         dynamic_cast<MaliputRailcarConfig<double>*>(vector_param);
     ASSERT_NE(config, nullptr);
-    config->set_r(1.5);
-    config->set_h(8.2);
+    config->set_r(r);
+    config->set_h(h);
     config->set_initial_speed(initial_speed);
   }
 
-  // The arc radius of the road's s-axis when the road is created using
-  // InitializeCurvedMonoLane(). This value must match the value specified in
-  // `flat_curved_lane.yaml`.
+  // The arc radius and theta of the road when it is created using
+  // InitializeCurvedMonoLane().
   const double kCurvedRoadRadius{10};
+  const double kCurvedRoadTheta{M_PI_2};
 
   std::unique_ptr<const maliput::api::RoadGeometry> road_;
   std::unique_ptr<MaliputRailcar<double>> dut_;  //< The device under test.
@@ -124,7 +138,7 @@ TEST_F(MaliputRailcarTest, ZeroInitialOutput) {
   dut_->CalcOutput(*context_, output_.get());
   auto state = state_output();
   EXPECT_EQ(state->s(), 0);
-  EXPECT_EQ(state->s_dot(), 0);
+  EXPECT_EQ(state->speed(), 0);
   auto pose = pose_output();
   EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
                               Eigen::Isometry3d::Identity().matrix()));
@@ -138,12 +152,12 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
 
   continuous_state()->set_s(1.0);
-  continuous_state()->set_s_dot(2.0);
+  continuous_state()->set_speed(2.0);
   dut_->CalcOutput(*context_, output_.get());
 
   auto state = state_output();
   EXPECT_EQ(state->s(), 1);
-  EXPECT_EQ(state->s_dot(), 2);
+  EXPECT_EQ(state->speed(), 2);
 
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
@@ -160,18 +174,18 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
 
   continuous_state()->set_s(lane->length());
-  continuous_state()->set_s_dot(3.5);
+  continuous_state()->set_speed(3.5);
   dut_->CalcOutput(*context_, output_.get());
 
   ASSERT_NE(lane, nullptr);
   auto state = state_output();
   EXPECT_EQ(state->s(), lane->length());
-  EXPECT_EQ(state->s_dot(), 3.5);
+  EXPECT_EQ(state->speed(), 3.5);
 
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
   {
-    const Eigen::Vector3d rpy(0, 0, M_PI_2);
+    const Eigen::Vector3d rpy(0, 0, kCurvedRoadTheta);
     const Eigen::Vector3d xyz(kCurvedRoadRadius, kCurvedRoadRadius, 0);
     expected_pose.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
@@ -182,27 +196,32 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
 
 TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputDragway) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
+  const double kR{1.5};
+  const double kH{8.2};
+
   // Sets the parameters to be non-zero values.
-  SetConfig(1.5 /* r */, 8.2 /* h */, 1 /* initial speed */);
+  SetConfig(kR, kH, 1 /* initial speed */);
   dut_->CalcOutput(*context_, output_.get());
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
-  expected_pose.translation() = Eigen::Vector3d(0, 1.5, 8.2);
+  expected_pose.translation() = Eigen::Vector3d(0, kR, kH);
   EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
                               expected_pose.matrix()));
 }
 
 TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
   EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane());
+  const double kR{1.5};
+  const double kH{8.2};
 
   // Sets the parameters to be non-zero values.
-  SetConfig(1.5 /* r */, 8.2 /* h */, 1 /* initial speed */);
+  SetConfig(kR, kH, 1 /* initial speed */);
   dut_->CalcOutput(*context_, output_.get());
   auto start_pose = pose_output();
   Eigen::Isometry3d expected_start_pose = Eigen::Isometry3d::Identity();
   {
     const Eigen::Vector3d rpy(0, 0, 0);
-    const Eigen::Vector3d xyz(0, 1.5, 8.2);
+    const Eigen::Vector3d xyz(0, kR, kH);
     expected_start_pose.matrix()
         << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
@@ -220,7 +239,7 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
   Eigen::Isometry3d expected_end_pose = Eigen::Isometry3d::Identity();
   {
     const Eigen::Vector3d rpy(0, 0, M_PI_2);
-    const Eigen::Vector3d xyz(kCurvedRoadRadius - 1.5, kCurvedRoadRadius, 8.2);
+    const Eigen::Vector3d xyz(kCurvedRoadRadius - kR, kCurvedRoadRadius, kH);
     expected_end_pose.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
   // The following tolerance was determined emperically.
@@ -229,7 +248,7 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
                               1e-15 /* tolerance */));
 }
 
-TEST_F(MaliputRailcarTest, Derivatives) {
+TEST_F(MaliputRailcarTest, DerivativesDragway) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
   // Grabs a pointer to where the EvalTimeDerivatives results end up.
   const MaliputRailcarState<double>* const result =
@@ -237,16 +256,42 @@ TEST_F(MaliputRailcarTest, Derivatives) {
           derivatives_->get_mutable_vector());
   ASSERT_NE(nullptr, result);
 
-  // Checks the derivatives given the default continous state.
+  // Checks the derivatives given the default continous state with r = 0.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_EQ(result->s(), MaliputRailcar<double>::kDefaultSpeed);
-  EXPECT_EQ(result->s_dot(), 0.0);  // Expect zero acceleration.
+  EXPECT_DOUBLE_EQ(result->s(), MaliputRailcar<double>::kDefaultSpeed);
+  EXPECT_DOUBLE_EQ(result->speed(), 0.0);  // Expect zero acceleration.
 
-  // Checks the derivatives given a non-default continuous state.
+  // Checks the derivatives given a non-default continuous state with r = 0.
   continuous_state()->set_s(3.5);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_EQ(result->s(), MaliputRailcar<double>::kDefaultSpeed);
-  EXPECT_EQ(result->s_dot(), 0.0);
+  EXPECT_DOUBLE_EQ(result->s(), MaliputRailcar<double>::kDefaultSpeed);
+  EXPECT_DOUBLE_EQ(result->speed(), 0.0);
+
+  // Checks the derivatives given a non-default continuous state with r != 0.
+  const double kSpeed{2};
+  SetConfig(-2 /* r */, 0 /* h */, kSpeed);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_DOUBLE_EQ(result->s(), kSpeed);
+  EXPECT_DOUBLE_EQ(result->speed(), 0.0);
+}
+
+TEST_F(MaliputRailcarTest, DerivativesMonolane) {
+  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane());
+  // Grabs a pointer to where the EvalTimeDerivatives results end up.
+  const MaliputRailcarState<double>* const result =
+      dynamic_cast<const MaliputRailcarState<double>*>(
+          derivatives_->get_mutable_vector());
+  ASSERT_NE(nullptr, result);
+  const double kSpeed{1};
+  const double kR{1};
+
+  // Checks the derivatives given a non-default continuous state with r != 0.
+  continuous_state()->set_s(1.5);
+  SetConfig(kR /* r */, 0 /* h */, kSpeed);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_DOUBLE_EQ(result->s(),
+                   kSpeed * kCurvedRoadRadius / (kCurvedRoadRadius - kR));
+  EXPECT_DOUBLE_EQ(result->speed(), 0);
 }
 
 }  // namespace

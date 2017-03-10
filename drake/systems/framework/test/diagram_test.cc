@@ -629,10 +629,8 @@ class SecondOrderStateVector : public BasicVector<double> {
   void set_v(double v) { SetAtIndex(1, v); }
 
  protected:
-  BasicVector<double>* DoClone() const override {
-    auto result = new SecondOrderStateVector;
-    result->set_value(this->get_value());
-    return result;
+  SecondOrderStateVector* DoClone() const override {
+    return new SecondOrderStateVector;
   }
 };
 

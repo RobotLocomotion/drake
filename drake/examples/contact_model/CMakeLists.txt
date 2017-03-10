@@ -20,4 +20,14 @@ if (lcm_FOUND AND Bullet_FOUND)
       drakeSystemAnalysis
       )
   drake_add_test(NAME rigid_gripper COMMAND rigid_gripper --sim_duration 0.01 --playback=false)
+
+  add_executable(bowling_ball bowling_ball.cc)
+  target_link_libraries(bowling_ball
+      drakeLcmSystem
+      drakeMultibodyParsers
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeSystemFramework
+      )
+  drake_add_test(NAME bowling_ball COMMAND bowling_ball --sim_duration=0.01 --playback=false)
 endif()

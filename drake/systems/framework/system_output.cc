@@ -27,5 +27,9 @@ void OutputPort::InvalidateAndIncrement() {
   }
 }
 
+template class SystemOutput<double>;
+
+template class LeafSystemOutput<double>;
+
 }  // namespace systems
 }  // namespace drake

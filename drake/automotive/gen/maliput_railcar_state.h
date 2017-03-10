@@ -21,7 +21,7 @@ struct MaliputRailcarStateIndices {
 
   // The index of each individual coordinate.
   static const int kS = 0;
-  static const int kSDot = 1;
+  static const int kSpeed = 1;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -37,19 +37,17 @@ class MaliputRailcarState : public systems::BasicVector<T> {
   }
 
   MaliputRailcarState<T>* DoClone() const override {
-    auto result = new MaliputRailcarState;
-    result->set_value(this->get_value());
-    return result;
+    return new MaliputRailcarState;
   }
 
   /// @name Getters and Setters
   //@{
-  /// The position along the lane's s-axis.
+  /// The s-coordinate of the vehicle in lane-space.
   const T& s() const { return this->GetAtIndex(K::kS); }
   void set_s(const T& s) { this->SetAtIndex(K::kS, s); }
-  /// The speed along the lane's s-axis.
-  const T& s_dot() const { return this->GetAtIndex(K::kSDot); }
-  void set_s_dot(const T& s_dot) { this->SetAtIndex(K::kSDot, s_dot); }
+  /// The speed of the vehicle in physical space.
+  const T& speed() const { return this->GetAtIndex(K::kSpeed); }
+  void set_speed(const T& speed) { this->SetAtIndex(K::kSpeed, speed); }
   //@}
 
   /// Returns whether the current values of this vector are well-formed.
@@ -57,7 +55,7 @@ class MaliputRailcarState : public systems::BasicVector<T> {
     using std::isnan;
     auto result = (T(0) == T(0));
     result = result && !isnan(s());
-    result = result && !isnan(s_dot());
+    result = result && !isnan(speed());
     return result;
   }
 };

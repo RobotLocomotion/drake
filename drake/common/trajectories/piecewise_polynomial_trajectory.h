@@ -62,9 +62,17 @@ class PiecewisePolynomialTrajectory : public Trajectory {
    */
   Eigen::Index cols() const override { return pp_.cols(); }
 
+
   double get_start_time() const override { return pp_.getStartTime(); }
 
   double get_end_time() const override { return pp_.getEndTime(); }
+
+  /**
+   * @return A reference to the underlying piecewise polynomial.
+   */
+  const PiecewisePolynomial<double>& get_piecewise_polynomial() const {
+    return pp_;
+  }
 
  private:
   PiecewisePolynomial<double> pp_;

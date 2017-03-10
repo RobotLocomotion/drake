@@ -3,6 +3,8 @@
 namespace drake {
 namespace systems {
 
+template class DiagramState<double>;
+
 template class DiagramContext<double>;
 
 }  // namespace systems

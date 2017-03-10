@@ -7,6 +7,6 @@ struct lcmt_maliput_railcar_state_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 
-  double s;  // The position along the lane's s-axis.
-  double s_dot;  // The speed along the lane's s-axis.
+  double s;  // The s-coordinate of the vehicle in lane-space.
+  double speed;  // The speed of the vehicle in physical space.
 }

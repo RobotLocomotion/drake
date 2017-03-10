@@ -37,11 +37,7 @@ class DrivingCommand : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
-  DrivingCommand<T>* DoClone() const override {
-    auto result = new DrivingCommand;
-    result->set_value(this->get_value());
-    return result;
-  }
+  DrivingCommand<T>* DoClone() const override { return new DrivingCommand; }
 
   /// @name Getters and Setters
   //@{

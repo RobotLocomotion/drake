@@ -137,11 +137,10 @@ class BasicVector : public VectorBase<T> {
     return new BasicVector<T>(this->size());
   }
 
- private:
-  // Sets @p data at @p index to an object of type T, which must have a
-  // single-argument constructor invoked via @p constructor_arg, and then
-  // recursively invokes itself on the next index with @p recursive args.
-  // Helper for BasicVector<T>::Make.
+  /// Sets @p data at @p index to an object of type T, which must have a
+  /// single-argument constructor invoked via @p constructor_arg, and then
+  /// recursively invokes itself on the next index with @p recursive args.
+  /// Helper for BasicVector<T>::Make.
   template<typename F, typename... Fargs>
   static void MakeRecursive(BasicVector<T>* data, int index,
                             F constructor_arg, Fargs&&... recursive_args) {
@@ -149,13 +148,14 @@ class BasicVector : public VectorBase<T> {
     BasicVector<T>::MakeRecursive(data, index, recursive_args...);
   }
 
-  // Base case for the MakeRecursive template recursion.
+  /// Base case for the MakeRecursive template recursion.
   template<typename F, typename... Fargs>
   static void MakeRecursive(BasicVector<T>* data, int index,
                             F constructor_arg) {
     data->SetAtIndex(index++, T(constructor_arg));
   }
 
+ private:
   // Add in multiple scaled vectors to this vector. All vectors
   // must be the same size. This function overrides the default DoPlusEqScaled()
   // implementation toward maximizing speed. This implementation should be able

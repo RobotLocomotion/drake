@@ -38,9 +38,7 @@ class MaliputRailcarConfig : public systems::BasicVector<T> {
   }
 
   MaliputRailcarConfig<T>* DoClone() const override {
-    auto result = new MaliputRailcarConfig;
-    result->set_value(this->get_value());
-    return result;
+    return new MaliputRailcarConfig;
   }
 
   /// @name Getters and Setters
@@ -51,7 +49,7 @@ class MaliputRailcarConfig : public systems::BasicVector<T> {
   /// The vehicle's height above the lane's surface.
   const T& h() const { return this->GetAtIndex(K::kH); }
   void set_h(const T& h) { this->SetAtIndex(K::kH, h); }
-  /// The vehicle's initial speed along the lane's s-axis.
+  /// The initial speed of the vehicle.
   const T& initial_speed() const { return this->GetAtIndex(K::kInitialSpeed); }
   void set_initial_speed(const T& initial_speed) {
     this->SetAtIndex(K::kInitialSpeed, initial_speed);

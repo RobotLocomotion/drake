@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
@@ -20,18 +22,19 @@ namespace symbolic {
 
 /** Kinds of symbolic formulas. */
 enum class FormulaKind {
-  False,  ///< ⊥
-  True,   ///< ⊤
-  Eq,     ///< =
-  Neq,    ///< !=
-  Gt,     ///< >
-  Geq,    ///< >=
-  Lt,     ///< <
-  Leq,    ///< <=
-  And,    ///< Conjunction (∧)
-  Or,     ///< Disjunction (∨)
-  Not,    ///< Negation (¬)
-  Forall  ///< Universal quantification (∀)
+  False,   ///< ⊥
+  True,    ///< ⊤
+  Eq,      ///< =
+  Neq,     ///< !=
+  Gt,      ///< >
+  Geq,     ///< >=
+  Lt,      ///< <
+  Leq,     ///< <=
+  And,     ///< Conjunction (∧)
+  Or,      ///< Disjunction (∨)
+  Not,     ///< Negation (¬)
+  Forall,  ///< Universal quantification (∀)
+  Isnan,   ///< NaN check predicate
 };
 
 // Total ordering between FormulaKinds
@@ -42,6 +45,7 @@ class RelationalFormulaCell;  // In drake/common/symbolic_formula_cell.h
 class NaryFormulaCell;        // In drake/common/symbolic_formula_cell.h
 class FormulaNot;             // In drake/common/symbolic_formula_cell.h
 class FormulaForall;          // In drake/common/symbolic_formula_cell.h
+class FormulaIsnan;           // In drake/common/symbolic_formula_cell.h
 
 /** Represents a symbolic form of a first-order logic formula.
 
@@ -85,8 +89,8 @@ class Formula {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Formula)
 
-  /** Default constructor (deleted). */
-  Formula() = delete;
+  /** Default constructor. */
+  Formula() { *this = True(); }
 
   explicit Formula(const std::shared_ptr<FormulaCell> ptr);
 
@@ -171,6 +175,7 @@ class Formula {
   friend bool is_disjunction(const Formula& f);
   friend bool is_negation(const Formula& f);
   friend bool is_forall(const Formula& f);
+  friend bool is_isnan(const Formula& f);
 
   // Note that the following cast functions are only for low-level operations
   // and not exposed to the user of symbolic_formula.h. These functions are
@@ -179,6 +184,7 @@ class Formula {
   friend std::shared_ptr<NaryFormulaCell> to_nary(const Formula& f);
   friend std::shared_ptr<FormulaNot> to_negation(const Formula& f);
   friend std::shared_ptr<FormulaForall> to_forall(const Formula& f);
+  friend std::shared_ptr<FormulaIsnan> to_isnan(const Formula& f);
 
  private:
   std::shared_ptr<FormulaCell> ptr_;
@@ -197,13 +203,14 @@ Formula operator<=(const Expression& e1, const Expression& e2);
 Formula operator>(const Expression& e1, const Expression& e2);
 Formula operator>=(const Expression& e1, const Expression& e2);
 
-std::ostream& operator<<(std::ostream& os, const Formula& f);
+/** Returns a Formula for the predicate isnan(e) to the given expression. This
+ * serves as the argument-dependent lookup related to std::isnan(double). When
+ * evaluated, this Formula will return false when the e.Evaluate() is not NaN.
+ * @throws std::runtime_error if NaN is detected during evaluation.
+ */
+Formula isnan(const Expression& e);
 
-/** Returns a NaN check predicate on @p e. */
-// TODO(soonho-tri) This implementation is broken.
-inline Formula isnan(const Expression& e) {
-  return (e == Expression::NaN());
-}
+std::ostream& operator<<(std::ostream& os, const Formula& f);
 
 /** Checks if @p f is structurally equal to False formula. */
 bool is_false(const Formula& f);
@@ -233,6 +240,8 @@ bool is_nary(const Formula& f);
 bool is_negation(const Formula& f);
 /** Checks if @p f is a Forall formula (∀). */
 bool is_forall(const Formula& f);
+/** Checks if @p f is an isnan formula. */
+bool is_isnan(const Formula& f);
 
 /** Returns the lhs-argument of a relational formula @p f.
  *  \pre{@p f is a relational formula.}
@@ -264,6 +273,46 @@ const Variables& get_quantified_variables(const Formula& f);
  */
 const Formula& get_quantified_formula(const Formula& f);
 
+/** Returns an Eigen array of symbolic formula where each element
+    includes element-wise symbolic-equality of two symbolic
+    arrays @p m1 and @p m2. */
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+        std::is_same<typename DerivedA::Scalar, Expression>::value &&
+        std::is_same<typename DerivedB::Scalar, Expression>::value,
+    Eigen::Array<Formula, DerivedA::RowsAtCompileTime,
+                 DerivedB::ColsAtCompileTime>>::type
+operator==(const DerivedA& m1, const DerivedB& m2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  const auto expr_equal = [](const Expression& e1, const Expression& e2) {
+    return e1 == e2;
+  };
+  return m1.binaryExpr(m2, expr_equal);
+}
+
+// Returns a symbolic formula checking if two matrices of symbolic expression @p
+// m1 and @p m2 are equal.
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+        std::is_same<typename DerivedA::Scalar, Expression>::value &&
+        std::is_same<typename DerivedB::Scalar, Expression>::value,
+    Formula>::type
+operator==(const DerivedA& m1, const DerivedB& m2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  const auto expr_equal = [](const Expression& e1, const Expression& e2) {
+    return e1 == e2;
+  };
+  const auto logic_and = [](const Formula& f1, const Formula& f2) {
+    return f1 && f2;
+  };
+  return m1.binaryExpr(m2, expr_equal).redux(logic_and);
+}
 }  // namespace symbolic
 
 /** Computes the hash value of a symbolic formula. */
@@ -306,3 +355,15 @@ struct equal_to<drake::symbolic::Formula> {
   }
 };
 }  // namespace std
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+// Define Eigen traits needed for Matrix<drake::symbolic::Formula>.
+namespace Eigen {
+// Eigen scalar type traits for Matrix<drake::symbolic::Formula>.
+template <>
+struct NumTraits<drake::symbolic::Formula>
+    : GenericNumTraits<drake::symbolic::Formula> {
+  static inline int digits10() { return 0; }
+};
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)

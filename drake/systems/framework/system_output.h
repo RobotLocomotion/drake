@@ -178,7 +178,8 @@ class SystemOutput {
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
 template <typename T>
-struct LeafSystemOutput : public SystemOutput<T> {
+class LeafSystemOutput : public SystemOutput<T> {
+ public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystemOutput)
 
   LeafSystemOutput() = default;
