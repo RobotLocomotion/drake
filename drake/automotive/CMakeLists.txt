@@ -8,6 +8,7 @@ endif()
 
 add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   bicycle_car.cc
+  calc_smooth_acceleration.cc
   create_trajectory_params.cc
   curve2.cc
   dev/endless_road_car.cc
@@ -58,6 +59,7 @@ target_link_libraries(drakeAutomotive
 drake_install_libraries(drakeAutomotive)
 drake_install_headers(
   bicycle_car.h
+  calc_smooth_acceleration.h
   create_trajectory_params.h
   curve2.h
   idm_planner.h

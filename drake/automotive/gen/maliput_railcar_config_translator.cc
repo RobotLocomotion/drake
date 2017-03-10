@@ -26,6 +26,8 @@ void MaliputRailcarConfigTranslator::Serialize(
   message.r = vector->r();
   message.h = vector->h();
   message.initial_speed = vector->initial_speed();
+  message.max_speed = vector->max_speed();
+  message.velocity_limit_kp = vector->velocity_limit_kp();
   const int lcm_message_length = message.getEncodedSize();
   lcm_message_bytes->resize(lcm_message_length);
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
@@ -48,6 +50,8 @@ void MaliputRailcarConfigTranslator::Deserialize(
   my_vector->set_r(message.r);
   my_vector->set_h(message.h);
   my_vector->set_initial_speed(message.initial_speed);
+  my_vector->set_max_speed(message.max_speed);
+  my_vector->set_velocity_limit_kp(message.velocity_limit_kp);
 }
 
 }  // namespace automotive
