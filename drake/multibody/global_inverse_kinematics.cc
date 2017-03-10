@@ -349,25 +349,33 @@ void GlobalInverseKinematics::AddPostureCost(
   cache.initialize(q_desired);
   robot_->doKinematics(cache);
 
-  // sum up the orientation error for each body to orient_err_sum.
+  // Sum up the orientation error for each body to orient_err_sum.
   Expression orient_err_sum(0);
   // p_WBo_err(i) is the slack variable, representing the position error for
-  // the (i+1)'th body.
-  solvers::VectorXDecisionVariable p_WBo_err = NewContinuousVariables(num_bodies - 1, "p_WBo_error");
+  // the (i+1)'th body, which is the Euclidean distance from the body origin
+  // position, to the desired position.
+  solvers::VectorXDecisionVariable p_WBo_err =
+      NewContinuousVariables(num_bodies - 1, "p_WBo_error");
   for (int i = 1; i < num_bodies; ++i) {
-    const auto& T_WB_desired = robot_->CalcFramePoseInWorldFrame(cache, robot_->get_body(i), Isometry3d::Identity());
-    // Add the constraint p_WBo_err(i-1) >= body_position_cost(i - 1) * | p_WBo(i) - p_WBo_desired(i) |
+    const auto& T_WB_desired = robot_->CalcFramePoseInWorldFrame(
+        cache, robot_->get_body(i), Isometry3d::Identity());
+    // Add the constraint p_WBo_err(i-1) >= body_position_cost(i - 1) * |
+    // p_WBo(i) - p_WBo_desired(i) |
     Vector4<symbolic::Expression> pos_error_expr;
-    pos_error_expr << p_WBo_err(i-1), body_position_cost(i - 1) * (p_WBo_[i] - T_WB_desired.translation());
+    pos_error_expr << p_WBo_err(i - 1),
+        body_position_cost(i - 1) * (p_WBo_[i] - T_WB_desired.translation());
     AddLorentzConeConstraint(pos_error_expr);
 
     // The orientation error is on the angle θ between the body orientation and
     // the desired orientation, namely 1 - cos(θ).
-    // cos(θ) can be computed as (trace(R_WB_[i]ᵀ * R_WB_desired) - 1) / 2
-    orient_err_sum += body_orientation_cost(i - 1) * (1 - ((R_WB_[i].transpose() * T_WB_desired.linear()).trace() - 1)/ 2);
+    // cos(θ) can be computed as (trace( R_WB_desired * R_WB_[i]ᵀ) - 1) / 2
+    orient_err_sum +=
+        body_orientation_cost(i - 1) *
+        (1 - ((T_WB_desired.linear() * R_WB_[i].transpose()).trace() - 1) / 2);
   }
 
-  // The total cost is the summation of the position error and the orientation error.
+  // The total cost is the summation of the position error and the orientation
+  // error.
   AddCost(p_WBo_err.cast<Expression>().sum() + orient_err_sum);
 }
 }  // namespace multibody

@@ -82,15 +82,20 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    *   p_WQ = p_WBo + R_WB * p_BQ
    * </pre>
    * where
-   *   - p_WQ is the position of the body point Q measured and expressed in the world frame `W`.
-   *   - p_WBo is the position of the body origin Bo measured and expressed in the world frame `W`.
-   *   - R_WB is the rotation matrix of the body measured and expressed in the world frame `W`.
-   *   - p_BQ is the position of the body point Q measured and expressed in the body frame `B`.
+   *   - p_WQ is the position of the body point Q measured and expressed in the
+   * world frame `W`.
+   *   - p_WBo is the position of the body origin Bo measured and expressed in
+   * the world frame `W`.
+   *   - R_WB is the rotation matrix of the body measured and expressed in the
+   * world frame `W`.
+   *   - p_BQ is the position of the body point Q measured and expressed in the
+   * body frame `B`.
    * p_WQ should lie within a bounding box in the frame `F`. Namely
    * <pre>
    *   box_lb_F <= p_FQ <= box_ub_F
    * </pre>
-   * where p_FQ is the position of the point Q measured and expressed in the `F`.
+   * where p_FQ is the position of the point Q measured and expressed in the
+   * `F`.
    * The inequality is imposed elementwisely.
    *
    * Notice that since the rotation matrix `R_WB` does not lie exactly on the
@@ -106,7 +111,14 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * frame is represented by an isometry transform X_WF, the transform from
    * the constraint frame F to the world frame W. Namely if the position of
    * the point `Q` in the world frame is `p_WQ`, then the constraint is
-   * box_lb <= X_WF.linear().transpose() * (p_WQ - X_WF.translation()) <= box_ub
+   * <pre>
+   *    box_lb_F <= R_FW * (p_WQ-p_WFo) <= box_ub_F
+   * </pre>
+   * where
+   *   - R_FW is the rotation matrix of frame `W` expressed and measured in
+   *     frame `F`. `R_FW = X_WF.linear().transpose()`.
+   *   - p_WFo is the position of frame `F`'s origin, expressed and measured in
+   *     frame `W`. `p_WFo = X_WF.translation()`.
    * @default is the identity transform.
    */
   void AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& p_BQ,
@@ -141,27 +153,35 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       double angle_tol);
 
   /** Penalizes the deviation to the desired posture.
-   * For each body in the kinematic tree, we impose the constraint
-   * body_position_cost(i) * body_position_error(i) + body_orientation_cost(i) * body_orientation_error(i)
-   * where body_position_error(i) is computed as the Euclidean distance error
+   * For each body in the kinematic tree, we add the cost
+   *  `body_position_cost(i - 1) * body_position_error(i) +
+   *  body_orientation_cost(i - 1) * body_orientation_error(i)`
+   * where `body_position_error(i)` is computed as the Euclidean distance error
    * |p_WBo(i) - p_WBo_desired(i)|
-   * p_WBo(i)         : position of body i'th frame in the world frame.
-   * p_WBo_desired(i) : position of body i'th frame in the world frame, computed
-   * from the desired posture `q_desired`.
+   * where
+   * - p_WBo(i)        : position of body i'th origin `Bo` in the world frame
+   *                     `W`.
+   * - p_WBo_desired(i): position of body i'th origin `Bo` in the world frame
+   *                     `W`, computed from the desired posture `q_desired`.
+   *
    * body_orientation_error(i) is computed as (1 - cos(θ)), where θ is the
    * angle between the orientation of body i'th frame and body i'th frame using
    * the desired posture.
    * @param q_desired  The desired posture.
    * @param body_position_cost  The cost for each body's position error.
-   * @pre{1. body_position_cost.rows() == robot_->get_num_bodies() - 1.
-   *         since the body 0 is the world frame, and we should not impose a cost
-   *         on the world frame position.
-   *      2. body_position_cost(i) is non-negative.}
-   *      Throw a runtime error if the precondition is not satisfied.
+   * @pre
+   * 1. body_position_cost.rows() == robot->get_num_bodies() - 1, where `robot`
+   *    is the input argument in the constructor of the class.
+   *    Since the body 0 is the world frame, we should not impose a cost
+   *    on the world frame position.
+   * 2. body_position_cost(i) is non-negative.
+   * @throw a runtime error if the precondition is not satisfied.
    * @param body_orientation_cost The cost for each body's orientation error.
-   * @pre{1. body_orientation_cost.rows() == robot_->get_num_bodies() - 1.
-   *      2. body_position_cost(i) is non-negative.}
-   *      Throws a runtime_error if the precondition is not satisfied.
+   * @pre
+   * 1. body_orientation_cost.rows() == robot->get_num_bodies() - 1, where
+   *    `robot` is the input argument in the constructor of the class.
+   * 2. body_position_cost(i) is non-negative.
+   * @throw a runtime_error if the precondition is not satisfied.
    */
   void AddPostureCost(
       const Eigen::Ref<const Eigen::VectorXd>& q_desired,

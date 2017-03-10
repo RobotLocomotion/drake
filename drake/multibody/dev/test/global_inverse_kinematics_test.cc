@@ -36,38 +36,12 @@ std::unique_ptr<RigidBodyTree<double>> ConstructKuka() {
 class KukaTest : public ::testing::Test {
  public:
   KukaTest()
-      : rigid_body_tree_(ConstructKuka()), global_ik_(*rigid_body_tree_, 2), ee_idx_(rigid_body_tree_->FindBodyIndex("iiwa_link_ee")) {}
+      : rigid_body_tree_(ConstructKuka()),
+        global_ik_(*rigid_body_tree_, 2), // Test with 2 binary variables per
+                                          // half axis.
+        ee_idx_(rigid_body_tree_->FindBodyIndex("iiwa_link_ee")) {}
 
   ~KukaTest() override {};
-
- protected:
-  std::unique_ptr<RigidBodyTree<double>> rigid_body_tree_;
-  GlobalInverseKinematics global_ik_;
-};
-
-TEST_F(KukaTest, ReachableTest) {
-  // Test the case that global IK should find a solution.
-  // "ee" stands for "end effector".
-  int ee_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_ee");
-  // Deliberately uses a large box.
-  Eigen::Vector3d ee_pos_lb_W(0.4, -0.1, 0.4);
-  Eigen::Vector3d ee_pos_ub_W(0.6, 0.1, 0.6);
-  global_ik_.AddWorldPositionConstraint(ee_idx, Vector3d::Zero(), ee_pos_lb_W,
-                                        ee_pos_ub_W);
-
-  Eigen::Quaterniond ee_desired_orient(
-      Eigen::AngleAxisd(-M_PI / 2, Vector3d(0, 1, 0)));
-  // Deliberately uses a large bound.
-  global_ik_.AddWorldOrientationConstraint(ee_idx, ee_desired_orient,
-                                           0.2 * M_PI);
-
-  solvers::GurobiSolver gurobi_solver;
-  if (gurobi_solver.available()) {
-    global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
-
-    SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
-
-    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
   /**
    * Given the solution computed from global IK, reconstruct the posture, then
@@ -125,7 +99,7 @@ TEST_F(KukaTest, ReachableTest) {
   GlobalInverseKinematics global_ik_;
   int ee_idx_;  // end effector's body index.
 };
-/*
+
 TEST_F(KukaTest, ReachableTest) {
   // Test the case that global IK should find a solution.
   // "ee" stands for "end effector".
@@ -173,26 +147,37 @@ TEST_F(KukaTest, UnreachableTest) {
     EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded
                     || sol_result == SolutionResult::kInfeasibleConstraints);
   }
-}*/
+}
 
 TEST_F(KukaTest, ReachableWithCost) {
   // Test a reachable cartesian pose, test global IK with costs.
+  // global IK should solve the problem with some error.
   const auto& joint_lb = rigid_body_tree_->joint_limit_min;
   const auto& joint_ub = rigid_body_tree_->joint_limit_max;
+  DRAKE_DEMAND(rigid_body_tree_->get_num_positions() == 7);
   Eigen::Matrix<double, 7, 1> q = joint_lb;
+  // Pick a posture within the joint bounds.
   for (int i = 0; i < 7; ++i) {
-    q(i) += (joint_ub(i) - joint_lb(i))* i / 10.0;
+    q(i) += (joint_ub(i) - joint_lb(i)) * i / 10.0;
   }
   auto cache = rigid_body_tree_->CreateKinematicsCache();
   cache.initialize(q);
   rigid_body_tree_->doKinematics(cache);
 
-  Isometry3d ee_desired_pose = rigid_body_tree_->CalcFramePoseInWorldFrame(cache, rigid_body_tree_->get_body(ee_idx_), Isometry3d::Identity());
-  global_ik_.AddWorldPositionConstraint(ee_idx_, Vector3d::Zero(), ee_desired_pose.translation(), ee_desired_pose.translation());
-  global_ik_.AddWorldOrientationConstraint(ee_idx_, Eigen::Quaterniond(ee_desired_pose.linear()), 0);
+  Isometry3d ee_desired_pose = rigid_body_tree_->CalcFramePoseInWorldFrame(
+      cache, rigid_body_tree_->get_body(ee_idx_), Isometry3d::Identity());
+  // Constrain the global IK to reach the exact end effector pose as the
+  // posture q.
+  global_ik_.AddWorldPositionConstraint(ee_idx_, Vector3d::Zero(),
+                                        ee_desired_pose.translation(),
+                                        ee_desired_pose.translation());
+  global_ik_.AddWorldOrientationConstraint(
+      ee_idx_, Eigen::Quaterniond(ee_desired_pose.linear()), 0);
 
-  Eigen::Matrix<double, 7, 1> q_err = Eigen::Matrix<double, 7, 1>::Constant(0.2);
-  global_ik_.AddPostureCost(q + q_err, Eigen::VectorXd::Constant(11, 1), Eigen::VectorXd::Constant(11, 1));
+  Eigen::Matrix<double, 7, 1> q_err =
+      Eigen::Matrix<double, 7, 1>::Constant(0.2);
+  global_ik_.AddPostureCost(q + q_err, Eigen::VectorXd::Constant(11, 1),
+                            Eigen::VectorXd::Constant(11, 1));
 
   solvers::GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
