@@ -127,7 +127,7 @@ TEST_F(KukaTest, ReachableTest) {
     CheckGlobalIKSolution(pos_tol, orient_tol);
   }
 }
-
+/*
 TEST_F(KukaTest, UnreachableTest) {
   // Test a cartesian pose that we know is not reachable.
   Eigen::Vector3d ee_pos_lb(0.6, -0.1, 0.7);
@@ -223,6 +223,7 @@ TEST_F(KukaTest, ReachableWithCost) {
     EXPECT_LE((q_w_cost - q).norm(), (q_no_cost - q).norm());
   }
 }
+}*/
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

@@ -524,6 +524,16 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
                               &gurobi_var_type, &xlow, &xupp);
 
   GRBmodel* model = nullptr;
+  char** var_names = new char*[num_gurobi_vars];
+  int prog_var_count = 0;
+  for (int i = 0; i < num_gurobi_vars; ++i) {
+    if (!is_new_variable[i]) {
+      var_names[i] = const_cast<char*>(prog.decision_variable(prog_var_count).get_name().c_str());
+      prog_var_count++;
+    } else {
+      var_names[i] = "slack";
+    }
+  }
   GRBnewmodel(env, &model, "gurobi_model", num_gurobi_vars, nullptr, &xlow[0],
               &xupp[0], gurobi_var_type.data(), nullptr);
 
@@ -603,6 +613,12 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
           break;
         }
       }
+      if (optimstatus == GRB_INFEASIBLE || optimstatus == GRB_INF_OR_UNBD) {
+        error = GRBcomputeIIS(model);
+        DRAKE_DEMAND(!error);
+        GRBwrite(model, "model1.ilp");
+        DRAKE_DEMAND(!error);
+      }
     } else {
       result = SolutionResult::kSolutionFound;
       int num_total_variables = is_new_variable.size();
@@ -636,7 +652,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   GRBfreemodel(model);
   GRBfreeenv(env);
-
+  delete[] var_names;
   return result;
 }
 
