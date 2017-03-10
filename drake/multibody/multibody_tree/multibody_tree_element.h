@@ -8,6 +8,15 @@ namespace multibody {
 // Forward declaration.
 template<typename T> class MultibodyTree;
 
+// Primary template defining the signature of this class.
+// Two template arguments are required in general, the type of the class
+// inheriting from MultibodyTreeElement (i.e. this is a CRTP class), and the
+// type of the type-safe index used to identify these element types within a
+// MultibodyTree.
+// The signature below is an explicit (full) template specialization for the
+// case in which the class is a template in a scalar type T. The template
+// specialization allows the compiler to automatically deduce the scalar type
+// from the subclass template signature itself.
 template <class ElementType, typename ElementIndexType>
 class MultibodyTreeElement;
 
@@ -26,8 +35,22 @@ class MultibodyTreeElement;
 /// };
 /// </pre>
 ///
-/// @tparam ElementType The type of the multibody tree component.
+/// @tparam ElementType The type of the specfic multibody element, for instance,
+///                     a body or a mobilizer. It must be a template class on
+///                     the scalar type `T`.
+/// @tparam T The underlying scalar type. Must be a valid Eigen scalar. With the
+///           signature below the scalar type is automatically deduced from the
+///           `ElementType` template argument.
 /// @tparam ElemeentIndexType The type-safe index used for this element type.
+///
+/// As an example of usage, consider the definition of a `ForceElement` class
+/// as a multibody tree element. This would be accomplished with: <pre>
+///   template <typename T>
+///   class ForceElement :
+///       public MultibodyTreeElement<ForceElement<T>, BodyIndex>;
+/// </pre>
+/// Notice that the with the signature below the scalar type is automatically
+/// deduced from the template arguments.
 template <template <typename> class ElementType,
     typename T, typename ElementIndexType>
 class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
