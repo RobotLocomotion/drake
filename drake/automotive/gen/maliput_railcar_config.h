@@ -38,9 +38,7 @@ class MaliputRailcarConfig : public systems::BasicVector<T> {
   }
 
   MaliputRailcarConfig<T>* DoClone() const override {
-    auto result = new MaliputRailcarConfig;
-    result->set_value(this->get_value());
-    return result;
+    return new MaliputRailcarConfig;
   }
 
   /// @name Getters and Setters

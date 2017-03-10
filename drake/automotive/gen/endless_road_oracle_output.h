@@ -37,9 +37,7 @@ class EndlessRoadOracleOutput : public systems::BasicVector<T> {
   }
 
   EndlessRoadOracleOutput<T>* DoClone() const override {
-    auto result = new EndlessRoadOracleOutput;
-    result->set_value(this->get_value());
-    return result;
+    return new EndlessRoadOracleOutput;
   }
 
   /// @name Getters and Setters
