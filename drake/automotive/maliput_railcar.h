@@ -7,6 +7,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/sparsity_matrix.h"
 #include "drake/systems/rendering/pose_vector.h"
 
 namespace drake {
@@ -24,7 +25,8 @@ namespace automotive {
 ///
 /// <B>Input Port Accessors:</B>
 ///
-///   - None.
+///   - command_input(): Contains the desired acceleration. This port
+///     contains a systems::BasicVector of size 1.
 ///
 /// <B>Output Port Accessors:</B>
 ///
@@ -72,15 +74,18 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   /// Sets `config` to contain the default parameters for MaliputRailcar.
   static void SetDefaultParameters(MaliputRailcarConfig<T>* config);
 
-  /// Getter methods for output port descriptors.
+  /// Getter methods for input and output port descriptors.
   /// @{
+  const systems::InputPortDescriptor<T>& command_input() const;
   const systems::OutputPortDescriptor<T>& state_output() const;
   const systems::OutputPortDescriptor<T>& pose_output() const;
   /// @}
 
-  static constexpr double kDefaultR = 0;      // meters
-  static constexpr double kDefaultH = 0;      // meters
-  static constexpr double kDefaultSpeed = 1;  // meters per second
+  static constexpr double kDefaultR = 0;
+  static constexpr double kDefaultH = 0;
+  static constexpr double kDefaultSpeed = 1;
+  static constexpr double kDefaultMaxSpeed = 45;
+  static constexpr double kDefaultVelocityLimitKp = 10;
 
  protected:
   // LeafSystem<T> overrides.
@@ -89,6 +94,8 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::OutputPortDescriptor<T>& descriptor) const override;
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
+                              int input_port, int output_port) const override;
 
  private:
   void ImplCalcOutput(
@@ -103,6 +110,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   void ImplCalcTimeDerivatives(
       const MaliputRailcarConfig<T>& config,
       const MaliputRailcarState<T>& state,
+      const systems::BasicVector<T>& command,
       MaliputRailcarState<T>* rates) const;
 
   void ImplCalcTimeDerivativesDouble(
@@ -112,6 +120,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
 
   const maliput::api::Lane& lane_;
   const double start_time_{};
+  int command_input_port_index_{};
   int state_output_port_index_{};
   int pose_output_port_index_{};
 };

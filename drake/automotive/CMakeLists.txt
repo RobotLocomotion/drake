@@ -44,6 +44,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   simple_car.cc
   simple_powertrain.cc
   single_lane_ego_and_agent.cc
+  smooth_acceleration_function.cc
   trajectory_car.cc
   )
 target_link_libraries(drakeAutomotive
@@ -68,6 +69,7 @@ drake_install_headers(
   simple_car_to_euler_floating_joint.h
   simple_powertrain.h
   single_lane_ego_and_agent.h
+  smooth_acceleration_function.h
   trajectory_car.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
   )
