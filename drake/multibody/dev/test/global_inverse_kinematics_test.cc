@@ -7,6 +7,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mosek_solver.h"
 
 using Eigen::Vector3d;
 using Eigen::Isometry3d;
@@ -66,7 +67,7 @@ class KukaTest : public ::testing::Test {
 
       const Eigen::Matrix3d body_Ri =
           global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
-      EXPECT_TRUE((body_Ri.array().abs() <= 1).all());
+      EXPECT_TRUE((body_Ri.array().abs() <= 1 + 1E-6).all());
       EXPECT_LE(body_Ri.trace(), 3);
       EXPECT_GE(body_Ri.trace(), -1);
       // TODO(hongkai.dai): We will have a more meaningful bound on the

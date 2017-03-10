@@ -583,7 +583,8 @@ void AddMcCormickVectorConstraints(
 }
 }  // namespace
 
-void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+std::pair<std::vector<MatrixDecisionVariable<3, 3>>, std::vector<MatrixDecisionVariable<3, 3>>>
+          AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     int num_binary_vars_per_half_axis, RollPitchYawLimits limits) {
@@ -678,12 +679,12 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
         // Bpos[k-1](i,j) = 0 => R(i,j) ≤ phi(k-1) < phi(k) => Bpos[k](i,j) = 0
         // Bpos[k](i,j) = 1 => R(i,j) ≥ phi(k) > phi(k-1) => Bpos[k-1](i,j) = 1
         // Thus Bpos[k](i, j) <= Bpos[k-1](i, j)
-        prog->AddLinearConstraint(Bpos[k](i, j) <= Bpos[k - 1](i, j));
+        prog->AddLinearConstraint(Bpos[k](i, j) - Bpos[k - 1](i, j), -1, 0);
 
         // Bneg[k](i,j) = 1 => -R(i,j) ≥ phi(k) > phi(k-1) => Bneg[k-1](i,j) = 1
         // Bneg[k-1](i,j) = 0 => -R(i,j) ≤ phi(k-1) < phi(k) => Bneg[k](i,j) = 0
         // Thus Bneg[k](i,j) <= Bneg[k-1](i,j)
-        prog->AddLinearConstraint(Bneg[k](i, j) <= Bneg[k-1](i, j));
+        prog->AddLinearConstraint(Bneg[k](i, j) - Bneg[k-1](i, j), -1, 0);
       }
     }
   }
@@ -717,6 +718,7 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                                   R.row((i + 1) % 3).transpose(),
                                   R.row((i + 2) % 3).transpose());
   }
+  return std::pair<std::vector<MatrixDecisionVariable<3, 3>>, std::vector<MatrixDecisionVariable<3, 3>>>(Bpos, Bneg);
 }
 
 }  // namespace solvers
