@@ -130,6 +130,23 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   EXPECT_EQ(kPpTrajFromPpMatrix.derivative(5)->value(200)(3), 0);
 }
 
+GTEST_TEST(piecewisePolynomialTrajectoryTest, PPAccessor) {
+  std::vector<Eigen::MatrixXd> points;
+  std::vector<double> times;
+  constexpr int num_points = 4;
+  for (int i = 0; i < num_points; ++i) {
+    times.push_back(static_cast<double>(i));
+    points.push_back(Eigen::VectorXd::Random(3, 1));
+  }
+  const auto poly = PiecewisePolynomial<double>::FirstOrderHold(times, points);
+  const PiecewisePolynomialTrajectory poly_traj(poly);
+  const auto& poly_traj_poly = poly_traj.get_piecewise_polynomial();
+  for (int i = 0; i < num_points - 1; ++i) {
+    EXPECT_EQ(poly.getPolynomialMatrix(i),
+              poly_traj_poly.getPolynomialMatrix(i));
+  }
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
