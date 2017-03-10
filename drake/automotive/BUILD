@@ -24,6 +24,7 @@ drake_cc_library(
         "gen/idm_planner_parameters.cc",
         "gen/maliput_railcar_config.cc",
         "gen/maliput_railcar_state.cc",
+        "gen/railcar_command.cc",
         "gen/simple_car_config.cc",
         "gen/simple_car_state.cc",
     ],
@@ -38,6 +39,7 @@ drake_cc_library(
         "gen/idm_planner_parameters.h",
         "gen/maliput_railcar_config.h",
         "gen/maliput_railcar_state.h",
+        "gen/railcar_command.h",
         "gen/simple_car_config.h",
         "gen/simple_car_state.h",
     ],
@@ -153,6 +155,7 @@ drake_cc_library(
     hdrs = ["maliput_railcar.h",],
     deps = [
         ":generated_vectors",
+        ":smooth_acceleration_function",
         "//drake/automotive/maliput/api",
         "//drake/math:geometric_transform",
         "//drake/systems/rendering:pose_vector",
@@ -178,6 +181,7 @@ drake_cc_library(
     ],
     deps = [
         ":generated_vectors",
+        ":smooth_acceleration_function",
         "//drake/common:cond",
         "//drake/common:double",
         "//drake/common:symbolic",
@@ -203,6 +207,16 @@ drake_cc_library(
         ":idm_planner",
         ":linear_car",
         "//drake/systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_library(
+    name = "smooth_acceleration_function",
+    srcs = ["smooth_acceleration_function.cc"],
+    hdrs = ["smooth_acceleration_function.h"],
+    deps = [
+        "//drake/common:autodiff",
+        "//drake/common:symbolic",
     ],
 )
 
@@ -591,6 +605,14 @@ drake_cc_googletest(
     name = "single_lane_ego_and_agent_test",
     deps = [
         "//drake/automotive:single_lane_ego_and_agent",
+    ],
+)
+
+drake_cc_googletest(
+    name = "smooth_acceleration_function_test",
+    deps = [
+        "//drake/automotive:smooth_acceleration_function",
+        "//drake/common",
     ],
 )
 

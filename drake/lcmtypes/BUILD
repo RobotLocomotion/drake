@@ -188,6 +188,7 @@ _AUTOMOTIVE_LCM_SRCS = [
     "lcmt_euler_floating_joint_state_t.lcm",
     "lcmt_maliput_railcar_config_t.lcm",
     "lcmt_maliput_railcar_state_t.lcm",
+    "lcmt_railcar_command_t.lcm",
     "lcmt_simple_car_config_t.lcm",
     "lcmt_simple_car_state_t.lcm",
 ]

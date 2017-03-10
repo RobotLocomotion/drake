@@ -10,6 +10,9 @@ const int MaliputRailcarConfigIndices::kNumCoordinates;
 const int MaliputRailcarConfigIndices::kR;
 const int MaliputRailcarConfigIndices::kH;
 const int MaliputRailcarConfigIndices::kInitialSpeed;
+const int MaliputRailcarConfigIndices::kMaxSpeed;
+const int MaliputRailcarConfigIndices::kMaxAcceleration;
+const int MaliputRailcarConfigIndices::kVelocityLimitKp;
 
 }  // namespace automotive
 }  // namespace drake

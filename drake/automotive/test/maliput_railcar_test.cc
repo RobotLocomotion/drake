@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/automotive/gen/railcar_command.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
@@ -66,6 +67,14 @@ class MaliputRailcarTest : public ::testing::Test {
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
 
+  void SetInputValue(double throttle, double brake) {
+    DRAKE_DEMAND(dut_ != nullptr);
+    auto value = std::make_unique<RailcarCommand<double>>();
+    value->set_throttle(throttle);
+    value->set_brake(brake);
+    context_->FixInputPort(dut_->command_input().get_index(), std::move(value));
+  }
+
   MaliputRailcarState<double>* continuous_state() {
     auto result = dynamic_cast<MaliputRailcarState<double>*>(
         context_->get_mutable_continuous_state_vector());
@@ -87,8 +96,9 @@ class MaliputRailcarTest : public ::testing::Test {
     return pose;
   }
 
-  // Sets the configuration parameters of the vehicle.
-  void SetConfig(double r, double h, double initial_speed) {
+  // Sets the configuration parameters of the railcar.
+  void SetConfig(double r, double h, double initial_speed, double max_speed,
+      double max_acceleration, double velocity_limit_kp) {
     LeafContext<double>* leaf_context =
         dynamic_cast<LeafContext<double>*>(context_.get());
     ASSERT_NE(leaf_context, nullptr);
@@ -103,6 +113,9 @@ class MaliputRailcarTest : public ::testing::Test {
     config->set_r(r);
     config->set_h(h);
     config->set_initial_speed(initial_speed);
+    config->set_max_speed(max_speed);
+    config->set_max_acceleration(max_acceleration);
+    config->set_velocity_limit_kp(velocity_limit_kp);
   }
 
   // The arc radius and theta of the road when it is created using
@@ -119,7 +132,7 @@ class MaliputRailcarTest : public ::testing::Test {
 
 TEST_F(MaliputRailcarTest, Topology) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
-  ASSERT_EQ(dut_->get_num_input_ports(), 0);
+  ASSERT_EQ(dut_->get_num_input_ports(), 1);
 
   ASSERT_EQ(dut_->get_num_output_ports(), 2);
   const auto& state_output = dut_->state_output();
@@ -130,7 +143,11 @@ TEST_F(MaliputRailcarTest, Topology) {
   EXPECT_EQ(systems::kVectorValued, pose_output.get_data_type());
   EXPECT_EQ(PoseVector<double>::kSize, pose_output.size());
 
-  EXPECT_FALSE(dut_->HasAnyDirectFeedthrough());
+  // MaliputRailcar does not support being templated on symbolic::Expression.
+  // Thus, there is no way to know whether the system has direct feedthrough.
+  // The method HasAnyDirectFeedthrough() thus errors on the safe side and
+  // assumes the worst-case scenario, which is that direct feedthrough exists.
+  EXPECT_TRUE(dut_->HasAnyDirectFeedthrough());
 }
 
 TEST_F(MaliputRailcarTest, ZeroInitialOutput) {
@@ -200,7 +217,8 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputDragway) {
   const double kH{8.2};
 
   // Sets the parameters to be non-zero values.
-  SetConfig(kR, kH, 1 /* initial speed */);
+  SetConfig(kR, kH, 1 /* initial speed */, 30 /* max_speed */,
+      5 /* max_acceleration */, 8 /* velocity_limit_kp */);
   dut_->CalcOutput(*context_, output_.get());
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
@@ -215,7 +233,8 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
   const double kH{8.2};
 
   // Sets the parameters to be non-zero values.
-  SetConfig(kR, kH, 1 /* initial speed */);
+  SetConfig(kR, kH, 1 /* initial speed */, 30 /* max_speed */,
+      5 /* max_acceleration */, 8 /* velocity_limit_kp */);
   dut_->CalcOutput(*context_, output_.get());
   auto start_pose = pose_output();
   Eigen::Isometry3d expected_start_pose = Eigen::Isometry3d::Identity();
@@ -256,23 +275,45 @@ TEST_F(MaliputRailcarTest, DerivativesDragway) {
           derivatives_->get_mutable_vector());
   ASSERT_NE(nullptr, result);
 
+  // Sets the input command.
+  SetInputValue(0 /* throttle */, 0 /* brake */);
+
   // Checks the derivatives given the default continous state with r = 0.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), MaliputRailcar<double>::kDefaultSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);  // Expect zero acceleration.
 
-  // Checks the derivatives given a non-default continuous state with r = 0.
+  // Checks that the derivatives are zero given zero throttle and brake commands
+  // and a non-default continuous state with r = 0.
   continuous_state()->set_s(3.5);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), MaliputRailcar<double>::kDefaultSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);
 
-  // Checks the derivatives given a non-default continuous state with r != 0.
-  const double kSpeed{2};
-  SetConfig(-2 /* r */, 0 /* h */, kSpeed);
+  // Checks that the derivatives remain zero given a non-default continuous
+  // state with r != 0.
+  const double kInitialSpeed{2};
+  const double kMaxAcceleration{5};
+  SetConfig(-2 /* r */, 0 /* h */, kInitialSpeed, 30 /* max_speed */,
+      kMaxAcceleration, 8 /* velocity_limit_kp */);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_DOUBLE_EQ(result->s(), kSpeed);
+  EXPECT_DOUBLE_EQ(result->s(), kInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);
+
+  // Checks that the maximum throttle command of 1 results in the maximum
+  // acceleration.
+  SetInputValue(1 /* throttle */, 0 /* brake */);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_DOUBLE_EQ(result->s(), kInitialSpeed);
+  EXPECT_DOUBLE_EQ(result->speed(), kMaxAcceleration);
+
+  // Checks that the maximum brake command of 1 when the current speed is > 0
+  // results in the maximum decceleration.
+  SetInputValue(0 /* throttle */, 1 /* brake */);
+  continuous_state()->set_speed(27);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_DOUBLE_EQ(result->s(), kInitialSpeed);
+  EXPECT_DOUBLE_EQ(result->speed(), -kMaxAcceleration);
 }
 
 TEST_F(MaliputRailcarTest, DerivativesMonolane) {
@@ -282,15 +323,20 @@ TEST_F(MaliputRailcarTest, DerivativesMonolane) {
       dynamic_cast<const MaliputRailcarState<double>*>(
           derivatives_->get_mutable_vector());
   ASSERT_NE(nullptr, result);
-  const double kSpeed{1};
+
+  // Sets the input command.
+  SetInputValue(0 /* throttle */, 0 /* brake */);
+
+  const double kInitialSpeed{1};
   const double kR{1};
 
   // Checks the derivatives given a non-default continuous state with r != 0.
   continuous_state()->set_s(1.5);
-  SetConfig(kR /* r */, 0 /* h */, kSpeed);
+  SetConfig(kR /* r */, 0 /* h */, kInitialSpeed, 30 /* max_speed */,
+      5 /* max_acceleration */, 8 /* velocity_limit_kp */);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(),
-                   kSpeed * kCurvedRoadRadius / (kCurvedRoadRadius - kR));
+      kInitialSpeed * kCurvedRoadRadius / (kCurvedRoadRadius - kR));
   EXPECT_DOUBLE_EQ(result->speed(), 0);
 }
 
