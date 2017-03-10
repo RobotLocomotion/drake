@@ -541,6 +541,25 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "rotation_constraint_limit_test",
+    srcs = [
+        "test/rotation_constraint_limit_test.cc"
+    ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    size = "large",
+    deps = [
+        ":mathematical_program",
+        ":rotation_constraint",
+        ":gurobi_solver",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "snopt_solver_test",
     srcs = [
         "test/snopt_solver_test.cc",
