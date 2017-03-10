@@ -77,14 +77,10 @@ class SimpleCar : public systems::LeafSystem<T> {
   // System<T> overrides
   systems::System<AutoDiffXd>* DoToAutoDiffXd() const override;
   systems::System<symbolic::Expression>* DoToSymbolic() const override;
-  systems::BasicVector<T>* DoAllocateInputVector(
-      const systems::InputPortDescriptor<T>& descriptor) const override;
 
   // LeafSystem<T> overrides
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::OutputPortDescriptor<T>& descriptor) const override;
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
  private:
