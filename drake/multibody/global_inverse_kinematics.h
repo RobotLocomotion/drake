@@ -153,7 +153,7 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       double angle_tol);
 
   /** Penalizes the deviation to the desired posture.
-   * For each body in the kinematic tree, we add the cost
+   * For each body (except the world) in the kinematic tree, we add the cost
    *  `body_position_cost(i - 1) * body_position_error(i) +
    *  body_orientation_cost(i - 1) * body_orientation_error(i)`
    * where `body_position_error(i)` is computed as the Euclidean distance error
@@ -167,6 +167,7 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * body_orientation_error(i) is computed as (1 - cos(θ)), where θ is the
    * angle between the orientation of body i'th frame and body i'th frame using
    * the desired posture.
+   * Since the body 0 is the world frame, we should not impose a cost on it.
    * @param q_desired  The desired posture.
    * @param body_position_cost  The cost for each body's position error.
    * @pre
