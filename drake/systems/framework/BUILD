@@ -252,6 +252,7 @@ drake_cc_library(
     hdrs = ["leaf_system.h"],
     deps = [
         ":leaf_context",
+        ":model_values",
         ":sparsity_matrix",
         ":system",
         ":value_checker",
