@@ -186,6 +186,11 @@ gurobi_repository(
     name = "gurobi",
 )
 
+load("//tools:mosek.bzl", "mosek_repository")
+mosek_repository(
+    name = "mosek",
+)
+
 load("//tools:soft_failure.bzl", "soft_failure_binary_repository")
 soft_failure_binary_repository(
     name = "drake_visualizer",
