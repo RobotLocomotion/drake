@@ -9,11 +9,13 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/test/my_vector2.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
 namespace systems {
 namespace {
+
+using MyVector2i = MyVector<2, int>;
 
 GTEST_TEST(ValueTest, Make) {
   auto abstract_value = AbstractValue::Make<int>(42);
@@ -173,12 +175,12 @@ GTEST_TEST(VectorValueTest, CopyConstructor) {
 }
 
 GTEST_TEST(VectorValueTest, CopyConstructorSubclass) {
-  VectorValue<int> value(test::MyVector2<int>::Make(1, 2));
+  VectorValue<int> value(MyVector2i::Make(1, 2));
   VectorValue<int> other_value(value);
   value.get_value()->set_value(Eigen::Vector2i(3, 4));
 
-  const test::MyVector2<int>* const vector =
-      dynamic_cast<const test::MyVector2<int>*>(other_value.get_value());
+  const MyVector2i* const vector =
+      dynamic_cast<const MyVector2i*>(other_value.get_value());
   ASSERT_NE(vector, nullptr);
   EXPECT_EQ(vector->get_value()(0), 1);
   EXPECT_EQ(vector->get_value()(1), 2);
@@ -202,13 +204,13 @@ GTEST_TEST(VectorValueTest, AssignmentOperator) {
 }
 
 GTEST_TEST(VectorValueTest, AssignmentOperatorSubclass) {
-  VectorValue<int> value(test::MyVector2<int>::Make(1, 2));
+  VectorValue<int> value(MyVector2i::Make(1, 2));
   VectorValue<int> other_value(BasicVector<int>::Make({5, 6}));
   other_value = value;
   value.get_value()->set_value(Eigen::Vector2i(3, 4));
 
-  const test::MyVector2<int>* const vector =
-      dynamic_cast<const test::MyVector2<int>*>(other_value.get_value());
+  const MyVector2i* const vector =
+      dynamic_cast<const MyVector2i*>(other_value.get_value());
   ASSERT_NE(vector, nullptr);
   EXPECT_EQ(vector->get_value()(0), 1);
   EXPECT_EQ(vector->get_value()(1), 2);

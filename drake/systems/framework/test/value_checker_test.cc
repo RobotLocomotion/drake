@@ -21,9 +21,7 @@ class GoodVector : public BasicVector<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GoodVector)
   GoodVector() : BasicVector<double>(2) {}
   GoodVector* DoClone() const override {
-    auto result = new GoodVector;
-    result->set_value(this->get_value());
-    return result;
+    return new GoodVector;
   }
 };
 
@@ -48,9 +46,7 @@ class NotQuiteGoodVector : public GoodVector {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotQuiteGoodVector)
   NotQuiteGoodVector() {}
   GoodVector* DoClone() const override {
-    auto result = new GoodVector;
-    result->set_value(this->get_value());
-    return result;
+    return new GoodVector;
   }
 };
 
