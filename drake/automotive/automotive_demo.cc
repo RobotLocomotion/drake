@@ -7,7 +7,6 @@
 #include "drake/automotive/automotive_simulator.h"
 #include "drake/automotive/create_trajectory_params.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
 
 DEFINE_string(simple_car_names, "",
@@ -73,21 +72,19 @@ void AddVehicles(RoadNetworkType road_network_type,
   // hard-coded assumptions about the model's geometry. For exeample, the call
   // to CreateTrajectoryParams() below expects a "car" to have a particular
   // length and width.
-  const std::string kSdfFile =
-      GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
-
+  const VehicleVisualization& prius = simulator->get_prius_visualization();
   if (FLAGS_simple_car_names.empty()) {
     const std::string name = "";
     const std::string& channel_name = MakeChannelName(name);
     drake::log()->info("Adding simple car subscribed to {}.", channel_name);
-    simulator->AddSimpleCarFromSdf(kSdfFile, name, channel_name);
+    simulator->AddSimpleCarFromSdf(prius, name, channel_name);
   } else {
     std::istringstream simple_car_name_stream(FLAGS_simple_car_names);
     std::string name;
     while (getline(simple_car_name_stream, name, ',')) {
       const std::string& channel_name = MakeChannelName(name);
       drake::log()->info("Adding simple car subscribed to {}.", channel_name);
-      simulator->AddSimpleCarFromSdf(kSdfFile, name, channel_name);
+      simulator->AddSimpleCarFromSdf(prius, name, channel_name);
     }
   }
 
@@ -104,14 +101,16 @@ void AddVehicles(RoadNetworkType road_network_type,
            FLAGS_dragway_vehicle_delay;
       const auto& params = CreateTrajectoryParamsForDragway(
           *dragway_road_geometry, lane_index, speed, start_time);
-      simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
+      simulator->AddTrajectoryCarFromSdf(prius,
+                                         std::get<0>(params),
                                          std::get<1>(params),
                                          std::get<2>(params));
     }
   } else {
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
-      simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
+      simulator->AddTrajectoryCarFromSdf(prius,
+                                         std::get<0>(params),
                                          std::get<1>(params),
                                          std::get<2>(params));
     }

@@ -25,6 +25,33 @@
 namespace drake {
 namespace automotive {
 
+/// The vehicle visualization's filename and `P_MoVo`.
+struct VehicleVisualization {
+  /// Default constructor.
+  VehicleVisualization() = default;
+
+  /// Fully parameterized constructor.
+  VehicleVisualization(std::string _filename, double _P_MoVo)
+      : filename(_filename), P_MoVo(_P_MoVo) {}
+
+  /// Constructor that initializes `P_MoVo` to be zero.
+  explicit VehicleVisualization(std::string _filename)
+      : VehicleVisualization(_filename, 0) {}
+
+  /// The name of the SDF file to load as the vehicle's visualization. This file
+  /// must contain one free-floating model of a vehicle (i.e., a model that's
+  /// connected to the world).
+  std::string filename;
+
+  /// The vector from `Mo` (the model's origin) to `Vo` (the
+  /// visualization's origin). It is used to ensure the visualization rotates
+  /// about the middle of its rear axle when the vehicle's yaw-state changes.
+  ///
+  /// <b>NOTE: `M` and `V` must have the same orientation. They can only be
+  /// offset by `P_MoVo` along `M`'s X-axis.</b>
+  double P_MoVo{};
+};
+
 /// A helper class to construct and run automotive-related simulations.
 ///
 /// @tparam T must be a valid Eigen ScalarType.
@@ -56,25 +83,28 @@ class AutomotiveSimulator {
   /// tree representation.
   const RigidBodyTree<T>& get_rigid_body_tree();
 
+  /// Returns a visualization of a Prius.
+  const VehicleVisualization& get_prius_visualization() const;
+
   /// Adds a SimpleCar system to this simulation, including its DrivingCommand
-  /// LCM input and EulerFloatingJoint output.
+  /// LCM input and EulerFloatingJoint output. A floating joint of type
+  /// multibody::joints::kRollPitchYaw is added to connect the vehicle's
+  /// visualization to the world.
   ///
   /// @pre Start() has NOT been called.
   ///
-  /// @param[in] sdf_filename The name of the SDF file to load as the
-  /// visualization for the simple car. This file must contain one free-floating
-  /// model of a vehicle (i.e., a model that's not connected to the world). A
-  /// floating joint of type multibody::joints::kRollPitchYaw is added to
-  /// connect the vehicle model to the world.
+  /// @param visualization The vehicle's visualization.
+  ///
   /// @param model_name  If this is non-empty, the car's model will be labeled
   ///                    with this name.
+  ///
   /// @param channel_name  The simple car will subscribe to a channel
   ///                      with this name to receive commands.  Must be
   ///                      non-empty.
   ///
   /// @return The model instance ID of the SimpleCar that was just added to
   /// the simulation.
-  int AddSimpleCarFromSdf(const std::string& sdf_filename,
+  int AddSimpleCarFromSdf(const VehicleVisualization& visualization,
                           const std::string& model_name,
                           const std::string& channel_name);
 
@@ -83,8 +113,7 @@ class AutomotiveSimulator {
   ///
   /// @pre Start() has NOT been called.
   ///
-  /// @param[in] sdf_filename See the documentation for the parameter of the
-  /// same name in AddSimpleCarFromSdf().
+  /// @param visualization The vehicle's visualization.
   ///
   /// @param[in] curve See documentation of TrajectoryCar::TrajectoryCar.
   ///
@@ -94,7 +123,7 @@ class AutomotiveSimulator {
   ///
   /// @return The model instance ID of the TrajectoryCar that was just added to
   /// the simulation.
-  int AddTrajectoryCarFromSdf(const std::string& sdf_filename,
+  int AddTrajectoryCarFromSdf(const VehicleVisualization& visualization,
                               const Curve2<double>& curve,
                               double speed,
                               double start_time);
@@ -233,6 +262,9 @@ class AutomotiveSimulator {
   // `RigidBodyTree`. Member variable `road_` must be set prior to calling this
   // method.
   void GenerateAndLoadRoadNetworkUrdf();
+
+  // For visualization.
+  const VehicleVisualization prius_visualization_;
 
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
