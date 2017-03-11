@@ -12,8 +12,22 @@ namespace drake {
 namespace automotive {
 namespace {
 
+class AutomotiveSimulatorTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    prius_with_lidar_visualization_.filename =
+        GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
+    prius_with_lidar_visualization_.P_MoVo = 1.40948;
+    prius_visualization_.filename =
+        GetDrakePath() + "/automotive/models/prius/prius.sdf";
+    prius_visualization_.P_MoVo = 1.40948;
+  }
+  VehicleVisualization prius_with_lidar_visualization_;
+  VehicleVisualization prius_visualization_;
+};
+
 // Simple touches on the getters.
-GTEST_TEST(AutomotiveSimulatorTest, BasicTest) {
+TEST_F(AutomotiveSimulatorTest, BasicTest) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
   EXPECT_NE(nullptr, simulator->get_lcm());
   EXPECT_NE(nullptr, simulator->get_builder());
@@ -33,7 +47,7 @@ void GetLastPublishedJointValue(
 // A helper method for unit testing SimpleCar. Parameter @p sdf_filename is the
 // name of the file containing the model of the vehicle to be used by the
 // SimpleCar.
-void TestSimpleCarWithSdf(const std::string& sdf_filename,
+void TestSimpleCarWithSdf(const VehicleVisualization& visualization,
     int num_vehicle_bodies) {
   // TODO(jwnimmer-tri) Do something better than "0_" here.
   const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
@@ -48,7 +62,7 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
   const int model_instance_id =
-      simulator->AddSimpleCarFromSdf(sdf_filename, "", kCommandChannelName);
+      simulator->AddSimpleCarFromSdf(visualization, "", kCommandChannelName);
 
   // Obtain the number of bodies belonging to the model.
   const int num_vehicle_bodies_in_tree =
@@ -101,8 +115,8 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   EulerFloatingJointState<double> joint_value;
   GetLastPublishedJointValue(kJointStateChannelName, state_pub.get_translator(),
                              mock_lcm, &joint_value);
-  EXPECT_GT(joint_value.x(), 0.0);
-  EXPECT_LT(joint_value.x(), 0.001);
+  EXPECT_GT(joint_value.x() - visualization.P_MoVo, 0);
+  EXPECT_LT(joint_value.x() - visualization.P_MoVo, 0.001);
 
   // Move a lot.  Confirm that we're moving in +x.
   for (int i = 0; i < 100; ++i) {
@@ -132,21 +146,20 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
 }
 
 // Cover AddSimpleCar (and thus AddPublisher), Start, StepBy, GetSystemByName.
-GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPrius) {
-  TestSimpleCarWithSdf(GetDrakePath() +
-                       "/automotive/models/prius/prius_with_lidar.sdf", 17);
+TEST_F(AutomotiveSimulatorTest, SimpleCarTestPriusWithLidar) {
+  TestSimpleCarWithSdf(prius_with_lidar_visualization_, 17);
 }
 
-GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestTwoDofBot) {
-  TestSimpleCarWithSdf(GetDrakePath() +
-                       "/automotive/models/prius/prius.sdf", 13);
+TEST_F(AutomotiveSimulatorTest, SimpleCarTestPrius) {
+  TestSimpleCarWithSdf(prius_visualization_, 13);
 }
 
 // A helper method for unit testing TrajectoryCar. Parameters @p sdf_filename_1
 // and @p sdf_filename_2 are the names of the files containing the models of the
 // vehicles to be used by two TrajectoryCars.
-void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
-                              const std::string& sdf_file_2, int num_bodies_2) {
+void TestTrajectoryCarWithSdf(
+    const VehicleVisualization& visualization_1, int num_bodies_1,
+    const VehicleVisualization& visualization_2, int num_bodies_2) {
   typedef Curve2<double> Curve2d;
   typedef Curve2d::Point2 Point2d;
   const std::vector<Point2d> waypoints{
@@ -159,9 +172,9 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
   const int model_instance_id_1 =
-      simulator->AddTrajectoryCarFromSdf(sdf_file_1, curve, 1.0, 0.0);
+      simulator->AddTrajectoryCarFromSdf(visualization_1, curve, 1.0, 0.0);
   const int model_instance_id_2 =
-      simulator->AddTrajectoryCarFromSdf(sdf_file_2, curve, 1.0, 10.0);
+      simulator->AddTrajectoryCarFromSdf(visualization_2, curve, 1.0, 10.0);
 
   // Obtain the number of bodies in the models.
   const std::vector<const RigidBody<double>*> vehicle_bodies_1 =
@@ -204,11 +217,9 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
 }
 
 // Cover AddTrajectoryCar (and thus AddPublisher).
-GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
-  TestTrajectoryCarWithSdf(GetDrakePath() +
-                           "/automotive/models/prius/prius.sdf", 13,
-                           GetDrakePath() +
-                           "/automotive/models/prius/prius_with_lidar.sdf", 17);
+TEST_F(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
+  TestTrajectoryCarWithSdf(prius_visualization_, 13,
+                           prius_with_lidar_visualization_, 17);
 }
 
 }  // namespace

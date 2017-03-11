@@ -83,14 +83,10 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
 
-  // TODO(liang.fok): Generalize this demo to allow arbitrary models to be
-  // specified via command line parameters. This will involve removing some
-  // hard-coded assumptions about the model's geometry. For exeample, the call
-  // to CreateTrajectoryParams() below expects a "car" to have a particular
-  // length and width.
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  const auto& prius = simulator->get_prius_visualization();
   const std::string kSdfFile =
       GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
-  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
 
   // Parse FLAGS_use_ego_car and FLAGS_ego_car_names into a vector of
   // name-strings.  One ego car will be provisioned for each name, and
@@ -120,13 +116,13 @@ int main(int argc, char* argv[]) {
     for (const std::string& name : ego_car_names) {
       const std::string& channel_name = MakeChannelName(name);
       drake::log()->info("Adding ego car subscribed to {}.", channel_name);
-      simulator->AddSimpleCarFromSdf(kSdfFile, name, channel_name);
+      simulator->AddSimpleCarFromSdf(prius, name, channel_name);
     }
 
     // "Traffic model" is "drive in a figure-8".
     for (int i = 0; i < FLAGS_num_ado_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
-      simulator->AddTrajectoryCarFromSdf(kSdfFile,
+      simulator->AddTrajectoryCarFromSdf(prius,
                                          std::get<0>(params),
                                          std::get<1>(params),
                                          std::get<2>(params));

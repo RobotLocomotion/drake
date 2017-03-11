@@ -16,6 +16,7 @@
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
+#include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
@@ -46,7 +47,10 @@ AutomotiveSimulator<T>::AutomotiveSimulator()
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator(
     std::unique_ptr<lcm::DrakeLcmInterface> lcm)
-    : lcm_(std::move(lcm)) {}
+    : prius_visualization_(
+          GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
+          1.40948 /* kP_MoVo*/),
+      lcm_(std::move(lcm)) {}
 
 template <typename T>
 AutomotiveSimulator<T>::~AutomotiveSimulator() {
@@ -72,8 +76,14 @@ const RigidBodyTree<T>& AutomotiveSimulator<T>::get_rigid_body_tree() {
 }
 
 template <typename T>
+const VehicleVisualization& AutomotiveSimulator<T>::get_prius_visualization()
+    const {
+  return prius_visualization_;
+}
+
+template <typename T>
 int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
-    const std::string& sdf_filename,
+    const VehicleVisualization& visualization,
     const std::string& model_name, const std::string& channel_name) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
@@ -85,19 +95,20 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
           channel_name, driving_command_translator, lcm_.get());
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
   auto coord_transform =
-      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>(
+          visualization.P_MoVo);
 
   builder_->Connect(*command_subscriber, *simple_car);
   builder_->Connect(simple_car->state_output(),
                     coord_transform->get_input_port(0));
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_filename, coord_transform, model_name);
+  return AddSdfModel(visualization.filename, coord_transform, model_name);
 }
 
 template <typename T>
 int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
-    const std::string& sdf_filename,
+    const VehicleVisualization& visualization,
     const Curve2<double>& curve,
     double speed,
     double start_time) {
@@ -107,12 +118,14 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
   auto trajectory_car =
       builder_->template AddSystem<TrajectoryCar<T>>(curve, speed, start_time);
   auto coord_transform =
-      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>(
+          visualization.P_MoVo);
 
   builder_->Connect(*trajectory_car, *coord_transform);
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_filename, coord_transform, ""/* model_name */);
+  return AddSdfModel(
+      visualization.filename, coord_transform, "" /* model_name */);
 }
 
 template <typename T>
