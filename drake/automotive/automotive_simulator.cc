@@ -115,7 +115,7 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
   builder_->Connect(*trajectory_car, *coord_transform);
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_filename, coord_transform, ""/* model_name */);
+  return AddSdfModel(sdf_filename, coord_transform, "" /* model_name */);
 }
 
 template <typename T>
