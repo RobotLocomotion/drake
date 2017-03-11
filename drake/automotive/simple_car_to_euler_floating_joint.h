@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <memory>
 
 #include "drake/automotive/gen/euler_floating_joint_state.h"
@@ -16,7 +17,10 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCarToEulerFloatingJoint)
 
-  SimpleCarToEulerFloatingJoint() {
+  /// The constructor.
+  ///
+  /// @param p_MoVo See the documentation of VehicleVisualization.
+  SimpleCarToEulerFloatingJoint(double p_MoVo = 0.) : p_MoVo_(p_MoVo) {
     this->set_name("SimpleCarToEulerFloatingJoint");
     this->DeclareInputPort(systems::kVectorValued,
                            SimpleCarStateIndices::kNumCoordinates);
@@ -39,12 +43,16 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
         dynamic_cast<EulerFloatingJointState<T>*>(output_vector);
     DRAKE_ASSERT(output_data != nullptr);
 
-    output_data->set_x(input_data->x());
-    output_data->set_y(input_data->y());
+    using std::cos;
+    using std::sin;
+
+    const double heading = input_data->heading();
+    output_data->set_x(p_MoVo_ * cos(heading) + input_data->x());
+    output_data->set_y(p_MoVo_ * sin(heading) + input_data->y());
     output_data->set_z(0.0);
     output_data->set_roll(0.0);
     output_data->set_pitch(0.0);
-    output_data->set_yaw(input_data->heading());
+    output_data->set_yaw(heading);
   }
 
  protected:
@@ -52,6 +60,9 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
       const systems::OutputPortDescriptor<T>& descriptor) const override {
     return std::make_unique<EulerFloatingJointState<T>>();
   }
+
+ private:
+  double p_MoVo_{0};
 };
 
 }  // namespace automotive

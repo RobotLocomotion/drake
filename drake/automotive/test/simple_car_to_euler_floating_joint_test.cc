@@ -8,6 +8,9 @@ namespace drake {
 namespace automotive {
 namespace {
 
+// Tests the conversion from the vehicle's state to the visualization's state
+// when the origin of the vehicle's model's frame, Mo, is equal to the origin of
+// the vehicle's visualization's frame, Vo.
 GTEST_TEST(SimpleCarToEulerFloatingJointTest, BasicTest) {
   // The device under test.
   auto dut = std::make_unique<SimpleCarToEulerFloatingJoint<double>>();
@@ -36,6 +39,65 @@ GTEST_TEST(SimpleCarToEulerFloatingJointTest, BasicTest) {
   EXPECT_EQ(33.0, result->yaw());
   EXPECT_EQ(0.0, result->pitch());
   EXPECT_EQ(0.0, result->roll());
+}
+
+// Tests the conversion from the vehicle's state to the visualization's state
+// when the origin of the vehicle's model's frame, Mo, is offset from the origin
+// of the vehicle's visualization's frame, Vo, by kP_MoVo along M's x-axis.
+GTEST_TEST(SimpleCarToEulerFloatingJointTest, XOriginOffsetTest) {
+  const double kX{5};
+  const double kY{0};
+  const double kZeroHeading{0};
+  const double kP_MoVo{1.5};
+  // The device under test.
+  auto dut = std::make_unique<SimpleCarToEulerFloatingJoint<double>>(kP_MoVo);
+  auto context = dut->CreateDefaultContext();
+  auto output = dut->AllocateOutput(*context);
+
+  // Grabs a pointer to where the CalcOutput results end up.
+  const EulerFloatingJointState<double>* const result =
+      dynamic_cast<const EulerFloatingJointState<double>*>(
+          output->get_vector_data(0));
+  ASSERT_NE(nullptr, result);
+
+  // Configures M's +X axis to be coincident with the world frame's (W's)
+  // +X axis. This should result in Vo's X-coordinate to be offset by kP_MoVo.
+  {
+    auto value = std::make_unique<SimpleCarState<double>>();
+    value->set_x(kX);
+    value->set_y(kY);
+    value->set_heading(kZeroHeading);
+    context->SetInputPort(
+        0, std::make_unique<systems::FreestandingInputPort>(std::move(value)));
+  }
+
+  dut->CalcOutput(*context, output.get());
+  EXPECT_EQ(result->x(), kX + kP_MoVo);
+  EXPECT_EQ(result->y(), kY);
+  EXPECT_EQ(result->z(), 0);
+  EXPECT_EQ(result->yaw(), kZeroHeading);
+  EXPECT_EQ(result->pitch(), 0);
+  EXPECT_EQ(result->roll(), 0);
+
+  // Configures M's +X axis to be coincident with the world frame's (W's)
+  // +Y axis. This should result in Vo's Y-coordinate to be offset by kP_MoVo.
+  const double kLeftHeading{M_PI_2};
+  {
+    auto value = std::make_unique<SimpleCarState<double>>();
+    value->set_x(kX);
+    value->set_y(kY);
+    value->set_heading(kLeftHeading);
+    context->SetInputPort(
+        0, std::make_unique<systems::FreestandingInputPort>(std::move(value)));
+  }
+
+  dut->CalcOutput(*context, output.get());
+  EXPECT_EQ(result->x(), kX);
+  EXPECT_EQ(result->y(), kY + kP_MoVo);
+  EXPECT_EQ(result->z(), 0);
+  EXPECT_EQ(result->yaw(), kLeftHeading);
+  EXPECT_EQ(result->pitch(), 0);
+  EXPECT_EQ(result->roll(), 0);
 }
 
 }  // namespace
