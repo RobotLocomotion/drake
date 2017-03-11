@@ -176,8 +176,9 @@ TEST_F(KukaTest, ReachableWithCost) {
 
   Eigen::Matrix<double, 7, 1> q_err =
       Eigen::Matrix<double, 7, 1>::Constant(0.2);
-  global_ik_.AddPostureCost(q + q_err, Eigen::VectorXd::Constant(11, 1),
-                            Eigen::VectorXd::Constant(11, 1));
+  DRAKE_DEMAND(rigid_body_tree_->get_num_bodies() == 12);
+  global_ik_.AddPostureCost(q + q_err, Eigen::VectorXd::Constant(12, 1),
+                            Eigen::VectorXd::Constant(12, 1));
 
   solvers::GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {

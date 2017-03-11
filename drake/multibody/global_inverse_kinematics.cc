@@ -323,17 +323,17 @@ void GlobalInverseKinematics::AddPostureCost(
     const Eigen::Ref<const Eigen::VectorXd>& body_position_cost,
     const Eigen::Ref<const Eigen::VectorXd>& body_orientation_cost) {
   const int num_bodies = robot_->get_num_bodies();
-  if (body_position_cost.rows() != num_bodies - 1) {
+  if (body_position_cost.rows() != num_bodies) {
     std::ostringstream oss;
-    oss << "body_position_cost should have " << num_bodies - 1 << " rows.";
+    oss << "body_position_cost should have " << num_bodies << " rows.";
     throw std::runtime_error(oss.str());
   }
-  if (body_orientation_cost.rows() != num_bodies - 1) {
+  if (body_orientation_cost.rows() != num_bodies) {
     std::ostringstream oss;
-    oss << "body_orientation_cost should have " << num_bodies - 1 << " rows.";
+    oss << "body_orientation_cost should have " << num_bodies << " rows.";
     throw std::runtime_error(oss.str());
   }
-  for (int i = 0; i < num_bodies - 1; ++i) {
+  for (int i = 1; i < num_bodies; ++i) {
     if (body_position_cost(i) < 0) {
       std::ostringstream oss;
       oss << "body_position_cost(" << i << ") is negative.";
@@ -359,11 +359,11 @@ void GlobalInverseKinematics::AddPostureCost(
   for (int i = 1; i < num_bodies; ++i) {
     const auto& X_WB_desired = robot_->CalcFramePoseInWorldFrame(
         cache, robot_->get_body(i), Isometry3d::Identity());
-    // Add the constraint p_WBo_err(i-1) >= body_position_cost(i - 1) * |
-    // p_WBo(i) - p_WBo_desired(i) |
+    // Add the constraint p_WBo_err(i-1) >= body_position_cost(i) *
+    // |p_WBo(i) - p_WBo_desired(i) |
     Vector4<symbolic::Expression> pos_error_expr;
     pos_error_expr << p_WBo_err(i - 1),
-        body_position_cost(i - 1) * (p_WBo_[i] - X_WB_desired.translation());
+        body_position_cost(i) * (p_WBo_[i] - X_WB_desired.translation());
     AddLorentzConeConstraint(pos_error_expr);
 
     // The orientation error is on the angle θ between the body orientation and
@@ -372,7 +372,7 @@ void GlobalInverseKinematics::AddPostureCost(
     // To see how the angle is computed from a rotation matrix, please refer to
     // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
     orient_err_sum +=
-        body_orientation_cost(i - 1) *
+        body_orientation_cost(i) *
         (1 - ((X_WB_desired.linear() * R_WB_[i].transpose()).trace() - 1) / 2);
   }
 
