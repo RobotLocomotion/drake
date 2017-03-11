@@ -608,7 +608,6 @@ TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact2) {
                               MatrixCompareType::absolute));
 }
 
-
 // Verify that applying the impact model to an impacting state results in a
 // non-impacting state.
 TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact2) {
@@ -667,6 +666,46 @@ TEST_F(Rod2DDAETest, BallisticNoImpact) {
 
   // Verify that no impact occurs.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
+}
+
+// Validates the number of witness functions is determined correctly.
+TEST_F(Rod2DDAETest, NumWitnessFunctions) {
+  // Verify that the correct number of witness functions is reported for...
+  // (a) Ballistic motion.
+  // (b) Sliding single contact.
+  // (c) Sticking single contact.
+  // (d) Sliding two contacts.
+  // (e) Sticking two contacts.
+}
+
+// Checks the witness function for calculating the signed distance.
+TEST_F(Rod2DDAETest, SignedDistWitness) {
+  // Set the rod to a non-contacting configuration and check that the signed
+  // distance is positive.
+  SetBallisticState();
+  EXPECT_GT(dut_->CalcSignedDistance(*dut_, *context_), 0);
+
+  // Set the rod to an interpenetrating configuration and check that the
+  // signed distance is negative.
+
+  // Set the rod to a kissing configuration with the halfspace and check that
+  // the signed distance is zero.
+}
+
+// Checks the witness function for calculating the distance of rod's other
+// endpoint when one endpoint is in contact with the halfspace.
+TEST_F(Rod2DDAETest, OtherEndpointDistWitness) {
+  //
+}
+
+// Evaluates the witness function for when the rod should separate from the
+// halfspace.
+TEST_F(Rod2DDAETest, SeparationWitness) {
+
+}
+
+// Evaluates the witness function for sliding velocity direction changes.
+TEST_F(Rod2DDAETest, VelocityChangesWitness) {
 }
 
 /// Class for testing the Rod 2D example using a first order time
@@ -744,6 +783,14 @@ TEST_F(Rod2DTimeSteppingTest, RodGoesToRest) {
   // should be nearly zero.
   EXPECT_TRUE(std::fabs(theta) < 1e-6 || std::fabs(theta - M_PI) < 1e-6);
   EXPECT_NEAR(theta_dot, 0.0, 1e-6);
+}
+
+// Validates the number of witness functions is determined correctly.
+TEST_F(Rod2DTimeSteppingTest, NumWitnessFunctions) {
+  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
+
+// TODO(edrumwri): Verify that calling witness functions causes assertion
+// failure.
 }
 
 // This test checks to see whether a single semi-explicit step of the piecewise
@@ -1059,6 +1106,14 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
   Vector3d F_Ro_W_both = dut_->CalcCompliantContactForces(*context_);
   EXPECT_TRUE(F_Ro_W_both.isApprox(F_Ro_W_left+F_Ro_W_right, kTightTol));
   EXPECT_NEAR(F_Ro_W_both[2], 0., kTightTol);
+}
+
+// Validates the number of witness functions is determined correctly.
+TEST_F(Rod2DCompliantTest, NumWitnessFunctions) {
+  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
+
+  // TODO(edrumwri): Verify that calling witness functions causes assertion
+  // failure.
 }
 
 }  // namespace

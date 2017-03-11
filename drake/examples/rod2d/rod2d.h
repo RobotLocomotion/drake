@@ -344,6 +344,42 @@ class Rod2D : public systems::LeafSystem<T> {
   Vector3<T> CalcCompliantContactForces(
       const systems::Context<T>& context) const;
 
+  /// The witness function for signed distance between the rod and the
+  /// half-space. The witness function will return positive values when the
+  /// rod is separated from the halfspace, negative values when the rod is
+  /// interpenetrating the halfspace, and zero values when the rod is "kissing"
+  /// the halfspace.
+  static T CalcSignedDistance(const Rod2D& rod,
+                              const systems::Context<T>& context);
+
+  /// The witness function for the signed distance between one endpoint of the
+  /// rod (not already touching the half-space) and the halfspace *for the case
+  /// when the rod is contacting the ground with a single point of contact. The
+  /// witness function will return positive values when the other rod endpoint
+  /// is above the halfspace, negative values when the other rod endpoint is
+  /// strictly within the halfspace, and zero when the other rod endpoint is
+  /// "kissing" the halfspace.
+  /// @pre One endpoint of the rod is in contact with the ground, indicated by
+  ///      the mode variable being appropriately.
+  static T CalcEndpointDistance(const Rod2D& rod,
+                                const systems::Context<T>& context);
+
+  /// The witness function that determines whether the rod should separate from
+  /// the halfspace. The witness function will return ...
+  /// TODO(edrumwri): finish this.
+  /// @pre It is assumed that the signed distance between the point of contact
+  ///      and the halfspace will be approximately zero and that the vertical
+  ///      velocity at the point of contact will be approximately zero.
+  static T CalcNormalAccelWithoutContactForces(const Rod2D& rod,
+                                               const systems::Context<T>&
+                                                 context);
+
+  /// Evaluates the witness function for sliding direction changes.
+  static T EvaluateSlidingDot(const Rod2D<T>& rod,
+                              const systems::Context<T>& context);
+
+  int DetermineNumWitnessFunctions(const systems::Context<T>& context) const;
+
  protected:
   int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractState> AllocateAbstractState()
@@ -360,16 +396,6 @@ class Rod2D : public systems::LeafSystem<T> {
                        systems::State<T>* state) const override;
 
  private:
-  T CalcSignedDistance(const Rod2d& rod, const systems::Context<T>& context)
-                        const;
-  T CalcEndpointDistance(const Rod2d& rod, const systems::Context<T>& context)
-                        const;
-  T CalcNormalAccelWithoutContactForces(const Rod2d& rod,
-                                        const systems::Context<T>& context)
-                        const;
-  T EvaluateSlidingDot(const Rod2d& rod, const systems::Context<T>& context)
-                        const;
-  int DetermineNumWitnessFunctions(const systems::Context<T>& context) const;
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
     const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
