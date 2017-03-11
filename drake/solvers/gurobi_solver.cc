@@ -584,8 +584,10 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     DRAKE_DEMAND(!error);
   }
 
+
   error = GRBoptimize(model);
 
+  GRBwrite(model, "model1.mps");
   SolutionResult result = SolutionResult::kUnknownError;
 
   // If any error exists so far, it's from calling GRBoptimize.
