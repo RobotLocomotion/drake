@@ -20,13 +20,16 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
       : prog_(),
         R_(NewRotationMatrixVars(&prog_)),
         d_(prog_.NewContinuousVariables<1>("d")),
+        Bpos_(GetParam()),
+        Bneg_(GetParam()),
         num_binary_vars_per_half_axis_(GetParam()),
         minimal_distance_expected_(0) {
-    AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+    const auto p = AddRotationMatrixMcCormickEnvelopeMilpConstraints(
         &prog_,
         R_,
         num_binary_vars_per_half_axis_);
-
+    Bpos_ = p.first;
+    Bneg_ = p.second;
     // Add the constraint that d_ >= |R_.col(0) - R_.col(1)|
     Vector4<symbolic::Expression> s;
     s << d_(0), R_.col(0) - R_.col(1);
@@ -49,6 +52,11 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
       EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
       double d_val = prog_.GetSolution(d_(0));
       EXPECT_NEAR(d_val, minimal_distance_expected_, 1E-2);
+      std::cout << " R:\n" << prog_.GetSolution(R_) << std::endl;
+      for (int i = 0; i < num_binary_vars_per_half_axis_; ++i) {
+        std::cout << "Bpos[" << i << "]:\n" << prog_.GetSolution(Bpos_[i]) << std::endl;
+        std::cout << "Bneg[" << i << "]:\n" << prog_.GetSolution(Bneg_[i]) << std::endl;
+      }
     }
   }
 
@@ -56,6 +64,8 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
   VectorDecisionVariable<1> d_;
+  std::vector<MatrixDecisionVariable<3, 3>> Bpos_;
+  std::vector<MatrixDecisionVariable<3, 3>> Bneg_;
   int num_binary_vars_per_half_axis_;
   double minimal_distance_expected_;
 
