@@ -154,8 +154,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
 
   /** Penalizes the deviation to the desired posture.
    * For each body (except the world) in the kinematic tree, we add the cost
-   *  `body_position_cost(i - 1) * body_position_error(i) +
-   *  body_orientation_cost(i - 1) * body_orientation_error(i)`
+   *  `∑ᵢ body_position_cost(i) * body_position_error(i) +
+   *  body_orientation_cost(i) * body_orientation_error(i)`
    * where `body_position_error(i)` is computed as the Euclidean distance error
    * |p_WBo(i) - p_WBo_desired(i)|
    * where
@@ -167,19 +167,17 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * body_orientation_error(i) is computed as (1 - cos(θ)), where θ is the
    * angle between the orientation of body i'th frame and body i'th frame using
    * the desired posture.
-   * Since the body 0 is the world frame, we should not impose a cost on it.
+   * Notice that since body 0 is the world, the cost on that is omitted.
    * @param q_desired  The desired posture.
    * @param body_position_cost  The cost for each body's position error.
    * @pre
-   * 1. body_position_cost.rows() == robot->get_num_bodies() - 1, where `robot`
+   * 1. body_position_cost.rows() == robot->get_num_bodies(), where `robot`
    *    is the input argument in the constructor of the class.
-   *    Since the body 0 is the world frame, we should not impose a cost
-   *    on the world frame position.
    * 2. body_position_cost(i) is non-negative.
    * @throw a runtime error if the precondition is not satisfied.
    * @param body_orientation_cost The cost for each body's orientation error.
    * @pre
-   * 1. body_orientation_cost.rows() == robot->get_num_bodies() - 1, where
+   * 1. body_orientation_cost.rows() == robot->get_num_bodies() , where
    *    `robot` is the input argument in the constructor of the class.
    * 2. body_position_cost(i) is non-negative.
    * @throw a runtime_error if the precondition is not satisfied.
