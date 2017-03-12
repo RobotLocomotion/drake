@@ -83,7 +83,6 @@ class KukaTest : public ::testing::Test {
       std::cout << "forward kinematics\n"
                 << body_pose_fk.translation() << std::endl;
       std::cout << std::endl;
-      // This error bound is chosen as tight as possible.
 
       EXPECT_TRUE(CompareMatrices(body_pose_fk.translation(),
                                   body_pos_global_ik,
