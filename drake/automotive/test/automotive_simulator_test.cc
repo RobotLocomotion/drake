@@ -5,6 +5,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_simple_car_state_t.hpp"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
@@ -140,6 +141,42 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPrius) {
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestTwoDofBot) {
   TestSimpleCarWithSdf(GetDrakePath() +
                        "/automotive/models/prius/prius.sdf", 13);
+}
+
+// Tests the ability to initialize a SimpleCar to a non-zero initial state.
+GTEST_TEST(AutomotiveSimulatorTest, TestSimpleCarInitialState) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+  const double kX{10};
+  const double kY{5.5};
+  const double kHeading{M_PI_2};
+  const double kVelocity{4.5};
+
+  SimpleCarState<double> initial_state;
+  initial_state.set_x(kX);
+  initial_state.set_y(kY);
+  initial_state.set_heading(kHeading);
+  initial_state.set_velocity(kVelocity);
+
+  simulator->AddSimpleCarFromSdf(
+      GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
+      "My Test Model",
+      "Channel",
+      initial_state);
+  simulator->Start();
+  simulator->StepBy(1e-3);
+
+  lcm::DrakeMockLcm* mock_lcm =
+      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
+  ASSERT_NE(mock_lcm, nullptr);
+  const lcmt_simple_car_state_t state_message =
+      mock_lcm->DecodeLastPublishedMessageAs<lcmt_simple_car_state_t>(
+          "0_SIMPLE_CAR_STATE");
+
+  EXPECT_EQ(state_message.x, kX);
+  EXPECT_EQ(state_message.y, kY);
+  EXPECT_EQ(state_message.heading, kHeading);
+  EXPECT_EQ(state_message.velocity, kVelocity);
 }
 
 // A helper method for unit testing TrajectoryCar. Parameters @p sdf_filename_1

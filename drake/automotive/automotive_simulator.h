@@ -66,17 +66,23 @@ class AutomotiveSimulator {
   /// model of a vehicle (i.e., a model that's not connected to the world). A
   /// floating joint of type multibody::joints::kRollPitchYaw is added to
   /// connect the vehicle model to the world.
+  ///
   /// @param model_name  If this is non-empty, the car's model will be labeled
   ///                    with this name.
+  ///
   /// @param channel_name  The simple car will subscribe to a channel
   ///                      with this name to receive commands.  Must be
   ///                      non-empty.
+  ///
+  /// @param initial_state The initial state of the SimpleCar.
   ///
   /// @return The model instance ID of the SimpleCar that was just added to
   /// the simulation.
   int AddSimpleCarFromSdf(const std::string& sdf_filename,
                           const std::string& model_name,
-                          const std::string& channel_name);
+                          const std::string& channel_name,
+                          const SimpleCarState<T>& initial_state =
+                              SimpleCarState<T>());
 
   /// Adds a TrajectoryCar system to this simulation, including its
   /// EulerFloatingJoint output.
@@ -254,6 +260,10 @@ class AutomotiveSimulator {
   // via non-RPY floating joints. See #3919.
   std::vector<std::pair<int, const systems::System<T>*>>
       rigid_body_tree_publisher_inputs_;
+
+  // Holds the desired initial states of each SimpleCar. It is used to
+  // initialize the simulation's diagram's state.
+  std::map<const SimpleCar<T>*, SimpleCarState<T>> simple_car_initial_states_;
   // === End for building. ===
 
   int next_vehicle_number_{0};
