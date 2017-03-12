@@ -8,11 +8,12 @@
 
 namespace drake {
 namespace solvers {
-// The goal of this class is to meaure how well we can approximate the
+// The goal of this class is to measure how well we can approximate the
 // constraint on SO(3). To do so, we choose to compute the closest distance
-// between R.col(0) and R.col(1), that satisfies our relaxation.
-// If `R` satisfies the SO(3) constraint exactly, thn the closest distance
-// is sqrt(2).
+// between R.col(0) and R.col(1), where `R` satisfies our relaxation.
+// If `R` satisfies the SO(3) constraint exactly, then the closest distance
+// is sqrt(2). Due to the relaxation, we should see the closest distance
+// being smaller than sqrt(2).
 // This test records how well we can approximate the rotation matrix on SO(3).
 // If in the future we improved our relaxation and get a larger minimal
 // distance, please update this test.
