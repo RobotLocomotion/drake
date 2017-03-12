@@ -8,10 +8,14 @@
 
 namespace drake {
 namespace solvers {
-// Compute the minimum distance of R.col(0) and R.col(1), if R satisfies
-// the McCormick envelope constraint. This test records how well we can
-// approximate the rotation matrix on SO(3). If in the future we improved
-// our relaxation and get a larger minimal distance, please update this test.
+// The goal of this class is to meaure how well we can approximate the
+// constraint on SO(3). To do so, we choose to compute the closest distance
+// between R.col(0) and R.col(1), that satisfies our relaxation.
+// If `R` satisfies the SO(3) constraint exactly, thn the closest distance
+// is sqrt(2).
+// This test records how well we can approximate the rotation matrix on SO(3).
+// If in the future we improved our relaxation and get a larger minimal
+// distance, please update this test.
 class TestMinimumDistance : public testing::TestWithParam<int> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMinimumDistance)
@@ -65,10 +69,7 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
     // SO(3).
     switch (num_binary_vars_per_half_axis_) {
       case 1 : {
-        // TODO(hongkai.dai): The minimum distance should not be zero. Add some
-        // constraint to prevent this, such as no two columns/rows can be in the
-        // same bin.
-        minimal_distance_expected_ = 0;
+        minimal_distance_expected_ = 0.069166;
         break;
       }
       case 2 : {
@@ -76,9 +77,7 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
         break;
       }
       case 3 : {
-        // TODO(hongkai.dai): Figure out why 3 binary variables give closest
-        // distance smaller than 2 binary variables case.
-        minimal_distance_expected_ = 0.38;
+        minimal_distance_expected_ = 1.0354;
         break;
       }
       default : {
@@ -105,7 +104,7 @@ class TestMinimumDistanceWOrthonormalSocp : public TestMinimumDistance {
     // SO(3).
     switch (num_binary_vars_per_half_axis_) {
       case 1 : {
-        minimal_distance_expected_ = 0;
+        minimal_distance_expected_ = 0.06916;
         break;
       }
       case 2 : {

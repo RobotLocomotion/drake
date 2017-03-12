@@ -654,6 +654,87 @@ void AddMcCormickVectorConstraints(
     }
   }
 }
+
+/**
+ * Add the constraint that vector R.col(i) and R.col(j) are not in the
+ * same or opposite orthants. This constraint should be satisfied since
+ * R.col(i) should be perpendicular to R.col(j). For example, if both
+ * R.col(i) and R.col(j) are in the first orthant (+++), their inner product
+ * has to be non-negative. If the inner product of two first orthant vectors
+ * is exactly zero, then both vectors has to be on the boundaries of the first
+ * orthant (more specifically, as one of the axis). But we can then assign the
+ * vector to a different orthant. The same proof applies to the opposite orthant
+ * case.
+ * To impose the constraint that R.col(0) and R.col(1) are not both in the first
+ * orthant, we consider the constraint
+ * Bpos0.col(0).sum() + Bpos0.col(1).sum() <= 5.
+ * Similarly we can impose the constrant on the other orthant.
+ * @param prog Add the constraint to this mathematical program.
+ * @param Bpos0 Bpos0(i,j) = 0 => R(i, j) >= 0.
+ * @param Bneg0 Bneg0(i,j) = 0 => R(i, j) <= 0.
+ */
+
+void AddNotInSameOrOppositeOrthantConstraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos0,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bneg0) {
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i + 1; j < 3; ++j) {
+      for (int o = 0; o < 8; ++o) {
+        // To enforce that R.col(i) and R.col(j) are not simultaneously in the
+        // o'th orthant, we will impose the constraint
+        // vars_same_orthant.sum() < = 5. The variables in vars_same_orthant
+        // depend on the orthant number o.
+        // To enforce that R.col(i) and R.col(j) are not in the opposite
+        // orthants, we will impose the constraint
+        // vars_oppo_orthant.sum() <= 5. The variables in vars_oppo_orthant
+        // depnd on the orthant number o.
+        Eigen::Matrix<symbolic::Variable, 6, 1> vars_same_orthant;
+        Eigen::Matrix<symbolic::Variable, 6, 1> vars_oppo_orthant;
+        // Choose +x axis?
+        if (o & (1 << 2)) {
+          vars_same_orthant(0) = Bpos0(0, i);
+          vars_same_orthant(1) = Bpos0(0, j);
+          vars_oppo_orthant(0) = Bpos0(0, i);
+          vars_oppo_orthant(1) = Bneg0(0, j);
+        } else {
+          vars_same_orthant(0) = Bneg0(0, i);
+          vars_same_orthant(1) = Bneg0(0, j);
+          vars_oppo_orthant(0) = Bneg0(0, i);
+          vars_oppo_orthant(1) = Bpos0(0, j);
+        }
+        // Choose +y axis?
+        if (o & (1 << 1)) {
+          vars_same_orthant(2) = Bpos0(1, i);
+          vars_same_orthant(3) = Bpos0(1, j);
+          vars_oppo_orthant(2) = Bpos0(1, i);
+          vars_oppo_orthant(3) = Bneg0(1, j);
+        } else {
+          vars_same_orthant(2) = Bneg0(1, i);
+          vars_same_orthant(3) = Bneg0(1, j);
+          vars_oppo_orthant(2) = Bneg0(1, i);
+          vars_oppo_orthant(3) = Bpos0(1, j);
+        }
+        // Choose +z axis?
+        if (o & (1 << 0)) {
+          vars_same_orthant(4) = Bpos0(2, i);
+          vars_same_orthant(5) = Bpos0(2, j);
+          vars_oppo_orthant(4) = Bpos0(2, i);
+          vars_oppo_orthant(5) = Bneg0(2, j);
+        } else {
+          vars_same_orthant(4) = Bneg0(2, i);
+          vars_same_orthant(5) = Bneg0(2, j);
+          vars_oppo_orthant(4) = Bneg0(2, i);
+          vars_oppo_orthant(5) = Bpos0(2, j);
+        }
+        prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
+                                  vars_same_orthant);
+        prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
+                                  vars_oppo_orthant);
+      }
+    }
+  }
+}
 }  // namespace
 
 std::pair<std::vector<MatrixDecisionVariable<3, 3>>,
@@ -747,21 +828,11 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     }
   }
 
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      for (int k = 1; k < num_binary_vars_per_half_axis; ++k) {
-        // Bpos[k-1](i,j) = 0 => R(i,j) ≤ phi(k-1) < phi(k) => Bpos[k](i,j) = 0
-        // Bpos[k](i,j) = 1 => R(i,j) ≥ phi(k) > phi(k-1) => Bpos[k-1](i,j) = 1
-        // Thus Bpos[k](i, j) <= Bpos[k-1](i, j)
-        prog->AddLinearConstraint(Bpos[k](i, j) <= Bpos[k - 1](i, j));
-
-        // Bneg[k](i,j) = 1 => -R(i,j) ≥ phi(k) > phi(k-1) => Bneg[k-1](i,j) = 1
-        // Bneg[k-1](i,j) = 0 => -R(i,j) ≤ phi(k-1) < phi(k) => Bneg[k](i,j) = 0
-        // Thus Bneg[k](i,j) <= Bneg[k-1](i,j)
-        prog->AddLinearConstraint(Bneg[k](i, j) <= Bneg[k-1](i, j));
-      }
-    }
-  }
+  // Add constraint that no two rows (or two columns) can lie in the same
+  // orthant (or opposite orthant).
+  AddNotInSameOrOppositeOrthantConstraint(prog, Bpos[0], Bneg[0]);
+  AddNotInSameOrOppositeOrthantConstraint(prog, Bpos[0].transpose(),
+                                          Bneg[0].transpose());
 
   // Add angle limit constraints.
   // Bounding box will turn on/off an orthant.  It's sufficient to add the
