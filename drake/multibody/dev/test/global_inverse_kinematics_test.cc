@@ -101,7 +101,7 @@ TEST_F(KukaTest, ReachableTest) {
       std::cout << std::endl;
       // This error bound is chosen as tight as possible.
       double pos_tol = 0.06;
-      double orient_tol = 0.12;
+      double orient_tol = 0.2;
       EXPECT_TRUE(CompareMatrices(body_pose_fk.translation(),
                                   body_pos_global_ik,
                                   pos_tol,
