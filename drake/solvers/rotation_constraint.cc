@@ -662,18 +662,16 @@ void AddMcCormickVectorConstraints(
  * R.col(i) and R.col(j) are in the first orthant (+++), their inner product
  * has to be non-negative. If the inner product of two first orthant vectors
  * is exactly zero, then both vectors has to be on the boundaries of the first
- * orthant (more specifically, as one of the axis). But we can then assign the
- * vector to a different orthant. The same proof applies to the opposite orthant
- * case.
+ * orthant. But we can then assign the vector to a different orthant. The same
+ * proof applies to the opposite orthant case.
  * To impose the constraint that R.col(0) and R.col(1) are not both in the first
  * orthant, we consider the constraint
  * Bpos0.col(0).sum() + Bpos0.col(1).sum() <= 5.
- * Similarly we can impose the constrant on the other orthant.
+ * Similarly we can impose the constraint on the other orthant.
  * @param prog Add the constraint to this mathematical program.
- * @param Bpos0 Bpos0(i,j) = 0 => R(i, j) >= 0.
- * @param Bneg0 Bneg0(i,j) = 0 => R(i, j) <= 0.
+ * @param Bpos0 Bpos0(i,j) = 1 => R(i, j) >= 0.
+ * @param Bneg0 Bneg0(i,j) = 1 => R(i, j) <= 0.
  */
-
 void AddNotInSameOrOppositeOrthantConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos0,
