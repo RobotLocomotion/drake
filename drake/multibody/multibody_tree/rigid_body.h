@@ -22,17 +22,16 @@ template<typename T> class MultibodyTree;
 /// often taken as the definition of a rigid body in classical treatments of
 /// multibody mechanics [Goldstein 2001].
 /// It can be demonstrated that the unconstrained three-dimensional motions of a
-/// rigid body can be described by six quasi coordinates and thus it is
-/// often said that a free body in space has six **degrees of freedom**.
-/// These generalized coordinates evolve according to a set of six equations;
-/// three equations dictate the translational motion of the rigid body, and
-/// three equations describe its rotations. When described
-/// in a frame of reference at the center of mass of the rigid body, or
-/// centroidal body frame, these equations take the form of the Newton-Euler
-/// equations.
+/// rigid body can be described by six coordinates and thus it is often said
+/// that a free body in space has six **degrees of freedom**. These generalized
+/// coordinates evolve according to a set of six equations; three equations
+/// dictate the translational motion of the rigid body, and three equations
+/// describe its rotations. When described in a frame of reference at the center
+/// of mass of the rigid body, or centroidal body frame, these equations take
+/// the form of the Newton-Euler equations.
 /// Within a MultibodyTree, a RigidBody is assigned a given number of rigid
 /// degrees of freedom by a Mobilizer while, at the same time, its motions can
-/// be constrained by a given set of Constraint's.
+/// be constrained by a given set of Constraint objects.
 ///
 /// - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
 ///                    (3rd Edition), Addison-Wesley, 2001.

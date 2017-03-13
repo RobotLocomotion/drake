@@ -35,9 +35,9 @@ class MultibodyTreeElement;
 /// };
 /// </pre>
 ///
-/// @tparam ElementType The type of the specfic multibody element, for instance,
-///                     a body or a mobilizer. It must be a template class on
-///                     the scalar type `T`.
+/// @tparam ElementType The type of the specific multibody element, for
+///                     instance, a body or a mobilizer. It must be a template
+///                     class on the scalar type `T`.
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar. With the
 ///           signature below the scalar type is automatically deduced from the
 ///           `ElementType` template argument.
