@@ -16,19 +16,13 @@
 namespace drake {
 namespace automotive {
 
-/// IdmController -- an IDM (Intelligent Driver Model) planner.
-///
-/// IDM: Intelligent Driver Model:
-///    https://en.wikipedia.org/wiki/Intelligent_driver_model
+/// A controller based on the IDM (Intelligent Driver Model) planner. See
+/// IdmPlanner for details.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
-/// - drake::TaylorVarXd
-/// - drake::symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
-///
-/// @ingroup automotive_systems
 ///
 /// Inputs:
 ///   Port 0:
@@ -38,6 +32,8 @@ namespace automotive {
 /// Outputs:
 ///   Port 0:
 ///      @p vdot_ego linear acceleration of the ego car (scalar) [m/s^2].
+///
+/// @ingroup automotive_systems
 template <typename T>
 class IdmController : public systems::LeafSystem<T> {
  public:
@@ -64,12 +60,6 @@ class IdmController : public systems::LeafSystem<T> {
                             systems::Parameters<T>* params) const override;
 
  private:
-  /// Selects nearest agent pose that is ahead of the ego car.  If there are no
-  /// qualifying poses, a pose at an x-value of infinity is returned.
-  const Isometry3<T> SelectNearestTargetAhead(
-      const systems::rendering::PoseVector<T>& ego_pose,
-      const systems::rendering::PoseBundle<T>& agent_poses) const;
-
   /// Retrieves the current RoadPosition for a given road and PoseVector.
   const maliput::api::RoadPosition GetRoadPosition(const Isometry3<T>& pose)
       const;
