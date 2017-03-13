@@ -74,7 +74,9 @@ const RigidBodyTree<T>& AutomotiveSimulator<T>::get_rigid_body_tree() {
 template <typename T>
 int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
     const std::string& sdf_filename,
-    const std::string& model_name, const std::string& channel_name) {
+    const std::string& model_name,
+    const std::string& channel_name,
+    const SimpleCarState<T>& initial_state) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
 
@@ -84,6 +86,7 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
       builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
           channel_name, driving_command_translator, lcm_.get());
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
+  simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
 
@@ -512,6 +515,21 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
 
   diagram_ = builder_->Build();
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
+
+  // Initialize the state of the SimpleCars.
+  for (const auto& pair : simple_car_initial_states_) {
+    const SimpleCar<T>* const car = pair.first;
+    const SimpleCarState<T>& initial_state = pair.second;
+
+    systems::VectorBase<T>* context_state =
+        diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(),
+                                             car)
+        ->get_mutable_continuous_state()->get_mutable_vector();
+    SimpleCarState<T>* const state =
+        dynamic_cast<SimpleCarState<T>*>(context_state);
+    DRAKE_ASSERT(state);
+    state->set_value(initial_state.get_value());
+  }
 
   // Initialize the state of the EndlessRoadCars.
   for (auto& pair : endless_road_cars_) {
