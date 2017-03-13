@@ -50,7 +50,8 @@ class KukaTest : public ::testing::Test {
    * in the global IK.
    */
   void CheckGlobalIKSolution(double pos_tol, double orient_tol) const {
-    Eigen::VectorXd q_global_ik = global_ik_.ReconstructPostureSolution();
+    Eigen::VectorXd q_global_ik =
+        global_ik_.ReconstructGeneralizedPositionSolution();
 
     std::cout << "Reconstructed robot posture:\n" << q_global_ik << std::endl;
     KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q_global_ik);
@@ -189,15 +190,15 @@ TEST_F(KukaTest, ReachableWithCost) {
 
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
-    const Eigen::VectorXd q_no_cost = global_ik_.ReconstructPostureSolution();
+    const Eigen::VectorXd q_no_cost =
+        global_ik_.ReconstructGeneralizedPositionSolution();
 
     DRAKE_DEMAND(rigid_body_tree_->get_num_bodies() == 12);
     // Now add the cost on the posture error.
     // Any positive cost should be able to achieve the optimal solution
     // being equal to q.
     global_ik_.AddPostureCost(q, Eigen::VectorXd::Constant(12, 1),
-                            Eigen::VectorXd::Constant(12, 1));
-
+                              Eigen::VectorXd::Constant(12, 1));
 
     sol_result = gurobi_solver.Solve(global_ik_);
 
@@ -209,7 +210,8 @@ TEST_F(KukaTest, ReachableWithCost) {
     double orientation_error = 2E-5;
     CheckGlobalIKSolution(position_error, orientation_error);
 
-    const Eigen::VectorXd q_w_cost = global_ik_.ReconstructPostureSolution();
+    const Eigen::VectorXd q_w_cost =
+        global_ik_.ReconstructGeneralizedPositionSolution();
     // There is extra error introduced from gurobi optimality condition and SVD,
     // so the tolerance is loose.
     EXPECT_TRUE(

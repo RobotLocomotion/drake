@@ -59,12 +59,12 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
 
   /**
    * After solving the inverse kinematics problem and finding out the pose of
-   * each body, reconstruct the robot posture (joint angles, etc) that matches
-   * with the body poses. Notice that since the rotation matrix is approximated,
-   * that the solution of body_rotmat() might not be on SO(3) exactly, the
-   * reconstructed body posture might not match with the body poses exactly, and
-   * the kinematics constraint might not be satisfied exactly with this
-   * reconstructed posture.
+   * each body, reconstruct the robot generalized position (joint angles, etc)
+   * that matches with the body poses. Notice that since the rotation matrix is
+   * approximated, that the solution of body_rotmat() might not be on SO(3)
+   * exactly, the reconstructed body posture might not match with the body poses
+   * exactly, and the kinematics constraint might not be satisfied exactly with
+   * this reconstructed posture.
    * @warning Do not call this method if the problem is not solved successfully!
    * The returned value can be NaN or meaningless number if the problem is
    * not solved.
@@ -72,7 +72,7 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * coordinates, corresponding to the RigidBodyTree on which the inverse
    * kinematics problem is solved.
    */
-  Eigen::VectorXd ReconstructPostureSolution() const;
+  Eigen::VectorXd ReconstructGeneralizedPositionSolution() const;
 
   /**
    * Adds the constraint that the position of a point `Q` on a body `B`
@@ -83,13 +83,13 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * </pre>
    * where
    *   - p_WQ is the position of the body point Q measured and expressed in the
-   * world frame `W`.
+   *     world frame `W`.
    *   - p_WBo is the position of the body origin Bo measured and expressed in
-   * the world frame `W`.
+   *     the world frame `W`.
    *   - R_WB is the rotation matrix of the body measured and expressed in the
-   * world frame `W`.
+   *     world frame `W`.
    *   - p_BQ is the position of the body point Q measured and expressed in the
-   * body frame `B`.
+   *     body frame `B`.
    * p_WQ should lie within a bounding box in the frame `F`. Namely
    * <pre>
    *   box_lb_F <= p_FQ <= box_ub_F
@@ -166,7 +166,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    *
    * body_orientation_error(i) is computed as (1 - cos(θ)), where θ is the
    * angle between the orientation of body i'th frame and body i'th frame using
-   * the desired posture.
+   * the desired posture. Notice that 1 - cos(θ) = θ²/2 + O(θ⁴), so this cost
+   * is on the square of θ, when θ is small.
    * Notice that since body 0 is the world, the cost on that body is always 0,
    * no matter what value `body_position_cost(0)` and `body_orientation_cost(0)`
    * take.

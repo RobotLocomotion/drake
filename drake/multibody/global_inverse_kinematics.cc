@@ -224,7 +224,8 @@ GlobalInverseKinematics::body_position(int body_index) const {
   return p_WBo_[body_index];
 }
 
-Eigen::VectorXd GlobalInverseKinematics::ReconstructPostureSolution() const {
+Eigen::VectorXd
+GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
   Eigen::VectorXd q(robot_->get_num_positions());
   for (int body_idx = 1; body_idx < robot_->get_num_bodies(); ++body_idx) {
     const RigidBody<double>& body = robot_->get_body(body_idx);
