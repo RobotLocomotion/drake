@@ -149,6 +149,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "type_safe_index",
+    srcs = [],
+    hdrs = ["type_safe_index.h"],
+    deps = [
+        ":common",
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "type_safe_index_test",
+    deps = [":type_safe_index"],
+)
+
 # Miscellaneous utilities.
 drake_cc_library(
     name = "drake_path",
