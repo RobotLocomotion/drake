@@ -75,7 +75,7 @@ class RgbdCamera : public LeafSystem<double> {
 
   /// A constructor for %RgbdCamera that defines `B` using Euler angles.
   /// The pose of %RgbdCamera will be fixed to the world coordinate system
-  /// throughtout the simulation.
+  /// throughout the simulation.
   ///
   /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
@@ -160,12 +160,15 @@ class RgbdCamera : public LeafSystem<double> {
   const OutputPortDescriptor<double>& depth_image_output_port() const;
 
   /// Returns a descriptor of the abstract valued output port that contains an
-  /// Eigen::Isometry3d.
+  /// PoseVector.
   const OutputPortDescriptor<double>& camera_base_pose_output_port() const;
 
  protected:
   /// Allocates the outputs.  See class description.
   std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<double>& descriptor) const override;
+
+  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const OutputPortDescriptor<double>& descriptor) const override;
 
   /// Updates all the model frames for the renderer and outputs the rendered

@@ -28,6 +28,7 @@
 #include <Eigen/Dense>
 
 #include "drake/math/roll_pitch_yaw_using_quaternion.h"
+#include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/vtk_util.h"
@@ -128,16 +129,6 @@ class RgbdCamera::Impl {
   int depth_image_output_port_index() const {
     return depth_image_output_port_index_;
   }
-
-  void set_camera_base_pose_output_port_index(int port_index) {
-    camera_base_pose_output_port_index_ = port_index;
-  }
-
-  int camera_base_pose_output_port_index() const {
-    return camera_base_pose_output_port_index_;
-  }
-
-
 
  private:
   void CreateRenderingWorld();
@@ -420,12 +411,7 @@ void RgbdCamera::Impl::DoCalcOutput(
       tree_.get_num_positions());
   KinematicsCache<double> cache = tree_.doKinematics(q);
 
-  // Outputs the camera's base pose.
-  systems::AbstractValue* mutable_data_base_pose = output->GetMutableData(
-      camera_base_pose_output_port_index_);
-  Eigen::Isometry3d& X_WB =
-      mutable_data_base_pose->GetMutableValue<Eigen::Isometry3d>();
-
+  Eigen::Isometry3d X_WB;
   if (kCameraFixed) {
     X_WB = X_WB_initial_;
   } else {
@@ -433,40 +419,48 @@ void RgbdCamera::Impl::DoCalcOutput(
     X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
   }
 
+  rendering::PoseVector<double>* const camera_base_pose =
+      dynamic_cast<rendering::PoseVector<double>*>(
+          output->GetMutableVectorData(2));
+
+  Eigen::Translation<double, 3> trans = Eigen::Translation<double, 3>(
+      X_WB.translation());
+  camera_base_pose->set_translation(trans);
+  Eigen::Quaterniond quat = Eigen::Quaterniond(X_WB.linear());
+  camera_base_pose->set_rotation(quat);
+
   UpdateModelPoses(cache, (X_WB * X_BC_).inverse());
 
   UpdateRenderWindow();
 
   // Outputs the image data.
-  systems::AbstractValue* mutable_data = output->GetMutableData(
-      color_image_output_port_index_);
-  drake::systems::sensors::Image<uint8_t>& image =
-      mutable_data->GetMutableValue<
-        drake::systems::sensors::Image<uint8_t>>();
+  sensors::Image<uint8_t>& image =
+      output->GetMutableData(
+          color_image_output_port_index_)->GetMutableValue<
+            sensors::Image<uint8_t>>();
 
-  systems::AbstractValue* mutable_data_d = output->GetMutableData(
-      depth_image_output_port_index_);
-  drake::systems::sensors::Image<float>& depth_image =
-      mutable_data_d->GetMutableValue<
-        drake::systems::sensors::Image<float>>();
+  sensors::Image<float>& depth_image =
+      output->GetMutableData(
+          depth_image_output_port_index_)->GetMutableValue<
+            sensors::Image<float>>();
 
-  const auto kHeight = color_camera_info_.height();
-  const auto kWidth = color_camera_info_.width();
-  for (int v = 0; v < kHeight; ++v) {
-    for (int u = 0; u < kWidth; ++u) {
-      const int kHeightReversed = kHeight - v - 1;  // Makes image upside down.
+  const int height = color_camera_info_.height();
+  const int width = color_camera_info_.width();
+  for (int v = 0; v < height; ++v) {
+    for (int u = 0; u < width; ++u) {
+      const int height_reversed = height - v - 1;  // Makes image upside down.
 
       // Converts RGBA to BGRA.
       void* color_ptr = color_buffer_->GetOutput()->GetScalarPointer(u, v, 0);
-      image.at(u, kHeightReversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
-      image.at(u, kHeightReversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
-      image.at(u, kHeightReversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
-      image.at(u, kHeightReversed)[3] = *(static_cast<uint8_t*>(color_ptr) + 3);
+      image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
+      image.at(u, height_reversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
+      image.at(u, height_reversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
+      image.at(u, height_reversed)[3] = *(static_cast<uint8_t*>(color_ptr) + 3);
 
       // Updates the depth image.
       const float z_buffer_value = *static_cast<float*>(
           depth_buffer_->GetOutput()->GetScalarPointer(u, v, 0));
-      depth_image.at(u, kHeightReversed)[0] =
+      depth_image.at(u, height_reversed)[0] =
           CheckRangeAndConvertToMeters(z_buffer_value);
     }
   }
@@ -526,8 +520,8 @@ void RgbdCamera::Init(const std::string& name) {
       this->DeclareAbstractOutputPort().get_index());
   impl_->set_depth_image_output_port_index(
       this->DeclareAbstractOutputPort().get_index());
-  impl_->set_camera_base_pose_output_port_index(
-      this->DeclareAbstractOutputPort().get_index());
+  this->DeclareOutputPort(systems::kVectorValued,
+                          rendering::PoseVector<double>::kSize);
 }
 
 RgbdCamera::~RgbdCamera() {}
@@ -574,10 +568,8 @@ RgbdCamera::depth_image_output_port() const {
 
 const OutputPortDescriptor<double>&
 RgbdCamera::camera_base_pose_output_port() const {
-  return System<double>::get_output_port(
-      impl_->camera_base_pose_output_port_index());
+  return System<double>::get_output_port(2);
 }
-
 
 std::unique_ptr<AbstractValue> RgbdCamera::AllocateOutputAbstract(
     const OutputPortDescriptor<double>& descriptor) const {
@@ -589,10 +581,17 @@ std::unique_ptr<AbstractValue> RgbdCamera::AllocateOutputAbstract(
   } else if (descriptor.get_index() == depth_image_output_port().get_index()) {
     Image<float> depth_image(kImageWidth, kImageHeight, kDepthImageChannel);
     return std::make_unique<systems::Value<sensors::Image<float>>>(depth_image);
-  } else if (descriptor.get_index() ==
-             camera_base_pose_output_port().get_index()) {
-    Eigen::Isometry3d pose;
-    return std::make_unique<systems::Value<Eigen::Isometry3d>>(pose);
+  }
+
+  DRAKE_ABORT_MSG("Unknown output port.");
+  return nullptr;
+}
+
+std::unique_ptr<systems::BasicVector<double>>
+RgbdCamera::AllocateOutputVector(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
+  if (descriptor.get_index() == 2) {
+    return std::make_unique<rendering::PoseVector<double>>();
   }
 
   DRAKE_ABORT_MSG("Unknown output port.");
