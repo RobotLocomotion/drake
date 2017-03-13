@@ -171,14 +171,14 @@ TEST_F(KukaTest, ReachableWithCost) {
   // Constrain the global IK to reach the exact end effector pose as the
   // posture q.
   global_ik_.AddWorldPositionConstraint(
-      ee_idx_, // body index
-      Vector3d::Zero(), // p_BQ
-      ee_desired_pose.translation(), // lower bound
-      ee_desired_pose.translation()); // upper bound
+      ee_idx_,  // body index
+      Vector3d::Zero(),  // p_BQ
+      ee_desired_pose.translation(),  // lower bound
+      ee_desired_pose.translation());  // upper bound
   global_ik_.AddWorldOrientationConstraint(
-      ee_idx_, // body index
-      Eigen::Quaterniond(ee_desired_pose.linear()), // desired orientation
-      0); // tolerance.
+      ee_idx_,  // body index
+      Eigen::Quaterniond(ee_desired_pose.linear()),  // desired orientation
+      0);  // tolerance.
 
   solvers::GurobiSolver gurobi_solver;
 
@@ -212,7 +212,8 @@ TEST_F(KukaTest, ReachableWithCost) {
     const Eigen::VectorXd q_w_cost = global_ik_.ReconstructPostureSolution();
     // There is extra error introduced from gurobi optimality condition and SVD,
     // so the tolerance is loose.
-    EXPECT_TRUE(CompareMatrices(q_w_cost, q, 1E-2, MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(q_w_cost, q, 1E-2, MatrixCompareType::absolute));
     // The posture from IK with cost should be different from that without cost.
     EXPECT_GE((q_w_cost - q_no_cost).norm(), 1E-3);
   }
