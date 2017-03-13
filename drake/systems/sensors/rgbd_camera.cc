@@ -148,7 +148,6 @@ class RgbdCamera::Impl {
   int state_input_port_index_{};
   int color_image_output_port_index_{};
   int depth_image_output_port_index_{};
-  int camera_base_pose_output_port_index_{};
   const bool kCameraFixed;
 
   std::map<int, vtkSmartPointer<vtkActor>> id_object_pairs_;

@@ -14,7 +14,6 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -121,7 +120,7 @@ class RenderingSim : public systems::Diagram<double> {
   void InitMovableCamera(const Eigen::Isometry3d& transformation) {
     rgbd_camera_frame_ = std::allocate_shared<RigidBodyFrame<double>>(
         Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-        "rgbd camera frame", plant_->get_rigid_body_tree().FindBody("sphere"),
+        "rgbd camera frame", plant_->get_rigid_body_tree().FindBody("link"),
         transformation);
 
     rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
@@ -160,29 +159,47 @@ class ImageTest : public ::testing::Test {
  public:
   typedef std::function<void(
       const sensors::Image<uint8_t>& color_image,
-      const sensors::Image<float>& depth_image)> Verifier;
+      const sensors::Image<float>& depth_image)> ImageVerifier;
 
   typedef std::function<void(
       const Eigen::Isometry3d& pose)> CameraBasePoseVerifier;
 
-  void Verify(Verifier verifier, double duration = 0.1) {
-    DoVerification(verifier, duration);
+  void Verify(ImageVerifier verifier) {
+    diagram_->CalcOutput(*context_, output_.get());
+
+    auto color_image = output_->GetMutableData(0)->GetMutableValue<
+      sensors::Image<uint8_t>>();
+    auto depth_image = output_->GetMutableData(1)->GetMutableValue<
+      sensors::Image<float>>();
+
+    verifier(color_image, depth_image);
+  }
+
+  void VerifyPoseUpdate(ImageVerifier verifier) {
+    auto& color_image = output_->GetMutableData(0)->GetMutableValue<
+      sensors::Image<uint8_t>>();
+    auto& depth_image = output_->GetMutableData(1)->GetMutableValue<
+      sensors::Image<float>>();
+    VectorBase<double>* cstate =
+        context_->get_mutable_continuous_state_vector();
+
+    diagram_->CalcOutput(*context_, output_.get());
+    verifier(color_image, depth_image);
+
+    cstate->SetAtIndex(2, -0.1);
+    diagram_->CalcOutput(*context_, output_.get());
+    verifier(color_image, depth_image);
+
+    cstate->SetAtIndex(2, -0.3);
+    diagram_->CalcOutput(*context_, output_.get());
+    verifier(color_image, depth_image);
   }
 
   void Verify(CameraBasePoseVerifier verifier) {
-    std::unique_ptr<systems::Context<double>> context =
-        diagram_->CreateDefaultContext();
-    std::unique_ptr<systems::SystemOutput<double>> output =
-        diagram_->AllocateOutput(*context);
-    systems::Simulator<double> simulator(*diagram_.get(), std::move(context));
-    simulator.Initialize();
-
-    simulator.StepTo(0.);
-    diagram_->CalcOutput(simulator.get_context(), output.get());
-
-  rendering::PoseVector<double>* const camera_base_pose =
-      dynamic_cast<rendering::PoseVector<double>*>(
-          output->GetMutableVectorData(2));
+    diagram_->CalcOutput(*context_, output_.get());
+    rendering::PoseVector<double>* const camera_base_pose =
+        dynamic_cast<rendering::PoseVector<double>*>(
+            output_->GetMutableVectorData(2));
 
     verifier(camera_base_pose->get_isometry());
   }
@@ -305,6 +322,8 @@ class ImageTest : public ::testing::Test {
              const Eigen::Vector3d& orientation) {
     diagram_ = std::make_unique<RenderingSim>(GetDrakePath() + sdf);
     diagram_->InitFixedCamera(position, orientation);
+    context_ = diagram_->CreateDefaultContext();
+    output_ = diagram_->AllocateOutput(*context_);
   }
 
   // For moving camera base.
@@ -312,31 +331,14 @@ class ImageTest : public ::testing::Test {
              const Eigen::Isometry3d& transformation) {
     diagram_ = std::make_unique<RenderingSim>(GetDrakePath() + sdf);
     diagram_->InitMovableCamera(transformation);
+    context_ = diagram_->CreateDefaultContext();
+    output_ = diagram_->AllocateOutput(*context_);
   }
 
  private:
-  void DoVerification(Verifier verifier, double duration) {
-    std::unique_ptr<systems::Context<double>> context =
-        diagram_->CreateDefaultContext();
-    std::unique_ptr<systems::SystemOutput<double>> output =
-        diagram_->AllocateOutput(*context);
-    systems::Simulator<double> simulator(*diagram_.get(), std::move(context));
-    simulator.Initialize();
-
-    for (double time = 0.; time < duration ; time += 0.1) {
-      simulator.StepTo(time);
-      diagram_->CalcOutput(simulator.get_context(), output.get());
-
-      auto color_image = output->GetMutableData(0)->GetMutableValue<
-        sensors::Image<uint8_t>>();
-      auto depth_image = output->GetMutableData(1)->GetMutableValue<
-        sensors::Image<float>>();
-
-      verifier(color_image, depth_image);
-    }
-  }
-
   std::unique_ptr<RenderingSim> diagram_;
+  std::unique_ptr<systems::Context<double>> context_;
+  std::unique_ptr<systems::SystemOutput<double>> output_;
   int previous_horizon_{480};
 };
 
@@ -387,24 +389,23 @@ TEST_F(ImageTest, SphereRenderingTest) {
 }
 
 // Verifies the camera pose update.
-// RgbdCamera's base is attached to a sphere falling from the sky.  RgbdCamera's
-// optical axis is parallel to the flat terrain, so the camera sees the horizon.
-// This test verifies that the horizon's pixel location changes as the sphere
-// falls.
+// RgbdCamera's base is attached to a model.  RgbdCamera's optical axis is
+// parallel to the flat terrain, so the camera sees the horizon.   This test
+// verifies that the horizon's pixel location changes as the model's state
+// updated.
 TEST_F(ImageTest, CameraPoseUpdateTest) {
-  const std::string sdf("/systems/sensors/test/models/falling_sphere.sdf");
-  // Attaches the camera to a location that is 1 m above the sphere.
+  const std::string sdf("/systems/sensors/test/models/nothing.sdf");
+  // Attaches the camera to a location that is 11 m above the model.
   Eigen::Isometry3d transformation((Eigen::Matrix4d() <<
                                     1., 0., 0., 0.,
                                     0., 1., 0., 0.,
-                                    0., 0., 1., 1.,
+                                    0., 0., 1., 11.,
                                     0., 0., 0., 1.).finished());
   SetUp(sdf, transformation);
 
-  const double kDuration = 0.8;
   auto verifier = std::bind(&ImageTest::VerifyMovingCamera, this,
                             std::placeholders::_1, std::placeholders::_2);
-  Verify(verifier, kDuration);
+  VerifyPoseUpdate(verifier);
 }
 
 
