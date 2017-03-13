@@ -63,16 +63,16 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// MultibodyTree. This method, however, asserts that this is the case in
   /// Debug builds.
   const MultibodyTree<T>& get_parent_tree() const {
-    DRAKE_ASSERT_VOID(HasParentTreeOrThrows());
+    DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
     return *parent_tree_;
   }
 
   /// Returns the unique identifier in its parent MultibodyTree to this element.
-  ElementIndexType get_id() const { return id_;}
+  ElementIndexType get_index() const { return id_;}
 
   /// Checks whether this MultibodyTreeElement has been registered into a
   /// MultibodyTree. If not, it throws an exception of type std::logic_error.
-  void HasParentTreeOrThrows() const {
+  void HasParentTreeOrThrow() const {
     if (parent_tree_ == nullptr) {
       throw std::logic_error(
           "This multibody component was not added to a MultibodyTree.");
@@ -83,11 +83,11 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// If not, it throws an exception of type std::logic_error.
   template <template <typename> class OtherElementType,
       typename OtherElementIndexType>
-  void HasSameParentTreeOrThrows(
+  void HasSameParentTreeOrThrow(
       const MultibodyTreeElement<OtherElementType<T>, OtherElementIndexType>&
       other) const {
-    this->HasParentTreeOrThrows();
-    other.HasParentTreeOrThrows();
+    this->HasParentTreeOrThrow();
+    other.HasParentTreeOrThrow();
     if (parent_tree_ != other.parent_tree_) {
       throw std::logic_error(
           "These two MultibodyTreeElement's do not belong to "

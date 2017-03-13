@@ -30,14 +30,14 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   const RigidBody<double>& pendulum = RigidBody<double>::Create(model);
 
   // Body identifiers are unique and are assigned by MultibodyTree in increasing
-  // order starting with id = 0 (MultibodyTree::kWorldBodyId) for the "world"
-  // body.
-  EXPECT_EQ(world_body.get_id(), world_index());
-  EXPECT_EQ(pendulum.get_id(), BodyIndex(1));
+  // order starting with index = 0 (world_index()) for the "world" body.
+  EXPECT_EQ(world_body.get_index(), world_index());
+  EXPECT_EQ(pendulum.get_index(), BodyIndex(1));
 
   // Tests API to access bodies.
-  EXPECT_EQ(model->get_body(BodyIndex(1)).get_id(), pendulum.get_id());
-  EXPECT_EQ(model->get_mutable_body(BodyIndex(1))->get_id(), pendulum.get_id());
+  EXPECT_EQ(model->get_body(BodyIndex(1)).get_index(), pendulum.get_index());
+  EXPECT_EQ(model->get_mutable_body(BodyIndex(1))->get_index(),
+            pendulum.get_index());
 
   // Rigid bodies have no generalized coordinates.
   EXPECT_EQ(pendulum.get_num_flexible_positions(), 0);
@@ -59,13 +59,13 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   const RigidBody<double>& body2 = RigidBody<double>::Create(model2.get());
 
   // Tests that the created bodies indeed do have a parent MultibodyTree.
-  EXPECT_NO_THROW(body1.HasParentTreeOrThrows());
-  EXPECT_NO_THROW(body2.HasParentTreeOrThrows());
+  EXPECT_NO_THROW(body1.HasParentTreeOrThrow());
+  EXPECT_NO_THROW(body2.HasParentTreeOrThrow());
 
   // Tests the check to verify that two bodies belong to the same MultibodyTree.
-  EXPECT_THROW(body1.HasSameParentTreeOrThrows(body2), std::logic_error);
-  EXPECT_NO_THROW(model1->get_world_body().HasSameParentTreeOrThrows(body1));
-  EXPECT_NO_THROW(model2->get_world_body().HasSameParentTreeOrThrows(body2));
+  EXPECT_THROW(body1.HasSameParentTreeOrThrow(body2), std::logic_error);
+  EXPECT_NO_THROW(model1->get_world_body().HasSameParentTreeOrThrow(body1));
+  EXPECT_NO_THROW(model2->get_world_body().HasSameParentTreeOrThrow(body2));
 }
 
 }  // namespace
