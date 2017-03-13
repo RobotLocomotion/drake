@@ -73,11 +73,6 @@ const RigidBodyTree<T>& AutomotiveSimulator<T>::get_rigid_body_tree() {
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::AddPoseAggregator() {
-  aggregator_ = builder_->template AddSystem<PoseAggregator<T>>();
-}
-
-template <typename T>
 int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
     const std::string& sdf_filename,
     const std::string& model_name,
