@@ -61,6 +61,10 @@ std::string MakeChannelName(const std::string& name) {
   return default_prefix + "_" + name;
 }
 
+void AddPoseAggregator(AutomotiveSimulator<double>* simulator) {
+  simulator->AddPoseAggregator();
+}
+
 // Initializes the provided `simulator` with user-specified numbers of
 // `SimpleCar` vehicles and `TrajectoryCar` vehicles. If parameter
 // `road_network_type` equals `RoadNetworkType::dragway`, the provided
@@ -185,6 +189,7 @@ int main(int argc, char* argv[]) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
   const maliput::api::RoadGeometry* road_geometry =
       AddTerrain(road_network_type, simulator.get());
+  AddPoseAggregator(simulator.get());
   AddVehicles(road_network_type, road_geometry, simulator.get());
   simulator->Start(FLAGS_target_realtime_rate);
   simulator->StepBy(FLAGS_simulation_sec);
