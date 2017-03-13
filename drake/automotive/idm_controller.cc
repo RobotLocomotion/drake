@@ -5,7 +5,6 @@
 #include <limits>
 #include <utility>
 
-#include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/pose_selector.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
@@ -13,7 +12,6 @@
 
 namespace drake {
 
-using maliput::api::GeoPosition;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadPosition;
 using systems::rendering::PoseBundle;
@@ -134,12 +132,8 @@ void IdmController<T>::SetDefaultParameters(
   IdmPlanner<T>::SetDefaultParameters(idm_params);
 }
 
-// These instantiations must match the API documentation in
-// idm_planner.h.
+// These instantiations must match the API documentation in idm_controller.h.
 template class IdmController<double>;
-// template class IdmController<drake::TaylorVarXd>;
-// template class IdmController<drake::symbolic::Expression>;
-// TODO(jadecastro): Need SFNAE or some other thing here to activate the above.
 
 }  // namespace automotive
 }  // namespace drake
