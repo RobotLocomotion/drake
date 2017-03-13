@@ -143,8 +143,8 @@ drake_cc_library(
     srcs = ["test/mathematical_program_test_util.cc"],
     hdrs = ["test/mathematical_program_test_util.h"],
     deps = [
-        ":mathematical_program",
         "@gtest//:main",
+        ":mathematical_program",
     ],
 )
 
@@ -154,10 +154,10 @@ drake_cc_library(
     srcs = ["test/optimization_examples.cc"],
     hdrs = ["test/optimization_examples.h"],
     deps = [
+        "@gtest//:main",
         ":mathematical_program",
         ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
@@ -258,14 +258,22 @@ drake_cc_library(
 
 drake_cc_library(
     name = "ipopt_solver",
-    srcs = ["ipopt_solver.cc"],
+    srcs = select({
+        "//tools:no_ipopt": ["no_ipopt.cc"],
+        "//conditions:default": ["ipopt_solver.cc"],
+    }),
     hdrs = ["ipopt_solver.h"],
     visibility = ["//visibility:private"],
-    deps = [
-        ":mathematical_program_api",
-        "//drake/math:autodiff",
-        "@ipopt//:lib",
-    ],
+    deps = select({
+        "//conditions:default": [
+            "@ipopt//:lib",
+            ":mathematical_program_api",
+            "//drake/math:autodiff",
+        ],
+        "//tools:no_ipopt": [
+            ":mathematical_program_api",
+        ],
+    }),
 )
 
 drake_cc_library(
@@ -274,9 +282,9 @@ drake_cc_library(
     hdrs = ["nlopt_solver.h"],
     visibility = ["//visibility:private"],
     deps = [
+        "@nlopt//:lib",
         ":mathematical_program_api",
         "//drake/math:autodiff",
-        "@nlopt//:lib",
     ],
 )
 
