@@ -289,6 +289,7 @@ drake_cc_googletest(
     deps = [
         ":binding",
         ":constraint",
+        "//drake/common:symbolic_test_util",
     ],
 )
 
@@ -326,6 +327,7 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
     ],
 )
 

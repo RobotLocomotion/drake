@@ -510,7 +510,8 @@ void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
                                          int num_linear_costs) {
   EXPECT_EQ(prog.linear_costs().size(), num_linear_costs);
   EXPECT_EQ(prog.linear_costs().back().constraint(), binding.constraint());
-  EXPECT_EQ(prog.linear_costs().back().variables(), binding.variables());
+  EXPECT_TRUE(CheckStructuralEquality(prog.linear_costs().back().variables(),
+                                      binding.variables()));
   EXPECT_EQ(binding.constraint()->num_constraints(), 1);
   auto cnstr = prog.linear_costs().back().constraint();
   auto vars = prog.linear_costs().back().variables();
@@ -1443,7 +1444,7 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
   EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.constraint().get());
   Eigen::Map<Eigen::Matrix<Variable, 16, 1>> X_flat(&X(0, 0));
-  EXPECT_TRUE(X_flat == new_psd_cnstr.variables());
+  EXPECT_TRUE(CheckStructuralEquality(X_flat, new_psd_cnstr.variables()));
 
   // Adds X is psd.
   CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog,
