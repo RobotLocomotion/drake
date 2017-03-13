@@ -19,18 +19,66 @@
 namespace drake {
 namespace multibody {
 
+/// This class represents the physical concept of a _Spatial Inertia_. A
+/// spatial inertia (or spatial mass matrix) encapsulates the mass, center of
+/// mass, and rotational inertia of the mass distribution of a system S which
+/// could consist of a single body B or even of a collection of bodies.
+/// As an element of ℛ⁶ˣ⁶ it is a symmetric, positive definite matrix that
+/// logically consists of `3x3` sub-matrices arranged like so:
+/// <pre>
+///              Spatial mass matrix
+///           ------------ ------------
+///        0 |            |            |
+///        1 |    I_SP    | m p_PScm×  |
+///        2 |            |            |
+///           ------------ ------------
+///        3 |            |            |
+///        4 | -m p_PScm× |     m Id   |
+///        5 |            |            |
+///           ------------ ------------
+///                Symbol: M
+/// </pre>
+/// where, with the monogram notation described in
+/// @ref multibody_spatial_inertia, `I_SP` is the rotational inertia of system
+/// S computed about a point P, m is the mass of this system, `p_PBcm` is the
+/// position vector from point P to the center of mass `Scm` of system with
+/// `p_PScm×` denoting its skew-symmetric cross product matrix, and `Id` is the
+/// identity matrix in ℛ³ˣ³.
+///
+/// In typeset material we use the symbol @f$ [M^{S/P}]_E @f$ to represent the
+/// spatial inertia of a system S about point P, expressed in frame E. For
+/// this inertia, the monogram notation reads `M_SP_E`. If the point P is fixed
+/// to a body B, we write that point as @f$ B_P @f$ which appears in code and
+/// comments as `Bp`. So if the system is a body B and the about point is `Bp`,
+/// the monogram notation reads `M_BBp_E`, which can be abbreviated to `M_Bp_E`
+/// since the about point `Bp` also identifies the system. Common cases are that
+/// the about point is the origin `Bo` of the body, or its the center of mass
+/// `Bcm` for which the rotational inertia in monogram notation would read as
+/// `I_Bo_E` and `I_Bcm_E`, respectively.
+/// Given `M_BP_E` (@f$[M^{B/P}]_E@f$), its rotational inertia is `I_BP_E`
+/// (@f$[I^{B/P}]_E@f$) and the position vector of the center of mass measured
+/// from point P and expressed in E is `p_PBcm_E` (@f$[^Pp^{B_{cm}}]_E@f$).
+///
+/// @note This class does not implement any mechanism to track the frame E in
+/// which a spatial inertia is expressed or about what point is computed.
+/// Methods and operators on this class have no means to determine frame
+/// consistency through operations. It is therefore the responsibility of users
+/// of this class to keep track of frames in which operations are performed. The
+/// best way to do that is to use a disciplined notation as described below.
+///
+/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class SpatialInertia {
  public:
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of
-  /// un-initialized values.
+  /// uninitialized values.
   SpatialInertia() {}
 
   /// Constructs a spatial inertia from a given mass, center of mass and
   /// rotational inertia. The center of mass is measured from an origin Bo, i.e.
   /// the center of mass is a vector from origin `Bo` to the body's center of
-  /// mass `Bc`, `com = p_BoBc`. The rotational inertia is exptected to be
+  /// mass `Bc`, `com = p_BoBc`. The rotational inertia is expected to be
   /// computed about the same origin `Bo`.
   /// Both center of mass `com` and rotational inertia `I` are expected to be
   /// expressed on a same frame `F`.
@@ -42,8 +90,19 @@ class SpatialInertia {
   SpatialInertia(
       const T& mass, const Vector3<T>& com, const UnitInertia<T>& I) :
       mass_(mass), p_BoBc_F_(com), I_Bo_F_(mass * I) {
-    //DRAKE_ASSERT(IsPhysicallyValid());
+    DRAKE_ASSERT(IsPhysicallyValid());
   }
+
+  /// Get a constant reference to the mass of this spatial inertia.
+  const T& get_mass() const { return mass_;}
+
+  /// Get a constant reference to the center of mass vector of this spatial
+  /// inertia.
+  const Vector3<T>& get_com() const { return p_BoBc_F_;}
+
+  /// Get a constant reference to the rotational inertia of this spatial
+  /// inertia.
+  const RotationalInertia<T>& get_rotational_inertia() const { return I_Bo_F_;}
 
   /// Returns `true` if any of the elements in this spatial inertia is NaN
   /// and `false` otherwise.
@@ -55,16 +114,27 @@ class SpatialInertia {
     return false;
   }
 
+  /// Performs a number of checks to verify that this is a physically valid
+  /// spatial inertia.
+  /// The checks performed are:
+  /// - No NaN entries.
+  /// - Positive mass.
+  /// - Valid rotational inertia,
+  /// @see RotationalInertia::IsPhysicallyValid().
+  bool IsPhysicallyValid() const {
+    if (IsNaN()) return false;
+    if (mass_ < T(0)) return false;
+    // The tests in RotationalInertia become a sufficient condition when
+    // performed on a rotational inertia computed about a body's center of mass.
+    RotationalInertia<T> I_Bcm_F = I_Bo_F_;// - mass_ * UnitInertia<T>::PointMass(p_BoBc_F_);
+    if (!I_Bcm_F.CouldBePhysicallyValid()) return false;
+    return true;  // All tests passed.
+  }
+
 #if 0
   // Default copy constructor and copy assignment.
   SpatialInertia(const SpatialInertia<T>& other) = default;
   SpatialInertia& operator=(const SpatialInertia<T>& other) = default;
-
-  const T& get_mass() const { return mass_;}
-
-  const Vector3<T>& get_com() const { return p_BoBc_F_;}
-
-  const RotationalInertia<T>& get_rotational_inertia() const { return I_Bo_F_;}
 
   /// Get a copy to a full Matrix3 representation for this rotational inertia
   /// including both lower and upper triangular parts.
@@ -85,21 +155,6 @@ class SpatialInertia {
     mass_ = nan();
     p_BoBc_F_.setConstant(nan());
     I_Bo_F_.SetToNaN();
-  }
-
-  /// Performs a number of checks to verify that this is a physically valid
-  /// spatial inertia.
-  /// The chekcs performed are:
-  /// - No NaN entries.
-  /// - Positive mass.
-  /// - Valid rotational inertia,
-  /// @see RotationalInertia::IsPhysicallyValid().
-  bool IsPhysicallyValid() const {
-    if (isnan(mass_)) return false;
-    if (p_BoBc_F_.array().isNaN().any()) return false;
-    if (mass_ <= T(0)) return false;
-    if (!I_Bo_F_.IsPhysicallyValid()) return false;
-    return true;  // All tests passed.
   }
 
   bool IsApprox(const SpatialInertia& M_Bo_F,

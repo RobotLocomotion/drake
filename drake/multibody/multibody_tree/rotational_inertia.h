@@ -177,7 +177,7 @@ class RotationalInertia {
   /// @returns `true` if `other` is within the specified `precision`. Returns
   ///   `false` otherwise.
   bool IsApprox(const RotationalInertia& other,
-                double precision = Eigen::NumTraits<T>::epsilon()) {
+                double precision = Eigen::NumTraits<T>::epsilon()) const {
     return get_moments().isApprox(other.get_moments(), precision) &&
            get_products().isApprox(other.get_products(), precision);
   }

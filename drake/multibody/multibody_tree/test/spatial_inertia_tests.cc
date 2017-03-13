@@ -5,6 +5,8 @@
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 #include "drake/multibody/multibody_tree/unit_inertia.h"
 
+#include <limits>
+
 #include <algorithm>
 #include <iostream>
 #include <sstream>
@@ -23,12 +25,28 @@ using std::sort;
 
 // Test default constructor which leaves entries initialized to NaN for a
 // quick detection of un-initialized values.
-GTEST_TEST(UnitInertia, DefaultConstructor) {
+GTEST_TEST(SpatialInertia, DefaultConstructor) {
   SpatialInertia<double> I;
   ASSERT_TRUE(I.IsNaN());
 }
 
-
+// Test the construction from the mass, center of mass, and unit inertia of a
+// body. Also test getters.
+GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
+  const double mass = 2.5;
+  const Vector3d com(1.0, -2.0, 3.0);
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
+  UnitInertia<double> G(m(0), m(1), m(2), /* moments of inertia */
+                        p(0), p(1), p(2));/* products of inertia */
+  SpatialInertia<double> M(mass, com, G);
+  ASSERT_TRUE(M.IsPhysicallyValid());
+  
+  ASSERT_EQ(M.get_mass(), mass);
+  ASSERT_EQ(M.get_com(), com);
+  ASSERT_TRUE(M.get_rotational_inertia().IsApprox(
+      mass * G, std::numeric_limits<double>::epsilon()));
+}
 
 #if 0
 GTEST_TEST(SpatialInertia, PlusEqualOperator) {
