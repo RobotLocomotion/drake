@@ -258,14 +258,22 @@ drake_cc_library(
 
 drake_cc_library(
     name = "ipopt_solver",
-    srcs = ["ipopt_solver.cc"],
+    srcs = select({
+        "//tools:no_ipopt": ["no_ipopt.cc"],
+        "//conditions:default": ["ipopt_solver.cc"],
+    }),
     hdrs = ["ipopt_solver.h"],
     visibility = ["//visibility:private"],
-    deps = [
-        ":mathematical_program_api",
-        "//drake/math:autodiff",
-        "@ipopt//:lib",
-    ],
+    deps = select({
+        "//conditions:default": [
+            "@ipopt//:lib",
+            ":mathematical_program_api",
+            "//drake/math:autodiff",
+        ],
+        "//tools:no_ipopt": [
+            ":mathematical_program_api",
+        ],
+    }),
 )
 
 drake_cc_library(
