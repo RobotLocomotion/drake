@@ -514,6 +514,7 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
