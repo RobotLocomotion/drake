@@ -21,6 +21,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/rendering/pose_aggregator.h"
 
 namespace drake {
 namespace automotive {
@@ -55,6 +56,8 @@ class AutomotiveSimulator {
   /// method invokes RigidBodyTree::compile, which may substantially update the
   /// tree representation.
   const RigidBodyTree<T>& get_rigid_body_tree();
+
+  void AddPoseAggregator();
 
   /// Adds a SimpleCar system to this simulation, including its DrivingCommand
   /// LCM input and EulerFloatingJoint output.
@@ -247,6 +250,7 @@ class AutomotiveSimulator {
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
   std::unique_ptr<const maliput::api::RoadGeometry> road_{};
   std::unique_ptr<const maliput::utility::InfiniteCircuitRoad> endless_road_{};
+  systems::rendering::PoseAggregator<T>* aggregator_{nullptr};
 
   // === Start for building. ===
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{

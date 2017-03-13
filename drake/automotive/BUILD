@@ -227,6 +227,8 @@ drake_cc_library(
     deps = [
         ":curve2",
         ":generated_vectors",
+        "//drake/systems/rendering:frame_velocity",
+        "//drake/systems/rendering:pose_vector",
     ],
 )
 
@@ -250,6 +252,7 @@ drake_cc_library(
         "//drake/systems/lcm",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:multiplexer",
+        "//drake/systems/rendering:pose_aggregator",
     ],
 )
 
