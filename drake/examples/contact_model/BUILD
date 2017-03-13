@@ -70,10 +70,10 @@ drake_cc_binary(
     deps = [
         "//drake/common:drake_path",
         "//drake/lcm",
+        "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/multibody:rigid_body_tree_construction",
         "//drake/systems/analysis",
         "//drake/systems/lcm",
         "@gflags//:gflags",

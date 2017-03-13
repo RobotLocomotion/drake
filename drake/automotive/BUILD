@@ -150,7 +150,7 @@ drake_cc_library(
 drake_cc_library(
     name = "maliput_railcar",
     srcs = ["maliput_railcar.cc"],
-    hdrs = ["maliput_railcar.h",],
+    hdrs = ["maliput_railcar.h"],
     deps = [
         ":generated_vectors",
         "//drake/automotive/maliput/api",
