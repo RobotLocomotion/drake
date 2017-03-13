@@ -64,4 +64,16 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "mesh_scaling_test",
+    srcs = ["test/mesh_scaling_test.cc"],
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":shapes",
+        "//drake/common:drake_path",
+    ],
+)
+
 cpplint()
