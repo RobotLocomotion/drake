@@ -42,6 +42,12 @@ class Variable {
   std::string get_name() const;
   std::string to_string() const;
 
+  /// Checks the equality of two variables based on their ID values.
+  bool equal_to(const Variable& v) const { return get_id() == v.get_id(); }
+
+  /// Compares two variables based on their ID values.
+  bool less(const Variable& v) const { return get_id() < v.get_id(); }
+
   friend std::ostream& operator<<(std::ostream& os, const Variable& var);
 
  private:
@@ -50,13 +56,6 @@ class Variable {
   Id id_{};           // Unique identifier.
   std::string name_;  // Name of variable.
 };
-
-/// Compare two variables based on their ID values
-bool operator<(const Variable& lhs, const Variable& rhs);
-
-/// Check equality
-bool operator==(const Variable& lhs, const Variable& rhs);
-
 }  // namespace symbolic
 
 /** Computes the hash value of a variable. */
@@ -66,6 +65,26 @@ struct hash_value<symbolic::Variable> {
 };
 
 }  // namespace drake
+
+namespace std {
+/* Provides std::less<drake::symbolic::Variable>. */
+template <>
+struct less<drake::symbolic::Variable> {
+  bool operator()(const drake::symbolic::Variable& lhs,
+                  const drake::symbolic::Variable& rhs) const {
+    return lhs.less(rhs);
+  }
+};
+
+/* Provides std::equal_to<drake::symbolic::Variable>. */
+template <>
+struct equal_to<drake::symbolic::Variable> {
+  bool operator()(const drake::symbolic::Variable& lhs,
+                  const drake::symbolic::Variable& rhs) const {
+    return lhs.equal_to(rhs);
+  }
+};
+}  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 namespace Eigen {
