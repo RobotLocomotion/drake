@@ -6,6 +6,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/calc_smooth_acceleration.h"
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/cond.h"
 #include "drake/common/double_overloads.h"
@@ -164,42 +165,23 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarConfig<T>& config,
                                            const DrivingCommand<T>& input,
                                            SimpleCarState<T>* rates) const {
   using std::abs;
+  using std::cos;
   using std::max;
-  using std::min;
-  using std::tanh;
+  using std::sin;
 
   // Sanity check our input.
   DRAKE_DEMAND(abs(input.steering_angle()) < M_PI);
   DRAKE_DEMAND(input.throttle() >= 0);
   DRAKE_DEMAND(input.brake() >= 0);
 
-  // Determine the requested acceleration, using throttle and brake.
-  const T nominal_acceleration =
+  // Determine the requested acceleration, using throttle and brake. Then
+  // compute the smooth acceleration that the vehicle actually executes.
+  const T desired_acceleration =
       config.max_acceleration() * (input.throttle() - input.brake());
-  // If our current velocity is out of bounds, insist on damping that brings us
-  // back toward the limit, but allow for the nominal_acceleration to win if it
-  // is stronger than the damping and has the desired sign.
-  const T underspeed = 0 - state.velocity();
-  const T overspeed = state.velocity() - config.max_velocity();
-  const T damped_acceleration = cond(
-      // If velocity is too low, use positive damping or nominal_acceleration.
-      underspeed > 0,
-      max(nominal_acceleration, T(config.velocity_limit_kp() * underspeed)),
-      // If velocity is too high, use negative damping or nominal_acceleration.
-      overspeed > 0,
-      min(nominal_acceleration, T(-config.velocity_limit_kp() * overspeed)),
-      // Velocity is within limits.
-      nominal_acceleration);
-  // TODO(jwnimmer-tri) Declare witness functions for the above conditions,
-  // once the framework support is in place.  Until then, smooth out the
-  // acceleration using tanh centered around the limit we are headed towards
-  // (max speed when accelerating; zero when decelerating).  The smoothing
-  // constant within the tanh is arbitrary and un-tuned.
-  const T relevant_limit = cond(
-      damped_acceleration >= 0, config.max_velocity(), T(0));
-  const T smoothing_factor =
-      pow(tanh(20.0 * (state.velocity() - relevant_limit)), 2);
-  const T smooth_acceleration = damped_acceleration * smoothing_factor;
+  T smooth_acceleration =
+    calc_smooth_acceleration(
+        desired_acceleration, config.max_velocity(), config.velocity_limit_kp(),
+        state.velocity());
 
   // Determine steering.
   const T saturated_steering_angle = math::saturate(
