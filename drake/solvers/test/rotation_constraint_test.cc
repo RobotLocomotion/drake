@@ -18,7 +18,7 @@ using std::sqrt;
 
 namespace drake {
 namespace solvers {
-
+namespace {
 void AddObjective(MathematicalProgram* prog,
                   const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
                   const Eigen::Ref<const Matrix3d>& R_desired) {
@@ -27,6 +27,7 @@ void AddObjective(MathematicalProgram* prog,
   // sigma >= |error|_2
   MatrixDecisionVariable<1, 1> sigma =
       prog->NewContinuousVariables<1, 1>("sigma");
+  // trace(R_errorᵀ * R_error) = sum_{i,j} R_error(i,j)²
   prog->AddLorentzConeConstraint(sigma(0),
                                  (R_error.transpose() * R_error).trace());
 
@@ -440,6 +441,6 @@ GTEST_TEST(RotationTest, TestMcCormick) {
       EXPECT_FALSE(IsFeasible(R_test));
   }
 }
-
+}  // namespace
 }  // namespace solvers
 }  // namespace drake
