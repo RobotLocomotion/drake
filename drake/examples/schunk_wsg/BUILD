@@ -95,6 +95,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "schunk_wsg_lift_test",
+    size = "large",
     data = [
         ":models",
         "//drake/multibody:models",
@@ -119,7 +120,6 @@ drake_cc_googletest(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:trajectory_source",
     ],
-    size = "large",
 )
 
 filegroup(
