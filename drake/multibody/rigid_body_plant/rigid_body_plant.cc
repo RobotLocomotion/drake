@@ -807,7 +807,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       // notation.
       // The *relative* velocity of the contact point in A relative to that in
       // B, expressed in the contact frame, C.
-      const auto rv_BcAc_C = J * kinsol.getV();
+      const auto v_CBcAc_C = J * kinsol.getV();
 
       // TODO(SeanCurtis-TRI): Move this documentation to the larger doxygen
       // discussion and simply reference it here.
@@ -816,14 +816,14 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       // Normal force fN = kx(1 + dẋ).  We map the equation to the
       // local variables as follows:
       //  x = -pair.distance -- penetration depth.
-      //  ̇ẋ = -rv_BcAc_C(2)  -- change of penetration (in normal direction).
+      //  ̇ẋ = -v_CBcAc_C(2)  -- change of penetration (in normal direction).
       //  fK = kx -- force due to stiffness.
       //  fD = fk dẋ -- force due to dissipation.
       //  fN = max(0, fK + fD ) -- total normal force; (skipped if fN < 0).
       //  fF = mu(v) * fN  - friction force magnitude.
 
       const T x = T(-pair.distance);
-      const T x_dot = -rv_BcAc_C(2);
+      const T x_dot = -v_CBcAc_C(2);
 
       const T fK = penetration_stiffness_ * x;
       const T fD = fK * dissipation_ * x_dot;
@@ -833,7 +833,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       Vector3<T> fA;
       fA(2) = fN;
       // Friction force
-      const auto slip_vector = rv_BcAc_C.template head<2>();
+      const auto slip_vector = v_CBcAc_C.template head<2>();
       T slip_speed_squared = slip_vector.squaredNorm();
       // Consider a value indistinguishable from zero if it is smaller
       // then 1e-14 and test against that value squared.

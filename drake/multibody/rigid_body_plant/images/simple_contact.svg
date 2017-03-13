@@ -15,7 +15,7 @@
    version="1.1"
    inkscape:version="0.48.4 r9939"
    sodipodi:docname="simple_contact.svg"
-   inkscape:export-filename="/home/seanc/code/drake-distro/drake/doc/images/multibody/rigid_body_plant/simple_contact.png"
+   inkscape:export-filename="/home/seanc/code/drake-distro/drake/multibody/rigid_body_plant/images/simple_contact.png"
    inkscape:export-xdpi="100"
    inkscape:export-ydpi="100">
   <sodipodi:namedview
@@ -37,8 +37,8 @@
      inkscape:snap-to-guides="false"
      inkscape:window-width="1577"
      inkscape:window-height="1187"
-     inkscape:window-x="2089"
-     inkscape:window-y="183"
+     inkscape:window-x="3333"
+     inkscape:window-y="133"
      inkscape:window-maximized="0">
     <sodipodi:guide
        orientation="1,0"
@@ -678,12 +678,9 @@
          id="tspan5781"
          x="246.59874"
          y="884.62463"
-         style="font-size:20px;letter-spacing:0px;word-spacing:0px"
-         dx="0">P<tspan
-   style="font-size:10px;line-height:0%"
-   id="tspan5785"
-   dx="-3.9000001"
-   dy="2.7499995">C</tspan></tspan></text>
+         style="font-size:20px;letter-spacing:0px;word-spacing:0px">C<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan3096">o</tspan></tspan></text>
     <text
        xml:space="preserve"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:0%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
@@ -698,10 +695,10 @@
          style="font-size:20px;letter-spacing:0px;word-spacing:0px"><tspan
            style="font-size:10px;line-height:0%"
            id="tspan5785-2"
-           dx="0 -1.51"
-           dy="0 2.7499995"><tspan
-   style="font-size:20px"
-   id="tspan5811">N</tspan>C</tspan></tspan></text>
+           dx="0"
+           dy="0"><tspan
+             style="font-size:20px"
+             id="tspan5811">N</tspan></tspan></tspan></text>
     <text
        xml:space="preserve"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#00f000;fill-opacity:1;stroke:none;font-family:Sans"

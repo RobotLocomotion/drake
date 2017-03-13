@@ -28,37 +28,36 @@
  surfaces, which can then affect the motion of the bodies. In practice, surfaces
  are represented by one or more DrakeCollision::Element objects -- geometric
  shapes rigidly affixed to a body, whose surfaces can engage in contact.
+
+ This document discusses a _compliant_ contact model.  Compliant models enforce
+ the principle that no two objects can occupy the same space by modeling
+ deformations in the contacting surfaces. This deformation is not modeled
+ explicitly; the contact geometry in the collision element is not actually
+ deformed.  Instead, deformation is modeled implicitly by allowing the collision
+ Elements to overlap and defining the deformation as a function of the degree
+ of penetration; greater penetration implies greater deformation.
+ One can think of largely rigid objects which have slightly deformable surfaces.
+ For this model to be useful in practice, the deformations should be small
+ relative to the whole body, so that we can (a) use simple models for the
+ relationship between deformation and forces, and (b) neglect the change in mass
+ properties induced by the deformation. As such, all discussion of collision
+ geometry/elements refers to this _undeformed_ geometry.
+
  Contacts are defined in terms of these collision Element instances and _not_
  RigidBody instances. For Drake's purposes, a "contact":
 
  - describes a relationship between two DrakeCollision::Element instances,
    denoted elements `A` and `B`,
- - only exists if the Element instances overlap (i.e., the _undeformed_ Element
-   surfaces are _interpenetrating_),
+ - only exists if the Element instances overlap,
  - quantifies the degree that the two Element instances are overlapping,
  - is characterized by a single contact point and a normal direction that are
    used to define a _contact frame_ `C`, and
  - leads to the generation of two equal-but-opposite forces acting on the
    RigidBody instances to which the corresponding Elements belong.
 
- Second, the model discussed here is a _compliant_ contact model. That means
- that it considers that contacting surfaces will deform, and that it is these
- deformed surfaces that obey the physical principle that no two objects can
- occupy the same space. Consequently, the _undeformed_ geometry will overlap
- to some degree when contact occurs. The resulting deformations are modeled
- internally, and are used to estimate the forces. The deformed geometry is not
- produced explicitly so no visualization of it is available. This idea is
- modeled by allowing the collision Elements to overlap, quantifying the degree
- of penetration such that increased penetration implies increased deformation.
- One can think of largely rigid objects which have slightly deformable surfaces.
- For this model to be useful in practice, the deformations should be small
- relative to the whole body, so that we can (a) use simple models for the
- relationship between deformation and forces, and (b) neglect the change in mass
- properties induced by the deformation.
-
  Handling physical contact is decomposed into (1) the detection and
  quantification of overlap (penetration) through the use of geometric techniques
- applied to _undeformed_ geometry, and (2) the generation of the resultant
+ applied to collision geometry, and (2) the generation of the resultant
  forces based on models of material and surface properties resulting in
  deformation and frictional forces.
 
@@ -72,13 +71,14 @@
  system is responsible for determining if those shapes are penetrating and
  characterizing that penetration. We won't go into the details of the how and
  why these techniques work the way they do, and, instead, focus on _what_ the
- properties of the results are.
+ properties of the results of the _current implementation_ are.  It is worth
+ noting that these some of these properties are considered _problems_ yet to be
+ resolved and should not necessarily be considered desirable.
 
- In the current implementation:
  -# Between any two collision Elements, only a _single_ contact will be
  reported.
  -# Contacts are reported as contact at a _point_. (This is a very reasonable
- assumption for smooth convex shapes such as spheres and ellipsoies where
+ assumption for smooth convex shapes such as spheres and ellipsoids where
  relative motion must inevitably lead to initial contact at a single point.)
  -# Surface-to-surface contacts (such as a block sitting on a plane) are
  unfortunately still limited to a single contact point, typically located at
@@ -94,23 +94,22 @@
 /** @defgroup contact_model Computing Contact Forces
  @ingroup drake_contacts
 
- Given @ref contact_spec "the definition of a contact", let the
- interpenetrating collision elements be `A` and `B`. The single contact point
- serves as the origin of the contact frame `C`, so is designated `Co`; we'll
+ Consider @ref contact_spec "the definition of a contact" with
+ interpenetrating collision elements `A` and `B`. The single, computed contact
+ point serves as the origin of a contact frame `C`, so is designated `Co`; we'll
  shorten that to just `C` when it is clear we mean the point rather than the
- frame. We define the normal as pointing outward from the surface of `B` towards
- the interior of `A`. The `C` frame is positioned relative to World; we will
- also be interested in the point of body `A` that is coincident with `Co`, which
- we'll call `Ac`, and the similar point `Bc` on element `B`. Because the two
- forces are equal and opposite, we can discuss only the force `f` acting on `A`
- at `Ac`; `-f` acts on `B` at `Bc`.
+ frame. We define the normal as pointing outward from the deformed surface of
+ `B` towards the deformed interior of `A`. The `C` frame's z-axis is aligned
+ along this normal (with arbitrary x- and y-axes). We are also interested in the
+ points of bodies `A` and `B` that are coincident with `Co`, which we call
+ `Ac` and `Bc`, respectively. Because the two
+ forces are equal and opposite, we limit our discussion to the force `f` acting
+ on `A` at `Ac` (such that `-f` acts on `B` at `Bc`).
 
- @image html simple_contact.png "Figure 1: Illustration of contact scenario between two spheres."
+ @image html simple_contact.png "Figure 1: Illustration of contact between two spheres."
 
  The computation of the contact force is most naturally discussed in the
- contact frame `C` (shown in Figure 1).  We define the contact frame such
- that its origin is the contact point `Co` and its z-axis `Cz` is aligned with
- the contact normal. Its x- and y-axes are arbitrary.
+ contact frame `C` (shown in Figure 1).
 
  The contact force, `f`,  can be decomposed into two components: normal, `fₙ`,
  and tangential, `fₜ` such that `f=fₙ+fₜ`. The normal force lies in the
@@ -132,7 +131,7 @@
  `fₙ` that accounts for both stiffness and dissipation effects. This is a
  continuous model based on Hertz elastic contact theory, which correctly
  reproduces the empirically observed velocity dependence of coefficient of
- restitution, where `e=(1-dv)` for (small) impact velocity v and a material
+ restitution, where `e=(1-dv)` for (small) impact velocity `v` and a material
  property `d` with units of 1/velocity. In theory, at least, `d` can be
  measured right off the coefficient of restitution-vs.-impact velocity curves:
  it is the negated slope at low impact velocities.
@@ -140,7 +139,7 @@
  Given a collision between two spheres, or a sphere and a plane, we can generate
  a contact force from this equation `fₙ = kxᵐ(1 + mdẋ)` where `k` is a stiffness
  constant incorporating material properties and geometry (to be defined below),
- `x` is penetration depth and ẋ is penetration rate (positive during
+ `x` is penetration depth and `ẋ` is penetration rate (positive during
  penetration and negative during rebound). Exponent `m` depends on the surface
  geometry and captures the change in contact patch area with penetration. For
  Hertz contact where the geometry can be approximated by sphere (or
@@ -161,15 +160,16 @@
  By definition `fₙ` should always be positive, so that the contact force is
  a repulsive force. Mathematically, for arbitrary x and ẋ, it is possible for
  `fₙ` to become negative, creating an attractive or "sucking" force. This case
- will be achieved if `ẋ < -1 / d`.  In this case, the normal component is
- clamped to zero. Otherwise, there will still be a repulsive force
- between two objects when they are drawing apart, as long as the relative
- velocities are small. This approximately models recovery of energy in the
- deformed material with observed hysteresis effects as described in [Hunt 1975].
- However, a surface can't undeform arbitrarily fast. If the bodies are pulled
- apart *faster* than the surface can recover, the bodies will separate before
- the potential energy of deformation can be converted to kinetic energy,
- resulting in energy loss (to heat, vibration, or other unmodeled effects).
+ will be achieved if `ẋ < -1 / d`. To prevent sucking forces, the normal
+ component is clamped to zero. In this regime, it is still possible for there to
+ be a repulsive force for bodies that are drawing apart (`ẋ < 0`), as long as
+ the relative velocities are small. This approximately models recovery of energy
+ in the deformed material with observed hysteresis effects as described in
+ [Hunt 1975]. However, a surface can't return to its undeformed state
+ arbitrarily quickly. If the bodies are pulled apart *faster* than the surface
+ can recover, the bodies will separate before the potential energy of
+ deformation can be converted to kinetic energy, resulting in energy loss (to
+ heat, vibration, or other unmodeled effects).
 
  - [Hunt 1975] K. H. Hunt and F. R. E. Crossley, "Coefficient of Restitution
    Interpreted as Damping in Vibroimpact," ASME Journal of Applied Mechanics,
@@ -179,7 +179,7 @@
 
  Static friction (or stiction) arises due to surface characteristics at the
  microscopic level (e.g., mechanical interference of surface imperfections,
- electrostatic and/or Van der Waals forces). Two objects in static contact
+ electrostatic, and/or Van der Waals forces). Two objects in static contact
  need to have a force `fₚ` applied parallel to the surface of contact sufficient
  to _break_ stiction. Once the objects are moving, dynamic (kinetic) friction
  takes over. It is possible to accelerate one body sliding
@@ -205,9 +205,9 @@
                       fₚ
       Figure 2: Idealized Stiction/Sliding Friction Model
  -->
- @image html ideal_stiction.png "Figure 2: Idealized stiction"
+ @image html ideal_stiction.png "Figure 2: Idealized Stiction/Sliding Friction Model"
 
- In _idealized_ stiction, tangent force `fₜ` has magnitude equal and opposite
+ In _idealized_ stiction, tangent force `fₜ` is equal and opposite
  to the pushing force `fₚ` up to the point where that force is sufficient to
  break stiction (the red dot in Figure 2). At that point, the tangent force
  immediately becomes a constant force based on the _dynamic_ coefficient of
@@ -243,9 +243,10 @@
  -->
  @image html stribeck.png "Figure 3: Stribeck function for stiction"
 
- <!-- TODO(sean-curtis,sherm1) Consider using "static" and "kinetic"
+ <!-- TODO(SeanCurtis-TRI,sherm1) Consider using "static" and "kinetic"
  coefficients of friction so we can write μₛ and μₖ in Unicode ("d" isn't
- available as a subscript). -->
+ available as a subscript). This isn't simply a change in this file; the
+ code should also reflect this nomenclature change. -->
 
  The Stribeck model is a variation of Coulomb friction, where the frictional
  (aka _tangential_) force is proportional to the normal force as:
@@ -352,7 +353,7 @@
 
  - **Surface-on-surface contacts**
 
-   Remember that the contact detection phase produces a single point to
+   Remember that the contact detection computation produces a single point to
    represent contact between two collision elements. If the contact is a
    surface instead of a point (such as one box lying on another), the contact
    point will *not* be temporally coherent. This will lead to instability
