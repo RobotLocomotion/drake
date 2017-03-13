@@ -357,6 +357,8 @@ void GlobalInverseKinematics::AddPostureCost(
   solvers::VectorXDecisionVariable p_WBo_err =
       NewContinuousVariables(num_bodies - 1, "p_WBo_error");
   for (int i = 1; i < num_bodies; ++i) {
+    // body 0 is the world. There is no position or orientation error on the
+    // world, so we just skip i = 0 and start from i = 1.
     const auto& X_WB_desired = robot_->CalcFramePoseInWorldFrame(
         cache, robot_->get_body(i), Isometry3d::Identity());
     // Add the constraint p_WBo_err(i-1) >= body_position_cost(i) *

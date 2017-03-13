@@ -49,7 +49,7 @@ class KukaTest : public ::testing::Test {
    * posture. Compare that forward kinematics body pose, with the body pose
    * in the global IK.
    */
-  void CheckGlobalIKSolution() const {
+  void CheckGlobalIKSolution(double pos_tol, double orient_tol) const {
     Eigen::VectorXd q_global_ik = global_ik_.ReconstructPostureSolution();
 
     std::cout << "Reconstructed robot posture:\n" << q_global_ik << std::endl;
@@ -83,8 +83,7 @@ class KukaTest : public ::testing::Test {
                 << body_pose_fk.translation() << std::endl;
       std::cout << std::endl;
       // This error bound is chosen as tight as possible.
-      double pos_tol = 0.03;
-      double orient_tol = 0.1;
+
       EXPECT_TRUE(CompareMatrices(body_pose_fk.translation(),
                                   body_pos_global_ik,
                                   pos_tol,
@@ -121,7 +120,9 @@ TEST_F(KukaTest, ReachableTest) {
 
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
-    CheckGlobalIKSolution();
+    double pos_tol = 0.03;
+    double orient_tol = 0.1;
+    CheckGlobalIKSolution(pos_tol, orient_tol);
   }
 }
 
@@ -151,7 +152,8 @@ TEST_F(KukaTest, UnreachableTest) {
 
 TEST_F(KukaTest, ReachableWithCost) {
   // Test a reachable cartesian pose, test global IK with costs.
-  // global IK should solve the problem with some error.
+  // The cost is on the deviation to a desired posture q. Since q itself satisfy
+  // the kinematics constraints we impose, the optimal solution should be q.
   const auto& joint_lb = rigid_body_tree_->joint_limit_min;
   const auto& joint_ub = rigid_body_tree_->joint_limit_max;
   DRAKE_DEMAND(rigid_body_tree_->get_num_positions() == 7);
@@ -174,21 +176,36 @@ TEST_F(KukaTest, ReachableWithCost) {
   global_ik_.AddWorldOrientationConstraint(
       ee_idx_, Eigen::Quaterniond(ee_desired_pose.linear()), 0);
 
-  Eigen::Matrix<double, 7, 1> q_err =
-      Eigen::Matrix<double, 7, 1>::Constant(0.2);
-  DRAKE_DEMAND(rigid_body_tree_->get_num_bodies() == 12);
-  global_ik_.AddPostureCost(q + q_err, Eigen::VectorXd::Constant(12, 1),
-                            Eigen::VectorXd::Constant(12, 1));
-
   solvers::GurobiSolver gurobi_solver;
-  if (gurobi_solver.available()) {
-    global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
 
+  if (gurobi_solver.available()) {
+    // First solve the IK problem without the cost.
+    global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
     SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
-    CheckGlobalIKSolution();
+    const Eigen::VectorXd q_no_cost = global_ik_.ReconstructPostureSolution();
+
+    DRAKE_DEMAND(rigid_body_tree_->get_num_bodies() == 12);
+    // Now add the cost on the posture error.
+    global_ik_.AddPostureCost(q, Eigen::VectorXd::Constant(12, 1),
+                            Eigen::VectorXd::Constant(12, 1));
+
+
+    sol_result = gurobi_solver.Solve(global_ik_);
+
+    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+
+    // The position tolerance and the orientation tolerance is chosen
+    // according to the Gurobi solver tolerance.
+    double position_error = 1E-5;
+    double orientation_error = 2E-5;
+    CheckGlobalIKSolution(position_error, orientation_error);
+
+    const Eigen::VectorXd q_w_cost = global_ik_.ReconstructPostureSolution();
+    // The posture from IK with cost should be different from that without cost.
+    EXPECT_GE((q_w_cost - q_no_cost).norm(), 1E-3);
   }
 }
 }  // namespace

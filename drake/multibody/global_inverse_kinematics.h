@@ -167,9 +167,12 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * body_orientation_error(i) is computed as (1 - cos(θ)), where θ is the
    * angle between the orientation of body i'th frame and body i'th frame using
    * the desired posture.
-   * Notice that since body 0 is the world, the cost on that is omitted.
+   * Notice that since body 0 is the world, the cost on that body is always 0,
+   * no matter what value `body_position_cost(0)` and `body_orientation_cost(0)`
+   * take.
    * @param q_desired  The desired posture.
-   * @param body_position_cost  The cost for each body's position error.
+   * @param body_position_cost  The cost for each body's position error. Unit is
+   * [1/m] (one over meters).
    * @pre
    * 1. body_position_cost.rows() == robot->get_num_bodies(), where `robot`
    *    is the input argument in the constructor of the class.
