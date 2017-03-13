@@ -57,8 +57,6 @@ class AutomotiveSimulator {
   /// tree representation.
   const RigidBodyTree<T>& get_rigid_body_tree();
 
-  void AddPoseAggregator();
-
   /// Adds a SimpleCar system to this simulation, including its DrivingCommand
   /// LCM input and EulerFloatingJoint output.
   ///
@@ -250,7 +248,7 @@ class AutomotiveSimulator {
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
   std::unique_ptr<const maliput::api::RoadGeometry> road_{};
   std::unique_ptr<const maliput::utility::InfiniteCircuitRoad> endless_road_{};
-  systems::rendering::PoseAggregator<T>* aggregator_{nullptr};
+  std::map<EndlessRoadCar<T>*, EndlessRoadCarState<T>> endless_road_cars_;
 
   // === Start for building. ===
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
@@ -273,6 +271,10 @@ class AutomotiveSimulator {
   // initialize the simulation's diagram's state.
   std::map<const SimpleCar<T>*, SimpleCarState<T>> simple_car_initial_states_;
   // === End for building. ===
+
+  // Adds the PoseAggregator.
+  systems::rendering::PoseAggregator<T>* aggregator_{
+    builder_->template AddSystem<systems::rendering::PoseAggregator<T>>()};
 
   int next_vehicle_number_{0};
   bool started_{false};

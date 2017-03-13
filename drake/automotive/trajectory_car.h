@@ -131,14 +131,17 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     const auto raw_pose = CalcRawPose(time);
 
     // Convert the state derivatives into a spatial velocity.
+    const T heading = std::atan2(raw_pose.position_dot[1],
+                                 raw_pose.position_dot[0]);
     multibody::SpatialVelocity<T> output;
-    output.translational().x() = speed_ * raw_pose.position_dot[0];
-    output.translational().y() = speed_ * raw_pose.position_dot[1];
+    output.translational().x() = speed_ * std::cos(heading);
+    output.translational().y() = speed_ * std::sin(heading);
     output.translational().z() = T(0);
     output.rotational().x() = T(0);
     output.rotational().y() = T(0);
-    output.rotational().z() = std::atan2(raw_pose.position_dot[1],
-                                         raw_pose.position_dot[0]);
+    // N.B. The instantaneous rotation rate is always zero, as the Curve2
+    // implmentation is based on line segments.
+    output.rotational().z() = T(0);
     velocity->set_velocity(output);
   }
 
