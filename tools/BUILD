@@ -174,6 +174,11 @@ config_setting(
 )
 
 config_setting(
+    name = "with_mosek",
+    values = {"define": "WITH_MOSEK=ON"},
+)
+
+config_setting(
     name = "with_snopt",
     values = {"define": "WITH_SNOPT=ON"},
 )

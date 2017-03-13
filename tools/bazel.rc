@@ -15,7 +15,7 @@ test --test_output=errors
 # Individual targets that use proprietary software are responsible for ensuring
 # they can also build without it, typically by using a select statement.
 # config_setting rules for proprietary software are provided in //tools.
-test --test_tag_filters=-gurobi,-snopt
+test --test_tag_filters=-gurobi,-mosek,-snopt
 
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GUROBI_PATH environment variable must be the
@@ -36,6 +36,15 @@ test:gurobi --test_env=HOME
 # -- If set, the GRB_LICENSE_FILE path takes precedence.
 test:gurobi --test_env=GRB_LICENSE_FILE
 
+### A configuration that enables MOSEK. ###
+# -- To use this config, you must have a MOSEK license file installed to
+# -- $HOME/mosek/mosek.lic.
+#
+# -- To run tests that require MOSEK, also specify a set of test_tag_filters
+# -- that does not exclude the "mosek" tag.
+build:mosek --define=WITH_MOSEK=ON
+# -- MOSEK looks for its license file at $HOME/mosek/mosek.lic
+test:mosek --test_env=HOME
 
 ### A configuration that enables SNOPT. ###
 # -- To use this config, you must have access to the private repository
@@ -51,8 +60,11 @@ test:everything --test_tag_filters=
 
 # -- Options for Gurobi.
 build:everything --define=WITH_GUROBI=ON
-test:everything --test_env=HOME
 test:everything --test_env=GRB_LICENSE_FILE
+# -- Options for MOSEK.
+build:everything --define=WITH_MOSEK=ON
+# -- Options for Gurobi and MOSEK.
+test:everything --test_env=HOME
 # -- Options for SNOPT.
 build:everything --define=WITH_SNOPT=ON
 
