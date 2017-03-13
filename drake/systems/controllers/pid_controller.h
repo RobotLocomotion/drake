@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <memory>
 #include <utility>
 
@@ -100,6 +101,18 @@ class PidController : public StateFeedbackController<T> {
   /// @p value must be a column vector of the appropriate size.
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
+
+ protected:
+  /// Appends to @p dot a simplified Graphviz representation of the PID
+  /// controller, since the internal wiring is unimportant and hard for human
+  /// viewers to parse.
+  void GetGraphvizFragment(std::stringstream* dot) const override;
+  /// Appends the Graphviz port for @p port to @p dot.
+  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+                                 std::stringstream* dot) const override;
+  /// Appends the Graphviz port for @p port to @p dot.
+  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T>& port,
+                                  std::stringstream* dot) const override;
 
  private:
   void ConnectPorts(std::unique_ptr<MatrixGain<T>> feedback_selector,

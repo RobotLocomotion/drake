@@ -802,6 +802,44 @@ class System {
   //@}
 
   //----------------------------------------------------------------------------
+  /// @name                      Graphviz methods
+  //@{
+
+  /// Returns a Graphviz file string describing this System.
+  /// http://www.graphviz.org/Documentation/dotguide.pdf
+  std::string GetGraphvizString() const {
+    std::stringstream dot;
+    dot << "digraph _" << this->GetGraphvizId() << " {" << std::endl;
+    dot << "rankdir=LR" << std::endl;
+    GetGraphvizFragment(&dot);
+    dot << "}" << std::endl;
+    return dot.str();
+  }
+
+  /// Appends a Graphviz fragment to the @p dot stream.  The fragment must be
+  /// valid Graphviz when wrapped in a `digraph` or `subgraph` stanza.  Does
+  /// nothing by default.
+  virtual void GetGraphvizFragment(std::stringstream *dot) const {}
+
+  /// Appends a fragment to the @p dot stream identifying the graphviz node
+  /// representing @p port. Does nothing by default.
+  virtual void GetGraphvizInputPortToken(const InputPortDescriptor<T> &port,
+                                         std::stringstream *dot) const {}
+
+  /// Appends a fragment to the @p dot stream identifying the graphviz node
+  /// representing @p port. Does nothing by default.
+  virtual void GetGraphvizOutputPortToken(const OutputPortDescriptor<T> &port,
+                                          std::stringstream *dot) const {}
+
+  /// Returns an opaque integer that uniquely identifies this system in the
+  /// Graphviz output.
+  int64_t GetGraphvizId() const {
+    return reinterpret_cast<int64_t>(this);
+  }
+
+  //@}
+
+  //----------------------------------------------------------------------------
   /// @name                Automatic differentiation
   /// From a %System templatized by `double`, you can obtain an identical system
   /// templatized by an automatic differentation scalar providing
