@@ -365,8 +365,9 @@ class Rod2D : public systems::LeafSystem<T> {
                                 const systems::Context<T>& context);
 
   /// The witness function that determines whether the rod should separate from
-  /// the halfspace. The witness function will return ...
-  /// TODO(edrumwri): finish this.
+  /// the halfspace. The witness function will return a non-negative value when
+  /// the rod should not separate and a positive value when it should begin
+  /// to separate from the halfspace.
   /// @pre It is assumed that the signed distance between the point of contact
   ///      and the halfspace will be approximately zero and that the vertical
   ///      velocity at the point of contact will be approximately zero.
@@ -374,9 +375,15 @@ class Rod2D : public systems::LeafSystem<T> {
                                                const systems::Context<T>&
                                                  context);
 
-  /// Evaluates the witness function for sliding direction changes.
-  static T EvaluateSlidingDot(const Rod2D<T>& rod,
-                              const systems::Context<T>& context);
+  /// Evaluates the witness function for sliding direction changes. The witness
+  /// function will bracket a zero crossing when the direction of sliding
+  /// changes over the interval; for example, when the rod is sliding to the
+  /// right, CalcSlidingDot() will return a positive value, which evolves into
+  /// a negative value (first crossing zero), as the rod begins sliding to the
+  /// left (assuming that the rod remains in contact with the halfspace over
+  /// the overal).
+  static T CalcSlidingDot(const Rod2D<T>& rod,
+                          const systems::Context<T>& context);
 
   int DetermineNumWitnessFunctions(const systems::Context<T>& context) const;
 

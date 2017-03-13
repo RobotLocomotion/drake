@@ -97,7 +97,7 @@ T Rod2D<T>::CalcEndpointDistance(const Rod2D<T>& rod,
   const T theta = state.GetAtIndex(2);
   const T stheta = sin(theta);
 
- // Get the abstract variables that determine the current system mode and
+  // Get the abstract variables that determine the current system mode and
   // the endpoint in contact.
   const Mode mode = context.template get_abstract_state<Mode>(0);
   DRAKE_DEMAND(mode == Mode::kSlidingSingleContact ||
@@ -144,8 +144,8 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const Rod2D<T>& rod,
 }
 
 template <class T>
-T Rod2D<T>::EvaluateSlidingDot(const Rod2D<T>& rod,
-                               const systems::Context<T>& context) {
+T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
+                           const systems::Context<T>& context) {
   // Verify the system is simulated using piecewise DAE.
   DRAKE_DEMAND(rod.get_simulation_type() ==
       Rod2D<T>::SimulationType::kPiecewiseDAE);
@@ -1379,8 +1379,8 @@ template <typename T>
 std::unique_ptr<systems::AbstractState> Rod2D<T>::
   AllocateAbstractState() const {
   if (simulation_type_ == SimulationType::kPiecewiseDAE) {
-    // Piecewise DAE approach needs two abstract variables (one mode and one
-    // contact point indicator).
+    // Piecewise DAE approach needs three abstract variables: one mode, one
+    // contact point indicator, and one sliding velocity (scalar).
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
     abstract_data.push_back(
         std::make_unique<systems::Value<Rod2D<T>::Mode>>(
@@ -1388,6 +1388,10 @@ std::unique_ptr<systems::AbstractState> Rod2D<T>::
 
     // Indicates that the rod is in contact at both points.
     abstract_data.push_back(std::make_unique<systems::Value<int>>(0));
+
+    // Indicates that there is zero sliding velocity.
+    abstract_data.push_back(std::make_unique<systems::Value<T>>(0));
+
     return std::make_unique<systems::AbstractState>(std::move(abstract_data));
   } else {
     // Time stepping and compliant approaches need no abstract variables.
@@ -1401,6 +1405,8 @@ template <typename T>
 void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
                                   systems::State<T>* state) const {
   using std::sqrt;
+  using std::cos;
+  using std::sin;
 
   // Initial state corresponds to an inconsistent configuration for piecewise
   // DAE.
@@ -1423,10 +1429,26 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
           Rod2D<T>::kSlidingSingleContact;
 
       // Determine and set the point of contact.
-      const double theta = x0(2);
+      const T theta = x0(2);
+      const T ctheta = cos(theta);
+      const T stheta = sin(theta);
       const int k = (std::sin(theta) > 0) ? -1 : 1;
       state->get_mutable_abstract_state()->get_mutable_abstract_state(1).
           template GetMutableValue<int>() = k;
+
+      // Get the point of contact.
+      const Vector2<T> p_WC = CalcRodEndpoint(x0(0), x0(1), k, ctheta, stheta,
+                                              half_len);
+
+      // Get the sliding velocity at the beginning of the interval.
+      const T theta_dot = x0(5);
+      const Vector2<T> p_WRo(x0(0), x0(1));
+      const Vector2<T> V_WRo(x0(3), x0(4));
+      const Vector2<T> v_WRC =  CalcCoincidentRodPointVelocity(p_WRo, V_WRo,
+                                                               theta_dot, p_WC);
+      const T xcdot_t0 = v_WRC(0);
+      state->get_mutable_abstract_state()->get_mutable_abstract_state(2).
+          template GetMutableValue<T>() = xcdot_t0;
     }
   }
 }

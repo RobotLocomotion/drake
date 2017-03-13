@@ -89,6 +89,11 @@ class Rod2DDAETest : public ::testing::Test {
     const int k = (std::sin(theta) > 0) ? -1 : 1;
     abs_state->get_mutable_abstract_state(1).
         template GetMutableValue<int>() = k;
+
+    // Set the sliding velocity at the beginning of the interval.
+    const double xcdot_t0 = -1.0;
+    abs_state->get_mutable_abstract_state(2).
+        template GetMutableValue<double>() = xcdot_t0;
   }
 
   // Sets the rod to a state that corresponds to ballistic motion.
@@ -111,6 +116,28 @@ class Rod2DDAETest : public ::testing::Test {
         Rod2D<double>::kBallisticMotion;
 
     // Note: contact point mode is now arbitrary.
+  }
+
+  // Sets the rod to an interpenetrating configuration without modifying the
+  // velocity or any mode variables.
+  void SetInterpenetratingConfig() {
+    ContinuousState<double> &xc =
+        *context_->get_mutable_continuous_state();
+    // Configuration has the rod on its side.
+    xc[0] = 0.0;
+    xc[1] = -1.0;
+    xc[2] = 0.0;
+  }
+
+  // Sets the rod to a resting horizontal configuration without modifying the
+  // velocity or any mode variables.
+  void SetRestingHorizontalConfig() {
+    ContinuousState<double> &xc =
+        *context_->get_mutable_continuous_state();
+    // Configuration has the rod on its side.
+    xc[0] = 0.0;
+    xc[1] = 0.0;
+    xc[2] = 0.0;
   }
 
   // Sets the rod to an arbitrary impacting state.
@@ -671,15 +698,36 @@ TEST_F(Rod2DDAETest, BallisticNoImpact) {
 // Validates the number of witness functions is determined correctly.
 TEST_F(Rod2DDAETest, NumWitnessFunctions) {
   // Verify that the correct number of witness functions is reported for...
-  // (a) Ballistic motion.
-  // (b) Sliding single contact.
+  // (a) Sliding single contact.
+  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 3);
+
+  // (b) Ballistic motion.
+  SetBallisticState();
+  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 1);
+
   // (c) Sticking single contact.
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+    Rod2D<double>::kStickingSingleContact;
+EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 2);
+
   // (d) Sliding two contacts.
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+    Rod2D<double>::kSlidingTwoContacts;
+  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 3);
+
   // (e) Sticking two contacts.
+  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+    Rod2D<double>::kStickingTwoContacts;
+  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 2);
 }
 
 // Checks the witness function for calculating the signed distance.
 TEST_F(Rod2DDAETest, SignedDistWitness) {
+  // Rod is initially in a kissing configuration with the halfspace; check that
+  // the signed distance is zero.
+  const double tol = 10*std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(dut_->CalcSignedDistance(*dut_, *context_), 0.0, tol);
+
   // Set the rod to a non-contacting configuration and check that the signed
   // distance is positive.
   SetBallisticState();
@@ -687,25 +735,62 @@ TEST_F(Rod2DDAETest, SignedDistWitness) {
 
   // Set the rod to an interpenetrating configuration and check that the
   // signed distance is negative.
-
-  // Set the rod to a kissing configuration with the halfspace and check that
-  // the signed distance is zero.
+  SetInterpenetratingConfig();
+  EXPECT_LT(dut_->CalcSignedDistance(*dut_, *context_), 0);
 }
 
 // Checks the witness function for calculating the distance of rod's other
 // endpoint when one endpoint is in contact with the halfspace.
 TEST_F(Rod2DDAETest, OtherEndpointDistWitness) {
-  //
+  // Rod is initially in the Painleve state. Verify that the distance
+  // on the other endpoint is positive.
+  EXPECT_GT(dut_->CalcEndpointDistance(*dut_, *context_), 0);
+
+  // Move the rod into an interpenetrating configuration without changing the
+  // mode variables.
+  SetInterpenetratingConfig();
+  EXPECT_LT(dut_->CalcEndpointDistance(*dut_, *context_), 0);
+
+  // Move the rod into a kissing configuration without changing the
+  // mode variables.
+  SetRestingHorizontalConfig();
+  const double tol = 10*std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(dut_->CalcEndpointDistance(*dut_, *context_), 0, tol);
 }
 
 // Evaluates the witness function for when the rod should separate from the
 // halfspace.
 TEST_F(Rod2DDAETest, SeparationWitness) {
+  // Set the rod to an upward configuration so that accelerations are simple
+  // to predict.
+  ContinuousState<double> &xc = *context_->get_mutable_continuous_state();
 
+  // Configuration has the rod on its side. Vertical velocity is still zero.
+  xc[0] = 0.0;
+  xc[1] = dut_->get_rod_half_length();
+  xc[2] = M_PI_2;
+
+  // Ensure that witness is negative.
+  EXPECT_LT(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 0);
+
+  // Now make gravity positive (i.e., rod accelerates upward) and verify that
+  // witness is positive.
+  dut_->set_gravitational_acceleration(10.0);
+  EXPECT_GT(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 0);
 }
 
 // Evaluates the witness function for sliding velocity direction changes.
 TEST_F(Rod2DDAETest, VelocityChangesWitness) {
+  // Verify that the sliding velocity before the Painleve configuration is
+  // positive.
+  EXPECT_GT(dut_->CalcSlidingDot(*dut_, *context_), 0);
+
+  // Switch to the mirrored Painleve configuration.
+  SetSecondInitialConfig();
+
+  // Verify that the sliding velocity before the Painleve configuration is
+  // negative.
+  EXPECT_LT(dut_->CalcSlidingDot(*dut_, *context_), 0);
 }
 
 /// Class for testing the Rod 2D example using a first order time
