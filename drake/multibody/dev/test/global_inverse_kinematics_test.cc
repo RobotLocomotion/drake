@@ -215,10 +215,10 @@ TEST_F(KukaTest, ReachableWithCost) {
     // There is extra error introduced from gurobi optimality condition and SVD,
     // so the tolerance is loose.
     EXPECT_TRUE(
-        CompareMatrices(q_w_cost, q, 3E-3, MatrixCompareType::absolute));
-    EXPECT_LE((q_w_cost - q).norm(), 4E-3);
-    // The posture from IK with cost should be different from that without cost.
-    EXPECT_GE((q_w_cost - q_no_cost).norm(), 2E-2);
+        CompareMatrices(q_w_cost, q, 1E-2, MatrixCompareType::absolute));
+    EXPECT_LE((q_w_cost - q).norm(), 1E-2);
+    // The posture from IK with cost should be closer to q, than the posture
+    // from IK without the cost.
     EXPECT_LE((q_w_cost - q).norm(), (q_no_cost - q).norm());
   }
 }
