@@ -31,7 +31,7 @@ class MultibodyTree {
   /// Creates a MultibodyTree containing only a **world** body.
   MultibodyTree();
 
-  /// Takes ownership of @p body and assigns a unique index to it.
+  /// Takes ownership of `body` and assigns a unique index to it.
   ///
   /// @throws std::logic_error if users attempt to add a body to an already
   /// compiled multibody tree with MultibodyTree::Compile() or if `body` is a

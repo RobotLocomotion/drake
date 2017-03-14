@@ -50,7 +50,7 @@ class RigidBody : public Body<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
 
   /// Creates a new %RigidBody and adds it to the %MultibodyTree world.
-  /// The MultibodyTree @p tree takes ownership of the newly created body.
+  /// The MultibodyTree `tree` takes ownership of the newly created body.
   /// @param[in] tree The parent MultibodyTree to which this body will be added.
   /// @returns A constant reference to the newly created rigid body.
   // TODO(amcastro-tri): In a future PR this factory will take a MassProperties
