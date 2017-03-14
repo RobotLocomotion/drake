@@ -366,6 +366,10 @@ GTEST_TEST(SplineTests, RandomizedPchipSplineTest) {
     PiecewisePolynomial<double> spline =
         PiecewisePolynomial<double>::Pchip(T, Y);
     PchipTest(T, Y, spline, 1e-8);
+
+    spline = PiecewisePolynomial<double>::Pchip(
+        T, Y, true /* Uses zero end point derivative. */);
+    PchipTest(T, Y, spline, 1e-8);
   }
 }
 
@@ -432,6 +436,27 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
     EXPECT_TRUE(CheckValues(spline, {Y, Ydot}, 1e-8));
     EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(spline, T, Y, 1e-8));
   }
+}
+
+GTEST_TEST(SplineTests, CubicSplineSize2) {
+  std::vector<double> T = {1, 2};
+  std::vector<MatrixX<double>> Y(2, MatrixX<double>::Zero(1, 1));
+  MatrixX<double> Ydot0 = MatrixX<double>::Zero(1, 1);
+  MatrixX<double> Ydot1 = MatrixX<double>::Zero(1, 1);
+  Y[0] << 1;
+  Y[1] << 3;
+  Ydot0 << 2;
+  Ydot1 << -1;
+
+  PiecewisePolynomial<double> spline =
+      PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1);
+  EXPECT_TRUE(CheckValues(spline, {Y, {Ydot0, Ydot1}}, 1e-8));
+
+  spline = PiecewisePolynomial<double>::Cubic(T, Y, {Ydot0, Ydot1});
+  EXPECT_TRUE(CheckValues(spline, {Y, {Ydot0, Ydot1}}, 1e-8));
+
+  // Calling Cubic(times, Y) with only 2 knots should not be allowed.
+  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y), std::runtime_error);
 }
 
 template <typename CoefficientType>

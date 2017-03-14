@@ -106,10 +106,11 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * http://home.uchicago.edu/~sctchoi/courses/cs138/interp.pdf is also a good
    * reference.
    *
-   * The first and last first derivative is chosen using a
-   * non-centered, shape-preserving three-point formulae.
-   * See equation (2.10) in the following reference for more details.
+   * If @p zero_end_point_derivatives is false, the first and last first
+   * derivative is chosen using a non-centered, shape-preserving three-point
+   * formulae. See equation (2.10) in the following reference for more details.
    * http://www.mi.sanu.ac.rs/~gvm/radovi/mon.pdf
+   * If @p zero_end_point_derivatives is true, they are set to zeros.
    *
    * @throws std::runtime_error if
    *    `breaks` and `knots` have different length,
@@ -119,7 +120,8 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    */
   static PiecewisePolynomial<CoefficientType> Pchip(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots);
+      const std::vector<CoefficientMatrix>& knots,
+      bool zero_end_point_derivatives = false);
 
   /**
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
@@ -134,7 +136,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    *    `knots` has inconsistent dimensions,
    *    `knots_dot_at_start` or `knot_dot_at_end` and `knots` have
    *    inconsistent dimensions,
-   *    `breaks` has length smaller than 3.
+   *    `breaks` has length smaller than 2.
    */
   static PiecewisePolynomial<CoefficientType> Cubic(
       const std::vector<double>& breaks,
@@ -177,7 +179,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    *    `breaks` and `knots` have different length,
    *    `breaks` is not strictly increasing,
    *    `knots` has inconsistent dimensions,
-   *    `breaks` has length smaller than 2.
+   *    `breaks` has length smaller than 3.
    */
   static PiecewisePolynomial<CoefficientType> Cubic(
       const std::vector<double>& breaks,
