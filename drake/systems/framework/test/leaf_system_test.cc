@@ -30,6 +30,8 @@ class TestSystem : public LeafSystem<T> {
   }
   ~TestSystem() override {}
 
+  using LeafSystem<T>::DeclareContinuousState;
+
   void AddPeriodicUpdate() {
     const double period = 10.0;
     const double offset = 5.0;
@@ -47,14 +49,6 @@ class TestSystem : public LeafSystem<T> {
 
   void AddPublish(double period) {
     this->DeclarePublishPeriodSec(period);
-  }
-
-  void AddContinuousState() {
-    this->DeclareContinuousState(4, 3, 2);
-  }
-
-  void AddContinuousState(std::unique_ptr<BasicVector<T>> vec) {
-    this->DeclareContinuousState(std::move(vec), 4, 3, 2);
   }
 
   void DoCalcOutput(const Context<T>& context,
@@ -248,10 +242,36 @@ TEST_F(LeafSystemTest, Parameters) {
   EXPECT_EQ(7.0, vec[1]);
 }
 
-// Tests that the leaf system reserved the declared continuous state, of
-// vanilla type.
+// Tests that the leaf system reserved the declared misc continuous state.
+TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
+  system_.DeclareContinuousState(2);
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  const ContinuousState<double>* xc = context->get_continuous_state();
+  EXPECT_EQ(2, xc->size());
+  EXPECT_EQ(0, xc->get_generalized_position().size());
+  EXPECT_EQ(0, xc->get_generalized_velocity().size());
+  EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+}
+
+// Tests that the leaf system reserved the declared misc continuous state of
+// interesting custom type.
+TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
+  system_.DeclareContinuousState(MyVector2d());
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  const ContinuousState<double>* xc = context->get_continuous_state();
+  // Check that type was preserved.
+  EXPECT_NE(nullptr, dynamic_cast<MyVector2d*>(
+                         context->get_mutable_continuous_state_vector()));
+  EXPECT_EQ(2, xc->size());
+  EXPECT_EQ(0, xc->get_generalized_position().size());
+  EXPECT_EQ(0, xc->get_generalized_velocity().size());
+  EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+}
+
+// Tests that the leaf system reserved the declared continuous state with
+// second-order structure.
 TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
-  system_.AddContinuousState();
+  system_.DeclareContinuousState(4, 3, 2);
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>* xc = context->get_continuous_state();
   EXPECT_EQ(4 + 3 + 2, xc->size());
@@ -260,12 +280,11 @@ TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
 }
 
-// Tests that the leaf system reserved the declared continuous state, of
-// interesting custom type.
+// Tests that the leaf system reserved the declared continuous state with
+// second-order structure of interesting custom type.
 TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   using MyVector9d = MyVector<4 + 3 + 2, double>;
-
-  system_.AddContinuousState(std::make_unique<MyVector9d>());
+  system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>* xc = context->get_continuous_state();
   // Check that type was preserved.
