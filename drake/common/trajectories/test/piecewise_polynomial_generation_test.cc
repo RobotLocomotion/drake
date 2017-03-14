@@ -366,7 +366,48 @@ GTEST_TEST(SplineTests, RandomizedPchipSplineTest) {
     PiecewisePolynomial<double> spline =
         PiecewisePolynomial<double>::Pchip(T, Y);
     PchipTest(T, Y, spline, 1e-8);
+
+    spline = PiecewisePolynomial<double>::Pchip(
+        T, Y, true /* Uses zero end point derivative. */);
+    PchipTest(T, Y, spline, 1e-8);
+    // Derivatives at end points should be zero.
+    PiecewisePolynomial<double> spline_dot = spline.derivative();
+    EXPECT_NEAR(spline_dot.value(spline_dot.getStartTime()).norm(), 0, 1e-10);
+    EXPECT_NEAR(spline_dot.value(spline_dot.getEndTime()).norm(), 0, 1e-10);
   }
+}
+
+GTEST_TEST(SplineTests, PchipLength2Test) {
+  std::vector<double> T = {0, 1};
+  std::vector<MatrixX<double>> Y(2, MatrixX<double>::Zero(1, 1));
+  Y[0] << 1;
+  Y[1] << 3;
+
+  PiecewisePolynomial<double> spline =
+      PiecewisePolynomial<double>::Pchip(T, Y, true);
+  PiecewisePolynomial<double> spline_dot = spline.derivative();
+
+  EXPECT_NEAR(spline_dot.value(spline_dot.getStartTime()).norm(), 0, 1e-10);
+  EXPECT_NEAR(spline_dot.value(spline_dot.getEndTime()).norm(), 0, 1e-10);
+
+  // Computes the minimal velocity from T = 0 to T = 1. Since this segment is
+  // increasing, the minimal velocity needs to be greater than 0.
+  double v_min = ComputeExtremeVel(
+      spline_dot.getPolynomial(0), T.back(), false);
+  EXPECT_GE(v_min, 0);
+
+  Y[0] << 5;
+  Y[1] << -2;
+  spline = PiecewisePolynomial<double>::Pchip(T, Y, true);
+  spline_dot = spline.derivative();
+
+  EXPECT_NEAR(spline_dot.value(spline_dot.getStartTime()).norm(), 0, 1e-10);
+  EXPECT_NEAR(spline_dot.value(spline_dot.getEndTime()).norm(), 0, 1e-10);
+
+  // Max velocity should be non positive.
+  double v_max = ComputeExtremeVel(
+      spline_dot.getPolynomial(0), T.back(), true);
+  EXPECT_LE(v_max, 0);
 }
 
 GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
@@ -432,6 +473,27 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
     EXPECT_TRUE(CheckValues(spline, {Y, Ydot}, 1e-8));
     EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(spline, T, Y, 1e-8));
   }
+}
+
+GTEST_TEST(SplineTests, CubicSplineSize2) {
+  std::vector<double> T = {1, 2};
+  std::vector<MatrixX<double>> Y(2, MatrixX<double>::Zero(1, 1));
+  MatrixX<double> Ydot0 = MatrixX<double>::Zero(1, 1);
+  MatrixX<double> Ydot1 = MatrixX<double>::Zero(1, 1);
+  Y[0] << 1;
+  Y[1] << 3;
+  Ydot0 << 2;
+  Ydot1 << -1;
+
+  PiecewisePolynomial<double> spline =
+      PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1);
+  EXPECT_TRUE(CheckValues(spline, {Y, {Ydot0, Ydot1}}, 1e-8));
+
+  spline = PiecewisePolynomial<double>::Cubic(T, Y, {Ydot0, Ydot1});
+  EXPECT_TRUE(CheckValues(spline, {Y, {Ydot0, Ydot1}}, 1e-8));
+
+  // Calling Cubic(times, Y) with only 2 knots should not be allowed.
+  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y), std::runtime_error);
 }
 
 template <typename CoefficientType>
