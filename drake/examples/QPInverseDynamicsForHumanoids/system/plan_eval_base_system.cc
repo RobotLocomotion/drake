@@ -52,8 +52,7 @@ PlanEvalBaseSystem::AllocateAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals =
       ExtendedAllocateAbstractState();
 
-  abstract_vals.push_back(systems::AbstractValue::Make<QpInput>(
-      QpInput()));
+  abstract_vals.push_back(systems::AbstractValue::Make<QpInput>(QpInput()));
   return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
 }
 
