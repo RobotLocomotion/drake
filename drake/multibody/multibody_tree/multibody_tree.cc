@@ -1,16 +1,14 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
+#include <stdexcept>
+#include <utility>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 
-#include <stdexcept>
-#include <utility>
-
 namespace drake {
 namespace multibody {
-
-using std::make_unique;
 
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
@@ -34,9 +32,9 @@ BodyIndex MultibodyTree<T>::AddBody(std::unique_ptr<Body<T>> body) {
   }
   // TODO(amcastro-tri): This id will be returned by the MultibodyTreeTopology
   // class in a future PR.
-  BodyIndex id(static_cast<int>(bodies_.size()));
+  BodyIndex index(bodies_.size());
   bodies_.push_back(std::move(body));
-  return id;
+  return index;
 }
 
 template <typename T>

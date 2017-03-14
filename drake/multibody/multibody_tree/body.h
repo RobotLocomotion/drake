@@ -18,11 +18,8 @@ template<typename T> class MultibodyTree;
 /// does it make any assumptions about on the underlying physical model or
 /// approximation.
 /// As an element or component of a MultibodyTree, a body is a
-/// MultibodyTreeElement, and therefore it has a unique identifier within the
-/// multibody tree it belongs to.
-///
-/// -[Mitiguy 2016] P Mitiguy. Advanced Dynamics and Motion Simulation, 2016.
-///                 Stanford University. www.MotionGenesis.com.
+/// MultibodyTreeElement, and therefore it has a unique index of type BodyIndex
+/// within the multibody tree it belongs to.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>

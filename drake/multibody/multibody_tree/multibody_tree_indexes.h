@@ -1,12 +1,12 @@
 #pragma once
 
+#include <cstddef>
+#include <stdexcept>
+#include <string>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/nice_type_name.h"
-
-#include <iostream>
-#include <stdexcept>
-#include <string>
 
 namespace drake {
 namespace multibody {
@@ -36,9 +36,16 @@ class TypeSafeIndex {
   TypeSafeIndex() = delete;
 
   /// Construction from an `int` value.
-  /// For Debug builds this constructor throws if the provided input `int`
-  /// `index` is negative. There is no check for Release builds.
+  /// For Debug builds this constructor throws if the provided input `index` is
+  /// negative.
   explicit TypeSafeIndex(int index) : index_(index) {
+    DRAKE_ASSERT_VOID(CheckInvariants());
+  }
+
+  /// Construction from a `size_t` value.
+  /// For Debug builds this constructor throws if the provided input `index` is
+  /// negative.
+  explicit TypeSafeIndex(size_t index) : index_(static_cast<int>(index)) {
     DRAKE_ASSERT_VOID(CheckInvariants());
   }
 
