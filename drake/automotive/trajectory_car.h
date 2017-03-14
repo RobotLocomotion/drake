@@ -12,7 +12,8 @@
 namespace drake {
 namespace automotive {
 
-/// A car that follows a pre-established trajectory, neglecting all physics.
+/// TrajectoryCar models a car that follows a pre-established trajectory,
+/// neglecting all physics.
 ///
 /// state vector
 /// * none

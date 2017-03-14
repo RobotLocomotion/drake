@@ -13,8 +13,8 @@
 namespace drake {
 namespace automotive {
 
-/// Models a vehicle that follows a maliput::api::Lane as if it were on rails
-/// and neglecting all physics.
+/// MaliputRailcar models a vehicle that follows a maliput::api::Lane as if it
+/// were on rails and neglecting all physics.
 ///
 /// Configuration:
 ///   * See MaliputRailcarConfig.

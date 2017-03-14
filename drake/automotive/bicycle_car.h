@@ -12,7 +12,7 @@
 namespace drake {
 namespace automotive {
 
-/// BicycleCar -- Implements a nonlinear rigid body bicycle model from Althoff &
+/// BicycleCar implements a nonlinear rigid body bicycle model from Althoff &
 /// Dolan (2014) [1].  The three-DOF model captures the rigid-body dynamics in
 /// the lateral, longitudinal, and yaw directions but not in the roll and pitch
 /// directions.  The model assumes a vehicle that has two wheels: one at the

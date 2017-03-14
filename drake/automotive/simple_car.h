@@ -13,9 +13,9 @@
 namespace drake {
 namespace automotive {
 
-/// SimpleCar -- model an idealized response to driving commands, neglecting
-/// all physics. Note that the SimpleCar can move forward, stop, turn left, and
-/// turn right but *cannot* travel in reverse.
+/// SimpleCar models an idealized response to driving commands, neglecting all
+/// physics. Note that SimpleCar can move forward, stop, turn left, and turn
+/// right but *cannot* travel in reverse.
 ///
 /// configuration:
 /// * uses systems::Parameters wrapping a SimpleCarConfig
