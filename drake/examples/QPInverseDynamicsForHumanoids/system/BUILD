@@ -84,15 +84,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "manipulator_inverse_dynamics_controller",
-    srcs = [
-        "manipulator_inverse_dynamics_controller.cc",
-    ],
-    hdrs = [
-        "manipulator_inverse_dynamics_controller.h",
-    ],
+    srcs = ["manipulator_inverse_dynamics_controller.cc"],
+    hdrs = ["manipulator_inverse_dynamics_controller.h"],
     deps = [
-        ":joint_level_controller_system",
         ":humanoid_status_translator_system",
+        ":joint_level_controller_system",
         ":manipulator_plan_eval_system",
         ":qp_controller_system",
         "//drake/systems/controllers:model_based_controller_base",
@@ -176,9 +172,9 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/framework",
         "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/controllers:inverse_dynamics_controller",
     ],
 )
 

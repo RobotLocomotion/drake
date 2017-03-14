@@ -14,7 +14,7 @@ namespace qp_inverse_dynamics {
 
 /**
  * This class extends PlanEvalBaseSystem. It generates QpInput to track
- * desired instantaneous position, velocity and acceleration.
+ * desired instantaneous position, velocity and acceleration in joint space.
  */
 class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
  public:
