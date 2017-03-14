@@ -97,10 +97,6 @@ class MaliputRailcar : public systems::LeafSystem<T> {
 
  protected:
   // LeafSystem<T> overrides.
-  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-      const override;
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::OutputPortDescriptor<T>& descriptor) const override;
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
   bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
                               int input_port, int output_port) const override;

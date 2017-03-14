@@ -19,10 +19,8 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
 
   SimpleCarToEulerFloatingJoint() {
     this->set_name("SimpleCarToEulerFloatingJoint");
-    this->DeclareInputPort(systems::kVectorValued,
-                           SimpleCarStateIndices::kNumCoordinates);
-    this->DeclareOutputPort(systems::kVectorValued,
-                            EulerFloatingJointStateIndices::kNumCoordinates);
+    this->DeclareVectorInputPort(SimpleCarState<T>());
+    this->DeclareVectorOutputPort(EulerFloatingJointState<T>());
   }
 
   void DoCalcOutput(const systems::Context<T>& context,
@@ -54,12 +52,6 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
     output_data->set_roll(0.0);
     output_data->set_pitch(0.0);
     output_data->set_yaw(heading);
-  }
-
- protected:
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::OutputPortDescriptor<T>& descriptor) const override {
-    return std::make_unique<EulerFloatingJointState<T>>();
   }
 };
 

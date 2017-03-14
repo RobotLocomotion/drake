@@ -49,11 +49,13 @@ MaliputRailcar<T>::MaliputRailcar(const Lane& lane, double start_time)
   command_input_port_index_ =
       this->DeclareInputPort(systems::kVectorValued, 1).get_index();
   state_output_port_index_ =
-      this->DeclareOutputPort(systems::kVectorValued,
-          MaliputRailcarStateIndices::kNumCoordinates).get_index();
+      this->DeclareVectorOutputPort(MaliputRailcarState<T>()).get_index();
   pose_output_port_index_ =
-      this->DeclareOutputPort(systems::kVectorValued,
-          PoseVector<T>::kSize).get_index();
+      this->DeclareVectorOutputPort(PoseVector<T>()).get_index();
+  // TODO(jwnimmer-tri) Offer one-argument model sugar for this next line.
+  this->DeclareContinuousState(
+      std::make_unique<MaliputRailcarState<T>>(),
+      0, 0, MaliputRailcarStateIndices::kNumCoordinates);
 }
 
 template <typename T>
@@ -194,28 +196,9 @@ void MaliputRailcar<T>::ImplCalcTimeDerivatives(
   rates->set_speed(smooth_acceleration);
 }
 
-template <typename T>
-std::unique_ptr<ContinuousState<T>>
-MaliputRailcar<T>::AllocateContinuousState() const {
-  return std::make_unique<ContinuousState<T>>(
-      std::make_unique<MaliputRailcarState<T>>());
-}
 
 template <typename T>
-std::unique_ptr<BasicVector<T>>
-MaliputRailcar<T>::AllocateOutputVector(
-    const OutputPortDescriptor<T>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_index() <= 1);
-  if (descriptor.get_index() == state_output_port_index_) {
-    return std::make_unique<MaliputRailcarState<T>>();
-  } else if (descriptor.get_index() == pose_output_port_index_) {
-    return std::make_unique<PoseVector<T>>();
-  }
-  return nullptr;
-}
-
-template <typename T>
-std::unique_ptr<Parameters<T>>
+std::unique_ptr<systems::Parameters<T>>
 MaliputRailcar<T>::AllocateParameters() const {
   auto params = std::make_unique<MaliputRailcarConfig<T>>();
   return std::make_unique<Parameters<T>>(std::move(params));

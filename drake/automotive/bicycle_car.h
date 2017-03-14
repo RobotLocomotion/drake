@@ -84,10 +84,6 @@ class BicycleCar : public systems::LeafSystem<T> {
                             systems::Parameters<T>* params) const override;
 
   // LeafSystem<T> overrides
-  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-      const override;
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::OutputPortDescriptor<T>& descriptor) const override;
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
   // System<T> overrides.
