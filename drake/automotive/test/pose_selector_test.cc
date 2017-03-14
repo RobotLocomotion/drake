@@ -35,12 +35,12 @@ static void SetDefaultPoses(PoseVector<double>* ego_pose,
                kLaneLength > kLeadingSPosition);
   DRAKE_DEMAND(kEgoSPosition > kTrailingSPosition && kTrailingSPosition > 0.);
 
-  // Create poses for four agent cars and one ego in the right lane,
+  // Create poses for four agent cars and one ego positioned in the right lane,
   // interspersed as follows:
   //
-  //      Far Behind   Just Behind     Ego     Just Ahead   Far Ahead
-  //    |------o------------o-----------o----------o------------o-------------|
-  //   s=0     3            7           10         31           35           100
+  //     Far Behind   Just Behind     Ego     Just Ahead   Far Ahead
+  //   |------o------------o-----------o----------o------------o-------------|
+  //  s=0     3            7           10         31           35           100
   ego_pose->set_translation(Eigen::Translation3d(
       kEgoSPosition /* s */, kEgoRPosition /* r */, 0. /* h */));
   const Eigen::Translation3d translation_far_ahead(
@@ -61,12 +61,11 @@ static void SetDefaultPoses(PoseVector<double>* ego_pose,
                         Eigen::Isometry3d(translation_far_behind));
 }
 
-// Evaluates the ability to select the closest poses.
-GTEST_TEST(IdmPlannerTest, SelectClosestPositions) {
-  // Create a straight road, two lanes wide, in which the two `s`-`r`
-  // Lane-coordinate frames are aligned with the`x`-`y` world coordinates, with
-  // `s_i = 0` for the `i`th lane, `i = {0, 1}`,`corresponds to `x = 0`, and
-  // `r_i = 0` corresponds to `y = (i - 0.5) * kLaneWidth`.
+GTEST_TEST(PoseSelectorTest, PoseSelectorFunction) {
+  // Create a straight road, two lanes wide, in which the two s-r
+  // Lane-coordinate frames are aligned with the x-y world coordinates, with s_i
+  // = 0 for the i-th lane, i ∈ {0, 1}, corresponds to x = 0, and r_i = 0
+  // corresponds to y = (i - 0.5) * kLaneWidth.
   const auto road = new RoadGeometry(
       maliput::api::RoadGeometryId({"Test Dragway"}), kNumLanes, kLaneLength,
       kLaneWidth, 0. /* shoulder width */);

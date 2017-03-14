@@ -13,7 +13,8 @@
 namespace drake {
 namespace automotive {
 
-/// Routines for selecting a pose of interest among a PoseBundle.
+/// PoseSelector contains utilities for selecting among several agent cars those
+/// that are closest to the ego car with respect to a given maliput Lane.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -27,7 +28,9 @@ class PoseSelector {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSelector)
   PoseSelector() = delete;
 
-  /// Compares the Lane-space poses
+  /// Compares the Lane-space poses within @p agent_poses against an @p
+  /// ego_pose and returns .
+
   ///
   /// If @p agent_lane is `nullptr`, the the ego car's current lane is used.
   ///
