@@ -29,13 +29,14 @@
  are represented by one or more DrakeCollision::Element objects -- geometric
  shapes rigidly affixed to a body, whose surfaces can engage in contact.
 
- This document discusses a _compliant_ contact model.  Compliant models enforce
- the principle that no two objects can occupy the same space by modeling
- deformations in the contacting surfaces. This deformation is not modeled
- explicitly; the contact geometry in the collision element is not actually
- deformed.  Instead, deformation is modeled implicitly by allowing the collision
- Elements to overlap and defining the deformation as a function of the degree
- of penetration; greater penetration implies greater deformation.
+ This document discusses a _compliant_ contact model. In compliant models, the
+ bodies are considered deformable. The
+ collision geometry represents an object in its undeformed state. As two objects
+ collide, the contact forces cause them to deform. Compliant models compute
+ the forces that would cause the deformation. The deformed geometry is _not_
+ modeled explicitly. Instead, the contact forces are computed based on the
+ degree of penetration of the non-deforming collision geometry; greater
+ penetration implies larger contact forces.
  One can think of largely rigid objects which have slightly deformable surfaces.
  For this model to be useful in practice, the deformations should be small
  relative to the whole body, so that we can (a) use simple models for the
