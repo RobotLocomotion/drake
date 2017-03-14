@@ -170,7 +170,7 @@ GTEST_TEST(TypeSafeIndex, ConversionNotAllowedBetweenDifferentTypes) {
 // non-existence of a particular operator.  Specifically, we are using it to
 // confirm that an index with one tag type cannot be compared or combined with
 // index instances of another type. We are also confirming that those same
-// operations work with atomic data types that can be converted to ints.
+// operations work with atomic data types that can be converted to int types.
 //
 // To simplify the test boilerplate, the infrastructure has been placed in a
 // macro, allowing for the test of a wide range of *binary* operations.  The

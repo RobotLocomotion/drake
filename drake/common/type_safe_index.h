@@ -22,8 +22,9 @@ namespace drake {
 ///
 /// The TypeSafeIndex guarantees that index instances of different types can't
 /// be compared or combined.  Efforts to due so will cause a compile-time
-/// failure.  However, comparisions or operations on *other* types that are
-/// convertible to an int will succeed.  For example: <pre>
+/// failure.  However, comparisons or operations on _other_ types that are
+/// convertible to an int will succeed.  For example:
+/// @code{.cpp}
 ///    using AIndex = TypeSafeIndex<class A>;
 ///    using BIndex = TypeSafeIndex<class B>;
 ///    AIndex a(1);
@@ -32,7 +33,7 @@ namespace drake {
 ///    size_t sz = 7;
 ///    if ( a == sz ) { ... }  // Ok.
 ///    if ( a == b ) { ... }   // <-- Compiler error.
-/// </pre>
+/// @endcode
 /// @tparam Tag The name of the tag associated with a class type.
 template <class Tag>
 class TypeSafeIndex {
@@ -113,8 +114,8 @@ class TypeSafeIndex {
   /// In order to prevent indices _of different type_ being added together or
   /// compared against each other, we apply a whitelist/blacklist approach to
   /// explicitly include indices of this type, but exclude indices of all other
-  /// types.  This implicitly allows all *other* objects that can be converted
-  /// to ints.
+  /// types.  This implicitly allows all _other_ objects that can be converted
+  /// to int types.
   ///@{
 
   /// Whitelist equality test with indices of this tag.
