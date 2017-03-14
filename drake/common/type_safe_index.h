@@ -4,12 +4,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/nice_type_name.h"
 
-#include <iostream>
-#include <stdexcept>
-#include <string>
-
 namespace drake {
-namespace common {
 
 /// A type-safe non-negative index that can be associated to a tag name.
 /// Different instantiations of TypeSafeIndex are not interconvertible.
@@ -31,13 +26,12 @@ class TypeSafeIndex {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TypeSafeIndex)
 
-  /// Default constructor is disabled to force users to intialize their indexes
+  /// Default constructor is disabled to force users to initialize their indexes
   /// at creation.
   TypeSafeIndex() = delete;
 
-  /// Construction from an `int` value.
-  /// For Debug builds this constructor throws if the provided input `int`
-  /// `index` is negative. There is no check for Release builds.
+  /// Construction from a non-negative `int` value.
+  /// Constructor only promises to enforce non-negativity in Debug build.
   explicit TypeSafeIndex(int index) : index_(index) {
     DRAKE_ASSERT_VOID(CheckInvariants());
   }
@@ -61,7 +55,7 @@ class TypeSafeIndex {
   }
 
   /// Prefix decrement operator.
-  /// In Debug builds this method asserts that the resulting index is
+  /// In Debug builds, this method asserts that the resulting index is
   /// non-negative.
   const TypeSafeIndex& operator--() {
     --index_;
@@ -70,7 +64,7 @@ class TypeSafeIndex {
   }
 
   /// Postfix decrement operator.
-  /// In Debug builds this method asserts that the resulting index is
+  /// In Debug builds, this method asserts that the resulting index is
   /// non-negative.
   TypeSafeIndex operator--(int) {
     --index_;
@@ -83,6 +77,8 @@ class TypeSafeIndex {
   ///@{
 
   /// Addition assignment operator.
+  /// In Debug builds, this method asserts that the resulting index is
+  /// non-negative.
   TypeSafeIndex& operator+=(int i) {
     index_ += i;
     DRAKE_ASSERT_VOID(CheckInvariants());
@@ -90,7 +86,7 @@ class TypeSafeIndex {
   }
 
   /// Subtraction assignment operator.
-  /// In Debug builds this method asserts that the resulting index is
+  /// In Debug builds, this method asserts that the resulting index is
   /// non-negative.
   TypeSafeIndex& operator-=(int i) {
     index_ -= i;
@@ -107,12 +103,11 @@ class TypeSafeIndex {
           "This index, of type \"" +
               drake::NiceTypeName::Get<TypeSafeIndex<Tag>>() +
               "\", has the negative value = " + std::to_string(index_) +
-              ". Negative indexes are not allowed");
+              ". Negative indexes are not allowed.");
     }
   }
 
   int index_{0};
 };
 
-}  // namespace common
 }  // namespace drake

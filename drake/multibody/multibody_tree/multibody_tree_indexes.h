@@ -2,21 +2,17 @@
 
 #include "drake/common/type_safe_index.h"
 
-#include <iostream>
-#include <stdexcept>
-#include <string>
-
 namespace drake {
 namespace multibody {
 
 /// Type used to identify frames by index in a multibody tree system.
-using FrameIndex = common::TypeSafeIndex<class FrameTag>;
+using FrameIndex = TypeSafeIndex<class FrameTag>;
 
 /// Type used to identify bodies by index in a multibody tree system.
-using BodyIndex = common::TypeSafeIndex<class BodyTag>;
+using BodyIndex = TypeSafeIndex<class BodyTag>;
 
 /// Type used to identify mobilizers by index in a multibody tree system.
-using MobilizerIndex = common::TypeSafeIndex<class MobilizerTag>;
+using MobilizerIndex = TypeSafeIndex<class MobilizerTag>;
 
 /// For every MultibodyTree the **world** body _always_ has this unique index
 /// and it is always zero.
