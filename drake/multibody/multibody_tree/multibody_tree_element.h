@@ -20,8 +20,11 @@ template<typename T> class MultibodyTree;
 // template in a scalar type T. The template specialization allows the compiler
 // to automatically deduce the scalar type from the subclass template signature
 // itself.
+// Hide from Doxygen.
+/// @cond
 template <class ElementType, typename ElementIndexType>
 class MultibodyTreeElement;
+/// @endcond
 
 /// A class representing an element or component of a MultibodyTree. Examples of
 /// multibody tree elements are bodies, joints, force elements, and constraints.
@@ -29,14 +32,15 @@ class MultibodyTreeElement;
 /// As part of their construction process they get assigned an index that
 /// uniquely identifies them within their parent MultibodyTree.
 /// A generic multibody tree element `MultibodyComponent` is derived from
-/// this class as: <pre>
+/// this class as:
+/// @code{.cpp}
 /// template <typename T>
 /// class MultibodyComponent :
 ///     public MultibodyTreeElement<MultibodyComponent<T>,
 ///                                 MultibodyComponentIndex> {
 ///  ...
 /// };
-/// </pre>
+/// @endcode
 ///
 /// @tparam ElementType The type of the specific multibody element, for
 ///                     instance, a body or a mobilizer. It must be a template
@@ -47,11 +51,12 @@ class MultibodyTreeElement;
 /// @tparam ElementIndexType The type-safe index used for this element type.
 ///
 /// As an example of usage, consider the definition of a `ForceElement` class
-/// as a multibody tree element. This would be accomplished with: <pre>
+/// as a multibody tree element. This would be accomplished with:
+/// @code{.cpp}
 ///   template <typename T>
 ///   class ForceElement :
 ///       public MultibodyTreeElement<ForceElement<T>, BodyIndex>;
-/// </pre>
+/// @endcode
 /// Notice that with the signature below the scalar type is automatically
 /// deduced from the template arguments.
 template <template <typename> class ElementType,
