@@ -199,12 +199,26 @@ class RotationalInertia {
     return *this;
   }
 
-  /// Disallow the subtraction of another inertia from `this` inertia since
-  /// this operation might lead to invalid (non physical) results.
-  // TODO(amcastro-tri): Consider allowing this operation to, for instance,
-  // compute the inertia for an object that has a hole of a known shape in it.
-  // For example, a block with a cylindrical hole.
-  RotationalInertia<T>& operator-=(const RotationalInertia<T>&) = delete;
+  /// Subtracts a rotational inertia from `this` rotational inertia. This
+  /// operation is only valid if both inertias are computed about the same point
+  /// `P` and expressed in the same frame `E`. Considering `this` inertia to be
+  /// `I_SP_E` for some system `S`, taken about some point `P`, the supplied
+  /// inertia must be for some system `B` taken about the *same* point `P`.
+  /// @param[in] I_BP_E A rotational inertia of some body `B` to be added to
+  ///                  `this` inertia. It must have been taken about the same
+  ///                   point `P` as `this` inertia, and expressed in the same
+  ///                   frame `E`.
+  /// @returns A reference to `this` rotational inertia, which has been updated
+  ///          to include the given inertia.
+  /// @warning This operation might lead to physically invalid rotational
+  /// inertia. Use CouldBePhysicallyValid() to perform a number of necessary
+  /// (but not sufficient) checks for a rotational inertia to be physically
+  /// valid. Sufficient conditions are provided by the class SpatialInertia.
+  /// @see SpatialInertia::IsPhysicallyValid().
+  RotationalInertia<T>& operator-=(const RotationalInertia<T>& I_BP_E) {
+    this->get_mutable_triangular_view() -= I_BP_E.get_matrix();
+    return *this;
+  }
 
   /// In-place multiplication of `this` rotational inertia by a `scalar`
   /// modifying the original object. `scalar` must be non-negative or this

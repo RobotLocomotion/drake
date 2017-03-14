@@ -34,7 +34,7 @@ GTEST_TEST(SpatialInertia, DefaultConstructor) {
 // body. Also test getters.
 GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   const double mass = 2.5;
-  const Vector3d com(1.0, -2.0, 3.0);
+  const Vector3d com(0.1, -0.2, 0.3);
   const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
   const Vector3d p(0.1, -0.1, 0.2);  // p for products.
   UnitInertia<double> G(m(0), m(1), m(2), /* moments of inertia */

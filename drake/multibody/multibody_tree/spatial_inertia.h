@@ -121,16 +121,22 @@ class SpatialInertia {
   /// spatial inertia.
   /// The checks performed are:
   /// - No NaN entries.
-  /// - Positive mass.
-  /// - Valid rotational inertia,
-  /// @see RotationalInertia::IsPhysicallyValid().
+  /// - Non-negative mass.
+  /// - Non-negative principal moments about the center of mass.
+  /// - Principal moments about the center of mass must satisfy the triangle
+  ///   inequality:
+  ///   - `Ixx + Iyy >= Izz`
+  ///   - `Ixx + Izz >= Iyy`
+  ///   - `Iyy + Izz >= Ixx`
+  /// @see RotationalInertia::CouldBePhysicallyValid().
   bool IsPhysicallyValid() const {
     if (IsNaN()) return false;
     if (mass_ < T(0)) return false;
     // The tests in RotationalInertia become a sufficient condition when
     // performed on a rotational inertia computed about a body's center of mass.
-    RotationalInertia<T> I_Bcm_F = I_SP_E_;// - mass_ * UnitInertia<T>::PointMass(p_PScm_E_);
-    if (!I_Bcm_F.CouldBePhysicallyValid()) return false;
+    RotationalInertia<T> I_SScm_E(I_SP_E_);
+    I_SScm_E -= mass_ * UnitInertia<T>::PointMass(p_PScm_E_);
+    if (!I_SScm_E.CouldBePhysicallyValid()) return false;
     return true;  // All tests passed.
   }
 
