@@ -12,8 +12,8 @@
 namespace drake {
 namespace automotive {
 
-/// Idm -- A System that takes in the positions and velocities of an ego car and
-/// agent car, and produces an output with the computed IDM acceleration (see
+/// A System that takes in the positions and velocities of an ego car and agent
+/// car, and produces an output with the computed IDM acceleration (see
 /// IdmPlanner).
 ///
 /// Inputs:

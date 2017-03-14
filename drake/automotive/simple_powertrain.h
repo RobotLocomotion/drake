@@ -5,9 +5,9 @@
 namespace drake {
 namespace automotive {
 
-/// SimplePowertrain -- A simple powertrain system modeled as a first-order lag,
-/// with input taken as the throttle setting and the output taken as the applied
-/// lumped force from the vehicle to the road.
+/// A simple powertrain system modeled as a first-order lag, with input taken as
+/// the throttle setting and the output taken as the applied lumped force from
+/// the vehicle to the road.
 ///
 /// Input:
 ///  - A unitless scalar value representing the throttle input to the power

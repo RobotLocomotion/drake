@@ -12,9 +12,9 @@
 namespace drake {
 namespace automotive {
 
-/// Curve2 -- a path through two-dimensional Cartesian space.
+/// A path through two-dimensional Cartesian space.
 ///
-/// Given a list of waypoints, traces a path between them.
+/// Given a list of waypoints, it traces a path between them.
 ///
 /// TODO(jwnimmer-tri) We will soon trace the path using a spline, but
 /// for now it's easiest to just interpolate straight segments, as a
