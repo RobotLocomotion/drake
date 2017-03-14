@@ -23,8 +23,8 @@ class MultibodyTreeElement;
 /// A class representing an element or component of a MultibodyTree. Examples of
 /// multibody tree elements are bodies, joints, force elements, and constraints.
 /// Multibody tree elements are owned and managed by a parent MultibodyTree.
-/// As part of their construction process they get assigned an id that uniquely
-/// identifies them within their parent MultibodyTree.
+/// As part of their construction process they get assigned an index that
+/// uniquely identifies them within their parent MultibodyTree.
 /// A generic multibody tree element `MultibodyComponent` is derived from
 /// this class as: <pre>
 /// template <typename T>
@@ -67,8 +67,8 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
     return *parent_tree_;
   }
 
-  /// Returns the unique identifier in its parent MultibodyTree to this element.
-  ElementIndexType get_index() const { return id_;}
+  /// Returns the unique index in its parent MultibodyTree to this element.
+  ElementIndexType get_index() const { return index_;}
 
   /// Checks whether this MultibodyTreeElement has been registered into a
   /// MultibodyTree. If not, it throws an exception of type std::logic_error.
@@ -105,12 +105,13 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
 
  protected:
   const MultibodyTree<T>* parent_tree_{nullptr};
-  ElementIndexType id_{0};  // ElementIndexType requires a valid initialization.
+  // ElementIndexType requires a valid initialization.
+  ElementIndexType index_{0};
 
   // Only derived sub-classes can call these set methods from within their
   // Create() factories.
   void set_parent_tree(const MultibodyTree<T>* tree) { parent_tree_ = tree; }
-  virtual void set_id(ElementIndexType id) { id_ = id; }
+  virtual void set_index(ElementIndexType index) { index_ = index; }
 };
 
 }  // namespace multibody

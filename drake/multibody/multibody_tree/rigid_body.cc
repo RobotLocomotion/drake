@@ -15,9 +15,9 @@ const RigidBody<T>& RigidBody<T>::Create(MultibodyTree<T>* tree) {
   // Create().
   RigidBody<T>* body = new RigidBody<T>();
   // tree takes ownership.
-  BodyIndex body_id = tree->AddBody(std::unique_ptr<Body<T>>(body));
+  BodyIndex body_index = tree->AddBody(std::unique_ptr<Body<T>>(body));
   body->set_parent_tree(tree);
-  body->set_id(body_id);
+  body->set_index(body_index);
 
   return *body;
 }

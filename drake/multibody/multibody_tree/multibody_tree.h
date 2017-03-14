@@ -9,11 +9,11 @@
 namespace drake {
 namespace multibody {
 
-/// MultibodyTree provides a representation for a world modeled as a
-/// **Multibody Dynamics system** (MBD) that consist of interconnected rigid and
-/// deformable components. As such, it owns and manages each of
-/// the elements that belong to this world. Multibody dynamics elements
-/// constitute Body's, Mobilizer's, Joint's, ForceElement's and Constraint's.
+/// %MultibodyTree provides a representation for a physical system consisting of
+/// a collection of interconnected rigid and deformable bodies. As such, it owns
+/// and manages each of the elements that belong to this physical system.
+/// Multibody dynamics elements include bodies, joints, force elements and
+/// constraints.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -28,11 +28,10 @@ class MultibodyTree {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTree)
 
-  /// Creates a MultibodyTree containing only a **world** body (with unique
-  /// BodyId equal to kWorldBodyId).
+  /// Creates a MultibodyTree containing only a **world** body.
   MultibodyTree();
 
-  /// Takes ownership of @p body and assigns a unique id to it.
+  /// Takes ownership of @p body and assigns a unique index to it.
   ///
   /// @throws std::logic_error if users attempt to add a body to an already
   /// compiled multibody tree with MultibodyTree::Compile() or if `body` is a
@@ -43,7 +42,7 @@ class MultibodyTree {
   /// factory methods. For instance, see RigidBody::Create() to create a body
   /// and add it to a MultibodyTree.
   ///
-  /// @returns The unique identifier of the body just added.
+  /// @returns The unique index of the body just added.
   BodyIndex AddBody(std::unique_ptr<Body<T>> body);
 
   /// Returns the number of bodies in the MultibodyTree including including the
@@ -56,17 +55,15 @@ class MultibodyTree {
     return *bodies_[0];
   }
 
-  /// Returns a constant reference to the body with unique identifier
-  /// @p body_id.
-  const Body<T>& get_body(BodyIndex body_id) const {
-    DRAKE_ASSERT(body_id < get_num_bodies());
-    return *bodies_[body_id];
+  /// Returns a constant reference to the body with unique index `body_index`.
+  const Body<T>& get_body(BodyIndex body_index) const {
+    DRAKE_ASSERT(body_index < get_num_bodies());
+    return *bodies_[body_index];
   }
 
-  /// Returns a mutable reference to the body with unique identifier
-  /// @p body_id.
-  Body<T>* get_mutable_body(BodyIndex body_id) {
-    return bodies_[body_id].get();
+  /// Returns a mutable reference to the body with unique index `body_index`.
+  Body<T>* get_mutable_body(BodyIndex body_index) {
+    return bodies_[body_index].get();
   }
 
   /// This method must be called after all elements in the tree (joints, bodies,

@@ -30,8 +30,8 @@ BodyIndex MultibodyTree<T>::AddBody(std::unique_ptr<Body<T>> body) {
         "Attempting to add a body to an already compiled MultibodyTree is not "
         "allowed. See MultibodyTree::Compile() for details.");
   }
-  // TODO(amcastro-tri): This id will be returned by the MultibodyTreeTopology
-  // class in a future PR.
+  // TODO(amcastro-tri): This index will be returned by the
+  // MultibodyTreeTopology class in a future PR.
   BodyIndex index(bodies_.size());
   bodies_.push_back(std::move(body));
   return index;
