@@ -88,7 +88,7 @@ class TestSisoSystem : public SisoVectorSystem<double> {
   }
 
   // LeafSystem override.
-  std::unique_ptr<AbstractState> AllocateAbstractState() const override {
+  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
     return prototype_abstract_state_->Clone();
   }
 
@@ -109,7 +109,8 @@ class TestSisoSystem : public SisoVectorSystem<double> {
   void set_prototype_abstract_state(const S& value) {
     std::vector<std::unique_ptr<AbstractValue>> vec;
     vec.emplace_back(std::move(std::make_unique<Value<S>>(value)));
-    prototype_abstract_state_ = std::make_unique<AbstractState>(std::move(vec));
+    prototype_abstract_state_ =
+        std::make_unique<AbstractValues>(std::move(vec));
   }
 
   // Testing accessors.
@@ -123,8 +124,8 @@ class TestSisoSystem : public SisoVectorSystem<double> {
  private:
   std::unique_ptr<DiscreteState<double>> prototype_discrete_state_{
     std::make_unique<DiscreteState<double>>()};
-  std::unique_ptr<AbstractState> prototype_abstract_state_{
-    std::make_unique<AbstractState>()};
+  std::unique_ptr<AbstractValues> prototype_abstract_state_{
+      std::make_unique<AbstractValues>()};
   mutable const Context<double>* last_context_{nullptr};
   mutable int output_count_{0};
   mutable int time_derivatives_count_{0};

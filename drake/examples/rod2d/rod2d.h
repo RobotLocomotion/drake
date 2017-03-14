@@ -346,8 +346,8 @@ class Rod2D : public systems::LeafSystem<T> {
 
  protected:
   int get_k(const systems::Context<T>& context) const;
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
-                                            const override;
+  std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
+      const override;
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
   void DoCalcTimeDerivatives(const systems::Context<T>& context,

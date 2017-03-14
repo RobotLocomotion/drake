@@ -71,9 +71,9 @@ class DiagramState : public State<T> {
           substate->get_mutable_discrete_state()->get_data();
       sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
       // Abstract
-      AbstractState* xm = substate->get_mutable_abstract_state();
+      AbstractValues* xm = substate->get_mutable_abstract_state();
       for (int i_xm = 0; i_xm < xm->size(); ++i_xm) {
-        sub_xms.push_back(&xm->get_mutable_abstract_state(i_xm));
+        sub_xms.push_back(&xm->get_mutable_value(i_xm));
       }
     }
 
@@ -85,7 +85,7 @@ class DiagramState : public State<T> {
     this->set_continuous_state(
         std::make_unique<DiagramContinuousState<T>>(sub_xcs));
     this->set_discrete_state(std::make_unique<DiscreteState<T>>(sub_xds));
-    this->set_abstract_state(std::make_unique<AbstractState>(sub_xms));
+    this->set_abstract_state(std::make_unique<AbstractValues>(sub_xms));
   }
 
  private:
@@ -218,7 +218,7 @@ class DiagramContext : public Context<T> {
     parameters_->set_numeric_parameters(
         std::make_unique<DiscreteState<T>>(numeric_params));
     parameters_->set_abstract_parameters(
-        std::make_unique<AbstractState>(abstract_params));
+        std::make_unique<AbstractValues>(abstract_params));
   }
 
   /// Returns the output structure for a given constituent system at @p index.

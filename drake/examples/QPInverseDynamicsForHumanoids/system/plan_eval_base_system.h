@@ -68,7 +68,7 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
    * custom abstract states, then appends a QpInput to the end.
    * @return The combined AbstractState.
    */
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState() const final;
+  std::unique_ptr<systems::AbstractValues> AllocateAbstractState() const final;
 
   /**
    * Returns input port for HumanoidStatus.
@@ -147,7 +147,7 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   Type& get_mutable_abstract_value(systems::State<double>* state,
                                    int index) const {
     return state->get_mutable_abstract_state()
-        ->get_mutable_abstract_state(index)
+        ->get_mutable_value(index)
         .GetMutableValue<Type>();
   }
 
@@ -157,7 +157,7 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   QpInput& get_mutable_qp_input(systems::State<double>* state) const {
     int size = state->get_mutable_abstract_state()->size();
     return state->get_mutable_abstract_state()
-        ->get_mutable_abstract_state(size - 1)
+        ->get_mutable_value(size - 1)
         .GetMutableValue<QpInput>();
   }
 
