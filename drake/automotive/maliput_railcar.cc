@@ -164,7 +164,12 @@ void MaliputRailcar<T>::DoCalcTimeDerivatives(
       dynamic_cast<MaliputRailcarState<T>*>(vector_derivatives);
   DRAKE_ASSERT(rates != nullptr);
 
-  ImplCalcTimeDerivatives(config, *state, *input, rates);
+  if (context.get_time() < T(start_time_)) {
+    rates->set_s(T(0));
+    rates->set_speed(T(0));
+  } else {
+    ImplCalcTimeDerivatives(config, *state, *input, rates);
+  }
 }
 
 template<typename T>
