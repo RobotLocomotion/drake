@@ -153,6 +153,16 @@ Clarifications
   "``const MyClass &foo;``". This is what is enforced by :ref:`clang-format <code-style-tools-clang-format>`. For additional context, see
   `this comment thread <https://github.com/robotlocomotion/drake/pull/3830#issuecomment-254849776>`_.
 
+* For the `Copyable and Movable Types <https://google.github.io/styleguide/cppguide.html#Copyable_Movable_Types>`_,
+  we clarify that a class must declare its own copy and move operations, and
+  must not silently inherit the disposition of a base class.
+  Prefer to use ``drake/common/drake_copyable.h`` macros (either
+  ``DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN`` or
+  ``DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN``) whenever practical.  When not
+  using the macros, the copy constructor and copy-assignment operator at least
+  must be either deleted, defaulted, or implemented.  For discussion, see
+  `issue #4861 <https://github.com/RobotLocomotion/drake/issues/4861>`_.
+
 .. _code-style-guide-cpp-exceptions:
 
 Exceptions
