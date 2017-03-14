@@ -532,8 +532,8 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   }
 
   // Initialize the state of the EndlessRoadCars.
-  for (auto& pair : endless_road_cars_) {
-    EndlessRoadCar<T>* const car = pair.first;
+  for (const auto& pair : endless_road_cars_) {
+    const EndlessRoadCar<T>* const car = pair.first;
     const EndlessRoadCarState<T>& initial_state = pair.second;
 
     systems::VectorBase<T>* context_state =

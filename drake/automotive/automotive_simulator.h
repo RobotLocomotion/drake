@@ -247,7 +247,6 @@ class AutomotiveSimulator {
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
   std::unique_ptr<const maliput::api::RoadGeometry> road_{};
   std::unique_ptr<const maliput::utility::InfiniteCircuitRoad> endless_road_{};
-  std::map<EndlessRoadCar<T>*, EndlessRoadCarState<T>> endless_road_cars_;
 
   // === Start for building. ===
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
@@ -260,6 +259,11 @@ class AutomotiveSimulator {
   // via non-RPY floating joints. See #3919.
   std::vector<std::pair<int, const systems::System<T>*>>
       rigid_body_tree_publisher_inputs_;
+
+  // Holds the desired initial states of each EndlessRoadCar. It is used to
+  // initialize the simulation's diagram's state and to connect the
+  // EndlessRoadCars to the EndlessRoadOracle sensor.
+  std::map<EndlessRoadCar<T>*, EndlessRoadCarState<T>> endless_road_cars_;
 
   // Holds the desired initial states of each SimpleCar. It is used to
   // initialize the simulation's diagram's state.
