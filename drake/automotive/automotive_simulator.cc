@@ -488,7 +488,7 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
         endless_road_.get(), num_cars);
     int i = 0;
     for (const auto& item : endless_road_cars_) {
-      EndlessRoadCar<T>* car = item.first;
+      const EndlessRoadCar<T>* car = item.first;
 
       // Every car is visible to the Oracle...
       builder_->Connect(car->get_output_port(0), oracle->get_input_port(i));
@@ -532,8 +532,8 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   }
 
   // Initialize the state of the EndlessRoadCars.
-  for (auto& pair : endless_road_cars_) {
-    EndlessRoadCar<T>* const car = pair.first;
+  for (const auto& pair : endless_road_cars_) {
+    const EndlessRoadCar<T>* const car = pair.first;
     const EndlessRoadCarState<T>& initial_state = pair.second;
 
     systems::VectorBase<T>* context_state =
