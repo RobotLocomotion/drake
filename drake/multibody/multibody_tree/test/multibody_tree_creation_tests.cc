@@ -36,7 +36,7 @@ GTEST_TEST(MultibodyTree, AddBodies) {
 
   // Tests API to access bodies.
   EXPECT_EQ(model->get_body(BodyIndex(1)).get_index(), pendulum.get_index());
-  EXPECT_EQ(model->get_mutable_body(BodyIndex(1))->get_index(),
+  EXPECT_EQ(model->get_mutable_body(BodyIndex(1)).get_index(),
             pendulum.get_index());
 
   // Rigid bodies have no generalized coordinates.

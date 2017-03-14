@@ -62,8 +62,9 @@ class MultibodyTree {
   }
 
   /// Returns a mutable reference to the body with unique index `body_index`.
-  Body<T>* get_mutable_body(BodyIndex body_index) {
-    return owned_bodies_[body_index].get();
+  Body<T>& get_mutable_body(BodyIndex body_index) {
+    DRAKE_ASSERT(body_index < get_num_bodies());
+    return *owned_bodies_[body_index].get();
   }
 
   /// This method must be called after all elements in the tree (joints, bodies,

@@ -15,7 +15,7 @@ template<typename T> class MultibodyTree;
 
 /// The term **rigid body** implies that the deformations of the body under
 /// consideration are so small that they have no significant effect on the
-/// overalll motions of the body and therefore deformations can be neglected.
+/// overall motions of the body and therefore deformations can be neglected.
 /// If deformations are neglected, the distance between any two points on the
 /// rigid body remains constant at all times and configurations of the multibody
 /// system. This invariance of the distance between two arbitrary points is
@@ -26,11 +26,9 @@ template<typename T> class MultibodyTree;
 /// that a free body in space has six **degrees of freedom**. These degrees of
 /// freedom evolve according to a set of six equations; three equations dictate
 /// the translational motion of the rigid body, and three equations describe its
-/// rotations. When described in a frame of reference at the center of mass of
-/// the rigid body, or centroidal body frame, these equations take the form of
-/// the Newton-Euler equations. Within a MultibodyTree, a RigidBody is assigned
-/// a given number of degrees of freedom by a Mobilizer while, at the same
-/// time, its motions can be constrained by a given set of Constraint objects.
+/// rotations. Within a MultibodyTree, a RigidBody is assigned a given number of
+/// degrees of freedom by a Mobilizer while, at the same time, its motions can
+/// be constrained by a given set of Constraint objects.
 ///
 /// - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
 ///                    (3rd Edition), Addison-Wesley, 2001.

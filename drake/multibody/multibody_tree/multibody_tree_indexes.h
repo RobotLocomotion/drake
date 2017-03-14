@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -46,6 +47,8 @@ class TypeSafeIndex {
   /// For Debug builds this constructor throws if the provided input `index` is
   /// negative.
   explicit TypeSafeIndex(size_t index) : index_(static_cast<int>(index)) {
+    DRAKE_ASSERT(
+        index <= static_cast<unsigned>(std::numeric_limits<int>::max()));
     DRAKE_ASSERT_VOID(CheckInvariants());
   }
 

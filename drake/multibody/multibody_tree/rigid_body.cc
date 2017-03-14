@@ -13,13 +13,15 @@ const RigidBody<T>& RigidBody<T>::Create(MultibodyTree<T>* tree) {
   // Notice that here we cannot use std::make_unique since constructors are made
   // private to avoid users creating bodies by other means other than calling
   // Create().
-  RigidBody<T>* body = new RigidBody<T>();
-  // tree takes ownership.
-  BodyIndex body_index = tree->AddBody(std::unique_ptr<Body<T>>(body));
-  body->set_parent_tree(tree);
-  body->set_index(body_index);
-
-  return *body;
+  // However we can still create a unique_ptr as below where ownership is clear
+  // and an exception would call the destructor.
+  BodyIndex body_index =
+      tree->AddBody(std::unique_ptr<RigidBody<T>>(new RigidBody<T>()));
+  RigidBody<T>& body =
+      dynamic_cast<RigidBody<T>&>(tree->get_mutable_body(body_index));
+  body.set_parent_tree(tree);
+  body.set_index(body_index);
+  return body;
 }
 
 

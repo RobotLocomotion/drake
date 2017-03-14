@@ -70,13 +70,11 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// Returns a constant reference to the parent MultibodyTree that owns
   /// this element.
   /// Sub-classes of %MultibodyTreeElement will have a set of `Create()` methods
-  /// that when susccesfull will create and add a %MultibodyTreeElement to a
+  /// that when successful will create and add a %MultibodyTreeElement to a
   /// valid MultibodyTree. Therefore, on success, the result of a `Create()`
   /// method is a properly initialized %MultibodyTreeElement with a
   /// valid MultibodyTree parent. @see RigidBody::Create() for an example of a
   /// `Create()` method.
-  /// As an additional measure, this method however, asserts that the parent
-  /// MultibodyTree of `this` element is valid in Debug builds.
   const MultibodyTree<T>& get_parent_tree() const {
     DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
     return *parent_tree_;
