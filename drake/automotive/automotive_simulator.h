@@ -263,7 +263,7 @@ class AutomotiveSimulator {
   // Holds the desired initial states of each EndlessRoadCar. It is used to
   // initialize the simulation's diagram's state and to connect the
   // EndlessRoadCars to the EndlessRoadOracle sensor.
-  std::map<EndlessRoadCar<T>*, EndlessRoadCarState<T>> endless_road_cars_;
+  std::map<const EndlessRoadCar<T>*, EndlessRoadCarState<T>> endless_road_cars_;
 
   // Holds the desired initial states of each SimpleCar. It is used to
   // initialize the simulation's diagram's state.

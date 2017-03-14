@@ -488,7 +488,7 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
         endless_road_.get(), num_cars);
     int i = 0;
     for (const auto& item : endless_road_cars_) {
-      EndlessRoadCar<T>* car = item.first;
+      const EndlessRoadCar<T>* car = item.first;
 
       // Every car is visible to the Oracle...
       builder_->Connect(car->get_output_port(0), oracle->get_input_port(i));
