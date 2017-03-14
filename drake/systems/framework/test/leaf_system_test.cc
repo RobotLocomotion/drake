@@ -411,7 +411,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   abstract_data.push_back(PackValue(5));
   abstract_data.push_back(PackValue(7));
   context->set_abstract_state(
-        std::make_unique<AbstractState>(std::move(abstract_data)));
+      std::make_unique<AbstractValues>(std::move(abstract_data)));
 
   // Copy the state.
   std::unique_ptr<State<double>> x = context->CloneState();
@@ -473,7 +473,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   event.do_unrestricted_update = [](const Context<double>& c,
                                   State<double>* s) {
     s->CopyFrom(*c.CloneState());
-    s->set_abstract_state(std::make_unique<AbstractState>());
+    s->set_abstract_state(std::make_unique<AbstractValues>());
   };
 
   // Call the unrestricted update function again, again verifying that an

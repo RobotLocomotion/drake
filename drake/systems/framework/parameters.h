@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/abstract_state.h"
+#include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/discrete_state.h"
 
 namespace drake {
@@ -37,7 +37,7 @@ class Parameters {
       : numeric_parameters_(
             std::make_unique<DiscreteState<T>>(std::move(numeric))),
         abstract_parameters_(
-            std::make_unique<AbstractState>(std::move(abstract))) {}
+            std::make_unique<AbstractValues>(std::move(abstract))) {}
 
   /// Constructs Parameters that are purely @p numeric.
   explicit Parameters(std::vector<std::unique_ptr<BasicVector<T>>>&& numeric)
@@ -50,16 +50,15 @@ class Parameters {
   /// Constructs Parameters in the common case where the parameters consist of
   /// exactly one numeric vector.
   explicit Parameters(std::unique_ptr<BasicVector<T>> vec)
-      : numeric_parameters_(
-          std::make_unique<DiscreteState<T>>(std::move(vec))),
-        abstract_parameters_(std::make_unique<AbstractState>()) {}
+      : numeric_parameters_(std::make_unique<DiscreteState<T>>(std::move(vec))),
+        abstract_parameters_(std::make_unique<AbstractValues>()) {}
 
   /// Constructs Parameters in the common case where the parameters consist of
   /// exactly one abstract value.
   explicit Parameters(std::unique_ptr<AbstractValue> value)
       : numeric_parameters_(std::make_unique<DiscreteState<T>>()),
         abstract_parameters_(
-            std::make_unique<AbstractState>(std::move(value))) {}
+            std::make_unique<AbstractValues>(std::move(value))) {}
 
   virtual ~Parameters() {}
 
@@ -96,13 +95,13 @@ class Parameters {
   /// Returns the abstract-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
   const AbstractValue& get_abstract_parameter(int index) const {
-    return abstract_parameters_->get_abstract_state(index);
+    return abstract_parameters_->get_value(index);
   }
 
   /// Returns the abstract-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
   AbstractValue& get_mutable_abstract_parameter(int index) {
-    return abstract_parameters_->get_mutable_abstract_state(index);
+    return abstract_parameters_->get_mutable_value(index);
   }
 
   /// Returns the abstract-valued parameter at @p index. Asserts if the index
@@ -119,11 +118,12 @@ class Parameters {
     return get_mutable_abstract_parameter(index).template GetMutableValue<V>();
   }
 
-  const AbstractState& get_abstract_parameters() const {
+  const AbstractValues& get_abstract_parameters() const {
     return *abstract_parameters_;
   }
 
-  void set_abstract_parameters(std::unique_ptr<AbstractState> abstract_params) {
+  void set_abstract_parameters(
+      std::unique_ptr<AbstractValues> abstract_params) {
     DRAKE_DEMAND(abstract_params != nullptr);
     abstract_parameters_ = std::move(abstract_params);
   }
@@ -145,11 +145,8 @@ class Parameters {
   }
 
  private:
-  // TODO(david-german-tri): Consider renaming AbstractState and DiscreteState
-  // to NumericValues and AbstractValues, since the abstraction is actually
-  // used in both State and Parameters.
   std::unique_ptr<DiscreteState<T>> numeric_parameters_;
-  std::unique_ptr<AbstractState> abstract_parameters_;
+  std::unique_ptr<AbstractValues> abstract_parameters_;
 };
 
 }  // namespace systems

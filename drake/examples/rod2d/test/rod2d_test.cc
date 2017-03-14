@@ -13,7 +13,7 @@ using drake::systems::BasicVector;
 using drake::systems::ContinuousState;
 using drake::systems::State;
 using drake::systems::SystemOutput;
-using drake::systems::AbstractState;
+using drake::systems::AbstractValues;
 using drake::systems::Simulator;
 using drake::systems::Context;
 
@@ -78,17 +78,16 @@ class Rod2DDAETest : public ::testing::Test {
     xc[5] = 0.0;
 
     // Indicate that the rod is in the single contact sliding mode.
-    AbstractState *abs_state = context_->get_mutable_state()->
-        get_mutable_abstract_state();
-    abs_state->get_mutable_abstract_state(0).
-      template GetMutableValue<Rod2D<double>::Mode>() =
+    AbstractValues* abs_state =
+        context_->get_mutable_state()->get_mutable_abstract_state();
+    abs_state->get_mutable_value(0)
+        .template GetMutableValue<Rod2D<double>::Mode>() =
         Rod2D<double>::kSlidingSingleContact;
 
     // Determine the point of contact.
     const double theta = xc[2];
     const int k = (std::sin(theta) > 0) ? -1 : 1;
-    abs_state->get_mutable_abstract_state(1).
-        template GetMutableValue<int>() = k;
+    abs_state->get_mutable_value(1).template GetMutableValue<int>() = k;
   }
 
   // Sets the rod to a state that corresponds to ballistic motion.
@@ -104,10 +103,10 @@ class Rod2DDAETest : public ::testing::Test {
     xc[5] = 3.0;
 
     // Set the mode to ballistic.
-    AbstractState *abs_state = context_->get_mutable_state()->
-        get_mutable_abstract_state();
-    abs_state->get_mutable_abstract_state(0).
-      template GetMutableValue<Rod2D<double>::Mode>() =
+    AbstractValues* abs_state =
+        context_->get_mutable_state()->get_mutable_abstract_state();
+    abs_state->get_mutable_value(0)
+        .template GetMutableValue<Rod2D<double>::Mode>() =
         Rod2D<double>::kBallisticMotion;
 
     // Note: contact point mode is now arbitrary.
@@ -124,17 +123,16 @@ class Rod2DDAETest : public ::testing::Test {
     xc[4] = -1.0;
 
     // Indicate that the rod is in the single contact sliding mode.
-    AbstractState *abs_state = context_->get_mutable_state()->
-        get_mutable_abstract_state();
-    abs_state->get_mutable_abstract_state(0).
-      template GetMutableValue<Rod2D<double>::Mode>() =
+    AbstractValues* abs_state =
+        context_->get_mutable_state()->get_mutable_abstract_state();
+    abs_state->get_mutable_value(0)
+        .template GetMutableValue<Rod2D<double>::Mode>() =
         Rod2D<double>::kSlidingSingleContact;
 
     // Determine the point of contact.
     const double theta = xc[2];
     const int k = (std::sin(theta) > 0) ? -1 : 1;
-    abs_state->get_mutable_abstract_state(1).
-        template GetMutableValue<int>() = k;
+    abs_state->get_mutable_value(1).template GetMutableValue<int>() = k;
   }
 
   std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.

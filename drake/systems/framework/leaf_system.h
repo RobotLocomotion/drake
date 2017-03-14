@@ -14,7 +14,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
-#include "drake/systems/framework/abstract_state.h"
+#include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_state.h"
@@ -285,8 +285,8 @@ class LeafSystem : public System<T> {
 
   /// Reserves the abstract state as required by CreateDefaultContext. By
   /// default, reserves no state. Systems with abstract state should override.
-  virtual std::unique_ptr<AbstractState> AllocateAbstractState() const {
-    return std::make_unique<AbstractState>();
+  virtual std::unique_ptr<AbstractValues> AllocateAbstractState() const {
+    return std::make_unique<AbstractValues>();
   }
 
   /// Reserves the parameters as required by CreateDefaultContext. By default,
