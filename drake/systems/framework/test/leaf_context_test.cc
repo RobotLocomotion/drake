@@ -309,7 +309,7 @@ TEST_F(LeafContextTest, CopyStateFrom) {
 }
 
 // Tests that a LeafContext<AutoDiffXd> can be initialized from a
-// Leafcontext<double>.
+// LeafContext<double>.
 TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // Set up a target with the same geometry as the source, and no
   // interesting values.
@@ -330,6 +330,11 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   xm.push_back(PackValue(76));
   target.set_abstract_state(std::make_unique<AbstractState>(std::move(xm)));
 
+  std::vector<std::unique_ptr<BasicVector<AutoDiffXd>>> params;
+  params.push_back(std::make_unique<BasicVector<AutoDiffXd>>(3));
+  params.push_back(std::make_unique<BasicVector<AutoDiffXd>>(4));
+  target.get_mutable_parameters().set_numeric_parameters(
+      std::make_unique<DiscreteState<AutoDiffXd>>(std::move(params)));
 
   // Set the target from the source.
   target.SetTimeStateAndParametersFrom(context_);
@@ -337,11 +342,14 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // Verify that time was set.
   EXPECT_EQ(kTime, target.get_time());
   // Verify that state was set.
-  const ContinuousState<AutoDiffXd>& xc = *target.get_continuous_state();
+  const ContinuousState<AutoDiffXd> &xc = *target.get_continuous_state();
   EXPECT_EQ(kGeneralizedPositionSize, xc.get_generalized_position().size());
   EXPECT_EQ(5.0, xc.get_generalized_velocity()[1].value());
   EXPECT_EQ(0, xc.get_generalized_velocity()[1].derivatives().size());
   EXPECT_EQ(128.0, target.get_discrete_state(0)->GetAtIndex(0));
+  // Verify that parameters were set.
+  target.get_numeric_parameter(0);
+  EXPECT_EQ(2.0, (target.get_numeric_parameter(0)->GetAtIndex(1).value()));
 }
 
 }  // namespace systems

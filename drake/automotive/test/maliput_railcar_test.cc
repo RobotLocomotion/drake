@@ -99,10 +99,9 @@ class MaliputRailcarTest : public ::testing::Test {
     LeafContext<double>* leaf_context =
         dynamic_cast<LeafContext<double>*>(context_.get());
     ASSERT_NE(leaf_context, nullptr);
-    Parameters<double>* parameters = leaf_context->get_mutable_parameters();
-    ASSERT_NE(parameters, nullptr);
+    Parameters<double>& parameters = leaf_context->get_mutable_parameters();
     BasicVector<double>* vector_param =
-        parameters->get_mutable_numeric_parameter(0);
+        parameters.get_mutable_numeric_parameter(0);
     ASSERT_NE(vector_param, nullptr);
     MaliputRailcarConfig<double>* railcar_config =
         dynamic_cast<MaliputRailcarConfig<double>*>(vector_param);
