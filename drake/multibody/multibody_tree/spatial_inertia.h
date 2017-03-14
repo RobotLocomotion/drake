@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/cross_product.h"
 #include "drake/multibody/multibody_tree/math/spatial_algebra.h"
@@ -72,6 +73,8 @@ namespace multibody {
 template <typename T>
 class SpatialInertia {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialInertia)
+
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of
   /// uninitialized values.
@@ -140,23 +143,18 @@ class SpatialInertia {
     return true;  // All tests passed.
   }
 
-#if 0
-  // Default copy constructor and copy assignment.
-  SpatialInertia(const SpatialInertia<T>& other) = default;
-  SpatialInertia& operator=(const SpatialInertia<T>& other) = default;
-
-  /// Get a copy to a full Matrix3 representation for this rotational inertia
-  /// including both lower and upper triangular parts.
+  /// Copy to a full 6x6 matrix representation.
   Matrix6<T> CopyToFullMatrix6() const {
-    using math::CrossProductMatrix;
+    using drake::math::VectorToSkewSymmetric;
     Matrix6<T> M;
     M.template block<3, 3>(0, 0) = I_SP_E_.CopyToFullMatrix3();
-    M.template block<3, 3>(0, 3) = mass_ * drake::math::VectorToSkewSymmetric(p_PScm_E_);
+    M.template block<3, 3>(0, 3) = mass_ * VectorToSkewSymmetric(p_PScm_E_);
     M.template block<3, 3>(3, 0) = -M.template block<3, 3>(0, 3);
     M.template block<3, 3>(3, 3) = mass_ * Matrix3<T>::Identity();
     return M;
   }
 
+#if 0
   /// Sets this spatial inertia to have NaN entries. Typically used to quickly
   /// detect uninitialized values since NaN will trigger a chain of invalid
   /// computations that then can be tracked to the source.
@@ -291,6 +289,7 @@ inline SpatialInertia<T> operator*(
                            s * I_Bo_F.get_com(),
                            s * I_Bo_F.get_rotational_inertia());
 }
+#endif
 
 template <typename T> inline
 std::ostream& operator<<(std::ostream& o,
@@ -301,7 +300,6 @@ std::ostream& operator<<(std::ostream& o,
       << " I = " << std::endl
       << M.get_rotational_inertia();
 }
-#endif
 
 }  // namespace multibody
 }  // namespace drake

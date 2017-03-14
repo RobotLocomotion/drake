@@ -18,7 +18,9 @@ namespace multibody {
 namespace math {
 namespace {
 
+using drake::math::VectorToSkewSymmetric;
 using Eigen::AngleAxisd;
+using Eigen::Matrix3d;
 using Eigen::NumTraits;
 using Eigen::Vector3d;
 using std::sort;
@@ -31,7 +33,9 @@ GTEST_TEST(SpatialInertia, DefaultConstructor) {
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a
-// body. Also test getters.
+// body. Also tests:
+//   - Getters.
+//   - CopyToFullMatrix6().
 GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   const double mass = 2.5;
   const Vector3d com(0.1, -0.2, 0.3);
@@ -46,6 +50,15 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   ASSERT_EQ(M.get_com(), com);
   ASSERT_TRUE(M.get_rotational_inertia().IsApprox(
       mass * G, std::numeric_limits<double>::epsilon()));
+
+  Matrix6<double> Mmatrix = M.CopyToFullMatrix6();
+  Matrix6<double> expected_matrix;
+  expected_matrix.block<3,3>(0,0) = mass * G.CopyToFullMatrix3();
+  expected_matrix.block<3,3>(3,3) = mass * Matrix3d::Identity();
+  expected_matrix.block<3,3>(0,3) = mass * VectorToSkewSymmetric(com);
+  expected_matrix.block<3,3>(3,0) = expected_matrix.block<3,3>(0,3).transpose();
+
+  EXPECT_TRUE(Mmatrix.isApprox(expected_matrix, NumTraits<double>::epsilon()));
 }
 
 #if 0
