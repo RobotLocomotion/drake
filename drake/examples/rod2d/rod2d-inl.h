@@ -1196,7 +1196,7 @@ void Rod2D<T>::DoCalcTimeDerivatives(
 
 /// Allocates the abstract state (for piecewise DAE systems).
 template <typename T>
-std::unique_ptr<systems::AbstractState> Rod2D<T>::
+std::unique_ptr<systems::AbstractValues> Rod2D<T>::
   AllocateAbstractState() const {
   if (simulation_type_ == SimulationType::kPiecewiseDAE) {
     // Piecewise DAE approach needs two abstract variables (one mode and one
@@ -1208,10 +1208,10 @@ std::unique_ptr<systems::AbstractState> Rod2D<T>::
 
     // Indicates that the rod is in contact at both points.
     abstract_data.push_back(std::make_unique<systems::Value<int>>(0));
-    return std::make_unique<systems::AbstractState>(std::move(abstract_data));
+    return std::make_unique<systems::AbstractValues>(std::move(abstract_data));
   } else {
     // Time stepping and compliant approaches need no abstract variables.
-    return std::make_unique<systems::AbstractState>();
+    return std::make_unique<systems::AbstractValues>();
   }
 }
 

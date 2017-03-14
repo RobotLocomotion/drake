@@ -68,7 +68,7 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
    * custom abstract states, then appends a QpInput to the end.
    * @return The combined AbstractState.
    */
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState() const final;
+  std::unique_ptr<systems::AbstractValues> AllocateAbstractState() const final;
 
   /**
    * Returns input port for HumanoidStatus.

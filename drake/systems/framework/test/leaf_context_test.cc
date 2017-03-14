@@ -56,7 +56,8 @@ class LeafContextTest : public ::testing::Test {
     abstract_state_ = PackValue(42);
     std::vector<AbstractValue*> xm;
     xm.push_back(abstract_state_.get());
-    context_.set_abstract_state(std::make_unique<AbstractState>(std::move(xm)));
+    context_.set_abstract_state(
+        std::make_unique<AbstractValues>(std::move(xm)));
 
     // Reserve two numeric parameters, of size 3 and size 4.
     std::vector<std::unique_ptr<BasicVector<double>>> params;
@@ -175,14 +176,14 @@ TEST_F(LeafContextTest, IsStateless) {
 TEST_F(LeafContextTest, HasOnlyContinuousState) {
   EXPECT_FALSE(context_.has_only_continuous_state());
   context_.set_discrete_state(std::make_unique<DiscreteState<double>>());
-  context_.set_abstract_state(std::make_unique<AbstractState>());
+  context_.set_abstract_state(std::make_unique<AbstractValues>());
   EXPECT_TRUE(context_.has_only_continuous_state());
 }
 
 TEST_F(LeafContextTest, HasOnlyDiscreteState) {
   EXPECT_FALSE(context_.has_only_discrete_state());
   context_.set_continuous_state(std::make_unique<ContinuousState<double>>());
-  context_.set_abstract_state(std::make_unique<AbstractState>());
+  context_.set_abstract_state(std::make_unique<AbstractValues>());
   EXPECT_TRUE(context_.has_only_discrete_state());
 }
 
@@ -328,7 +329,7 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
 
   std::vector<std::unique_ptr<AbstractValue>> xm;
   xm.push_back(PackValue(76));
-  target.set_abstract_state(std::make_unique<AbstractState>(std::move(xm)));
+  target.set_abstract_state(std::make_unique<AbstractValues>(std::move(xm)));
 
   std::vector<std::unique_ptr<BasicVector<AutoDiffXd>>> params;
   params.push_back(std::make_unique<BasicVector<AutoDiffXd>>(3));

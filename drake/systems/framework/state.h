@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/abstract_state.h"
+#include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_state.h"
 
@@ -25,7 +25,7 @@ class State {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(State)
 
   State()
-      : abstract_state_(std::make_unique<AbstractState>()),
+      : abstract_state_(std::make_unique<AbstractValues>()),
         continuous_state_(std::make_unique<ContinuousState<T>>()),
         discrete_state_(std::make_unique<DiscreteState<T>>()) {}
   virtual ~State() {}
@@ -56,16 +56,16 @@ class State {
     return discrete_state_.get();
   }
 
-  void set_abstract_state(std::unique_ptr<AbstractState> xm) {
+  void set_abstract_state(std::unique_ptr<AbstractValues> xm) {
     DRAKE_DEMAND(xm != nullptr);
     abstract_state_ = std::move(xm);
   }
 
-  const AbstractState* get_abstract_state() const {
+  const AbstractValues* get_abstract_state() const {
     return abstract_state_.get();
   }
 
-  AbstractState* get_mutable_abstract_state() {
+  AbstractValues* get_mutable_abstract_state() {
     return abstract_state_.get();
   }
 
@@ -73,7 +73,7 @@ class State {
   /// state at @p index.  Asserts if @p index doesn't exist.
   template <typename U>
   const U& get_abstract_state(int index) const {
-    const AbstractState* xm = get_abstract_state();
+    const AbstractValues* xm = get_abstract_state();
     return xm->get_abstract_state(index).GetValue<U>();
   }
 
@@ -81,7 +81,7 @@ class State {
   /// Asserts if @p index doesn't exist.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
-    AbstractState* xm = get_mutable_abstract_state();
+    AbstractValues* xm = get_mutable_abstract_state();
     return xm->get_mutable_abstract_state(index).GetMutableValue<U>();
   }
 
@@ -102,7 +102,7 @@ class State {
   }
 
  private:
-  std::unique_ptr<AbstractState> abstract_state_;
+  std::unique_ptr<AbstractValues> abstract_state_;
   std::unique_ptr<ContinuousState<T>> continuous_state_;
   std::unique_ptr<DiscreteState<T>> discrete_state_;
 };

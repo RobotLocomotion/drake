@@ -13,7 +13,7 @@ using drake::systems::BasicVector;
 using drake::systems::ContinuousState;
 using drake::systems::State;
 using drake::systems::SystemOutput;
-using drake::systems::AbstractState;
+using drake::systems::AbstractValues;
 using drake::systems::Simulator;
 using drake::systems::Context;
 
@@ -78,7 +78,7 @@ class Rod2DDAETest : public ::testing::Test {
     xc[5] = 0.0;
 
     // Indicate that the rod is in the single contact sliding mode.
-    AbstractState *abs_state = context_->get_mutable_state()->
+    AbstractValues *abs_state = context_->get_mutable_state()->
         get_mutable_abstract_state();
     abs_state->get_mutable_abstract_state(0).
       template GetMutableValue<Rod2D<double>::Mode>() =
@@ -104,7 +104,7 @@ class Rod2DDAETest : public ::testing::Test {
     xc[5] = 3.0;
 
     // Set the mode to ballistic.
-    AbstractState *abs_state = context_->get_mutable_state()->
+    AbstractValues *abs_state = context_->get_mutable_state()->
         get_mutable_abstract_state();
     abs_state->get_mutable_abstract_state(0).
       template GetMutableValue<Rod2D<double>::Mode>() =
@@ -124,7 +124,7 @@ class Rod2DDAETest : public ::testing::Test {
     xc[4] = -1.0;
 
     // Indicate that the rod is in the single contact sliding mode.
-    AbstractState *abs_state = context_->get_mutable_state()->
+    AbstractValues *abs_state = context_->get_mutable_state()->
         get_mutable_abstract_state();
     abs_state->get_mutable_abstract_state(0).
       template GetMutableValue<Rod2D<double>::Mode>() =

@@ -1,4 +1,4 @@
-#include "drake/systems/framework/abstract_state.h"
+#include "drake/systems/framework/abstract_values.h"
 
 #include <memory>
 
@@ -25,26 +25,27 @@ class AbstractStateTest : public ::testing::Test {
 
 
 TEST_F(AbstractStateTest, OwnedState) {
-  AbstractState xm(std::move(data_));
+  AbstractValues xm(std::move(data_));
   EXPECT_EQ(42, UnpackIntValue(xm.get_abstract_state(0)));
   EXPECT_EQ(76, UnpackIntValue(xm.get_abstract_state(1)));
 }
 
 TEST_F(AbstractStateTest, UnownedState) {
-  AbstractState xm(std::vector<AbstractValue*>{data_[0].get(), data_[1].get()});
+  AbstractValues xm(
+      std::vector<AbstractValue*>{data_[0].get(), data_[1].get()});
   EXPECT_EQ(42, UnpackIntValue(xm.get_abstract_state(0)));
   EXPECT_EQ(76, UnpackIntValue(xm.get_abstract_state(1)));
 }
 
 TEST_F(AbstractStateTest, SingleValueConstructor) {
-  AbstractState xm(PackValue<int>(1000));
+  AbstractValues xm(PackValue<int>(1000));
   ASSERT_EQ(1, xm.size());
   EXPECT_EQ(1000, UnpackIntValue(xm.get_abstract_state(0)));
 }
 
 TEST_F(AbstractStateTest, Clone) {
-  AbstractState xm(std::move(data_));
-  std::unique_ptr<AbstractState> clone = xm.Clone();
+  AbstractValues xm(std::move(data_));
+  std::unique_ptr<AbstractValues> clone = xm.Clone();
   EXPECT_EQ(42, UnpackIntValue(clone->get_abstract_state(0)));
   EXPECT_EQ(76, UnpackIntValue(clone->get_abstract_state(1)));
 }
