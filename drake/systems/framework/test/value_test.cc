@@ -3,6 +3,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -16,6 +17,45 @@ namespace systems {
 namespace {
 
 using MyVector2i = MyVector<2, int>;
+
+struct NoDefaultCtor {
+  explicit NoDefaultCtor(int i) : data{i} {}
+  int data;
+};
+
+struct BareStruct {
+  int data;
+};
+
+GTEST_TEST(ValueTest, DefaultConstructor) {
+  // Value<int>() should work because int is default-constructible.
+  const AbstractValue& abstract_value = Value<int>();
+  EXPECT_EQ(0, abstract_value.GetValue<int>());
+
+  // Value<NoDefaultCtor>() should not work because NoDefaultCtor is not.
+  static_assert(!std::is_default_constructible<Value<NoDefaultCtor>>::value,
+                "Value<NoDefaultCtor>() should not work.");
+}
+
+GTEST_TEST(ValueTest, ForwardingConstructor) {
+  // Value<NoDefaultCtor>(int) should work using forwarding.
+  const AbstractValue& abstract_value = Value<NoDefaultCtor>(22);
+  EXPECT_EQ(22, abstract_value.GetValue<NoDefaultCtor>().data);
+
+  // Value<BareStruct>(BareStruct&&) should use the `(const T&)` constructor,
+  // not the forwarding constructor.
+  const Value<BareStruct> xvalue_bare(BareStruct{});
+
+  // Value<BareStruct>(BareStruct&) should use the `(const T&)` constructor,
+  // not the forwarding constructor.
+  BareStruct bare_struct{};
+  const Value<BareStruct> lvalue_bare(bare_struct);
+
+  // Value<BareStruct>(const BareStruct&) should use the `(const T&)`
+  // constructor, not the forwarding constructor.
+  const BareStruct const_bare_struct{};
+  const Value<BareStruct> crvalue_bare(const_bare_struct);
+}
 
 GTEST_TEST(ValueTest, Make) {
   auto abstract_value = AbstractValue::Make<int>(42);
