@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
+#include <type_traits>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -155,7 +156,29 @@ class Value : public AbstractValue {
   // Values are copyable but not moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Value)
 
+  /// Constructs a Value<T> using T's default constructor, if available.
+  /// This is only available for T's that support default construction.
+  ///
+  /// @tparam T1 is template boilerplate; do not set.
+  template <typename T1 = T,
+            typename = typename std::enable_if<
+                std::is_default_constructible<T1>::value>::type>
+  Value() : value_{} {}
+
+  /// Constructs a Value<T> by copying the given value @p v.
   explicit Value(const T& v) : value_(v) {}
+
+  /// Constructs a Value<T> by forwarding the given @p args to T's constructor,
+  /// if available.  This is only available for non-primitive T's that are
+  /// constructible from @p args.
+  template <typename... Args,
+            typename = typename std::enable_if<
+                std::is_constructible<T, Args...>::value &&
+                !std::is_same<T, Args...>::value &&
+                !std::is_same<T&, Args...>::value &&
+                !std::is_fundamental<T>::value>::type>
+  explicit Value(Args&&... args) : value_{std::forward<Args>(args)...} {}
+
   ~Value() override {}
 
   std::unique_ptr<AbstractValue> Clone() const override {

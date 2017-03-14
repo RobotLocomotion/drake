@@ -75,8 +75,8 @@ drake_cc_library(
     srcs = ["oracular_state_estimator.cc"],
     hdrs = ["oracular_state_estimator.h"],
     deps = [
-        "//drake/systems/framework:leaf_system",
         "//drake/multibody:rigid_body_tree",
+        "//drake/systems/framework:leaf_system",
         "//drake/util:lcm_util",
         "@bot_core_lcmtypes//:lib",
     ],
@@ -87,11 +87,30 @@ drake_cc_library(
     srcs = ["sim_diagram_builder.cc"],
     hdrs = ["sim_diagram_builder.h"],
     deps = [
-        "//drake/systems/controllers:state_feedback_controller_base",
-        "//drake/systems/framework",
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/controllers:state_feedback_controller_base",
+        "//drake/systems/framework",
     ],
+)
+
+drake_cc_binary(
+    name = "iiwa_controller",
+    srcs = ["iiwa_controller.cc"],
+    data = [":models"],
+    deps = [
+        ":iiwa_common",
+        ":iiwa_lcm",
+        ":iiwa_plan_source",
+        "//drake/common:text_logging_gflags",
+        "//drake/lcm",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:pid_controlled_system",
+        "//drake/systems/lcm",
+        "@bot_core_lcmtypes//:lib",
+        "@gflags//:gflags",
+        "@robotlocomotion_lcmtypes//:lib",
+        ],
 )
 
 drake_cc_binary(
@@ -196,15 +215,15 @@ drake_cc_googletest(
     deps = [
         ":iiwa_common",
         ":sim_diagram_builder",
+        "//drake/common:eigen_matrix_compare",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis",
-        "//drake/common:eigen_matrix_compare",
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/controllers:pid_controller",
-        "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/framework",
+        "//drake/systems/primitives:constant_vector_source",
     ],
 )
 

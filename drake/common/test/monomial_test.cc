@@ -24,6 +24,7 @@ namespace symbolic {
 namespace {
 
 using test::ExprEqual;
+using test::VarLess;
 
 class MonomialTest : public ::testing::Test {
  protected:
@@ -57,9 +58,9 @@ class MonomialTest : public ::testing::Test {
                   {var_z_.get_id(), 3}}},  // x^2y^4z^3
     };
 
-    EXPECT_TRUE(var_y_ < var_x_);
-    EXPECT_TRUE(var_z_ < var_y_);
-    EXPECT_TRUE(var_w_ < var_z_);
+    EXPECT_PRED2(VarLess, var_y_, var_x_);
+    EXPECT_PRED2(VarLess, var_z_, var_y_);
+    EXPECT_PRED2(VarLess, var_w_, var_z_);
   }
 
   // Helper function to extract unordered_map<Variable::Id, Variable> from a

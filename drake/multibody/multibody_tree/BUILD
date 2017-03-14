@@ -17,8 +17,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["multibody_tree_indexes.h"],
     deps = [
-        "//drake/common",
-        "//drake/common:nice_type_name",
+        "//drake/common:type_safe_index",
     ],
 )
 
@@ -27,11 +26,11 @@ drake_cc_library(
     srcs = [
         "multibody_tree.cc",
         "rigid_body.cc",
-        ],
+    ],
     hdrs = [
         "body.h",
-        "multibody_tree_element.h",
         "multibody_tree.h",
+        "multibody_tree_element.h",
         "rigid_body.h",
     ],
     deps = [
@@ -46,15 +45,17 @@ drake_cc_library(
     hdrs = ["rotational_inertia.h"],
     deps = [
         "//drake/common",
+        "//drake/common:autodiff",
         "//drake/common:extract_double",
     ],
 )
 
-drake_cc_googletest(
-    name = "mass_properties_test",
+drake_cc_library(
+    name = "unit_inertia",
+    srcs = [],
+    hdrs = ["unit_inertia.h"],
     deps = [
         ":rotational_inertia",
-        "//drake/common:autodiff",
     ],
 )
 
@@ -66,6 +67,21 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_tree_creation_tests",
     deps = [":multibody_tree"],
+)
+
+drake_cc_googletest(
+    name = "rotational_inertia_tests",
+    deps = [
+        ":rotational_inertia",
+        "//drake/common:autodiff",
+    ],
+)
+
+drake_cc_googletest(
+    name = "unit_inertia_tests",
+    deps = [
+        ":unit_inertia",
+    ],
 )
 
 cpplint()

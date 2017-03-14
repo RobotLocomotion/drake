@@ -294,6 +294,106 @@ TEST_F(LeafSystemTest, DeclareAbstractOutput) {
   EXPECT_EQ(42, UnpackIntValue(output->get_data(1)));
 }
 
+// A system that exercises the model_value-based input and output ports.
+class DeclaredModelPortsSystem : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeclaredModelPortsSystem);
+
+  DeclaredModelPortsSystem() {
+    this->DeclareInputPort(kVectorValued, 1);
+    this->DeclareVectorInputPort(MyVector2d());
+    this->DeclareAbstractInputPort(Value<int>(22));
+
+    this->DeclareOutputPort(kVectorValued, 3);
+    this->DeclareVectorOutputPort(MyVector4d());
+    this->DeclareAbstractOutputPort(Value<std::string>("44"));
+  }
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+};
+
+// Tests that Declare{Vector,Abstract}{Input,Output}Port end up with the
+// correct topology.
+GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
+  DeclaredModelPortsSystem dut;
+
+  ASSERT_EQ(dut.get_num_input_ports(), 3);
+  ASSERT_EQ(dut.get_num_output_ports(), 3);
+
+  const InputPortDescriptor<double>& in0 = dut.get_input_port(0);
+  const InputPortDescriptor<double>& in1 = dut.get_input_port(1);
+  const InputPortDescriptor<double>& in2 = dut.get_input_port(2);
+
+  const OutputPortDescriptor<double>& out0 = dut.get_output_port(0);
+  const OutputPortDescriptor<double>& out1 = dut.get_output_port(1);
+  const OutputPortDescriptor<double>& out2 = dut.get_output_port(2);
+
+  EXPECT_EQ(in0.get_data_type(), kVectorValued);
+  EXPECT_EQ(in1.get_data_type(), kVectorValued);
+  EXPECT_EQ(in2.get_data_type(), kAbstractValued);
+
+  EXPECT_EQ(out0.get_data_type(), kVectorValued);
+  EXPECT_EQ(out1.get_data_type(), kVectorValued);
+  EXPECT_EQ(out2.get_data_type(), kAbstractValued);
+
+  EXPECT_EQ(in0.size(), 1);
+  EXPECT_EQ(in1.size(), 2);
+
+  EXPECT_EQ(out0.size(), 3);
+  EXPECT_EQ(out1.size(), 4);
+}
+
+// Tests that the model values specified in Declare{...} are actually used by
+// the corresponding Allocate{...} methods to yield correct types and values.
+GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
+  DeclaredModelPortsSystem dut;
+
+  // Check that BasicVector<double>(1) came out.
+  auto input0 = dut.AllocateInputVector(dut.get_input_port(0));
+  ASSERT_NE(input0, nullptr);
+  EXPECT_EQ(input0->size(), 1);
+
+  // Check that MyVector2d came out.
+  auto input1 = dut.AllocateInputVector(dut.get_input_port(1));
+  ASSERT_NE(input1, nullptr);
+  MyVector2d* downcast_input1 = dynamic_cast<MyVector2d*>(input1.get());
+  ASSERT_NE(downcast_input1, nullptr);
+
+  // Check that Value<int>(22) came out.
+  auto input2 = dut.AllocateInputAbstract(dut.get_input_port(2));
+  ASSERT_NE(input2, nullptr);
+  int downcast_input2{};
+  EXPECT_NO_THROW(downcast_input2 = input2->GetValueOrThrow<int>());
+  EXPECT_EQ(downcast_input2, 22);
+}
+
+// Tests that Declare{Vector,Abstract}OutputPort flow through to allocating the
+// correct values.
+GTEST_TEST(ModelLeafSystemTest, ModelPortsOutput) {
+  DeclaredModelPortsSystem dut;
+  auto context = dut.CreateDefaultContext();
+  auto system_output = dut.AllocateOutput(*context);
+
+  // Check that BasicVector<double>(3) came out.
+  auto output0 = system_output->get_vector_data(0);
+  ASSERT_NE(output0, nullptr);
+  EXPECT_EQ(output0->size(), 3);
+
+  // Check that MyVector4d came out.
+  auto output1 = system_output->GetMutableVectorData(1);
+  ASSERT_NE(output1, nullptr);
+  MyVector4d* downcast_output1 = dynamic_cast<MyVector4d*>(output1);
+  ASSERT_NE(downcast_output1, nullptr);
+
+  // Check that Value<string>("44") came out.
+  auto output2 = system_output->get_data(2);
+  ASSERT_NE(output2, nullptr);
+  std::string downcast_output2{};
+  EXPECT_NO_THROW(downcast_output2 = output2->GetValueOrThrow<std::string>());
+  EXPECT_EQ(downcast_output2, "44");
+}
+
 // Tests both that an unrestricted update callback is called and that
 // modifications to state dimension are caught.
 TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {

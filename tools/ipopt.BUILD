@@ -100,10 +100,20 @@ IPOPT_LIBS = [
 # https://github.com/bazelbuild/bazel/issues/281
 HALF_THE_CORES = "$$[($$(getconf _NPROCESSORS_ONLN)+1)/2]"
 
+LOG = " 2>> ipopt.log"
+
+PRINT_ERRORS = (
+    "echo \"***IPOPT Build stderr***\"" +
+    " && cat ipopt.log" +
+    " && echo \"***IPOPT Build config.log***\"" +
+    " && find -L . -name config.log | xargs cat"
+)
+
 BUILD_IPOPT_CMD = (
-    CDEXEC + " `pwd`/external/ipopt/configure --enable-shared=no 2> /dev/null" +
-    " && " + CDEXEC + " make -j " + HALF_THE_CORES + "  2> /dev/null" +
-    " && " + CDEXEC + " make install 2> /dev/null"
+    "(" + CDEXEC + " `pwd`/external/ipopt/configure --enable-shared=no" + LOG +
+    " && " + CDEXEC + " make -j " + HALF_THE_CORES + LOG +
+    " && " + CDEXEC + " make install" + LOG +
+    ") || (" + PRINT_ERRORS + " && false)"
 )
 
 genrule(

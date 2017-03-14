@@ -257,6 +257,10 @@ Additional Rules
   `exceptions to naming rules <https://google.github.io/styleguide/cppguide.html#Exceptions_to_Naming_Rules>`_, though other method names like
   "``exec()``" are also acceptable.
 
+* Use `MKS <https://en.wikipedia.org/wiki/MKS_system_of_units>`_ units whenever
+  possible. When it is not possible, the code must clearly convey the units
+  used.
+
 .. _code-style-guide-python:
 
 Python Style

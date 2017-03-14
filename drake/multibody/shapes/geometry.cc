@@ -265,7 +265,8 @@ bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
     if (iss >> type && type == "v") {
       int i = 0;
       while (iss >> d) {
-        vertex_coordinates(i++, j) = d;
+        vertex_coordinates(i, j) = d * scale_(i);
+        i++;
       }
       ++j;
     }
@@ -326,7 +327,9 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
             "(line " + std::to_string(line_number) + "). "
             "Vertex in the wrong format.");
       }
-      vertices->push_back(Vector3d(x, y, z));
+      vertices->push_back(Vector3d(x * scale_[0],
+                                   y * scale_[1],
+                                   z * scale_[2]));
     } else if (key == "f") {
       // Reads the connectivity for a single triangle.
       std::vector<int> indices;

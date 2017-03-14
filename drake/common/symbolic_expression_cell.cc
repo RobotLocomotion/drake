@@ -273,7 +273,7 @@ Variables ExpressionVar::GetVariables() const { return {get_variable()}; }
 bool ExpressionVar::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
-  return var_ == static_cast<const ExpressionVar&>(e).var_;
+  return var_.equal_to(static_cast<const ExpressionVar&>(e).var_);
 }
 
 bool ExpressionVar::Less(const ExpressionCell& e) const {
@@ -281,7 +281,7 @@ bool ExpressionVar::Less(const ExpressionCell& e) const {
   DRAKE_ASSERT(get_kind() == e.get_kind());
   // Note the below is using the overloaded operator< between ExpressionVar
   // which is based on variable IDs.
-  return var_ < static_cast<const ExpressionVar&>(e).var_;
+  return var_.less(static_cast<const ExpressionVar&>(e).var_);
 }
 
 Polynomial<double> ExpressionVar::ToPolynomial() const {
@@ -315,7 +315,7 @@ Expression ExpressionVar::Substitute(const Substitution& s) const {
 }
 
 Expression ExpressionVar::Differentiate(const Variable& x) const {
-  if (x == var_) {
+  if (x.equal_to(var_)) {
     return Expression::One();
   } else {
     return Expression::Zero();

@@ -6,12 +6,12 @@
 namespace drake {
 namespace automotive {
 
-/// IdmPlanner -- an IDM (Intelligent Driver Model) planner.  The IDM is a
-/// simple model governing longitudinal accelerations of a vehicle in
-/// single-lane traffic [1, 2].  It is derived based on qualitative observations
-/// of actual driving behavior and captures objectives such as keeping a safe
-/// distance behind a lead vehicle, maintaining a desired speed, and
-/// accelerating and decelerating within comfortable limits.
+/// IdmPlanner (Intelligent Driver Model Planner) is a simple model governing
+/// longitudinal accelerations of a vehicle in single-lane traffic [1, 2].  It
+/// is derived based on qualitative observations of actual driving behavior and
+/// captures objectives such as keeping a safe distance behind a lead vehicle,
+/// maintaining a desired speed, and accelerating and decelerating within
+/// comfortable limits.
 ///
 /// The IDM equation produces accelerations that realize smooth transitions
 /// between the following three modes:

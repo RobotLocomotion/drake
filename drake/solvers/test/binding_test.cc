@@ -2,11 +2,15 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/test/symbolic_test_util.h"
 #include "drake/solvers/constraint.h"
 
 namespace drake {
 namespace solvers {
 namespace test {
+
+using drake::symbolic::test::VarEqual;
+
 GTEST_TEST(TestBinding, constructBinding) {
   symbolic::Variable x1("x1");
   symbolic::Variable x2("x2");
@@ -21,7 +25,7 @@ GTEST_TEST(TestBinding, constructBinding) {
   EXPECT_EQ(binding1.GetNumElements(), 3u);
   VectorDecisionVariable<3> var1_expected(x3, x1, x2);
   for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(binding1.variables()(i), var1_expected(i));
+    EXPECT_PRED2(VarEqual, binding1.variables()(i), var1_expected(i));
   }
 
   // Creates a binding with a single VectorDecisionVariable.

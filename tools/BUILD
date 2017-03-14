@@ -174,8 +174,22 @@ config_setting(
 )
 
 config_setting(
+    name = "with_mosek",
+    values = {"define": "WITH_MOSEK=ON"},
+)
+
+config_setting(
     name = "with_snopt",
     values = {"define": "WITH_SNOPT=ON"},
+)
+
+# IPOPT is an open-source solver, and is included in the Drake build by default.
+# The IPOPT build is fragile, so we provide a hidden switch to shut it off for
+# developers who don't actually need it.  This is not a supported configuration.
+# Use at your own risk: --define=NO_IPOPT=ON
+config_setting(
+    name = "no_ipopt",
+    values = {"define": "NO_IPOPT=ON"},
 )
 
 config_setting(

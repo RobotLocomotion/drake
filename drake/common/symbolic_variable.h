@@ -42,6 +42,12 @@ class Variable {
   std::string get_name() const;
   std::string to_string() const;
 
+  /// Checks the equality of two variables based on their ID values.
+  bool equal_to(const Variable& v) const { return get_id() == v.get_id(); }
+
+  /// Compares two variables based on their ID values.
+  bool less(const Variable& v) const { return get_id() < v.get_id(); }
+
   friend std::ostream& operator<<(std::ostream& os, const Variable& var);
 
  private:
@@ -50,13 +56,6 @@ class Variable {
   Id id_{};           // Unique identifier.
   std::string name_;  // Name of variable.
 };
-
-/// Compare two variables based on their ID values
-bool operator<(const Variable& lhs, const Variable& rhs);
-
-/// Check equality
-bool operator==(const Variable& lhs, const Variable& rhs);
-
 }  // namespace symbolic
 
 /** Computes the hash value of a variable. */
@@ -66,6 +65,26 @@ struct hash_value<symbolic::Variable> {
 };
 
 }  // namespace drake
+
+namespace std {
+/* Provides std::less<drake::symbolic::Variable>. */
+template <>
+struct less<drake::symbolic::Variable> {
+  bool operator()(const drake::symbolic::Variable& lhs,
+                  const drake::symbolic::Variable& rhs) const {
+    return lhs.less(rhs);
+  }
+};
+
+/* Provides std::equal_to<drake::symbolic::Variable>. */
+template <>
+struct equal_to<drake::symbolic::Variable> {
+  bool operator()(const drake::symbolic::Variable& lhs,
+                  const drake::symbolic::Variable& rhs) const {
+    return lhs.equal_to(rhs);
+  }
+};
+}  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 namespace Eigen {
@@ -77,3 +96,23 @@ struct NumTraits<drake::symbolic::Variable>
 };
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+namespace drake {
+namespace symbolic {
+/// Checks if two Eigen::Matrix<Variable> @p m1 and @p m2 are structurally
+/// equal. That is, it returns true if and only if `m1(i, j)` is structurally
+/// equal to `m2(i, j)` for all `i`, `j`.
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+        std::is_same<typename DerivedA::Scalar, Variable>::value &&
+        std::is_same<typename DerivedB::Scalar, Variable>::value,
+    bool>::type
+CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  return m1.binaryExpr(m2, std::equal_to<Variable>{}).all();
+}
+}  // namespace symbolic
+}  // namespace drake

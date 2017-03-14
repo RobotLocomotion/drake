@@ -12,9 +12,9 @@
 namespace drake {
 namespace automotive {
 
-/// Idm -- A System that takes in the positions and velocities of an ego car and
-/// agent car, and produces an output with the computed IDM acceleration (see
-/// IdmPlanner).
+/// Idm (Intelligent Driver Model) is a System that takes in the positions and
+/// velocities of an ego car and agent car, and produces an output with the
+/// computed IDM acceleration (see IdmPlanner).
 ///
 /// Inputs:
 ///   0: A BasicVector consisting of
@@ -49,7 +49,7 @@ class Idm : public systems::LeafSystem<T> {
                             systems::Parameters<T>* params) const override;
 };
 
-/// SingleLaneEgoAndAgent -- A System consisting of two cars: an ego and an
+/// SingleLaneEgoAndAgent is a System consisting of two cars: an ego and an
 /// agent, where the ego is governed by an IDM (intelligent driver model)
 /// planner, and where the agent is fed a constant acceleration input.
 ///
