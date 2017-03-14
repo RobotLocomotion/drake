@@ -59,7 +59,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   /// @param start_time The time at which this vehicle starts moving.
   ///
   explicit MaliputRailcar(const maliput::api::Lane& lane,
-                          double start_time = 0);
+                          T start_time = T(0));
 
   // System<T> overrides.
   void DoCalcOutput(const systems::Context<T>& context,
@@ -123,7 +123,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
     MaliputRailcarState<double>* rates) const;
 
   const maliput::api::Lane& lane_;
-  const double start_time_{};
+  const T start_time_{};
   int command_input_port_index_{};
   int state_output_port_index_{};
   int pose_output_port_index_{};
