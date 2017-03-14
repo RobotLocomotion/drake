@@ -31,7 +31,8 @@ class MultibodyTree {
   /// Creates a MultibodyTree containing only a **world** body.
   MultibodyTree();
 
-  /// Takes ownership of `body` and assigns a unique index to it.
+  /// Takes ownership of `body` and assigns a unique index to it. Once a body
+  /// is added to a MultibodyTree it cannot be removed from it.
   ///
   /// @throws std::logic_error if users attempt to add a body to an already
   /// compiled multibody tree with MultibodyTree::Compile() or if `body` is a

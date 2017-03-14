@@ -90,7 +90,9 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   }
 
   /// Checks whether `this` element has the same parent tree as `other`.
-  /// If not, it throws an exception of type std::logic_error.
+  /// If not, it throws an exception of type `std::logic_error`.
+  /// A `std::logic_error` exception is thrown if either or both elements do not
+  /// have a parent tree.
   template <template <typename> class OtherElementType,
       typename OtherElementIndexType>
   void HasSameParentTreeOrThrow(
