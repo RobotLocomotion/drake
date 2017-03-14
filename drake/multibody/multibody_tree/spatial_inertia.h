@@ -291,6 +291,9 @@ inline SpatialInertia<T> operator*(
 }
 #endif
 
+/// Insertion operator to write SpatialInertia objects into a `std::ostream`.
+/// Especially useful for debugging.
+/// @relates SpatialInertia
 template <typename T> inline
 std::ostream& operator<<(std::ostream& o,
                          const SpatialInertia<T>& M) {

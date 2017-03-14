@@ -61,6 +61,29 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   EXPECT_TRUE(Mmatrix.isApprox(expected_matrix, NumTraits<double>::epsilon()));
 }
 
+// Test the shift operator to write into a stream.
+GTEST_TEST(SpatialInertia, ShiftOperator) {
+  const double mass = 2.5;
+  const Vector3d com(0.1, -0.2, 0.3);
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
+  UnitInertia<double> G(m(0), m(1), m(2), /* moments of inertia */
+                        p(0), p(1), p(2));/* products of inertia */
+  SpatialInertia<double> M(mass, com, G);
+
+  std::stringstream stream;
+  stream << std::fixed << std::setprecision(4) << M;
+  std::string expected_string =
+      " mass = 2.5000\n"
+      " com = [ 0.1000 -0.2000  0.3000]^T\n"
+      " I = \n"
+      "[ 5.0000,  0.2500, -0.2500]\n"
+      "[ 0.2500,  5.7500,  0.5000]\n"
+      "[-0.2500,  0.5000,  6.0000]\n";
+  EXPECT_EQ(expected_string, stream.str());
+}
+
+
 #if 0
 GTEST_TEST(SpatialInertia, PlusEqualOperator) {
   const double L = 2.0;
