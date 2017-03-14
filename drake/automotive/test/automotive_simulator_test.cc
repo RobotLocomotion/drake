@@ -102,8 +102,10 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   EulerFloatingJointState<double> joint_value;
   GetLastPublishedJointValue(kJointStateChannelName, state_pub.get_translator(),
                              mock_lcm, &joint_value);
-  EXPECT_GT(joint_value.x(), 0.0);
-  EXPECT_LT(joint_value.x(), 0.001);
+  // The following is hard-coded to match prius.sdf and prius_with_lidar.sdf.
+  const double kp_MoVo{1.40948};
+  EXPECT_GT(joint_value.x() - kp_MoVo, 0.0);
+  EXPECT_LT(joint_value.x() - kp_MoVo, 0.001);
 
   // Move a lot.  Confirm that we're moving in +x.
   for (int i = 0; i < 100; ++i) {
@@ -133,12 +135,12 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
 }
 
 // Cover AddSimpleCar (and thus AddPublisher), Start, StepBy, GetSystemByName.
-GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPrius) {
+GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPriusWithLidar) {
   TestSimpleCarWithSdf(GetDrakePath() +
                        "/automotive/models/prius/prius_with_lidar.sdf", 17);
 }
 
-GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestTwoDofBot) {
+GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPrius) {
   TestSimpleCarWithSdf(GetDrakePath() +
                        "/automotive/models/prius/prius.sdf", 13);
 }
