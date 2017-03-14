@@ -162,6 +162,11 @@ class ImageTest : public ::testing::Test {
       const sensors::Image<float>& depth_image)> ImageVerifier;
 
   typedef std::function<void(
+      const sensors::Image<uint8_t>& color_image,
+      const sensors::Image<float>& depth_image,
+      int horizon)> ImageHorizonVerifier;
+
+  typedef std::function<void(
       const Eigen::Isometry3d& pose)> CameraBasePoseVerifier;
 
   void Verify(ImageVerifier verifier) {
@@ -175,7 +180,15 @@ class ImageTest : public ::testing::Test {
     verifier(color_image, depth_image);
   }
 
-  void VerifyPoseUpdate(ImageVerifier verifier) {
+  // Calculates the pixel location of the horizon.
+  static int CalcHorizon(double z, int image_height) {
+    const double elevation_per_pixel = kFovY / image_height;
+    const double kTerrainSize = 50.;
+    return image_height / 2 +
+        std::atan(z / kTerrainSize) / elevation_per_pixel;
+  }
+
+  void VerifyPoseUpdate(ImageHorizonVerifier verifier) {
     auto& color_image = output_->GetMutableData(0)->GetMutableValue<
       sensors::Image<uint8_t>>();
     auto& depth_image = output_->GetMutableData(1)->GetMutableValue<
@@ -183,16 +196,16 @@ class ImageTest : public ::testing::Test {
     VectorBase<double>* cstate =
         context_->get_mutable_continuous_state_vector();
 
-    diagram_->CalcOutput(*context_, output_.get());
-    verifier(color_image, depth_image);
+    const double kZInitial = 1.;
+    std::array<double, 3> kZDiffs{{0., -0.2, -0.5}};
 
-    cstate->SetAtIndex(2, -0.1);
-    diagram_->CalcOutput(*context_, output_.get());
-    verifier(color_image, depth_image);
-
-    cstate->SetAtIndex(2, -0.3);
-    diagram_->CalcOutput(*context_, output_.get());
-    verifier(color_image, depth_image);
+    for (int i = 0; i < 3; ++i) {
+      cstate->SetAtIndex(2, kZDiffs[i]);
+      diagram_->CalcOutput(*context_, output_.get());
+      double expected_horizon = CalcHorizon(kZInitial + kZDiffs[i],
+                                            color_image.height());
+      verifier(color_image, depth_image, expected_horizon);
+    }
   }
 
   void Verify(CameraBasePoseVerifier verifier) {
@@ -293,9 +306,10 @@ class ImageTest : public ::testing::Test {
     ASSERT_NEAR(depth_image.at(kHalfWidth, kHalfHeight)[0], 1.f, 1e-4);
   }
 
-  void VerifyMovingCamera(const sensors::Image<uint8_t>& color_image,
-                          const sensors::Image<float>& depth_image) {
-    int horizon = 0;
+  static void VerifyMovingCamera(const sensors::Image<uint8_t>& color_image,
+                                 const sensors::Image<float>& depth_image,
+                                 int expected_horizon) {
+    int actual_horizon{0};
     std::array<uint8_t, 4> color{{0u, 0u, 0u, 0u}};
     for (int v = 0; v < color_image.height(); ++v) {
       if ((color[0] != color_image.at(0, v)[0]) ||
@@ -305,13 +319,11 @@ class ImageTest : public ::testing::Test {
         for (int ch = 0; ch < 4; ++ch) {
           color[ch] = color_image.at(0, v)[ch];
         }
-        horizon = v;
+        actual_horizon = v;
       }
     }
 
-    // RgbdCamera goes down, so the horizon goes up.
-    EXPECT_LT(horizon, previous_horizon_);
-    previous_horizon_ = horizon;
+    EXPECT_EQ(expected_horizon, actual_horizon);
   }
 
  protected:
@@ -339,7 +351,6 @@ class ImageTest : public ::testing::Test {
   std::unique_ptr<RenderingSim> diagram_;
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
-  int previous_horizon_{480};
 };
 
 // Verifies the rendered terrain and the camera's pose.
@@ -402,10 +413,7 @@ TEST_F(ImageTest, CameraPoseUpdateTest) {
                                     0., 0., 1., 11.,
                                     0., 0., 0., 1.).finished());
   SetUp(sdf, transformation);
-
-  auto verifier = std::bind(&ImageTest::VerifyMovingCamera, this,
-                            std::placeholders::_1, std::placeholders::_2);
-  VerifyPoseUpdate(verifier);
+  VerifyPoseUpdate(ImageTest::VerifyMovingCamera);
 }
 
 

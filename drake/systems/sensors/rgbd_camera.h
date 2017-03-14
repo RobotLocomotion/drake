@@ -159,7 +159,7 @@ class RgbdCamera : public LeafSystem<double> {
   /// Image<float>.
   const OutputPortDescriptor<double>& depth_image_output_port() const;
 
-  /// Returns a descriptor of the abstract valued output port that contains an
+  /// Returns a descriptor of the vector valued output port that contains an
   /// PoseVector.
   const OutputPortDescriptor<double>& camera_base_pose_output_port() const;
 
