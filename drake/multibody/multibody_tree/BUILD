@@ -17,8 +17,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["multibody_tree_indexes.h"],
     deps = [
-        "//drake/common",
-        "//drake/common:nice_type_name",
+        "//drake/common:type_safe_index",
     ],
 )
 
