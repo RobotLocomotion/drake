@@ -14,8 +14,8 @@ namespace multibody {
 template<typename T> class MultibodyTree;
 
 /// The term **rigid body** implies that the deformations of the body under
-/// consideration are so small that have no effect on the overalll motions of
-/// the body and therefore deformations can be neglected.
+/// consideration are so small that they have no significant effect on the
+/// overalll motions of the body and therefore deformations can be neglected.
 /// If deformations are neglected, the distance between any two points on the
 /// rigid body remains constant at all times and configurations of the multibody
 /// system. This invariance of the distance between two arbitrary points is
@@ -23,15 +23,14 @@ template<typename T> class MultibodyTree;
 /// multibody mechanics [Goldstein 2001].
 /// It can be demonstrated that the unconstrained three-dimensional motions of a
 /// rigid body can be described by six coordinates and thus it is often said
-/// that a free body in space has six **degrees of freedom**. These generalized
-/// coordinates evolve according to a set of six equations; three equations
-/// dictate the translational motion of the rigid body, and three equations
-/// describe its rotations. When described in a frame of reference at the center
-/// of mass of the rigid body, or centroidal body frame, these equations take
-/// the form of the Newton-Euler equations.
-/// Within a MultibodyTree, a RigidBody is assigned a given number of rigid
-/// degrees of freedom by a Mobilizer while, at the same time, its motions can
-/// be constrained by a given set of Constraint objects.
+/// that a free body in space has six **degrees of freedom**. These degrees of
+/// freedom evolve according to a set of six equations; three equations dictate
+/// the translational motion of the rigid body, and three equations describe its
+/// rotations. When described in a frame of reference at the center of mass of
+/// the rigid body, or centroidal body frame, these equations take the form of
+/// the Newton-Euler equations. Within a MultibodyTree, a RigidBody is assigned
+/// a given number of degrees of freedom by a Mobilizer while, at the same
+/// time, its motions can be constrained by a given set of Constraint objects.
 ///
 /// - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
 ///                    (3rd Edition), Addison-Wesley, 2001.
@@ -49,9 +48,10 @@ class RigidBody : public Body<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
 
-  /// Creates a new %RigidBody and adds it to the %MultibodyTree world.
+  /// Creates a new %RigidBody and adds it to the MultibodyTree world.
   /// The MultibodyTree `tree` takes ownership of the newly created body.
-  /// @param[in] tree The parent MultibodyTree to which this body will be added.
+  /// @param[in, out] tree The parent MultibodyTree to which this body will be
+  ///                      added.
   /// @returns A constant reference to the newly created rigid body.
   // TODO(amcastro-tri): In a future PR this factory will take a MassProperties
   // object to:

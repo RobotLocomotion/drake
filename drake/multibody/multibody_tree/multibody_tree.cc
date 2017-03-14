@@ -32,8 +32,8 @@ BodyIndex MultibodyTree<T>::AddBody(std::unique_ptr<Body<T>> body) {
   }
   // TODO(amcastro-tri): This index will be returned by the
   // MultibodyTreeTopology class in a future PR.
-  BodyIndex index(bodies_.size());
-  bodies_.push_back(std::move(body));
+  BodyIndex index(owned_bodies_.size());
+  owned_bodies_.push_back(std::move(body));
   return index;
 }
 
@@ -47,7 +47,7 @@ void MultibodyTree<T>::Compile() {
   //   - Setup computational structures (BodyNode based).
 
   // Here, give bodies the chance to perform any compile-time setup.
-  for (const auto& body : bodies_) {
+  for (const auto& body : owned_bodies_) {
     body->Compile();
   }
 

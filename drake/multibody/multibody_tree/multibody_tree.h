@@ -45,25 +45,24 @@ class MultibodyTree {
   /// @returns The unique index of the body just added.
   BodyIndex AddBody(std::unique_ptr<Body<T>> body);
 
-  /// Returns the number of bodies in the MultibodyTree including including the
-  /// *world* body. Therefore the minimum number of bodies in a MultibodyTree is
-  /// one.
-  int get_num_bodies() const { return static_cast<int>(bodies_.size()); }
+  /// Returns the number of bodies in the MultibodyTree including the *world*
+  /// body. Therefore the minimum number of bodies in a MultibodyTree is one.
+  int get_num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
 
   /// Returns a constant reference to the *world* body.
   const Body<T>& get_world_body() const {
-    return *bodies_[0];
+    return *owned_bodies_[world_index()];
   }
 
   /// Returns a constant reference to the body with unique index `body_index`.
   const Body<T>& get_body(BodyIndex body_index) const {
     DRAKE_ASSERT(body_index < get_num_bodies());
-    return *bodies_[body_index];
+    return *owned_bodies_[body_index];
   }
 
   /// Returns a mutable reference to the body with unique index `body_index`.
   Body<T>* get_mutable_body(BodyIndex body_index) {
-    return bodies_[body_index].get();
+    return owned_bodies_[body_index].get();
   }
 
   /// This method must be called after all elements in the tree (joints, bodies,
@@ -79,7 +78,7 @@ class MultibodyTree {
   void Compile();
 
  private:
-  std::vector<std::unique_ptr<Body<T>>> bodies_;
+  std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   // TODO(amcastro-tri): this flag will go within the topology class in a
   // future PR.
   bool topology_is_valid_{false};

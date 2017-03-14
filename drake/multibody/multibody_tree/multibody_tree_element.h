@@ -13,10 +13,13 @@ template<typename T> class MultibodyTree;
 // inheriting from MultibodyTreeElement (i.e. this is a CRTP class), and the
 // type of the type-safe index used to identify these element types within a
 // MultibodyTree.
-// The signature below is an explicit (full) template specialization for the
-// case in which the class is a template in a scalar type T. The template
-// specialization allows the compiler to automatically deduce the scalar type
-// from the subclass template signature itself.
+// The signature below is the primary template definition for
+// MultibodyTreeElement (even when at a first glance it looks like a forward
+// declaration, it is not). This will allow us, a few lines below, to provide an
+// explicit (full) template specialization for the case in which the class is a
+// template in a scalar type T. The template specialization allows the compiler
+// to automatically deduce the scalar type from the subclass template signature
+// itself.
 template <class ElementType, typename ElementIndexType>
 class MultibodyTreeElement;
 
@@ -41,7 +44,7 @@ class MultibodyTreeElement;
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar. With the
 ///           signature below the scalar type is automatically deduced from the
 ///           `ElementType` template argument.
-/// @tparam ElemeentIndexType The type-safe index used for this element type.
+/// @tparam ElementIndexType The type-safe index used for this element type.
 ///
 /// As an example of usage, consider the definition of a `ForceElement` class
 /// as a multibody tree element. This would be accomplished with: <pre>
@@ -49,19 +52,26 @@ class MultibodyTreeElement;
 ///   class ForceElement :
 ///       public MultibodyTreeElement<ForceElement<T>, BodyIndex>;
 /// </pre>
-/// Notice that the with the signature below the scalar type is automatically
+/// Notice that with the signature below the scalar type is automatically
 /// deduced from the template arguments.
 template <template <typename> class ElementType,
     typename T, typename ElementIndexType>
 class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeElement)
+
   virtual ~MultibodyTreeElement() {}
 
   /// Returns a constant reference to the parent MultibodyTree that owns
   /// this element.
-  /// By construction a %MultibodyTreeElement **always** has a parent
-  /// MultibodyTree. This method, however, asserts that this is the case in
-  /// Debug builds.
+  /// Sub-classes of %MultibodyTreeElement will have a set of `Create()` methods
+  /// that when susccesfull will create and add a %MultibodyTreeElement to a
+  /// valid MultibodyTree. Therefore, on success, the result of a `Create()`
+  /// method is a properly initialized %MultibodyTreeElement with a
+  /// valid MultibodyTree parent. @see RigidBody::Create() for an example of a
+  /// `Create()` method.
+  /// As an additional measure, this method however, asserts that the parent
+  /// MultibodyTree of `this` element is valid in Debug builds.
   const MultibodyTree<T>& get_parent_tree() const {
     DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
     return *parent_tree_;
@@ -90,7 +100,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
     other.HasParentTreeOrThrow();
     if (parent_tree_ != other.parent_tree_) {
       throw std::logic_error(
-          "These two MultibodyTreeElement's do not belong to "
+          "These two MultibodyTreeElement objects do not belong to "
           "the same MultibodyTree.");
     }
   }
@@ -104,14 +114,19 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   // This will make use the template argument "MultibodyTreeElement".
 
  protected:
-  const MultibodyTree<T>* parent_tree_{nullptr};
-  // ElementIndexType requires a valid initialization.
-  ElementIndexType index_{0};
+  // Default constructor made protected so that sub-classes can still declare
+  // their default constructors if they need to.
+  MultibodyTreeElement() {}
 
   // Only derived sub-classes can call these set methods from within their
   // Create() factories.
   void set_parent_tree(const MultibodyTree<T>* tree) { parent_tree_ = tree; }
-  virtual void set_index(ElementIndexType index) { index_ = index; }
+  void set_index(ElementIndexType index) { index_ = index; }
+
+ private:
+  const MultibodyTree<T>* parent_tree_{nullptr};
+  // ElementIndexType requires a valid initialization.
+  ElementIndexType index_{0};
 };
 
 }  // namespace multibody
