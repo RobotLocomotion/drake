@@ -79,8 +79,6 @@ class SimpleCar : public systems::LeafSystem<T> {
   systems::System<symbolic::Expression>* DoToSymbolic() const override;
 
   // LeafSystem<T> overrides
-  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-      const override;
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
  private:

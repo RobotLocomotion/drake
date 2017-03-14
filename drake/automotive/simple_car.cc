@@ -30,6 +30,10 @@ SimpleCar<T>::SimpleCar() {
   this->DeclareVectorOutputPort(SimpleCarState<T>());
   this->DeclareVectorOutputPort(PoseVector<T>());
   this->DeclareVectorOutputPort(FrameVelocity<T>());
+  // TODO(jwnimmer-tri) Offer one-argument model sugar for this next line.
+  this->DeclareContinuousState(
+      std::make_unique<SimpleCarState<T>>(),
+      0, 0, SimpleCarStateIndices::kNumCoordinates);
 }
 
 template <typename T>
@@ -203,13 +207,6 @@ systems::System<AutoDiffXd>* SimpleCar<T>::DoToAutoDiffXd() const {
 template <typename T>
 systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
   return new SimpleCar<symbolic::Expression>;
-}
-
-template <typename T>
-std::unique_ptr<systems::ContinuousState<T>>
-SimpleCar<T>::AllocateContinuousState() const {
-  return std::make_unique<systems::ContinuousState<T>>(
-      std::make_unique<SimpleCarState<T>>());
 }
 
 template <typename T>

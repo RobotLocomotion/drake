@@ -40,8 +40,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     if (curve_.path_length() == 0.0) {
       throw std::invalid_argument{"empty curve"};
     }
-    this->DeclareOutputPort(systems::kVectorValued,
-                            SimpleCarStateIndices::kNumCoordinates);
+    this->DeclareVectorOutputPort(SimpleCarState<T>());
   }
 
  protected:
@@ -52,11 +51,6 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     DRAKE_ASSERT(output_vector);
 
     ImplCalcOutput(context.get_time(), output_vector);
-  }
-
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::OutputPortDescriptor<T>& descriptor) const override {
-    return std::make_unique<SimpleCarState<T>>();
   }
 
  private:
