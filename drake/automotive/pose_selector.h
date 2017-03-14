@@ -27,8 +27,8 @@ class PoseSelector {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSelector)
   PoseSelector() = delete;
 
-  /// Compares the Lane-space poses 
-  /// 
+  /// Compares the Lane-space poses
+  ///
   /// If @p agent_lane is `nullptr`, the the ego car's current lane is used.
   ///
   /// N.B. Assumes that road.ToRoadPosition(geo_position, nullptr, nullptr,
@@ -48,7 +48,7 @@ class PoseSelector {
       const systems::rendering::PoseBundle<T>& agent_poses);
 
   ///
-  static const maliput::api::RoadPosition GetRoadPosition(
+  static const maliput::api::RoadPosition CalcRoadPosition(
       const maliput::api::RoadGeometry& road, const Isometry3<T>& pose);
 };
 

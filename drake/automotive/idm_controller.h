@@ -40,7 +40,7 @@ class IdmController : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdmController)
 
   /// Constructor. @p road the pre-defined RoadGeometry.
-  IdmController(const maliput::api::RoadGeometry* road);
+  explicit IdmController(const maliput::api::RoadGeometry* road);
   ~IdmController() override;
 
   /// Returns the port to the ego car input subvector.

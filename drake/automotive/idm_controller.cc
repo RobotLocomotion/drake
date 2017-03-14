@@ -85,7 +85,7 @@ void IdmController<T>::ImplDoCalcOutput(const PoseVector<T>& ego_pose,
   const T car_length = 4.5;
 
   const T& s_ego =
-      PoseSelector<T>::GetRoadPosition(*road_, ego_pose.get_isometry()).pos.s;
+      PoseSelector<T>::CalcRoadPosition(*road_, ego_pose.get_isometry()).pos.s;
   const T& s_dot_ego = 10.;  // TODO(jadecastro): Retrieve an actual velocity.
   const T& s_agent = agent_road_position.pos.s;
   const T& s_dot_agent = 0.;  // TODO(jadecastro): Retrieve an actual velocity.
