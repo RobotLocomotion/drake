@@ -13,11 +13,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/math/saturate.h"
 #include "drake/systems/framework/vector_base.h"
-
-// This is used indirectly to allow DRAKE_ASSERT on symbolic::Expression.
-#include "drake/common/symbolic_formula.h"
 
 namespace drake {
 
@@ -28,12 +26,10 @@ namespace automotive {
 
 template <typename T>
 SimpleCar<T>::SimpleCar() {
-  this->DeclareInputPort(systems::kVectorValued,
-                         DrivingCommandIndices::kNumCoordinates);
-  this->DeclareOutputPort(systems::kVectorValued,
-                          SimpleCarStateIndices::kNumCoordinates);
-  this->DeclareOutputPort(systems::kVectorValued, PoseVector<T>::kSize);
-  this->DeclareOutputPort(systems::kVectorValued, FrameVelocity<T>::kSize);
+  this->DeclareVectorInputPort(DrivingCommand<T>());
+  this->DeclareVectorOutputPort(SimpleCarState<T>());
+  this->DeclareVectorOutputPort(PoseVector<T>());
+  this->DeclareVectorOutputPort(FrameVelocity<T>());
 }
 
 template <typename T>
@@ -210,33 +206,10 @@ systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
 }
 
 template <typename T>
-systems::BasicVector<T>* SimpleCar<T>::DoAllocateInputVector(
-    const systems::InputPortDescriptor<T>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_index() == 0);
-  return new DrivingCommand<T>();
-}
-
-template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>
 SimpleCar<T>::AllocateContinuousState() const {
   return std::make_unique<systems::ContinuousState<T>>(
       std::make_unique<SimpleCarState<T>>());
-}
-
-template <typename T>
-std::unique_ptr<systems::BasicVector<T>> SimpleCar<T>::AllocateOutputVector(
-    const systems::OutputPortDescriptor<T>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_index() <= 2);
-  switch (descriptor.get_index()) {
-    case 0:
-      return std::make_unique<SimpleCarState<T>>();
-    case 1:
-      return std::make_unique<PoseVector<T>>();
-    case 2:
-      return std::make_unique<FrameVelocity<T>>();
-    default:
-      return nullptr;
-  }
 }
 
 template <typename T>
