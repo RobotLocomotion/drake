@@ -17,18 +17,16 @@ template<typename T> class MultibodyTree;
 /// consideration are so small that they have no significant effect on the
 /// overall motions of the body and therefore deformations can be neglected.
 /// If deformations are neglected, the distance between any two points on the
-/// rigid body remains constant at all times and configurations of the multibody
-/// system. This invariance of the distance between two arbitrary points is
-/// often taken as the definition of a rigid body in classical treatments of
-/// multibody mechanics [Goldstein 2001].
+/// rigid body remains constant at all times. This invariance of the distance
+/// between two arbitrary points is often taken as the definition of a rigid
+/// body in classical treatments of multibody mechanics [Goldstein 2001].
 /// It can be demonstrated that the unconstrained three-dimensional motions of a
 /// rigid body can be described by six coordinates and thus it is often said
 /// that a free body in space has six **degrees of freedom**. These degrees of
-/// freedom evolve according to a set of six equations; three equations dictate
-/// the translational motion of the rigid body, and three equations describe its
-/// rotations. Within a MultibodyTree, a RigidBody is assigned a given number of
-/// degrees of freedom by a Mobilizer while, at the same time, its motions can
-/// be constrained by a given set of Constraint objects.
+/// freedom obey the Newton-Euler equations of motion. Within a MultibodyTree,
+/// a RigidBody is assigned a given number of degrees of freedom by a Mobilizer
+/// while, at the same time, its motions can be constrained by a given set of
+/// Constraint objects.
 ///
 /// - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
 ///                    (3rd Edition), Addison-Wesley, 2001.

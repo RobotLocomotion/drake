@@ -55,7 +55,7 @@ class MultibodyTreeElement;
 /// @code{.cpp}
 ///   template <typename T>
 ///   class ForceElement :
-///       public MultibodyTreeElement<ForceElement<T>, BodyIndex>;
+///       public MultibodyTreeElement<ForceElement<T>, ForceElementIndex>;
 /// @endcode
 /// Notice that with the signature below the scalar type is automatically
 /// deduced from the template arguments.

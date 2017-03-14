@@ -44,8 +44,8 @@ class TypeSafeIndex {
   }
 
   /// Construction from a `size_t` value.
-  /// For Debug builds this constructor throws if the provided input `index` is
-  /// negative.
+  /// This constructor asserts that the provided input `index` will fit in a
+  /// non-negative int.
   explicit TypeSafeIndex(size_t index) : index_(static_cast<int>(index)) {
     DRAKE_ASSERT(
         index <= static_cast<unsigned>(std::numeric_limits<int>::max()));

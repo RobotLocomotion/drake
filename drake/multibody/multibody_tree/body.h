@@ -15,7 +15,7 @@ template<typename T> class MultibodyTree;
 
 /// This class provides the general abstraction of a body with an API that
 /// makes no assumption about whether a body is rigid or deformable and neither
-/// does it make any assumptions about on the underlying physical model or
+/// does it make any assumptions about the underlying physical model or
 /// approximation.
 /// As an element or component of a MultibodyTree, a body is a
 /// MultibodyTreeElement, and therefore it has a unique index of type BodyIndex
