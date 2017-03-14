@@ -26,7 +26,7 @@ BicycleCar<T>::BicycleCar() {
                 "BicycleCar requires BicycleCarStateIndices::kPsiDot to be the "
                 "1st element.");
   this->DeclareContinuousState(
-      std::make_unique<BicycleCarState<T>>(),
+      BicycleCarState<T>(),
       1,                                             // num_q (Ψ)
       1,                                             // num_v (Ψ_dot)
       BicycleCarStateIndices::kNumCoordinates - 2);  // num_z (all but Ψ, Ψ_dot)
