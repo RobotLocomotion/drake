@@ -13,9 +13,8 @@
 namespace drake {
 namespace automotive {
 
-/// MaliputRailcar -- models a vehicle that follows a maliput::api::Lane as if
-/// it were on rails and neglecting all physics. It can only move forward at a
-/// predetermined speed.
+/// Models a vehicle that follows a maliput::api::Lane as if it were on rails
+/// and neglecting all physics.
 ///
 /// Configuration:
 ///   * See MaliputRailcarConfig.
@@ -27,8 +26,8 @@ namespace automotive {
 ///
 ///   - command_input(): Contains the desired acceleration. This port
 ///     contains a systems::BasicVector of size 1. It is optional in that it
-///     need not be connected. When it is not connected, the railcar will travel
-///     at its initial velocity.
+///     need not be connected. When it is unconnected, the railcar will travel
+///     at its initial velocity, which is specified in MaliputRailcarConfig.
 ///
 /// <B>Output Port Accessors:</B>
 ///
