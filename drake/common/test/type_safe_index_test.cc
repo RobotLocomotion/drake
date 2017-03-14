@@ -163,6 +163,81 @@ GTEST_TEST(TypeSafeIndex, ConversionNotAllowedBetweenDifferentTypes) {
   EXPECT_TRUE((std::is_convertible<BIndex, BIndex>::value));
 }
 
+//-------------------------------------------------------------------
+
+// This code allows us to turn compile-time errors in to run-time errors that
+// we can incorporate in a unit test.  We can use it to confirm the
+// non-existence of a particular operator.  Specifically, we are using it to
+// confirm that an index with one tag type cannot be compared or combined with
+// index instances of another type. We are also confirming that those same
+// operations work with atomic data types that can be converted to ints.
+//
+// To simplify the test boilerplate, the infrastructure has been placed in a
+// macro, allowing for the test of a wide range of *binary* operations.  The
+// use is:
+//    BINARY_TEST( op, op_name )
+// It produces the templated method: has_op_name<T, U>(), which returns true
+// if `t op u` is a valid operation for `T t` and `U u`.
+//
+// Examples of invocations:
+//    op    |   op_name
+// ---------+-------------
+//   ==     |   equals
+//    <     |   less_than
+//    +     |   add
+
+// This class provides the compiler with an l-value to trigger compilation on.
+template <class T>
+struct GenerateLValue { T& get_thing(); };
+
+#define BINARY_TEST(OP, OP_NAME) \
+template <typename T, typename U, \
+    typename = decltype(GenerateLValue<T>().get_thing() OP \
+                        GenerateLValue<U>().get_thing())> \
+bool has_ ## OP_NAME ## _helper(int) { return true; } \
+template <typename T, typename U> \
+bool has_ ## OP_NAME ## _helper(...) { return false; } \
+template <typename T, typename U> \
+bool has_ ## OP_NAME() { return has_ ## OP_NAME ## _helper<T, U>(1); } \
+GTEST_TEST(TypeSafeIndex, OP_NAME ## _Operator) { \
+  EXPECT_FALSE((has_ ## OP_NAME<AIndex, BIndex>())); \
+  EXPECT_TRUE((has_ ## OP_NAME<AIndex, AIndex>())); \
+  EXPECT_TRUE((has_ ## OP_NAME<AIndex, int>())); \
+  EXPECT_TRUE((has_ ## OP_NAME<AIndex, size_t>())); \
+  EXPECT_TRUE((has_ ## OP_NAME<AIndex, int64_t>())); \
+}
+
+//-------------------------------------------------------------------
+
+// Confirms that indices of different tag types cannot be compared for equality.
+BINARY_TEST(==, equals)
+
+// Confirms that indices of different tag types cannot be compared for
+// inequality.
+BINARY_TEST(!=, not_equals)
+
+// Confirms that indices of different tag types cannot be compared as one less
+// than the other.
+BINARY_TEST(<, less_than)
+
+// Confirms that indices of different tag types cannot be compared as one less
+// than or equal to the other.
+BINARY_TEST(<=, less_than_or_equal)
+
+// Confirms that indices of different tag types cannot be compared as one
+// greater than the other.
+BINARY_TEST(>, greater_than)
+
+// Confirms that indices of different tag types cannot be compared as one
+// greater than or equal to the other.
+BINARY_TEST(>=, greater_than_or_equal)
+
+// Confirms that indices of different tag types cannot be added to each other.
+BINARY_TEST(+=, in_place_add)
+
+// Confirms that indices of different tag types cannot be added to each other.
+BINARY_TEST(-=, in_place_subtract)
+
 }  // namespace
 }  // namespace common
 }  // namespace drake
