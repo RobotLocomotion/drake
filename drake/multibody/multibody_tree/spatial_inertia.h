@@ -22,7 +22,9 @@ namespace multibody {
 /// This class represents the physical concept of a _Spatial Inertia_. A
 /// spatial inertia (or spatial mass matrix) encapsulates the mass, center of
 /// mass, and rotational inertia of the mass distribution of a system S which
-/// could consist of a single body B or even of a collection of bodies.
+/// could consist of a single body B or even of a collection of bodies
+/// (throughout this documentation "body" is many times used instead of "system"
+/// but the same concepts apply to a system of bodies as well.)
 /// As an element of ℛ⁶ˣ⁶ it is a symmetric, positive definite matrix that
 /// logically consists of `3x3` sub-matrices arranged like so:
 /// <pre>
@@ -75,42 +77,43 @@ class SpatialInertia {
   /// uninitialized values.
   SpatialInertia() {}
 
-  /// Constructs a spatial inertia from a given mass, center of mass and
-  /// rotational inertia. The center of mass is measured from an origin Bo, i.e.
-  /// the center of mass is a vector from origin `Bo` to the body's center of
-  /// mass `Bc`, `com = p_BoBc`. The rotational inertia is expected to be
-  /// computed about the same origin `Bo`.
-  /// Both center of mass `com` and rotational inertia `I` are expected to be
-  /// expressed on a same frame `F`.
-  /// @param[in] mass The mass of the body.
-  /// @param[in] com The center of mass of the body measured from an origin `Bo`
-  /// and expressed in a frame `F`.
-  /// @param[in] I Rotational inertia of the body computed about origin `Bo` and
-  /// expressed in a frame `F`.
+  /// Constructs a spatial for a physical system S about a point P from a given
+  /// mass, center of mass and rotational inertia. The center of mass is
+  /// specified by the position vector `p_PScm_E` from point P to the systems's
+  /// center of mass point `Scm`, expressed in a frame E.
+  /// The rotational inertia is provided as the UnitInertia `G_SP_E` of system S
+  /// computed about point P and expressed in frame E.
+  /// @param[in] mass The mass of the physical system or body S.
+  /// @param[in] p_PScm_E The position vector from point P to the center of mass
+  ///                     of system or body S expressed in frame E.
+  /// @param[in] G_SP_E UnitInertia of the system or body S computed about
+  ///                   origin point P and expressed in frame E.
   SpatialInertia(
-      const T& mass, const Vector3<T>& com, const UnitInertia<T>& I) :
-      mass_(mass), p_BoBc_F_(com), I_Bo_F_(mass * I) {
+      const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E) :
+      mass_(mass), p_PScm_E_(p_PScm_E), I_SP_E_(mass * G_SP_E) {
     DRAKE_ASSERT(IsPhysicallyValid());
   }
 
   /// Get a constant reference to the mass of this spatial inertia.
   const T& get_mass() const { return mass_;}
 
-  /// Get a constant reference to the center of mass vector of this spatial
-  /// inertia.
-  const Vector3<T>& get_com() const { return p_BoBc_F_;}
+  /// Get a constant reference to the position vector `p_PScm_E` from the
+  /// _about point_ P to the center of mass `Scm` of the physical system S,
+  /// expressed in frame E. See the documentation of this clas for details.
+  const Vector3<T>& get_com() const { return p_PScm_E_;}
 
-  /// Get a constant reference to the rotational inertia of this spatial
-  /// inertia.
-  const RotationalInertia<T>& get_rotational_inertia() const { return I_Bo_F_;}
+  /// Get a constant reference to the rotational inertia `I_SP_E` of this
+  /// spatial inertia, computed about point P and expressed in frame E. See the
+  /// documentation of this clas for details.
+  const RotationalInertia<T>& get_rotational_inertia() const { return I_SP_E_;}
 
   /// Returns `true` if any of the elements in this spatial inertia is NaN
   /// and `false` otherwise.
   bool IsNaN() const {
     using std::isnan;
     if (isnan(mass_)) return true;
-    if (I_Bo_F_.IsNaN()) return true;
-    if (p_BoBc_F_.array().isNaN().any()) return true;
+    if (I_SP_E_.IsNaN()) return true;
+    if (p_PScm_E_.array().isNaN().any()) return true;
     return false;
   }
 
@@ -126,7 +129,7 @@ class SpatialInertia {
     if (mass_ < T(0)) return false;
     // The tests in RotationalInertia become a sufficient condition when
     // performed on a rotational inertia computed about a body's center of mass.
-    RotationalInertia<T> I_Bcm_F = I_Bo_F_;// - mass_ * UnitInertia<T>::PointMass(p_BoBc_F_);
+    RotationalInertia<T> I_Bcm_F = I_SP_E_;// - mass_ * UnitInertia<T>::PointMass(p_PScm_E_);
     if (!I_Bcm_F.CouldBePhysicallyValid()) return false;
     return true;  // All tests passed.
   }
@@ -141,8 +144,8 @@ class SpatialInertia {
   Matrix6<T> CopyToFullMatrix6() const {
     using math::CrossProductMatrix;
     Matrix6<T> M;
-    M.template block<3, 3>(0, 0) = I_Bo_F_.CopyToFullMatrix3();
-    M.template block<3, 3>(0, 3) = mass_ * drake::math::VectorToSkewSymmetric(p_BoBc_F_);
+    M.template block<3, 3>(0, 0) = I_SP_E_.CopyToFullMatrix3();
+    M.template block<3, 3>(0, 3) = mass_ * drake::math::VectorToSkewSymmetric(p_PScm_E_);
     M.template block<3, 3>(3, 0) = -M.template block<3, 3>(0, 3);
     M.template block<3, 3>(3, 3) = mass_ * Matrix3<T>::Identity();
     return M;
@@ -153,8 +156,8 @@ class SpatialInertia {
   /// computations that then can be tracked to the source.
   void SetToNaN() {
     mass_ = nan();
-    p_BoBc_F_.setConstant(nan());
-    I_Bo_F_.SetToNaN();
+    p_PScm_E_.setConstant(nan());
+    I_SP_E_.SetToNaN();
   }
 
   bool IsApprox(const SpatialInertia& M_Bo_F,
@@ -162,8 +165,8 @@ class SpatialInertia {
     using std::abs;
     return
         abs(mass_ - M_Bo_F.get_mass()) < tolerance &&
-        p_BoBc_F_.isApprox(M_Bo_F.get_com(), tolerance) &&
-        I_Bo_F_.IsApprox(M_Bo_F.get_rotational_inertia(), tolerance);
+        p_PScm_E_.isApprox(M_Bo_F.get_com(), tolerance) &&
+        I_SP_E_.IsApprox(M_Bo_F.get_rotational_inertia(), tolerance);
   }
 
   /// Adds spatial inertia @p `M_Bo_F` to this spatial inertia. This operation 
@@ -172,10 +175,10 @@ class SpatialInertia {
   /// @param[in] M_Bo_F A spatial inertia to be added to this inertia.
   /// @returns A reference to `this` spatial inetia.
   SpatialInertia& operator+=(const SpatialInertia<T>& M_Bo_F) {
-    p_BoBc_F_ = get_mass() * get_com() + M_Bo_F.get_mass() * M_Bo_F.get_com();
+    p_PScm_E_ = get_mass() * get_com() + M_Bo_F.get_mass() * M_Bo_F.get_com();
     mass_ += M_Bo_F.get_mass();
-    p_BoBc_F_ /= mass_;
-    I_Bo_F_ += M_Bo_F.I_Bo_F_;
+    p_PScm_E_ /= mass_;
+    I_SP_E_ += M_Bo_F.I_SP_E_;
     return *this;
   }
 
@@ -188,9 +191,9 @@ class SpatialInertia {
   {
     const auto& v = V.linear();   // Linear velocity.
     const auto& w = V.angular();  // Angular velocity.
-    const Vector3<T> mxp = mass_ * p_BoBc_F_;
+    const Vector3<T> mxp = mass_ * p_PScm_E_;
     return SpatialVector<T>(
-        I_Bo_F_ * w + mxp.cross(v), /* angular component */
+        I_SP_E_ * w + mxp.cross(v), /* angular component */
         mass_ * v - mxp.cross(w));  /* linear component */
   }
 
@@ -201,8 +204,8 @@ class SpatialInertia {
   /// @returns A references to `this` object which now is the same spatial 
   /// inertia about `Bo` but expressed in frame `A`.
   SpatialInertia& ReExpressInPlace(const Matrix3<T>& R_AF) {
-    p_BoBc_F_ = R_AF * p_BoBc_F_;
-    I_Bo_F_.ReExpressInPlace(R_AF);
+    p_PScm_E_ = R_AF * p_PScm_E_;
+    I_SP_E_.ReExpressInPlace(R_AF);
     return *this;
   }
 
@@ -231,12 +234,12 @@ class SpatialInertia {
   /// origin `Xo`.
   SpatialInertia& ShiftInPlace(const Vector3<T>& p_BoXo_F) {
     using math::CrossProductMatrixSquared;
-    const Vector3<T> p_XoBc_F = p_BoBc_F_ - p_BoXo_F;
-    const Matrix3<T> Sp_BoBc_F = CrossProductMatrixSquared(p_BoBc_F_);
+    const Vector3<T> p_XoBc_F = p_PScm_E_ - p_BoXo_F;
+    const Matrix3<T> Sp_BoBc_F = CrossProductMatrixSquared(p_PScm_E_);
     const Matrix3<T> Sp_XoBc_F = CrossProductMatrixSquared(p_XoBc_F);
-    I_Bo_F_.get_mutable_symmetric_matrix_view() =
-        I_Bo_F_.get_matrix() + mass_ * (Sp_BoBc_F - Sp_XoBc_F);
-    p_BoBc_F_ = p_XoBc_F;
+    I_SP_E_.get_mutable_symmetric_matrix_view() =
+        I_SP_E_.get_matrix() + mass_ * (Sp_BoBc_F - Sp_XoBc_F);
+    p_PScm_E_ = p_XoBc_F;
     return *this;
   }
 
@@ -264,13 +267,14 @@ class SpatialInertia {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
   }
 
-  // Mass of the body.
+  // Mass of the system.
   T mass_{nan()};
-  // Center of mass measured in X and expressed in Y. Typically X is the body
-  // frame and Y is the world frame.
-  Vector3<T> p_BoBc_F_{Vector3<T>::Constant(nan())};
-  // Rotational inertia about Xo and expressed in Y.
-  RotationalInertia<T> I_Bo_F_{};  // Defaults to NaN initialized inertia.
+  // Position vector from point P to the center of mass of physical system S,
+  // expressed in a frame E.
+  Vector3<T> p_PScm_E_{Vector3<T>::Constant(nan())};
+  // Rotational inertia of physical system S computed about point P and
+  // expressed in a frame E.
+  RotationalInertia<T> I_SP_E_{};  // Defaults to NaN initialized inertia.
 };
 
 #if 0
