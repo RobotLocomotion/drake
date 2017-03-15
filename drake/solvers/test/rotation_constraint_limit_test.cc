@@ -12,6 +12,7 @@ namespace solvers {
 // the McCormick envelope constraint. This test records how well we can
 // approximate the rotation matrix on SO(3). If in the future we improved
 // our relaxation and get a larger minimal distance, please update this test.
+static Eigen::Matrix3d R_test;
 class TestMinimumDistance : public testing::TestWithParam<int> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMinimumDistance)
@@ -37,6 +38,27 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
 
     // Miminize the distance.
     prog_.AddCost(d_(0));
+
+    if (num_binary_vars_per_half_axis_ == 2) {
+      for(int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+          if (i == 2 && j == 0) {
+            prog_.AddBoundingBoxConstraint(0.6, 0.7, R_(2, 0));
+          } else if (i == 0 && j == 2) {
+            prog_.AddBoundingBoxConstraint(0.6, 0.7, R_(0, 2));
+          } else if( i == 2 && j == 1) {
+            prog_.AddBoundingBoxConstraint(0.6, 0.7, R_(2, 1));
+          } else if (i == 1 && j == 2) {
+            prog_.AddBoundingBoxConstraint(0.6, 0.7, R_(1, 2));
+          }
+          else {
+            prog_.AddBoundingBoxConstraint(R_test(i, j), R_test(i, j), R_(i, j));
+          }
+        }
+
+      }
+
+    }
   }
 
   ~TestMinimumDistance() override {}
@@ -56,6 +78,9 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
       for (int i = 0; i < num_binary_vars_per_half_axis_; ++i) {
         std::cout << "Bpos[" << i << "]:\n" << prog_.GetSolution(Bpos_[i]) << std::endl;
         std::cout << "Bneg[" << i << "]:\n" << prog_.GetSolution(Bneg_[i]) << std::endl;
+      }
+      if (num_binary_vars_per_half_axis_ == 3) {
+        R_test = prog_.GetSolution(R_);
       }
     }
   }
@@ -145,11 +170,11 @@ TEST_P(TestMinimumDistanceWOrthonormalSocp, Test) {
 }
 
 INSTANTIATE_TEST_CASE_P(RotationTest, TestMinimumDistance,
-    ::testing::ValuesIn({1, 2, 3})
+    ::testing::ValuesIn({3, 2})
 );
-
+/*
 INSTANTIATE_TEST_CASE_P(RotationTest, TestMinimumDistanceWOrthonormalSocp,
     ::testing::ValuesIn({1, 2, 3})
-);
+);*/
 }  // namespace solvers
 }  // namespace drake
