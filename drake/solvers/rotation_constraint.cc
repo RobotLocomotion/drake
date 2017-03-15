@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/math/cross_product.h"
+#include "drake/lcm/lcm_call_matlab.h"
 
 namespace drake {
 namespace solvers {
@@ -411,6 +412,64 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   DRAKE_DEMAND((*n)(0) > 0 && (*n)(1) > 0 && (*n)(2) > 0);
   DRAKE_DEMAND(*d > 0 && *d < 1);
 }
+
+// Draw an arc between two end points on the unit sphere. The two end points
+// are the vertices of the intersection region, between the box and the surface
+// of the sphere.
+// This requires that arc_end0(fixed_axis) = arc_end1(fixed_axis) = x(fixed_axis),
+// where `x` is a point on the arc.
+// Draws the shorter arc between the two points.
+void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0, const Eigen::Vector3d& arc_end1, int fixed_axis) {
+  DRAKE_DEMAND(std::abs(arc_end0(fixed_axis) - arc_end1(fixed_axis)) < 1E-3);
+  DRAKE_DEMAND(std::abs(arc_end0.norm() - 1) < 1E-3);
+  DRAKE_DEMAND(std::abs(arc_end1.norm() - 1) < 1E-3);
+  int free_axis0 = (fixed_axis + 1) % 3;
+  int free_axis1 = (fixed_axis + 2) % 3;
+  if (arc_end0(free_axis0) * arc_end1(free_axis0) < 0 || arc_end0(free_axis1) * arc_end1(free_axis1) < 0) {
+    // The two end points have to be in the same orthant.
+    throw std::runtime_error("The end points of the boundary arc are not in the same orthant.");
+  }
+  const int kNumViaPoints = 20;
+  Eigen::Matrix<double, 3, kNumViaPoints> via_pts;
+  via_pts.row(fixed_axis) = Eigen::Matrix<double, 1, kNumViaPoints>::Constant(arc_end0(fixed_axis));
+  Eigen::Vector3d start_via_pts, end_via_pts;
+  if (arc_end0(free_axis0) < arc_end1(free_axis0)) {
+    start_via_pts = arc_end0;
+    end_via_pts = arc_end1;
+  } else {
+    start_via_pts = arc_end1;
+    end_via_pts = arc_end0;
+  }
+  via_pts.row(free_axis0) = Eigen::Matrix<double, 1, kNumViaPoints>::LinSpaced(kNumViaPoints, start_via_pts(free_axis0), end_via_pts(free_axis0));
+  via_pts(free_axis1, 0) = start_via_pts(free_axis1);
+  via_pts(free_axis1, kNumViaPoints - 1) = end_via_pts(free_axis1);
+  bool positive_free_axis1 = arc_end0(free_axis1) >= 0 || arc_end1(free_axis1);
+  for (int i = 1; i < kNumViaPoints - 1; ++i) {
+    via_pts(free_axis1, i) = std::sqrt(1 - std::pow(via_pts(fixed_axis, i), 2) - std::pow(via_pts(free_axis0, i), 2));
+    if (!positive_free_axis1) {
+      via_pts(free_axis1, i) *= -1;
+    }
+  }
+  auto h = lcm::LcmCallMatlab(1, "plot3", via_pts.row(0), via_pts.row(1), via_pts.row(2));
+  lcm::LcmCallMatlab("set", h[0], "Color", "r");
+}
+
+void DrawMcCormickEnvelope(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax) {
+  const auto& intersection_pts = ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
+  // Draw the line that connects adjacent intersection points.
+  // For each intersection point, find out the neighbouring points, and then
+  // draw the arc between these two points. The neighouring points should have
+  // one axis same as the queried intersection point.
+  for (int i = 0; i < static_cast<int>(intersection_pts.size()); ++i) {
+    for (int j = i + 1; j < static_cast<int>(intersection_pts.size()); ++j) {
+      for (int dim = 0; dim < 3; ++dim) {
+        if (std::abs(intersection_pts[i](dim) - intersection_pts[j](dim)) < 1E-3) {
+          DrawArcBoundaryOfBoxSphereIntersection(intersection_pts[i], intersection_pts[j], dim);
+        }
+      }
+    }
+  }
+}
 }  // namespace internal
 
 namespace {
@@ -459,6 +518,8 @@ void AddMcCormickVectorConstraints(
             auto pts = internal::ComputeBoxEdgesAndSphereIntersection(box_min,
                                                                       box_max);
             DRAKE_DEMAND(pts.size() >= 3);
+
+            internal::DrawMcCormickEnvelope(box_min, box_max);
 
             double d(0);
             Eigen::Vector3d normal{};
@@ -532,12 +593,15 @@ void AddMcCormickVectorConstraints(
               //     -sin(theta)<=n'*vi <=sin(theta),
               //   we can impose a tighter Lorentz cone constraint
               //     [|sin(theta)|, n'*v1, n'*v2] is in the Lorentz cone.
-              prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v1, orthant_c});
-              prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v2, orthant_c});
+              Vector3<symbolic::Expression> cone_expr1;
+              cone_expr1 << sin(theta) + 6 - 2 * orthant_c.cast<symbolic::Expression>().sum(), orthant_normal.transpose().dot(v1), orthant_normal.transpose().dot(v2);
+              prog->AddLorentzConeConstraint(cone_expr1);
+              //prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v1, orthant_c});
+              //prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v2, orthant_c});
 
-              a.tail<3>() << 2, 2, 2;
-              prog->AddLinearConstraint(a, -1, sin(theta) + 6, {v1, orthant_c});
-              prog->AddLinearConstraint(a, -1, sin(theta) + 6, {v2, orthant_c});
+              //a.tail<3>() << 2, 2, 2;
+              //prog->AddLinearConstraint(a, -1, sin(theta) + 6, {v1, orthant_c});
+              //prog->AddLinearConstraint(a, -1, sin(theta) + 6, {v2, orthant_c});
 
               // Cross-product constraint: ideally v2 = v.cross(v1).
               // Since v is within theta of normal, we will prove that
@@ -562,6 +626,9 @@ void AddMcCormickVectorConstraints(
               // Note: Again this constraint could be tighter as a Lorenz cone
               // constraint of the form:
               //   |v2 - normal.cross(v1)| <= 2*sin(theta/2).
+              Vector4<symbolic::Expression> cone_expr2;
+              cone_expr2 << 2 * sin(theta / 2) + 6 - 2 * orthant_c.cast<symbolic::Expression>().sum(), v2 - orthant_normal.transpose().cross(v1);
+              prog->AddLorentzConeConstraint(cone_expr2);
               A_cross << Eigen::Matrix3d::Identity(),
                   -math::VectorToSkewSymmetric(orthant_normal),
                   Eigen::Matrix3d::Constant(-2);
