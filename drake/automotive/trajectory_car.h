@@ -29,9 +29,12 @@ namespace automotive {
 ///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
 ///   heading is defined around the +z axis, so positive-turn-left
 /// * velocity
+///   (OutputPortDescriptor getter: raw_pose_output())
 ///
 /// output port 1: A PoseVector containing X_WC, where C is the car frame.
+///   (OutputPortDescriptor getter: pose_output())
 /// output port 2: A FrameVelocity containing Xdot_WC, where C is the car frame.
+///   (OutputPortDescriptor getter: velocity_output())
 ///
 /// @ingroup automotive_systems
 template <typename T>
@@ -55,6 +58,8 @@ class TrajectoryCar : public systems::LeafSystem<T> {
                             systems::rendering::FrameVelocity<T>::kSize);
   }
 
+  /// See class description for details about the following ports.
+  /// @{
   const systems::OutputPortDescriptor<T>& raw_pose_output() const {
     return this->get_output_port(0);
   }
@@ -64,6 +69,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   const systems::OutputPortDescriptor<T>& velocity_output() const {
     return this->get_output_port(2);
   }
+  /// @}
 
  protected:
   void DoCalcOutput(const systems::Context<T>& context,
