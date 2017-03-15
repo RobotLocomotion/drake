@@ -44,11 +44,15 @@ class PoseBundle {
   const std::string& get_name(int index) const;
   void set_name(int index, const std::string& name);
 
+  int get_model_instance_id(int index) const;
+  void set_model_instance_id(int index, int id);
+
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PoseBundle)
 
  private:
   std::vector<Isometry3<T>> poses_;
   std::vector<std::string> names_;
+  std::vector<int> ids_;
 };
 
 }  // namespace rendering
