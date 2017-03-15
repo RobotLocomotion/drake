@@ -69,22 +69,23 @@ class InputPort : public detail::OutputPortListenerInterface {
   std::function<void()> invalidation_callback_ = nullptr;
 };
 
-/// The DependentInputPort wraps a pointer to the OutputPort of a System for use
-/// as an input to another System. Many DependentInputPorts may wrap a single
-/// OutputPort.
+/// A %DependentInputPort wraps a pointer to an OutputPortValue associated
+/// with one System for use as an input to another System. Many
+/// %DependentInputPort objects may wrap a single OutputPortValue.
 class DependentInputPort : public InputPort {
  public:
   // DependentInputPort objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DependentInputPort)
 
-  /// Creates an input port connected to the given @p output_port, which
-  /// must not be nullptr. The output port must outlive this input port.
-  explicit DependentInputPort(OutputPortValue* output_port);
+  /// Creates an input port value source connected to the given
+  /// @p output_port_value, which must not be nullptr. The OutputPortValue must
+  /// outlive this %DependentInputPort object.
+  explicit DependentInputPort(OutputPortValue* output_port_value);
 
   /// Disconnects from the output port.
   ~DependentInputPort() override;
 
-  /// Sets the output port to nullptr.
+  /// Sets the associated OutputPortValue to nullptr.
   void Disconnect() override;
 
   /// Returns the value version of the connected output port.
@@ -92,7 +93,7 @@ class DependentInputPort : public InputPort {
     return output_port_value_->get_version();
   }
 
-  /// A DependentInputPort must be evaluated in a Context, because it does not
+  /// A %DependentInputPort must be evaluated in a Context, because it does not
   /// control its own data.
   bool requires_evaluation() const override { return true; }
 
@@ -105,14 +106,14 @@ class DependentInputPort : public InputPort {
   OutputPortValue* output_port_value_{};
 };
 
-/// The FreestandingInputPort encapsulates a vector of data for use as an input
-/// to a System.
+/// The FreestandingInputPort encapsulates a vector of data for use as the
+/// value of a System's input port.
 class FreestandingInputPort : public InputPort {
  public:
   // FreestandingInputPort objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreestandingInputPort)
 
-  /// Constructs a vector-valued FreestandingInputPort.
+  /// Constructs a vector-valued %FreestandingInputPort.
   /// Takes ownership of @p vec.
   ///
   /// @tparam T The type of the vector data. Must be a valid Eigen scalar.
@@ -123,11 +124,11 @@ class FreestandingInputPort : public InputPort {
     output_port_value_.add_dependent(this);
   }
 
-  /// Constructs an abstract-valued FreestandingInputPort.
+  /// Constructs an abstract-valued %FreestandingInputPort.
   /// Takes ownership of @p data.
   explicit FreestandingInputPort(std::unique_ptr<AbstractValue> data);
 
-  /// Constructs an abstract-valued FreestandingInputPort.
+  /// Constructs an abstract-valued %FreestandingInputPort.
   /// Takes ownership of @p data.
   ///
   /// @tparam T The type of the data.
@@ -143,31 +144,31 @@ class FreestandingInputPort : public InputPort {
     return output_port_value_.get_version();
   }
 
-  /// A FreestandingInputPort does not require evaluation, because it controls
+  /// A %FreestandingInputPort does not require evaluation, because it controls
   /// its own data.
   bool requires_evaluation() const override { return false; }
 
-  /// Returns a pointer to the data inside this InputPort, and updates the
-  /// version so that Contexts depending on this InputPort know to invalidate
+  /// Returns a pointer to the data inside this %FreestandingInputPort, and
+  /// updates the version so that Contexts depending on this know to invalidate
   /// their caches.
   ///
   /// To ensure invalidation notifications are delivered, callers should
   /// call this method every time they wish to update the stored value.  In
   /// particular, callers MUST NOT write on the returned pointer if there is any
-  /// possibility this FreestandingInputPort has been accessed since the last
+  /// possibility this %FreestandingInputPort has been accessed since the last
   /// time this method was called.
   AbstractValue* GetMutableData() {
     return output_port_value_.GetMutableData();
   }
 
-  /// Returns a pointer to the data inside this InputPort, and updates the
-  /// version so that Contexts depending on this InputPort know to invalidate
+  /// Returns a pointer to the data inside this %FreestandingInputPort, and
+  /// updates the version so that Contexts depending on this know to invalidate
   /// their caches. Throws std::bad_cast if the data is not vector data.
   ///
   /// To ensure invalidation notifications are delivered, callers should
   /// call this method every time they wish to update the stored value.  In
   /// particular, callers MUST NOT write on the returned pointer if there is any
-  /// possibility this FreestandingInputPort has been accessed since the last
+  /// possibility this %FreestandingInputPort has been accessed since the last
   /// time this method was called.
   ///
   /// @tparam T The type of the input port. Must be a valid Eigen scalar.
@@ -176,8 +177,8 @@ class FreestandingInputPort : public InputPort {
     return output_port_value_.GetMutableVectorData<T>();
   }
 
-  /// Does nothing. A FreestandingInputPort wraps its own OutputPort, so there
-  /// is no need to handle unexpected destruction of the OutputPort.
+  /// Does nothing. A %FreestandingInputPort wraps its own OutputPortValue, so
+  /// there is no need to handle unexpected destruction of an output port.
   void Disconnect() override {}
 
  protected:

@@ -59,7 +59,7 @@ TEST_F(OutputPortVectorTest, Mutation) {
             output_port_value_->template get_vector_data<int>()->get_value());
 }
 
-// Tests that a clone of an OutputPort has a deep copy of the data.
+// Tests that a clone of an OutputPortValue has a deep copy of the data.
 TEST_F(OutputPortVectorTest, Clone) {
   auto clone = output_port_value_->Clone();
   // Changes to the original port should not affect the clone.
@@ -76,7 +76,7 @@ TEST_F(OutputPortVectorTest, Clone) {
 }
 
 // Tests that listeners are notified when GetMutableVectorData is called, and
-// when the OutputPort is deleted.
+// when the OutputPortValue is deleted.
 TEST_F(OutputPortVectorTest, Listeners) {
   TestOutputPortListener a, b, c;
   output_port_value_->add_dependent(&a);
@@ -93,7 +93,7 @@ TEST_F(OutputPortVectorTest, Listeners) {
   EXPECT_EQ(2, b.get_invalidations());
   EXPECT_EQ(1, c.get_invalidations());
 
-  // Only the listeners that are connected at the time the OutputPort is
+  // Only the listeners that are connected at the time the OutputPortValue is
   // destroyed get a disconnect notification.
   output_port_value_.reset();
   EXPECT_EQ(0, a.get_disconnections());
@@ -128,7 +128,7 @@ TEST_F(OutputPortAbstractValueTest, Mutation) {
             output_port_value_->get_abstract_data()->GetValue<std::string>());
 }
 
-// Tests that a clone of an OutputPort has a deep copy of the data.
+// Tests that a clone of an OutputPortValue has a deep copy of the data.
 TEST_F(OutputPortAbstractValueTest, Clone) {
   auto clone = output_port_value_->Clone();
   // Changes to the original port should not affect the clone.
@@ -162,19 +162,21 @@ TEST_F(LeafSystemOutputTest, Clone) {
   std::unique_ptr<SystemOutput<int>> clone = output_.Clone();
 
   {
-    const OutputPortValue& port = clone->get_port_value(0);
+    const OutputPortValue& port_value = clone->get_port_value(0);
     VectorX<int> expected(2);
     expected << 5, 25;
-    EXPECT_EQ(expected, port.template get_vector_data<int>()->get_value());
-    EXPECT_NE(nullptr, port.template get_vector_data<int>());
+    EXPECT_EQ(expected,
+              port_value.template get_vector_data<int>()->get_value());
+    EXPECT_NE(nullptr, port_value.template get_vector_data<int>());
   }
 
   {
-    const OutputPortValue& port = clone->get_port_value(1);
+    const OutputPortValue& port_value = clone->get_port_value(1);
     VectorX<int> expected(3);
     expected << 125, 625, 3125;
-    EXPECT_EQ(expected, port.template get_vector_data<int>()->get_value());
-    EXPECT_NE(nullptr, port.template get_vector_data<int>());
+    EXPECT_EQ(expected,
+              port_value.template get_vector_data<int>()->get_value());
+    EXPECT_NE(nullptr, port_value.template get_vector_data<int>());
   }
 }
 
