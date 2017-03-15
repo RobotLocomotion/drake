@@ -43,10 +43,23 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   EXPECT_EQ(pendulum.get_num_flexible_positions(), 0);
   EXPECT_EQ(pendulum.get_num_flexible_velocities(), 0);
 
-  // Verify that no more bodies can be added to a MultibodyTree if it was
-  // compiled already.
+  EXPECT_FALSE(model->topology_is_valid());
+  // Verifies that the topology of this model gets validated at compile stage.
   model->Compile();
-  EXPECT_THROW(RigidBody<double>::Create(model), std::logic_error);
+  EXPECT_TRUE(model->topology_is_valid());
+
+  // Verifies that an exception is throw if a call to Compile() is attempted to
+  // an already compiled MultibodyTree.
+  EXPECT_THROW(model->Compile(), std::logic_error);
+
+  // Verifies that more bodies can still be added to an already compiled model.
+  // However, the topology of the multibody tree gets invalidated.
+  EXPECT_NO_THROW(RigidBody<double>::Create(model));
+  EXPECT_FALSE(model->topology_is_valid());
+
+  // Verifies we can re-compile.
+  EXPECT_NO_THROW(model->Compile());
+  EXPECT_TRUE(model->topology_is_valid());
 }
 
 // Tests the correctness of MultibodyTreeElement checks to verify one or more

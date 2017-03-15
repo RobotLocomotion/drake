@@ -19,6 +19,15 @@ MultibodyTree<T>::MultibodyTree() {
 
 template <typename T>
 void MultibodyTree<T>::Compile() {
+  // If the topology is valid it means that this MultibodyTree was already
+  // compiled. Since this is an expensive operation, throw an exception to alert
+  // users.
+  if (topology_is_valid()) {
+    throw std::logic_error(
+        "Attempting to add a body to an already compiled MultibodyTree is "
+        "not allowed. See MultibodyTree::Compile() for details.");
+  }
+
   // TODO(amcastro-tri): This is a brief list of operations to be added in
   // subsequent PR's:
   //   - Compile non-T dependent topological information.
@@ -32,7 +41,7 @@ void MultibodyTree<T>::Compile() {
   }
 
   // Validate topology.
-  topology_is_valid_ = true;
+  validate_topology();
 }
 
 // Explicitly instantiates on the most common scalar types.

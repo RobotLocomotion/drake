@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -35,12 +36,16 @@ class MultibodyTree {
   /// Takes ownership of `body`, assigns a unique index to it, and adds it to
   /// `this` %MultibodyTree. Returns a bare pointer to the body just added,
   /// which will remain valid for the lifetime of `this` %MultibodyTree.
+  /// This call invalidates the topology of this %MultibodyTree and therefore
+  /// the user must call the Compile() method once is done adding elements, see
+  /// Compile() for details.
   ///
   /// Example of usage:
   /// @code{.cpp}
   ///   MultibodyTree<T> model;
   ///   auto foo = model.AddBody(std::make_unique<RigidBody<T>>());
   /// @endcode
+  /// where `auto` here resolves to `RigidBody<T>*`.
   ///
   /// @throws std::logic_error if users attempt to add a body to an already
   /// compiled multibody tree with MultibodyTree::Compile() or if `body` is a
@@ -51,6 +56,9 @@ class MultibodyTree {
   /// factory methods. For instance, see RigidBody::Create() to create a body
   /// and add it to a MultibodyTree.
   ///
+  /// @note This method invalidates this %MultibodyTree topology. The method
+  /// Compile() must be called to re-compute and validate the topology.
+  ///
   /// @param[in] body A unique pointer to a body to add to `this`
   ///                 %MultibodyTree.
   /// @returns A bare pointer to the `body` just added, which will remain valid
@@ -59,17 +67,16 @@ class MultibodyTree {
   /// @tparam BodyType The type of the specific sub-class of Body to add.
   template <class BodyType>
   BodyType* AddBody(std::unique_ptr<BodyType> body) {
+    static_assert(std::is_convertible<BodyType*, Body<T>*>::value,
+                  "BodyType must be a sub-class of Body<T>.");
     if (body == nullptr) {
       throw std::logic_error("Input body is an invalid nullptr.");
     }
 
-    // If the topology is valid it means that this MultibodyTree was already
-    // compiled. Thus throw an exception to alert users.
-    if (topology_is_valid_) {
-      throw std::logic_error(
-          "Attempting to add a body to an already compiled MultibodyTree is "
-          "not allowed. See MultibodyTree::Compile() for details.");
-    }
+    // Users can add new multibody elements, however the topology gets
+    // invalidated.
+    invalidate_topology();
+
     // TODO(amcastro-tri): This index will be returned by the
     // MultibodyTreeTopology class in a future PR.
     BodyIndex index(owned_bodies_.size());
@@ -104,6 +111,14 @@ class MultibodyTree {
     return *owned_bodies_[body_index].get();
   }
 
+  /// Returns `true` if this %MultibodyTree was compiled with Compile() after
+  /// all multibody elements were added, and `false` otherwise.
+  /// The addition of new multibody elements invalidates the topology of the
+  /// %MultibodyTree, while a call to Compile() validates the topology, if
+  /// successful.
+  /// @see Compile().
+  bool topology_is_valid() const { return topology_is_valid_; }
+
   /// This method must be called after all elements in the tree (joints, bodies,
   /// force elements, constraints) were added and before any computations are
   /// performed.
@@ -111,12 +126,33 @@ class MultibodyTree {
   /// how bodies, joints and, any other elements connect with each other, and
   /// performs all the required pre-processing to perform computations at a
   /// later stage.
-  /// No more elements can be added to `this` MultibodyTree after calling this
-  /// method. An excpetion is thrown if users attempt to add elements after
-  /// this call was performed.
+  ///
+  /// If the compile stage is succesful, the topology of this %MultibodyTree is
+  /// validated, meaning that the topology is up-to-date after this call.
+  /// The topology of a %MultibodyTree gets invalidated if more multibody
+  /// elements are added and therefore the user needs to call this method in
+  /// order to have a valid %MultibodyTree.
+  ///
+  /// An excpetion is thrown if users attempt to call this method on an already
+  /// compiled %MultibodyTree.
   void Compile();
 
  private:
+  // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
+  // a method that verifies the state of the topology with a signature similar
+  // to RoadGeometry::CheckInvariants(). Like so:
+  // Verifies certain invariants guaranteed by the API.
+  //
+  // Returns a vector of strings describing violations of invariants.
+  // Return value with size() == 0 indicates success.
+  // std::vector<std::string> CheckInvariants() const;
+
+  // Sets a flag indicate the topology got invalidated.
+  void invalidate_topology() { topology_is_valid_ = false; }
+
+  // Sets a flag indicate the topology is valid.
+  void validate_topology() { topology_is_valid_ = true; }
+
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   // TODO(amcastro-tri): this flag will go within the topology class in a
   // future PR.

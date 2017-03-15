@@ -46,6 +46,11 @@ class RigidBody : public Body<T> {
 
   /// Creates a new %RigidBody and adds it to the MultibodyTree world.
   /// The MultibodyTree `tree` takes ownership of the newly created body.
+  ///
+  /// @note This method invalidates the topology of the MultibodyTree `tree`.
+  /// Users must call the Compile() method on `tree` in order to re-compute and
+  /// validate its topology. See the documentation on Compile() for details.
+  ///
   /// @param[in, out] tree The parent MultibodyTree to which this body will be
   ///                      added.
   /// @returns A constant reference to the newly created rigid body.
