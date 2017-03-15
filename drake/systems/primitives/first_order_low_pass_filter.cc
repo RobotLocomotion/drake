@@ -20,6 +20,7 @@ FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
     : SisoVectorSystem<T>(time_constants.size(), time_constants.size()),
       time_constants_(time_constants) {
   DRAKE_ASSERT(time_constants.size() > 0);
+  DRAKE_ASSERT((time_constants.array() > 0).all());
   this->DeclareContinuousState(time_constants.size());
 }
 
@@ -56,7 +57,7 @@ void FirstOrderLowPassFilter<T>::DoCalcVectorTimeDerivatives(
     const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* derivatives) const {
-  derivatives->array() = (input -state).array() / time_constants_.array();
+  derivatives->array() = (input - state).array() / time_constants_.array();
 }
 
 template <typename T>

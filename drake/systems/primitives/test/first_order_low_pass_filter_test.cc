@@ -23,7 +23,7 @@ class FirstOrderLowPassFilterTest : public ::testing::Test {
     derivatives_ = filter_->AllocateTimeDerivatives();
     output_ = filter_->AllocateOutput(*context_);
 
-    // Set the state to zero initially.
+    // Sets the state to zero initially.
     filter_->set_initial_output_value(
         context_.get(), Eigen::VectorXd::Zero(kSignalSize));
   }

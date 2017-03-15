@@ -49,6 +49,7 @@ class FirstOrderLowPassFilter : public SisoVectorSystem<T> {
   /// signals with the same time constant, i.e. τᵢ = τ, ∀ i.
   ///
   /// @param[in] time_constant the time constant τ of the filter.
+  ///                          It must be a positive number.
   /// @param[in] size number of elements in the signal to be processed.
   explicit FirstOrderLowPassFilter(double time_constant, int size = 1);
 
@@ -56,7 +57,8 @@ class FirstOrderLowPassFilter : public SisoVectorSystem<T> {
   /// input signal vector is low pass filtered with a time constant given in the
   /// i-th component τᵢ of the input `time_constants` vector.
   ///
-  /// @param[in] time_constants Vector of time constants.
+  /// @param[in] time_constants Vector of time constants. Each entry in this
+  ///                           vector must be positive.
   explicit FirstOrderLowPassFilter(const VectorX<double>& time_constants);
 
   /// Returns the time constant of the filter for filters that have the same
@@ -88,7 +90,7 @@ class FirstOrderLowPassFilter : public SisoVectorSystem<T> {
       Eigen::VectorBlock<VectorX<T>>* output) const override;
 
   // System<T> override. Returns a FirstOrderLowPassFilter<symbolic::Expression>
-  // with the same time constants and dimensions as this Integrator.
+  // with the same time constants and dimensions as this filter.
   FirstOrderLowPassFilter<symbolic::Expression>* DoToSymbolic() const override;
 
   const VectorX<double> time_constants_;
