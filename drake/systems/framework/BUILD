@@ -16,7 +16,7 @@ drake_cc_library(
         ":diagram",
         ":diagram_builder",
         ":diagram_context",
-        ":hybrid_automaton_context",
+        ":modal_subsystem",
         ":leaf_context",
         ":leaf_system",
         ":parameters",
@@ -262,19 +262,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "hybrid_automaton_context",
-    srcs = ["hybrid_automaton_context.cc"],
-    hdrs = ["hybrid_automaton_context.h"],
-    linkstatic = 1,
-    deps = [
-        ":context",
-        ":system",
-        ":vector",
-        "//drake/common",
-    ],
-)
-
-drake_cc_library(
     name = "diagram_continuous_state",
     srcs = ["diagram_continuous_state.cc"],
     hdrs = ["diagram_continuous_state.h"],
@@ -315,6 +302,19 @@ drake_cc_library(
     hdrs = ["diagram_builder.h"],
     deps = [
         ":diagram",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "modal_subsystem",
+    srcs = ["modal_subsystem.cc"],
+    hdrs = ["modal_subsystem.h"],
+    linkstatic = 1,
+    deps = [
+        ":context",
+        ":system",
+        ":vector",
         "//drake/common",
     ],
 )
@@ -375,20 +375,6 @@ drake_cc_googletest(
     deps = [
         ":continuous_state",
         "//drake/common",
-    ],
-)
-
-drake_cc_googletest(
-    name = "hybrid_automaton_context_test",
-    deps = [
-        ":diagram",
-        "diagram_builder",
-        ":hybrid_automaton_context",
-        "//drake/common",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/systems/framework/test_utilities:pack_value",
-        "//drake/systems/primitives:integrator",
-        "//drake/systems/primitives:zero_order_hold",
     ],
 )
 
@@ -457,6 +443,20 @@ drake_cc_googletest(
         ":leaf_system",
         "//drake/common",
         "//drake/systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "modal_subsystem_test",
+    deps = [
+        ":diagram",
+        "diagram_builder",
+        ":modal_subsystem",
+        "//drake/common",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework/test_utilities:pack_value",
+        "//drake/systems/primitives:integrator",
+        "//drake/systems/primitives:zero_order_hold",
     ],
 )
 

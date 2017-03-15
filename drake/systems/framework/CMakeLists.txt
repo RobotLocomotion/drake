@@ -10,10 +10,10 @@ set(sources
   diagram_context.cc
   diagram_continuous_state.cc
   discrete_state.cc
-  hybrid_automaton_context.cc
   input_port_evaluator_interface.cc
   leaf_context.cc
   leaf_system.cc
+  modal_subsystem.cc
   model_values.cc
   output_port_listener_interface.cc
   parameters.cc
@@ -51,10 +51,10 @@ set(installed_headers
   diagram_context.h
   diagram_continuous_state.h
   discrete_state.h
-  hybrid_automaton_context.h
   input_port_evaluator_interface.h
   leaf_context.h
   leaf_system.h
+  modal_subsystem.h
   model_values.h
   output_port_listener_interface.h
   parameters.h

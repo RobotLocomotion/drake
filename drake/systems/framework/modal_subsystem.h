@@ -221,7 +221,5 @@ class ModalSubsystem {
       symbolic_variables_;
 };
 
-// TODO(jadecastro): Include the Hybrid Automaton specialization of Context.
-
 }  // namespace systems
 }  // namespace drake

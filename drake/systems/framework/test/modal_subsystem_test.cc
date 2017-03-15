@@ -1,4 +1,4 @@
-#include "drake/systems/framework/hybrid_automaton_context.h"
+#include "drake/systems/framework/modal_subsystem.h"
 
 #include <stdexcept>
 #include <vector>
@@ -64,10 +64,10 @@ class ContinuousDiscreteAbstractSystem : public Diagram<double> {
                                                              kSize);
     abstract_ = builder.template AddSystem<AbstractTestSource>();
 
-    builder.Connect(integrator_->get_output_port(0), zoh_->get_input_port(0));
+    builder.Connect(*integrator_, *zoh_);
 
-    builder.ExportInput(integrator_->get_input_port(0));
-    builder.ExportOutput(zoh_->get_output_port(0));
+    builder.ExportInput(integrator_->get_input_port());
+    builder.ExportOutput(zoh_->get_output_port());
     builder.ExportOutput(abstract_->get_output_port(0));
 
     builder.BuildInto(this);
@@ -79,7 +79,7 @@ class ContinuousDiscreteAbstractSystem : public Diagram<double> {
   AbstractTestSource* abstract_ = nullptr;
 };
 
-class HybridAutomatonContextTest : public ::testing::Test {
+class ModalSubsystemTest : public ::testing::Test {
  protected:
   void SetUp() override {
     integrator_.reset(new Integrator<double>(kSize));
@@ -96,7 +96,7 @@ class HybridAutomatonContextTest : public ::testing::Test {
   shared_ptr<Integrator<double>> integrator_;
 };
 
-class HybridAutomatonContextStateTest : public ::testing::Test {
+class ModalSubsystemStateTest : public ::testing::Test {
  protected:
   void SetUp() override {
     example_system_.reset(new ContinuousDiscreteAbstractSystem());
@@ -115,7 +115,7 @@ class HybridAutomatonContextStateTest : public ::testing::Test {
 
 // Tests that we can correctly select among exported input and output ports
 // those that are inputs and outputs of the HA.
-TEST_F(HybridAutomatonContextTest, ModalSubsystemPortIds) {
+TEST_F(ModalSubsystemTest, ModalSubsystemPortIds) {
   EXPECT_EQ(1, mss_->get_num_input_ports());
   EXPECT_EQ(1, mss_->get_num_output_ports());
 
@@ -138,7 +138,7 @@ TEST_F(HybridAutomatonContextTest, ModalSubsystemPortIds) {
 }
 
 // Tests the ability to specify symbolic expressions and evaluate them.
-TEST_F(HybridAutomatonContextStateTest, ModalSubsystemSymbolicExpressions) {
+TEST_F(ModalSubsystemStateTest, ModalSubsystemSymbolicExpressions) {
   // Fetch the symbolic variables and mutable expressions for this context.
   symbolic::Variable xc = mss_->get_symbolic_continuous_states()[0];
   symbolic::Variable xd = mss_->get_symbolic_discrete_states_at(0)[0];
@@ -172,7 +172,7 @@ TEST_F(HybridAutomatonContextStateTest, ModalSubsystemSymbolicExpressions) {
 }
 
 // Tests the ability to create a clone of a ModalSubsystem.
-TEST_F(HybridAutomatonContextStateTest, CloneModalSubsystem) {
+TEST_F(ModalSubsystemStateTest, CloneModalSubsystem) {
   // Set fictitious invariants and initial conditions.
   const symbolic::Expression y{symbolic::Variable{"x"}};
   symbolic::Expression expression{y};
@@ -190,8 +190,6 @@ TEST_F(HybridAutomatonContextStateTest, CloneModalSubsystem) {
   EXPECT_EQ(1, mss_new->get_num_input_ports());
   EXPECT_EQ(2, mss_new->get_num_output_ports());
 }
-
-// TODO(jadecastro): Include unit tests for HybridAutomatonContext.
 
 }  // namespace
 }  // namespace systems
