@@ -21,7 +21,7 @@ namespace drake {
 /// never-defined type.
 ///
 /// The TypeSafeIndex guarantees that index instances of different types can't
-/// be compared or combined.  Efforts to due so will cause a compile-time
+/// be compared or combined.  Efforts to do so will cause a compile-time
 /// failure.  However, comparisons or operations on _other_ types that are
 /// convertible to an int will succeed.  For example:
 /// @code{.cpp}
