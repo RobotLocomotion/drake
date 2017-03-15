@@ -158,9 +158,6 @@ T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
   // Get the point of contact.
   const int k = rod.get_k(context);
 
-  // Get the sliding velocity at the beginning of the interval.
-  const T xcdot_t0 = context.template get_abstract_state<T>(2);
-
   // Get the relevant parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
   const T theta = state.GetAtIndex(2);
@@ -171,7 +168,7 @@ T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
   const T stheta = sin(theta);
   const T half_rod_length = rod.get_rod_half_length();
   const T xcdot = xdot - k * stheta * half_rod_length * thetadot;
-  return xcdot * xcdot_t0;
+  return xcdot;
 }
 
 /// Gets the number of witness functions.
@@ -204,9 +201,7 @@ int Rod2D<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
       // single point of contact. Two witness functions are necessary: one for
       // checking whether the rod is to separate from the half-space and a
       // second for checking for contact between the other rod endpoint
-      // and the ground. We assume that a sticking contact cannot transition
-      // to a sliding contact, as this particular example lacks non-frictional
-      // tangential forces.
+      // and the ground.
       return 2;
 
     case Rod2D::kSlidingTwoContacts:
@@ -219,9 +214,7 @@ int Rod2D<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
     case Rod2D::kStickingTwoContacts:
       // The rod is undergoing sliding contact without impact at two points of
       // contact. Two witness functions are necessary to check whether the rod
-      // is to separate from the half-space. We assume that a sticking contact
-      // cannot transition to a sliding contact, as this particular example
-      // lacks non-frictional tangential forces.
+      // is to separate from the half-space. 
       return 2;
 
     default:
@@ -1379,8 +1372,8 @@ template <typename T>
 std::unique_ptr<systems::AbstractState> Rod2D<T>::
   AllocateAbstractState() const {
   if (simulation_type_ == SimulationType::kPiecewiseDAE) {
-    // Piecewise DAE approach needs three abstract variables: one mode, one
-    // contact point indicator, and one sliding velocity (scalar).
+    // Piecewise DAE approach needs two abstract variables: one mode and one
+    // contact point indicator.
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
     abstract_data.push_back(
         std::make_unique<systems::Value<Rod2D<T>::Mode>>(
@@ -1388,9 +1381,6 @@ std::unique_ptr<systems::AbstractState> Rod2D<T>::
 
     // Indicates that the rod is in contact at both points.
     abstract_data.push_back(std::make_unique<systems::Value<int>>(0));
-
-    // Indicates that there is zero sliding velocity.
-    abstract_data.push_back(std::make_unique<systems::Value<T>>(0));
 
     return std::make_unique<systems::AbstractState>(std::move(abstract_data));
   } else {
@@ -1405,7 +1395,6 @@ template <typename T>
 void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
                                   systems::State<T>* state) const {
   using std::sqrt;
-  using std::cos;
   using std::sin;
 
   // Initial state corresponds to an inconsistent configuration for piecewise
@@ -1430,25 +1419,10 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
 
       // Determine and set the point of contact.
       const T theta = x0(2);
-      const T ctheta = cos(theta);
       const T stheta = sin(theta);
-      const int k = (std::sin(theta) > 0) ? -1 : 1;
+      const int k = (stheta > 0) ? -1 : 1;
       state->get_mutable_abstract_state()->get_mutable_abstract_state(1).
           template GetMutableValue<int>() = k;
-
-      // Get the point of contact.
-      const Vector2<T> p_WC = CalcRodEndpoint(x0(0), x0(1), k, ctheta, stheta,
-                                              half_len);
-
-      // Get the sliding velocity at the beginning of the interval.
-      const T theta_dot = x0(5);
-      const Vector2<T> p_WRo(x0(0), x0(1));
-      const Vector2<T> V_WRo(x0(3), x0(4));
-      const Vector2<T> v_WRC =  CalcCoincidentRodPointVelocity(p_WRo, V_WRo,
-                                                               theta_dot, p_WC);
-      const T xcdot_t0 = v_WRC(0);
-      state->get_mutable_abstract_state()->get_mutable_abstract_state(2).
-          template GetMutableValue<T>() = xcdot_t0;
     }
   }
 }
