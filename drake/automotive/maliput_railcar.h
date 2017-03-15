@@ -13,6 +13,28 @@
 namespace drake {
 namespace automotive {
 
+/// LaneDirection holds the lane that a MaliputRailcar is traversing and the
+/// direction in which it is moving. A MaliputRailcar can either travel in the
+/// increasing-`s` direction or in the decreasing-`s` direction.
+struct LaneDirection {
+  /// Default constructor.
+  LaneDirection() {}
+
+  /// A constructor that sets `with_s` to be `true`.
+  explicit LaneDirection(const maliput::api::Lane* lane_input)
+      : LaneDirection(lane_input, true) {}
+
+  /// Fully parameterized constructor.
+  LaneDirection(const maliput::api::Lane* lane_input, bool with_s_input)
+      : lane(lane_input), with_s(with_s_input) {}
+
+  const maliput::api::Lane* lane{nullptr};
+
+  /// True means that the MaliputRailcar's `s` coordinate increases when the
+  /// vehicle has positive speed. False means the opposite.
+  bool with_s{true};
+};
+
 /// MaliputRailcar models a vehicle that follows a maliput::api::Lane as if it
 /// were on rails and neglecting all physics.
 ///
@@ -21,6 +43,9 @@ namespace automotive {
 ///
 /// State vector:
 ///   * See MaliputRailcarState.
+///
+/// Abstract state:
+///   * See LaneDirection.
 ///
 /// <B>Input Port Accessors:</B>
 ///
@@ -33,6 +58,9 @@ namespace automotive {
 ///
 ///   - state_output(): Contains this system's state vector. See
 ///     MaliputRailcarState.
+///
+///   - lane_state_output(): Contains this system's lane direction state. See
+///     LaneDirection.
 ///
 ///   - pose_output(): Contains PoseVector `X_WC`, where `C` is the car frame
 ///     and `W` is the world frame.
@@ -53,12 +81,11 @@ class MaliputRailcar : public systems::LeafSystem<T> {
 
   /// The constructor.
   ///
-  /// @param lane The lane on which this MaliputRailcar travels. The lifetime
-  /// of this parameter must exceed that of this class's instance.
+  /// @param initial_lane_direction The initial lane and direction of travel.
   ///
   /// @param start_time The time at which this vehicle starts moving.
   ///
-  explicit MaliputRailcar(const maliput::api::Lane& lane,
+  explicit MaliputRailcar(const LaneDirection& initial_lane_direction,
                           double start_time = 0);
 
   // System<T> overrides.
@@ -85,6 +112,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   /// @{
   const systems::InputPortDescriptor<T>& command_input() const;
   const systems::OutputPortDescriptor<T>& state_output() const;
+  const systems::OutputPortDescriptor<T>& lane_state_output() const;
   const systems::OutputPortDescriptor<T>& pose_output() const;
   /// @}
 
@@ -97,6 +125,8 @@ class MaliputRailcar : public systems::LeafSystem<T> {
 
  protected:
   // LeafSystem<T> overrides.
+  std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
+      const override;
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
   bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
                               int input_port, int output_port) const override;
@@ -106,14 +136,20 @@ class MaliputRailcar : public systems::LeafSystem<T> {
       const MaliputRailcarState<T>& state,
       MaliputRailcarState<T>* output) const;
 
+  void ImplCalcLaneOutput(
+      const LaneDirection& lane_direction,
+      LaneDirection* output) const;
+
   void ImplCalcPose(
       const MaliputRailcarConfig<T>& config,
       const MaliputRailcarState<T>& state,
+      const LaneDirection& lane_direction,
       systems::rendering::PoseVector<T>* pose) const;
 
   void ImplCalcTimeDerivatives(
       const MaliputRailcarConfig<T>& config,
       const MaliputRailcarState<T>& state,
+      const LaneDirection& lane_direction,
       const systems::BasicVector<T>& input,
       MaliputRailcarState<T>* rates) const;
 
@@ -122,10 +158,11 @@ class MaliputRailcar : public systems::LeafSystem<T> {
     const MaliputRailcarState<double>& state,
     MaliputRailcarState<double>* rates) const;
 
-  const maliput::api::Lane& lane_;
   const double start_time_{};
+  const LaneDirection initial_lane_direction_{};
   int command_input_port_index_{};
   int state_output_port_index_{};
+  int lane_state_output_port_index_{};
   int pose_output_port_index_{};
 };
 
