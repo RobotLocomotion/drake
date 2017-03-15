@@ -52,10 +52,7 @@ MaliputRailcar<T>::MaliputRailcar(const Lane& lane, double start_time)
       this->DeclareVectorOutputPort(MaliputRailcarState<T>()).get_index();
   pose_output_port_index_ =
       this->DeclareVectorOutputPort(PoseVector<T>()).get_index();
-  // TODO(jwnimmer-tri) Offer one-argument model sugar for this next line.
-  this->DeclareContinuousState(
-      std::make_unique<MaliputRailcarState<T>>(),
-      0, 0, MaliputRailcarStateIndices::kNumCoordinates);
+  this->DeclareContinuousState(MaliputRailcarState<T>());
 }
 
 template <typename T>
