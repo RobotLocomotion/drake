@@ -162,7 +162,8 @@ class DiagramContext : public Context<T> {
     SystemOutput<T>* src_ports = GetSubsystemOutput(src_system_index);
     DRAKE_DEMAND(src_port_index >= 0);
     DRAKE_DEMAND(src_port_index < src_ports->get_num_ports());
-    OutputPort* output_port = src_ports->get_mutable_port(src_port_index);
+    OutputPortValue* output_port_value =
+        src_ports->get_mutable_port_value(src_port_index);
 
     // Identify and validate the destination port.
     SystemIndex dest_system_index = dest.first;
@@ -172,7 +173,7 @@ class DiagramContext : public Context<T> {
     DRAKE_DEMAND(dest_port_index < dest_context->get_num_input_ports());
 
     // Construct and install the destination port.
-    auto input_port = std::make_unique<DependentInputPort>(output_port);
+    auto input_port = std::make_unique<DependentInputPort>(output_port_value);
     dest_context->SetInputPort(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
