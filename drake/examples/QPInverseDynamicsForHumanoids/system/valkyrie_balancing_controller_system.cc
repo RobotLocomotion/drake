@@ -6,9 +6,9 @@
 #include "bot_core/robot_state_t.hpp"
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_status_translator_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_plan_eval_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_status_translator_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
@@ -37,6 +37,10 @@ void controller_loop() {
   const std::string kAliasGroupPath = drake::GetDrakePath() +
                                       "/examples/QPInverseDynamicsForHumanoids/"
                                       "config/valkyrie.alias_groups";
+  const std::string kControlConfigPath =
+      drake::GetDrakePath() +
+      "/examples/QPInverseDynamicsForHumanoids/"
+      "config/valkyrie.id_controller_config";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -49,8 +53,9 @@ void controller_loop() {
   RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs =
       builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(
           *robot, kAliasGroupPath));
-  PlanEvalSystem* plan_eval =
-      builder.AddSystem(std::make_unique<PlanEvalSystem>(*robot));
+  HumanoidPlanEvalSystem* plan_eval =
+      builder.AddSystem(std::make_unique<HumanoidPlanEvalSystem>(
+          *robot, kAliasGroupPath, kControlConfigPath, 0.003));
   QpControllerSystem* qp_con =
       builder.AddSystem(std::make_unique<QpControllerSystem>(*robot, 0.003));
   AtlasJointLevelControllerSystem* joint_con =
@@ -96,7 +101,7 @@ void controller_loop() {
   DRAKE_DEMAND(valkyrie::kRPYValkyrieDof == robot->get_num_positions());
   VectorX<double> desired_q =
       valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
-  plan_eval->SetDesired(desired_q, plan_eval_state);
+  plan_eval->Initialize(desired_q, plan_eval_state);
 
   lcm.StartReceiveThread();
 

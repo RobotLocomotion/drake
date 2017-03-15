@@ -17,10 +17,73 @@
       </material>
     </visual>
 
+    <!--
+      This places contact spheres on the corners of the visual box and a
+      *slightly* smaller inset contact box (centered on the visual origin). This
+      accounts for issues in the contact computation providing stable table
+      contact *and* supports grasping.
+
+      When the box is in stable contact with the ground plane, the corner
+      spheres will provide fixed contact points (simulating distributed contact
+      points around the face).  However, for arbitrary grip configuration, the
+      slightly inset box will provide contact with a *slight* offset (in this
+      case a deviation of 0.0005 m from the visual surface).
+     -->
     <collision>
       <geometry>
-        <box size="0.06 0.06 0.2" />
+        <box size="0.059 0.059 0.199" />
       </geometry>
     </collision>
+
+    <collision>
+      <origin xyz="-0.03 -0.03 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.03 0.03 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.03 0.03 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.03 -0.03 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <origin xyz="-0.03 -0.03 0.1" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.03 0.03 0.1" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.03 0.03 0.1" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.03 -0.03 0.1" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+
    </link>
 </robot>

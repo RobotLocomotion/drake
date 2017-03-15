@@ -39,9 +39,7 @@ class EndlessRoadCarState : public systems::BasicVector<T> {
   }
 
   EndlessRoadCarState<T>* DoClone() const override {
-    auto result = new EndlessRoadCarState;
-    result->set_value(this->get_value());
-    return result;
+    return new EndlessRoadCarState;
   }
 
   /// @name Getters and Setters

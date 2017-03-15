@@ -149,6 +149,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "type_safe_index",
+    srcs = [],
+    hdrs = ["type_safe_index.h"],
+    deps = [
+        ":common",
+        ":nice_type_name",
+    ],
+)
+
 # Miscellaneous utilities.
 drake_cc_library(
     name = "drake_path",
@@ -470,6 +480,7 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
@@ -513,6 +524,7 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
@@ -537,6 +549,11 @@ drake_cc_googletest(
         ":common",
         ":polynomial",
     ],
+)
+
+drake_cc_googletest(
+    name = "type_safe_index_test",
+    deps = [":type_safe_index"],
 )
 
 # TODO(jwnimmer-tri) These tests are currently missing...

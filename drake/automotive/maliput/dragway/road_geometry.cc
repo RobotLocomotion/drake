@@ -7,32 +7,13 @@
 #include "drake/automotive/maliput/dragway/junction.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/saturate.h"
 
 using std::make_unique;
 
 namespace drake {
 namespace maliput {
 namespace dragway {
-
-namespace {
-
-// Clamps the provided `value` by the provided `min` and `max` values. Returns
-// the clamped result.
-//
-// TODO(liang.fok) Once c++17 or later is used, switch to std::clamp().
-//
-double clamp(double value, double min, double max) {
-  double result = value;
-  if (value < min) {
-    result = min;
-  }
-  if (value > max) {
-    result = max;
-  }
-  return result;
-}
-
-}  // namespace
 
 RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
                int num_lanes,
@@ -180,8 +161,8 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(
       follows.
   */
   api::GeoPosition closest_position;
-  closest_position.x = clamp(geo_pos.x, min_x, max_x);
-  closest_position.y = clamp(geo_pos.y, min_y, max_y);
+  closest_position.x = math::saturate(geo_pos.x, min_x, max_x);
+  closest_position.y = math::saturate(geo_pos.y, min_y, max_y);
   closest_position.z = geo_pos.z;
 
   if (distance != nullptr) {

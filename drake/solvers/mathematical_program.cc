@@ -349,6 +349,75 @@ void DecomposeLinearExpression(const Eigen::Ref<const VectorX<Expression>>& v,
     DecomposeLinearExpression(e_i, map_var_to_index, A->row(i), b->data() + i);
   }
 }
+
+/**
+ * Given a quadratic expression `e` represented by its monomial to coefficient
+ * map, decompose it into the form
+ * e = 0.5 * x' * Q * x + b' * x + c
+ * @param[in] monomial_to_coeff_map. Map the monomial to the coefficient, this
+ * is the result of calling DecomposePolynomialIntoMonomial(e).
+ * @param[in] map_var_to_index maps variables in
+ * monomial_to_coeff_map.GetVariables() to the index in the vector `x`.
+ * @param[in] num_variables The number of variables in the expression.
+ * @param Q[out] The Hessian of the quadratic expression. @pre The size of Q
+ * should be `num_variables * num_variables`.
+ * @param b[out] The linear term of the quadratic expression. @pre The size of
+ * `b` should be `num_variables * 1`.
+ * @param c[out] The constant term of the quadratic expression.
+ */
+void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
+    const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map,
+    const unordered_map<Variable::Id, int>& map_var_to_index,
+    int num_variables,
+    Eigen::MatrixXd* Q, Eigen::VectorXd* b, double* c) {
+  DRAKE_DEMAND(Q->rows() == num_variables);
+  DRAKE_DEMAND(Q->cols() == num_variables);
+  DRAKE_DEMAND(b->rows() == num_variables);
+  Q->setZero();
+  b->setZero();
+  *c = 0;
+  for (const auto& p : monomial_to_coeff_map) {
+    DRAKE_ASSERT(is_constant(p.second));
+    DRAKE_DEMAND(!is_zero(p.second));
+    const double coefficient = get_constant_value(p.second);
+    const symbolic::Monomial& p_monomial = p.first;
+    if (p_monomial.total_degree() > 2) {
+      ostringstream oss;
+      oss << p.first << " has order higher than 2, cannot be handled by "
+          "DecomposeQuadraticExpressionWithMonomialToCoeffMap" << std::endl;
+      throw std::runtime_error(oss.str());
+    }
+    const auto& monomial_powers = p_monomial.get_powers();
+    if (monomial_powers.size() == 2) {
+      // cross terms.
+      auto it = monomial_powers.begin();
+      const int x1_index = map_var_to_index.at(it->first);
+      DRAKE_DEMAND(it->second == 1);
+      ++it;
+      const int x2_index = map_var_to_index.at(it->first);
+      DRAKE_DEMAND(it->second == 1);
+      (*Q)(x1_index, x2_index) += coefficient;
+      (*Q)(x2_index, x1_index) = (*Q)(x1_index, x2_index);
+    } else if (monomial_powers.size() == 1) {
+      // Two cases
+      // 1. quadratic term a*x^2
+      // 2. linear term b*x
+      auto it = monomial_powers.begin();
+      DRAKE_DEMAND(it->second == 2 || it->second == 1);
+      const int x_index = map_var_to_index.at(it->first);
+      if (it->second == 2) {
+        // quadratic term a * x^2
+        (*Q)(x_index, x_index) += 2 * coefficient;
+      } else if (it->second == 1) {
+        // linear term b * x.
+        (*b)(x_index) += coefficient;
+      }
+    } else {
+      // constant term.
+      *c += coefficient;
+    }
+  }
+}
 }  // anonymous namespace
 
 void MathematicalProgram::AddCost(const Binding<Constraint>& binding) {
@@ -428,49 +497,10 @@ Binding<QuadraticConstraint> AddQuadraticCostWithMonomialToCoeffMap(
   // TODO(hongkai.dai): use a sparse matrix to represent Q and b.
   Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
   Eigen::VectorXd b(vars_vec.size());
-  Q.setZero();
-  b.setZero();
-  for (const auto& p : monomial_to_coeff_map) {
-    DRAKE_ASSERT(is_constant(p.second));
-    const double coefficient = get_constant_value(p.second);
-    const symbolic::Monomial& p_monomial = p.first;
-    if (p_monomial.total_degree() > 2) {
-      ostringstream oss;
-      oss << p.first << " has order higher than 2, cannot be handled by "
-          "AddQuadraticCost" << std::endl;
-      throw std::runtime_error(oss.str());
-    }
-    const auto& monomial_powers = p_monomial.get_powers();
-    if (monomial_powers.size() == 2) {
-      // cross terms.
-      auto it = monomial_powers.begin();
-      const int x1_index = map_var_to_index.at(it->first);
-      DRAKE_DEMAND(it->second == 1);
-      ++it;
-      const int x2_index = map_var_to_index.at(it->first);
-      DRAKE_DEMAND(it->second == 1);
-      Q(x1_index, x2_index) += coefficient;
-      Q(x2_index, x1_index) = Q(x1_index, x2_index);
-    } else if (monomial_powers.size() == 1) {
-      // Three cases
-      // 1. quadratic term a*x^2
-      // 2. linear term b*x
-      // 3. constant term. We ignore the constant term in QuadraticConstraint.
-      auto it = monomial_powers.begin();
-      const int x_index = map_var_to_index.at(it->first);
-      if (it->second == 2) {
-        // quadratic term a * x^2
-        Q(x_index, x_index) += 2 * coefficient;
-      } else if (it->second == 1) {
-        // linear term b * x.
-        b(x_index) += coefficient;
-      } else {
-        // constant term.
-        // Deliberately left empty, we ignore the constant term in
-        // QuadraticConstraint.
-      }
-    }
-  }
+  double constant_term;
+  DecomposeQuadraticExpressionWithMonomialToCoeffMap(
+      monomial_to_coeff_map, map_var_to_index, vars_vec.size(), &Q, &b,
+      &constant_term);
   // Now add the quadratic constraint 0.5 * x' * Q * x + b' * x
   return Binding<QuadraticConstraint>(prog->AddQuadraticCost(Q, b, vars_vec),
                                       vars_vec);
@@ -785,6 +815,109 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   DRAKE_DEMAND(vars.rows() >= 1);
   return Binding<LorentzConeConstraint>(AddLorentzConeConstraint(A, b, vars),
                                         vars);
+}
+
+Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
+    const symbolic::Expression& linear_expr,
+    const symbolic::Expression& quadratic_expr) {
+  const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);
+  const auto& quadratic_vars = quadratic_p.first;
+  const auto& quadratic_var_to_index_map = quadratic_p.second;
+  const auto& monomial_to_coeff_map = symbolic::DecomposePolynomialIntoMonomial(
+      quadratic_expr, quadratic_expr.GetVariables());
+  Eigen::MatrixXd Q(quadratic_vars.size(), quadratic_vars.size());
+  Eigen::VectorXd b(quadratic_vars.size());
+  double a;
+  DecomposeQuadraticExpressionWithMonomialToCoeffMap(
+      monomial_to_coeff_map, quadratic_var_to_index_map, quadratic_vars.size(),
+      &Q, &b, &a);
+  // The constraint that the linear expression v1 satisfying
+  // v1 >= sqrt(0.5 * x' * Q * x + b' * x + a), is equivalent to the vector
+  // [z; y] being within a Lorentz cone, where
+  // z = v1
+  // y = [1/sqrt(2) * (R * x + R⁻ᵀb); sqrt(a - 0.5 * bᵀ * Q⁻¹ * a)]
+  // R is the matrix satisfying Rᵀ * R = Q
+
+  VectorX<Expression> expr{};
+
+  double constant;  // constant is a - 0.5 * bᵀ * Q⁻¹ * a
+  // If Q is strictly positive definite, then use LLT
+  Eigen::LLT<Eigen::MatrixXd> llt_Q(Q.selfadjointView<Eigen::Upper>());
+  if (llt_Q.info() == Eigen::Success) {
+    Eigen::MatrixXd R = llt_Q.matrixU();
+    expr.resize(2 + R.rows());
+    expr(0) = linear_expr;
+    expr.segment(1, R.rows()) =
+        1.0 / std::sqrt(2) * (R * quadratic_vars + llt_Q.matrixL().solve(b));
+    constant = a - 0.5 * b.dot(llt_Q.solve(b));
+  } else {
+    // Q is not strictly positive definite.
+    // First check if Q is zero.
+    const bool is_Q_zero = (Q.array() == 0).all();
+
+    if (is_Q_zero) {
+      // Now check if the linear term b is zero. If both Q and b are zero, then
+      // add the linear constraint linear_expr >= sqrt(a); otherwise throw a
+      // runtime error.
+      const bool is_b_zero = (b.array() == 0).all();
+      if (!is_b_zero) {
+        ostringstream oss;
+        oss << "Expression " << quadratic_expr
+            << " is not quadratic, cannot call AddLorentzConeConstraint.\n";
+        throw std::runtime_error(oss.str());
+      } else {
+        if (a < 0) {
+          ostringstream oss;
+          oss << "Expression " << quadratic_expr
+              << " is negative, cannot call AddLorentzConeConstraint.\n";
+          throw std::runtime_error(oss.str());
+        }
+        Vector2<Expression> expr_constant_quadratic(linear_expr, std::sqrt(a));
+        return AddLorentzConeConstraint(expr_constant_quadratic);
+      }
+    }
+    // Q is not strictly positive, nor is it zero. Use LDLT to decompose Q
+    // into R * Rᵀ.
+    // Question: is there a better way to compute R * x and R⁻ᵀb? The following
+    // code is really ugly.
+    Eigen::LDLT<Eigen::MatrixXd> ldlt_Q(Q.selfadjointView<Eigen::Upper>());
+    if (ldlt_Q.info() != Eigen::Success || !ldlt_Q.isPositive()) {
+      std::ostringstream oss;
+      oss << "Expression" << quadratic_expr
+          << " does not have a positive semidefinite Hessian. Cannot be called "
+              "with AddLorentzConeConstraint.\n";
+      throw std::runtime_error(oss.str());
+    }
+    Eigen::MatrixXd R1 = ldlt_Q.matrixU();
+    for (int i = 0; i < R1.rows(); ++i) {
+      for (int j = 0; j < i; ++j) {
+        R1(i, j) = 0;
+      }
+      const double d_sqrt = std::sqrt(ldlt_Q.vectorD()(i));
+      for (int j = i; j < R1.cols(); ++j) {
+        R1(i, j) *= d_sqrt;
+      }
+    }
+    Eigen::MatrixXd R = R1 * ldlt_Q.transpositionsP();
+
+    expr.resize(2 + R1.rows());
+    expr(0) = linear_expr;
+    // expr.segment(1, R1.rows()) = 1/sqrt(2) * (R * x + R⁻ᵀb)
+    expr.segment(1, R1.rows()) =
+        1.0 / std::sqrt(2) *
+            (R * quadratic_vars
+                + R.transpose().fullPivHouseholderQr().solve(b));
+    constant = a - 0.5 * b.dot(ldlt_Q.solve(b));
+  }
+  if (constant < 0) {
+    std::ostringstream oss;
+    oss << "Expression " << quadratic_expr
+        << " is not guaranteed to be non-negative, cannot call it with "
+            "AddLorentzConeConstraint.\n";
+    throw std::runtime_error(oss.str());
+  }
+  expr(expr.rows() - 1) = std::sqrt(constant);
+  return AddLorentzConeConstraint(expr);
 }
 
 void MathematicalProgram::AddConstraint(

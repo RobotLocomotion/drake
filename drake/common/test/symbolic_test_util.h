@@ -11,6 +11,22 @@ namespace drake {
 namespace symbolic {
 namespace test {
 
+inline bool VarEqual(const Variable& v1, const Variable& v2) {
+  return v1.equal_to(v2);
+}
+
+inline bool VarNotEqual(const Variable& v1, const Variable& v2) {
+  return !VarEqual(v1, v2);
+}
+
+inline bool VarLess(const Variable& v1, const Variable& v2) {
+  return v1.less(v2);
+}
+
+inline bool VarNotLess(const Variable& v1, const Variable& v2) {
+  return !VarLess(v1, v2);
+}
+
 inline bool ExprEqual(const Expression& e1, const Expression& e2) {
   return e1.EqualTo(e2);
 }

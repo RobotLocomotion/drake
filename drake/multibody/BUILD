@@ -13,6 +13,21 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "global_inverse_kinematics",
+    srcs = [
+        "global_inverse_kinematics.cc",
+    ],
+    hdrs = [
+        "global_inverse_kinematics.h",
+    ],
+    deps = [
+        ":rigid_body_tree",
+        "//drake/solvers:mathematical_program",
+        "//drake/solvers:rotation_constraint",
+    ],
+)
+
+drake_cc_library(
     name = "inverse_kinematics",
     srcs = [
         "constraint_wrappers.cc",

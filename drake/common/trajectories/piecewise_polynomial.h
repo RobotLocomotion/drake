@@ -106,20 +106,34 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * http://home.uchicago.edu/~sctchoi/courses/cs138/interp.pdf is also a good
    * reference.
    *
-   * The first and last first derivative is chosen using a
-   * non-centered, shape-preserving three-point formulae.
-   * See equation (2.10) in the following reference for more details.
+   * If @p zero_end_point_derivatives is false, the first and last first
+   * derivative is chosen using a non-centered, shape-preserving three-point
+   * formulae. See equation (2.10) in the following reference for more details.
    * http://www.mi.sanu.ac.rs/~gvm/radovi/mon.pdf
+   * If @p zero_end_point_derivatives is true, they are set to zeros.
+   *
+   * If @p zero_end_point_derivatives is false, @p breaks and @p knots must
+   * have at least 3 elements for the algorithm to determine the first
+   * derivatives.
+   *
+   * If @p zero_end_point_derivatives is true, @p breaks and @p knots may have
+   * 2 or more elements. For the 2 elements case, the result is equivalent to
+   * computing a cubic polynomial whose values are given by @p knots, and
+   * derivatives set to zero.
    *
    * @throws std::runtime_error if
    *    `breaks` and `knots` have different length,
    *    `breaks` is not strictly increasing,
    *    `knots` has inconsistent dimensions,
-   *    `breaks` has length smaller than 3.
+   *    `breaks` has length smaller than 3 and zero_end_point_derivatives is
+   *    false,
+   *    `breaks` has length smaller than 2 and zero_end_point_derivatives is
+   *    true.
    */
   static PiecewisePolynomial<CoefficientType> Pchip(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots);
+      const std::vector<CoefficientMatrix>& knots,
+      bool zero_end_point_derivatives = false);
 
   /**
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
@@ -134,7 +148,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    *    `knots` has inconsistent dimensions,
    *    `knots_dot_at_start` or `knot_dot_at_end` and `knots` have
    *    inconsistent dimensions,
-   *    `breaks` has length smaller than 3.
+   *    `breaks` has length smaller than 2.
    */
   static PiecewisePolynomial<CoefficientType> Cubic(
       const std::vector<double>& breaks,
@@ -173,11 +187,14 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * http://home.uchicago.edu/~sctchoi/courses/cs138/interp.pdf are also good
    * references.
    *
+   * @p breaks and @p knots must have at least 3 elements. Otherwise there is
+   * not enough information to solve for the coefficients.
+   *
    * @throws std::runtime_error if
    *    `breaks` and `knots` have different length,
    *    `breaks` is not strictly increasing,
    *    `knots` has inconsistent dimensions,
-   *    `breaks` has length smaller than 2.
+   *    `breaks` has length smaller than 3.
    */
   static PiecewisePolynomial<CoefficientType> Cubic(
       const std::vector<double>& breaks,

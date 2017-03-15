@@ -24,9 +24,7 @@ Vector3<T> GyroscopeOutput<T>::get_rotational_velocities() const {
 
 template <typename T>
 GyroscopeOutput<T>* GyroscopeOutput<T>::DoClone() const {
-  auto result = new GyroscopeOutput;
-  result->set_value(this->get_value());
-  return result;
+  return new GyroscopeOutput;
 }
 
 template class GyroscopeOutput<double>;

@@ -35,7 +35,7 @@ target_link_libraries(drakeSensors
     drakeSystemFramework)
 
 if(VTK_FOUND)
-  target_link_libraries(drakeSensors vtkIO vtkRendering)
+  target_link_libraries(drakeSensors drakeRendering vtkIO vtkRendering)
   target_include_directories(drakeSensors PUBLIC ${VTK_INCLUDE_DIRS})
 endif()
 

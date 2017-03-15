@@ -39,7 +39,8 @@ set(installed_headers
   roll_pitch_yaw_using_quaternion.h
   roll_pitch_yaw_not_using_quaternion.h
   rotation_conversion_gradient.h
-  rotation_matrix.h)
+  rotation_matrix.h
+  saturate.h)
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.

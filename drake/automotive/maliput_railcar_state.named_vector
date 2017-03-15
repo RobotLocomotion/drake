@@ -1,0 +1,8 @@
+element {
+    name: "s"
+    doc: "The s-coordinate of the vehicle in lane-space."
+}
+element {
+    name: "speed"
+    doc: "The speed of the vehicle in physical space."
+}

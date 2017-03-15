@@ -22,6 +22,8 @@ drake_cc_library(
         "gen/endless_road_oracle_output.cc",
         "gen/euler_floating_joint_state.cc",
         "gen/idm_planner_parameters.cc",
+        "gen/maliput_railcar_config.cc",
+        "gen/maliput_railcar_state.cc",
         "gen/simple_car_config.cc",
         "gen/simple_car_state.cc",
     ],
@@ -34,6 +36,8 @@ drake_cc_library(
         "gen/endless_road_oracle_output.h",
         "gen/euler_floating_joint_state.h",
         "gen/idm_planner_parameters.h",
+        "gen/maliput_railcar_config.h",
+        "gen/maliput_railcar_state.h",
         "gen/simple_car_config.h",
         "gen/simple_car_state.h",
     ],
@@ -52,6 +56,8 @@ drake_cc_library(
         "gen/endless_road_car_state_translator.cc",
         "gen/endless_road_oracle_output_translator.cc",
         "gen/euler_floating_joint_state_translator.cc",
+        "gen/maliput_railcar_config_translator.cc",
+        "gen/maliput_railcar_state_translator.cc",
         "gen/simple_car_config_translator.cc",
         "gen/simple_car_state_translator.cc",
     ],
@@ -63,6 +69,8 @@ drake_cc_library(
         "gen/endless_road_car_state_translator.h",
         "gen/endless_road_oracle_output_translator.h",
         "gen/euler_floating_joint_state_translator.h",
+        "gen/maliput_railcar_config_translator.h",
+        "gen/maliput_railcar_state_translator.h",
         "gen/simple_car_config_translator.h",
         "gen/simple_car_state_translator.h",
     ],
@@ -140,6 +148,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "maliput_railcar",
+    srcs = ["maliput_railcar.cc"],
+    hdrs = ["maliput_railcar.h"],
+    deps = [
+        ":calc_smooth_acceleration",
+        ":generated_vectors",
+        "//drake/automotive/maliput/api",
+        "//drake/math:geometric_transform",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
     name = "monolane_onramp_merge",
     srcs = ["monolane_onramp_merge.cc"],
     hdrs = ["monolane_onramp_merge.h"],
@@ -157,10 +178,12 @@ drake_cc_library(
         "simple_car_to_euler_floating_joint.h",
     ],
     deps = [
+        ":calc_smooth_acceleration",
         ":generated_vectors",
         "//drake/common:cond",
         "//drake/common:double",
         "//drake/common:symbolic",
+        "//drake/math:saturate",
         "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -184,6 +207,17 @@ drake_cc_library(
         ":linear_car",
         "//drake/systems/primitives:constant_vector_source",
     ],
+)
+
+drake_cc_library(
+    name = "calc_smooth_acceleration",
+    srcs = ["calc_smooth_acceleration.cc"],
+    hdrs = ["calc_smooth_acceleration.h"],
+    deps = [
+        "//drake/common:autodiff",
+        "//drake/common:symbolic",
+    ],
+    visibility=[],
 )
 
 drake_cc_library(
@@ -511,6 +545,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "maliput_railcar_test",
+    deps = [
+        "//drake/automotive:maliput_railcar",
+        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/dragway",
+        "//drake/automotive/maliput/monolane",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "monolane_onramp_merge_test",
     deps = [
         ":monolane_onramp_merge",
@@ -558,6 +605,14 @@ drake_cc_googletest(
     name = "single_lane_ego_and_agent_test",
     deps = [
         "//drake/automotive:single_lane_ego_and_agent",
+    ],
+)
+
+drake_cc_googletest(
+    name = "calc_smooth_acceleration_test",
+    deps = [
+        "//drake/automotive:calc_smooth_acceleration",
+        "//drake/common",
     ],
 )
 

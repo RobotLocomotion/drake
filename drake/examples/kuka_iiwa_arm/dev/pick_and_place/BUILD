@@ -16,14 +16,18 @@ drake_cc_library(
     name = "kuka_pick_and_place",
     srcs = [
         "action.cc",
+        "pick_and_place_common.cc",
         "world_state.cc",
     ],
     hdrs = [
         "action.h",
+        "pick_and_place_common.h",
         "world_state.h",
     ],
     deps = [
+        "//drake/common/trajectories:piecewise_quaternion",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm/dev:iiwa_ik_planner",
         "//drake/lcmtypes:schunk",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",

@@ -12,7 +12,7 @@
 namespace drake {
 namespace automotive {
 
-/// BicycleCar -- Implements a nonlinear rigid body bicycle model from Althoff &
+/// BicycleCar implements a nonlinear rigid body bicycle model from Althoff &
 /// Dolan (2014) [1].  The three-DOF model captures the rigid-body dynamics in
 /// the lateral, longitudinal, and yaw directions but not in the roll and pitch
 /// directions.  The model assumes a vehicle that has two wheels: one at the
@@ -84,10 +84,6 @@ class BicycleCar : public systems::LeafSystem<T> {
                             systems::Parameters<T>* params) const override;
 
   // LeafSystem<T> overrides
-  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-      const override;
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::OutputPortDescriptor<T>& descriptor) const override;
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
   // System<T> overrides.

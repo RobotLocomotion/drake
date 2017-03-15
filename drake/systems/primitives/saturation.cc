@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/saturate.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -92,12 +93,9 @@ void Saturation<T>::DoCalcOutput(const Context<T>& context,
 
   const auto& u = input_vector->get_value();
 
-  using std::min;
-  using std::max;
-
   // Loop through and set the saturation values.
   for (int i = 0; i < u_min.size(); ++i) {
-    y[i] = min(max(u[i], u_min[i]), u_max[i]);
+    y[i] = math::saturate(u[i], u_min[i], u_max[i]);
   }
 }
 

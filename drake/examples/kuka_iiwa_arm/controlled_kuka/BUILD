@@ -9,30 +9,17 @@ load(
     "drake_cc_googletest",
 )
 
-drake_cc_library(
-    name = "kuka_demo_plant_builder",
-    hdrs = ["kuka_demo_plant_builder.h"],
-    deps = [
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/lcm",
-        "//drake/multibody:rigid_body_tree_construction",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/controllers:inverse_dynamics_controller",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:multiplexer",
-        "//drake/systems/primitives:trajectory_source",
-    ],
-)
-
 cc_binary(
     name = "controlled_kuka_demo",
     srcs = ["controlled_kuka_demo.cc"],
     data = ["//drake/examples/kuka_iiwa_arm:models"],
     deps = [
-        ":kuka_demo_plant_builder",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
+        "//drake/lcm",
         "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/primitives:trajectory_source",
         "@gflags//:gflags",
     ],
 )
@@ -42,8 +29,12 @@ cc_binary(
     srcs = ["kuka_cartesian_way_point_demo.cc"],
     data = ["//drake/examples/kuka_iiwa_arm:models"],
     deps = [
-        ":kuka_demo_plant_builder",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
+        "//drake/lcm",
         "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/primitives:trajectory_source",
         "@gflags//:gflags",
     ],
 )

@@ -5,48 +5,65 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/multibody_tree/math/spatial_vector.h"
 
 namespace drake {
 namespace multibody {
 
-/// This class is used to represent physical quantities that correspond to
-/// spatial velocities. Spatial velocities are 6-element quantities that are
-/// pairs of ordinary 3-vectors. Elements 0-2 are always the angular velocity
-/// while elements 3-5 are the linear velocity.
-/// For a more detailed introduction on spatial vectors please refer to
-/// section @ref multibody_spatial_vectors.
+// Forward declaration to define dot product with a spatial force.
+template <typename T> class SpatialForce;
+
+/// This class is used to represent a _spatial velocity_ (also called a
+/// _twist_) that combines rotational (angular) and translational
+/// (linear) velocity components. Spatial velocities are 6-element
+/// quantities that are pairs of ordinary 3-vectors. Elements 0-2 are
+/// the angular velocity component while elements 3-5 are the translational
+/// velocity. Spatial velocities represent the motion of a "moving frame"
+/// `B` measured with respect to a "measured-in" frame `A`. In addition,
+/// the two contained vectors must be expressed in the same "expressed-in"
+/// frame `E`, which may be distinct from either `A` or `B`. Finally,
+/// while angular velocity is identical for any frame fixed to a rigid
+/// body, translational velocity refers to a particular point. Only the
+/// vector values are stored in a %SpatialVelocity object; the three
+/// frames and the point must be understood from context. It is the
+/// responsibility of the user to keep track of them. That is best
+/// accomplished through disciplined notation. In source code we use
+/// monogram notation where capital `V` is used to designate a spatial
+/// velocity quantity. We write a point `P` fixed to body (or frame)
+/// `B` as @f$B_P@f$ which appears in code and comments as `Bp`. Then
+/// we write a particular spatial velocity as `V_ABp_E` where the `_E`
+/// suffix indicates that the expressed-in frame is `E`. This symbol
+/// represents the angular velocity of frame `B` in frame `A`, and the
+/// translational velocity of point `P` in `A`, where `P` is fixed to
+/// frame `B`, with both vectors expressed in `E`. Very often
+/// the point of interest will be the body origin `Bo`; if no point is
+/// shown the origin is understood, so `V_AB_E` means `V_ABo_E`.
+/// For a more detailed introduction on spatial vectors and the monogram
+/// notation please refer to section @ref multibody_spatial_vectors.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class SpatialVelocity {
+class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
+  // We need the fully qualified class name below for the clang compiler to
+  // work. Without qualifiers the code is legal according to the C++11 standard
+  // but the clang compiler still gets confused. See:
+  // http://stackoverflow.com/questions/17687459/clang-not-accepting-use-of-template-template-parameter-when-using-crtp
+  typedef SpatialVector<::drake::multibody::SpatialVelocity, T> Base;
+
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity)
-
-  /// Sizes for spatial quantities and its components in three dimensions.
-  enum {
-    kSpatialVelocitySize = 6,
-    kRotationSize = 3,
-    kTranslationSize = 3
-  };
-  /// The type of the underlying in-memory representation using an Eigen vector.
-  typedef Vector6<T> CoeffsEigenType;
 
   /// Default constructor. In Release builds the elements of the newly
   /// constructed spatial velocity are left uninitialized resulting in a zero
   /// cost operation. However in Debug builds those entries are set to NaN so
   /// that operations using this uninitialized spatial velocity fail fast,
   /// allowing fast bug detection.
-  SpatialVelocity() {
-    DRAKE_ASSERT_VOID(SetNaN());
-  }
+  SpatialVelocity() : Base() {}
 
   /// SpatialVelocity constructor from an angular velocity @p w and a linear
   /// velocity @p v.
   SpatialVelocity(const Eigen::Ref<const Vector3<T>>& w,
-                  const Eigen::Ref<const Vector3<T>>& v) {
-    V_.template head<3>() = w;
-    V_.template tail<3>() = v;
-  }
+                  const Eigen::Ref<const Vector3<T>>& v) : Base(w, v) {}
 
   /// SpatialVelocity constructor from an Eigen expression that represents a
   /// six-dimensional vector.
@@ -54,125 +71,67 @@ class SpatialVelocity {
   /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
   /// expressions.
   template <typename Derived>
-  explicit SpatialVelocity(const Eigen::MatrixBase<Derived>& V) : V_(V) {}
+  explicit SpatialVelocity(const Eigen::MatrixBase<Derived>& V) : Base(V) {}
 
-  /// The total size of the concatenation of the angular and linear components.
-  /// In three dimensions this is six (6) and it is known at compile time.
-  int size() const { return kSpatialVelocitySize; }
-
-  /// Const access to the i-th component of this spatial velocity.
-  /// Bounds are only checked in Debug builds for a zero overhead implementation
-  /// in Release builds.
-  const T& operator[](int i) const {
-    DRAKE_ASSERT(0 <= i && i < kSpatialVelocitySize);
-    return V_[i];
-  }
-
-  /// Mutable access to the i-th component of this spatial velocity.
-  /// Bounds are only checked in Debug builds for a zero overhead implementation
-  /// in Release builds.
-  T& operator[](int i) {
-    DRAKE_ASSERT(0 <= i && i < kSpatialVelocitySize);
-    return V_[i];
-  }
-
-  /// Const access to the rotational component of this spatial velocity.
-  const Vector3<T>& rotational() const {
-    // We are counting on a particular representation for an Eigen Vector3<T>:
-    // it must be represented exactly as 3 T's in an array with no metadata.
-    return *reinterpret_cast<const Vector3<T>*>(V_.data());
-  }
-
-  /// Mutable access to the rotational component of this spatial velocity.
-  Vector3<T>& rotational() {
-    // We are counting on a particular representation for an Eigen Vector3<T>:
-    // it must be represented exactly as 3 T's in an array with no metadata.
-    return *reinterpret_cast<Vector3<T>*>(V_.data());
-  }
-
-  /// Const access to the translational component of this spatial velocity.
-  const Vector3<T>& translational() const {
-    // We are counting on a particular representation for an Eigen Vector3<T>:
-    // it must be represented exactly as 3 T's in an array with no metadata.
-    return *reinterpret_cast<const Vector3<T>*>(
-        V_.data() + kRotationSize);
-  }
-
-  /// Mutable access to the translational component of this spatial velocity.
-  Vector3<T>& translational() {
-    // We are counting on a particular representation for an Eigen Vector3<T>:
-    // it must be represented exactly as 3 T's in an array with no metadata.
-    return *reinterpret_cast<Vector3<T>*>(
-        V_.data() + kRotationSize);
-  }
-
-  /// Returns a (const) bare pointer to the underlying data.
-  /// It is guaranteed that there will be six (6) T's densely packed at data[0],
-  /// data[1], etc.
-  const T* data() const { return V_.data(); }
-
-  /// Returns a (mutable) bare pointer to the underlying data.
-  /// It is guaranteed that there will be six (6) T's densely packed at data[0],
-  /// data[1], etc.
-  T* mutable_data() { return V_.data(); }
-
-  /// @returns `true` if `other` is within a precision given by @p tolerance.
-  /// The comparison is performed by comparing the angular (linear) component of
-  /// `this` spatial velocity with the angular (linear) component of @p other
-  /// using the fuzzy comparison provided by Eigen's method isApprox().
-  bool IsApprox(const SpatialVelocity<T>& other,
-                double tolerance = Eigen::NumTraits<T>::epsilon()) {
-    return translational().isApprox(other.translational(), tolerance) &&
-           rotational().isApprox(other.rotational(), tolerance);
-  }
-
-  /// Sets all entries in `this` SpatialVelocity to NaN. Typically used to
-  /// quickly detect uninitialized values since NaN will trigger a chain of
-  /// invalid computations that can then be tracked back to the source.
-  void SetNaN() {
-    V_.setConstant(std::numeric_limits<
-        typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
-  }
-
-  /// Given `this` spatial velocity `V_AB_E` of a frame `B` measured in a frame
-  /// `A` and expressed in a frame `E`, this method computes the spatial
-  /// velocity of a frame `Q` rigidly moving with `B` but offset by a vector
-  /// `p_BQ_E` from the orgin of frame `B` to the origin of frame `Q` and
-  /// expressed in the same frame `E`.
+  /// In-place shift of a %SpatialVelocity from one point on a rigid body
+  /// or frame to another point on the same body or frame.
+  /// `this` spatial velocity `V_ABp_E` of a frame `B` at a point `P` fixed
+  /// on `B`, measured in a frame `A`, and expressed in a frame `E`, is
+  /// modified to become `V_ABq_E`, representing the velocity of another
+  /// point `Q` on `B` instead (see class comment for more about this
+  /// notation). This requires adjusting the translational (linear) velocity
+  /// component to account for the velocity difference between `P` and `Q`
+  /// due to the angular velocity of `B` in `A`.
   ///
-  /// The operation performed, in coordinate-free form, is: <pre>
-  ///   w_AQ = w_AB,  i.e. the angular velocity of frame B and Q is the same.
-  ///   v_AQ = v_AB + w_AB x p_BQ
+  /// We are given the vector from point `P` to point `Q`, as a position
+  /// vector `p_BpBq_E` (or `p_PQ_E`) expressed in the same frame `E` as the
+  /// spatial velocity. The operation performed, in coordinate-free form, is:
+  /// <pre>
+  ///   w_AB  = w_AB,  i.e. the angular velocity is unchanged.
+  ///   v_ABq = v_ABp + w_AB x p_BpBq
   /// </pre>
+  /// where w and v represent the angular and linear velocity components
+  /// respectively.
   ///
-  /// All quantities above must be expressed in a common frame `E` i.e: <pre>
-  ///   w_AQ_E = w_AB_E
-  ///   v_AQ_E = v_AB_E + w_AB_E x p_BQ_E
-  /// </pre>
+  /// For computation, all quantities above must be expressed in a common
+  /// frame `E`; we add an `_E` suffix to each symbol to indicate that.
   ///
   /// This operation is performed in-place modifying the original object.
   ///
-  /// @param[in] p_BQ_E Shift vector from `Bo` to `Qo` and expressed in
-  ///                   frame `E`.
-  /// @retval V_AQ_E The spatial velocity of frame `Q` with respect to `A` and
-  ///                expressed in frame `A`.
+  /// @param[in] p_BpBq_E
+  ///   Shift vector from point `P` of body `B` to point `Q` of `B`,
+  ///   expressed in frame `E`. The "from" point `Bp` must be the point
+  ///   whose velocity is currently represented in this spatial velocity,
+  ///   and `E` must be the same expressed-in frame as for this spatial
+  ///   velocity.
+  ///
+  /// @returns A reference to `this` spatial velocity which is now `V_ABq_E`,
+  ///   that is, the spatial velocity of frame `B` at point `Q`, still
+  ///   measured in frame `A` and expressed in frame `E`.
   ///
   /// @see Shift() to compute the shifted spatial velocity without modifying
   ///      this original object.
   SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_BQ_E) {
-    translational() += rotational().cross(p_BQ_E);
+    this->translational() += this->rotational().cross(p_BQ_E);
     return *this;
   }
 
-  /// Given `this` spatial velocity `V_AB_E` of a frame `B` measured in a frame
-  /// `A` and expressed in a frame `E`, this method computes the spatial
-  /// velocity of a frame `Q` rigidly moving with `B` but offset by a vector
-  /// `p_BQ` from the orgin of frame `B` to the origin of frame Q.
+  /// Shift of a %SpatialVelocity from one point on a rigid body
+  /// or frame to another point on the same body or frame.
+  /// This is an alternate signature for shifting a spatial velocity's
+  /// point that does not change the original object. See
+  /// ShiftInPlace() for more information.
   ///
-  /// @param[in] p_BQ_E Shift vector from `Bo` to `Qo` and expressed in
-  ///                   frame `E`.
-  /// @retval V_AQ_E The spatial velocity of frame `Q` with respect to `A` and
-  ///                expressed in frame `A`.
+  /// @param[in] p_BpBq_E
+  ///   Shift vector from point `P` of body `B` to point `Q` of `B`,
+  ///   expressed in frame `E`. The "from" point `Bp` must be the point
+  ///   whose velocity is currently represented in this spatial velocity,
+  ///   and `E` must be the same expressed-in frame as for this spatial
+  ///   velocity.
+  ///
+  /// @retval V_ABq_E
+  ///   The spatial velocity of frame `B` at point `Q`, measured in frame
+  ///   `A` and expressed in frame `E`.
   ///
   /// @see ShiftInPlace() to compute the shifted spatial velocity in-place
   ///      modifying the original object.
@@ -180,32 +139,21 @@ class SpatialVelocity {
     return SpatialVelocity<T>(*this).ShiftInPlace(p_BQ_E);
   }
 
-  /// Multiplication of a spatial velocity `V` from the left by a scalar `s`.
-  /// @relates SpatialVelocity.
-  friend SpatialVelocity<T> operator*(const T& s, const SpatialVelocity<T>& V) {
-    return SpatialVelocity<T>(s * V.V_);
-  }
-
-  /// Multiplication of a spatial velocity `V` from the right by a scalar `s`.
-  /// @relates SpatialVelocity.
-  friend SpatialVelocity<T> operator*(const SpatialVelocity<T>& V, const T& s) {
-    return s * V;  // Multiplication by scalar is commutative.
-  }
-
- private:
-  CoeffsEigenType V_;
+  /// Given `this` spatial velocity `V_IBp_E` of point `P` of body `B`,
+  /// measured in an inertial frame `I` and expressed in a frame `E`,
+  /// this method computes the 6-dimensional dot product with the spatial
+  /// force `F_Bp_E` applied to point `P`, and expressed in the same
+  /// frame `E` in which the spatial velocity is expressed.
+  /// This dot-product represents the power generated by the spatial force
+  /// when its body and application point have `this` spatial velocity.
+  /// Although the two spatial vectors must be expressed in the same frame,
+  /// the result is independent of that frame.
+  ///
+  /// @warning The result of this method cannot be interpreted as power unless
+  ///          `this` spatial velocity is measured in an inertial frame `I`,
+  ///          which cannot be enforced by this class.
+  T dot(const SpatialForce<T>& F_Q_E) const;
 };
-
-/// Stream insertion operator to write SpatialVelocity objects into a
-/// `std::ostream`. Especially useful for debugging.
-/// @relates SpatialVelocity.
-template <typename T> inline
-std::ostream& operator<<(std::ostream& o, const SpatialVelocity<T>& V) {
-  o << "[" << V[0];
-  for (int i = 1; i < V.size(); ++i) o << ", " << V[i];
-  o << "]ᵀ";  // The "transpose" symbol.
-  return o;
-}
 
 }  // namespace multibody
 }  // namespace drake

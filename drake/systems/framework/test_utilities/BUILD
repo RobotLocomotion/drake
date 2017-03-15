@@ -12,6 +12,7 @@ drake_cc_library(
     srcs = [],
     hdrs = [],
     deps = [
+        ":my_vector",
         ":pack_value",
     ],
 )
@@ -23,6 +24,17 @@ drake_cc_library(
     hdrs = ["pack_value.h"],
     deps = [
         "//drake/systems/framework:value",
+    ],
+)
+
+drake_cc_library(
+    name = "my_vector",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["my_vector.h"],
+    deps = [
+        "//drake/common",
+        "//drake/systems/framework:vector",
     ],
 )
 
