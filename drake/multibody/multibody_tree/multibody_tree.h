@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -31,8 +32,15 @@ class MultibodyTree {
   /// Creates a MultibodyTree containing only a **world** body.
   MultibodyTree();
 
-  /// Takes ownership of `body` and assigns a unique index to it. Once a body
-  /// is added to a MultibodyTree it cannot be removed from it.
+  /// Takes ownership of `body`, assigns a unique index to it, and adds it to
+  /// `this` %MultibodyTree. Returns a bare pointer to the body just added,
+  /// which will remain valid for the lifetime of `this` %MultibodyTree.
+  ///
+  /// Example of usage:
+  /// @code{.cpp}
+  ///   MultibodyTree<T> model;
+  ///   auto foo = model.AddBody(std::make_unique<RigidBody<T>>());
+  /// @endcode
   ///
   /// @throws std::logic_error if users attempt to add a body to an already
   /// compiled multibody tree with MultibodyTree::Compile() or if `body` is a
@@ -43,8 +51,37 @@ class MultibodyTree {
   /// factory methods. For instance, see RigidBody::Create() to create a body
   /// and add it to a MultibodyTree.
   ///
-  /// @returns The unique index of the body just added.
-  BodyIndex AddBody(std::unique_ptr<Body<T>> body);
+  /// @param[in] body A unique pointer to a body to add to `this`
+  ///                 %MultibodyTree.
+  /// @returns A bare pointer to the `body` just added, which will remain valid
+  ///          for the lifetime of `this` MultibodyTree.
+  ///
+  /// @tparam BodyType The type of the specific sub-class of Body to add.
+  template <class BodyType>
+  BodyType* AddBody(std::unique_ptr<BodyType> body) {
+    if (body == nullptr) {
+      throw std::logic_error("Input body is an invalid nullptr.");
+    }
+
+    // If the topology is valid it means that this MultibodyTree was already
+    // compiled. Thus throw an exception to alert users.
+    if (topology_is_valid_) {
+      throw std::logic_error(
+          "Attempting to add a body to an already compiled MultibodyTree is "
+          "not allowed. See MultibodyTree::Compile() for details.");
+    }
+    // TODO(amcastro-tri): This index will be returned by the
+    // MultibodyTreeTopology class in a future PR.
+    BodyIndex index(owned_bodies_.size());
+    // MultibodyTree has access to these methods since it is a friend of
+    // MultibodyTreeElement. Users of Body<T>, however, do not have access to
+    // these methods.
+    body->set_parent_tree(this);
+    body->set_index(index);
+    BodyType* raw_body_ptr = body.get();
+    owned_bodies_.push_back(std::move(body));
+    return raw_body_ptr;
+  }
 
   /// Returns the number of bodies in the MultibodyTree including the *world*
   /// body. Therefore the minimum number of bodies in a MultibodyTree is one.

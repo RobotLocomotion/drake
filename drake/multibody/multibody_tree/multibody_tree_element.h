@@ -62,6 +62,9 @@ class MultibodyTreeElement;
 template <template <typename> class ElementType,
     typename T, typename ElementIndexType>
 class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
+  // The owning MultibodyTree has access to protected methods in this class to
+  // set the owning parent tree and its unique index in that tree.
+  friend class MultibodyTree<T>;
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeElement)
 

@@ -15,12 +15,7 @@ const RigidBody<T>& RigidBody<T>::Create(MultibodyTree<T>* tree) {
   // Create().
   // However we can still create a unique_ptr as below where ownership is clear
   // and an exception would call the destructor.
-  RigidBody<T>* body{nullptr};
-  BodyIndex body_index =
-      tree->AddBody(std::unique_ptr<RigidBody<T>>(body = new RigidBody<T>()));
-  body->set_parent_tree(tree);
-  body->set_index(body_index);
-  return *body;
+  return *tree->AddBody(std::unique_ptr<RigidBody<T>>(new RigidBody<T>()));
 }
 
 template <typename T>
