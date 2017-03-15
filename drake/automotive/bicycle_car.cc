@@ -14,33 +14,22 @@
 namespace drake {
 namespace automotive {
 
-namespace {
-
-// Specify the dimension of the state vector and of each input port.
-static constexpr int kStateDimension{BicycleCarStateIndices::kNumCoordinates};
-static constexpr int kSteeringInputDimension{1};
-static constexpr int kForceInputDimension{1};
-
-}  // namespace
-
 template <typename T>
 BicycleCar<T>::BicycleCar() {
-  auto& steering_input =
-      this->DeclareInputPort(systems::kVectorValued, kSteeringInputDimension);
-  auto& force_input =
-      this->DeclareInputPort(systems::kVectorValued, kForceInputDimension);
-  auto& state_output =
-      this->DeclareOutputPort(systems::kVectorValued, kStateDimension);
+  auto& steering_input = this->DeclareInputPort(systems::kVectorValued, 1);
+  auto& force_input = this->DeclareInputPort(systems::kVectorValued, 1);
+  auto& state_output = this->DeclareVectorOutputPort(BicycleCarState<T>());
   static_assert(BicycleCarStateIndices::kPsi == 0,
                 "BicycleCar requires BicycleCarStateIndices::kPsi to be the "
                 "0th element.");
   static_assert(BicycleCarStateIndices::kPsiDot == 1,
                 "BicycleCar requires BicycleCarStateIndices::kPsiDot to be the "
                 "1st element.");
-  this->DeclareContinuousState(1,                     // num_q (Ψ)
-                               1,                     // num_v (Ψ_dot)
-                               kStateDimension - 2);  // num_z (all but Ψ,
-                                                      // Ψ_dot)
+  this->DeclareContinuousState(
+      BicycleCarState<T>(),
+      1,                                             // num_q (Ψ)
+      1,                                             // num_v (Ψ_dot)
+      BicycleCarStateIndices::kNumCoordinates - 2);  // num_z (all but Ψ, Ψ_dot)
   // TODO(jadecastro): Expose translational second-order structure of `sx`, `sy`
   // using `vel` as the generalized velocity (#5323).
 
@@ -177,19 +166,6 @@ void BicycleCar<T>::ImplCalcTimeDerivatives(
   derivatives->set_vel(vel_dot);
   derivatives->set_sx(sx_dot);
   derivatives->set_sy(sy_dot);
-}
-
-template <typename T>
-std::unique_ptr<systems::ContinuousState<T>>
-BicycleCar<T>::AllocateContinuousState() const {
-  return std::make_unique<systems::ContinuousState<T>>(
-      std::make_unique<BicycleCarState<T>>());
-}
-
-template <typename T>
-std::unique_ptr<systems::BasicVector<T>> BicycleCar<T>::AllocateOutputVector(
-    const systems::OutputPortDescriptor<T>& descriptor) const {
-  return std::make_unique<BicycleCarState<T>>();
 }
 
 template <typename T>

@@ -22,18 +22,45 @@ namespace systems {
 namespace {
 
 constexpr int kSize = 1;
-constexpr int kNumSystems = 6;
+constexpr int kNumSystems = 8;
 constexpr double kTime = 12.0;
 
-class AbstractStateSystem : public LeafSystem<double> {
+class SystemWithAbstractState : public LeafSystem<double> {
  public:
-  AbstractStateSystem() {}
-  ~AbstractStateSystem() override {}
+  SystemWithAbstractState() {}
+  ~SystemWithAbstractState() override {}
 
-  std::unique_ptr<AbstractState> AllocateAbstractState() const override {
-    std::vector<std::unique_ptr<AbstractValue>> values;
-    values.push_back({PackValue(42)});
-    return std::make_unique<AbstractState>(std::move(values));
+  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
+    return std::make_unique<AbstractValues>(PackValue(42));
+  }
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+};
+
+class SystemWithNumericParameters : public LeafSystem<double> {
+ public:
+  SystemWithNumericParameters() {}
+  ~SystemWithNumericParameters() override {}
+
+
+  std::unique_ptr<Parameters<double>> AllocateParameters() const override {
+    return std::make_unique<Parameters<double>>(
+        std::make_unique<BasicVector<double>>(2));
+  }
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+};
+
+class SystemWithAbstractParameters : public LeafSystem<double> {
+ public:
+  SystemWithAbstractParameters() {}
+  ~SystemWithAbstractParameters() override {}
+
+
+  std::unique_ptr<Parameters<double>> AllocateParameters() const override {
+    return std::make_unique<Parameters<double>>(PackValue<int>(2048));
   }
 
   void DoCalcOutput(const Context<double>& context,
@@ -43,18 +70,22 @@ class AbstractStateSystem : public LeafSystem<double> {
 class DiagramContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    adder0_.reset(new Adder<double>(2 /* inputs */, kSize));
+    adder0_ = std::make_unique<Adder<double>>(2 /* inputs */, kSize);
     adder0_->set_name("adder0");
-    adder1_.reset(new Adder<double>(2 /* inputs */, kSize));
+    adder1_ = std::make_unique<Adder<double>>(2 /* inputs */, kSize);
     adder1_->set_name("adder1");
 
     integrator0_.reset(new Integrator<double>(kSize));
     integrator1_.reset(new Integrator<double>(kSize));
-    hold_.reset(new ZeroOrderHold<double>(13.0 /* sec */, kSize));
+    hold_ = std::make_unique<ZeroOrderHold<double>>(13.0 /* sec */, kSize);
 
-    abstract_state_system_.reset(new AbstractStateSystem());
+    abstract_state_system_ = std::make_unique<SystemWithAbstractState>();
+    system_with_numeric_parameters_ =
+        std::make_unique<SystemWithNumericParameters>();
+    system_with_abstract_parameters_ =
+        std::make_unique<SystemWithAbstractParameters>();
 
-    context_.reset(new DiagramContext<double>(kNumSystems));
+    context_ = std::make_unique<DiagramContext<double>>(kNumSystems);
     context_->set_time(kTime);
 
     AddSystem(*adder0_, 0);
@@ -63,17 +94,23 @@ class DiagramContextTest : public ::testing::Test {
     AddSystem(*integrator1_, 3);
     AddSystem(*hold_, 4);
     AddSystem(*abstract_state_system_, 5);
+    AddSystem(*system_with_numeric_parameters_, 6);
+    AddSystem(*system_with_abstract_parameters_, 7);
 
     context_->ExportInput({0 /* adder0_ */, 1 /* port 1 */});
     context_->ExportInput({1 /* adder1_ */, 0 /* port 0 */});
 
     context_->MakeState();
+    context_->MakeParameters();
     ContinuousState<double>* xc = context_->get_mutable_continuous_state();
     xc->get_mutable_vector()->SetAtIndex(0, 42.0);
     xc->get_mutable_vector()->SetAtIndex(1, 43.0);
 
     DiscreteState<double>* xd = context_->get_mutable_discrete_state();
     xd->get_mutable_discrete_state(0)->SetAtIndex(0, 44.0);
+
+    context_->get_mutable_numeric_parameter(0)->SetAtIndex(0, 76.0);
+    context_->get_mutable_numeric_parameter(0)->SetAtIndex(1, 77.0);
   }
 
   void AddSystem(const System<double>& sys, int index) {
@@ -101,11 +138,14 @@ class DiagramContextTest : public ::testing::Test {
   std::unique_ptr<Integrator<double>> integrator0_;
   std::unique_ptr<Integrator<double>> integrator1_;
   std::unique_ptr<ZeroOrderHold<double>> hold_;
-  std::unique_ptr<AbstractStateSystem> abstract_state_system_;
+  std::unique_ptr<SystemWithAbstractState> abstract_state_system_;
+  std::unique_ptr<SystemWithNumericParameters> system_with_numeric_parameters_;
+  std::unique_ptr<SystemWithAbstractParameters>
+      system_with_abstract_parameters_;
 };
 
 // Verifies that @p state is a clone of the state constructed in
-// LeafContextTest::SetUp.
+// DiagramContextTest::SetUp.
 void VerifyClonedState(const State<double>& clone) {
   // - Continuous
   const ContinuousState<double>* xc = clone.get_continuous_state();
@@ -115,8 +155,18 @@ void VerifyClonedState(const State<double>& clone) {
   const DiscreteState<double>* xd = clone.get_discrete_state();
   EXPECT_EQ(44.0, xd->get_discrete_state(0)->GetAtIndex(0));
   // - Abstract
-  const AbstractState* xa = clone.get_abstract_state();
-  EXPECT_EQ(42, xa->get_abstract_state(0).GetValue<int>());
+  const AbstractValues* xa = clone.get_abstract_state();
+  EXPECT_EQ(42, xa->get_value(0).GetValue<int>());
+}
+
+// Verifies that the @p params are a clone of the params constructed in
+// DiagramContextTest::SetUp.
+void VerifyClonedParameters(const Parameters<double>& params) {
+  ASSERT_EQ(1, params.num_numeric_parameters());
+  EXPECT_EQ(76.0, params.get_numeric_parameter(0)->GetAtIndex(0));
+  EXPECT_EQ(77.0, params.get_numeric_parameter(0)->GetAtIndex(1));
+  ASSERT_EQ(1, params.num_abstract_parameters());
+  EXPECT_EQ(2048, UnpackIntValue(params.get_abstract_parameter(0)));
 }
 
 // Tests that subsystems have outputs and contexts in the DiagramContext.
@@ -221,6 +271,8 @@ TEST_F(DiagramContextTest, Clone) {
 
   // Verify that the state has the same value.
   VerifyClonedState(clone->get_state());
+  // Verify that the parameters have the same value.
+  VerifyClonedParameters(clone->get_parameters());
 
   // Verify that changes to the state do not write through to the original
   // context.

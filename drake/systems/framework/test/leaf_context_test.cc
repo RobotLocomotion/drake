@@ -56,7 +56,8 @@ class LeafContextTest : public ::testing::Test {
     abstract_state_ = PackValue(42);
     std::vector<AbstractValue*> xm;
     xm.push_back(abstract_state_.get());
-    context_.set_abstract_state(std::make_unique<AbstractState>(std::move(xm)));
+    context_.set_abstract_state(
+        std::make_unique<AbstractValues>(std::move(xm)));
 
     // Reserve two numeric parameters, of size 3 and size 4.
     std::vector<std::unique_ptr<BasicVector<double>>> params;
@@ -126,8 +127,7 @@ void VerifyClonedState(const State<double>& clone) {
   }
 
   EXPECT_EQ(1, clone.get_abstract_state()->size());
-  EXPECT_EQ(42,
-            clone.get_abstract_state()->get_abstract_state(0).GetValue<int>());
+  EXPECT_EQ(42, clone.get_abstract_state()->get_value(0).GetValue<int>());
   EXPECT_EQ(42, clone.get_abstract_state<int>(0));
 
   // Verify that the state type was preserved.
@@ -175,14 +175,14 @@ TEST_F(LeafContextTest, IsStateless) {
 TEST_F(LeafContextTest, HasOnlyContinuousState) {
   EXPECT_FALSE(context_.has_only_continuous_state());
   context_.set_discrete_state(std::make_unique<DiscreteState<double>>());
-  context_.set_abstract_state(std::make_unique<AbstractState>());
+  context_.set_abstract_state(std::make_unique<AbstractValues>());
   EXPECT_TRUE(context_.has_only_continuous_state());
 }
 
 TEST_F(LeafContextTest, HasOnlyDiscreteState) {
   EXPECT_FALSE(context_.has_only_discrete_state());
   context_.set_continuous_state(std::make_unique<ContinuousState<double>>());
-  context_.set_abstract_state(std::make_unique<AbstractState>());
+  context_.set_abstract_state(std::make_unique<AbstractValues>());
   EXPECT_TRUE(context_.has_only_discrete_state());
 }
 
@@ -265,8 +265,7 @@ TEST_F(LeafContextTest, Clone) {
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_abstract_state<int>(0));
-  EXPECT_EQ(42, context_.get_abstract_state()->get_abstract_state(0).
-                    GetValue<int>());
+  EXPECT_EQ(42, context_.get_abstract_state()->get_value(0).GetValue<int>());
   EXPECT_EQ(2048, clone->get_abstract_state<int>(0));
 
   // Verify that the parameters were copied.
@@ -309,7 +308,7 @@ TEST_F(LeafContextTest, CopyStateFrom) {
 }
 
 // Tests that a LeafContext<AutoDiffXd> can be initialized from a
-// Leafcontext<double>.
+// LeafContext<double>.
 TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // Set up a target with the same geometry as the source, and no
   // interesting values.
@@ -328,8 +327,13 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
 
   std::vector<std::unique_ptr<AbstractValue>> xm;
   xm.push_back(PackValue(76));
-  target.set_abstract_state(std::make_unique<AbstractState>(std::move(xm)));
+  target.set_abstract_state(std::make_unique<AbstractValues>(std::move(xm)));
 
+  std::vector<std::unique_ptr<BasicVector<AutoDiffXd>>> params;
+  params.push_back(std::make_unique<BasicVector<AutoDiffXd>>(3));
+  params.push_back(std::make_unique<BasicVector<AutoDiffXd>>(4));
+  target.get_mutable_parameters().set_numeric_parameters(
+      std::make_unique<DiscreteState<AutoDiffXd>>(std::move(params)));
 
   // Set the target from the source.
   target.SetTimeStateAndParametersFrom(context_);
@@ -337,11 +341,14 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // Verify that time was set.
   EXPECT_EQ(kTime, target.get_time());
   // Verify that state was set.
-  const ContinuousState<AutoDiffXd>& xc = *target.get_continuous_state();
+  const ContinuousState<AutoDiffXd> &xc = *target.get_continuous_state();
   EXPECT_EQ(kGeneralizedPositionSize, xc.get_generalized_position().size());
   EXPECT_EQ(5.0, xc.get_generalized_velocity()[1].value());
   EXPECT_EQ(0, xc.get_generalized_velocity()[1].derivatives().size());
   EXPECT_EQ(128.0, target.get_discrete_state(0)->GetAtIndex(0));
+  // Verify that parameters were set.
+  target.get_numeric_parameter(0);
+  EXPECT_EQ(2.0, (target.get_numeric_parameter(0)->GetAtIndex(1).value()));
 }
 
 }  // namespace systems

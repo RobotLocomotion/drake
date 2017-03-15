@@ -264,6 +264,7 @@ class Diagram : public System<T>,
     }
 
     context->MakeState();
+    context->MakeParameters();
     return std::unique_ptr<Context<T>>(context.release());
   }
 

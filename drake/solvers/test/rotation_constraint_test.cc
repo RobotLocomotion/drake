@@ -18,30 +18,21 @@ using std::sqrt;
 
 namespace drake {
 namespace solvers {
-
+namespace {
 void AddObjective(MathematicalProgram* prog,
                   const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
                   const Eigen::Ref<const Matrix3d>& R_desired) {
-  MatrixDecisionVariable<9, 1> error =
-      prog->NewContinuousVariables<9, 1>("error");
-
-  Eigen::Map<const Eigen::Matrix<double, 9, 1>> vecR_desired(R_desired.data(),
-                                                             R_desired.size());
-
-  // error - vec(R) = vec(R_desired)
-  Eigen::Matrix<double, 9, 18> A;
-  A << Eigen::Matrix<double, 9, 9>::Identity(),
-      -Eigen::Matrix<double, 9, 9>::Identity();
-  prog->AddLinearEqualityConstraint(A, vecR_desired,
-                                    {error, R.col(0), R.col(1), R.col(2)});
+  const auto R_error = R - R_desired;
 
   // sigma >= |error|_2
   MatrixDecisionVariable<1, 1> sigma =
       prog->NewContinuousVariables<1, 1>("sigma");
-  prog->AddLorentzConeConstraint({sigma, error});
+  // trace(R_errorᵀ * R_error) = sum_{i,j} R_error(i,j)²
+  prog->AddLorentzConeConstraint(sigma(0),
+                                 (R_error.transpose() * R_error).trace());
 
   // min sigma
-  prog->AddLinearCost(Vector1d::Ones(), sigma);
+  prog->AddCost(sigma(0));
 }
 
 // Iterates over possible setting of the RPY limits flag, and for each setting
@@ -450,6 +441,6 @@ GTEST_TEST(RotationTest, TestMcCormick) {
       EXPECT_FALSE(IsFeasible(R_test));
   }
 }
-
+}  // namespace
 }  // namespace solvers
 }  // namespace drake

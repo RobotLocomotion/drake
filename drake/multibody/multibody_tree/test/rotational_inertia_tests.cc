@@ -230,7 +230,10 @@ GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
   EXPECT_EQ(Ixs.get_products(), sxI.get_products());
 }
 
-// Test the correctness of operator+=().
+// Test the correctness of:
+//  - operator+=(const RotationalInertia<T>&)
+//  - operator*=(const T&)
+//  - operator/=(const T&)
 GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
   const Vector3d p(0.1, -0.1, 0.2);  // p for products.
@@ -244,6 +247,17 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
 
   EXPECT_EQ(Ib.get_moments(), 3.0 * m);
   EXPECT_EQ(Ib.get_products(), 3.0 * p);
+
+  // Verify correctness of operator*=().
+  const double scalar = 2.2;
+  Ia *= scalar;
+  EXPECT_EQ(Ia.get_moments(), scalar * m);
+  EXPECT_EQ(Ia.get_products(), scalar * p);
+
+  // Verify correctness of operator/=().
+  Ia /= scalar;
+  EXPECT_EQ(Ia.get_moments(), m);
+  EXPECT_EQ(Ia.get_products(), p);
 }
 
 // Test the shift operator to write into a stream.

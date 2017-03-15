@@ -38,7 +38,8 @@ Variables::size_type Variables::erase(const Variables& vars) {
 }
 
 bool Variables::IsSubsetOf(const Variables& vars) const {
-  return includes(vars.begin(), vars.end(), begin(), end());
+  return includes(vars.begin(), vars.end(), begin(), end(),
+                  std::less<Variable>{});
 }
 
 bool Variables::IsSupersetOf(const Variables& vars) const {
@@ -60,11 +61,14 @@ bool Variables::IsStrictSupersetOf(const Variables& vars) const {
 }
 
 bool operator==(const Variables& vars1, const Variables& vars2) {
-  return vars1.vars_ == vars2.vars_;
+  return std::equal(vars1.vars_.begin(), vars1.vars_.end(), vars2.vars_.begin(),
+                    vars2.vars_.end(), std::equal_to<Variable>{});
 }
 
 bool operator<(const Variables& vars1, const Variables& vars2) {
-  return vars1.vars_ < vars2.vars_;
+  return std::lexicographical_compare(vars1.vars_.begin(), vars1.vars_.end(),
+                                      vars2.vars_.begin(), vars2.vars_.end(),
+                                      std::less<Variable>{});
 }
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.

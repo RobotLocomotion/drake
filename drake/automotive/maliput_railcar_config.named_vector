@@ -8,5 +8,13 @@ element {
 }
 element {
     name: "initial_speed"
-    doc: "The initial speed of the vehicle."
+    doc: "The initial speed of the vehicle. This must be positive."
+}
+element {
+    name: "max_speed"
+    doc: "The limit on the vehicle's forward speed, in meters per second; this element must be positive."
+}
+element {
+    name: "velocity_limit_kp"
+    doc: "The smoothing constant for min/max velocity limits, in Hz; this element must be positive."
 }

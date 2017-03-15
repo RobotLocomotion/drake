@@ -6,8 +6,8 @@
 namespace drake {
 namespace automotive {
 
-/// LinearCar -- model a car operating in a single lane using a double
-/// integrator with an acceleration input.
+/// LinearCar models a car operating in a single lane using a double integrator
+/// with an acceleration input.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double

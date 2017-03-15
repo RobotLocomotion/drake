@@ -150,8 +150,9 @@ drake_cc_library(
 drake_cc_library(
     name = "maliput_railcar",
     srcs = ["maliput_railcar.cc"],
-    hdrs = ["maliput_railcar.h",],
+    hdrs = ["maliput_railcar.h"],
     deps = [
+        ":calc_smooth_acceleration",
         ":generated_vectors",
         "//drake/automotive/maliput/api",
         "//drake/math:geometric_transform",
@@ -177,10 +178,12 @@ drake_cc_library(
         "simple_car_to_euler_floating_joint.h",
     ],
     deps = [
+        ":calc_smooth_acceleration",
         ":generated_vectors",
         "//drake/common:cond",
         "//drake/common:double",
         "//drake/common:symbolic",
+        "//drake/math:saturate",
         "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -204,6 +207,17 @@ drake_cc_library(
         ":linear_car",
         "//drake/systems/primitives:constant_vector_source",
     ],
+)
+
+drake_cc_library(
+    name = "calc_smooth_acceleration",
+    srcs = ["calc_smooth_acceleration.cc"],
+    hdrs = ["calc_smooth_acceleration.h"],
+    deps = [
+        "//drake/common:autodiff",
+        "//drake/common:symbolic",
+    ],
+    visibility=[],
 )
 
 drake_cc_library(
@@ -591,6 +605,14 @@ drake_cc_googletest(
     name = "single_lane_ego_and_agent_test",
     deps = [
         "//drake/automotive:single_lane_ego_and_agent",
+    ],
+)
+
+drake_cc_googletest(
+    name = "calc_smooth_acceleration_test",
+    deps = [
+        "//drake/automotive:calc_smooth_acceleration",
+        "//drake/common",
     ],
 )
 

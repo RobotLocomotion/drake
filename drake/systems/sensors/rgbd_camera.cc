@@ -28,6 +28,7 @@
 #include <Eigen/Dense>
 
 #include "drake/math/roll_pitch_yaw_using_quaternion.h"
+#include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/vtk_util.h"
@@ -54,20 +55,15 @@ const double kBackgoundColor[3] = {0.8, 0.898, 1.};
 // ranges.
 const int kImageWidth = 640;  // In pixels
 const int kImageHeight = 480;  // In pixels
-const double kDepthRangeNear = 0.5;
-const double kDepthRangeFar = 5.0;
+const float kDepthRangeNear = 0.5;
+const float kDepthRangeFar = 5.0;
 
-const double kPlaneSize = 100.;
-const double kPlaneColor[3] = {1., 0.898, 0.797};
+const double kTerrainSize = 100.;
+const double kTerrainColor[3] = {1., 0.898, 0.797};
 
 // For Zbuffer value conversion.
 const double kA = kClippingPlaneFar / (kClippingPlaneFar - kClippingPlaneNear);
 const double kB = -kA * kClippingPlaneNear;
-
-// TODO(kunimatsu-tri) Calculate this in vertex shader.
-double ConvertZbufferToMeters(float z_buffer_value) {
-  return kB / (z_buffer_value - kA);
-}
 
 std::string RemoveFileExtension(const std::string& filepath) {
   const size_t last_dot = filepath.find_last_of(".");
@@ -83,31 +79,34 @@ std::string RemoveFileExtension(const std::string& filepath) {
 class RgbdCamera::Impl {
  public:
   Impl(const RigidBodyTree<double>& tree, const RigidBodyFrame<double>& frame,
-       double fov_y, bool show_window);
+       double fov_y, bool show_window, bool fix_camera);
 
-  Impl(const RigidBodyTree<double>& tree, const Eigen::Vector3d& position,
-       const Eigen::Vector3d& orientation, double fov_y, bool show_window);
+  Impl(const RigidBodyTree<double>& tree, const RigidBodyFrame<double>& frame,
+       const Eigen::Vector3d& position, const Eigen::Vector3d& orientation,
+       double fov_y, bool show_window, bool fix_camera);
 
   ~Impl() {}
 
-  const Eigen::Isometry3d& base_pose() const { return X_WB_; }
+  static float CheckRangeAndConvertToMeters(float z_buffer_value);
+
+  void DoCalcOutput(const BasicVector<double>& input_vector,
+                    systems::SystemOutput<double>* output) const;
 
   const Eigen::Isometry3d& color_camera_optical_pose() const {
-    return X_WC_;
+    return X_BC_;
   }
 
   const Eigen::Isometry3d& depth_camera_optical_pose() const {
-    return X_WD_;
+    return X_BD_;
   }
 
   const CameraInfo& color_camera_info() const { return color_camera_info_; }
 
   const CameraInfo& depth_camera_info() const { return depth_camera_info_; }
 
-  const RigidBodyTree<double>& tree() const { return tree_; }
+  const RigidBodyFrame<double>& frame() const { return frame_; }
 
-  void DoCalcOutput(const BasicVector<double>& input_vector,
-                    systems::SystemOutput<double>* output) const;
+  const RigidBodyTree<double>& tree() const { return tree_; }
 
   void set_state_input_port_index(int port_index) {
     state_input_port_index_ = port_index;
@@ -134,23 +133,25 @@ class RgbdCamera::Impl {
  private:
   void CreateRenderingWorld();
 
-  void UpdateModelPoses(const VectorBase<double>& vector_base) const;
+  void UpdateModelPoses(const KinematicsCache<double>& cache,
+                        const Eigen::Isometry3d& X_CW) const;
 
   void UpdateRenderWindow() const;
 
   const RigidBodyTree<double>& tree_;
+  const RigidBodyFrame<double>& frame_;
   const CameraInfo color_camera_info_;
   const CameraInfo depth_camera_info_;
-  Eigen::Isometry3d X_WB_;  // World to Base
-  Eigen::Isometry3d X_WC_;  // World to Color optical
-  Eigen::Isometry3d X_WD_;  // World to Depth optical
-  const Eigen::Isometry3d X_BC_;  // Base to Color optical
-  const Eigen::Isometry3d X_BD_;  // Base to Depth optical
+  const Eigen::Isometry3d X_BC_;
+  const Eigen::Isometry3d X_BD_;
+  const Eigen::Isometry3d X_WB_initial_;
   int state_input_port_index_{};
   int color_image_output_port_index_{};
   int depth_image_output_port_index_{};
+  const bool kCameraFixed;
 
   std::map<int, vtkSmartPointer<vtkActor>> id_object_pairs_;
+  vtkNew<vtkActor> terrain_actor_;
   vtkNew<vtkRenderer> renderer_;
   vtkNew<vtkRenderWindow> render_window_;
   vtkNew<vtkWindowToImageFilter> depth_buffer_;
@@ -159,11 +160,11 @@ class RgbdCamera::Impl {
 
 
 RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
+                       const RigidBodyFrame<double>& frame,
                        const Eigen::Vector3d& position,
                        const Eigen::Vector3d& orientation,
-                       double fov_y,
-                       bool show_window)
-    : tree_(tree),
+                       double fov_y, bool show_window, bool fix_camera)
+    : tree_(tree), frame_(frame),
       color_camera_info_(kImageWidth, kImageHeight, fov_y),
       depth_camera_info_(kImageWidth, kImageHeight, fov_y),
       // The color sensor's origin (`Co`) is offset by 0.02 m on the Y axis of
@@ -177,20 +178,16 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
       // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
       X_BD_(Eigen::Translation3d(0., 0.02, 0.) *
             (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
-             Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))) {
+             Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))),
+      X_WB_initial_(
+          Eigen::Translation3d(position[0], position[1], position[2]) *
+          (Eigen::AngleAxisd(orientation[0], Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd(orientation[1], Eigen::Vector3d::UnitY()) *
+           Eigen::AngleAxisd(orientation[2], Eigen::Vector3d::UnitZ()))),
+      kCameraFixed(fix_camera) {
   if (!show_window) {
     render_window_->SetOffScreenRendering(1);
   }
-
-  // The RgbdCamera's base pose in the world.
-  auto axis_angle = drake::math::rpy2axis(orientation);
-  X_WB_ = Eigen::AngleAxisd(axis_angle[3],
-      Eigen::Vector3d(axis_angle[0], axis_angle[1], axis_angle[2]));
-  X_WB_.translation() = Eigen::Vector3d(
-      position[0], position[1], position[2]);
-
-  X_WC_ = X_WB_ * X_BC_;
-  X_WD_ = X_WB_ * X_BD_;
 
   CreateRenderingWorld();
 
@@ -198,6 +195,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   camera->SetPosition(0., 0., 0.);
   camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward.
   camera->SetViewUp(0., -1, 0.);  // Sets y-down.
+  camera->SetViewAngle(fov_y * 180. / M_PI);
   camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
 
   renderer_->SetActiveCamera(camera.GetPointer());
@@ -224,16 +222,13 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
 
 RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
                        const RigidBodyFrame<double>& frame,
-                       double fov_y,
-                       bool show_window)
-    : tree_(tree), color_camera_info_(kImageWidth, kImageHeight, fov_y),
-      depth_camera_info_(kImageWidth, kImageHeight, fov_y) {
-  // TODO(kunimatsu) Implement this.
-  throw std::runtime_error("Not implemented");
-}
+                       double fov_y, bool show_window, bool fix_camera)
+    : Impl::Impl(tree, frame, Eigen::Vector3d(0., 0., 0.),
+                 Eigen::Vector3d(0., 0., 0.), fov_y, show_window, fix_camera) {}
+
 
 void RgbdCamera::Impl::CreateRenderingWorld() {
-  auto camera_to_world = X_WC_.inverse();
+  auto X_CW = (X_WB_initial_ * X_BC_).inverse();
 
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
@@ -250,7 +245,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
     const auto& visual = body->get_visual_elements().at(0);
     // Converts visual's pose in the world to the one in the camera coordinate
     // system.
-    auto pose = camera_to_world * visual.getWorldTransform();
+    auto pose = X_CW * visual.getWorldTransform();
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(pose);
 
@@ -351,52 +346,52 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
   }
 
   // Adds a flat terrain.
-  // TODO(kunimatsu-tri) This also should be updated at every time step when the
-  // camera pose update capability is implemented.
   vtkSmartPointer<vtkPlaneSource> plane = VtkUtil::CreateSquarePlane(
-      kPlaneSize);
+      kTerrainSize);
 
   vtkSmartPointer<vtkTransform> transform =
-      VtkUtil::ConvertToVtkTransform(camera_to_world);
+      VtkUtil::ConvertToVtkTransform(X_CW);
 
   vtkNew<vtkPolyDataMapper> mapper;
   mapper->SetInput(plane->GetOutput());
-  vtkNew<vtkActor> actor;
-  actor->SetMapper(mapper.GetPointer());
-  actor->GetProperty()->SetColor(kPlaneColor[0],
-                                 kPlaneColor[1],
-                                 kPlaneColor[2]);
-  actor->GetProperty()->SetAmbient(1);
-  actor->GetProperty()->SetDiffuse(0);
-  actor->GetProperty()->SetSpecular(0);
+  terrain_actor_->SetMapper(mapper.GetPointer());
+  terrain_actor_->GetProperty()->SetColor(kTerrainColor[0],
+                                          kTerrainColor[1],
+                                          kTerrainColor[2]);
+  terrain_actor_->GetProperty()->SetAmbient(1);
+  terrain_actor_->GetProperty()->SetDiffuse(0);
+  terrain_actor_->GetProperty()->SetSpecular(0);
 
-  actor->SetUserTransform(transform);
-  renderer_->AddActor(actor.GetPointer());
+  terrain_actor_->SetUserTransform(transform);
+  renderer_->AddActor(terrain_actor_.GetPointer());
 }
 
-
 void RgbdCamera::Impl::UpdateModelPoses(
-    const VectorBase<double>& vector_base) const {
-  const Eigen::VectorXd q = vector_base.CopyToVector().head(
-      tree_.get_num_positions());
-  KinematicsCache<double> cache = tree_.doKinematics(q);
-
-  // TODO(kunimatsu-tri) Update camera frame here and the flat terrain too.
-  auto camera_to_world = X_WC_.inverse();
-
+    const KinematicsCache<double>& cache,
+    const Eigen::Isometry3d& X_CW) const {
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
     }
 
-    auto pose = camera_to_world * tree_.relativeTransform(
+    auto const X_CBody = X_CW * tree_.relativeTransform(
         cache, 0, body->get_body_index());
-
     vtkSmartPointer<vtkTransform> vtk_transform =
-        VtkUtil::ConvertToVtkTransform(pose);
-
+        VtkUtil::ConvertToVtkTransform(X_CBody);
+    // `id_object_pairs_` is modified here.  This is OK because 1) we are just
+    // copying data to the memory space allocated at the construction time and
+    // 2) we are not outputting this data to outside the class.
     auto& actor = id_object_pairs_.at(body->get_model_instance_id());
     actor->SetUserTransform(vtk_transform);
+  }
+
+  if (!kCameraFixed) {
+    // Updates terrain.
+    vtkSmartPointer<vtkTransform> vtk_transform =
+        VtkUtil::ConvertToVtkTransform(X_CW);
+    // `terrain_actor_` is modified here, but this is OK.  For the detail, see
+    // the comment above for `id_object_pairs_`.
+    terrain_actor_->SetUserTransform(vtk_transform);
   }
 }
 
@@ -411,58 +406,87 @@ void RgbdCamera::Impl::UpdateRenderWindow() const {
 void RgbdCamera::Impl::DoCalcOutput(
     const BasicVector<double>& input_vector,
     systems::SystemOutput<double>* output) const {
-  UpdateModelPoses(input_vector);
+  const Eigen::VectorXd q = input_vector.CopyToVector().head(
+      tree_.get_num_positions());
+  KinematicsCache<double> cache = tree_.doKinematics(q);
+
+  Eigen::Isometry3d X_WB;
+  if (kCameraFixed) {
+    X_WB = X_WB_initial_;
+  } else {
+    // Updates camera pose.
+    X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
+  }
+
+  rendering::PoseVector<double>* const camera_base_pose =
+      dynamic_cast<rendering::PoseVector<double>*>(
+          output->GetMutableVectorData(2));
+
+  Eigen::Translation<double, 3> trans = Eigen::Translation<double, 3>(
+      X_WB.translation());
+  camera_base_pose->set_translation(trans);
+  Eigen::Quaterniond quat = Eigen::Quaterniond(X_WB.linear());
+  camera_base_pose->set_rotation(quat);
+
+  UpdateModelPoses(cache, (X_WB * X_BC_).inverse());
 
   UpdateRenderWindow();
 
   // Outputs the image data.
-  systems::AbstractValue* mutable_data = output->GetMutableData(
-      color_image_output_port_index_);
-  drake::systems::sensors::Image<uint8_t>& image =
-      mutable_data->GetMutableValue<
-        drake::systems::sensors::Image<uint8_t>>();
+  sensors::Image<uint8_t>& image =
+      output->GetMutableData(
+          color_image_output_port_index_)->GetMutableValue<
+            sensors::Image<uint8_t>>();
 
-  systems::AbstractValue* mutable_data_d = output->GetMutableData(
-      depth_image_output_port_index_);
-  drake::systems::sensors::Image<float>& depth_image =
-      mutable_data_d->GetMutableValue<
-        drake::systems::sensors::Image<float>>();
+  sensors::Image<float>& depth_image =
+      output->GetMutableData(
+          depth_image_output_port_index_)->GetMutableValue<
+            sensors::Image<float>>();
 
-  const auto height = color_camera_info_.height();
-  const auto width = color_camera_info_.width();
+  const int height = color_camera_info_.height();
+  const int width = color_camera_info_.width();
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
       const int height_reversed = height - v - 1;  // Makes image upside down.
 
-      // Color image
-      void* color_ptr = color_buffer_->GetOutput()->GetScalarPointer(u, v, 0);
       // Converts RGBA to BGRA.
+      void* color_ptr = color_buffer_->GetOutput()->GetScalarPointer(u, v, 0);
       image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
       image.at(u, height_reversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
       image.at(u, height_reversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
       image.at(u, height_reversed)[3] = *(static_cast<uint8_t*>(color_ptr) + 3);
 
-      // Depth image
-      float depth_buffer_value = *static_cast<float*>(
+      // Updates the depth image.
+      const float z_buffer_value = *static_cast<float*>(
           depth_buffer_->GetOutput()->GetScalarPointer(u, v, 0));
-      // When the depth is either closer than kClippingPlaneNear or further than
-      // kClippingPlaneFar, `depth_value` becomes `1.f`.
-      if (depth_buffer_value == 1.f) {
-        depth_image.at(u, height_reversed)[0] = InvalidDepth::kError;
-      } else {
-        double depth_value = ConvertZbufferToMeters(depth_buffer_value);
-        if (depth_value > kDepthRangeFar) {
-          depth_image.at(u, height_reversed)[0] = InvalidDepth::kTooFar;
-        } else if (depth_value < kDepthRangeNear) {
-          depth_image.at(u, height_reversed)[0] = InvalidDepth::kTooClose;
-        } else {
-          depth_image.at(u, height_reversed)[0] =
-              static_cast<float>(depth_value);
-        }
-      }
+      depth_image.at(u, height_reversed)[0] =
+          CheckRangeAndConvertToMeters(z_buffer_value);
     }
   }
 }
+
+float RgbdCamera::Impl::CheckRangeAndConvertToMeters(float z_buffer_value) {
+  float checked_depth;
+  // When the depth is either closer than kClippingPlaneNear or further than
+  // kClippingPlaneFar, `z_buffer_value` becomes `1.f`.
+  if (z_buffer_value == 1.f) {
+    checked_depth = InvalidDepth::kError;
+  } else {
+    // TODO(kunimatsu-tri) Calculate this in a vertex shader.
+    float depth = static_cast<float>(kB / (z_buffer_value - kA));
+
+    if (depth > kDepthRangeFar) {
+      checked_depth = InvalidDepth::kTooFar;
+    } else if (depth < kDepthRangeNear) {
+      checked_depth = InvalidDepth::kTooClose;
+    } else {
+      checked_depth = depth;
+    }
+  }
+
+  return checked_depth;
+}
+
 
 RgbdCamera::RgbdCamera(const std::string& name,
                        const RigidBodyTree<double>& tree,
@@ -470,16 +494,9 @@ RgbdCamera::RgbdCamera(const std::string& name,
                        const Eigen::Vector3d& orientation,
                        double fov_y,
                        bool show_window)
-    : impl_(new RgbdCamera::Impl(tree, position, orientation, fov_y,
-                                 show_window)) {
-  set_name(name);
-  const int vec_num =  tree.get_num_positions() + tree.get_num_velocities();
-  impl_->set_state_input_port_index(
-      this->DeclareInputPort(systems::kVectorValued, vec_num).get_index());
-  impl_->set_color_image_output_port_index(
-      this->DeclareAbstractOutputPort().get_index());
-  impl_->set_depth_image_output_port_index(
-      this->DeclareAbstractOutputPort().get_index());
+    : impl_(new RgbdCamera::Impl(tree, RigidBodyFrame<double>(), position,
+                                 orientation, fov_y, show_window, true)) {
+  Init(name);
 }
 
 RgbdCamera::RgbdCamera(const std::string& name,
@@ -487,15 +504,23 @@ RgbdCamera::RgbdCamera(const std::string& name,
                        const RigidBodyFrame<double>& frame,
                        double fov_y,
                        bool show_window)
-    : impl_(new RgbdCamera::Impl(tree, frame, fov_y, show_window)) {
+    : impl_(new RgbdCamera::Impl(tree, frame, fov_y, show_window, false)) {
+  Init(name);
+}
+
+void RgbdCamera::Init(const std::string& name) {
   set_name(name);
-  const int vec_num =  tree.get_num_positions() + tree.get_num_velocities();
+  const int kVecNum =
+      impl_->tree().get_num_positions() + impl_->tree().get_num_velocities();
   impl_->set_state_input_port_index(
-      this->DeclareInputPort(systems::kVectorValued, vec_num).get_index());
+      this->DeclareInputPort(systems::kVectorValued, kVecNum).get_index());
+
   impl_->set_color_image_output_port_index(
       this->DeclareAbstractOutputPort().get_index());
   impl_->set_depth_image_output_port_index(
       this->DeclareAbstractOutputPort().get_index());
+  this->DeclareOutputPort(systems::kVectorValued,
+                          rendering::PoseVector<double>::kSize);
 }
 
 RgbdCamera::~RgbdCamera() {}
@@ -508,16 +533,16 @@ const CameraInfo& RgbdCamera::depth_camera_info() const {
   return impl_->depth_camera_info();
 }
 
-const Eigen::Isometry3d& RgbdCamera::base_pose() const {
-  return impl_->base_pose();
-}
-
 const Eigen::Isometry3d& RgbdCamera::color_camera_optical_pose() const {
   return impl_->color_camera_optical_pose();
 }
 
 const Eigen::Isometry3d& RgbdCamera::depth_camera_optical_pose() const {
   return impl_->depth_camera_optical_pose();
+}
+
+const RigidBodyFrame<double>& RgbdCamera::frame() const {
+  return impl_->frame();
 }
 
 const RigidBodyTree<double>& RgbdCamera::tree() const {
@@ -540,6 +565,10 @@ RgbdCamera::depth_image_output_port() const {
       impl_->depth_image_output_port_index());
 }
 
+const OutputPortDescriptor<double>&
+RgbdCamera::camera_base_pose_output_port() const {
+  return System<double>::get_output_port(2);
+}
 
 std::unique_ptr<AbstractValue> RgbdCamera::AllocateOutputAbstract(
     const OutputPortDescriptor<double>& descriptor) const {
@@ -552,6 +581,18 @@ std::unique_ptr<AbstractValue> RgbdCamera::AllocateOutputAbstract(
     Image<float> depth_image(kImageWidth, kImageHeight, kDepthImageChannel);
     return std::make_unique<systems::Value<sensors::Image<float>>>(depth_image);
   }
+
+  DRAKE_ABORT_MSG("Unknown output port.");
+  return nullptr;
+}
+
+std::unique_ptr<systems::BasicVector<double>>
+RgbdCamera::AllocateOutputVector(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
+  if (descriptor.get_index() == 2) {
+    return std::make_unique<rendering::PoseVector<double>>();
+  }
+
   DRAKE_ABORT_MSG("Unknown output port.");
   return nullptr;
 }

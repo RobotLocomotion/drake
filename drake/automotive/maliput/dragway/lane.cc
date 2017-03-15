@@ -7,35 +7,13 @@
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/dragway/segment.h"
 #include "drake/common/drake_assert.h"
+#include "drake/math/saturate.h"
 
 using std::make_unique;
 
 namespace drake {
 namespace maliput {
 namespace dragway {
-
-namespace {
-
-// Clamps the provided `value` by the provided `min` and `max` values. Returns
-// the clamped result.
-//
-// TODO(liang.fok) Once c++17 or later is used, switch to std::clamp().
-//
-// TODO(liang.fok) Move this and identical functions in dragway/road_geometry.cc
-// and SimpleCar into a common shared location.
-//
-double clamp(double value, double min, double max) {
-  double result = value;
-  if (value < min) {
-    result = min;
-  }
-  if (value > max) {
-    result = max;
-  }
-  return result;
-}
-
-}  // namespace
 
 Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
     double length, double y_offset, const api::RBounds& lane_bounds,
@@ -123,8 +101,8 @@ api::LanePosition Lane::DoToLanePosition(
   const double min_y = driveable_bounds_.r_min + y_offset_;
   const double max_y = driveable_bounds_.r_max + y_offset_;
 
-  const api::GeoPosition closest_point{clamp(geo_pos.x, min_x, max_x),
-                                       clamp(geo_pos.y, min_y, max_y),
+  const api::GeoPosition closest_point{math::saturate(geo_pos.x, min_x, max_x),
+                                       math::saturate(geo_pos.y, min_y, max_y),
                                        geo_pos.z};
   if (nearest_point != nullptr) {
     *nearest_point = closest_point;

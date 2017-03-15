@@ -52,13 +52,13 @@ drake_cc_library(
 # - linear_system_solver
 # - moby_lcp_solver
 # - IPOPT
+# - MOSEK
 # - NLOPT
 # - SNOPT
 # - Gurobi (on Ubuntu only)
 
 # Unsupported solvers:
 # - dReal
-# - MOSEK
 
 # TODO(jwnimmer-tri, david-german-tri): Support more solvers.
 drake_cc_library(
@@ -70,7 +70,6 @@ drake_cc_library(
         "mathematical_program_solver_interface.cc",
         "moby_lcp_solver.cc",
         "no_dreal.cc",
-        "no_mosek.cc",
     ],
     hdrs = [
         "dreal_solver.h",
@@ -89,6 +88,7 @@ drake_cc_library(
         ":function",
         ":gurobi_solver",
         ":ipopt_solver",
+        ":mosek_solver",
         ":nlopt_solver",
         ":snopt_solver",
         "//drake/common",
@@ -115,7 +115,7 @@ drake_cc_library(
 drake_cc_library(
     name = "rotation_constraint",
     srcs = [
-        "rotation_constraint.cc"
+        "rotation_constraint.cc",
     ],
     hdrs = [
         "rotation_constraint.h",
@@ -126,6 +126,7 @@ drake_cc_library(
         "//drake/math:gradient",
     ],
 )
+
 drake_cc_library(
     name = "add_solver_util",
     testonly = 1,
@@ -232,6 +233,28 @@ drake_cc_library(
     }),
 )
 
+# If --config mosek is used, this target builds object code that satisfies
+# MathematicalProgramSolverInterface by calling MOSEK. Otherwise, this target
+# builds dummy object code that fails at runtime.
+drake_cc_library(
+    name = "mosek_solver",
+    srcs = select({
+        "//tools:with_mosek": ["mosek_solver.cc"],
+        "//conditions:default": ["no_mosek.cc"],
+    }),
+    hdrs = ["mosek_solver.h"],
+    visibility = ["//visibility:private"],
+    deps = select({
+        "//tools:with_mosek": [
+            ":mathematical_program_api",
+            "@mosek//:mosek",
+        ],
+        "//conditions:default": [
+            ":mathematical_program_api",
+        ],
+    }),
+)
+
 # If --config snopt is used, this target builds object code that satisfies
 # MathematicalProgramSolverInterface by calling SNOPT. Otherwise, this target
 # builds dummy object code that fails at runtime.
@@ -257,14 +280,22 @@ drake_cc_library(
 
 drake_cc_library(
     name = "ipopt_solver",
-    srcs = ["ipopt_solver.cc"],
+    srcs = select({
+        "//tools:no_ipopt": ["no_ipopt.cc"],
+        "//conditions:default": ["ipopt_solver.cc"],
+    }),
     hdrs = ["ipopt_solver.h"],
     visibility = ["//visibility:private"],
-    deps = [
-        ":mathematical_program_api",
-        "//drake/math:autodiff",
-        "@ipopt//:lib",
-    ],
+    deps = select({
+        "//conditions:default": [
+            "@ipopt//:lib",
+            ":mathematical_program_api",
+            "//drake/math:autodiff",
+        ],
+        "//tools:no_ipopt": [
+            ":mathematical_program_api",
+        ],
+    }),
 )
 
 drake_cc_library(
@@ -288,6 +319,7 @@ drake_cc_googletest(
     deps = [
         ":binding",
         ":constraint",
+        "//drake/common:symbolic_test_util",
     ],
 )
 
@@ -325,6 +357,7 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
     ],
 )
 
@@ -441,6 +474,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "mosek_solver_test",
+    srcs = [
+        "test/mosek_solver_test.cc",
+    ],
+    tags = ["mosek"],
+    deps = [
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":quadratic_program_examples",
+    ],
+)
+
+drake_cc_googletest(
     name = "nonlinear_program_test",
     srcs = [
         "test/nonlinear_program_test.cc",
@@ -489,4 +536,7 @@ cpplint(extra_srcs = [
     "snopt_solver.cc",
     "snopt_solver.h",
     "no_snopt.cc",
+    "ipopt_solver.cc",
+    "ipopt_solver.h",
+    "no_ipopt.cc",
 ])
