@@ -119,8 +119,8 @@ TEST_F(KukaTest, ReachableTest) {
 
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
-    double pos_tol = 0.03;
-    double orient_tol = 0.1;
+    double pos_tol = 0.06;
+    double orient_tol = 0.2;
     CheckGlobalIKSolution(pos_tol, orient_tol);
   }
 }

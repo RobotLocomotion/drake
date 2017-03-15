@@ -669,8 +669,10 @@ void AddMcCormickVectorConstraints(
  * Bpos0.col(0).sum() + Bpos0.col(1).sum() <= 5.
  * Similarly we can impose the constraint on the other orthant.
  * @param prog Add the constraint to this mathematical program.
- * @param Bpos0 Bpos0(i,j) = 1 => R(i, j) >= 0.
- * @param Bneg0 Bneg0(i,j) = 1 => R(i, j) <= 0.
+ * @param Bpos0 Defined in AddRotationMatrixMcCormickEnvelopeMilpConstraints(),
+ * Bpos0(i,j) = 1 => R(i, j) >= 0.
+ * @param Bneg0 Defined in AddRotationMatrixMcCormickEnvelopeMilpConstraints(),
+ * Bneg0(i,j) = 1 => R(i, j) <= 0.
  */
 void AddNotInSameOrOppositeOrthantConstraint(
     MathematicalProgram* prog,
@@ -805,10 +807,10 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
 
         if (k == num_binary_vars_per_half_axis - 1) {
           //   Cpos[k](i,j) = Bpos[k](i,j)
-          prog->AddLinearEqualityConstraint(Cpos[k](i, j) - Bpos[k](i, j), 0);
+          prog->AddLinearConstraint(Cpos[k](i, j) == Bpos[k](i, j));
 
           //   Cneg[k](i,j) = Bneg[k](i,j)
-          prog->AddLinearEqualityConstraint(Cneg[k](i, j) - Bneg[k](i, j), 0);
+          prog->AddLinearConstraint(Cneg[k](i, j) == Bneg[k](i, j));
         } else {
           //   Cpos[k](i,j) = Bpos[k](i,j) - Bpos[k+1](i,j)
           prog->AddLinearConstraint(Cpos[k](i, j) ==
@@ -818,7 +820,7 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                                     Bneg[k](i, j) - Bneg[k + 1](i, j));
         }
       }
-      // Bpos[0](i,j) + Bneg[0](i,j) = 1.  (have to pick a side).
+      // R(i,j) has to pick a side, either non-positive or non-negative.
       prog->AddLinearConstraint(Bpos[0](i, j) + Bneg[0](i, j) == 1);
 
       // for debugging: constrain to positive orthant.

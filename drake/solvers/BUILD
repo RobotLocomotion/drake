@@ -513,6 +513,25 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
     ],
 )
+drake_cc_googletest(
+    name = "rotation_constraint_test",
+    srcs = [
+        "test/rotation_constraint_test.cc"
+    ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+        "mosek",
+    ],
+    deps = [
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/math:geometric_transform",
+        ":gurobi_solver",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
 
 drake_cc_binary(
     name = "plot_feasible_rotation_matrices",

@@ -666,7 +666,7 @@ std::array<std::pair<int, int>, 3> vector_indices = {{{0, 1}, {0, 2}, {1, 2}}};
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormickOrthant,
     ::testing::Combine(
-        ::testing::ValuesIn({1, 2}),  // # of binary variables per half axis
+        ::testing::ValuesIn({1}),  // # of binary variables per half axis
         ::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6, 7}),  // orthant index
         ::testing::ValuesIn({false, true}),    // row vector or column vector
         ::testing::ValuesIn(vector_indices),   // vector indices
