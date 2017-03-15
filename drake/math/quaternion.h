@@ -467,7 +467,7 @@ Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
  * @param quat Quaternion [w, x, y, z] that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
  *   Note: quat is analogous to the rotation matrix R_AB.
- * @return True if quat.w() is positive (in canonical form), otherwise false.
+ * @return `true` if quat.w() is nonnegative (in canonical form), else `false`.
  */
 template<typename T>
 bool is_quaternion_in_canonical_form(const Eigen::Quaternion<T>& quat) {
@@ -496,19 +496,21 @@ Eigen::Quaternion<T> QuaternionToCanonicalForm(
 
 
 /**
- * This function tests whether the canonical form of one quaternion is equal to
- * the canonical form of another quaternion, which is useful for testing whether
- * two quaternions represent the same orientation.
+ * This function tests whether two quaternions represent the same orientation.
+ * This function converts each quaternion to its canonical form and tests
+ * whether the absolute value of the difference in corresponding elements of
+ * these canonical quaternions is within tolerance.
  * @param quat1 Quaternion [w, x, y, z] that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
  *   Note: quat is analogous to the rotation matrix R_AB.
-  * @param quat2 Quaternion [w, x, y, z] that relates two right-handed
- *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
- *   Note: quat is analogous to the rotation matrix R_AB.*
- * @return True if quat.w() is positive (in canonical form), otherwise false.
+ * @param quat2 Quaternion with a description analogous to quat1.
+ * @param tolerance Nonnegative real scalar defining the allowable difference
+ *   in the orientation described by quat1 and quat2.
+ * @return `true` if quat1 and quat2 represent the same orientation (to within
+ * tolerance), otherwise `false`.
  */
 template<typename T>
-bool AreQuaternionsApproximatlyEqualInCanonicalForm(
+bool AreQuaternionsEqualForOrientation(
     const Eigen::Quaternion<T>& quat1,
     const Eigen::Quaternion<T>& quat2,
     const T tolerance) {
@@ -524,7 +526,7 @@ bool AreQuaternionsApproximatlyEqualInCanonicalForm(
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
  *   Note: quat_AB is analogous to the rotation matrix R_AB.
  * @param w_AB_B  B's angular velocity in A, expressed in B.
- * @retval quatDt time-derivative of quat_AB, i.e., [w', x', y', z'].
+ * @retval quatDt Time-derivative of quat_AB, i.e., [ẇ, ẋ, ẏ, ż].
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
  *   (With P. W. Likins and D. A. Levinson).  Available for free .pdf download:
@@ -554,7 +556,7 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
  * @param quat_AB  Quaternion [w, x, y, z] that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
  *   Note: quat_AB is analogous to the rotation matrix R_AB.
- * @param quatDt  time-derivative of `quat_AB`, i.e. [w', x', y', z'].
+ * @param quatDt  Time-derivative of `quat_AB`, i.e. [ẇ, ẋ, ẏ, ż].
  * @retval w_AB_B  B's angular velocity in A, expressed in B.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
@@ -584,12 +586,12 @@ Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDt(
  * satisfy the quaternion time-derivative constraint specified in [Kane, 1983]
  * Section 1.13, equations 12-13, page 59.  For a quaternion [w, x, y, z],
  * the quaternion must satisfy:  w^2 + x^2 + y^2 + z^2 = 1,   hence its
- * time-derivative must satisfy:  2*(w*w' + x*x' + y*y' + z*z') = 0.
+ * time-derivative must satisfy:  2*(w*ẇ + x*ẋ + y*ẏ + z*ż) = 0.
  * @param quat  Quaternion [w, x, y, z] that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
  *   Note: A quaternion like quat_AB is analogous to the rotation matrix R_AB.
- * @param quatDt  time-derivative of `quat`, i.e., [w', x', y', z'].
- * @retval quaternionDt_constraint_violation, i.e., the amount the time-
+ * @param quatDt  Time-derivative of `quat`, i.e., [ẇ, ẋ, ẏ, ż].
+ * @retval quaternionDt_constraint_violation  The amount the time-
  *   derivative of the quaternion constraint has been violated, which may be
  *   positive or negative (0 means the constraint is perfectly satisfied).
  *
@@ -606,20 +608,43 @@ T CalculateQuaternionDtConstraintViolation(const Eigen::Quaternion<T>& quat,
   return quaternionDt_constraint_violation;
 }
 
-
-/** This function tests if a quaternion and its time-derivative satisfy the
- * quaternion and its time-derivative constraint specified in [Kane, 1983]
- * Section 1.13, equations 12-13, page 59.  For a quaternion [w, x, y, z],
- * the quaternion must satisfy:  w^2 + x^2 + y^2 + z^2 = 1,   hence its
- * time-derivative must satisfy:  2*(w*w' + x*x' + y*y' + z*z') = 0.
+/** This function tests if a quaternion satisfies the quaternion constraint
+ * specified in [Kane, 1983] Section 1.3, equation 4, page 12, i.e., a
+ * quaternion [w, x, y, z] must satisfy:  w^2 + x^2 + y^2 + z^2 = 1.
  * @param quat  Quaternion [w, x, y, z] that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
  *   Note: A quaternion like quat_AB is analogous to the rotation matrix R_AB.
- * @param quatDt  time-derivative of `quat`, i.e., [w', x', y', z'].
- * @param tolerance Tolerance required to match results.
- * @returns true if both of the following constraints are satisfied:
- * a) w^2 + x^2 + y^2 + z^2 - 1 = 0,  to within tolerance.
- * b) 2*(w*w' + x*x' + y*y' + z*z') = 0   to within tolerance.
+ * @param tolerance  Tolerance for quaternion constraint, i.e., how much is
+ *   abs(w^2 + x^2 + y^2 + z^2 - 1) allowed to differ from 0.
+ * @return `true` if the quaternion constraint is satisfied within tolerance.
+ *
+ * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
+ *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
+ *   https://ecommons.cornell.edu/handle/1813/637
+ */
+template <typename T>
+bool IsQuaternionValid(const Eigen::Quaternion<T>& quat,
+                       const double tolerance) {
+  using std::abs;
+  const T quat_norm_error = abs(1.0 - quat.norm());
+  return (quat_norm_error <= tolerance);
+}
+
+
+/** This function tests if a quaternion satisfies the time-derivative constraint
+ * specified in [Kane, 1983] Section 1.13, equation 13, page 59.  A quaternion
+ * [w, x, y, z] must satisfy  w^2 + x^2 + y^2 + z^2 = 1,   hence its
+ * time-derivative must satisfy  2*(w*ẇ + x*ẋ + y*ẏ + z*ż) = 0.
+ * Note: To accurately test whether the time-derivative quaternion constraint
+ * is satisfied, the quaternion constraint is also tested to be accurate.
+ * @param quat  Quaternion [w, x, y, z] that relates two right-handed
+ *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
+ *   Note: A quaternion like quat_AB is analogous to the rotation matrix R_AB.
+ * @param quatDt  Time-derivative of `quat`, i.e., [ẇ, ẋ, ẏ, ż].
+ * @param tolerance  Tolerance for quaternion constraints.
+ * @return `true` if both of the following constraints are satisfied:
+ * a) abs(w^2 + x^2 + y^2 + z^2 - 1) = 0,  to within tolerance.
+ * b) abs(2*(w*ẇ + x*ẋ + y*ẏ + z*ż)) = 0   to within tolerance.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
  *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
@@ -632,15 +657,41 @@ bool IsBothQuaternionAndQuaternionDtOK(const Eigen::Quaternion<T>& quat,
   using std::abs;
 
   // For an accurate test, the quaternion should be reasonably accurate.
-  const T quat_norm_error = abs(1.0 - quat.norm());
-  const bool is_good_quat_norm = (quat_norm_error <= tolerance);
-  if ( !is_good_quat_norm ) return false;
+  if ( !IsQuaternionValid(quat, tolerance) ) return false;
 
-  const T quatDt_test =
-      CalculateQuaternionDtConstraintViolation(quat, quatDt);
+  const T quatDt_test = CalculateQuaternionDtConstraintViolation(quat, quatDt);
   return abs(quatDt_test) <= tolerance;
 }
 
+/** This function tests if a quaternion and a quaternions time-derivative
+ * can calculate and match an angular velocity to within a tolerance.
+ * Note: This function first tests whether the quaternion and time-derivative of
+ * the quaternion constraint is satisified to within tolerance.
+ * @param quat  Quaternion [w, x, y, z] that relates two right-handed
+ *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
+ *   Note: A quaternion like quat_AB is analogous to the rotation matrix R_AB.
+ * @param w_B  Rigid body B's angular velocity in frame A, expressed in B.
+ * @param quatDt  Time-derivative of `quat`, i.e., [ẇ, ẋ, ẏ, ż].
+ * @param tolerance  Tolerance for quaternion constraints.
+ * @return `true` if all three of the following constraints are satisfied:
+ * a) abs(w^2 + x^2 + y^2 + z^2 - 1) = 0,                 to within tolerance.
+ * b) abs(2*(w*ẇ + x*ẋ + y*ẏ + z*ż)) = 0                  to within tolerance.
+ * c) Angular velocity (from quat and quatDt) - w_B = 0   to within tolerance.
+ */
+template <typename T>
+bool IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
+                                       const Eigen::Quaternion<T>& quat,
+                                       const Vector4<T>& quatDt,
+                                       const Vector3<T>& w_B,
+                                       const double tolerance) {
+  // Ensure time-derivative of quaternion satifies quarternionDt test.
+  if ( !math::IsBothQuaternionAndQuaternionDtOK(quat, quatDt, tolerance) )
+    return false;
+
+  const Eigen::Vector3d w_from_quatDt =
+       math::CalculateAngularVelocityExpressedInBFromQuaternionDt(quat, quatDt);
+  return CompareMatrices(w_from_quatDt, w_B, tolerance);
+}
 
 }  // namespace math
 }  // namespace drake
