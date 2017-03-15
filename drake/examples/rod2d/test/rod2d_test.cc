@@ -874,8 +874,12 @@ TEST_F(Rod2DTimeSteppingTest, RodGoesToRest) {
 TEST_F(Rod2DTimeSteppingTest, NumWitnessFunctions) {
   EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
 
-// TODO(edrumwri): Verify that calling witness functions causes assertion
-// failure.
+  // Verify that calling witness functions causes assertion failure.
+  EXPECT_DEATH(dut_->CalcSignedDistance(*dut_, *context_), ".");
+  EXPECT_DEATH(dut_->CalcEndpointDistance(*dut_, *context_), ".");
+  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_),
+               ".");
+  EXPECT_DEATH(dut_->CalcSlidingDot(*dut_, *context_), ".");
 }
 
 // This test checks to see whether a single semi-explicit step of the piecewise
@@ -1197,8 +1201,12 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
 TEST_F(Rod2DCompliantTest, NumWitnessFunctions) {
   EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
 
-  // TODO(edrumwri): Verify that calling witness functions causes assertion
-  // failure.
+  // Verify that calling witness functions causes assertion failure.
+  EXPECT_DEATH(dut_->CalcSignedDistance(*dut_, *context_), ".");
+  EXPECT_DEATH(dut_->CalcEndpointDistance(*dut_, *context_), ".");
+  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_),
+               ".");
+  EXPECT_DEATH(dut_->CalcSlidingDot(*dut_, *context_), ".");
 }
 
 }  // namespace

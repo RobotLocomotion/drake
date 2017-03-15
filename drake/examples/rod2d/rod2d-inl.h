@@ -174,7 +174,6 @@ T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
   return xcdot * xcdot_t0;
 }
 
-/// Gets the number of witness functions.
 template <class T>
 int Rod2D<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
                                              context) const {

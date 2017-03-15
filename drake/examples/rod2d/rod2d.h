@@ -385,6 +385,8 @@ class Rod2D : public systems::LeafSystem<T> {
   static T CalcSlidingDot(const Rod2D<T>& rod,
                           const systems::Context<T>& context);
 
+  /// Gets the number of witness functions for the system active in the system
+  /// for a given state (using @p context).
   int DetermineNumWitnessFunctions(const systems::Context<T>& context) const;
 
  protected:
