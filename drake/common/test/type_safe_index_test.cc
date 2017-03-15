@@ -23,6 +23,8 @@ using BIndex = TypeSafeIndex<class B>;
 GTEST_TEST(TypeSafeIndex, Constructor) {
   AIndex index(1);
   EXPECT_EQ(index, 1);  // This also tests operator==(int).
+  AIndex index2(index);  // Copy constructor.
+  EXPECT_EQ(index2, 1);
 // In Debug builds construction from a negative int throws.
 #ifndef DRAKE_ASSERT_IS_DISARMED
   try {
@@ -163,6 +165,21 @@ GTEST_TEST(TypeSafeIndex, ConversionNotAllowedBetweenDifferentTypes) {
   EXPECT_TRUE((std::is_convertible<BIndex, BIndex>::value));
 }
 
+// Verifies the behavior of the assignment operator:
+//  - One index can be assigned to another (if they're the same type).
+//  - Int types are correctly assigned to the index.
+//  - Negative values are caught in debug builds.
+GTEST_TEST(TypeSafeIndex, ValueAssignment) {
+  AIndex index(0);
+  AIndex target(3);
+  EXPECT_EQ(target, 3);
+  target = index;
+  EXPECT_EQ(target, 0);
+  target = 17;
+  EXPECT_EQ(target, 17);
+  EXPECT_THROW_IF_ARMED(target = -1);
+}
+
 //-------------------------------------------------------------------
 
 // This code allows us to turn compile-time errors in to run-time errors that
@@ -199,7 +216,7 @@ template <typename T, typename U> \
 bool has_ ## OP_NAME ## _helper(...) { return false; } \
 template <typename T, typename U> \
 bool has_ ## OP_NAME() { return has_ ## OP_NAME ## _helper<T, U>(1); } \
-GTEST_TEST(TypeSafeIndex, OP_NAME ## _Operator) { \
+GTEST_TEST(TypeSafeIndex, OP_NAME ## _Operator_Available) { \
   EXPECT_FALSE((has_ ## OP_NAME<AIndex, BIndex>())); \
   EXPECT_TRUE((has_ ## OP_NAME<AIndex, AIndex>())); \
   EXPECT_TRUE((has_ ## OP_NAME<AIndex, int>())); \
@@ -237,6 +254,26 @@ BINARY_TEST(+=, in_place_add)
 
 // Confirms that indices of different tag types cannot be added to each other.
 BINARY_TEST(-=, in_place_subtract)
+
+// Confirms that one index cannot be assigned to by another index type (but int
+// types and same index types can). This is partially redundant to the
+// assignment test above, but the redundancy doesn't hurt.
+BINARY_TEST(=, assignment)
+
+// This tests that one index cannot be *constructed* from another index type,
+// but can be constructed from int types.
+template <typename T, typename U, typename = decltype(T(U(1)))>
+bool has_construct_helper(int) { return true; }
+template <typename T, typename U>
+bool has_construct_helper(...) { return false; }
+template <typename T, typename U>
+bool has_constructor() { return has_construct_helper<T, U>(1); }
+GTEST_TEST(TypeSafeIndex, constructor_Operator) {
+  EXPECT_FALSE((has_constructor<AIndex, BIndex>()));
+  EXPECT_TRUE((has_constructor<AIndex, int>()));
+  EXPECT_TRUE((has_constructor<AIndex, size_t>()));
+  EXPECT_TRUE((has_constructor<AIndex, int64_t>()));
+}
 
 }  // namespace
 }  // namespace common

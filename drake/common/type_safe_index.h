@@ -29,11 +29,26 @@ namespace drake {
 ///    using BIndex = TypeSafeIndex<class B>;
 ///    AIndex a(1);
 ///    BIndex b(1);
-///    if ( a == 2 ) { ... }   // Ok.
+///    if (a == 2) { ... }   // Ok.
 ///    size_t sz = 7;
-///    if ( a == sz ) { ... }  // Ok.
-///    if ( a == b ) { ... }   // <-- Compiler error.
+///    if (a == sz) { ... }  // Ok.
+///    if (a == b) { ... }   // <-- Compiler error.
 /// @endcode
+///
+/// The intent of these classes is to seamlessly serve as indices into typical
+/// indexed objects (e.g., vector, array, etc.). At the same time, we want to
+/// avoid implicit conversions _from_ int to an index.  These two design
+/// constraints combined lead to a limitation in how TypeSafeIndex instances
+/// can be used.  Specifically, we've lost a common index pattern:
+/// @code{.cpp}
+///    for (MyIndex a = 0; a < N; ++a) { ... }
+/// @endcode
+/// This pattern no longer works because it requires implicit conversion of int
+/// to TypeSafeIndex. Instead, the following pattern needs to be used:
+/// @code{.cpp}
+///    for (MyIndex a(0); a < N; ++a) { ... }
+/// @endcode
+///
 /// @tparam Tag The name of the tag associated with a class type.
 template <class Tag>
 class TypeSafeIndex {
@@ -50,7 +65,19 @@ class TypeSafeIndex {
     DRAKE_ASSERT_VOID(CheckInvariants());
   }
 
-  /// Implicit conversion to int operator.
+  /// Disallow construction from another index type.
+  template <typename U>
+  TypeSafeIndex( const TypeSafeIndex<U>& idx) = delete;
+
+  /// Assign the index a value from a non-negative int.
+  /// In Debug builds, this method asserts that the input index is non-negative.
+  TypeSafeIndex& operator=(int idx) {
+    index_ = idx;
+    DRAKE_ASSERT_VOID(CheckInvariants());
+    return *this;
+  }
+
+  /// Implicit conversion-to-int operator.
   operator int() const { return index_; }
 
   /// @name Arithmetic operators.
