@@ -35,7 +35,7 @@ class FirstOrderLowPassFilterTest : public ::testing::Test {
     derivatives_ = filter_->AllocateTimeDerivatives();
     output_ = filter_->AllocateOutput(*context_);
 
-    // Set the state to zero initially.
+    // Sets the state to zero initially.
     ContinuousState<double>* xc = continuous_state();
     EXPECT_EQ(kSignalSize, xc->size());
     EXPECT_EQ(kSignalSize, xc->get_misc_continuous_state().size());
@@ -94,7 +94,7 @@ TEST_F(FirstOrderLowPassFilterTest, Derivatives) {
   Vector3<double> u({1.0, 2.0, 3.0});  // The input signal.
   context_->FixInputPort(0, u);
 
-  // Set a more interesting (non-zero) state.
+  // Sets a more interesting (non-zero) state.
   Vector3<double> z_expected(-1.0, 2.0, 3.5);
   filter_->set_initial_output_value(context_.get(), z_expected);
 
