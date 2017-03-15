@@ -35,8 +35,8 @@ class InputPort : public detail::OutputPortListenerInterface {
 
   /// Returns the data on this port, or nullptr if this port is not connected.
   const AbstractValue* get_abstract_data() const {
-    DRAKE_DEMAND(get_output_port() != nullptr);
-    return get_output_port()->get_abstract_data();
+    DRAKE_DEMAND(get_output_port_value() != nullptr);
+    return get_output_port_value()->get_abstract_data();
   }
 
   /// Returns the vector data on this port, or nullptr if this port is not
@@ -45,8 +45,8 @@ class InputPort : public detail::OutputPortListenerInterface {
   /// @tparam T The type of the input port. Must be a valid Eigen scalar.
   template <typename T>
   const BasicVector<T>* get_vector_data() const {
-    DRAKE_DEMAND(get_output_port() != nullptr);
-    return get_output_port()->get_vector_data<T>();
+    DRAKE_DEMAND(get_output_port_value() != nullptr);
+    return get_output_port_value()->get_vector_data<T>();
   }
 
   /// Registers @p callback to be called whenever the value of get_version
@@ -63,7 +63,7 @@ class InputPort : public detail::OutputPortListenerInterface {
  protected:
   InputPort() {}
 
-  virtual const OutputPort* get_output_port() const = 0;
+  virtual const OutputPortValue* get_output_port_value() const = 0;
 
  private:
   std::function<void()> invalidation_callback_ = nullptr;
@@ -79,7 +79,7 @@ class DependentInputPort : public InputPort {
 
   /// Creates an input port connected to the given @p output_port, which
   /// must not be nullptr. The output port must outlive this input port.
-  explicit DependentInputPort(OutputPort* output_port);
+  explicit DependentInputPort(OutputPortValue* output_port);
 
   /// Disconnects from the output port.
   ~DependentInputPort() override;
@@ -88,17 +88,21 @@ class DependentInputPort : public InputPort {
   void Disconnect() override;
 
   /// Returns the value version of the connected output port.
-  int64_t get_version() const override { return output_port_->get_version(); }
+  int64_t get_version() const override {
+    return output_port_value_->get_version();
+  }
 
   /// A DependentInputPort must be evaluated in a Context, because it does not
   /// control its own data.
   bool requires_evaluation() const override { return true; }
 
  protected:
-  const OutputPort* get_output_port() const override { return output_port_; }
+  const OutputPortValue* get_output_port_value() const override {
+    return output_port_value_;
+  }
 
  private:
-  OutputPort* output_port_{};
+  OutputPortValue* output_port_value_{};
 };
 
 /// The FreestandingInputPort encapsulates a vector of data for use as an input
@@ -115,8 +119,8 @@ class FreestandingInputPort : public InputPort {
   /// @tparam V The type of @p vec itself. Must implement BasicVector<T>.
   template <template <typename T> class V, typename T>
   explicit FreestandingInputPort(std::unique_ptr<V<T>> vec)
-      : output_port_(std::move(vec)) {
-    output_port_.add_dependent(this);
+      : output_port_value_(std::move(vec)) {
+    output_port_value_.add_dependent(this);
   }
 
   /// Constructs an abstract-valued FreestandingInputPort.
@@ -135,7 +139,9 @@ class FreestandingInputPort : public InputPort {
 
   /// Returns a positive and monotonically increasing number that is guaranteed
   /// to change whenever GetMutableVectorData is called.
-  int64_t get_version() const override { return output_port_.get_version(); }
+  int64_t get_version() const override {
+    return output_port_value_.get_version();
+  }
 
   /// A FreestandingInputPort does not require evaluation, because it controls
   /// its own data.
@@ -150,7 +156,9 @@ class FreestandingInputPort : public InputPort {
   /// particular, callers MUST NOT write on the returned pointer if there is any
   /// possibility this FreestandingInputPort has been accessed since the last
   /// time this method was called.
-  AbstractValue* GetMutableData() { return output_port_.GetMutableData(); }
+  AbstractValue* GetMutableData() {
+    return output_port_value_.GetMutableData();
+  }
 
   /// Returns a pointer to the data inside this InputPort, and updates the
   /// version so that Contexts depending on this InputPort know to invalidate
@@ -165,7 +173,7 @@ class FreestandingInputPort : public InputPort {
   /// @tparam T The type of the input port. Must be a valid Eigen scalar.
   template <typename T>
   BasicVector<T>* GetMutableVectorData() {
-    return output_port_.GetMutableVectorData<T>();
+    return output_port_value_.GetMutableVectorData<T>();
   }
 
   /// Does nothing. A FreestandingInputPort wraps its own OutputPort, so there
@@ -173,10 +181,12 @@ class FreestandingInputPort : public InputPort {
   void Disconnect() override {}
 
  protected:
-  const OutputPort* get_output_port() const override { return &output_port_; }
+  const OutputPortValue* get_output_port_value() const override {
+    return &output_port_value_;
+  }
 
  private:
-  OutputPort output_port_;
+  OutputPortValue output_port_value_;
 };
 
 }  // namespace systems

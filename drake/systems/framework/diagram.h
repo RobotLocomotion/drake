@@ -65,17 +65,17 @@ class DiagramOutput : public SystemOutput<T> {
 
   int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 
-  OutputPort* get_mutable_port(int index) override {
+  OutputPortValue* get_mutable_port_value(int index) override {
     DRAKE_DEMAND(index >= 0 && index < get_num_ports());
     return ports_[index];
   }
 
-  const OutputPort& get_port(int index) const override {
+  const OutputPortValue& get_port_value(int index) const override {
     DRAKE_DEMAND(index >= 0 && index < get_num_ports());
     return *ports_[index];
   }
 
-  std::vector<OutputPort*>* get_mutable_ports() { return &ports_; }
+  std::vector<OutputPortValue*>* get_mutable_port_values() { return &ports_; }
 
  protected:
   // Returns a clone that has the same number of output ports, set to nullptr.
@@ -86,7 +86,7 @@ class DiagramOutput : public SystemOutput<T> {
   }
 
  private:
-  std::vector<OutputPort*> ports_;
+  std::vector<OutputPortValue*> ports_;
 };
 
 /// DiagramTimeDerivatives is a version of DiagramContinuousState that owns
@@ -304,7 +304,7 @@ class Diagram : public System<T>,
     // The output ports of this Diagram are output ports of its constituent
     // systems. Create a DiagramOutput with that many ports.
     auto output = std::make_unique<internal::DiagramOutput<T>>();
-    output->get_mutable_ports()->resize(output_port_ids_.size());
+    output->get_mutable_port_values()->resize(output_port_ids_.size());
     ExposeSubsystemOutputs(*diagram_context, output.get());
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
@@ -994,10 +994,11 @@ class Diagram : public System<T>,
       const int sys_index = GetSystemIndexOrAbort(id.first);
       const int port_index = id.second;
       SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(sys_index);
-      OutputPort* output_port = subsystem_output->get_mutable_port(port_index);
+      OutputPortValue* output_port =
+          subsystem_output->get_mutable_port_value(port_index);
 
       // Then, put a pointer to that OutputPort in the DiagramOutput.
-      (*output->get_mutable_ports())[i] = output_port;
+      (*output->get_mutable_port_values())[i] = output_port;
     }
   }
 
