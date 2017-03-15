@@ -2,10 +2,10 @@
 
 #include <memory>
 
+#include "gtest/gtest.h"
+
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
-
-#include "gtest/gtest.h"
 
 namespace drake {
 namespace systems {
