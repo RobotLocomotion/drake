@@ -59,20 +59,17 @@ MaliputRailcar<T>::MaliputRailcar(const Lane& lane, double start_time)
 }
 
 template <typename T>
-const InputPortDescriptor<T>& MaliputRailcar<T>::command_input()
-    const {
+const InputPortDescriptor<T>& MaliputRailcar<T>::command_input() const {
   return this->get_input_port(command_input_port_index_);
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& MaliputRailcar<T>::state_output()
-    const {
+const OutputPortDescriptor<T>& MaliputRailcar<T>::state_output() const {
   return this->get_output_port(state_output_port_index_);
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& MaliputRailcar<T>::pose_output()
-    const {
+const OutputPortDescriptor<T>& MaliputRailcar<T>::pose_output() const {
   return this->get_output_port(pose_output_port_index_);
 }
 

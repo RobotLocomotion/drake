@@ -156,21 +156,23 @@ TEST_F(MaliputRailcarTest, ZeroInitialOutput) {
 
 TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
+  const double kS{1};
+  const double kSpeed{2};
 
-  continuous_state()->set_s(1.0);
-  continuous_state()->set_speed(2.0);
+  continuous_state()->set_s(kS);
+  continuous_state()->set_speed(kSpeed);
   dut_->CalcOutput(*context_, output_.get());
 
   auto state = state_output();
-  EXPECT_EQ(state->s(), 1);
-  EXPECT_EQ(state->speed(), 2);
+  EXPECT_EQ(state->s(), kS);
+  EXPECT_EQ(state->speed(), kSpeed);
 
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
   // For the dragway, the `(s, r, h)` axes in lane-space coorespond to the
-  // `(x, y, z)` axes in geo-space. In this case, `s = 1` while `r` and `h` are
+  // `(x, y, z)` axes in geo-space. In this case, `s = kS` while `r` and `h` are
   // by default zero.
-  expected_pose.translation() = Eigen::Vector3d(1, 0, 0);
+  expected_pose.translation() = Eigen::Vector3d(kS, 0, 0);
   EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
                               expected_pose.matrix()));
 }
@@ -178,15 +180,16 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
 TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
   EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane());
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
+  const double kSpeed{3.5};
 
   continuous_state()->set_s(lane->length());
-  continuous_state()->set_speed(3.5);
+  continuous_state()->set_speed(kSpeed);
   dut_->CalcOutput(*context_, output_.get());
 
   ASSERT_NE(lane, nullptr);
   auto state = state_output();
   EXPECT_EQ(state->s(), lane->length());
-  EXPECT_EQ(state->speed(), 3.5);
+  EXPECT_EQ(state->speed(), kSpeed);
 
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
@@ -282,22 +285,23 @@ TEST_F(MaliputRailcarTest, DerivativesDragway) {
   EXPECT_DOUBLE_EQ(result->s(), MaliputRailcar<double>::kDefaultInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);  // Expect zero acceleration.
 
-  // Checks that the derivatives are zero given zero throttle and brake commands
+  // Checks that the acceleration is zero given zero throttle and brake commands
   // and a non-default continuous state with r = 0.
   continuous_state()->set_s(3.5);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), MaliputRailcar<double>::kDefaultInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);
 
-  // Checks that the derivatives remain zero given a non-default continuous
-  // state with r != 0.
+  // Checks that the acceleration is zero given a non-default continuous state
+  // with r != 0.
   const double kS{1.5};
   const double kSlowSpeed{2};
+  const double kMaxSpeed{30};
   MaliputRailcarConfig<double> config;
   config.set_r(-2);
   config.set_h(0);
   config.set_initial_speed(kSlowSpeed);
-  config.set_max_speed(30);
+  config.set_max_speed(kMaxSpeed);
   config.set_velocity_limit_kp(8);
   SetConfig(config);
   continuous_state()->set_s(kS);
@@ -306,21 +310,26 @@ TEST_F(MaliputRailcarTest, DerivativesDragway) {
   EXPECT_DOUBLE_EQ(result->s(), kSlowSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);
 
-  // Checks that the maximum throttle command of 1 results in the maximum
-  // acceleration.
-  SetInputValue(5  /* desired acceleration */);
+  // Checks that a positive acceleration command of `kPosAccelCmd` results in
+  // the actual acceleration being equal to the commanded acceleration when the
+  // vehicle's current speed of `kSlowSpeed` is far lower than the vehicle's
+  // maximum speed of `kMaxSpeed`.
+  const double kPosAccelCmd{5};
+  SetInputValue(kPosAccelCmd);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), kSlowSpeed);
-  EXPECT_DOUBLE_EQ(result->speed(), 5);
+  EXPECT_DOUBLE_EQ(result->speed(), kPosAccelCmd);
 
-  // Checks that an acceleration command of -1 when the current speed is > 0
-  // results in an acceleration of -1.
+  // Checks that a negative acceleration command of `kNegAccelCmd` results in
+  // the actual acceleration being equal to the commanded acceleration when the
+  // vehicle's current speed of `kFastSpeed` is far higher than 0.
   const double kFastSpeed{27};
-  SetInputValue(-1  /* desired acceleration */);
+  const double kNegAccelCmd{-1};
+  SetInputValue(kNegAccelCmd);
   continuous_state()->set_speed(kFastSpeed);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), kFastSpeed);
-  EXPECT_DOUBLE_EQ(result->speed(), -1);
+  EXPECT_DOUBLE_EQ(result->speed(), kNegAccelCmd);
 }
 
 TEST_F(MaliputRailcarTest, DerivativesMonolane) {
