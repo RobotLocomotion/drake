@@ -752,7 +752,7 @@ TEST_F(Rod2DDAETest, OtherEndpointDistWitness) {
 
   // Set the rod to a ballistic state and verify that the witness aborts.
   SetBallisticState();
-  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 
+  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_),
                ".");
 }
 
@@ -778,7 +778,7 @@ TEST_F(Rod2DDAETest, SeparationWitness) {
 
   // Set the rod to a ballistic state and verify that the witness aborts.
   SetBallisticState();
-  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 
+  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_),
                ".");
 }
 
@@ -797,7 +797,7 @@ TEST_F(Rod2DDAETest, VelocityChangesWitness) {
 
   // Set the rod to a ballistic state and verify that the witness aborts.
   SetBallisticState();
-  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 
+  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_),
                ".");
 }
 
