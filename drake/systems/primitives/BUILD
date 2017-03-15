@@ -56,6 +56,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "first_order_low_pass_filter",
+    srcs = ["first_order_low_pass_filter.cc"],
+    hdrs = [
+        "first_order_low_pass_filter.h",
+    ],
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "gain",
     srcs = ["gain.cc"],
     hdrs = [
@@ -229,6 +240,17 @@ drake_cc_googletest(
     deps = [
         ":demultiplexer",
         "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "first_order_low_pass_filter_test",
+    srcs = [
+        "test/first_order_low_pass_filter_test.cc",
+    ],
+    deps = [
+        ":first_order_low_pass_filter",
         "//drake/systems/framework",
     ],
 )
