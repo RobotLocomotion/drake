@@ -29,8 +29,8 @@ double FirstOrderLowPassFilter<T>::get_time_constant() const {
   if (!time_constants_.isConstant(time_constants_[0])) {
     std::stringstream s;
     s << "The time constants vector, [" << time_constants_ << "], cannot be "
-         "represented as a scalar value."
-         "Please use FirstOrderLowPassFilter::get_gain_vector() instead.";
+         "represented as a scalar value. Please use "
+         "FirstOrderLowPassFilter::get_time_constants_vector() instead.";
     DRAKE_ABORT_MSG(s.str().c_str());
   }
   return time_constants_[0];
