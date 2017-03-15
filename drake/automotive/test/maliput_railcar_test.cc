@@ -246,7 +246,7 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
     expected_start_pose.matrix()
         << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
-  // The following tolerance was determined emperically.
+  // The following tolerance was determined empirically.
   EXPECT_TRUE(CompareMatrices(start_pose->get_isometry().matrix(),
                               expected_start_pose.matrix(),
                               1e-15 /* tolerance */));
@@ -263,7 +263,7 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
     const Eigen::Vector3d xyz(kCurvedRoadRadius - kR, kCurvedRoadRadius, kH);
     expected_end_pose.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
-  // The following tolerance was determined emperically.
+  // The following tolerance was determined empirically.
   EXPECT_TRUE(CompareMatrices(end_pose->get_isometry().matrix(),
                               expected_end_pose.matrix(),
                               1e-15 /* tolerance */));
@@ -280,20 +280,20 @@ TEST_F(MaliputRailcarTest, DerivativesDragway) {
   // Sets the input command.
   SetInputValue(0 /* desired_acceleration */);
 
-  // Checks the derivatives given the default continous state with r = 0.
+  // Checks the derivatives given the default continuous state with r = 0.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), MaliputRailcar<double>::kDefaultInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);  // Expect zero acceleration.
 
-  // Checks that the acceleration is zero given zero throttle and brake commands
+  // Checks that the acceleration is zero given an acceleration command of zero
   // and a non-default continuous state with r = 0.
   continuous_state()->set_s(3.5);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), MaliputRailcar<double>::kDefaultInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);
 
-  // Checks that the acceleration is zero given a non-default continuous state
-  // with r != 0.
+  // Checks that the acceleration is zero given an acceleration command of zero
+  // and a non-default continuous state with r != 0.
   const double kS{1.5};
   const double kSlowSpeed{2};
   const double kMaxSpeed{30};
