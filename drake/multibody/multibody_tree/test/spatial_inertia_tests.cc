@@ -88,6 +88,26 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
   EXPECT_EQ(expected_string, stream.str());
 }
 
+// Tests comparison to a given precision.
+GTEST_TEST(SpatialInertia, IsApprox) {
+  const double mass = 2.5;
+  const Vector3d com(0.1, -0.2, 0.3);
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
+  UnitInertia<double> G(m(0), m(1), m(2), /* moments of inertia */
+                        p(0), p(1), p(2));/* products of inertia */
+  SpatialInertia<double> M(mass, com, G);
+
+  // Creates a spatial inertia that is approximately equal to M, but not equal.
+  const double precision = 1.0e-10;
+  SpatialInertia<double> other(
+      (1.0 + precision) * mass,
+      (1.0 + precision) * com,
+      UnitInertia<double>((1.0 + precision) * G));
+  EXPECT_TRUE(M.IsApprox(other, 2.6 * precision));
+  EXPECT_FALSE(M.IsApprox(other, 2.5 * precision));
+}
+
 
 #if 0
 GTEST_TEST(SpatialInertia, PlusEqualOperator) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <memory>
 #include <sstream>
 #include <vector>
@@ -86,6 +87,12 @@ class SpatialInertia {
   /// center of mass point `Scm`, expressed in a frame E.
   /// The rotational inertia is provided as the UnitInertia `G_SP_E` of system S
   /// computed about point P and expressed in frame E.
+  ///
+  /// This constructor checks for the physical validity of the resulting
+  /// %SpatialInertia with IsPhysicallyValid() and throws an exception in the
+  /// event the provided input parameters lead to non-physically viable spatial
+  /// inertia.
+  ///
   /// @param[in] mass The mass of the physical system or body S.
   /// @param[in] p_PScm_E The position vector from point P to the center of mass
   ///                     of system or body S expressed in frame E.
@@ -94,7 +101,11 @@ class SpatialInertia {
   SpatialInertia(
       const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E) :
       mass_(mass), p_PScm_E_(p_PScm_E), I_SP_E_(mass * G_SP_E) {
-    DRAKE_ASSERT(IsPhysicallyValid());
+    if (!IsPhysicallyValid()) {
+      throw std::runtime_error(
+          "The resulting spatial inertia is not physically valid."
+          "See SpatialInertia::IsPhysicallyValid()");
+    }
   }
 
   /// Get a constant reference to the mass of this spatial inertia.
@@ -162,16 +173,26 @@ class SpatialInertia {
     I_SP_E_.SetToNaN();
   }
 
-#if 0
-  bool IsApprox(const SpatialInertia& M_Bo_F,
+  /// Compares `this` spatial inertia to `other` rotational inertia within the
+  /// specified `tolerance`.
+  /// The comparsion returns `true` if the following are true:
+  ///   - abs(this->get_mass() - other.get_mass()) < tolerance.
+  ///   - this->get_com().isApprox(other.get_com(), tolerance).
+  ///   - this->get_rotational_inertia().IsApprox(
+  ///               other.get_rotational_inertia(), tolerance()).
+  ///
+  /// @returns `true` if `other` is within the specified `precision`. Returns
+  ///   `false` otherwise.
+  bool IsApprox(const SpatialInertia& other,
                 double tolerance = Eigen::NumTraits<T>::epsilon()) {
     using std::abs;
     return
-        abs(mass_ - M_Bo_F.get_mass()) < tolerance &&
-        p_PScm_E_.isApprox(M_Bo_F.get_com(), tolerance) &&
-        I_SP_E_.IsApprox(M_Bo_F.get_rotational_inertia(), tolerance);
+        abs(mass_ - other.get_mass()) < tolerance &&
+        p_PScm_E_.isApprox(other.get_com(), tolerance) &&
+        I_SP_E_.IsApprox(other.get_rotational_inertia(), tolerance);
   }
 
+#if 0
   /// Adds spatial inertia @p `M_Bo_F` to this spatial inertia. This operation 
   /// is only valid if both inertias are computed about the same center `Bo`
   /// and expressed in the same frame `F`.
