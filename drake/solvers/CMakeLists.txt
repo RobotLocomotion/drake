@@ -136,7 +136,9 @@ endif()
 
 add_library_with_exports(LIB_NAME drakeRotationConstraint SOURCE_FILES rotation_constraint.cc)
 target_link_libraries(drakeRotationConstraint
-        drakeOptimization)
+        drakeOptimization
+        drakeLcm
+        drakeLCMTypes)
 drake_install_headers(
         rotation_constraint.h
 )

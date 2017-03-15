@@ -79,7 +79,7 @@ endif(mosek_FOUND)
 if (gurobi_FOUND)
   drake_add_cc_test(rotation_constraint_limit_test)
   set_tests_properties(rotation_constraint_limit_test PROPERTIES TIMEOUT 600)
-  target_link_libraries(rotation_constraint_limit_test drakeOptimization)
+  target_link_libraries(rotation_constraint_limit_test drakeRotationConstraint)
 endif(gurobi_FOUND)
 
 if (lcm_FOUND)
