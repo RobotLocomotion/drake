@@ -216,7 +216,7 @@ template <typename T, typename U> \
 bool has_ ## OP_NAME ## _helper(...) { return false; } \
 template <typename T, typename U> \
 bool has_ ## OP_NAME() { return has_ ## OP_NAME ## _helper<T, U>(1); } \
-GTEST_TEST(TypeSafeIndex, OP_NAME ## _Operator_Available) { \
+GTEST_TEST(TypeSafeIndex, OP_NAME ## OperatorAvailiblity) { \
   EXPECT_FALSE((has_ ## OP_NAME<AIndex, BIndex>())); \
   EXPECT_TRUE((has_ ## OP_NAME<AIndex, AIndex>())); \
   EXPECT_TRUE((has_ ## OP_NAME<AIndex, int>())); \
@@ -227,38 +227,38 @@ GTEST_TEST(TypeSafeIndex, OP_NAME ## _Operator_Available) { \
 //-------------------------------------------------------------------
 
 // Confirms that indices of different tag types cannot be compared for equality.
-BINARY_TEST(==, equals)
+BINARY_TEST(==, Equals)
 
 // Confirms that indices of different tag types cannot be compared for
 // inequality.
-BINARY_TEST(!=, not_equals)
+BINARY_TEST(!=, NotEquals)
 
 // Confirms that indices of different tag types cannot be compared as one less
 // than the other.
-BINARY_TEST(<, less_than)
+BINARY_TEST(<, LessThan)
 
 // Confirms that indices of different tag types cannot be compared as one less
 // than or equal to the other.
-BINARY_TEST(<=, less_than_or_equal)
+BINARY_TEST(<=, LessThanOrEquals)
 
 // Confirms that indices of different tag types cannot be compared as one
 // greater than the other.
-BINARY_TEST(>, greater_than)
+BINARY_TEST(>, GreaterThan)
 
 // Confirms that indices of different tag types cannot be compared as one
 // greater than or equal to the other.
-BINARY_TEST(>=, greater_than_or_equal)
+BINARY_TEST(>=, GreaterThanOrEqual)
 
 // Confirms that indices of different tag types cannot be added to each other.
-BINARY_TEST(+=, in_place_add)
+BINARY_TEST(+=, InPlaceAdd)
 
 // Confirms that indices of different tag types cannot be added to each other.
-BINARY_TEST(-=, in_place_subtract)
+BINARY_TEST(-=, InPlaceSubtract)
 
 // Confirms that one index cannot be assigned to by another index type (but int
 // types and same index types can). This is partially redundant to the
 // assignment test above, but the redundancy doesn't hurt.
-BINARY_TEST(=, assignment)
+BINARY_TEST(=, Assignment)
 
 // This tests that one index cannot be *constructed* from another index type,
 // but can be constructed from int types.
@@ -268,7 +268,7 @@ template <typename T, typename U>
 bool has_construct_helper(...) { return false; }
 template <typename T, typename U>
 bool has_constructor() { return has_construct_helper<T, U>(1); }
-GTEST_TEST(TypeSafeIndex, constructor_Operator) {
+GTEST_TEST(TypeSafeIndex, ConstructorAvailability) {
   EXPECT_FALSE((has_constructor<AIndex, BIndex>()));
   EXPECT_TRUE((has_constructor<AIndex, int>()));
   EXPECT_TRUE((has_constructor<AIndex, size_t>()));
