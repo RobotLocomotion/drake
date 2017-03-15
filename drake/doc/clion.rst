@@ -125,31 +125,14 @@ is especially important to make sure that ``ccache`` is never on your ``PATH``
 when you run CLion, because CLion will cache the ``PATH`` aggressively. We do
 not yet have a proven technique for purging it.
 
-Installing CLion and the Bazel Plugin
--------------------------------------
+Installing the Bazel Plugin
+---------------------------
 
-To use CLion with Bazel, we require an experimental plugin that the Bazel team
-supplies in source form only.
-
-1. Download and install CLion 2016.2.3 from the CLion
-   `previous releases <https://www.jetbrains.com/clion/download/previous.html>`_.
-   No other version of CLion is compatible with the Bazel plugin.
-
-2. Adjust your JVM options to increase CLion's memory limits so that ``-Xms``
-   is ``1024m`` and ``-Xmx`` is ``8196m``. The JVM options file location
-   is platform-dependent:
-
-   a. **Linux:**  ``bin/clion64.vmoptions``, in the CLion tarball.
-   b. **OS X:** ``Contents/bin/clion.vmoptions``, in the CLion app package.
-
-3. Clone the `bazelbuild/intellij <https://github.com/bazelbuild/intellij>`_
-   project from GitHub, and build the CLion plugin with
-   ``bazel build --define=ij_product=clion-latest //clwb:clwb_bazel``.
-
-4. Launch CLion, and install the Bazel plugin from disk. Open
-   ``File > Settings``. Select ``Plugins``, then ``Install plugin from disk...``.
-   In the file browser, select ``bazel-genfiles/clwb/clwb_bazel.jar``.
-   Click "OK".
+To use Bazel in CLion, you must install a plugin supplied by Google. The plugin
+requires CLion 2016.3 or later.  To install the plugin, open
+``File > Settings``, select ``Plugins``, and press the ``Browse repositories``
+button.  Locate and install the ``CLion with Bazel`` plugin. You will be
+prompted to restart CLion.
 
 Setting up Drake in CLion
 -------------------------
