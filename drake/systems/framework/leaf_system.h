@@ -12,6 +12,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/systems/framework/abstract_state.h"
@@ -464,8 +465,31 @@ class LeafSystem : public System<T> {
   /// is overridden.
   void DeclareContinuousState(int num_q, int num_v, int num_z) {
     const int n = num_q + num_v + num_z;
-    DeclareContinuousState(std::make_unique<BasicVector<T>>(n), num_q, num_v,
-                           num_z);
+    DeclareContinuousState(BasicVector<T>(n), num_q, num_v, num_z);
+  }
+
+  /// Declares that this System should reserve continuous state with
+  /// @p model_vector.size() miscellaneous state variables, stored in a
+  /// vector Cloned from @p model_vector.  Has no effect if
+  /// AllocateContinuousState is overridden.
+  void DeclareContinuousState(const BasicVector<T>& model_vector) {
+    const int num_q = 0, num_v = 0;
+    const int num_z = model_vector.size();
+    DeclareContinuousState(model_vector, num_q, num_v, num_z);
+  }
+
+  /// Declares that this System should reserve continuous state with @p num_q
+  /// generalized positions, @p num_v generalized velocities, and @p num_z
+  /// miscellaneous state variables, stored in a vector Cloned from
+  /// @p model_vector. Aborts if @p model_vector has the wrong size. Has no
+  /// effect if AllocateContinuousState is overridden.
+  void DeclareContinuousState(const BasicVector<T>& model_vector,
+                              int num_q, int num_v, int num_z) {
+    DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
+    model_continuous_state_vector_ = model_vector.Clone();
+    num_generalized_positions_ = num_q;
+    num_generalized_velocities_ = num_v;
+    num_misc_continuous_states_ = num_z;
   }
 
   /// Declares that this System should reserve continuous state with @p num_q
@@ -473,14 +497,11 @@ class LeafSystem : public System<T> {
   /// miscellaneous state variables, stored in the a vector Cloned from
   /// @p model_vector. Aborts if @p model_vector is nullptr or has the wrong
   /// size. Has no effect if AllocateContinuousState is overridden.
+  DRAKE_DEPRECATED("Use the const-reference model_vector overload instead")
   void DeclareContinuousState(std::unique_ptr<BasicVector<T>> model_vector,
                               int num_q, int num_v, int num_z) {
     DRAKE_DEMAND(model_vector != nullptr);
-    DRAKE_DEMAND(model_vector->size() == num_q + num_v + num_z);
-    model_continuous_state_vector_ = std::move(model_vector);
-    num_generalized_positions_ = num_q;
-    num_generalized_velocities_ = num_v;
-    num_misc_continuous_states_ = num_z;
+    DeclareContinuousState(*model_vector, num_q, num_v, num_z);
   }
 
   /// Declares that this System should reserve discrete state with
