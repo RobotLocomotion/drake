@@ -89,11 +89,6 @@ class Rod2DDAETest : public ::testing::Test {
     const int k = (std::sin(theta) > 0) ? -1 : 1;
     abs_state->get_mutable_abstract_state(1).
         template GetMutableValue<int>() = k;
-
-    // Set the sliding velocity at the beginning of the interval.
-    const double xcdot_t0 = -1.0;
-    abs_state->get_mutable_abstract_state(2).
-        template GetMutableValue<double>() = xcdot_t0;
   }
 
   // Sets the rod to a state that corresponds to ballistic motion.
@@ -756,6 +751,11 @@ TEST_F(Rod2DDAETest, OtherEndpointDistWitness) {
   SetRestingHorizontalConfig();
   const double tol = 10*std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(dut_->CalcEndpointDistance(*dut_, *context_), 0, tol);
+
+  // Set the rod to a ballistic state and verify that the witness aborts.
+  SetBallisticState();
+  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 
+               ".");
 }
 
 // Evaluates the witness function for when the rod should separate from the
@@ -777,20 +777,30 @@ TEST_F(Rod2DDAETest, SeparationWitness) {
   // witness is positive.
   dut_->set_gravitational_acceleration(10.0);
   EXPECT_GT(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 0);
+
+  // Set the rod to a ballistic state and verify that the witness aborts.
+  SetBallisticState();
+  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 
+               ".");
 }
 
 // Evaluates the witness function for sliding velocity direction changes.
 TEST_F(Rod2DDAETest, VelocityChangesWitness) {
   // Verify that the sliding velocity before the Painleve configuration is
-  // positive.
-  EXPECT_GT(dut_->CalcSlidingDot(*dut_, *context_), 0);
+  // negative.
+  EXPECT_LT(dut_->CalcSlidingDot(*dut_, *context_), 0);
 
   // Switch to the mirrored Painleve configuration.
   SetSecondInitialConfig();
 
-  // Verify that the sliding velocity before the Painleve configuration is
-  // negative.
-  EXPECT_LT(dut_->CalcSlidingDot(*dut_, *context_), 0);
+  // Verify that the sliding velocity before the second Painleve configuration
+  // is positive.
+  EXPECT_GT(dut_->CalcSlidingDot(*dut_, *context_), 0);
+
+  // Set the rod to a ballistic state and verify that the witness aborts.
+  SetBallisticState();
+  EXPECT_DEATH(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 
+               ".");
 }
 
 /// Class for testing the Rod 2D example using a first order time
