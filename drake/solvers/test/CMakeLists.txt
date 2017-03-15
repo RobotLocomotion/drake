@@ -73,7 +73,7 @@ endif()
 
 if (mosek_FOUND)
   drake_add_cc_test(rotation_constraint_test rotation_constraint_test.cc)
-  target_link_libraries(rotation_constraint_test drakeOptimization)
+  target_link_libraries(rotation_constraint_test drakeRotationConstraint)
 endif(mosek_FOUND)
 
 if (lcm_FOUND)
