@@ -531,11 +531,11 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       var_names[i] = const_cast<char*>(prog.decision_variable(prog_var_count).get_name().c_str());
       prog_var_count++;
     } else {
-      var_names[i] = "slack";
+      var_names[i] = const_cast<char*>(std::string("slack").c_str());
     }
   }
   GRBnewmodel(env, &model, "gurobi_model", num_gurobi_vars, nullptr, &xlow[0],
-              &xupp[0], gurobi_var_type.data(), nullptr);
+              &xupp[0], gurobi_var_type.data(), var_names);
 
   int error = 0;
   // TODO(naveenoid) : This needs access externally.
@@ -618,7 +618,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       if (optimstatus == GRB_INFEASIBLE || optimstatus == GRB_INF_OR_UNBD) {
         error = GRBcomputeIIS(model);
         DRAKE_DEMAND(!error);
-        GRBwrite(model, "model1.ilp");
+        GRBwrite(model, "model3.ilp");
         DRAKE_DEMAND(!error);
       }
     } else {
