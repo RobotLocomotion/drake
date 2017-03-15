@@ -393,6 +393,38 @@ GTEST_TEST(testMobyLCP, testEmpty) {
   EXPECT_EQ(z.size(), 0);
 }
 
+GTEST_TEST(testMobyLCP, ThrowsOnNaN) {
+  const unsigned n = 2;
+  Eigen::SparseMatrix<double> M(n,n);
+  Eigen::VectorXd q(n), z(n);
+  typedef Eigen::Triplet<double> Triplet;
+  std::vector<Triplet> triplet_list;
+  MobyLCPSolver<double> lcp;
+
+  // Construct a matrix with an initial basis that corresponds to a singular
+  // sub-matrix.
+  q[0] = 0.0;
+  q[1] = -1.0;
+  z[0] = 1.0;
+  z[1] = 0.0;
+  triplet_list.push_back(Triplet(1,1,1.0));
+  M.setFromTriplets(triplet_list.begin(), triplet_list.end());
+
+  // Try solving the LCP.
+  EXPECT_TRUE(lcp.SolveLcpLemke(M, q, &z));
+
+  // Construct a matrix with with an initial basis that corresponds to a
+  // singular sub-matrix, and the non-singular block has a NaN value.
+  triplet_list.clear();
+  triplet_list.push_back(Triplet(1,1,std::nan("")));
+  M.setFromTriplets(triplet_list.begin(), triplet_list.end());
+
+  // Try solving the LCP - it's now unsolvable- and should be identified as
+  // such within a single pivot.
+  EXPECT_FALSE(lcp.SolveLcpLemke(M, q, &z));
+  EXPECT_LE(lcp.get_num_pivots(), 1);
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

@@ -391,6 +391,20 @@ bool MobyLCPSolver<T>::SolveLcpFastRegularized(const MatrixX<T>& M,
   // copy MM
   MM = M;
 
+  // A discourse on the zero tolerance in the context of regularization:
+  // The zero tolerance is used to determine when an element of w or z is
+  // effectively zero though its floating point value is negative. The question
+  // is whether the regularization process will change the zero tolerance
+  // necessary to solve the problem numerically. In such a case, the infinity
+  // norm of M would be small while the infinity norm of MM (regularized M)
+  // would be large. Consider the case of a symmetric, indefinite matrix with
+  // maximum and minimum eigenvalues of a and -a, respectively. The matrix could
+  // be made positive definite (and thereby guaranteed to possess a solution to
+  // the linear complementarity problem) by adding an identity matrix times
+  // (a+ε) to the LCP matrix, where ε > 0 (its magnitude will depend upon the
+  // magnitude of a). The infinity norm could then be expected to grow by a
+  // factor of approximately two during the regularization process.
+
   // assign value for zero tolerance, if necessary
   const T naive_tol = q.size() * M.template lpNorm<Eigen::Infinity>() *
       kSqrtEps;
@@ -1123,7 +1137,8 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
     sBl *= -1;
     solver->analyzePattern(sBl);
     solver->factorize(sBl);
-    DRAKE_DEMAND(solver->info() == Eigen::ComputationInfo::Success);
+    if (solver->info() != Eigen::ComputationInfo::Success)
+      throw std::runtime_error("Unable to find an initial basis.");
   }
   x = solver->solve(q);
   x *= -1;
