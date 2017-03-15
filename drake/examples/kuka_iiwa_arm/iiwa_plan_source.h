@@ -39,7 +39,7 @@ class IiwaPlanSource : public systems::LeafSystem<double> {
   }
 
  protected:
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
+  std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
 
   void DoCalcOutput(const systems::Context<double>& context,

@@ -150,13 +150,13 @@ class Context {
 
   /// Returns a pointer to the abstract component of the state, which
   /// may be of size zero.
-  const AbstractState* get_abstract_state() const {
+  const AbstractValues* get_abstract_state() const {
     return get_state().get_abstract_state();
   }
 
   /// Returns a mutable pointer to the abstract component of the state,
   /// which may be of size zero.
-  AbstractState* get_mutable_abstract_state() {
+  AbstractValues* get_mutable_abstract_state() {
     return get_mutable_state()->get_mutable_abstract_state();
   }
 
@@ -164,12 +164,12 @@ class Context {
   /// Asserts if @p index doesn't exist.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
-    AbstractState* xm = get_mutable_abstract_state();
-    return xm->get_mutable_abstract_state(index).GetMutableValue<U>();
+    AbstractValues* xm = get_mutable_abstract_state();
+    return xm->get_mutable_value(index).GetMutableValue<U>();
   }
 
   /// Sets the abstractstate to @p xm, deleting whatever was there before.
-  void set_abstract_state(std::unique_ptr<AbstractState> xm) {
+  void set_abstract_state(std::unique_ptr<AbstractValues> xm) {
     get_mutable_state()->set_abstract_state(std::move(xm));
   }
 
@@ -177,8 +177,8 @@ class Context {
   /// state at @p index.  Asserts if @p index doesn't exist.
   template <typename U>
   const U& get_abstract_state(int index) const {
-    const AbstractState* xm = get_state().get_abstract_state();
-    return xm->get_abstract_state(index).GetValue<U>();
+    const AbstractValues* xm = get_state().get_abstract_state();
+    return xm->get_value(index).GetValue<U>();
   }
 
   // =========================================================================

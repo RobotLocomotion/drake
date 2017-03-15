@@ -16,7 +16,7 @@ template <typename ValueType>
 ValueType& get_mutable_value(systems::State<double>* state, int index) {
   DRAKE_DEMAND(state);
   return state->get_mutable_abstract_state()
-      ->get_mutable_abstract_state(index)
+      ->get_mutable_value(index)
       .GetMutableValue<ValueType>();
 }
 
@@ -90,7 +90,7 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
   }
 }
 
-std::unique_ptr<systems::AbstractState>
+std::unique_ptr<systems::AbstractValues>
 QpControllerSystem::AllocateAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
   abstract_vals[kAbstractStateIndexQpOutput] =
@@ -100,7 +100,7 @@ QpControllerSystem::AllocateAbstractState() const {
       std::unique_ptr<systems::AbstractValue>(
           new systems::Value<lcmt_inverse_dynamics_debug_info>(
               lcmt_inverse_dynamics_debug_info()));
-  return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
+  return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
 }
 
 std::unique_ptr<systems::AbstractValue>
