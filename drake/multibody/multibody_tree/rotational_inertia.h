@@ -60,12 +60,12 @@ namespace multibody {
 /// that is to use a disciplined notation as described below.
 ///
 /// In typeset material we use the symbol @f$ [I^{S/P}]_E @f$ to represent the
-/// rotational inertia of a system `S` about point `P`, expressed in frame `E`.
+/// rotational inertia of a system S about point P, expressed in frame E.
 /// In code and comments we use the monogram notation as described
 /// in @ref multibody_spatial_inertia. For this inertia, the monogram notation
-/// reads `I_SP_E`. If the point `P` is fixed to a body `B`, we write that
+/// reads `I_SP_E`. If the point P is fixed to a body B, we write that
 /// point as @f$ B_P @f$ which appears in code and comments as `Bp`. So if the
-/// system is a body `B` and the about point is `Bp`, the monogram notation
+/// system is a body B and the about point is `Bp`, the monogram notation
 /// reads `I_BBp_E`, which can be abbreviated to `I_Bp_E` since the about point
 /// `Bp` also identifies the system. Common cases are that the
 /// about point is the origin `Bo` of the body, or its the center of mass `Bcm`
@@ -116,7 +116,7 @@ class RotationalInertia {
 
   /// Creates a general rotational inertia matrix with non-zero off-diagonal
   /// elements where the six components of the rotational inertia in a given
-  /// frame `E` need to be provided.
+  /// frame E need to be provided.
   /// Throws an exception if the resulting inertia is invalid according to
   /// CouldBePhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
@@ -183,15 +183,15 @@ class RotationalInertia {
   }
 
   /// Adds in a rotational inertia to `this` rotational inertia. This operation
-  /// is only valid if both inertias are computed about the same point `P` and
-  /// expressed in the same frame `E`. Considering `this` inertia to be `I_SP_E`
-  /// for some system `S`, taken about some point `P`, the supplied inertia must
-  /// be for some system `B` taken about the *same* point `P`; `B`'s inertia is
-  /// then included in `S`.
-  /// @param[in] I_BP_E A rotational inertia of some body `B` to be added to
+  /// is only valid if both inertias are computed about the same point P and
+  /// expressed in the same frame E. Considering `this` inertia to be `I_SP_E`
+  /// for some system S, taken about some point P, the supplied inertia must
+  /// be for some system B taken about the _same_ point P; B's inertia is
+  /// then included in S.
+  /// @param[in] I_BP_E A rotational inertia of some body B to be added to
   ///                  `this` inertia. It must have been taken about the same
-  ///                   point `P` as `this` inertia, and expressed in the same
-  ///                   frame `E`.
+  ///                   point P as `this` inertia, and expressed in the same
+  ///                   frame E.
   /// @returns A reference to `this` rotational inertia, which has been updated
   ///          to include the given inertia.
   RotationalInertia<T>& operator+=(const RotationalInertia<T>& I_BP_E) {
@@ -199,15 +199,35 @@ class RotationalInertia {
     return *this;
   }
 
+  /// Returns the combined inertia obtained by adding `this` rotational inertia
+  /// with another rotational inertia `I_BP_E`. 
+  /// This operation is only valid if both inertias are computed about the same
+  /// point P and expressed in the same frame E. Considering `this` inertia
+  /// to be `I_SP_E` for some system S, taken about some point P, the
+  /// supplied inertia must be for some system B taken about the _same_ point
+  /// P; the returned _combined_ inertia `I_CP_E` for the combined system C
+  /// includes both, the inertia of `this` system S and that of system B.
+  /// @param[in] I_BP_E A rotational inertia of some body B to be added to
+  ///                  `this` inertia. It must have been taken about the same
+  ///                   point P as `this` inertia, and expressed in the same
+  ///                   frame E.
+  /// @retval I_CP_E The rotational inertia of the combined system C including
+  ///                both, the rotational inertia `I_SP_E` of `this` system S
+  ///                and the rotational inertia `I_BP_E` of system B.
+  /// @see operator+=().
+  RotationalInertia<T> operator+(const RotationalInertia<T>& I_BP_E) {
+    return RotationalInertia(*this) += I_BP_E;
+  }
+
   /// Subtracts a rotational inertia from `this` rotational inertia. This
   /// operation is only valid if both inertias are computed about the same point
-  /// `P` and expressed in the same frame `E`. Considering `this` inertia to be
-  /// `I_SP_E` for some system `S`, taken about some point `P`, the supplied
-  /// inertia must be for some system `B` taken about the *same* point `P`.
-  /// @param[in] I_BP_E A rotational inertia of some body `B` to be added to
+  /// P and expressed in the same frame E. Considering `this` inertia to be
+  /// `I_SP_E` for some system S, taken about some point P, the supplied
+  /// inertia must be for some system B taken about the _same_ point P.
+  /// @param[in] I_BP_E A rotational inertia of some body B to be added to
   ///                  `this` inertia. It must have been taken about the same
-  ///                   point `P` as `this` inertia, and expressed in the same
-  ///                   frame `E`.
+  ///                   point P as `this` inertia, and expressed in the same
+  ///                   frame E.
   /// @returns A reference to `this` rotational inertia, which has been updated
   ///          to include the given inertia.
   /// @warning This operation might lead to physically invalid rotational
@@ -218,6 +238,35 @@ class RotationalInertia {
   RotationalInertia<T>& operator-=(const RotationalInertia<T>& I_BP_E) {
     this->get_mutable_triangular_view() -= I_BP_E.get_matrix();
     return *this;
+  }
+
+  /// Returns the combined inertia obtained by subtracting another rotational
+  /// inertia `I_BP_E` from `this` rotational inertia. This operation is useful
+  /// when computing the inertia of a geometry with an empty space; its inertia 
+  /// can be computed by substracting the _inertia_ of the empty space from the
+  /// geometry without the empty space. 
+  /// This operation is only valid if both inertias are computed about the same
+  /// point P and expressed in the same frame E. Considering `this` inertia
+  /// to be `I_SP_E` for some system S, taken about some point P, the
+  /// supplied inertia must be for some system B taken about the _same_ point
+  /// P; the returned _combined_ inertia `I_CP_E` for the combined system C
+  /// includes the inertia of `this` system S and subtracts that of system B.
+  /// @param[in] I_BP_E A rotational inertia of some body B to be added to
+  ///                  `this` inertia. It must have been taken about the same
+  ///                   point P as `this` inertia, and expressed in the same
+  ///                   frame E.
+  /// @retval I_CP_E The rotational inertia of the combined system C including
+  ///                the rotational inertia `I_SP_E` of `this` system S and
+  ///                subtracts the rotational inertia `I_BP_E` of system B.
+  /// @see operator-=().
+  ///
+  /// @warning This operation might lead to physically invalid rotational
+  /// inertia. Use CouldBePhysicallyValid() to perform a number of necessary
+  /// (but not sufficient) checks for a rotational inertia to be physically
+  /// valid. Sufficient conditions are provided by the class SpatialInertia.
+  /// @see SpatialInertia::IsPhysicallyValid().
+  RotationalInertia<T> operator-(const RotationalInertia<T>& I_BP_E) {
+    return RotationalInertia(*this) -= I_BP_E;
   }
 
   /// In-place multiplication of `this` rotational inertia by a `scalar`
@@ -242,7 +291,7 @@ class RotationalInertia {
   /// matrix `I` with a vector `w`.
   /// This inertia and vector `w` must both be expressed in the same frame.
   /// @param[in] w_E Vector to multiply from the right, expressed in the same
-  ///                frame `E` as `this` inertia matrix.
+  ///                frame E as `this` inertia matrix.
   /// @returns The product from the right of `this` inertia with `w_E`.
   Vector3<T> operator*(const Vector3<T>& w_E) const {
     return Vector3<T>(get_symmetric_matrix_view() * w_E);
@@ -280,10 +329,10 @@ class RotationalInertia {
     return false;
   }
 
-  /// For `this` inertia about a given point `P` and expressed in a frame `E`,
+  /// For `this` inertia about a given point P and expressed in a frame E,
   /// this method computes the principal moments of inertia of `this` rotational
-  /// inertia about the same point `P` and expressed in a frame with origin at
-  /// `P` and aligned with the principal axes.
+  /// inertia about the same point P and expressed in a frame with origin at
+  /// P and aligned with the principal axes.
   ///
   /// Note: The current version of this method only works for inertias with a
   ///       scalar type `T` that can be converted to a double discarding any
@@ -387,13 +436,13 @@ class RotationalInertia {
     return true;  // All tests passed.
   }
 
-  /// Given `this` rotational inertia `I_SP_E` for some system or body `S`,
-  /// taken about a point `P` and expressed in frame
-  /// `E`, this method computes the same inertia re-expressed in another
+  /// Given `this` rotational inertia `I_SP_E` for some system or body S,
+  /// taken about a point P and expressed in frame
+  /// E, this method computes the same inertia re-expressed in another
   /// frame `A` as `I_SP_A = R_AE * I_SP_E * (R_AE)ᵀ`.
   /// This operation is performed in-place modifying the original object.
-  /// @param[in] R_AE Rotation matrix from frame `E` to frame `A`.
-  /// @returns A reference to `this` rotational inertia about `P` but now
+  /// @param[in] R_AE Rotation matrix from frame E to frame `A`.
+  /// @returns A reference to `this` rotational inertia about P but now
   ///          re-expressed in frame `A`, that is, `I_SP_A`.
   RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AE) {
     // There is an interesting discussion on Eigen's forum here:
@@ -418,18 +467,18 @@ class RotationalInertia {
     return *this;
   }
 
-  /// Re-express `this` inertia `I_SP_E` from frame `E` to frame `A` and return
+  /// Re-express `this` inertia `I_SP_E` from frame E to frame `A` and return
   /// the result. See ReExpressInPlace() for details.
   ///
-  /// @param[in] R_AE Rotation matrix from frame `E` to frame `A`.
-  /// @retval I_SP_A The same rotational inertia of `S` about `P` but now
+  /// @param[in] R_AE Rotation matrix from frame E to frame `A`.
+  /// @retval I_SP_A The same rotational inertia of S about P but now
   ///                re-expressed in frame`A`.
   /// @see ReExpressInPlace()
   RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
-  /// Multiplies a %RotationalInertia from the left by a scalar `s`.
+  /// Multiplies a %RotationalInertia from the left by a scalar S.
   /// Multiplication by scalar is commutative.
   friend RotationalInertia<T> operator*(const T& s,
                                         const RotationalInertia<T>& I_BP_E) {
@@ -438,7 +487,7 @@ class RotationalInertia {
     return sxI;
   }
 
-  /// Multiplies `this` %RotationalInertiafrom the right by a scalar `s`.
+  /// Multiplies `this` %RotationalInertiafrom the right by a scalar S.
   /// Multiplication by scalar is commutative.
   friend RotationalInertia<T> operator*(const RotationalInertia<T>& I_BP_E,
                                         const T& s) {

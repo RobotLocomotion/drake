@@ -192,20 +192,27 @@ class SpatialInertia {
         I_SP_E_.IsApprox(other.get_rotational_inertia(), tolerance);
   }
 
-#if 0
-  /// Adds spatial inertia @p `M_Bo_F` to this spatial inertia. This operation 
-  /// is only valid if both inertias are computed about the same center `Bo`
-  /// and expressed in the same frame `F`.
-  /// @param[in] M_Bo_F A spatial inertia to be added to this inertia.
-  /// @returns A reference to `this` spatial inetia.
-  SpatialInertia& operator+=(const SpatialInertia<T>& M_Bo_F) {
-    p_PScm_E_ = get_mass() * get_com() + M_Bo_F.get_mass() * M_Bo_F.get_com();
-    mass_ += M_Bo_F.get_mass();
-    p_PScm_E_ /= mass_;
-    I_SP_E_ += M_Bo_F.I_SP_E_;
+  /// Adds in a spatial inertia to `this` spatial inertia. This operation is
+  /// only valid if both spatial inertias are computed about the same point `P`
+  /// and expressed in the same frame `E`. Considering `this` spatial inertia to
+  /// be `M_SP_E` for some system `S`, taken about some point `P`, the supplied
+  /// spatial inertia `M_BP_E` must be for some system `B` taken about the
+  /// _same_ point `P`; `B`'s inertia is then included in `S`.
+  /// @param[in] M_BP_E A spatial inertia of some body `B` to be added to
+  ///                  `this` spatial inertia. It must have been taken about the
+  ///                   same point `P` as `this` inertia, and expressed in the
+  ///                   same frame `E`.
+  /// @returns A reference to `this` spatial inertia, which has been updated
+  ///          to include the given spatial inertia `M_BP_E`.
+  SpatialInertia& operator+=(const SpatialInertia<T>& M_BP_E) {
+    p_PScm_E_ = get_mass() * get_com() + M_BP_E.get_mass() * M_BP_E.get_com();
+    mass_ += M_BP_E.get_mass();
+    p_PScm_E_ /= get_mass();
+    I_SP_E_ += M_BP_E.get_rotational_inertia();
     return *this;
   }
 
+#if 0
   /// Computes the product from the right between this spatial inertia with the
   /// spatial vector @p V. This spatial inertia and spatial vector @p V must be
   /// expressed in the same frame.
@@ -242,6 +249,7 @@ class SpatialInertia {
   SpatialInertia ReExpress(const Matrix3<T>& R_AF) const {
     return SpatialInertia(*this).ReExpressInPlace(R_AF);
   }
+#endif
 
   /// This methods perfomrs the "parallel axis theorem" for spatial inertias:
   /// given this spatial inertia `M_Bo_F` about `Bo` and expressed in frame `F`,
@@ -257,16 +265,20 @@ class SpatialInertia {
   /// @returns `M_Xo_F` This same spatial inertia but computed about
   /// origin `Xo`.
   SpatialInertia& ShiftInPlace(const Vector3<T>& p_BoXo_F) {
-    using math::CrossProductMatrixSquared;
+    //using math::CrossProductMatrixSquared;
     const Vector3<T> p_XoBc_F = p_PScm_E_ - p_BoXo_F;
-    const Matrix3<T> Sp_BoBc_F = CrossProductMatrixSquared(p_PScm_E_);
-    const Matrix3<T> Sp_XoBc_F = CrossProductMatrixSquared(p_XoBc_F);
-    I_SP_E_.get_mutable_symmetric_matrix_view() =
-        I_SP_E_.get_matrix() + mass_ * (Sp_BoBc_F - Sp_XoBc_F);
+    //const Matrix3<T> Sp_BoBc_F = CrossProductMatrixSquared(p_PScm_E_);
+    //const Matrix3<T> Sp_XoBc_F = CrossProductMatrixSquared(p_XoBc_F);
+    I_SP_E_ += get_mass() *
+        (UnitInertia<T>::PointMass(p_XoBc_F) -
+         UnitInertia<T>::PointMass(p_PScm_E_));
+    //I_SP_E_.get_mutable_symmetric_matrix_view() =
+    //    I_SP_E_.get_matrix() + mass_ * (Sp_BoBc_F - Sp_XoBc_F);
     p_PScm_E_ = p_XoBc_F;
     return *this;
   }
 
+#if 0
   /// This methods perfomrs the "parallel axis theorem" for spatial inertias:
   /// given this spatial inertia `M_Bo_F` about `Bo` and expressed in frame `F`,
   /// this method returns this spatial inertia to but computed about a new
@@ -319,7 +331,7 @@ std::ostream& operator<<(std::ostream& o,
                          const SpatialInertia<T>& M) {
   return o
       << " mass = " << M.get_mass() << std::endl
-      << " com = [" << M.get_com().transpose() << "]^T" << std::endl
+      << " com = [" << M.get_com().transpose() << "]ᵀ" << std::endl
       << " I = " << std::endl
       << M.get_rotational_inertia();
 }
