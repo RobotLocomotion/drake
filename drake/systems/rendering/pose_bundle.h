@@ -21,8 +21,10 @@ namespace rendering {
 // here.  "Names" as currently construed are unlikely to be useful to
 // consumers of aggregated poses.
 
-/// PoseBundle is a container for a set of named poses, represented by an
-/// Isometry3. The poses are expressed in the world frame: X_WFi.
+/// PoseBundle is a container for a set of poses, represented by an Isometry3.
+/// The poses are expressed in the world frame: X_WFi. Each pose has a name,
+/// and a model instance ID.  If two poses in the bundle have the same model
+/// instance ID, they must not have the same name.
 ///
 /// This class is explicitly instantiated for the following scalar types. No
 /// other scalar types are supported.
@@ -44,11 +46,15 @@ class PoseBundle {
   const std::string& get_name(int index) const;
   void set_name(int index, const std::string& name);
 
+  int get_model_instance_id(int index) const;
+  void set_model_instance_id(int index, int id);
+
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PoseBundle)
 
  private:
   std::vector<Isometry3<T>> poses_;
   std::vector<std::string> names_;
+  std::vector<int> ids_;
 };
 
 }  // namespace rendering
