@@ -37,6 +37,18 @@ class SymbolicExpressionMatrixTest : public ::testing::Test {
   Eigen::Matrix<Expression, 2, 3, Eigen::DontAlign> B_;
   Eigen::Matrix<Expression, 3, 2, Eigen::DontAlign> C_;
 
+  Eigen::Matrix<Expression, 2, 2, Eigen::DontAlign> matrix_expr_1_;
+  Eigen::Matrix<Expression, 2, 2, Eigen::DontAlign> matrix_expr_2_;
+  Eigen::Matrix<Variable, 2, 2, Eigen::DontAlign> matrix_var_1_;
+  Eigen::Matrix<Variable, 2, 2, Eigen::DontAlign> matrix_var_2_;
+  Eigen::Matrix<double, 2, 2, Eigen::DontAlign> matrix_double_;
+
+  Eigen::Array<Expression, 2, 2, Eigen::DontAlign> array_expr_1_;
+  Eigen::Array<Expression, 2, 2, Eigen::DontAlign> array_expr_2_;
+  Eigen::Array<Variable, 2, 2, Eigen::DontAlign> array_var_1_;
+  Eigen::Array<Variable, 2, 2, Eigen::DontAlign> array_var_2_;
+  Eigen::Array<double, 2, 2, Eigen::DontAlign> array_double_;
+
   void SetUp() override {
     // clang-format off
     A_ << x_, one_,       //  [x  1]
@@ -49,7 +61,24 @@ class SymbolicExpressionMatrixTest : public ::testing::Test {
     C_ << z_, two_,       //  [z  2]
           x_, e_,         //  [x -2.718]
           y_, pi_;        //  [y  3.141592]
+
+    matrix_expr_1_ << x_, y_,
+                      z_, x_;
+    matrix_expr_2_ << z_, x_,
+                      y_, z_;
+    matrix_var_1_ << var_x_, var_y_,
+                     var_z_, var_x_;
+    matrix_var_2_ << var_y_, var_z_,
+                     var_x_, var_x_;
+    matrix_double_ << 1.0, 2.0,
+                      3.0, 4.0;
     // clang-format on
+
+    array_expr_1_ = matrix_expr_1_.array();
+    array_expr_2_ = matrix_expr_2_.array();
+    array_var_1_ = matrix_var_1_.array();
+    array_var_2_ = matrix_var_2_.array();
+    array_double_ = matrix_double_.array();
   }
 };
 
@@ -146,19 +175,184 @@ TEST_F(SymbolicExpressionMatrixTest, CheckStructuralEquality) {
   EXPECT_FALSE(CheckStructuralEquality(B_ * A_, B_ * C_));
 }
 
-// Checks if m1.array() == m2.array() returns an array whose (i, j) element is a
-// formula m1(i, j) == m2(i, j).
-bool CheckArrayOperatorEq(const MatrixX<Expression>& m1,
-                          const MatrixX<Expression>& m2) {
-  const auto arr = (m1.array() == m2.array());
+// Given two Eigen arrays a1 and a2, it checks if a1 == a2 returns an array
+// whose (i, j) element is a formula a1(i, j) == a2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorEq(const DerivedA& a1, const DerivedB& a2) {
+  const auto arr = (a1 == a2);
   for (int i = 0; i < arr.rows(); ++i) {
     for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(m1(i, j) == m2(i, j))) {
+      if (!arr(i, j).EqualTo(a1(i, j) == a2(i, j))) {
         return false;
       }
     }
   }
   return true;
+}
+
+// Given two Eigen matrices m1 and m2, it checks if m1.array() == m2.array()
+// returns an array whose (i, j) element is a formula m1(i, j) == m2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorEq(const DerivedA& m1, const DerivedB& m2) {
+  return CheckArrayOperatorEq(m1.array(), m2.array());
+}
+
+// Given two Eigen arrays a1 and a2, it checks if a1 <= a2 returns an array
+// whose (i, j) element is a formula a1(i, j) <= a2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorLte(const DerivedA& a1, const DerivedB& a2) {
+  const auto arr = (a1 <= a2);
+  for (int i = 0; i < arr.rows(); ++i) {
+    for (int j = 0; j < arr.cols(); ++j) {
+      if (!arr(i, j).EqualTo(a1(i, j) <= a2(i, j))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Given two Eigen matrices m1 and m2, it checks if m1.array() <= m2.array()
+// returns an array whose (i, j) element is a formula m1(i, j) <= m2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorLte(const DerivedA& m1, const DerivedB& m2) {
+  return CheckArrayOperatorLte(m1.array(), m2.array());
+}
+
+// Given two Eigen arrays a1 and a2, it checks if a1 < a2 returns an array whose
+// (i, j) element is a formula a1(i, j) < a2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorLt(const DerivedA& a1, const DerivedB& a2) {
+  const auto arr = (a1 < a2);
+  for (int i = 0; i < arr.rows(); ++i) {
+    for (int j = 0; j < arr.cols(); ++j) {
+      if (!arr(i, j).EqualTo(a1(i, j) < a2(i, j))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Given two Eigen matrices m1 and m2, it checks if m1.array() < m2.array()
+// returns an array whose (i, j) element is a formula m1(i, j) < m2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorLt(const DerivedA& m1, const DerivedB& m2) {
+  return CheckArrayOperatorLt(m1.array(), m2.array());
+}
+
+// Given two Eigen arrays a1 and a2, it checks if a1 >= a2 returns an array
+// whose (i, j) element is a formula a1(i, j) >= a2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorGte(const DerivedA& a1, const DerivedB& a2) {
+  const auto arr = (a1 >= a2);
+  for (int i = 0; i < arr.rows(); ++i) {
+    for (int j = 0; j < arr.cols(); ++j) {
+      if (!arr(i, j).EqualTo(a1(i, j) >= a2(i, j))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Given two Eigen matrices m1 and m2, it checks if m1.array() >= m2.array()
+// returns an array whose (i, j) element is a formula m1(i, j) >= m2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorGte(const DerivedA& m1, const DerivedB& m2) {
+  return CheckArrayOperatorGte(m1.array(), m2.array());
+}
+
+// Given two Eigen arrays a1 and a2, it checks if a1 > a2 returns an array whose
+// (i, j) element is a formula a1(i, j) > a2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorGt(const DerivedA& a1, const DerivedB& a2) {
+  const auto arr = (a1 > a2);
+  for (int i = 0; i < arr.rows(); ++i) {
+    for (int j = 0; j < arr.cols(); ++j) {
+      if (!arr(i, j).EqualTo(a1(i, j) > a2(i, j))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Given two Eigen matrices m1 and m2, it checks if m1.array() > m2.array()
+// returns an array whose (i, j) element is a formula m1(i, j) > m2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorGt(const DerivedA& m1, const DerivedB& m2) {
+  return CheckArrayOperatorGt(m1.array(), m2.array());
+}
+
+// Given two Eigen arrays a1 and a2, it checks if a1 != a2 returns an array
+// whose (i, j) element is a formula a1(i, j) != a2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorNeq(const DerivedA& a1, const DerivedB& a2) {
+  const auto arr = (a1 != a2);
+  for (int i = 0; i < arr.rows(); ++i) {
+    for (int j = 0; j < arr.cols(); ++j) {
+      if (!arr(i, j).EqualTo(a1(i, j) != a2(i, j))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Given two Eigen matrices m1 and m2, it checks if m1.array() != m2.array()
+// returns an array whose (i, j) element is a formula m1(i, j) != m2(i, j).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value,
+    bool>::type
+CheckArrayOperatorNeq(const DerivedA& m1, const DerivedB& m2) {
+  return CheckArrayOperatorNeq(m1.array(), m2.array());
 }
 
 TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorExprEqExpr) {
@@ -168,79 +362,91 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorExprEqExpr) {
   EXPECT_TRUE(a1.unaryExpr(ptr_fun(is_true)).all());
   EXPECT_TRUE(a2.unaryExpr(ptr_fun(is_true)).all());
   EXPECT_TRUE(a3.unaryExpr(ptr_fun(is_true)).all());
+}
 
+// Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
+// and Array<Expression>
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorExprOpExpr) {
   EXPECT_TRUE(CheckArrayOperatorEq(A_, C_));
   EXPECT_TRUE(CheckArrayOperatorEq(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckArrayOperatorLte(A_, C_));
+  EXPECT_TRUE(CheckArrayOperatorLte(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckArrayOperatorLt(A_, C_));
+  EXPECT_TRUE(CheckArrayOperatorLt(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckArrayOperatorGte(A_, C_));
+  EXPECT_TRUE(CheckArrayOperatorGte(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckArrayOperatorGt(A_, C_));
+  EXPECT_TRUE(CheckArrayOperatorGt(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckArrayOperatorNeq(A_, C_));
+  EXPECT_TRUE(CheckArrayOperatorNeq(B_ * A_, B_ * C_));
 }
 
-// Checks operator== between Array<Expression> and Array<Variable>
-TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorExprEqVar) {
-  Eigen::Array<Expression, 2, 2> m1;
-  Eigen::Array<Variable, 2, 2> m2;
-  m1 << x_, y_, z_, x_;
-  m2 << var_z_, var_x_, var_y_, var_z_;
-
-  Eigen::Array<Formula, 2, 2> expected_m1_m2;
-  expected_m1_m2 << (x_ == var_z_), (y_ == var_x_), (z_ == var_y_),
-      (x_ == var_z_);
-  EXPECT_TRUE(expected_m1_m2.binaryExpr(m1 == m2, equal_to<Formula>{}).all());
-
-  Eigen::Array<Formula, 2, 2> expected_m2_m1;
-  expected_m2_m1 << (var_z_ == x_), (var_x_ == y_), (var_y_ == z_),
-      (var_z_ == x_);
-  EXPECT_TRUE(expected_m2_m1.binaryExpr(m2 == m1, equal_to<Formula>{}).all());
+// Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
+// and Array<Variable>
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorExprOpVar) {
+  EXPECT_TRUE(CheckArrayOperatorEq(array_expr_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorEq(array_var_2_, array_expr_1_));
+  EXPECT_TRUE(CheckArrayOperatorLte(array_expr_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorLte(array_var_2_, array_expr_1_));
+  EXPECT_TRUE(CheckArrayOperatorLt(array_expr_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorLt(array_var_2_, array_expr_1_));
+  EXPECT_TRUE(CheckArrayOperatorGte(array_expr_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorGte(array_var_2_, array_expr_1_));
+  EXPECT_TRUE(CheckArrayOperatorGt(array_expr_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorGt(array_var_2_, array_expr_1_));
+  EXPECT_TRUE(CheckArrayOperatorNeq(array_expr_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_2_, array_expr_1_));
 }
 
-// Checks operator== between Array<Expression> and Array<double>
-TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorExprEqDouble) {
-  Eigen::Array<Expression, 2, 2> m1;
-  Eigen::Array<double, 2, 2> m2;
-  m1 << x_, y_, z_, x_;
-  m2 << 1.0, 2.0, 3.0, 4.0;
-
-  Eigen::Array<Formula, 2, 2> expected_m1_m2;
-  expected_m1_m2 << (x_ == 1.0), (y_ == 2.0), (z_ == 3.0), (x_ == 4.0);
-  EXPECT_TRUE(expected_m1_m2.binaryExpr(m1 == m2, equal_to<Formula>{}).all());
-
-  Eigen::Array<Formula, 2, 2> expected_m2_m1;
-  expected_m2_m1 << (1.0 == x_), (2.0 == y_), (3.0 == z_), (4.0 == x_);
-  EXPECT_TRUE(expected_m2_m1.binaryExpr(m2 == m1, equal_to<Formula>{}).all());
+// Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
+// and Array<double>
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorExprOpDouble) {
+  EXPECT_TRUE(CheckArrayOperatorEq(array_expr_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorEq(array_double_, array_expr_1_));
+  EXPECT_TRUE(CheckArrayOperatorLte(array_expr_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorLte(array_double_, array_expr_1_));
+  EXPECT_TRUE(CheckArrayOperatorLt(array_expr_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorLt(array_double_, array_expr_1_));
+  EXPECT_TRUE(CheckArrayOperatorGte(array_expr_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorGte(array_double_, array_expr_1_));
+  EXPECT_TRUE(CheckArrayOperatorGt(array_expr_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorGt(array_double_, array_expr_1_));
+  EXPECT_TRUE(CheckArrayOperatorNeq(array_expr_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorNeq(array_double_, array_expr_1_));
 }
 
-// Checks operator== between Array<Variable> and Array<double>
-TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorVarEqDouble) {
-  Eigen::Array<Variable, 2, 2> m1;
-  Eigen::Array<double, 2, 2> m2;
-  m1 << var_x_, var_y_, var_z_, var_x_;
-  m2 << 1.0, 2.0, 3.0, 4.0;
-
-  Eigen::Array<Formula, 2, 2> expected_m1_m2;
-  expected_m1_m2 << (var_x_ == 1.0), (var_y_ == 2.0), (var_z_ == 3.0),
-      (var_x_ == 4.0);
-  EXPECT_TRUE(expected_m1_m2.binaryExpr(m1 == m2, equal_to<Formula>{}).all());
-
-  Eigen::Array<Formula, 2, 2> expected_m2_m1;
-  expected_m2_m1 << (1.0 == var_x_), (2.0 == var_y_), (3.0 == var_z_),
-      (4.0 == var_x_);
-  EXPECT_TRUE(expected_m2_m1.binaryExpr(m2 == m1, equal_to<Formula>{}).all());
+// Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
+// and Array<double>
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorVarOpDouble) {
+  EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorEq(array_double_, array_var_1_));
+  EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorLte(array_double_, array_var_1_));
+  EXPECT_TRUE(CheckArrayOperatorLt(array_var_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorLt(array_double_, array_var_1_));
+  EXPECT_TRUE(CheckArrayOperatorGte(array_var_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorGte(array_double_, array_var_1_));
+  EXPECT_TRUE(CheckArrayOperatorGt(array_var_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorGt(array_double_, array_var_1_));
+  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_1_, array_double_));
+  EXPECT_TRUE(CheckArrayOperatorNeq(array_double_, array_var_1_));
 }
 
-// Checks operator== between Array<Variable> and Array<Variable>
-TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorVarEqVar) {
-  Eigen::Array<Variable, 2, 2> m1;
-  Eigen::Array<Variable, 2, 2> m2;
-  m1 << var_x_, var_y_, var_z_, var_x_;
-  m2 << var_y_, var_z_, var_x_, var_x_;
-
-  Eigen::Array<Formula, 2, 2> expected_m1_m2;
-  expected_m1_m2 << (var_x_ == var_y_), (var_y_ == var_z_), (var_z_ == var_x_),
-      (var_x_ == var_x_);
-  EXPECT_TRUE(expected_m1_m2.binaryExpr(m1 == m2, equal_to<Formula>{}).all());
-
-  Eigen::Array<Formula, 2, 2> expected_m2_m1;
-  expected_m2_m1 << (var_y_ == var_x_), (var_z_ == var_y_), (var_x_ == var_z_),
-      (var_x_ == var_x_);
-  EXPECT_TRUE(expected_m2_m1.binaryExpr(m2 == m1, equal_to<Formula>{}).all());
+// Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
+// and Array<Variable>
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorVarOpVar) {
+  EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorEq(array_var_2_, array_var_1_));
+  EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorLte(array_var_2_, array_var_1_));
+  EXPECT_TRUE(CheckArrayOperatorLt(array_var_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorLt(array_var_2_, array_var_1_));
+  EXPECT_TRUE(CheckArrayOperatorGte(array_var_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorGte(array_var_2_, array_var_1_));
+  EXPECT_TRUE(CheckArrayOperatorGt(array_var_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorGt(array_var_2_, array_var_1_));
+  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_1_, array_var_2_));
+  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_2_, array_var_1_));
 }
 
 // Checks if m1 == m2 returns a formula which is a conjunction of

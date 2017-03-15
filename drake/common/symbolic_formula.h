@@ -307,13 +307,138 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() ==
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    Eigen::Array<Formula, DerivedA::RowsAtCompileTime,
-                 DerivedB::ColsAtCompileTime>>::type
-operator==(const DerivedA& m1, const DerivedB& m2) {
+    Eigen::Array<Formula,
+                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::RowsAtCompileTime
+                     : DerivedA::RowsAtCompileTime,
+                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::ColsAtCompileTime
+                     : DerivedA::ColsAtCompileTime>>::type
+operator==(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
-  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   const auto equal = [](const auto& e1, const auto& e2) { return e1 == e2; };
-  return m1.binaryExpr(m2, equal);
+  return a1.binaryExpr(a2, equal);
+}
+
+/// Returns an Eigen array of symbolic formula where each element includes
+/// element-wise comparison of two arrays @p a1 and @p a2 using
+/// less-than-or-equal operator (<=).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+        std::is_same<decltype(typename DerivedA::Scalar() >=
+                              typename DerivedB::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula,
+                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::RowsAtCompileTime
+                     : DerivedA::RowsAtCompileTime,
+                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::ColsAtCompileTime
+                     : DerivedA::ColsAtCompileTime>>::type
+operator<=(const DerivedA& a1, const DerivedB& a2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
+  const auto lte = [](const auto& e1, const auto& e2) { return e1 <= e2; };
+  return a1.binaryExpr(a2, lte);
+}
+
+/// Returns an Eigen array of symbolic formula where each element includes
+/// element-wise comparison of two arrays @p a1 and @p a2 using
+/// less-than operator (<).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+        std::is_same<decltype(typename DerivedA::Scalar() >
+                              typename DerivedB::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula,
+                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::RowsAtCompileTime
+                     : DerivedA::RowsAtCompileTime,
+                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::ColsAtCompileTime
+                     : DerivedA::ColsAtCompileTime>>::type
+operator<(const DerivedA& a1, const DerivedB& a2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
+  const auto lt = [](const auto& e1, const auto& e2) { return e1 < e2; };
+  return a1.binaryExpr(a2, lt);
+}
+
+/// Returns an Eigen array of symbolic formula where each element includes
+/// element-wise comparison of two arrays @p a1 and @p a2 using
+/// greater-than-or-equal operator (>=).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+        std::is_same<decltype(typename DerivedA::Scalar() >=
+                              typename DerivedB::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula,
+                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::RowsAtCompileTime
+                     : DerivedA::RowsAtCompileTime,
+                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::ColsAtCompileTime
+                     : DerivedA::ColsAtCompileTime>>::type
+operator>=(const DerivedA& a1, const DerivedB& a2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
+  const auto gte = [](const auto& e1, const auto& e2) { return e1 >= e2; };
+  return a1.binaryExpr(a2, gte);
+}
+
+/// Returns an Eigen array of symbolic formula where each element includes
+/// element-wise comparison of two arrays @p a1 and @p a2 using
+/// greater-than operator (>).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+        std::is_same<decltype(typename DerivedA::Scalar() >
+                              typename DerivedB::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula,
+                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::RowsAtCompileTime
+                     : DerivedA::RowsAtCompileTime,
+                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::ColsAtCompileTime
+                     : DerivedA::ColsAtCompileTime>>::type
+operator>(const DerivedA& a1, const DerivedB& a2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
+  const auto gt = [](const auto& e1, const auto& e2) { return e1 > e2; };
+  return a1.binaryExpr(a2, gt);
+}
+
+/// Returns an Eigen array of symbolic formula where each element includes
+/// element-wise comparison of two arrays @p a1 and @p a2 using
+/// not-equal operator (!=).
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+        std::is_same<decltype(typename DerivedA::Scalar() >
+                              typename DerivedB::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula,
+                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::RowsAtCompileTime
+                     : DerivedA::RowsAtCompileTime,
+                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
+                     ? DerivedB::ColsAtCompileTime
+                     : DerivedA::ColsAtCompileTime>>::type
+operator!=(const DerivedA& a1, const DerivedB& a2) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
+  const auto neq = [](const auto& e1, const auto& e2) { return e1 != e2; };
+  return a1.binaryExpr(a2, neq);
 }
 
 /// Returns a symbolic formula checking if two matrices @p m1 and @p m2 are
