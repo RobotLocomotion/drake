@@ -128,22 +128,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "idm_controller",
-    srcs = ["idm_controller.cc"],
-    hdrs = ["idm_controller.h"],
-    deps = [
-        ":generated_vectors",
-        ":idm_planner",
-        "//drake/automotive/maliput/api",
-        "//drake/automotive:pose_selector",
-        "//drake/common:cond",
-        "//drake/common:symbolic",
-        "//drake/systems/rendering:pose_bundle",
-        "//drake/systems/rendering:pose_vector",
-    ],
-)
-
-drake_cc_library(
     name = "idm_planner",
     srcs = ["idm_planner.cc"],
     hdrs = ["idm_planner.h"],
