@@ -15,7 +15,7 @@ cd "$mydir"
 # Build Drake.
 workspace=$(bazel info workspace)
 cd "$workspace"
-bazel build //drake:libdrake.so //drake:libdrake_headers
+bazel build //drake:libdrake.so //drake:libdrake_headers //drake:external_licenses
 
 # Copy off all the package artifacts into a temporary directory.
 # TODO(jamiesnape): Add drake-config.cmake and drake-targets.cmake.
@@ -24,6 +24,7 @@ mkdir -p "$tmpdir/lib"
 mkdir -p "$tmpdir/include/external/scratch"
 cp bazel-bin/drake/libdrake.so "$tmpdir/lib"
 cp bazel-bin/drake/libdrake_headers.tar.gz "$tmpdir/include/external/scratch"
+cp bazel-bin/drake/external_licenses.tar.gz "$tmpdir/include/external"
 chmod -R 755 "$tmpdir"
 
 # Un-tar the headers. The -P flag and scratch directory are necessary because
@@ -38,8 +39,15 @@ mv drake "$tmpdir/include"
 
 # Clean up the header tarball, and the scratch directory.
 rm libdrake_headers.tar.gz
-cd ..
+cd .. # include/external
 rmdir scratch
+
+# Un-tar the license notices.
+tar -xzf external_licenses.tar.gz
+rm external_licenses.tar.gz
+
+# Copy the license for Drake itself.
+cp "$workspace/LICENSE.TXT" $tmpdir
 
 # Make the package tarball.
 cd "$tmpdir"

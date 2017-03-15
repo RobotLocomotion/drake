@@ -1,10 +1,10 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
- 
- 
+
 package(default_visibility = ["//visibility:public"])
 
 load("//tools:drake.bzl", "drake_header_tar")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 # This list is obviously incomplete.
 # TODO(david-german-tri, jamiesnape): Add everything Director needs, and
@@ -20,10 +20,10 @@ _LIBDRAKE_COMPONENTS = [
 # that the binary package will not contain any references to shared libraries
 # inside the build tree.
 cc_binary(
-     name = "libdrake.so",
-     deps = _LIBDRAKE_COMPONENTS,
-     linkstatic = 1,
-     linkshared = 1,
+    name = "libdrake.so",
+    linkshared = 1,
+    linkstatic = 1,
+    deps = _LIBDRAKE_COMPONENTS,
 )
 
 # All the headers mentioned in "hdrs" attributes of the transitive closure of
@@ -32,4 +32,14 @@ cc_binary(
 drake_header_tar(
     name = "libdrake_headers",
     deps = _LIBDRAKE_COMPONENTS,
+)
+
+pkg_tar(
+    name = "external_licenses",
+    extension = "tar.gz",
+    deps = [
+        "@bullet//:license",
+        "@eigen//:license",
+        "@spdlog//:license",
+    ],
 )
