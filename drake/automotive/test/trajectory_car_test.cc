@@ -138,7 +138,6 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
       ASSERT_NE(nullptr, velocity);
       EXPECT_EQ(FrameVelocity<double>::kSize, velocity->size());
 
-      std::cerr << it.speed << std::endl;
       EXPECT_NEAR(it.speed * cos(it.heading),
                   velocity->get_velocity().translational().x(), kMaxErrorRad);
       EXPECT_NEAR(it.speed * sin(it.heading),

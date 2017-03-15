@@ -40,6 +40,8 @@ namespace automotive {
 template <typename T>
 class TrajectoryCar : public systems::LeafSystem<T> {
  public:
+  typedef typename Curve2<T>::Point2 Point2;
+
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryCar)
 
   /// Constructs a TrajectoryCar system that traces the given @p curve,
@@ -50,12 +52,9 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     if (curve_.path_length() == 0.0) {
       throw std::invalid_argument{"empty curve"};
     }
-    this->DeclareOutputPort(systems::kVectorValued,
-                            SimpleCarStateIndices::kNumCoordinates);
-    this->DeclareOutputPort(systems::kVectorValued,
-                            systems::rendering::PoseVector<T>::kSize);
-    this->DeclareOutputPort(systems::kVectorValued,
-                            systems::rendering::FrameVelocity<T>::kSize);
+    this->DeclareVectorOutputPort(SimpleCarState<T>());
+    this->DeclareVectorOutputPort(systems::rendering::PoseVector<T>());
+    this->DeclareVectorOutputPort(systems::rendering::FrameVelocity<T>());
   }
 
   /// See class description for details about the following ports.
@@ -72,6 +71,12 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   /// @}
 
  protected:
+  /// Data structure returned by CalcRawPose containing raw pose information.
+  struct PositionHeading {
+    Point2 position = Point2(Point2::Zero());
+    T heading{0.};
+  };
+
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override {
     SimpleCarState<T>* const output_vector =
@@ -92,21 +97,6 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     ImplCalcVelocity(context.get_time(), velocity);
   }
 
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::OutputPortDescriptor<T>& descriptor) const override {
-    DRAKE_DEMAND(descriptor.get_index() <= 2);
-    switch (descriptor.get_index()) {
-      case 0:
-        return std::make_unique<SimpleCarState<T>>();
-      case 1:
-        return std::make_unique<systems::rendering::PoseVector<T>>();
-      case 2:
-        return std::make_unique<systems::rendering::FrameVelocity<T>>();
-      default:
-        return nullptr;
-    }
-  }
-
  private:
   void ImplCalcOutput(double time, SimpleCarState<T>* output) const {
     const auto raw_pose = CalcRawPose(time);
@@ -114,8 +104,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     // Convert raw pose to output type.
     output->set_x(raw_pose.position[0]);
     output->set_y(raw_pose.position[1]);
-    output->set_heading(std::atan2(raw_pose.position_dot[1],
-                                   raw_pose.position_dot[0]));
+    output->set_heading(raw_pose.heading);
     output->set_velocity(speed_);
   }
 
@@ -127,8 +116,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     pose->set_translation(Eigen::Translation<T, 3>(
         raw_pose.position[0], raw_pose.position[1], 0));
     const Vector3<T> z_axis{0.0, 0.0, 1.0};
-    const Eigen::AngleAxis<T> rotation(
-        std::atan2(raw_pose.position_dot[1], raw_pose.position_dot[0]), z_axis);
+    const Eigen::AngleAxis<T> rotation(raw_pose.heading, z_axis);
     pose->set_rotation(Eigen::Quaternion<T>(rotation));
   }
 
@@ -137,11 +125,9 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     const auto raw_pose = CalcRawPose(time);
 
     // Convert the state derivatives into a spatial velocity.
-    const T heading = std::atan2(raw_pose.position_dot[1],
-                                 raw_pose.position_dot[0]);
     multibody::SpatialVelocity<T> output;
-    output.translational().x() = speed_ * std::cos(heading);
-    output.translational().y() = speed_ * std::sin(heading);
+    output.translational().x() = speed_ * std::cos(raw_pose.heading);
+    output.translational().y() = speed_ * std::sin(raw_pose.heading);
     output.translational().z() = T(0);
     output.rotational().x() = T(0);
     output.rotational().y() = T(0);
@@ -151,17 +137,22 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     velocity->set_velocity(output);
   }
 
-  const Curve2<double>::PositionResult CalcRawPose(double time) const {
+  const PositionHeading CalcRawPose(double time) const {
+    PositionHeading result;
+
     // Trace the curve at a fixed speed.
     const double distance = speed_ * (time - start_time_);
     const Curve2<double>::PositionResult pose = curve_.GetPosition(distance);
     DRAKE_ASSERT(pose.position_dot.norm() > 0.0);
-    return pose;
+
+    result.position = pose.position;
+    result.heading = std::atan2(pose.position_dot[1], pose.position_dot[0]);
+    return result;
   }
 
   const Curve2<double> curve_;
-  const double speed_;
-  const double start_time_;
+  const double speed_{};
+  const double start_time_{};
 };
 
 }  // namespace automotive
