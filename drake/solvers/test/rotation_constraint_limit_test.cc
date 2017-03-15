@@ -42,20 +42,12 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
     if (num_binary_vars_per_half_axis_ == 2) {
       for(int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
-          if (i == 2 && j == 0) {
-            prog_.AddBoundingBoxConstraint(0.6, 0.7, R_(2, 0));
-          } else if (i == 0 && j == 2) {
-            prog_.AddBoundingBoxConstraint(0.6, 0.7, R_(0, 2));
-          } else if( i == 2 && j == 1) {
-            prog_.AddBoundingBoxConstraint(0.6, 0.7, R_(2, 1));
-          } else if (i == 1 && j == 2) {
-            prog_.AddBoundingBoxConstraint(0.6, 0.7, R_(1, 2));
-          }
-          else {
-            prog_.AddBoundingBoxConstraint(R_test(i, j), R_test(i, j), R_(i, j));
-          }
+          prog_.AddBoundingBoxConstraint(0, 0, R_(0, 0));
+          prog_.AddBoundingBoxConstraint(0, 0, R_(1, 0));
+          prog_.AddBoundingBoxConstraint(0, 1, R_(2, 0));
+          prog_.AddBoundingBoxConstraint(0.51, 1, R_(0, 1));
+          prog_.AddBoundingBoxConstraint(0, 1, R_(2, 1));
         }
-
       }
 
     }
@@ -170,7 +162,7 @@ TEST_P(TestMinimumDistanceWOrthonormalSocp, Test) {
 }
 
 INSTANTIATE_TEST_CASE_P(RotationTest, TestMinimumDistance,
-    ::testing::ValuesIn({3, 2})
+    ::testing::ValuesIn({3})
 );
 /*
 INSTANTIATE_TEST_CASE_P(RotationTest, TestMinimumDistanceWOrthonormalSocp,

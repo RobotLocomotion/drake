@@ -618,7 +618,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       if (optimstatus == GRB_INFEASIBLE || optimstatus == GRB_INF_OR_UNBD) {
         error = GRBcomputeIIS(model);
         DRAKE_DEMAND(!error);
-        GRBwrite(model, "model3.ilp");
+        GRBwrite(model, "model4.ilp");
         DRAKE_DEMAND(!error);
       }
     } else {
