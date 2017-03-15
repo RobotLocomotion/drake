@@ -16,6 +16,9 @@ target_link_libraries(demultiplexer_test drakeSystemPrimitives)
 drake_add_cc_test(gain_test)
 target_link_libraries(gain_test drakeSystemPrimitives)
 
+drake_add_cc_test(first_order_low_pass_filter_test)
+target_link_libraries(first_order_low_pass_filter_test drakeSystemPrimitives)
+
 drake_add_cc_test(gain_scalartype_test)
 target_link_libraries(gain_scalartype_test drakeSystemPrimitives)
 
