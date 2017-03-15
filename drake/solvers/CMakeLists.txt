@@ -14,7 +14,7 @@ if(gurobi_FOUND)
       gurobi)
 endif()
 
-set(private_headers
+set(solver_headers
   dreal_solver.h
   gurobi_solver.h
   ipopt_solver.h
@@ -27,7 +27,7 @@ set(private_headers
 set(optimization_files)
 set(optimization_requires)
 list(APPEND optimization_files
-  ${private_headers}
+  ${solver_headers}
   constraint.cc
   decision_variable.cc
   equality_constrained_qp_solver.cc
@@ -80,6 +80,7 @@ target_link_libraries(drakeOptimization
   drakeCommon
   Eigen3::Eigen)
 drake_install_headers(
+  ${solver_headers}
   binding.h
   constraint.h
   function.h
