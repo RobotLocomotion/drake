@@ -36,6 +36,7 @@ GTEST_TEST(SpatialInertia, DefaultConstructor) {
 // body. Also tests:
 //   - Getters.
 //   - CopyToFullMatrix6().
+//   - SetNan()
 GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   const double mass = 2.5;
   const Vector3d com(0.1, -0.2, 0.3);
@@ -59,6 +60,10 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   expected_matrix.block<3,3>(3,0) = expected_matrix.block<3,3>(0,3).transpose();
 
   EXPECT_TRUE(Mmatrix.isApprox(expected_matrix, NumTraits<double>::epsilon()));
+
+  EXPECT_FALSE(M.IsNaN());
+  M.SetNaN();
+  EXPECT_TRUE(M.IsNaN());
 }
 
 // Test the shift operator to write into a stream.

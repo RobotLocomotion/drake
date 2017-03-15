@@ -154,16 +154,15 @@ class SpatialInertia {
     return M;
   }
 
-#if 0
-  /// Sets this spatial inertia to have NaN entries. Typically used to quickly
-  /// detect uninitialized values since NaN will trigger a chain of invalid
-  /// computations that then can be tracked to the source.
-  void SetToNaN() {
+  /// Sets `this` spatial inertia to have NaN entries. Typically used for the
+  /// quick detection of uninitialized values.
+  void SetNaN() {
     mass_ = nan();
     p_PScm_E_.setConstant(nan());
     I_SP_E_.SetToNaN();
   }
 
+#if 0
   bool IsApprox(const SpatialInertia& M_Bo_F,
                 double tolerance = Eigen::NumTraits<T>::epsilon()) {
     using std::abs;
