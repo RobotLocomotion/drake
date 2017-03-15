@@ -96,7 +96,7 @@ GTEST_TEST(PoseSelectorTest, PoseSelectorFunction) {
                                                          agent_poses);
   EXPECT_EQ(kLeadingSPosition, agent_position.pos.s);
 
-  // Peer into the lane to the left.
+  // Peer into the adjacent lane to the left.
   std::tie(leading_position, trailing_position) =
       PoseSelector<double>::SelectClosestPositions(
           *road, ego_pose, agent_poses, ego_position.lane->to_left());
@@ -127,7 +127,7 @@ GTEST_TEST(PoseSelectorTest, PoseSelectorFunction) {
   // Looking forward, we expect there to be no car in sight.
   EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_position.pos.s);
 
-  // Peer into the lane to the left.
+  // Peer into the adjacent lane to the left.
   std::tie(leading_position, trailing_position) =
       PoseSelector<double>::SelectClosestPositions(
           *road, ego_pose, agent_poses, ego_position.lane->to_left());
