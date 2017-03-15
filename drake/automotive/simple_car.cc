@@ -30,10 +30,7 @@ SimpleCar<T>::SimpleCar() {
   this->DeclareVectorOutputPort(SimpleCarState<T>());
   this->DeclareVectorOutputPort(PoseVector<T>());
   this->DeclareVectorOutputPort(FrameVelocity<T>());
-  // TODO(jwnimmer-tri) Offer one-argument model sugar for this next line.
-  this->DeclareContinuousState(
-      std::make_unique<SimpleCarState<T>>(),
-      0, 0, SimpleCarStateIndices::kNumCoordinates);
+  this->DeclareContinuousState(SimpleCarState<T>());
 }
 
 template <typename T>
