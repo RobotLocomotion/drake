@@ -32,19 +32,25 @@ namespace rendering {
 ///
 /// The output poses are named in the form `<source>` or `<source>::<pose>`.
 /// - For poses derived from a RigidBodyPlant input, `<source>` is the name of
-/// the RigidBodyTree model, concatenated with the instance ID, and `<pose>`
-/// is the name of the body.  For instance, if the model is named "model", the
-/// pose of the link named "foo" in the first instance of that model is
-/// "model_0::foo".
-///
+///   the RigidBodyTree model, and `<pose>` is the name of the body.
 /// - For poses derived from a PoseVector input, <source> is the bundle name
-/// provided at construction time, and "::<pose>" is omitted.
-///
+///   provided at construction time, and "::<pose>" is omitted.
 /// - For poses derived from a PoseBundle input, <source> is the bundle name
-/// provided at construction time, and <pose> is the name found in the input
-/// PoseBundle at output evaluation time. In any sane use case, the input
-/// names will be stable during a simulation, but PoseAggregator is stateless
-/// and therefore can't check whether this is actually true.
+///   provided at construction time, and <pose> is the name found in the input
+///   PoseBundle at output evaluation time. In any sane use case, the input
+///   names will be stable during a simulation, but PoseAggregator is stateless
+///   and therefore can't check whether this is actually true.
+///
+/// The output poses are also each assigned a model instance ID, which must be
+/// an integer that is greater than or equal to zero. All poses with the same
+/// model instance ID must have unique names. This enables PoseAggregator to
+/// aggregate multiple instances of the same model.
+/// - For poses derived from a RigidBodyPlant input, the instance ID is obtained
+///   from the RigidBodyTree.
+/// - For poses derived from a PoseVector input, the instance ID is specified
+///   when the input is declared.
+/// - For poses derived from a PoseBundle input, the instance ID is obtained
+///   directly from the PoseBundle.
 ///
 /// In typical usage, Diagrams should contain just one PoseAggregator, and
 /// every pose in the Diagram should appear as an input to it. Then,
@@ -71,8 +77,10 @@ class PoseAggregator : public LeafSystem<T> {
   const InputPortDescriptor<T>& AddRigidBodyPlantInput(
       const RigidBodyTree<double> &tree);
 
-  /// Adds an input for a PoseVector.
-  const InputPortDescriptor<T>& AddSingleInput(const std::string& name);
+  /// Adds an input for a PoseVector. @p name must be unique for all inputs with
+  /// the same @p model_instance_id.
+  const InputPortDescriptor<T>& AddSingleInput(const std::string& name,
+                                               int model_instance_id);
 
   /// Adds an input for a PoseBundle containing @p num_poses poses.
   const InputPortDescriptor<T>& AddBundleInput(const std::string& bundle_name,
@@ -97,41 +105,34 @@ class PoseAggregator : public LeafSystem<T> {
   };
 
   struct InputRecord {
-    // Constructs an InputRecord for a RigidBodyTree input. The number of poses
-    // excludes the world "body".
-    explicit InputRecord(const RigidBodyTree<double>* tree_in)
-        : type(kRigidBodyTree),
-          num_poses(tree_in->get_num_bodies() - 1),
-          tree(tree_in) {}
-
-    // Constructs an InputRecord for a generic single pose input.
-    explicit InputRecord(const std::string& name_in)
-        : type(kSingle),
-          num_poses(1),
-          name(name_in) {}
-
-    // Constructs an InputRecord for a generic PoseBundle input.
-    InputRecord(const std::string& bundle_name_in, const int num_poses_in)
-        : type(kBundle),
-          num_poses(num_poses_in),
-          name(bundle_name_in) {}
-
     PoseInputType type{kUnknown};
     int num_poses{0};
     // name is only valid if type is kSingle or kBundle.
     std::string name{};
+    // model_instance_id is only valid if type is kSingle.
+    int model_instance_id{-1};
     // tree is only valid if type is kRigidBodyTree.
     const RigidBodyTree<double>* tree{};
   };
 
+  // Returns an InputRecord for a RigidBodyTree input. The number of poses
+  // excludes the world "body".
+  static InputRecord MakeRigidBodyTreeInputRecord(
+      const RigidBodyTree<double>* tree);
+
+  // Returns an InputRecord for a generic single pose input.
+  static InputRecord MakeSinglePoseInputRecord(const std::string& name,
+                                               int model_instance_id);
+
+  // Returns an InputRecord for a generic PoseBundle input.
+  static InputRecord MakePoseBundleInputRecord(const std::string& bundle_name,
+                                               int num_poses);
+
   // Returns the total number of poses from all inputs.
   int CountNumPoses() const;
 
-  // Returns a name for the body in the given @p tree at the given
-  // @p body_index, which contains the model name, the model instance ID, and
-  // the body name. See class comment for details.
-  const std::string MakeBodyName(const RigidBodyTree<double>& tree,
-                                int body_index) const;
+  // Returns a name for the given @p body. See class comment for details.
+  const std::string MakeBodyName(const RigidBody<double>& body) const;
 
   // The type, size, and source of each input port.
   std::vector<InputRecord> input_records_;

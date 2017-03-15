@@ -12,7 +12,7 @@ namespace rendering {
 
 template <typename T>
 PoseBundle<T>::PoseBundle(int num_poses)
-    : poses_(num_poses), names_(num_poses) {
+    : poses_(num_poses), names_(num_poses), ids_(num_poses) {
 }
 
 template <typename T>
@@ -46,6 +46,19 @@ void PoseBundle<T>::set_name(int index, const std::string& name) {
   DRAKE_DEMAND(index >= 0 && index < get_num_poses());
   names_[index] = name;
 }
+template <typename T>
+int PoseBundle<T>::get_model_instance_id(int index) const {
+  DRAKE_DEMAND(index >= 0 && index < get_num_poses());
+  return ids_[index];
+}
+
+template <typename T>
+void PoseBundle<T>::set_model_instance_id(int index, int id) {
+  DRAKE_DEMAND(index >= 0 && index < get_num_poses());
+  DRAKE_DEMAND(id >= 0);
+  ids_[index] = id;
+}
+
 
 template class PoseBundle<double>;
 template class PoseBundle<AutoDiffXd>;

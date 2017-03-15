@@ -92,7 +92,7 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
   const auto& descriptor = aggregator_->AddSingleInput(
-      "simple_car" + std::to_string(vehicle_number));
+      "simple_car", vehicle_number);
   builder_->Connect(simple_car->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
 
@@ -119,7 +119,7 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
   const auto& descriptor = aggregator_->AddSingleInput(
-      "trajectory_car" + std::to_string(vehicle_number));
+      "trajectory_car", vehicle_number);
   builder_->Connect(trajectory_car->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
 
