@@ -66,25 +66,24 @@ GTEST_TEST(PoseSelectorTest, PoseSelectorFunction) {
   // Lane-coordinate frames are aligned with the x-y world coordinates, with s_i
   // = 0 for the i-th lane, i ∈ {0, 1}, corresponds to x = 0, and r_i = 0
   // corresponds to y = (i - 0.5) * kLaneWidth.
-  const auto road = new RoadGeometry(
+  const RoadGeometry road(
       maliput::api::RoadGeometryId({"Test Dragway"}), kNumLanes, kLaneLength,
       kLaneWidth, 0. /* shoulder width */);
   PoseVector<double> ego_pose;
   PoseBundle<double> agent_poses(4);
 
   // Define the default poses.
-  SetDefaultPoses(&ego_pose, &agent_poses, *road);
+  SetDefaultPoses(&ego_pose, &agent_poses, road);
 
   // Calculate the current road position and use it to determine the ego car's
   // lane.
   const maliput::api::RoadPosition& ego_position =
-      PoseSelector<double>::CalcRoadPosition(*road, ego_pose.get_isometry());
+      PoseSelector<double>::CalcRoadPosition(road, ego_pose.get_isometry());
 
   maliput::api::RoadPosition leading_position;
   maliput::api::RoadPosition trailing_position;
   std::tie(leading_position, trailing_position) =
-      PoseSelector<double>::SelectClosestPositions(*road, ego_pose,
-                                                   agent_poses);
+      PoseSelector<double>::SelectClosestPositions(road, ego_pose, agent_poses);
 
   // Verifies that we are on the road and that the correct car was identified.
   EXPECT_EQ(kLeadingSPosition, leading_position.pos.s);
@@ -92,14 +91,14 @@ GTEST_TEST(PoseSelectorTest, PoseSelectorFunction) {
 
   // Test that we get the same result when just the leading car is returned.
   const maliput::api::RoadPosition& agent_position =
-      PoseSelector<double>::SelectClosestLeadingPosition(*road, ego_pose,
+      PoseSelector<double>::SelectClosestLeadingPosition(road, ego_pose,
                                                          agent_poses);
   EXPECT_EQ(kLeadingSPosition, agent_position.pos.s);
 
   // Peer into the adjacent lane to the left.
   std::tie(leading_position, trailing_position) =
       PoseSelector<double>::SelectClosestPositions(
-          *road, ego_pose, agent_poses, ego_position.lane->to_left());
+          road, ego_pose, agent_poses, ego_position.lane->to_left());
 
   // Expect to see no cars in the left lane.
   EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_position.pos.s);
@@ -110,8 +109,7 @@ GTEST_TEST(PoseSelectorTest, PoseSelectorFunction) {
   isometry_just_ahead.translation().y() += kLaneWidth;
   agent_poses.set_pose(kJustAheadIndex, isometry_just_ahead);
   std::tie(leading_position, std::ignore) =
-      PoseSelector<double>::SelectClosestPositions(*road, ego_pose,
-                                                   agent_poses);
+      PoseSelector<double>::SelectClosestPositions(road, ego_pose, agent_poses);
 
   // Expect the "far ahead" car to be identified.
   EXPECT_EQ(kLeadingSPosition + kSOffset, leading_position.pos.s);
@@ -121,8 +119,7 @@ GTEST_TEST(PoseSelectorTest, PoseSelectorFunction) {
   isometry_far_ahead.translation().y() += kLaneWidth;
   agent_poses.set_pose(kFarAheadIndex, isometry_far_ahead);
   std::tie(leading_position, std::ignore) =
-      PoseSelector<double>::SelectClosestPositions(*road, ego_pose,
-                                                   agent_poses);
+      PoseSelector<double>::SelectClosestPositions(road, ego_pose, agent_poses);
 
   // Looking forward, we expect there to be no car in sight.
   EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_position.pos.s);
@@ -130,7 +127,7 @@ GTEST_TEST(PoseSelectorTest, PoseSelectorFunction) {
   // Peer into the adjacent lane to the left.
   std::tie(leading_position, trailing_position) =
       PoseSelector<double>::SelectClosestPositions(
-          *road, ego_pose, agent_poses, ego_position.lane->to_left());
+          road, ego_pose, agent_poses, ego_position.lane->to_left());
 
   // Expect there to be no car behind on the immediate left and the "just ahead"
   // car to be leading.

@@ -28,7 +28,8 @@ PoseSelector<T>::SelectClosestPositions(const RoadGeometry& road,
   const Lane* const lane =
       (agent_lane == nullptr) ? ego_position.lane : agent_lane;
 
-  // Reconstruct leading and trailing vehicle positions as if they are
+  // Default the leading and trailing positions to extend to, respectively,
+  // positive and negative infinity.
   RoadPosition result_leading = RoadPosition(lane, LanePosition(
       std::numeric_limits<T>::infinity(), 0., 0.));
   RoadPosition result_trailing = RoadPosition(lane, LanePosition(
@@ -38,8 +39,8 @@ PoseSelector<T>::SelectClosestPositions(const RoadGeometry& road,
         CalcRoadPosition(road, agent_poses.get_pose(i));
     const T& s_agent = agent_position.pos.s;
 
-    // If this pose is not the ego car and is in the correct lane, then insert
-    // it into the correct bin.
+    // If this pose is not the ego car and it is in the correct lane, then
+    // insert it into the correct bin.
     if (ego_position.lane->id().id != lane->id().id ||
         s_agent != ego_position.pos.s) {
       if (agent_position.lane->id().id == lane->id().id &&
