@@ -460,6 +460,211 @@ TEST_F(MaliputRailcarTest, DecreasingS) {
   EXPECT_DOUBLE_EQ(result->speed(), kAccelCmd);
 }
 
+// Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the
+// road network is a dragway and with_s is true.
+TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayWithS) {
+  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(0 /* start_time */,
+                                                true /* with_s */));
+  const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
+  const double kSpeed(10);
+
+  systems::UpdateActions<double> actions;
+
+  // Computes the time to reach the end of the lane assuming a speed of kSpeed
+  // and zero acceleration.
+  const double kZeroAccelerationTime = lane->length() / kSpeed;
+
+  // Sets the desired acceleration to zero. It then verifies that the time till
+  // reaching the end of the lane is equal to the lane length divided by the
+  // vehicle's speed.
+  context_->set_time(0);
+  SetInputValue(0 /* desired_acceleration */);
+  continuous_state()->set_s(0);
+  continuous_state()->set_speed(kSpeed);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
+  EXPECT_EQ(actions.events.at(0).action,
+            systems::DiscreteEvent<double>::kUnrestrictedUpdateAction);
+
+  // Verifies that when the vehicle is mid-way through the lane, the time till
+  // it reaches the end is cut in half.
+  continuous_state()->set_s(lane->length() / 2);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_GE(actions.time, 0);
+  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime / 2);
+
+  // Verifies that when the vehicle is at the end of the lane, the time till it
+  // reaches the end is zero.
+  continuous_state()->set_s(lane->length());
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_DOUBLE_EQ(actions.time, 0);
+
+  // Sets the desired acceleration to a positive value. It then verifies that
+  // the time till reaching the end of the lane is shorter than when the
+  // acceleration is zero.
+  SetInputValue(10 /* desired_acceleration */);
+  continuous_state()->set_s(0);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_GE(actions.time, 0);
+  EXPECT_LT(actions.time, kZeroAccelerationTime);
+
+  // Sets the desired acceleration to a negative value. It then verifies that
+  // the time till reaching the end of the lane is greater than when the
+  // acceleration is zero.
+  SetInputValue(-10 /* desired_acceleration */);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_GE(actions.time, 0);
+  EXPECT_GT(actions.time, kZeroAccelerationTime);
+}
+
+// Same as the previous unit test except with_s is false.
+TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayAgainstS) {
+  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(0 /* start_time */,
+                                                false /* with_s */));
+  const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
+  const double kSpeed(10);
+
+  systems::UpdateActions<double> actions;
+
+  // Computes the time to reach the end of the lane assuming a speed of kSpeed
+  // and zero acceleration.
+  const double kZeroAccelerationTime = lane->length() / kSpeed;
+
+  // Sets the desired acceleration to zero. It then verifies that the time till
+  // reaching the end of the lane is equal to the lane length divided by the
+  // vehicle's speed.
+  context_->set_time(0);
+  SetInputValue(0 /* desired_acceleration */);
+  continuous_state()->set_s(lane->length());
+  continuous_state()->set_speed(kSpeed);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_GE(actions.time, 0);
+  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
+
+  // Verifies that when the vehicle is mid-way through the lane, the time till
+  // it reaches the end is cut in half.
+  continuous_state()->set_s(lane->length() / 2);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_GE(actions.time, 0);
+  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime / 2);
+
+  // Verifies that when the vehicle is at the end of the lane, the time till it
+  // reaches the end is zero.
+  continuous_state()->set_s(0);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_DOUBLE_EQ(actions.time, 0);
+
+  // Sets the desired acceleration to a positive value. It then verifies that
+  // the time till reaching the end of the lane is shorter than when the
+  // acceleration is zero.
+  SetInputValue(10 /* desired_acceleration */);
+  continuous_state()->set_s(lane->length());
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_GE(actions.time, 0);
+  EXPECT_LT(actions.time, kZeroAccelerationTime);
+
+  // Sets the desired acceleration to a negative value. It then verifies that
+  // the time till reaching the end of the lane is greater than when the
+  // acceleration is zero.
+  SetInputValue(-10 /* desired_acceleration */);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_GE(actions.time, 0);
+  EXPECT_GT(actions.time, kZeroAccelerationTime);
+}
+
+// Same as the previous unit test except the road network is a curved monolane
+// and with_s is true.
+TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
+  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane(0 /* start_time */,
+                                                   true /* with_s */));
+  const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
+  const double kSpeed(10);
+
+  systems::UpdateActions<double> actions;
+
+  MaliputRailcarConfig<double> config;
+  config.set_r(0);
+  config.set_h(0);
+  config.set_initial_speed(kSpeed);
+  config.set_max_speed(30);
+  config.set_velocity_limit_kp(8);
+  SetConfig(config);
+
+  // Computes the time to reach the end of the lane assuming a speed of kSpeed
+  // and zero acceleration.
+  const double kZeroAccelerationTime = lane->length() / kSpeed;
+
+  // Sets the desired acceleration to zero. It then verifies that the time till
+  // reaching the end of the lane is equal to the lane length divided by the
+  // vehicle's speed.
+  context_->set_time(0);
+  SetInputValue(0 /* desired_acceleration */);
+  continuous_state()->set_s(0);
+  continuous_state()->set_speed(kSpeed);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
+
+  // Sets `r` to be positive and verifies that the time to reach the end is
+  // shorter.
+  config.set_r(1);
+  SetConfig(config);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_LT(actions.time, kZeroAccelerationTime);
+
+  // Sets `r` to be negative and verifies that the time to reach the end is
+  // longer.
+  config.set_r(-1);
+  SetConfig(config);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_GT(actions.time, kZeroAccelerationTime);
+}
+
+// Same as the previous unit test except with_s is false.
+TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
+  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane(0 /* start_time */,
+                                                   false /* with_s */));
+  const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
+  const double kSpeed(10);
+
+  systems::UpdateActions<double> actions;
+
+  MaliputRailcarConfig<double> config;
+  config.set_r(0);
+  config.set_h(0);
+  config.set_initial_speed(kSpeed);
+  config.set_max_speed(30);
+  config.set_velocity_limit_kp(8);
+  SetConfig(config);
+
+  // Computes the time to reach the end of the lane assuming a speed of kSpeed
+  // and zero acceleration.
+  const double kZeroAccelerationTime = lane->length() / kSpeed;
+
+  // Sets the desired acceleration to zero. It then verifies that the time till
+  // reaching the end of the lane is equal to the lane length divided by the
+  // vehicle's speed.
+  context_->set_time(0);
+  SetInputValue(0 /* desired_acceleration */);
+  continuous_state()->set_s(lane->length());
+  continuous_state()->set_speed(kSpeed);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
+
+  // Sets `r` to be positive and verifies that the time to reach the end is
+  // shorter.
+  config.set_r(1);
+  SetConfig(config);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_LT(actions.time, kZeroAccelerationTime);
+
+  // Sets `r` to be negative and verifies that the time to reach the end is
+  // longer.
+  config.set_r(-1);
+  SetConfig(config);
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_GT(actions.time, kZeroAccelerationTime);
+}
+
 }  // namespace
 }  // namespace automotive
 }  // namespace drake
