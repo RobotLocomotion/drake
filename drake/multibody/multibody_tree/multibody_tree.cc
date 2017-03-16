@@ -24,8 +24,8 @@ void MultibodyTree<T>::Compile() {
   // users.
   if (topology_is_valid()) {
     throw std::logic_error(
-        "Attempting to add a body to an already compiled MultibodyTree is "
-        "not allowed. See MultibodyTree::Compile() for details.");
+        "Attempting to call MultibodyTree::Compile() on an already compiled "
+            "MultibodyTree.");
   }
 
   // TODO(amcastro-tri): This is a brief list of operations to be added in

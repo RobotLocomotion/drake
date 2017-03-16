@@ -101,12 +101,16 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the body with unique index `body_index`.
+  /// This method aborts in Debug builds when `body_index` does not correspond
+  /// to a body in this multibody tree.
   const Body<T>& get_body(BodyIndex body_index) const {
     DRAKE_ASSERT(body_index < get_num_bodies());
     return *owned_bodies_[body_index];
   }
 
   /// Returns a mutable reference to the body with unique index `body_index`.
+  /// This method aborts in Debug builds when `body_index` does not correspond
+  /// to a body in this multibody tree.
   Body<T>& get_mutable_body(BodyIndex body_index) {
     DRAKE_ASSERT(body_index < get_num_bodies());
     return *owned_bodies_[body_index].get();
@@ -134,19 +138,14 @@ class MultibodyTree {
   /// elements are added and therefore the user needs to call this method in
   /// order to have a valid %MultibodyTree.
   ///
-  /// An exception is thrown if users attempt to call this method on an already
-  /// compiled %MultibodyTree.
+  /// @throws std::logic_error If users attempt to call this method on an
+  ///         already compiled %MultibodyTree.
   void Compile();
 
  private:
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
-  // to RoadGeometry::CheckInvariants(). Like so:
-  // Verifies certain invariants guaranteed by the API.
-  //
-  // Returns a vector of strings describing violations of invariants.
-  // Return value with size() == 0 indicates success.
-  // std::vector<std::string> CheckInvariants() const;
+  // to RoadGeometry::CheckInvariants().
 
   // Sets a flag to indicate the topology got invalidated.
   void invalidate_topology() { topology_is_valid_ = false; }

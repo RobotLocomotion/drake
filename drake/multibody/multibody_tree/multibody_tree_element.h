@@ -73,7 +73,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// Returns a constant reference to the parent MultibodyTree that owns
   /// this element.
   /// Sub-classes of %MultibodyTreeElement will have a set of `Create()` methods
-  /// that when successful will create and add a %MultibodyTreeElement to a
+  /// that, when successful, will create and add a %MultibodyTreeElement to a
   /// valid MultibodyTree. Therefore, on success, the result of a `Create()`
   /// method is a properly initialized %MultibodyTreeElement with a
   /// valid MultibodyTree parent. @see RigidBody::Create() for an example of a
