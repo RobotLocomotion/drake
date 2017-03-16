@@ -478,7 +478,7 @@ class RotationalInertia {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
-  /// Multiplies a %RotationalInertia from the left by a scalar S.
+  /// Multiplies a %RotationalInertia from the left by a scalar `s`.
   /// Multiplication by scalar is commutative.
   friend RotationalInertia<T> operator*(const T& s,
                                         const RotationalInertia<T>& I_BP_E) {
@@ -487,7 +487,7 @@ class RotationalInertia {
     return sxI;
   }
 
-  /// Multiplies `this` %RotationalInertia from the right by a scalar S.
+  /// Multiplies `this` %RotationalInertia from the right by a scalar `s`.
   /// Multiplication by scalar is commutative.
   friend RotationalInertia<T> operator*(const RotationalInertia<T>& I_BP_E,
                                         const T& s) {
