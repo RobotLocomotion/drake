@@ -470,10 +470,16 @@ template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::Pchip(
     const std::vector<double>& breaks,
-    const std::vector<CoefficientMatrix>& knots) {
-    const std::vector<double>& T = breaks;
-    const std::vector<CoefficientMatrix>& Y = knots;
-  CheckSplineGenerationInputValidityOrThrow(T, Y, 3);
+    const std::vector<CoefficientMatrix>& knots,
+    bool zero_end_point_derivatives) {
+  const std::vector<double>& T = breaks;
+  const std::vector<CoefficientMatrix>& Y = knots;
+
+  if (zero_end_point_derivatives) {
+    CheckSplineGenerationInputValidityOrThrow(T, Y, 2);
+  } else {
+    CheckSplineGenerationInputValidityOrThrow(T, Y, 3);
+  }
 
   int N = static_cast<int>(T.size());
   int rows = Y.front().rows();
@@ -487,13 +493,18 @@ PiecewisePolynomial<CoefficientType>::Pchip(
   Eigen::Matrix<CoefficientType, 4, 1> coeffs;
 
   // Computes the end slopes.
-  CoefficientMatrix Ydot_start = ComputePchipEndSlope(T[1] - T[0], T[2] - T[1],
-                                                 (Y[1] - Y[0]) / (T[1] - T[0]),
-                                                 (Y[2] - Y[1]) / (T[2] - T[1]));
-  CoefficientMatrix Ydot_end =
-      ComputePchipEndSlope(T[N - 1] - T[N - 2], T[N - 2] - T[N - 3],
-                           (Y[N - 1] - Y[N - 2]) / (T[N - 1] - T[N - 2]),
-                           (Y[N - 2] - Y[N - 3]) / (T[N - 2] - T[N - 3]));
+  CoefficientMatrix Ydot_start = CoefficientMatrix::Zero(rows, cols);
+  CoefficientMatrix Ydot_end = CoefficientMatrix::Zero(rows, cols);
+
+  if (!zero_end_point_derivatives) {
+    Ydot_start = ComputePchipEndSlope(T[1] - T[0], T[2] - T[1],
+                                      (Y[1] - Y[0]) / (T[1] - T[0]),
+                                      (Y[2] - Y[1]) / (T[2] - T[1]));
+    Ydot_end = ComputePchipEndSlope(
+        T[N - 1] - T[N - 2], T[N - 2] - T[N - 3],
+        (Y[N - 1] - Y[N - 2]) / (T[N - 1] - T[N - 2]),
+        (Y[N - 2] - Y[N - 3]) / (T[N - 2] - T[N - 3]));
+  }
 
   for (int t = 0; t < N - 1; ++t) {
     dt[t] = T[t + 1] - T[t];
@@ -544,7 +555,7 @@ PiecewisePolynomial<CoefficientType>::Cubic(
   const std::vector<double>& T = breaks;
   const std::vector<CoefficientMatrix>& Y = knots;
   const std::vector<CoefficientMatrix>& Ydot = knots_dot;
-  CheckSplineGenerationInputValidityOrThrow(T, Y, 3);
+  CheckSplineGenerationInputValidityOrThrow(T, Y, 2);
 
   int N = static_cast<int>(T.size());
   int rows = Y.front().rows();
@@ -658,7 +669,7 @@ PiecewisePolynomial<CoefficientType>::Cubic(
   const CoefficientMatrix& Ydot_start = knot_dot_at_start;
   const CoefficientMatrix& Ydot_end = knot_dot_at_end;
 
-  CheckSplineGenerationInputValidityOrThrow(T, Y, 3);
+  CheckSplineGenerationInputValidityOrThrow(T, Y, 2);
 
   int N = static_cast<int>(T.size());
   int rows = Y.front().rows();

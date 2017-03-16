@@ -32,7 +32,7 @@ void RobotCommandToDesiredEffortConverter::DoCalcOutput(
   // (with empty std::vectors for the efforts and such).
   for (const auto& actuator_and_port_index : desired_effort_port_indices_) {
     int port_index = actuator_and_port_index.second;
-    output->get_mutable_port(port_index)
+    output->get_mutable_port_value(port_index)
         ->GetMutableVectorData<double>()
         ->SetAtIndex(0, 0.0);
   }
@@ -43,7 +43,7 @@ void RobotCommandToDesiredEffortConverter::DoCalcOutput(
     const double& effort = message.effort[i];
     const RigidBodyActuator* actuator = name_to_actuator_.at(joint_name);
     int port_index = desired_effort_port_indices_.at(actuator);
-    output->get_mutable_port(port_index)
+    output->get_mutable_port_value(port_index)
         ->GetMutableVectorData<double>()
         ->SetAtIndex(0, effort);
   }

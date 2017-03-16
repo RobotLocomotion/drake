@@ -86,13 +86,13 @@ class DependentInputPortTest : public ::testing::Test {
   void SetUp() override {
     std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
     vec->get_mutable_value() << 5, 6;
-    output_port_.reset(new OutputPort(std::move(vec)));
-    port_.reset(new DependentInputPort(output_port_.get()));
+    output_port_value_.reset(new OutputPortValue(std::move(vec)));
+    port_.reset(new DependentInputPort(output_port_value_.get()));
     port_->set_invalidation_callback(
         std::bind(&DependentInputPortTest::Invalidate, this));
   }
 
-  std::unique_ptr<OutputPort> output_port_;
+  std::unique_ptr<OutputPortValue> output_port_value_;
   std::unique_ptr<DependentInputPort> port_;
   int64_t latest_version_ = -1;
 
@@ -110,8 +110,8 @@ TEST_F(DependentInputPortTest, Access) {
 // is connected to it.
 TEST_F(DependentInputPortTest, Mutation) {
   EXPECT_EQ(0, port_->get_version());
-  output_port_->template GetMutableVectorData<int>()->get_mutable_value() << 7,
-      8;
+  output_port_value_->template GetMutableVectorData<int>()->get_mutable_value()
+      << 7, 8;
 
   // Check that the version number was incremented.
   EXPECT_EQ(1, port_->get_version());

@@ -25,6 +25,7 @@ To build from source, follow these steps::
   mkdir build
   cd build
   cmake ..
+  cmake --build .
 
 The resulting binary will be in ``kcov/build/src/kcov``. Create a symbolic link
 to the binary from some directory on your ``$PATH``.

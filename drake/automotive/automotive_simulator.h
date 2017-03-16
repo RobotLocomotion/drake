@@ -21,6 +21,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/rendering/pose_aggregator.h"
 
 namespace drake {
 namespace automotive {
@@ -269,6 +270,10 @@ class AutomotiveSimulator {
   // initialize the simulation's diagram's state.
   std::map<const SimpleCar<T>*, SimpleCarState<T>> simple_car_initial_states_;
   // === End for building. ===
+
+  // Adds the PoseAggregator.
+  systems::rendering::PoseAggregator<T>* aggregator_{
+    builder_->template AddSystem<systems::rendering::PoseAggregator<T>>()};
 
   int next_vehicle_number_{0};
   bool started_{false};

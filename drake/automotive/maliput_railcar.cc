@@ -52,27 +52,21 @@ MaliputRailcar<T>::MaliputRailcar(const Lane& lane, double start_time)
       this->DeclareVectorOutputPort(MaliputRailcarState<T>()).get_index();
   pose_output_port_index_ =
       this->DeclareVectorOutputPort(PoseVector<T>()).get_index();
-  // TODO(jwnimmer-tri) Offer one-argument model sugar for this next line.
-  this->DeclareContinuousState(
-      std::make_unique<MaliputRailcarState<T>>(),
-      0, 0, MaliputRailcarStateIndices::kNumCoordinates);
+  this->DeclareContinuousState(MaliputRailcarState<T>());
 }
 
 template <typename T>
-const InputPortDescriptor<T>& MaliputRailcar<T>::command_input()
-    const {
+const InputPortDescriptor<T>& MaliputRailcar<T>::command_input() const {
   return this->get_input_port(command_input_port_index_);
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& MaliputRailcar<T>::state_output()
-    const {
+const OutputPortDescriptor<T>& MaliputRailcar<T>::state_output() const {
   return this->get_output_port(state_output_port_index_);
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& MaliputRailcar<T>::pose_output()
-    const {
+const OutputPortDescriptor<T>& MaliputRailcar<T>::pose_output() const {
   return this->get_output_port(pose_output_port_index_);
 }
 
@@ -164,7 +158,12 @@ void MaliputRailcar<T>::DoCalcTimeDerivatives(
       dynamic_cast<MaliputRailcarState<T>*>(vector_derivatives);
   DRAKE_ASSERT(rates != nullptr);
 
-  ImplCalcTimeDerivatives(config, *state, *input, rates);
+  if (context.get_time() < T(start_time_)) {
+    rates->set_s(T(0));
+    rates->set_speed(T(0));
+  } else {
+    ImplCalcTimeDerivatives(config, *state, *input, rates);
+  }
 }
 
 template<typename T>

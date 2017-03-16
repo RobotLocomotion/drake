@@ -31,7 +31,7 @@ namespace {
 
 class MaliputRailcarTest : public ::testing::Test {
  protected:
-  void InitializeDragwayLane() {
+  void InitializeDragwayLane(double start_time = 0) {
     // Defines the dragway's parameters.
     const int kNumLanes{1};
     const double kDragwayLength{50};
@@ -39,10 +39,10 @@ class MaliputRailcarTest : public ::testing::Test {
     const double kDragwayShoulderWidth{0.25};
     Initialize(std::make_unique<const maliput::dragway::RoadGeometry>(
         maliput::api::RoadGeometryId({"RailcarTestDragway"}), kNumLanes,
-        kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth));
+        kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth), start_time);
   }
 
-  void InitializeCurvedMonoLane() {
+  void InitializeCurvedMonoLane(double start_time = 0) {
     maliput::monolane::Builder builder(
         maliput::api::RBounds(-2, 2),   /* lane_bounds       */
         maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
@@ -54,13 +54,15 @@ class MaliputRailcarTest : public ::testing::Test {
         ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
         EndpointZ(0, 0, 0, 0));                                /* z_end */
     Initialize(
-        builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})));
+        builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})),
+        start_time);
   }
 
-  void Initialize(std::unique_ptr<const maliput::api::RoadGeometry> road) {
+  void Initialize(std::unique_ptr<const maliput::api::RoadGeometry> road,
+      double start_time) {
     road_ = std::move(road);
     const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
-    dut_.reset(new MaliputRailcar<double>(*lane));
+    dut_.reset(new MaliputRailcar<double>(*lane, start_time));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -99,10 +101,9 @@ class MaliputRailcarTest : public ::testing::Test {
     LeafContext<double>* leaf_context =
         dynamic_cast<LeafContext<double>*>(context_.get());
     ASSERT_NE(leaf_context, nullptr);
-    Parameters<double>* parameters = leaf_context->get_mutable_parameters();
-    ASSERT_NE(parameters, nullptr);
+    Parameters<double>& parameters = leaf_context->get_mutable_parameters();
     BasicVector<double>* vector_param =
-        parameters->get_mutable_numeric_parameter(0);
+        parameters.get_mutable_numeric_parameter(0);
     ASSERT_NE(vector_param, nullptr);
     MaliputRailcarConfig<double>* railcar_config =
         dynamic_cast<MaliputRailcarConfig<double>*>(vector_param);
@@ -155,21 +156,23 @@ TEST_F(MaliputRailcarTest, ZeroInitialOutput) {
 
 TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
+  const double kS{1};
+  const double kSpeed{2};
 
-  continuous_state()->set_s(1.0);
-  continuous_state()->set_speed(2.0);
+  continuous_state()->set_s(kS);
+  continuous_state()->set_speed(kSpeed);
   dut_->CalcOutput(*context_, output_.get());
 
   auto state = state_output();
-  EXPECT_EQ(state->s(), 1);
-  EXPECT_EQ(state->speed(), 2);
+  EXPECT_EQ(state->s(), kS);
+  EXPECT_EQ(state->speed(), kSpeed);
 
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
   // For the dragway, the `(s, r, h)` axes in lane-space coorespond to the
-  // `(x, y, z)` axes in geo-space. In this case, `s = 1` while `r` and `h` are
+  // `(x, y, z)` axes in geo-space. In this case, `s = kS` while `r` and `h` are
   // by default zero.
-  expected_pose.translation() = Eigen::Vector3d(1, 0, 0);
+  expected_pose.translation() = Eigen::Vector3d(kS, 0, 0);
   EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
                               expected_pose.matrix()));
 }
@@ -177,15 +180,16 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
 TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
   EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane());
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
+  const double kSpeed{3.5};
 
   continuous_state()->set_s(lane->length());
-  continuous_state()->set_speed(3.5);
+  continuous_state()->set_speed(kSpeed);
   dut_->CalcOutput(*context_, output_.get());
 
   ASSERT_NE(lane, nullptr);
   auto state = state_output();
   EXPECT_EQ(state->s(), lane->length());
-  EXPECT_EQ(state->speed(), 3.5);
+  EXPECT_EQ(state->speed(), kSpeed);
 
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
@@ -242,7 +246,7 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
     expected_start_pose.matrix()
         << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
-  // The following tolerance was determined emperically.
+  // The following tolerance was determined empirically.
   EXPECT_TRUE(CompareMatrices(start_pose->get_isometry().matrix(),
                               expected_start_pose.matrix(),
                               1e-15 /* tolerance */));
@@ -259,7 +263,7 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
     const Eigen::Vector3d xyz(kCurvedRoadRadius - kR, kCurvedRoadRadius, kH);
     expected_end_pose.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
-  // The following tolerance was determined emperically.
+  // The following tolerance was determined empirically.
   EXPECT_TRUE(CompareMatrices(end_pose->get_isometry().matrix(),
                               expected_end_pose.matrix(),
                               1e-15 /* tolerance */));
@@ -276,27 +280,28 @@ TEST_F(MaliputRailcarTest, DerivativesDragway) {
   // Sets the input command.
   SetInputValue(0 /* desired_acceleration */);
 
-  // Checks the derivatives given the default continous state with r = 0.
+  // Checks the derivatives given the default continuous state with r = 0.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), MaliputRailcar<double>::kDefaultInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);  // Expect zero acceleration.
 
-  // Checks that the derivatives are zero given zero throttle and brake commands
+  // Checks that the acceleration is zero given an acceleration command of zero
   // and a non-default continuous state with r = 0.
   continuous_state()->set_s(3.5);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), MaliputRailcar<double>::kDefaultInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);
 
-  // Checks that the derivatives remain zero given a non-default continuous
-  // state with r != 0.
+  // Checks that the acceleration is zero given an acceleration command of zero
+  // and a non-default continuous state with r != 0.
   const double kS{1.5};
   const double kSlowSpeed{2};
+  const double kMaxSpeed{30};
   MaliputRailcarConfig<double> config;
   config.set_r(-2);
   config.set_h(0);
   config.set_initial_speed(kSlowSpeed);
-  config.set_max_speed(30);
+  config.set_max_speed(kMaxSpeed);
   config.set_velocity_limit_kp(8);
   SetConfig(config);
   continuous_state()->set_s(kS);
@@ -305,21 +310,26 @@ TEST_F(MaliputRailcarTest, DerivativesDragway) {
   EXPECT_DOUBLE_EQ(result->s(), kSlowSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);
 
-  // Checks that the maximum throttle command of 1 results in the maximum
-  // acceleration.
-  SetInputValue(5  /* desired acceleration */);
+  // Checks that a positive acceleration command of `kPosAccelCmd` results in
+  // the actual acceleration being equal to the commanded acceleration when the
+  // vehicle's current speed of `kSlowSpeed` is far lower than the vehicle's
+  // maximum speed of `kMaxSpeed`.
+  const double kPosAccelCmd{5};
+  SetInputValue(kPosAccelCmd);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), kSlowSpeed);
-  EXPECT_DOUBLE_EQ(result->speed(), 5);
+  EXPECT_DOUBLE_EQ(result->speed(), kPosAccelCmd);
 
-  // Checks that an acceleration command of -1 when the current speed is > 0
-  // results in an acceleration of -1.
+  // Checks that a negative acceleration command of `kNegAccelCmd` results in
+  // the actual acceleration being equal to the commanded acceleration when the
+  // vehicle's current speed of `kFastSpeed` is far higher than 0.
   const double kFastSpeed{27};
-  SetInputValue(-1  /* desired acceleration */);
+  const double kNegAccelCmd{-1};
+  SetInputValue(kNegAccelCmd);
   continuous_state()->set_speed(kFastSpeed);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), kFastSpeed);
-  EXPECT_DOUBLE_EQ(result->speed(), -1);
+  EXPECT_DOUBLE_EQ(result->speed(), kNegAccelCmd);
 }
 
 TEST_F(MaliputRailcarTest, DerivativesMonolane) {
@@ -382,6 +392,47 @@ TEST_F(MaliputRailcarTest, InputPortNotConnected) {
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), kInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);
+}
+
+// Tests that a MaliputRailcar does not start moving until after the start time
+// has passed.
+TEST_F(MaliputRailcarTest, NonZeroStartTime) {
+  const double kStartTime{10};
+  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(kStartTime));
+
+  // Grabs a pointer to where the EvalTimeDerivatives results end up.
+  const MaliputRailcarState<double>* const result =
+      dynamic_cast<const MaliputRailcarState<double>*>(
+          derivatives_->get_mutable_vector());
+  ASSERT_NE(nullptr, result);
+
+  const double kDesiredAcceleration{1};
+  const double kSpeed{3};
+
+  // Verifies that the vehicle has zero derivatives prior to the start time even
+  // if the input contains a non-zero acceleration command.
+  SetInputValue(kDesiredAcceleration);
+  context_->set_time(kStartTime - 1e-8);
+  ASSERT_NO_FATAL_FAILURE(
+      dut_->CalcTimeDerivatives(*context_, derivatives_.get()));
+  EXPECT_DOUBLE_EQ(result->s(), 0);
+  EXPECT_DOUBLE_EQ(result->speed(), 0);
+
+  // Verifies that the vehicle has the expected derivatives at the start time.
+  context_->set_time(kStartTime);
+  continuous_state()->set_speed(kSpeed);
+  ASSERT_NO_FATAL_FAILURE(
+      dut_->CalcTimeDerivatives(*context_, derivatives_.get()));
+  EXPECT_DOUBLE_EQ(result->s(), kSpeed);
+  EXPECT_DOUBLE_EQ(result->speed(), kDesiredAcceleration);
+
+  // Verifies that the vehicle has the expected derivatives after the start
+  // time.
+  context_->set_time(kStartTime + 1e-8);
+  ASSERT_NO_FATAL_FAILURE(
+      dut_->CalcTimeDerivatives(*context_, derivatives_.get()));
+  EXPECT_DOUBLE_EQ(result->s(), kSpeed);
+  EXPECT_DOUBLE_EQ(result->speed(), kDesiredAcceleration);
 }
 
 }  // namespace

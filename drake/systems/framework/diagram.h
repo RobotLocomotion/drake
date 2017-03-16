@@ -52,7 +52,7 @@ bool HasEvent(const UpdateActions<T> actions,
 }
 
 /// DiagramOutput is an implementation of SystemOutput that holds unowned
-/// OutputPort pointers. It is used to expose the outputs of constituent
+/// OutputPortValue pointers. It is used to expose the outputs of constituent
 /// systems as outputs of a Diagram.
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
@@ -65,20 +65,21 @@ class DiagramOutput : public SystemOutput<T> {
 
   int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 
-  OutputPort* get_mutable_port(int index) override {
+  OutputPortValue* get_mutable_port_value(int index) override {
     DRAKE_DEMAND(index >= 0 && index < get_num_ports());
     return ports_[index];
   }
 
-  const OutputPort& get_port(int index) const override {
+  const OutputPortValue& get_port_value(int index) const override {
     DRAKE_DEMAND(index >= 0 && index < get_num_ports());
     return *ports_[index];
   }
 
-  std::vector<OutputPort*>* get_mutable_ports() { return &ports_; }
+  std::vector<OutputPortValue*>* get_mutable_port_values() { return &ports_; }
 
  protected:
-  // Returns a clone that has the same number of output ports, set to nullptr.
+  // Returns a clone that has the same number of output ports, with values
+  // set to nullptr.
   DiagramOutput<T>* DoClone() const override {
     DiagramOutput<T>* clone = new DiagramOutput<T>();
     clone->ports_.resize(get_num_ports());
@@ -86,7 +87,7 @@ class DiagramOutput : public SystemOutput<T> {
   }
 
  private:
-  std::vector<OutputPort*> ports_;
+  std::vector<OutputPortValue*> ports_;
 };
 
 /// DiagramTimeDerivatives is a version of DiagramContinuousState that owns
@@ -264,6 +265,7 @@ class Diagram : public System<T>,
     }
 
     context->MakeState();
+    context->MakeParameters();
     return std::unique_ptr<Context<T>>(context.release());
   }
 
@@ -304,7 +306,7 @@ class Diagram : public System<T>,
     // The output ports of this Diagram are output ports of its constituent
     // systems. Create a DiagramOutput with that many ports.
     auto output = std::make_unique<internal::DiagramOutput<T>>();
-    output->get_mutable_ports()->resize(output_port_ids_.size());
+    output->get_mutable_port_values()->resize(output_port_ids_.size());
     ExposeSubsystemOutputs(*diagram_context, output.get());
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
@@ -978,8 +980,8 @@ class Diagram : public System<T>,
     return output;
   }
 
-  // Sets up the OutputPort pointers in @p output to point to the subsystem
-  // outputs, found in @p context, that are the outputs of this Diagram.
+  // Sets up the OutputPortValue pointers in @p output to point to the subsystem
+  // output values, found in @p context, that are the outputs of this Diagram.
   void ExposeSubsystemOutputs(const DiagramContext<T>& context,
                               internal::DiagramOutput<T>* output) const {
     // The number of output ports of this diagram must equal the number of
@@ -990,14 +992,15 @@ class Diagram : public System<T>,
     for (int i = 0; i < num_ports; ++i) {
       const PortIdentifier& id = output_port_ids_[i];
       // For each configured output port ID, obtain from the DiagramContext the
-      // actual OutputPort that produces it.
+      // actual OutputPortValue that supplies its value.
       const int sys_index = GetSystemIndexOrAbort(id.first);
       const int port_index = id.second;
       SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(sys_index);
-      OutputPort* output_port = subsystem_output->get_mutable_port(port_index);
+      OutputPortValue* output_port_value =
+          subsystem_output->get_mutable_port_value(port_index);
 
-      // Then, put a pointer to that OutputPort in the DiagramOutput.
-      (*output->get_mutable_ports())[i] = output_port;
+      // Then, put a pointer to that OutputPortValue in the DiagramOutput.
+      (*output->get_mutable_port_values())[i] = output_port_value;
     }
   }
 
