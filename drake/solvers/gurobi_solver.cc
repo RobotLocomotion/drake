@@ -524,18 +524,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
                               &gurobi_var_type, &xlow, &xupp);
 
   GRBmodel* model = nullptr;
-  char** var_names = new char*[num_gurobi_vars];
-  int prog_var_count = 0;
-  for (int i = 0; i < num_gurobi_vars; ++i) {
-    if (!is_new_variable[i]) {
-      var_names[i] = const_cast<char*>(prog.decision_variable(prog_var_count).get_name().c_str());
-      prog_var_count++;
-    } else {
-      var_names[i] = const_cast<char*>(std::string("slack").c_str());
-    }
-  }
   GRBnewmodel(env, &model, "gurobi_model", num_gurobi_vars, nullptr, &xlow[0],
-              &xupp[0], gurobi_var_type.data(), var_names);
+              &xupp[0], gurobi_var_type.data(), nullptr);
 
   int error = 0;
   // TODO(naveenoid) : This needs access externally.
@@ -584,10 +574,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     DRAKE_DEMAND(!error);
   }
 
-
   error = GRBoptimize(model);
 
-  GRBwrite(model, "model1.mps");
   SolutionResult result = SolutionResult::kUnknownError;
 
   // If any error exists so far, it's from calling GRBoptimize.
@@ -614,12 +602,6 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
           result = SolutionResult::kInfeasibleConstraints;
           break;
         }
-      }
-      if (optimstatus == GRB_INFEASIBLE || optimstatus == GRB_INF_OR_UNBD) {
-        error = GRBcomputeIIS(model);
-        DRAKE_DEMAND(!error);
-        GRBwrite(model, "model4.ilp");
-        DRAKE_DEMAND(!error);
       }
     } else {
       result = SolutionResult::kSolutionFound;
@@ -654,7 +636,6 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   GRBfreemodel(model);
   GRBfreeenv(env);
-  delete[] var_names;
   return result;
 }
 
