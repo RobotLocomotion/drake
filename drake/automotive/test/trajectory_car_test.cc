@@ -14,6 +14,9 @@ namespace {
 typedef Curve2<double> Curve2d;
 typedef Curve2d::Point2 Point2d;
 
+using systems::rendering::FrameVelocity;
+using systems::rendering::PoseVector;
+
 // Empty curves are rejected.
 GTEST_TEST(TrajectoryCarTest, StationaryTest) {
   const std::vector<Point2d> empty_waypoints{};
@@ -94,16 +97,51 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
       context->set_time(time);
       car_dut.CalcOutput(*context, all_output.get());
 
-      ASSERT_EQ(1, all_output->get_num_ports());
-      const SimpleCarState<double>* output =
-          dynamic_cast<const SimpleCarState<double>*>(
-              all_output->get_vector_data(0));
-      ASSERT_NE(nullptr, output);
+      ASSERT_EQ(3, all_output->get_num_ports());
 
-      EXPECT_DOUBLE_EQ(expected_position(0), output->x());
-      EXPECT_DOUBLE_EQ(expected_position(1), output->y());
-      EXPECT_NEAR(it.heading, output->heading(), kMaxErrorRad);
-      EXPECT_DOUBLE_EQ(it.speed, output->velocity());
+      // Tests the raw pose output.
+      const SimpleCarState<double>* raw_pose =
+          dynamic_cast<const SimpleCarState<double>*>(
+              all_output->get_vector_data(
+                  car_dut.raw_pose_output().get_index()));
+      ASSERT_NE(nullptr, raw_pose);
+      EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates,
+                raw_pose->size());
+
+      EXPECT_DOUBLE_EQ(expected_position(0), raw_pose->x());
+      EXPECT_DOUBLE_EQ(expected_position(1), raw_pose->y());
+      EXPECT_NEAR(it.heading, raw_pose->heading(), kMaxErrorRad);
+      EXPECT_DOUBLE_EQ(it.speed, raw_pose->velocity());
+
+      // Tests the PoseVector output.
+      const PoseVector<double>* pose =
+          dynamic_cast<const PoseVector<double>*>(
+              all_output->get_vector_data(
+                  car_dut.pose_output().get_index()));
+      ASSERT_NE(nullptr, pose);
+      EXPECT_EQ(PoseVector<double>::kSize, pose->size());
+
+      EXPECT_DOUBLE_EQ(expected_position(0),
+                       pose->get_translation().translation().x());
+      EXPECT_DOUBLE_EQ(expected_position(1),
+                       pose->get_translation().translation().y());
+      EXPECT_NEAR(std::cos(it.heading / 2), pose->get_rotation().w(),
+                  kMaxErrorRad);
+      EXPECT_NEAR(std::sin(it.heading / 2), pose->get_rotation().z(),
+                  kMaxErrorRad);
+
+      // Tests the FrameVelocity output.
+      const FrameVelocity<double>* velocity =
+          dynamic_cast<const FrameVelocity<double>*>(
+              all_output->get_vector_data(
+                  car_dut.velocity_output().get_index()));
+      ASSERT_NE(nullptr, velocity);
+      EXPECT_EQ(FrameVelocity<double>::kSize, velocity->size());
+
+      EXPECT_NEAR(it.speed * cos(it.heading),
+                  velocity->get_velocity().translational().x(), kMaxErrorRad);
+      EXPECT_NEAR(it.speed * sin(it.heading),
+                  velocity->get_velocity().translational().y(), kMaxErrorRad);
     }
   }
 }
