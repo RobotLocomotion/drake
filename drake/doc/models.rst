@@ -145,7 +145,7 @@ Modelling the shape of an object
 To model a shape for visual purposes, use URDF's or SDF's ``<visual>`` tag. To
 model a shape for the purpose of determining contact between your model and
 other objects, use URDF's or SDF's ``<collision>`` tag. (While both SDF and URDF
-use those same tags, note that the structure and content of those tags differ).
+use those same tags, note that the structure and content of those tags differ.)
 
 To explain why you might want to define the collision element differently than
 the visual element, let's explore the different ways of defining shapes.
@@ -184,7 +184,7 @@ exact accuracy.
 But there are cases where we need the precision of a mesh. For example, extra
 modeling precision may be needed to simulate a robot arm's end effector
 reaching into tight spaces or performing dexterous manipulation tasks. In these
-cases, if its taking too long to process the original mesh, then the mesh needs
+cases, if it's taking too long to process the original mesh, then the mesh needs
 to be simplified. The next section describes some options.
 
 .. _models_simplifying_meshes:
