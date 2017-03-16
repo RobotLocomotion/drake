@@ -353,14 +353,14 @@ class Rod2D : public systems::LeafSystem<T> {
                               const systems::Context<T>& context);
 
   /// The witness function for the signed distance between one endpoint of the
-  /// rod (not already touching the half-space) and the halfspace *for the case
+  /// rod (not already touching the half-space) and the half-space for the case
   /// when the rod is contacting the ground with a single point of contact. The
   /// witness function will return positive values when the other rod endpoint
   /// is above the halfspace, negative values when the other rod endpoint is
   /// strictly within the halfspace, and zero when the other rod endpoint is
   /// "kissing" the halfspace.
   /// @pre One endpoint of the rod is in contact with the ground, indicated by
-  ///      the mode variable being appropriately.
+  ///      the mode variable being set appropriately.
   static T CalcEndpointDistance(const Rod2D& rod,
                                 const systems::Context<T>& context);
 

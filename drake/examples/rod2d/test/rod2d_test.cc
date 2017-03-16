@@ -118,9 +118,9 @@ class Rod2DDAETest : public ::testing::Test {
     ContinuousState<double> &xc =
         *context_->get_mutable_continuous_state();
     // Configuration has the rod on its side.
-    xc[0] = 0.0;
-    xc[1] = -1.0;
-    xc[2] = 0.0;
+    xc[0] = 0.0;    // com horizontal position
+    xc[1] = -1.0;   // com vertical position
+    xc[2] = 0.0;    // rod rotation
   }
 
   // Sets the rod to a resting horizontal configuration without modifying the
@@ -129,9 +129,9 @@ class Rod2DDAETest : public ::testing::Test {
     ContinuousState<double> &xc =
         *context_->get_mutable_continuous_state();
     // Configuration has the rod on its side.
-    xc[0] = 0.0;
-    xc[1] = 0.0;
-    xc[2] = 0.0;
+    xc[0] = 0.0;     // com horizontal position
+    xc[1] = 0.0;     // com vertical position
+    xc[2] = 0.0;     // rod rotation
   }
 
   // Sets the rod to an arbitrary impacting state.
@@ -142,7 +142,7 @@ class Rod2DDAETest : public ::testing::Test {
     SetSecondInitialConfig();
     ContinuousState<double> &xc =
         *context_->get_mutable_continuous_state();
-    xc[4] = -1.0;
+    xc[4] = -1.0;    // com horizontal velocity
 
     // Indicate that the rod is in the single contact sliding mode.
     AbstractValues* abs_state =
@@ -699,17 +699,17 @@ TEST_F(Rod2DDAETest, NumWitnessFunctions) {
   EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 1);
 
   // (c) Sticking single contact.
-  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+  context_->get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
     Rod2D<double>::kStickingSingleContact;
-EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 2);
+  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 2);
 
   // (d) Sliding two contacts.
-  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+  context_->get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
     Rod2D<double>::kSlidingTwoContacts;
   EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 3);
 
   // (e) Sticking two contacts.
-  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
+  context_->get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
     Rod2D<double>::kStickingTwoContacts;
   EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 2);
 }

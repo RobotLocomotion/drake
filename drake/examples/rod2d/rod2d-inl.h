@@ -65,9 +65,9 @@ T Rod2D<T>::CalcSignedDistance(const Rod2D<T>& rod,
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
-  const T x = state.GetAtIndex(0);
-  const T y = state.GetAtIndex(1);
-  const T theta = state.GetAtIndex(2);
+  const T& x = state.GetAtIndex(0);
+  const T& y = state.GetAtIndex(1);
+  const T& theta = state.GetAtIndex(2);
 
   // Get the two rod endpoints.
   const T ctheta = cos(theta);
@@ -93,8 +93,8 @@ T Rod2D<T>::CalcEndpointDistance(const Rod2D<T>& rod,
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
-  const T y = state.GetAtIndex(1);
-  const T theta = state.GetAtIndex(2);
+  const T& y = state.GetAtIndex(1);
+  const T& theta = state.GetAtIndex(2);
   const T stheta = sin(theta);
 
   // Get the abstract variables that determine the current system mode and
@@ -124,8 +124,8 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const Rod2D<T>& rod,
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
-  const T theta = state.GetAtIndex(2);
-  const T thetadot = state.GetAtIndex(5);
+  const T& theta = state.GetAtIndex(2);
+  const T& thetadot = state.GetAtIndex(5);
 
   // Get the abstract variables that determine the current system mode and
   // the endpoint in contact.
@@ -160,9 +160,9 @@ T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
 
   // Get the relevant parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
-  const T theta = state.GetAtIndex(2);
-  const T xdot = state.GetAtIndex(3);
-  const T thetadot = state.GetAtIndex(5);
+  const T& theta = state.GetAtIndex(2);
+  const T& xdot = state.GetAtIndex(3);
+  const T& thetadot = state.GetAtIndex(5);
 
   // Compute the velocity at the point of contact
   const T stheta = sin(theta);
