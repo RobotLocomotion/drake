@@ -1,14 +1,15 @@
-*****************************************
-CLion IDE setup (experimental)
-*****************************************
+***************
+CLion IDE setup
+***************
 
-This guide describes how to set up Drake in the new JetBrains CLion IDE.
+This guide describes how to set up Drake in the JetBrains CLion IDE.
 It is assumed that ``drake-distro`` is
-:ref:`already installed <installation_and_quick_start>`. CLion support is
-currently experimental.
+:ref:`already installed <installation_and_quick_start>`.
 
 Using CLion with CMake
 ======================
+
+(We recommend using Bazel rather than CMake; see instructions below.)
 
 Installing CLion
 ----------------
@@ -184,9 +185,14 @@ CLion provides a user interface for Git, which you can enable in the ``VCS``
 menu.  It automatically detects all Git roots within the workspace. This will
 include ``bazel-drake-distro``, which is a Bazel-internal detail. Bazel edits
 the contents of that directory for its own purposes, and those changes will
-spuriously appear in the CLion UI. To make CLion ignore ``bazel-drake-distro``,
-enable Git integration, shut down CLion, and remove the ``bazel-drake-distro``
-line from ``.idea/vcs.xml`` in your CLion project directory.
+spuriously appear in the CLion UI as changes that need to be committed. To make
+CLion ignore ``bazel-drake-distro``, enable Git integration under the ``VCS``
+tab, then go to ``File > Settings``. Select the ``Version Control`` menu item
+directly (not one of the subtopics displayed when that item is expanded). You
+will see a list of all the Git root directories. Look for ``bazel-drake-distro``
+on that list and select it. On the right hand side are ``+`` and ``-`` buttons;
+click ``-`` to remove the spurious root directory. After that you should be
+able to go to ``VCS > Commit Changes`` and there should be no changes seen.
 
 Integrating External Tools with CLion
 =====================================
