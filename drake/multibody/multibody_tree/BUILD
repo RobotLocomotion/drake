@@ -22,6 +22,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "multibody_tree",
+    srcs = [
+        "multibody_tree.cc",
+        "rigid_body.cc",
+    ],
+    hdrs = [
+        "body.h",
+        "multibody_tree.h",
+        "multibody_tree_element.h",
+        "rigid_body.h",
+    ],
+    deps = [
+        ":multibody_tree_indexes",
+        "//drake/common:autodiff",
+    ],
+)
+
+drake_cc_library(
     name = "rotational_inertia",
     srcs = [],
     hdrs = ["rotational_inertia.h"],
@@ -44,6 +62,11 @@ drake_cc_library(
 drake_cc_googletest(
     name = "multibody_tree_indexes_tests",
     deps = [":multibody_tree_indexes"],
+)
+
+drake_cc_googletest(
+    name = "multibody_tree_creation_tests",
+    deps = [":multibody_tree"],
 )
 
 drake_cc_googletest(
