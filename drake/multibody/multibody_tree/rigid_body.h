@@ -62,13 +62,13 @@ class RigidBody : public Body<T> {
   static const RigidBody<T>& Create(MultibodyTree<T>* tree);
 
   /// There are no flexible degrees of freedom associated with a rigid body and
-  /// therefore this method returns zero. By definition, a rigid body has no state
-  /// associated with flexible deformations.
+  /// therefore this method returns zero. By definition, a rigid body has no
+  /// state associated with flexible deformations.
   int get_num_flexible_positions() const final { return 0; }
 
   /// There are no flexible degrees of freedom associated with a rigid body and
-  /// therefore this method returns zero. By definition, a rigid body has no state
-  /// associated with flexible deformations.
+  /// therefore this method returns zero. By definition, a rigid body has no
+  /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
  private:
