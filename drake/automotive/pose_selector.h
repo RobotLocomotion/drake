@@ -12,55 +12,55 @@
 
 namespace drake {
 namespace automotive {
+namespace pose_selector {
 
-/// PoseSelector contains utilities for selecting among several agent cars those
-/// that have the closest relative `s`-positions to an ego car traveling in the
-/// same maliput lane or an adjacent one.
+/// Returns the leading and trailing cars that have closest `s`-coordinates in a
+/// given @p traffic_lane to an ego car as if the ego car were traveling in @p
+/// traffic_lane at its current `s`-position.  The ego car's pose @ego_pose and
+/// the poses of the traffic cars are assumed to exist on the same @p road.  If
+/// @p traffic_lane is `nullptr`, the the ego car's current lane is used.  If no
+/// cars are seen within @p traffic_lane, car `s`-positions are taken to be at
+/// infinite distances away from the ego car.
 ///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
+/// The return values are a pair of leading/trailing RoadPositions. In the
+/// infinite-`s`-position case, the respective RoadPosition will contain an
+/// `s`-value of `std::numeric_limits<double>::infinity()`.
 ///
-/// They are already available to link against in the containing library.
+/// N.B. When comparing across lanes, it is assumed that @p road is configured
+/// such that a comparison between the `s`-positions of any two cars on the road
+/// is meaningful.  For instance, if car A is at `s = 10 m` in lane 0's frame
+/// and car B is at `s = 0 m` in lane 1's frame then, if car A moved into lane
+/// 1, it would be 10 meters ahead of car B.
 ///
-/// @ingroup automotive_systems
-template <typename T>
-class PoseSelector {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSelector)
-  PoseSelector() = delete;
+/// TODO(jadecastro): Support road networks containing multi-lane segments
+/// (#4934).
+const std::pair<maliput::api::RoadPosition, maliput::api::RoadPosition>
+FindClosestPair(
+    const maliput::api::RoadGeometry& road,
+    const systems::rendering::PoseVector<double>& ego_pose,
+    const systems::rendering::PoseBundle<double>& traffic_poses,
+    const maliput::api::Lane* traffic_lane = nullptr);
 
-  /// Compares the Lane-space poses collected within @p agent_poses against an
-  /// @p ego_pose and returns a pair of the closest {leading, trailing}
-  /// RoadPositions.  All cars are assumed to be traveling on the same @p road.
-  /// Regardless of the ego car's lane, a comparison is made for cars in @p
-  /// agent_lane.  If @p agent_lane is `nullptr`, the the ego car's current lane
-  /// is used.  If no cars are seen within @p agent_lane, the cars are taken to
-  /// be at infinite distances away from the ego car.
-  ///
-  /// N.B. Assumes that @p road is set up such that a comparison between the
-  /// `s`-positions of any two cars on the road is meaningful.
-  static const std::pair<maliput::api::RoadPosition, maliput::api::RoadPosition>
-  SelectClosestPositions(const maliput::api::RoadGeometry& road,
-                         const systems::rendering::PoseVector<T>& ego_pose,
-                         const systems::rendering::PoseBundle<T>& agent_poses,
-                         const maliput::api::Lane* agent_lane = nullptr);
+/// Compares the Lane-space poses collected within @p traffic_poses against an
+/// @p ego_pose and returns the closest leading RoadPosition for traffic cars
+/// traveling in the same lane as the ego car.  All cars are assumed to be
+/// traveling on the same @p road.  If no cars are seen within @p traffic_lane,
+/// the leading car is taken to be at an infinite distance away from the ego
+/// car.
+///
+/// The return value is a RoadPosition of the lead car. In the
+/// infinite-`s`-position case, RoadPosition will contain an `s`-value of
+/// `std::numeric_limits<double>::infinity()`.
+const maliput::api::RoadPosition FindClosestLeading(
+    const maliput::api::RoadGeometry& road,
+    const systems::rendering::PoseVector<double>& ego_pose,
+    const systems::rendering::PoseBundle<double>& traffic_poses);
 
-  /// Compares the Lane-space poses collected within @p agent_poses against an
-  /// @p ego_pose and returns the closest leading RoadPosition for agent cars
-  /// traveling in the same lane as the ego car.  All cars are assumed to be
-  /// traveling on the same @p road.  If no cars are seen within @p agent_lane,
-  /// the leading car is taken to be at an infinite distance away from the ego
-  /// car.
-  static const maliput::api::RoadPosition SelectClosestLeadingPosition(
-      const maliput::api::RoadGeometry& road,
-      const systems::rendering::PoseVector<T>& ego_pose,
-      const systems::rendering::PoseBundle<T>& agent_poses);
+/// Computes the RoadPosition for a car whose @p pose is located on a given @p
+/// road.
+const maliput::api::RoadPosition CalcRoadPosition(
+    const maliput::api::RoadGeometry& road, const Isometry3<double>& pose);
 
-  /// Computes the RoadPosition for a car whose @p pose is located on a given @p
-  /// road.
-  static const maliput::api::RoadPosition CalcRoadPosition(
-      const maliput::api::RoadGeometry& road, const Isometry3<T>& pose);
-};
-
+}  // namespace pose_selector
 }  // namespace automotive
 }  // namespace drake

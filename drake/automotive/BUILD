@@ -175,11 +175,11 @@ drake_cc_library(
     srcs = ["pose_selector.cc"],
     hdrs = ["pose_selector.h"],
     deps = [
-        ":generated_vectors",
         "//drake/automotive/maliput/api",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
+    visibility=[],
 )
 
 drake_cc_library(
@@ -606,7 +606,8 @@ drake_cc_googletest(
     name = "pose_selector_test",
     deps = [
         "//drake/automotive:pose_selector",
-        "//drake/automotive/maliput/dragway"
+        "//drake/automotive/maliput/dragway",
+        "//drake/automotive/maliput/monolane",
     ],
 )
 

@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace automotive {
+namespace pose_selector {
 
 using maliput::api::Lane;
 using maliput::api::LanePosition;
@@ -15,63 +16,61 @@ using maliput::api::RoadPosition;
 using systems::rendering::PoseBundle;
 using systems::rendering::PoseVector;
 
-template <typename T>
-const std::pair<RoadPosition, RoadPosition>
-PoseSelector<T>::SelectClosestPositions(const RoadGeometry& road,
-                                        const PoseVector<T>& ego_pose,
-                                        const PoseBundle<T>& agent_poses,
-                                        const Lane* agent_lane) {
+const std::pair<RoadPosition, RoadPosition> FindClosestPair(
+    const RoadGeometry& road, const PoseVector<double>& ego_pose,
+    const PoseBundle<double>& traffic_poses, const Lane* traffic_lane) {
   const RoadPosition& ego_position =
       CalcRoadPosition(road, ego_pose.get_isometry());
+  std::cerr << " ego_position.pos.s: " << ego_position.pos.s << std::endl;
   DRAKE_DEMAND(ego_position.lane != nullptr);
   // Take the ego car's lane by default.
   const Lane* const lane =
-      (agent_lane == nullptr) ? ego_position.lane : agent_lane;
+      (traffic_lane == nullptr) ? ego_position.lane : traffic_lane;
 
   // Default the leading and trailing positions to extend to, respectively,
   // positive and negative infinity.
-  RoadPosition result_leading = RoadPosition(lane, LanePosition(
-      std::numeric_limits<T>::infinity(), 0., 0.));
-  RoadPosition result_trailing = RoadPosition(lane, LanePosition(
-      -std::numeric_limits<T>::infinity(), 0., 0.));
-  for (int i = 0; i < agent_poses.get_num_poses(); ++i) {
-    const RoadPosition& agent_position =
-        CalcRoadPosition(road, agent_poses.get_pose(i));
-    const T& s_agent = agent_position.pos.s;
+  RoadPosition result_leading = RoadPosition(
+      lane, LanePosition(std::numeric_limits<double>::infinity(), 0., 0.));
+  RoadPosition result_trailing = RoadPosition(
+      lane, LanePosition(-std::numeric_limits<double>::infinity(), 0., 0.));
+  for (int i = 0; i < traffic_poses.get_num_poses(); ++i) {
+    const RoadPosition& traffic_position =
+        CalcRoadPosition(road, traffic_poses.get_pose(i));
+    const double& s_traffic = traffic_position.pos.s;
+
+    if (traffic_position.lane->id().id != lane->id().id) continue;
 
     // If this pose is not the ego car and it is in the correct lane, then
-    // insert it into the correct bin.
+    // insert it into the correct "leading" or "trailing" bin.
     if (ego_position.lane->id().id != lane->id().id ||
-        s_agent != ego_position.pos.s) {
-      if (agent_position.lane->id().id == lane->id().id &&
-          result_trailing.pos.s < s_agent && s_agent < result_leading.pos.s) {
-        if (s_agent >= ego_position.pos.s)
-          result_leading = agent_position;
+        s_traffic != ego_position.pos.s) {
+      if (result_trailing.pos.s < s_traffic &&
+          s_traffic < result_leading.pos.s) {
+        // N.B. The ego car and traffic may reside in different lanes.
+        if (s_traffic >= ego_position.pos.s)
+          result_leading = traffic_position;
         else
-          result_trailing = agent_position;
+          result_trailing = traffic_position;
       }
     }
   }
   return std::make_pair(result_leading, result_trailing);
 }
 
-template <typename T>
-const RoadPosition PoseSelector<T>::SelectClosestLeadingPosition(
-    const RoadGeometry& road, const PoseVector<T>& ego_pose,
-    const PoseBundle<T>& agent_poses) {
-  return SelectClosestPositions(road, ego_pose, agent_poses).first;
+const RoadPosition FindClosestLeading(
+    const RoadGeometry& road, const PoseVector<double>& ego_pose,
+    const PoseBundle<double>& traffic_poses) {
+  return FindClosestPair(road, ego_pose, traffic_poses).first;
 }
 
-template <typename T>
-const RoadPosition PoseSelector<T>::CalcRoadPosition(const RoadGeometry& road,
-                                                     const Isometry3<T>& pose) {
-  const maliput::api::GeoPosition& geo_position = maliput::api::GeoPosition(
-      pose.translation().x(), pose.translation().y(), pose.translation().z());
-  return road.ToRoadPosition(geo_position, nullptr, nullptr, nullptr);
+const RoadPosition CalcRoadPosition(const RoadGeometry& road,
+                                    const Isometry3<double>& pose) {
+  return road.ToRoadPosition(
+      maliput::api::GeoPosition(pose.translation().x(), pose.translation().y(),
+                                pose.translation().z()),
+      nullptr, nullptr, nullptr);
 }
 
-// These instantiations must match the API documentation in pose_selector.h.
-template class PoseSelector<double>;
-
+}  // namespace pose_selector
 }  // namespace automotive
 }  // namespace drake
