@@ -28,9 +28,6 @@ class ContactResultsToLcmSystem : public LeafSystem<double> {
    */
   explicit ContactResultsToLcmSystem(const RigidBodyTree<T>& tree);
 
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<T>& descriptor) const override;
-
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
 

@@ -351,15 +351,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
   std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const override;
 
-  /// Allocates the data for the abstract-valued output port specified by
-  /// @p descriptor.
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<T>& descriptor) const override;
-  /// Allocates the data for the vector-valued output port specified by
-  /// @p descriptor.
-  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const OutputPortDescriptor<T>& descriptor) const override;
-
   // System<T> overrides.
 
   void DoCalcTimeDerivatives(const Context<T>& context,
