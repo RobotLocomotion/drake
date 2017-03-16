@@ -273,7 +273,6 @@ class ImageTest : public ::testing::Test {
     // assumption is any defects will be detected by sampling this amount.
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
-
         for (int ch = 0; ch < color_image.num_channels(); ++ch) {
           AssertIntNear(color_image.at(u, v)[ch], color[ch],
                         kColorPixelTolerance);
