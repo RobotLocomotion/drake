@@ -177,6 +177,17 @@ Changes to BUILD files can add or remove source files from the Bazel build.
 To propagate those changes into the CLion project structure, select
 ``Bazel > Sync Project With BUILD Files``.
 
+Git Integration
+---------------
+
+CLion provides a user interface for Git, which you can enable in the ``VCS``
+menu.  It automatically detects all Git roots within the workspace. This will
+include ``bazel-drake-distro``, which is a Bazel-internal detail. Bazel edits
+the contents of that directory for its own purposes, and those changes will
+spuriously appear in the CLion UI. To make CLion ignore ``bazel-drake-distro``,
+enable Git integration, shut down CLion, and remove the ``bazel-drake-distro``
+line from ``.idea/vcs.xml`` in your CLion project directory.
+
 Integrating External Tools with CLion
 =====================================
 
