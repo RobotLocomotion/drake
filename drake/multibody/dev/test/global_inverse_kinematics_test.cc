@@ -7,7 +7,6 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/solvers/gurobi_solver.h"
-#include "drake/solvers/mosek_solver.h"
 
 using Eigen::Vector3d;
 using Eigen::Isometry3d;
@@ -67,7 +66,7 @@ class KukaTest : public ::testing::Test {
 
       const Eigen::Matrix3d body_Ri =
           global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
-      EXPECT_TRUE((body_Ri.array().abs() <= 1 + 1E-6).all());
+      EXPECT_TRUE((body_Ri.array().abs() <= 1).all());
       EXPECT_LE(body_Ri.trace(), 3);
       EXPECT_GE(body_Ri.trace(), -1);
       // TODO(hongkai.dai): We will have a more meaningful bound on the
@@ -127,7 +126,7 @@ TEST_F(KukaTest, ReachableTest) {
     CheckGlobalIKSolution(pos_tol, orient_tol);
   }
 }
-/*
+
 TEST_F(KukaTest, UnreachableTest) {
   // Test a cartesian pose that we know is not reachable.
   Eigen::Vector3d ee_pos_lb(0.6, -0.1, 0.7);
@@ -223,7 +222,7 @@ TEST_F(KukaTest, ReachableWithCost) {
     EXPECT_LE((q_w_cost - q).norm(), (q_no_cost - q).norm());
   }
 }
-}*/
+}
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

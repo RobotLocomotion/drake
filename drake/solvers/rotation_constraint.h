@@ -112,8 +112,7 @@ void AddRotationMatrixOrthonormalSocpConstraint(
 ///     on large portions of O(3), and confers hopefully "useful" constraints
 ///     the on other binary variables.
 /// TODO(russ, hongkai): add proper documentation for each input arguments.
-std::pair<std::vector<MatrixDecisionVariable<3, 3>>, std::vector<MatrixDecisionVariable<3, 3>>>
-AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     int num_binary_vars_per_half_axis = 2,
