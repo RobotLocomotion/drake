@@ -43,10 +43,13 @@ namespace systems {
 namespace sensors {
 namespace {
 
+// Defines a color based on its three primary additive colors: red, green, and
+// blue. Each of these primary additive colors are in the range of [0, 1] where
+// 0 is the lowest intensity and 1 is the highest intensity.
 struct Color {
-  double r;
-  double g;
-  double b;
+  double r;  // red
+  double g;  // green
+  double b;  // blue
 };
 
 const int kPortCameraPose = 3;
@@ -66,8 +69,9 @@ const int kImageWidth = 640;  // In pixels
 const int kImageHeight = 480;  // In pixels
 const float kDepthRangeNear = 0.5;
 const float kDepthRangeFar = 5.0;
-
 const double kTerrainSize = 100.;
+// These colors are chosen so as to be easily distinguished from the colors in
+// ColorPalette.
 const Color kTerrainColor{1., 0.898, 0.797};
 const Color kBackgroundColor{0.8, 0.898, 1.};
 
@@ -83,6 +87,11 @@ std::string RemoveFileExtension(const std::string& filepath) {
   return filepath.substr(0, last_dot);
 }
 
+// Creates and holds a palette of colors for visualizing different objects in a
+// scene (the intent is for a different color to be applied to each identified
+// object). The colors are chosen so as to be easily distinguishable. This color
+// palette can hold up to 1536 colors. Black, white and gray, which has the same
+// value for all the three color channels, are not part of this color palette.
 class ColorPalette {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ColorPalette)
@@ -104,7 +113,7 @@ class ColorPalette {
     }
   }
 
-  Color& get_color(int index) {
+  const Color& get_color(int index) const {
     DRAKE_DEMAND(index < static_cast<int>(color_palette_.size()));
     return color_palette_[index];
   }
