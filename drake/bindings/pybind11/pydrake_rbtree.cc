@@ -15,6 +15,9 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
   py::module m("_pydrake_rbtree", "Bindings for the RigidBodyTree class");
 
   using drake::multibody::joints::FloatingBaseType;
+  using drake::parsers::PackageMap;
+
+  py::module::import("pydrake.parsers");
 
   py::enum_<FloatingBaseType>(m, "FloatingBaseType")
     .value("kFixed", FloatingBaseType::kFixed)
@@ -26,7 +29,26 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
     .def("__init__",
          [](RigidBodyTree<double> &instance,
             const std::string& urdf_filename,
-            FloatingBaseType floating_base_type) {
+            const PackageMap& pmap,
+            FloatingBaseType floating_base_type
+            ) {
+          new (&instance) RigidBodyTree<double>();
+          drake::parsers::urdf::
+            AddModelInstanceFromUrdfFileSearchingInRosPackages(
+            urdf_filename,
+            pmap,
+            floating_base_type,
+            nullptr,
+            &instance);
+        },
+        py::arg("urdf_filename"),
+        py::arg("package_map"),
+        py::arg("floating_base_type") = FloatingBaseType::kRollPitchYaw)
+    .def("__init__",
+         [](RigidBodyTree<double> &instance,
+            const std::string& urdf_filename,
+            FloatingBaseType floating_base_type
+            ) {
           new (&instance) RigidBodyTree<double>();
           drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
             urdf_filename, floating_base_type, &instance);
@@ -157,10 +179,6 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
 
   py::class_<KinematicsCache<double> >(m, "KinematicsCacheDouble");
   py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
-
-  py::class_<drake::parsers::PackageMap>(m, "PackageMap")
-    .def(py::init<>())
-    .def("Add", &drake::parsers::PackageMap::Add);
 
   py::class_<RigidBody<double> >(m, "RigidBody")
     .def("get_name", &RigidBody<double>::get_name)
