@@ -1,4 +1,3 @@
-
 .. _models:
 
 ***************
@@ -97,85 +96,101 @@ newer and thus preferred. They are similar formats. Both are XML-based.
 
 Mesh file format
 ----------------
-Drake can accept the following mesh file formats:
-
-- `DAE <https://en.wikipedia.org/wiki/COLLADA>`_ (digital asset exchange) - can
-  include textures.
+Drake can process the following mesh file format (file extension):
 
 - `OBJ <https://en.wikipedia.org/wiki/Wavefront_.obj_file>`_ - a 3D geometry
   definition file format.
 
+If Drake processes an SDF or URDF file and finds a mesh file name extension that
+is not a type that it can process (currently only OBJ), it will see if a file
+exists with the same path and name but with an "obj" extension.
+
+The following are mesh file formats that are not processed by Drake, but may be
+found in the Drake repository and may be used to find OBJ versions:
+
+- `DAE <https://en.wikipedia.org/wiki/COLLADA>`_ (digital asset exchange) - can
+  include textures. An `issue exists to add Drake support for DAE files
+  <https://github.com/RobotLocomotion/drake/issues/2941>`_.
+
 - `STL <https://en.wikipedia.org/wiki/STL_(file_format)>`_ (\ **ST**\ ereo
   **L**\ithography) - describes only the surface geometry
   of a three-dimensional object without any representation of color,
-  texture or other common CAD model attributes.
+  texture or other common CAD model attributes.  An
+  `issue exists to add Drake support for STL files
+  <https://github.com/RobotLocomotion/drake/issues/2941>`_.
 
-- `WRL <https://en.wikipedia.org/wiki/VRML>`_- obsolete, but used in Drake. A
-  text file format. Allows you to specify surface color, textures, shininess,
-  transparency, and other parameters. Vertices and edges for a 3D polygon can
-  be specified.
+- `WRL <https://en.wikipedia.org/wiki/VRML>`_- an obsolete mesh format that is
+  superseded by a new format called X3D. Allows you to specify surface color,
+  textures, shininess, transparency, and other parameters. Vertices and edges
+  for a 3D polygon can be specified.
 
 .. _models_contents:
 
 The content of a Model file
 ===========================
 
-For a simple example, see `this cinder block example
-<https://github.com/RobotLocomotion/drake/blob/9a67372fa00054aedf8a9f30684bdd5dc2ee9b0d/drake/examples/Atlas/sdf/cinder_block_2/model-1_4.sdf>`_.
-As you can see, an SDF file is an XML file.
-
-The way the model looks in an SDF file is given by the "visual" tag. In the
-example, it looks like this::
-
-      <visual name="visual">
-        <geometry>
-          <mesh>
-            <uri>model://cinder_block_2/meshes/cinder_block.dae</uri>
-          </mesh>
-        </geometry>
-      </visual>
-
-The visual is defined to be a mesh given by `this DAE file
-<https://github.com/RobotLocomotion/drake/blob/9a67372fa00054aedf8a9f30684bdd5dc2ee9b0d/drake/examples/Atlas/sdf/cinder_block_2/meshes/cinder_block.dae>`_.
-The DAE mesh file defines many
-things concerning the look of the object, including a reference to a PNG file
-which defines the texture. If you open the PNG file in an image viewing program
-like `GIMP <https://www.gimp.org>`_, you will see it shows the pitted texture
-and grey color of a cinder block.
-
-While the visual properties define how the model looks, often we need to
-describe the shape of the hard parts of the model (the rigid bodies), which
-the SDF file defines with a "collision" tag. You may wonder why we don't use
-the visual mesh for the collision element.  That is possible, and it would be
-accurate, but a visual mesh is usually very detailed and complex, making it
-computationally expensive to use as a collision model.
-
-A much simpler way to describe a shape is with geometric primitives, such as
-cylinders, spheres, or boxes. The complexity of a geometric primitive
-is far less than with a mesh. If you look at the cinder block SDF file,
-you'll see that the geometries of the collision elements are defined as
-boxes, instead of using the mesh. In this cinder block, the outline of the
-object is a rectangle (ignoring the holes in the cinder block), so we can
-use the box shape.
-
-See the `URDF <urdf/drakeURDF.html#://>`_ or `SDF <http://sdformat.org/>`_
-references for more information.
-
 The best way to learn how to create a model is to examine and change an
 existing, working model.  `This tutorial <https://www.youtube
 .com/watch?v=gugV8IMyHnY>`_ walks through editing a model in Drake.
+
+For detailed information on the elements of a model, see the
+`URDF <urdf/drakeURDF.html#://>`_ or `SDF <http://sdformat.org/>`_
+references for more information.
+
+.. _models_shape:
+
+Modelling the shape of an object
+--------------------------------
+
+To model a shape for visual purposes, use URDF's or SDF's ``<visual>`` tag. To
+model a shape for the purpose of determining contact between your model and
+other objects, use URDF's or SDF's ``<collision>`` tag. (While both SDF and URDF
+use those same tags, note that the structure and content of those tags differ.)
+
+To explain why you might want to define the collision element differently than
+the visual element, let's explore the different ways of defining shapes.
+
+An object's shape can be modelled using a 3D scanner, which produces a polygon
+mesh. Meshes of geometrically complicated objects contain many polygons. The
+detail (density) of the mesh is great for a realistic visual display. However
+when a mesh is used for a collision element, collision algorithms must process
+all the polygons that are close to the target, which can be slow. For these
+reasons it is often desirable to use something simpler than a mesh for the
+collision model.  It's a tradeoff between accuracy of the shape and processing
+time.
+
+The ``<visual>`` tag is used in visualization programs like
+``drake-visualizer`` (in the
+`Director external <https://github.com/RobotLocomotion/director>`_). Drake does
+not process the visual tag, unless you have something specific in your code that
+will process it, like
+`RgbdCamera <http://drake.mit.edu/doxygen_cxx/rgbd__camera_8h.html>`_.
+Regardless of what program is processing the visual data, the processing time
+of visual elements is generally not an issue.
+
+In addition to modelling shapes with meshes, you can also model shapes with
+geometric primitives, such as cylinders, spheres, or boxes. Geometric primitives
+are far less complex than meshes and so require far less processing time.
+
+In the `iiwa14.urdf robotic arm example
+<https://github.com/RobotLocomotion/drake/blob/83740997e1c893be5d2209563b755cfe84ee1c32/drake/examples/kuka_iiwa_arm/urdf/iiwa14.urdf>`_,
+we use meshes for the visual geometry elements, and
+cylinders for the collision elements, except for the last links where meshes
+are used.  The idea is that for links of the arm, we don't need exact shapes
+for collision, where we don't expect to need precision. Even if we were to
+use an "elbow" to shove an object out of the way, we probably don't need
+exact accuracy.
+
+But there are cases where we need the precision of a mesh. For example, extra
+modeling precision may be needed to simulate a robot arm's end effector
+reaching into tight spaces or performing dexterous manipulation tasks. In these
+cases, if it's taking too long to process the original mesh, then the mesh needs
+to be simplified. The next section describes some options.
 
 .. _models_simplifying_meshes:
 
 Simplifying a Mesh
 ==================
-
-Meshes of complicated objects contain many vertices. The detail (density) of
-the mesh makes the visual representation look realistic. However when a mesh
-is used for a collision element, collision algorithms must process the entire
-mesh, which can be slow. For these reasons it is often desirable for the
-collision model to use a simpler structure than the original high density
-mesh.
 
 Q: What is the easiest way to use something simpler for a collision model?
 
@@ -196,17 +211,5 @@ simplify a mesh?
 
 A: Sometimes you really need the accuracy of a mesh.
 
-In the `iiwa14.urdf robotic arm example
-<https://github.com/RobotLocomotion/drake/blob/83740997e1c893be5d2209563b755cfe84ee1c32/drake/examples/kuka_iiwa_arm/urdf/iiwa14.urdf>`_,
-we use meshes for the visual geometry elements, and
-cylinders for the collision elements, except for the last links where meshes
-are used.  The idea is that for links of the arm, we don't need exact shapes
-for collision, where we don't expect to need precision. Even if we were to
-use an "elbow" to shove an object out of the way, we probably don't need
-exact accuracy. It's possible we may desire more precision for the links at
-the end of the arm, if the arm is reaching into tight or crowded spaces or
-performing dexterous manipulation tasks.
-
 An existing complex mesh can be simplified using a tool like `Blender
 <https://www.blender.org/>`_, a free and open source 3D creation suite.
-
