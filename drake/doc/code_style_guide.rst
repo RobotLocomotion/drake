@@ -219,10 +219,10 @@ Additional Rules
   ``GTEST_TEST(Group, Name)`` instead of ``TEST(Group, Name)``.
   (`#2181 <https://github.com/RobotLocomotion/drake/issues/2181>`_)
 * Always use `in-class member initialization
-  <http://www.stroustrup.com/C++11FAQ.html#member-init>`_ for built-in data
-  types that would would otherwise be uninitialized, including numerical
-  types, pointers, and enumerations. The syntax ``int count_{};`` (called
-  `value initialization
+  <http://www.stroustrup.com/C++11FAQ.html#member-init>`_ for built-in
+  non-``const`` data types that would would otherwise be uninitialized,
+  including numerical types, pointers, and enumerations. The syntax
+  ``int count_{};`` (called `value initialization
   <http://en.cppreference.com/w/cpp/language/value_initialization>`_)
   ensures that these types are zero-initialized rather than left with
   unpredictable content (informally known as "garbage"). You may also
@@ -235,7 +235,9 @@ Additional Rules
   behavior you want. Note that fixed-size Eigen objects are intentionally
   left uninitialized; if you want yours zero-initialized you can
   member-initialize it by passing an appropriate ``Zero``, for example:
-  ``Eigen::Matrix3d mat_{Eigen::Matrix3d::Zero()};``.
+  ``Eigen::Matrix3d mat_{Eigen::Matrix3d::Zero()};``. Member variables that are
+  declared ``const`` need not be initialized in this manner since the compiler
+  requires that they be initialized in the constructor's initializer list.
 * After including ``<cstddef>``, assume that ``size_t``
   is defined in the global namespace. Do not preface it with ``std::``
   and do not write ``using std::size_t`` in
