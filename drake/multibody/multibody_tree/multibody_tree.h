@@ -36,9 +36,9 @@ class MultibodyTree {
   /// Takes ownership of `body`, assigns a unique index to it, and adds it to
   /// `this` %MultibodyTree. Returns a bare pointer to the body just added,
   /// which will remain valid for the lifetime of `this` %MultibodyTree.
-  /// This call invalidates the topology of this %MultibodyTree and therefore
-  /// the user must call the Compile() method once is done adding elements, see
-  /// Compile() for details.
+  /// This call invalidates the topology of this %MultibodyTree and, therefore,
+  /// the user must call the Compile() method before invoking methods which
+  /// require valid topology. See Compile() for details.
   ///
   /// Example of usage:
   /// @code{.cpp}
@@ -56,8 +56,9 @@ class MultibodyTree {
   /// factory methods. For instance, see RigidBody::Create() to create a body
   /// and add it to a MultibodyTree.
   ///
-  /// @note This method invalidates this %MultibodyTree topology. The method
-  /// Compile() must be called to re-compute and validate the topology.
+  /// @note This call invalidates the topology of this %MultibodyTree and,
+  /// therefore, the user must call the Compile() method before invoking
+  /// methods which require valid topology.
   ///
   /// @param[in] body A unique pointer to a body to add to `this`
   ///                 %MultibodyTree.
@@ -127,13 +128,13 @@ class MultibodyTree {
   /// performs all the required pre-processing to perform computations at a
   /// later stage.
   ///
-  /// If the compile stage is succesful, the topology of this %MultibodyTree is
+  /// If the compile stage is successful, the topology of this %MultibodyTree is
   /// validated, meaning that the topology is up-to-date after this call.
   /// The topology of a %MultibodyTree gets invalidated if more multibody
   /// elements are added and therefore the user needs to call this method in
   /// order to have a valid %MultibodyTree.
   ///
-  /// An excpetion is thrown if users attempt to call this method on an already
+  /// An exception is thrown if users attempt to call this method on an already
   /// compiled %MultibodyTree.
   void Compile();
 
@@ -147,7 +148,7 @@ class MultibodyTree {
   // Return value with size() == 0 indicates success.
   // std::vector<std::string> CheckInvariants() const;
 
-  // Sets a flag indicate the topology got invalidated.
+  // Sets a flag to indicate the topology got invalidated.
   void invalidate_topology() { topology_is_valid_ = false; }
 
   // Sets a flag indicate the topology is valid.

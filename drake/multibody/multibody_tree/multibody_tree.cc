@@ -40,7 +40,6 @@ void MultibodyTree<T>::Compile() {
     body->Compile();
   }
 
-  // Validate topology.
   validate_topology();
 }
 
