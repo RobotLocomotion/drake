@@ -76,7 +76,7 @@ SpringMassSystem<T>::SpringMassSystem(const T& spring_constant_N_per_m,
   this->DeclareVectorOutputPort(SpringMassStateVector<T>());
 
   this->DeclareContinuousState(
-      std::make_unique<SpringMassStateVector<T>>(),
+      SpringMassStateVector<T>(),
       1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
 }
 
