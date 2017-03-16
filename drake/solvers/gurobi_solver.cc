@@ -636,6 +636,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   GRBfreemodel(model);
   GRBfreeenv(env);
+
   return result;
 }
 

@@ -222,7 +222,6 @@ TEST_F(KukaTest, ReachableWithCost) {
     EXPECT_LE((q_w_cost - q).norm(), (q_no_cost - q).norm());
   }
 }
-}
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
