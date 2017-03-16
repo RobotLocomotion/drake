@@ -20,25 +20,43 @@ class StateFeedbackController : public Diagram<T> {
    * Returns the input port for the estimated state.
    */
   const InputPortDescriptor<T>& get_input_port_estimated_state() const {
-    return Diagram<T>::get_input_port(0);
+    DRAKE_DEMAND(input_port_index_estimated_state_ >= 0);
+    return Diagram<T>::get_input_port(input_port_index_estimated_state_);
   }
 
   /**
    * Returns the input port for the desired state.
    */
   const InputPortDescriptor<T>& get_input_port_desired_state() const {
-    return Diagram<T>::get_input_port(1);
+    DRAKE_DEMAND(input_port_index_desired_state_ >= 0);
+    return Diagram<T>::get_input_port(input_port_index_desired_state_);
   }
 
   /**
    * Returns the output port for computed control.
    */
   const OutputPortDescriptor<T>& get_output_port_control() const {
-    return Diagram<T>::get_output_port(0);
+    DRAKE_DEMAND(output_port_index_control_ >= 0);
+    return Diagram<T>::get_output_port(output_port_index_control_);
   }
 
  protected:
+  void set_input_port_index_estimated_state(int index) {
+    input_port_index_estimated_state_ = index;
+  }
+
+  void set_input_port_index_desired_state(int index) {
+    input_port_index_desired_state_ = index;
+  }
+
+  void set_output_port_index_control(int index) {
+    output_port_index_control_ = index;
+  }
+
   StateFeedbackController() {}
+  int input_port_index_estimated_state_{-1};
+  int input_port_index_desired_state_{-1};
+  int output_port_index_control_{-1};
 };
 
 }  // namespace systems
