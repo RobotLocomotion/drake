@@ -48,6 +48,8 @@ namespace sensors {
 ///     provided by DepthSensor) in which the depth value represents the
 ///     distance from the sensor origin to the object's surface.
 ///
+///   - The label image has three channels in the following order: blue, green
+///     red. Each channel is represented by a uint8_t.
 // TODO(kunimatsu-tri) Add support for the image publish capability.
 class RgbdCamera : public LeafSystem<double> {
  public:
@@ -83,7 +85,8 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param tree The RigidBodyTree containing the geometric description of the
   /// world. The life span of this parameter must exceed that of this class's
-  /// instance.
+  /// instance. The maximum number of bodies in the `tree` must be less than
+  /// 1536 based on the number of the colors used for the label image.
   ///
   /// @param position The x-y-z position of `B` in `W`. This defines the
   /// translation component of `X_WB`.
@@ -112,7 +115,8 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param tree The RigidBodyTree containing the geometric description of the
   /// world. The life span of this parameter must exceed that of this class's
-  /// instance.
+  /// instance. The maximum number of bodies in the `tree` must be less than
+  /// 1536 based on the number of the colors used for the label image.
   ///
   /// @param frame The frame in @tree to which this camera is attached.
   ///
