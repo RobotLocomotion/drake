@@ -1,4 +1,5 @@
 #include "drake/examples/Acrobot/acrobot_lcm.h"
+
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
 
@@ -16,7 +17,7 @@ static const int kNumJoints = 2;
 
 AcrobotStateReceiver::AcrobotStateReceiver() {
   this->DeclareAbstractInputPort();
-  this->DeclareOutputPort(systems::kVectorValued, kNumJoints * 2);
+  this->DeclareVectorOutputPort(AcrobotStateVector<double>());
 }
 
 void AcrobotStateReceiver::DoCalcOutput(const Context<double>& context,
@@ -32,27 +33,12 @@ void AcrobotStateReceiver::DoCalcOutput(const Context<double>& context,
   output_vec(3) = state.theta2Dot;
 }
 
-std::unique_ptr<systems::BasicVector<double>>
-AcrobotStateReceiver::AllocateOutputVector(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  DRAKE_THROW_UNLESS(descriptor.size() == 4);
-  return std::make_unique<AcrobotStateVector<double>>();
-}
-
 /*--------------------------------------------------------------------------*/
 // methods implementation for AcrobotCommandSender.
 
 AcrobotCommandSender::AcrobotCommandSender() {
   this->DeclareInputPort(systems::kVectorValued, 1);
-  this->DeclareAbstractOutputPort();
-}
-
-std::unique_ptr<systems::AbstractValue>
-AcrobotCommandSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  lcmt_acrobot_u msg{};
-  msg.tau = 0;
-  return std::make_unique<systems::Value<lcmt_acrobot_u>>(msg);
+  this->DeclareAbstractOutputPort(systems::Value<lcmt_acrobot_u>());
 }
 
 void AcrobotCommandSender::DoCalcOutput(const Context<double>& context,
@@ -88,19 +74,7 @@ void AcrobotCommandReceiver::DoCalcOutput(const Context<double>& context,
 
 AcrobotStateSender::AcrobotStateSender() {
   this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2);
-  this->DeclareAbstractOutputPort();
-}
-
-std::unique_ptr<systems::AbstractValue>
-AcrobotStateSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  auto output = std::make_unique<systems::LeafSystemOutput<double>>();
-  lcmt_acrobot_x msg{};
-  msg.theta1 = 0;
-  msg.theta2 = 0;
-  msg.theta1Dot = 0;
-  msg.theta2Dot = 0;
-  return std::make_unique<systems::Value<lcmt_acrobot_x>>(msg);
+  this->DeclareAbstractOutputPort(systems::Value<lcmt_acrobot_x>());
 }
 
 void AcrobotStateSender::DoCalcOutput(const Context<double>& context,

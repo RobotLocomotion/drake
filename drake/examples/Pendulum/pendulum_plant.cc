@@ -7,14 +7,14 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 
-namespace {
-constexpr int kStateSize = 2;  // position, velocity
-}
-
 template <typename T>
 PendulumPlant<T>::PendulumPlant() {
   this->DeclareInputPort(systems::kVectorValued, 1);
-  this->DeclareOutputPort(systems::kVectorValued, kStateSize);
+  this->DeclareVectorOutputPort(PendulumStateVector<T>());
+  this->DeclareContinuousState(
+      PendulumStateVector<T>(),
+      1 /* num_q */, 1 /* num_v */, 0 /* num_z */);
+  static_assert(PendulumStateVectorIndices::kNumCoordinates == 1 + 1, "");
 }
 
 template <typename T>
@@ -30,23 +30,6 @@ template <typename T>
 const systems::OutputPortDescriptor<T>&
 PendulumPlant<T>::get_output_port() const {
   return systems::System<T>::get_output_port(0);
-}
-
-template <typename T>
-std::unique_ptr<systems::BasicVector<T>>
-PendulumPlant<T>::AllocateOutputVector(
-    const systems::OutputPortDescriptor<T>& descriptor) const {
-  DRAKE_THROW_UNLESS(descriptor.size() == kStateSize);
-  return std::make_unique<PendulumStateVector<T>>();
-}
-
-template <typename T>
-std::unique_ptr<systems::ContinuousState<T>>
-PendulumPlant<T>::AllocateContinuousState() const {
-  return std::make_unique<systems::ContinuousState<T>>(
-      std::make_unique<PendulumStateVector<T>>(),
-      1 /* num_q */, 1 /* num_v */, 0 /* num_z */);
-  static_assert(kStateSize == 1 + 1, "State size has changed");
 }
 
 template <typename T>
