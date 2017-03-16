@@ -515,12 +515,17 @@ void RgbdCamera::Init(const std::string& name) {
   impl_->set_state_input_port_index(
       this->DeclareInputPort(systems::kVectorValued, kVecNum).get_index());
 
+  Image<uint8_t> color_image(kImageWidth, kImageHeight, kColorImageChannel);
   impl_->set_color_image_output_port_index(
-      this->DeclareAbstractOutputPort().get_index());
+      this->DeclareAbstractOutputPort(systems::Value<sensors::Image<uint8_t>>(
+          color_image)).get_index());
+
+  Image<float> depth_image(kImageWidth, kImageHeight, kDepthImageChannel);
   impl_->set_depth_image_output_port_index(
-      this->DeclareAbstractOutputPort().get_index());
-  this->DeclareOutputPort(systems::kVectorValued,
-                          rendering::PoseVector<double>::kSize);
+      this->DeclareAbstractOutputPort(systems::Value<sensors::Image<float>>(
+          depth_image)).get_index());
+
+  this->DeclareVectorOutputPort(rendering::PoseVector<double>());
 }
 
 RgbdCamera::~RgbdCamera() {}
@@ -568,33 +573,6 @@ RgbdCamera::depth_image_output_port() const {
 const OutputPortDescriptor<double>&
 RgbdCamera::camera_base_pose_output_port() const {
   return System<double>::get_output_port(2);
-}
-
-std::unique_ptr<AbstractValue> RgbdCamera::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>& descriptor) const {
-  if (descriptor.get_index() == color_image_output_port().get_index()) {
-    sensors::Image<uint8_t> color_image(kImageWidth, kImageHeight,
-                                        kColorImageChannel);
-    return std::make_unique<systems::Value<sensors::Image<uint8_t>>>(
-        color_image);
-  } else if (descriptor.get_index() == depth_image_output_port().get_index()) {
-    Image<float> depth_image(kImageWidth, kImageHeight, kDepthImageChannel);
-    return std::make_unique<systems::Value<sensors::Image<float>>>(depth_image);
-  }
-
-  DRAKE_ABORT_MSG("Unknown output port.");
-  return nullptr;
-}
-
-std::unique_ptr<systems::BasicVector<double>>
-RgbdCamera::AllocateOutputVector(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  if (descriptor.get_index() == 2) {
-    return std::make_unique<rendering::PoseVector<double>>();
-  }
-
-  DRAKE_ABORT_MSG("Unknown output port.");
-  return nullptr;
 }
 
 void RgbdCamera::DoCalcOutput(const systems::Context<double>& context,
