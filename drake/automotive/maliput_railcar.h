@@ -130,6 +130,10 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
   bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
                               int input_port, int output_port) const override;
+  void DoCalcNextUpdateTime(const systems::Context<T>& context,
+                            systems::UpdateActions<T>* actions) const override;
+  void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
+                                systems::State<T>* state) const override;
 
  private:
   void ImplCalcOutput(
