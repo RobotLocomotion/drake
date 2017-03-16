@@ -23,8 +23,6 @@ GlobalInverseKinematics::GlobalInverseKinematics(
   const int num_bodies = robot_->get_num_bodies();
   R_WB_.resize(num_bodies);
   p_WBo_.resize(num_bodies);
-  Bpos_.resize(num_bodies);
-  Bneg_.resize(num_bodies);
   // Loop through each body in the robot, to add the constraint that the bodies
   // are welded by joints.
   for (int body_idx = 1; body_idx < num_bodies; ++body_idx) {
@@ -96,10 +94,8 @@ GlobalInverseKinematics::GlobalInverseKinematics(
             if (dynamic_cast<const RevoluteJoint*>(joint) != nullptr) {
               // Adding McCormick Envelope will add binary variables into
               // the program.
-              const auto pair_binary = solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+              solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                   this, R_WB_[body_idx], num_binary_vars_per_half_axis);
-              Bpos_[body_idx] = pair_binary.first;
-              Bneg_[body_idx] = pair_binary.second;
 
               const RevoluteJoint
                   *revolute_joint = dynamic_cast<const RevoluteJoint*>(joint);

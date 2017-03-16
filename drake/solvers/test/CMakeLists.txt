@@ -89,4 +89,10 @@ if (lcm_FOUND)
     drakeRotationConstraint
     drakeLCMTypes
     drakeLcm)
+
+  add_executable(plot_rotation_mccormick_envelope plot_rotation_mccormick_envelope.cc)
+  target_link_libraries(plot_rotation_mccormick_envelope
+          drakeOptimization
+          drakeRotationConstraint
+          drakeRotationConstraintVisualization)
 endif(lcm_FOUND)
