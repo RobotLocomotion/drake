@@ -10,22 +10,29 @@ namespace {
 // Draw an arc between two end points on the unit sphere. The two end points
 // are the vertices of the intersection region, between the box and the surface
 // of the sphere.
-// This requires that arc_end0(fixed_axis) = arc_end1(fixed_axis) = x(fixed_axis),
+// This requires that
+// arc_end0(fixed_axis) = arc_end1(fixed_axis) = x(fixed_axis),
 // where `x` is a point on the arc.
 // Draws the shorter arc between the two points.
-void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0, const Eigen::Vector3d& arc_end1, int fixed_axis, const Eigen::RowVector3d& color) {
+void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0,
+                                            const Eigen::Vector3d& arc_end1,
+                                            int fixed_axis,
+                                            const Eigen::RowVector3d& color) {
   DRAKE_DEMAND(std::abs(arc_end0(fixed_axis) - arc_end1(fixed_axis)) < 1E-3);
   DRAKE_DEMAND(std::abs(arc_end0.norm() - 1) < 1E-3);
   DRAKE_DEMAND(std::abs(arc_end1.norm() - 1) < 1E-3);
   int free_axis0 = (fixed_axis + 1) % 3;
   int free_axis1 = (fixed_axis + 2) % 3;
-  if (arc_end0(free_axis0) * arc_end1(free_axis0) < 0 || arc_end0(free_axis1) * arc_end1(free_axis1) < 0) {
+  if (arc_end0(free_axis0) * arc_end1(free_axis0) < 0 ||
+      arc_end0(free_axis1) * arc_end1(free_axis1) < 0) {
     // The two end points have to be in the same orthant.
-    throw std::runtime_error("The end points of the boundary arc are not in the same orthant.");
+    throw std::runtime_error(
+        "The end points of the boundary arc are not in the same orthant.");
   }
   const int kNumViaPoints = 20;
   Eigen::Matrix<double, 3, kNumViaPoints> via_pts;
-  via_pts.row(fixed_axis) = Eigen::Matrix<double, 1, kNumViaPoints>::Constant(arc_end0(fixed_axis));
+  via_pts.row(fixed_axis) =
+      Eigen::Matrix<double, 1, kNumViaPoints>::Constant(arc_end0(fixed_axis));
   Eigen::Vector3d start_via_pts, end_via_pts;
   if (arc_end0(free_axis0) < arc_end1(free_axis0)) {
     start_via_pts = arc_end0;
@@ -34,17 +41,20 @@ void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0, con
     start_via_pts = arc_end1;
     end_via_pts = arc_end0;
   }
-  via_pts.row(free_axis0) = Eigen::Matrix<double, 1, kNumViaPoints>::LinSpaced(kNumViaPoints, start_via_pts(free_axis0), end_via_pts(free_axis0));
+  via_pts.row(free_axis0) = Eigen::Matrix<double, 1, kNumViaPoints>::LinSpaced(
+      kNumViaPoints, start_via_pts(free_axis0), end_via_pts(free_axis0));
   via_pts(free_axis1, 0) = start_via_pts(free_axis1);
   via_pts(free_axis1, kNumViaPoints - 1) = end_via_pts(free_axis1);
   bool positive_free_axis1 = arc_end0(free_axis1) >= 0 || arc_end1(free_axis1);
   for (int i = 1; i < kNumViaPoints - 1; ++i) {
-    via_pts(free_axis1, i) = std::sqrt(1 - std::pow(via_pts(fixed_axis, i), 2) - std::pow(via_pts(free_axis0, i), 2));
+    via_pts(free_axis1, i) = std::sqrt(1 - std::pow(via_pts(fixed_axis, i), 2) -
+                                       std::pow(via_pts(free_axis0, i), 2));
     if (!positive_free_axis1) {
       via_pts(free_axis1, i) *= -1;
     }
   }
-  auto h = lcm::LcmCallMatlab(1, "plot3", via_pts.row(0), via_pts.row(1), via_pts.row(2));
+  auto h = lcm::LcmCallMatlab(1, "plot3", via_pts.row(0), via_pts.row(1),
+                              via_pts.row(2));
   lcm::LcmCallMatlab("set", h[0], "Color", color);
 }
 }  // namespace
@@ -52,14 +62,16 @@ void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0, con
 void DrawSphere(const Eigen::RowVector3d& color) {
   using lcm::LcmCallMatlab;
   auto xyz_sphere = lcm::LcmCallMatlab(3, "sphere", 40);
-  auto h_sphere = LcmCallMatlab(1, "surf", xyz_sphere[0], xyz_sphere[1], xyz_sphere[2]);
+  auto h_sphere =
+      LcmCallMatlab(1, "surf", xyz_sphere[0], xyz_sphere[1], xyz_sphere[2]);
   LcmCallMatlab("set", h_sphere[0], "FaceColor", color);
   LcmCallMatlab("set", h_sphere[0], "FaceAlpha", 0.2);
   LcmCallMatlab("set", h_sphere[0], "EdgeColor", color);
   LcmCallMatlab("set", h_sphere[0], "LineStyle", "none");
 }
 
-void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax, const Eigen::RowVector3d& color) {
+void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax,
+             const Eigen::RowVector3d& color) {
   using lcm::LcmCallMatlab;
   if ((bmin.array() < 0).any()) {
     throw std::runtime_error("bmin should be in the first orthant in DrawBox.");
@@ -83,7 +95,8 @@ void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax, const Eig
       // bmin bmax
       // Please refer to MATLAB meshgrid function for more details
       // https://www.mathworks.com/help/matlab/ref/meshgrid.html
-      plane[free_axis0] << Eigen::RowVector2d::Constant(bmin(free_axis0)), Eigen::RowVector2d::Constant(bmax(free_axis0));
+      plane[free_axis0] << Eigen::RowVector2d::Constant(bmin(free_axis0)),
+          Eigen::RowVector2d::Constant(bmax(free_axis0));
       plane[free_axis1].col(0) = Eigen::Vector2d::Constant(bmin(free_axis1));
       plane[free_axis1].col(1) = Eigen::Vector2d::Constant(bmax(free_axis1));
       plane[fixed_axis] = Eigen::Matrix2d::Constant(bmin(fixed_axis));
@@ -102,8 +115,11 @@ void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax, const Eig
   }
 }
 
-void DrawBoxSphereIntersection(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax, const Eigen::RowVector3d& color) {
-  const auto& intersection_pts = internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
+void DrawBoxSphereIntersection(const Eigen::Vector3d& bmin,
+                               const Eigen::Vector3d& bmax,
+                               const Eigen::RowVector3d& color) {
+  const auto& intersection_pts =
+      internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
   // Draw the line that connects adjacent intersection points.
   // For each intersection point, find out the neighbouring points, and then
   // draw the arc between these two points. The neighbouring points should have
@@ -117,7 +133,8 @@ void DrawBoxSphereIntersection(const Eigen::Vector3d& bmin, const Eigen::Vector3
                 || std::abs(intersection_pts[i](dim) - bmax(dim)) < 1E-3)) {
           // Determine if two intersection points are the neighbouring boundary
           // points of the intersection region.
-          DrawArcBoundaryOfBoxSphereIntersection(intersection_pts[i], intersection_pts[j], dim, color);
+          DrawArcBoundaryOfBoxSphereIntersection(
+              intersection_pts[i], intersection_pts[j], dim, color);
         }
       }
     }

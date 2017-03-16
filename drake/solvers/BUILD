@@ -144,8 +144,9 @@ drake_cc_library(
     deps = [
         ":rotation_constraint",
         "//drake/lcm:lcm_call_matlab",
-     ],
+    ],
 )
+
 drake_cc_library(
     name = "add_solver_util",
     testonly = 1,
@@ -550,13 +551,14 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
     ],
 )
+
 drake_cc_binary(
     name = "plot_rotation_mccormick_envelope",
-    srcs = ["test/plot_rotation_mccormick_envelope.cc"],
     testonly = 1,
+    srcs = ["test/plot_rotation_mccormick_envelope.cc"],
     deps = [
         ":rotation_constraint_visualization",
-    ]
+    ],
 )
 
 # The extra_srcs are required here because cpplint() doesn't understand how to

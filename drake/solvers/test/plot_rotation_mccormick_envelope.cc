@@ -15,11 +15,15 @@ void DrawAllMcCormickEnvelopes(int num_bins) {
   for (int i = 0; i < num_bins; ++i) {
     for (int j = 0; j < num_bins; ++j) {
       for (int k = 0; k < num_bins; ++k) {
-        Eigen::Vector3d bmin(static_cast<double>(i) / num_bins, static_cast<double>(j) / num_bins, static_cast<double>(k) / num_bins);
-        Eigen::Vector3d bmax(static_cast<double>(i + 1) / num_bins, static_cast<double>(j + 1) / num_bins, static_cast<double>(k + 1) / num_bins);
+        Eigen::Vector3d bmin(static_cast<double>(i) / num_bins,
+                             static_cast<double>(j) / num_bins,
+                             static_cast<double>(k) / num_bins);
+        Eigen::Vector3d bmax(static_cast<double>(i + 1) / num_bins,
+                             static_cast<double>(j + 1) / num_bins,
+                             static_cast<double>(k + 1) / num_bins);
         if (bmin.norm() <= 1 && bmax.norm() >= 1) {
           DrawBoxSphereIntersection(bmin, bmax);
-//          DrawBox(bmin, bmax);
+          DrawBox(bmin, bmax);
         }
       }
     }
