@@ -149,19 +149,21 @@ drake_install_pkg_config_file(drake-rotation-constraint
 
 drake_install_libraries(drakeRotationConstraint)
 
-add_library_with_exports(LIB_NAME drakeRotationConstraintVisualization SOURCE_FILES rotation_constraint_visualization.cc)
-target_link_libraries(drakeRotationConstraintVisualization
-        drakeRotationConstraint
-        drakeLcm
-        drakeLCMTypes)
-drake_install_headers(rotation_constraint_visualization.h)
-drake_install_pkg_config_file(drake-rotation-constraint-visualization
-        TARGET drakeRotationConstraintVisualization
-        LIBS -ldrakeRotationConstraintVisualization
-        REQUIRES
-        drake-common
-        drake-rotation-constraint)
-drake_install_libraries(drakeRotationConstraintVisualization)
+if(lcm_FOUND)
+  add_library_with_exports(LIB_NAME drakeRotationConstraintVisualization SOURCE_FILES rotation_constraint_visualization.cc)
+  target_link_libraries(drakeRotationConstraintVisualization
+          drakeRotationConstraint
+          drakeLcm
+          drakeLCMTypes)
+  drake_install_headers(rotation_constraint_visualization.h)
+  drake_install_pkg_config_file(drake-rotation-constraint-visualization
+          TARGET drakeRotationConstraintVisualization
+          LIBS -ldrakeRotationConstraintVisualization
+          REQUIRES
+          drake-common
+          drake-rotation-constraint)
+  drake_install_libraries(drakeRotationConstraintVisualization)
+endif()
 
 if(BUILD_TESTING)
   add_subdirectory(test)
