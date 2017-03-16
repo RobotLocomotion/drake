@@ -7,6 +7,32 @@ load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "primitives",
+    srcs = [],
+    hdrs = [],
+    deps = [
+        ":adder",
+        ":affine_system",
+        ":constant_value_source",
+        ":constant_vector_source",
+        ":demultiplexer",
+        ":first_order_low_pass_filter",
+        ":gain",
+        ":integrator",
+        ":linear_system",
+        ":matrix_gain",
+        ":multiplexer",
+        ":pass_through",
+        ":random_source",
+        ":saturation",
+        ":signal_log",
+        ":signal_logger",
+        ":trajectory_source",
+        ":zero_order_hold",
+    ],
+)
+
+drake_cc_library(
     name = "adder",
     srcs = ["adder.cc"],
     hdrs = ["adder.h"],
