@@ -101,9 +101,9 @@ Drake can process the following mesh file format (file extension):
 - `OBJ <https://en.wikipedia.org/wiki/Wavefront_.obj_file>`_ - a 3D geometry
   definition file format.
 
-If Drake processes an sdf or urdf file and finds a mesh file name extension that
+If Drake processes an SDF or URDF file and finds a mesh file name extension that
 is not a type that it can process (currently only OBJ), it will see if a file
-exists with the same path and name but with an OBJ extension.
+exists with the same path and name but with an "obj" extension.
 
 The following are mesh file formats that are not processed by Drake, but may be
 found in the Drake repository and may be used to find OBJ versions:
@@ -119,10 +119,10 @@ found in the Drake repository and may be used to find OBJ versions:
   `issue exists to add Drake support for STL files
   <https://github.com/RobotLocomotion/drake/issues/2941>`_.
 
-- `WRL <https://en.wikipedia.org/wiki/VRML>`_- an obsolete mesh format, in the
-  form of a text file. Allows you to specify surface color, textures,
-  shininess, transparency, and other parameters. Vertices and edges for a 3D
-  polygon can be specified.
+- `WRL <https://en.wikipedia.org/wiki/VRML>`_- an obsolete mesh format that is
+  superseded by a new format called X3D. Allows you to specify surface color,
+  textures, shininess, transparency, and other parameters. Vertices and edges
+  for a 3D polygon can be specified.
 
 .. _models_contents:
 
@@ -142,34 +142,35 @@ references for more information.
 Modelling the shape of an object
 --------------------------------
 
-To model a shape for visual purposes, use the ``<visual>`` tag. To model a shape
-for the purpose of determining contact between your model and other objects, use
-the ``<collision>`` tag.
+To model a shape for visual purposes, use URDF's or SDF's ``<visual>`` tag. To
+model a shape for the purpose of determining contact between your model and
+other objects, use URDF's or SDF's ``<collision>`` tag. (While both SDF and URDF
+use those same tags, note that the structure and content of those tags differ).
 
 To explain why you might want to define the collision element differently than
 the visual element, let's explore the different ways of defining shapes.
 
 An object's shape can be modelled using a 3D scanner, which produces a polygon
-mesh. Meshes of complicated objects contain many polygons. The detail (density)
-of the mesh is great for a realistic visual display. However when a mesh is used
-for a collision element, collision algorithms must process all the polygons that
-are close to the target, which can be slow. For these reasons it is often
-desirable to use something simpler than a mesh for the collision model.  It's a
-tradeoff between accuracy of the shape and processing time.
+mesh. Meshes of geometrically complicated objects contain many polygons. The
+detail (density) of the mesh is great for a realistic visual display. However
+when a mesh is used for a collision element, collision algorithms must process
+all the polygons that are close to the target, which can be slow. For these
+reasons it is often desirable to use something simpler than a mesh for the
+collision model.  It's a tradeoff between accuracy of the shape and processing
+time.
 
 The ``<visual>`` tag is used in visualization programs like
-drake-visualizer (in the
+``drake-visualizer`` (in the
 `Director external <https://github.com/RobotLocomotion/director>`_). Drake does
 not process the visual tag, unless you have something specific in your code that
 will process it, like
 `RgbdCamera <http://drake.mit.edu/doxygen_cxx/rgbd__camera_8h.html>`_.
 Regardless of what program is processing the visual data, the processing time
-will be longer with a complex visual representation, than with a simple one, but
-not as much as if it were collision data.
+of visual elements is generally not an issue.
 
-In addition to modelling shapes with meshes, you can also model a shape with
-geometric primitives, such as cylinders, spheres, or boxes. The complexity of a
-geometric primitive is far less than with a mesh.
+In addition to modelling shapes with meshes, you can also model shapes with
+geometric primitives, such as cylinders, spheres, or boxes. Geometric primitives
+are far less complex than meshes and so require far less processing time.
 
 In the `iiwa14.urdf robotic arm example
 <https://github.com/RobotLocomotion/drake/blob/83740997e1c893be5d2209563b755cfe84ee1c32/drake/examples/kuka_iiwa_arm/urdf/iiwa14.urdf>`_,
@@ -180,10 +181,11 @@ for collision, where we don't expect to need precision. Even if we were to
 use an "elbow" to shove an object out of the way, we probably don't need
 exact accuracy.
 
-But there are cases where we need the precision of a mesh, for example, for the
-end of the arm, when the arm is reaching into tight or crowded spaces or
-performing dexterous manipulation tasks. In these cases, we need to simplify the
-mesh. The next section describes some options.
+But there are cases where we need the precision of a mesh. For example, extra
+modeling precision may be needed to simulate a robot arm's end effector
+reaching into tight spaces or performing dexterous manipulation tasks. In these
+cases, if its taking too long to process the original mesh, then the mesh needs
+to be simplified. The next section describes some options.
 
 .. _models_simplifying_meshes:
 
