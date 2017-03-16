@@ -293,6 +293,111 @@ void MaliputRailcar<T>::SetDefaultState(
   railcar_state->set_speed(kDefaultInitialSpeed);
 }
 
+// TODO(liang.fok): Switch to guard functions once they are available. The
+// following computes an estimate of when the vehicle will reach the end of
+// its lane. This estimate will be off when r != 0 and the lane is very
+// curvey because the scale factors used in Lane::EvalMotionDerivatives() will
+// not be constant.
+template <typename T>
+void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
+    systems::UpdateActions<T>* actions) const {
+  // Obtains the relevant parameters.
+  const MaliputRailcarConfig<T>& config =
+      this->template GetNumericParameter<MaliputRailcarConfig>(context, 0);
+
+  const VectorBase<T>& context_state = context.get_continuous_state_vector();
+  const MaliputRailcarState<T>* const state =
+      dynamic_cast<const MaliputRailcarState<T>*>(&context_state);
+  DRAKE_ASSERT(state != nullptr);
+
+  const LaneDirection& lane_direction =
+      context.template get_abstract_state<LaneDirection>(0);
+
+  const BasicVector<T>* input =
+      this->template EvalVectorInput<BasicVector>(context,
+          command_input_port_index_);
+  DRAKE_ASSERT(input->size() == 1);
+
+  const T& r = config.r();
+  const T& h = config.h();
+  const T& s = state->s();
+  const T& speed = state->speed();
+  const T acceleration = cond(input == nullptr, T(0), input->GetAtIndex(0));
+  const maliput::api::Lane* lane = lane_direction.lane;
+  const bool with_s = lane_direction.with_s;
+
+  DRAKE_DEMAND(lane != nullptr);
+
+  // Computes `s_dot`, the time derivative of `s`.
+  const T sigma_v = cond(with_s, speed, -speed);
+  const LanePosition first_motion_derivatives =
+      lane_direction.lane->EvalMotionDerivatives(
+          LanePosition(s, r, h),
+          IsoLaneVelocity(sigma_v, 0 /* rho_v */, 0 /* eta_v */));
+  const T s_dot = first_motion_derivatives.s;
+
+  // Computes `s_dot_dot`, the second time derivative of `s`.
+  const T sigma_a = cond(with_s, acceleration, -acceleration);
+  const LanePosition second_motion_derivatives =
+      lane_direction.lane->EvalMotionDerivatives(
+          LanePosition(s, r, h),
+          IsoLaneVelocity(sigma_a, 0 /* rho_a */, 0 /* eta_a */));
+  const T s_dot_dot = second_motion_derivatives.s;
+
+  const T distance = cond(with_s, T(lane->length()) - s, -s);
+
+  using std::pow;
+  using std::sqrt;
+
+  // Allocates a variable for saving the time when the vehicle will reach the
+  // end of the current lane.
+  T t{};
+
+  if (s_dot_dot == 0) {
+    t = distance / s_dot;
+  } else {
+    // Applies the quadratic formula to solve for `t`, the time when the vehicle
+    // will encounter the end of the lane.
+    //
+    //     s_dot_dot * t^2 + s_dot * t - distance = 0
+    //
+    const T b_squared = pow(s_dot, 2);
+    const T four_ac = -4 * s_dot_dot * distance;
+    if (b_squared < four_ac) {
+      // The vehicle will stop before reaching the end of its lane.
+      systems::LeafSystem<T>::DoCalcNextUpdateTime(context, actions);
+      return;
+    }
+    T root1 = (-s_dot + sqrt(b_squared - four_ac)) / (2 * s_dot_dot);
+    T root2 = (-s_dot - sqrt(b_squared - four_ac)) / (2 * s_dot_dot);
+    if (root1 > 0) {
+      t = root1;
+    } else if (root2 > 0) {
+      t = root2;
+    } else {
+      DRAKE_ABORT_MSG("MaliputRailcar::DoCalcNextUpdateTime: Failed "
+          "to find a positive time till vehicle reaches end of lane.");
+    }
+  }
+
+  actions->time = context.get_time() + t;
+  actions->events.push_back(systems::DiscreteEvent<T>());
+  actions->events.back().action =
+      systems::DiscreteEvent<T>::kUnrestrictedUpdateAction;
+}
+
+template <typename T>
+void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
+    const systems::Context<T>& context,
+    systems::State<T>* next_state) const {
+
+  // Copy the present state to the new one.
+  next_state->CopyFrom(context.get_state());
+
+  // TODO(liang.fok): Update state to allow MaliputRailcar to proceed onto an
+  // ongoing branch from the current Maliput lane.
+}
+
 // This section must match the API documentation in maliput_railcar.h.
 template class MaliputRailcar<double>;
 
