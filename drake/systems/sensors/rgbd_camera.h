@@ -74,6 +74,8 @@ class RgbdCamera : public LeafSystem<double> {
   };
 
   /// A constructor for %RgbdCamera that defines `B` using Euler angles.
+  /// The pose of %RgbdCamera will be fixed to the world coordinate system
+  /// throughout the simulation.
   ///
   /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
@@ -101,6 +103,8 @@ class RgbdCamera : public LeafSystem<double> {
              bool show_window);
 
   /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
+  /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
+  /// updated during the simulation.
   ///
   /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
@@ -130,14 +134,14 @@ class RgbdCamera : public LeafSystem<double> {
   /// Reterns the depth sensor's info.
   const CameraInfo& depth_camera_info() const;
 
-  /// Returns `X_WB`.
-  const Eigen::Isometry3d& base_pose() const;
-
-  /// Returns `X_WC`.
+  /// Returns `X_BC`.
   const Eigen::Isometry3d& color_camera_optical_pose() const;
 
-  /// Returns `X_WD`.
+  /// Returns `X_BD`.
   const Eigen::Isometry3d& depth_camera_optical_pose() const;
+
+  /// Returns the RigidBodyFrame to which this RgbdCamera is attached.
+  const RigidBodyFrame<double>& frame() const;
 
   /// Returns the RigidBodyTree to which this RgbdCamera is attached.
   const RigidBodyTree<double>& tree() const;
@@ -155,9 +159,16 @@ class RgbdCamera : public LeafSystem<double> {
   /// Image<float>.
   const OutputPortDescriptor<double>& depth_image_output_port() const;
 
+  /// Returns a descriptor of the vector valued output port that contains an
+  /// PoseVector.
+  const OutputPortDescriptor<double>& camera_base_pose_output_port() const;
+
  protected:
   /// Allocates the outputs.  See class description.
   std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<double>& descriptor) const override;
+
+  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const OutputPortDescriptor<double>& descriptor) const override;
 
   /// Updates all the model frames for the renderer and outputs the rendered
@@ -166,6 +177,8 @@ class RgbdCamera : public LeafSystem<double> {
                     systems::SystemOutput<double>* output) const override;
 
  private:
+  void Init(const std::string& name);
+
   class Impl;
   std::unique_ptr<Impl> impl_;
 };

@@ -36,6 +36,7 @@ namespace drake {
 
 using multibody::joints::kFixed;
 using multibody::joints::kRollPitchYaw;
+using systems::rendering::PoseAggregator;
 
 namespace automotive {
 
@@ -74,8 +75,11 @@ const RigidBodyTree<T>& AutomotiveSimulator<T>::get_rigid_body_tree() {
 template <typename T>
 int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
     const std::string& sdf_filename,
-    const std::string& model_name, const std::string& channel_name) {
+    const std::string& model_name,
+    const std::string& channel_name,
+    const SimpleCarState<T>& initial_state) {
   DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(aggregator_ != nullptr);
   const int vehicle_number = allocate_vehicle_number();
 
   static const DrivingCommandTranslator driving_command_translator;
@@ -84,8 +88,13 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
       builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
           channel_name, driving_command_translator, lcm_.get());
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
+  simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+  const auto& descriptor = aggregator_->AddSingleInput(
+      "simple_car" + std::to_string(vehicle_number));
+  builder_->Connect(simple_car->pose_output(),
+                    aggregator_->get_input_port(descriptor.get_index()));
 
   builder_->Connect(*command_subscriber, *simple_car);
   builder_->Connect(simple_car->state_output(),
@@ -102,17 +111,23 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
     double speed,
     double start_time) {
   DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(aggregator_ != nullptr);
   const int vehicle_number = allocate_vehicle_number();
 
   auto trajectory_car =
       builder_->template AddSystem<TrajectoryCar<T>>(curve, speed, start_time);
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+  const auto& descriptor = aggregator_->AddSingleInput(
+      "trajectory_car" + std::to_string(vehicle_number));
+  builder_->Connect(trajectory_car->pose_output(),
+                    aggregator_->get_input_port(descriptor.get_index()));
 
-  builder_->Connect(*trajectory_car, *coord_transform);
+  builder_->Connect(trajectory_car->raw_pose_output(),
+                    coord_transform->get_input_port(0));
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_filename, coord_transform, ""/* model_name */);
+  return AddSdfModel(sdf_filename, coord_transform, "" /* model_name */);
 }
 
 template <typename T>
@@ -275,7 +290,7 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
       builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
           std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE", translator,
           lcm_.get());
-  builder_->Connect(system, *publisher);
+  builder_->Connect(system.raw_pose_output(), publisher->get_input_port(0));
 }
 
 template <typename T>
@@ -485,7 +500,7 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
         endless_road_.get(), num_cars);
     int i = 0;
     for (const auto& item : endless_road_cars_) {
-      EndlessRoadCar<T>* car = item.first;
+      const EndlessRoadCar<T>* car = item.first;
 
       // Every car is visible to the Oracle...
       builder_->Connect(car->get_output_port(0), oracle->get_input_port(i));
@@ -513,9 +528,24 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   diagram_ = builder_->Build();
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
 
+  // Initialize the state of the SimpleCars.
+  for (const auto& pair : simple_car_initial_states_) {
+    const SimpleCar<T>* const car = pair.first;
+    const SimpleCarState<T>& initial_state = pair.second;
+
+    systems::VectorBase<T>* context_state =
+        diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(),
+                                             car)
+        ->get_mutable_continuous_state()->get_mutable_vector();
+    SimpleCarState<T>* const state =
+        dynamic_cast<SimpleCarState<T>*>(context_state);
+    DRAKE_ASSERT(state);
+    state->set_value(initial_state.get_value());
+  }
+
   // Initialize the state of the EndlessRoadCars.
-  for (auto& pair : endless_road_cars_) {
-    EndlessRoadCar<T>* const car = pair.first;
+  for (const auto& pair : endless_road_cars_) {
+    const EndlessRoadCar<T>* const car = pair.first;
     const EndlessRoadCarState<T>& initial_state = pair.second;
 
     systems::VectorBase<T>* context_state =

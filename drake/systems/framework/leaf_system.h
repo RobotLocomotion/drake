@@ -12,13 +12,15 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
-#include "drake/systems/framework/abstract_state.h"
+#include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_state.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/model_values.h"
 #include "drake/systems/framework/sparsity_matrix.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
@@ -142,7 +144,8 @@ class LeafSystem : public System<T> {
     // Set the default parameters, checking that the number of parameters does
     // not change.
     const int num_params = leaf_context->num_numeric_parameters();
-    SetDefaultParameters(*leaf_context, leaf_context->get_mutable_parameters());
+    SetDefaultParameters(*leaf_context,
+                         &leaf_context->get_mutable_parameters());
     DRAKE_DEMAND(num_params == leaf_context->num_numeric_parameters());
   }
 
@@ -152,11 +155,11 @@ class LeafSystem : public System<T> {
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
       if (descriptor.get_data_type() == kVectorValued) {
-        output->add_port(
-            std::make_unique<OutputPort>(AllocateOutputVector(descriptor)));
+        output->add_port(std::make_unique<OutputPortValue>(
+            AllocateOutputVector(descriptor)));
       } else {
-        output->add_port(
-            std::make_unique<OutputPort>(AllocateOutputAbstract(descriptor)));
+        output->add_port(std::make_unique<OutputPortValue>(
+            AllocateOutputAbstract(descriptor)));
       }
     }
     return std::unique_ptr<SystemOutput<T>>(output.release());
@@ -220,21 +223,38 @@ class LeafSystem : public System<T> {
     DoCalcNextUpdateTimeImpl(context, events);
   }
 
-  /// Returns a BasicVector of the size specified in @p descriptor. Concrete
-  /// subclasses that require a more specific type of vector input should
-  /// override this function to provide that type.
+  /// Allocates a vector that is suitable as an input value for @p descriptor.
+  /// The default implementation in this class either clones the model_vector
+  /// (if the port was declared via DeclareVectorInputPort) or else allocates a
+  /// BasicVector (if the port was declared via DeclareInputPort(kVectorValued,
+  /// size).  Subclasses can override this method if the default behavior is
+  /// not sufficient.
   BasicVector<T>* DoAllocateInputVector(
       const InputPortDescriptor<T>& descriptor) const override {
+    std::unique_ptr<BasicVector<T>> model_result =
+        model_input_values_.CloneVectorModel<T>(descriptor.get_index());
+    if (model_result) {
+      return model_result.release();
+    }
     return new BasicVector<T>(descriptor.size());
   }
 
-  /// Aborts.
-  /// Concrete subclasses that require an abstract input should override this
-  /// function to provide the appropriate type.
+  /// Allocates a vector that is suitable as an input value for @p descriptor.
+  /// The default implementation in this class either clones the model_value
+  /// (if the port was declared via DeclareAbstractInputPort) or else aborts.
+  ///
+  /// Subclasses with abstract input ports must either provide a model_value
+  /// when declaring the port, or else override this method.
   AbstractValue* DoAllocateInputAbstract(
       const InputPortDescriptor<T>& descriptor) const override {
+    std::unique_ptr<AbstractValue> model_result =
+        model_input_values_.CloneModel(descriptor.get_index());
+    if (model_result) {
+      return model_result.release();
+    }
     DRAKE_ABORT_MSG("A concrete leaf system with abstract input ports should "
-                    "override AllocateInputAbstract.");
+                    "pass a model_value to DeclareAbstractInputPort, or else "
+                    "must override DoAllocateInputAbstract");
   }
 
   // =========================================================================
@@ -266,8 +286,8 @@ class LeafSystem : public System<T> {
 
   /// Reserves the abstract state as required by CreateDefaultContext. By
   /// default, reserves no state. Systems with abstract state should override.
-  virtual std::unique_ptr<AbstractState> AllocateAbstractState() const {
-    return std::make_unique<AbstractState>();
+  virtual std::unique_ptr<AbstractValues> AllocateAbstractState() const {
+    return std::make_unique<AbstractValues>();
   }
 
   /// Reserves the parameters as required by CreateDefaultContext. By default,
@@ -277,20 +297,40 @@ class LeafSystem : public System<T> {
   }
 
   /// Given a port descriptor, allocates the vector storage.  The default
-  /// implementation in this class allocates a BasicVector.  Subclasses can
-  /// override to use output vector types other than BasicVector.  The
-  /// descriptor must match a port declared via DeclareOutputPort.
+  /// implementation in this class either clones the model_vector (if the port
+  /// was declared via DeclareVectorOutputPort) or else allocates a BasicVector
+  /// (if the port was declared via DeclareOutputPort(kVectorValued, size).
+  /// Subclasses can override this method if the default behavior is not
+  /// sufficient.
+  ///
+  /// The descriptor must match a port declared via DeclareOutputPort or one of
+  /// its wrappers, e.g., DeclareVectorOutputPort.
   virtual std::unique_ptr<BasicVector<T>> AllocateOutputVector(
       const OutputPortDescriptor<T>& descriptor) const {
+    std::unique_ptr<BasicVector<T>> model_result =
+        model_output_values_.CloneVectorModel<T>(descriptor.get_index());
+    if (model_result) {
+      return model_result;
+    }
     return std::make_unique<BasicVector<T>>(descriptor.size());
   }
 
   /// Given a port descriptor, allocates the abstract storage.  The default
-  /// implementation in this class aborts.  Subclasses with abstract output
-  /// ports must override. The descriptor must match a port declared via
-  /// DeclareOutputPort.
+  /// implementation in this class either clones the model_value (if the port
+  /// was declared via DeclareAbstractOutputPort) or aborts.
+  ///
+  /// Subclasses with abstract output ports must either provide a model_value
+  /// when declaring the port, or else override this method.
+  ///
+  /// The descriptor must match a port declared via DeclareOutputPort or one of
+  /// its wrappers, e.g., DeclareAbstractOutputPort.
   virtual std::unique_ptr<AbstractValue> AllocateOutputAbstract(
       const OutputPortDescriptor<T>& descriptor) const {
+    std::unique_ptr<AbstractValue> model_result =
+        model_output_values_.CloneModel(descriptor.get_index());
+    if (model_result) {
+      return model_result;
+    }
     DRAKE_ABORT_MSG("A concrete leaf system with abstract output ports must "
                     "override AllocateOutputAbstract.");
   }
@@ -425,8 +465,31 @@ class LeafSystem : public System<T> {
   /// is overridden.
   void DeclareContinuousState(int num_q, int num_v, int num_z) {
     const int n = num_q + num_v + num_z;
-    DeclareContinuousState(std::make_unique<BasicVector<T>>(n), num_q, num_v,
-                           num_z);
+    DeclareContinuousState(BasicVector<T>(n), num_q, num_v, num_z);
+  }
+
+  /// Declares that this System should reserve continuous state with
+  /// @p model_vector.size() miscellaneous state variables, stored in a
+  /// vector Cloned from @p model_vector.  Has no effect if
+  /// AllocateContinuousState is overridden.
+  void DeclareContinuousState(const BasicVector<T>& model_vector) {
+    const int num_q = 0, num_v = 0;
+    const int num_z = model_vector.size();
+    DeclareContinuousState(model_vector, num_q, num_v, num_z);
+  }
+
+  /// Declares that this System should reserve continuous state with @p num_q
+  /// generalized positions, @p num_v generalized velocities, and @p num_z
+  /// miscellaneous state variables, stored in a vector Cloned from
+  /// @p model_vector. Aborts if @p model_vector has the wrong size. Has no
+  /// effect if AllocateContinuousState is overridden.
+  void DeclareContinuousState(const BasicVector<T>& model_vector,
+                              int num_q, int num_v, int num_z) {
+    DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
+    model_continuous_state_vector_ = model_vector.Clone();
+    num_generalized_positions_ = num_q;
+    num_generalized_velocities_ = num_v;
+    num_misc_continuous_states_ = num_z;
   }
 
   /// Declares that this System should reserve continuous state with @p num_q
@@ -434,14 +497,11 @@ class LeafSystem : public System<T> {
   /// miscellaneous state variables, stored in the a vector Cloned from
   /// @p model_vector. Aborts if @p model_vector is nullptr or has the wrong
   /// size. Has no effect if AllocateContinuousState is overridden.
+  DRAKE_DEPRECATED("Use the const-reference model_vector overload instead")
   void DeclareContinuousState(std::unique_ptr<BasicVector<T>> model_vector,
                               int num_q, int num_v, int num_z) {
     DRAKE_DEMAND(model_vector != nullptr);
-    DRAKE_DEMAND(model_vector->size() == num_q + num_v + num_z);
-    model_continuous_state_vector_ = std::move(model_vector);
-    num_generalized_positions_ = num_q;
-    num_generalized_velocities_ = num_v;
-    num_misc_continuous_states_ = num_z;
+    DeclareContinuousState(*model_vector, num_q, num_v, num_z);
   }
 
   /// Declares that this System should reserve discrete state with
@@ -450,6 +510,60 @@ class LeafSystem : public System<T> {
   void DeclareDiscreteState(int num_state_variables) {
     model_discrete_state_vector_ =
         std::make_unique<BasicVector<T>>(num_state_variables);
+  }
+
+  /// Declares a vector-valued input port using the given @p model_vector.
+  /// This is the best way to declare LeafSystem input ports that require
+  /// subclasses of BasicVector.  The port's size will be model_vector.size(),
+  /// and LeafSystem's default implementation of DoAllocateInputVector will be
+  /// model_vector.Clone().
+  const InputPortDescriptor<T>& DeclareVectorInputPort(
+      const BasicVector<T>& model_vector) {
+    const int size = model_vector.size();
+    const int next_index = this->get_num_input_ports();
+    model_input_values_.AddVectorModel(next_index, model_vector.Clone());
+    return this->DeclareInputPort(kVectorValued, size);
+  }
+
+  // Avoid shadowing out the no-arg DeclareAbstractInputPort().
+  using System<T>::DeclareAbstractInputPort;
+
+  /// Declares an abstract-valued input port using the given @p model_value.
+  /// This is the best way to declare LeafSystem abstract input ports.
+  /// LeafSystem's default implementation of DoAllocateInputAbstract will be
+  /// model_value.Clone().
+  const InputPortDescriptor<T>& DeclareAbstractInputPort(
+      const AbstractValue& model_value) {
+    const int next_index = this->get_num_input_ports();
+    model_input_values_.AddModel(next_index, model_value.Clone());
+    return this->DeclareAbstractInputPort();
+  }
+
+  /// Declares a vector-valued output port using the given @p model_vector.
+  /// This is the best way to declare LeafSystem output ports that require
+  /// subclasses of BasicVector.  The port's size will be model_vector.size(),
+  /// and LeafSystem's default implementation of DoAllocateOutputVector will be
+  /// model_vector.Clone().
+  const OutputPortDescriptor<T>& DeclareVectorOutputPort(
+      const BasicVector<T>& model_vector) {
+    const int size = model_vector.size();
+    const int next_index = this->get_num_output_ports();
+    model_output_values_.AddVectorModel(next_index, model_vector.Clone());
+    return this->DeclareOutputPort(kVectorValued, size);
+  }
+
+  // Avoid shadowing out the no-arg DeclareAbstractOutputPort().
+  using System<T>::DeclareAbstractOutputPort;
+
+  /// Declares an abstract-valued output port using the given @p model_value.
+  /// This is the best way to declare LeafSystem abstract output ports.
+  /// LeafSystem's default implementation of DoAllocateOutputAbstract will be
+  /// model_value.Clone().
+  const OutputPortDescriptor<T>& DeclareAbstractOutputPort(
+      const AbstractValue& model_value) {
+    const int next_index = this->get_num_output_ports();
+    model_output_values_.AddModel(next_index, model_value.Clone());
+    return this->DeclareAbstractOutputPort();
   }
 
  private:
@@ -552,6 +666,12 @@ class LeafSystem : public System<T> {
 
   // A model discrete state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_discrete_state_vector_;
+
+  // Model inputs to be used in AllocateOutput{Vector,Abstract}.
+  detail::ModelValues model_input_values_;
+
+  // Model outputs to be used in AllocateOutput{Vector,Abstract}.
+  detail::ModelValues model_output_values_;
 };
 
 }  // namespace systems

@@ -150,11 +150,6 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// sensed values.
   const OutputPortDescriptor<double>& get_sensor_state_output_port() const;
 
-  /// Allocates the output vector. See this class' description for details of
-  /// this output vector.
-  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
   friend std::ostream& operator<<(std::ostream& out,
                                   const DepthSensor& depth_sensor);
 

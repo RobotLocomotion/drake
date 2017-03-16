@@ -20,6 +20,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "pose_bundle_to_draw_message",
+    srcs = ["pose_bundle_to_draw_message.cc"],
+    hdrs = ["pose_bundle_to_draw_message.h"],
+    deps = [
+        ":pose_bundle",
+        "//drake/common",
+        "//drake/lcmtypes:viewer",
+        "//drake/systems/framework:leaf_system",
+    ],
+)
+
 # TODO(david-german-tri): Rename PoseVector to FramePose.
 drake_cc_library(
     name = "pose_vector",
@@ -85,6 +97,13 @@ drake_cc_googletest(
     deps = [
         ":frame_velocity",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pose_bundle_to_draw_message_test",
+    deps = [
+        ":pose_bundle_to_draw_message",
     ],
 )
 

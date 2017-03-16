@@ -95,6 +95,25 @@ drake_cc_library(
 )
 
 drake_cc_binary(
+    name = "iiwa_controller",
+    srcs = ["iiwa_controller.cc"],
+    data = [":models"],
+    deps = [
+        ":iiwa_common",
+        ":iiwa_lcm",
+        ":iiwa_plan_source",
+        "//drake/common:text_logging_gflags",
+        "//drake/lcm",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:pid_controlled_system",
+        "//drake/systems/lcm",
+        "@bot_core_lcmtypes//:lib",
+        "@gflags//:gflags",
+        "@robotlocomotion_lcmtypes//:lib",
+        ],
+)
+
+drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
     add_test_rule = 1,

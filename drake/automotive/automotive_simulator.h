@@ -21,6 +21,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/rendering/pose_aggregator.h"
 
 namespace drake {
 namespace automotive {
@@ -66,17 +67,23 @@ class AutomotiveSimulator {
   /// model of a vehicle (i.e., a model that's not connected to the world). A
   /// floating joint of type multibody::joints::kRollPitchYaw is added to
   /// connect the vehicle model to the world.
+  ///
   /// @param model_name  If this is non-empty, the car's model will be labeled
   ///                    with this name.
+  ///
   /// @param channel_name  The simple car will subscribe to a channel
   ///                      with this name to receive commands.  Must be
   ///                      non-empty.
+  ///
+  /// @param initial_state The initial state of the SimpleCar.
   ///
   /// @return The model instance ID of the SimpleCar that was just added to
   /// the simulation.
   int AddSimpleCarFromSdf(const std::string& sdf_filename,
                           const std::string& model_name,
-                          const std::string& channel_name);
+                          const std::string& channel_name,
+                          const SimpleCarState<T>& initial_state =
+                              SimpleCarState<T>());
 
   /// Adds a TrajectoryCar system to this simulation, including its
   /// EulerFloatingJoint output.
@@ -241,7 +248,6 @@ class AutomotiveSimulator {
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
   std::unique_ptr<const maliput::api::RoadGeometry> road_{};
   std::unique_ptr<const maliput::utility::InfiniteCircuitRoad> endless_road_{};
-  std::map<EndlessRoadCar<T>*, EndlessRoadCarState<T>> endless_road_cars_;
 
   // === Start for building. ===
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
@@ -254,7 +260,20 @@ class AutomotiveSimulator {
   // via non-RPY floating joints. See #3919.
   std::vector<std::pair<int, const systems::System<T>*>>
       rigid_body_tree_publisher_inputs_;
+
+  // Holds the desired initial states of each EndlessRoadCar. It is used to
+  // initialize the simulation's diagram's state and to connect the
+  // EndlessRoadCars to the EndlessRoadOracle sensor.
+  std::map<const EndlessRoadCar<T>*, EndlessRoadCarState<T>> endless_road_cars_;
+
+  // Holds the desired initial states of each SimpleCar. It is used to
+  // initialize the simulation's diagram's state.
+  std::map<const SimpleCar<T>*, SimpleCarState<T>> simple_car_initial_states_;
   // === End for building. ===
+
+  // Adds the PoseAggregator.
+  systems::rendering::PoseAggregator<T>* aggregator_{
+    builder_->template AddSystem<systems::rendering::PoseAggregator<T>>()};
 
   int next_vehicle_number_{0};
   bool started_{false};

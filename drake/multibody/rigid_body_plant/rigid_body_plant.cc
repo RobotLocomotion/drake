@@ -39,9 +39,11 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
       this->DeclareOutputPort(kVectorValued, get_num_states()).get_index();
   ExportModelInstanceCentricPorts();
   // Declares an abstract valued output port for kinematics results.
-  kinematics_output_port_index_ = this->DeclareAbstractOutputPort().get_index();
+  kinematics_output_port_index_ = this->DeclareAbstractOutputPort(
+      Value<KinematicsResults<T>>(tree_.get())).get_index();
   // Declares an abstract valued output port for contact information.
-  contact_output_port_index_ = this->DeclareAbstractOutputPort().get_index();
+  contact_output_port_index_ = this->DeclareAbstractOutputPort(
+      Value<ContactResults<T>>()).get_index();
 }
 
 template <typename T>
@@ -277,38 +279,6 @@ void RigidBodyPlant<T>::set_state_vector(
         ->SetFromVector(x);
   } else {
     state->get_mutable_continuous_state()->SetFromVector(x);
-  }
-}
-
-template <typename T>
-std::unique_ptr<AbstractValue> RigidBodyPlant<T>::AllocateOutputAbstract(
-    const OutputPortDescriptor<T>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_data_type() == kAbstractValued);
-  const int idx = descriptor.get_index();
-  if (idx == kinematics_results_output_port().get_index()) {
-    return make_unique<Value<KinematicsResults<T>>>(
-        KinematicsResults<T>(tree_.get()));
-  } else if (idx == contact_results_output_port().get_index()) {
-    return make_unique<Value<ContactResults<T>>>(ContactResults<T>());
-  }
-  DRAKE_ABORT_MSG("Unknown abstract output port.");
-  return nullptr;
-}
-
-template <typename T>
-std::unique_ptr<BasicVector<T>> RigidBodyPlant<T>::AllocateOutputVector(
-    const OutputPortDescriptor<T>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_data_type() == kVectorValued);
-  if (descriptor.get_index() == state_output_port().get_index()) {
-    // One vector-valued port is the plant-centric state vector.
-    return make_unique<BasicVector<T>>(get_num_states());
-  } else {
-    // The other vector-valued ports are the model instance state vectors.
-    auto it = std::find(output_map_.begin(), output_map_.end(),
-                        descriptor.get_index());
-    DRAKE_DEMAND(it != output_map_.end());
-    const int instance_id = it - output_map_.begin();
-    return make_unique<BasicVector<T>>(get_num_states(instance_id));
   }
 }
 
@@ -807,39 +777,23 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       // notation.
       // The *relative* velocity of the contact point in A relative to that in
       // B, expressed in the contact frame, C.
-      const auto rv_BcAc_C = J * kinsol.getV();
+      const auto v_CBcAc_C = J * kinsol.getV();
 
       // TODO(SeanCurtis-TRI): Move this documentation to the larger doxygen
       // discussion and simply reference it here.
 
-      // Normal force:
-      // This is the implementation of the Hunt-Crossley dissipation model
-      // with a linear stiffness model.  Generally, f(x, ẋ) = kxⁿ(1 + dẋ).
-      // For Hertz stiffness, n = 3/2.  Here n = 1.  The variables have the
-      // following interpretation:
-      //    x: is the penetration depth.
-      //    ẋ: is the rate of change of penetration, ẋ > 0 --> increasing
-      //        penetration.
-      //    k: penetration stiffness, k > 0
-      //    d: dissipation factor, d > 0
-      // f(x, ẋ) > 0 provides a repulsive force.
-      // It is possible for this force to become attractive if there is a
-      // sufficiently large separating velocity.  In fact, this occurs if
-      // ẋ < -1 / d.  In these cases, we simply clamp the force to zero.
-      // For analysis, we break it down as follows:
-      //  fK = kx -- force due to stiffness
-      //  fD = fk dẋ -- force due to dissipation
-      //  fN = fK + fD  -- total normal force; (skipped if fN < 0).
-      //  fF = mu(v) fN  - friction force magnitude.
-
-      // pair.distance is the signed distance (with negative values indicating
-      // collision).  Therefore, x = -pair.distance.
-      // Given the previous definition of rv_BcAc_C, if the objects are
-      // getting closer (i.e., increasing penetration depth), then A is
-      // moving *against* the normal direction. That means, ẋ = -rv_BcAc_C(2).
+      // See contact_model_doxygen.h for the details of this contact model.
+      // Normal force fN = kx(1 + dẋ).  We map the equation to the
+      // local variables as follows:
+      //  x = -pair.distance -- penetration depth.
+      //  ̇ẋ = -v_CBcAc_C(2)  -- change of penetration (in normal direction).
+      //  fK = kx -- force due to stiffness.
+      //  fD = fk dẋ -- force due to dissipation.
+      //  fN = max(0, fK + fD ) -- total normal force; (skipped if fN < 0).
+      //  fF = mu(v) * fN  - friction force magnitude.
 
       const T x = T(-pair.distance);
-      const T x_dot = -rv_BcAc_C(2);
+      const T x_dot = -v_CBcAc_C(2);
 
       const T fK = penetration_stiffness_ * x;
       const T fD = fK * dissipation_ * x_dot;
@@ -849,7 +803,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       Vector3<T> fA;
       fA(2) = fN;
       // Friction force
-      const auto slip_vector = rv_BcAc_C.template head<2>();
+      const auto slip_vector = v_CBcAc_C.template head<2>();
       T slip_speed_squared = slip_vector.squaredNorm();
       // Consider a value indistinguishable from zero if it is smaller
       // then 1e-14 and test against that value squared.

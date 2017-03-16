@@ -104,14 +104,16 @@ void AddVehicles(RoadNetworkType road_network_type,
            FLAGS_dragway_vehicle_delay;
       const auto& params = CreateTrajectoryParamsForDragway(
           *dragway_road_geometry, lane_index, speed, start_time);
-      simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
+      simulator->AddTrajectoryCarFromSdf(kSdfFile,
+                                         std::get<0>(params),
                                          std::get<1>(params),
                                          std::get<2>(params));
     }
   } else {
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
-      simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
+      simulator->AddTrajectoryCarFromSdf(kSdfFile,
+                                         std::get<0>(params),
                                          std::get<1>(params),
                                          std::get<2>(params));
     }
