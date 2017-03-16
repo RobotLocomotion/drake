@@ -48,8 +48,11 @@ namespace sensors {
 ///     provided by DepthSensor) in which the depth value represents the
 ///     distance from the sensor origin to the object's surface.
 ///
-///   - The label image has three channels in the following order: blue, green
-///     red. Each channel is represented by a uint8_t.
+///   - The label image has single channel represented by a uint16_t. The value
+///     stored in the channel holds a model ID which corresponds to an object
+///     in the scene. For the pixels corresponding to the sky and the flat
+///     terrain which have no model ID in RigidBodyTree, we assign 65535 and
+///     65534, respectively.
 // TODO(kunimatsu-tri) Add support for the image publish capability.
 class RgbdCamera : public LeafSystem<double> {
  public:
@@ -164,7 +167,7 @@ class RgbdCamera : public LeafSystem<double> {
   const OutputPortDescriptor<double>& depth_image_output_port() const;
 
   /// Returns a descriptor of the abstract valued output port that contains an
-  /// label image of the type Image<uint_8>.
+  /// label image of the type Image<uint_16>.
   const OutputPortDescriptor<double>& label_image_output_port() const;
 
   /// Returns a descriptor of the vector valued output port that contains an

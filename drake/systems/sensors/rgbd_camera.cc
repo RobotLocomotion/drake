@@ -1,6 +1,7 @@
 #include "drake/systems/sensors/rgbd_camera.h"
 
 #include <fstream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -43,20 +44,14 @@ namespace systems {
 namespace sensors {
 namespace {
 
-// Defines a color based on its three primary additive colors: red, green, and
-// blue. Each of these primary additive colors are in the range of [0, 1] where
-// 0 is the lowest intensity and 1 is the highest intensity.
-struct Color {
-  double r;  // red
-  double g;  // green
-  double b;  // blue
-};
-
 const int kPortCameraPose = 3;
+
+const int kTerrainId = std::numeric_limits<uint16_t>::max() - 1;
+const int kSkyId = std::numeric_limits<uint16_t>::max();
 
 const int kColorImageChannel = 4;
 const int kDepthImageChannel = 1;
-const int kLabelImageChannel = 3;
+const int kLabelImageChannel = 1;
 
 // TODO(kunimatsu-tri) Add support for the arbitrary clipping planes and
 // background color.
@@ -70,10 +65,6 @@ const int kImageHeight = 480;  // In pixels
 const float kDepthRangeNear = 0.5;
 const float kDepthRangeFar = 5.0;
 const double kTerrainSize = 100.;
-// These colors are chosen so as to be easily distinguished from the colors in
-// ColorPalette.
-const Color kTerrainColor{1., 0.898, 0.797};
-const Color kBackgroundColor{0.8, 0.898, 1.};
 
 // For Zbuffer value conversion.
 const double kA = kClippingPlaneFar / (kClippingPlaneFar - kClippingPlaneNear);
@@ -87,6 +78,22 @@ std::string RemoveFileExtension(const std::string& filepath) {
   return filepath.substr(0, last_dot);
 }
 
+// Defines a color based on its three primary additive colors: red, green, and
+// blue. Each of these primary additive colors are in the range of [0, 255].
+struct Color {
+  int r;  // red
+  int g;  // green
+  int b;  // blue
+};
+
+// Defines a color based on its three primary additive colors: red, green, and
+// blue. Each of these primary additive colors are in the range of [0, 1].
+struct NormalizedColor {
+  double r;  // red
+  double g;  // green
+  double b;  // blue
+};
+
 // Creates and holds a palette of colors for visualizing different objects in a
 // scene (the intent is for a different color to be applied to each identified
 // object). The colors are chosen so as to be easily distinguishable. This color
@@ -95,21 +102,21 @@ std::string RemoveFileExtension(const std::string& filepath) {
 class ColorPalette {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ColorPalette)
-
   explicit ColorPalette(int num_colors) {
     const int num = std::ceil(num_colors / 6.);
     DRAKE_DEMAND(num < 256);  // The maximum number of uint8_t.
+
     for (int i = 0; i < num; ++i) {
       // It is possible to have more colors, but we want the colors to be as
       // distinguishable as possible for visualization purpose.  We can add more
       // colors as needed.
-      const double intensity = 1. - i / static_cast<double>(num);
-      color_palette_.push_back(Color{intensity, 0., 0.});
-      color_palette_.push_back(Color{0., intensity, 0.});
-      color_palette_.push_back(Color{0., 0., intensity});
-      color_palette_.push_back(Color{intensity, intensity, 0.});
-      color_palette_.push_back(Color{0., intensity, intensity});
-      color_palette_.push_back(Color{intensity, 0., intensity});
+      const int intensity = 255 - i * 255 / num;
+      color_palette_.push_back(Color{intensity, 0, 0});
+      color_palette_.push_back(Color{0, intensity, 0});
+      color_palette_.push_back(Color{0, 0, intensity});
+      color_palette_.push_back(Color{intensity, intensity, 0});
+      color_palette_.push_back(Color{0, intensity, intensity});
+      color_palette_.push_back(Color{intensity, 0, intensity});
     }
   }
 
@@ -118,10 +125,56 @@ class ColorPalette {
     return color_palette_[index];
   }
 
+  const NormalizedColor get_normalized_color(int index) const {
+    NormalizedColor color = Normalize(get_color(index));
+    return color;
+  }
+
+  const NormalizedColor get_normalized_sky_color() const {
+    return Normalize(kSkyColor);
+  }
+
+  const NormalizedColor get_normalized_terrain_color() const {
+    return Normalize(kTerrainColor);
+  }
+
+  int LookUpId(const Color& color) const {
+    auto it = std::find_if(color_palette_.begin(), color_palette_.end(),
+                           [color](const Color& c) {
+                             return (c.r == color.r) &&
+                             (c.g == color.g) &&
+                             (c.b == color.b);
+                           });
+    if (it == color_palette_.end()) {
+      if (CompareColors(color, kSkyColor)) {
+        return kSkyId;
+      } else if (CompareColors(color, kTerrainColor)) {
+        return kTerrainId;
+      }
+      throw std::runtime_error("ID not found");
+    }
+    return std::distance(color_palette_.begin(), it);
+  }
+
  private:
+  static NormalizedColor Normalize(const Color& color) {
+    NormalizedColor normalized;
+    normalized.r = static_cast<double>(color.r / 255.);
+    normalized.g = static_cast<double>(color.g / 255.);
+    normalized.b = static_cast<double>(color.b / 255.);
+    return normalized;
+  }
+
+  static bool CompareColors(const Color& lhs, const Color& rhs) {
+    return lhs.r == rhs.r && lhs.g == rhs.g && lhs.b == rhs.b;
+  }
+
+  // These colors are chosen so as to be easily distinguished from the colors in
+  // color_palette_
+  const Color kTerrainColor{255, 229, 204};
+  const Color kSkyColor{204, 229, 255};
   std::vector<Color> color_palette_;
 };
-
 
 }  // namespace
 
@@ -208,8 +261,8 @@ class RgbdCamera::Impl {
   int depth_image_output_port_index_{};
   int label_image_output_port_index_{};
   const bool kCameraFixed;
-
   ColorPalette color_palette_;
+
   std::map<int, vtkSmartPointer<vtkActor>> id_object_pairs_;
   std::map<int, vtkSmartPointer<vtkActor>> id_label_object_pairs_;
   vtkNew<vtkActor> terrain_actor_;
@@ -264,17 +317,18 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
 
   renderer_->SetActiveCamera(camera.GetPointer());
-  renderer_->SetBackground(kBackgroundColor.r,
-                           kBackgroundColor.g,
-                           kBackgroundColor.b);
+  auto sky_color = color_palette_.get_normalized_sky_color();
+  renderer_->SetBackground(sky_color.r,
+                           sky_color.g,
+                           sky_color.b);
   render_window_->SetSize(color_camera_info_.width(),
                           color_camera_info_.height());
   render_window_->AddRenderer(renderer_.GetPointer());
 
   label_renderer_->SetActiveCamera(camera.GetPointer());
-  label_renderer_->SetBackground(kBackgroundColor.r,
-                                 kBackgroundColor.g,
-                                 kBackgroundColor.b);
+  label_renderer_->SetBackground(sky_color.r,
+                                 sky_color.g,
+                                 sky_color.b);
 
   label_render_window_->SetSize(color_camera_info_.width(),
                                 color_camera_info_.height());
@@ -428,7 +482,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
           vtkSmartPointer<vtkActor>(actor.GetPointer());
       renderer_->AddActor(actor.GetPointer());
 
-      const auto& color = color_palette_.get_color(model_id);
+      const auto& color = color_palette_.get_normalized_color(model_id);
       actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
       actor_for_label->GetProperty()->LightingOff();
       actor_for_label->SetMapper(mapper.GetPointer());
@@ -448,9 +502,10 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
   vtkNew<vtkPolyDataMapper> mapper;
   mapper->SetInputConnection(plane->GetOutputPort());
   terrain_actor_->SetMapper(mapper.GetPointer());
-  terrain_actor_->GetProperty()->SetColor(kTerrainColor.r,
-                                          kTerrainColor.g,
-                                          kTerrainColor.b);
+  auto color = color_palette_.get_normalized_terrain_color();
+  terrain_actor_->GetProperty()->SetColor(color.r,
+                                          color.g,
+                                          color.b);
   terrain_actor_->GetProperty()->LightingOff();
   terrain_actor_->SetUserTransform(transform);
   renderer_->AddActor(terrain_actor_.GetPointer());
@@ -541,10 +596,10 @@ void RgbdCamera::Impl::DoCalcOutput(
           depth_image_output_port_index_)->GetMutableValue<
             sensors::Image<float>>();
 
-  sensors::Image<uint8_t>& label_image =
+  sensors::Image<uint16_t>& label_image =
       output->GetMutableData(
           label_image_output_port_index_)->GetMutableValue<
-            sensors::Image<uint8_t>>();
+            sensors::Image<uint16_t>>();
 
   const int height = color_camera_info_.height();
   const int width = color_camera_info_.width();
@@ -567,12 +622,12 @@ void RgbdCamera::Impl::DoCalcOutput(
 
       // Updates the Label image.
       void* label_ptr = label_buffer_->GetOutput()->GetScalarPointer(u, v, 0);
+      Color color{*(static_cast<uint8_t*>(label_ptr) + 0),  // R
+                  *(static_cast<uint8_t*>(label_ptr) + 1),  // G
+                  *(static_cast<uint8_t*>(label_ptr) + 2)};  // B
+
       label_image.at(u, height_reversed)[0] =
-          *(static_cast<uint8_t*>(label_ptr) + 2);  // B
-      label_image.at(u, height_reversed)[1] =
-          *(static_cast<uint8_t*>(label_ptr) + 1);  // G
-      label_image.at(u, height_reversed)[2] =
-          *(static_cast<uint8_t*>(label_ptr) + 0);  // R
+          static_cast<uint16_t>(color_palette_.LookUpId(color));
     }
   }
 }
@@ -637,9 +692,9 @@ void RgbdCamera::Init(const std::string& name) {
       this->DeclareAbstractOutputPort(systems::Value<sensors::Image<float>>(
           depth_image)).get_index());
 
-  Image<uint8_t> label_image(kImageWidth, kImageHeight, kLabelImageChannel);
+  Image<uint16_t> label_image(kImageWidth, kImageHeight, kLabelImageChannel);
   impl_->set_label_image_output_port_index(
-      this->DeclareAbstractOutputPort(systems::Value<sensors::Image<uint8_t>>(
+      this->DeclareAbstractOutputPort(systems::Value<sensors::Image<uint16_t>>(
           label_image)).get_index());
 
   this->DeclareVectorOutputPort(rendering::PoseVector<double>());

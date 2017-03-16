@@ -217,36 +217,31 @@ class ImageTest : public ::testing::Test {
   void VerifyLabelImage() {
     diagram_->CalcOutput(*context_, output_.get());
     auto label_image = output_->GetMutableData(2)->GetMutableValue<
-      sensors::Image<uint8_t>>();
+      sensors::Image<uint16_t>>();
 
-    typedef std::array<uint8_t, 3> Color;
-    std::vector<Color> actual_colors;
-
+    std::vector<uint16_t> actual_ids;
     for (int v = 0; v < label_image.height(); ++v) {
       for (int u = 0; u < label_image.width(); ++u) {
-        Color color{{label_image.at(u, v)[0],
-                     label_image.at(u, v)[1],
-                     label_image.at(u, v)[2]}};
-        auto it = std::find(actual_colors.begin(), actual_colors.end(), color);
-        if (it == actual_colors.end()) {
-          actual_colors.push_back(color);
+        const uint16_t id = label_image.at(u, v)[0];
+        auto it = std::find(actual_ids.begin(), actual_ids.end(), id);
+        if (it == actual_ids.end()) {
+          actual_ids.push_back(id);
         }
       }
     }
     // We have three objects plus the sky and the terrain.
-    const int kExpectedNumColors{5};
-    EXPECT_EQ(kExpectedNumColors, actual_colors.size());
+    const int kExpectedNumIds{5};
+    EXPECT_EQ(kExpectedNumIds, actual_ids.size());
 
-    const Color kModel1Color{{0u, 0u, 255u}};
-    const Color kModel2Color{{0u, 255u, 0u}};
-    const Color kModel3Color{{255u, 0u, 0u}};
-    for (int ch = 0; ch < label_image.num_channels(); ++ch) {
-      AssertIntNear(label_image.at(0, 0)[ch], kSkyColor[ch], 1);
-      AssertIntNear(label_image.at(0, 479)[ch], kTerrainColor[ch], 1);
-      AssertIntNear(label_image.at(320, 205)[ch], kModel1Color[ch], 1);
-      AssertIntNear(label_image.at(470, 205)[ch], kModel2Color[ch], 1);
-      AssertIntNear(label_image.at(170, 205)[ch], kModel3Color[ch], 1);
-    }
+    ASSERT_EQ(label_image.at(320, 205)[0], 0);
+    ASSERT_EQ(label_image.at(470, 205)[0], 1);
+    ASSERT_EQ(label_image.at(170, 205)[0], 2);
+    // Terrain
+    ASSERT_EQ(label_image.at(0, 479)[0],
+              std::numeric_limits<uint16_t>::max() - 1);
+    // Sky
+    ASSERT_EQ(label_image.at(0, 0)[0],
+              std::numeric_limits<uint16_t>::max());
   }
 
   static void VerifyCameraPose(const Eigen::Isometry3d& pose_actual) {
@@ -450,7 +445,7 @@ TEST_F(ImageTest, CameraPoseUpdateTest) {
   VerifyPoseUpdate(ImageTest::VerifyMovingCamera);
 }
 
-// Verifies the number of colors in a label image.
+// Verifies the number of ids in a label image.
 TEST_F(ImageTest, LabelRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/three_boxes.sdf");
   SetUp(sdf,
