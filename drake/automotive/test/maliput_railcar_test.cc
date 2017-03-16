@@ -31,18 +31,20 @@ namespace {
 
 class MaliputRailcarTest : public ::testing::Test {
  protected:
-  void InitializeDragwayLane(double start_time = 0) {
+  void InitializeDragwayLane(double start_time = 0, bool with_s = true) {
     // Defines the dragway's parameters.
     const int kNumLanes{1};
     const double kDragwayLength{50};
     const double kDragwayLaneWidth{0.5};
     const double kDragwayShoulderWidth{0.25};
-    Initialize(std::make_unique<const maliput::dragway::RoadGeometry>(
-        maliput::api::RoadGeometryId({"RailcarTestDragway"}), kNumLanes,
-        kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth), start_time);
+    Initialize(
+        std::make_unique<const maliput::dragway::RoadGeometry>(
+            maliput::api::RoadGeometryId({"RailcarTestDragway"}), kNumLanes,
+            kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth),
+        start_time, with_s);
   }
 
-  void InitializeCurvedMonoLane(double start_time = 0) {
+  void InitializeCurvedMonoLane(double start_time = 0, bool with_s = true) {
     maliput::monolane::Builder builder(
         maliput::api::RBounds(-2, 2),   /* lane_bounds       */
         maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
@@ -55,14 +57,15 @@ class MaliputRailcarTest : public ::testing::Test {
         EndpointZ(0, 0, 0, 0));                                /* z_end */
     Initialize(
         builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})),
-        start_time);
+        start_time, with_s);
   }
 
   void Initialize(std::unique_ptr<const maliput::api::RoadGeometry> road,
-      double start_time) {
+      double start_time, bool with_s) {
     road_ = std::move(road);
     const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
-    dut_.reset(new MaliputRailcar<double>(*lane, start_time));
+    dut_.reset(new MaliputRailcar<double>(LaneDirection(lane, with_s),
+                                          start_time));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -127,7 +130,7 @@ TEST_F(MaliputRailcarTest, Topology) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
   ASSERT_EQ(dut_->get_num_input_ports(), 1);
 
-  ASSERT_EQ(dut_->get_num_output_ports(), 2);
+  ASSERT_EQ(dut_->get_num_output_ports(), 3);
   const auto& state_output = dut_->state_output();
   EXPECT_EQ(systems::kVectorValued, state_output.get_data_type());
   EXPECT_EQ(MaliputRailcarStateIndices::kNumCoordinates, state_output.size());
@@ -433,6 +436,28 @@ TEST_F(MaliputRailcarTest, NonZeroStartTime) {
       dut_->CalcTimeDerivatives(*context_, derivatives_.get()));
   EXPECT_DOUBLE_EQ(result->s(), kSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), kDesiredAcceleration);
+}
+
+// Tests the correctness of the derivatives when the vehicle travels in the
+// decreasing `s` direction.
+TEST_F(MaliputRailcarTest, DecreasingS) {
+  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(0 /* start_time */,
+                                                false /* with_s */));
+  // Grabs a pointer to where the EvalTimeDerivatives results end up.
+  const MaliputRailcarState<double>* const result =
+      dynamic_cast<const MaliputRailcarState<double>*>(
+          derivatives_->get_mutable_vector());
+  ASSERT_NE(nullptr, result);
+
+  // Sets the input command.
+  const double kAccelCmd{1.5};  // The acceleration command.
+  SetInputValue(kAccelCmd);
+
+  // Checks that the time derivative of `s` is the negative of the speed, which
+  // happens when the vehicle is traveling in the negative `s` direction.
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_DOUBLE_EQ(result->s(), -MaliputRailcar<double>::kDefaultInitialSpeed);
+  EXPECT_DOUBLE_EQ(result->speed(), kAccelCmd);
 }
 
 }  // namespace
