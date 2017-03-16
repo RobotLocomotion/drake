@@ -202,46 +202,52 @@ GTEST_TEST(SpatialInertia, ReExpress) {
   EXPECT_NEAR(moments_W(2), moments_E(1), numeric_limits<double>::epsilon());
 }
 
-#if 0
+// Unit tests the parallel axis theorem shift. The test computes the moment of
+// inertia for a cylinder computed about its center of mass and shifted to a
+// point at its base. The result is compared to the expected value.
 GTEST_TEST(SpatialInertia, Shift) {
-  // Place B rotated +90 degrees about W's x-axis.
+  // This defines the orientation of a frame B to be rotated +90 degrees about
+  // the x-axis of a W frame.
   Matrix3<double> R_WB =
       AngleAxisd(M_PI_2, Vector3d::UnitX()).toRotationMatrix();
 
-  // Spatial inertia for a thin rod of unit mass computed about its center of
-  // mass and expressed in the world frame W.
+  // Spatial inertia for a thin cylinder of computed about its center of
+  // mass and expressed in frame W.
   const double mass = 1.2;
-  const double radius = 0.05, length = 1.0;
-  SpatialInertia<double> M_Bo_W(
+  const double radius = 0.05, length = 1.5;
+  // First define it in frame B.
+  SpatialInertia<double> M_BBcm_W(
       mass, Vector3d::Zero(),
-      UnitInertia<double>::SolidRod(radius, length));
-  M_Bo_W.ReExpressInPlace(R_WB);
+      UnitInertia<double>::SolidCylinder(radius, length));
+  // Then re-express in frame W.
+  M_BBcm_W.ReExpressInPlace(R_WB);
 
-  // Replace this print by the respective getters and check values.
-  PRINT_VARn(M_Bo_W);
+  // Vector from Bcm to the the top of the cylinder Btop.
+  Vector3d p_BcmBtop_W(0, length/2.0, 0);
 
-  // Vector from Bo, in this case Bo = Bc, to the top of the box.
-  Vector3d p_BoXo_W(0, 0.5, 0);
-
-  PRINT_VARn(p_BoXo_W.transpose());
-
-  // Computes spatial inertia about Xo, still expressed in W.
-  SpatialInertia<double> M_Xo_W = M_Bo_W.Shift(p_BoXo_W);
-
-  // Replace this print by the respective checks of the new computed values.
-  // What was in y now is in z.
-  PRINT_VARn(M_Xo_W);
+  // Computes spatial inertia about Btop, still expressed in W.
+  SpatialInertia<double> M_BBtop_W = M_BBcm_W.Shift(p_BcmBtop_W);
 
   // Checks for physically correct spatial inertia.
-  EXPECT_TRUE(M_Xo_W.IsPhysicallyValid());
+  EXPECT_TRUE(M_BBtop_W.IsPhysicallyValid());
+
+  // Shift() does not change the mass.
+  EXPECT_EQ(M_BBtop_W.get_mass(), M_BBcm_W.get_mass());
+
+  // The position vector from Bcm was zero by definition.
+  // It is not zero from Btop but -p_BcmBtop_W.
+  EXPECT_EQ(M_BBtop_W.get_com(), -p_BcmBtop_W);
 
   // Expected moment of inertia for a rod when computed about one of its ends.
-  const double I_end = mass * length / 3.0;
-  const auto& I_Xo_W = M_Xo_W.get_rotational_inertia();
+  const double I_end =
+      mass * (3 * radius * radius + length * length) / 12  /*About centroid.*/
+      + mass * length * length / 4;  /*Parallel axis theorem shift.*/
+  const auto& I_Xo_W = M_BBtop_W.get_rotational_inertia();
   EXPECT_NEAR(I_Xo_W(0,0), I_end, Eigen::NumTraits<double>::epsilon());
   EXPECT_NEAR(I_Xo_W(2,2), I_end, Eigen::NumTraits<double>::epsilon());
 }
 
+#if 0
 // This tests the implementation of two product operators:
 // 1. SpatialVector operator*(const SpatialVector& V) const;
 // 2. SpatialVelocityJacobian operator*(const SpatialVelocityJacobian& J) const;

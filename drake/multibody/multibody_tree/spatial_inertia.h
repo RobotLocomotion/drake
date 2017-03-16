@@ -238,6 +238,46 @@ class SpatialInertia {
     return SpatialInertia(*this).ReExpressInPlace(R_AE);
   }
 
+  /// Given `this` spatial inertia `M_SP_E` for some physical system or body S,
+  /// computed about point P, and expressed in frame E, this method uses uses
+  /// the _parallel axis theorem_ for spatial inertias to compute the same
+  /// spatial inertia about a new point Q. The result still is expressed in
+  /// frame E.
+  /// This operation is performed in-place modifying the original object.
+  /// @see Shift() which does not modify this object.
+  ///
+  /// For details see Section 2.1.2, p. 20 of [Jain 2010].
+  ///
+  /// @param[in] p_PQ_E Vector from the original about point P to the new
+  ///                   about point Q, expressed in the same frame E `this`
+  ///                   spatial inertia is expressed in.
+  /// @returns A reference to `this` spatial inertia for system S but now
+  ///          computed about about a new point Q.
+  SpatialInertia& ShiftInPlace(const Vector3<T>& p_PQ_E) {
+    const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
+    I_SP_E_ += get_mass() *
+        (UnitInertia<T>::PointMass(p_QScm_E) -
+         UnitInertia<T>::PointMass(p_PScm_E_));
+    p_PScm_E_ = p_QScm_E;
+    return *this;
+  }
+
+  /// Given `this` spatial inertia `M_SP_E` for some physical system or body S,
+  /// computed about point P, and expressed in frame E, this method uses uses
+  /// the _parallel axis theorem_ for spatial inertias to compute the same
+  /// spatial inertia about a new point Q. The result still is expressed in
+  /// frame E.
+  /// @see ShiftInPlace() for more details.
+  ///
+  /// @param[in] p_PQ_E Vector from the original about point P to the new
+  ///                   about point Q, expressed in the same frame E `this`
+  ///                   spatial inertia is expressed in.
+  /// @retval `M_SQ_E` This same spatial inertia for system S but computed
+  ///                  about about a new point Q.
+  SpatialInertia Shift(const Vector3<T>& p_PQ_E) const {
+    return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
+  }
+
 #if 0
   /// Computes the product from the right between this spatial inertia with the
   /// spatial vector @p V. This spatial inertia and spatial vector @p V must be
@@ -252,46 +292,6 @@ class SpatialInertia {
     return SpatialVector<T>(
         I_SP_E_ * w + mxp.cross(v), /* angular component */
         mass_ * v - mxp.cross(w));  /* linear component */
-  }
-#endif
-
-  /// This methods perfomrs the "parallel axis theorem" for spatial inertias:
-  /// given this spatial inertia `M_Bo_F` about `Bo` and expressed in frame `F`,
-  /// this method modifies this spatial inertia to be computed about a new
-  /// origin Xo. The result still is expressed in frame `F`.
-  /// This operation is performed in-place modifying the original object.
-  /// @see Shift() which does not modify this object.
-  ///
-  /// See Section 2.1.2, p. 20 of A. Jain's book.
-  ///
-  /// @param[in] p_BoXo_F Vector from the original origin `Bo` to the new origin
-  /// `Xo`, expressed in the spatial inertia frame `F`.
-  /// @returns `M_Xo_F` This same spatial inertia but computed about
-  /// origin `Xo`.
-  SpatialInertia& ShiftInPlace(const Vector3<T>& p_BoXo_F) {
-    const Vector3<T> p_XoBc_F = p_PScm_E_ - p_BoXo_F;
-    I_SP_E_ += get_mass() *
-        (UnitInertia<T>::PointMass(p_XoBc_F) -
-         UnitInertia<T>::PointMass(p_PScm_E_));
-    p_PScm_E_ = p_XoBc_F;
-    return *this;
-  }
-
-#if 0
-  /// This methods perfomrs the "parallel axis theorem" for spatial inertias:
-  /// given this spatial inertia `M_Bo_F` about `Bo` and expressed in frame `F`,
-  /// this method returns this spatial inertia to but computed about a new
-  /// origin Xo. The result still is expressed in frame `F`.
-  /// @see ShiftInPlace() for the in-place operation.
-  ///
-  /// See Section 2.1.2, p. 20 of A. Jain's book.
-  ///
-  /// @param[in] p_BoXo_F Vector from the original origin `Bo` to the new origin
-  /// `Xo`, expressed in the spatial inertia frame `F`.
-  /// @returns `M_Xo_F` This same spatial inertia but computed about
-  /// origin `Xo`.
-  SpatialInertia Shift(const Vector3<T>& p_BoXo_F) const {
-    return SpatialInertia(*this).ShiftInPlace(p_BoXo_F);
   }
 #endif
 
