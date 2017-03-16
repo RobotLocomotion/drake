@@ -32,9 +32,7 @@ void PoseBundleToDrawMessage::DoCalcOutput(const Context<double>& context,
   message.quaternion.resize(n);
 
   for (int i = 0; i < n; ++i) {
-    // TODO(david-german-tri): Support non-unique link names by populating
-    // robot_num. Will require changes in PoseAggregator and PoseBundle.
-    message.robot_num[i] = 0;
+    message.robot_num[i] = poses.get_model_instance_id(i);
 
     message.link_name[i] = poses.get_name(i);
 

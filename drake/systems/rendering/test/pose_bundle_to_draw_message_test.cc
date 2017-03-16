@@ -16,12 +16,14 @@ GTEST_TEST(PoseBundleToDrawMessageTest, Conversion) {
   foo_pose.translation()[0] = 123;
   bundle.set_name(0, "foo");
   bundle.set_pose(0, foo_pose);
+  bundle.set_model_instance_id(0, 42);
 
   Eigen::Isometry3d bar_pose = Eigen::Isometry3d::Identity();
   const double roll = -M_PI_2;
   bar_pose *= Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
   bundle.set_name(1, "bar");
   bundle.set_pose(1, bar_pose);
+  bundle.set_model_instance_id(1, 43);
 
   PoseBundleToDrawMessage converter;
   auto context = converter.AllocateContext();
@@ -33,7 +35,7 @@ GTEST_TEST(PoseBundleToDrawMessageTest, Conversion) {
   EXPECT_EQ(2, message.num_links);
 
   EXPECT_EQ("foo", message.link_name[0]);
-  EXPECT_EQ(0, message.robot_num[0]);
+  EXPECT_EQ(42, message.robot_num[0]);
   // foo is translated in x.
   EXPECT_EQ(123, message.position[0][0]);  // x
   EXPECT_EQ(0, message.position[0][1]);    // y
@@ -45,7 +47,7 @@ GTEST_TEST(PoseBundleToDrawMessageTest, Conversion) {
   EXPECT_EQ(0, message.quaternion[0][3]);  // z
 
   EXPECT_EQ("bar", message.link_name[1]);
-  EXPECT_EQ(0, message.robot_num[1]);
+  EXPECT_EQ(43, message.robot_num[1]);
   // bar has no translation.
   EXPECT_EQ(0, message.position[1][0]);  // x
   EXPECT_EQ(0, message.position[1][1]);  // y
