@@ -32,8 +32,8 @@ Accelerometer::Accelerometer(const string& name,
   plant_state_derivative_input_port_index_ =
       DeclareInputPort(kVectorValued, tree_.get_num_positions() +
                                       tree_.get_num_velocities()).get_index();
-  output_port_index_ =
-      DeclareOutputPort(kVectorValued, 3).get_index();
+  output_port_index_ = DeclareVectorOutputPort(
+      AccelerometerOutput<double>()).get_index();
 }
 
 Accelerometer* Accelerometer::AttachAccelerometer(
@@ -70,11 +70,6 @@ Accelerometer* Accelerometer::AttachAccelerometer(
   // port once RigidBodyPlant has an output port containing xdot. This can only
   // be done once #2890 is resolved.
   return accelerometer;
-}
-
-std::unique_ptr<BasicVector<double>> Accelerometer::AllocateOutputVector(
-    const OutputPortDescriptor<double>& descriptor) const {
-  return std::make_unique<AccelerometerOutput<double>>();
 }
 
 void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
