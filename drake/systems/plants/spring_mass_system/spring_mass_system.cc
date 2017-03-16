@@ -73,7 +73,11 @@ SpringMassSystem<T>::SpringMassSystem(const T& spring_constant_N_per_m,
   if (system_is_forced_) this->DeclareInputPort(kVectorValued, 1);
 
   // Declares output port for q, qdot, Energy.
-  this->DeclareOutputPort(kVectorValued, 3);
+  this->DeclareVectorOutputPort(SpringMassStateVector<T>());
+
+  this->DeclareContinuousState(
+      std::make_unique<SpringMassStateVector<T>>(),
+      1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
 }
 
 template <typename T>
@@ -124,20 +128,6 @@ template <typename T>
 T SpringMassSystem<T>::DoCalcNonConservativePower(const MyContext&) const {
   const T& power_nc = 0.;
   return power_nc;
-}
-
-template <typename T>
-std::unique_ptr<BasicVector<T>> SpringMassSystem<T>::AllocateOutputVector(
-    const OutputPortDescriptor<T>& descriptor) const {
-  return std::make_unique<SpringMassStateVector<T>>();
-}
-
-template <typename T>
-std::unique_ptr<ContinuousState<T>>
-SpringMassSystem<T>::AllocateContinuousState() const {
-  return std::make_unique<ContinuousState<T>>(
-      std::make_unique<SpringMassStateVector<T>>(),
-      1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
 }
 
 // Assign the state to the output.
