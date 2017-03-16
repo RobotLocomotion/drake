@@ -152,7 +152,8 @@ void AssertIntNear(int value_a, int value_b, int tolerance) {
   ASSERT_LE(std::abs(value_a - value_b), tolerance);
 }
 
-const std::array<uint8_t, 4> kBackgroundColor{{204u, 229u, 255u, 255u}};
+const std::array<uint8_t, 4> kSkyColor{{255u, 229u, 204u, 255u}};
+const std::array<uint8_t, 4> kTerrainColor{{204u, 229u, 255u, 255u}};
 
 class ImageTest : public ::testing::Test {
  public:
@@ -217,7 +218,7 @@ class ImageTest : public ::testing::Test {
     verifier(camera_base_pose->get_isometry());
   }
 
-  void VerifyLabelImage(int expected_num_colors) {
+  void VerifyLabelImage() {
     diagram_->CalcOutput(*context_, output_.get());
     auto label_image = output_->GetMutableData(2)->GetMutableValue<
       sensors::Image<uint8_t>>();
@@ -236,8 +237,20 @@ class ImageTest : public ::testing::Test {
         }
       }
     }
+    // We have three objects plus the sky and the terrain.
+    const int kExpectedNumColors{5};
+    EXPECT_EQ(kExpectedNumColors, actual_colors.size());
 
-    EXPECT_EQ(expected_num_colors, actual_colors.size());
+    const Color kModel1Color{{0u, 0u, 255u}};
+    const Color kModel2Color{{0u, 255u, 0u}};
+    const Color kModel3Color{{255u, 0u, 0u}};
+    for (int ch = 0; ch < label_image.num_channels(); ++ch) {
+      AssertIntNear(label_image.at(0, 0)[ch], kSkyColor[ch], 1);
+      AssertIntNear(label_image.at(0, 479)[ch], kTerrainColor[ch], 1);
+      AssertIntNear(label_image.at(320, 205)[ch], kModel1Color[ch], 1);
+      AssertIntNear(label_image.at(470, 205)[ch], kModel2Color[ch], 1);
+      AssertIntNear(label_image.at(170, 205)[ch], kModel3Color[ch], 1);
+    }
   }
 
   static void VerifyCameraPose(const Eigen::Isometry3d& pose_actual) {
@@ -274,7 +287,7 @@ class ImageTest : public ::testing::Test {
   static void VerifyTerrain(const sensors::Image<uint8_t>& color_image,
                             const sensors::Image<float>& depth_image) {
     VerifyUniformColorAndDepth(color_image, depth_image,
-                               kBackgroundColor, 4.999f);
+                               kTerrainColor, 4.999f);
   }
 
   static void VerifyBox(
@@ -315,7 +328,7 @@ class ImageTest : public ::testing::Test {
     for (const auto& corner : kCorners) {
       for (int ch = 0; ch < color_image.num_channels(); ++ch) {
         AssertIntNear(color_image.at(corner.u, corner.v)[ch],
-                      kBackgroundColor[ch], kColorPixelTolerance);
+                      kTerrainColor[ch], kColorPixelTolerance);
       }
       ASSERT_NEAR(depth_image.at(corner.u, corner.v)[0], 2.f, 1e-4);
     }
@@ -448,7 +461,7 @@ TEST_F(ImageTest, LabelRenderingTest) {
   SetUp(sdf,
         Eigen::Vector3d(-10., 0., 2.),
         Eigen::Vector3d(0., M_PI_4 * 0.2, 0.));
-  VerifyLabelImage(5);  // We have three objects plus the sky and the terrain.
+  VerifyLabelImage();
 }
 
 // Verifies an exception is thrown if a link has more than two visuals.
