@@ -1,4 +1,4 @@
-#include "drake/examples/uniformly_accelerated_particle/src/particle-inl.hh"
+#include "drake/examples/uniformly_accelerated_particle/particle-inl.h"
 
 namespace drake {
   namespace particles {

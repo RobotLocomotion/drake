@@ -1,7 +1,11 @@
-#ifndef PARTICLE_INL_HH
-#define PARTICLE_INL_HH
+#pragma once
 
-#include "drake/examples/uniformly_accelerated_particle/src/particle.hh"
+/// @file
+/// Template method implementations for particle.h.
+/// Most users should only include that file, not this one.
+/// For background, see http://drake.mit.edu/cxx_inl.html.
+
+#include "drake/examples/uniformly_accelerated_particle/particle.h"
 
 namespace drake {
   namespace particles {
@@ -9,14 +13,10 @@ namespace drake {
     template <typename T>
     Particle<T>::Particle() {
       this->DeclareInputPort(systems::kVectorValued, 1);
-      this->DeclareContinuousState(1, 1, 0);
+      // one generalized position, one generalized velocity
+      this->DeclareContinuousState(1, 1, 0);  
       this->DeclareOutputPort(systems::kVectorValued, 2);
-    }
-    
-    template <typename T>
-    void Particle<T>::SetInitialConditions(const T& position, const T& velocity) {
-      ic_ << position, velocity;
-    }
+    }    
     
     template <typename T>
     void Particle<T>::DoCalcOutput(const systems::Context<T>& context,
@@ -47,15 +47,6 @@ namespace drake {
       deriv_vec->SetAtIndex(0, cstate_vec.GetAtIndex(1));
       deriv_vec->SetAtIndex(1, accel->GetAtIndex(0));
     }
-
-    template <typename T>
-    void Particle<T>::SetDefaultState(const systems::Context<T>& context,
-				      systems::State<T>* state) const {
-      systems::ContinuousState<T>* cstate = state->get_mutable_continuous_state();
-      cstate->SetFromVector(ic_);
-    }
     
   }  // namespace particles
 }  // namespace drake
-
-#endif  // PARTICLE_INL_HH

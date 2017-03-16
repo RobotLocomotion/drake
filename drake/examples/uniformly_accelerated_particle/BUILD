@@ -1,18 +1,22 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:cpplint.bzl", "cpplint")
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary"
+)
 
 drake_cc_library(
-    name = "particles",
+    name = "particle",
     srcs = [
-        "src/particle.cc",
-	"src/degenerate_euler_joint.cc"
+        "particle.cc",
     ],
     hdrs = [
-        "src/particle.hh",
-        "src/particle-inl.hh",
-    	"src/degenerate_euler_joint-inl.hh",
-	"src/degenerate_euler_joint.hh"
+        "particle.h",
+        "particle-inl.h",
     ],
     deps = [
         "@eigen//:eigen",
@@ -21,34 +25,56 @@ drake_cc_library(
     ]
 )
 
-cc_binary(
-    name = "uniformly_accelerated_particle",
+drake_cc_library(
+    name = "degenerate_euler_joint",
     srcs = [
-        "src/uniformly_accelerated_particle.cc",
+	"degenerate_euler_joint.cc"
+    ],
+    hdrs = [
+	"degenerate_euler_joint.h",
+        "degenerate_euler_joint-inl.h"
+    ],
+    deps = [
+        "@eigen//:eigen",
+        "//drake/common",
+        "//drake/systems/framework:leaf_system"
+    ]
+)
+
+drake_cc_binary(
+    name = "demo",
+    srcs = [
+        "uniformly_accelerated_particle.cc",
     ],
     data = [
         ":models"
     ],
     deps = [
-        ":particles",
+        ":particle",
+        ":degenerate_euler_joint",
         "//drake/lcm",
         "//drake/systems/analysis",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/multibody/parsers",
-        "//drake/common:text_logging_gflags"
+        "//drake/common:text_logging_gflags",
+        "//drake/multibody/parsers"
     ]
 )
 
-py_binary(
-    name = "demo",
-    srcs = ["src/demo.py"],
-    data = [
-        ":uniformly_accelerated_particle",
-        "@drake_visualizer//:drake-visualizer"
-    ],
-    main = "src/demo.py",
+# === test/ ===
+
+drake_cc_googletest(
+    name = "particle_test",
     deps = [
-        "@lcm//:lcm-python",
+        ":particle"
     ]
 )
+
+drake_cc_googletest(
+    name = "degenerate_euler_joint_test",
+    deps = [
+        ":degenerate_euler_joint"
+    ]
+)
+
+cpplint()
