@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
@@ -280,6 +281,31 @@ const Variables& get_quantified_variables(const Formula& f);
  */
 const Formula& get_quantified_formula(const Formula& f);
 
+namespace detail {
+/// Provides a return type of relational operations (=, ≠, ≤, <, ≥, >) between
+/// `Eigen::Array`s.
+///
+/// @tparam DerivedA A derived type of Eigen::ArrayBase.
+/// @tparam DerivedB A derived type of Eigen::ArrayBase.
+/// @pre The type of (DerivedA::Scalar() == DerivedB::Scalar()) is symbolic
+/// formula.
+template <typename DerivedA, typename DerivedB,
+          typename = std::enable_if<
+              std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
+              std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+              std::is_same<decltype(typename DerivedA::Scalar() ==
+                                    typename DerivedB::Scalar()),
+                           Formula>::value>>
+struct RelationalOpTraits {
+  using ReturnType =
+      Eigen::Array<Formula,
+                   EigenSizeMinPreferFixed<DerivedA::RowsAtCompileTime,
+                                           DerivedB::RowsAtCompileTime>::value,
+                   EigenSizeMinPreferFixed<DerivedA::ColsAtCompileTime,
+                                           DerivedB::ColsAtCompileTime>::value>;
+};
+}  // namespace detail
+
 /// Returns an Eigen array of symbolic formula where each element includes
 /// element-wise symbolic-equality of two arrays @p m1 and @p m2.
 ///
@@ -307,13 +333,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() ==
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    Eigen::Array<Formula,
-                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::RowsAtCompileTime
-                     : DerivedA::RowsAtCompileTime,
-                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::ColsAtCompileTime
-                     : DerivedA::ColsAtCompileTime>>::type
+    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator==(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -331,13 +351,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() >=
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    Eigen::Array<Formula,
-                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::RowsAtCompileTime
-                     : DerivedA::RowsAtCompileTime,
-                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::ColsAtCompileTime
-                     : DerivedA::ColsAtCompileTime>>::type
+    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator<=(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -355,13 +369,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() >
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    Eigen::Array<Formula,
-                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::RowsAtCompileTime
-                     : DerivedA::RowsAtCompileTime,
-                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::ColsAtCompileTime
-                     : DerivedA::ColsAtCompileTime>>::type
+    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator<(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -379,13 +387,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() >=
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    Eigen::Array<Formula,
-                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::RowsAtCompileTime
-                     : DerivedA::RowsAtCompileTime,
-                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::ColsAtCompileTime
-                     : DerivedA::ColsAtCompileTime>>::type
+    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator>=(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -403,13 +405,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() >
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    Eigen::Array<Formula,
-                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::RowsAtCompileTime
-                     : DerivedA::RowsAtCompileTime,
-                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::ColsAtCompileTime
-                     : DerivedA::ColsAtCompileTime>>::type
+    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator>(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -427,13 +423,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() >
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    Eigen::Array<Formula,
-                 DerivedA::RowsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::RowsAtCompileTime
-                     : DerivedA::RowsAtCompileTime,
-                 DerivedA::ColsAtCompileTime == Eigen::Dynamic
-                     ? DerivedB::ColsAtCompileTime
-                     : DerivedA::ColsAtCompileTime>>::type
+    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator!=(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
