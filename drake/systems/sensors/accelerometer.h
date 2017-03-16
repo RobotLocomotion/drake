@@ -189,11 +189,6 @@ class Accelerometer : public systems::LeafSystem<double> {
     return System<double>::get_output_port(output_port_index_);
   }
 
-  /// Allocates the output vector. See this class's description for details of
-  /// this output vector.
-  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
  protected:
   /// Computes the "sensed" linear acceleration.
   void DoCalcOutput(const systems::Context<double>& context,

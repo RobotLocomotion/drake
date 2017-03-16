@@ -102,11 +102,6 @@ class Gyroscope : public systems::LeafSystem<double> {
     return System<double>::get_output_port(output_port_index_);
   }
 
-  /// Allocates the output vector. See this class' description for details of
-  /// this output vector.
-  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
  protected:
   /// Computes the angular velocity as sensed by this sensor.
   void DoCalcOutput(const systems::Context<double>& context,
