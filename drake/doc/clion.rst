@@ -125,31 +125,14 @@ is especially important to make sure that ``ccache`` is never on your ``PATH``
 when you run CLion, because CLion will cache the ``PATH`` aggressively. We do
 not yet have a proven technique for purging it.
 
-Installing CLion and the Bazel Plugin
--------------------------------------
+Installing the Bazel Plugin
+---------------------------
 
-To use CLion with Bazel, we require an experimental plugin that the Bazel team
-supplies in source form only.
-
-1. Download and install CLion 2016.2.3 from the CLion
-   `previous releases <https://www.jetbrains.com/clion/download/previous.html>`_.
-   No other version of CLion is compatible with the Bazel plugin.
-
-2. Adjust your JVM options to increase CLion's memory limits so that ``-Xms``
-   is ``1024m`` and ``-Xmx`` is ``8196m``. The JVM options file location
-   is platform-dependent:
-
-   a. **Linux:**  ``bin/clion64.vmoptions``, in the CLion tarball.
-   b. **OS X:** ``Contents/bin/clion.vmoptions``, in the CLion app package.
-
-3. Clone the `bazelbuild/intellij <https://github.com/bazelbuild/intellij>`_
-   project from GitHub, and build the CLion plugin with
-   ``bazel build --define=ij_product=clion-latest //clwb:clwb_bazel``.
-
-4. Launch CLion, and install the Bazel plugin from disk. Open
-   ``File > Settings``. Select ``Plugins``, then ``Install plugin from disk...``.
-   In the file browser, select ``bazel-genfiles/clwb/clwb_bazel.jar``.
-   Click "OK".
+To use Bazel in CLion, you must install a plugin supplied by Google. The plugin
+requires CLion 2016.3 or later.  To install the plugin, open
+``File > Settings``, select ``Plugins``, and press the ``Browse repositories``
+button.  Locate and install the ``CLion with Bazel`` plugin. You will be
+prompted to restart CLion.
 
 Setting up Drake in CLion
 -------------------------
@@ -168,18 +151,21 @@ specified in the WORKSPACE file.
 6. (Advanced) Project View: If you only wish to develop a subset of Drake,
    you can specify only those files and targets in the project view file.
    Most users should leave it as-is.
-7. Click "Finish".  CLion will begin ingesting the Drake source and building
-   symbols. This will take several minutes.
+7. Click "Finish".  CLion will begin ingesting the Drake source, building
+   symbols, and compiling Drake. This will take several minutes.
 
 Building and Running Targets
 ----------------------------
 
 To build all of Drake with default Bazel options, select
-``Bazel > Make Project``.
+``Bazel > Build > Compile Project``.
 
 To build or run a specific target go to ``Run > Edit Configurations``. Click
 ``+`` to create a new Bazel command.  Specify the configuration name and Bazel
-options, then click OK.  Launch the configuration from the ``Run`` menu.
+options. The ``Target expression`` specifies the actual code (library, binary,
+and/or test) that you want to run. To learn more about target expressions, see
+`the Bazel manual <https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns>`_.
+Once you've created a configuration, you can launch it from the ``Run`` menu.
 
 To run a specific target in the debugger, create a configuration as above,
 using the ``bazel run`` command. Then launch it from ``Run > Debug``.
@@ -190,6 +176,17 @@ Keeping CLion Up-to-Date with the Bazel Build
 Changes to BUILD files can add or remove source files from the Bazel build.
 To propagate those changes into the CLion project structure, select
 ``Bazel > Sync Project With BUILD Files``.
+
+Git Integration
+---------------
+
+CLion provides a user interface for Git, which you can enable in the ``VCS``
+menu.  It automatically detects all Git roots within the workspace. This will
+include ``bazel-drake-distro``, which is a Bazel-internal detail. Bazel edits
+the contents of that directory for its own purposes, and those changes will
+spuriously appear in the CLion UI. To make CLion ignore ``bazel-drake-distro``,
+enable Git integration, shut down CLion, and remove the ``bazel-drake-distro``
+line from ``.idea/vcs.xml`` in your CLion project directory.
 
 Integrating External Tools with CLion
 =====================================
