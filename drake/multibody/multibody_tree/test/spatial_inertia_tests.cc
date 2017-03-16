@@ -23,7 +23,7 @@ using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::NumTraits;
 using Eigen::Vector3d;
-using std::sort;
+using std::numeric_limits;
 
 // Test default constructor which leaves entries initialized to NaN for a
 // quick detection of un-initialized values.
@@ -161,32 +161,46 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
   EXPECT_TRUE(MPrism_Wo_W.IsApprox(MExpected_Wo_W));
 }
 
-#if 0
+// Tests the method SpatialInertia::ReExpress().
 GTEST_TEST(SpatialInertia, ReExpress) {
-  // Spatial inertia for a cube of unit mass computed about its center of mass
-  // and expressed in its principal axes frame.
-  const double Lx = 0.2, Ly = 1.0, Lz = 0.5;  // Box's lengths.
-  SpatialInertia<double> M_Bo_B(
-      1.0, Vector3d::UnitX(), UnitInertia<double>::SolidBox(Lx, Ly, Lz));
-
-  // Replace this pring by the respective getters and check values.
-  PRINT_VARn(M_Bo_B);
+  // Spatial inertia for a cube C computed about a point P and expressed in a
+  // frame E.
+  const double Lx = 0.2, Ly = 1.0, Lz = 0.5;  // Cube's lengths.
+  const double mass = 1.3;  // Cube's mass
+  SpatialInertia<double> M_CP_E(  // First computed about its centroid.
+      mass, Vector3d::Zero(), UnitInertia<double>::SolidBox(Lx, Ly, Lz));
+  // Shift to point P placed one unit in the y direction along the y axis in
+  // frame E.
+  M_CP_E.ShiftInPlace(Vector3d::UnitY());
 
   // Place B rotated +90 degrees about W's x-axis.
-  Matrix3<double> R_WB =
+  Matrix3<double> R_WE =
       AngleAxisd(M_PI_2, Vector3d::UnitX()).toRotationMatrix();
-  PRINT_VARn(R_WB);
 
-  SpatialInertia<double> M_Bo_W = M_Bo_B.ReExpress(R_WB);
+  SpatialInertia<double> M_CP_W = M_CP_E.ReExpress(R_WE);
 
   // Checks for physically correct spatial inertia.
-  EXPECT_TRUE(M_Bo_W.IsPhysicallyValid());
+  EXPECT_TRUE(M_CP_W.IsPhysicallyValid());
 
-  // Replace this print by the respective checks of the new computed values.
-  // What was in y now is in z.
-  PRINT_VARn(M_Bo_W);
+  // The mass is invariant when re-expressing in another frame.
+  EXPECT_EQ(M_CP_E.get_mass(), M_CP_W.get_mass());
+
+  // The vector p_PCcm changes when re-expressed in another frame from
+  // p_PCcm_E = [0, -1, 0] to p_PCcm_W = [0, 0, -1]
+  EXPECT_TRUE(M_CP_W.get_com().isApprox(
+      -Vector3d::UnitZ(), numeric_limits<double>::epsilon()));
+
+  Vector3d moments_E = M_CP_E.get_rotational_inertia().get_moments();
+  Vector3d moments_W = M_CP_W.get_rotational_inertia().get_moments();
+  // Since rotation is along the x-axis the first moment about x does
+  // not change.
+  EXPECT_NEAR(moments_W(0), moments_E(0), numeric_limits<double>::epsilon());
+
+  // The y and z moments swap places after the rotation of 90 degrees about the
+  // x axis.
+  EXPECT_NEAR(moments_W(1), moments_E(2), numeric_limits<double>::epsilon());
+  EXPECT_NEAR(moments_W(2), moments_E(1), numeric_limits<double>::epsilon());
 }
-#endif
 
 #if 0
 GTEST_TEST(SpatialInertia, Shift) {

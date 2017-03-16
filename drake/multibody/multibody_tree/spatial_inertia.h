@@ -212,6 +212,32 @@ class SpatialInertia {
     return *this;
   }
 
+  /// Given `this` spatial inertia `M_SP_E` for some system or body S, taken
+  /// about a point P and expressed in frame E, this method computes the same
+  /// inertia re-expressed in another frame A.
+  /// This operation is performed in-place modifying the original object.
+  ///
+  /// @param[in] R_AE Rotation matrix from frame E to frame A.
+  /// @returns A reference to `this` rotational inertia about the same point P
+  ///          but now re-expressed in frame `A`, that is, `M_SP_A`.
+  SpatialInertia& ReExpressInPlace(const Matrix3<T>& R_AE) {
+    p_PScm_E_ = R_AE * p_PScm_E_;    // Now p_PScm_A
+    I_SP_E_.ReExpressInPlace(R_AE);  // Now I_SP_A
+    return *this;                    // Now M_SP_A
+  }
+
+  /// Given `this` spatial inertia `M_SP_E` for some system or body S, taken
+  /// about a point P and expressed in frame E, this method computes the same
+  /// inertia re-expressed in another frame A.
+  ///
+  /// @param[in] R_AE Rotation matrix from frame E to frame A.
+  /// @retval M_SP_A The same spatial inertia of S about P but now
+  ///                re-expressed in frame`A`.
+  /// @see ReExpressInPlace()
+  SpatialInertia ReExpress(const Matrix3<T>& R_AE) const {
+    return SpatialInertia(*this).ReExpressInPlace(R_AE);
+  }
+
 #if 0
   /// Computes the product from the right between this spatial inertia with the
   /// spatial vector @p V. This spatial inertia and spatial vector @p V must be
@@ -226,28 +252,6 @@ class SpatialInertia {
     return SpatialVector<T>(
         I_SP_E_ * w + mxp.cross(v), /* angular component */
         mass_ * v - mxp.cross(w));  /* linear component */
-  }
-
-  /// Given this spatial inertia `M_Bo_F` about `Bo` and expressed in frame `F`,
-  /// this method re-expresses the same spatial inertia in another frame `A`.
-  /// This operation is performed in-place modifying the original object.
-  /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
-  /// @returns A references to `this` object which now is the same spatial 
-  /// inertia about `Bo` but expressed in frame `A`.
-  SpatialInertia& ReExpressInPlace(const Matrix3<T>& R_AF) {
-    p_PScm_E_ = R_AF * p_PScm_E_;
-    I_SP_E_.ReExpressInPlace(R_AF);
-    return *this;
-  }
-
-  /// Given this spatial inertia `M_Bo_F` about `Bo` and expressed in frame `F`,
-  /// this method computes the same spatial inertia but re-expressed in another
-  /// frame `A`.
-  /// @param[in] R_AF Rotation matrix from frame `F` to frame `A`.
-  /// @returns M_Bo_A The same spatial inertia about `Bo` but expressed in
-  /// frame `A`.
-  SpatialInertia ReExpress(const Matrix3<T>& R_AF) const {
-    return SpatialInertia(*this).ReExpressInPlace(R_AF);
   }
 #endif
 
@@ -265,15 +269,10 @@ class SpatialInertia {
   /// @returns `M_Xo_F` This same spatial inertia but computed about
   /// origin `Xo`.
   SpatialInertia& ShiftInPlace(const Vector3<T>& p_BoXo_F) {
-    //using math::CrossProductMatrixSquared;
     const Vector3<T> p_XoBc_F = p_PScm_E_ - p_BoXo_F;
-    //const Matrix3<T> Sp_BoBc_F = CrossProductMatrixSquared(p_PScm_E_);
-    //const Matrix3<T> Sp_XoBc_F = CrossProductMatrixSquared(p_XoBc_F);
     I_SP_E_ += get_mass() *
         (UnitInertia<T>::PointMass(p_XoBc_F) -
          UnitInertia<T>::PointMass(p_PScm_E_));
-    //I_SP_E_.get_mutable_symmetric_matrix_view() =
-    //    I_SP_E_.get_matrix() + mass_ * (Sp_BoBc_F - Sp_XoBc_F);
     p_PScm_E_ = p_XoBc_F;
     return *this;
   }
