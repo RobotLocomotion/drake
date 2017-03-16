@@ -158,6 +158,7 @@ drake_install_pkg_config_file(drake-java
 add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(common)
+add_subdirectory(geometry)
 add_subdirectory(lcm)
 add_subdirectory(math)
 add_subdirectory(multibody)
