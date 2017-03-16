@@ -1,9 +1,8 @@
 #pragma once
 
 #include <exception>
-#include <memory>
-#include <sstream>
-#include <vector>
+#include <iostream>
+#include <limits>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -12,11 +11,6 @@
 #include "drake/multibody/multibody_tree/math/spatial_algebra.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 #include "drake/multibody/multibody_tree/unit_inertia.h"
-
-#include <iostream>
-#include <sstream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-#define PRINT_VARn(x) std::cout <<  #x ":\n" << x << std::endl;
 
 namespace drake {
 namespace multibody {
@@ -83,7 +77,7 @@ class SpatialInertia {
 
   /// Constructs a spatial for a physical system S about a point P from a given
   /// mass, center of mass and rotational inertia. The center of mass is
-  /// specified by the position vector `p_PScm_E` from point P to the systems's
+  /// specified by the position vector `p_PScm_E` from point P to the systems'
   /// center of mass point `Scm`, expressed in a frame E.
   /// The rotational inertia is provided as the UnitInertia `G_SP_E` of system S
   /// computed about point P and expressed in frame E.
@@ -113,12 +107,12 @@ class SpatialInertia {
 
   /// Get a constant reference to the position vector `p_PScm_E` from the
   /// _about point_ P to the center of mass `Scm` of the physical system S,
-  /// expressed in frame E. See the documentation of this clas for details.
+  /// expressed in frame E. See the documentation of this class for details.
   const Vector3<T>& get_com() const { return p_PScm_E_;}
 
   /// Get a constant reference to the rotational inertia `I_SP_E` of this
   /// spatial inertia, computed about point P and expressed in frame E. See the
-  /// documentation of this clas for details.
+  /// documentation of this class for details.
   const RotationalInertia<T>& get_rotational_inertia() const { return I_SP_E_;}
 
   /// Returns `true` if any of the elements in this spatial inertia is NaN
@@ -175,7 +169,7 @@ class SpatialInertia {
 
   /// Compares `this` spatial inertia to `other` rotational inertia within the
   /// specified `tolerance`.
-  /// The comparsion returns `true` if the following are true:
+  /// The comparison returns `true` if the following are true:
   ///   - abs(this->get_mass() - other.get_mass()) < tolerance.
   ///   - this->get_com().isApprox(other.get_com(), tolerance).
   ///   - this->get_rotational_inertia().IsApprox(
@@ -278,23 +272,6 @@ class SpatialInertia {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
   }
 
-#if 0
-  /// Computes the product from the right between this spatial inertia with the
-  /// spatial vector @p V. This spatial inertia and spatial vector @p V must be
-  /// expressed in the same frame.
-  /// @param[in] V Spatial vector to multiply from the right.
-  /// @returns The product from the right of `this` inertia with @p V.
-  SpatialVector<T> operator*(const SpatialVector<T>& V) const
-  {
-    const auto& v = V.linear();   // Linear velocity.
-    const auto& w = V.angular();  // Angular velocity.
-    const Vector3<T> mxp = mass_ * p_PScm_E_;
-    return SpatialVector<T>(
-        I_SP_E_ * w + mxp.cross(v), /* angular component */
-        mass_ * v - mxp.cross(w));  /* linear component */
-  }
-#endif
-
  private:
   // Helper method for NaN initialization.
   static constexpr T nan() {
@@ -311,16 +288,6 @@ class SpatialInertia {
   // expressed in a frame E.
   RotationalInertia<T> I_SP_E_{};  // Defaults to NaN initialized inertia.
 };
-
-#if 0
-template <typename T>
-inline SpatialInertia<T> operator*(
-    const T& s, const SpatialInertia<T>& I_Bo_F) {
-  return SpatialInertia<T>(s * I_Bo_F.get_mass(),
-                           s * I_Bo_F.get_com(),
-                           s * I_Bo_F.get_rotational_inertia());
-}
-#endif
 
 /// Insertion operator to write SpatialInertia objects into a `std::ostream`.
 /// Especially useful for debugging.

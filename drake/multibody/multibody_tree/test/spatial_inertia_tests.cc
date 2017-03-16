@@ -1,32 +1,25 @@
 #include "gtest/gtest.h"
 
+#include <limits>
+#include <sstream>
+
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 #include "drake/multibody/multibody_tree/unit_inertia.h"
 
-#include <limits>
-
-#include <algorithm>
-#include <iostream>
-#include <sstream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-#define PRINT_VARn(x) std::cout <<  #x ":\n" << x << std::endl;
-
 namespace drake {
 namespace multibody {
-namespace math {
 namespace {
 
 using drake::math::VectorToSkewSymmetric;
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
-using Eigen::NumTraits;
 using Eigen::Vector3d;
 using std::numeric_limits;
 
 // Test default constructor which leaves entries initialized to NaN for a
-// quick detection of un-initialized values.
+// quick detection of uninitialized values.
 GTEST_TEST(SpatialInertia, DefaultConstructor) {
   SpatialInertia<double> I;
   ASSERT_TRUE(I.IsNaN());
@@ -46,7 +39,7 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
                         p(0), p(1), p(2));/* products of inertia */
   SpatialInertia<double> M(mass, com, G);
   ASSERT_TRUE(M.IsPhysicallyValid());
-  
+
   ASSERT_EQ(M.get_mass(), mass);
   ASSERT_EQ(M.get_com(), com);
   ASSERT_TRUE(M.get_rotational_inertia().IsApprox(
@@ -54,12 +47,14 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
 
   Matrix6<double> Mmatrix = M.CopyToFullMatrix6();
   Matrix6<double> expected_matrix;
-  expected_matrix.block<3,3>(0,0) = mass * G.CopyToFullMatrix3();
-  expected_matrix.block<3,3>(3,3) = mass * Matrix3d::Identity();
-  expected_matrix.block<3,3>(0,3) = mass * VectorToSkewSymmetric(com);
-  expected_matrix.block<3,3>(3,0) = expected_matrix.block<3,3>(0,3).transpose();
+  expected_matrix.block<3, 3>(0, 0) = mass * G.CopyToFullMatrix3();
+  expected_matrix.block<3, 3>(3, 3) = mass * Matrix3d::Identity();
+  expected_matrix.block<3, 3>(0, 3) = mass * VectorToSkewSymmetric(com);
+  expected_matrix.block<3, 3>(3, 0) =
+      expected_matrix.block<3, 3>(0, 3).transpose();
 
-  EXPECT_TRUE(Mmatrix.isApprox(expected_matrix, NumTraits<double>::epsilon()));
+  EXPECT_TRUE(Mmatrix.isApprox(expected_matrix,
+                               numeric_limits<double>::epsilon()));
 
   EXPECT_FALSE(M.IsNaN());
   M.SetNaN();
@@ -243,128 +238,10 @@ GTEST_TEST(SpatialInertia, Shift) {
       mass * (3 * radius * radius + length * length) / 12  /*About centroid.*/
       + mass * length * length / 4;  /*Parallel axis theorem shift.*/
   const auto& I_Xo_W = M_BBtop_W.get_rotational_inertia();
-  EXPECT_NEAR(I_Xo_W(0,0), I_end, Eigen::NumTraits<double>::epsilon());
-  EXPECT_NEAR(I_Xo_W(2,2), I_end, Eigen::NumTraits<double>::epsilon());
+  EXPECT_NEAR(I_Xo_W(0, 0), I_end, numeric_limits<double>::epsilon());
+  EXPECT_NEAR(I_Xo_W(2, 2), I_end, numeric_limits<double>::epsilon());
 }
 
-#if 0
-// This tests the implementation of two product operators:
-// 1. SpatialVector operator*(const SpatialVector& V) const;
-// 2. SpatialVelocityJacobian operator*(const SpatialVelocityJacobian& J) const;
-//
-// The first operator allows to multiply a SpatialInertia with a SpatialVector
-// from the right.
-// The second operator allows to multiply a SpatialInertia with a
-// SpatialVelocityJacobian. A SpatialVelocityJacobian can be viewed as a matrix
-// where each column is a SpatialVector.
-GTEST_TEST(SpatialInertia, ProductWithSpatialVectors) {
-  const double mass = 2.5;
-  const double radius = 0.1;
-  const double length = 1.0;
-
-  // Spatial inertia of a rod along the z-axis computed about center of mass.
-  SpatialInertia<double> M_Bc_W(
-      mass,
-      Vector3d::Zero(),
-      UnitInertia<double>::SolidRod(radius, length));
-
-  // Spatial inertia about the top end of the bar.
-  SpatialInertia<double> M_Eo_W =
-      M_Bc_W.Shift(length / 2 * Vector3d::UnitZ());
-  EXPECT_TRUE(M_Eo_W.IsPhysicallyValid());
-
-  // Assume a given linear velocity.
-  const Vector3d v_WB(-1, 2, 8);
-
-  // Assume a given angular velocity.
-  const Vector3d w_WB(1, 2, 3);
-
-  // Spatial velocity of its top end frame.
-  SpatialVector<double> V_WB(w_WB, v_WB);
-
-  // Product of a SpatialInertia times a SpatialVector
-  SpatialVector<double> F_WB = M_Bc_W * V_WB;
-
-  SpatialVector<double> F_expected(
-      Vector3d(5.0 / 24.0, 5.0 / 12.0, 0.0375),
-      Vector3d(-2.5, 5.0, 20.0));
-  EXPECT_TRUE(F_WB.IsApprox(F_expected, Eigen::NumTraits<double>::epsilon()));
-
-  // Jacobian with three columns but a maximum up to six columns.
-  SpatialVelocityJacobianUpTo6<double> H(3);
-  H.col(0) = V_WB;
-  H.col(1) = 2. * V_WB;
-  H.col(2) = 3. * V_WB;
-  EXPECT_EQ(H.cols(), 3);  // Verifying the constructor did the right thing.
-
-  // Product of a SpatialInertia times a SpatialVelocityJacobian.
-  SpatialVelocityJacobianUpTo6<double> MxH = M_Bc_W * H;
-  EXPECT_EQ(MxH.rows(), 6);  // Trivial. This is always true.
-  EXPECT_EQ(MxH.cols(), H.cols());  // Depends on the size of H.
-  EXPECT_TRUE(MxH.col(0).IsApprox(F_WB, Eigen::NumTraits<double>::epsilon()));
-  EXPECT_TRUE(MxH.col(1).IsApprox(
-      2.0 * F_WB, Eigen::NumTraits<double>::epsilon()));
-  EXPECT_TRUE(MxH.col(2).IsApprox(
-      3.0 * F_WB, Eigen::NumTraits<double>::epsilon()));
-}
-
-GTEST_TEST(SpatialInertia, ComputeKineticEnergy) {
-  const double mass = 2.5;
-  const double radius = 0.1;
-  const double length = 1.0;
-
-  // Spatial inertia of a rod along the z-axis computed about center of mass.
-  SpatialInertia<double> M_Bc_W(
-      mass,
-      Vector3d::Zero(),
-      UnitInertia<double>::SolidRod(radius, length));
-
-  // Spatial inertia about the top end of the bar.
-  SpatialInertia<double> M_Eo_W =
-      M_Bc_W.Shift(length / 2 * Vector3d::UnitZ());
-  EXPECT_TRUE(M_Eo_W.IsPhysicallyValid());
-
-  // Assume a given angular velocity.
-  const double w0 = 2.5;  // Magnitude of the angular velocity.
-  const Vector3d w_WBc = -w0 * Vector3d::UnitY();
-
-  // Spatial velocity of its top end frame.
-  SpatialVector<double> V_WE(w_WBc, Vector3d::Zero());
-
-  // Spatial velocity of its center of mass.
-  SpatialVector<double> V_WB =
-      /* phi_BE */
-      ShiftOperator<double>(M_Eo_W.get_com()).transpose() * V_WE;
-
-  PRINT_VARn(V_WE);
-  PRINT_VARn(V_WB);
-  PRINT_VARn(M_Bc_W);
-
-  // Computes kinetic energy using spatial operations:
-  // Using spatial algebra about the center of mass:
-  double K_com = 0.5 * V_WB.dot(M_Bc_W * V_WB);
-
-  PRINT_VARn(M_Bc_W * V_WB);
-
-  // Using spatial algebra about the rod's end:
-  double K_end = 0.5 * V_WE.dot(M_Eo_W * V_WE);
-
-  PRINT_VAR(K_com);
-  PRINT_VAR(K_end);
-
-  // Expected kinetic energy of a rod rotation about its end.
-  const double Iend = mass * length * length / 3.0;
-  const double Kexpected = 0.5 * Iend * w0 * w0;
-  PRINT_VAR(Kexpected);
-
-  EXPECT_NEAR(Kexpected, K_com, 4 * NumTraits<double>::epsilon());
-  EXPECT_NEAR(Kexpected, K_end, 4 * NumTraits<double>::epsilon());
-
-}
-#endif
-
-
-}
-}  // math
-}  // multibody
-}  // drake
+}  // namespace
+}  // namespace multibody
+}  // namespace drake

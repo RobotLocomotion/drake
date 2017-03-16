@@ -55,7 +55,7 @@ namespace multibody {
 /// @note This class does not implement any mechanism to track the frame in
 /// which an inertia is expressed or about what point is computed. Methods and
 /// operators on this class have no means to determine frame consistency through
-/// operations. It is therefore the responsability of users of this class to
+/// operations. It is therefore the responsibility of users of this class to
 /// keep track of frames in which operations are performed. The best way to do
 /// that is to use a disciplined notation as described below.
 ///
@@ -79,7 +79,7 @@ class RotationalInertia {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
 
   /// Default RotationalInertia constructor. All entries are set to NaN for a
-  /// quick detection of un-initialized values.
+  /// quick detection of uninitialized values.
   RotationalInertia() {}
 
   /// Creates a principal rotational inertia with identical diagonal elements
@@ -155,7 +155,7 @@ class RotationalInertia {
   /// symmetric rotational inertia. Therefore this accessor is not meant for
   /// speed but rather as a convenience method.
   /// Notice that the mutable counterpart of this accessor is not provided to
-  /// prevent the creation of unphysical inertias by setting one element at a
+  /// prevent the creation of nonphysical inertias by setting one element at a
   /// time.
   const T& operator()(int i, int j) const {
     // Overwrites local copies of i and j.
@@ -200,7 +200,7 @@ class RotationalInertia {
   }
 
   /// Returns the combined inertia obtained by adding `this` rotational inertia
-  /// with another rotational inertia `I_BP_E`. 
+  /// with another rotational inertia `I_BP_E`.
   /// This operation is only valid if both inertias are computed about the same
   /// point P and expressed in the same frame E. Considering `this` inertia
   /// to be `I_SP_E` for some system S, taken about some point P, the
@@ -242,9 +242,9 @@ class RotationalInertia {
 
   /// Returns the combined inertia obtained by subtracting another rotational
   /// inertia `I_BP_E` from `this` rotational inertia. This operation is useful
-  /// when computing the inertia of a geometry with an empty space; its inertia 
-  /// can be computed by substracting the _inertia_ of the empty space from the
-  /// geometry without the empty space. 
+  /// when computing the inertia of a geometry with an empty space; its inertia
+  /// can be computed by subtracting the _inertia_ of the empty space from the
+  /// geometry without the empty space.
   /// This operation is only valid if both inertias are computed about the same
   /// point P and expressed in the same frame E. Considering `this` inertia
   /// to be `I_SP_E` for some system S, taken about some point P, the
@@ -410,7 +410,7 @@ class RotationalInertia {
     // Say CalcPrincipalMomentsOfInertia() results in a very small negative
     // value d0 = -slop⁻, with slop⁻ ∈ [0; slop) (notice closed and open bounds
     // in this range) a very small floating point number that could be very
-    // close to slop but never equal since otherwise the first comparision
+    // close to slop but never equal since otherwise the first comparison
     // above (d.array() < -slop) would not pass. d1 and d2 in this example case
     // could take any values.
     // For this case the triangle inequality d0 + d1 >= d2 becomes:
@@ -487,7 +487,7 @@ class RotationalInertia {
     return sxI;
   }
 
-  /// Multiplies `this` %RotationalInertiafrom the right by a scalar S.
+  /// Multiplies `this` %RotationalInertia from the right by a scalar S.
   /// Multiplication by scalar is commutative.
   friend RotationalInertia<T> operator*(const RotationalInertia<T>& I_BP_E,
                                         const T& s) {
