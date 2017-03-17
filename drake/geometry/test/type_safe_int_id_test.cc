@@ -1,5 +1,6 @@
 #include "drake/geometry/type_safe_int_id.h"
 
+#include <sstream>
 #include <unordered_set>
 
 #include "gtest/gtest.h"
@@ -9,6 +10,7 @@ namespace geometry {
 namespace  {
 
 // Creates various dummy index types to test.
+using std::stringstream;
 using std::unordered_set;
 using AId = TypeSafeIntId<class ATag>;
 using BId = TypeSafeIntId<class BTag>;
@@ -45,6 +47,14 @@ GTEST_TEST(TypeSafeIntId, ServeAsMapKey) {
   EXPECT_EQ(ids.size(), 2);
   ids.insert(AId(0));
   EXPECT_EQ(ids.size(), 2);
+}
+
+// Tests the streaming behavior.
+GTEST_TEST(TypeSafeIntId, StreamOperator) {
+  stringstream ss;
+  AId a(1);
+  ss << a;
+  EXPECT_EQ(ss.str(), "1");
 }
 
 // These tests confirm that behavior that *shouldn't* be compilable isn't.
