@@ -1,5 +1,7 @@
 #include "drake/geometry/type_safe_int_id.h"
 
+#include <unordered_set>
+
 #include "gtest/gtest.h"
 
 namespace drake {
@@ -7,6 +9,7 @@ namespace geometry {
 namespace  {
 
 // Creates various dummy index types to test.
+using std::unordered_set;
 using AId = TypeSafeIntId<class ATag>;
 using BId = TypeSafeIntId<class BTag>;
 
@@ -21,7 +24,7 @@ GTEST_TEST(TypeSafeIntId, Constructor) {
   ASSERT_EQ(a2.value(), 2);
 };
 
-// Confirms that assignment behaves correctly. This also implicitly tests the
+// Confirms that assignment behaves correctly. This also implicitly tests
 // equality and inequality.
 GTEST_TEST(TypeSafeIntId, AssignmentAndComparison) {
   AId a1(1);
@@ -29,6 +32,19 @@ GTEST_TEST(TypeSafeIntId, AssignmentAndComparison) {
   ASSERT_NE(a1, a2);
   a2 = a1;
   ASSERT_EQ(a1, a2);
+}
+
+// Confirms that frame ids are configured to serve as unique keys in
+// STL containers.
+GTEST_TEST(TypeSafeIntId, ServeAsMapKey) {
+  unordered_set<AId> ids;
+  EXPECT_EQ(ids.size(), 0);
+  ids.insert(AId(0));
+  EXPECT_EQ(ids.size(), 1);
+  ids.insert(AId(1));
+  EXPECT_EQ(ids.size(), 2);
+  ids.insert(AId(0));
+  EXPECT_EQ(ids.size(), 2);
 }
 
 // These tests confirm that behavior that *shouldn't* be compilable isn't.

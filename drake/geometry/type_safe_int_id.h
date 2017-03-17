@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 
 #include "drake/common/drake_copyable.h"
 
@@ -57,9 +58,21 @@ class TypeSafeIntId {
     return a.value_ != b.value_;
   }
 
+  /** Enables use of the identifier to serve as a key in STL containers. */
+  friend struct std::hash<TypeSafeIntId<Tag>>;
+
  private:
   // The underlying value.
   int64_t value_;
 };
 }  // namespace geometry
 }  // namespace drake
+
+namespace std {
+template <typename Tag>
+struct hash<drake::geometry::TypeSafeIntId<Tag>> {
+  size_t operator()(const drake::geometry::TypeSafeIntId<Tag>& id) const {
+    return static_cast<size_t>(id.value_);//hash(id.value());
+  }
+};
+}  // namespace std
