@@ -21,7 +21,6 @@ const std::pair<RoadPosition, RoadPosition> FindClosestPair(
     const PoseBundle<double>& traffic_poses, const Lane* traffic_lane) {
   const RoadPosition& ego_position =
       CalcRoadPosition(road, ego_pose.get_isometry());
-  std::cerr << " ego_position.pos.s: " << ego_position.pos.s << std::endl;
   DRAKE_DEMAND(ego_position.lane != nullptr);
   // Take the ego car's lane by default.
   const Lane* const lane =

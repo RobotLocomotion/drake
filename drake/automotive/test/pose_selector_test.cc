@@ -3,11 +3,6 @@
 #include "gtest/gtest.h"
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/automotive/maliput/monolane/arc_lane.h"
-#include "drake/automotive/maliput/monolane/junction.h"
-#include "drake/automotive/maliput/monolane/lane.h"
-#include "drake/automotive/maliput/monolane/road_geometry.h"
-#include "drake/automotive/maliput/monolane/segment.h"
 
 namespace drake {
 namespace automotive {
@@ -69,7 +64,12 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
   // Create a straight road, two lanes wide, in which the two s-r
   // Lane-coordinate frames are aligned with the x-y world coordinates, with s_i
   // = 0 for the i-th lane, i ∈ {0, 1}, corresponds to x = 0, and r_i = 0
-  // corresponds to y = (i - 0.5) * kLaneWidth.
+  // corresponds to y = (i - 0.5) * kLaneWidth.  See sketch below.
+  //
+  // +y ^
+  //    | -  -  -  -  -  -  -  -   <-- lane 1 (y_1)
+  //  0 |-----------------------> +x
+  //    | -  -  -  -  -  -  -  -   <-- lane 0 (y_0)
   const int kNumLanes{2};
   const maliput::dragway::RoadGeometry road(
       maliput::api::RoadGeometryId({"Test Dragway"}), kNumLanes, kLaneLength,
@@ -118,7 +118,7 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
   // Expect the "far ahead" car to be identified.
   EXPECT_EQ(kLeadingSPosition + kSOffset, leading_position.pos.s);
 
-  // Bump the "just ahead" car into the lane to the left.
+  // Bump the "far ahead" car into the lane to the left.
   Isometry3<double> isometry_far_ahead = traffic_poses.get_pose(kFarAheadIndex);
   isometry_far_ahead.translation().y() += kLaneWidth;
   traffic_poses.set_pose(kFarAheadIndex, isometry_far_ahead);
@@ -132,35 +132,10 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
   std::tie(leading_position, trailing_position) = FindClosestPair(
       road, ego_pose, traffic_poses, ego_position.lane->to_left());
 
-  // Expect there to be no car behind on the immediate left and the "far ahead"
+  // Expect there to be no car behind on the immediate left and the "just ahead"
   // car to be leading.
   EXPECT_EQ(kLeadingSPosition, leading_position.pos.s);
   EXPECT_EQ(-std::numeric_limits<double>::infinity(), trailing_position.pos.s);
-}
-
-GTEST_TEST(PoseSelectorTest, ArcLaneTest) {
-  // Create an arc lane.
-  const double kTolerance{1e-6};
-  const double kRadius{100.};
-  const maliput::monolane::CubicPolynomial zp{0., 0., 0., 0.};
-  maliput::monolane::RoadGeometry road({"Test ArcLane"}, kTolerance,
-                                       kTolerance);
-  maliput::monolane::Segment* s0 = road.NewJunction({"j0"})->NewSegment({"s0"});
-  s0->NewArcLane({"l1"}, {100., -75.}, kRadius, 0., kLaneLength / kRadius,
-                     {-kLaneWidth, kLaneWidth}, {-kLaneWidth, kLaneWidth},
-                     // Zero elevation and no superelevation.
-                     zp, zp);
-
-  PoseVector<double> ego_pose;
-  PoseBundle<double> traffic_poses(4);
-
-  // Define the default poses.
-  SetDefaultPoses(&ego_pose, &traffic_poses);
-
-  // Test that we get the same result when just the leading car is returned.
-  const maliput::api::RoadPosition& traffic_position =
-      FindClosestLeading(road, ego_pose, traffic_poses);
-  EXPECT_EQ(kLeadingSPosition, traffic_position.pos.s);
 }
 
 }  // namespace

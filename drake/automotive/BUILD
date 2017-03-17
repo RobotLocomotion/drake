@@ -607,7 +607,6 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:pose_selector",
         "//drake/automotive/maliput/dragway",
-        "//drake/automotive/maliput/monolane",
     ],
 )
 

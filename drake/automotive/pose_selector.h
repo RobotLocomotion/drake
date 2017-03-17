@@ -22,15 +22,17 @@ namespace pose_selector {
 /// cars are seen within @p traffic_lane, car `s`-positions are taken to be at
 /// infinite distances away from the ego car.
 ///
-/// The return values are a pair of leading/trailing RoadPositions. In the
-/// infinite-`s`-position case, the respective RoadPosition will contain an
-/// `s`-value of `std::numeric_limits<double>::infinity()`.
+/// The return values are a pair of leading/trailing RoadPositions. Note that
+/// when no car is detected in front of (resp. behind) the ego car, the
+/// respective RoadPosition will contain an `s`-value of positive
+/// (resp. negative) infinity (`std::numeric_limits<double>::infinity()`).
 ///
 /// N.B. When comparing across lanes, it is assumed that @p road is configured
 /// such that a comparison between the `s`-positions of any two cars on the road
 /// is meaningful.  For instance, if car A is at `s = 10 m` in lane 0's frame
 /// and car B is at `s = 0 m` in lane 1's frame then, if car A moved into lane
-/// 1, it would be 10 meters ahead of car B.
+/// 1, it would be 10 meters ahead of car B.  Only straight multi-lane roads are
+/// supported presently.
 ///
 /// TODO(jadecastro): Support road networks containing multi-lane segments
 /// (#4934).
@@ -41,16 +43,12 @@ FindClosestPair(
     const systems::rendering::PoseBundle<double>& traffic_poses,
     const maliput::api::Lane* traffic_lane = nullptr);
 
-/// Compares the Lane-space poses collected within @p traffic_poses against an
-/// @p ego_pose and returns the closest leading RoadPosition for traffic cars
-/// traveling in the same lane as the ego car.  All cars are assumed to be
-/// traveling on the same @p road.  If no cars are seen within @p traffic_lane,
-/// the leading car is taken to be at an infinite distance away from the ego
-/// car.
+/// Same as FindClosestPair() except that: (1) it only considers the ego car's
+/// lane and (2) it returns a single the RoadPosition of the leading vehicle.
 ///
-/// The return value is a RoadPosition of the lead car. In the
-/// infinite-`s`-position case, RoadPosition will contain an `s`-value of
-/// `std::numeric_limits<double>::infinity()`.
+///  Note that when no car is detected in front of the ego car, the returned
+///  RoadPosition will contain an `s`-value of
+///  `std::numeric_limits<double>::infinity()`.
 const maliput::api::RoadPosition FindClosestLeading(
     const maliput::api::RoadGeometry& road,
     const systems::rendering::PoseVector<double>& ego_pose,
