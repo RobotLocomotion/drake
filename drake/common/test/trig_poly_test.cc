@@ -1,7 +1,7 @@
 #include "drake/common/trig_poly.h"
 
-#include <sstream>
 #include <map>
+#include <sstream>
 
 #include "gtest/gtest.h"
 

@@ -7,7 +7,6 @@
 #include <vector>
 
 #include <Eigen/Core>
-
 #include "gtest/gtest.h"
 
 #include "drake/common/test/symbolic_test_util.h"

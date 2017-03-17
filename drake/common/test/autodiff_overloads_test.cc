@@ -4,7 +4,6 @@
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
-
 #include "gtest/gtest.h"
 
 #include "drake/common/cond.h"

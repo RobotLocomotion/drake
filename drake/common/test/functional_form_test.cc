@@ -4,7 +4,6 @@
 #include <sstream>
 
 #include <Eigen/Core>
-
 #include "gtest/gtest.h"
 
 namespace drake {
