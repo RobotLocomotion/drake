@@ -442,10 +442,12 @@ void AddMcCormickVectorConstraints(
         double box_min_norm = box_min.lpNorm<2>();
         double box_max_norm = box_max.lpNorm<2>();
         if (box_min_norm <= 1.0 + 1E-10 && box_max_norm >= 1.0 - 1E-10) {
-          // Three possible cases
-          // 1. box_min is on the surface of the sphere.
-          // 2. box_max is on the surface of the sphere.
-          // 3. otherwise.
+          // The box intersects with the surface of the unit sphere
+          // Two possible cases
+          // 1. If the box bmin <= x <= bmax intersects with the surface of the
+          // unit sphere at a unique point (either bmin or bmax), then we know
+          // the unique value of v, it has to be either bmin or bmax.
+          // 2. Otherwise, there is a region of intersection.
           if (std::abs(box_min_norm - 1.0) < 1E-10 || std::abs(box_max_norm - 1.0) < 1E-10) {
             // If box_min or box_max is on the sphere, then denote the point on
             // the sphere as u, we have the following condition
@@ -472,9 +474,32 @@ void AddMcCormickVectorConstraints(
             } else {
               u = box_max / box_max_norm;
             }
+            Eigen::Vector3d orthant_u;
+            VectorDecisionVariable<3> orthant_c;
+            for (int o = 0; o < 8; o ++) { // iterate over orthants
+              orthant_u = FlipVector(u, o);
+              orthant_c = PickPermutation(this_cpos, this_cneg, o);
 
-          } else if (std::abs(box_max_norm - 1.0) < 1E-10) {
+              // TODO(hongkai.dai): remove this for loop when we can handle
+              // Eigen::Array of symbolic formulae.
+              symbolic::Expression orthant_c_sum = orthant_c.cast<symbolic::Expression>().sum();
+              for (int i = 0; i < 3; ++i) {
+                prog->AddLinearConstraint(v(i) - orthant_u(i) <= 6 - 2 * orthant_c_sum);
+                prog->AddLinearConstraint(v(i) - orthant_u(i) >= 2 * orthant_c_sum - 6);
+              }
+              symbolic::Expression v_dot_v1 = orthant_u.dot(v1);
+              symbolic::Expression v_dot_v2 = orthant_u.dot(v2);
+              prog->AddLinearConstraint(v_dot_v1 <= 3 - orthant_c_sum);
+              prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v1);
+              prog->AddLinearConstraint(v_dot_v2 <= 3 - orthant_c_sum);
+              prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v2);
 
+              Vector3<symbolic::Expression> v_cross_v1 = orthant_u.cross(v1);
+              for (int i = 0; i < 3; ++i) {
+                prog->AddLinearConstraint(v_cross_v1(i) <= 3 - orthant_c_sum);
+                prog->AddLinearConstraint(v_cross_v1(i) >= orthant_c_sum - 3);
+              }
+            }
           } else {
             // Find the intercepts of the unit sphere with the box, then find
             // the tightest linear constraint of the form:
@@ -603,7 +628,7 @@ void AddMcCormickVectorConstraints(
         } else {
           // This box does not intersect with the sphere.
           for (int o = 0; o < 8; ++o) {  // iterate over orthants
-            prog->AddLinearConstraint(PickPermutation(this_cpos, this_cneg).cast<symbolic::Expression>().sum(), 0.0, 2.0);
+            prog->AddLinearConstraint(PickPermutation(this_cpos, this_cneg, o).cast<symbolic::Expression>().sum(), 0.0, 2.0);
           }
         }
       }

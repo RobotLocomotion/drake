@@ -445,7 +445,7 @@ GTEST_TEST(RotationTest, TestMcCormick) {
 // Test some corner cases of McCormick envelope.
 // The corner cases happens when either the innermost or the outermost corner
 // of the box bmin <= x <= bmax lies on the surface of the unit sphere.
-class TestMcCormickCorner : public ::testing::TestWithParam<std::tuple<int, bool, int>> {
+class TestMcCormickCorner : public ::testing::TestWithParam<std::tuple<int, int>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormickCorner)
 
@@ -453,8 +453,7 @@ class TestMcCormickCorner : public ::testing::TestWithParam<std::tuple<int, bool
     : prog_(),
       R_(NewRotationMatrixVars(&prog_)),
       orthant_(std::get<0>(GetParam())),
-      is_bmin_(std::get<1>(GetParam())),
-      col_idx_(std::get<2>(GetParam())){
+      col_idx_(std::get<1>(GetParam())){
     DRAKE_DEMAND(orthant_ >= 0);
     DRAKE_DEMAND(orthant_ <= 7);
     AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, 3);
@@ -462,9 +461,7 @@ class TestMcCormickCorner : public ::testing::TestWithParam<std::tuple<int, bool
  protected:
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
-  int orthant_;
-  bool is_bmin_; // If true, it means bmin is on the surface of the unit sphere.
-                 // otherwise, bmax is on the surface of the unit sphere.
+  int orthant_; // Index of the orthant that R_.col(col_idx_) is in.
   int col_idx_; // R_.col(col_idx_) will be fixed to a vertex of the box, and
                 // also this point is on the surface of the unit sphere.
 };
@@ -499,7 +496,6 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormickCorner,
     ::testing::Combine(::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6, 7}),  // Orthant
-                       ::testing::ValuesIn({false, true}),  // bmin or bmax
                        ::testing::ValuesIn({0, 1, 2})));  // column index
 
 }  // namespace
