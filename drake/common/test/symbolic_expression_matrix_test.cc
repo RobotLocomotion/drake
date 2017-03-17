@@ -449,6 +449,23 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorVarOpVar) {
   EXPECT_TRUE(CheckArrayOperatorNeq(array_var_2_, array_var_1_));
 }
 
+TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorReturnType) {
+  Eigen::Array<Variable, 2, Eigen::Dynamic> m1(2, 2);
+  Eigen::Array<Variable, Eigen::Dynamic, 2> m2(2, 2);
+  EXPECT_TRUE(
+      (std::is_same<decltype(m1 == m2), Eigen::Array<Formula, 2, 2>>::value));
+  EXPECT_TRUE(
+      (std::is_same<decltype(m1 != m2), Eigen::Array<Formula, 2, 2>>::value));
+  EXPECT_TRUE(
+      (std::is_same<decltype(m1 <= m2), Eigen::Array<Formula, 2, 2>>::value));
+  EXPECT_TRUE(
+      (std::is_same<decltype(m1 < m2), Eigen::Array<Formula, 2, 2>>::value));
+  EXPECT_TRUE(
+      (std::is_same<decltype(m1 >= m2), Eigen::Array<Formula, 2, 2>>::value));
+  EXPECT_TRUE(
+      (std::is_same<decltype(m1 > m2), Eigen::Array<Formula, 2, 2>>::value));
+}
+
 // Checks if m1 == m2 returns a formula which is a conjunction of
 // m1(i, j) == m2(i, j) for all i and j.
 bool CheckMatrixOperatorEq(const MatrixX<Expression>& m1,
