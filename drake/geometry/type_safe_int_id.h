@@ -58,6 +58,13 @@ class TypeSafeIntId {
     return a.value_ != b.value_;
   }
 
+  /** Streaming output operator. */
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const TypeSafeIntId<Tag>& id) {
+    out << id.value_;
+    return out;
+  }
+
   /** Enables use of the identifier to serve as a key in STL containers. */
   friend struct std::hash<TypeSafeIntId<Tag>>;
 
