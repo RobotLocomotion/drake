@@ -45,6 +45,8 @@ DEFINE_double(v_stiction_tolerance, 0.01,
 DEFINE_double(sim_duration, 5, "Amount of time to simulate");
 DEFINE_bool(playback, true,
             "If true, simulation begins looping playback when complete");
+DEFINE_bool(implicit, true,
+            "If true, implicit integrator is used.");
 
 namespace drake {
 namespace examples {
@@ -126,12 +128,17 @@ int main() {
 
   auto context = simulator.get_mutable_context();
 
-  simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
-  simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
-simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*model, 1e-1, context);
-simulator.get_mutable_integrator()->request_initial_step_size_target(1e-1);
-ImplicitEulerIntegrator<double>* integrator = (ImplicitEulerIntegrator<double>*) simulator.get_mutable_integrator();
-  integrator->set_delta_state_tolerance(1e-5);
+  if (FLAGS_implicit) {
+    simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*model, 1e-1,
+                                                                context);
+    simulator.get_mutable_integrator()->request_initial_step_size_target(1e-1);
+    ImplicitEulerIntegrator<double>* integrator = 
+      (ImplicitEulerIntegrator<double>*) simulator.get_mutable_integrator();
+    integrator->set_delta_state_tolerance(1e-5);
+  } else {
+    simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
+    simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
+  }
   simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
   std::cout << "Variable-step integrator accuracy: " << FLAGS_accuracy << "\n";
 

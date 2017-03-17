@@ -32,7 +32,6 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -46,7 +45,6 @@ namespace schunk_wsg {
 namespace {
 
 using drake::systems::RungeKutta3Integrator;
-using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
@@ -111,7 +109,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const double kDissipation = 2.0;
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
-  const double kVStictionTolerance = 0.0001;
+  const double kVStictionTolerance = 0.01;
   plant->set_normal_contact_parameters(kStiffness, kDissipation);
   plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
                                          kVStictionTolerance);
@@ -239,36 +237,14 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   auto context = simulator.get_mutable_context();
 
   simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
-/*
   simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
   simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
-*/
-const double dt = 1e-2;
-simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*model, dt, context);
-simulator.get_mutable_integrator()->request_initial_step_size_target(dt);
-simulator.get_mutable_integrator()->set_target_accuracy(5e-2);
-ImplicitEulerIntegrator<double>* integrator = (ImplicitEulerIntegrator<double>*) simulator.get_mutable_integrator();
-  integrator->set_delta_state_tolerance(1e-6);
-integrator->set_convergence_tolerance(1e-6);
-integrator->set_error_estimation_enabled(true);
-integrator->set_minimum_step_size(1e-5);
-integrator->set_jacobian_computation_scheme(ImplicitEulerIntegrator<double>::JacobianComputationScheme::kCentralDifference);
 
   simulator.Initialize();
 
   // Simulate to one second beyond the trajectory motion.
-  const double sim_duration = lift_breaks[lift_breaks.size() - 1] + 1.0;
-  const double print_period = dt;
-  const int step_count = static_cast<int>(std::ceil(sim_duration / print_period));
-  for (int i=0; i < step_count; ++i) { 
-    std::cout << "time: " << context->get_time() << std::endl;
-    simulator.StepTo((i+1)*print_period);
-    std::cout << "Number of function evaluations: " << integrator->get_num_function_evaluations() << std::endl; 
-    std::cout << "Number of Newton-Raphson loops: " << integrator->get_num_newton_raphson_loops() << std::endl;
-    std::cout << "Mean alpha: " << integrator->get_mean_scaling_factor() << std::endl;
-    std::cout << "Minimum step size: " << integrator->get_smallest_adapted_step_size_taken() << std::endl;
-    integrator->ResetStatistics(); 
-  }
+  const double kSimDuration = lift_breaks[lift_breaks.size() - 1] + 1.0;
+  simulator.StepTo(kSimDuration);
 
   // Extract and log the state of the robot.
   auto state_output = model->AllocateOutput(simulator.get_context());
@@ -343,7 +319,7 @@ integrator->set_jacobian_computation_scheme(ImplicitEulerIntegrator<double>::Jac
   double distance = displacement.norm();
 
   // Lift duration is a sub-interval of the full simulation.
-  const double kLiftDuration = sim_duration - kLiftStart;
+  const double kLiftDuration = kSimDuration - kLiftStart;
   const double kMeanSlipSpeed = distance / kLiftDuration;
   EXPECT_LT(kMeanSlipSpeed, kVStictionTolerance);
 }
