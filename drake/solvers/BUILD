@@ -496,21 +496,21 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rotation_constraint_test",
-    srcs = [
-        "test/rotation_constraint_test.cc"
-    ],
     size = "medium",
+    srcs = [
+        "test/rotation_constraint_test.cc",
+    ],
     tags = [
         "exclusive",
         "local",
         "mosek",
     ],
     deps = [
+        ":gurobi_solver",
         ":mathematical_program",
         ":rotation_constraint",
-        "//drake/math:geometric_transform",
-        ":gurobi_solver",
         "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
     ],
 )
 
