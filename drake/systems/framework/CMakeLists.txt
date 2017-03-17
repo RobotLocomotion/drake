@@ -23,7 +23,7 @@ set(sources
   subvector.cc
   supervector.cc
   system.cc
-  system_input.cc
+        input_port_value.cc
   system_output.cc
   system_port_descriptor.cc
   value.cc
@@ -63,7 +63,7 @@ set(installed_headers
   subvector.h
   supervector.h
   system.h
-  system_input.h
+        input_port_value.h
   system_output.h
   system_port_descriptor.h
   systems.h

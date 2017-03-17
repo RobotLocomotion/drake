@@ -14,7 +14,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/input_port_value.h"
 
 namespace drake {
 namespace examples {

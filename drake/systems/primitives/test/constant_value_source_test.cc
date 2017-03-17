@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/value.h"
 
 using Eigen::Matrix;

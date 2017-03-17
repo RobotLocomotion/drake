@@ -187,8 +187,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "system_input",
-    srcs = ["system_input.cc"],
-    hdrs = ["system_input.h"],
+    srcs = ["input_port_value.cc"],
+    hdrs = ["input_port_value.h"],
     deps = [
         ":input_port_evaluator_interface",
         ":vector",

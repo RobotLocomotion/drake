@@ -15,7 +15,7 @@
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/supervector.h"
-#include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {

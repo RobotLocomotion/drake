@@ -12,7 +12,7 @@
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
-#include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
