@@ -402,10 +402,11 @@ bool MobyLCPSolver<T>::SolveLcpFastRegularized(const MatrixX<T>& M,
   // be made positive definite (and thereby guaranteed to possess a solution to
   // the linear complementarity problem) by adding an identity matrix times
   // (a+ε) to the LCP matrix, where ε > 0 (its magnitude will depend upon the
-  // magnitude of a). The infinity norm could then be expected to grow by a
-  // factor of approximately two during the regularization process.
+  // magnitude of a). The infinity norm (and hence the zero tolerance) could
+  // then be expected to grow by a factor of approximately two during the
+  // regularization process.
 
-  // assign value for zero tolerance, if necessary
+  // Assign value for zero tolerance, if necessary.
   const T naive_tol = q.size() * M.template lpNorm<Eigen::Infinity>() *
       kSqrtEps;
   const T ZERO_TOL = (zero_tol > 0) ? zero_tol : naive_tol;
