@@ -1,7 +1,6 @@
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 
 #include <Eigen/Core>
-
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"

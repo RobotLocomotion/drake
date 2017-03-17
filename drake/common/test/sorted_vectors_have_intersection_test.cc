@@ -1,6 +1,7 @@
 #include "drake/common/sorted_vectors_have_intersection.h"
 
 #include <vector>
+
 #include "gtest/gtest.h"
 
 using std::vector;

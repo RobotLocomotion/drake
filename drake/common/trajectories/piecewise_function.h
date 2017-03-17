@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Eigen/Core>
-#include <vector>
 #include <random>
+#include <vector>
+
+#include <Eigen/Core>
 
 class PiecewiseFunction {
  protected:

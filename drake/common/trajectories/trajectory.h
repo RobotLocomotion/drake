@@ -1,7 +1,9 @@
 #pragma once
 
 #include <memory>
+
 #include <Eigen/Core>
+
 #include "drake/common/eigen_types.h"
 
 namespace drake {
