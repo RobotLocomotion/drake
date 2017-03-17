@@ -1,4 +1,4 @@
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 
 namespace drake {
 namespace systems {

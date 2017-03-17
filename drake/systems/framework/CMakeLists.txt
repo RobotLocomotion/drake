@@ -1,6 +1,6 @@
 # Source files used to build drakeSystemFramework.
 set(sources
-        abstract_values.cc
+  abstract_values.cc
   basic_vector.cc
   cache.cc
   context.cc
@@ -16,6 +16,7 @@ set(sources
   leaf_system.cc
   model_values.cc
   output_port_listener_interface.cc
+  output_port_value.cc
   parameters.cc
   single_output_vector_source.cc
   siso_vector_system.cc
@@ -24,7 +25,6 @@ set(sources
   subvector.cc
   supervector.cc
   system.cc
-  system_output.cc
   system_port_descriptor.cc
   value.cc
   vector_base.cc
@@ -56,6 +56,7 @@ set(installed_headers
   leaf_system.h
   model_values.h
   output_port_listener_interface.h
+  output_port_value.h
   parameters.h
   single_output_vector_source.h
   siso_vector_system.h
@@ -64,7 +65,6 @@ set(installed_headers
   subvector.h
   supervector.h
   system.h
-  system_output.h
   system_port_descriptor.h
   systems.h
   value.h
