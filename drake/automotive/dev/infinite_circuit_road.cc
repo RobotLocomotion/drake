@@ -307,6 +307,11 @@ api::LanePosition InfiniteCircuitRoad::Lane::DoEvalMotionDerivatives(
   return position_dot;
 }
 
+api::GeoPosition InfiniteCircuitRoad::Lane::DoEvalGeoMotionDerivatives(
+    const api::LanePosition& position,
+    const api::IsoLaneVelocity& velocity) const {
+  DRAKE_ABORT();  // TODO(maddog@tri.global) Implement me.
+}
 
 int InfiniteCircuitRoad::Lane::GetPathIndex(const double s) const {
   double circuit_s = this->circuit_s(s);

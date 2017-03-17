@@ -131,6 +131,16 @@ class Lane {
     return DoEvalMotionDerivatives(position, velocity);
   }
 
+  /// Computes derivatives of LanePosition given a velocity vector @p velocity.
+  /// @p velocity is an isometric velocity vector oriented in the LANE-space
+  /// reference frame at @p position.
+  ///
+  /// @returns geo-space derivatives packed into a GeoPosition struct.
+  GeoPosition EvalGeoMotionDerivatives(const LanePosition& position,
+                                       const IsoLaneVelocity& velocity) const {
+    return DoEvalGeoMotionDerivatives(position, velocity);
+  }
+
   // TODO(maddog@tri.global)  Design/implement this.
   // void EvalSurfaceDerivatives(...) const { return do_(); }
 
@@ -199,6 +209,9 @@ class Lane {
   virtual Rotation DoGetOrientation(const LanePosition& lane_pos) const = 0;
 
   virtual LanePosition DoEvalMotionDerivatives(
+      const LanePosition& position, const IsoLaneVelocity& velocity) const = 0;
+
+  virtual GeoPosition DoEvalGeoMotionDerivatives(
       const LanePosition& position, const IsoLaneVelocity& velocity) const = 0;
 
   virtual const BranchPoint* DoGetBranchPoint(

@@ -151,6 +151,9 @@ class InfiniteCircuitRoad : public api::RoadGeometry {
     api::LanePosition DoEvalMotionDerivatives(
         const api::LanePosition& position,
         const api::IsoLaneVelocity& velocity) const override;
+    api::GeoPosition DoEvalGeoMotionDerivatives(
+        const api::LanePosition& position,
+        const api::IsoLaneVelocity& velocity) const override;
     api::LanePosition DoToLanePosition(
         const api::GeoPosition&,
         api::GeoPosition* nearest_point,

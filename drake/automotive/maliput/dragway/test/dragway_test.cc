@@ -550,6 +550,35 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
   }
 }
 
+// Tests dragway::Lane::EvalGeoMotionDerivatives().
+TEST_F(MaliputDragwayLaneTest, TestEvalGeoMotionDerivatives) {
+  const api::RoadGeometryId road_geometry_id({"OneLaneDragwayRoadGeometry"});
+  const int kNumLanes = 1;
+
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
+      lane_width_, shoulder_width_, kLinearTolerance);
+
+  const api::Junction* junction = road_geometry.junction(0);
+  ASSERT_NE(junction, nullptr);
+  const api::Segment* segment = junction->segment(0);
+  ASSERT_NE(segment, nullptr);
+  const Lane* lane = dynamic_cast<const Lane*>(segment->lane(0));
+  ASSERT_NE(lane, nullptr);
+
+  const api::GeoPosition zero_geo_position_dot = lane->EvalGeoMotionDerivatives(
+      {0, 0, 0} /* lane position */, {0, 0, 0} /* velocity */);
+  EXPECT_EQ(zero_geo_position_dot.x, 0);
+  EXPECT_EQ(zero_geo_position_dot.y, 0);
+  EXPECT_EQ(zero_geo_position_dot.z, 0);
+
+  const api::GeoPosition nonzero_geo_position_dot =
+      lane->EvalGeoMotionDerivatives(
+          {0, 0, 0} /* lane position */, {1, 2, 3} /* velocity */);
+  EXPECT_EQ(nonzero_geo_position_dot.x, 1);
+  EXPECT_EQ(nonzero_geo_position_dot.y, 2);
+  EXPECT_EQ(nonzero_geo_position_dot.z, 3);
+}
+
 }  // namespace
 }  // namespace dragway
 }  // namespace maliput
