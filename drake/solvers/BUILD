@@ -495,6 +495,26 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "rotation_constraint_test",
+    srcs = [
+        "test/rotation_constraint_test.cc"
+    ],
+    size = "medium",
+    tags = [
+        "exclusive",
+        "local",
+        "mosek",
+    ],
+    deps = [
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/math:geometric_transform",
+        ":gurobi_solver",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "snopt_solver_test",
     srcs = [
         "test/snopt_solver_test.cc",

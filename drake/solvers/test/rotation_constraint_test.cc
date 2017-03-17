@@ -10,7 +10,6 @@
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/gurobi_solver.h"
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
@@ -19,7 +18,7 @@ using std::sqrt;
 
 namespace drake {
 namespace solvers {
-namespace {/*
+namespace {
 void AddObjective(MathematicalProgram* prog,
                   const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
                   const Eigen::Ref<const Matrix3d>& R_desired) {
@@ -441,7 +440,7 @@ GTEST_TEST(RotationTest, TestMcCormick) {
     else
       EXPECT_FALSE(IsFeasible(R_test));
   }
-}*/
+}
 
 // Test some corner cases of McCormick envelope.
 // The corner cases happens when either the innermost or the outermost corner
@@ -539,8 +538,7 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
   // Add a cost function to try to make the column of R not perpendicular.
   prog_.AddLinearCost(R_.col(free_axis0).dot(box_pt) + R_.col(free_axis1).dot(box_pt));
 
-  GurobiSolver gurobi_solver;
-  SolutionResult sol_result = gurobi_solver.Solve(prog_);
+  SolutionResult sol_result = prog_.Solve();
   EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
   const auto R_val = prog_.GetSolution(R_);
   std::vector<Eigen::Matrix3d> Bpos_val(3);
@@ -553,7 +551,7 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormickCorner,
     ::testing::Combine(::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6, 7}),  // Orthant
-                       ::testing::ValuesIn({false, true}),  // bmin or bmax
+                       ::testing::ValuesIn({true, false}),  // bmin or bmax
                        ::testing::ValuesIn({0, 1, 2})));  // column index
 
 }  // namespace

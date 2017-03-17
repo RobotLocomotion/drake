@@ -8,6 +8,8 @@
 
 #include "drake/math/cross_product.h"
 
+using drake::symbolic::Expression;
+
 namespace drake {
 namespace solvers {
 
@@ -482,22 +484,21 @@ void AddMcCormickVectorConstraints(
 
               // TODO(hongkai.dai): remove this for loop when we can handle
               // Eigen::Array of symbolic formulae.
-              symbolic::Expression orthant_c_sum = orthant_c.cast<symbolic::Expression>().sum();
+              Expression orthant_c_sum = orthant_c.cast<Expression>().sum();
               for (int i = 0; i < 3; ++i) {
                 prog->AddLinearConstraint(v(i) - orthant_u(i) <= 6 - 2 * orthant_c_sum);
                 prog->AddLinearConstraint(v(i) - orthant_u(i) >= 2 * orthant_c_sum - 6);
               }
-              symbolic::Expression v_dot_v1 = orthant_u.dot(v1);
-              symbolic::Expression v_dot_v2 = orthant_u.dot(v2);
+              Expression v_dot_v1 = orthant_u.dot(v1);
+              Expression v_dot_v2 = orthant_u.dot(v2);
               prog->AddLinearConstraint(v_dot_v1 <= 3 - orthant_c_sum);
               prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v1);
               prog->AddLinearConstraint(v_dot_v2 <= 3 - orthant_c_sum);
               prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v2);
-
-              Vector3<symbolic::Expression> v_cross_v1 = orthant_u.cross(v1);
+              Vector3<Expression> v_cross_v1 = orthant_u.cross(v1);
               for (int i = 0; i < 3; ++i) {
-                prog->AddLinearConstraint(v_cross_v1(i) <= 6 - 2 * orthant_c_sum);
-                prog->AddLinearConstraint(v_cross_v1(i) >= 2 * orthant_c_sum - 6);
+                prog->AddLinearConstraint(v_cross_v1(i) - v2(i) <= 6 - 2 * orthant_c_sum);
+                prog->AddLinearConstraint(v_cross_v1(i) - v2(i) >= 2 * orthant_c_sum - 6);
               }
             }
           } else {
@@ -628,7 +629,7 @@ void AddMcCormickVectorConstraints(
         } else {
           // This box does not intersect with the sphere.
           for (int o = 0; o < 8; ++o) {  // iterate over orthants
-            prog->AddLinearConstraint(PickPermutation(this_cpos, this_cneg, o).cast<symbolic::Expression>().sum(), 0.0, 2.0);
+            prog->AddLinearConstraint(PickPermutation(this_cpos, this_cneg, o).cast<Expression>().sum(), 0.0, 2.0);
           }
         }
       }
