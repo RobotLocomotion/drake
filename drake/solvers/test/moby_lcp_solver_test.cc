@@ -395,7 +395,7 @@ GTEST_TEST(testMobyLCP, testEmpty) {
 
 GTEST_TEST(testMobyLCP, ThrowsOnNaN) {
   const unsigned n = 2;
-  Eigen::SparseMatrix<double> M(n,n);
+  Eigen::SparseMatrix<double> M(n, n);
   Eigen::VectorXd q(n), z(n);
   typedef Eigen::Triplet<double> Triplet;
   std::vector<Triplet> triplet_list;
@@ -407,7 +407,7 @@ GTEST_TEST(testMobyLCP, ThrowsOnNaN) {
   q[1] = -1.0;
   z[0] = 1.0;
   z[1] = 0.0;
-  triplet_list.push_back(Triplet(1,1,1.0));
+  triplet_list.push_back(Triplet(1, 1, 1.0));
   M.setFromTriplets(triplet_list.begin(), triplet_list.end());
 
   // Try solving the LCP.
@@ -416,7 +416,7 @@ GTEST_TEST(testMobyLCP, ThrowsOnNaN) {
   // Construct a matrix with with an initial basis that corresponds to a
   // singular sub-matrix, and the non-singular block has a NaN value.
   triplet_list.clear();
-  triplet_list.push_back(Triplet(1,1,std::nan("")));
+  triplet_list.push_back(Triplet(1, 1, std::nan("")));
   M.setFromTriplets(triplet_list.begin(), triplet_list.end());
 
   // Try solving the LCP - it's now unsolvable- and should be identified as
