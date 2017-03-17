@@ -22,6 +22,10 @@ class PiecewisePolynomialTrajectory : public Trajectory {
   explicit PiecewisePolynomialTrajectory(const PiecewisePolynomial<double>& pp)
       : pp_(pp) {}
 
+  std::unique_ptr<Trajectory> Clone() const override {
+    return std::make_unique<PiecewisePolynomialTrajectory>(pp_);
+  }
+
   /**
    * Evaluate this PiecewisePolynomial at a particular time.
    * @param t The time to evaluate.
@@ -57,6 +61,10 @@ class PiecewisePolynomialTrajectory : public Trajectory {
    * the number of columns in the PiecewisePolynomial.
    */
   Eigen::Index cols() const override { return pp_.cols(); }
+
+  double get_start_time() const override { return pp_.getStartTime(); }
+
+  double get_end_time() const override { return pp_.getEndTime(); }
 
  private:
   PiecewisePolynomial<double> pp_;

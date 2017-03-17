@@ -1075,7 +1075,7 @@ GTEST_TEST(StiffTest, Rod2d) {
   rod.set_mu_coulomb(1);
   rod.set_stiffness(1e8);
   rod.set_dissipation(1e3);
-  rod.set_stiction_speed_tolerance(1e-4);
+  rod.set_stiction_speed_tolerance(1e-6);
   rod.set_mu_static(1.5);
 
   // Create the context.

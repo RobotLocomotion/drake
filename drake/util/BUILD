@@ -16,7 +16,6 @@ drake_cc_library(
         "drakeGeometryUtil.h",
         "drakeUtil.h",
     ],
-    deprecation = "Consider pitching in by porting the dependencies you need to //drake/math.",
     deps = [
         "//drake/common",
         "//drake/math:geometric_transform",

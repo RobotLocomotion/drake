@@ -5,11 +5,9 @@ find_program(SPHINX_EXECUTABLE
   DOC "Sphinx documentation generator (sphinx-build)")
 
 if(SPHINX_EXECUTABLE)
-  configure_file(conf.py.in conf.py @ONLY)
   add_custom_command(
     COMMAND ${SPHINX_EXECUTABLE}
             -b html
-            -c ${CMAKE_CURRENT_BINARY_DIR}
             -d ${CMAKE_CURRENT_BINARY_DIR}/doctrees
             ${CMAKE_CURRENT_SOURCE_DIR}
             ${CMAKE_CURRENT_BINARY_DIR}/sphinx

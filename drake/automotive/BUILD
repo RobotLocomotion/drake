@@ -271,9 +271,11 @@ drake_cc_binary(
         "car_sim_lcm_common.cc",
         "car_sim_lcm_common.h",
     ],
+    add_test_rule = 1,
     data = [
         ":models",
     ],
+    test_rule_args = [" --simulation_sec=0.01"],
     deps = [
         ":automotive_simulator",
         "//drake/common:text_logging_gflags",
@@ -287,7 +289,7 @@ py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
     deps = [
-        "//drake/lcmtypes:automotive-py",
+        "//drake/lcmtypes:lcmtypes-py",
         "@lcm//:lcm-python",
     ],
 )
@@ -566,29 +568,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simple_car_state_translator_test",
-    deps = [
-        "//drake/automotive:generated_translators",
-    ],
-)
-
-drake_cc_googletest(
     name = "infinite_circuit_road_test",
     srcs = ["dev/test/infinite_circuit_road_test.cc"],
     deps = [
         ":infinite_circuit_road",
         "//drake/automotive/maliput/monolane:builder",
     ],
-)
-
-sh_test(
-    name = "car_sim_lcm_test",
-    srcs = ["//tools:exec.sh"],
-    args = [
-        "$(location :car_sim_lcm)",
-        " --simulation_sec=0.01",
-    ],
-    data = [":car_sim_lcm"],
 )
 
 cpplint()

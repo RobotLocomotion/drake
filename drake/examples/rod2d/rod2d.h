@@ -347,7 +347,9 @@ class Rod2D : public systems::LeafSystem<T> {
  protected:
   systems::System<AutoDiffXd>* DoToAutoDiffXd() const override {
       Rod2D<AutoDiffXd>* adiff_sys =
-          new Rod2D<AutoDiffXd>(static_cast<Rod2D<AutoDiffXd>::SimulationType>(simulation_type_), dt_);
+          new Rod2D<AutoDiffXd>(
+              static_cast<Rod2D<AutoDiffXd>::SimulationType>(simulation_type_),
+              dt_);
       return adiff_sys;
   }
 

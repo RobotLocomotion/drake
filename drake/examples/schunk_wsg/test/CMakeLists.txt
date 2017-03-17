@@ -7,10 +7,10 @@ if(lcm_FOUND)
   target_link_libraries(schunk_wsg_lcm_test
     drakeSchunkWsg drakeSystemAnalysis)
 
-  # This test doesn't take too long in Release builds (about 20s,
-  # which is consistent with other longer tests), but it's much much
-  # slower in Debug.
-  drake_add_cc_test(NAME schunk_wsg_lift_test SIZE medium
+  # With the new contact model (and current configuration values), this test
+  # takes about 2.5 minutes to run in release mode.  It should *not*
+  # be run in debug mode (> 90 minutes).
+  drake_add_cc_test(NAME schunk_wsg_lift_test SIZE large
     CONFIGURATIONS Release)
   target_link_libraries(schunk_wsg_lift_test
     drakeCommon

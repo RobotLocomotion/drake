@@ -7,13 +7,25 @@ if(Bullet_FOUND)
   drake_add_cc_test(compute_contact_result_test)
   target_link_libraries(compute_contact_result_test
       drakeRigidBodyPlant
-      drakeRBSystem
+      drakeIK
+      drakeMultibodyParsers
+      drakeOptimization
+      drakeRBM
+      drakeRigidBodyConstraint
+      Eigen3::Eigen
+      spruce
       )
 
   drake_add_cc_test(contact_force_formula_test)
   target_link_libraries(contact_force_formula_test
       drakeRigidBodyPlant
-      drakeRBSystem
+      drakeIK
+      drakeMultibodyParsers
+      drakeOptimization
+      drakeRBM
+      drakeRigidBodyConstraint
+      Eigen3::Eigen
+      spruce
       )
 
   if (lcm_FOUND)

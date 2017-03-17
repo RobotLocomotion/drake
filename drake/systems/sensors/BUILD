@@ -193,6 +193,7 @@ drake_cc_googletest(
     srcs = ["test/depth_sensor_test.cc"],
     deps = [
         ":depth_sensor",
+        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
     ],
 )

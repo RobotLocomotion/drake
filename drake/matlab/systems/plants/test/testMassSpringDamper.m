@@ -1,18 +1,18 @@
 function testMassSpringDamper 
 
-r = RigidBodyManipulator('../../../../multibody/rigid_body_system1/test/MassSpringDamper.urdf');
+r = RigidBodyManipulator('./MassSpringDamper.urdf');
 x0 = [5;0];%randn(2,1);
 xtraj = simulate(r,[0 5],x0);
 %fnplt(xtraj,1);
 %v = r.constructVisualizer();
 %v.playback(xtraj);
 
-r = PlanarRigidBodyManipulator('../../../../multibody/rigid_body_system1/test/MassSpringDamper.urdf');
+r = PlanarRigidBodyManipulator('./MassSpringDamper.urdf');
 x0 = [5;0];%randn(2,1);
 xtraj = simulate(r,[0 5],x0);
 fnplt(xtraj,1);
 
-r = RigidBodyManipulator('../../../../multibody/rigid_body_system1/test/MassSpringDamper.urdf');
+r = RigidBodyManipulator('./MassSpringDamper.urdf');
 x0 = [10;0];
 run_time = 10;
 xtraj = simulate(r,[0,run_time],x0);

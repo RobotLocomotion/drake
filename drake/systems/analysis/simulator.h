@@ -503,8 +503,12 @@ void Simulator<T>::StepTo(const T& boundary_time) {
         sample_time_hit = true;
         break;
 
-      case IntegratorBase<T>::kTimeHasAdvanced:
       case IntegratorBase<T>::kReachedBoundaryTime:
+        context_->set_time(boundary_time);
+        sample_time_hit = false;
+        break;
+
+      case IntegratorBase<T>::kTimeHasAdvanced:
         sample_time_hit = false;
         break;
 

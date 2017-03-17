@@ -383,9 +383,9 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
   // Defines the test case values for x and y. Points both far away and close to
   // the driveable area are evaluated.
   const std::vector<double> x_test_cases{
-    test_x_min, x_min - 1e-10, x_max + 1e10, test_x_max};
+    test_x_min, x_min - 1e-10, x_max + 1e-10, test_x_max};
   const std::vector<double> y_test_cases{
-    test_y_min, y_min - 1e-10, y_max + 1e10, test_y_max};
+    test_y_min, y_min - 1e-10, y_max + 1e-10, test_y_max};
 
   for (const auto x : x_test_cases) {
     for (const auto y : y_test_cases) {
@@ -432,6 +432,120 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
       EXPECT_EQ(road_position.pos.r,
           expected_nearest_position.y - expected_lane->y_offset());
       EXPECT_EQ(road_position.pos.h, z);
+    }
+  }
+}
+
+// Tests that dragway::RoadGeometry::ToRoadPosition() can be called with
+// parameters `nearest_position` and `distance` set to `nullptr`.
+TEST_F(MaliputDragwayLaneTest, TestToRoadPositionNullptr) {
+  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const int kNumLanes = 2;
+
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
+      lane_width_, shoulder_width_, kLinearTolerance);
+
+  // Case 1: The provided geo_pos is in the driveable region.
+  EXPECT_NO_THROW(road_geometry.ToRoadPosition(
+            api::GeoPosition(length_ / 2 /* x */, 0 /* y */, 0 /* z */),
+            nullptr /* hint */,
+            nullptr /* nearest_position */,
+            nullptr /* distance */));
+
+  // Case 2: The provided geo_pos is beyond the driveable region.
+  EXPECT_NO_THROW(road_geometry.ToRoadPosition(
+            api::GeoPosition(length_ + 1e-10 /* x */, 0 /* y */, 0 /* z */),
+            nullptr /* hint */,
+            nullptr /* nearest_position */,
+            nullptr /* distance */));
+}
+
+// Tests dragway::Lane::ToLanePosition() using geographic positions whose
+// projections onto the XY plane reside within the lane's driveable region.
+TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
+  const api::RoadGeometryId road_geometry_id({"OneLaneDragwayRoadGeometry"});
+  const int kNumLanes = 1;
+
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
+      lane_width_, shoulder_width_, kLinearTolerance);
+
+  const api::Junction* junction = road_geometry.junction(0);
+  ASSERT_NE(junction, nullptr);
+  const api::Segment* segment = junction->segment(0);
+  ASSERT_NE(segment, nullptr);
+  const Lane* lane = dynamic_cast<const Lane*>(segment->lane(0));
+  ASSERT_NE(lane, nullptr);
+  EXPECT_EQ(lane->length(), length_);
+
+  /*
+    A figure of the one-lane dragway is shown below. The minimum and maximum
+    values of the dragway's driveable region are demarcated.
+ 
+                        X
+              Y = max_y ^  Y = min_y
+                        :
+                  |     :     |
+                  |     :     |
+          --------+-----+-----+---------  X = max_x
+                  | .   :   . |
+                  | .   :   . |
+                  | .   :   . |
+                  | .  The  . |
+                  | .Dragway. |
+                  | .   :   . |
+                  | .   :   . |
+                  | .   :   . |
+     Y <----------+-----o-----+---------  X = min_x
+                  |     :     |
+                        :
+                ->|-|<- : ->|-|<-  shoulder_width
+                        :
+                    |<--:-->|      lane_width
+                        V
+  */
+  const double min_x = 0;
+  const double max_x = length_;
+  const double min_y = -lane_width_ / 2 - shoulder_width_;
+  const double max_y = lane_width_ / 2 + shoulder_width_;
+
+  // Defines the test case values for x and y. Points both far away and close to
+  // the driveable area are evaluated.
+  const std::vector<double> x_test_cases{
+    min_x - 10, min_x - 1e-10, min_x, max_x, max_x + 1e-10, max_x + 10};
+  const std::vector<double> y_test_cases{
+    min_y - 10, min_y - 1e-10, min_y, max_y, max_y + 1e-10, max_y + 10};
+
+  // Spot checks geographic positions on and beyond the lane's driveable region
+  // with a focus on edge cases.
+  for (const auto x : x_test_cases) {
+    for (const auto y : y_test_cases) {
+      // Test one case where z is not equal to zero.
+      const double z = (x == min_x && y == min_y) ? 0.1 : 0;
+      api::GeoPosition nearest_position;
+      double distance;
+      const api::LanePosition lane_position = lane->ToLanePosition(
+          api::GeoPosition(x, y, z), &nearest_position, &distance);
+      api::GeoPosition expected_nearest_position(x, y, z);
+      if (x < min_x) {
+        expected_nearest_position.x = min_x;
+      }
+      if (x > max_x) {
+        expected_nearest_position.x = max_x;
+      }
+      if (y < min_y) {
+        expected_nearest_position.y = min_y;
+      }
+      if (y > max_y) {
+        expected_nearest_position.y = max_y;
+      }
+      EXPECT_DOUBLE_EQ(nearest_position.x, expected_nearest_position.x);
+      EXPECT_DOUBLE_EQ(nearest_position.y, expected_nearest_position.y);
+      EXPECT_DOUBLE_EQ(nearest_position.z, expected_nearest_position.z);
+      EXPECT_GE(distance, 0);
+      EXPECT_EQ(lane_position.s, expected_nearest_position.x);
+      EXPECT_EQ(lane_position.r,
+          expected_nearest_position.y - lane->y_offset());
+      EXPECT_EQ(lane_position.h, expected_nearest_position.z);
     }
   }
 }

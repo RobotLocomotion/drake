@@ -36,7 +36,7 @@ namespace automotive {
 /// output port 1: A PoseVector containing X_WC, where C is the car frame.
 ///
 /// @tparam T must support certain arithmetic operations;
-/// for details, see ./test/simple_car_scalartype_test.cc.
+/// for details, see drake::symbolic::Expression.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double
@@ -74,6 +74,8 @@ class SimpleCar : public systems::LeafSystem<T> {
   // System<T> overrides
   systems::System<AutoDiffXd>* DoToAutoDiffXd() const override;
   systems::System<symbolic::Expression>* DoToSymbolic() const override;
+  systems::BasicVector<T>* DoAllocateInputVector(
+      const systems::InputPortDescriptor<T>& descriptor) const override;
 
   // LeafSystem<T> overrides
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
