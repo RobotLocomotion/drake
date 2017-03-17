@@ -4,7 +4,6 @@
 #include <vector>
 
 #include <Eigen/Dense>
-
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"

@@ -1,12 +1,13 @@
+#include "drake/multibody/constraint/rigid_body_constraint.h"
+
 #include <memory>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 using std::cerr;
 using std::endl;

@@ -1,5 +1,5 @@
-#include <iostream>
 #include <cstdlib>
+#include <iostream>
 #include <memory>
 
 #include "drake/multibody/joints/floating_base_types.h"

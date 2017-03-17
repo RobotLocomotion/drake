@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/solvers/gurobi_solver.h"

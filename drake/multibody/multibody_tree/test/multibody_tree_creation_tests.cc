@@ -1,12 +1,13 @@
+#include "drake/multibody/multibody_tree/multibody_tree.h"
+
+#include <memory>
+#include <sstream>
+#include <string>
+
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-
-#include <memory>
-#include <string>
-#include <sstream>
 
 namespace drake {
 namespace multibody {
