@@ -1,4 +1,3 @@
-
 #include <limits>
 
 #include "drake/common/eigen_matrix_compare.h"

@@ -1,8 +1,5 @@
 #include "drake/solvers/moby_lcp_solver.h"
 
-#include <Eigen/SparseCore>
-#include <Eigen/SparseLU>
-
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -12,9 +9,12 @@
 #include <sstream>
 #include <vector>
 
-#include "drake/common/drake_assert.h"
-
+#include <Eigen/LU>
+#include <Eigen/SparseCore>
+#include <Eigen/SparseLU>
 #include <unsupported/Eigen/AutoDiff>
+
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace solvers {

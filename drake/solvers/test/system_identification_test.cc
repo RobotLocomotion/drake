@@ -3,7 +3,6 @@
 #include <random>  // Used only with deterministic seeds!
 
 #include <Eigen/Core>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/polynomial.h"

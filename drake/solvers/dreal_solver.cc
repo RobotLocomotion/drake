@@ -1,6 +1,7 @@
 #include "drake/solvers/dreal_solver.h"
 
 #include <stdexcept>
+
 #include "dreal/dreal.h"
 
 #include "drake/solvers/mathematical_program.h"
