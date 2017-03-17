@@ -90,10 +90,6 @@ void AddRotationMatrixOrthonormalSocpConstraint(
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R);
 
 /**
-
- TODO(russ, hongkai): add proper documentation for each input arguments.
- */
-/**
  * Adds binary variables that constrain the value of the column *and* row
  * vectors of R, in order to add the following (in some cases non-convex)
  * constraints as an MILP.  Specifically, for column vectors Ri, we constrain:
