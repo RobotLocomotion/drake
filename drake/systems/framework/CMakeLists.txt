@@ -11,6 +11,7 @@ set(sources
   diagram_continuous_state.cc
   discrete_state.cc
   input_port_evaluator_interface.cc
+  input_port_value.cc
   leaf_context.cc
   leaf_system.cc
   model_values.cc
@@ -23,7 +24,6 @@ set(sources
   subvector.cc
   supervector.cc
   system.cc
-        input_port_value.cc
   system_output.cc
   system_port_descriptor.cc
   value.cc
@@ -40,7 +40,7 @@ set(sources
 # System2 framework template implementations have been moved into .cc files
 # using explicit instantiation, tighten this list.
 set(installed_headers
-        abstract_values.h
+  abstract_values.h
   basic_vector.h
   cache.h
   context.h
