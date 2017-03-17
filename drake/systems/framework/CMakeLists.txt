@@ -51,6 +51,7 @@ set(installed_headers
   diagram_continuous_state.h
   discrete_state.h
   input_port_evaluator_interface.h
+  input_port_value.h
   leaf_context.h
   leaf_system.h
   model_values.h
@@ -63,7 +64,6 @@ set(installed_headers
   subvector.h
   supervector.h
   system.h
-        input_port_value.h
   system_output.h
   system_port_descriptor.h
   systems.h
