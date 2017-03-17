@@ -149,6 +149,24 @@ GTEST_TEST(DiagramBuilderTest, GetMutableSystems) {
             builder.GetMutableSystems());
 }
 
+// Tests that the returned exported input / output port id matches the
+// number of ExportInput() / ExportOutput() calls.
+GTEST_TEST(DiagramBuilderTest, ExportInputOutputIndex) {
+  DiagramBuilder<double> builder;
+  auto adder = builder.AddSystem<Adder>(3 /* inputs */, 1 /* size */);
+  auto adder1 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
+
+  EXPECT_EQ(builder.ExportInput(
+        adder->get_input_port(0)), 0 /* exported input port id */);
+  EXPECT_EQ(builder.ExportInput(
+        adder->get_input_port(1)), 1 /* exported input port id */);
+
+  EXPECT_EQ(builder.ExportOutput(
+        adder->get_output_port()), 0 /* exported output port id */);
+  EXPECT_EQ(builder.ExportOutput(
+        adder1->get_output_port()), 1 /* exported output port id */);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

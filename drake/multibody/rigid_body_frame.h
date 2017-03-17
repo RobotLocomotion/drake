@@ -58,6 +58,8 @@ class RigidBodyFrame {
   RigidBodyFrame()
       : RigidBodyFrame("", nullptr, Eigen::Isometry3d::Identity()) {}
 
+  virtual ~RigidBodyFrame() {}
+
   // TODO(liang.fok) Update this to return a unique_ptr. This is related to
   // #3093.
   /**

@@ -121,12 +121,11 @@ class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
 class ImplicitIntegratorTest : public ::testing::Test {
  public:
   ImplicitIntegratorTest() {
-
     // Create three systems.
     spring = std::make_unique<SpringMassSystem<double>>(spring_k,
-                                                         mass,
-                                                         false /* no forcing */
-    );
+                                                        mass,
+                                                        false /* no forcing */);
+
     spring_damper = std::make_unique<SpringMassDamperSystem<double>>(
         stiff_spring_k, stiff_damping_b, mass);
     mod_spring_damper = std::make_unique<
@@ -141,13 +140,14 @@ class ImplicitIntegratorTest : public ::testing::Test {
   std::unique_ptr<SpringMassSystem<double>> spring;
   std::unique_ptr<SpringMassDamperSystem<double>> spring_damper;
   std::unique_ptr<ModifiedSpringMassDamperSystem<double>> mod_spring_damper;
-  const double dt = 1e-3;               // Default integration step size.
-  const double spring_k = 1.0;          // Default spring constant.
-  const double stiff_spring_k = 1e10;   // Default constant for a stiff spring.
-  const double damping_b = 1e4;         // Default semi-stiff damper constant.
-  const double stiff_damping_b = 1e8;   // Default stiff damper constant.
-  const double mass = 2.0;              // Default particle mass.
-  const double constant_force_mag = 10; // Magnitude of the constant force.
+  const double dt = 1e-3;                // Default integration step size.
+  const double large_dt = 1e-1;          // Large integration step size.
+  const double spring_k = 1.0;           // Default spring constant.
+  const double stiff_spring_k = 1e10;    // Default constant for a stiff spring.
+  const double damping_b = 1e4;          // Default semi-stiff damper constant.
+  const double stiff_damping_b = 1e8;    // Default stiff damper constant.
+  const double mass = 2.0;               // Default particle mass.
+  const double constant_force_mag = 10;  // Magnitude of the constant force.
   const double inf = std::numeric_limits<double>::infinity();
 };
 
@@ -155,14 +155,22 @@ TEST_F(ImplicitIntegratorTest, MiscAPI) {
   // Create the integrator as a double and as an autodiff type
   ImplicitEulerIntegrator<double> integrator(*spring, dt, context.get());
 
-  // Test that setting the target accuracy or initial step size target fails.
-  EXPECT_THROW(integrator.set_target_accuracy(1.0), std::logic_error);
-  EXPECT_THROW(integrator.request_initial_step_size_target(1.0),
-               std::logic_error);
-}
+  // Verify defaults match documentation.
+  const double eps = std::numeric_limits<double>::epsilon();
+  const double sqrt_eps = std::sqrt(eps);
+  EXPECT_NEAR(integrator.get_delta_update_tolerance(), sqrt_eps, eps);
+  EXPECT_NEAR(integrator.get_jacobian_reformulation_tolerance(), 1e-8, eps);
+  EXPECT_NEAR(integrator.get_delta_objective_tolerance(), 1e-8, eps);
+  EXPECT_EQ(integrator.get_jacobian_reformulation_min_loops(), 5);
+  EXPECT_EQ(integrator.get_jacobian_computation_scheme(),
+            ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+                kForwardDifference);
 
-// TODO(edrumwri): Somehow verify that the integrator statistics were properly
-// reset?
+  // Test that setting the target accuracy and initial step size target is
+  // successful.
+  EXPECT_NO_THROW(integrator.set_target_accuracy(1.0));
+  EXPECT_NO_THROW(integrator.request_initial_step_size_target(1.0));
+}
 
 TEST_F(ImplicitIntegratorTest, ContextAccess) {
   // Create the integrator.
@@ -181,11 +189,196 @@ TEST_F(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
   // Spring-mass system is necessary only to setup the problem.
   ImplicitEulerIntegrator<double> integrator(*spring, dt, context.get());
 
-  EXPECT_EQ(integrator.get_error_estimate_order(), 0);
-  EXPECT_EQ(integrator.supports_error_estimation(), false);
-  EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
-  EXPECT_THROW(integrator.request_initial_step_size_target(dt),
-               std::logic_error);
+  EXPECT_EQ(integrator.get_error_estimate_order(), 2);
+  EXPECT_EQ(integrator.supports_error_estimation(), true);
+  EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
+  EXPECT_NO_THROW(integrator.request_initial_step_size_target(dt));
+}
+
+// Checks the validity of general integrator statistics and resets statistics.
+void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>& integrator) {
+  EXPECT_GT(integrator.get_num_newton_raphson_loops(), 0);
+  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
+  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_num_steps_taken(), 0);
+  EXPECT_GT(integrator.get_num_function_evaluations(), 0);
+  EXPECT_GT(integrator.get_mean_scaling_factor(), 0.0);
+  EXPECT_LE(integrator.get_mean_scaling_factor(), 1.0);
+  integrator.ResetStatistics();
+}
+
+// Verify that disabling error estimation yields a NaN error estimate.
+TEST_F(ImplicitIntegratorTest, NaNErrEst) {
+  // Create a context.
+  auto context = spring_damper->CreateDefaultContext();
+
+  // Create the integrator.
+  ImplicitEulerIntegrator<double> integrator(*spring_damper, large_dt,
+                                             context.get());
+
+  // Disable error estimation and initialize the integrator.
+  integrator.set_error_estimation_enabled(false);
+  EXPECT_FALSE(integrator.is_error_estimation_enabled());
+  integrator.Initialize();
+
+  // Integrate just once.
+  integrator.StepOnceAtMost(inf, inf, dt);
+
+  // Verify that the first element of the error estimate is nan.
+  EXPECT_TRUE(std::isnan((*integrator.get_error_estimate())[0]));
+}
+
+// Checks that decreasing the likelihood that the Jacobian will be reformulated
+// increases the number of function evaluations.
+TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
+  // Create a context.
+  auto context = spring_damper->CreateDefaultContext();
+
+  // Create the integrator.
+  ImplicitEulerIntegrator<double> integrator(*spring_damper, large_dt,
+                                             context.get());
+
+  // Disable error estimation - don't want it to skew the numbers.
+  integrator.set_error_estimation_enabled(false);
+
+  // Enable fixed stepping to enable StepOnceExactly().
+  integrator.set_fixed_step_mode(true);
+
+  // Use central differencing to yield a presumably more accurate
+  // Jacobian matrix.
+  integrator.set_jacobian_computation_scheme(
+      ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+      kCentralDifference);
+
+  // Initialize the integrator.
+  integrator.Initialize();
+
+  // Set the initial conditions for the spring and amper.
+  const double initial_position = 1;
+  const double initial_velocity = 0.1;
+  spring_damper->set_position(context.get(), initial_position);
+  spring_damper->set_velocity(context.get(), initial_velocity);
+
+  // Integrate once.
+  integrator.StepOnceExactly(large_dt);
+
+  // Count the number of function evaluations.
+  const int n_feval_reform = integrator.get_num_function_evaluations();
+
+  // Don't allow any Jacobian reformulation.
+  integrator.set_jacobian_reformulation_tolerance(0.0);
+  integrator.set_jacobian_reformulation_min_loops(0);
+
+  // Reset the initial conditions and integrate once again.
+  spring_damper->set_position(context.get(), initial_position);
+  spring_damper->set_velocity(context.get(), initial_velocity);
+  integrator.StepOnceExactly(large_dt);
+
+  // Make sure that the number of function evaluations has gone down.
+  const int n_feval_noreform = integrator.get_num_function_evaluations();
+  EXPECT_GT(n_feval_noreform, n_feval_reform);
+}
+
+// Integrate the mass-spring-damping system using huge stiffness and damping.
+// This equation should be stiff.
+TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
+  // Create a context.
+  auto context = spring_damper->CreateDefaultContext();
+
+  // Create the integrator.
+  ImplicitEulerIntegrator<double> integrator(*spring_damper, large_dt,
+                                             context.get());
+
+  // Verify error estimation is enabled by default.
+  EXPECT_TRUE(integrator.is_error_estimation_enabled());
+
+  // Set error controlled integration parameters.
+  const double xtol = 1e10 * std::numeric_limits<double>::epsilon();
+  integrator.set_target_accuracy(xtol);
+  integrator.set_minimum_step_size(0.0);
+
+  // Set the initial position and initial velocity.
+  const double initial_position = 1;
+  const double initial_velocity = 0.1;
+
+  // Set initial condition.
+  spring_damper->set_position(context.get(), initial_position);
+  spring_damper->set_velocity(context.get(), initial_velocity);
+
+  // Take all the defaults.
+  integrator.Initialize();
+
+  // Integrate for sufficient time for the spring to go to rest.
+  const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
+  const double t_final = 2.0;
+  double t;
+  for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
+    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, large_dt));
+
+  // Check the time.
+  EXPECT_NEAR(context->get_time(), t, ttol);
+
+  // Get the final position and velocity.
+  const VectorBase<double>& xc_final = context->get_continuous_state()->
+      get_vector();
+  double x_final = xc_final.GetAtIndex(0);
+  double v_final = xc_final.GetAtIndex(1);
+
+  // Check the solution - the large spring should have driven the spring
+  // position to zero, while the large damper should make the velocity
+  // essentially zero.
+  const double vtol = xtol * 100;
+  EXPECT_NEAR(0.0, x_final, xtol);
+  EXPECT_NEAR(0.0, v_final, vtol);
+
+  // Verify that integrator statistics are valid
+  CheckGeneralStatsValidity(integrator);
+
+  // Switch to central differencing.
+  integrator.set_jacobian_computation_scheme(
+      ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+      kCentralDifference);
+
+  // Reset the time, position, gnom velocity.
+  context->set_time(0.0);
+  spring_damper->set_position(context.get(), initial_position);
+  spring_damper->set_velocity(context.get(), initial_velocity);
+
+  // Integrate for 1 second again.
+  for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
+    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, large_dt));
+  x_final = xc_final.GetAtIndex(0);
+  v_final = xc_final.GetAtIndex(1);
+
+  // Verify that integrator statistics and outputs are valid.
+  EXPECT_NEAR(0.0, x_final, xtol);
+  EXPECT_NEAR(0.0, v_final, vtol);
+  CheckGeneralStatsValidity(integrator);
+
+  // Switch to central differencing.
+  integrator.set_jacobian_computation_scheme(
+      ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+      kAutomatic);
+
+  // Reset the time, position, and velocity.
+  context->set_time(0.0);
+  spring_damper->set_position(context.get(), initial_position);
+  spring_damper->set_velocity(context.get(), initial_velocity);
+
+  // Integrate for 1 second again.
+  for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
+    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, large_dt));
+  x_final = xc_final.GetAtIndex(0);
+  v_final = xc_final.GetAtIndex(1);
+
+  // Verify that error control was used by making sure that the minimum step
+  // size was smaller than large_dt.
+  EXPECT_LT(integrator.get_smallest_adapted_step_size_taken(), large_dt);
+
+  // Verify that integrator statistics and outputs are valid.
+  EXPECT_NEAR(0.0, x_final, xtol);
+  EXPECT_NEAR(0.0, v_final, vtol);
+  CheckGeneralStatsValidity(integrator);
 }
 
 // Try a purely continuous system with no sampling.
@@ -203,10 +396,12 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   // Create a new dt. This is actually a larger dt than that used for the same
   // time with the explicit Euler integrator. As these are both first order
   // integrators, we should be able to attain the same accuracy.
-  const double dt = 1e-5;
+  const double dt = 1e-4;
 
   // Spring-mass system is necessary only to setup the problem.
   ImplicitEulerIntegrator<double> integrator(spring_mass, dt, context.get());
+  integrator.set_target_accuracy(1e-4);
+  integrator.set_minimum_step_size(1e-6);
 
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
@@ -215,6 +410,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
 
   // Set initial condition.
   spring_mass.set_position(context.get(), initial_position);
+  spring_mass.set_velocity(context.get(), initial_velocity);
 
   // Take all the defaults.
   integrator.Initialize();
@@ -224,17 +420,17 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   const double c2 = initial_velocity / omega;
 
   // Integrate for 1 second.
+  const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
   const double t_final = 1.0;
   double t;
-  for (t = 0.0; std::abs(t - t_final) >= dt; t = context->get_time())
+  for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
     integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
 
-  // Check the time. 
-  const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(context->get_time(), t, ttol);
+  // Check the time.
+  EXPECT_NEAR(context->get_time(), t_final, ttol);
 
   // Get the final position.
-  const double x_final =
+  double x_final =
       context->get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Check the solution to the same tolerance as the explicit Euler
@@ -242,65 +438,133 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   EXPECT_NEAR(c1 * std::cos(omega * t) + c2 * std::sin(omega * t), x_final,
               5e-3);
 
+  // Verify that integrator statistics are valid.
+  CheckGeneralStatsValidity(integrator);
+
+  // Switch to central differencing.
+  integrator.set_jacobian_computation_scheme(
+      ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+      kCentralDifference);
+
+  // Reset the time, position, and velocity.
+  context->set_time(0.0);
+  spring_mass.set_position(context.get(), initial_position);
+  spring_mass.set_velocity(context.get(), initial_velocity);
+
+  // Integrate for 1 second again.
+  for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
+    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
+
+  // Check results again.
+  x_final =
+      context->get_continuous_state()->get_vector().GetAtIndex(0);
+  EXPECT_NEAR(c1 * std::cos(omega * t) + c2 * std::sin(omega * t), x_final,
+              5e-3);
+  EXPECT_NEAR(context->get_time(), t_final, ttol);
+
   // Verify that integrator statistics are valid
-  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
-  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
-  EXPECT_GE(integrator.get_num_steps_taken(), 0);
-  EXPECT_EQ(integrator.get_error_estimate(), nullptr);
+  CheckGeneralStatsValidity(integrator);
+
+  // Switch to automatic differentiation.
+  integrator.set_jacobian_computation_scheme(
+      ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+      kAutomatic);
+
+  // Reset the time, position, and velocity.
+  context->set_time(0.0);
+  spring_mass.set_position(context.get(), initial_position);
+  spring_mass.set_velocity(context.get(), initial_velocity);
+
+  // Integrate for 1 second again.
+  for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
+    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
+
+  // Check results again.
+  x_final =
+      context->get_continuous_state()->get_vector().GetAtIndex(0);
+  EXPECT_NEAR(c1 * std::cos(omega * t) + c2 * std::sin(omega * t), x_final,
+              5e-3);
+  EXPECT_NEAR(context->get_time(), t_final, ttol);
+
+  // Verify that integrator statistics are valid
+  CheckGeneralStatsValidity(integrator);
 }
 
-// Integrate the mass-spring-damping system using huge stiffness and damping.
-// This equation should be stiff. 
-TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
-  // Create a context.
-  auto context = spring_damper->CreateDefaultContext();
+// Try a purely continuous system with no sampling to verify that the
+// convergence tolerances have an effect. See SpringMassStep test for
+// description of the closed form solution.
+TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
+  const double spring_k = 300.0;  // N/m
 
-  // Use a new integration size.
-  const double dt = 1e-1;
+  // Create a new spring-mass system.
+  SpringMassSystem<double> spring_mass(spring_k, mass, false /* no forcing */);
 
-  // Create the integrator.
-  ImplicitEulerIntegrator<double> integrator(*spring_damper, dt, context.get());
+  // Spring-mass system is necessary only to setup the problem.
+  ImplicitEulerIntegrator<double> integrator(spring_mass, large_dt,
+                                             context.get());
 
-  // Set the initial position and initial velocity.
-  const double initial_position = 1;
-  const double initial_velocity = 0.1;
+  // Turn error estimation off and fixed stepping on.
+  integrator.set_fixed_step_mode(true);
+  integrator.set_error_estimation_enabled(false);
+
+  // Setup the initial position and initial velocity.
+  const double initial_position = 0.1;
+  const double initial_velocity = 0.01;
+  const double omega = std::sqrt(spring_k / mass);
 
   // Set initial condition.
-  spring_damper->set_position(context.get(), initial_position);
-  spring_damper->set_velocity(context.get(), initial_velocity);
+  spring_mass.set_position(context.get(), initial_position);
+  spring_mass.set_velocity(context.get(), initial_velocity);
 
   // Take all the defaults.
   integrator.Initialize();
 
-  // Integrate for sufficient time for the spring to go to rest. 
-  const double t_final = 2.0;
-  double t;
-  for (t = 0.0; std::abs(t - t_final) >= dt; t = context->get_time())
-    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
+  // Setup c1 and c2 for ODE constants and compute the desired solution.
+  const double c1 = initial_position;
+  const double c2 = initial_velocity / omega;
+  const double x_des = c1 * std::cos(omega * large_dt) +
+      c2 * std::sin(omega * large_dt);
 
-  // Check the time. 
-  const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(context->get_time(), t, ttol);
+  // Integrate exactly one step.
+  integrator.StepOnceExactly(large_dt);
 
-  // Get the final position and velocity.
-  const VectorBase<double>& xc_final = context->get_continuous_state()->
-      get_vector();
-  const double x_final = xc_final.GetAtIndex(0);
-  const double v_final = xc_final.GetAtIndex(1);
+  // Get the positional error.
+  const double pos_err = std::abs(x_des -
+      context->get_continuous_state_vector().GetAtIndex(0));
 
-  // Check the solution - the large spring should have driven the spring
-  // position to zero, while the large damper should make the velocity
-  // essentially zero.
-  const double xtol = 1e6 * std::numeric_limits<double>::epsilon();
-  const double vtol = xtol * 100;
-  EXPECT_NEAR(0.0, x_final, xtol);
-  EXPECT_NEAR(0.0, v_final, vtol);
+  // Increase convergence tolerance.
+  const double old_ctol = integrator.get_convergence_tolerance();
+  integrator.set_convergence_tolerance(1.0);
 
-  // Verify that integrator statistics are valid
-  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
-  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
-  EXPECT_GE(integrator.get_num_steps_taken(), 0);
-  EXPECT_EQ(integrator.get_error_estimate(), nullptr);
+  // Integrate again and verify that positional error has increased.
+  spring_mass.set_position(context.get(), initial_position);
+  spring_mass.set_velocity(context.get(), initial_velocity);
+  integrator.StepOnceExactly(large_dt);
+  EXPECT_GT(std::abs(x_des -
+      context->get_continuous_state_vector().GetAtIndex(0)), pos_err);
+
+  // Reduce convergence tolerance to default, increase delta objective
+  // function tolerance, integrate again, and verify that positional error
+  // also increases.
+  integrator.set_convergence_tolerance(old_ctol);
+  const double old_delta_ofn_tol = integrator.get_delta_objective_tolerance();
+  integrator.set_delta_objective_tolerance(1.0);
+  spring_mass.set_position(context.get(), initial_position);
+  spring_mass.set_velocity(context.get(), initial_velocity);
+  integrator.StepOnceExactly(large_dt);
+  EXPECT_GT(std::abs(x_des -
+      context->get_continuous_state_vector().GetAtIndex(0)), pos_err);
+
+  // Reduce delta objective function tolerance to default, increase delta update
+  // tolerance, integrate again, and verify that positional error
+  // also increases.
+  integrator.set_delta_objective_tolerance(old_delta_ofn_tol);
+  integrator.set_delta_state_tolerance(100.0);
+  spring_mass.set_position(context.get(), initial_position);
+  spring_mass.set_velocity(context.get(), initial_velocity);
+  integrator.StepOnceExactly(large_dt);
+  EXPECT_GT(std::abs(x_des -
+      context->get_continuous_state_vector().GetAtIndex(0)), pos_err);
 }
 
 // Integrate the mass-spring-damping system with a constant force.
@@ -309,7 +573,6 @@ TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
   ImplicitEulerIntegrator<double> integrator(*mod_spring_damper,
                                              dt,
                                              context.get());
-  integrator.set_convergence_tolerance(1e-8);
 
   // Set the initial position and initial velocity.
   const double initial_position = 1e-8;
@@ -322,33 +585,68 @@ TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
   // Take all the defaults.
   integrator.Initialize();
 
+  // Establish tolerances for time and solution.
+  const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
+  const double sol_tol = std::sqrt(std::numeric_limits<double>::epsilon());
+
   // Integrate for 1 second.
   const double t_final = 1.0;
   double t;
-//  int last_obj_inc = 0;
-  for (t = 0.0; std::abs(t - t_final) >= dt; t = context->get_time()) {
-//    const VectorBase<double>& xc = context->get_continuous_state_vector();
-//   std::cout << (integrator.get_num_objective_function_increases() - last_obj_inc) << " objective function increases for xc=" << xc.GetAtIndex(0) << ", " << xc.GetAtIndex(1) << " at " << context->get_time() << std::endl;
-//    last_obj_inc = integrator.get_num_objective_function_increases();
+  for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
     integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
-  }
 
-  // TODO(edrumwri): Tighten this test.
-  EXPECT_NEAR(context->get_time(), t, dt);
+  // Check the time.
+  EXPECT_NEAR(context->get_time(), t_final, ttol);
 
   // Get the final position.
-  const double x_final =
+  double x_final =
       context->get_continuous_state()->get_vector().GetAtIndex(0);
 
-  // Check the solution.
-  const double tol = std::sqrt(std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(0.0, x_final, tol);
+  // Verify that solution and integrator statistics are valid
+  EXPECT_NEAR(0.0, x_final, sol_tol);
+  CheckGeneralStatsValidity(integrator);
 
-  // Verify that integrator statistics are valid
-  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
-  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
-  EXPECT_GE(integrator.get_num_steps_taken(), 0);
-  EXPECT_EQ(integrator.get_error_estimate(), nullptr);
+  // Switch the Jacobian scheme to central differencing.
+  integrator.set_jacobian_computation_scheme(
+      ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+      kCentralDifference);
+
+  // Reset the time, position, and velocity.
+  context->set_time(0.0);
+  mod_spring_damper->set_position(context.get(), initial_position);
+  mod_spring_damper->set_velocity(context.get(), initial_velocity);
+
+  // Integrate again.
+  for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
+    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
+
+  // Check the solution and the time again.
+  x_final =
+      context->get_continuous_state()->get_vector().GetAtIndex(0);
+  EXPECT_NEAR(context->get_time(), t_final, ttol);
+  EXPECT_NEAR(0.0, x_final, sol_tol);
+  CheckGeneralStatsValidity(integrator);
+
+  // Switch the Jacobian scheme to automatic differentiation.
+  integrator.set_jacobian_computation_scheme(
+      ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+      kAutomatic);
+
+  // Reset the time, position, and velocity.
+  context->set_time(0.0);
+  mod_spring_damper->set_position(context.get(), initial_position);
+  mod_spring_damper->set_velocity(context.get(), initial_velocity);
+
+  // Integrate again.
+  for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
+    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
+
+  // Check the solution and the time again.
+  x_final =
+      context->get_continuous_state()->get_vector().GetAtIndex(0);
+  EXPECT_NEAR(context->get_time(), t_final, ttol);
+  EXPECT_NEAR(0.0, x_final, sol_tol);
+  CheckGeneralStatsValidity(integrator);
 }
 
 }  // namespace

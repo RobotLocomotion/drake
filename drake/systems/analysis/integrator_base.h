@@ -895,7 +895,8 @@ class IntegratorBase {
 
   /**
    * Get the system state derivative at the start of the last integration
-   * interval.
+   * interval, for integrators that might otherwise need to compute this
+   * repeatedly.
    */
   const VectorX<T>& get_interval_start_state_deriv() const {
     return xcdot0_save_;
@@ -1018,6 +1019,12 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
                                             ContinuousState<T>* derivs0) {
   using std::isnan;
 
+  // If the directed step is less than the minimum, just go ahead and take it.
+  if (dt_max < get_minimum_step_size()) {
+    StepOnceAtFixedSize(dt_max);
+    return;
+  }
+
   // Constants for step size growth and shrinkage.
   const double kDTShrink = 0.95;
   const double kDTGrow = 1.001;
@@ -1033,7 +1040,11 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
   VectorBase<T>* xc =
       get_mutable_context()->get_mutable_continuous_state_vector();
   xc0_save_ = xc->CopyToVector();
-  xcdot0_save_ = derivs0->CopyToVector();
+  if (derivs0) {
+    xcdot0_save_ = derivs0->CopyToVector();
+  } else {
+    xcdot0_save_.resize(0);
+  }
 
   // Set the "current" step size.
   T current_step_size = get_ideal_next_step_size();
@@ -1083,7 +1094,8 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
       // Reset the time, state, and time derivative at t0.
       get_mutable_context()->set_time(current_time);
       xc->SetFromVector(get_interval_start_state());
-      derivs0->SetFromVector(get_interval_start_state_deriv());
+      if (derivs0)
+        derivs0->SetFromVector(get_interval_start_state_deriv());
     }
   } while (!step_succeeded);
 }

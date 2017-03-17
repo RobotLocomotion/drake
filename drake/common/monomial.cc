@@ -18,9 +18,11 @@ namespace drake {
 namespace symbolic {
 
 using std::accumulate;
+using std::make_pair;
 using std::map;
 using std::ostream;
 using std::ostringstream;
+using std::out_of_range;
 using std::pair;
 using std::runtime_error;
 using std::shared_ptr;
@@ -63,6 +65,47 @@ size_t Monomial::GetHash() const {
 
 bool Monomial::operator==(const Monomial& m) const {
   return powers_ == m.powers_;
+}
+
+double Monomial::Evaluate(
+    const unordered_map<Variable::Id, double>& env) const {
+  return accumulate(
+      powers_.begin(), powers_.end(), 1.0,
+      [this, &env](const double v, const pair<Variable::Id, int>& p) {
+        const Variable::Id& var_id{p.first};
+        const auto it = env.find(var_id);
+        if (it == env.end()) {
+          ostringstream oss;
+          oss << "Monomial " << *this
+              << " cannot be evaluated with the given "
+                 "environment which does not provide an entry "
+                 "for variable ID = "
+              << var_id << ".";
+          throw out_of_range(oss.str());
+        } else {
+          const double base{it->second};
+          const int exponent{p.second};
+          return v * std::pow(base, exponent);
+        }
+      });
+}
+
+pair<double, Monomial> Monomial::Substitute(
+    const unordered_map<Variable::Id, double>& env) const {
+  double coeff{1.0};
+  map<Variable::Id, int> new_powers;
+  for (const pair<Variable::Id, int>& p : powers_) {
+    const Variable::Id& var_id{p.first};
+    const int exponent{p.second};
+    const auto it = env.find(var_id);
+    if (it != env.end()) {
+      const double base{it->second};
+      coeff *= std::pow(base, exponent);
+    } else {
+      new_powers.insert(p);
+    }
+  }
+  return make_pair(coeff, Monomial(new_powers));
 }
 
 Expression Monomial::ToExpression(
@@ -176,7 +219,12 @@ void AddTermToPolynomial(const Monomial& monomial,
   if (it == polynomial->end()) {
     polynomial->emplace_hint(it, monomial, coefficient);
   } else {
-    it->second += coefficient;
+    Expression new_coeff = it->second + coefficient;
+    if (is_zero(new_coeff)) {
+      polynomial->erase(it);
+    } else {
+      it->second = new_coeff;
+    }
   }
 }
 
@@ -232,7 +280,11 @@ class DecomposePolynomialVisitor {
 
   MonomialToCoefficientMap operator()(
       const shared_ptr<ExpressionConstant>& e, const Variables& vars) const {
-    return MonomialToCoefficientMap({{Monomial(), e->get_value()}});
+    if (e->get_value() != 0) {
+      return MonomialToCoefficientMap({{Monomial(), e->get_value()}});
+    } else {
+      return MonomialToCoefficientMap();
+    }
   }
 
   MonomialToCoefficientMap operator()(
@@ -397,7 +449,37 @@ class DecomposePolynomialVisitor {
 MonomialToCoefficientMap DecomposePolynomialIntoMonomial(
     const Expression &e, const Variables &vars) {
   DRAKE_DEMAND(e.is_polynomial());
-  return DecomposePolynomialVisitor().Visit(e, vars);
+  MonomialToCoefficientMap map = DecomposePolynomialVisitor().Visit(e, vars);
+  // Now loops through the map to remove the term with zero coefficient.
+  for (auto it = map.begin(); it != map.end(); ) {
+    bool is_zero_term = false;
+    DRAKE_DEMAND(it->second.is_polynomial());
+    if (!is_constant(it->second)) {
+      // If the coefficient it->second is a polynomial, then determine if it
+      // is a zero polynomial, by decomposing it->second into monomials,
+      // and check if the constant coefficient for each term is zero.
+      MonomialToCoefficientMap coeff_map = DecomposePolynomialVisitor().Visit(
+          it->second, it->second.GetVariables());
+      is_zero_term = true;
+      for (const auto& p : coeff_map) {
+        DRAKE_DEMAND(is_constant(p.second));
+        if (!is_zero(p.second)) {
+          is_zero_term = false;
+          break;
+        }
+      }
+    } else {
+      // If the coefficient is a constant, then it cannot be zero, since we have
+      // deleted term with zero constant coefficient already.
+      DRAKE_ASSERT(!is_zero(it->second));
+    }
+    if (is_zero_term) {
+      it = map.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  return map;
 }
 
 class DegreeVisitor {

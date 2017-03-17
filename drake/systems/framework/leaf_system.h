@@ -147,7 +147,7 @@ class LeafSystem : public System<T> {
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override {
+      const Context<T>& context) const final {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
@@ -218,6 +218,23 @@ class LeafSystem : public System<T> {
   void DoCalcNextUpdateTime(const Context<T>& context,
                             UpdateActions<T>* events) const override {
     DoCalcNextUpdateTimeImpl(context, events);
+  }
+
+  /// Returns a BasicVector of the size specified in @p descriptor. Concrete
+  /// subclasses that require a more specific type of vector input should
+  /// override this function to provide that type.
+  BasicVector<T>* DoAllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const override {
+    return new BasicVector<T>(descriptor.size());
+  }
+
+  /// Aborts.
+  /// Concrete subclasses that require an abstract input should override this
+  /// function to provide the appropriate type.
+  AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const override {
+    DRAKE_ABORT_MSG("A concrete leaf system with abstract input ports should "
+                    "override AllocateInputAbstract.");
   }
 
   // =========================================================================

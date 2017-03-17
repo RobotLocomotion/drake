@@ -56,6 +56,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "iiwa_plan_source",
+    srcs = ["iiwa_plan_source.cc"],
+    hdrs = ["iiwa_plan_source.h"],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/lcmtypes:iiwa",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "//drake/systems/framework:leaf_system",
+        "@bot_core_lcmtypes//:lib",
+        "@robotlocomotion_lcmtypes//:lib",
+    ],
+)
+
+drake_cc_library(
     name = "oracular_state_estimator",
     hdrs = ["oracular_state_estimator.h"],
     deps = [
@@ -67,10 +82,12 @@ drake_cc_library(
 drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
+    add_test_rule = 1,
     data = [
         ":models",
         "//drake/examples/schunk_wsg:models",
     ],
+    test_rule_args = ["--simulation_sec=0.01"],
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
@@ -136,21 +153,20 @@ cc_binary(
 
 # === test/ ===
 
-sh_test(
-    name = "iiwa_wsg_simulation_test",
-    srcs = ["//tools:exec.sh"],
-    args = [
-        "$(location :iiwa_wsg_simulation)",
-        "--simulation_sec=0.01",
-    ],
-    data = [":iiwa_wsg_simulation"],
-)
-
 drake_cc_googletest(
     name = "iiwa_lcm_test",
     deps = [
         ":iiwa_lcm",
         "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_plan_source_test",
+    data = [":models"],
+    deps = [
+        ":iiwa_plan_source",
         "//drake/systems/framework",
     ],
 )

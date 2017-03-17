@@ -1,9 +1,7 @@
 #pragma once
 
-#include <limits>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -21,7 +19,7 @@ namespace systems {
 namespace sensors {
 
 // TODO(liang.fok): xdot is coming from LCM and must be wired separately.
-// Once RigidBodyPlant is able to output xdot, update this accelerometer to
+// Once RigidBodyPlant is able to output `xdot`, update this accelerometer to
 // use it. See #4105 and #2890.
 
 /// A simulated ideal accelerometer that measures the linear acceleration of a
@@ -146,7 +144,7 @@ class Accelerometer : public systems::LeafSystem<double> {
   ///
   /// @return A pointer to the newly instantiated and added accelerometer. The
   /// accelerometer is initially owned by the builder. Ownership will
-  /// subsequently be transferred to the Diagram that is build by the builder.
+  /// subsequently be transferred to the Diagram that is built by the builder.
   static Accelerometer* AttachAccelerometer(
       const std::string& name,
       const RigidBodyFrame<double>& frame,
@@ -154,7 +152,7 @@ class Accelerometer : public systems::LeafSystem<double> {
       bool include_gravity,
       DiagramBuilder<double>* builder);
 
-  /// Retrusn whether gravity is included in this sensor's measurements.
+  /// Returns whether gravity is included in this sensor's measurements.
   bool get_include_gravity() const { return include_gravity_; }
 
   /// Returns the name of this sensor. The name can be any user-specified value.
