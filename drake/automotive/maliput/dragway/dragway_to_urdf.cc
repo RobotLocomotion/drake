@@ -2,13 +2,14 @@
  @file Instantiates a dragway with a user-specified number of lanes and outputs
  a URDF model of it.
  **/
+
 #include <gflags/gflags.h>
+#include "spruce.hh"
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/utility/generate_urdf.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/text_logging_gflags.h"
-#include "spruce.hh"
 
 DEFINE_int32(num_lanes, 2, "The number of lanes.");
 DEFINE_double(length, 10, "The length of the dragway in meters.");

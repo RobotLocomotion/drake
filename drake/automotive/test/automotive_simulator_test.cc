@@ -4,8 +4,8 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
-#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmt_simple_car_state_t.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 

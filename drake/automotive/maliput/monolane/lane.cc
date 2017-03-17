@@ -1,7 +1,6 @@
 #include "drake/automotive/maliput/monolane/lane.h"
 
 #include "drake/automotive/maliput/monolane/branch_point.h"
-
 #include "drake/common/drake_assert.h"
 
 namespace drake {
