@@ -445,7 +445,7 @@ GTEST_TEST(RotationTest, TestMcCormick) {
 // Test some corner cases of McCormick envelope.
 // The corner cases happens when either the innermost or the outermost corner
 // of the box bmin <= x <= bmax lies on the surface of the unit sphere.
-class TestMcCormickCorner : public ::testing::TestWithParam<std::tuple<int, bool>> {
+class TestMcCormickCorner : public ::testing::TestWithParam<std::tuple<int, bool, int>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormickCorner)
 
@@ -453,7 +453,8 @@ class TestMcCormickCorner : public ::testing::TestWithParam<std::tuple<int, bool
     : prog_(),
       R_(NewRotationMatrixVars(&prog_)),
       orthant_(std::get<0>(GetParam())),
-      is_bmin_(std::get<1>(GetParam())) {
+      is_bmin_(std::get<1>(GetParam())),
+      col_idx_(std::get<2>(GetParam())){
     DRAKE_DEMAND(orthant_ >= 0);
     DRAKE_DEMAND(orthant_ <= 7);
     AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, 3);
@@ -464,6 +465,8 @@ class TestMcCormickCorner : public ::testing::TestWithParam<std::tuple<int, bool
   int orthant_;
   bool is_bmin_; // If true, it means bmin is on the surface of the unit sphere.
                  // otherwise, bmax is on the surface of the unit sphere.
+  int col_idx_; // R_.col(col_idx_) will be fixed to a vertex of the box, and
+                // also this point is on the surface of the unit sphere.
 };
 
 TEST_P(TestMcCormickCorner, TestOrthogonal) {
@@ -475,28 +478,29 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
       box_pt(axis) *= -1;
     }
   }
-  // If R_.col(0) == box_pt, and box_pt is on the surface of the unit sphere,
-  // while also being either bmin or bmax of the box bmin <= x <= bmax, then
-  // the solution should satisfy R.col(1) ⊥ box_pt and R.col(2) ⊥ box_pt
-  prog_.AddBoundingBoxConstraint(box_pt, box_pt, R_.col(0));
 
-  // Try to minimize R_.col(1).dot(box_pt) + R_.col(2).dot(box_pt), without
-  // explicitly imposing the constraints
-  // R.col(1) ⊥ box_pt and R.col(2) ⊥ box_pt,
-  // the solution is unlikely to satisfy these constraints.
-  prog_.AddLinearCost(R_.col(1).dot(box_pt));
+  int free_axis0 = (col_idx_ + 1) % 3;
+  int free_axis1 = (col_idx_ + 2) % 3;
+  // If R_.col(i) == box_pt, and box_pt is on the surface of the unit sphere,
+  // while also being either bmin or bmax of the box bmin <= x <= bmax, then
+  // the solution should satisfy R.col(j) ⊥ box_pt and R.col(k) ⊥ box_pt
+  prog_.AddBoundingBoxConstraint(box_pt, box_pt, R_.col(col_idx_));
+
+  prog_.AddLinearCost(R_.col(free_axis0).dot(box_pt) + R_.col(free_axis1).dot(box_pt));
 
   SolutionResult sol_result = prog_.Solve();
   EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
   const auto R_val = prog_.GetSolution(R_);
-  EXPECT_NEAR(R_val.col(1).dot(box_pt), 0, 1E-4);
-  EXPECT_NEAR(R_val.col(2).dot(box_pt), 0, 1E-4);
+  EXPECT_NEAR(R_val.col(free_axis0).dot(box_pt), 0, 1E-4);
+  EXPECT_NEAR(R_val.col(free_axis1).dot(box_pt), 0, 1E-4);
+  EXPECT_TRUE(CompareMatrices(box_pt.cross(R_val.col(free_axis0)), R_val.col(free_axis1), 1E-4, MatrixCompareType::absolute));
 }
 
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormickCorner,
-    ::testing::Combine(::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6, 7}), // Orthant
-                       ::testing::ValuesIn({false, true}))); // bmin or bmax
+    ::testing::Combine(::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6, 7}),  // Orthant
+                       ::testing::ValuesIn({false, true}),  // bmin or bmax
+                       ::testing::ValuesIn({0, 1, 2})));  // column index
 
 }  // namespace
 }  // namespace solvers

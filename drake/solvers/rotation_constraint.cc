@@ -435,23 +435,46 @@ void AddMcCormickVectorConstraints(
         box_min(2) = EnvelopeMinValue(zi, N);
         box_max(2) = EnvelopeMinValue(zi + 1, N);
 
-        // If min corner is inside the unit circle...
-        if (box_min.lpNorm<2>() < 1.0) {
-          VectorDecisionVariable<3> this_cpos, this_cneg;
-          this_cpos << cpos[xi](0), cpos[yi](1), cpos[zi](2);
-          this_cneg << cneg[xi](0), cneg[yi](1), cneg[zi](2);
+        VectorDecisionVariable<3> this_cpos, this_cneg;
+        this_cpos << cpos[xi](0), cpos[yi](1), cpos[zi](2);
+        this_cneg << cneg[xi](0), cneg[yi](1), cneg[zi](2);
 
-          if (box_max.lpNorm<2>() <= 1.0) {
-            // This box is not allowed, e.g. c[xi]+c[yi]+c[zi] <= 2
-
-            // Should never happen on the outer boxes.
-            DRAKE_DEMAND((xi < (N - 1)) && (yi < (N - 1)) && (zi < (N - 1)));
-
-            for (int o = 0; o < 8; o++) {  // iterate over orthants
-              prog->AddLinearConstraint(
-                  Eigen::RowVector3d(1, 1, 1), 0.0, 2.0,
-                  PickPermutation(this_cpos, this_cneg, o));
+        double box_min_norm = box_min.lpNorm<2>();
+        double box_max_norm = box_max.lpNorm<2>();
+        if (box_min_norm <= 1.0 + 1E-10 && box_max_norm >= 1.0 - 1E-10) {
+          // Three possible cases
+          // 1. box_min is on the surface of the sphere.
+          // 2. box_max is on the surface of the sphere.
+          // 3. otherwise.
+          if (std::abs(box_min_norm - 1.0) < 1E-10 || std::abs(box_max_norm - 1.0) < 1E-10) {
+            // If box_min or box_max is on the sphere, then denote the point on
+            // the sphere as u, we have the following condition
+            // if c[xi](0) = 1 and c[yi](1) == 1 and c[zi](2) == 1, then
+            //     v = u
+            //     vᵀ * v1 = 0
+            //     vᵀ * v2 = 0
+            //     v.cross(v1) = v2
+            // Translate this to constraint, we have
+            //   2 * (c[xi](0) + c[yi](1) + c[zi](2)) - 6
+            //       <= v - u <= -2 * (c[xi](0) + c[yi](1) + c[zi](2)) + 6
+            //
+            //   c[xi](0) + c[yi](1) + c[zi](2) - 3
+            //       <= vᵀ * v1 <= 3 - (c[xi](0) + c[yi](1) + c[zi](2))
+            //
+            //   c[xi](0) + c[yi](1) + c[zi](2) - 3
+            //       <= vᵀ * v2 <= 3 - (c[xi](0) + c[yi](1) + c[zi](2))
+            //
+            //   c[xi](0) + c[yi](1) + c[zi](2) - 3
+            //       <= v.cross(v1) - v2 <= 3 - (c[xi](0) + c[yi](1) + c[zi](2))
+            Eigen::Vector3d u;
+            if (std::abs(box_min_norm - 1.0) < 1E-10) {
+              u = box_min / box_min_norm;
+            } else {
+              u = box_max / box_max_norm;
             }
+
+          } else if (std::abs(box_max_norm - 1.0) < 1E-10) {
+
           } else {
             // Find the intercepts of the unit sphere with the box, then find
             // the tightest linear constraint of the form:
@@ -576,6 +599,11 @@ void AddMcCormickVectorConstraints(
                   Eigen::Vector3d::Constant(2 * sin(theta / 2) + 6),
                   {v2, v1, orthant_c});
             }
+          }
+        } else {
+          // This box does not intersect with the sphere.
+          for (int o = 0; o < 8; ++o) {  // iterate over orthants
+            prog->AddLinearConstraint(PickPermutation(this_cpos, this_cneg).cast<symbolic::Expression>().sum(), 0.0, 2.0);
           }
         }
       }
