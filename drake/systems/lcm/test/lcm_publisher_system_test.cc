@@ -139,7 +139,7 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
     2, { 1.0, 2.0, }, { "x", "y", }, 12345,
   };
   context->SetInputPort(
-      kPortNumber, make_unique<FreestandingInputPort>(
+      kPortNumber, make_unique<FreestandingInputPortValue>(
           make_unique<Value<lcmt_drake_signal>>(sample_data)));
 
   // Verifies that a correct message is published.

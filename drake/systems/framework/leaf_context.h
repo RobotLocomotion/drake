@@ -38,7 +38,7 @@ class LeafContext : public Context<T> {
         parameters_(std::make_unique<Parameters<T>>()) {}
   ~LeafContext() override {}
 
-  void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
+  void SetInputPort(int index, std::unique_ptr<InputPortValue> port) override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     // TODO(david-german-tri): Set invalidation callbacks.
     inputs_[index] = std::move(port);
@@ -143,7 +143,7 @@ class LeafContext : public Context<T> {
       if (port == nullptr) {
         clone->inputs_.emplace_back(nullptr);
       } else {
-        clone->inputs_.emplace_back(new FreestandingInputPort(
+        clone->inputs_.emplace_back(new FreestandingInputPortValue(
             port->template get_vector_data<T>()->Clone()));
       }
     }
@@ -177,14 +177,14 @@ class LeafContext : public Context<T> {
     return clone;
   }
 
-  const InputPort* GetInputPort(int index) const override {
+  const InputPortValue* GetInputPort(int index) const override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     return inputs_[index].get();
   }
 
  private:
   // The external inputs to the System.
-  std::vector<std::unique_ptr<InputPort>> inputs_;
+  std::vector<std::unique_ptr<InputPortValue>> inputs_;
 
   // The internal state of the System.
   std::unique_ptr<State<T>> state_;

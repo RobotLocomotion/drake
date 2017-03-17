@@ -479,7 +479,8 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   input_data->set_value(Eigen::VectorXd::Zero(vector_size));
 
   context->SetInputPort(0,
-      std::make_unique<systems::FreestandingInputPort>(std::move(input_data)));
+                        std::make_unique<systems::FreestandingInputPortValue>(
+                            std::move(input_data)));
 
   // Publishes the `RigidBodyTree` visualization messages.
   dut.Publish(*context.get());
