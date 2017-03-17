@@ -15,37 +15,40 @@ class FreestandingInputPortVectorTest : public ::testing::Test {
   void SetUp() override {
     std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
     vec->get_mutable_value() << 5, 6;
-    port_.reset(new FreestandingInputPortValue(std::move(vec)));
-    port_->set_invalidation_callback(
+    port_value_.reset(new FreestandingInputPortValue(std::move(vec)));
+    port_value_->set_invalidation_callback(
         std::bind(&FreestandingInputPortVectorTest::Invalidate, this));
   }
 
-  std::unique_ptr<FreestandingInputPortValue> port_;
+  std::unique_ptr<FreestandingInputPortValue> port_value_;
   int64_t latest_version_ = -1;
 
  private:
-  void Invalidate() { latest_version_ = port_->get_version(); }
+  void Invalidate() { latest_version_ = port_value_->get_version(); }
 };
 
 TEST_F(FreestandingInputPortVectorTest, Access) {
   VectorX<int> expected(2);
   expected << 5, 6;
-  EXPECT_EQ(expected, port_->template get_vector_data<int>()->get_value());
+  EXPECT_EQ(expected,
+            port_value_->template get_vector_data<int>()->get_value());
 }
 
 // Tests that changes to the vector data are propagated to the input port
 // that wraps it.
 TEST_F(FreestandingInputPortVectorTest, Mutation) {
-  EXPECT_EQ(0, port_->get_version());
-  port_->template GetMutableVectorData<int>()->get_mutable_value() << 7, 8;
+  EXPECT_EQ(0, port_value_->get_version());
+  port_value_->template GetMutableVectorData<int>()->get_mutable_value()
+      << 7, 8;
 
   // Check that the version number was incremented.
-  EXPECT_EQ(1, port_->get_version());
+  EXPECT_EQ(1, port_value_->get_version());
 
   // Check that the vector contents changed.
   VectorX<int> expected(2);
   expected << 7, 8;
-  EXPECT_EQ(expected, port_->template get_vector_data<int>()->get_value());
+  EXPECT_EQ(expected,
+            port_value_->template get_vector_data<int>()->get_value());
 }
 
 class FreestandingInputPortAbstractValueTest : public ::testing::Test {

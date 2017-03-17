@@ -175,7 +175,7 @@ class DiagramContext : public Context<T> {
     // Construct and install the destination port.
     auto input_port =
         std::make_unique<DependentInputPortValue>(output_port_value);
-    dest_context->SetInputPort(dest_port_index, std::move(input_port));
+    dest_context->SetInputPortValue(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
     dependency_graph_[dest] = src;
@@ -266,13 +266,14 @@ class DiagramContext : public Context<T> {
     return static_cast<int>(input_ids_.size());
   }
 
-  void SetInputPort(int index, std::unique_ptr<InputPortValue> port) override {
+  void SetInputPortValue(int index,
+                         std::unique_ptr<InputPortValue> port) override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
     GetMutableSubsystemContext(system_index)
-        ->SetInputPort(port_index, std::move(port));
+        ->SetInputPortValue(port_index, std::move(port));
     // TODO(david-german-tri): Set invalidation callbacks.
   }
 
@@ -309,8 +310,9 @@ class DiagramContext : public Context<T> {
     clone->MakeParameters();
 
     // Clone the internal graph structure. After this is done, the clone will
-    // still have FreestandingInputPorts at the inputs to the Diagram itself,
-    // but all of the intermediate nodes will have DependentInputPorts.
+    // still have FreestandingInputPortValues at the inputs to the Diagram
+    // itself, but all of the intermediate nodes will have
+    // DependentInputPortValues.
     for (const auto& connection : dependency_graph_) {
       const PortIdentifier& src = connection.second;
       const PortIdentifier& dest = connection.first;
@@ -343,13 +345,13 @@ class DiagramContext : public Context<T> {
 
   /// Returns the input port at the given @p index, which of course belongs
   /// to the subsystem whose input was exposed at that index.
-  const InputPortValue* GetInputPort(int index) const override {
+  const InputPortValue* GetInputPortValue(int index) const override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
-    return Context<T>::GetInputPort(*GetSubsystemContext(system_index),
-                                    port_index);
+    return Context<T>::GetInputPortValue(*GetSubsystemContext(system_index),
+                                         port_index);
   }
 
  private:
