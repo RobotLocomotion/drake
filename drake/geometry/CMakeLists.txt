@@ -14,13 +14,14 @@ set(installed_headers
 set(private_headers
     )
 
-# Create the library target and note its dependencies.
-add_library_with_exports(LIB_NAME drakeGeometry
-    SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-
-target_link_libraries(drakeGeometry
-    drakeCommon
-    )
+# TODO(SeanCurtis-TRI): Add this back when I have a non-empty source file list.
+## Create the library target and note its dependencies.
+#add_library_with_exports(LIB_NAME drakeGeometry
+#    SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
+#
+#target_link_libraries(drakeGeometry
+#    drakeCommon
+#    )
 
 if(BUILD_TESTING)
   add_subdirectory(test)
