@@ -638,7 +638,8 @@ void AddMcCormickVectorConstraints(
 
 }  // namespace
 
-void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+std::pair<std::vector<MatrixDecisionVariable<3, 3>>, std::vector<MatrixDecisionVariable<3, 3>>>
+AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     int num_binary_vars_per_half_axis, RollPitchYawLimits limits) {
@@ -767,6 +768,7 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                                   R.row((i + 1) % 3).transpose(),
                                   R.row((i + 2) % 3).transpose());
   }
+  return std::pair<std::vector<MatrixDecisionVariable<3, 3>>, std::vector<MatrixDecisionVariable<3, 3>>>(Bpos, Bneg);
 }
 
 }  // namespace solvers
