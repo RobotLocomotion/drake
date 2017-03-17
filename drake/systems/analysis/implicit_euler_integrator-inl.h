@@ -20,7 +20,6 @@ template <class T>
 void ImplicitEulerIntegrator<T>::DoResetStatistics() {
   num_nr_loops_ = 0;
   num_function_evaluations_ = 0;
-  num_misdirected_updates_ = 0;
   alpha_sum_ = 0.0;
 }
 
@@ -291,13 +290,10 @@ void ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
 
     // Compute the gradient of f = 0.5*g'*g, used for linesearch, computed with
     // respect to x. This also allows us to handle a single Jacobian matrix.
-    // If grad*dx > 0, f will be non-decreasing, and we should recompute the
-    // step using a more robust approach.
-    const VectorX<T> grad = Jg * goutput;
+    // If grad*dx > 0, f will be non-decreasing.
+    const VectorX<T> grad = goutput.transpose() * Jg;
     double slope = grad.dot(dx);
-    if (slope >= 0) {
-      num_misdirected_updates_++;
-    }
+    DRAKE_DEMAND(slope < 0);
 
     // Search the ray \alpha \in [0, \infty] for a "good" value that minimizes
     // || x(t+h)_i + dx \alpha - x(t) - h f(t+h, x(t+h)_i + dx \alpha) ||. The

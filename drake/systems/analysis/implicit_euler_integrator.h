@@ -64,7 +64,26 @@ namespace systems {
  * required to (repeatedly) solve least squares problems as part of the
  * nonlinear system solution process.
  *
- * 
+ * This implementation uses a novel solution process compared to methods
+ * described in existing literature on implicit integration techniques. Those
+ * techniques use "vanilla" Newton-Raphson (NR), relying upon obvious
+ * convergence to a solution for `g = 0` where
+ * `g(x(t+h)) ≡ x(t+h) - x(t) - h f(t+h,x(t+h))` as `h` becomes sufficiently
+ * small. Those methods require logic to determine whether to keep taking NR
+ * iterates or whether to decrease `h` and begin iterating anew.  It is clear
+ * that for sufficiently small `h`, `g(x(t+h)) = 0` will be satisfiable.
+ *
+ * This novel solution process uses globally convergent NR with line search,
+ * which is guaranteed to converge to a "local minimum", a point at which the
+ * norm of `∇g` will be equal to zero. In other words, given a proposed update
+ * Δx to the state variables, this method computes a scalar value α such that
+ * `||g(x(t+h) + αΔx)||` is significantly reduced over `||g(x(t+h)||`.  `g = 0`
+ * is *not* guaranteed at the end of this solution process, which seems to put
+ * this method at a significant disadvantage compared to existing methods.
+ * However, those methods do not generally terminate when `g = 0`! The danger in
+ * this novel approach is that the determined `||g(x(t+h)||` is inaccurate for
+ * large `h`. Use of error control and initializing `g(x(t+h))` to `g(x(t))`
+ * both guard against that possibility.
  */
 template <class T>
 class ImplicitEulerIntegrator : public IntegratorBase<T> {
@@ -156,11 +175,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// Gets the number of loops used in the Newton-Raphson nonlinear systems of
   /// equation solving process since the last call to ResetStatistics().
   int get_num_newton_raphson_loops() const { return num_nr_loops_; }
-
-  /// Gets the number of times that the Newton-Raphson solver has computed a
-  /// state variable update that is not a descent direction since the last
-  /// call to ResetStatistics.
-  int get_num_misdirected_updates() const { return num_misdirected_updates_; }
 
   /// Gets the mean scaling factor applied to each state update since the last
   /// call to ResetStatistics(). The ideal (and maximum) value is 1.0. Minimum
@@ -317,7 +331,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
       JacobianComputationScheme::kForwardDifference};
 
   // Various statistics
-  int num_misdirected_updates_{0};
   int num_function_evaluations_{0};
   int num_nr_loops_{0};
   double alpha_sum_{0.0};

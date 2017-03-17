@@ -201,8 +201,6 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>& integrator) {
   EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
-  EXPECT_GT(integrator.get_num_newton_raphson_loops(),
-            integrator.get_num_misdirected_updates());
   EXPECT_GT(integrator.get_num_function_evaluations(), 0);
   EXPECT_GT(integrator.get_mean_scaling_factor(), 0.0);
   EXPECT_LE(integrator.get_mean_scaling_factor(), 1.0);
