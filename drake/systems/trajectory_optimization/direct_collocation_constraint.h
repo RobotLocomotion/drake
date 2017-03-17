@@ -80,7 +80,7 @@ class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
 
   std::unique_ptr<System<AutoDiffXd>> system_;
   std::unique_ptr<Context<AutoDiffXd>> context_;
-  FreestandingInputPortValue* input_port_{nullptr};
+  FreestandingInputPortValue* input_port_value_{nullptr};
   std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
 };
 

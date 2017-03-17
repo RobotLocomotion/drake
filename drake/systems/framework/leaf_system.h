@@ -239,7 +239,7 @@ class LeafSystem : public System<T> {
     return new BasicVector<T>(descriptor.size());
   }
 
-  /// Allocates a vector that is suitable as an input value for @p descriptor.
+  /// Allocates an AbstractValue suitable as an input value for @p descriptor.
   /// The default implementation in this class either clones the model_value
   /// (if the port was declared via DeclareAbstractInputPort) or else aborts.
   ///

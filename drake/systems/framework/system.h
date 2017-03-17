@@ -1353,8 +1353,8 @@ class System {
     return output_vector->get_mutable_value();
   }
 
-  /// Causes an InputPort in the @p context to become up-to-date, delegating to
-  /// the parent Diagram if necessary.
+  /// Causes an InputPortValue in the @p context to become up-to-date,
+  /// delegating to the parent Diagram if necessary.
   ///
   /// This is a framework implementation detail. User code should never call it.
   void EvalInputPort(const Context<T>& context, int port_index) const {

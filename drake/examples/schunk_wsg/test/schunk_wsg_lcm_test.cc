@@ -30,7 +30,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgTrajectoryGeneratorTest) {
       std::make_unique<systems::FreestandingInputPortValue>(
           std::make_unique<systems::Value<lcmt_schunk_wsg_command>>(
               initial_command));
-  context->SetInputPort(0, std::move(input_command));
+  context->SetInputPortValue(0, std::move(input_command));
   context->FixInputPort(1, Eigen::VectorXd::Zero(1));
 
   // Step a little bit. We should be commanding a point on the
