@@ -441,6 +441,63 @@ GTEST_TEST(RotationTest, TestMcCormick) {
       EXPECT_FALSE(IsFeasible(R_test));
   }
 }
+
+// Test some corner cases of McCormick envelope.
+// The corner cases happens when either the innermost or the outermost corner
+// of the box bmin <= x <= bmax lies on the surface of the unit sphere.
+class TestMcCormickCorner : public ::testing::TestWithParam<std::tuple<int, bool>> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormickCorner)
+
+  TestMcCormickCorner()
+    : prog_(),
+      R_(NewRotationMatrixVars(&prog_)),
+      orthant_(std::get<0>(GetParam())),
+      is_bmin_(std::get<1>(GetParam())) {
+    DRAKE_DEMAND(orthant_ >= 0);
+    DRAKE_DEMAND(orthant_ <= 7);
+    AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, 3);
+  }
+ protected:
+  MathematicalProgram prog_;
+  MatrixDecisionVariable<3, 3> R_;
+  int orthant_;
+  bool is_bmin_; // If true, it means bmin is on the surface of the unit sphere.
+                 // otherwise, bmax is on the surface of the unit sphere.
+};
+
+TEST_P(TestMcCormickCorner, TestOrthogonal) {
+  // box_pt is a vertex of the box, and also lies exactly on the surface of
+  // the unit sphere.
+  Eigen::Vector3d box_pt(1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0);
+  for (int axis = 0; axis < 3; ++axis) {
+    if (orthant_ & 1 << axis) {
+      box_pt(axis) *= -1;
+    }
+  }
+  // If R_.col(0) == box_pt, and box_pt is on the surface of the unit sphere,
+  // while also being either bmin or bmax of the box bmin <= x <= bmax, then
+  // the solution should satisfy R.col(1) ⊥ box_pt and R.col(2) ⊥ box_pt
+  prog_.AddBoundingBoxConstraint(box_pt, box_pt, R_.col(0));
+
+  // Try to minimize R_.col(1).dot(box_pt) + R_.col(2).dot(box_pt), without
+  // explicitly imposing the constraints
+  // R.col(1) ⊥ box_pt and R.col(2) ⊥ box_pt,
+  // the solution is unlikely to satisfy these constraints.
+  prog_.AddLinearCost(R_.col(1).dot(box_pt));
+
+  SolutionResult sol_result = prog_.Solve();
+  EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+  const auto R_val = prog_.GetSolution(R_);
+  EXPECT_NEAR(R_val.col(1).dot(box_pt), 0, 1E-4);
+  EXPECT_NEAR(R_val.col(2).dot(box_pt), 0, 1E-4);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    RotationTest, TestMcCormickCorner,
+    ::testing::Combine(::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6, 7}), // Orthant
+                       ::testing::ValuesIn({false, true}))); // bmin or bmax
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
