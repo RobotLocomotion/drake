@@ -10,7 +10,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port_listener_interface.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {

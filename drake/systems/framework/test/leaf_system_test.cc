@@ -10,8 +10,8 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 

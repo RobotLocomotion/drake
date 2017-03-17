@@ -9,7 +9,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {

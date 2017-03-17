@@ -162,9 +162,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "system_output",
-    srcs = ["system_output.cc"],
-    hdrs = ["system_output.h"],
+    name = "output_port_value",
+    srcs = ["output_port_value.cc"],
+    hdrs = ["output_port_value.h"],
     deps = [
         ":output_port_listener_interface",
         ":value",
@@ -179,7 +179,7 @@ drake_cc_library(
     srcs = ["input_port_evaluator_interface.cc"],
     hdrs = ["input_port_evaluator_interface.h"],
     deps = [
-        ":system_output",
+        ":output_port_value",
         ":system_port_descriptor",
         "//drake/common",
     ],
@@ -488,9 +488,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "system_output_test",
+    name = "output_port_value_test",
     deps = [
-        ":system_output",
+        ":output_port_value",
         "//drake/common",
     ],
 )

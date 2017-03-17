@@ -114,9 +114,11 @@ class OutputPortValue {
   int64_t version_ = 0;
 };
 
-/// An abstract base class template for the output ports of a System.
+/// An abstract base class template for the values of the output ports of
+/// a System.
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
+// TODO(sherm1) Output ports should be separated, see issue #2890.
 template <typename T>
 class SystemOutput {
  public:
@@ -176,7 +178,7 @@ class SystemOutput {
   virtual SystemOutput<T>* DoClone() const = 0;
 };
 
-/// A container for all the output data of a leaf System.
+/// A container for the values of all output ports of a leaf System.
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
 template <typename T>
