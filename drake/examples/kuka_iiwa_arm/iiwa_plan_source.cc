@@ -53,13 +53,13 @@ IiwaPlanSource::IiwaPlanSource(const std::string& model_path)
 
 IiwaPlanSource::~IiwaPlanSource() {}
 
-std::unique_ptr<systems::AbstractState>
-IiwaPlanSource::AllocateAbstractState() const {
+std::unique_ptr<systems::AbstractValues> IiwaPlanSource::AllocateAbstractState()
+    const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals;
   const PlanData default_plan;
   abstract_vals.push_back(std::unique_ptr<systems::AbstractValue>(
       std::make_unique<systems::Value<PlanData>>(default_plan)));
-  return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
+  return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
 }
 
 void IiwaPlanSource::DoCalcOutput(

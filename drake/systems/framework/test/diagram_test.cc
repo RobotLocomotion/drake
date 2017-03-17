@@ -911,17 +911,18 @@ class SystemWithAbstractState : public LeafSystem<double> {
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
-  std::unique_ptr<AbstractState> AllocateAbstractState() const override {
+  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
     std::vector<std::unique_ptr<AbstractValue>> values;
     values.push_back({PackValue<double>(id_)});
-    return std::make_unique<AbstractState>(std::move(values));
+    return std::make_unique<AbstractValues>(std::move(values));
   }
 
   // Abstract state is set to time + id.
   void DoCalcUnrestrictedUpdate(const Context<double>& context,
                                 State<double>* state) const override {
-    double& state_num = state->get_mutable_abstract_state()->
-        get_mutable_abstract_state(0).GetMutableValue<double>();
+    double& state_num = state->get_mutable_abstract_state()
+                            ->get_mutable_value(0)
+                            .GetMutableValue<double>();
     state_num = id_ + context.get_time();
   }
 

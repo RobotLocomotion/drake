@@ -20,6 +20,35 @@ namespace drake {
 /// where the class `FooTag` above should simply be a dummy argument, a
 /// never-defined type.
 ///
+/// The TypeSafeIndex guarantees that index instances of different types can't
+/// be compared or combined.  Efforts to do so will cause a compile-time
+/// failure.  However, comparisons or operations on _other_ types that are
+/// convertible to an int will succeed.  For example:
+/// @code{.cpp}
+///    using AIndex = TypeSafeIndex<class A>;
+///    using BIndex = TypeSafeIndex<class B>;
+///    AIndex a(1);
+///    BIndex b(1);
+///    if (a == 2) { ... }   // Ok.
+///    size_t sz = 7;
+///    if (a == sz) { ... }  // Ok.
+///    if (a == b) { ... }   // <-- Compiler error.
+/// @endcode
+///
+/// The intent of these classes is to seamlessly serve as indices into typical
+/// indexed objects (e.g., vector, array, etc.). At the same time, we want to
+/// avoid implicit conversions _from_ int to an index.  These two design
+/// constraints combined lead to a limitation in how TypeSafeIndex instances
+/// can be used.  Specifically, we've lost a common index pattern:
+/// @code{.cpp}
+///    for (MyIndex a = 0; a < N; ++a) { ... }
+/// @endcode
+/// This pattern no longer works because it requires implicit conversion of int
+/// to TypeSafeIndex. Instead, the following pattern needs to be used:
+/// @code{.cpp}
+///    for (MyIndex a(0); a < N; ++a) { ... }
+/// @endcode
+///
 /// @tparam Tag The name of the tag associated with a class type.
 template <class Tag>
 class TypeSafeIndex {
@@ -36,7 +65,19 @@ class TypeSafeIndex {
     DRAKE_ASSERT_VOID(CheckInvariants());
   }
 
-  /// Implicit conversion to int operator.
+  /// Disallow construction from another index type.
+  template <typename U>
+  TypeSafeIndex( const TypeSafeIndex<U>& idx) = delete;
+
+  /// Assign the index a value from a non-negative int.
+  /// In Debug builds, this method asserts that the input index is non-negative.
+  TypeSafeIndex& operator=(int idx) {
+    index_ = idx;
+    DRAKE_ASSERT_VOID(CheckInvariants());
+    return *this;
+  }
+
+  /// Implicit conversion-to-int operator.
   operator int() const { return index_; }
 
   /// @name Arithmetic operators.
@@ -93,6 +134,89 @@ class TypeSafeIndex {
     DRAKE_ASSERT_VOID(CheckInvariants());
     return *this;
   }
+  ///@}
+
+  /// @name Exclusionary operators
+  ///
+  /// In order to prevent indices _of different type_ being added together or
+  /// compared against each other, we apply a whitelist/blacklist approach to
+  /// explicitly include indices of this type, but exclude indices of all other
+  /// types.  This implicitly allows all _other_ objects that can be converted
+  /// to int types.
+  ///@{
+
+  /// Whitelist equality test with indices of this tag.
+  bool operator==(const TypeSafeIndex<Tag>& other) {
+    return index_ == other.index_;
+  }
+
+  /// Blacklist equality tests with indices of other tags.
+  template <typename U>
+  bool operator==(const TypeSafeIndex<U>& u) = delete;
+
+  /// Whitelist inequality test with indices of this tag.
+  bool operator!=(const TypeSafeIndex<Tag>& other) {
+    return index_ != other.index_;
+  }
+
+  /// Blacklist inequality test with indices of other tags.
+  template <typename U>
+  bool operator!=(const TypeSafeIndex<U>& u) = delete;
+
+  /// Whitelist less than test with indices of this tag.
+  bool operator<(const TypeSafeIndex<Tag>& other) {
+    return index_ < other.index_;
+  }
+
+  /// Blacklist less than test with indices of other tags.
+  template <typename U>
+  bool operator<(const TypeSafeIndex<U>& u) = delete;
+
+  /// Whitelist less than or equals test with indices of this tag.
+  bool operator<=(const TypeSafeIndex<Tag>& other) {
+    return index_ <= other.index_;
+  }
+
+  /// Blacklist less than or equals test with indices of other tags.
+  template <typename U>
+  bool operator<=(const TypeSafeIndex<U>& u) = delete;
+
+  /// Whitelist greater than test with indices of this tag.
+  bool operator>(const TypeSafeIndex<Tag>& other) {
+    return index_ > other.index_;
+  }
+
+  /// Blacklist greater than test with indices of other tags.
+  template <typename U>
+  bool operator>(const TypeSafeIndex<U>& u) = delete;
+
+  /// Whitelist greater than or equals test with indices of this tag.
+  bool operator>=(const TypeSafeIndex<Tag>& other) {
+    return index_ >= other.index_;
+  }
+
+  /// Blacklist greater than or equals test with indices of other tags.
+  template <typename U>
+  bool operator>=(const TypeSafeIndex<U>& u) = delete;
+
+  /// Whitelist addition for indices with the same tag.
+  TypeSafeIndex<Tag>& operator+=(const TypeSafeIndex<Tag>& other) {
+    return *this += other.index_;
+  }
+
+  /// Blacklist addition for indices of different tags.
+  template <typename U>
+  TypeSafeIndex<U>& operator+=(const TypeSafeIndex<U>& u) = delete;
+
+  /// Whitelist subtraction for indices with the same tag.
+  TypeSafeIndex<Tag>& operator-=(const TypeSafeIndex<Tag>& other) {
+    return *this -= other.index_;
+  }
+
+  /// Blacklist subtraction for indices of different tags.
+  template <typename U>
+  TypeSafeIndex<U>& operator-=(const TypeSafeIndex<U>& u) = delete;
+
   ///@}
 
  private:

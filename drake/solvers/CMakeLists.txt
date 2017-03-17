@@ -14,7 +14,7 @@ if(gurobi_FOUND)
       gurobi)
 endif()
 
-set(private_headers
+set(solver_headers
   dreal_solver.h
   gurobi_solver.h
   ipopt_solver.h
@@ -27,7 +27,7 @@ set(private_headers
 set(optimization_files)
 set(optimization_requires)
 list(APPEND optimization_files
-  ${private_headers}
+  ${solver_headers}
   constraint.cc
   decision_variable.cc
   equality_constrained_qp_solver.cc
@@ -35,7 +35,6 @@ list(APPEND optimization_files
   mathematical_program.cc
   mathematical_program_solver_interface.cc
   moby_lcp_solver.cc
-  rotation_constraint.cc
   system_identification.cc
   )
 if(ipopt_FOUND)
@@ -80,13 +79,13 @@ target_link_libraries(drakeOptimization
   drakeCommon
   Eigen3::Eigen)
 drake_install_headers(
+  ${solver_headers}
   binding.h
   constraint.h
   function.h
   mathematical_program.h
   mathematical_program_solver_interface.h
   decision_variable.h
-  rotation_constraint.h
   system_identification.h
   )
 drake_install_libraries(drakeOptimization)
@@ -134,6 +133,21 @@ endif()
 if(mosek_FOUND)
   target_link_libraries(drakeOptimization mosek)
 endif()
+
+add_library_with_exports(LIB_NAME drakeRotationConstraint SOURCE_FILES rotation_constraint.cc)
+target_link_libraries(drakeRotationConstraint
+        drakeOptimization)
+drake_install_headers(
+        rotation_constraint.h
+)
+drake_install_pkg_config_file(drake-rotation-constraint
+        TARGET drakeRotationConstraint
+        LIBS -ldrakeRotationConstraint
+        REQUIRES
+        drake-common
+        drake-optimization)
+
+drake_install_libraries(drakeRotationConstraint)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

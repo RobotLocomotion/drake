@@ -71,9 +71,9 @@ class DiagramState : public State<T> {
           substate->get_mutable_discrete_state()->get_data();
       sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
       // Abstract
-      AbstractState* xm = substate->get_mutable_abstract_state();
+      AbstractValues* xm = substate->get_mutable_abstract_state();
       for (int i_xm = 0; i_xm < xm->size(); ++i_xm) {
-        sub_xms.push_back(&xm->get_mutable_abstract_state(i_xm));
+        sub_xms.push_back(&xm->get_mutable_value(i_xm));
       }
     }
 
@@ -85,7 +85,7 @@ class DiagramState : public State<T> {
     this->set_continuous_state(
         std::make_unique<DiagramContinuousState<T>>(sub_xcs));
     this->set_discrete_state(std::make_unique<DiscreteState<T>>(sub_xds));
-    this->set_abstract_state(std::make_unique<AbstractState>(sub_xms));
+    this->set_abstract_state(std::make_unique<AbstractValues>(sub_xms));
   }
 
  private:
@@ -162,7 +162,8 @@ class DiagramContext : public Context<T> {
     SystemOutput<T>* src_ports = GetSubsystemOutput(src_system_index);
     DRAKE_DEMAND(src_port_index >= 0);
     DRAKE_DEMAND(src_port_index < src_ports->get_num_ports());
-    OutputPort* output_port = src_ports->get_mutable_port(src_port_index);
+    OutputPortValue* output_port_value =
+        src_ports->get_mutable_port_value(src_port_index);
 
     // Identify and validate the destination port.
     SystemIndex dest_system_index = dest.first;
@@ -172,7 +173,7 @@ class DiagramContext : public Context<T> {
     DRAKE_DEMAND(dest_port_index < dest_context->get_num_input_ports());
 
     // Construct and install the destination port.
-    auto input_port = std::make_unique<DependentInputPort>(output_port);
+    auto input_port = std::make_unique<DependentInputPort>(output_port_value);
     dest_context->SetInputPort(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
@@ -218,7 +219,7 @@ class DiagramContext : public Context<T> {
     parameters_->set_numeric_parameters(
         std::make_unique<DiscreteState<T>>(numeric_params));
     parameters_->set_abstract_parameters(
-        std::make_unique<AbstractState>(abstract_params));
+        std::make_unique<AbstractValues>(abstract_params));
   }
 
   /// Returns the output structure for a given constituent system at @p index.

@@ -195,7 +195,6 @@ drake_cc_library(
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
     ],
-    visibility = ["//visibility:private"],
     deps = [
         ":binding",
         ":constraint",
@@ -220,7 +219,6 @@ drake_cc_library(
         "//conditions:default": ["no_gurobi.cc"],
     }),
     hdrs = ["gurobi_solver.h"],
-    visibility = ["//visibility:private"],
     deps = select({
         "//tools:with_gurobi": [
             ":mathematical_program_api",
@@ -243,7 +241,6 @@ drake_cc_library(
         "//conditions:default": ["no_mosek.cc"],
     }),
     hdrs = ["mosek_solver.h"],
-    visibility = ["//visibility:private"],
     deps = select({
         "//tools:with_mosek": [
             ":mathematical_program_api",
@@ -265,7 +262,6 @@ drake_cc_library(
         "//conditions:default": ["no_snopt.cc"],
     }),
     hdrs = ["snopt_solver.h"],
-    visibility = ["//visibility:private"],
     deps = select({
         "//tools:with_snopt": [
             ":mathematical_program_api",
@@ -285,7 +281,6 @@ drake_cc_library(
         "//conditions:default": ["ipopt_solver.cc"],
     }),
     hdrs = ["ipopt_solver.h"],
-    visibility = ["//visibility:private"],
     deps = select({
         "//conditions:default": [
             "@ipopt//:lib",
@@ -302,7 +297,6 @@ drake_cc_library(
     name = "nlopt_solver",
     srcs = ["nlopt_solver.cc"],
     hdrs = ["nlopt_solver.h"],
-    visibility = ["//visibility:private"],
     deps = [
         ":mathematical_program_api",
         "//drake/math:autodiff",

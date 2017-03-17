@@ -30,8 +30,8 @@ class SystemWithAbstractState : public LeafSystem<double> {
   SystemWithAbstractState() {}
   ~SystemWithAbstractState() override {}
 
-  std::unique_ptr<AbstractState> AllocateAbstractState() const override {
-    return std::make_unique<AbstractState>(PackValue(42));
+  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
+    return std::make_unique<AbstractValues>(PackValue(42));
   }
 
   void DoCalcOutput(const Context<double>& context,
@@ -155,8 +155,8 @@ void VerifyClonedState(const State<double>& clone) {
   const DiscreteState<double>* xd = clone.get_discrete_state();
   EXPECT_EQ(44.0, xd->get_discrete_state(0)->GetAtIndex(0));
   // - Abstract
-  const AbstractState* xa = clone.get_abstract_state();
-  EXPECT_EQ(42, xa->get_abstract_state(0).GetValue<int>());
+  const AbstractValues* xa = clone.get_abstract_state();
+  EXPECT_EQ(42, xa->get_value(0).GetValue<int>());
 }
 
 // Verifies that the @p params are a clone of the params constructed in

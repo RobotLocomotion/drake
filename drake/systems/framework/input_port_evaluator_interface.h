@@ -14,7 +14,7 @@ template <typename T> class Context;
 namespace detail {
 
 /// InputPortEvaluatorInterface is implemented by classes that are able to
-/// evaluate the OutputPort connected to a particular InputPort.
+/// evaluate the OutputPortValue connected to a particular InputPort.
 ///
 /// This interface is a Drake-internal detail. Users should never implement
 /// it. In fact, only Diagram should implement it. It exists primarily to

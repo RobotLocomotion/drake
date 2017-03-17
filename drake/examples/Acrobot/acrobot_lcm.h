@@ -3,10 +3,12 @@
 /// @file This file contains classes dealing with sending/receiving
 /// LCM messages related to acrobot. The classes in this file are based on
 /// iiwa_lcm.h
+
 #include <memory>
-#include "drake/systems/framework/leaf_system.h"
+
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace examples {
@@ -22,9 +24,6 @@ class AcrobotStateReceiver : public systems::LeafSystem<double> {
  protected:
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
-
-  std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
 };
 
 /// Receives the output of an acrobot controller, and outputs it as an LCM
@@ -35,9 +34,6 @@ class AcrobotCommandSender : public systems::LeafSystem<double> {
   AcrobotCommandSender();
 
  protected:
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 };
@@ -62,9 +58,6 @@ class AcrobotStateSender : public systems::LeafSystem<double> {
   AcrobotStateSender();
 
  protected:
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 };

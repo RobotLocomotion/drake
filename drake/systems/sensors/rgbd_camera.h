@@ -164,13 +164,6 @@ class RgbdCamera : public LeafSystem<double> {
   const OutputPortDescriptor<double>& camera_base_pose_output_port() const;
 
  protected:
-  /// Allocates the outputs.  See class description.
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
-  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
   /// Updates all the model frames for the renderer and outputs the rendered
   /// images.
   void DoCalcOutput(const systems::Context<double>& context,
