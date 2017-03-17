@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
-#include <vector>
 
 #include "drake/math/cross_product.h"
 
@@ -450,7 +449,8 @@ void AddMcCormickVectorConstraints(
           // unit sphere at a unique point (either bmin or bmax), then we know
           // the unique value of v, it has to be either bmin or bmax.
           // 2. Otherwise, there is a region of intersection.
-          if (std::abs(box_min_norm - 1.0) < 1E-10 || std::abs(box_max_norm - 1.0) < 1E-10) {
+          if (std::abs(box_min_norm - 1.0) < 1E-10 ||
+              std::abs(box_max_norm - 1.0) < 1E-10) {
             // If box_min or box_max is on the sphere, then denote the point on
             // the sphere as u, we have the following condition
             // if c[xi](0) = 1 and c[yi](1) == 1 and c[zi](2) == 1, then
@@ -469,7 +469,8 @@ void AddMcCormickVectorConstraints(
             //       <= vᵀ * v2 <= 3 - (c[xi](0) + c[yi](1) + c[zi](2))
             //
             //   2 * c[xi](0) + c[yi](1) + c[zi](2) - 6
-            //       <= v.cross(v1) - v2 <= 6 - 2 * (c[xi](0) + c[yi](1) + c[zi](2))
+            //       <= v.cross(v1) - v2 <= 6 - 2 * (c[xi](0) + c[yi](1) +
+            //       c[zi](2))
             Eigen::Vector3d u;
             if (std::abs(box_min_norm - 1.0) < 1E-10) {
               u = box_min / box_min_norm;
@@ -478,7 +479,7 @@ void AddMcCormickVectorConstraints(
             }
             Eigen::Vector3d orthant_u;
             VectorDecisionVariable<3> orthant_c;
-            for (int o = 0; o < 8; o++) { // iterate over orthants
+            for (int o = 0; o < 8; o++) {  // iterate over orthants
               orthant_u = FlipVector(u, o);
               orthant_c = PickPermutation(this_cpos, this_cneg, o);
 
@@ -486,8 +487,10 @@ void AddMcCormickVectorConstraints(
               // Eigen::Array of symbolic formulae.
               Expression orthant_c_sum = orthant_c.cast<Expression>().sum();
               for (int i = 0; i < 3; ++i) {
-                prog->AddLinearConstraint(v(i) - orthant_u(i) <= 6 - 2 * orthant_c_sum);
-                prog->AddLinearConstraint(v(i) - orthant_u(i) >= 2 * orthant_c_sum - 6);
+                prog->AddLinearConstraint(v(i) - orthant_u(i) <=
+                                          6 - 2 * orthant_c_sum);
+                prog->AddLinearConstraint(v(i) - orthant_u(i) >=
+                                          2 * orthant_c_sum - 6);
               }
               Expression v_dot_v1 = orthant_u.dot(v1);
               Expression v_dot_v2 = orthant_u.dot(v2);
@@ -497,8 +500,10 @@ void AddMcCormickVectorConstraints(
               prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v2);
               Vector3<Expression> v_cross_v1 = orthant_u.cross(v1);
               for (int i = 0; i < 3; ++i) {
-                prog->AddLinearConstraint(v_cross_v1(i) - v2(i) <= 6 - 2 * orthant_c_sum);
-                prog->AddLinearConstraint(v_cross_v1(i) - v2(i) >= 2 * orthant_c_sum - 6);
+                prog->AddLinearConstraint(v_cross_v1(i) - v2(i) <=
+                                          6 - 2 * orthant_c_sum);
+                prog->AddLinearConstraint(v_cross_v1(i) - v2(i) >=
+                                          2 * orthant_c_sum - 6);
               }
             }
           } else {
@@ -629,7 +634,10 @@ void AddMcCormickVectorConstraints(
         } else {
           // This box does not intersect with the sphere.
           for (int o = 0; o < 8; ++o) {  // iterate over orthants
-            prog->AddLinearConstraint(PickPermutation(this_cpos, this_cneg, o).cast<Expression>().sum(), 0.0, 2.0);
+            prog->AddLinearConstraint(PickPermutation(this_cpos, this_cneg, o)
+                                          .cast<Expression>()
+                                          .sum(),
+                                      0.0, 2.0);
           }
         }
       }
@@ -639,7 +647,8 @@ void AddMcCormickVectorConstraints(
 
 }  // namespace
 
-std::pair<std::vector<MatrixDecisionVariable<3, 3>>, std::vector<MatrixDecisionVariable<3, 3>>>
+std::pair<std::vector<MatrixDecisionVariable<3, 3>>,
+          std::vector<MatrixDecisionVariable<3, 3>>>
 AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
@@ -769,7 +778,8 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                                   R.row((i + 1) % 3).transpose(),
                                   R.row((i + 2) % 3).transpose());
   }
-  return std::pair<std::vector<MatrixDecisionVariable<3, 3>>, std::vector<MatrixDecisionVariable<3, 3>>>(Bpos, Bneg);
+  return std::pair<std::vector<MatrixDecisionVariable<3, 3>>,
+                   std::vector<MatrixDecisionVariable<3, 3>>>(Cpos, Cneg);
 }
 
 }  // namespace solvers

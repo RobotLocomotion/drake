@@ -445,35 +445,38 @@ GTEST_TEST(RotationTest, TestMcCormick) {
 // Test some corner cases of McCormick envelope.
 // The corner cases happens when either the innermost or the outermost corner
 // of the box bmin <= x <= bmax lies on the surface of the unit sphere.
-class TestMcCormickCorner : public ::testing::TestWithParam<std::tuple<int, bool, int>> {
+class TestMcCormickCorner
+    : public ::testing::TestWithParam<std::tuple<int, bool, int>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormickCorner)
 
   TestMcCormickCorner()
     : prog_(),
       R_(NewRotationMatrixVars(&prog_)),
-      Bpos_(),
-      Bneg_(),
+      Cpos_(),
+      Cneg_(),
       orthant_(std::get<0>(GetParam())),
       is_bmin_(std::get<1>(GetParam())),
-      col_idx_(std::get<2>(GetParam())){
+      col_idx_(std::get<2>(GetParam())) {
     DRAKE_DEMAND(orthant_ >= 0);
     DRAKE_DEMAND(orthant_ <= 7);
-    const auto Bpos_Bneg = AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, 3);
-    Bpos_ = Bpos_Bneg.first;
-    Bneg_ = Bpos_Bneg.second;
+    const auto Cpos_Cneg =
+        AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, 3);
+    Cpos_ = Cpos_Cneg.first;
+    Cneg_ = Cpos_Cneg.second;
   }
+
  protected:
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
-  std::vector<MatrixDecisionVariable<3, 3>> Bpos_;
-  std::vector<MatrixDecisionVariable<3, 3>> Bneg_;
-  int orthant_; // Index of the orthant that R_.col(col_idx_) is in.
-  bool is_bmin_; // If true, then the box bmin <= x <= bmax intersects with the
-                 // surface of the unit sphere at the unique point bmin;
-                 // otherwise it intersects at the unique point bmax;
-  int col_idx_; // R_.col(col_idx_) will be fixed to a vertex of the box, and
-                // also this point is on the surface of the unit sphere.
+  std::vector<MatrixDecisionVariable<3, 3>> Cpos_;
+  std::vector<MatrixDecisionVariable<3, 3>> Cneg_;
+  int orthant_;  // Index of the orthant that R_.col(col_idx_) is in.
+  bool is_bmin_;  // If true, then the box bmin <= x <= bmax intersects with the
+                  // surface of the unit sphere at the unique point bmin;
+                  // otherwise it intersects at the unique point bmax;
+  int col_idx_;  // R_.col(col_idx_) will be fixed to a vertex of the box, and
+                 // also this point is on the surface of the unit sphere.
 };
 
 TEST_P(TestMcCormickCorner, TestOrthogonal) {
@@ -495,48 +498,41 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
 
   // If bmin is the unique intersection point, here we document when the box is
   // in the first orthant (+++)
-  // Bpos[1](0, col_idx_) = 1 => R_(0, col_idx_) >= 1 / 3
-  // Bpos[2](0, col_idx_) = 0 => R_(0, col_idx_) <= 2 / 3
-  // Bpos[2](1, col_idx_) = 1 => R_(1, col_idx_) >= 2 / 3
-  // Bpos[2](2, col_idx_) = 1 => R_(2, col_idx_) >= 2 / 3
+  // Cpos[1](0, col_idx_) = 1 => 1 / 3 <= R_(0, col_idx_) <= 2 / 3
+  // Cpos[2](1, col_idx_) = 1 => 2 / 3 <= R_(1, col_idx_) <= 1
+  // Cpos[2](2, col_idx_) = 1 => 2 / 3 <= R_(2, col_idx_) <= 1
   // If bmax is the unique intersection point, here we document when the box is
   // in the first orthant (+++)
-  // Bpos[0](0, col_idx_) = 1 => R_(0, col_idx_) >= 0
-  // Bpos[1](0, col_idx_) = 0 => R_(0, col_idx_) <= 1 / 3
-  // Bpos[1](1, col_idx_) = 1 => R_(1, col_idx_) >= 1 / 3
-  // Bpos[2](1, col_idx_) = 0 => R_(1, col_idx_) <= 2 / 3
-  // Bpos[1](2, col_idx_) = 1 => R_(2, col_idx_) >= 1 / 3
-  // Bpos[2](2, col_idx_) = 0 => R_(2, col_idx_) <= 2 / 3
+  // Cpos[0](0, col_idx_) = 1 => 0 <= R_(0, col_idx_) <= 1 / 3
+  // Cpos[1](1, col_idx_) = 1 => 1 / 3 <= R_(1, col_idx_) <= 2 / 3
+  // Cpos[1](2, col_idx_) = 1 => 1 / 3 <= R_(2, col_idx_) <= 2 / 3
 
-  // orthant_B[i](j) is either Bpos[i](j, col_idx_) or Bneg[i](j, col_idx_),
+  // orthant_C[i](j) is either Cpos[i](j, col_idx_) or Cneg[i](j, col_idx_),
   // depending on the orthant.
-  std::array<VectorDecisionVariable<3>, 3> orthant_B;
+  std::array<VectorDecisionVariable<3>, 3> orthant_C;
 
   for (int i = 0; i < 3; ++i) {
     for (int axis = 0; axis < 3; ++axis) {
       if (orthant_ & 1 << axis) {
-        orthant_B[i](axis) = Bneg_[i](axis, col_idx_);
+        orthant_C[i](axis) = Cneg_[i](axis, col_idx_);
       } else {
-        orthant_B[i](axis) = Bpos_[i](axis, col_idx_);
+        orthant_C[i](axis) = Cpos_[i](axis, col_idx_);
       }
     }
   }
   if (is_bmin_) {
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_B[1](0));
-    prog_.AddBoundingBoxConstraint(0, 0, orthant_B[2](0));
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_B[2](1));
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_B[2](2));
+    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[1](0));
+    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[2](1));
+    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[2](2));
   } else {
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_B[0](0));
-    prog_.AddBoundingBoxConstraint(0, 0, orthant_B[1](0));
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_B[1](1));
-    prog_.AddBoundingBoxConstraint(0, 0, orthant_B[2](1));
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_B[1](2));
-    prog_.AddBoundingBoxConstraint(0, 0, orthant_B[2](2));
+    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[0](0));
+    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[1](1));
+    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[1](2));
   }
 
   // Add a cost function to try to make the column of R not perpendicular.
-  prog_.AddLinearCost(R_.col(free_axis0).dot(box_pt) + R_.col(free_axis1).dot(box_pt));
+  prog_.AddLinearCost(R_.col(free_axis0).dot(box_pt) +
+                      R_.col(free_axis1).dot(box_pt));
 
   SolutionResult sol_result = prog_.Solve();
   EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
@@ -545,14 +541,17 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
   std::vector<Eigen::Matrix3d> Bneg_val(3);
   EXPECT_NEAR(R_val.col(free_axis0).dot(box_pt), 0, 1E-4);
   EXPECT_NEAR(R_val.col(free_axis1).dot(box_pt), 0, 1E-4);
-  EXPECT_TRUE(CompareMatrices(box_pt.cross(R_val.col(free_axis0)), R_val.col(free_axis1), 1E-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(box_pt.cross(R_val.col(free_axis0)),
+                              R_val.col(free_axis1), 1E-4,
+                              MatrixCompareType::absolute));
 }
 
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormickCorner,
-    ::testing::Combine(::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6, 7}),  // Orthant
+    ::testing::Combine(::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6,
+                                            7}),            // Orthant
                        ::testing::ValuesIn({true, false}),  // bmin or bmax
-                       ::testing::ValuesIn({0, 1, 2})));  // column index
+                       ::testing::ValuesIn({0, 1, 2})));    // column index
 
 }  // namespace
 }  // namespace solvers
