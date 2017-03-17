@@ -1067,6 +1067,72 @@ class MathematicalProgram {
   Binding<LinearConstraint> AddLinearConstraint(const symbolic::Formula& f);
 
   /**
+   * Add a linear constraint represented by a symbolic array of formulas to the
+   * program. A formula in @p formulas can be of the following forms:
+   *
+   *  1. e1  <=  e2 , which is 0 <= e2 - e1 <= ∞
+   *  2. e1  >=  e2 , which is 0 <= e1 - e2 <= ∞
+   *  3. e1  ==  e2
+   *
+   * It throws an exception if
+   *  1. A formula in @p formulas is not matched with one of the above
+   *     patterns. Especially, strict inequalities (<, >) are not allowed.
+   *  2. A formula in @p formulas includes a non-linear expression.
+   *  3. A formula in @p formulas is either a trivial constraint such
+   *     as "1 <= 2" or an unsatisfiable constraint such as "2 <= 1".
+   *
+   * @tparam Derived An Eigen Array type of Formula.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_base_of<Eigen::ArrayBase<Derived>, Derived>::value &&
+          std::is_same<typename Derived::Scalar, symbolic::Formula>::value,
+      Binding<LinearConstraint>>::type
+  AddLinearConstraint(const Derived& formulas) {
+    const auto n = formulas.rows() * formulas.cols();
+
+    // Decomposes 2D-array of formulas into 1D-vector of expression, `v`, and
+    // two 1D-vector of double `lb` and `ub`.
+    drake::VectorX<symbolic::Expression> v{n};
+    Eigen::VectorXd lb{n};
+    Eigen::VectorXd ub{n};
+    int k{0};  // index variable for 1D components.
+    for (int i{0}; i < formulas.rows(); ++i) {
+      for (int j{0}; j < formulas.cols(); ++j, ++k) {
+        const symbolic::Formula& f{formulas(i, j)};
+        if (is_equal_to(f)) {
+          // f(i) := (lhs == rhs)
+          //         (lhs - rhs == 0)
+          v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+          lb(k) = 0.0;
+          ub(k) = 0.0;
+        } else if (is_less_than_or_equal_to(f)) {
+          // f(i) := (lhs <= rhs)
+          //         (-∞ <= lhs - rhs <= 0)
+          v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+          lb(k) = -std::numeric_limits<double>::infinity();
+          ub(k) = 0.0;
+        } else if (is_greater_than_or_equal_to(f)) {
+          // f(i) := (lhs >= rhs)
+          //         (∞ >= lhs - rhs >= 0)
+          v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+          lb(k) = 0.0;
+          ub(k) = std::numeric_limits<double>::infinity();
+        } else {
+          std::ostringstream oss;
+          oss << "MathematicalProgram::AddLinearConstraint is called with an "
+                 "array of formulas which includes a formula "
+              << f
+              << " which is not a relational formula using one of {==, <=, >=} "
+                 "operators.";
+          throw std::runtime_error(oss.str());
+        }
+      }
+    }
+    return AddLinearConstraint(v, lb, ub);
+  }
+
+  /**
    * Adds linear equality constraints referencing potentially a
    * subset of the decision variables.
    */
