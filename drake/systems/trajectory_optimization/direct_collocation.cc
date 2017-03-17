@@ -137,7 +137,8 @@ DircolTrajectoryOptimization::ReconstructStateTrajectory() const {
   derivatives.reserve(input_vec.size());
 
   for (size_t i = 0; i < input_vec.size(); ++i) {
-    input_port_value_->GetMutableVectorData<double>()->SetFromVector(input_vec[i]);
+    input_port_value_->GetMutableVectorData<double>()->SetFromVector(
+        input_vec[i]);
     context_->get_mutable_continuous_state()->SetFromVector(state_vec[i]);
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives.push_back(continuous_state_->CopyToVector());
