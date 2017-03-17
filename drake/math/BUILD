@@ -199,6 +199,7 @@ drake_cc_googletest(
     deps = [
         ":geometric_transform",
         "//drake/common:eigen_matrix_compare",
+        "//drake/math:autodiff",
     ],
 )
 

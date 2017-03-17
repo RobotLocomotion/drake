@@ -13,7 +13,7 @@ namespace drake {
 namespace math {
 namespace quaternion_test {
 
-// Form an generic arbitrary quaternion for testing.
+// Form a generic quaternion for testing.
 Eigen::Quaterniond  GetGenericArbitraryQuaternion(const double half_angle,
                                                   const bool getPositive) {
   const double cos_half_angle = std::cos(half_angle);
@@ -25,6 +25,19 @@ Eigen::Quaterniond  GetGenericArbitraryQuaternion(const double half_angle,
   const double e2 = negate * sin_half_angle * y;
   const double e3 = negate * sin_half_angle * z;
   return Eigen::Quaterniond(e0, e1, e2, e3);
+}
+
+
+// Form a generic time-derivative of the quaternion [e0, e1, e2, e3] generated
+// by a pi/6 rotation about a generic vector.  Ensure the time-derivative
+// satisifies the constraint  e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
+// MotionGenesis was used to calculate these values of e0Dt, e1Dt, e2Dt, e3Dt.
+Eigen::Vector4d  GetQuaternionDtAssociatedWith30DegRotation() {
+  const double e0Dt = -0.4211981425390414;
+  const double e1Dt =  2.387689633338328;
+  const double e2Dt = -1.529504299767133;
+  const double e3Dt =  1.672467320028763;
+  return Eigen::Vector4d(e0Dt, e1Dt, e2Dt, e3Dt);
 }
 
 
@@ -87,8 +100,8 @@ GTEST_TEST(CalculateQuaternionDtFromAngularVelocityExpressedInBTest, testA) {
       CalculateQuaternionDtFromAngularVelocityExpressedInB(quat, w_B);
 
   // Verify Drake's quatDt versus MotionGenesis (MG) results.
-  const Eigen::Vector4d quatDt_MG(-0.4211981425390414,  2.387689633338328,
-                                  -1.529504299767133,   1.672467320028763);
+  const Eigen::Vector4d quatDt_MG =
+                                   GetQuaternionDtAssociatedWith30DegRotation();
   const Eigen::Vector4d quatDt_numerical = math::autoDiffToValueMatrix(quatDt);
   const double epsilon = std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(quatDt_numerical, quatDt_MG, 8*epsilon));
@@ -143,23 +156,23 @@ GTEST_TEST(CalculateAngularVelocityExpressedInBFromQuaternionDtTest, testA) {
   const AutoDiff8d e3Dt(-2.623156949355562,  8, 7);
   const Eigen::Quaternion<AutoDiff8d> quat(e0,  e1,  e2,  e3);
   const drake::Vector4<AutoDiff8d> quatDt(e0Dt, e1Dt, e2Dt, e3Dt);
-  const drake::Vector3<AutoDiff8d> w_B =
-      CalculateAngularVelocityExpressedInBFromQuaternionDt(quat, quatDt);
+  const drake::Vector3<AutoDiff8d> w =
+             CalculateAngularVelocityExpressedInBFromQuaternionDt(quat, quatDt);
 
   // Verify Drake's angular velocity vs near-exact MotionGenesis (MG) results.
-  const double wx_MG = 4.864408811799343;
-  const double wy_MG = 2.029080460490301;
+  const double wx_MG = +4.864408811799343;
+  const double wy_MG = +2.029080460490301;
   const double wz_MG = -4.443441112511214;
-  const Eigen::Vector3d w_B_MG(wx_MG, wy_MG, wz_MG);
-  const Eigen::Vector3d w_B_numerical = math::autoDiffToValueMatrix(w_B);
+  const Eigen::Vector3d w_MG(wx_MG, wy_MG, wz_MG);
+  const Eigen::Vector3d w_numerical = math::autoDiffToValueMatrix(w);
   const double epsilon = std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(w_B_numerical, w_B_MG, 8*epsilon));
+  EXPECT_TRUE(CompareMatrices(w_numerical, w_MG, 8*epsilon));
 
   // Test Drake partials of angular velocity with respect to
   // [e0, e1, e2, e3, ė0, ė1, ė2, ė3].
-  const Vector8d wx_partials = w_B(0).derivatives();
-  const Vector8d wy_partials = w_B(1).derivatives();
-  const Vector8d wz_partials = w_B(2).derivatives();
+  const Vector8d wx_partials = w(0).derivatives();
+  const Vector8d wy_partials = w(1).derivatives();
+  const Vector8d wz_partials = w(2).derivatives();
 
   // MotionGenesis was used to calculate and evaluate same partial derivatives.
   Vector8d wx_partial_MG, wy_partial_MG, wz_partial_MG;
@@ -182,13 +195,9 @@ GTEST_TEST(CalculateQuaternionDtConstraintViolationTest, testA) {
   // MotionGenesis was used to calculate values for e0Dt, e1Dt, e2Dt, e3Dt that
   // satisifies the constraint  e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
   const Eigen::Quaterniond quat = GetGenericArbitraryQuaternion(M_PI/6, true);
-  const double e0Dt = -0.4211981425390414;
-  const double e1Dt =  2.387689633338328;
-  const double e2Dt = -1.529504299767133;
-  const double e3Dt =  1.672467320028763;
-  const drake::Vector4<double> quatDt(e0Dt, e1Dt, e2Dt, e3Dt);
-  const drake::Vector4<double> quatDt_bad(quatDt[0], quatDt[1], quatDt[2],
-                                          0.99*quatDt[3]);
+  const Eigen::Vector4d quatDt = GetQuaternionDtAssociatedWith30DegRotation();
+  const double z_bad = 0.99 * quatDt(3);
+  const Eigen::Vector4d quatDt_bad(quatDt(0), quatDt(1), quatDt(2), z_bad);
   const double a = CalculateQuaternionDtConstraintViolation(quat, quatDt);
   const double b = CalculateQuaternionDtConstraintViolation(quat, quatDt_bad);
 
@@ -199,22 +208,51 @@ GTEST_TEST(CalculateQuaternionDtConstraintViolationTest, testA) {
 }
 
 
-// This function tests CalculateQuaternionDtConstraintViolation.
+// This function tests IsQuaternionValid.
+GTEST_TEST(IsQuaternionValid, testA) {
+  const Eigen::Quaterniond quat = GetGenericArbitraryQuaternion(M_PI/6, true);
+  const double quat_y_bad = 0.99 * quat.y();
+  const Eigen::Quaterniond quat_bad(quat.w(), quat.x(), quat_y_bad, quat.z());
+  const double epsilon = std::numeric_limits<double>::epsilon();
+  const bool a = IsQuaternionValid(quat, 8*epsilon);
+  const bool b = IsQuaternionValid(quat_bad, 0.001);
+  EXPECT_TRUE(a);
+  EXPECT_FALSE(b);
+}
+
+
+// This function tests IsBothQuaternionAndQuaternionDtOK.
 GTEST_TEST(IsBothQuaternionAndQuaternionDtOK, testA) {
   // MotionGenesis was used to calculate values for e0Dt, e1Dt, e2Dt, e3Dt that
   // satisifies the constraint  e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
   const Eigen::Quaterniond quat = GetGenericArbitraryQuaternion(M_PI/6, true);
-  const double e0Dt = -0.4211981425390414;
-  const double e1Dt =  2.387689633338328;
-  const double e2Dt = -1.529504299767133;
-  const double e3Dt =  1.672467320028763;
-  const drake::Vector4<double> quatDt(e0Dt, e1Dt, e2Dt, e3Dt);
-  const drake::Vector4<double> quatDt_bad(quatDt[0], quatDt[1], quatDt[2],
-                                          0.99*quatDt[3]);
+  const Eigen::Vector4d quatDt = GetQuaternionDtAssociatedWith30DegRotation();
+  const double z_bad = 0.99 * quatDt(3);
+  const Eigen::Vector4d quatDt_bad(quatDt(0), quatDt(1), quatDt(2), z_bad);
 
   const double epsilon = std::numeric_limits<double>::epsilon();
   const bool a = IsBothQuaternionAndQuaternionDtOK(quat, quatDt,     8*epsilon);
   const bool b = IsBothQuaternionAndQuaternionDtOK(quat, quatDt_bad, 0.01);
+  EXPECT_TRUE(a);
+  EXPECT_FALSE(b);
+}
+
+
+// Function to test IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB.
+GTEST_TEST(IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB, testA) {
+  const Eigen::Quaterniond quat = GetGenericArbitraryQuaternion(M_PI/6, true);
+  const Eigen::Vector4d quatDt =  GetQuaternionDtAssociatedWith30DegRotation();
+
+  // MotionGenesis was used to calculate these values of wx, wy, wz so they
+  // are consistent with GetQuaternionDtAssociatedWith30DegRotation.
+  const Eigen::Vector3d w_B(2.1, -3.4, 5.3);
+
+  const double epsilon = std::numeric_limits<double>::epsilon();
+  const bool a = IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
+                                                  quat, quatDt, w_B, 8*epsilon);
+  const Eigen::Vector3d w_bad = 0.99*w_B;
+  const bool b = IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
+                                                  quat, quatDt, w_bad, 0.01);
   EXPECT_TRUE(a);
   EXPECT_FALSE(b);
 }

@@ -118,7 +118,7 @@ class TorqueFreeCylinderExactSolution{
   Vector3d p_NoBcm_N_initial_;
 
   // v_NBcm_B_initial_ is Bcm's initial velocity in N, expressed in B.
-  // Note: v_NBcm_B is not (in general) the time-derivative of ẋ, ẏ, z̈.
+  // Note: v_NBcm_B is not (in general) the time-derivative of ẋ, ẏ, ż.
   Vector3d v_NBcm_B_initial_;
 
   // uniform_gravity_expressed_in_world_ is the local planet's (e.g., Earth)
@@ -161,12 +161,12 @@ class TorqueFreeCylinderExactSolution{
   const Vector3d w_NB_B_drake   = state_as_vector.segment<3>(7);
   const Vector3d v_NBo_B_drake  = state_as_vector.segment<3>(10);
 
-  // xyzDt is [x?, y?, z?], Bo's velocity in N, expressed in N, i.e., the time-
+  // xyzDt is [ẋ, ẏ, ż̈], Bo's velocity in N, expressed in N, i.e., the time-
   //           derivative of [x, y, z] (Bo's position from No, expressed in N).
-  // quatDt_NB is the time-derivative of quat_NB, i.e., [].
+  // quatDt_NB is the time-derivative of quat_NB, i.e., [ė0  ė1  ė2  ė3].
   // wDt_NB_B  is B's angular acceleration in N, expressed in B, and
   //           is equal to [ẇx, ẇy, ẇz], where [wx, wy, wz] is w_NB_B.
-  // vDt_NBo_B is the time-derivative in B of v_NBo_B, [v?x, v?y, v?z] -
+  // vDt_NBo_B is the time-derivative in B of v_NBo_B, [v̇x  v̇y  v̇z] -
   //           which is not physically meaningful.
   const VectorXd stateDt_as_vector = stateDt_drake->CopyToVector();
   const Vector3d xyzDt_drake     = stateDt_as_vector.segment<3>(0);
@@ -241,12 +241,12 @@ class TorqueFreeCylinderExactSolution{
  * @param[in] rigid_body_plant
  *    A reference to the rigid-body system being simulated.
  * @param[in] dt_max
- *    The maximum (fixed) step size taken by the integrator.  Note: t_final is not
- *    an exact multiple of dt, the final integration step is adjusted.
+ *    The maximum (fixed) step size taken by the integrator.  Note: t_final is
+ *    not an exact multiple of dt, the final integration step is adjusted.
  * @param[in] t_final
  *    Value of time that signals the simulation to stop.
- *    t_final is not required to be an exact multiple of dt_max as the integration
- *    step is adjusted as necessary to land at exactly t_final.
+ *    t_final is not required to be an exact multiple of dt_max as the
+ *    integration step is adjusted as necessary to land at exactly t_final.
  * @param[in] maximum_absolute_error_per_integration_step
  *    Maximum allowable absolute error (for any variable being integrated) for
  *    the numerical-integrator's internal time-step (which can shrink or grow).
@@ -642,8 +642,8 @@ TorqueFreeCylinderExactSolution::CalculateExactRotationalSolutionNB(
  * std::tuple | Description
  * -----------|-----------------------------------------------------------
  * xyz        | Vector3d [x, y, z], Bcm's position from No, expressed in N.
- * xyzDt      | Vector3d [ẋ, ẏ, z�], Bcm's velocity in N, expressed in N.
- * xyzDDt     | Vector3d [x�, y�, z�], Bcm's acceleration in N, expressed in N.
+ * xyzDt      | Vector3d [ẋ, ẏ, ż̈], Bcm's velocity in N, expressed in N.
+ * xyzDDt     | Vector3d [ẍ  ÿ  z̈], Bcm's acceleration in N, expressed in N.
  */
 std::tuple<Vector3d, Vector3d, Vector3d>
 TorqueFreeCylinderExactSolution::CalculateExactTranslationalSolution(
