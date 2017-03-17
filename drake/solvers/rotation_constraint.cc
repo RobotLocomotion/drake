@@ -466,8 +466,8 @@ void AddMcCormickVectorConstraints(
             //   c[xi](0) + c[yi](1) + c[zi](2) - 3
             //       <= vᵀ * v2 <= 3 - (c[xi](0) + c[yi](1) + c[zi](2))
             //
-            //   c[xi](0) + c[yi](1) + c[zi](2) - 3
-            //       <= v.cross(v1) - v2 <= 3 - (c[xi](0) + c[yi](1) + c[zi](2))
+            //   2 * c[xi](0) + c[yi](1) + c[zi](2) - 6
+            //       <= v.cross(v1) - v2 <= 6 - 2 * (c[xi](0) + c[yi](1) + c[zi](2))
             Eigen::Vector3d u;
             if (std::abs(box_min_norm - 1.0) < 1E-10) {
               u = box_min / box_min_norm;
@@ -476,7 +476,7 @@ void AddMcCormickVectorConstraints(
             }
             Eigen::Vector3d orthant_u;
             VectorDecisionVariable<3> orthant_c;
-            for (int o = 0; o < 8; o ++) { // iterate over orthants
+            for (int o = 0; o < 8; o++) { // iterate over orthants
               orthant_u = FlipVector(u, o);
               orthant_c = PickPermutation(this_cpos, this_cneg, o);
 
@@ -496,8 +496,8 @@ void AddMcCormickVectorConstraints(
 
               Vector3<symbolic::Expression> v_cross_v1 = orthant_u.cross(v1);
               for (int i = 0; i < 3; ++i) {
-                prog->AddLinearConstraint(v_cross_v1(i) <= 3 - orthant_c_sum);
-                prog->AddLinearConstraint(v_cross_v1(i) >= orthant_c_sum - 3);
+                prog->AddLinearConstraint(v_cross_v1(i) <= 6 - 2 * orthant_c_sum);
+                prog->AddLinearConstraint(v_cross_v1(i) >= 2 * orthant_c_sum - 6);
               }
             }
           } else {
