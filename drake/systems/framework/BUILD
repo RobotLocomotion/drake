@@ -186,7 +186,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "system_input",
+    name = "input_port_value",
     srcs = ["input_port_value.cc"],
     hdrs = ["input_port_value.h"],
     deps = [
@@ -202,9 +202,9 @@ drake_cc_library(
     hdrs = ["context.h"],
     deps = [
         ":input_port_evaluator_interface",
+        ":input_port_value",
         ":parameters",
         ":state",
-        ":system_input",
         "//drake/common",
     ],
 )
@@ -480,9 +480,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "system_input_test",
+    name = "input_port_value_test",
     deps = [
-        ":system_input",
+        ":input_port_value",
         "//drake/common",
     ],
 )
