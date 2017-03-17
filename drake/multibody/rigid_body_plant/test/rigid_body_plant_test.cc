@@ -3,8 +3,8 @@
 #include <iostream>
 #include <memory>
 
-#include <gtest/gtest.h>
 #include <Eigen/Geometry>
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"

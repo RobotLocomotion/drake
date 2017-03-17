@@ -17,8 +17,8 @@
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/signal_logger.h"
 

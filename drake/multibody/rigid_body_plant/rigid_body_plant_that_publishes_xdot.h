@@ -10,8 +10,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcmt_drake_signal.hpp"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/continuous_state.h"
 
 namespace drake {

@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 #include <cmath>
 #include <tuple>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
@@ -17,7 +18,6 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-
 
 namespace drake {
 namespace benchmarks {

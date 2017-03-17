@@ -5,10 +5,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "btBulletCollisionCommon.h"
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
 #include "BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h"
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
+#include "btBulletCollisionCommon.h"
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"

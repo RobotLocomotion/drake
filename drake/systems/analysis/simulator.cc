@@ -1,3 +1,5 @@
+#include "drake/systems/analysis/simulator.h"
+
 #include <chrono>
 #include <limits>
 #include <thread>
@@ -5,7 +7,6 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/extract_double.h"
-#include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace systems {

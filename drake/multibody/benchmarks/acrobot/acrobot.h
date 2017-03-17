@@ -1,8 +1,8 @@
 #pragma once
 
-#include "drake/common/eigen_types.h"
-
 #include <memory>
+
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace multibody {

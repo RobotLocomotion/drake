@@ -2,9 +2,8 @@
 
 #include <Eigen/Dense>
 
-#include "drake/multibody/shapes/element.h"
-
 #include "drake/common/eigen_stl_types.h"
+#include "drake/multibody/shapes/element.h"
 
 namespace DrakeShapes {
 class VisualElement : public Element {

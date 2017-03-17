@@ -5,8 +5,8 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/quaternion.h"
 #include "drake/math/normalize_vector.h"
+#include "drake/math/quaternion.h"
 #include "drake/math/rotation_conversion_gradient.h"
 #include "drake/multibody/joints/drake_joint_impl.h"
 #include "drake/util/drakeGeometryUtil.h"
