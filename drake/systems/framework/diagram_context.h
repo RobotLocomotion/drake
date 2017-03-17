@@ -173,7 +173,8 @@ class DiagramContext : public Context<T> {
     DRAKE_DEMAND(dest_port_index < dest_context->get_num_input_ports());
 
     // Construct and install the destination port.
-    auto input_port = std::make_unique<DependentInputPort>(output_port_value);
+    auto input_port =
+        std::make_unique<DependentInputPortValue>(output_port_value);
     dest_context->SetInputPort(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
@@ -265,7 +266,7 @@ class DiagramContext : public Context<T> {
     return static_cast<int>(input_ids_.size());
   }
 
-  void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
+  void SetInputPort(int index, std::unique_ptr<InputPortValue> port) override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
@@ -297,7 +298,7 @@ class DiagramContext : public Context<T> {
       DRAKE_DEMAND(contexts_[i] != nullptr);
       DRAKE_DEMAND(outputs_[i] != nullptr);
       // When a leaf context is cloned, it will clone the data that currently
-      // appears on each of its input ports into a FreestandingInputPort.
+      // appears on each of its input ports into a FreestandingInputPortValue.
       clone->AddSystem(i, contexts_[i]->Clone(), outputs_[i]->Clone());
     }
 
@@ -342,7 +343,7 @@ class DiagramContext : public Context<T> {
 
   /// Returns the input port at the given @p index, which of course belongs
   /// to the subsystem whose input was exposed at that index.
-  const InputPort* GetInputPort(int index) const override {
+  const InputPortValue* GetInputPort(int index) const override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;

@@ -15,12 +15,12 @@ class FreestandingInputPortVectorTest : public ::testing::Test {
   void SetUp() override {
     std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
     vec->get_mutable_value() << 5, 6;
-    port_.reset(new FreestandingInputPort(std::move(vec)));
+    port_.reset(new FreestandingInputPortValue(std::move(vec)));
     port_->set_invalidation_callback(
         std::bind(&FreestandingInputPortVectorTest::Invalidate, this));
   }
 
-  std::unique_ptr<FreestandingInputPort> port_;
+  std::unique_ptr<FreestandingInputPortValue> port_;
   int64_t latest_version_ = -1;
 
  private:
@@ -52,12 +52,12 @@ class FreestandingInputPortAbstractValueTest : public ::testing::Test {
  protected:
   void SetUp() override {
     auto value = std::make_unique<Value<std::string>>("foo");
-    port_.reset(new FreestandingInputPort(std::move(value)));
+    port_.reset(new FreestandingInputPortValue(std::move(value)));
     port_->set_invalidation_callback(
         std::bind(&FreestandingInputPortAbstractValueTest::Invalidate, this));
   }
 
-  std::unique_ptr<FreestandingInputPort> port_;
+  std::unique_ptr<FreestandingInputPortValue> port_;
   int64_t latest_version_ = -1;
 
  private:
@@ -87,13 +87,13 @@ class DependentInputPortTest : public ::testing::Test {
     std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
     vec->get_mutable_value() << 5, 6;
     output_port_value_.reset(new OutputPortValue(std::move(vec)));
-    port_.reset(new DependentInputPort(output_port_value_.get()));
+    port_.reset(new DependentInputPortValue(output_port_value_.get()));
     port_->set_invalidation_callback(
         std::bind(&DependentInputPortTest::Invalidate, this));
   }
 
   std::unique_ptr<OutputPortValue> output_port_value_;
-  std::unique_ptr<DependentInputPort> port_;
+  std::unique_ptr<DependentInputPortValue> port_;
   int64_t latest_version_ = -1;
 
  private:

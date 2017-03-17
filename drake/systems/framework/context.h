@@ -189,26 +189,27 @@ class Context {
   /// it from the output port on which it depends.  In some Context
   /// implementations, may require a recursive search through a tree of
   /// subcontexts. Asserts if @p index is out of range.
-  virtual void SetInputPort(int index, std::unique_ptr<InputPort> port) = 0;
+  virtual void SetInputPort(int index,
+                            std::unique_ptr<InputPortValue> port) = 0;
 
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
 
-  /// Connects a FreestandingInputPort with the given vector @p value at the
-  /// given @p index. Asserts if @p index is out of range.
+  /// Connects a FreestandingInputPortValue with the given vector @p value at
+  /// the given @p index. Asserts if @p index is out of range.
   void FixInputPort(int index, std::unique_ptr<BasicVector<T>> value) {
-    SetInputPort(index,
-                 std::make_unique<FreestandingInputPort>(std::move(value)));
+    SetInputPort(
+        index, std::make_unique<FreestandingInputPortValue>(std::move(value)));
   }
 
-  /// Connects a FreestandingInputPort with the given abstract @p value at the
-  /// given @p index. Asserts if @p index is out of range.
+  /// Connects a FreestandingInputPortValue with the given abstract @p value at
+  /// the given @p index. Asserts if @p index is out of range.
   void FixInputPort(int index, std::unique_ptr<AbstractValue> value) {
-    SetInputPort(index,
-                 std::make_unique<FreestandingInputPort>(std::move(value)));
+    SetInputPort(
+        index, std::make_unique<FreestandingInputPortValue>(std::move(value)));
   }
 
-  /// Connects a FreestandingInputPort with the given @p value at the given
+  /// Connects a FreestandingInputPortValue with the given @p value at the given
   /// @p index. Asserts if @p index is out of range.  Returns a raw pointer to
   /// the allocated BasicVector that will remain valid until this input
   /// port is overwritten or the context is destroyed.
@@ -216,7 +217,7 @@ class Context {
                                const Eigen::Ref<const VectorX<T>>& data) {
     auto vec = std::make_unique<BasicVector<T>>(data);
     BasicVector<T>* ptr = vec.get();
-    SetInputPort(index, std::make_unique<systems::FreestandingInputPort>(
+    SetInputPort(index, std::make_unique<systems::FreestandingInputPortValue>(
                             std::move(vec)));
     return ptr;
   }
@@ -232,10 +233,10 @@ class Context {
   /// not exist.
   ///
   /// This is a framework implementation detail.  User code should not call it.
-  const InputPort* EvalInputPort(
+  const InputPortValue* EvalInputPort(
       const detail::InputPortEvaluatorInterface<T>* evaluator,
       const InputPortDescriptor<T>& descriptor) const {
-    const InputPort* port = GetInputPort(descriptor.get_index());
+    const InputPortValue* port = GetInputPort(descriptor.get_index());
     if (port == nullptr) return nullptr;
     if (port->requires_evaluation()) {
       DRAKE_DEMAND(evaluator != nullptr);
@@ -257,7 +258,7 @@ class Context {
   const BasicVector<T>* EvalVectorInput(
       const detail::InputPortEvaluatorInterface<T>* evaluator,
       const InputPortDescriptor<T>& descriptor) const {
-    const InputPort* port = EvalInputPort(evaluator, descriptor);
+    const InputPortValue* port = EvalInputPort(evaluator, descriptor);
     if (port == nullptr) return nullptr;
     return port->template get_vector_data<T>();
   }
@@ -273,7 +274,7 @@ class Context {
   const AbstractValue* EvalAbstractInput(
       const detail::InputPortEvaluatorInterface<T>* evaluator,
       const InputPortDescriptor<T>& descriptor) const {
-    const InputPort* port = EvalInputPort(evaluator, descriptor);
+    const InputPortValue* port = EvalInputPort(evaluator, descriptor);
     if (port == nullptr) return nullptr;
     return port->get_abstract_data();
   }
@@ -378,7 +379,7 @@ class Context {
   template<typename T1 = T>
   void VerifyInputPort(const InputPortDescriptor<T1>& descriptor) const {
     const int i = descriptor.get_index();
-    const InputPort* port = GetInputPort(i);
+    const InputPortValue* port = GetInputPort(i);
     // If the port isn't connected, we don't have anything else to check.
     if (port == nullptr) { return; }
     // TODO(david-german-tri, sherm1): Consider checking sampling here.
@@ -412,12 +413,13 @@ class Context {
   /// Returns the InputPort at the given @p index, which may be nullptr if
   /// it has never been set with SetInputPort.
   /// Asserts if @p index is out of range.
-  virtual const InputPort* GetInputPort(int index) const = 0;
+  virtual const InputPortValue* GetInputPort(int index) const = 0;
 
   /// Returns the InputPort at the given @p index from the given @p context.
   /// Returns nullptr if the given port has never been set with SetInputPort.
   /// Asserts if @p index is out of range.
-  static const InputPort* GetInputPort(const Context<T>& context, int index) {
+  static const InputPortValue* GetInputPort(const Context<T>& context,
+                                            int index) {
     return context.GetInputPort(index);
   }
 

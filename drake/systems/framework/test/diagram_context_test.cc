@@ -124,7 +124,7 @@ class DiagramContextTest : public ::testing::Test {
     context_->FixInputPort(1, BasicVector<double>::Make({256}));
   }
 
-  // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
+  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {

@@ -71,7 +71,8 @@ std::unique_ptr<LinearSystem<double>> Linearize(
     auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(num_inputs);
     input_vector->SetFromVector(std::get<1>(autodiff_args));
     autodiff_context->SetInputPort(
-        0, std::make_unique<FreestandingInputPort>(std::move(input_vector)));
+        0,
+        std::make_unique<FreestandingInputPortValue>(std::move(input_vector)));
   }
 
   std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot =
