@@ -48,7 +48,7 @@ namespace sensors {
 ///     provided by DepthSensor) in which the depth value represents the
 ///     distance from the sensor origin to the object's surface.
 ///
-///   - The label image has single channel represented by a uint16_t. The value
+///   - The label image has single channel represented by a int16_t. The value
 ///     stored in the channel holds a model ID which corresponds to an object
 ///     in the scene. For the pixels corresponding to no body, namely the sky
 ///     and the flat terrain, we assign Label::kNoBody and Label::kFlatTerrain,
@@ -83,10 +83,10 @@ class RgbdCamera : public LeafSystem<double> {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Label)
     /// The label used for pixels correspond to nothing.
-    static constexpr uint16_t kNoBody{std::numeric_limits<uint16_t>::max()};
+    static constexpr int16_t kNoBody{std::numeric_limits<int16_t>::max()};
     /// The label used for pixels correspond to the flat terrain.
-    static constexpr uint16_t kFlatTerrain{
-      std::numeric_limits<uint16_t>::max() - 1};
+    static constexpr int16_t kFlatTerrain{
+      std::numeric_limits<int16_t>::max() - 1};
   };
 
   /// A constructor for %RgbdCamera that defines `B` using Euler angles.
@@ -170,7 +170,7 @@ class RgbdCamera : public LeafSystem<double> {
   const InputPortDescriptor<double>& state_input_port() const;
 
   /// Returns a descriptor of the abstract valued output port that contains an
-  /// BGRA image of the type Image<uint_8>.
+  /// BGRA image of the type Image<uint8_t>.
   const OutputPortDescriptor<double>& color_image_output_port() const;
 
   /// Returns a descriptor of the abstract valued output port that contains an
@@ -178,7 +178,7 @@ class RgbdCamera : public LeafSystem<double> {
   const OutputPortDescriptor<double>& depth_image_output_port() const;
 
   /// Returns a descriptor of the abstract valued output port that contains an
-  /// label image of the type Image<uint_16>.
+  /// label image of the type Image<int16_t>.
   const OutputPortDescriptor<double>& label_image_output_port() const;
 
   /// Returns a descriptor of the vector valued output port that contains an

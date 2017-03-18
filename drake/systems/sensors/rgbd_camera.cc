@@ -44,6 +44,10 @@ namespace systems {
 namespace sensors {
 namespace {
 
+const int kPortStateInput = 0;
+const int kPortColorImage = 0;
+const int kPortDepthImage = 1;
+const int kPortLabelImage = 2;
 const int kPortCameraPose = 3;
 
 const int kColorImageChannel = 4;
@@ -81,6 +85,10 @@ struct Color {
   int r;  // red
   int g;  // green
   int b;  // blue
+
+  bool operator==(const Color& other) const {
+    return this->r == other.r && this->g == other.g && this->b == other.b;
+  }
 };
 
 // Defines a color based on its three primary additive colors: red, green, and
@@ -93,9 +101,11 @@ struct NormalizedColor {
 
 // Creates and holds a palette of colors for visualizing different objects in a
 // scene (the intent is for a different color to be applied to each identified
-// object). The colors are chosen so as to be easily distinguishable. This color
-// palette can hold up to 1536 colors. Black, white and gray, which has the same
-// value for all the three color channels, are not part of this color palette.
+// object). The colors are chosen so as to be easily distinguishable. In other
+// words, the intensities are spaced as widely as possible given the number of
+// required colors. Black, white and gray, which has the same value for all the
+// three color channels, are not part of this color palette. This color palette
+// can hold up to 1536 colors.
 class ColorPalette {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ColorPalette)
@@ -108,6 +118,7 @@ class ColorPalette {
       // distinguishable as possible for visualization purpose.  We can add more
       // colors as needed.
       const int intensity = 255 - i * 255 / num;
+      DRAKE_ASSERT(intensity > 0);
       color_palette_.push_back(Color{intensity, 0, 0});
       color_palette_.push_back(Color{0, intensity, 0});
       color_palette_.push_back(Color{0, 0, intensity});
@@ -136,16 +147,11 @@ class ColorPalette {
   }
 
   int LookUpId(const Color& color) const {
-    auto it = std::find_if(color_palette_.begin(), color_palette_.end(),
-                           [color](const Color& c) {
-                             return (c.r == color.r) &&
-                             (c.g == color.g) &&
-                             (c.b == color.b);
-                           });
+    auto it = std::find(color_palette_.begin(), color_palette_.end(), color);
     if (it == color_palette_.end()) {
-      if (CompareColors(color, kSkyColor)) {
+      if (color == kSkyColor) {
         return RgbdCamera::Label::kNoBody;
-      } else if (CompareColors(color, kTerrainColor)) {
+      } else if (color == kTerrainColor) {
         return RgbdCamera::Label::kFlatTerrain;
       }
       throw std::runtime_error("ID not found");
@@ -156,18 +162,15 @@ class ColorPalette {
  private:
   static NormalizedColor Normalize(const Color& color) {
     NormalizedColor normalized;
-    normalized.r = static_cast<double>(color.r / 255.);
-    normalized.g = static_cast<double>(color.g / 255.);
-    normalized.b = static_cast<double>(color.b / 255.);
+    normalized.r = color.r / 255.;
+    normalized.g = color.g / 255.;
+    normalized.b = color.b / 255.;
     return normalized;
   }
 
-  static bool CompareColors(const Color& lhs, const Color& rhs) {
-    return lhs.r == rhs.r && lhs.g == rhs.g && lhs.b == rhs.b;
-  }
-
   // These colors are chosen so as to be easily distinguished from the colors in
-  // color_palette_
+  // color_palette_. They are guaranteed to be distinct from color_palette_
+  // because none of their intensity elements are identical.
   const Color kTerrainColor{255, 229, 204};
   const Color kSkyColor{204, 229, 255};
   std::vector<Color> color_palette_;
@@ -208,36 +211,6 @@ class RgbdCamera::Impl {
 
   const RigidBodyTree<double>& tree() const { return tree_; }
 
-  void set_state_input_port_index(int port_index) {
-    state_input_port_index_ = port_index;
-  }
-
-  int state_input_port_index() const { return state_input_port_index_; }
-
-  void set_color_image_output_port_index(int port_index) {
-    color_image_output_port_index_ = port_index;
-  }
-
-  int color_image_output_port_index() const {
-    return color_image_output_port_index_;
-  }
-
-  void set_depth_image_output_port_index(int port_index) {
-    depth_image_output_port_index_ = port_index;
-  }
-
-  int depth_image_output_port_index() const {
-    return depth_image_output_port_index_;
-  }
-
-  void set_label_image_output_port_index(int port_index) {
-    label_image_output_port_index_ = port_index;
-  }
-
-  int label_image_output_port_index() const {
-    return label_image_output_port_index_;
-  }
-
  private:
   void CreateRenderingWorld();
 
@@ -253,10 +226,6 @@ class RgbdCamera::Impl {
   const Eigen::Isometry3d X_BC_;
   const Eigen::Isometry3d X_BD_;
   const Eigen::Isometry3d X_WB_initial_;
-  int state_input_port_index_{};
-  int color_image_output_port_index_{};
-  int depth_image_output_port_index_{};
-  int label_image_output_port_index_{};
   const bool kCameraFixed;
   ColorPalette color_palette_;
 
@@ -332,6 +301,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   label_render_window_->AddRenderer(label_renderer_.GetPointer());
   label_render_window_->SetMultiSamples(0);
 
+  // TODO(kunimatsu-tri) Reduce the copy-pasted code for color / depth / label.
   color_buffer_->SetInput(render_window_.GetPointer());
   color_buffer_->SetMagnification(1);
   color_buffer_->SetInputBufferTypeToRGBA();
@@ -530,6 +500,8 @@ void RgbdCamera::Impl::UpdateModelPoses(
 
     auto& actor_for_label = id_label_object_pairs_.at(
         body->get_model_instance_id());
+    // TODO(kunimatsu-tri) Reduce the copy-pasted code for actor and
+    // actor_for_label.
     actor_for_label->SetUserTransform(vtk_transform);
   }
 
@@ -545,6 +517,7 @@ void RgbdCamera::Impl::UpdateModelPoses(
 
 void RgbdCamera::Impl::UpdateRenderWindow() const {
   render_window_->Render();
+  // TODO(kunimatsu-tri) Reduce the copy-pasted code for color / depth / label.
   color_buffer_->Modified();
   color_buffer_->Update();
   depth_buffer_->Modified();
@@ -584,19 +557,16 @@ void RgbdCamera::Impl::DoCalcOutput(
 
   // Outputs the image data.
   sensors::Image<uint8_t>& image =
-      output->GetMutableData(
-          color_image_output_port_index_)->GetMutableValue<
-            sensors::Image<uint8_t>>();
+      output->GetMutableData(kPortColorImage)->GetMutableValue<
+        sensors::Image<uint8_t>>();
 
   sensors::Image<float>& depth_image =
-      output->GetMutableData(
-          depth_image_output_port_index_)->GetMutableValue<
-            sensors::Image<float>>();
+      output->GetMutableData(kPortDepthImage)->GetMutableValue<
+        sensors::Image<float>>();
 
-  sensors::Image<uint16_t>& label_image =
-      output->GetMutableData(
-          label_image_output_port_index_)->GetMutableValue<
-            sensors::Image<uint16_t>>();
+  sensors::Image<int16_t>& label_image =
+      output->GetMutableData(kPortLabelImage)->GetMutableValue<
+        sensors::Image<int16_t>>();
 
   const int height = color_camera_info_.height();
   const int width = color_camera_info_.width();
@@ -604,6 +574,10 @@ void RgbdCamera::Impl::DoCalcOutput(
     for (int u = 0; u < width; ++u) {
       const int height_reversed = height - v - 1;  // Makes image upside down.
 
+      // We cast `void*` to `uint8_t*` for RGBA, and to `float*` for ZBuffer,
+      // respectively. This is because these are the types for pixels internally
+      // used in `vtkWindowToImageFiler` class. For more detail, refer to:
+      // http://www.vtk.org/doc/release/5.8/html/a02326.html.
       // Converts RGBA to BGRA.
       void* color_ptr = color_buffer_->GetOutput()->GetScalarPointer(u, v, 0);
       image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
@@ -624,7 +598,7 @@ void RgbdCamera::Impl::DoCalcOutput(
                   *(static_cast<uint8_t*>(label_ptr) + 2)};  // B
 
       label_image.at(u, height_reversed)[0] =
-          static_cast<uint16_t>(color_palette_.LookUpId(color));
+          static_cast<int16_t>(color_palette_.LookUpId(color));
     }
   }
 }
@@ -676,23 +650,19 @@ void RgbdCamera::Init(const std::string& name) {
   set_name(name);
   const int kVecNum =
       impl_->tree().get_num_positions() + impl_->tree().get_num_velocities();
-  impl_->set_state_input_port_index(
-      this->DeclareInputPort(systems::kVectorValued, kVecNum).get_index());
+  this->DeclareInputPort(systems::kVectorValued, kVecNum);
 
   Image<uint8_t> color_image(kImageWidth, kImageHeight, kColorImageChannel);
-  impl_->set_color_image_output_port_index(
-      this->DeclareAbstractOutputPort(systems::Value<sensors::Image<uint8_t>>(
-          color_image)).get_index());
+  this->DeclareAbstractOutputPort(systems::Value<sensors::Image<uint8_t>>(
+      color_image));
 
   Image<float> depth_image(kImageWidth, kImageHeight, kDepthImageChannel);
-  impl_->set_depth_image_output_port_index(
-      this->DeclareAbstractOutputPort(systems::Value<sensors::Image<float>>(
-          depth_image)).get_index());
+  this->DeclareAbstractOutputPort(systems::Value<sensors::Image<float>>(
+      depth_image));
 
-  Image<uint16_t> label_image(kImageWidth, kImageHeight, kLabelImageChannel);
-  impl_->set_label_image_output_port_index(
-      this->DeclareAbstractOutputPort(systems::Value<sensors::Image<uint16_t>>(
-          label_image)).get_index());
+  Image<int16_t> label_image(kImageWidth, kImageHeight, kLabelImageChannel);
+  this->DeclareAbstractOutputPort(systems::Value<sensors::Image<int16_t>>(
+      label_image));
 
   this->DeclareVectorOutputPort(rendering::PoseVector<double>());
 }
@@ -724,25 +694,22 @@ const RigidBodyTree<double>& RgbdCamera::tree() const {
 }
 
 const InputPortDescriptor<double>& RgbdCamera::state_input_port() const {
-  return System<double>::get_input_port(impl_->state_input_port_index());
+  return System<double>::get_input_port(kPortStateInput);
 }
 
 const OutputPortDescriptor<double>&
 RgbdCamera::color_image_output_port() const {
-  return System<double>::get_output_port(
-      impl_->color_image_output_port_index());
+  return System<double>::get_output_port(kPortColorImage);
 }
 
 const OutputPortDescriptor<double>&
 RgbdCamera::depth_image_output_port() const {
-  return System<double>::get_output_port(
-      impl_->depth_image_output_port_index());
+  return System<double>::get_output_port(kPortDepthImage);
 }
 
 const OutputPortDescriptor<double>&
 RgbdCamera::label_image_output_port() const {
-  return System<double>::get_output_port(
-      impl_->label_image_output_port_index());
+  return System<double>::get_output_port(kPortLabelImage);
 }
 
 const OutputPortDescriptor<double>&
@@ -753,7 +720,7 @@ RgbdCamera::camera_base_pose_output_port() const {
 void RgbdCamera::DoCalcOutput(const systems::Context<double>& context,
                               systems::SystemOutput<double>* output) const {
   const BasicVector<double>* input_vector =
-      this->EvalVectorInput(context, impl_->state_input_port_index());
+      this->EvalVectorInput(context, kPortStateInput);
 
   impl_->DoCalcOutput(*input_vector, output);
 }
@@ -762,8 +729,8 @@ constexpr float RgbdCamera::InvalidDepth::kError;
 constexpr float RgbdCamera::InvalidDepth::kTooFar;
 constexpr float RgbdCamera::InvalidDepth::kTooClose;
 
-constexpr uint16_t RgbdCamera::Label::kNoBody;
-constexpr uint16_t RgbdCamera::Label::kFlatTerrain;
+constexpr int16_t RgbdCamera::Label::kNoBody;
+constexpr int16_t RgbdCamera::Label::kFlatTerrain;
 
 }  // namespace sensors
 }  // namespace systems
