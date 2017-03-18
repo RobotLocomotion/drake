@@ -5,7 +5,7 @@
 #include <memory>
 #include <numeric>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 // Includes for IK solver.
 #include "drake/multibody/ik_options.h"

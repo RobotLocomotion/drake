@@ -1,6 +1,6 @@
 #include "drake/automotive/automotive_simulator.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"

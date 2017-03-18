@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 

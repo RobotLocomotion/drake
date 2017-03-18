@@ -8,7 +8,7 @@
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 using std::make_unique;
 

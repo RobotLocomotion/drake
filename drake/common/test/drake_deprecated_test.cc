@@ -1,6 +1,6 @@
 #include "drake/common/drake_deprecated.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 /* This test verifies that the Drake build can still succeed if a deprecated
 class or function is in use, and (through CMakeLists.txt rules) that when

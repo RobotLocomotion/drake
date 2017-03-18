@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/lcmt_drake_signal.hpp"

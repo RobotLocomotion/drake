@@ -3,7 +3,7 @@
 #include <cmath>
 #include <fstream>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "spruce.hh"
 
 #include "drake/automotive/maliput/monolane/arc_lane.h"

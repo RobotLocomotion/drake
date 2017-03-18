@@ -1,7 +1,7 @@
 #include "drake/systems/framework/diagram.h"
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"

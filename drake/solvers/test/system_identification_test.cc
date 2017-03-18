@@ -4,7 +4,7 @@
 
 #include <Eigen/Core>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/polynomial.h"
 #include "drake/common/trig_poly.h"

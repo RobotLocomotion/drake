@@ -2,7 +2,7 @@
 
 #include <typeinfo>
 #include "dreal/dreal.h"
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/solvers/mathematical_program.h"
 

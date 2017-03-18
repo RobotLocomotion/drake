@@ -3,7 +3,7 @@
 #include <cmath>
 #include <limits>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include <vtkCellData.h>
 #include <vtkPlaneSource.h>
 #include <vtkSmartPointer.h>

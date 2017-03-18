@@ -1,7 +1,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/lcmt_iiwa_command.hpp"

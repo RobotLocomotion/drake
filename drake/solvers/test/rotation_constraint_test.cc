@@ -3,7 +3,7 @@
 
 #include <random>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/random_rotation.h"

@@ -11,7 +11,7 @@
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace systems {

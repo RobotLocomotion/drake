@@ -4,7 +4,7 @@
 
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace bouncing_ball {

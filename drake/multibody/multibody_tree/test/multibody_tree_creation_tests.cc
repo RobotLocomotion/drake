@@ -4,7 +4,7 @@
 #include <sstream>
 #include <string>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"

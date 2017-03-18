@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/output_port_listener_interface.h"

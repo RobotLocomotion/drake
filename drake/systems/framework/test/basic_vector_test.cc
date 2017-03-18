@@ -4,7 +4,7 @@
 #include <sstream>
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"

@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 using std::make_unique;
 

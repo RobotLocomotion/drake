@@ -4,7 +4,7 @@
 #include <string>
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"

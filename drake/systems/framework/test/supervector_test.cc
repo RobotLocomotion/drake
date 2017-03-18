@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/supervector.h"

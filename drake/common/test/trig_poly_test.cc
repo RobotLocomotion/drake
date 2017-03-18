@@ -3,7 +3,7 @@
 #include <map>
 #include <sstream>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/polynomial.h"
 

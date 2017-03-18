@@ -3,7 +3,7 @@
 
 #include "drake/systems/controllers/zmp_planner.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace examples {

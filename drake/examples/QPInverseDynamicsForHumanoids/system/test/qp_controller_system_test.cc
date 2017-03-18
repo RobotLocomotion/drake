@@ -12,7 +12,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace examples {

@@ -4,7 +4,7 @@
 #include <functional>
 #include <stdexcept>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"

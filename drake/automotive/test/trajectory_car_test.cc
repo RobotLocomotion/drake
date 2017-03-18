@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/automotive/curve2.h"
 
