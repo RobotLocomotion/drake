@@ -46,9 +46,6 @@ namespace {
 
 const int kPortCameraPose = 3;
 
-const int kTerrainId = std::numeric_limits<uint16_t>::max() - 1;
-const int kSkyId = std::numeric_limits<uint16_t>::max();
-
 const int kColorImageChannel = 4;
 const int kDepthImageChannel = 1;
 const int kLabelImageChannel = 1;
@@ -147,9 +144,9 @@ class ColorPalette {
                            });
     if (it == color_palette_.end()) {
       if (CompareColors(color, kSkyColor)) {
-        return kSkyId;
+        return RgbdCamera::Label::kNoBody;
       } else if (CompareColors(color, kTerrainColor)) {
-        return kTerrainId;
+        return RgbdCamera::Label::kFlatTerrain;
       }
       throw std::runtime_error("ID not found");
     }
@@ -760,6 +757,13 @@ void RgbdCamera::DoCalcOutput(const systems::Context<double>& context,
 
   impl_->DoCalcOutput(*input_vector, output);
 }
+
+constexpr float RgbdCamera::InvalidDepth::kError;
+constexpr float RgbdCamera::InvalidDepth::kTooFar;
+constexpr float RgbdCamera::InvalidDepth::kTooClose;
+
+constexpr uint16_t RgbdCamera::Label::kNoBody;
+constexpr uint16_t RgbdCamera::Label::kFlatTerrain;
 
 }  // namespace sensors
 }  // namespace systems

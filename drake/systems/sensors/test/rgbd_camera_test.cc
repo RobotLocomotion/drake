@@ -237,11 +237,9 @@ class ImageTest : public ::testing::Test {
     ASSERT_EQ(label_image.at(470, 205)[0], 1);
     ASSERT_EQ(label_image.at(170, 205)[0], 2);
     // Terrain
-    ASSERT_EQ(label_image.at(0, 479)[0],
-              std::numeric_limits<uint16_t>::max() - 1);
+    ASSERT_EQ(label_image.at(0, 479)[0], RgbdCamera::Label::kFlatTerrain);
     // Sky
-    ASSERT_EQ(label_image.at(0, 0)[0],
-              std::numeric_limits<uint16_t>::max());
+    ASSERT_EQ(label_image.at(0, 0)[0], RgbdCamera::Label::kNoBody);
   }
 
   static void VerifyCameraPose(const Eigen::Isometry3d& pose_actual) {
