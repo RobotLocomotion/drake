@@ -110,7 +110,7 @@ drake_cc_binary(
         "@bot_core_lcmtypes//:lib",
         "@gflags//:gflags",
         "@robotlocomotion_lcmtypes//:lib",
-        ],
+    ],
 )
 
 drake_cc_binary(
