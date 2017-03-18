@@ -466,6 +466,8 @@ class TestMcCormickCorner
     Cneg_ = Cpos_Cneg.second;
   }
 
+  ~TestMcCormickCorner() override {}
+
  protected:
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;

@@ -500,11 +500,7 @@ drake_cc_googletest(
     srcs = [
         "test/rotation_constraint_test.cc",
     ],
-    tags = [
-        "exclusive",
-        "local",
-        "mosek",
-    ],
+    tags = ["mosek"],
     deps = [
         ":mathematical_program",
         ":rotation_constraint",
