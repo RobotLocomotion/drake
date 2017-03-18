@@ -13,10 +13,13 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/system.h"
 
 namespace drake {
 
+using maliput::api::LaneEnd;
 using maliput::monolane::ArcOffset;
+using maliput::monolane::Connection;
 using maliput::monolane::Endpoint;
 using maliput::monolane::EndpointXy;
 using maliput::monolane::EndpointZ;
@@ -77,6 +80,64 @@ class MaliputRailcarTest : public ::testing::Test {
         start_time, with_s);
   }
 
+  // Creates a RoadGeometry based on monolane that consists of a straight lane
+  // that's then connected to a left turning lane. See #5552 for screenshots of
+  // the lane visualizations.
+  //
+  // @param start_time the start time of the MaliputRailcar.
+  //
+  // @param with_s Whether the MaliputRailcar is traveling with or against the
+  // lane's s-curve.
+  //
+  // @param flip_curve_lane Whether to flip the curved lane's s-axis. This is
+  // useful for testing wither MaliputRailcar can traverse lanes that have
+  // opposing s-directions.
+  void InitializeTwoLaneSegment(double start_time = 0, bool with_s = true,
+      bool flip_curve_lane = false) {
+    maliput::monolane::Builder builder(
+        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
+        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
+        0.01,                           /* linear tolerance  */
+        0.5 * M_PI / 180.0);            /* angular_tolerance */
+    const Connection* straight_lane_connection = builder.Connect(
+        "point.0",                                                /* id     */
+        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),     /* start  */
+        kStraightRoadLength,                                      /* length */
+        EndpointZ(0, 0, 0, 0));                                   /* z_end  */
+    if (flip_curve_lane) {
+      const Connection* curved_lane_connection = builder.Connect(
+          "point.1",                                              /* id     */
+          Endpoint(                                               /* start  */
+              EndpointXy(10 + kCurvedRoadRadius, kCurvedRoadRadius, 1.5 * M_PI),
+              EndpointZ(0, 0, 0, 0)),
+          ArcOffset(kCurvedRoadRadius, -kCurvedRoadTheta),        /* arc    */
+          EndpointZ(0, 0, 0, 0));                                 /* z_end  */
+      builder.SetDefaultBranch(
+          straight_lane_connection, LaneEnd::kFinish,             /* in_end */
+          curved_lane_connection, LaneEnd::kFinish);              /* out_end */
+      builder.SetDefaultBranch(
+          curved_lane_connection, LaneEnd::kFinish,               /* in_end */
+          straight_lane_connection, LaneEnd::kFinish);            /* out_end */
+    } else {
+      const Connection* curved_lane_connection = builder.Connect(
+          "point.1",                                              /* id     */
+          Endpoint(EndpointXy(10, 0, 0), EndpointZ(0, 0, 0, 0)),  /* start  */
+          ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),         /* arc    */
+          EndpointZ(0, 0, 0, 0));                                 /* z_end  */
+      builder.SetDefaultBranch(
+          straight_lane_connection, LaneEnd::kFinish,             /* in_end */
+          curved_lane_connection, LaneEnd::kStart);               /* out_end */
+      builder.SetDefaultBranch(
+          curved_lane_connection, LaneEnd::kStart,                /* in_end */
+          straight_lane_connection, LaneEnd::kFinish);            /* out_end */
+    }
+
+    std::unique_ptr<const maliput::api::RoadGeometry> road =
+        builder.Build(maliput::api::RoadGeometryId(
+            {"RailcarTestTwoLaneSegmentRoad"}));
+    Initialize(std::move(road), start_time, with_s);
+  }
+
   void Initialize(std::unique_ptr<const maliput::api::RoadGeometry> road,
       double start_time, bool with_s) {
     road_ = std::move(road);
@@ -100,6 +161,10 @@ class MaliputRailcarTest : public ::testing::Test {
         context_->get_mutable_continuous_state_vector());
     if (result == nullptr) { throw std::bad_cast(); }
     return result;
+  }
+
+  LaneDirection& lane_direction() {
+    return context_->template get_mutable_abstract_state<LaneDirection>(0);
   }
 
   const MaliputRailcarState<double>* state_output() const {
@@ -131,8 +196,116 @@ class MaliputRailcarTest : public ::testing::Test {
     railcar_config->SetFrom(config);
   }
 
+  // Obtains the lanes created by the call to InitializeTwoLaneSegment().
+  // Since a monolane::Builder was used to create the RoadGeometry, we don't
+  // know which Junction contains which lane and thus need to figure it out.
+  // This is done by checking the lengths of the two lanes. The straight lane
+  // has a length of kStraightRoadLength = 10 while the curved lane has a length
+  // of approximately 2 * PI * kCurvedRoadRadius /4 = 2 * PI * 10 / 4= 15.078.
+  std::pair<const maliput::api::Lane*, const maliput::api::Lane*>
+  GetStraightAndCurvedLanes() {
+    DRAKE_DEMAND(road_->num_junctions() == 2);
+    const maliput::api::Lane* lane_0 =
+        road_->junction(0)->segment(0)->lane(0);
+    const maliput::api::Lane* lane_1 =
+        road_->junction(1)->segment(0)->lane(0);
+
+    const maliput::api::Lane* straight_lane =
+        (lane_0->length() == kStraightRoadLength) ? lane_0 : lane_1;
+    const maliput::api::Lane* curved_lane =
+        (lane_0->length() == kStraightRoadLength) ? lane_1 : lane_0;
+
+    return std::make_pair(straight_lane, curved_lane);
+  }
+
+  // A helper method for evaluating whether MaliputRailcar can traverse a lane
+  // boundary and proceed onto a default branch. The parameter `flip_curve_lane`
+  // specifies whether the s-axis of the ongoing lane should be flipped.
+  void DoTestLaneTraversalTest(bool flip_curve_lane) {
+    EXPECT_NO_FATAL_FAILURE(InitializeTwoLaneSegment(
+        0 /* start_time */, true /* with_s */, flip_curve_lane));
+    const maliput::api::Lane* straight_lane{};
+    const maliput::api::Lane* curved_lane{};
+    std::tie(straight_lane, curved_lane) = GetStraightAndCurvedLanes();
+
+    // Verifies that the end of the straight lane is connected to:
+    //  - the start of the curved lane if it is not flipped.
+    //  - the end of the curved lane if it is flipped.
+    std::unique_ptr<LaneEnd> straight_lane_end =
+        straight_lane->GetDefaultBranch(LaneEnd::kFinish);
+    ASSERT_NE(straight_lane_end, nullptr);
+    EXPECT_EQ(straight_lane_end->end,
+              flip_curve_lane ? LaneEnd::kFinish : LaneEnd::kStart);
+    EXPECT_EQ(straight_lane_end->lane, curved_lane);
+
+    const double kForwardSpeed(10);
+
+    MaliputRailcarConfig<double> config;
+    config.set_r(1);
+    config.set_h(0);
+    config.set_initial_speed(kForwardSpeed);
+    config.set_max_speed(30);
+    config.set_velocity_limit_kp(8);
+    SetConfig(config);
+
+    context_->set_time(straight_lane->length() / kForwardSpeed);
+
+    // Verifies that MaliputRailcar::DoCalcUnrestrictedUpdate() switches to the
+    // start of curved lane when it is traveling forward and reaches the end of
+    // the straight lane.
+    continuous_state()->set_s(straight_lane->length());
+    continuous_state()->set_speed(kForwardSpeed);
+    lane_direction().lane = straight_lane;
+    lane_direction().with_s = true;
+
+    dut_->CalcOutput(*context_, output_.get());
+    std::unique_ptr<BasicVector<double>> prior_pose = pose_output()->Clone();
+
+    systems::DiscreteEvent<double> event;
+    event.action = systems::DiscreteEvent<double>::kUnrestrictedUpdateAction;
+
+    dut_->CalcUnrestrictedUpdate(
+        *context_, event, context_->get_mutable_state());
+
+    if (flip_curve_lane) {
+      EXPECT_EQ(continuous_state()->s(), curved_lane->length());
+    } else {
+      EXPECT_EQ(continuous_state()->s(), 0);
+    }
+    EXPECT_EQ(continuous_state()->speed(), kForwardSpeed);
+    EXPECT_EQ(lane_direction().with_s, !flip_curve_lane);
+    EXPECT_EQ(lane_direction().lane, curved_lane);
+
+    // Verifies the time derivative of s, s_dot, is correct. Its magnitude is
+    // expected to be greater than kForwardSpeed because r = 1 and the ongoing
+    // lane is curving to the left. This means the vehicle is traveling a
+    // smaller radius arc relative to that of the s-axis. The smaller radius arc
+    // result in the vehicle's s_dot being greater than kForwardSpeed.
+    dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+    const MaliputRailcarState<double>* const railcar_derivatives =
+      dynamic_cast<const MaliputRailcarState<double>*>(
+          derivatives_->get_mutable_vector());
+    if (flip_curve_lane) {
+      EXPECT_LT(railcar_derivatives->s(), -kForwardSpeed);
+    } else {
+      EXPECT_GT(railcar_derivatives->s(), kForwardSpeed);
+    }
+    EXPECT_DOUBLE_EQ(railcar_derivatives->speed(), 0);
+
+    // Verifies the vehicle's pose did not change even after switching lanes.
+    dut_->CalcOutput(*context_, output_.get());
+    const PoseVector<double>* post_pose = pose_output();
+    // The following tolerance was determined empirically.
+    EXPECT_TRUE(CompareMatrices(prior_pose->get_value(),
+                                post_pose->get_value(), 1e-14 /* tolerance */));
+  }
+
+  // The length of the straight lane segment of the road when it is created
+  // using InitializeTwoLaneSegment().
+  const double kStraightRoadLength{10};
+
   // The arc radius and theta of the road when it is created using
-  // InitializeCurvedMonoLane().
+  // InitializeCurvedMonoLane() and InitializeTwoLaneSegment().
   const double kCurvedRoadRadius{10};
   const double kCurvedRoadTheta{M_PI_2};
 
@@ -695,6 +868,19 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
   SetConfig(config);
   dut_->CalcNextUpdateTime(*context_, &actions);
   EXPECT_GT(actions.time, kZeroAccelerationTime);
+}
+
+// Tests the ability for a MaliputRailcar to traverse lane boundaries when the
+// s-curve of the continuing lane is consistent (i.e., in the same direction)
+// with the s-curve of the initial lane.
+TEST_F(MaliputRailcarTest, TraverseLaneBoundaryConsistentS) {
+  DoTestLaneTraversalTest(false /* flip_curve_lane */);
+}
+
+// Same as the previous test (TraverseLaneBoundaryConsistentS) except the
+// s-curve of the continuing lane is inconsistent.
+TEST_F(MaliputRailcarTest, TraverseLaneBoundaryInconsistentS) {
+  DoTestLaneTraversalTest(true /* flip_curve_lane */);
 }
 
 }  // namespace
