@@ -8,8 +8,8 @@
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/value.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {

@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Eigen/Dense>
-
 #include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 #include <utility>
 #include <vector>
+
+#include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/vector_base.h"

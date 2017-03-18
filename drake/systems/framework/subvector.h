@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Eigen/Dense>
-
 #include <cstdint>
 #include <stdexcept>
+
+#include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
