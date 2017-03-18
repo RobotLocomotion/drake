@@ -152,7 +152,6 @@ void AssertIntNear(int value_a, int value_b, int tolerance) {
   ASSERT_LE(std::abs(value_a - value_b), tolerance);
 }
 
-const std::array<uint8_t, 4> kSkyColor{{255u, 229u, 204u, 255u}};
 const std::array<uint8_t, 4> kTerrainColor{{204u, 229u, 255u, 255u}};
 
 class ImageTest : public ::testing::Test {
@@ -221,12 +220,12 @@ class ImageTest : public ::testing::Test {
   void VerifyLabelImage() {
     diagram_->CalcOutput(*context_, output_.get());
     auto label_image = output_->GetMutableData(2)->GetMutableValue<
-      sensors::Image<uint16_t>>();
+      sensors::Image<int16_t>>();
 
-    std::vector<uint16_t> actual_ids;
+    std::vector<int16_t> actual_ids;
     for (int v = 0; v < label_image.height(); ++v) {
       for (int u = 0; u < label_image.width(); ++u) {
-        const uint16_t id = label_image.at(u, v)[0];
+        const int16_t id = label_image.at(u, v)[0];
         auto it = std::find(actual_ids.begin(), actual_ids.end(), id);
         if (it == actual_ids.end()) {
           actual_ids.push_back(id);
