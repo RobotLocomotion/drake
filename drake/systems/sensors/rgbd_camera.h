@@ -50,9 +50,9 @@ namespace sensors {
 ///
 ///   - The label image has single channel represented by a uint16_t. The value
 ///     stored in the channel holds a model ID which corresponds to an object
-///     in the scene. For the pixels corresponding to the sky and the flat
-///     terrain which have no model ID in RigidBodyTree, we assign 65535 and
-///     65534, respectively.
+///     in the scene. For the pixels corresponding to no body, namely the sky
+///     and the flat terrain, we assign Label::kNoBody and Label::kFlatTerrain,
+///     respectively.
 // TODO(kunimatsu-tri) Add support for the image publish capability.
 class RgbdCamera : public LeafSystem<double> {
  public:
@@ -76,6 +76,17 @@ class RgbdCamera : public LeafSystem<double> {
     /// lower limit being hit and using negative infinity does not prevent users
     /// from writing bad code.
     static constexpr float kTooClose{0.f};
+  };
+
+  /// Set of labels used for label image.
+  class Label {
+   public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Label)
+    /// The label used for pixels correspond to nothing.
+    static constexpr uint16_t kNoBody{std::numeric_limits<uint16_t>::max()};
+    /// The label used for pixels correspond to the flat terrain.
+    static constexpr uint16_t kFlatTerrain{
+      std::numeric_limits<uint16_t>::max() - 1};
   };
 
   /// A constructor for %RgbdCamera that defines `B` using Euler angles.
