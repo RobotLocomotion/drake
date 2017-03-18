@@ -394,7 +394,7 @@ GTEST_TEST(testMobyLCP, testEmpty) {
 }
 
 GTEST_TEST(testMobyLCP, ThrowsOnNaN) {
-  const unsigned n = 2;
+  const int n = 2;
   Eigen::SparseMatrix<double> M(n, n);
   Eigen::VectorXd q(n), z(n);
   typedef Eigen::Triplet<double> Triplet;
