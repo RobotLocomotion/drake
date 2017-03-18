@@ -79,7 +79,7 @@ TEST_F(RK3IntegratorTest, MagDisparity) {
   integrator_->set_target_accuracy(1e-3);
 
   // Take a variable step.
-  integrator.StepExactlyVariable(dt);
+  integrator_->StepExactlyVariable(dt);
 }
 
 // Test scaling vectors

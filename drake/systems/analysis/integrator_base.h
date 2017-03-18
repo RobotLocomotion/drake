@@ -342,7 +342,7 @@ class IntegratorBase {
    *
    * @param publish_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) at which the next publish will occur.
-   * @param update_dt The step size, >= 0.0 (exception will be thrown
+   * @param update_dt The step size, > 0.0 (exception will be thrown
    *        if this is not the case) at which the next update will occur.
    * @param boundary_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) marking the end of the user-designated
@@ -369,8 +369,9 @@ class IntegratorBase {
   ///          purposes), generally.
   /// @note Users desiring this functionality for integrators operating in
   ///       fixed step mode should use StepExactlyFixed().
+  /// @param dt The non-negative integration step to take. 
   /// @throws std::logic_error If the integrator has not been initialized or
-  ///                          boundary_dt is negative **or** if the integrator
+  ///                          dt is negative **or** if the integrator
   ///                          is operating in fixed step mode.
   /// @sa StepExactlyFixed()
   void StepExactlyVariable(const T& dt) {
@@ -406,8 +407,9 @@ class IntegratorBase {
   ///       fixed step mode should use StepExactlyVariable()- these functions
   ///       are kept distinct to make clear to the caller which of these
   ///       functions uses fixed integration steps.
+  /// @param dt The non-negative integration step to take. 
   /// @throws std::logic_error If the integrator has not been initialized or
-  ///                          boundary_dt is negative **or** if the integrator
+  ///                          dt is negative **or** if the integrator
   ///                          is not operating in fixed step mode.
   /// @sa StepExactlyVariable()
   void StepExactlyFixed(const T& dt) {
@@ -1273,7 +1275,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
 
   // Verify that update dt is positive.
   if (update_dt <= 0.0)
-    throw std::logic_error("Update dt must be non-negative.");
+    throw std::logic_error("Update dt must be strictly positive.");
 
   // Verify that other dt's are non-negative.
   if (publish_dt < 0.0)
