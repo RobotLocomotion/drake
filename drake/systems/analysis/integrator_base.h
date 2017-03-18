@@ -369,7 +369,7 @@ class IntegratorBase {
   ///          purposes), generally.
   /// @note Users desiring this functionality for integrators operating in
   ///       fixed step mode should use StepExactlyFixed().
-  /// @param dt The non-negative integration step to take. 
+  /// @param dt The non-negative integration step to take.
   /// @throws std::logic_error If the integrator has not been initialized or
   ///                          dt is negative **or** if the integrator
   ///                          is operating in fixed step mode.
@@ -407,7 +407,7 @@ class IntegratorBase {
   ///       fixed step mode should use StepExactlyVariable()- these functions
   ///       are kept distinct to make clear to the caller which of these
   ///       functions uses fixed integration steps.
-  /// @param dt The non-negative integration step to take. 
+  /// @param dt The non-negative integration step to take.
   /// @throws std::logic_error If the integrator has not been initialized or
   ///                          dt is negative **or** if the integrator
   ///                          is not operating in fixed step mode.
