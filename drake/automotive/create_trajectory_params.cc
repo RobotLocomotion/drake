@@ -62,9 +62,9 @@ Curve2<double> MakeCurve(double radius, double inset) {
 std::tuple<Curve2<double>, double, double> CreateTrajectoryParams(int index) {
   // The possible curves to trace (lanes).
   static const std::vector<Curve2<double>> curves{
-    MakeCurve(40.0, 0.0),  // BR
-    MakeCurve(40.0, 4.0),  // BR
-    MakeCurve(40.0, 8.0),
+      MakeCurve(40.0, 0.0),  // BR
+      MakeCurve(40.0, 4.0),  // BR
+      MakeCurve(40.0, 8.0),
   };
 
   // Magic car placement to make a good visual demo.
@@ -80,9 +80,29 @@ std::tuple<Curve2<double>, double, double> CreateTrajectoryParamsForDragway(
   const maliput::api::Segment* segment = road_geometry.junction(0)->segment(0);
   DRAKE_DEMAND(index < segment->num_lanes());
   const maliput::api::Lane* lane = segment->lane(index);
-  const maliput::api::GeoPosition start_geo_position =
+  const maliput::api::GeoPosition start_geo_position = lane->ToGeoPosition(
+      maliput::api::LanePosition({0 /* s */, 0 /* r */, 0 /* h */}));
+  const maliput::api::GeoPosition end_geo_position =
       lane->ToGeoPosition(maliput::api::LanePosition(
-          {0 /* s */, 0 /* r */, 0 /* h */}));
+          {lane->length() /* s */, 0 /* r */, 0 /* h */}));
+  std::vector<Curve2<double>::Point2> waypoints;
+  waypoints.push_back({start_geo_position.x, start_geo_position.y});
+  waypoints.push_back({end_geo_position.x, end_geo_position.y});
+  Curve2<double> curve(waypoints);
+  return std::make_tuple(curve, speed, start_time);
+}
+
+// TODO(shensquared) make sure it's true for the crossroad too
+std::tuple<Curve2<double>, double, double> CreateTrajectoryParamsForCrossroad(
+    const maliput::crossroad::RoadGeometry& road_geometry, int segment_index,
+    int lane_index, double speed, double start_time) {
+  const maliput::api::Segment* segment =
+      road_geometry.junction(0)->segment(segment_index);
+  DRAKE_DEMAND(lane_index <
+               road_geometry.junction(0)->segment(segment_index)->num_lanes());
+  const maliput::api::Lane* lane = segment->lane(lane_index);
+  const maliput::api::GeoPosition start_geo_position = lane->ToGeoPosition(
+      maliput::api::LanePosition({0 /* s */, 0 /* r */, 0 /* h */}));
   const maliput::api::GeoPosition end_geo_position =
       lane->ToGeoPosition(maliput::api::LanePosition(
           {lane->length() /* s */, 0 /* r */, 0 /* h */}));

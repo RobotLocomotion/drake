@@ -1,0 +1,2 @@
+drake_add_cc_test(crossroad_test)
+target_link_libraries(crossroad_test drakeMaliputCrossroad)

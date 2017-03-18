@@ -130,7 +130,8 @@ if(lcm_FOUND)
   target_link_libraries(automotive_demo
       drakeAutomotiveLcm
       drakeLCMTypes
-      drakeMaliputDragway)
+      drakeMaliputDragway
+      drakeMaliputCrossroad)
 
   add_executable(car_sim_lcm car_sim_lcm.cc car_sim_lcm_common.cc)
   target_link_libraries(car_sim_lcm
