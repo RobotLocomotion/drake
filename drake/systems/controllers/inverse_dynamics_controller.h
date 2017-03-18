@@ -98,7 +98,8 @@ class InverseDynamicsController : public ModelBasedController<T> {
    */
   const InputPortDescriptor<T>& get_input_port_desired_acceleration() const {
     DRAKE_DEMAND(has_reference_acceleration_);
-    return Diagram<T>::get_input_port(2);
+    DRAKE_DEMAND(input_port_index_desired_acceleration_ >= 0);
+    return Diagram<T>::get_input_port(input_port_index_desired_acceleration_);
   }
 
  private:
@@ -106,6 +107,7 @@ class InverseDynamicsController : public ModelBasedController<T> {
 
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
+  int input_port_index_desired_acceleration_{-1};
 };
 
 }  // namespace systems
