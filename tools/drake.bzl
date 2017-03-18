@@ -202,6 +202,7 @@ _transitive_hdrs = rule(
 )
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
 def drake_header_tar(name, deps=[], **kwargs):
   """Creates a .tar.gz that includes all the headers exported by the deps."""
   # TODO(david-german-tri): The --flagfile that Bazel generates to drive `tar`

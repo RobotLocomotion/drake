@@ -174,12 +174,12 @@ drake_cc_library(
     name = "pose_selector",
     srcs = ["pose_selector.cc"],
     hdrs = ["pose_selector.h"],
+    visibility = [],
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
-    visibility=[],
 )
 
 drake_cc_library(
@@ -225,11 +225,11 @@ drake_cc_library(
     name = "calc_smooth_acceleration",
     srcs = ["calc_smooth_acceleration.cc"],
     hdrs = ["calc_smooth_acceleration.h"],
+    visibility = [],
     deps = [
         "//drake/common:autodiff",
         "//drake/common:symbolic",
     ],
-    visibility=[],
 )
 
 drake_cc_library(
