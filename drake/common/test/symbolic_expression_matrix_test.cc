@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"

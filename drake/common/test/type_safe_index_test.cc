@@ -3,7 +3,7 @@
 #include <sstream>
 #include <type_traits>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace common {

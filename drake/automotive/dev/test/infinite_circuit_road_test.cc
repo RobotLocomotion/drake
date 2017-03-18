@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/monolane/builder.h"
 

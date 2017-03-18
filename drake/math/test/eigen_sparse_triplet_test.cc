@@ -1,6 +1,6 @@
 #include "drake/math/eigen_sparse_triplet.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace math {

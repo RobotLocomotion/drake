@@ -1,6 +1,6 @@
 #include "drake/automotive/pose_selector.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 

@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/junction.h"

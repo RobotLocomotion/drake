@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"

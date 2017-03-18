@@ -7,7 +7,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 using Eigen::Matrix;
 using std::make_unique;

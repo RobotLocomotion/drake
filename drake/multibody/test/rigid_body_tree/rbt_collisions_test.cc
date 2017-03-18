@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/multibody/joints/floating_base_types.h"

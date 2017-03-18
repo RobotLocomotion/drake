@@ -1,6 +1,6 @@
 #include "drake/common/symbolic_variables.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/symbolic_variable.h"
 

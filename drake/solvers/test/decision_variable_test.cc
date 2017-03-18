@@ -1,6 +1,6 @@
 #include "drake/solvers/decision_variable.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/test/symbolic_test_util.h"
 
