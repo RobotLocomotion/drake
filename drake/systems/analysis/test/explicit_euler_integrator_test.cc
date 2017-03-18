@@ -89,6 +89,35 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
                std::logic_error);
 }
 
+// Verifies that the stepping works with large magnitude times and small
+// magnitude step sizes.
+GTEST_TEST(IntegratorTest, MagDisparity) {
+  const double spring_k = 300.0;  // N/m
+  const double mass = 2.0;      // kg
+
+  // Create the spring-mass system.
+  SpringMassSystem<double> spring_mass(spring_k, mass, 0.);
+
+  // Create a context.
+  auto context = spring_mass.CreateDefaultContext();
+
+  // Set a large magnitude time.
+  context->set_time(1e10);
+
+  // Setup the integration size and infinity.
+  const double dt = 1e-6;
+
+  // Create the integrator.
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, dt, context.get());  // Use default Context.
+
+  // Take all the defaults.
+  integrator.Initialize();
+
+  // Take a fixed integration step.
+  integrator.StepExactlyFixed(dt);
+}
+
 // Try a purely continuous system with no sampling.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)

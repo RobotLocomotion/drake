@@ -373,19 +373,22 @@ class IntegratorBase {
   ///                          boundary_dt is negative **or** if the integrator
   ///                          is operating in fixed step mode.
   /// @sa StepExactlyFixed()
-  void StepExactlyVariable(const T& boundary_dt) {
+  void StepExactlyVariable(const T& dt) {
+    using std::max;
+
     if (this->get_fixed_step_mode()) {
       throw std::logic_error("StepExactlyVariable() requires variable "
                              "stepping.");
     }
     const Context<T>& context = get_context();
     const T inf = std::numeric_limits<double>::infinity();
-    T t_remaining = boundary_dt;
+    T t_remaining = dt;
     const T t_final = context.get_time() + t_remaining;
     do {
       StepOnceAtMost(inf, inf, t_remaining);
       t_remaining = t_final - context.get_time();
-    } while (t_remaining > 0);
+    } while (t_remaining > std::numeric_limits<double>::epsilon()*
+                           max(1.0, context.get_time()));
   }
 
   /// Stepping function for integrators operating outside of simulation
@@ -407,11 +410,11 @@ class IntegratorBase {
   ///                          boundary_dt is negative **or** if the integrator
   ///                          is not operating in fixed step mode.
   /// @sa StepExactlyVariable()
-  void StepExactlyFixed(const T& boundary_dt) {
+  void StepExactlyFixed(const T& dt) {
     if (!this->get_fixed_step_mode())
       throw std::logic_error("StepExactlyFixed() requires fixed stepping.");
     const T inf = std::numeric_limits<double>::infinity();
-    StepOnceAtMost(inf, inf, boundary_dt);
+    StepOnceAtMost(inf, inf, dt);
   }
 
   /**

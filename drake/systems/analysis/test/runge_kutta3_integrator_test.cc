@@ -64,6 +64,24 @@ TEST_F(RK3IntegratorTest, ErrorEstSupport) {
   EXPECT_NO_THROW(integrator_->request_initial_step_size_target(dt));
 }
 
+// Verifies that the stepping works with large magnitude times and small
+// magnitude step sizes.
+TEST_F(RK3IntegratorTest, MagDisparity) {
+  // Set a large magnitude time.
+  context_->set_time(1e10);
+
+  // Take all the defaults.
+  integrator_->Initialize();
+
+  // Set integrator parameters.
+  integrator_->set_maximum_step_size(0.1);
+  integrator_->set_minimum_step_size(1e-6);
+  integrator_->set_target_accuracy(1e-3);
+
+  // Take a variable step.
+  integrator.StepExactlyVariable(dt);
+}
+
 // Test scaling vectors
 TEST_F(RK3IntegratorTest, Scaling) {
   // Setting maximum integrator step size is necessary to prevent integrator
