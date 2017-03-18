@@ -72,14 +72,14 @@ TEST_F(RK3IntegratorTest, MagDisparity) {
 
   // Set integrator parameters.
   integrator_->set_maximum_step_size(0.1);
-  integrator_->set_minimum_step_size(1e-6);
+  integrator_->set_minimum_step_size(1e-10);
   integrator_->set_target_accuracy(1e-3);
 
   // Take all the defaults.
   integrator_->Initialize();
 
   // Take a variable step.
-  integrator_->StepExactlyVariable(dt);
+  integrator_->StepExactlyVariable(1e-10);
 }
 
 // Test scaling vectors
