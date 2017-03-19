@@ -13,7 +13,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-
 #include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {

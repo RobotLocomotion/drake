@@ -1,3 +1,5 @@
+#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
+
 #include <cstdlib>
 #include <memory>
 
@@ -5,7 +7,6 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"

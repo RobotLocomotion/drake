@@ -2,7 +2,6 @@
 #include <thread>
 
 #include "drake/examples/ZMP/zmp_test_util.h"
-
 #include "drake/lcm/lcm_call_matlab.h"
 
 void PlotResults(const drake::examples::zmp::ZMPTestTraj& traj) {

@@ -1,7 +1,8 @@
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
+
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
