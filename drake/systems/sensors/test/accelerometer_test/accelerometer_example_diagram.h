@@ -12,7 +12,6 @@
 #include "drake/systems/sensors/test/accelerometer_test/accelerometer_test_logger.h"
 #include "drake/systems/sensors/test/accelerometer_test/accelerometer_xdot_hack.h"
 
-
 namespace drake {
 namespace systems {
 namespace sensors {

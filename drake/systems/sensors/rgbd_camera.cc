@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <Eigen/Dense>
 #include <vtkActor.h>
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
@@ -13,19 +14,18 @@
 #include <vtkImageShiftScale.h>
 #include <vtkNew.h>
 #include <vtkOBJReader.h>
+#include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
 #include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkProperty.h>
-#include <vtkPNGReader.h>
-#include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
+#include <vtkRenderer.h>
 #include <vtkSmartPointer.h>
 #include <vtkSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
-#include <Eigen/Dense>
 
 #include "drake/math/roll_pitch_yaw_using_quaternion.h"
 #include "drake/systems/rendering/pose_vector.h"

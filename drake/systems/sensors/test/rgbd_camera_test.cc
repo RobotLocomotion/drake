@@ -4,8 +4,8 @@
 #include <functional>
 #include <stdexcept>
 
-#include <gtest/gtest.h>
 #include <Eigen/Dense>
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_path.h"
@@ -17,8 +17,8 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/sensors/image.h"
 #include "drake/systems/rendering/pose_vector.h"
+#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace systems {
