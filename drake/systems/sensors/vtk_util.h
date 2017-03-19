@@ -1,9 +1,9 @@
 #pragma once
 
+#include <Eigen/Dense>
 #include <vtkPlaneSource.h>
 #include <vtkSmartPointer.h>
 #include <vtkTransform.h>
-#include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
 
