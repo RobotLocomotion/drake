@@ -13,7 +13,6 @@
 
 #include <memory>
 
-#include "drake/common/drake_path.h"
 #include "drake/examples/Acrobot/acrobot_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_acrobot_u.hpp"
