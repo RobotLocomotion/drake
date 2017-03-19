@@ -458,6 +458,17 @@ TEST_F(MaliputRailcarTest, DecreasingS) {
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), -MaliputRailcar<double>::kDefaultInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), kAccelCmd);
+
+  // Verifies that the vehicle's pose is correct. Since the vehicle is traveling
+  // against s, its orientation is expected to be flipped.
+  dut_->CalcOutput(*context_, output_.get());
+  const PoseVector<double>* pose = pose_output();
+  PoseVector<double> expected_pose;
+  expected_pose.set_translation({0, 0, 0});
+  expected_pose.set_rotation({0, 0, 0, -1});
+  // The following tolerance was determined empirically.
+  EXPECT_TRUE(CompareMatrices(
+      pose->get_value(), expected_pose.get_value(), 1e-15 /* tolerance */));
 }
 
 // Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the

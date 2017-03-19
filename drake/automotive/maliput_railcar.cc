@@ -144,11 +144,16 @@ void MaliputRailcar<T>::ImplCalcPose(const MaliputRailcarConfig<T>& config,
       lane_direction.lane->ToGeoPosition(lane_position);
   const Rotation rotation =
       lane_direction.lane->GetOrientation(lane_position);
-
+  // Adjust the rotation based on whether the vehicle is traveling with s or
+  // against s.
+  const Rotation adjusted_rotation =
+      (lane_direction.with_s ? rotation :
+          Rotation(rotation.roll, rotation.pitch, rotation.yaw - M_PI));
   pose->set_translation(
       Eigen::Translation<T, 3>(geo_position.x, geo_position.y, geo_position.z));
   pose->set_rotation(math::RollPitchYawToQuaternion(
-      Vector3<T>(rotation.roll, rotation.pitch, rotation.yaw)));
+      Vector3<T>(adjusted_rotation.roll, adjusted_rotation.pitch,
+                 adjusted_rotation.yaw)));
 }
 
 template <typename T>
