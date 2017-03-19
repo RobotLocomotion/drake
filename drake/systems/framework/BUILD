@@ -9,7 +9,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "framework",
     srcs = [],
-    hdrs = [],
+    hdrs = ["systems.h"],
     deps = [
         ":cache",
         ":context",

@@ -285,6 +285,40 @@ drake_cc_binary(
 )
 
 drake_cc_googletest(
+    name = "anchored_geometry_test",
+    srcs = ["test/rigid_body_tree/anchored_geometry_test.cc"],
+    data = [":test_models"],
+    deps = [
+        ":rigid_body_tree",
+        "//drake/common:drake_path",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_points_generation_test",
+    srcs = ["test/rigid_body_tree/contact_points_generation_test.cc"],
+    data = [":test_models"],
+    deps = [
+        ":rigid_body_tree",
+        "//drake/common:drake_path",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "point_collision_detection_test",
+    srcs = ["test/rigid_body_tree/point_collision_detection_test.cc"],
+    data = [":test_models"],
+    deps = [
+        ":rigid_body_tree",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
     name = "rbt_collisions_test",
     srcs = ["test/rigid_body_tree/rbt_collisions_test.cc"],
     data = [":test_models"],
@@ -318,13 +352,13 @@ drake_cc_googletest(
     srcs = ["test/rigid_body_tree/rigid_body_tree_kinematics_test.cc"],
     data = [
         "test/rigid_body_tree/two_dof_robot.urdf",
-        "//drake/multibody/benchmarks:acrobot_models",
+        "//drake/multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":rigid_body_tree",
         "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
-        "//drake/multibody/benchmarks:acrobot",
+        "//drake/multibody/benchmarks/acrobot",
         "//drake/multibody/parsers",
     ],
 )
@@ -359,6 +393,14 @@ drake_cc_googletest(
         "//drake/systems/analysis",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:signal_logger",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_body_tree_completeness_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_completeness_test.cc"],
+    deps = [
+        ":rigid_body_tree",
     ],
 )
 

@@ -1,7 +1,6 @@
 
 #include <limits>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/lcm/lcm_call_matlab.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/rotation_constraint.h"
