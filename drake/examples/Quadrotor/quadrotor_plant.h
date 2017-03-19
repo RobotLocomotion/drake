@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <memory>
+
+#include <Eigen/Core>
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
