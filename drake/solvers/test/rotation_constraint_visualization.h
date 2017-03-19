@@ -26,6 +26,8 @@ void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax,
  * Draw the boundary of the intersection region, between the box
  * bmin <= x <= bmax, and the unit sphere.
  * Currently we only accept the box in the first orthant.
+ * TODO(hongkai.dai): draw the intersection if the box is not in the first
+ * orthant.
  * @param bmin The innermost corner of the box.
  * @param bmax The outermost corner of the box.
  * @param color The rgb color of the boundary to be plotted. @default is red.
