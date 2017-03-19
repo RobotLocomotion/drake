@@ -4,10 +4,10 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/pass_through.h"
-#include "drake/systems/primitives/demultiplexer.h"
 
 using std::make_unique;
 
