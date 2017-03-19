@@ -2,6 +2,7 @@
 
 #include <Eigen/Core>
 #include <unsupported/Eigen/AutoDiff>
+
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
