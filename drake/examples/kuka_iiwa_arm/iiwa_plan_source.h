@@ -3,10 +3,10 @@
 #include <memory>
 #include <string>
 
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/value.h"
-#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace examples {

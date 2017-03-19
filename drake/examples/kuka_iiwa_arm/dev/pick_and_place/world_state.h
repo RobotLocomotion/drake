@@ -1,13 +1,14 @@
 #pragma once
 
-#include <lcm/lcm-cpp.hpp>
 #include <list>
 #include <memory>
 #include <string>
 
+#include <lcm/lcm-cpp.hpp>
 #include "bot_core/robot_state_t.hpp"
-#include "drake/multibody/rigid_body_tree.h"
+
 #include "drake/lcmt_schunk_wsg_status.hpp"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace examples {

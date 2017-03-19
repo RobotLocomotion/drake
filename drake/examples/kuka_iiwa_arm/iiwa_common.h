@@ -4,12 +4,12 @@
 #include <string>
 #include <vector>
 
+#include "robotlocomotion/robot_plan_t.hpp"
+
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
-
-#include "robotlocomotion/robot_plan_t.hpp"
 
 namespace drake {
 namespace examples {
