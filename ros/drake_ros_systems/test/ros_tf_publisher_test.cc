@@ -1,8 +1,8 @@
 #include "drake/systems/ros_tf_publisher.h"
 
-#include <gtest/gtest.h>
 #include <memory>
 
+#include <gtest/gtest.h>
 #include "ros/ros.h"
 
 #include "drake/multibody/parsers/urdf_parser.h"
