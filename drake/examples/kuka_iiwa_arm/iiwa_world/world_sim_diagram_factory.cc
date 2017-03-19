@@ -101,7 +101,7 @@ PassiveVisualizedPlant<T>::PassiveVisualizedPlant(
   DiagramBuilder<T> builder;
   visualized_plant_ = builder.template AddSystem<PlantAndVisualizerDiagram<T>>(
       std::move(visualized_plant));
-  visualized_plant->set_name("PlantAndVisualizer");
+  visualized_plant_->set_name("PlantAndVisualizer");
 
   // Fixes constant sources to all inputs.
   const systems::RigidBodyPlant<T>& plant = visualized_plant_->plant();
