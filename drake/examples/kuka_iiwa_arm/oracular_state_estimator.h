@@ -4,6 +4,7 @@
 #include <string>
 
 #include "bot_core/robot_state_t.hpp"
+
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/util/lcmUtil.h"
