@@ -60,6 +60,23 @@ class MaliputRailcarTest : public ::testing::Test {
         start_time, with_s);
   }
 
+  void InitializeSlopedCurvedMonoLane(double start_time = 0,
+      bool with_s = true) {
+    maliput::monolane::Builder builder(
+        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
+        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
+        0.01,                           /* linear tolerance  */
+        0.5 * M_PI / 180.0);            /* angular_tolerance */
+    builder.Connect(
+        "point.0",                                             /* id    */
+        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),  /* start */
+        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
+        EndpointZ(2, 0, 0.5, 0));                              /* z_end */
+    Initialize(
+        builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})),
+        start_time, with_s);
+  }
+
   void Initialize(std::unique_ptr<const maliput::api::RoadGeometry> road,
       double start_time, bool with_s) {
     road_ = std::move(road);
@@ -440,7 +457,7 @@ TEST_F(MaliputRailcarTest, NonZeroStartTime) {
 
 // Tests the correctness of the derivatives when the vehicle travels in the
 // decreasing `s` direction.
-TEST_F(MaliputRailcarTest, DecreasingS) {
+TEST_F(MaliputRailcarTest, DecreasingSDragway) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(0 /* start_time */,
                                                 false /* with_s */));
   // Grabs a pointer to where the EvalTimeDerivatives results end up.
@@ -458,6 +475,64 @@ TEST_F(MaliputRailcarTest, DecreasingS) {
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), -MaliputRailcar<double>::kDefaultInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), kAccelCmd);
+
+  // Verifies that the vehicle's pose is correct. Since the vehicle is traveling
+  // against s, its orientation is expected to be flipped.
+  dut_->CalcOutput(*context_, output_.get());
+  const PoseVector<double>* pose = pose_output();
+  PoseVector<double> expected_pose;
+  expected_pose.set_translation({0, 0, 0});
+  expected_pose.set_rotation({0, 0, 0, -1});
+  // The following tolerance was determined empirically.
+  EXPECT_TRUE(CompareMatrices(
+      pose->get_value(), expected_pose.get_value(), 1e-15 /* tolerance */));
+}
+
+TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
+  EXPECT_NO_FATAL_FAILURE(InitializeSlopedCurvedMonoLane(0 /* start_time */,
+                                                         false /* with_s */));
+  // Sets the r != 0 and s != 0.
+  const double kS{2.25};
+  const double kInitialSpeed{2};
+  MaliputRailcarConfig<double> config;
+  config.set_r(1);
+  config.set_h(0);
+  config.set_initial_speed(kInitialSpeed);
+  config.set_max_speed(30);
+  config.set_velocity_limit_kp(8);
+  SetConfig(config);
+  continuous_state()->set_s(kS);
+  continuous_state()->set_speed(kInitialSpeed);
+
+  // Obtains the against-s pose.
+  dut_->CalcOutput(*context_, output_.get());
+  const PoseVector<double>* against_s_pose = pose_output();
+  Eigen::Translation<double, 3> against_s_translation =
+      against_s_pose->get_translation();
+  Eigen::Quaternion<double> against_s_orientation =
+      against_s_pose->get_rotation();
+
+  // Obtains the with-s pose.
+  EXPECT_NO_FATAL_FAILURE(InitializeSlopedCurvedMonoLane(0 /* start_time */,
+                                                         true /* with_s */));
+  SetConfig(config);
+  continuous_state()->set_s(kS);
+  continuous_state()->set_speed(kInitialSpeed);
+  dut_->CalcOutput(*context_, output_.get());
+  const PoseVector<double>* with_s_pose = pose_output();
+
+  Eigen::Translation<double, 3> with_s_translation =
+      with_s_pose->get_translation();
+  Eigen::Quaternion<double> with_s_orientation = with_s_pose->get_rotation();
+
+  // Verifies that the with-s and against-s translations are equal.
+  EXPECT_TRUE(with_s_translation.isApprox(against_s_translation));
+
+  // Verifies that the with-s and against-s orientations are opposite of
+  // each other. This is done by checking that the dot product of the two
+  // quaternions is equal to zero. The following tolerance was empirically
+  // determined.
+  EXPECT_NEAR(with_s_orientation.dot(against_s_orientation), 0, 1e-15);
 }
 
 // Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the
