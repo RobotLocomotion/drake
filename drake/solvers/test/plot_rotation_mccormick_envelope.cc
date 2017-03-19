@@ -1,11 +1,11 @@
-#include "drake/solvers/rotation_constraint_visualization.h"
+#include "drake/solvers/test/rotation_constraint_visualization.h"
 
 #include "drake/lcm/lcm_call_matlab.h"
 #include "drake/solvers/rotation_constraint.h"
 #include "drake/solvers/rotation_constraint_internal.h"
 
 // Plot the McCormick Envelope on the unit sphere, to help developers to
-// visualize the McCormick Envelope relaxation
+// visualize the McCormick Envelope relaxation.
 
 namespace drake {
 namespace solvers {

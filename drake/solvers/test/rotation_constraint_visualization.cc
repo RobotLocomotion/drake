@@ -1,4 +1,4 @@
-#include "drake/solvers/rotation_constraint_visualization.h"
+#include "drake/solvers/test/rotation_constraint_visualization.h"
 
 #include "drake/lcm/lcm_call_matlab.h"
 #include "drake/solvers/rotation_constraint.h"
