@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/alias_groups.pb.h"
-
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {

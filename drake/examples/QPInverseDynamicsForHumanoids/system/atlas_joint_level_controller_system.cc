@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "bot_core/atlas_command_t.hpp"
+
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 #include "drake/util/drakeUtil.h"
