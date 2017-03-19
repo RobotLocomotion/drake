@@ -29,11 +29,14 @@ void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0,
     throw std::runtime_error(
         "The end points of the boundary arc are not in the same orthant.");
   }
+
   const int kNumViaPoints = 20;
   Eigen::Matrix<double, 3, kNumViaPoints> via_pts;
   via_pts.row(fixed_axis) =
       Eigen::Matrix<double, 1, kNumViaPoints>::Constant(arc_end0(fixed_axis));
   Eigen::Vector3d start_via_pts, end_via_pts;
+  // Eigen::LinSpaced requires the smaller number being the first argument. So
+  // find out whether arc_end0(free_axis0) or arc_end1(free_axis0) is smaller.
   if (arc_end0(free_axis0) < arc_end1(free_axis0)) {
     start_via_pts = arc_end0;
     end_via_pts = arc_end1;
@@ -47,6 +50,8 @@ void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0,
   via_pts(free_axis1, kNumViaPoints - 1) = end_via_pts(free_axis1);
   bool positive_free_axis1 = arc_end0(free_axis1) >= 0 || arc_end1(free_axis1);
   for (int i = 1; i < kNumViaPoints - 1; ++i) {
+    // A point `x` on the arc satisfies
+    // x(free_axis0)^2 + x(free_axis1)^2 = 1 - x(fixed_axis)^2
     via_pts(free_axis1, i) = std::sqrt(1 - std::pow(via_pts(fixed_axis, i), 2) -
                                        std::pow(via_pts(free_axis0, i), 2));
     if (!positive_free_axis1) {
