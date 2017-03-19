@@ -6,7 +6,6 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
