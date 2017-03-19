@@ -79,7 +79,7 @@ namespace std {
 template <typename Tag>
 struct hash<drake::geometry::TypeSafeIntId<Tag>> {
   size_t operator()(const drake::geometry::TypeSafeIntId<Tag>& id) const {
-    return static_cast<size_t>(id.value_);//hash(id.value());
+    return static_cast<size_t>(id.value_);  //hash(id.value());
   }
 };
 }  // namespace std
