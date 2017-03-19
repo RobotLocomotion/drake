@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+
 #include "drake/systems/controllers/zmp_planner.h"
 
 namespace drake {

@@ -3,14 +3,14 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 
+#include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
-#include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
