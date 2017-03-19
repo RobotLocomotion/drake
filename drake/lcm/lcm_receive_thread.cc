@@ -1,8 +1,8 @@
 #include "drake/lcm/lcm_receive_thread.h"
 
-#include <iostream>
-
 #include <sys/select.h>
+
+#include <iostream>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
