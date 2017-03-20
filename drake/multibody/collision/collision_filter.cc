@@ -1,11 +1,11 @@
 #include "drake/multibody/collision/collision_filter.h"
 
+#include <string>
+#include <utility>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
-
-#include <string>
-#include <utility>
 
 namespace DrakeCollision {
 

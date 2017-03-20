@@ -1,6 +1,6 @@
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace multibody {

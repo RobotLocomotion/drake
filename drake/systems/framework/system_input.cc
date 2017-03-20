@@ -11,29 +11,29 @@ void InputPort::Invalidate() {
   }
 }
 
-DependentInputPort::DependentInputPort(OutputPort* output_port)
-    : output_port_(output_port) {
-  DRAKE_DEMAND(output_port_ != nullptr);
-  output_port_->add_dependent(this);
+DependentInputPort::DependentInputPort(OutputPortValue* output_port_value)
+    : output_port_value_(output_port_value) {
+  DRAKE_DEMAND(output_port_value_ != nullptr);
+  output_port_value_->add_dependent(this);
 }
 
 DependentInputPort::~DependentInputPort() {
-  if (output_port_ != nullptr) {
-    output_port_->remove_dependent(this);
+  if (output_port_value_ != nullptr) {
+    output_port_value_->remove_dependent(this);
   }
 }
 
 void DependentInputPort::Disconnect() {
-  output_port_ = nullptr;
+  output_port_value_ = nullptr;
 }
 FreestandingInputPort::FreestandingInputPort(
     std::unique_ptr<AbstractValue> data)
-    : output_port_(std::move(data)) {
-  output_port_.add_dependent(this);
+    : output_port_value_(std::move(data)) {
+  output_port_value_.add_dependent(this);
 }
 
 FreestandingInputPort::~FreestandingInputPort() {
-  output_port_.remove_dependent(this);
+  output_port_value_.remove_dependent(this);
 }
 
 }  // namespace systems

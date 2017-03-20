@@ -4,7 +4,6 @@
 
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/line_lane.h"
-
 #include "drake/common/drake_assert.h"
 
 namespace drake {

@@ -1,11 +1,12 @@
+#include "drake/multibody/parsers/xml_util.h"
+
 #include <list>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
-#include "drake/multibody/parsers/xml_util.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 using Eigen::Vector3d;

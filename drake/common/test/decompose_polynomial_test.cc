@@ -1,6 +1,6 @@
 #include "drake/common/symbolic_expression.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/hash.h"
 #include "drake/common/monomial.h"

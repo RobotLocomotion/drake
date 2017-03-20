@@ -161,7 +161,10 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .value("kInvalidInput", SolutionResult::kInvalidInput)
     .value("kInfeasibleConstraints",
            SolutionResult::kInfeasibleConstraints)
-    .value("kUnknownError", SolutionResult::kUnknownError);
+    .value("kUnbounded", SolutionResult::kUnbounded)
+    .value("kUnknownError", SolutionResult::kUnknownError)
+    .value("kInfeasible_Or_Unbounded",
+           SolutionResult::kInfeasible_Or_Unbounded);
 
   // Assign the wrapped Constraint class to the name 'constraint'
   // so we can use it in this file to indicate that the other constraint

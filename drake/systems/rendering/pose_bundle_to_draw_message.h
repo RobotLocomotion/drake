@@ -17,9 +17,7 @@ namespace rendering {
 ///
 /// The draw message will contain one link for each pose in the PoseBundle. The
 /// name of the link will be the name of the corresponding pose. The robot_num
-/// will always be 0. Because of this restriction, only one instance of a
-/// model can be visualized, and no two models can have overlapping link names.
-/// TODO(david-german-tri): Lift this restriction.
+/// will be the corresponding model instance ID.
 class PoseBundleToDrawMessage : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseBundleToDrawMessage)

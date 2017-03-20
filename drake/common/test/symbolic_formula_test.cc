@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"

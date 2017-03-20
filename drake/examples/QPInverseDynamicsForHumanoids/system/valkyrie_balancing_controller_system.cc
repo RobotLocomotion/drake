@@ -4,6 +4,7 @@
 
 #include "bot_core/atlas_command_t.hpp"
 #include "bot_core/robot_state_t.hpp"
+
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"

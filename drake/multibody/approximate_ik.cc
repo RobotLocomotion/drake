@@ -1,10 +1,13 @@
-#include "drake/multibody/rigid_body_ik.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include <math.h>
+
+#include <set>
+
+#include <gurobi_c++.h>
+
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
-#include <math.h>
-#include <set>
-#include <gurobi_c++.h>
+#include "drake/multibody/rigid_body_ik.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 // TODO(jwnimmer-tri) Someone with gurobi needs to fix these.
 // NOLINTNEXTLINE(build/namespaces)

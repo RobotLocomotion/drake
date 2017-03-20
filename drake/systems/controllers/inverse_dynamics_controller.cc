@@ -69,10 +69,12 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
                   inverse_dynamics->get_input_port_desired_acceleration());
 
   // Exposes estimated state input port.
-  builder.ExportInput(pass_through->get_input_port());
+  int index = builder.ExportInput(pass_through->get_input_port());
+  this->set_input_port_index_estimated_state(index);
 
   // Exposes reference state input port.
-  builder.ExportInput(pid_->get_input_port_desired_state());
+  index = builder.ExportInput(pid_->get_input_port_desired_state());
+  this->set_input_port_index_desired_state(index);
 
   if (!has_reference_acceleration_) {
     // Uses a zero constant source for reference acceleration.
@@ -83,11 +85,13 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
                     adder->get_input_port(1));
   } else {
     // Exposes reference acceleration input port.
-    builder.ExportInput(adder->get_input_port(1));
+    input_port_index_desired_acceleration_ =
+        builder.ExportInput(adder->get_input_port(1));
   }
 
   // Exposes inverse dynamics' output torque port.
-  builder.ExportOutput(inverse_dynamics->get_output_port_torque());
+  index = builder.ExportOutput(inverse_dynamics->get_output_port_torque());
+  this->set_output_port_index_control(index);
 
   builder.BuildInto(this);
 }

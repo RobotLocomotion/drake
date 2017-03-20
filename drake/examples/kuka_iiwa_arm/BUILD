@@ -110,7 +110,7 @@ drake_cc_binary(
         "@bot_core_lcmtypes//:lib",
         "@gflags//:gflags",
         "@robotlocomotion_lcmtypes//:lib",
-        ],
+    ],
 )
 
 drake_cc_binary(
@@ -146,7 +146,9 @@ drake_cc_binary(
 drake_cc_binary(
     name = "kuka_simulation",
     srcs = ["kuka_simulation.cc"],
+    add_test_rule = 1,
     data = [":models"],
+    test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
@@ -173,7 +175,7 @@ drake_cc_binary(
     ],
 )
 
-cc_binary(
+drake_cc_binary(
     name = "kuka_ik_demo",
     srcs = ["kuka_ik_demo.cc"],
     data = [":models"],
@@ -186,6 +188,31 @@ cc_binary(
         "//drake/solvers:mathematical_program",
         "@bot_core_lcmtypes//:lib",
         "@robotlocomotion_lcmtypes//:lib",
+    ],
+)
+
+drake_cc_binary(
+    name = "run_kuka_iiwa_arm_dynamics",
+    srcs = ["run_kuka_iiwa_arm_dynamics.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    test_rule_args = ["--duration=0.5"],
+    test_rule_size = "medium",
+    deps = [
+        ":iiwa_common",
+        ":sim_diagram_builder",
+        "//drake/common:drake_path",
+        "//drake/common:text_logging_gflags",
+        "//drake/lcm",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework:context",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/primitives:constant_vector_source",
+        "@gflags//:gflags",
     ],
 )
 

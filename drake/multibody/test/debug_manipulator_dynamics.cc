@@ -1,5 +1,5 @@
-#include <iostream>
 #include <cstdlib>
+#include <iostream>
 #include <memory>
 
 #include "drake/common/eigen_types.h"

@@ -101,6 +101,7 @@ python-gtk2
 python-html5lib
 python-lxml
 python-numpy
+python-pygame
 python-scipy
 python-sphinx
 python-vtk

@@ -1,7 +1,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 

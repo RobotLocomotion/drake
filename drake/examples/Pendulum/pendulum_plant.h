@@ -60,13 +60,6 @@ class PendulumPlant : public systems::LeafSystem<T> {
   PendulumPlant& operator=(PendulumPlant&& other) = delete;
 
  protected:
-  // LeafSystem<T> override.
-  std::unique_ptr<MyContinuousState>
-  AllocateContinuousState() const override;
-
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::OutputPortDescriptor<T>& descriptor) const override;
-
   // System<T> override.
   PendulumPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
 

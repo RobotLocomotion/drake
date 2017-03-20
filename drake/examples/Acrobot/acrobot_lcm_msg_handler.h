@@ -6,11 +6,10 @@
 #include <string>
 #include <thread>
 
-#include "drake/lcmt_acrobot_u.hpp"
-#include "drake/lcmt_acrobot_x.hpp"
-
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
+#include "drake/lcmt_acrobot_u.hpp"
+#include "drake/lcmt_acrobot_x.hpp"
 
 namespace drake {
 namespace examples {

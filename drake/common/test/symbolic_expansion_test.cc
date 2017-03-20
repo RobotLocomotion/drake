@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"

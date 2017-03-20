@@ -4,8 +4,7 @@
 #include <vector>
 
 #include <Eigen/Dense>
-
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"

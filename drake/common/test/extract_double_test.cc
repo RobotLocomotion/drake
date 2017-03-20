@@ -4,7 +4,7 @@
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 // A non-numeric ScalarType for testing.
 namespace { struct NonNumericScalar { }; }

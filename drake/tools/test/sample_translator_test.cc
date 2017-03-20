@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/tools/test/gen/sample.h"
 

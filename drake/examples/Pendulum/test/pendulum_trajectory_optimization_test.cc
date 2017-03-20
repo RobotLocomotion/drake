@@ -5,8 +5,8 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
+#include "drake/examples/Pendulum/pendulum_swing_up.h"
 
 using drake::solvers::SolutionResult;
 

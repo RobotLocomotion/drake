@@ -37,8 +37,13 @@ AcrobotPlant<T>::AcrobotPlant(double m1, double m2, double l1, double l2,
       b2_(b2),
       g_(g) {
   this->DeclareInputPort(systems::kVectorValued, 1);
-  this->DeclareContinuousState(kNumDOF * 2);  // Position + velocity.
-  this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2);
+  this->DeclareVectorOutputPort(AcrobotStateVector<T>());
+  static_assert(AcrobotStateVectorIndices::kNumCoordinates == kNumDOF * 2, "");
+  this->DeclareContinuousState(
+      AcrobotStateVector<T>(),
+      kNumDOF /* num_q */,
+      kNumDOF /* num_v */,
+      0 /* num_z */);
 }
 
 template <typename T>
@@ -139,21 +144,6 @@ T AcrobotPlant<T>::DoCalcPotentialEnergy(
   const T c12 = cos(x.theta1() + x.theta2());
 
   return -m1_ * g_ * lc1_ * c1 - m2_ * g_ * (l1_ * c1 + lc2_ * c12);
-}
-
-template <typename T>
-std::unique_ptr<systems::ContinuousState<T>>
-AcrobotPlant<T>::AllocateContinuousState() const {
-  return std::make_unique<systems::ContinuousState<T>>(
-      std::make_unique<AcrobotStateVector<T>>(), kNumDOF /* num_q */,
-      kNumDOF /* num_v */, 0 /* num_z */);
-}
-
-template <typename T>
-std::unique_ptr<systems::BasicVector<T>> AcrobotPlant<T>::AllocateOutputVector(
-    const systems::OutputPortDescriptor<T>& descriptor) const {
-  DRAKE_THROW_UNLESS(descriptor.size() == kNumDOF * 2);
-  return std::make_unique<AcrobotStateVector<T>>();
 }
 
 // AcrobotPlant has no constructor arguments, so there's no work to do here.

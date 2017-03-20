@@ -12,6 +12,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
+#include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/supervector.h"
 #include "drake/systems/framework/system_input.h"
@@ -70,9 +71,9 @@ class DiagramState : public State<T> {
           substate->get_mutable_discrete_state()->get_data();
       sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
       // Abstract
-      AbstractState* xm = substate->get_mutable_abstract_state();
+      AbstractValues* xm = substate->get_mutable_abstract_state();
       for (int i_xm = 0; i_xm < xm->size(); ++i_xm) {
-        sub_xms.push_back(&xm->get_mutable_abstract_state(i_xm));
+        sub_xms.push_back(&xm->get_mutable_value(i_xm));
       }
     }
 
@@ -84,7 +85,7 @@ class DiagramState : public State<T> {
     this->set_continuous_state(
         std::make_unique<DiagramContinuousState<T>>(sub_xcs));
     this->set_discrete_state(std::make_unique<DiscreteState<T>>(sub_xds));
-    this->set_abstract_state(std::make_unique<AbstractState>(sub_xms));
+    this->set_abstract_state(std::make_unique<AbstractValues>(sub_xms));
   }
 
  private:
@@ -161,7 +162,8 @@ class DiagramContext : public Context<T> {
     SystemOutput<T>* src_ports = GetSubsystemOutput(src_system_index);
     DRAKE_DEMAND(src_port_index >= 0);
     DRAKE_DEMAND(src_port_index < src_ports->get_num_ports());
-    OutputPort* output_port = src_ports->get_mutable_port(src_port_index);
+    OutputPortValue* output_port_value =
+        src_ports->get_mutable_port_value(src_port_index);
 
     // Identify and validate the destination port.
     SystemIndex dest_system_index = dest.first;
@@ -171,7 +173,7 @@ class DiagramContext : public Context<T> {
     DRAKE_DEMAND(dest_port_index < dest_context->get_num_input_ports());
 
     // Construct and install the destination port.
-    auto input_port = std::make_unique<DependentInputPort>(output_port);
+    auto input_port = std::make_unique<DependentInputPort>(output_port_value);
     dest_context->SetInputPort(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
@@ -186,11 +188,38 @@ class DiagramContext : public Context<T> {
   void MakeState() {
     auto state = std::make_unique<DiagramState<T>>(num_subsystems());
     for (int i = 0; i < num_subsystems(); ++i) {
-      Context<T> *context = contexts_[i].get();
+      Context<T>* context = contexts_[i].get();
       state->set_substate(i, context->get_mutable_state());
     }
     state->Finalize();
     state_ = std::move(state);
+  }
+
+  /// Generates the parameters for the entire diagram by wrapping the parameters
+  /// of all the constituent Systems. The wrapper simply holds pointers to the
+  /// parameters in the subsystem Contexts.  It does not make a copy, or take
+  /// ownership.
+  ///
+  /// User code should not call this method. It is for use during Diagram
+  /// context allocation only.
+  void MakeParameters() {
+    std::vector<BasicVector<T>*> numeric_params;
+    std::vector<AbstractValue*> abstract_params;
+    for (auto& subcontext : contexts_) {
+      Parameters<T>& subparams = subcontext->get_mutable_parameters();
+      for (int i = 0; i < subparams.num_numeric_parameters(); ++i) {
+        numeric_params.push_back(subparams.get_mutable_numeric_parameter(i));
+      }
+      for (int i = 0; i < subparams.num_abstract_parameters(); ++i) {
+        abstract_params.push_back(
+            &subparams.get_mutable_abstract_parameter(i));
+      }
+    }
+    parameters_ = std::make_unique<Parameters<T>>();
+    parameters_->set_numeric_parameters(
+        std::make_unique<DiscreteState<T>>(numeric_params));
+    parameters_->set_abstract_parameters(
+        std::make_unique<AbstractValues>(abstract_params));
   }
 
   /// Returns the output structure for a given constituent system at @p index.
@@ -247,8 +276,15 @@ class DiagramContext : public Context<T> {
   }
 
   const State<T>& get_state() const override { return *state_; }
-
   State<T>* get_mutable_state() override { return state_.get(); }
+
+  const Parameters<T>& get_parameters() const final {
+    return *parameters_;
+  }
+
+  Parameters<T>& get_mutable_parameters() final {
+    return *parameters_;
+  }
 
  protected:
   /// The caller owns the returned memory.
@@ -267,6 +303,9 @@ class DiagramContext : public Context<T> {
 
     // Build a superstate over the subsystem contexts.
     clone->MakeState();
+
+    // Build a superparameters over the subsystem contexts.
+    clone->MakeParameters();
 
     // Clone the internal graph structure. After this is done, the clone will
     // still have FreestandingInputPorts at the inputs to the Diagram itself,
@@ -333,6 +372,9 @@ class DiagramContext : public Context<T> {
 
   // The internal state of the Diagram, which includes all its subsystem states.
   std::unique_ptr<DiagramState<T>> state_;
+
+  // The parameters of the Diagram, which includes all subsystem parameters.
+  std::unique_ptr<Parameters<T>> parameters_;
 };
 
 }  // namespace systems

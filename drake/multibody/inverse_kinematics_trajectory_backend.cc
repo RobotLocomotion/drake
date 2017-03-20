@@ -1,5 +1,3 @@
-#include "drake/multibody/inverse_kinematics_backend.h"
-
 #include <memory>
 #include <string>
 #include <vector>
@@ -14,6 +12,7 @@
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/ik_trajectory_helper.h"
+#include "drake/multibody/inverse_kinematics_backend.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"

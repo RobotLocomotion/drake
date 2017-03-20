@@ -22,13 +22,8 @@ Gyroscope::Gyroscope(const std::string& name,
   input_port_index_ =
       DeclareInputPort(kVectorValued, tree_.get_num_positions() +
                                       tree_.get_num_velocities()).get_index();
-  output_port_index_ =
-      DeclareOutputPort(kVectorValued, 3).get_index();
-}
-
-std::unique_ptr<BasicVector<double>> Gyroscope::AllocateOutputVector(
-    const OutputPortDescriptor<double>& descriptor) const {
-  return make_unique<GyroscopeOutput<double>>();
+  output_port_index_ = DeclareVectorOutputPort(
+      GyroscopeOutput<double>()).get_index();
 }
 
 void Gyroscope::DoCalcOutput(const systems::Context<double>& context,

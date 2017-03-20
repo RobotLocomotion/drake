@@ -5,6 +5,7 @@ set(sources
     constant_value_source.cc
     constant_vector_source.cc
     demultiplexer.cc
+    first_order_low_pass_filter.cc
     gain.cc
     integrator.cc
     linear_system.cc
@@ -24,6 +25,7 @@ drake_install_headers(
   constant_value_source-inl.h
   constant_vector_source.h
   demultiplexer.h
+  first_order_low_pass_filter.h
   gain.h
   gain-inl.h
   integrator.h

@@ -1,11 +1,4 @@
-// Adapted with permission from code by Evan Drumwright
-// (https://github.com/edrumwri).
-
 #include "drake/solvers/moby_lcp_solver.h"
-
-#include <Eigen/LU>
-#include <Eigen/SparseCore>
-#include <Eigen/SparseLU>
 
 #include <algorithm>
 #include <cmath>
@@ -16,15 +9,39 @@
 #include <sstream>
 #include <vector>
 
+#include <Eigen/LU>
+#include <Eigen/SparseCore>
+#include <Eigen/SparseLU>
+#include <unsupported/Eigen/AutoDiff>
+
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace solvers {
+
 namespace {
-template <typename Derived>
+
+template <typename Scalar>
+bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
+                       VectorX<Scalar>* z) {
+  // see whether trivial solution exists
+  if (q.minCoeff() > -zero_tol) {
+    z->resize(n);
+    z->fill(0);
+    return true;
+  }
+
+  return false;
+}
+
+// Utility function for copying part of a matrix (designated by the indices
+// in rows and cols) from in to a target matrix, out. This template approach
+// allows selecting parts of both sparse and dense matrices for input; only
+// a dense matrix is returned.
+template <typename Derived, typename T>
 void selectSubMat(const Eigen::MatrixBase<Derived>& in,
                   const std::vector<unsigned>& rows,
-                  const std::vector<unsigned>& cols, Eigen::MatrixXd* out) {
+                  const std::vector<unsigned>& cols, MatrixX<T>* out) {
   const int num_rows = rows.size();
   const int num_cols = cols.size();
   out->resize(num_rows, num_cols);
@@ -39,24 +56,13 @@ void selectSubMat(const Eigen::MatrixBase<Derived>& in,
 }
 
 // TODO(sammy-tri) this could also use a more efficient implementation.
-template <typename Derived>
-void selectSubVec(const Eigen::MatrixBase<Derived>& in,
-                  const std::vector<unsigned>& rows, Eigen::VectorXd* out) {
+template <typename T>
+void selectSubVec(const VectorX<T>& in,
+                  const std::vector<unsigned>& rows, VectorX<T>* out) {
   const int num_rows = rows.size();
   out->resize(num_rows);
   for (int i = 0; i < num_rows; i++) {
     (*out)(i) = in(rows[i]);
-  }
-}
-
-template <typename DerivedA, typename DerivedB, typename F>
-void transformVecElements(const Eigen::MatrixBase<DerivedA>& in,
-                          Eigen::MatrixBase<DerivedB>* out, F func) {
-  DRAKE_ASSERT(in.cols() == 1);
-  DRAKE_ASSERT(out->cols() == 1);
-  DRAKE_ASSERT(in.rows() == out->rows());
-  for (int i = 0; i < in.rows(); i++) {
-    (*out)(i) = func(in(i), (*out)(i));
   }
 }
 
@@ -80,24 +86,29 @@ Eigen::Index minCoeffIdx(const Eigen::MatrixBase<Derived>& in) {
   return idx;
 }
 
-const double NEAR_ZERO = std::sqrt(std::numeric_limits<double>::epsilon());
+const double kSqrtEps = std::sqrt(std::numeric_limits<double>::epsilon());
 }  // anonymous namespace
 
 // Sole constructor
-MobyLCPSolver::MobyLCPSolver()
+template <typename T>
+MobyLCPSolver<T>::MobyLCPSolver()
     : MathematicalProgramSolverInterface(SolverType::kMobyLCP),
       log_enabled_(false) {}
 
-void MobyLCPSolver::SetLoggingEnabled(bool enabled) { log_enabled_ = enabled; }
+template <typename T>
+void MobyLCPSolver<T>::SetLoggingEnabled(bool enabled) {
+  log_enabled_ = enabled; }
 
-std::ostream& MobyLCPSolver::Log() const {
+template <typename T>
+std::ostream& MobyLCPSolver<T>::Log() const {
   if (log_enabled_) {
     return std::cerr;
   }
   return null_stream_;
 }
 
-void MobyLCPSolver::ClearIndexVectors() const {
+template <typename T>
+void MobyLCPSolver<T>::ClearIndexVectors() const {
   // clear all vectors
   all_.clear();
   tlist_.clear();
@@ -106,7 +117,20 @@ void MobyLCPSolver::ClearIndexVectors() const {
   j_.clear();
 }
 
-SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
+template <>
+SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
+// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
+    MathematicalProgram& prog) const {
+  DRAKE_ABORT_MSG("MobyLCPSolver cannot yet be used in a MathematicalProgram "
+                  "while templatized as an AutoDiff");
+  return SolutionResult::kUnknownError;
+}
+
+// TODO(edrumwri): Break the following code out into a special
+// MobyLcpMathematicalProgram class.
+template <typename T>
+// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
+SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   // TODO(ggould-tri) This solver currently imposes restrictions that its
   // problem:
   //
@@ -176,13 +200,22 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   return SolutionResult::kSolutionFound;
 }
 
-/// Fast pivoting algorithm for degenerate, monotone LCPs with few nonzero,
-/// nonbasic variables
-bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
-                                 const Eigen::VectorXd& q, Eigen::VectorXd* z,
-                                 double zero_tol) const {
+template <typename T>
+bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
+                                    const VectorX<T>& q, VectorX<T>* z,
+                                    const T& zero_tol) const {
+  using std::abs;
+
+  // Variables that will be reused multiple times, thus hopefully allowing
+  // Eigen to keep from freeing/reallocating memory repeatedly.
+  VectorX<T> zz, w, qbas;
+  MatrixX<T> Mmix, Msub;
+
   const unsigned N = q.rows();
   const unsigned UINF = std::numeric_limits<unsigned>::max();
+
+  if (M.rows() != N || M.cols() != N)
+    throw std::logic_error("M's dimensions do not match that of q.");
 
   Log() << "MobyLCPSolver::SolveLcpFast() entered" << std::endl;
 
@@ -194,9 +227,10 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
   }
 
   // set zero tolerance if necessary
-  if (zero_tol < 0.0) {
-    zero_tol = M.rows() * M.lpNorm<Eigen::Infinity>() *
-               std::numeric_limits<double>::epsilon();
+  T mod_zero_tol = zero_tol;
+  if (mod_zero_tol < 0) {
+    mod_zero_tol = M.rows() * M.template lpNorm<Eigen::Infinity>() *
+        std::numeric_limits<double>::epsilon();
   }
 
   // prepare to setup basic and nonbasic variable indices for z
@@ -209,7 +243,7 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
           << std::endl;
 
     for (unsigned i = 0; i < z->size(); i++) {
-      if (std::fabs((*z)[i]) < zero_tol) {
+      if (abs((*z)[i]) < mod_zero_tol) {
         bas_.push_back(i);
       } else {
         nonbas_.push_back(i);
@@ -225,8 +259,8 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
   } else {
     // get minimum element of q (really w)
     Eigen::Index minw;
-    const double minw_val = q.minCoeff(&minw);
-    if (minw_val > -zero_tol) {
+    const T minw_val = q.minCoeff(&minw);
+    if (minw_val > -mod_zero_tol) {
       Log() << "MobyLCPSolver::SolveLcpFast() - trivial solution found"
             << std::endl;
       z->resize(N);
@@ -244,39 +278,42 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
     }
   }
 
-  // loop for maximum number of pivots
-  //  const unsigned MAX_PIV = std::max(N*N, (unsigned) 1000);
+  // Loop for the maximum number of pivots.
   const unsigned MAX_PIV = 2 * N;
-  for (pivots_ = 0; pivots_ < MAX_PIV; pivots_++) {
+  for (pivots_ = 1; pivots_ <= MAX_PIV; pivots_++) {
     // select nonbasic indices
-    selectSubMat(M, nonbas_, nonbas_, &Msub_);
-    selectSubMat(M, bas_, nonbas_, &Mmix_);
-    selectSubVec(q, nonbas_, &z_);
-    selectSubVec(q, bas_, &qbas_);
-    // _z.negate();
-    z_ = z_ * -1;
+    selectSubMat(M, nonbas_, nonbas_, &Msub);
+    selectSubMat(M, bas_, nonbas_, &Mmix);
+    selectSubVec(q, nonbas_, &zz);
+    selectSubVec(q, bas_, &qbas);
+    zz *= -1;
 
-    // solve for nonbasic z
-    z_ = Msub_.lu().solve(z_);
+    // Solve for nonbasic z. If the QR factorization reveals that the matrix
+    // is singular, the basis (Msub) has become degenerate. Recovering from
+    // a degenerate basis for pivoting algorithms is currently an open problem.
+    // See http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf for
+    // example. The algorithm would ideally terminate at this point, but
+    // compilation with AutoDiff currently generates template errors.
+    zz = Msub.householderQr().solve(zz.eval());
 
     // compute w and find minimum value
-    w_ = Mmix_ * z_;
-    w_ += qbas_;
-    unsigned minw = (w_.rows() > 0) ? minCoeffIdx(w_) : UINF;
+    w = Mmix * zz;
+    w += qbas;
+    unsigned minw = (w.rows() > 0) ? minCoeffIdx(w) : UINF;
 
     // TODO(sammy-tri) this log can't print when minw is UINF.
     // LOG() << "MobyLCPSolver::SolveLcpFast() - minimum w after pivot: "
     // << _w[minw] << std::endl;
 
     // if w >= 0, check whether any component of z < 0
-    if (minw == UINF || w_[minw] > -zero_tol) {
+    if (minw == UINF || w[minw] > -mod_zero_tol) {
       // find the (a) minimum of z
-      unsigned minz = (z_.rows() > 0) ? minCoeffIdx(z_) : UINF;
-      if (log_enabled_ && z_.rows() > 0) {
+      unsigned minz = (zz.rows() > 0) ? minCoeffIdx(zz) : UINF;
+      if (log_enabled_ && zz.rows() > 0) {
         Log() << "MobyLCPSolver::SolveLcpFast() - minimum z after pivot: "
-              << z_[minz] << std::endl;
+              << zz[minz] << std::endl;
       }
-      if (minz < UINF && z_[minz] < -zero_tol) {
+      if (minz < UINF && zz[minz] < -mod_zero_tol) {
         // get the original index and remove it from the nonbasic set
         unsigned idx = nonbas_[minz];
         nonbas_.erase(nonbas_.begin() + minz);
@@ -291,7 +328,7 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
 
         // set values of z corresponding to _z
         for (unsigned i = 0, j = 0; j < nonbas_.size(); i++, j++) {
-          (*z)[nonbas_[j]] = z_[i];
+          (*z)[nonbas_[j]] = zz[i];
         }
 
         Log() << "MobyLCPSolver::SolveLcpFast() - solution found!" << std::endl;
@@ -308,12 +345,12 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
       std::sort(nonbas_.begin(), nonbas_.end());
 
       // look whether any component of z needs to move to basic set
-      unsigned minz = (z_.rows() > 0) ? minCoeffIdx(z_) : UINF;
-      if (log_enabled_ && z_.rows() > 0) {
+      unsigned minz = (zz.rows() > 0) ? minCoeffIdx(zz) : UINF;
+      if (log_enabled_ && zz.rows() > 0) {
         Log() << "MobyLCPSolver::SolveLcpFast() - minimum z after pivot: "
-              << z_[minz] << std::endl;
+              << zz[minz] << std::endl;
       }
-      if (minz < UINF && z_[minz] < -zero_tol) {
+      if (minz < UINF && zz[minz] < -mod_zero_tol) {
         // move index to basic set and continue looping
         unsigned k = nonbas_[minz];
         Log() << "MobyLCPSolver::SolveLcpFast() - moving index " << k
@@ -333,13 +370,18 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
   return false;
 }
 
-/// Regularized wrapper around PPM I
-bool MobyLCPSolver::SolveLcpFastRegularized(const Eigen::MatrixXd& M,
-                                            const Eigen::VectorXd& q,
-                                            Eigen::VectorXd* z, int min_exp,
-                                            unsigned step_exp, int max_exp,
-                                            double zero_tol) const {
+template <typename T>
+bool MobyLCPSolver<T>::SolveLcpFastRegularized(const MatrixX<T>& M,
+                                               const VectorX<T>& q,
+                                               VectorX<T>* z, int min_exp,
+                                               unsigned step_exp, int max_exp,
+                                               const T& zero_tol) const {
   Log() << "MobyLCPSolver::SolveLcpFastRegularized() entered" << std::endl;
+
+  // Variables that will be reused multiple times, thus hopefully allowing
+  // Eigen to keep from freeing/reallocating memory repeatedly.
+  VectorX<T> wx;
+  MatrixX<T> MM;
 
   // look for fast exit
   if (q.size() == 0) {
@@ -348,33 +390,50 @@ bool MobyLCPSolver::SolveLcpFastRegularized(const Eigen::MatrixXd& M,
   }
 
   // copy MM
-  MM_ = M;
+  MM = M;
 
-  // assign value for zero tolerance, if necessary
-  const double ZERO_TOL =
-      (zero_tol > static_cast<double>(0.0))
-          ? zero_tol
-          : (q.size() * M.lpNorm<Eigen::Infinity>() * NEAR_ZERO);
+  // A discourse on the zero tolerance in the context of regularization:
+  // The zero tolerance is used to determine when an element of w or z is
+  // effectively zero though its floating point value is negative. The question
+  // is whether the regularization process will change the zero tolerance
+  // necessary to solve the problem numerically. In such a case, the infinity
+  // norm of M would be small while the infinity norm of MM (regularized M)
+  // would be large. Consider the case of a symmetric, indefinite matrix with
+  // maximum and minimum eigenvalues of a and -a, respectively. The matrix could
+  // be made positive definite (and thereby guaranteed to possess a solution to
+  // the linear complementarity problem) by adding an identity matrix times
+  // (a+ε) to the LCP matrix, where ε > 0 (its magnitude will depend upon the
+  // magnitude of a). The infinity norm (and hence the zero tolerance) could
+  // then be expected to grow by a factor of approximately two during the
+  // regularization process. In other words, recomputing the zero tolerance
+  // for each regularization update to the LCP matrix appears wasteful. For
+  // this reason, we compute it only once below, but a practical effect is
+  // not discernible at this time.
 
-  Log() << " zero tolerance: " << ZERO_TOL << std::endl;
+  // Assign value for zero tolerance, if necessary.
+  const T naive_tol = q.size() * M.template lpNorm<Eigen::Infinity>() *
+      kSqrtEps;
+  const T mod_zero_tol = (zero_tol > 0) ? zero_tol : naive_tol;
+
+  Log() << " zero tolerance: " << mod_zero_tol << std::endl;
 
   // store the total pivots
   unsigned total_piv = 0;
 
   // try non-regularized version first
-  bool result = SolveLcpFast(MM_, q, z, zero_tol);
+  bool result = SolveLcpFast(MM, q, z, mod_zero_tol);
   if (result) {
     // verify that solution truly is a solution -- check z
-    if (z->minCoeff() >= -ZERO_TOL) {
+    if (z->minCoeff() >= -mod_zero_tol) {
       // check w
-      wx_ = (M * (*z)) + q;
-      if (wx_.minCoeff() >= -ZERO_TOL) {
-        // check z'w
-        transformVecElements(*z, &wx_, std::multiplies<double>());
-        const double wx_min = wx_.minCoeff();
-        const double wx_max = wx_.maxCoeff();
+      wx = (M * (*z)) + q;
+      if (wx.minCoeff() >= -mod_zero_tol) {
+        // Check element-wise operation of z*wx.
+        wx = z->array() * wx.eval().array();
+        const T wx_min = wx.minCoeff();
+        const T wx_max = wx.maxCoeff();
 
-        if (wx_min >= -ZERO_TOL && wx_max < ZERO_TOL) {
+        if (wx_min >= -mod_zero_tol && wx_max < mod_zero_tol) {
           Log() << "  solved with no regularization necessary!" << std::endl;
           Log() << "  pivots / total pivots: " << pivots_ << " " << pivots_
                 << std::endl;
@@ -390,12 +449,12 @@ bool MobyLCPSolver::SolveLcpFastRegularized(const Eigen::MatrixXd& M,
       } else {
         Log() << "  MobyLCPSolver::SolveLcpFastRegularized() - "
               << "'w' not solved to desired tolerance" << std::endl;
-        Log() << "  minimum w: " << wx_.minCoeff() << std::endl;
+        Log() << "  minimum w: " << wx.minCoeff() << std::endl;
       }
     } else {
-        Log() << "  MobyLCPSolver::SolveLcpFastRegularized() - "
+      Log() << "  MobyLCPSolver::SolveLcpFastRegularized() - "
             << "'z' not solved to desired tolerance" << std::endl;
-        Log() << "  minimum z: " << z->minCoeff() << std::endl;
+      Log() << "  minimum z: " << z->minCoeff() << std::endl;
     }
   } else {
     Log() << "  MobyLCPSolver::SolveLcpFastRegularized() "
@@ -416,29 +475,29 @@ bool MobyLCPSolver::SolveLcpFastRegularized(const Eigen::MatrixXd& M,
           << std::endl;
 
     // regularize M
-    MM_ = M;
+    MM = M;
     for (unsigned i = 0; i < M.rows(); i++) {
-      MM_(i, i) += lambda;
+      MM(i, i) += lambda;
     }
 
     // try to solve the LCP
-    result = SolveLcpFast(MM_, q, z, zero_tol);
+    result = SolveLcpFast(MM, q, z, mod_zero_tol);
 
     // update total pivots
     total_piv += pivots_;
 
     if (result) {
       // verify that solution truly is a solution -- check z
-      if (z->minCoeff() > -ZERO_TOL) {
+      if (z->minCoeff() > -mod_zero_tol) {
         // check w
-        wx_ = (MM_ * (*z)) + q;
-        if (wx_.minCoeff() > -ZERO_TOL) {
-          // check z'w
-          transformVecElements(*z, &wx_, std::multiplies<double>());
-          const double wx_min = wx_.minCoeff();
-          const double wx_max = wx_.maxCoeff();
+        wx = (MM * (*z)) + q;
+        if (wx.minCoeff() > -mod_zero_tol) {
+          // Check element-wise operation of z*wx.
+          wx = z->array() * wx.eval().array();
+          const T wx_min = wx.minCoeff();
+          const T wx_max = wx.maxCoeff();
 
-          if (wx_min > -ZERO_TOL && wx_max < ZERO_TOL) {
+          if (wx_min > -mod_zero_tol && wx_max < mod_zero_tol) {
             Log() << "  solved with regularization factor: " << lambda
                   << std::endl;
             Log() << "  pivots / total pivots: " << pivots_ << " " << total_piv
@@ -455,7 +514,7 @@ bool MobyLCPSolver::SolveLcpFastRegularized(const Eigen::MatrixXd& M,
         } else {
           Log() << "  MobyLCPSolver::SolveLcpFastRegularized() - "
                 << "'w' not solved to desired tolerance" << std::endl;
-          Log() << "  minimum w: " << wx_.minCoeff() << std::endl;
+          Log() << "  minimum w: " << wx.minCoeff() << std::endl;
         }
       } else {
         Log() << "  MobyLCPSolver::SolveLcpFastRegularized() - "
@@ -478,27 +537,25 @@ bool MobyLCPSolver::SolveLcpFastRegularized(const Eigen::MatrixXd& M,
   return false;
 }
 
-bool MobyLCPSolver::CheckLemkeTrivial(int n, double zero_tol,
-                                      const Eigen::VectorXd& q,
-                                      Eigen::VectorXd* z) const {
-  // see whether trivial solution exists
-  if (q.minCoeff() > -zero_tol) {
-    z->resize(n);
-    z->fill(0);
-    return true;
-  }
-
-  return false;
-}
-
-template <typename MatrixType>
-void MobyLCPSolver::FinishLemkeSolution(const MatrixType& M,
-                                        const Eigen::VectorXd& q,
-                                        Eigen::VectorXd* z) const {
+// Retrieves the solution computed by Lemke's Algorithm.
+// T is irrelevant for this method (necessary only for the member function).
+// MatrixType allows both dense and sparse matrices to be used.
+// Scalar allows this method to be used for when the T is AutoDiffXd but
+// the caller wants to use sparse methods.
+// TODO(edrumwri): Address this kludge when calling sparse LCP solves from
+//                 MobyLCPSolver<AutoDiffXd> has been prevented.
+template <typename T>
+template <typename MatrixType, typename Scalar>
+void MobyLCPSolver<T>::FinishLemkeSolution(const MatrixType& M,
+                                           const VectorX<Scalar>& q,
+                                           const VectorX<Scalar>& x,
+                                           VectorX<Scalar>* z) const {
+  using std::abs;
+  using std::max;
   std::vector<unsigned>::iterator iiter;
   int idx;
   for (idx = 0, iiter = bas_.begin(); iiter != bas_.end(); iiter++, idx++) {
-    (*z)(*iiter) = x_(idx);
+    (*z)(*iiter) = x(idx);
   }
 
   // TODO(sammy-tri) Is there a more efficient way to resize and
@@ -507,24 +564,28 @@ void MobyLCPSolver::FinishLemkeSolution(const MatrixType& M,
 
   // check to see whether tolerances are satisfied
   if (log_enabled_) {
-    wl_ = (M * (*z)) + q;
-    const double minw = wl_.minCoeff();
-    const double w_dot_z = std::fabs(wl_.dot(*z));
+    VectorX<T> wl = (M * (*z)) + q;
+    const T minw = wl.minCoeff();
+    const T w_dot_z = abs(wl.dot(*z));
     Log() << "  z: " << z << std::endl;
-    Log() << "  _w: " << wl_ << std::endl;
+    Log() << "  w: " << wl << std::endl;
     Log() << "  minimum w: " << minw << std::endl;
     Log() << "  w'z: " << w_dot_z << std::endl;
   }
 }
 
-/// Lemke's algorithm for solving linear complementarity problems
-/**
- * \param z a vector "close" to the solution on input (optional); contains
- *        the solution on output
- */
-bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
-                                  const Eigen::VectorXd& q, Eigen::VectorXd* z,
-                                  double piv_tol, double zero_tol) const {
+template <typename T>
+bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
+                                     const VectorX<T>& q, VectorX<T>* z,
+                                     const T& piv_tol,
+                                     const T& zero_tol) const {
+  using std::max;
+
+  // Variables that will be reused multiple times, thus hopefully allowing
+  // Eigen to keep from freeing/reallocating memory repeatedly.
+  VectorX<T> result, dj, dl, x, xj, Be, u, z0;
+  MatrixX<T> Bl, t1, t2;
+
   if (log_enabled_) {
     Log() << "MobyLCPSolver::SolveLcpLemke() entered" << std::endl;
     Log() << "  M: " << std::endl << M;
@@ -532,7 +593,10 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
   }
 
   const unsigned n = q.size();
-  const unsigned MAXITER = std::min((unsigned)1000, 50 * n);
+  const unsigned max_iter = std::min((unsigned)1000, 50 * n);
+
+  if (M.rows() != n || M.cols() != n)
+    throw std::logic_error("M's dimensions do not match that of q.");
 
   // update the pivots
   pivots_ = 0;
@@ -544,12 +608,14 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
   }
 
   // come up with a sensible value for zero tolerance if none is given
-  if (zero_tol <= static_cast<double>(0.0)) {
-    zero_tol =
-        M.lpNorm<Eigen::Infinity>() * std::numeric_limits<double>::epsilon();
+  T mod_zero_tol = zero_tol;
+  if (mod_zero_tol <= 0) {
+    mod_zero_tol =
+        M.template lpNorm<Eigen::Infinity>() *
+            std::numeric_limits<double>::epsilon();
   }
 
-  if (CheckLemkeTrivial(n, zero_tol, q, z)) {
+  if (CheckLemkeTrivial(n, mod_zero_tol, q, z)) {
     Log() << " -- trivial solution found" << std::endl;
     Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
     return true;
@@ -562,7 +628,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
   z->fill(0);
 
   // copy z to z0
-  z0_ = *z;
+  z0 = *z;
 
   ClearIndexVectors();
 
@@ -580,12 +646,12 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
   std::vector<unsigned>::iterator iiter;
 
   // determine initial basis
-  if (z0_.size() != n) {
+  if (z0.size() != n) {
     // setup the nonbasic indices
     for (unsigned i = 0; i < n; i++) nonbas_.push_back(i);
   } else {
     for (unsigned i = 0; i < n; i++) {
-      if (z0_[i] > 0) {
+      if (z0[i] > 0) {
         bas_.push_back(i);
       } else {
         nonbas_.push_back(i);
@@ -598,59 +664,61 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
     Log() << "-- initial basis not empty (warmstarting)" << std::endl;
 
     // start from good initial basis
-    Bl_.resize(n, n);
-    Bl_.setIdentity();
-    // _Bl.negate();
-    Bl_ *= -1;
+    Bl.resize(n, n);
+    Bl.setIdentity();
+    Bl *= -1;
 
     // select columns of M corresponding to z vars in the basis
-    selectSubMat(M, all_, bas_, &t1_);
+    selectSubMat(M, all_, bas_, &t1);
 
     // select columns of I corresponding to z vars not in the basis
-    selectSubMat(Bl_, all_, nonbas_, &t2_);
+    selectSubMat(Bl, all_, nonbas_, &t2);
 
     // setup the basis matrix
-    Bl_.resize(n, t1_.cols() + t2_.cols());
-    Bl_.block(0, 0, t1_.rows(), t1_.cols()) = t1_;
-    Bl_.block(0, t1_.cols(), t2_.rows(), t2_.cols()) = t2_;
+    Bl.resize(n, t1.cols() + t2.cols());
+    Bl.block(0, 0, t1.rows(), t1.cols()) = t1;
+    Bl.block(0, t1.cols(), t2.rows(), t2.cols()) = t2;
 
     // solve B*x = -q
     //
-    // The original version of this code from Moby could handle the
-    // case where the colver failed (though only in this dense
-    // implementation).  It's not obvious how to do this from Eigen,
-    // so we've (sam.creasey) assumed that the solve succeeds.
-    Al_ = Bl_;
-    x_ = Al_.lu().solve(q);
+    // Solve for nonbasic z. If the QR factorization reveals that the matrix
+    // is singular, the basis (Msub) has become degenerate. Recovering from
+    // a degenerate basis for Lemke's Algorithm is currently an open problem.
+    // See http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf, for
+    // example. The algorithm would ideally terminate at this point, but
+    // compilation of householderQr().rank() with AutoDiff currently generates
+    // template errors. Leaving this as-is means that the algorithm might
+    // continue on for some time and could conceivably even indicate success on
+    // return, though return does not guarantee the solution is correct to
+    // desired tolerances anyway (see function documentation).
+    x = Bl.householderQr().solve(q);
   } else {
     Log() << "-- using basis of -1 (no warmstarting)" << std::endl;
 
     // use standard initial basis
-    Bl_.resize(n, n);
-    Bl_.setIdentity();
-    Bl_ *= -1;
-    x_ = q;
+    Bl.resize(n, n);
+    Bl.setIdentity();
+    Bl *= -1;
+    x = q;
   }
 
   // check whether initial basis provides a solution
-  if (x_.minCoeff() >= 0.0) {
+  if (x.minCoeff() >= 0.0) {
     Log() << " -- initial basis provides a solution!" << std::endl;
-    FinishLemkeSolution(M, q, z);
+    FinishLemkeSolution(M, q, x, z);
     Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
     return true;
   }
 
   // use a new pivot tolerance if necessary
-  const double PIV_TOL =
-      (piv_tol > static_cast<double>(0.0))
-          ? piv_tol
-          : (std::numeric_limits<double>::epsilon() * n *
-             std::max(static_cast<double>(1.0), M.lpNorm<Eigen::Infinity>()));
+  const T naive_piv_tol = n * max(T(1), M.template lpNorm<Eigen::Infinity>()) *
+      std::numeric_limits<double>::epsilon();
+  const T mod_piv_tol = (piv_tol > 0) ? piv_tol : naive_piv_tol;
 
   // determine initial leaving variable
   Eigen::Index min_x;
-  const double min_x_val = x_.topRows(n).minCoeff(&min_x);
-  double tval = -min_x_val;
+  const T min_x_val = x.topRows(n).minCoeff(&min_x);
+  const T tval = -min_x_val;
   for (size_t i = 0; i < nonbas_.size(); i++) {
     bas_.push_back(nonbas_[i] + n);
   }
@@ -658,26 +726,26 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
   iiter = bas_.begin();
   std::advance(iiter, lvindex);
   leaving = *iiter;
-  Log() << " -- x: " << x_ << std::endl;
+  Log() << " -- x: " << x << std::endl;
   Log() << " -- first pivot: leaving index=" << lvindex
         << "  entering index=" << entering << " minimum value: " << tval
         << std::endl;
 
   // pivot in the artificial variable
   *iiter = t;  // replace w var with _z0 in basic indices
-  u_.resize(n);
+  u.resize(n);
   for (unsigned i = 0; i < n; i++) {
-    u_[i] = (x_[i] < 0.0) ? 1.0 : 0.0;
+    u[i] = (x[i] < 0) ? 1 : 0;
   }
-  Be_ = (Bl_ * u_) * -1;
-  u_ *= tval;
-  x_ += u_;
-  x_[lvindex] = tval;
-  Bl_.col(lvindex) = Be_;
-  Log() << "  new q: " << x_ << std::endl;
+  Be = (Bl * u) * -1;
+  u *= tval;
+  x += u;
+  x[lvindex] = tval;
+  Bl.col(lvindex) = Be;
+  Log() << "  new q: " << x << std::endl;
 
   // main iterations begin here
-  for (pivots_ = 0; pivots_ < MAXITER; pivots_++) {
+  for (pivots_ = 0; pivots_ < max_iter; pivots_++) {
     if (log_enabled_) {
       std::ostringstream basic;
       for (unsigned i = 0; i < bas_.size(); i++) {
@@ -690,32 +758,27 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
     // check whether done; if not, get new entering variable
     if (leaving == t) {
       Log() << "-- solved LCP successfully!" << std::endl;
-      FinishLemkeSolution(M, q, z);
+      FinishLemkeSolution(M, q, x, z);
       Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
       return true;
     } else if (leaving < n) {
       entering = n + leaving;
-      Be_.resize(n);
-      Be_.fill(0);
-      Be_[leaving] = -1;
+      Be.resize(n);
+      Be.fill(0);
+      Be[leaving] = -1;
     } else {
       entering = leaving - n;
-      Be_ = M.col(entering);
+      Be = M.col(entering);
     }
-    dl_ = Be_;
+    dl = Be;
 
-    // Again, The original version of this code from Moby could handle
-    // the case where the solver failed.  There was also some
-    // commented out code related to trying to restart on finding a
-    // solution.  For the reasons above, and the fact that it was
-    // commented out, this functionality has not been preserved.
-    Al_ = Bl_;
-    dl_ = Al_.lu().solve(dl_);
+    // See comments above on the possibility of this solve failing.
+    dl = Bl.householderQr().solve(dl.eval());
 
     // ** find new leaving variable
     j_.clear();
-    for (unsigned i = 0; i < dl_.size(); i++) {
-      if (dl_[i] > PIV_TOL) {
+    for (unsigned i = 0; i < dl.size(); i++) {
+      if (dl[i] > mod_piv_tol) {
         j_.push_back(i);
       }
     }
@@ -732,32 +795,37 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
     if (log_enabled_) {
       std::ostringstream j;
       for (unsigned i = 0; i < j_.size(); i++) j << " " << j_[i];
-      Log() << "d: " << dl_ << std::endl;
+      Log() << "d: " << dl << std::endl;
       Log() << "j (before min ratio):" << j.str() << std::endl;
     }
 
     // select elements j from x and d
-    selectSubVec(x_, j_, &xj_);
-    selectSubVec(dl_, j_, &dj_);
+    selectSubVec(x, j_, &xj);
+    selectSubVec(dl, j_, &dj);
 
     // compute minimal ratios x(j) + EPS_DOUBLE ./ d(j), d > 0
-    result_.resize(xj_.size());
-    result_.fill(zero_tol);
-    transformVecElements(xj_, &result_, std::plus<double>());
-    transformVecElements(dj_, &result_,
-                         [](double a, double b) { return b / a; });
-    double theta = result_.minCoeff();
+    result.resize(xj.size());
+    result.fill(mod_zero_tol);
+    result = xj.eval().array() + result.array();
+    result = result.eval().array() / dj.array();
+    const T theta = result.minCoeff();
 
-    // NOTE: lexicographic ordering does not appear to be used here to prevent
-    // cycling (see [Cottle 1992], pp. 340-342)
+    // NOTE: lexicographic ordering is not used here to prevent
+    // cycling (see [Cottle 1992], pp. 340-342). Cycling is indirectly prevented
+    // by (a) limiting the maximum number of pivots and (b) using
+    // regularized solvers, as necessary. In other words, cycling may cause
+    // solver to fail when the LCP is theoretically solvable, but wrapping the
+    // solver with regularization practically addresses the problem (albeit,
+    // at the cost of additional computation).
+
     // find indices of minimal ratios, d> 0
     //   divide _x(j) ./ d(j) -- remove elements above the minimum ratio
-    for (int i = 0; i < result_.size(); i++) {
-      result_(i) = xj_(i) / dj_(i);
+    for (int i = 0; i < result.size(); i++) {
+      result(i) = xj(i) / dj(i);
     }
 
     for (iiter = j_.begin(), idx = 0; iiter != j_.end();) {
-      if (result_[idx++] <= theta) {
+      if (result[idx++] <= theta) {
         iiter++;
       } else {
         iiter = j_.erase(iiter);
@@ -801,29 +869,33 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
     leaving = *iiter;
 
     // ** perform pivot
-    double ratio = x_[lvindex] / dl_[lvindex];
-    dl_ *= ratio;
-    x_ -= dl_;
-    x_[lvindex] = ratio;
-    Bl_.col(lvindex) = Be_;
+    const T ratio = x[lvindex] / dl[lvindex];
+    dl *= ratio;
+    x -= dl;
+    x[lvindex] = ratio;
+    Bl.col(lvindex) = Be;
     *iiter = entering;
     Log() << " -- pivoting: leaving index=" << lvindex
           << "  entering index=" << entering << std::endl;
   }
 
   Log() << " -- maximum number of iterations exceeded (n=" << n
-        << ", max=" << MAXITER << ")" << std::endl;
+        << ", max=" << max_iter << ")" << std::endl;
   Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
   return false;
 }
 
-/// Regularized wrapper around Lemke's algorithm
-bool MobyLCPSolver::SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
-                                             const Eigen::VectorXd& q,
-                                             Eigen::VectorXd* z, int min_exp,
-                                             unsigned step_exp, int max_exp,
-                                             double piv_tol,
-                                             double zero_tol) const {
+template <class T>
+bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
+                                                const VectorX<T>& q,
+                                                VectorX<T>* z, int min_exp,
+                                                unsigned step_exp, int max_exp,
+                                                const T& piv_tol,
+                                                const T& zero_tol) const {
+  // Variables that will be reused multiple times, thus hopefully allowing
+  // Eigen to keep from freeing/reallocating memory repeatedly.
+  VectorX<T> wx;
+
   Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() entered" << std::endl;
 
   // look for fast exit
@@ -833,32 +905,33 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
   }
 
   // copy MM
-  MM_ = M;
+  MatrixX<T> MM = M;
 
-  // assign value for zero tolerance, if necessary
-  const double ZERO_TOL =
-      (zero_tol > static_cast<double>(0.0))
-          ? zero_tol
-          : (q.size() * M.lpNorm<Eigen::Infinity>() * NEAR_ZERO);
+  // Assign value for zero tolerance, if necessary. See discussion in
+  // SolveLcpFastRegularized() to see why this tolerance is computed here once,
+  // rather than for each regularized version of M.
+  T naive_tol = q.size() * M.template lpNorm<Eigen::Infinity>() * kSqrtEps;
+  const T mod_zero_tol = (zero_tol > 0) ? zero_tol : naive_tol;
 
-  Log() << " zero tolerance: " << ZERO_TOL << std::endl;
+  Log() << " zero tolerance: " << mod_zero_tol << std::endl;
 
   // store the total pivots
   unsigned total_piv = 0;
 
   // try non-regularized version first
-  bool result = SolveLcpLemke(MM_, q, z, piv_tol, zero_tol);
+  bool result = SolveLcpLemke(MM, q, z, piv_tol, mod_zero_tol);
   if (result) {
     // verify that solution truly is a solution -- check z
-    if (z->minCoeff() >= -ZERO_TOL) {
+    if (z->minCoeff() >= -mod_zero_tol) {
       // check w
-      wx_ = (M * (*z)) + q;
-      if (wx_.minCoeff() >= -ZERO_TOL) {
-        // check z'w
-        transformVecElements(*z, &wx_, std::multiplies<double>());
-        const double wx_min = wx_.minCoeff();
-        const double wx_max = wx_.maxCoeff();
-        if (wx_min >= -ZERO_TOL && wx_max < ZERO_TOL) {
+      wx = (M * (*z)) + q;
+      if (wx.minCoeff() >= -mod_zero_tol) {
+        // Check element-wise operation of z*wx.
+        wx = z->array() * wx.eval().array();
+
+        const T wx_min = wx.minCoeff();
+        const T wx_max = wx.maxCoeff();
+        if (wx_min >= -mod_zero_tol && wx_max < mod_zero_tol) {
           Log() << "  solved with no regularization necessary!" << std::endl;
           Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() exited"
                 << std::endl;
@@ -871,13 +944,13 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
         }
       } else {
         Log() << "  MobyLCPSolver::SolveLcpLemke() - 'w' not solved to desired "
-                 "tolerance"
+            "tolerance"
               << std::endl;
-        Log() << "  minimum w: " << wx_.minCoeff() << std::endl;
+        Log() << "  minimum w: " << wx.minCoeff() << std::endl;
       }
     } else {
       Log() << "  MobyLCPSolver::SolveLcpLemke() - 'z' not solved to desired "
-               "tolerance"
+          "tolerance"
             << std::endl;
       Log() << "  minimum z: " << z->minCoeff() << std::endl;
     }
@@ -897,28 +970,29 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
           << std::endl;
 
     // regularize M
-    MM_ = M;
+    MM = M;
     for (unsigned i = 0; i < M.rows(); i++) {
-      MM_(i, i) += lambda;
+      MM(i, i) += lambda;
     }
 
     // try to solve the LCP
-    result = SolveLcpLemke(MM_, q, z, piv_tol, zero_tol);
+    result = SolveLcpLemke(MM, q, z, piv_tol, mod_zero_tol);
 
     // update total pivots
     total_piv += pivots_;
 
     if (result) {
       // verify that solution truly is a solution -- check z
-      if (z->minCoeff() > -ZERO_TOL) {
+      if (z->minCoeff() > -mod_zero_tol) {
         // check w
-        wx_ = (MM_ * (*z)) + q;
-        if (wx_.minCoeff() > -ZERO_TOL) {
-          // check z'w
-          transformVecElements(*z, &wx_, std::multiplies<double>());
-          const double wx_min = wx_.minCoeff();
-          const double wx_max = wx_.maxCoeff();
-          if (wx_min > -ZERO_TOL && wx_max < ZERO_TOL) {
+        wx = (MM * (*z)) + q;
+        if (wx.minCoeff() > -mod_zero_tol) {
+          // Check element-wise operation of z*wx.
+          wx = z->array() * wx.eval().array();
+
+          const T wx_min = wx.minCoeff();
+          const T wx_max = wx.maxCoeff();
+          if (wx_min > -mod_zero_tol && wx_max < mod_zero_tol) {
             Log() << "  solved with regularization factor: " << lambda
                   << std::endl;
             Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() exited"
@@ -932,13 +1006,13 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
           }
         } else {
           Log() << "  MobyLCPSolver::SolveLcpLemke() - 'w' not solved to "
-                   "desired tolerance"
+              "desired tolerance"
                 << std::endl;
-          Log() << "  minimum w: " << wx_.minCoeff() << std::endl;
+          Log() << "  minimum w: " << wx.minCoeff() << std::endl;
         }
       } else {
         Log() << "  MobyLCPSolver::SolveLcpLemke() - 'z' not solved to desired "
-                 "tolerance"
+            "tolerance"
               << std::endl;
         Log() << "  minimum z: " << z->minCoeff() << std::endl;
       }
@@ -958,15 +1032,15 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
   return false;
 }
 
-/// Lemke's algorithm for solving linear complementarity problems using sparse
-/// matrices
-/**
- * \param z a vector "close" to the solution on input (optional); contains
- *        the solution on output
- */
-bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
-                                  const Eigen::VectorXd& q, Eigen::VectorXd* z,
-                                  double piv_tol, double zero_tol) const {
+template <typename T>
+bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
+                                     const Eigen::VectorXd& q,
+                                     Eigen::VectorXd* z,
+                                     double piv_tol, double zero_tol) const {
+  Eigen::VectorXd x, dl, result, z0, xj, dj, u, Be;
+  Eigen::SparseMatrix<double> sBl;
+  Eigen::SparseMatrix<double> MMs, MMx;
+
   if (log_enabled_) {
     Log() << "MobyLCPSolver::SolveLcpLemke() entered" << std::endl;
     Log() << "  M: " << std::endl << M;
@@ -974,7 +1048,10 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   }
 
   const unsigned n = q.size();
-  const unsigned MAXITER = std::min((unsigned)1000, 50 * n);
+  const unsigned max_iter = std::min((unsigned)1000, 50 * n);
+
+  if (M.rows() != n || M.cols() != n)
+    throw std::logic_error("M's dimensions do not match that of q.");
 
   // look for immediate exit
   if (n == 0) {
@@ -986,7 +1063,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   if (zero_tol <= static_cast<double>(0.0)) {
     Eigen::MatrixXd dense_M = M;
     zero_tol = dense_M.lpNorm<Eigen::Infinity>() *
-               std::numeric_limits<double>::epsilon() * n;
+        std::numeric_limits<double>::epsilon() * n;
   }
 
   if (CheckLemkeTrivial(n, zero_tol, q, z)) {
@@ -996,7 +1073,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   }
 
   // copy z to z0
-  z0_ = *z;
+  z0 = *z;
 
   ClearIndexVectors();
 
@@ -1014,13 +1091,13 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   std::vector<unsigned>::iterator iiter;
 
   // determine initial basis
-  if (z0_.size() != n) {
+  if (z0.size() != n) {
     for (unsigned i = 0; i < n; i++) {
       nonbas_.push_back(i);
     }
   } else {
     for (unsigned i = 0; i < n; i++) {
-      if (z0_[i] > 0) {
+      if (z0[i] > 0) {
         bas_.push_back(i);
       } else {
         nonbas_.push_back(i);
@@ -1029,7 +1106,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   }
 
   // determine initial values
-  sBl_ = Eigen::SparseMatrix<double>(n, n);
+  sBl = Eigen::SparseMatrix<double>(n, n);
   if (!bas_.empty()) {
     typedef Eigen::Triplet<double> Triplet;
     std::vector<Triplet> triplet_list;
@@ -1049,31 +1126,43 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
       triplet_list.push_back(Triplet(nonbas_[i], j, 1.0));
     }
 
-    sBl_.setFromTriplets(triplet_list.begin(), triplet_list.end());
+    sBl.setFromTriplets(triplet_list.begin(), triplet_list.end());
   } else {
-    sBl_.setIdentity();
-    sBl_ *= -1;
+    sBl.setIdentity();
+    sBl *= -1;
   }
 
   // solve B*x = -q
   std::unique_ptr<Eigen::SparseLU<Eigen::SparseMatrix<double>>> solver;
   solver.reset(new Eigen::SparseLU<Eigen::SparseMatrix<double>>);
-  solver->analyzePattern(sBl_);
-  solver->factorize(sBl_);
-  x_ = solver->solve(q);
-  x_ *= -1;
+  solver->analyzePattern(sBl);
+  solver->factorize(sBl);
+  if (solver->info() != Eigen::ComputationInfo::Success) {
+    // Initial basis was singular (and a poor choice). Try a known good one.
+    ClearIndexVectors();
+    for (unsigned i = 0; i < n; i++)
+      nonbas_.push_back(i);
+    sBl.setIdentity();
+    sBl *= -1;
+    solver->analyzePattern(sBl);
+    solver->factorize(sBl);
+    if (solver->info() != Eigen::ComputationInfo::Success)
+      throw std::runtime_error("Unable to find an initial basis.");
+  }
+  x = solver->solve(q);
+  x *= -1;
 
   // check whether initial basis provides a solution
-  if (x_.minCoeff() >= 0.0) {
+  if (x.minCoeff() >= 0.0) {
     Log() << " -- initial basis provides a solution!" << std::endl;
-    FinishLemkeSolution(M, q, z);
+    FinishLemkeSolution(M, q, x, z);
     Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
     return true;
   }
 
   // determine initial leaving variable
   Eigen::Index min_x;
-  const double min_x_val = x_.topRows(n).minCoeff(&min_x);
+  const double min_x_val = x.topRows(n).minCoeff(&min_x);
   double tval = -min_x_val;
   for (size_t i = 0; i < nonbas_.size(); i++) {
     bas_.push_back(nonbas_[i] + n);
@@ -1085,50 +1174,54 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
 
   // pivot in the artificial variable
   *iiter = t;  // replace w var with _z0 in basic indices
-  u_.resize(n);
+  u.resize(n);
   for (unsigned i = 0; i < n; i++) {
-    u_[i] = (x_[i] < 0.0) ? 1.0 : 0.0;
+    u[i] = (x[i] < 0.0) ? 1.0 : 0.0;
   }
-  Be_ = (sBl_ * u_) * -1;
-  u_ *= tval;
-  x_ += u_;
-  x_[lvindex] = tval;
-  sBl_.col(lvindex) = makeSparseVector(Be_);
-  Log() << "  new q: " << x_ << std::endl;
+  Be = (sBl * u) * -1;
+  u *= tval;
+  x += u;
+  x[lvindex] = tval;
+  sBl.col(lvindex) = makeSparseVector(Be);
+  Log() << "  new q: " << x << std::endl;
 
   // main iterations begin here
-  for (pivots_ = 0; pivots_ < MAXITER; pivots_++) {
+  for (pivots_ = 0; pivots_ < max_iter; pivots_++) {
     // check whether done; if not, get new entering variable
     if (leaving == t) {
       Log() << "-- solved LCP successfully!" << std::endl;
-      FinishLemkeSolution(M, q, z);
+      FinishLemkeSolution(M, q, x, z);
       Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
       return true;
     } else if (leaving < n) {
       entering = n + leaving;
-      Be_.resize(n);
-      Be_.fill(0);
-      Be_[leaving] = -1;
+      Be.resize(n);
+      Be.fill(0);
+      Be[leaving] = -1;
     } else {
       entering = leaving - n;
-      Be_ = M.col(entering);
+      Be = M.col(entering);
     }
     solver.reset(new Eigen::SparseLU<Eigen::SparseMatrix<double>>);
-    solver->analyzePattern(sBl_);
-    solver->factorize(sBl_);
-    dl_ = solver->solve(Be_);
+    solver->analyzePattern(sBl);
+    solver->factorize(sBl);
+
+    // We go ahead and return failure here as the basis matrix has become
+    // singular due to too many pivoting operations; without this change,
+    // failure would presumably occur (eventually).
+    if (solver->info() != Eigen::ComputationInfo::Success)
+      return false;
+    dl = solver->solve(Be);
 
     // use a new pivot tolerance if necessary
-    const double PIV_TOL = (piv_tol > static_cast<double>(0.0))
-                               ? piv_tol
-                               : (std::numeric_limits<double>::epsilon() * n *
-                                  std::max(static_cast<double>(1.0),
-                                           Be_.lpNorm<Eigen::Infinity>()));
+    const double mod_piv_tol = (piv_tol > static_cast<double>(0.0)) ? piv_tol :
+                                 (std::numeric_limits<double>::epsilon() * n *
+                                  std::max(1.0, Be.lpNorm<Eigen::Infinity>()));
 
     // ** find new leaving variable
     j_.clear();
-    for (unsigned i = 0; i < dl_.size(); i++) {
-      if (dl_[i] > PIV_TOL) {
+    for (unsigned i = 0; i < dl.size(); i++) {
+      if (dl[i] > mod_piv_tol) {
         j_.push_back(i);
       }
     }
@@ -1141,29 +1234,28 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
       return false;
     }
 
-    Log() << " -- column of M': " << dl_ << std::endl;
+    Log() << " -- column of M': " << dl << std::endl;
 
     // select elements j from x and d
-    selectSubVec(x_, j_, &xj_);
-    selectSubVec(dl_, j_, &dj_);
+    selectSubVec(x, j_, &xj);
+    selectSubVec(dl, j_, &dj);
 
     // compute minimal ratios x(j) + EPS_DOUBLE ./ d(j), d > 0
-    result_.resize(xj_.size());
-    result_.fill(zero_tol);
-    transformVecElements(xj_, &result_, std::plus<double>());
-    transformVecElements(dj_, &result_,
-                         [](double a, double b) { return b / a; });
-    double theta = result_.minCoeff();
+    result.resize(xj.size());
+    result.fill(zero_tol);
+    result = xj.eval().array() + result.array();
+    result = result.eval().array() / dj.array();
+    double theta = result.minCoeff();
 
     // NOTE: lexicographic ordering does not appear to be used here to prevent
     // cycling (see [Cottle 1992], pp. 340-342)
     // find indices of minimal ratios, d> 0
     //   divide _x(j) ./ d(j) -- remove elements above the minimum ratio
-    for (int i = 0; i < result_.size(); i++) {
-      result_(i) = xj_(i) / dj_(i);
+    for (int i = 0; i < result.size(); i++) {
+      result(i) = xj(i) / dj(i);
     }
     for (iiter = j_.begin(), idx = 0; iiter != j_.end();) {
-      if (result_[idx++] <= theta) {
+      if (result[idx++] <= theta) {
         iiter++;
       } else {
         iiter = j_.erase(iiter);
@@ -1199,11 +1291,11 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
     leaving = *iiter;
 
     // ** perform pivot
-    double ratio = x_[lvindex] / dl_[lvindex];
-    dl_ *= ratio;
-    x_ -= dl_;
-    x_[lvindex] = ratio;
-    sBl_.col(lvindex) = makeSparseVector(Be_);
+    double ratio = x[lvindex] / dl[lvindex];
+    dl *= ratio;
+    x -= dl;
+    x[lvindex] = ratio;
+    sBl.col(lvindex) = makeSparseVector(Be);
     *iiter = entering;
     Log() << " -- pivoting: leaving index=" << lvindex
           << "  entering index=" << entering << std::endl;
@@ -1214,11 +1306,14 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   return false;
 }
 
-/// Regularized wrapper around Lemke's algorithm for srpase matrices
-bool MobyLCPSolver::SolveLcpLemkeRegularized(
+template <typename T>
+bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
     const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q,
     Eigen::VectorXd* z, int min_exp, unsigned step_exp, int max_exp,
     double piv_tol, double zero_tol) const {
+  Eigen::VectorXd x, wx;
+  Eigen::SparseMatrix<double> MMx, eye, diag_lambda;
+
   Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() entered" << std::endl;
 
   // look for fast exit
@@ -1228,25 +1323,26 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(
   }
 
   // copy MM
-  MMs_ = M;
+  Eigen::SparseMatrix<double> MMs = M;
 
-  // assign value for zero tolerance, if necessary
-  const double ZERO_TOL =
-      (zero_tol > static_cast<double>(0.0)) ? zero_tol : q.size() * NEAR_ZERO;
+  // Assign value for zero tolerance, if necessary. See discussion in
+  // SolveLcpFastRegularized() to see why this tolerance is computed here once,
+  // rather than for each regularized version of M.
+  const double mod_zero_tol = (zero_tol > 0) ? zero_tol : q.size() * kSqrtEps;
 
   // try non-regularized version first
-  bool result = SolveLcpLemke(MMs_, q, z, piv_tol, zero_tol);
+  bool result = SolveLcpLemke(MMs, q, z, piv_tol, mod_zero_tol);
   if (result) {
     // verify that solution truly is a solution -- check z
-    if (z->minCoeff() >= -ZERO_TOL) {
+    if (z->minCoeff() >= -mod_zero_tol) {
       // check w
-      wx_ = (M * (*z)) + q;
-      if (wx_.minCoeff() >= -ZERO_TOL) {
-        // check z'w
-        transformVecElements(*z, &wx_, std::multiplies<double>());
-        const double wx_min = wx_.minCoeff();
-        const double wx_max = wx_.maxCoeff();
-        if (wx_min >= -ZERO_TOL && wx_max < ZERO_TOL) {
+      wx = (M * (*z)) + q;
+      if (wx.minCoeff() >= -mod_zero_tol) {
+        // Check element-wise operation of z*wx.
+        wx = z->array() * wx.eval().array();
+        const double wx_min = wx.minCoeff();
+        const double wx_max = wx.maxCoeff();
+        if (wx_min >= -mod_zero_tol && wx_max < mod_zero_tol) {
           Log() << "  solved with no regularization necessary!" << std::endl;
           Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() exited"
                 << std::endl;
@@ -1256,14 +1352,14 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(
           Log() << "MobyLCPSolver::SolveLcpLemke() - "
                 << "'<w, z> not within tolerance(min value: " << wx_min
                 << " max value: " << wx_max << ")"
-                << " tol " << ZERO_TOL << std::endl;
+                << " tol " << mod_zero_tol << std::endl;
         }
       }
     }
   }
 
-  eye_.resize(M.rows(), M.cols());
-  eye_.setIdentity();
+  eye.resize(M.rows(), M.cols());
+  eye.setIdentity();
 
   // start the regularization process
   int rf = min_exp;
@@ -1271,21 +1367,21 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(
     // setup regularization factor
     double lambda =
         std::pow(static_cast<double>(10.0), static_cast<double>(rf));
-    (diag_lambda_ = eye_) *= lambda;
+    (diag_lambda = eye) *= lambda;
 
     // regularize M
-    (MMx_ = MMs_) += diag_lambda_;
+    (MMx = MMs) += diag_lambda;
 
     // try to solve the LCP
-    if ((result = SolveLcpLemke(MMx_, q, z, piv_tol, zero_tol))) {
+    if ((result = SolveLcpLemke(MMx, q, z, piv_tol, zero_tol))) {
       // verify that solution truly is a solution -- check z
-      if (z->minCoeff() > -ZERO_TOL) {
+      if (z->minCoeff() > -mod_zero_tol) {
         // check w
-        wx_ = (MMx_ * (*z)) + q;
-        if (wx_.minCoeff() > -ZERO_TOL) {
-          // check z'w
-          transformVecElements(*z, &wx_, std::multiplies<double>());
-          if (wx_.minCoeff() > -ZERO_TOL && wx_.maxCoeff() < ZERO_TOL) {
+        wx = (MMx * (*z)) + q;
+        if (wx.minCoeff() > -mod_zero_tol) {
+          // Check element-wise operation of z*wx.
+          wx = z->array() * wx.eval().array();
+          if (wx.minCoeff() > -mod_zero_tol && wx.maxCoeff() < mod_zero_tol) {
             Log() << "  solved with regularization factor: " << lambda
                   << std::endl;
             Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() exited"
@@ -1307,6 +1403,11 @@ bool MobyLCPSolver::SolveLcpLemkeRegularized(
   // still here?  failure...
   return false;
 }
+
+// Instantiate templates.
+template class MobyLCPSolver<double>;
+template class
+    drake::solvers::MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>;
 
 }  // namespace solvers
 }  // namespace drake

@@ -2,11 +2,11 @@
 
 #include <utility>
 
+#include "lcmtypes/bot_core/robot_state_t.hpp"
+
 #include "drake/examples/Valkyrie/robot_state_lcmtype_util.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/lcmUtil.h"
-
-#include "lcmtypes/bot_core/robot_state_t.hpp"
 
 namespace drake {
 namespace systems {

@@ -23,13 +23,7 @@ template <typename T>
 ConstantValueSource<T>::ConstantValueSource(
     std::unique_ptr<AbstractValue> value)
     : source_value_(std::move(value)) {
-  this->DeclareAbstractOutputPort();
-}
-
-template <typename T>
-std::unique_ptr<AbstractValue> ConstantValueSource<T>::AllocateOutputAbstract(
-    const OutputPortDescriptor<T>& descriptor) const {
-  return source_value_->Clone();
+  this->DeclareAbstractOutputPort(*source_value_);
 }
 
 template <typename T>

@@ -1,11 +1,11 @@
 #include <memory>
 
+#include <gtest/gtest.h>
+
 #include "drake/common/drake_path.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/joints/floating_base_types.h"
-
-#include "gtest/gtest.h"
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;

@@ -9,17 +9,17 @@
  * LcmPublisherSystem
  *
  */
+#include "drake/examples/Acrobot/acrobot_plant.h"
+
 #include <memory>
 
 #include <gflags/gflags.h>
 
+#include "drake/common/drake_path.h"
 #include "drake/examples/Acrobot/acrobot_lcm.h"
-#include "drake/examples/Acrobot/acrobot_plant.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
-
-#include "drake/common/drake_path.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"

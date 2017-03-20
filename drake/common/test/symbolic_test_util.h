@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"

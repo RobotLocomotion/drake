@@ -122,4 +122,38 @@ using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
 template <typename Scalar>
 using SpatialForce = Eigen::Matrix<Scalar, 6, 1>;
 
+/// EigenSizeMinPreferDynamic<a, b>::value gives the min between compile-time
+/// sizes @p a and @p b. 0 has absolute priority, followed by 1, followed by
+/// Dynamic, followed by other finite values.
+///
+/// Note that this is a type-trait version of EIGEN_SIZE_MIN_PREFER_DYNAMIC
+/// macro in "Eigen/Core/util/Macros.h".
+template <int a, int b>
+struct EigenSizeMinPreferDynamic {
+  // clang-format off
+  static constexpr int value = (a == 0 || b == 0) ? 0 :
+                               (a == 1 || b == 1) ? 1 :
+     (a == Eigen::Dynamic || b == Eigen::Dynamic) ? Eigen::Dynamic :
+                                           a <= b ? a : b;
+  // clang-format on
+};
+
+/// EigenSizeMinPreferFixed is a variant of EigenSizeMinPreferDynamic. The
+/// difference is that finite values now have priority over Dynamic, so that
+/// EigenSizeMinPreferFixed<3, Dynamic>::value gives 3.
+///
+/// Note that this is a type-trait version of EIGEN_SIZE_MIN_PREFER_FIXED macro
+/// in "Eigen/Core/util/Macros.h".
+template <int a, int b>
+struct EigenSizeMinPreferFixed {
+  // clang-format off
+  static constexpr int value = (a == 0 || b == 0) ? 0 :
+                               (a == 1 || b == 1) ? 1 :
+     (a == Eigen::Dynamic && b == Eigen::Dynamic) ? Eigen::Dynamic :
+                            (a == Eigen::Dynamic) ? b :
+                            (b == Eigen::Dynamic) ? a :
+                                           a <= b ? a : b;
+  // clang-format on
+};
+
 }  // namespace drake

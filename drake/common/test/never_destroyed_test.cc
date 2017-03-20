@@ -1,6 +1,6 @@
 #include "drake/common/never_destroyed.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
 

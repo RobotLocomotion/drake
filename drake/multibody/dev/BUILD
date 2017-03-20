@@ -9,8 +9,8 @@ load(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_test",
-    srcs = ["test/global_inverse_kinematics_test.cc"],
     size = "large",
+    srcs = ["test/global_inverse_kinematics_test.cc"],
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
     ],

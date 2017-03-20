@@ -77,7 +77,9 @@ drake_cc_library(
 drake_cc_binary(
     name = "iiwa_world_demo",
     srcs = ["iiwa_world_demo.cc"],
+    add_test_rule = 1,
     data = ["//drake/examples/kuka_iiwa_arm:models"],
+    test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":world_sim_diagram_factory",
         ":world_sim_tree_builder",
@@ -89,7 +91,9 @@ drake_cc_binary(
 drake_cc_binary(
     name = "controlled_iiwa_world_demo",
     srcs = ["controlled_iiwa_world_demo.cc"],
+    add_test_rule = 1,
     data = ["//drake/examples/kuka_iiwa_arm:models"],
+    test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":world_sim_diagram_factory",
         ":world_sim_tree_builder",

@@ -1,6 +1,6 @@
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"

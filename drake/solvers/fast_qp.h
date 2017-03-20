@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <set>
+#include <vector>
 
 #include <Eigen/Dense>
 

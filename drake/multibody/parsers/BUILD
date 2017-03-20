@@ -94,6 +94,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "parsers_frames_test",
+    srcs = ["test/parsers_frames_test/parsers_frames_test.cc"],
+    data = [":test_models"],
+    deps = [
+        ":parsers",
+    ],
+)
+
+drake_cc_googletest(
     name = "urdf_parser_test",
     srcs = ["test/urdf_parser_test/urdf_parser_test.cc"],
     data = [

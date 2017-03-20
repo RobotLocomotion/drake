@@ -1,14 +1,14 @@
 #include "drake/multibody/shapes/geometry.h"
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/text_logging.h"
-
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <stdexcept>
 
 #include "spruce.hh"
+
+#include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 
 using std::string;
 using std::ostream;

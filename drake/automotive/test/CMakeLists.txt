@@ -31,6 +31,9 @@ target_link_libraries(single_lane_ego_and_agent_test drakeAutomotive)
 drake_add_cc_test(monolane_onramp_merge_test)
 target_link_libraries(monolane_onramp_merge_test drakeAutomotive)
 
+drake_add_cc_test(pose_selector_test)
+target_link_libraries(pose_selector_test drakeAutomotive)
+
 if(lcm_FOUND)
   drake_add_cc_test(automotive_simulator_test)
   target_link_libraries(automotive_simulator_test drakeAutomotiveLcm)

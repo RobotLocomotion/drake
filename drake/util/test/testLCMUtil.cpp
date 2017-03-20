@@ -4,7 +4,7 @@
 #include "drake/math/random_rotation.h"
 #include "drake/util/lcmUtil.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 using namespace std;
 using namespace Eigen;

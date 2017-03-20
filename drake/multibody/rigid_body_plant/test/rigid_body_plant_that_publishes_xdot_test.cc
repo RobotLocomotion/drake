@@ -6,8 +6,8 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
-#include "drake/lcmt_drake_signal.hpp"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
+#include "drake/lcmt_drake_signal.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
 
 using std::make_unique;

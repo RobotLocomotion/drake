@@ -1,8 +1,8 @@
 #include "drake/multibody/rigid_body_tree.h"
 
-#include <gtest/gtest.h>
-
 #include <memory>
+
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/fixed_joint.h"

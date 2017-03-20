@@ -1,8 +1,8 @@
 #include "drake/systems/ros_clock_publisher.h"
 
 #include <mutex>
-#include <gtest/gtest.h>
 
+#include <gtest/gtest.h>
 #include "ros/ros.h"
 #include "rosgraph_msgs/Clock.h"
 

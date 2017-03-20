@@ -16,7 +16,6 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
-
 #include "drake/common/drake_assert.h"
 
 namespace drake {

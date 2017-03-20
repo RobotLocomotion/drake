@@ -3,7 +3,6 @@
 #include <limits>
 #include <string>
 
-
 template <typename T>
 class RigidBody;
 

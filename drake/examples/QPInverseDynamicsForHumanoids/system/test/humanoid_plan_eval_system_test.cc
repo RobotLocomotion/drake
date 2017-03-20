@@ -1,5 +1,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_plan_eval_system.h"
 
+#include <gtest/gtest.h>
+
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
@@ -10,8 +12,6 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
-
-#include "gtest/gtest.h"
 
 namespace drake {
 namespace examples {

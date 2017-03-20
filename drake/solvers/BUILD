@@ -2,7 +2,12 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -195,7 +200,6 @@ drake_cc_library(
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
     ],
-    visibility = ["//visibility:private"],
     deps = [
         ":binding",
         ":constraint",
@@ -220,7 +224,6 @@ drake_cc_library(
         "//conditions:default": ["no_gurobi.cc"],
     }),
     hdrs = ["gurobi_solver.h"],
-    visibility = ["//visibility:private"],
     deps = select({
         "//tools:with_gurobi": [
             ":mathematical_program_api",
@@ -243,7 +246,6 @@ drake_cc_library(
         "//conditions:default": ["no_mosek.cc"],
     }),
     hdrs = ["mosek_solver.h"],
-    visibility = ["//visibility:private"],
     deps = select({
         "//tools:with_mosek": [
             ":mathematical_program_api",
@@ -265,7 +267,6 @@ drake_cc_library(
         "//conditions:default": ["no_snopt.cc"],
     }),
     hdrs = ["snopt_solver.h"],
-    visibility = ["//visibility:private"],
     deps = select({
         "//tools:with_snopt": [
             ":mathematical_program_api",
@@ -285,7 +286,6 @@ drake_cc_library(
         "//conditions:default": ["ipopt_solver.cc"],
     }),
     hdrs = ["ipopt_solver.h"],
-    visibility = ["//visibility:private"],
     deps = select({
         "//conditions:default": [
             "@ipopt//:lib",
@@ -302,7 +302,6 @@ drake_cc_library(
     name = "nlopt_solver",
     srcs = ["nlopt_solver.cc"],
     hdrs = ["nlopt_solver.h"],
-    visibility = ["//visibility:private"],
     deps = [
         ":mathematical_program_api",
         "//drake/math:autodiff",
@@ -497,6 +496,17 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_binary(
+    name = "plot_feasible_rotation_matrices",
+    testonly = 1,
+    srcs = ["test/plot_feasible_rotation_matrices.cc"],
+    deps = [
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/lcm:lcm_call_matlab",
     ],
 )
 

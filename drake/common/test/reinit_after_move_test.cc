@@ -1,6 +1,6 @@
 #include "drake/common/reinit_after_move.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace {

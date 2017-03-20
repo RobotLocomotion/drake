@@ -206,19 +206,9 @@ class SpringMassSystem : public LeafSystem<T> {
   T DoCalcNonConservativePower(const MyContext& context) const override;
 
   // System<T> overrides.
-  /// Allocates an output vector of type SpringMassStateVector<T>.
-  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const OutputPortDescriptor<T>& descriptor) const override;
-
   void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
-
   void DoCalcTimeDerivatives(const MyContext& context,
                              MyContinuousState* derivatives) const override;
-
- protected:
-  // LeafSystem<T> override.
-  std::unique_ptr<ContinuousState<T>>
-  AllocateContinuousState() const override;
 
  private:
   // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,

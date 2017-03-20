@@ -1338,8 +1338,8 @@ class System {
   //@{
 
   /// Returns a mutable Eigen expression for a vector valued output port with
-  /// index @p port_index in this system. All InputPorts that directly depend
-  /// on this OutputPort will be notified that upstream data has changed, and
+  /// index @p port_index in this system. All input ports that directly depend
+  /// on this output port will be notified that upstream data has changed, and
   /// may invalidate cache entries as a result.
   Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(SystemOutput<T>* output,
                                                         int port_index) const {

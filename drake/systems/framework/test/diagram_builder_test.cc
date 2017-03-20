@@ -1,7 +1,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/system_port_descriptor.h"

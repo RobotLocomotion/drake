@@ -32,7 +32,7 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
+  std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,

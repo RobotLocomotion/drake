@@ -1,7 +1,7 @@
 #include "drake/solvers/mathematical_program_solver_interface.h"
 
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 
 namespace drake {
 namespace solvers {

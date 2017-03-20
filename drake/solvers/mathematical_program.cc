@@ -89,7 +89,7 @@ MathematicalProgram::MathematicalProgram()
       ipopt_solver_(new IpoptSolver()),
       nlopt_solver_(new NloptSolver()),
       snopt_solver_(new SnoptSolver()),
-      moby_lcp_solver_(new MobyLCPSolver()),
+      moby_lcp_solver_(new MobyLCPSolver<double>()),
       linear_system_solver_(new LinearSystemSolver()),
       equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
       gurobi_solver_(new GurobiSolver()),

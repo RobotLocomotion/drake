@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 

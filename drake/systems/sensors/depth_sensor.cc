@@ -58,8 +58,8 @@ DepthSensor::DepthSensor(const std::string& name,
       DeclareInputPort(kVectorValued,
                        tree.get_num_positions() + tree.get_num_velocities())
           .get_index();
-  output_port_index_ =
-      DeclareOutputPort(kVectorValued, get_num_depth_readings()).get_index();
+  output_port_index_ = DeclareVectorOutputPort(
+      DepthSensorOutput<double>(specification_)).get_index();
   PrecomputeRaycastEndpoints();
 }
 
@@ -117,12 +117,6 @@ DepthSensor::get_rigid_body_tree_state_input_port() const {
 const OutputPortDescriptor<double>& DepthSensor::get_sensor_state_output_port()
     const {
   return System<double>::get_output_port(output_port_index_);
-}
-
-std::unique_ptr<BasicVector<double>> DepthSensor::AllocateOutputVector(
-    const OutputPortDescriptor<double>& descriptor) const {
-  DRAKE_DEMAND(descriptor.size() == specification_.num_depth_readings());
-  return std::make_unique<DepthSensorOutput<double>>(specification_);
 }
 
 void DepthSensor::DoCalcOutput(const systems::Context<double>& context,

@@ -7,7 +7,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/joints/fixed_joint.h"
@@ -54,7 +54,8 @@ class PoseAggregatorTest : public ::testing::Test {
     // Allocate another input for a PoseBundle.
     aggregator_.AddBundleInput("bundle", kNumGenericPoses);
     // Allocate a third input for a PoseVector.
-    aggregator_.AddSingleInput("vector");
+    const int kRandomModelInstanceId = 42;
+    aggregator_.AddSingleInput("vector", kRandomModelInstanceId);
 
     context_ = aggregator_.CreateDefaultContext();
     output_ = aggregator_.AllocateOutput(*context_);
@@ -81,10 +82,15 @@ TEST_F(PoseAggregatorTest, HeterogeneousAggregation) {
   PoseBundle<double> generic_input(2);
   Eigen::Translation3d translation_0(0, 1, 0);
   Eigen::Translation3d translation_1(0, 1, 1);
+  const int kSherlockModelInstanceId = 17;
   generic_input.set_name(0, "Sherlock");
   generic_input.set_pose(0, Isometry3d(translation_0));
+  generic_input.set_model_instance_id(0, kSherlockModelInstanceId);
+
+  const int kMycroftModelInstanceId = 13;
   generic_input.set_name(1, "Mycroft");
   generic_input.set_pose(1, Isometry3d(translation_1));
+  generic_input.set_model_instance_id(1, kMycroftModelInstanceId);
   context_->FixInputPort(1, AbstractValue::Make(generic_input));
 
   // Set an arbitrary rotation in the PoseVector input.
@@ -101,15 +107,18 @@ TEST_F(PoseAggregatorTest, HeterogeneousAggregation) {
 
   // Check that the rigid body poses, as determined by the kinematics,
   // appear in the output.
-  EXPECT_EQ("robot_0::link1", bundle.get_name(0));
+  EXPECT_EQ("robot::link1", bundle.get_name(0));
+  EXPECT_EQ(0, bundle.get_model_instance_id(0));
   const Isometry3d& link1_pose = bundle.get_pose(0);
   EXPECT_TRUE(CompareMatrices(Isometry3d(AngleAxisd(M_PI, axis_)).matrix(),
                               link1_pose.matrix()));
 
   // Check that the generic poses are passed through to the output.
   EXPECT_EQ("bundle::Sherlock", bundle.get_name(1));
+  EXPECT_EQ(kSherlockModelInstanceId, bundle.get_model_instance_id(1));
   const Isometry3d& generic_pose_0 = bundle.get_pose(1);
   EXPECT_EQ("bundle::Mycroft", bundle.get_name(2));
+  EXPECT_EQ(kMycroftModelInstanceId, bundle.get_model_instance_id(2));
   const Isometry3d& generic_pose_1 = bundle.get_pose(2);
 
   EXPECT_TRUE(CompareMatrices(Isometry3d(translation_0).matrix(),
@@ -119,6 +128,7 @@ TEST_F(PoseAggregatorTest, HeterogeneousAggregation) {
 
   EXPECT_EQ("vector", bundle.get_name(3));
   const Isometry3d& vector_pose = bundle.get_pose(3);
+  EXPECT_EQ(42, bundle.get_model_instance_id(3));
   EXPECT_TRUE(CompareMatrices(
       Isometry3d(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5)).matrix(),
       vector_pose.matrix()));

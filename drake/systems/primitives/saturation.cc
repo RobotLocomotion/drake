@@ -1,5 +1,3 @@
-
-
 #include "drake/systems/primitives/saturation.h"
 
 #include <algorithm>

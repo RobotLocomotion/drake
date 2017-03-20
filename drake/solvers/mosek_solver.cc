@@ -6,10 +6,9 @@
 #include <list>
 #include <vector>
 
-#include <mosek.h>
-
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
+#include <mosek.h>
 
 namespace drake {
 namespace solvers {

@@ -1,10 +1,11 @@
+#include "drake/multibody/rigid_body_tree.h"
+
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_tree.h"
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;

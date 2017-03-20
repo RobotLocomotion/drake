@@ -13,16 +13,8 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     const RigidBodyTree<T>& tree)
     : tree_(tree) {
   set_name("ContactResultsToLcmSystem");
-  DeclareAbstractInputPort();
-  DeclareAbstractOutputPort();
-}
-
-template <typename T>
-std::unique_ptr<AbstractValue>
-ContactResultsToLcmSystem<T>::AllocateOutputAbstract(
-    const OutputPortDescriptor<T>& descriptor) const {
-  return systems::AbstractValue::Make<lcmt_contact_results_for_viz>(
-      lcmt_contact_results_for_viz());
+  DeclareAbstractInputPort(Value<ContactResults<T>>());
+  DeclareAbstractOutputPort(Value<lcmt_contact_results_for_viz>());
 }
 
 template <typename T>

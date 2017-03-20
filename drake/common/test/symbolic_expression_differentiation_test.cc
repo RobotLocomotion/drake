@@ -5,10 +5,11 @@
 #include <tuple>
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/test/symbolic_test_util.h"
-#include "gtest/gtest.h"
 
 namespace drake {
 namespace symbolic {

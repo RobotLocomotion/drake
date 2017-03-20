@@ -5,7 +5,6 @@
 #include <memory>
 
 #include <gflags/gflags.h>
-
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_path.h"
@@ -14,6 +13,8 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_iiwa_command.hpp"
+#include "drake/lcmt_iiwa_status.hpp"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/context.h"
@@ -22,9 +23,6 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/demultiplexer.h"
-
-#include "drake/lcmt_iiwa_command.hpp"
-#include "drake/lcmt_iiwa_status.hpp"
 
 using robotlocomotion::robot_plan_t;
 

@@ -1,13 +1,13 @@
-#include "drake/multibody/joints/prismatic_joint.h"
-#include "drake/multibody/joints/quaternion_floating_joint.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 
 #include <cmath>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
+#include "drake/multibody/joints/prismatic_joint.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 
 namespace drake {

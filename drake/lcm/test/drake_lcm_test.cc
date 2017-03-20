@@ -4,7 +4,7 @@
 #include <mutex>
 #include <thread>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 struct KinematicPath {
   std::vector<int> joint_path;

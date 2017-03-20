@@ -1196,8 +1196,8 @@ void Rod2D<T>::DoCalcTimeDerivatives(
 
 /// Allocates the abstract state (for piecewise DAE systems).
 template <typename T>
-std::unique_ptr<systems::AbstractState> Rod2D<T>::
-  AllocateAbstractState() const {
+std::unique_ptr<systems::AbstractValues> Rod2D<T>::AllocateAbstractState()
+    const {
   if (simulation_type_ == SimulationType::kPiecewiseDAE) {
     // Piecewise DAE approach needs two abstract variables (one mode and one
     // contact point indicator).
@@ -1208,10 +1208,10 @@ std::unique_ptr<systems::AbstractState> Rod2D<T>::
 
     // Indicates that the rod is in contact at both points.
     abstract_data.push_back(std::make_unique<systems::Value<int>>(0));
-    return std::make_unique<systems::AbstractState>(std::move(abstract_data));
+    return std::make_unique<systems::AbstractValues>(std::move(abstract_data));
   } else {
     // Time stepping and compliant approaches need no abstract variables.
-    return std::make_unique<systems::AbstractState>();
+    return std::make_unique<systems::AbstractValues>();
   }
 }
 
@@ -1238,15 +1238,17 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
     // Set abstract variables for piecewise DAE approach.
     if (simulation_type_ == SimulationType::kPiecewiseDAE) {
       // Indicate that the rod is in the single contact sliding mode.
-      state->get_mutable_abstract_state()->get_mutable_abstract_state(0).
-          template GetMutableValue<Rod2D<T>::Mode>() =
+      state->get_mutable_abstract_state()
+          ->get_mutable_value(0)
+          .template GetMutableValue<Rod2D<T>::Mode>() =
           Rod2D<T>::kSlidingSingleContact;
 
       // Determine and set the point of contact.
       const double theta = x0(2);
       const int k = (std::sin(theta) > 0) ? -1 : 1;
-      state->get_mutable_abstract_state()->get_mutable_abstract_state(1).
-          template GetMutableValue<int>() = k;
+      state->get_mutable_abstract_state()
+          ->get_mutable_value(1)
+          .template GetMutableValue<int>() = k;
     }
   }
 }

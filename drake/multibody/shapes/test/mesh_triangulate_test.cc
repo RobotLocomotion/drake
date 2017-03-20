@@ -1,6 +1,6 @@
 #include "drake/multibody/shapes/geometry.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 

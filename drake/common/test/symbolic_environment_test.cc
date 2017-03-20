@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/symbolic_variable.h"
 

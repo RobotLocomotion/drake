@@ -1,9 +1,9 @@
-#include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/ZMP/zmp_test_util.h"
-
 #include "drake/systems/controllers/zmp_planner.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/examples/ZMP/zmp_test_util.h"
 
 namespace drake {
 namespace examples {

@@ -12,10 +12,9 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-
-#include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {

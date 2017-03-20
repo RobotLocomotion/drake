@@ -1,7 +1,7 @@
 #include "drake/common/is_approx_equal_abstol.h"
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;

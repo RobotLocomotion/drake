@@ -1,5 +1,6 @@
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator-inl.h"
+
 #include <unsupported/Eigen/AutoDiff>
 
 namespace drake {

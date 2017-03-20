@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
+#include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/value.h"
@@ -149,13 +150,13 @@ class Context {
 
   /// Returns a pointer to the abstract component of the state, which
   /// may be of size zero.
-  const AbstractState* get_abstract_state() const {
+  const AbstractValues* get_abstract_state() const {
     return get_state().get_abstract_state();
   }
 
   /// Returns a mutable pointer to the abstract component of the state,
   /// which may be of size zero.
-  AbstractState* get_mutable_abstract_state() {
+  AbstractValues* get_mutable_abstract_state() {
     return get_mutable_state()->get_mutable_abstract_state();
   }
 
@@ -163,21 +164,21 @@ class Context {
   /// Asserts if @p index doesn't exist.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
-    AbstractState* xm = get_mutable_abstract_state();
-    return xm->get_mutable_abstract_state(index).GetMutableValue<U>();
+    AbstractValues* xm = get_mutable_abstract_state();
+    return xm->get_mutable_value(index).GetMutableValue<U>();
   }
 
   /// Sets the abstractstate to @p xm, deleting whatever was there before.
-  void set_abstract_state(std::unique_ptr<AbstractState> xm) {
+  void set_abstract_state(std::unique_ptr<AbstractValues> xm) {
     get_mutable_state()->set_abstract_state(std::move(xm));
   }
 
-  /// Returns a const pointer to the abstract component of the
+  /// Returns a const reference to the abstract component of the
   /// state at @p index.  Asserts if @p index doesn't exist.
   template <typename U>
   const U& get_abstract_state(int index) const {
-    const AbstractState* xm = get_state().get_abstract_state();
-    return xm->get_abstract_state(index).GetValue<U>();
+    const AbstractValues* xm = get_state().get_abstract_state();
+    return xm->get_value(index).GetValue<U>();
   }
 
   // =========================================================================
@@ -298,6 +299,41 @@ class Context {
   }
 
   // =========================================================================
+  // Accessors and Mutators for Parameters.
+
+  virtual const Parameters<T>& get_parameters() const = 0;
+  virtual Parameters<T>& get_mutable_parameters() = 0;
+
+  /// Returns the number of vector-valued parameters.
+  int num_numeric_parameters() const {
+    return get_parameters().num_numeric_parameters();
+  }
+
+  /// Returns a const pointer to the vector-valued parameter at @p index.
+  /// Asserts if @p index doesn't exist.
+  const BasicVector<T>* get_numeric_parameter(int index) const {
+    return get_parameters().get_numeric_parameter(index);
+  }
+
+  /// Returns a mutable pointer to element @p index of the vector-valued
+  /// parameters. Asserts if @p index doesn't exist.
+  BasicVector<T>* get_mutable_numeric_parameter(int index) {
+    return get_mutable_parameters().get_mutable_numeric_parameter(index);
+  }
+
+  /// Returns a const reference to the abstract-valued parameter at @p index.
+  /// Asserts if @p index doesn't exist.
+  const AbstractValue& get_abstract_parameter(int index) const {
+    return get_parameters().get_abstract_parameter(index);
+  }
+
+  /// Returns a mutable reference to element @p index of the abstract-valued
+  /// parameters. Asserts if @p index doesn't exist.
+  AbstractValue& get_mutable_abstract_parameter(int index) {
+    return get_mutable_parameters().get_mutable_abstract_parameter(index);
+  }
+
+  // =========================================================================
   // Miscellaneous Public Methods
 
   /// Returns a deep copy of this Context. The clone's input ports will
@@ -318,7 +354,7 @@ class Context {
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
     set_time(T(source.get_time()));
     get_mutable_state()->SetFrom(source.get_state());
-    // TODO(david-german-tri): Parameters.
+    get_mutable_parameters().SetFrom(source.get_parameters());
   }
 
   /// Declares that @p parent is the context of the enclosing Diagram. The

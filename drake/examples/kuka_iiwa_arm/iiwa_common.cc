@@ -1,6 +1,5 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
-#include <memory.h>
 #include <map>
 #include <set>
 #include <string>
@@ -17,7 +16,6 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
-
 #include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::Vector3d;

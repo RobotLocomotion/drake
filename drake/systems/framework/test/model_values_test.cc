@@ -1,6 +1,6 @@
 #include "drake/systems/framework/model_values.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_copyable.h"

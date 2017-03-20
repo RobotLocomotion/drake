@@ -1,9 +1,10 @@
+#include "drake/systems/primitives/linear_system.h"
+
 #include <stdexcept>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
 using std::make_unique;

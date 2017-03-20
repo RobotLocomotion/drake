@@ -5,6 +5,8 @@
 
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 
+#include "drake/common/eigen_types.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"

@@ -1,4 +1,5 @@
 #include "drake/multibody/collision/drake_collision.h"
+
 #include "drake/multibody/collision/collision_filter.h"
 
 #ifdef BULLET_COLLISION

@@ -1,4 +1,9 @@
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
+
 #include <cmath>
+
+#include <gtest/gtest.h>
+
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -9,10 +14,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
-#include "gtest/gtest.h"
-
 
 namespace drake {
 namespace systems {

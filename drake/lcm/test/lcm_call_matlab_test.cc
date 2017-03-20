@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/lcm/lcm_call_matlab.h"
 

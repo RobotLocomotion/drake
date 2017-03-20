@@ -33,7 +33,9 @@ class LeafContext : public Context<T> {
   // LeafContext objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafContext)
 
-  LeafContext() : state_(std::make_unique<State<T>>()) {}
+  LeafContext()
+      : state_(std::make_unique<State<T>>()),
+        parameters_(std::make_unique<Parameters<T>>()) {}
   ~LeafContext() override {}
 
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
@@ -108,7 +110,6 @@ class LeafContext : public Context<T> {
 
   // =========================================================================
   // Accessors and Mutators for Parameters.
-  // TODO(david-german-tri): Add accessors for abstract parameters.
 
   /// Sets the parameters to @p params, deleting whatever was there before.
   void set_parameters(std::unique_ptr<Parameters<T>> params) {
@@ -116,25 +117,13 @@ class LeafContext : public Context<T> {
   }
 
   /// Returns the entire Parameters object.
-  Parameters<T>* get_mutable_parameters() {
-    return parameters_.get();
+  const Parameters<T>& get_parameters() const final {
+    return *parameters_;
   }
 
-  /// Returns the number of vector-valued parameters.
-  int num_numeric_parameters() const {
-    return parameters_->num_numeric_parameters();
-  }
-
-  /// Returns a const pointer to the vector-valued parameter at @p index.
-  /// Asserts if @p index doesn't exist.
-  const BasicVector<T>* get_numeric_parameter(int index) const {
-    return parameters_->get_numeric_parameter(index);
-  }
-
-  /// Returns a mutable pointer to element @p index of the vector-valued
-  /// parameters. Asserts if @p index doesn't exist.
-  BasicVector<T>* get_mutable_numeric_parameter(int index) {
-    return parameters_->get_mutable_numeric_parameter(index);
+  /// Returns the entire Parameters object.
+  Parameters<T>& get_mutable_parameters() final {
+    return *parameters_;
   }
 
  protected:

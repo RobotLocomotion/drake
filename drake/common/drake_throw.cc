@@ -1,7 +1,7 @@
 #include "drake/common/drake_throw.h"
 
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 
 namespace drake {
 namespace detail {

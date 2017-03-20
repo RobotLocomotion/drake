@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
-
 #include "ros/ros.h"
+
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace systems {

@@ -1,11 +1,12 @@
 #include "drake/multibody/collision/bullet_model.h"
-#include "drake/common/drake_assert.h"
 
 #include <iostream>
 #include <limits>
 #include <utility>
 
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+
+#include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/collision/drake_collision.h"
 

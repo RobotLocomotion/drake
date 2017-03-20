@@ -106,14 +106,6 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  // LeafSystem<T> override.
-  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-      const override;
-
-  // LeafSystem<T> override.
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::OutputPortDescriptor<T>& descriptor) const override;
-
   // System<T> override.
   AcrobotPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
 

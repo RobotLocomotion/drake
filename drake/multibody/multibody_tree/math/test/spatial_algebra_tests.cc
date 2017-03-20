@@ -1,14 +1,13 @@
 #include "drake/multibody/multibody_tree/math/spatial_algebra.h"
 
-#include <Eigen/Dense>
-
-#include "drake/common/eigen_types.h"
-#include "drake/common/eigen_autodiff_types.h"
-
-#include "gtest/gtest.h"
-
 #include <sstream>
 #include <string>
+
+#include <Eigen/Dense>
+#include <gtest/gtest.h>
+
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace multibody {

@@ -1,12 +1,13 @@
-#include "gtest/gtest.h"
-
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 
 #include <iomanip>
 #include <sstream>
 #include <string>
+
+#include <gtest/gtest.h>
+
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace multibody {

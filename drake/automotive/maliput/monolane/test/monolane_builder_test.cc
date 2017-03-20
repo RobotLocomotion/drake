@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace maliput {

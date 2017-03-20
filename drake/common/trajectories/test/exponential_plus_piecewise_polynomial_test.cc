@@ -4,7 +4,7 @@
 #include <random>
 
 #include <Eigen/Core>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/trajectories/test/random_piecewise_polynomial.h"
 

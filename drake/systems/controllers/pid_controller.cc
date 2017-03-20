@@ -4,10 +4,10 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/pass_through.h"
-#include "drake/systems/primitives/demultiplexer.h"
 
 using std::make_unique;
 
@@ -300,13 +300,16 @@ void PidController<T>::ConnectPorts(
       controller_inverter->get_input_port());
 
   // Expose state input
-  builder.ExportInput(feedback_selector_p->get_input_port());
+  int index = builder.ExportInput(feedback_selector_p->get_input_port());
+  this->set_input_port_index_estimated_state(index);
 
   // Exposes desired state input
-  builder.ExportInput(error_inverter->get_input_port());
+  index = builder.ExportInput(error_inverter->get_input_port());
+  this->set_input_port_index_desired_state(index);
 
   // Exposes torque output
-  builder.ExportOutput(controller_inverter->get_output_port());
+  index = builder.ExportOutput(controller_inverter->get_output_port());
+  this->set_output_port_index_control(index);
 
   builder.BuildInto(this);
 }

@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 using Eigen::Vector2d;
 using Eigen::Vector4d;

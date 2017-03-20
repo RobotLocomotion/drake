@@ -3,7 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/value.h"

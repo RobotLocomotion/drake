@@ -16,6 +16,8 @@
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_schunk_wsg_command.hpp"
+#include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -28,9 +30,6 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/multiplexer.h"
-
-#include "drake/lcmt_schunk_wsg_command.hpp"
-#include "drake/lcmt_schunk_wsg_status.hpp"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");

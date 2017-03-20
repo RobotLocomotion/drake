@@ -1,10 +1,11 @@
+#include "drake/multibody/rigid_body.h"
+
 #include <iostream>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/rigid_body.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/test/rigid_body_compare_to_clone.h"

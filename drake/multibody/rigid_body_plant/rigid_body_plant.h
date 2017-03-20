@@ -351,15 +351,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
   std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const override;
 
-  /// Allocates the data for the abstract-valued output port specified by
-  /// @p descriptor.
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<T>& descriptor) const override;
-  /// Allocates the data for the vector-valued output port specified by
-  /// @p descriptor.
-  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const OutputPortDescriptor<T>& descriptor) const override;
-
   // System<T> overrides.
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -412,32 +403,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on Ac relative to B (expressed in B), v_BAc.
   //
-  // Specifically, this creates a velocity-dependent coefficient of friction
-  // based a Stribeck curve using values of static (us) and dynamic (ud)
-  // coefficients of friction.  The input relative speed, is transformed to be a
-  // dimensionless multiple of a *stiction tolerance speed*, v.
-  //
-  // The curve is a piecewise smooth curve with three intervals (given v >= 0):
-  //  (a) v=0..1: smooth interpolation from 0 to us
-  //  (b) v=1..3: smooth interpolation from us to ud
-  //  (c) v=3..inf: ud
-  //
-  // Graph looks like this:
-  //
-  //    |
-  //    |
-  // us |     **
-  //    |    *  *
-  //    |    *   *
-  // ud |   *      **********
-  //    |   *
-  //    |   *
-  //    |   *
-  //    |  *
-  //    |*____________________
-  //    0     1     2     3
-  //        multiple of v
-  //
+  // See contact_model_doxygen.h @section tangent_force for details.
   T ComputeFrictionCoefficient(T v_tangent_BAc) const;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the

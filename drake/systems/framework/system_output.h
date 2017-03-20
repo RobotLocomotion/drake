@@ -16,38 +16,38 @@
 namespace drake {
 namespace systems {
 
-/// The OutputPort represents a data output from a System. Other Systems
-/// may depend on the OutputPort. When an OutputPort is deleted, it will
-/// automatically notify the listeners that depend on it to disconnect,
-/// meaning those ports will resolve to nullptr.
-class OutputPort {
+/// %OutputPortValue contains the value of a single System output port.
+/// Input ports of other Systems may depend on an %OutputPortValue. When an
+/// %OutputPortValue is deleted, it will automatically notify the listeners that
+/// depend on it to disconnect, meaning those ports will resolve to nullptr.
+class OutputPortValue {
  public:
-  // OutputPort objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPort)
+  // OutputPortValue objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPortValue)
 
-  /// Constructs a vector-valued OutputPort.
+  /// Constructs a vector-valued OutputPortValue.
   /// Takes ownership of @p vec.
   ///
   /// @tparam T The type of the vector data. Must be a valid Eigen scalar.
   /// @tparam V The type of @p vec itself. Must implement BasicVector<T>.
   template <template <typename T> class V, typename T>
-  explicit OutputPort(std::unique_ptr<V<T>> vec)
+  explicit OutputPortValue(std::unique_ptr<V<T>> vec)
       : data_(new VectorValue<T>(std::move(vec))) {}
 
-  /// Constructs an abstract-valued OutputPort.
+  /// Constructs an abstract-valued OutputPortValue.
   /// Takes ownership of @p data.
-  explicit OutputPort(std::unique_ptr<AbstractValue> data)
+  explicit OutputPortValue(std::unique_ptr<AbstractValue> data)
       : data_(std::move(data)) {}
 
-  /// Constructs an abstract-valued OutputPort.
+  /// Constructs an abstract-valued OutputPortValue.
   /// Takes ownership of @p data.
   ///
   /// @tparam T The type of the data.
   template <typename T>
-  explicit OutputPort(std::unique_ptr<Value<T>> data)
-      : OutputPort(std::unique_ptr<AbstractValue>(data.release())) {}
+  explicit OutputPortValue(std::unique_ptr<Value<T>> data)
+      : OutputPortValue(std::unique_ptr<AbstractValue>(data.release())) {}
 
-  virtual ~OutputPort();
+  virtual ~OutputPortValue();
 
   /// Returns the abstract value in this port.
   const AbstractValue* get_abstract_data() const { return data_.get(); }
@@ -74,21 +74,21 @@ class OutputPort {
     dependents_.erase(dependent);
   }
 
-  /// Returns a pointer to the data inside this OutputPort, and updates the
-  /// version so that Contexts depending on this OutputPort know to invalidate
-  /// their caches. Callers MUST NOT write on the returned pointer if there is
-  /// any possibility this OutputPort has been accessed since the last time
-  /// GetMutableVectorData was called.
+  /// Returns a pointer to the data inside this %OutputPortValue, and updates
+  /// the version so that Contexts depending on this %OutputPortValue know to
+  /// invalidate their caches. Callers MUST NOT write on the returned pointer if
+  /// there is any possibility this %OutputPortValue has been accessed since the
+  /// last time GetMutableVectorData was called.
   AbstractValue* GetMutableData() {
     InvalidateAndIncrement();
     return data_.get();
   }
 
-  /// Returns a pointer to the data inside this OutputPort, and updates the
-  /// version so that Contexts depending on this OutputPort know to invalidate
-  /// their caches. Callers MUST NOT write on the returned pointer if there is
-  /// any possibility this OutputPort has been accessed since the last time
-  /// GetMutableVectorData was called.
+  /// Returns a pointer to the data inside this %OutputPortValue, and updates
+  /// the version so that Contexts depending on this %OutputPortValue know to
+  /// invalidate their caches. Callers MUST NOT write on the returned pointer if
+  /// there is any possibility this %OutputPortValue has been accessed since the
+  /// last time GetMutableVectorData was called.
   ///
   /// Throws std::bad_cast if this is not a vector-valued port.
   template <typename T>
@@ -97,9 +97,9 @@ class OutputPort {
     return data_->GetValue<BasicVector<T>*>();
   }
 
-  /// Returns a clone of this OutputPort containing a clone of the data, but
-  /// without any dependents.
-  std::unique_ptr<OutputPort> Clone() const;
+  /// Returns a clone of this %OutputPortValue containing a clone of the data,
+  /// but without any dependents.
+  std::unique_ptr<OutputPortValue> Clone() const;
 
  private:
   void InvalidateAndIncrement();
@@ -126,8 +126,8 @@ class SystemOutput {
   virtual ~SystemOutput() {}
 
   virtual int get_num_ports() const = 0;
-  virtual OutputPort* get_mutable_port(int index) = 0;
-  virtual const OutputPort& get_port(int index) const = 0;
+  virtual OutputPortValue* get_mutable_port_value(int index) = 0;
+  virtual const OutputPortValue& get_port_value(int index) const = 0;
 
   /// Returns a type-preserving clone of this SystemOutput using the NVI idiom.
   std::unique_ptr<SystemOutput<T>> Clone() const {
@@ -137,36 +137,38 @@ class SystemOutput {
   /// Returns the abstract value in the port at @p index.
   const AbstractValue* get_data(int index) const {
     DRAKE_ASSERT(index >= 0 && index < get_num_ports());
-    return get_port(index).get_abstract_data();
+    return get_port_value(index).get_abstract_data();
   }
 
   /// Returns the vector value in the port at @p index. Throws std::bad_cast if
   /// the port is not vector-valued.
   const BasicVector<T>* get_vector_data(int index) const {
     DRAKE_ASSERT(index >= 0 && index < get_num_ports());
-    return get_port(index).template get_vector_data<T>();
+    return get_port_value(index).template get_vector_data<T>();
   }
 
   /// Returns a pointer to the data inside the port at @p index, and updates the
-  /// version so that Contexts depending on that OutputPort know to invalidate
+  /// version so that Contexts depending on that OutputPortValue know to
+  /// invalidate
   /// their caches. Callers MUST NOT write on the returned pointer if there is
-  /// any possibility this OutputPort has been accessed since the last time
+  /// any possibility this OutputPortValue has been accessed since the last time
   /// GetMutableVectorData was called.
   AbstractValue* GetMutableData(int index) {
     DRAKE_ASSERT(index >= 0 && index < get_num_ports());
-    return get_mutable_port(index)->GetMutableData();
+    return get_mutable_port_value(index)->GetMutableData();
   }
 
   /// Returns a pointer to the data inside the port at @p index, and updates the
-  /// version so that Contexts depending on that OutputPort know to invalidate
+  /// version so that Contexts depending on that OutputPortValue know to
+  /// invalidate
   /// their caches. Callers MUST NOT write on the returned pointer if there is
-  /// any possibility this OutputPort has been accessed since the last time
+  /// any possibility this OutputPortValue has been accessed since the last time
   /// GetMutableVectorData was called.
   ///
   /// Throws std::bad_cast if this is not a vector-valued port.
   BasicVector<T>* GetMutableVectorData(int index) {
     DRAKE_ASSERT(index >= 0 && index < get_num_ports());
-    return get_mutable_port(index)->template GetMutableVectorData<T>();
+    return get_mutable_port_value(index)->template GetMutableVectorData<T>();
   }
 
  protected:
@@ -174,7 +176,7 @@ class SystemOutput {
   virtual SystemOutput<T>* DoClone() const = 0;
 };
 
-/// A container for all the output of a leaf System.
+/// A container for all the output data of a leaf System.
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
 template <typename T>
@@ -185,42 +187,44 @@ class LeafSystemOutput : public SystemOutput<T> {
   LeafSystemOutput() = default;
   ~LeafSystemOutput() override = default;
 
-  int get_num_ports() const override { return static_cast<int>(ports_.size()); }
-
-  OutputPort* get_mutable_port(int index) override {
-    DRAKE_DEMAND(index >= 0 && index < get_num_ports());
-    return ports_[index].get();
+  int get_num_ports() const override {
+    return static_cast<int>(port_values_.size());
   }
 
-  const OutputPort& get_port(int index) const override {
+  OutputPortValue* get_mutable_port_value(int index) override {
     DRAKE_DEMAND(index >= 0 && index < get_num_ports());
-    return *ports_[index];
+    return port_values_[index].get();
+  }
+
+  const OutputPortValue& get_port_value(int index) const override {
+    DRAKE_DEMAND(index >= 0 && index < get_num_ports());
+    return *port_values_[index];
   }
 
   void add_port(std::unique_ptr<AbstractValue> value) {
-    add_port(std::make_unique<OutputPort>(std::move(value)));
+    add_port(std::make_unique<OutputPortValue>(std::move(value)));
   }
 
-  void add_port(std::unique_ptr<OutputPort> port) {
+  void add_port(std::unique_ptr<OutputPortValue> port) {
     // This is a good time to confirm that the port's value is well-formed.
     // This check will mostly occur only once per System.
     DRAKE_ASSERT_VOID(detail::CheckVectorValueInvariants<T>(
         port->get_abstract_data()));
-    ports_.emplace_back(std::move(port));
+    port_values_.emplace_back(std::move(port));
   }
 
  protected:
   /// Returns a clone that includes a deep copy of all the output ports.
   LeafSystemOutput<T>* DoClone() const override {
     LeafSystemOutput<T>* clone = new LeafSystemOutput<T>();
-    for (const auto& port : ports_) {
-      clone->ports_.push_back(port->Clone());
+    for (const auto& port_value : port_values_) {
+      clone->port_values_.push_back(port_value->Clone());
     }
     return clone;
   }
 
  private:
-  std::vector<std::unique_ptr<OutputPort>> ports_;
+  std::vector<std::unique_ptr<OutputPortValue>> port_values_;
 };
 
 }  // namespace systems

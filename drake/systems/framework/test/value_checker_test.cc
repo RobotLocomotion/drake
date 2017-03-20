@@ -3,7 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"

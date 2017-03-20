@@ -1,6 +1,6 @@
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcmt_drake_signal.hpp"

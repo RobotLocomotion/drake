@@ -1,7 +1,6 @@
 #include "drake/multibody/ik_trajectory_helper.h"
 
 #include <cmath>
-
 #include <set>
 
 using Eigen::MatrixXd;

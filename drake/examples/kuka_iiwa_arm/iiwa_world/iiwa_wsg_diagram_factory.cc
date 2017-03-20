@@ -4,12 +4,11 @@
 #include <set>
 #include <string>
 #include <utility>
-#include "drake/util/drakeGeometryUtil.h"
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -18,6 +17,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/matrix_gain.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
 
@@ -43,6 +43,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   DiagramBuilder<T>* base_builder = builder.get_mutable_builder();
 
   plant_ = builder.AddPlant(std::move(combined_plant));
+  plant_->set_name("IiwaAndWsgCombinedPlant");
 
   const auto& iiwa_output_port =
     plant_->model_instance_state_output_port(iiwa_info.instance_id);
@@ -62,6 +63,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
           iiwa_info.instance_id,
           iiwa_info.model_path, iiwa_info.world_offset, iiwa_kp, iiwa_ki,
           iiwa_kd, true /* with feedforward acceleration */);
+  iiwa_controller_->set_name("IIWAInverseDynamicsController");
 
   // Updates the controller's model's end effector's inertia to include
   // the added gripper.
@@ -96,6 +98,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
       builder.template AddController<systems::PidController<T>>(
           wsg_info.instance_id,
           std::move(feedback_selector), wsg_kp, wsg_ki, wsg_kd);
+  wsg_controller_->set_name("SchunkWSGPIDController");
 
   //  Export wsg's desired state input, and state output.
   base_builder->ExportInput(wsg_controller_->get_input_port_desired_state());
@@ -109,6 +112,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
       base_builder->template AddSystem<OracularStateEstimation<T>>(
           iiwa_controller_->get_robot_for_control(),
           iiwa_controller_->get_robot_for_control().get_body(1));
+  iiwa_state_est_->set_name("OracularStateEstimationIIWAState");
   base_builder->Connect(iiwa_output_port,
       iiwa_state_est_->get_input_port_state());
   base_builder->ExportOutput(iiwa_state_est_->get_output_port_msg());
@@ -123,6 +127,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   box_state_est_ =
       base_builder->template AddSystem<OracularStateEstimation<T>>(
           *object_, object_->get_body(1));
+  box_state_est_->set_name("OracularStateEstimationBoxState");
   base_builder->Connect(
       plant_->model_instance_state_output_port(box_info.instance_id),
       box_state_est_->get_input_port_state());

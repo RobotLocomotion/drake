@@ -1,10 +1,10 @@
 #include "drake/systems/sensors/vtk_util.h"
 
+#include <Eigen/Dense>
 #include <vtkNew.h>
 #include <vtkPlaneSource.h>
 #include <vtkSmartPointer.h>
 #include <vtkTransform.h>
-#include <Eigen/Dense>
 
 namespace drake {
 namespace systems {

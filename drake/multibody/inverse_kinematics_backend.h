@@ -5,9 +5,9 @@
 
 #include <Eigen/Dense>
 
-#include "drake/solvers/decision_variable.h"
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/solvers/decision_variable.h"
 
 class RigidBodyConstraint;
 class IKoptions;

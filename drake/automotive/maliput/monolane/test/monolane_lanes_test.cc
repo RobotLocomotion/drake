@@ -1,16 +1,15 @@
+#include <cmath>
+#include <iostream>
+
+#include <gtest/gtest.h>
+
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/junction.h"
 #include "drake/automotive/maliput/monolane/lane.h"
 #include "drake/automotive/maliput/monolane/line_lane.h"
 #include "drake/automotive/maliput/monolane/road_geometry.h"
 #include "drake/automotive/maliput/monolane/segment.h"
-
 #include "drake/common/eigen_matrix_compare.h"
-
-#include <cmath>
-#include <iostream>
-
-#include "gtest/gtest.h"
 
 namespace drake {
 namespace maliput {

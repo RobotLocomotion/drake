@@ -1,7 +1,7 @@
 #include "drake/systems/sensors/camera_info.h"
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 
