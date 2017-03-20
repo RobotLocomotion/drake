@@ -116,11 +116,13 @@ void AddRotationMatrixOrthonormalSocpConstraint(
  *    the on other binary variables.
  * @param prog The mathematical program to which the constraints are added.
  * @param R The rotation matrix
- * @param num_binary_vars_per_half_axis # of binary variables for a half axis.
+ * @param num_binary_vars_per_half_axis number of binary variables for a half
+ * axis.
  * @param limits The angle joints for space fixed z-y-x representation of the
- * rotation. @default is no constraint.
- * @retval p  `p.first` is the binary variables CRpos, `p.second` is the binary
- * variables CRneg. The definition for these variables are
+ * rotation. @default is no constraint. @see RollPitchYawLimitOptions
+ * @retval p  `p.first` is the variables CRpos, `p.second` is the
+ * variables CRneg. Both variables can only take values either 0 or 1.
+ * The definition for these variables are
  * <pre>
  *   CRpos[k](i, j) = 1 => k / N <= R(i, j) <= (k+1) / N
  *   CRneg[k](i, j) = 1 => -(k+1) / N <= R(i, j) <= -k / N

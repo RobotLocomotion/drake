@@ -7,6 +7,7 @@
 
 #include "drake/math/cross_product.h"
 
+using std::numeric_limits;
 using drake::symbolic::Expression;
 
 namespace drake {
@@ -398,7 +399,7 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   prog_normal.AddLinearCost(Vector1d(-1), d_var);
   for (const auto& pt : pts) {
     prog_normal.AddLinearConstraint(Eigen::Vector4d(pt(0), pt(1), pt(2), -1), 0,
-                                    std::numeric_limits<double>::infinity(),
+                                    numeric_limits<double>::infinity(),
                                     {n_var, d_var});
   }
   // A_lorentz * n + b_lorentz = [1; n]
@@ -442,15 +443,18 @@ void AddMcCormickVectorConstraints(
 
         double box_min_norm = box_min.lpNorm<2>();
         double box_max_norm = box_max.lpNorm<2>();
-        if (box_min_norm <= 1.0 + 1E-10 && box_max_norm >= 1.0 - 1E-10) {
+        if (box_min_norm <= 1.0 + numeric_limits<double>::epsilon() &&
+            box_max_norm >= 1.0 - numeric_limits<double>::epsilon()) {
           // The box intersects with the surface of the unit sphere
           // Two possible cases
           // 1. If the box bmin <= x <= bmax intersects with the surface of the
           // unit sphere at a unique point (either bmin or bmax), then we know
           // the unique value of v, it has to be either bmin or bmax.
           // 2. Otherwise, there is a region of intersection.
-          if (std::abs(box_min_norm - 1.0) < 1E-10 ||
-              std::abs(box_max_norm - 1.0) < 1E-10) {
+          if (std::abs(box_min_norm - 1.0) <
+                  2 * numeric_limits<double>::epsilon() ||
+              std::abs(box_max_norm - 1.0) <
+                  2 * numeric_limits<double>::epsilon()) {
             // If box_min or box_max is on the sphere, then denote the point on
             // the sphere as u, we have the following condition
             // if c[xi](0) = 1 and c[yi](1) == 1 and c[zi](2) == 1, then
@@ -471,16 +475,18 @@ void AddMcCormickVectorConstraints(
             //   2 * c[xi](0) + c[yi](1) + c[zi](2) - 6
             //       <= v.cross(v1) - v2 <= 6 - 2 * (c[xi](0) + c[yi](1) +
             //       c[zi](2))
-            Eigen::Vector3d u;
-            if (std::abs(box_min_norm - 1.0) < 1E-10) {
-              u = box_min / box_min_norm;
+            Eigen::Vector3d unique_intersection;  // `u` in the documentation
+                                                  // above
+            if (std::abs(box_min_norm - 1.0) <
+                2 * numeric_limits<double>::epsilon()) {
+              unique_intersection = box_min / box_min_norm;
             } else {
-              u = box_max / box_max_norm;
+              unique_intersection = box_max / box_max_norm;
             }
             Eigen::Vector3d orthant_u;
             VectorDecisionVariable<3> orthant_c;
             for (int o = 0; o < 8; o++) {  // iterate over orthants
-              orthant_u = FlipVector(u, o);
+              orthant_u = FlipVector(unique_intersection, o);
               orthant_c = PickPermutation(this_cpos, this_cneg, o);
 
               // TODO(hongkai.dai): remove this for loop when we can handle
@@ -632,7 +638,7 @@ void AddMcCormickVectorConstraints(
             }
           }
         } else {
-          // This box does not intersect with the sphere.
+          // This box does not intersect with the surface of the sphere.
           for (int o = 0; o < 8; ++o) {  // iterate over orthants
             prog->AddLinearConstraint(PickPermutation(this_cpos, this_cneg, o)
                                           .cast<Expression>()
