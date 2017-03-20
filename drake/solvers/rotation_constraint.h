@@ -93,15 +93,15 @@ void AddRotationMatrixOrthonormalSocpConstraint(
  * Adds binary variables that constrain the value of the column *and* row
  * vectors of R, in order to add the following (in some cases non-convex)
  * constraints as an MILP.  Specifically, for column vectors Ri, we constrain:
- * - forall i, |Ri| = 1 +/- envelope,
- * - forall i,j!=i, Ri.dot(Rj) = 0 +/- envelope,
- * - R2 = R0.cross(R1) +/- envelope,
+ * - forall i, |Ri| = 1 ± envelope,
+ * - forall i,j. i ≠ j, Ri.dot(Rj) = 0 ± envelope,
+ * - R2 = R0.cross(R1) ± envelope,
  *      and again for R0=R1.cross(R2), and R1=R2.cross(R0).
  * Then all of the same constraints are also added to R^T.  The size of the
  * envelope decreases quickly as num_binary_variables_per_half_axis is
  * is increased.
  *
- * Note: Creates 9*2*num_binary_variables_per_half_axis binary variables named
+ * Note: Creates `9*2*num_binary_variables_per_half_axis binary` variables named
  * "BRpos*(*,*)" and "BRneg*(*,*)", and the same number of continuous variables
  * named "CRpos*(*,*)" and "CRneg*(*,*)".
  *
@@ -111,8 +111,8 @@ void AddRotationMatrixOrthonormalSocpConstraint(
  *    between multiple rows/columns (e.g. the constraints on R^T use the same
  *    variables as the constraints on R), and
  *  - to facilitate branch-and-bound solution techniques -- binary regions are
- *    layered so that constraining one region provides establishes constraints
- *    on large portions of O(3), and confers hopefully "useful" constraints
+ *    layered so that constraining one region establishes constraints
+ *    on large portions of SO(3), and confers hopefully "useful" constraints
  *    the on other binary variables.
  * @param prog The mathematical program to which the constraints are added.
  * @param R The rotation matrix

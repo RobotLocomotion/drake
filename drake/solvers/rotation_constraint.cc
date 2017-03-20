@@ -2,9 +2,11 @@
 #include "drake/solvers/rotation_constraint_internal.h"
 
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <limits>
 
+#include "drake/common/symbolic_expression.h"
 #include "drake/math/cross_product.h"
 
 using std::numeric_limits;
@@ -441,16 +443,16 @@ void AddMcCormickVectorConstraints(
         this_cpos << cpos[xi](0), cpos[yi](1), cpos[zi](2);
         this_cneg << cneg[xi](0), cneg[yi](1), cneg[zi](2);
 
-        double box_min_norm = box_min.lpNorm<2>();
-        double box_max_norm = box_max.lpNorm<2>();
+        const double box_min_norm = box_min.lpNorm<2>();
+        const double box_max_norm = box_max.lpNorm<2>();
         if (box_min_norm <= 1.0 + 2 * numeric_limits<double>::epsilon() &&
             box_max_norm >= 1.0 - 2 * numeric_limits<double>::epsilon()) {
-          // The box intersects with the surface of the unit sphere
+          // The box intersects with the surface of the unit sphere.
           // Two possible cases
           // 1. If the box bmin <= x <= bmax intersects with the surface of the
-          // unit sphere at a unique point (either bmin or bmax), then we know
-          // the unique value of v, it has to be either bmin or bmax.
+          // unit sphere at a unique point (either bmin or bmax),
           // 2. Otherwise, there is a region of intersection.
+
           // We choose the error as 2 * eps here. The reason is that
           // if x.norm() == 1, then another vector y which is different from
           // x by eps (y(i) = x(i) + eps), the norm of y is at most 1 + 2 * eps.
@@ -501,13 +503,13 @@ void AddMcCormickVectorConstraints(
                 prog->AddLinearConstraint(v(i) - orthant_u(i) >=
                                           2 * orthant_c_sum - 6);
               }
-              Expression v_dot_v1 = orthant_u.dot(v1);
-              Expression v_dot_v2 = orthant_u.dot(v2);
+              const Expression v_dot_v1 = orthant_u.dot(v1);
+              const Expression v_dot_v2 = orthant_u.dot(v2);
               prog->AddLinearConstraint(v_dot_v1 <= 3 - orthant_c_sum);
               prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v1);
               prog->AddLinearConstraint(v_dot_v2 <= 3 - orthant_c_sum);
               prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v2);
-              Vector3<Expression> v_cross_v1 = orthant_u.cross(v1);
+              const Vector3<Expression> v_cross_v1 = orthant_u.cross(v1);
               for (int i = 0; i < 3; ++i) {
                 prog->AddLinearConstraint(v_cross_v1(i) - v2(i) <=
                                           6 - 2 * orthant_c_sum);
@@ -787,8 +789,7 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                                   R.row((i + 1) % 3).transpose(),
                                   R.row((i + 2) % 3).transpose());
   }
-  return std::pair<std::vector<MatrixDecisionVariable<3, 3>>,
-                   std::vector<MatrixDecisionVariable<3, 3>>>(Cpos, Cneg);
+  return make_pair(Cpos, Cneg);
 }
 
 }  // namespace solvers
