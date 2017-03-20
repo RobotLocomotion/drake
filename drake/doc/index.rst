@@ -127,3 +127,12 @@ Next steps
    Mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>
    credits
    GitHub <https://github.com/RobotLocomotion/drake>
+
+
+Using Drake from other Programming Languages
+============================================
+.. toctree::
+    :maxdepth: 1
+
+    python_bindings
+    julia_bindings

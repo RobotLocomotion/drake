@@ -251,10 +251,3 @@ Version Control
 
     no_push_to_origin
 
-Using Drake from other Programming Languages
-============================================
-.. toctree::
-    :maxdepth: 1
-
-    python_bindings
-    julia_python_interface
