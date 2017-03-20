@@ -16,7 +16,7 @@ namespace drake {
 /// void foo(int bar_index, int thing_index);
 /// @endcode
 ///
-/// It is possible for a programmer to accidentally switch the to index values
+/// It is possible for a programmer to accidentally switch the two index values
 /// in an invocation.  This mistake would still be _syntactically_ correct; it
 /// will successfully compile but lead to inscrutable run-time errors. The
 /// type-safe index provides the same speed and efficiency of passing `int`s,
@@ -31,7 +31,7 @@ namespace drake {
 /// The type-safe index is a _stripped down_ `int`. Each uniquely declared
 /// index type has the following properties:
 ///
-///   - Index values are constructed _from_ `int` values.
+///   - Index values are _explicitly_ constructed from `int` values.
 ///   - The index is implicitly convertible to an `int` (to serve as an index).
 ///   - The index supports increment, decrement, and in-place addition and
 ///     subtraction to support standard index-like operations.
@@ -43,21 +43,23 @@ namespace drake {
 /// value which indicates uninitialized or undefined. Operations which return
 /// an index, but can fail, should communicate this in the function interface
 /// (e.g. through the std::optional<IndexType> return value). If an index
-/// exists, it should be considered valid
+/// exists, it should be considered valid.
 ///
 /// It is the designed intent of this class, that indices derived from this
 /// class can be passed and returned by value. Passing indices by const
 /// reference should be considered a misuse.
 ///
-/// The following alias will create a unique identifier type for class `Foo`:
+/// This is the recommended method to create a unique index type associated with
+/// class `Foo`:
 ///
 /// @code
 /// using FooIndex = TypeSafeIndex<class FooTag>;
 /// @endcode
 ///
-/// This references a non-existant, and ultimately anonymous, class `FooTag`.
-/// This is sufficient to create a unique index type. At the same time, the
-/// index can be instantiated on the actual `Foo` class if convenient.
+/// This references a non-existent, and ultimately anonymous, class `FooTag`.
+/// This is sufficient to create a unique index type. It is certainly possible
+/// to use an existing class (e.g., `Foo`). But this provides no functional
+/// benefit.
 ///
 /// __Examples of valid and invalid operations__
 ///
@@ -119,6 +121,8 @@ namespace drake {
 /// transform to or compare with an `int`). This decouples details of
 /// implementation from the idea of the object. Combined with its immutability,
 /// it would serve well as a element of a public API.
+///
+/// @sa TypeSafeIntId
 ///
 /// @tparam Tag The name of the tag associated with a class type. The class
 ///             need not be a defined class.

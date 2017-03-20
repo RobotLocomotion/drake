@@ -26,9 +26,9 @@ using BId = TypeSafeIntId<class BTag>;
 //      first).
 //   2. The TypeSafeIntId::get_new_id() returns 0 with the first
 //      invocation and each successive invocation increases the value by 1.
-const AId a0 = AId::get_new_id();
 const AId a1 = AId::get_new_id();
 const AId a2 = AId::get_new_id();
+const AId a3 = AId::get_new_id();
 const BId b = BId::get_new_id();
 
 // These tests confirm that *compilable* functionality behaves correctly.
@@ -36,21 +36,21 @@ const BId b = BId::get_new_id();
 // Verifies the copy constructor. This implicitly tests the expected property
 // of the get_new_id() factory method and the get_value() method.
 GTEST_TEST(TypeSafeIntId, Constructor) {
-  EXPECT_EQ(a0.get_value(), 0);
   EXPECT_EQ(a1.get_value(), 1);
   EXPECT_EQ(a2.get_value(), 2);
-  AId temp(a1);
-  EXPECT_EQ(temp.get_value(), 1);
+  EXPECT_EQ(a3.get_value(), 3);
+  AId temp(a2);
+  EXPECT_EQ(temp.get_value(), 2);
 };
 
 // Confirms that assignment behaves correctly. This also implicitly tests
 // equality and inequality.
 GTEST_TEST(TypeSafeIntId, AssignmentAndComparison) {
-  EXPECT_TRUE(a1 != a2);
-  AId temp = a1;
-  EXPECT_TRUE(temp == a1);
-  temp = a2;
+  EXPECT_TRUE(a2 != a3);
+  AId temp = a2;
   EXPECT_TRUE(temp == a2);
+  temp = a3;
+  EXPECT_TRUE(temp == a3);
 }
 
 // Confirms that frame ids are configured to serve as unique keys in
@@ -58,30 +58,30 @@ GTEST_TEST(TypeSafeIntId, AssignmentAndComparison) {
 GTEST_TEST(TypeSafeIntId, ServeAsMapKey) {
   unordered_set<AId> ids;
 
-  // This is a *different* id with the *same* value as a0. It should *not*
+  // This is a *different* id with the *same* value as a1. It should *not*
   // introduce a new value to the set.
-  AId temp = a0;
+  AId temp = a1;
 
   EXPECT_EQ(ids.size(), 0);
-  ids.insert(a0);
-  EXPECT_NE(ids.find(a0), ids.end());
+  ids.insert(a1);
+  EXPECT_NE(ids.find(a1), ids.end());
   EXPECT_NE(ids.find(temp), ids.end());
 
   EXPECT_EQ(ids.size(), 1);
-  ids.insert(a1);
+  ids.insert(a2);
   EXPECT_EQ(ids.size(), 2);
 
   ids.insert(temp);
   EXPECT_EQ(ids.size(), 2);
 
-  EXPECT_EQ(ids.find(a2), ids.end());
+  EXPECT_EQ(ids.find(a3), ids.end());
 }
 
 // Tests the streaming behavior.
 GTEST_TEST(TypeSafeIntId, StreamOperator) {
   stringstream ss;
-  ss << a1;
-  EXPECT_EQ(ss.str(), "1");
+  ss << a2;
+  EXPECT_EQ(ss.str(), "2");
 }
 
 // These tests confirm that behavior that *shouldn't* be compilable isn't.

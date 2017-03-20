@@ -12,17 +12,18 @@ namespace geometry {
  A type-safe integer-based identifier class.
 
  This class serves as an upgrade to the standard practice of passing `int`s
- around as unique identifiers. In the common practice, a method that takes
- identifiers to different types of objects would have an interface like:
+ around as unique identifiers (or, as in this case, `int64_t`s). In the common
+ practice, a method that takes identifiers to different types of objects would
+ have an interface like:
 
  @code
- void foo(int bar_id, int thing_id);
+ void foo(int64_t bar_id, int64_t thing_id);
  @endcode
 
  It is possible for a programmer to accidentally switch the two ids in an
  invocation. This mistake would still be _syntactically_ correct; it will
  successfully compile but  lead to inscrutable run-time errors. The type-safe
- identifier provides the same speed and efficiency of passing `int`s, but
+ identifier provides the same speed and efficiency of passing `int64_t`s, but
  provides compile-time checking. The function would now look like:
 
  @code
@@ -34,13 +35,14 @@ namespace geometry {
  The type-safe identifier is a _stripped down_ 64-bit int. Each uniquely
  declared identifier type has the following properties:
 
-   - The identifier has no public constructors (see note below).
+   - The identifier has only a single public constructor: the copy constructor
+     (see note below).
    - The identifier is immutable.
    - The identifier can only be tested for equality/inequality with other
      identifiers of the _same_ type.
    - Identifiers of different types are _not_ interconvertible.
-   - The identifier can be queried for its underlying `int` value.
-   - The identifier can be written to an output stream. Its underlying `int`
+   - The identifier can be queried for its underlying `int64_t` value.
+   - The identifier can be written to an output stream. Its underlying `int64_t`
      value gets written.
    - Identifiers are not guaranteed to possess _meaningful_ ordering. I.e.,
      identifiers for two objects created sequentially may not have sequential
@@ -84,10 +86,10 @@ namespace geometry {
     a3 = 7;                              // Compiler error.
  @endcode
 
- __Working in the absence of public constructors__
+ __Implications of having *only* a copy constructor__
 
- As noted, the TypeSafeIntId has no public constructor. This has several
- implications:
+ As noted, the only constructor that TypeSafeIntId has is the copy constructor.
+ This has several implications:
 
    1. Working with STL containers. Generally, the lack of a default constructor,
       is not a problem. Using `emplace_back()` and methods of this type work
@@ -128,6 +130,8 @@ namespace geometry {
  compare with an `int`). This decouples details of implementation from the idea
  of the object. Combined with its immutability, it would serve well as a element
  of a public API.
+
+ @sa TypeSafeIndex
 
  @tparam Tag              The name of the tag that uniquely segregates one
                           instantiation from another.
@@ -171,8 +175,12 @@ class TypeSafeIntId {
   static int64_t next_index_;
 };
 
+// We initialize this to 1 (instead of zero) as an aid to human debugging.
+// There are too many zeros in the system already. And as the default
+// value of int-types is zero, this will clearly distinguish between default
+// and meaningful initialization.
 template <typename Tag>
-int64_t TypeSafeIntId<Tag>::next_index_ = 0;
+int64_t TypeSafeIntId<Tag>::next_index_ = 1;
 
 /** Streaming output operator.
  @relates TypeSafeIntId
