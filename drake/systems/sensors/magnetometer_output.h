@@ -26,7 +26,6 @@ class MagnetometerOutput : public BasicVector<T> {
 
   /// @name Accessors
   /// @{
-
   /// Returns a Vector3<T> containing the magnetometer's measurement.
   Vector3<T> get_measurement() const;
   /// @}

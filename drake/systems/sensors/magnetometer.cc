@@ -61,14 +61,12 @@ void Magnetometer::DoCalcOutput(const systems::Context<double>& context,
   const auto R_MW = X_WM.linear().transpose();
   auto p_WoN_M = R_MW * p_WoN_W_;
 
-
   std::cout << "Magnetometer::DoCalcOutput():\n"
     << "  - p_WoN_W_ = " << p_WoN_W_.transpose() << "\n"
     << "  - X_WM =\n" << X_WM.matrix() << "\n"
     << "  - R_MW =\n" << R_MW.matrix() << "\n"
     << "  - p_WoN_M = " << p_WoN_M.transpose() << "\n"
     << std::endl;
-
 
   // This is the previous logic that assumes the world frame's +X axis is
   // pointing north.

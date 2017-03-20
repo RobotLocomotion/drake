@@ -26,7 +26,8 @@ namespace sensors {
 /// Let:
 ///  - `M` be the magnetometer's frame.
 ///  - `W` be the world frame with origin `Wo`.
-///  - `p_WoN_W` be a unit vector from `Wo` to point `N` that points to true
+///  - `N` be a point in the direction of true north.
+///  - `p_WoN_W` be a unit vector from `Wo` to `N` that points to true
 ///     north express in `W`.
 ///  - `p_WoN_M` be the same as `p_WoN_W` except expressed in `M`.
 ///  - `R_MW` be the rotation matrix from `W` to `M`.
@@ -66,51 +67,48 @@ class Magnetometer : public systems::LeafSystem<double> {
   /// should typically be unique among all sensors attached to a particular
   /// model instance within @p tree.
   ///
-  /// @param[in] frame The frame to which this magnetometer is attached. This
-  /// is the frame in which this sensor's output is given. It need not be in the
-  /// provided `tree`, but must reference a body in the `tree`. It defines `M`,
-  /// which is described in this class's documentation.
+  /// @param[in] frame The frame, `M`, to which this magnetometer is attached.
+  /// This is the frame in which this sensor's output is given. It need not be
+  /// in the provided `tree`, but must reference a body in the `tree`. For more
+  /// details, see this class's documentation.
   ///
   /// @param[in] tree The RigidBodyTree that belongs to the RigidBodyPlant being
-  /// sensed by this sensor. This should be a reference to the same
-  /// RigidBodyTree that is being used by the RigidBodyPlant whose outputs are
-  /// fed into this sensor. This parameter's lifespan must exceed that of this
-  /// class's instance.
+  /// sensed by this sensor. This parameter's lifespan must exceed this class's
+  /// instance.
   ///
-  /// @param[in] north_vector A unit vector in `W` that points to true north,
-  /// i.e., `p_WoN_W`.
+  /// @param[in] north_vector A unit vector, `p_WoN_W`, that points to true
+  /// north in the world frame.
   ///
   Magnetometer(const std::string& name, const RigidBodyFrame<double>& frame,
                const RigidBodyTree<double>& tree,
                const Eigen::Vector3d& north_vector = Eigen::Vector3d(1, 0, 0));
 
-  /// Returns the name of this sensor. The name can be any user-specified value.
+  /// Returns this sensor's name.
   const std::string& get_name() const { return name_; }
 
-  /// Returns the RigidBodyTree that this sensor is sensing.
+  /// Returns the RigidBodyTree being used by this sensor.
   const RigidBodyTree<double>& get_tree() const { return tree_; }
 
-  /// Returns this sensor's frame, which specifies its location and orientation
-  /// in the RigidBodyTree.
-  ///
-  /// @see get_tree()
+  /// Returns `M` (see this class's documentation).
   const RigidBodyFrame<double>& get_frame() const { return frame_; }
 
-  /// Returns a descriptor of the input port that should contain the generalized
-  /// (i.e., linear and rotational) position and velocity state of the
-  /// RigidBodyTree DOFs.
+  /// Returns a descriptor of the input port that contains `x`, the generalized
+  /// state of the RigidBodyPlant.
   const InputPortDescriptor<double>& get_input_port() const {
     return System<double>::get_input_port(input_port_index_);
   }
 
-  /// Returns a descriptor of the state output port, which contains the sensor's
-  /// sensed values.
+  /// Returns a descriptor of the state output port, which contains the sensed
+  /// values.
+  ///
+  /// @see MagnetometerOutput
   const OutputPortDescriptor<double>& get_output_port() const {
     return System<double>::get_output_port(output_port_index_);
   }
 
-  /// Allocates the output vector. See this class' description for details of
-  /// this output vector.
+  /// Allocates the output vector.
+  ///
+  /// @see MagnetometerOutput
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const OutputPortDescriptor<double>& descriptor) const override;
 
