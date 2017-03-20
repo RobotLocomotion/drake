@@ -8,11 +8,11 @@
 #include <stdexcept>
 #include <utility>
 
+#include <Eigen/Dense>
+
 #include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/systems/framework/vector_base.h"
-
-#include <Eigen/Dense>
 
 namespace drake {
 namespace systems {

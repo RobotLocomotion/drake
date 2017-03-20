@@ -3,8 +3,8 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <typeinfo>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
 
 #include "drake/common/drake_assert.h"

@@ -11,8 +11,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 
