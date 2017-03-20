@@ -196,7 +196,7 @@ struct hash<drake::geometry::TypeSafeIntId<Tag>> {
   size_t operator()(const drake::geometry::TypeSafeIntId<Tag>& id) const {
     // There is no hash function for int64_t. However, given that the ids
     // are intended to be unique, they can serve as their own hash value.
-    return static_cast<size_t>(id.get_value());
+    return hash<int64_t>()(id.get_value());
   }
 };
 
