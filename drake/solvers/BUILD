@@ -527,6 +527,7 @@ drake_cc_googletest(
         "mosek",
     ],
     deps = [
+        ":gurobi_solver",
         ":mathematical_program",
         ":rotation_constraint",
         "//drake/common:eigen_matrix_compare",
