@@ -45,7 +45,7 @@ namespace systems {
  * zero (for `k < 0` and `t → ∞`). The practical effect is that the integrator
  * tends to be stable for any given step size on a system of ordinary
  * differential equations, given that the nonlinear system of equations is
- * solvable (which typically depends on the step size, `h`).
+ * solvable.
  *
  * The time complexity of this method is often dominated by the time to form
  * the Jacobian matrix consisting of the partial derivatives of the nonlinear
@@ -56,11 +56,11 @@ namespace systems {
  * evaluation code runs in `O(n)` time (e.g., as it would for multi-rigid
  * body dynamics without kinematic loops), the asymptotic complexity to form
  * the Jacobian will be `O(n²)`. This Jacobian matrix needs to be formed
- * repeatedly- on the order of every time the state variables are updated-
+ * repeatedly- as often as every time the state variables are updated-
  * during the solution process. Using automatic differentiation replaces the
  * `n` derivative evaluations with what is hopefully a much less expensive
  * process, though the complexity to form the Jacobian matrix is still `O(n²)`.
- * For large `n`, the time complexity will be dominated by the `O(n³)` time
+ * For large `n`, the time complexity may be dominated by the `O(n³)` time
  * required to (repeatedly) solve least squares problems as part of the
  * nonlinear system solution process.
  *
@@ -70,8 +70,8 @@ namespace systems {
  * convergence to a solution for `g = 0` where
  * `g(x(t+h)) ≡ x(t+h) - x(t) - h f(t+h,x(t+h))` as `h` becomes sufficiently
  * small. Those methods require logic to determine whether to keep taking NR
- * iterates or whether to decrease `h` and begin iterating anew.  It is clear
- * that for sufficiently small `h`, `g(x(t+h)) = 0` will be satisfiable.
+ * iterates or whether to decrease `h` and begin iterating anew.  It should be
+ *  clear that for sufficiently small `h`, `g(x(t+h)) = 0` will be satisfiable.
  *
  * This novel solution process uses globally convergent NR with line search,
  * which is guaranteed to converge to a "local minimum", a point at which the
@@ -80,10 +80,11 @@ namespace systems {
  * `||g(x(t+h) + αΔx)||` is significantly reduced over `||g(x(t+h)||`.  `g = 0`
  * is *not* guaranteed at the end of this solution process, which seems to put
  * this method at a significant disadvantage compared to existing methods.
- * However, those methods do not generally terminate when `g = 0`! The danger in
- * this novel approach is that the determined `||g(x(t+h)||` is inaccurate for
+ * However, those methods generally terminate before `g = 0`! The danger in
+ * the novel approach is that the determined `||g(x(t+h)||` is inaccurate for
  * large `h`. Use of error control and initializing `g(x(t+h))` to `g(x(t))`
- * both guard against that possibility.
+ * both guard against (but do not, at least as of yet, provably prevent) that
+ * possibility.
  */
 template <class T>
 class ImplicitEulerIntegrator : public IntegratorBase<T> {
@@ -264,9 +265,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
  private:
   MatrixX<T> CalcJacobian(const VectorX<T>& xtplus);
-  void RestoreTimeAndState(const T& t, const VectorX<T>& x);
   void DoStepOnceFixedSize(const T& dt) override;
-  void DoTrialStep(const T& dt);
+  void Step(const T &dt);
   MatrixX<T> ComputeFDiffJacobianF(const VectorX<T>& xtplus);
   MatrixX<T> ComputeCDiffJacobianF(const VectorX<T>& xtplus);
   Eigen::MatrixXd ComputeADiffJacobianF(const Eigen::VectorXd& xtplus);

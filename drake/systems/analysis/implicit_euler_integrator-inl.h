@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file
-/// Template method implementations for runge_kutta_3_integrator.h.
+/// Template method implementations.
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
@@ -32,7 +32,7 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
   dx_state_ = this->get_system().AllocateTimeDerivatives();
 
   const double kDefaultAccuracy = 1e-1;  // Good for this particular integrator.
-  const double kLoosestAccuracy = 2e-1;  // Integrator specific.
+  const double kLoosestAccuracy = 1e-2;  // Integrator specific.
 
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
@@ -200,25 +200,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCDiffJacobianF(
   return J;
 }
 
-// Restores the integrator time and state to that at the start of the
-// integration interval. This restoration is necessary when the integrator
-// attempts (and fails) a trial step.
+// Steps forward by dt.
 template <class T>
-void ImplicitEulerIntegrator<T>::RestoreTimeAndState(const T& t,
-                                                     const VectorX<T>& x) {
-  Context<T>* context = this->get_mutable_context();
-  context->set_time(t);
-  context->get_mutable_continuous_state()->SetFromVector(x);
-}
-
-// Attempts a trial step of time length @p dt.
-// @param dt The trial step size.
-// @param Jf The Jacobian matrix of the time derivative of the ordinary
-//          differential equations taken with respect to the state variables
-//          at time t0 (i.e., the time at the beginning of the integration
-//          interval).
-template <class T>
-void ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
+void ImplicitEulerIntegrator<T>::Step(const T &dt) {
   using std::abs;
 
   // Calculate the Jacobian matrix at x0.
@@ -279,15 +263,15 @@ void ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
     // Compute the state update.
     VectorX<T> dx = LU_.solve(-goutput);
 
-    // Compute the gradient of f = 0.5*g'*g, used for linesearch, computed with
+    // Compute the gradient of f = 0.5*g'*g, used for line search, computed with
     // respect to x. This also allows us to handle a single Jacobian matrix.
     // If grad*dx > 0, f will be non-decreasing.
     const VectorX<T> grad = goutput.transpose() * Jg;
     double slope = grad.dot(dx);
     DRAKE_DEMAND(slope < 0);
 
-    // Search the ray \alpha \in [0, \infty] for a "good" value that minimizes
-    // || x(t+h)_i + dx \alpha - x(t) - h f(t+h, x(t+h)_i + dx \alpha) ||. The
+    // Search the ray α ∈ [0, 1] for a "good" value that minimizes
+    // || x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ||. The
     // ray search is relativelly expensive, as it requres evaluating f().
     // Therefore, a good ray search will optimize the computational tradeoff
     // between finding the value of \alpha that minimizes the norm above and
@@ -295,7 +279,7 @@ void ImplicitEulerIntegrator<T>::DoTrialStep(const T& dt) {
     typename LineSearch<T>::LineSearchOutput lout =
         LineSearch<T>::search_line(xtplus, dx, f_last, grad, g, goutput.norm());
 
-    // Store the last alpha and update alpha sum statistic.
+    // Store the last alpha and update the alpha sum statistic.
     last_alpha = lout.alpha;
     alpha_sum_ += last_alpha;
 
