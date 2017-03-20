@@ -196,7 +196,8 @@ TEST_F(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
 }
 
 // Checks the validity of general integrator statistics and resets statistics.
-void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>& integrator) {
+void CheckGeneralStatsValidity(
+    const ImplicitEulerIntegrator<double>& integrator) {
   EXPECT_GT(integrator.get_num_newton_raphson_loops(), 0);
   EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
