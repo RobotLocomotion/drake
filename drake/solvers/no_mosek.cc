@@ -1,4 +1,3 @@
-
 #include "drake/solvers/mosek_solver.h"
 
 #include <stdexcept>

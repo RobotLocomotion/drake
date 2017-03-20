@@ -1,4 +1,3 @@
-
 #include "drake/solvers/snopt_solver.h"
 
 #include <stdexcept>

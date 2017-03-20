@@ -1,4 +1,3 @@
-
 #include "drake/solvers/nlopt_solver.h"
 
 #include <stdexcept>

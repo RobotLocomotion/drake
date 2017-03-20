@@ -1,6 +1,7 @@
 #include "drake/solvers/dreal_solver.h"
 
 #include <typeinfo>
+
 #include "dreal/dreal.h"
 #include <gtest/gtest.h>
 

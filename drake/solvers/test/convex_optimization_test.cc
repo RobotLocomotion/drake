@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include <list>
 
 #include <gtest/gtest.h>

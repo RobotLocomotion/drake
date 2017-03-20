@@ -1,10 +1,9 @@
 #pragma once
 
-#include <vector>
 #include <set>
+#include <vector>
 
 #include <Eigen/Dense>
-
 #include <gurobi_c++.h>
 
 #define CGE(call, env)                                                  \

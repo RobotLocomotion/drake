@@ -4,8 +4,8 @@
 #pragma once
 
 #include <fstream>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include <Eigen/SparseCore>
 
