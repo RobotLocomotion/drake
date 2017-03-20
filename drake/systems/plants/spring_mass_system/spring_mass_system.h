@@ -80,13 +80,12 @@ class SpringMassSystem : public LeafSystem<T> {
 
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
-  /// @param[in] name The name of the system.
   /// @param[in] spring_constant_N_per_m The spring constant in N/m.
   /// @param[in] mass_Kg The actual value in Kg of the mass attached to the
   /// spring.
   /// @param[in] system_is_forced If `true`, the system has an input port for an
   /// external force. If `false`, the system has no inputs.
-  SpringMassSystem(const T& spring_constant_N_per_m, const T& mass_kg,
+  SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
                    bool system_is_forced = false);
 
   using MyContext = Context<T>;
@@ -105,10 +104,10 @@ class SpringMassSystem : public LeafSystem<T> {
   const OutputPortDescriptor<T>& get_output_port() const;
 
   /// Returns the spring constant k that was provided at construction, in N/m.
-  const T& get_spring_constant() const { return spring_constant_N_per_m_; }
+  double get_spring_constant() const { return spring_constant_N_per_m_; }
 
   /// Returns the mass m that was provided at construction, in kg.
-  const T& get_mass() const { return mass_kg_; }
+  double get_mass() const { return mass_kg_; }
 
   /// Gets the current position of the mass in the given Context.
   T get_position(const MyContext& context) const {
@@ -206,9 +205,27 @@ class SpringMassSystem : public LeafSystem<T> {
   T DoCalcNonConservativePower(const MyContext& context) const override;
 
   // System<T> overrides.
+  /// Allocates an output vector of type SpringMassStateVector<T>.
+  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
+      const OutputPortDescriptor<T>& descriptor) const override;
+
   void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
+
   void DoCalcTimeDerivatives(const MyContext& context,
                              MyContinuousState* derivatives) const override;
+
+ protected:
+  System<AutoDiffXd>* DoToAutoDiffXd() const override {
+    SpringMassSystem<AutoDiffXd>* adiff_spring =
+        new SpringMassSystem<AutoDiffXd>(this->get_spring_constant(),
+                                         this->get_mass(),
+                                         system_is_forced_);
+    return adiff_spring;
+  }
+
+  // LeafSystem<T> override.
+  std::unique_ptr<ContinuousState<T>>
+  AllocateContinuousState() const override;
 
  private:
   // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,
@@ -243,8 +260,8 @@ class SpringMassSystem : public LeafSystem<T> {
     return get_mutable_state(context->get_mutable_continuous_state());
   }
 
-  const T spring_constant_N_per_m_{};
-  const T mass_kg_{};
+  const double spring_constant_N_per_m_{};
+  const double mass_kg_{};
   const bool system_is_forced_{false};
 };
 
