@@ -14,7 +14,7 @@ namespace systems {
 
 template <typename T>
 PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
-    const T& spring_stiffness, const T& mass,
+    double spring_stiffness, double mass,
     const T& Kp, const T& Ki, const T& Kd,
     const T& target_position) : Diagram<T>() {
   DRAKE_ASSERT(spring_stiffness >= 0);
