@@ -365,7 +365,7 @@ class Rod2D : public systems::LeafSystem<T> {
                                 const systems::Context<T>& context);
 
   /// The witness function that determines whether the rod should separate from
-  /// the halfspace. The witness function will return a non-negative value when
+  /// the halfspace. The witness function will return a negative value when
   /// the rod should not separate and a positive value when it should begin
   /// to separate from the halfspace.
   /// @pre It is assumed that the signed distance between the point of contact
@@ -381,9 +381,18 @@ class Rod2D : public systems::LeafSystem<T> {
   /// right, CalcSlidingDot() will return a positive value, which evolves into
   /// a negative value (first crossing zero), as the rod begins sliding to the
   /// left (assuming that the rod remains in contact with the halfspace over
-  /// the overal).
+  /// the intervall).
   static T CalcSlidingDot(const Rod2D<T>& rod,
                           const systems::Context<T>& context);
+
+  /// Evaluates the witness function for determining whether the rod in sticking
+  /// frictional contact should transition to sliding contact. When the rod
+  /// is in sticking contact at the beginning of an interval, the witness
+  /// function will return a non-negative value. If the witness function returns
+  /// a negative value at the end of an interval, a transition from sticking
+  /// to sliding has been indicated.
+  static T CalcStickingFrictionForceSlack(const Rod2D<T>& rod,
+                                          const systems::Context<T>& context);
 
   /// Gets the number of witness functions for the system active in the system
   /// for a given state (using @p context).

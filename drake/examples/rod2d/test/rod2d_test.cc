@@ -716,8 +716,8 @@ TEST_F(Rod2DDAETest, NumWitnessFunctions) {
 
 // Checks the witness function for calculating the signed distance.
 TEST_F(Rod2DDAETest, SignedDistWitness) {
-  // Rod is initially in a kissing configuration with the halfspace; check that
-  // the signed distance is zero.
+  // Rod initially touches the halfspace in a kissing configuration and is
+  // oriented at a 45 degree angle; check that the signed distance is zero.
   const double tol = 10*std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(dut_->CalcSignedDistance(*dut_, *context_), 0.0, tol);
 
@@ -744,8 +744,8 @@ TEST_F(Rod2DDAETest, OtherEndpointDistWitness) {
   SetInterpenetratingConfig();
   EXPECT_LT(dut_->CalcEndpointDistance(*dut_, *context_), 0);
 
-  // Move the rod into a kissing configuration without changing the
-  // mode variables.
+  // Move the rod into a kissing configuration with the rod lying horizontally
+  // without changing the mode variables.
   SetRestingHorizontalConfig();
   const double tol = 10*std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(dut_->CalcEndpointDistance(*dut_, *context_), 0, tol);

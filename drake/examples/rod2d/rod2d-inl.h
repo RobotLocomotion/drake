@@ -115,8 +115,6 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const Rod2D<T>& rod,
                                                      context) {
   DRAKE_ASSERT_VOID(rod.CheckValidContext(context));
   using std::sin;
-  using std::cos;
-  using std::abs;
 
   // Verify the system is simulated using piecewise DAE.
   DRAKE_DEMAND(rod.get_simulation_type() ==
@@ -146,6 +144,8 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const Rod2D<T>& rod,
 template <class T>
 T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
                            const systems::Context<T>& context) {
+  using std::sin;
+
   // Verify the system is simulated using piecewise DAE.
   DRAKE_DEMAND(rod.get_simulation_type() ==
       Rod2D<T>::SimulationType::kPiecewiseDAE);
@@ -169,6 +169,21 @@ T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
   const T half_rod_length = rod.get_rod_half_length();
   const T xcdot = xdot - k * stheta * half_rod_length * thetadot;
   return xcdot;
+}
+
+template <class T>
+T Rod2D<T>::CalcStickingForceSlack(const Rod2D<T>& rod,
+                                   const systems::Context<T>& context) {
+  using std::abs;
+
+  // Compute the contact forces, assuming sticking contact.
+  const Vector2 <T> cf = CalcStickingContactForces(context);
+  const T &fN = cf(0);
+  const T &fF = cf(1);
+
+  // Compute the difference between how much force *can* be applied
+  const double mu = get_mu_coulomb();
+  return mu * fN - abs(fF);
 }
 
 template <class T>
@@ -197,23 +212,25 @@ int Rod2D<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
 
     case Rod2D::kStickingSingleContact:
       // The rod is undergoing contact without impact and is sticking at a
-      // single point of contact. Two witness functions are necessary: one for
-      // checking whether the rod is to separate from the half-space and a
+      // single point of contact. Three witness functions are necessary: one for
+      // checking whether the rod is to separate from the half-space, a
       // second for checking for contact between the other rod endpoint
-      // and the ground.
+      // and the ground, and a third for checking for the transition from
+      // sticking to sliding.
       return 2;
 
     case Rod2D::kSlidingTwoContacts:
       // The rod is undergoing sliding contact without impact at two points of
-      // contact. Three witness functions are necessary: two for checking
+      // contact. Two witness functions are necessary: one for checking
       // whether the rod is to separate from the half-space and one more to
       // check whether the rod is to transition from sliding to sticking.
-      return 3;
+      return 2;
 
     case Rod2D::kStickingTwoContacts:
       // The rod is undergoing sliding contact without impact at two points of
-      // contact. Two witness functions are necessary to check whether the rod
-      // is to separate from the half-space.
+      // contact. Two witness functions are necessary: one to check whether
+      // the rod is to separate from the half-space and one more to check
+      // whether the rod is to transition from sticking to sliding.
       return 2;
 
     default:
