@@ -56,6 +56,7 @@ drake_cc_library(
     ],
     deps = [
         ":integrator_base",
+        "//drake/math:autodiff",
     ],
 )
 
