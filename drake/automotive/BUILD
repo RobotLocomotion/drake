@@ -93,6 +93,42 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "box_car_vis",
+    srcs = ["box_car_vis.cc"],
+    hdrs = ["box_car_vis.h"],
+    deps = [
+        ":car_vis",
+        "//drake/multibody/shapes",
+        "//drake/systems/rendering:drake_visualizer_client",
+    ],
+)
+
+drake_cc_library(
+    name = "car_vis",
+    srcs = ["car_vis.cc"],
+    hdrs = ["car_vis.h"],
+    deps = [
+        "//drake/lcmtypes:viewer",
+        "//drake/systems/rendering:pose_bundle",
+    ],
+)
+
+drake_cc_library(
+    name = "car_vis_applicator",
+    srcs = ["car_vis_applicator.cc"],
+    hdrs = ["car_vis_applicator.h"],
+    deps = [
+        ":box_car_vis",
+        ":car_vis",
+        ":generated_vectors",
+        "//drake/lcmtypes:viewer",
+        "//drake/systems/framework",
+        "//drake/systems/rendering:drake_visualizer_client",
+        "//drake/systems/rendering:pose_aggregator",
+    ],
+)
+
+drake_cc_library(
     name = "curve2",
     srcs = ["curve2.cc"],
     hdrs = ["curve2.h"],
@@ -520,6 +556,24 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:bicycle_car",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "box_car_vis_test",
+    deps = [
+        ":box_car_vis",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_googletest(
+    name = "car_vis_applicator_test",
+    deps = [
+        ":car_vis_applicator",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
     ],
 )
 
