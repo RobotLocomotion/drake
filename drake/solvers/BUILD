@@ -2,7 +2,12 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -491,6 +496,17 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_binary(
+    name = "plot_feasible_rotation_matrices",
+    testonly = 1,
+    srcs = ["test/plot_feasible_rotation_matrices.cc"],
+    deps = [
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/lcm:lcm_call_matlab",
     ],
 )
 
