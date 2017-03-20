@@ -36,6 +36,14 @@ target_link_libraries(drakeOptimizationTest
         GTest::GTest
         drakeOptimization)
 
+if (lcm_FOUND)
+add_library_with_exports(LIB_NAME drakeRotationConstraintVisualization SOURCE_FILES rotation_constraint_visualization.cc)
+target_link_libraries(drakeRotationConstraintVisualization
+        drakeRotationConstraint
+        drakeLcm
+        drakeLCMTypes)
+endif(lcm_FOUND)
+
 drake_add_cc_test(convex_optimization_test)
 target_link_libraries(convex_optimization_test drakeCommon drakeOptimizationTest)
 
@@ -83,4 +91,10 @@ if (lcm_FOUND)
     drakeRotationConstraint
     drakeLCMTypes
     drakeLcm)
+
+  add_executable(plot_rotation_mccormick_envelope plot_rotation_mccormick_envelope.cc)
+  target_link_libraries(plot_rotation_mccormick_envelope
+          drakeOptimization
+          drakeRotationConstraint
+          drakeRotationConstraintVisualization)
 endif(lcm_FOUND)

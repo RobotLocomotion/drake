@@ -133,6 +133,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rotation_constraint_visualization",
+    testonly = 1,
+    srcs = [
+        "test/rotation_constraint_visualization.cc",
+    ],
+    hdrs = [
+        "test/rotation_constraint_visualization.h",
+    ],
+    deps = [
+        ":rotation_constraint",
+        "//drake/lcm:lcm_call_matlab",
+    ],
+)
+
+drake_cc_library(
     name = "add_solver_util",
     testonly = 1,
     srcs = ["test/add_solver_util.cc"],
@@ -534,6 +549,15 @@ drake_cc_googletest(
     deps = [
         ":system_identification",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_binary(
+    name = "plot_rotation_mccormick_envelope",
+    testonly = 1,
+    srcs = ["test/plot_rotation_mccormick_envelope.cc"],
+    deps = [
+        ":rotation_constraint_visualization",
     ],
 )
 

@@ -132,7 +132,7 @@ GTEST_TEST(RotationTest, TestSpectralPsd) {
 // <pre>
 //    min_R  sum_{i,j} |R(i,j) - R_desired(i,j)|^2
 // </pre>
-// where the columans (and rows) of R_desired are outside the unit ball.
+// where the columns (and rows) of R_desired are outside the unit ball.
 // Confirms that the Orthonormal SOCP constraints result in a solution matrix
 // with columns and rows of unit length or less, and that the specific
 // orthogonality relaxation implemented by the routine is satisfied.
