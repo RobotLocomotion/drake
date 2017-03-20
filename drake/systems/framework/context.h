@@ -208,23 +208,22 @@ class Context {
     SetInputPortValue(
         index, std::make_unique<FreestandingInputPortValue>(std::move(value)));
   }
+
   /// Connects the input port at @p index to a FreestandingInputPortValue with
   /// the given vector @p value. Asserts if @p index is out of range.
-  /// Returns a raw pointer to the allocated BasicVector that will remain valid
-  /// until this input port's value source is replaced or the context is
-  /// destroyed.
-  /// To ensure invalidation notifications are delivered, callers MUST NOT write
-  /// through the returned pointer if there is any possibility the input port's
-  /// value has been accessed since the value was last changed.
-  // TODO(sherm1) I believe this method is too dangerous to live.
-  BasicVector<T>* FixInputPort(int index,
-                               const Eigen::Ref<const VectorX<T>>& data) {
+  /// Returns a reference to the allocated FreestandingInputPortValue that will
+  /// remain valid until this input port's value source is replaced or the
+  /// context is destroyed. You may use that reference to modify the input
+  /// port's value using the appropriate FreestandingInputPortValue method,
+  /// which will ensure that invalidation notifications are delivered.
+  FreestandingInputPortValue& FixInputPort(
+      int index, const Eigen::Ref<const VectorX<T>>& data) {
     auto vec = std::make_unique<BasicVector<T>>(data);
-    BasicVector<T>* ptr = vec.get();
-    SetInputPortValue(index,
-                      std::make_unique<systems::FreestandingInputPortValue>(
-                          std::move(vec)));
-    return ptr;
+    auto freestanding =
+        std::make_unique<FreestandingInputPortValue>(std::move(vec));
+    FreestandingInputPortValue& freestanding_ref = *freestanding;
+    SetInputPortValue(index, std::move(freestanding));
+    return freestanding_ref;
   }
 
   /// Evaluates and returns the value of the input port identified by
