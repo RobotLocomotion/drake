@@ -26,12 +26,17 @@ drake_cc_library(
     srcs = [
         "multibody_tree.cc",
         "rigid_body.cc",
+        "rigid_body_frame.cc",
     ],
     hdrs = [
         "body.h",
+        "frame.h",
+        "material_frame.h",
         "multibody_tree.h",
         "multibody_tree_element.h",
+        "multibody_tree_topology.h",
         "rigid_body.h",
+        "rigid_body_frame.h",
     ],
     deps = [
         ":multibody_tree_indexes",
@@ -57,6 +62,13 @@ drake_cc_library(
     deps = [
         ":rotational_inertia",
     ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "double_pendulum_test",
+    deps = [":multibody_tree"],
 )
 
 drake_cc_googletest(

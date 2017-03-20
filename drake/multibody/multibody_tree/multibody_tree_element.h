@@ -113,6 +113,17 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
     }
   }
 
+  /// Checks whether this MultibodyTreeElement belongs to the provided
+  /// MultibodyTree `tree`. If not, it throws an exception of type
+  /// std::logic_error.
+  void HasThisParentTreeOrThrow(const MultibodyTree<T>* tree) const {
+    DRAKE_ASSERT(tree != nullptr);
+    if (parent_tree_ != tree) {
+      throw std::logic_error("This multibody component does not belong to the"
+                                 " supplied MultibodyTree.");
+    }
+  }
+
   /// Gives MultibodyTree elements the opportunity to perform internal setup
   /// when MultibodyTree::Compile() is invoked.
   virtual void Compile() = 0;
