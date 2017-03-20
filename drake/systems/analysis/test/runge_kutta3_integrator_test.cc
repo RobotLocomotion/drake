@@ -68,18 +68,18 @@ TEST_F(RK3IntegratorTest, ErrorEstSupport) {
 // magnitude step sizes.
 TEST_F(RK3IntegratorTest, MagDisparity) {
   // Set a large magnitude time.
-  context_->set_time(1e10);
+  context_->set_time(1.0);
 
   // Set integrator parameters.
   integrator_->set_maximum_step_size(0.1);
-  integrator_->set_minimum_step_size(1e-10);
+  integrator_->set_minimum_step_size(1e-40);
   integrator_->set_target_accuracy(1e-3);
 
   // Take all the defaults.
   integrator_->Initialize();
 
   // Take a variable step.
-  integrator_->StepExactlyVariable(1e-10);
+  integrator_->StepExactlyVariable(1e-40);
 }
 
 // Test scaling vectors

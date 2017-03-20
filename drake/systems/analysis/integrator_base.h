@@ -384,12 +384,18 @@ class IntegratorBase {
     const Context<T>& context = get_context();
     const T inf = std::numeric_limits<double>::infinity();
     T t_remaining = dt;
+
+    // Note: A concern below is that the while loop while run forever because
+    // t_remaining could be small, but not quite zero, if dt is relatively
+    // small compared to the context time. In such a case, t_final will be
+    // equal to context.get_time() in the expression immediately below,
+    // context.get_time() will not change during the call to StepOnceAtMost(),
+    // and t_remaining will be equal to zero.
     const T t_final = context.get_time() + t_remaining;
     do {
       StepOnceAtMost(inf, inf, t_remaining);
       t_remaining = t_final - context.get_time();
-    } while (t_remaining > std::numeric_limits<double>::epsilon()*
-                           max(1.0, context.get_time()));
+    } while (t_remaining > 0);
   }
 
   /// Stepping function for integrators operating outside of simulation
