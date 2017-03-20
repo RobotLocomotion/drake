@@ -28,7 +28,7 @@ namespace {
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Macintosh OSX.
 const double kTolerance = 1e-12;
-const uint8_t kColorPixelTolerance = 1u;
+const double kColorPixelTolerance = 1.001;
 const double kFovY = M_PI_4;
 const bool kShowWindow = true;
 
@@ -145,10 +145,6 @@ class RenderingSim : public systems::Diagram<double> {
   std::shared_ptr<RigidBodyFrame<double>> rgbd_camera_frame_;
 };
 
-void AssertIntNear(int value_a, int value_b, int tolerance) {
-  ASSERT_LE(std::abs(value_a - value_b), tolerance);
-}
-
 const std::array<uint8_t, 4> kBackgroundColor{{204u, 229u, 255u, 255u}};
 
 class ImageTest : public ::testing::Test {
@@ -234,8 +230,8 @@ class ImageTest : public ::testing::Test {
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
         for (int ch = 0; ch < 4; ++ch) {
-          AssertIntNear(color_image.at(u, v)[ch], color[ch],
-                        kColorPixelTolerance);
+          ASSERT_NEAR(color_image.at(u, v)[ch], color[ch],
+                      kColorPixelTolerance);
         }
         // Assuming depth value provides 0.1 mm precision.
         ASSERT_NEAR(depth_image.at(u, v)[0], depth, 1e-4);
@@ -286,8 +282,8 @@ class ImageTest : public ::testing::Test {
 
     for (const auto& corner : kCorners) {
       for (int ch = 0; ch < color_image.num_channels(); ++ch) {
-        AssertIntNear(color_image.at(corner.u, corner.v)[ch],
-                      kBackgroundColor[ch], kColorPixelTolerance);
+        ASSERT_NEAR(color_image.at(corner.u, corner.v)[ch],
+                    kBackgroundColor[ch], kColorPixelTolerance);
       }
       ASSERT_NEAR(depth_image.at(corner.u, corner.v)[0], 2.f, 1e-4);
     }
@@ -296,8 +292,8 @@ class ImageTest : public ::testing::Test {
     const int kHalfWidth = color_image.width() / 2;
     const int kHalfHeight = color_image.height() / 2;
     for (int ch = 0; ch < color_image.num_channels(); ++ch) {
-      AssertIntNear(color_image.at(kHalfWidth, kHalfHeight)[ch],
-                    255u, kColorPixelTolerance);
+      ASSERT_NEAR(color_image.at(kHalfWidth, kHalfHeight)[ch],
+                  255u, kColorPixelTolerance);
     }
     // Verifies the center point's depth.
     ASSERT_NEAR(depth_image.at(kHalfWidth, kHalfHeight)[0], 1.f, 1e-4);
@@ -321,7 +317,7 @@ class ImageTest : public ::testing::Test {
     }
 
     // We need a tolerance because the result varies depending on the CPU.
-    AssertIntNear(expected_horizon, actual_horizon, 1);
+    ASSERT_NEAR(expected_horizon, actual_horizon, 1.001);
   }
 
  protected:
