@@ -401,7 +401,7 @@ void ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T &dt) {
   const VectorX<T> dx0 = derivs->CopyToVector();
 
   // Do the single step.
-  DoTrialStep(dt);
+  Step(dt);
 
   // Compute the derivative at xtf.
   system.CalcTimeDerivatives(*context, derivs.get());
