@@ -94,6 +94,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "schunk_wsg_lcm_test",
+    data = [":models"],
+    deps = [
+        ":schunk_wsg_lcm",
+        "//drake/systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
     name = "schunk_wsg_lift_test",
     size = "large",
     data = [
@@ -119,6 +128,19 @@ drake_cc_googletest(
         "//drake/systems/framework:diagram_builder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:trajectory_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simulated_schunk_wsg_system_test",
+    data = [":models"],
+    deps = [
+        ":simulated_schunk_wsg_system",
+        "//drake/lcm",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/primitives:constant_vector_source",
     ],
 )
 
