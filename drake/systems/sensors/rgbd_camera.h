@@ -48,6 +48,11 @@ namespace sensors {
 ///     provided by DepthSensor) in which the depth value represents the
 ///     distance from the sensor origin to the object's surface.
 ///
+///   - The label image has single channel represented by a int16_t. The value
+///     stored in the channel holds a model ID which corresponds to an object
+///     in the scene. For the pixels corresponding to no body, namely the sky
+///     and the flat terrain, we assign Label::kNoBody and Label::kFlatTerrain,
+///     respectively.
 // TODO(kunimatsu-tri) Add support for the image publish capability.
 class RgbdCamera : public LeafSystem<double> {
  public:
@@ -73,6 +78,17 @@ class RgbdCamera : public LeafSystem<double> {
     static constexpr float kTooClose{0.f};
   };
 
+  /// Set of labels used for label image.
+  class Label {
+   public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Label)
+    /// The label used for pixels correspond to nothing.
+    static constexpr int16_t kNoBody{std::numeric_limits<int16_t>::max()};
+    /// The label used for pixels correspond to the flat terrain.
+    static constexpr int16_t kFlatTerrain{
+      std::numeric_limits<int16_t>::max() - 1};
+  };
+
   /// A constructor for %RgbdCamera that defines `B` using Euler angles.
   /// The pose of %RgbdCamera will be fixed to the world coordinate system
   /// throughout the simulation.
@@ -83,7 +99,8 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param tree The RigidBodyTree containing the geometric description of the
   /// world. The life span of this parameter must exceed that of this class's
-  /// instance.
+  /// instance. The maximum number of bodies in the `tree` must be less than
+  /// 1536 based on the number of the colors used for the label image.
   ///
   /// @param position The x-y-z position of `B` in `W`. This defines the
   /// translation component of `X_WB`.
@@ -112,7 +129,8 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param tree The RigidBodyTree containing the geometric description of the
   /// world. The life span of this parameter must exceed that of this class's
-  /// instance.
+  /// instance. The maximum number of bodies in the `tree` must be less than
+  /// 1536 based on the number of the colors used for the label image.
   ///
   /// @param frame The frame in @tree to which this camera is attached.
   ///
@@ -152,12 +170,16 @@ class RgbdCamera : public LeafSystem<double> {
   const InputPortDescriptor<double>& state_input_port() const;
 
   /// Returns a descriptor of the abstract valued output port that contains an
-  /// Image<uint_8>.
+  /// BGRA image of the type Image<uint8_t>.
   const OutputPortDescriptor<double>& color_image_output_port() const;
 
   /// Returns a descriptor of the abstract valued output port that contains an
   /// Image<float>.
   const OutputPortDescriptor<double>& depth_image_output_port() const;
+
+  /// Returns a descriptor of the abstract valued output port that contains an
+  /// label image of the type Image<int16_t>.
+  const OutputPortDescriptor<double>& label_image_output_port() const;
 
   /// Returns a descriptor of the vector valued output port that contains an
   /// PoseVector.
