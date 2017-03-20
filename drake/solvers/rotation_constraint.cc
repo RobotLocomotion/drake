@@ -176,16 +176,15 @@ void AddOrthogonalConstraint(
   Eigen::Matrix<double, 5, 1> b;
 
   // |v1+v2|^2 <= 2
-  // Implemented as a rotated Lorenz cone using z = Ax+b = [ 1; 2; v1+v2 ].
-  A.topRows<2>() = Eigen::Matrix<double, 2, 6>::Zero();
-  A.bottomRows<3>() << Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity();
-  b << 1, 2, 0, 0, 0;
-  prog->AddRotatedLorentzConeConstraint(A, b, {v1, v2});
+  // Implemented as a Lorenz cone using z = [ sqrt(2); v1+v2 ].
+  Vector4<symbolic::Expression> z;
+  z << std::sqrt(2), v1 + v2;
+  prog->AddLorentzConeConstraint(z);
 
   // |v1-v2|^2 <= 2
-  // Implemented as a rotated Lorenz cone using z = Ax+b = [ 1; 2; v1-v2 ].
-  A.block<3, 3>(2, 3) = -Eigen::Matrix3d::Identity();
-  prog->AddRotatedLorentzConeConstraint(A, b, {v1, v2});
+  // Implemented as a Lorenz cone using z = [ sqrt(2); v1-v2 ].
+  z.tail<3>() = v1 - v2;
+  prog->AddLorentzConeConstraint(z);
 }
 
 }  // namespace
@@ -582,7 +581,6 @@ void AddMcCormickVectorConstraints(
     }
   }
 }
-
 }  // namespace
 
 void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
@@ -628,60 +626,65 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
         // R(i,j) > phi(k) => Bpos[k](i,j) = 1
         // R(i,j) < phi(k) => Bpos[k](i,j) = 0
         // R(i,j) = phi(k) => Bpos[k](i,j) = 0 or 1
-        // -2 + 2*Bpos[k](i,j) <= R(i,j)-phi(k) <= Bpos[k](i,j)
+        // Since -s1 <= R(i, j) - phi(k) <= s2,
+        // where s1 = 1 + phi(k), s2 = 1 - phi(k). The point
+        // [R(i,j) - phi(k), Bpos[k](i,j)] has to lie within the convex hull,
+        // whose vertices are (-s1, 0), (0, 0), (s2, 1), (0, 1). By computing
+        // the edges of this convex hull, we get
+        // -s1 + s1*Bpos[k](i,j) <= R(i,j)-phi(k) <= s2 * Bpos[k](i,j)
+        double s1 = 1 + phi(k);
+        double s2 = 1 - phi(k);
+        prog->AddLinearConstraint(R(i, j) - phi(k) >= -s1 + s1 * Bpos[k](i, j));
+        prog->AddLinearConstraint(R(i, j) - phi(k) <= s2 * Bpos[k](i, j));
 
-        // Tight on the lower bound:
-        prog->AddLinearConstraint(
-            Eigen::RowVector2d(1, -2), -2 + phi(k), phi(k),
-            VectorDecisionVariable<2>{R(i, j), Bpos[k](i, j)});
-        // Tight on the upper bound:
-        prog->AddLinearConstraint(
-            Eigen::RowVector2d(1, -1), -2 + phi(k), phi(k),
-            VectorDecisionVariable<2>{R(i, j), Bpos[k](i, j)});
-
-        // -R(i,j) >= phi(k) => Bneg[k](i,j) = 1
-        // -R(i,j) <= phi(k) => Bneg[k](i,j) = 0
+        // -R(i,j) > phi(k) => Bneg[k](i,j) = 1
+        // -R(i,j) < phi(k) => Bneg[k](i,j) = 0
         // -R(i,j) = phi(k) => Bneg[k](i,j) = 0 or 1
-        // -Bneg[k](i,j) <= R(i,j)+phi(k) <= 2-2*Bneg[k](i,j)
-
-        // Tight on the lower bound:
-        prog->AddLinearConstraint(
-            Eigen::RowVector2d(1, 1), -phi(k), 2 - phi(k),
-            VectorDecisionVariable<2>{R(i, j), Bneg[k](i, j)});
-        // Tight on the lower bound:
-        prog->AddLinearConstraint(
-            Eigen::RowVector2d(1, 2), -phi(k), 2 - phi(k),
-            VectorDecisionVariable<2>{R(i, j), Bneg[k](i, j)});
+        // Since -s2 <= R(i, j) + phi(k) <= s1,
+        // where s1 = 1 + phi(k), s2 = 1 - phi(k). The point
+        // [R(i,j) + phi(k), Bneg[k](i,j)] has to lie within the convex hull
+        // whose vertices are (-s2, 1), (0, 0), (s1, 0), (0, 1). By computing
+        // the edges of the convex hull, we get
+        // -s2 * Bneg[k](i,j) <= R(i,j)+phi(k) <= s1-s1*Bneg[k](i,j)
+        prog->AddLinearConstraint(R(i, j) + phi(k) <= s1 - s1 * Bneg[k](i, j));
+        prog->AddLinearConstraint(R(i, j) + phi(k) >= -s2 * Bneg[k](i, j));
 
         if (k == num_binary_vars_per_half_axis - 1) {
           //   Cpos[k](i,j) = Bpos[k](i,j)
-          prog->AddLinearEqualityConstraint(
-              Eigen::RowVector2d(1, -1), 0,
-              {Cpos[k].block<1, 1>(i, j), Bpos[k].block<1, 1>(i, j)});
+          prog->AddLinearEqualityConstraint(Cpos[k](i, j) - Bpos[k](i, j), 0);
+
           //   Cneg[k](i,j) = Bneg[k](i,j)
-          prog->AddLinearEqualityConstraint(
-              Eigen::RowVector2d(1, -1), 0,
-              {Cneg[k].block<1, 1>(i, j), Bneg[k].block<1, 1>(i, j)});
+          prog->AddLinearEqualityConstraint(Cneg[k](i, j) - Bneg[k](i, j), 0);
         } else {
           //   Cpos[k](i,j) = Bpos[k](i,j) - Bpos[k+1](i,j)
-          prog->AddLinearEqualityConstraint(
-              Eigen::RowVector3d(1, -1, 1), 0,
-              {Cpos[k].block<1, 1>(i, j), Bpos[k].block<1, 1>(i, j),
-               Bpos[k + 1].block<1, 1>(i, j)});
+          prog->AddLinearConstraint(Cpos[k](i, j) ==
+                                    Bpos[k](i, j) - Bpos[k + 1](i, j));
           //   Cneg[k](i,j) = Bneg[k](i,j) - Bneg[k+1](i,j)
-          prog->AddLinearEqualityConstraint(
-              Eigen::RowVector3d(1, -1, 1), 0,
-              {Cneg[k].block<1, 1>(i, j), Bneg[k].block<1, 1>(i, j),
-               Bneg[k + 1].block<1, 1>(i, j)});
+          prog->AddLinearConstraint(Cneg[k](i, j) ==
+                                    Bneg[k](i, j) - Bneg[k + 1](i, j));
         }
       }
       // Bpos[0](i,j) + Bneg[0](i,j) = 1.  (have to pick a side).
-      prog->AddLinearEqualityConstraint(
-          Eigen::RowVector2d(1, 1), 1,
-          {Bpos[0].block<1, 1>(i, j), Bneg[0].block<1, 1>(i, j)});
+      prog->AddLinearConstraint(Bpos[0](i, j) + Bneg[0](i, j) == 1);
 
       // for debugging: constrain to positive orthant.
       //      prog->AddBoundingBoxConstraint(1,1,{Bpos[0].block<1,1>(i,j)});
+    }
+  }
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      for (int k = 1; k < num_binary_vars_per_half_axis; ++k) {
+        // Bpos[k-1](i,j) = 0 => R(i,j) ≤ phi(k-1) < phi(k) => Bpos[k](i,j) = 0
+        // Bpos[k](i,j) = 1 => R(i,j) ≥ phi(k) > phi(k-1) => Bpos[k-1](i,j) = 1
+        // Thus Bpos[k](i, j) <= Bpos[k-1](i, j)
+        prog->AddLinearConstraint(Bpos[k](i, j) <= Bpos[k - 1](i, j));
+
+        // Bneg[k](i,j) = 1 => -R(i,j) ≥ phi(k) > phi(k-1) => Bneg[k-1](i,j) = 1
+        // Bneg[k-1](i,j) = 0 => -R(i,j) ≤ phi(k-1) < phi(k) => Bneg[k](i,j) = 0
+        // Thus Bneg[k](i,j) <= Bneg[k-1](i,j)
+        prog->AddLinearConstraint(Bneg[k](i, j) <= Bneg[k-1](i, j));
+      }
     }
   }
 
