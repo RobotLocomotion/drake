@@ -6,8 +6,6 @@
 
 #include <Eigen/LU>
 
-#include "drake/math/jacobian.h"
-#include "drake/math/autodiff_gradient.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
 
