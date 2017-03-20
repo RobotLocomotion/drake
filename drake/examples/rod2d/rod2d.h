@@ -360,7 +360,8 @@ class Rod2D : public systems::LeafSystem<T> {
   /// strictly within the halfspace, and zero when the other rod endpoint is
   /// "kissing" the halfspace.
   /// @pre One endpoint of the rod is in contact with the ground, indicated by
-  ///      the mode variable being set appropriately.
+  ///      the mode variable being set appropriately. Assertion failure is
+  ///      triggered if this is not the case.
   static T CalcEndpointDistance(const Rod2D& rod,
                                 const systems::Context<T>& context);
 
@@ -371,6 +372,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// @pre It is assumed that the signed distance between the point of contact
   ///      and the halfspace will be approximately zero and that the vertical
   ///      velocity at the point of contact will be approximately zero.
+  ///      Assertion failure is triggered if the rod is in a ballistic mode.
   static T CalcNormalAccelWithoutContactForces(const Rod2D& rod,
                                                const systems::Context<T>&
                                                  context);

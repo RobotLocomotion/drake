@@ -172,17 +172,17 @@ T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
 }
 
 template <class T>
-T Rod2D<T>::CalcStickingForceSlack(const Rod2D<T>& rod,
-                                   const systems::Context<T>& context) {
+T Rod2D<T>::CalcStickingFrictionForceSlack(const Rod2D<T>& rod,
+                                           const systems::Context<T>& context) {
   using std::abs;
 
   // Compute the contact forces, assuming sticking contact.
-  const Vector2 <T> cf = CalcStickingContactForces(context);
+  const Vector2 <T> cf = rod.CalcStickingContactForces(context);
   const T &fN = cf(0);
   const T &fF = cf(1);
 
   // Compute the difference between how much force *can* be applied
-  const double mu = get_mu_coulomb();
+  const double mu = rod.get_mu_coulomb();
   return mu * fN - abs(fF);
 }
 
@@ -224,6 +224,10 @@ int Rod2D<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
       // contact. Two witness functions are necessary: one for checking
       // whether the rod is to separate from the half-space and one more to
       // check whether the rod is to transition from sliding to sticking.
+      // TODO(edrumwri): Add two more witness functions- one to check separation
+      //                 from half-space for second contact point and another
+      //                 to check transition from sliding to sticking from
+      //                 second contact point.
       return 2;
 
     case Rod2D::kStickingTwoContacts:
@@ -231,6 +235,10 @@ int Rod2D<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
       // contact. Two witness functions are necessary: one to check whether
       // the rod is to separate from the half-space and one more to check
       // whether the rod is to transition from sticking to sliding.
+      // TODO(edrumwri): Add two more witness functions- one to check separation
+      //                 from half-space for second contact point and another
+      //                 to check transition from sticking to sliding from
+      //                 second contact point.
       return 2;
 
     default:
@@ -1238,11 +1246,13 @@ void Rod2D<T>::CalcAccelerationsTwoContact(
 
   // Look to see whether there is sliding velocity.
   if (abs(xdot) < std::numeric_limits<double>::epsilon()) {
+    // TODO(edrumwri): Handle sticking contact for two points of contact.
     // Set the time derivatives to "resting".
     f->SetAtIndex(3, T(0));
     f->SetAtIndex(4, T(0));
     f->SetAtIndex(5, T(0));
   } else {
+    // TODO(edrumwri): Check/correct this assumption as necessary.
     // This code assumes no sliding will occur with contacts at multiple
     // points unless the system is initialized to such a condition. This
     // assumption has been neither proven nor rigorously validated.
@@ -1256,6 +1266,7 @@ bool Rod2D<T>::IsImpacting(const systems::Context<T>& context) const {
   using std::cos;
 
   // Note: we do not consider modes here.
+  // TODO(edrumwri): Handle two-point contacts.
 
   // Get state data necessary to compute the point of contact.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
