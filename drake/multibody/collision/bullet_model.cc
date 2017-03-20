@@ -90,6 +90,8 @@ bool OverlapFilterCallback::needBroadphaseCollision(
   return collides;
 }
 
+// This causes "possibly lost errors" for valgrind memchecks.
+// The errors are in the bullet3 library and have been suppressed.
 BulletCollisionWorldWrapper::BulletCollisionWorldWrapper()
     : bt_collision_configuration(),
       bt_collision_broadphase(),

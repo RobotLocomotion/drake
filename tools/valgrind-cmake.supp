@@ -135,3 +135,17 @@
     obj:/usr/local/bin/python
     ...
 }
+
+{
+ <bullet3-1>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    fun:_ZL14btAllocDefaultm
+    fun:_ZL21btAlignedAllocDefaultmi
+    fun:_Z22btAlignedAllocInternalmi
+    ...
+    fun:_ZN14DrakeCollision27BulletCollisionWorldWrapperC1Ev
+ }
+
+
