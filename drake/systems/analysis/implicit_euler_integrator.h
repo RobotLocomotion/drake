@@ -260,7 +260,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
  protected:
   void DoInitialize() override;
-  std::pair<bool, T> DoStepOnceAtMost(const T& max_dt);
+  std::pair<bool, T> DoStepOnceAtMost(const T& max_dt) override;
   void DoResetStatistics() override;
 
  private:
