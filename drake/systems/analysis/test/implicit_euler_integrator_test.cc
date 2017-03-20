@@ -208,27 +208,6 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>& integrator) {
   integrator.ResetStatistics();
 }
 
-// Verify that disabling error estimation yields a NaN error estimate.
-TEST_F(ImplicitIntegratorTest, NaNErrEst) {
-  // Create a context.
-  auto context = spring_damper->CreateDefaultContext();
-
-  // Create the integrator.
-  ImplicitEulerIntegrator<double> integrator(*spring_damper, large_dt,
-                                             context.get());
-
-  // Disable error estimation and initialize the integrator.
-  integrator.set_error_estimation_enabled(false);
-  EXPECT_FALSE(integrator.is_error_estimation_enabled());
-  integrator.Initialize();
-
-  // Integrate just once.
-  integrator.StepOnceAtMost(inf, inf, dt);
-
-  // Verify that the first element of the error estimate is nan.
-  EXPECT_TRUE(std::isnan((*integrator.get_error_estimate())[0]));
-}
-
 // Checks that decreasing the likelihood that the Jacobian will be reformulated
 // increases the number of function evaluations.
 TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
@@ -238,9 +217,6 @@ TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*spring_damper, large_dt,
                                              context.get());
-
-  // Disable error estimation - don't want it to skew the numbers.
-  integrator.set_error_estimation_enabled(false);
 
   // Enable fixed stepping to enable StepOnceExactly().
   integrator.set_fixed_step_mode(true);
@@ -289,9 +265,6 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*spring_damper, large_dt,
                                              context.get());
-
-  // Verify error estimation is enabled by default.
-  EXPECT_TRUE(integrator.is_error_estimation_enabled());
 
   // Set error controlled integration parameters.
   const double xtol = 1e10 * std::numeric_limits<double>::epsilon();
@@ -504,9 +477,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   ImplicitEulerIntegrator<double> integrator(spring_mass, large_dt,
                                              context.get());
 
-  // Turn error estimation off and fixed stepping on.
+  // Turn fixed stepping on.
   integrator.set_fixed_step_mode(true);
-  integrator.set_error_estimation_enabled(false);
 
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
