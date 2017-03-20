@@ -443,14 +443,17 @@ void AddMcCormickVectorConstraints(
 
         double box_min_norm = box_min.lpNorm<2>();
         double box_max_norm = box_max.lpNorm<2>();
-        if (box_min_norm <= 1.0 + numeric_limits<double>::epsilon() &&
-            box_max_norm >= 1.0 - numeric_limits<double>::epsilon()) {
+        if (box_min_norm <= 1.0 + 2 * numeric_limits<double>::epsilon() &&
+            box_max_norm >= 1.0 - 2 * numeric_limits<double>::epsilon()) {
           // The box intersects with the surface of the unit sphere
           // Two possible cases
           // 1. If the box bmin <= x <= bmax intersects with the surface of the
           // unit sphere at a unique point (either bmin or bmax), then we know
           // the unique value of v, it has to be either bmin or bmax.
           // 2. Otherwise, there is a region of intersection.
+          // We choose the error as 2 * eps here. The reason is that
+          // if x.norm() == 1, then another vector y which is different from
+          // x by eps (y(i) = x(i) + eps), the norm of y is at most 1 + 2 * eps.
           if (std::abs(box_min_norm - 1.0) <
                   2 * numeric_limits<double>::epsilon() ||
               std::abs(box_max_norm - 1.0) <
