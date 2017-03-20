@@ -167,7 +167,7 @@ class TypeSafeIntId {
   // The underlying value.
   int64_t value_;
 
-  //
+  // Internal counter for generating ids.
   static int64_t next_index_;
 };
 
@@ -194,8 +194,6 @@ namespace std {
 template <typename Tag>
 struct hash<drake::geometry::TypeSafeIntId<Tag>> {
   size_t operator()(const drake::geometry::TypeSafeIntId<Tag>& id) const {
-    // There is no hash function for int64_t. However, given that the ids
-    // are intended to be unique, they can serve as their own hash value.
     return hash<int64_t>()(id.get_value());
   }
 };

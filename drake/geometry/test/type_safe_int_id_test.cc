@@ -19,7 +19,7 @@ using BId = TypeSafeIntId<class BTag>;
 // Any local instantiation of identifiers could lead to arbitrary values.
 // This renders the tests that *care* about values very fragile.  The simplest
 // way to account for this is to have these translation-unit-level globals that
-// are constant w.r.t. execution order.  That get_available_idis why these exist.
+// are constant w.r.t. execution order.  That is why these exist.
 // For this to work, the following assumptions must be true:
 //   1. It must run in a scope where these are the only invocations of
 //      TypeSafeIntId::get_new_id() (or, at the very least, these are the
