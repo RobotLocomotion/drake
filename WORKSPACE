@@ -22,8 +22,8 @@ pkg_config_package(
 github_archive(
     name = "gtest",
     repository = "google/googletest",
-    commit = "release-1.7.0",
-    sha256 = "f73a6546fdf9fce9ff93a5015e0333a8af3062a152a9ad6bcb772c96687016cc",
+    commit = "release-1.8.0",
+    sha256 = "58a6f4277ca2bc8565222b3bbd58a177609e9c488e8a72649359ba51450db7d8",
     build_file = "tools/gtest.BUILD",
 )
 
