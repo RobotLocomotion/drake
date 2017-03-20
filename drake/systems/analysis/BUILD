@@ -12,6 +12,7 @@ drake_cc_library(
     hdrs = [],
     deps = [
         ":explicit_euler_integrator",
+        ":implicit_euler_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":semi_explicit_euler_integrator",
@@ -41,6 +42,18 @@ drake_cc_library(
     name = "runge_kutta2_integrator",
     srcs = [],
     hdrs = ["runge_kutta2_integrator.h"],
+    deps = [
+        ":integrator_base",
+    ],
+)
+
+drake_cc_library(
+    name = "implicit_euler_integrator",
+    srcs = ["implicit_euler_integrator.cc"],
+    hdrs = [
+        "implicit_euler_integrator.h",
+        "implicit_euler_integrator-inl.h",
+    ],
     deps = [
         ":integrator_base",
     ],
@@ -107,6 +120,14 @@ drake_cc_googletest(
     name = "explicit_euler_integrator_test",
     deps = [
         ":explicit_euler_integrator",
+        ":my_spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "implicit_euler_integrator_test",
+    deps = [
+        ":implicit_euler_integrator",
         ":my_spring_mass_system",
     ],
 )
