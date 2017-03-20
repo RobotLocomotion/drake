@@ -15,45 +15,72 @@ using std::unordered_set;
 using AId = TypeSafeIntId<class ATag>;
 using BId = TypeSafeIntId<class BTag>;
 
+// The nature of gtest means these tests can be instantiated in any order.
+// Any local instantiation of identifiers could lead to arbitrary values.
+// This renders the tests that *care* about values very fragile.  The simplest
+// way to account for this is to have these translation-unit-level globals that
+// are constant w.r.t. execution order.  That get_available_idis why these exist.
+// For this to work, the following assumptions must be true:
+//   1. It must run in a scope where these are the only invocations of
+//      TypeSafeIntId::get_new_id() (or, at the very least, these are the
+//      first).
+//   2. The TypeSafeIntId::get_new_id() returns 0 with the first
+//      invocation and each successive invocation increases the value by 1.
+const AId a0 = AId::get_new_id();
+const AId a1 = AId::get_new_id();
+const AId a2 = AId::get_new_id();
+const BId b = BId::get_new_id();
+
 // These tests confirm that *compilable* functionality behaves correctly.
 
-// Verifies the constructor -- both explicit constructor and copy constructor.
-// This also implicitly tests the value() method.
+// Verifies the copy constructor. This implicitly tests the expected property
+// of the get_new_id() factory method and the get_value() method.
 GTEST_TEST(TypeSafeIntId, Constructor) {
-  AId a1{2};
-  ASSERT_EQ(a1.value(), 2);
-  AId a2(a1);
-  ASSERT_EQ(a2.value(), 2);
+  EXPECT_EQ(a0.get_value(), 0);
+  EXPECT_EQ(a1.get_value(), 1);
+  EXPECT_EQ(a2.get_value(), 2);
+  AId temp(a1);
+  EXPECT_EQ(temp.get_value(), 1);
 };
 
 // Confirms that assignment behaves correctly. This also implicitly tests
 // equality and inequality.
 GTEST_TEST(TypeSafeIntId, AssignmentAndComparison) {
-  AId a1(1);
-  AId a2(2);
-  ASSERT_NE(a1, a2);
-  a2 = a1;
-  ASSERT_EQ(a1, a2);
+  EXPECT_TRUE(a1 != a2);
+  AId temp = a1;
+  EXPECT_TRUE(temp == a1);
+  temp = a2;
+  EXPECT_TRUE(temp == a2);
 }
 
 // Confirms that frame ids are configured to serve as unique keys in
 // STL containers.
 GTEST_TEST(TypeSafeIntId, ServeAsMapKey) {
   unordered_set<AId> ids;
+
+  // This is a *different* id with the *same* value as a0. It should *not*
+  // introduce a new value to the set.
+  AId temp = a0;
+
   EXPECT_EQ(ids.size(), 0);
-  ids.insert(AId(0));
+  ids.insert(a0);
+  EXPECT_NE(ids.find(a0), ids.end());
+  EXPECT_NE(ids.find(temp), ids.end());
+
   EXPECT_EQ(ids.size(), 1);
-  ids.insert(AId(1));
+  ids.insert(a1);
   EXPECT_EQ(ids.size(), 2);
-  ids.insert(AId(0));
+
+  ids.insert(temp);
   EXPECT_EQ(ids.size(), 2);
+
+  EXPECT_EQ(ids.find(a2), ids.end());
 }
 
 // Tests the streaming behavior.
 GTEST_TEST(TypeSafeIntId, StreamOperator) {
   stringstream ss;
-  AId a(1);
-  ss << a;
+  ss << a1;
   EXPECT_EQ(ss.str(), "1");
 }
 
