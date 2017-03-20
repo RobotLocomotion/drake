@@ -179,6 +179,8 @@ class ColorPalette {
   // These colors are chosen so as to be easily distinguished from the colors in
   // color_palette_. They are guaranteed to be distinct from color_palette_
   // because none of their intensity elements are identical.
+  // TODO(kunimatsu-tri) Add support for arbitrary colors for the terrain and
+  // the sky.
   const Color kTerrainColor{255, 229, 204};
   const Color kSkyColor{204, 229, 255};
   std::vector<Color> color_palette_;

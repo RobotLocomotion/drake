@@ -148,6 +148,8 @@ class RenderingSim : public systems::Diagram<double> {
   std::shared_ptr<RigidBodyFrame<double>> rgbd_camera_frame_;
 };
 
+// TODO(kunimatsu-tri) Remove this once the arbitrary terrain color support
+// is added.
 const std::array<uint8_t, 4> kTerrainColor{{204u, 229u, 255u, 255u}};
 
 class ImageTest : public ::testing::Test {
