@@ -574,7 +574,7 @@ INSTANTIATE_TEST_CASE_P(
 
 
 // Make sure that no two row or column vectors in R, which satisfies the
-// McCormick relaxation, can lie in the same or the opposite orthant.
+// McCormick relaxation, can lie in either the same or the opposite orthant.
 class TestMcCormickOrthant
     : public ::testing::TestWithParam<
           std::tuple<int, int, bool, std::pair<int, int>, bool>> {
@@ -606,21 +606,27 @@ class TestMcCormickOrthant
         Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
     Eigen::Vector3d vec1_ub =
         Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+    // positive or negative x axis?
     if (orthant & (1 << 2)) {
       vec1_lb(0) = 1E-3;
     } else {
       vec1_ub(0) = -1E-3;
     }
+    // positive or negative y axis?
     if (orthant & (1 << 1)) {
       vec1_lb(1) = 1E-3;
     } else {
       vec1_ub(1) = -1E-3;
     }
+    // positive or negative z axis?
     if (orthant & (1 << 0)) {
       vec1_lb(2) = 1E-3;
     } else {
       vec1_ub(2) = -1E-3;
     }
+    // If we want to verify vec1 and vec2 CANNOT be in the same orthant,
+    // then set vec2_lb = vec1_lb, vec2_ub = vec1_ub;
+    // otherwise set vec2_lb = -vec2_ub, vec2_ub = -vec1_lb.
     Eigen::Vector3d vec2_lb = vec1_lb;
     Eigen::Vector3d vec2_ub = vec1_ub;
     if (!is_same_orthant) {
@@ -642,6 +648,8 @@ TEST_P(TestMcCormickOrthant, test) {
   GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
     SolutionResult sol_result = gurobi_solver.Solve(prog_);
+    // Since no two row or column vectors in R can lie in either the same of the
+    // opposite orthant, the program should be infeasible.
     EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded ||
         sol_result == SolutionResult::kInfeasibleConstraints);
   }
