@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -91,6 +92,13 @@ struct Color {
   }
 };
 
+// Defines a hash function for unordered_map that takes Color as the key.
+struct ColorHash {
+  std::size_t operator()(const Color& key) const {
+    return (key.r * 256 + key.g) * 256 + key.b;
+  }
+};
+
 // Defines a color based on its three primary additive colors: red, green, and
 // blue. Each of these primary additive colors are in the range of [0, 1].
 struct NormalizedColor {
@@ -126,6 +134,15 @@ class ColorPalette {
       color_palette_.push_back(Color{0, intensity, intensity});
       color_palette_.push_back(Color{intensity, 0, intensity});
     }
+
+    // Creates hash map for ID look up.
+    int i = 0;
+    for (const auto& color : color_palette_) {
+      color_id_map_[color] = i;
+      ++i;
+    }
+    color_id_map_[kTerrainColor] = RgbdCamera::Label::kFlatTerrain;
+    color_id_map_[kSkyColor] = RgbdCamera::Label::kNoBody;
   }
 
   const Color& get_color(int index) const {
@@ -147,16 +164,7 @@ class ColorPalette {
   }
 
   int LookUpId(const Color& color) const {
-    auto it = std::find(color_palette_.begin(), color_palette_.end(), color);
-    if (it == color_palette_.end()) {
-      if (color == kSkyColor) {
-        return RgbdCamera::Label::kNoBody;
-      } else if (color == kTerrainColor) {
-        return RgbdCamera::Label::kFlatTerrain;
-      }
-      throw std::runtime_error("ID not found");
-    }
-    return std::distance(color_palette_.begin(), it);
+    return color_id_map_.at(color);
   }
 
  private:
@@ -174,6 +182,7 @@ class ColorPalette {
   const Color kTerrainColor{255, 229, 204};
   const Color kSkyColor{204, 229, 255};
   std::vector<Color> color_palette_;
+  std::unordered_map<const Color, int, ColorHash> color_id_map_;
 };
 
 }  // namespace
