@@ -286,7 +286,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         vtkNew<vtkTransform> transform;
         transform->RotateX(90);
         vtkNew<vtkTransformPolyDataFilter> transform_filter;
-        transform_filter->SetInput(vtk_cylinder->GetOutput());
+        transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
         transform_filter->SetTransform(transform.GetPointer());
         transform_filter->Update();
 
@@ -353,7 +353,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
       VtkUtil::ConvertToVtkTransform(X_CW);
 
   vtkNew<vtkPolyDataMapper> mapper;
-  mapper->SetInput(plane->GetOutput());
+  mapper->SetInputConnection(plane->GetOutputPort());
   terrain_actor_->SetMapper(mapper.GetPointer());
   terrain_actor_->GetProperty()->SetColor(kTerrainColor[0],
                                           kTerrainColor[1],
