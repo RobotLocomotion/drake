@@ -572,21 +572,6 @@ INSTANTIATE_TEST_CASE_P(
                        ::testing::ValuesIn({true, false}),  // bmin or bmax
                        ::testing::ValuesIn({0, 1, 2})));    // column index
 
-GTEST_TEST(RotationTest, TestMinimumDistance) {
-  // Compute the minimum distance of R.col(0) and R.col(1), if R satisfies
-  // the McCormick envelope constraint. This minimum distance cannot be 0.
-  MathematicalProgram prog;
-  MatrixDecisionVariable<3, 3> R = NewRotationMatrixVars(&prog);
-
-  AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog, R, 1);
-
-  // Same orthant
-  Eigen::Vector3d v1(1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0);
-  Eigen::Vector3d v2(2.0 / 3.0, 1.0 / 3.0, 2.0 / 3.0);
-  Eigen::Vector3d v3(2.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0);
-  Eigen::Matrix3d R_test;
-  R_test << v1, v2, v3;
-}
 
 // Make sure that no two row or column vectors in R, which satisfies the
 // McCormick relaxation, can lie in the same or the opposite orthant.

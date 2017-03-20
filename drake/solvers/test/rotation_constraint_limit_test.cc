@@ -78,7 +78,7 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
         break;
       }
       case 3 : {
-        minimal_distance_expected_ = 1.0354;
+        minimal_distance_expected_ = 1.0823199;
         break;
       }
       default : {

@@ -513,10 +513,12 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
     ],
 )
+
 drake_cc_googletest(
     name = "rotation_constraint_test",
+    size = "medium",
     srcs = [
-        "test/rotation_constraint_test.cc"
+        "test/rotation_constraint_test.cc",
     ],
     tags = [
         "exclusive",
@@ -527,9 +529,8 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":rotation_constraint",
-        "//drake/math:geometric_transform",
-        ":gurobi_solver",
         "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -545,35 +546,20 @@ drake_cc_binary(
 )
 
 drake_cc_googletest(
-    name = "rotation_constraint_test",
-    size = "medium",
-    srcs = [
-        "test/rotation_constraint_test.cc",
-    ],
-    tags = ["mosek"],
-    deps = [
-        ":mathematical_program",
-        ":rotation_constraint",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/math:geometric_transform",
-    ],
-)
-
-drake_cc_googletest(
     name = "rotation_constraint_limit_test",
+    size = "large",
     srcs = [
-        "test/rotation_constraint_limit_test.cc"
+        "test/rotation_constraint_limit_test.cc",
     ],
     tags = [
         "exclusive",
         "gurobi",
         "local",
     ],
-    size = "large",
     deps = [
+        ":gurobi_solver",
         ":mathematical_program",
         ":rotation_constraint",
-        ":gurobi_solver",
         "//drake/common:eigen_matrix_compare",
     ],
 )
