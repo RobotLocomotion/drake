@@ -1,3 +1,5 @@
+#include "drake/multibody/rigid_body_tree.h"
+
 #include <iostream>
 
 #include <gtest/gtest.h>
@@ -10,7 +12,6 @@
 #include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace systems {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+
 #include <Eigen/Dense>
 
 typedef double coord_t;   // coordinate type

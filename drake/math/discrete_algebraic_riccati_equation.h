@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Eigen/Dense>
-#include <cstdlib>
 #include <cmath>
+#include <cstdlib>
+
+#include <Eigen/Dense>
 
 namespace drake {
 namespace math {

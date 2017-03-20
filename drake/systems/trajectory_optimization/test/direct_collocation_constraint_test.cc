@@ -1,3 +1,4 @@
+#include "drake/systems/trajectory_optimization/direct_collocation_constraint.h"
 
 #include <cmath>
 
@@ -5,7 +6,6 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
-#include "drake/systems/trajectory_optimization/direct_collocation_constraint.h"
 
 namespace drake {
 namespace systems {
