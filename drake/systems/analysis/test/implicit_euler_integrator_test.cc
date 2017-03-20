@@ -196,17 +196,16 @@ TEST_F(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
 }
 
 // Checks the validity of general integrator statistics and resets statistics.
-void CheckGeneralStatsValidity(
-    const ImplicitEulerIntegrator<double>& integrator) {
-  EXPECT_GT(integrator.get_num_newton_raphson_loops(), 0);
-  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
-  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
-  EXPECT_GE(integrator.get_num_steps_taken(), 0);
-  EXPECT_GT(integrator.get_num_function_evaluations(), 0);
-  EXPECT_GT(integrator.get_num_jacobian_function_evaluations(), 0);
-  EXPECT_GT(integrator.get_mean_scaling_factor(), 0.0);
-  EXPECT_LE(integrator.get_mean_scaling_factor(), 1.0);
-  integrator.ResetStatistics();
+void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
+  EXPECT_GT(integrator->get_num_newton_raphson_loops(), 0);
+  EXPECT_GE(integrator->get_previous_integration_step_size(), 0.0);
+  EXPECT_GE(integrator->get_largest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator->get_num_steps_taken(), 0);
+  EXPECT_GT(integrator->get_num_function_evaluations(), 0);
+  EXPECT_GT(integrator->get_num_jacobian_function_evaluations(), 0);
+  EXPECT_GT(integrator->get_mean_scaling_factor(), 0.0);
+  EXPECT_LE(integrator->get_mean_scaling_factor(), 1.0);
+  integrator->ResetStatistics();
 }
 
 // Checks that decreasing the likelihood that the Jacobian will be reformulated
@@ -307,7 +306,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   EXPECT_NEAR(0.0, v_final, vtol);
 
   // Verify that integrator statistics are valid
-  CheckGeneralStatsValidity(integrator);
+  CheckGeneralStatsValidity(&integrator);
 
   // Switch to central differencing.
   integrator.set_jacobian_computation_scheme(
@@ -328,7 +327,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   // Verify that integrator statistics and outputs are valid.
   EXPECT_NEAR(0.0, x_final, xtol);
   EXPECT_NEAR(0.0, v_final, vtol);
-  CheckGeneralStatsValidity(integrator);
+  CheckGeneralStatsValidity(&integrator);
 
   // Switch to central differencing.
   integrator.set_jacobian_computation_scheme(
@@ -353,7 +352,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   // Verify that integrator statistics and outputs are valid.
   EXPECT_NEAR(0.0, x_final, xtol);
   EXPECT_NEAR(0.0, v_final, vtol);
-  CheckGeneralStatsValidity(integrator);
+  CheckGeneralStatsValidity(&integrator);
 }
 
 // Try a purely continuous system with no sampling.
@@ -414,7 +413,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
               5e-3);
 
   // Verify that integrator statistics are valid.
-  CheckGeneralStatsValidity(integrator);
+  CheckGeneralStatsValidity(&integrator);
 
   // Switch to central differencing.
   integrator.set_jacobian_computation_scheme(
@@ -438,7 +437,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   EXPECT_NEAR(context->get_time(), t_final, ttol);
 
   // Verify that integrator statistics are valid
-  CheckGeneralStatsValidity(integrator);
+  CheckGeneralStatsValidity(&integrator);
 
   // Switch to automatic differentiation.
   integrator.set_jacobian_computation_scheme(
@@ -462,7 +461,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   EXPECT_NEAR(context->get_time(), t_final, ttol);
 
   // Verify that integrator statistics are valid
-  CheckGeneralStatsValidity(integrator);
+  CheckGeneralStatsValidity(&integrator);
 }
 
 // Try a purely continuous system with no sampling to verify that the
@@ -578,7 +577,7 @@ TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
 
   // Verify that solution and integrator statistics are valid
   EXPECT_NEAR(0.0, x_final, sol_tol);
-  CheckGeneralStatsValidity(integrator);
+  CheckGeneralStatsValidity(&integrator);
 
   // Switch the Jacobian scheme to central differencing.
   integrator.set_jacobian_computation_scheme(
@@ -599,7 +598,7 @@ TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
       context->get_continuous_state()->get_vector().GetAtIndex(0);
   EXPECT_NEAR(context->get_time(), t_final, ttol);
   EXPECT_NEAR(0.0, x_final, sol_tol);
-  CheckGeneralStatsValidity(integrator);
+  CheckGeneralStatsValidity(&integrator);
 
   // Switch the Jacobian scheme to automatic differentiation.
   integrator.set_jacobian_computation_scheme(
@@ -620,7 +619,7 @@ TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
       context->get_continuous_state()->get_vector().GetAtIndex(0);
   EXPECT_NEAR(context->get_time(), t_final, ttol);
   EXPECT_NEAR(0.0, x_final, sol_tol);
-  CheckGeneralStatsValidity(integrator);
+  CheckGeneralStatsValidity(&integrator);
 }
 
 }  // namespace
