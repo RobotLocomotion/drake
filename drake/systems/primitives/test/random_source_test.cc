@@ -1,3 +1,5 @@
+#include "drake/systems/primitives/random_source.h"
+
 #include <stdexcept>
 
 #include <gtest/gtest.h>
@@ -7,7 +9,6 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/signal_logger.h"
 
 namespace drake {

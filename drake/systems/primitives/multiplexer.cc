@@ -1,10 +1,10 @@
 #include "drake/systems/primitives/multiplexer.h"
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
-
 #include <functional>
 #include <numeric>
+
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 namespace systems {
