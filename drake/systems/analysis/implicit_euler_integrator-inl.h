@@ -392,7 +392,7 @@ std::pair<bool, T> ImplicitEulerIntegrator<T>::DoStepOnceAtMost(
 
   // Call the generic error controlled stepper unless error control or
   // error estimation is disabled.
-  if (this->get_fixed_step_mode() || !is_error_estimation_enabled()) {
+  if (this->get_fixed_step_mode()) {
     this->get_mutable_interval_start_state() =
         context.get_continuous_state_vector().CopyToVector();
     this->DoStepOnceFixedSize(max_dt);
