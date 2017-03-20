@@ -80,6 +80,10 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   EXPECT_THROW(body1.HasSameParentTreeOrThrow(body2), std::logic_error);
   EXPECT_NO_THROW(model1->get_world_body().HasSameParentTreeOrThrow(body1));
   EXPECT_NO_THROW(model2->get_world_body().HasSameParentTreeOrThrow(body2));
+
+  // Verifies bodies have the correct parent tree.
+  EXPECT_NO_THROW(body1.HasThisParentTreeOrThrow(model1.get()));
+  EXPECT_NO_THROW(body2.HasThisParentTreeOrThrow(model2.get()));
 }
 
 }  // namespace
