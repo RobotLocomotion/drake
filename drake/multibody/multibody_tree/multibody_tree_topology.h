@@ -64,8 +64,7 @@ struct MultibodyTreeTopology {
   int get_num_bodies() const {return static_cast<int>(bodies.size()); }
 
   // Returns the number of material frames in the multibody tree.
-  int get_num_material_frames() const
-  {
+  int get_num_material_frames() const {
     return static_cast<int>(material_frames.size());
   }
 

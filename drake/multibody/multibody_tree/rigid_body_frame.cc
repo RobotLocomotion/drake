@@ -14,8 +14,8 @@ namespace multibody {
 
 template <typename T>
 RigidBodyFrame<T>& RigidBodyFrame<T>::Create(
-    MultibodyTree<T>* tree, const RigidBody<T>& body, const Isometry3<T>& X_BM)
-{
+    MultibodyTree<T>* tree,
+    const RigidBody<T>& body, const Isometry3<T>& X_BM) {
   // Notice that here we cannot use std::make_unique since constructors are made
   // private to avoid users creating bodies by other means other than calling
   // Create().
