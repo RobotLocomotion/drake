@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/solvers/mathematical_program.h"
+/* clang-format on */
 
 #include <gtest/gtest.h>
 

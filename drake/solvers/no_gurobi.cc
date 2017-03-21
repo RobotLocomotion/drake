@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/solvers/gurobi_solver.h"
+/* clang-format on */
 
 #include <stdexcept>
 

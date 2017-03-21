@@ -1,5 +1,7 @@
+/* clang-format off */
 #include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/examples/Valkyrie/robot_state_decoder.h"
+/* clang-format on */
 
 #include <gtest/gtest.h>
 

@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/common/symbolic_expression.h"
+/* clang-format on */
 
 #include <gtest/gtest.h>
 

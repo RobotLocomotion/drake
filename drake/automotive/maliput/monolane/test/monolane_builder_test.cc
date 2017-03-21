@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/automotive/maliput/monolane/builder.h"
+/* clang-format on */
 
 #include <cmath>
 #include <iostream>
