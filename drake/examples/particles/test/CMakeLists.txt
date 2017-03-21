@@ -1,0 +1,5 @@
+drake_add_cc_test(particle_test)
+target_link_libraries(particle_test drakeParticles)
+
+drake_add_cc_test(degenerate_euler_joint_test)
+target_link_libraries(degenerate_euler_joint_test drakeParticles)

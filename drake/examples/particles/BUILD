@@ -10,39 +10,23 @@ load(
 )
 
 drake_cc_library(
-    name = "particle",
+    name = "particles",
     srcs = [
         "particle.cc",
+        "degenerate_euler_joint.cc"
     ],
     hdrs = [
         "particle.h",
-        "particle-inl.h",
+        "degenerate_euler_joint.h"
     ],
     deps = [
-        "@eigen//:eigen",
         "//drake/common",
-        "//drake/systems/framework:leaf_system"
-    ]
-)
-
-drake_cc_library(
-    name = "degenerate_euler_joint",
-    srcs = [
-	"degenerate_euler_joint.cc"
-    ],
-    hdrs = [
-	"degenerate_euler_joint.h",
-        "degenerate_euler_joint-inl.h"
-    ],
-    deps = [
-        "@eigen//:eigen",
-        "//drake/common",
-        "//drake/systems/framework:leaf_system"
+        "//drake/systems/framework"
     ]
 )
 
 drake_cc_binary(
-    name = "demo",
+    name = "uniformly_accelerated_particle_demo",
     srcs = [
         "uniformly_accelerated_particle.cc",
     ],
@@ -50,8 +34,7 @@ drake_cc_binary(
         ":models"
     ],
     deps = [
-        ":particle",
-        ":degenerate_euler_joint",
+        ":particles",
         "//drake/lcm",
         "//drake/systems/analysis",
         "//drake/systems/primitives:constant_vector_source",
@@ -66,14 +49,14 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "particle_test",
     deps = [
-        ":particle"
+        ":particles"
     ]
 )
 
 drake_cc_googletest(
     name = "degenerate_euler_joint_test",
     deps = [
-        ":degenerate_euler_joint"
+        ":particles"
     ]
 )
 
