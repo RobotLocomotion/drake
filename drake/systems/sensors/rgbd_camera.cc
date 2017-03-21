@@ -241,12 +241,17 @@ class RgbdCamera::Impl {
   const bool kCameraFixed;
   ColorPalette color_palette_;
   vtkNew<vtkActor> terrain_actor_;
-  // For color / depth, and label images.
+
+  // Indices for id_object_maps_, renderers_ and render_windows_.
+  enum RenderTarget { kRenderTargetColorAndDepth = 0, kRenderTargetLabel = 1 };
   std::array<std::map<int, vtkSmartPointer<vtkActor>>, 2> id_object_maps_;
   std::array<vtkNew<vtkRenderer>, 2> renderers_;
   std::array<vtkNew<vtkRenderWindow>, 2> render_windows_;
-  // For color, depth and label images.
-  std::array<vtkNew<vtkWindowToImageFilter>, 3> image_buffers_;
+
+  // Indices for image_filters_.
+  enum ImageFilter { kImageFilterColor = 0, kImageFilterDepth = 1,
+                     kImageFilterLabel = 2 };
+  std::array<vtkNew<vtkWindowToImageFilter>, 3> image_filters_;
 };
 
 
@@ -304,22 +309,22 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
     window->AddRenderer(renderers_[i].GetPointer());
     ++i;
   }
-  render_windows_[1]->SetMultiSamples(0);
+  render_windows_[kRenderTargetLabel]->SetMultiSamples(0);
 
-  // Color image.
-  image_buffers_[0]->SetInput(render_windows_[0].GetPointer());
-  image_buffers_[0]->SetInputBufferTypeToRGBA();
-  // Depth image.
-  image_buffers_[1]->SetInput(render_windows_[0].GetPointer());
-  image_buffers_[1]->SetInputBufferTypeToZBuffer();
-  // Label image.
-  image_buffers_[2]->SetInput(render_windows_[1].GetPointer());
-  image_buffers_[2]->SetInputBufferTypeToRGB();
+  image_filters_[kImageFilterColor]->SetInput(
+      render_windows_[kRenderTargetColorAndDepth].GetPointer());
+  image_filters_[kImageFilterColor]->SetInputBufferTypeToRGBA();
+  image_filters_[kImageFilterDepth]->SetInput(
+      render_windows_[kRenderTargetColorAndDepth].GetPointer());
+  image_filters_[kImageFilterDepth]->SetInputBufferTypeToZBuffer();
+  image_filters_[kImageFilterLabel]->SetInput(
+      render_windows_[kRenderTargetLabel].GetPointer());
+  image_filters_[kImageFilterLabel]->SetInputBufferTypeToRGB();
 
-  for (auto& buffer : image_buffers_) {
-    buffer->SetMagnification(1);
-    buffer->ReadFrontBufferOff();
-    buffer->Update();
+  for (auto& filter : image_filters_) {
+    filter->SetMagnification(1);
+    filter->ReadFrontBufferOff();
+    filter->Update();
   }
 }
 
@@ -447,18 +452,18 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
     if (shape_matched) {
       actor->SetMapper(mapper.GetPointer());
       actor->SetUserTransform(vtk_transform);
-      id_object_maps_[0][model_id] =
+      id_object_maps_[kRenderTargetColorAndDepth][model_id] =
           vtkSmartPointer<vtkActor>(actor.GetPointer());
-      renderers_[0]->AddActor(actor.GetPointer());
+      renderers_[kRenderTargetColorAndDepth]->AddActor(actor.GetPointer());
 
       const auto& color = color_palette_.get_normalized_color(model_id);
       actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
       actor_for_label->GetProperty()->LightingOff();
       actor_for_label->SetMapper(mapper.GetPointer());
       actor_for_label->SetUserTransform(vtk_transform);
-      id_object_maps_[1][model_id] =
+      id_object_maps_[kRenderTargetLabel][model_id] =
           vtkSmartPointer<vtkActor>(actor_for_label.GetPointer());
-      renderers_[1]->AddActor(actor_for_label.GetPointer());
+      renderers_[kRenderTargetLabel]->AddActor(actor_for_label.GetPointer());
     }
   }
 
@@ -520,9 +525,9 @@ void RgbdCamera::Impl::UpdateRenderWindow() const {
     window->Render();
   }
 
-  for (auto& buffer : image_buffers_) {
-    buffer->Modified();
-    buffer->Update();
+  for (auto& filter : image_filters_) {
+    filter->Modified();
+    filter->Update();
   }
 }
 
@@ -580,7 +585,8 @@ void RgbdCamera::Impl::DoCalcOutput(
       // http://www.vtk.org/doc/release/5.8/html/a02326.html.
       // Converts RGBA to BGRA.
       void* color_ptr =
-          image_buffers_[0]->GetOutput()->GetScalarPointer(u, v, 0);
+          image_filters_[kImageFilterColor]->GetOutput()->GetScalarPointer(
+              u, v, 0);
       image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
       image.at(u, height_reversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
       image.at(u, height_reversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
@@ -588,13 +594,15 @@ void RgbdCamera::Impl::DoCalcOutput(
 
       // Updates the depth image.
       const float z_buffer_value = *static_cast<float*>(
-          image_buffers_[1]->GetOutput()->GetScalarPointer(u, v, 0));
+          image_filters_[kImageFilterDepth]->GetOutput()->GetScalarPointer(
+              u, v, 0));
       depth_image.at(u, height_reversed)[0] =
           CheckRangeAndConvertToMeters(z_buffer_value);
 
       // Updates the label image.
       void* label_ptr =
-          image_buffers_[2]->GetOutput()->GetScalarPointer(u, v, 0);
+          image_filters_[kImageFilterLabel]->GetOutput()->GetScalarPointer(
+              u, v, 0);
       Color color{*(static_cast<uint8_t*>(label_ptr) + 0),  // R
                   *(static_cast<uint8_t*>(label_ptr) + 1),  // G
                   *(static_cast<uint8_t*>(label_ptr) + 2)};  // B
