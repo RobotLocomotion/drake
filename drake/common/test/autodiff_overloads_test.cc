@@ -3,8 +3,8 @@
 #include <type_traits>
 
 #include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
 #include <gtest/gtest.h>
+#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/cond.h"
 #include "drake/common/eigen_matrix_compare.h"
