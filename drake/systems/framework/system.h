@@ -17,7 +17,7 @@
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
@@ -1353,8 +1353,8 @@ class System {
     return output_vector->get_mutable_value();
   }
 
-  /// Causes an InputPort in the @p context to become up-to-date, delegating to
-  /// the parent Diagram if necessary.
+  /// Causes an InputPortValue in the @p context to become up-to-date,
+  /// delegating to the parent Diagram if necessary.
   ///
   /// This is a framework implementation detail. User code should never call it.
   void EvalInputPort(const Context<T>& context, int port_index) const {

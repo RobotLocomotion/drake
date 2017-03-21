@@ -21,9 +21,9 @@
 #include "drake/systems/framework/discrete_state.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/model_values.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/sparsity_matrix.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
 
@@ -239,7 +239,7 @@ class LeafSystem : public System<T> {
     return new BasicVector<T>(descriptor.size());
   }
 
-  /// Allocates a vector that is suitable as an input value for @p descriptor.
+  /// Allocates an AbstractValue suitable as an input value for @p descriptor.
   /// The default implementation in this class either clones the model_value
   /// (if the port was declared via DeclareAbstractInputPort) or else aborts.
   ///

@@ -6,7 +6,7 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/input_port_value.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;

@@ -86,11 +86,11 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
   context_->SetTimeStateAndParametersFrom(context);
 
   // Allocate the input port and keep an alias around.
-  input_port_ =
-      new FreestandingInputPort(std::make_unique<BasicVector<AutoDiffXd>>(
+  input_port_value_ =
+      new FreestandingInputPortValue(std::make_unique<BasicVector<AutoDiffXd>>(
           system_->get_input_port(0).size()));
-  std::unique_ptr<InputPort> input_port(input_port_);
-  context_->SetInputPort(0, std::move(input_port));
+  std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
+  context_->SetInputPortValue(0, std::move(input_port_value));
 }
 
 SystemDirectCollocationConstraint::~SystemDirectCollocationConstraint() {}
@@ -98,7 +98,7 @@ SystemDirectCollocationConstraint::~SystemDirectCollocationConstraint() {}
 void SystemDirectCollocationConstraint::dynamics(const TaylorVecXd& state,
                                                  const TaylorVecXd& input,
                                                  TaylorVecXd* xdot) const {
-  input_port_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(input);
+  input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(input);
   context_->get_mutable_continuous_state()->SetFromVector(state);
   system_->CalcTimeDerivatives(*context_, derivatives_.get());
   *xdot = derivatives_->CopyToVector();

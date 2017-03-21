@@ -9,7 +9,7 @@
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/input_port_value.h"
 
 using Eigen::Matrix;
 using Eigen::MatrixXd;
