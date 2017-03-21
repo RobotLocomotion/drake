@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Eigen/Dense>
-
 #include <cmath>
 #include <functional>
+
+#include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"

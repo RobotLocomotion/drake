@@ -1,5 +1,6 @@
+#include <memory>
+
 #include <gtest/gtest.h>
-#include  <memory>
 
 #include <Eigen/Geometry>
 

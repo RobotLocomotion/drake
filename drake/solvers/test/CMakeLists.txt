@@ -81,6 +81,7 @@ endif()
 
 if (mosek_FOUND)
   drake_add_cc_test(rotation_constraint_test rotation_constraint_test.cc)
+  set_tests_properties(rotation_constraint_test PROPERTIES TIMEOUT 400)
   target_link_libraries(rotation_constraint_test drakeRotationConstraint)
 endif(mosek_FOUND)
 

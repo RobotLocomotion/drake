@@ -3,12 +3,12 @@
 cc_library(
     name = "main",
     srcs = glob(
-        ["src/*.cc"],
-        exclude = ["src/gtest-all.cc"],
+        ["googletest/src/*.cc"],
+        exclude = ["googletest/src/gtest-all.cc"],
     ),
     hdrs = glob([
-        "include/**/*.h",
-        "src/*.h",
+        "googletest/include/**/*.h",
+        "googletest/src/*.h",
     ]),
     copts = ["-Wno-unused-const-variable"],
     defines = [
@@ -16,7 +16,10 @@ cc_library(
         "GTEST_DONT_DEFINE_SUCCEED=1",
         "GTEST_DONT_DEFINE_TEST=1",
     ],
-    includes = ["include"],
+    includes = [
+        "googletest",
+        "googletest/include",
+    ],
     linkopts = select({
         "@//tools:linux": ["-pthread"],
         "@//conditions:default": [],

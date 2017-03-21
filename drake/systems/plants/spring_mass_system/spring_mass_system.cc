@@ -73,7 +73,10 @@ SpringMassSystem<T>::SpringMassSystem(double spring_constant_N_per_m,
   if (system_is_forced_) this->DeclareInputPort(kVectorValued, 1);
 
   // Declares output port for q, qdot, Energy.
-  this->DeclareOutputPort(kVectorValued, 3);
+  this->DeclareVectorOutputPort(SpringMassStateVector<T>());
+
+  this->DeclareContinuousState(SpringMassStateVector<T>(),
+      1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
 }
 
 template <typename T>

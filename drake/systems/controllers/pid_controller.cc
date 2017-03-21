@@ -1,5 +1,7 @@
 #include "drake/systems/controllers/pid_controller.h"
 
+#include <string>
+
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -357,6 +359,32 @@ void PidController<T>::set_integral_value(
 template <typename T>
 bool PidController<T>::has_any_direct_feedthrough() const {
   return !get_Kp_vector().isZero() || !get_Kd_vector().isZero();
+}
+
+// Adds a simple record-based representation of the PID controller to @p dot.
+template <typename T>
+void PidController<T>::GetGraphvizFragment(std::stringstream* dot) const {
+  std::string name = this->get_name();
+  if (name.empty()) {
+    name = "PID Controller";
+  }
+  *dot << this->GetGraphvizId() << " [shape=record, label=\"" << name;
+  *dot << " | { {<u0> q |<u1> q_d} |<y0> y}";
+  *dot << "\"];" << std::endl;
+}
+
+template <typename T>
+void PidController<T>::GetGraphvizInputPortToken(
+    const InputPortDescriptor<T>& port, std::stringstream* dot) const {
+  DRAKE_DEMAND(port.get_system() == this);
+  *dot << this->GetGraphvizId() << ":u" << port.get_index();
+}
+
+template <typename T>
+void PidController<T>::GetGraphvizOutputPortToken(
+    const OutputPortDescriptor<T>& port, std::stringstream* dot) const {
+  DRAKE_DEMAND(port.get_system() == this);
+  *dot << this->GetGraphvizId() << ":y" << port.get_index();
 }
 
 template class PidControllerInternal<double>;

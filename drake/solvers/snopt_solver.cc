@@ -14,10 +14,10 @@ namespace snopt {
 // not work.
 // clang-format wants to switch the order of this inclusion, which causes
 // compiler failure.
-// clang-format off
+/* clang-format off */
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-// clang-format on
+/* clang-format on */
 }
 
 // todo(sammy-tri) :  implement sparsity inside each cost/constraint

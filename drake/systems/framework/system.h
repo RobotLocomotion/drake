@@ -17,7 +17,7 @@
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
@@ -802,6 +802,45 @@ class System {
   //@}
 
   //----------------------------------------------------------------------------
+  /// @name                      Graphviz methods
+  //@{
+
+  /// Returns a Graphviz string describing this System.  To render the string,
+  /// use the Graphviz tool, ``dot``.
+  /// http://www.graphviz.org/Documentation/dotguide.pdf
+  std::string GetGraphvizString() const {
+    std::stringstream dot;
+    dot << "digraph _" << this->GetGraphvizId() << " {" << std::endl;
+    dot << "rankdir=LR" << std::endl;
+    GetGraphvizFragment(&dot);
+    dot << "}" << std::endl;
+    return dot.str();
+  }
+
+  /// Appends a Graphviz fragment to the @p dot stream.  The fragment must be
+  /// valid Graphviz when wrapped in a `digraph` or `subgraph` stanza.  Does
+  /// nothing by default.
+  virtual void GetGraphvizFragment(std::stringstream *dot) const {}
+
+  /// Appends a fragment to the @p dot stream identifying the graphviz node
+  /// representing @p port. Does nothing by default.
+  virtual void GetGraphvizInputPortToken(const InputPortDescriptor<T> &port,
+                                         std::stringstream *dot) const {}
+
+  /// Appends a fragment to the @p dot stream identifying the graphviz node
+  /// representing @p port. Does nothing by default.
+  virtual void GetGraphvizOutputPortToken(const OutputPortDescriptor<T> &port,
+                                          std::stringstream *dot) const {}
+
+  /// Returns an opaque integer that uniquely identifies this system in the
+  /// Graphviz output.
+  int64_t GetGraphvizId() const {
+    return reinterpret_cast<int64_t>(this);
+  }
+
+  //@}
+
+  //----------------------------------------------------------------------------
   /// @name                Automatic differentiation
   /// From a %System templatized by `double`, you can obtain an identical system
   /// templatized by an automatic differentation scalar providing
@@ -1353,8 +1392,8 @@ class System {
     return output_vector->get_mutable_value();
   }
 
-  /// Causes an InputPort in the @p context to become up-to-date, delegating to
-  /// the parent Diagram if necessary.
+  /// Causes an InputPortValue in the @p context to become up-to-date,
+  /// delegating to the parent Diagram if necessary.
   ///
   /// This is a framework implementation detail. User code should never call it.
   void EvalInputPort(const Context<T>& context, int port_index) const {

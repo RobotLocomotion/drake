@@ -5,7 +5,6 @@
 #include <iostream>
 
 #include <Eigen/Dense>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"

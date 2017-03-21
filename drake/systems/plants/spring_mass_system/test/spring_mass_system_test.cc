@@ -6,12 +6,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_input.h"
-#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/vector_base.h"
 
 using std::make_unique;

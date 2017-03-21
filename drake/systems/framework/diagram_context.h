@@ -12,11 +12,11 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
+#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/supervector.h"
-#include "drake/systems/framework/system_input.h"
-#include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace systems {
@@ -173,8 +173,9 @@ class DiagramContext : public Context<T> {
     DRAKE_DEMAND(dest_port_index < dest_context->get_num_input_ports());
 
     // Construct and install the destination port.
-    auto input_port = std::make_unique<DependentInputPort>(output_port_value);
-    dest_context->SetInputPort(dest_port_index, std::move(input_port));
+    auto input_port =
+        std::make_unique<DependentInputPortValue>(output_port_value);
+    dest_context->SetInputPortValue(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
     dependency_graph_[dest] = src;
@@ -265,13 +266,14 @@ class DiagramContext : public Context<T> {
     return static_cast<int>(input_ids_.size());
   }
 
-  void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
+  void SetInputPortValue(int index,
+                         std::unique_ptr<InputPortValue> port) override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
     GetMutableSubsystemContext(system_index)
-        ->SetInputPort(port_index, std::move(port));
+        ->SetInputPortValue(port_index, std::move(port));
     // TODO(david-german-tri): Set invalidation callbacks.
   }
 
@@ -297,7 +299,7 @@ class DiagramContext : public Context<T> {
       DRAKE_DEMAND(contexts_[i] != nullptr);
       DRAKE_DEMAND(outputs_[i] != nullptr);
       // When a leaf context is cloned, it will clone the data that currently
-      // appears on each of its input ports into a FreestandingInputPort.
+      // appears on each of its input ports into a FreestandingInputPortValue.
       clone->AddSystem(i, contexts_[i]->Clone(), outputs_[i]->Clone());
     }
 
@@ -308,8 +310,9 @@ class DiagramContext : public Context<T> {
     clone->MakeParameters();
 
     // Clone the internal graph structure. After this is done, the clone will
-    // still have FreestandingInputPorts at the inputs to the Diagram itself,
-    // but all of the intermediate nodes will have DependentInputPorts.
+    // still have FreestandingInputPortValues at the inputs to the Diagram
+    // itself, but all of the intermediate nodes will have
+    // DependentInputPortValues.
     for (const auto& connection : dependency_graph_) {
       const PortIdentifier& src = connection.second;
       const PortIdentifier& dest = connection.first;
@@ -342,13 +345,13 @@ class DiagramContext : public Context<T> {
 
   /// Returns the input port at the given @p index, which of course belongs
   /// to the subsystem whose input was exposed at that index.
-  const InputPort* GetInputPort(int index) const override {
+  const InputPortValue* GetInputPortValue(int index) const override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
-    return Context<T>::GetInputPort(*GetSubsystemContext(system_index),
-                                    port_index);
+    return Context<T>::GetInputPortValue(*GetSubsystemContext(system_index),
+                                         port_index);
   }
 
  private:

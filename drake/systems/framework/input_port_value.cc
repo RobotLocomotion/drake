@@ -1,38 +1,39 @@
-#include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/input_port_value.h"
 
 namespace drake {
 namespace systems {
 
-InputPort::~InputPort() {}
+InputPortValue::~InputPortValue() {}
 
-void InputPort::Invalidate() {
+void InputPortValue::Invalidate() {
   if (invalidation_callback_ != nullptr) {
     invalidation_callback_();
   }
 }
 
-DependentInputPort::DependentInputPort(OutputPortValue* output_port_value)
+DependentInputPortValue::DependentInputPortValue(
+    OutputPortValue* output_port_value)
     : output_port_value_(output_port_value) {
   DRAKE_DEMAND(output_port_value_ != nullptr);
   output_port_value_->add_dependent(this);
 }
 
-DependentInputPort::~DependentInputPort() {
+DependentInputPortValue::~DependentInputPortValue() {
   if (output_port_value_ != nullptr) {
     output_port_value_->remove_dependent(this);
   }
 }
 
-void DependentInputPort::Disconnect() {
+void DependentInputPortValue::Disconnect() {
   output_port_value_ = nullptr;
 }
-FreestandingInputPort::FreestandingInputPort(
+FreestandingInputPortValue::FreestandingInputPortValue(
     std::unique_ptr<AbstractValue> data)
     : output_port_value_(std::move(data)) {
   output_port_value_.add_dependent(this);
 }
 
-FreestandingInputPort::~FreestandingInputPort() {
+FreestandingInputPortValue::~FreestandingInputPortValue() {
   output_port_value_.remove_dependent(this);
 }
 

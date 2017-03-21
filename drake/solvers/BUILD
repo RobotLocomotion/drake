@@ -526,6 +526,21 @@ drake_cc_binary(
 )
 
 drake_cc_googletest(
+    name = "rotation_constraint_test",
+    size = "medium",
+    srcs = [
+        "test/rotation_constraint_test.cc",
+    ],
+    tags = ["mosek"],
+    deps = [
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "snopt_solver_test",
     srcs = [
         "test/snopt_solver_test.cc",

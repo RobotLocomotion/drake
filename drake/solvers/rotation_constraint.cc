@@ -1,12 +1,18 @@
+/* clang-format off */
 #include "drake/solvers/rotation_constraint.h"
 #include "drake/solvers/rotation_constraint_internal.h"
+/* clang-format on */
 
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <limits>
-#include <vector>
 
+#include "drake/common/symbolic_expression.h"
 #include "drake/math/cross_product.h"
+
+using std::numeric_limits;
+using drake::symbolic::Expression;
 
 namespace drake {
 namespace solvers {
@@ -397,7 +403,7 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   prog_normal.AddLinearCost(Vector1d(-1), d_var);
   for (const auto& pt : pts) {
     prog_normal.AddLinearConstraint(Eigen::Vector4d(pt(0), pt(1), pt(2), -1), 0,
-                                    std::numeric_limits<double>::infinity(),
+                                    numeric_limits<double>::infinity(),
                                     {n_var, d_var});
   }
   // A_lorentz * n + b_lorentz = [1; n]
@@ -435,22 +441,83 @@ void AddMcCormickVectorConstraints(
         box_min(2) = EnvelopeMinValue(zi, N);
         box_max(2) = EnvelopeMinValue(zi + 1, N);
 
-        // If min corner is inside the unit circle...
-        if (box_min.lpNorm<2>() < 1.0) {
-          VectorDecisionVariable<3> this_cpos, this_cneg;
-          this_cpos << cpos[xi](0), cpos[yi](1), cpos[zi](2);
-          this_cneg << cneg[xi](0), cneg[yi](1), cneg[zi](2);
+        VectorDecisionVariable<3> this_cpos, this_cneg;
+        this_cpos << cpos[xi](0), cpos[yi](1), cpos[zi](2);
+        this_cneg << cneg[xi](0), cneg[yi](1), cneg[zi](2);
 
-          if (box_max.lpNorm<2>() <= 1.0) {
-            // This box is not allowed, e.g. c[xi]+c[yi]+c[zi] <= 2
+        const double box_min_norm = box_min.lpNorm<2>();
+        const double box_max_norm = box_max.lpNorm<2>();
+        if (box_min_norm <= 1.0 + 2 * numeric_limits<double>::epsilon() &&
+            box_max_norm >= 1.0 - 2 * numeric_limits<double>::epsilon()) {
+          // The box intersects with the surface of the unit sphere.
+          // Two possible cases
+          // 1. If the box bmin <= x <= bmax intersects with the surface of the
+          // unit sphere at a unique point (either bmin or bmax),
+          // 2. Otherwise, there is a region of intersection.
 
-            // Should never happen on the outer boxes.
-            DRAKE_DEMAND((xi < (N - 1)) && (yi < (N - 1)) && (zi < (N - 1)));
-
+          // We choose the error as 2 * eps here. The reason is that
+          // if x.norm() == 1, then another vector y which is different from
+          // x by eps (y(i) = x(i) + eps), the norm of y is at most 1 + 2 * eps.
+          if (std::abs(box_min_norm - 1.0) <
+                  2 * numeric_limits<double>::epsilon() ||
+              std::abs(box_max_norm - 1.0) <
+                  2 * numeric_limits<double>::epsilon()) {
+            // If box_min or box_max is on the sphere, then denote the point on
+            // the sphere as u, we have the following condition
+            // if c[xi](0) = 1 and c[yi](1) == 1 and c[zi](2) == 1, then
+            //     v = u
+            //     vᵀ * v1 = 0
+            //     vᵀ * v2 = 0
+            //     v.cross(v1) = v2
+            // Translate this to constraint, we have
+            //   2 * (c[xi](0) + c[yi](1) + c[zi](2)) - 6
+            //       <= v - u <= -2 * (c[xi](0) + c[yi](1) + c[zi](2)) + 6
+            //
+            //   c[xi](0) + c[yi](1) + c[zi](2) - 3
+            //       <= vᵀ * v1 <= 3 - (c[xi](0) + c[yi](1) + c[zi](2))
+            //
+            //   c[xi](0) + c[yi](1) + c[zi](2) - 3
+            //       <= vᵀ * v2 <= 3 - (c[xi](0) + c[yi](1) + c[zi](2))
+            //
+            //   2 * c[xi](0) + c[yi](1) + c[zi](2) - 6
+            //       <= v.cross(v1) - v2 <= 6 - 2 * (c[xi](0) + c[yi](1) +
+            //       c[zi](2))
+            Eigen::Vector3d unique_intersection;  // `u` in the documentation
+                                                  // above
+            if (std::abs(box_min_norm - 1.0) <
+                2 * numeric_limits<double>::epsilon()) {
+              unique_intersection = box_min / box_min_norm;
+            } else {
+              unique_intersection = box_max / box_max_norm;
+            }
+            Eigen::Vector3d orthant_u;
+            VectorDecisionVariable<3> orthant_c;
             for (int o = 0; o < 8; o++) {  // iterate over orthants
-              prog->AddLinearConstraint(
-                  Eigen::RowVector3d(1, 1, 1), 0.0, 2.0,
-                  PickPermutation(this_cpos, this_cneg, o));
+              orthant_u = FlipVector(unique_intersection, o);
+              orthant_c = PickPermutation(this_cpos, this_cneg, o);
+
+              // TODO(hongkai.dai): remove this for loop when we can handle
+              // Eigen::Array of symbolic formulae.
+              Expression orthant_c_sum = orthant_c.cast<Expression>().sum();
+              for (int i = 0; i < 3; ++i) {
+                prog->AddLinearConstraint(v(i) - orthant_u(i) <=
+                                          6 - 2 * orthant_c_sum);
+                prog->AddLinearConstraint(v(i) - orthant_u(i) >=
+                                          2 * orthant_c_sum - 6);
+              }
+              const Expression v_dot_v1 = orthant_u.dot(v1);
+              const Expression v_dot_v2 = orthant_u.dot(v2);
+              prog->AddLinearConstraint(v_dot_v1 <= 3 - orthant_c_sum);
+              prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v1);
+              prog->AddLinearConstraint(v_dot_v2 <= 3 - orthant_c_sum);
+              prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v2);
+              const Vector3<Expression> v_cross_v1 = orthant_u.cross(v1);
+              for (int i = 0; i < 3; ++i) {
+                prog->AddLinearConstraint(v_cross_v1(i) - v2(i) <=
+                                          6 - 2 * orthant_c_sum);
+                prog->AddLinearConstraint(v_cross_v1(i) - v2(i) >=
+                                          2 * orthant_c_sum - 6);
+              }
             }
           } else {
             // Find the intercepts of the unit sphere with the box, then find
@@ -577,6 +644,14 @@ void AddMcCormickVectorConstraints(
                   {v2, v1, orthant_c});
             }
           }
+        } else {
+          // This box does not intersect with the surface of the sphere.
+          for (int o = 0; o < 8; ++o) {  // iterate over orthants
+            prog->AddLinearConstraint(PickPermutation(this_cpos, this_cneg, o)
+                                          .cast<Expression>()
+                                          .sum(),
+                                      0.0, 2.0);
+          }
         }
       }
     }
@@ -585,7 +660,9 @@ void AddMcCormickVectorConstraints(
 
 }  // namespace
 
-void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+std::pair<std::vector<MatrixDecisionVariable<3, 3>>,
+          std::vector<MatrixDecisionVariable<3, 3>>>
+AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     int num_binary_vars_per_half_axis, RollPitchYawLimits limits) {
@@ -714,6 +791,7 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                                   R.row((i + 1) % 3).transpose(),
                                   R.row((i + 2) % 3).transpose());
   }
+  return make_pair(Cpos, Cneg);
 }
 
 }  // namespace solvers

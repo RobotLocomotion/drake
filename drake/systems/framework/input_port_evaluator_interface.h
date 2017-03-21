@@ -3,7 +3,7 @@
 #include <sstream>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
@@ -14,7 +14,7 @@ template <typename T> class Context;
 namespace detail {
 
 /// InputPortEvaluatorInterface is implemented by classes that are able to
-/// evaluate the OutputPortValue connected to a particular InputPort.
+/// evaluate the OutputPortValue connected to a particular InputPortValue.
 ///
 /// This interface is a Drake-internal detail. Users should never implement
 /// it. In fact, only Diagram should implement it. It exists primarily to

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program.h"
@@ -87,32 +89,49 @@ void AddRotationMatrixOrthonormalSocpConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R);
 
-/// Adds binary variables that constrain the value of the column *and* row
-/// vectors of R, in order to add the following (in some cases non-convex)
-/// constraints as an MILP.  Specifically, for column vectors Ri, we constrain:
-///   - forall i, |Ri| = 1 +/- envelope,
-///   - forall i,j!=i, Ri.dot(Rj) = 0 +/- envelope,
-///   - R2 = R0.cross(R1) +/- envelope,
-///        and again for R0=R1.cross(R2), and R1=R2.cross(R0).
-/// Then all of the same constraints are also added to R^T.  The size of the
-/// envelope decreases quickly as num_binary_variables_per_half_axis is
-/// is increased.
-///
-/// Note: Creates 9*2*num_binary_variables_per_half_axis binary variables named
-/// "BRpos*(*,*)" and "BRneg*(*,*)", and the same number of continuous variables
-/// named "CRpos*(*,*)" and "CRneg*(*,*)".
-///
-/// Note: The particular representation/algorithm here was developed in an
-/// attempt:
-///   - to enable efficient reuse of the variables between the constraints
-///     between multiple rows/columns (e.g. the constraints on R^T use the same
-///     variables as the constraints on R), and
-///   - to facilitate branch-and-bound solution techniques -- binary regions are
-///     layered so that constraining one region provides establishes constraints
-///     on large portions of O(3), and confers hopefully "useful" constraints
-///     the on other binary variables.
-/// TODO(russ, hongkai): add proper documentation for each input arguments.
-void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+/**
+ * Adds binary variables that constrain the value of the column *and* row
+ * vectors of R, in order to add the following (in some cases non-convex)
+ * constraints as an MILP.  Specifically, for column vectors Ri, we constrain:
+ * - forall i, |Ri| = 1 ± envelope,
+ * - forall i,j. i ≠ j, Ri.dot(Rj) = 0 ± envelope,
+ * - R2 = R0.cross(R1) ± envelope,
+ *      and again for R0=R1.cross(R2), and R1=R2.cross(R0).
+ * Then all of the same constraints are also added to R^T.  The size of the
+ * envelope decreases quickly as num_binary_variables_per_half_axis is
+ * is increased.
+ *
+ * Note: Creates `9*2*num_binary_variables_per_half_axis binary` variables named
+ * "BRpos*(*,*)" and "BRneg*(*,*)", and the same number of continuous variables
+ * named "CRpos*(*,*)" and "CRneg*(*,*)".
+ *
+ * Note: The particular representation/algorithm here was developed in an
+ * attempt:
+ *  - to enable efficient reuse of the variables between the constraints
+ *    between multiple rows/columns (e.g. the constraints on R^T use the same
+ *    variables as the constraints on R), and
+ *  - to facilitate branch-and-bound solution techniques -- binary regions are
+ *    layered so that constraining one region establishes constraints
+ *    on large portions of SO(3), and confers hopefully "useful" constraints
+ *    the on other binary variables.
+ * @param prog The mathematical program to which the constraints are added.
+ * @param R The rotation matrix
+ * @param num_binary_vars_per_half_axis number of binary variables for a half
+ * axis.
+ * @param limits The angle joints for space fixed z-y-x representation of the
+ * rotation. @default is no constraint. @see RollPitchYawLimitOptions
+ * @retval p  `p.first` is the variables CRpos, `p.second` is the
+ * variables CRneg. Both variables can only take values either 0 or 1.
+ * The definition for these variables are
+ * <pre>
+ *   CRpos[k](i, j) = 1 => k / N <= R(i, j) <= (k+1) / N
+ *   CRneg[k](i, j) = 1 => -(k+1) / N <= R(i, j) <= -k / N
+ * </pre>
+ * where `N` is `num_binary_vars_per_half_axis`.
+ */
+std::pair<std::vector<MatrixDecisionVariable<3, 3>>,
+          std::vector<MatrixDecisionVariable<3, 3>>>
+AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     int num_binary_vars_per_half_axis = 2,

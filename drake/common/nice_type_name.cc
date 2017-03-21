@@ -17,8 +17,10 @@ using std::string;
 // __GNUG__ is defined both for gcc and clang. See:
 // https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a01696.html
 #if defined(__GNUG__)
+/* clang-format off */
 #include <cxxabi.h>
 #include <cstdlib>
+/* clang-format on */
 #endif
 
 namespace drake {

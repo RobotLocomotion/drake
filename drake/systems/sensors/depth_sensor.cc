@@ -12,7 +12,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 
 using Eigen::Matrix3Xd;

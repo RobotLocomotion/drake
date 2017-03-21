@@ -7,8 +7,8 @@
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace systems {
