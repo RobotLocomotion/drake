@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace automotive {
@@ -22,8 +22,9 @@ GTEST_TEST(SimpleCarToEulerFloatingJointTest, BasicTest) {
   value->set_x(11.0);
   value->set_y(22.0);
   value->set_heading(33.0);
-  context->SetInputPort(
-      0, std::make_unique<systems::FreestandingInputPort>(std::move(value)));
+  context->SetInputPortValue(
+      0,
+      std::make_unique<systems::FreestandingInputPortValue>(std::move(value)));
 
   // Grab a pointer to where the CalcOutput results end up.
   const EulerFloatingJointState<double>* const result =
@@ -71,8 +72,9 @@ GTEST_TEST(SimpleCarToEulerFloatingJointTest, XOriginOffsetTest) {
     value->set_x(kX);
     value->set_y(kY);
     value->set_heading(kZeroHeading);
-    context->SetInputPort(
-        0, std::make_unique<systems::FreestandingInputPort>(std::move(value)));
+    context->SetInputPortValue(
+        0, std::make_unique<systems::FreestandingInputPortValue>(
+               std::move(value)));
   }
 
   dut->CalcOutput(*context, output.get());
@@ -91,8 +93,9 @@ GTEST_TEST(SimpleCarToEulerFloatingJointTest, XOriginOffsetTest) {
     value->set_x(kX);
     value->set_y(kY);
     value->set_heading(kLeftHeading);
-    context->SetInputPort(
-        0, std::make_unique<systems::FreestandingInputPort>(std::move(value)));
+    context->SetInputPortValue(
+        0, std::make_unique<systems::FreestandingInputPortValue>(
+               std::move(value)));
   }
 
   dut->CalcOutput(*context, output.get());

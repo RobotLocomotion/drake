@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 #include <cmath>
 #include <tuple>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"

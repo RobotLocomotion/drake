@@ -5,15 +5,15 @@
 #include <string>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
-#include "drake/systems/framework/value.h"
+#include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -67,7 +67,7 @@ class LeafContextTest : public ::testing::Test {
         std::make_unique<Parameters<double>>(std::move(params)));
   }
 
-  // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
+  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
@@ -75,7 +75,7 @@ class LeafContextTest : public ::testing::Test {
     return context.EvalVectorInput(nullptr, descriptor);
   }
 
-  // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
+  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
   static const std::string* ReadStringInputPort(
       const Context<double>& context, int index) {
@@ -83,7 +83,7 @@ class LeafContextTest : public ::testing::Test {
     return context.EvalInputValue<std::string>(nullptr, descriptor);
   }
 
-  // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
+  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
   static const AbstractValue* ReadAbstractInputPort(
       const Context<double>& context, int index) {

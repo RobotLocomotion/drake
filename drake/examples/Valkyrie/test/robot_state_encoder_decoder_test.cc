@@ -1,7 +1,9 @@
+/* clang-format off */
 #include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/examples/Valkyrie/robot_state_decoder.h"
+/* clang-format on */
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
@@ -13,7 +15,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-
 #include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {

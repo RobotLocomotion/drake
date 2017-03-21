@@ -1,14 +1,14 @@
+#include "drake/systems/framework/subvector.h"
+
 #include <memory>
 
 #include <Eigen/Dense>
-
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/subvector.h"
 
 namespace drake {
 namespace systems {

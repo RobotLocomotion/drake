@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+/* clang-format on */
 
 #include <memory>
 

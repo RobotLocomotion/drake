@@ -1,7 +1,7 @@
 #include "drake/math/expmap.h"
 
+#include <gtest/gtest.h>
 #include <unsupported/Eigen/AutoDiff>
-#include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"

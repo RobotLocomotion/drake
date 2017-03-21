@@ -4,11 +4,11 @@
 #include <stdexcept>
 #include <string>
 
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
-#include "drake/systems/framework/system_port_descriptor.h"
+#include <gtest/gtest.h>
 
-#include "gtest/gtest.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/system_port_descriptor.h"
 
 using std::make_unique;
 

@@ -1,7 +1,6 @@
-#include <memory>
-
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_diagram_factory.h"
 
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -53,9 +52,11 @@ PlantAndVisualizerDiagram<T>::PlantAndVisualizerDiagram(
     double static_friction_coefficient, double dynamic_friction_coefficient,
     double v_stiction_tolerance, lcm::DrakeLcmInterface* lcm) {
   DiagramBuilder<T> builder;
+  this->set_name("PlantAndVisualizerDiagram");
 
   rigid_body_plant_ =
       builder.template AddSystem<RigidBodyPlant<T>>(std::move(rigid_body_tree));
+  rigid_body_plant_->set_name("RigidBodyPlant");
 
   DRAKE_DEMAND(rigid_body_plant_ != nullptr);
   rigid_body_plant_->set_normal_contact_parameters(penetration_stiffness,
@@ -69,6 +70,7 @@ PlantAndVisualizerDiagram<T>::PlantAndVisualizerDiagram(
   // Creates and adds a DrakeVisualizer publisher.
   auto viz_publisher_ = builder.template AddSystem<DrakeVisualizer>(
       rigid_body_plant_->get_rigid_body_tree(), lcm);
+  viz_publisher_->set_name("DrakeVisualizer");
 
   // Connects the plant to the publisher for visualization.
   builder.Connect(rigid_body_plant_->state_output_port(),
@@ -92,10 +94,13 @@ template class PlantAndVisualizerDiagram<double>;
 template <typename T>
 PassiveVisualizedPlant<T>::PassiveVisualizedPlant(
     std::unique_ptr<PlantAndVisualizerDiagram<T>> visualized_plant) {
+  this->set_name("PassiveVisualizedPlant");
+
   // Sets up a builder for the demo.
   DiagramBuilder<T> builder;
   visualized_plant_ = builder.template AddSystem<PlantAndVisualizerDiagram<T>>(
       std::move(visualized_plant));
+  visualized_plant_->set_name("PlantAndVisualizer");
 
   // Fixes constant sources to all inputs.
   const systems::RigidBodyPlant<T>& plant = visualized_plant_->plant();
@@ -119,6 +124,7 @@ PassiveVisualizedPlant<T>::PassiveVisualizedPlant(
       systems::ConstantVectorSource<T>* constant_vector_source =
           builder.template AddSystem<systems::ConstantVectorSource<T>>(
               constant_value);
+      constant_vector_source->set_name("ConstantVectorZeroSource");
       builder.Connect(constant_vector_source->get_output_port(), input_port);
     }
   }
@@ -136,10 +142,12 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
     double static_friction_coefficient, double dynamic_friction_coefficient,
     double v_stiction_tolerance, lcm::DrakeLcmInterface* lcm)
     : poly_trajectory_(std::move(pp_traj)) {
+  this->set_name("PositionControlledPlantWithRobot");
   DiagramBuilder<T> builder;
 
   rigid_body_plant_ =
       builder.template AddSystem<RigidBodyPlant>(std::move(world_tree));
+  rigid_body_plant_->set_name("RigidBodyPlant");
 
   const auto& robot_input_port =
       rigid_body_plant_->model_instance_actuator_command_input_port(
@@ -158,6 +166,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   // Creates and adds a DrakeVisualizer publisher.
   drake_visualizer_ = builder.template AddSystem<DrakeVisualizer>(
       rigid_body_plant_->get_rigid_body_tree(), lcm);
+  drake_visualizer_->set_name("DrakeVisualizer");
 
   const int num_robot_positions = robot_tree.get_num_positions();
   const int num_robot_velocities = robot_tree.get_num_velocities();
@@ -177,6 +186,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   controller_ =
       builder.template AddSystem<systems::InverseDynamicsController<T>>(
           robot_tree, kp, ki, kd, false /* no feedforward acceleration */);
+  controller_->set_name("InverseDynamicsIIWAController");
 
   // Connect robot (not the entire plant) and controller
   builder.Connect(robot_output_port,
@@ -190,6 +200,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   // the diagram.  Port 1 (velocities) is connected below).
   input_mux_ = builder.template AddSystem<Multiplexer<T>>(
       std::vector<int>{num_robot_positions, num_robot_velocities});
+  input_mux_->set_name("IIWAInputMux");
 
   // The iiwa's control protocol doesn't have any way to express the
   // desired velocity for the arm, so this simulation doesn't take
@@ -200,6 +211,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   // position) and feed a desired velocity vector of zero.
   auto zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
       VectorX<T>::Zero(num_robot_velocities));
+  zero_source->set_name("ConstantVectorZeroSource");
 
   builder.Connect(zero_source->get_output_port(),
                   input_mux_->get_input_port(1));
@@ -212,6 +224,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
       builder.template AddSystem<TrajectorySource<double>>(*poly_trajectory_);
   builder.Connect(desired_plan_->get_output_port(),
                   input_mux_->get_input_port(0));
+  desired_plan_->set_name("PolynomialTrajectorySource");
 
   // Connects the plant to the publisher for visualization.
   builder.Connect(plant_output_port,

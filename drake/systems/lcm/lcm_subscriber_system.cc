@@ -6,7 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 
 namespace drake {
 namespace systems {

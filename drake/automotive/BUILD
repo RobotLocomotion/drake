@@ -128,9 +128,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "linear_car",
-    srcs = ["linear_car.cc"],
-    hdrs = ["linear_car.h"],
+    name = "idm_planner",
+    srcs = ["idm_planner.cc"],
+    hdrs = ["idm_planner.h"],
     deps = [
         ":generated_vectors",
         "//drake/common:symbolic",
@@ -138,9 +138,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "idm_planner",
-    srcs = ["idm_planner.cc"],
-    hdrs = ["idm_planner.h"],
+    name = "linear_car",
+    srcs = ["linear_car.cc"],
+    hdrs = ["linear_car.h"],
     deps = [
         ":generated_vectors",
         "//drake/common:symbolic",
@@ -167,6 +167,18 @@ drake_cc_library(
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/automotive/maliput/monolane",
+    ],
+)
+
+drake_cc_library(
+    name = "pose_selector",
+    srcs = ["pose_selector.cc"],
+    hdrs = ["pose_selector.h"],
+    visibility = [],
+    deps = [
+        "//drake/automotive/maliput/api",
+        "//drake/systems/rendering:pose_bundle",
+        "//drake/systems/rendering:pose_vector",
     ],
 )
 
@@ -213,11 +225,11 @@ drake_cc_library(
     name = "calc_smooth_acceleration",
     srcs = ["calc_smooth_acceleration.cc"],
     hdrs = ["calc_smooth_acceleration.h"],
+    visibility = [],
     deps = [
         "//drake/common:autodiff",
         "//drake/common:symbolic",
     ],
-    visibility=[],
 )
 
 drake_cc_library(
@@ -587,6 +599,14 @@ drake_cc_googletest(
     name = "linear_car_test",
     deps = [
         "//drake/automotive:linear_car",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pose_selector_test",
+    deps = [
+        "//drake/automotive:pose_selector",
+        "//drake/automotive/maliput/dragway",
     ],
 )
 

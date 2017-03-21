@@ -2,7 +2,12 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -124,6 +129,21 @@ drake_cc_library(
     deps = [
         ":mathematical_program",
         "//drake/math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "rotation_constraint_visualization",
+    testonly = 1,
+    srcs = [
+        "test/rotation_constraint_visualization.cc",
+    ],
+    hdrs = [
+        "test/rotation_constraint_visualization.h",
+    ],
+    deps = [
+        ":rotation_constraint",
+        "//drake/lcm:lcm_call_matlab",
     ],
 )
 
@@ -494,6 +514,32 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_binary(
+    name = "plot_feasible_rotation_matrices",
+    testonly = 1,
+    srcs = ["test/plot_feasible_rotation_matrices.cc"],
+    deps = [
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/lcm:lcm_call_matlab",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rotation_constraint_test",
+    size = "medium",
+    srcs = [
+        "test/rotation_constraint_test.cc",
+    ],
+    tags = ["mosek"],
+    deps = [
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
+    ],
+)
+
 drake_cc_googletest(
     name = "snopt_solver_test",
     srcs = [
@@ -518,6 +564,15 @@ drake_cc_googletest(
     deps = [
         ":system_identification",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_binary(
+    name = "plot_rotation_mccormick_envelope",
+    testonly = 1,
+    srcs = ["test/plot_rotation_mccormick_envelope.cc"],
+    deps = [
+        ":rotation_constraint_visualization",
     ],
 )
 

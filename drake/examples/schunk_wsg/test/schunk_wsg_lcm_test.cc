@@ -6,8 +6,8 @@
 
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/system_input.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/output_port_value.h"
 
 namespace drake {
 namespace examples {
@@ -26,11 +26,11 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgTrajectoryGeneratorTest) {
   lcmt_schunk_wsg_command initial_command{};
   initial_command.target_position_mm = 100;
   initial_command.force = 40;
-  std::unique_ptr<systems::FreestandingInputPort> input_command =
-      std::make_unique<systems::FreestandingInputPort>(
+  std::unique_ptr<systems::FreestandingInputPortValue> input_command =
+      std::make_unique<systems::FreestandingInputPortValue>(
           std::make_unique<systems::Value<lcmt_schunk_wsg_command>>(
               initial_command));
-  context->SetInputPort(0, std::move(input_command));
+  context->SetInputPortValue(0, std::move(input_command));
   context->FixInputPort(1, Eigen::VectorXd::Zero(1));
 
   // Step a little bit. We should be commanding a point on the

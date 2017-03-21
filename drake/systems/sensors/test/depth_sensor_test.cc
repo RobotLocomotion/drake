@@ -1,12 +1,12 @@
 #include "drake/systems/sensors/depth_sensor.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 

@@ -7,7 +7,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/joints/fixed_joint.h"

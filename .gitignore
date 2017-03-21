@@ -60,3 +60,6 @@ Pendulum.pmd
 drake/doc/_build
 bazel-*
 xcode
+.cproject
+.project
+.settings

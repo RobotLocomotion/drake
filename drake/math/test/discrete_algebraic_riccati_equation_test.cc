@@ -1,7 +1,10 @@
 #include "drake/math/discrete_algebraic_riccati_equation.h"
+
+#include <gtest/gtest.h>
+
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
-#include "gtest/gtest.h"
+
 using Eigen::MatrixXd;
 
 namespace drake {

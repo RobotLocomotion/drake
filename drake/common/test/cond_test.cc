@@ -1,6 +1,6 @@
 #include "drake/common/cond.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/double_overloads.h"
 

@@ -1,8 +1,7 @@
-#include <gtest/gtest.h>
-
-#include "ros/ros.h"
-
 #include "drake/ros/parameter_server.h"
+
+#include <gtest/gtest.h>
+#include "ros/ros.h"
 
 namespace drake {
 namespace ros {

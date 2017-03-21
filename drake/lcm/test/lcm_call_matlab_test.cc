@@ -1,8 +1,8 @@
+#include "drake/lcm/lcm_call_matlab.h"
+
 #include <cmath>
 
-#include "gtest/gtest.h"
-
-#include "drake/lcm/lcm_call_matlab.h"
+#include <gtest/gtest.h>
 
 // Note: Unfortunately these really only test whether the code compiles and
 // runs... the actual output must currently be verified by human inspection in

@@ -1,6 +1,8 @@
+/* clang-format off */
 #include "drake/common/symbolic_expression.h"
+/* clang-format on */
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/hash.h"
 #include "drake/common/monomial.h"

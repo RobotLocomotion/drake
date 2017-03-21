@@ -87,6 +87,54 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "control_util",
+    srcs = ["controlUtil.cpp"],
+    hdrs = ["controlUtil.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/math:autodiff",
+        "//drake/math:expmap",
+        "//drake/math:geometric_transform",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/util",
+    ],
+)
+
+drake_cc_library(
+    name = "qp_common",
+    srcs = [],
+    hdrs = ["QPCommon.h"],
+    deps = [
+        ":control_util",
+        "//drake/common",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/robotInterfaces:side",
+        "//drake/util",
+    ],
+)
+
+drake_cc_library(
+    name = "zmp_planner",
+    srcs = ["zmp_planner.cc"],
+    hdrs = ["zmp_planner.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/systems/controllers:linear_quadratic_regulator",
+    ],
+)
+
+drake_cc_library(
+    name = "zmp_util",
+    srcs = ["zmpUtil.cpp"],
+    hdrs = ["zmpUtil.h"],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(

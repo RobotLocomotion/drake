@@ -61,6 +61,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "manipulator_plan_eval_system",
+    srcs = ["manipulator_plan_eval_system.cc"],
+    hdrs = ["manipulator_plan_eval_system.h"],
+    deps = [
+        ":plan_eval_base_system",
+        "//drake/lcmtypes:plan_eval_debug_info",
+    ],
+)
+
+drake_cc_library(
     name = "qp_controller_system",
     srcs = ["qp_controller_system.cc"],
     hdrs = ["qp_controller_system.h"],
@@ -69,6 +79,20 @@ drake_cc_library(
         "//drake/lcmtypes:inverse_dynamics_debug_info",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "manipulator_inverse_dynamics_controller",
+    srcs = ["manipulator_inverse_dynamics_controller.cc"],
+    hdrs = ["manipulator_inverse_dynamics_controller.h"],
+    deps = [
+        ":humanoid_status_translator_system",
+        ":joint_level_controller_system",
+        ":manipulator_plan_eval_system",
+        ":qp_controller_system",
+        "//drake/systems/controllers:model_based_controller_base",
+        "//drake/systems/framework",
     ],
 )
 
@@ -89,8 +113,8 @@ drake_cc_binary(
     ],
     deps = [
         ":atlas_joint_level_controller_system",
-        ":humanoid_status_translator_system",
         ":humanoid_plan_eval_system",
+        ":humanoid_status_translator_system",
         ":qp_controller_system",
         "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/lcm",
@@ -119,14 +143,38 @@ drake_cc_googletest(
         ":humanoid_plan_eval_system",
         ":qp_controller_system",
         "//drake/common:eigen_matrix_compare",
-        "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
         "//drake/systems/primitives:constant_value_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "manipulator_inverse_dynamics_controller_test",
+    srcs = ["test/manipulator_inverse_dynamics_controller_test.cc"],
+    data = [
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    deps = [
+        ":manipulator_inverse_dynamics_controller",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/framework",
+        "//drake/systems/primitives:constant_vector_source",
     ],
 )
 

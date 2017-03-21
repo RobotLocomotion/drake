@@ -1,5 +1,6 @@
 #include "drake/common/eigen_matrix_compare.h"
-#include "gtest/gtest.h"
+
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace {

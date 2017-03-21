@@ -1,9 +1,11 @@
+/* clang-format off */
 #include "drake/automotive/dev/endless_road_oracle.h"
 #include "drake/automotive/dev/endless_road_oracle-internal.h"
+/* clang-format on */
 
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/maliput/monolane/builder.h"

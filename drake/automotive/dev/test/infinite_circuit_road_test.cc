@@ -2,9 +2,9 @@
 
 #include <cmath>
 
-#include "drake/automotive/maliput/monolane/builder.h"
+#include <gtest/gtest.h>
 
-#include "gtest/gtest.h"
+#include "drake/automotive/maliput/monolane/builder.h"
 
 namespace drake {
 namespace maliput {

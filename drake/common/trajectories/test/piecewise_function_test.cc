@@ -2,8 +2,9 @@
 
 #include <random>
 
+#include <gtest/gtest.h>
+
 #include "drake/common/drake_assert.h"
-#include "gtest/gtest.h"
 
 // Dummy implementation of PiecewiseFunction to test the basic indexing
 // functions.

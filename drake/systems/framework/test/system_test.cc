@@ -4,12 +4,12 @@
 #include <stdexcept>
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
@@ -397,15 +397,15 @@ class SystemIOTest : public ::testing::Test {
     // make string input
     std::unique_ptr<Value<std::string>> str_input =
         std::make_unique<Value<std::string>>("input");
-    context_->SetInputPort(
-        0, std::make_unique<FreestandingInputPort>(std::move(str_input)));
+    context_->SetInputPortValue(
+        0, std::make_unique<FreestandingInputPortValue>(std::move(str_input)));
 
     // make vector input
     std::unique_ptr<BasicVector<double>> vec_input =
         std::make_unique<BasicVector<double>>(1);
     vec_input->SetAtIndex(0, 2);
-    context_->SetInputPort(
-        1, std::make_unique<FreestandingInputPort>(std::move(vec_input)));
+    context_->SetInputPortValue(
+        1, std::make_unique<FreestandingInputPortValue>(std::move(vec_input)));
   }
 
   ValueIOTestSystem<double> test_sys_;

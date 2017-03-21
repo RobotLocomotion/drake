@@ -3,11 +3,11 @@
 #include <cmath>
 #include <limits>
 
-#include "gtest/gtest.h"
+#include <Eigen/Dense>
+#include <gtest/gtest.h>
 #include <vtkCellData.h>
 #include <vtkPlaneSource.h>
 #include <vtkSmartPointer.h>
-#include <Eigen/Dense>
 
 namespace drake {
 namespace systems {

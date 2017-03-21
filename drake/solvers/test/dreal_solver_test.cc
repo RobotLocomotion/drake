@@ -1,8 +1,9 @@
 #include "drake/solvers/dreal_solver.h"
 
 #include <typeinfo>
+
+#include <gtest/gtest.h>
 #include "dreal/dreal.h"
-#include "gtest/gtest.h"
 
 #include "drake/solvers/mathematical_program.h"
 

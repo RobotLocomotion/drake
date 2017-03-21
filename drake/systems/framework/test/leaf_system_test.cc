@@ -4,14 +4,14 @@
 #include <stdexcept>
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 
@@ -645,6 +645,27 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
   EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
   EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
+}
+
+GTEST_TEST(GraphvizTest, Attributes) {
+  DefaultFeedthroughSystem system;
+  // Check that the ID is the memory address.
+  ASSERT_EQ(reinterpret_cast<int64_t>(&system), system.GetGraphvizId());
+  const std::string dot = system.GetGraphvizString();
+  // Check that left-to-right ranking is imposed.
+  EXPECT_NE(std::string::npos, dot.find("rankdir=LR")) << dot;
+  // Check that NiceTypeName is used to compute the label.
+  EXPECT_NE(std::string::npos, dot.find(
+      "label=\"drake::systems::(anonymous)::DefaultFeedthroughSystem|"));
+}
+
+GTEST_TEST(GraphvizTest, Ports) {
+  DefaultFeedthroughSystem system;
+  system.AddAbstractInputPort();
+  system.AddAbstractInputPort();
+  system.AddAbstractOutputPort();
+  const std::string dot = system.GetGraphvizString();
+  EXPECT_NE(std::string::npos, dot.find("{{<u0>u0|<u1>u1} | {<y0>y0}}")) << dot;
 }
 
 }  // namespace

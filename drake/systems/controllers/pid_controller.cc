@@ -1,13 +1,15 @@
 #include "drake/systems/controllers/pid_controller.h"
 
+#include <string>
+
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/pass_through.h"
-#include "drake/systems/primitives/demultiplexer.h"
 
 using std::make_unique;
 
@@ -300,13 +302,16 @@ void PidController<T>::ConnectPorts(
       controller_inverter->get_input_port());
 
   // Expose state input
-  builder.ExportInput(feedback_selector_p->get_input_port());
+  int index = builder.ExportInput(feedback_selector_p->get_input_port());
+  this->set_input_port_index_estimated_state(index);
 
   // Exposes desired state input
-  builder.ExportInput(error_inverter->get_input_port());
+  index = builder.ExportInput(error_inverter->get_input_port());
+  this->set_input_port_index_desired_state(index);
 
   // Exposes torque output
-  builder.ExportOutput(controller_inverter->get_output_port());
+  index = builder.ExportOutput(controller_inverter->get_output_port());
+  this->set_output_port_index_control(index);
 
   builder.BuildInto(this);
 }
@@ -354,6 +359,32 @@ void PidController<T>::set_integral_value(
 template <typename T>
 bool PidController<T>::has_any_direct_feedthrough() const {
   return !get_Kp_vector().isZero() || !get_Kd_vector().isZero();
+}
+
+// Adds a simple record-based representation of the PID controller to @p dot.
+template <typename T>
+void PidController<T>::GetGraphvizFragment(std::stringstream* dot) const {
+  std::string name = this->get_name();
+  if (name.empty()) {
+    name = "PID Controller";
+  }
+  *dot << this->GetGraphvizId() << " [shape=record, label=\"" << name;
+  *dot << " | { {<u0> q |<u1> q_d} |<y0> y}";
+  *dot << "\"];" << std::endl;
+}
+
+template <typename T>
+void PidController<T>::GetGraphvizInputPortToken(
+    const InputPortDescriptor<T>& port, std::stringstream* dot) const {
+  DRAKE_DEMAND(port.get_system() == this);
+  *dot << this->GetGraphvizId() << ":u" << port.get_index();
+}
+
+template <typename T>
+void PidController<T>::GetGraphvizOutputPortToken(
+    const OutputPortDescriptor<T>& port, std::stringstream* dot) const {
+  DRAKE_DEMAND(port.get_system() == this);
+  *dot << this->GetGraphvizId() << ":y" << port.get_index();
 }
 
 template class PidControllerInternal<double>;

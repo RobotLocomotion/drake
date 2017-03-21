@@ -1,12 +1,13 @@
 #include "drake/systems/controllers/pid_controller.h"
 
 #include <memory>
+#include <string>
+
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
-
-#include "gtest/gtest.h"
+#include "drake/systems/framework/input_port_value.h"
 
 using std::make_unique;
 
@@ -76,6 +77,12 @@ TEST_F(PidControllerTest, GetterVectors) {
   EXPECT_DEATH(controller.get_Kp_singleton(), ".*");
   EXPECT_DEATH(controller.get_Ki_singleton(), ".*");
   EXPECT_DEATH(controller.get_Kd_singleton(), ".*");
+}
+
+TEST_F(PidControllerTest, Graphviz) {
+  const std::string dot = controller_.GetGraphvizString();
+  EXPECT_NE(std::string::npos, dot.find(
+      "label=\"PID Controller | { {<u0> q |<u1> q_d} |<y0> y}\"")) << dot;
 }
 
 // Evaluates the output and asserts correctness.

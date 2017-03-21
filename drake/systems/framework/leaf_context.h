@@ -7,12 +7,12 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/cache.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
+#include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
-#include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -38,25 +38,26 @@ class LeafContext : public Context<T> {
         parameters_(std::make_unique<Parameters<T>>()) {}
   ~LeafContext() override {}
 
-  void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
+  void SetInputPortValue(int index,
+                         std::unique_ptr<InputPortValue> port) override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     // TODO(david-german-tri): Set invalidation callbacks.
-    inputs_[index] = std::move(port);
+    input_values_[index] = std::move(port);
   }
 
   /// Removes all the input ports, and deregisters them from the output ports
   /// on which they depend.
-  void ClearInputPorts() { inputs_.clear(); }
+  void ClearInputPorts() { input_values_.clear(); }
 
   /// Clears the input ports and allocates @p n new input ports, not connected
   /// to anything.
   void SetNumInputPorts(int n) {
     ClearInputPorts();
-    inputs_.resize(n);
+    input_values_.resize(n);
   }
 
   int get_num_input_ports() const override {
-    return static_cast<int>(inputs_.size());
+    return static_cast<int>(input_values_.size());
   }
 
   const State<T>& get_state() const override { return *state_; }
@@ -137,13 +138,13 @@ class LeafContext : public Context<T> {
     // Make deep copies of the parameters.
     clone->set_parameters(parameters_->Clone());
 
-    // Make deep copies of the inputs into FreestandingInputPorts.
+    // Make deep copies of the inputs into FreestandingInputPortValues.
     // TODO(david-german-tri): Preserve version numbers as well.
-    for (const auto& port : this->inputs_) {
+    for (const auto& port : this->input_values_) {
       if (port == nullptr) {
-        clone->inputs_.emplace_back(nullptr);
+        clone->input_values_.emplace_back(nullptr);
       } else {
-        clone->inputs_.emplace_back(new FreestandingInputPort(
+        clone->input_values_.emplace_back(new FreestandingInputPortValue(
             port->template get_vector_data<T>()->Clone()));
       }
     }
@@ -177,14 +178,14 @@ class LeafContext : public Context<T> {
     return clone;
   }
 
-  const InputPort* GetInputPort(int index) const override {
+  const InputPortValue* GetInputPortValue(int index) const override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
-    return inputs_[index].get();
+    return input_values_[index].get();
   }
 
  private:
   // The external inputs to the System.
-  std::vector<std::unique_ptr<InputPort>> inputs_;
+  std::vector<std::unique_ptr<InputPortValue>> input_values_;
 
   // The internal state of the System.
   std::unique_ptr<State<T>> state_;

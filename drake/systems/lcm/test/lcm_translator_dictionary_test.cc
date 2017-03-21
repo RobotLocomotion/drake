@@ -1,6 +1,6 @@
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 

@@ -25,10 +25,10 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
   context_->SetTimeStateAndParametersFrom(context);
 
   // Allocate the input port and keep an alias around.
-  input_port_ = new FreestandingInputPort(
+  input_port_value_ = new FreestandingInputPortValue(
       std::make_unique<BasicVector<double>>(system_->get_input_port(0).size()));
-  std::unique_ptr<InputPort> input_port(input_port_);
-  context_->SetInputPort(0, std::move(input_port));
+  std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
+  context_->SetInputPortValue(0, std::move(input_port_value));
 
   // Add the dynamic constraints.
   auto constraint =
@@ -137,7 +137,8 @@ DircolTrajectoryOptimization::ReconstructStateTrajectory() const {
   derivatives.reserve(input_vec.size());
 
   for (size_t i = 0; i < input_vec.size(); ++i) {
-    input_port_->GetMutableVectorData<double>()->SetFromVector(input_vec[i]);
+    input_port_value_->GetMutableVectorData<double>()->SetFromVector(
+        input_vec[i]);
     context_->get_mutable_continuous_state()->SetFromVector(state_vec[i]);
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives.push_back(continuous_state_->CopyToVector());

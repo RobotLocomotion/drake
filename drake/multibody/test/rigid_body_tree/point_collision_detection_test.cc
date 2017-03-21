@@ -1,8 +1,10 @@
+/* clang-format off */
 #include "drake/multibody/rigid_body_tree.h"
-
-#include <gtest/gtest.h>
+/* clang-format on */
 
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"

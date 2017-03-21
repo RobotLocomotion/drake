@@ -8,10 +8,10 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/joints/drake_joint.h"
-#include "drake/multibody/joints/quaternion_floating_joint.h"
-#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 
 using std::runtime_error;
 using std::string;

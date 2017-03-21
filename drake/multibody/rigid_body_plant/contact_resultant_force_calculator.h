@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
+#include "drake/multibody/rigid_body_plant/contact_force.h"
 
 namespace drake {
 namespace systems {

@@ -1,14 +1,15 @@
+#include "drake/multibody/collision/model.h"
+
 #include <cmath>
 #include <memory>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/collision/drake_collision.h"
-#include "drake/multibody/collision/model.h"
 
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;

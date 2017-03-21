@@ -1,5 +1,11 @@
 #include "drake/automotive/maliput/utility/generate_urdf.h"
 
+#include <cmath>
+#include <fstream>
+
+#include <gtest/gtest.h>
+#include "spruce.hh"
+
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/builder.h"
 #include "drake/automotive/maliput/monolane/junction.h"
@@ -7,12 +13,6 @@
 #include "drake/automotive/maliput/monolane/line_lane.h"
 #include "drake/automotive/maliput/monolane/road_geometry.h"
 #include "drake/automotive/maliput/monolane/segment.h"
-
-#include <cmath>
-#include <fstream>
-
-#include "gtest/gtest.h"
-#include "spruce.hh"
 
 namespace drake {
 namespace maliput {

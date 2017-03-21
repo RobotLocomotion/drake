@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace systems {

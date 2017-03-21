@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"

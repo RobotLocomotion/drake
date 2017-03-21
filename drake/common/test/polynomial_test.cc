@@ -5,7 +5,7 @@
 #include <sstream>
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/test/random_polynomial_matrix.h"

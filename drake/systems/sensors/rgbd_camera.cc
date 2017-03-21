@@ -1,11 +1,16 @@
 #include "drake/systems/sensors/rgbd_camera.h"
 
+#include <array>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
+#include <Eigen/Dense>
 #include <vtkActor.h>
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
@@ -13,19 +18,18 @@
 #include <vtkImageShiftScale.h>
 #include <vtkNew.h>
 #include <vtkOBJReader.h>
+#include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
 #include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkProperty.h>
-#include <vtkPNGReader.h>
-#include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
+#include <vtkRenderer.h>
 #include <vtkSmartPointer.h>
 #include <vtkSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
-#include <Eigen/Dense>
 
 #include "drake/math/roll_pitch_yaw_using_quaternion.h"
 #include "drake/systems/rendering/pose_vector.h"
@@ -42,14 +46,20 @@ namespace systems {
 namespace sensors {
 namespace {
 
+const int kPortStateInput = 0;
+const int kPortColorImage = 0;
+const int kPortDepthImage = 1;
+const int kPortLabelImage = 2;
+const int kPortCameraPose = 3;
+
 const int kColorImageChannel = 4;
 const int kDepthImageChannel = 1;
+const int kLabelImageChannel = 1;
 
 // TODO(kunimatsu-tri) Add support for the arbitrary clipping planes and
 // background color.
 const double kClippingPlaneNear = 0.01;
 const double kClippingPlaneFar = 100.;
-const double kBackgoundColor[3] = {0.8, 0.898, 1.};
 
 // TODO(kunimatsu-tri) Add support for the arbitrary image size and the depth
 // ranges.
@@ -57,9 +67,7 @@ const int kImageWidth = 640;  // In pixels
 const int kImageHeight = 480;  // In pixels
 const float kDepthRangeNear = 0.5;
 const float kDepthRangeFar = 5.0;
-
 const double kTerrainSize = 100.;
-const double kTerrainColor[3] = {1., 0.898, 0.797};
 
 // For Zbuffer value conversion.
 const double kA = kClippingPlaneFar / (kClippingPlaneFar - kClippingPlaneNear);
@@ -72,6 +80,131 @@ std::string RemoveFileExtension(const std::string& filepath) {
   }
   return filepath.substr(0, last_dot);
 }
+
+template <typename T>
+const std::array<vtkSmartPointer<T>, 3>
+MakeVtkInstanceArray(const vtkNew<T>& element1,
+                     const vtkNew<T>& element2,
+                     const vtkNew<T>& element3) {
+  return  std::array<vtkSmartPointer<T>, 3>{{
+      vtkSmartPointer<T>(element1.GetPointer()),
+      vtkSmartPointer<T>(element2.GetPointer()),
+      vtkSmartPointer<T>(element3.GetPointer())}};
+}
+
+template <typename T>
+const std::array<vtkSmartPointer<T>, 2>
+MakeVtkInstanceArray(const vtkNew<T>& element1,
+                     const vtkNew<T>& element2) {
+  return  std::array<vtkSmartPointer<T>, 2>{{
+      vtkSmartPointer<T>(element1.GetPointer()),
+      vtkSmartPointer<T>(element2.GetPointer())}};
+}
+
+// Defines a color based on its three primary additive colors: red, green, and
+// blue. Each of these primary additive colors are in the range of [0, 255].
+struct Color {
+  int r;  // red
+  int g;  // green
+  int b;  // blue
+
+  bool operator==(const Color& other) const {
+    return this->r == other.r && this->g == other.g && this->b == other.b;
+  }
+};
+
+// Defines a hash function for unordered_map that takes Color as the key.
+struct ColorHash {
+  std::size_t operator()(const Color& key) const {
+    return (key.r * 256 + key.g) * 256 + key.b;
+  }
+};
+
+// Defines a color based on its three primary additive colors: red, green, and
+// blue. Each of these primary additive colors are in the range of [0, 1].
+struct NormalizedColor {
+  double r;  // red
+  double g;  // green
+  double b;  // blue
+};
+
+// Creates and holds a palette of colors for visualizing different objects in a
+// scene (the intent is for a different color to be applied to each identified
+// object). The colors are chosen so as to be easily distinguishable. In other
+// words, the intensities are spaced as widely as possible given the number of
+// required colors. Black, white and gray, which has the same value for all the
+// three color channels, are not part of this color palette. This color palette
+// can hold up to 1536 colors.
+class ColorPalette {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ColorPalette)
+  explicit ColorPalette(int num_colors) {
+    const int num = std::ceil(num_colors / 6.);
+    DRAKE_DEMAND(num < 256);  // The maximum number of uint8_t.
+
+    for (int i = 0; i < num; ++i) {
+      // It is possible to have more colors, but we want the colors to be as
+      // distinguishable as possible for visualization purpose.  We can add more
+      // colors as needed.
+      const int intensity = 255 - i * 255 / num;
+      DRAKE_ASSERT(intensity > 0);
+      color_palette_.push_back(Color{intensity, 0, 0});
+      color_palette_.push_back(Color{0, intensity, 0});
+      color_palette_.push_back(Color{0, 0, intensity});
+      color_palette_.push_back(Color{intensity, intensity, 0});
+      color_palette_.push_back(Color{0, intensity, intensity});
+      color_palette_.push_back(Color{intensity, 0, intensity});
+    }
+
+    // Creates hash map for ID look up.
+    for (size_t i = 0; i < color_palette_.size(); ++i) {
+      color_id_map_[color_palette_[i]] = i;
+    }
+    color_id_map_[kTerrainColor] = RgbdCamera::Label::kFlatTerrain;
+    color_id_map_[kSkyColor] = RgbdCamera::Label::kNoBody;
+  }
+
+  const Color& get_color(int index) const {
+    DRAKE_DEMAND(index < static_cast<int>(color_palette_.size()));
+    return color_palette_[index];
+  }
+
+  const NormalizedColor get_normalized_color(int index) const {
+    NormalizedColor color = Normalize(get_color(index));
+    return color;
+  }
+
+  const NormalizedColor get_normalized_sky_color() const {
+    return Normalize(kSkyColor);
+  }
+
+  const NormalizedColor get_normalized_terrain_color() const {
+    return Normalize(kTerrainColor);
+  }
+
+  int LookUpId(const Color& color) const {
+    return color_id_map_.at(color);
+  }
+
+ private:
+  static NormalizedColor Normalize(const Color& color) {
+    NormalizedColor normalized;
+    normalized.r = color.r / 255.;
+    normalized.g = color.g / 255.;
+    normalized.b = color.b / 255.;
+    return normalized;
+  }
+
+  // These colors are chosen so as to be easily distinguished from the colors in
+  // color_palette_. They are guaranteed to be distinct from color_palette_
+  // because none of their intensity elements are identical.
+  // TODO(kunimatsu-tri) Add support for arbitrary colors for the terrain and
+  // the sky.
+  const Color kTerrainColor{255, 229, 204};
+  const Color kSkyColor{204, 229, 255};
+  std::vector<Color> color_palette_;
+  std::unordered_map<const Color, int, ColorHash> color_id_map_;
+};
 
 }  // namespace
 
@@ -108,28 +241,6 @@ class RgbdCamera::Impl {
 
   const RigidBodyTree<double>& tree() const { return tree_; }
 
-  void set_state_input_port_index(int port_index) {
-    state_input_port_index_ = port_index;
-  }
-
-  int state_input_port_index() const { return state_input_port_index_; }
-
-  void set_color_image_output_port_index(int port_index) {
-    color_image_output_port_index_ = port_index;
-  }
-
-  int color_image_output_port_index() const {
-    return color_image_output_port_index_;
-  }
-
-  void set_depth_image_output_port_index(int port_index) {
-    depth_image_output_port_index_ = port_index;
-  }
-
-  int depth_image_output_port_index() const {
-    return depth_image_output_port_index_;
-  }
-
  private:
   void CreateRenderingWorld();
 
@@ -145,17 +256,18 @@ class RgbdCamera::Impl {
   const Eigen::Isometry3d X_BC_;
   const Eigen::Isometry3d X_BD_;
   const Eigen::Isometry3d X_WB_initial_;
-  int state_input_port_index_{};
-  int color_image_output_port_index_{};
-  int depth_image_output_port_index_{};
   const bool kCameraFixed;
-
-  std::map<int, vtkSmartPointer<vtkActor>> id_object_pairs_;
+  ColorPalette color_palette_;
   vtkNew<vtkActor> terrain_actor_;
-  vtkNew<vtkRenderer> renderer_;
-  vtkNew<vtkRenderWindow> render_window_;
-  vtkNew<vtkWindowToImageFilter> depth_buffer_;
-  vtkNew<vtkWindowToImageFilter> color_buffer_;
+  std::map<int, vtkSmartPointer<vtkActor>> color_depth_id_object_map_;
+  std::map<int, vtkSmartPointer<vtkActor>> label_id_object_map_;
+  vtkNew<vtkRenderer> color_depth_renderer_;
+  vtkNew<vtkRenderer> label_renderer_;
+  vtkNew<vtkRenderWindow> color_depth_render_window_;
+  vtkNew<vtkRenderWindow> label_render_window_;
+  vtkNew<vtkWindowToImageFilter> color_filter_;
+  vtkNew<vtkWindowToImageFilter> depth_filter_;
+  vtkNew<vtkWindowToImageFilter> label_filter_;
 };
 
 
@@ -184,9 +296,12 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
           (Eigen::AngleAxisd(orientation[0], Eigen::Vector3d::UnitX()) *
            Eigen::AngleAxisd(orientation[1], Eigen::Vector3d::UnitY()) *
            Eigen::AngleAxisd(orientation[2], Eigen::Vector3d::UnitZ()))),
-      kCameraFixed(fix_camera) {
+      kCameraFixed(fix_camera), color_palette_(tree.bodies.size()) {
   if (!show_window) {
-    render_window_->SetOffScreenRendering(1);
+    for (auto& window : MakeVtkInstanceArray(color_depth_render_window_,
+                                             label_render_window_)) {
+      window->SetOffScreenRendering(1);
+    }
   }
 
   CreateRenderingWorld();
@@ -198,26 +313,36 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   camera->SetViewAngle(fov_y * 180. / M_PI);
   camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
 
-  renderer_->SetActiveCamera(camera.GetPointer());
-  renderer_->SetBackground(kBackgoundColor[0],
-                           kBackgoundColor[1],
-                           kBackgoundColor[2]);
+  const auto sky_color = color_palette_.get_normalized_sky_color();
+  const auto renderers = MakeVtkInstanceArray<vtkRenderer>(
+      color_depth_renderer_, label_renderer_);
+  for (auto& renderer : renderers) {
+    renderer->SetActiveCamera(camera.GetPointer());
+    renderer->SetBackground(sky_color.r, sky_color.g, sky_color.b);
+  }
 
-  render_window_->SetSize(color_camera_info_.width(),
-                          color_camera_info_.height());
-  render_window_->AddRenderer(renderer_.GetPointer());
+  const auto windows = MakeVtkInstanceArray<vtkRenderWindow>(
+      color_depth_render_window_, label_render_window_);
+  for (size_t i = 0; i < windows.size(); ++i) {
+    windows[i]->SetSize(color_camera_info_.width(),
+                        color_camera_info_.height());
+    windows[i]->AddRenderer(renderers[i].GetPointer());
+  }
+  label_render_window_->SetMultiSamples(0);
 
-  color_buffer_->SetInput(render_window_.GetPointer());
-  color_buffer_->SetMagnification(1);
-  color_buffer_->SetInputBufferTypeToRGBA();
-  color_buffer_->ReadFrontBufferOff();
-  color_buffer_->Update();
+  color_filter_->SetInput(color_depth_render_window_.GetPointer());
+  color_filter_->SetInputBufferTypeToRGBA();
+  depth_filter_->SetInput(color_depth_render_window_.GetPointer());
+  depth_filter_->SetInputBufferTypeToZBuffer();
+  label_filter_->SetInput(label_render_window_.GetPointer());
+  label_filter_->SetInputBufferTypeToRGB();
 
-  depth_buffer_->SetInput(render_window_.GetPointer());
-  depth_buffer_->SetMagnification(1);
-  depth_buffer_->SetInputBufferTypeToZBuffer();
-  depth_buffer_->ReadFrontBufferOff();
-  depth_buffer_->Update();
+  for (auto& filter : MakeVtkInstanceArray<vtkWindowToImageFilter>(
+           color_filter_, depth_filter_, label_filter_)) {
+    filter->SetMagnification(1);
+    filter->ReadFrontBufferOff();
+    filter->Update();
+  }
 }
 
 RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
@@ -232,6 +357,10 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
 
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
+      continue;
+    }
+
+    if (body->get_visual_elements().empty()) {
       continue;
     }
 
@@ -250,6 +379,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         VtkUtil::ConvertToVtkTransform(pose);
 
     vtkNew<vtkActor> actor;
+    vtkNew<vtkActor> actor_for_label;
     vtkNew<vtkPolyDataMapper> mapper;
     bool shape_matched = true;
     const DrakeShapes::Geometry& geometry = visual.getGeometry();
@@ -286,7 +416,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         vtkNew<vtkTransform> transform;
         transform->RotateX(90);
         vtkNew<vtkTransformPolyDataFilter> transform_filter;
-        transform_filter->SetInput(vtk_cylinder->GetOutput());
+        transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
         transform_filter->SetTransform(transform.GetPointer());
         transform_filter->Update();
 
@@ -339,31 +469,40 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
     if (shape_matched) {
       actor->SetMapper(mapper.GetPointer());
       actor->SetUserTransform(vtk_transform);
-      id_object_pairs_[model_id] =
+      color_depth_id_object_map_[model_id] =
           vtkSmartPointer<vtkActor>(actor.GetPointer());
-      renderer_->AddActor(actor.GetPointer());
+      color_depth_renderer_->AddActor(actor.GetPointer());
+
+      const auto& color = color_palette_.get_normalized_color(model_id);
+      actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
+      actor_for_label->GetProperty()->LightingOff();
+      actor_for_label->SetMapper(mapper.GetPointer());
+      actor_for_label->SetUserTransform(vtk_transform);
+      label_id_object_map_[model_id] =
+          vtkSmartPointer<vtkActor>(actor_for_label.GetPointer());
+      label_renderer_->AddActor(actor_for_label.GetPointer());
     }
   }
 
   // Adds a flat terrain.
   vtkSmartPointer<vtkPlaneSource> plane = VtkUtil::CreateSquarePlane(
       kTerrainSize);
-
   vtkSmartPointer<vtkTransform> transform =
       VtkUtil::ConvertToVtkTransform(X_CW);
 
   vtkNew<vtkPolyDataMapper> mapper;
-  mapper->SetInput(plane->GetOutput());
+  mapper->SetInputConnection(plane->GetOutputPort());
   terrain_actor_->SetMapper(mapper.GetPointer());
-  terrain_actor_->GetProperty()->SetColor(kTerrainColor[0],
-                                          kTerrainColor[1],
-                                          kTerrainColor[2]);
-  terrain_actor_->GetProperty()->SetAmbient(1);
-  terrain_actor_->GetProperty()->SetDiffuse(0);
-  terrain_actor_->GetProperty()->SetSpecular(0);
-
+  auto color = color_palette_.get_normalized_terrain_color();
+  terrain_actor_->GetProperty()->SetColor(color.r,
+                                          color.g,
+                                          color.b);
+  terrain_actor_->GetProperty()->LightingOff();
   terrain_actor_->SetUserTransform(transform);
-  renderer_->AddActor(terrain_actor_.GetPointer());
+  for (auto& renderer : MakeVtkInstanceArray<vtkRenderer>(color_depth_renderer_,
+                                                          label_renderer_)) {
+    renderer->AddActor(terrain_actor_.GetPointer());
+  }
 }
 
 void RgbdCamera::Impl::UpdateModelPoses(
@@ -378,11 +517,18 @@ void RgbdCamera::Impl::UpdateModelPoses(
         cache, 0, body->get_body_index());
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(X_CBody);
-    // `id_object_pairs_` is modified here.  This is OK because 1) we are just
-    // copying data to the memory space allocated at the construction time and
-    // 2) we are not outputting this data to outside the class.
-    auto& actor = id_object_pairs_.at(body->get_model_instance_id());
-    actor->SetUserTransform(vtk_transform);
+    // `color_depth_id_object_map_` and `label_id_object_map_` are modified
+    // here. This is OK because 1) we are just copying data to the memory spaces
+    // allocated at the construction time and 2) we are not outputting these
+    // data to outside the class.
+    const int model_instance_id = body->get_model_instance_id();
+
+    const std::array<std::map<int, vtkSmartPointer<vtkActor>>, 2>
+        id_object_maps{{color_depth_id_object_map_, label_id_object_map_}};
+    for (auto& id_object_map : id_object_maps) {
+      auto& actor = id_object_map.at(model_instance_id);
+      actor->SetUserTransform(vtk_transform);
+    }
   }
 
   if (!kCameraFixed) {
@@ -390,17 +536,22 @@ void RgbdCamera::Impl::UpdateModelPoses(
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(X_CW);
     // `terrain_actor_` is modified here, but this is OK.  For the detail, see
-    // the comment above for `id_object_pairs_`.
+    // the comment above for `color_depth_id_object_map_`.
     terrain_actor_->SetUserTransform(vtk_transform);
   }
 }
 
 void RgbdCamera::Impl::UpdateRenderWindow() const {
-  render_window_->Render();
-  color_buffer_->Modified();
-  color_buffer_->Update();
-  depth_buffer_->Modified();
-  depth_buffer_->Update();
+  for (auto& window : MakeVtkInstanceArray<vtkRenderWindow>(
+           color_depth_render_window_, label_render_window_)) {
+    window->Render();
+  }
+
+  for (auto& filter : MakeVtkInstanceArray<vtkWindowToImageFilter>(
+           color_filter_, depth_filter_, label_filter_)) {
+    filter->Modified();
+    filter->Update();
+  }
 }
 
 void RgbdCamera::Impl::DoCalcOutput(
@@ -420,7 +571,7 @@ void RgbdCamera::Impl::DoCalcOutput(
 
   rendering::PoseVector<double>* const camera_base_pose =
       dynamic_cast<rendering::PoseVector<double>*>(
-          output->GetMutableVectorData(2));
+          output->GetMutableVectorData(kPortCameraPose));
 
   Eigen::Translation<double, 3> trans = Eigen::Translation<double, 3>(
       X_WB.translation());
@@ -434,14 +585,16 @@ void RgbdCamera::Impl::DoCalcOutput(
 
   // Outputs the image data.
   sensors::Image<uint8_t>& image =
-      output->GetMutableData(
-          color_image_output_port_index_)->GetMutableValue<
-            sensors::Image<uint8_t>>();
+      output->GetMutableData(kPortColorImage)->GetMutableValue<
+        sensors::Image<uint8_t>>();
 
   sensors::Image<float>& depth_image =
-      output->GetMutableData(
-          depth_image_output_port_index_)->GetMutableValue<
-            sensors::Image<float>>();
+      output->GetMutableData(kPortDepthImage)->GetMutableValue<
+        sensors::Image<float>>();
+
+  sensors::Image<int16_t>& label_image =
+      output->GetMutableData(kPortLabelImage)->GetMutableValue<
+        sensors::Image<int16_t>>();
 
   const int height = color_camera_info_.height();
   const int width = color_camera_info_.width();
@@ -449,8 +602,12 @@ void RgbdCamera::Impl::DoCalcOutput(
     for (int u = 0; u < width; ++u) {
       const int height_reversed = height - v - 1;  // Makes image upside down.
 
+      // We cast `void*` to `uint8_t*` for RGBA, and to `float*` for ZBuffer,
+      // respectively. This is because these are the types for pixels internally
+      // used in `vtkWindowToImageFiler` class. For more detail, refer to:
+      // http://www.vtk.org/doc/release/5.8/html/a02326.html.
       // Converts RGBA to BGRA.
-      void* color_ptr = color_buffer_->GetOutput()->GetScalarPointer(u, v, 0);
+      void* color_ptr = color_filter_->GetOutput()->GetScalarPointer(u, v, 0);
       image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
       image.at(u, height_reversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
       image.at(u, height_reversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
@@ -458,9 +615,18 @@ void RgbdCamera::Impl::DoCalcOutput(
 
       // Updates the depth image.
       const float z_buffer_value = *static_cast<float*>(
-          depth_buffer_->GetOutput()->GetScalarPointer(u, v, 0));
+          depth_filter_->GetOutput()->GetScalarPointer(u, v, 0));
       depth_image.at(u, height_reversed)[0] =
           CheckRangeAndConvertToMeters(z_buffer_value);
+
+      // Updates the label image.
+      void* label_ptr = label_filter_->GetOutput()->GetScalarPointer(u, v, 0);
+      Color color{*(static_cast<uint8_t*>(label_ptr) + 0),  // R
+                  *(static_cast<uint8_t*>(label_ptr) + 1),  // G
+                  *(static_cast<uint8_t*>(label_ptr) + 2)};  // B
+
+      label_image.at(u, height_reversed)[0] =
+          static_cast<int16_t>(color_palette_.LookUpId(color));
     }
   }
 }
@@ -512,18 +678,19 @@ void RgbdCamera::Init(const std::string& name) {
   set_name(name);
   const int kVecNum =
       impl_->tree().get_num_positions() + impl_->tree().get_num_velocities();
-  impl_->set_state_input_port_index(
-      this->DeclareInputPort(systems::kVectorValued, kVecNum).get_index());
+  this->DeclareInputPort(systems::kVectorValued, kVecNum);
 
   Image<uint8_t> color_image(kImageWidth, kImageHeight, kColorImageChannel);
-  impl_->set_color_image_output_port_index(
-      this->DeclareAbstractOutputPort(systems::Value<sensors::Image<uint8_t>>(
-          color_image)).get_index());
+  this->DeclareAbstractOutputPort(systems::Value<sensors::Image<uint8_t>>(
+      color_image));
 
   Image<float> depth_image(kImageWidth, kImageHeight, kDepthImageChannel);
-  impl_->set_depth_image_output_port_index(
-      this->DeclareAbstractOutputPort(systems::Value<sensors::Image<float>>(
-          depth_image)).get_index());
+  this->DeclareAbstractOutputPort(systems::Value<sensors::Image<float>>(
+      depth_image));
+
+  Image<int16_t> label_image(kImageWidth, kImageHeight, kLabelImageChannel);
+  this->DeclareAbstractOutputPort(systems::Value<sensors::Image<int16_t>>(
+      label_image));
 
   this->DeclareVectorOutputPort(rendering::PoseVector<double>());
 }
@@ -555,33 +722,43 @@ const RigidBodyTree<double>& RgbdCamera::tree() const {
 }
 
 const InputPortDescriptor<double>& RgbdCamera::state_input_port() const {
-  return System<double>::get_input_port(impl_->state_input_port_index());
+  return System<double>::get_input_port(kPortStateInput);
 }
 
 const OutputPortDescriptor<double>&
 RgbdCamera::color_image_output_port() const {
-  return System<double>::get_output_port(
-      impl_->color_image_output_port_index());
+  return System<double>::get_output_port(kPortColorImage);
 }
 
 const OutputPortDescriptor<double>&
 RgbdCamera::depth_image_output_port() const {
-  return System<double>::get_output_port(
-      impl_->depth_image_output_port_index());
+  return System<double>::get_output_port(kPortDepthImage);
+}
+
+const OutputPortDescriptor<double>&
+RgbdCamera::label_image_output_port() const {
+  return System<double>::get_output_port(kPortLabelImage);
 }
 
 const OutputPortDescriptor<double>&
 RgbdCamera::camera_base_pose_output_port() const {
-  return System<double>::get_output_port(2);
+  return System<double>::get_output_port(kPortCameraPose);
 }
 
 void RgbdCamera::DoCalcOutput(const systems::Context<double>& context,
                               systems::SystemOutput<double>* output) const {
   const BasicVector<double>* input_vector =
-      this->EvalVectorInput(context, impl_->state_input_port_index());
+      this->EvalVectorInput(context, kPortStateInput);
 
   impl_->DoCalcOutput(*input_vector, output);
 }
+
+constexpr float RgbdCamera::InvalidDepth::kError;
+constexpr float RgbdCamera::InvalidDepth::kTooFar;
+constexpr float RgbdCamera::InvalidDepth::kTooClose;
+
+constexpr int16_t RgbdCamera::Label::kNoBody;
+constexpr int16_t RgbdCamera::Label::kFlatTerrain;
 
 }  // namespace sensors
 }  // namespace systems

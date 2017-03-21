@@ -1,7 +1,8 @@
+#include "drake/examples/Valkyrie/robot_state_encoder.h"
+
 #include <list>
 
 #include "drake/common/constants.h"
-#include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/examples/Valkyrie/robot_state_lcmtype_util.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"

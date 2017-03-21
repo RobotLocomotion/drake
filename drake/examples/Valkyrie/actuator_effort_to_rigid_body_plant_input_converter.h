@@ -1,10 +1,10 @@
 #pragma once
 
-#include <vector>
 #include <map>
+#include <vector>
 
-#include "drake/systems/framework/leaf_system.h"
 #include "drake/multibody/rigid_body_actuator.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {

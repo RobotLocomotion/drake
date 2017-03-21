@@ -1,11 +1,13 @@
 #include "drake/systems/sensors/rgbd_camera.h"
 
+#include <array>
 #include <cmath>
-#include <functional>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
-#include "gtest/gtest.h"
 #include <Eigen/Dense>
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_path.h"
@@ -17,8 +19,8 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/sensors/image.h"
 #include "drake/systems/rendering/pose_vector.h"
+#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace systems {
@@ -28,7 +30,7 @@ namespace {
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Macintosh OSX.
 const double kTolerance = 1e-12;
-const uint8_t kColorPixelTolerance = 1u;
+const double kColorPixelTolerance = 1.001;
 const double kFovY = M_PI_4;
 const bool kShowWindow = true;
 
@@ -135,6 +137,7 @@ class RenderingSim : public systems::Diagram<double> {
                      rgbd_camera_->state_input_port());
     builder_.ExportOutput(rgbd_camera_->color_image_output_port());
     builder_.ExportOutput(rgbd_camera_->depth_image_output_port());
+    builder_.ExportOutput(rgbd_camera_->label_image_output_port());
     builder_.ExportOutput(rgbd_camera_->camera_base_pose_output_port());
     builder_.BuildInto(this);
   }
@@ -145,11 +148,9 @@ class RenderingSim : public systems::Diagram<double> {
   std::shared_ptr<RigidBodyFrame<double>> rgbd_camera_frame_;
 };
 
-void AssertIntNear(int value_a, int value_b, int tolerance) {
-  ASSERT_LE(std::abs(value_a - value_b), tolerance);
-}
-
-const std::array<uint8_t, 4> kBackgroundColor{{204u, 229u, 255u, 255u}};
+// TODO(kunimatsu-tri) Remove this once the arbitrary terrain color support
+// is added.
+const std::array<uint8_t, 4> kTerrainColor{{204u, 229u, 255u, 255u}};
 
 class ImageTest : public ::testing::Test {
  public:
@@ -193,7 +194,7 @@ class ImageTest : public ::testing::Test {
         context_->get_mutable_continuous_state_vector();
 
     const double kZInitial = 1.;
-    std::array<double, 3> kZDiffs{{0., -0.2, -0.5}};
+    const std::array<double, 3> kZDiffs{{0., -0.2, -0.5}};
 
     for (int i = 0; i < 3; ++i) {
       cstate->SetAtIndex(2, kZDiffs[i]);
@@ -204,13 +205,42 @@ class ImageTest : public ::testing::Test {
     }
   }
 
+
   void Verify(CameraBasePoseVerifier verifier) {
     diagram_->CalcOutput(*context_, output_.get());
     rendering::PoseVector<double>* const camera_base_pose =
         dynamic_cast<rendering::PoseVector<double>*>(
-            output_->GetMutableVectorData(2));
+            output_->GetMutableVectorData(3));
 
     verifier(camera_base_pose->get_isometry());
+  }
+
+  void VerifyLabelImage() {
+    diagram_->CalcOutput(*context_, output_.get());
+    auto label_image = output_->GetMutableData(2)->GetMutableValue<
+      sensors::Image<int16_t>>();
+
+    std::vector<int16_t> actual_ids;
+    for (int v = 0; v < label_image.height(); ++v) {
+      for (int u = 0; u < label_image.width(); ++u) {
+        const int16_t id = label_image.at(u, v)[0];
+        auto it = std::find(actual_ids.begin(), actual_ids.end(), id);
+        if (it == actual_ids.end()) {
+          actual_ids.push_back(id);
+        }
+      }
+    }
+    // We have three objects plus the sky and the terrain.
+    const int kExpectedNumIds{5};
+    EXPECT_EQ(kExpectedNumIds, actual_ids.size());
+
+    ASSERT_EQ(label_image.at(320, 205)[0], 0);
+    ASSERT_EQ(label_image.at(470, 205)[0], 1);
+    ASSERT_EQ(label_image.at(170, 205)[0], 2);
+    // Terrain
+    ASSERT_EQ(label_image.at(0, 479)[0], RgbdCamera::Label::kFlatTerrain);
+    // Sky
+    ASSERT_EQ(label_image.at(0, 0)[0], RgbdCamera::Label::kNoBody);
   }
 
   static void VerifyCameraPose(const Eigen::Isometry3d& pose_actual) {
@@ -233,9 +263,9 @@ class ImageTest : public ::testing::Test {
     // assumption is any defects will be detected by sampling this amount.
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
-        for (int ch = 0; ch < 4; ++ch) {
-          AssertIntNear(color_image.at(u, v)[ch], color[ch],
-                        kColorPixelTolerance);
+        for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+          ASSERT_NEAR(color_image.at(u, v)[ch], color[ch],
+                      kColorPixelTolerance);
         }
         // Assuming depth value provides 0.1 mm precision.
         ASSERT_NEAR(depth_image.at(u, v)[0], depth, 1e-4);
@@ -246,7 +276,7 @@ class ImageTest : public ::testing::Test {
   static void VerifyTerrain(const sensors::Image<uint8_t>& color_image,
                             const sensors::Image<float>& depth_image) {
     VerifyUniformColorAndDepth(color_image, depth_image,
-                               kBackgroundColor, 4.999f);
+                               kTerrainColor, 4.999f);
   }
 
   static void VerifyBox(
@@ -286,21 +316,21 @@ class ImageTest : public ::testing::Test {
 
     for (const auto& corner : kCorners) {
       for (int ch = 0; ch < color_image.num_channels(); ++ch) {
-        AssertIntNear(color_image.at(corner.u, corner.v)[ch],
-                      kBackgroundColor[ch], kColorPixelTolerance);
+        ASSERT_NEAR(color_image.at(corner.u, corner.v)[ch],
+                    kTerrainColor[ch], kColorPixelTolerance);
       }
       ASSERT_NEAR(depth_image.at(corner.u, corner.v)[0], 2.f, 1e-4);
     }
 
     // Verifies the center point's color.
-    const int kHalfWidth = color_image.width() / 2;
-    const int kHalfHeight = color_image.height() / 2;
+    const int half_width = color_image.width() / 2;
+    const int half_height = color_image.height() / 2;
     for (int ch = 0; ch < color_image.num_channels(); ++ch) {
-      AssertIntNear(color_image.at(kHalfWidth, kHalfHeight)[ch],
-                    255u, kColorPixelTolerance);
+      ASSERT_NEAR(color_image.at(half_width, half_height)[ch],
+                  255u, kColorPixelTolerance);
     }
     // Verifies the center point's depth.
-    ASSERT_NEAR(depth_image.at(kHalfWidth, kHalfHeight)[0], 1.f, 1e-4);
+    ASSERT_NEAR(depth_image.at(half_width, half_height)[0], 1.f, 1e-4);
   }
 
   static void VerifyMovingCamera(const sensors::Image<uint8_t>& color_image,
@@ -313,7 +343,7 @@ class ImageTest : public ::testing::Test {
           (color[1] != color_image.at(0, v)[1]) ||
           (color[2] != color_image.at(0, v)[2]) ||
           (color[3] != color_image.at(0, v)[3])) {
-        for (int ch = 0; ch < 4; ++ch) {
+        for (int ch = 0; ch < color_image.num_channels(); ++ch) {
           color[ch] = color_image.at(0, v)[ch];
         }
         actual_horizon = v;
@@ -321,7 +351,7 @@ class ImageTest : public ::testing::Test {
     }
 
     // We need a tolerance because the result varies depending on the CPU.
-    AssertIntNear(expected_horizon, actual_horizon, 1);
+    ASSERT_NEAR(expected_horizon, actual_horizon, 1.001);
   }
 
  protected:
@@ -414,6 +444,14 @@ TEST_F(ImageTest, CameraPoseUpdateTest) {
   VerifyPoseUpdate(ImageTest::VerifyMovingCamera);
 }
 
+// Verifies the number of ids in a label image.
+TEST_F(ImageTest, LabelRenderingTest) {
+  const std::string sdf("/systems/sensors/test/models/three_boxes.sdf");
+  SetUp(sdf,
+        Eigen::Vector3d(-10., 0., 2.),
+        Eigen::Vector3d(0., M_PI_4 * 0.2, 0.));
+  VerifyLabelImage();
+}
 
 // Verifies an exception is thrown if a link has more than two visuals.
 GTEST_TEST(RenderingTest, MultipleVisualsTest) {

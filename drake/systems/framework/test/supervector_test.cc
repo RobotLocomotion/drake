@@ -1,11 +1,11 @@
+#include "drake/systems/framework/supervector.h"
+
 #include <memory>
 
 #include <Eigen/Dense>
-
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/supervector.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {

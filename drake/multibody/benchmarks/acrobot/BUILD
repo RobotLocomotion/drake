@@ -8,22 +8,22 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
     name = "acrobot",
-    srcs = ["acrobot/acrobot.cc"],
-    hdrs = ["acrobot/acrobot.h"],
+    srcs = ["acrobot.cc"],
+    hdrs = ["acrobot.h"],
     deps = [
+        "//drake/common:autodiff",
         "//drake/common:extract_double",
-        "//drake/multibody:rigid_body_tree",
     ],
 )
 
 filegroup(
-    name = "acrobot_models",
+    name = "models",
     testonly = 1,
     srcs = glob([
-        "acrobot/*.obj",
-        "acrobot/*.sdf",
-        "acrobot/*.urdf",
-        "acrobot/*.xml",
+        "**/*.obj",
+        "**/*.sdf",
+        "**/*.urdf",
+        "**/*.xml",
     ]),
 )
 

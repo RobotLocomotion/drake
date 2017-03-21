@@ -5,16 +5,16 @@
 #include <functional>
 #include <map>
 
+#include <gtest/gtest.h>
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
+#include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
-#include "gtest/gtest.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;

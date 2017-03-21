@@ -1,9 +1,9 @@
 #include "drake/systems/rendering/frame_velocity.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
-#include "drake/common/eigen_types.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace systems {

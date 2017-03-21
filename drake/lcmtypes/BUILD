@@ -103,6 +103,12 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "plan_eval_debug_info",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_plan_eval_debug_info.lcm"],
+)
+
+lcm_cc_library(
     name = "polynomial_matrix",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_polynomial_matrix.lcm"],

@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"

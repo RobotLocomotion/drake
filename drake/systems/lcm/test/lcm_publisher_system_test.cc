@@ -3,7 +3,7 @@
 #include <cmath>
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
@@ -138,8 +138,8 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
   const lcmt_drake_signal sample_data{
     2, { 1.0, 2.0, }, { "x", "y", }, 12345,
   };
-  context->SetInputPort(
-      kPortNumber, make_unique<FreestandingInputPort>(
+  context->SetInputPortValue(
+      kPortNumber, make_unique<FreestandingInputPortValue>(
           make_unique<Value<lcmt_drake_signal>>(sample_data)));
 
   // Verifies that a correct message is published.

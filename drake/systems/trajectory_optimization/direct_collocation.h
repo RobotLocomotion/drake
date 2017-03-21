@@ -60,7 +60,7 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
   const System<double>* system_{nullptr};
   const std::unique_ptr<Context<double>> context_{nullptr};
   const std::unique_ptr<ContinuousState<double>> continuous_state_{nullptr};
-  FreestandingInputPort* input_port_{nullptr};
+  FreestandingInputPortValue* input_port_value_{nullptr};
 };
 
 }  // namespace systems

@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/multibody/rigid_body_tree.h"
+/* clang-format on */
 
 #include <string>
 

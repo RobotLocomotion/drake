@@ -72,6 +72,7 @@ def drake_cc_binary(
         testonly=0,
         add_test_rule=0,
         test_rule_args=[],
+        test_rule_size=None,
         **kwargs):
     """Creates a rule to declare a C++ binary.
 
@@ -79,10 +80,10 @@ def drake_cc_binary(
     This default could be revisited if binary size becomes a concern.
 
     If you wish to create a smoke-test demonstrating that your binary runs
-    without crashing, supply add_test_rule=1, and any necessary arguments
-    with test_rule_args=["-f", "--bar=42"]. Note that if you wish to do this,
-    you should consider suppressing that urge, and instead writing real tests.
-    The smoke-test will be named <name>_test.
+    without crashing, supply add_test_rule=1. Note that if you wish to do
+    this, you should consider suppressing that urge, and instead writing real
+    tests. The smoke-test will be named <name>_test. You may override cc_test
+    defaults using test_rule_args=["-f", "--bar=42"] or test_rule_size="baz".
     """
     native.cc_binary(
         name=name,
@@ -113,6 +114,7 @@ def drake_cc_binary(
             srcs=srcs,
             deps=deps,
             copts=copts,
+            size=test_rule_size,
             testonly=testonly,
             linkstatic=linkstatic,
             args=test_rule_args,
@@ -202,6 +204,7 @@ _transitive_hdrs = rule(
 )
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
 def drake_header_tar(name, deps=[], **kwargs):
   """Creates a .tar.gz that includes all the headers exported by the deps."""
   # TODO(david-german-tri): The --flagfile that Bazel generates to drive `tar`

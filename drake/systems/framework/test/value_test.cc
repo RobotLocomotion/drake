@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"

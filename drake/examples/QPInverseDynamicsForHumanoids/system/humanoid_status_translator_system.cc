@@ -1,6 +1,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_status_translator_system.h"
 
 #include "bot_core/robot_state_t.hpp"
+
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 

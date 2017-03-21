@@ -1,9 +1,9 @@
 #include "drake/multibody/multibody_tree/rigid_body.h"
 
+#include <memory>
+
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
-
-#include <memory>
 
 namespace drake {
 namespace multibody {

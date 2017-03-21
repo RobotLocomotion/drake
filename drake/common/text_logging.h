@@ -37,8 +37,10 @@ printed without any special handling.
 #define SPDLOG_DEBUG_ON 1
 #define SPDLOG_TRACE_ON 1
 #endif
+/* clang-format off */
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
+/* clang-format on */
 #endif
 
 #include "drake/common/drake_copyable.h"

@@ -4,6 +4,7 @@
 #include "drake/examples/Acrobot/acrobot_swing_up.h"
 
 #include <cmath>
+
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"

@@ -40,7 +40,7 @@ AcrobotPlant<T>::AcrobotPlant(double m1, double m2, double l1, double l2,
   this->DeclareVectorOutputPort(AcrobotStateVector<T>());
   static_assert(AcrobotStateVectorIndices::kNumCoordinates == kNumDOF * 2, "");
   this->DeclareContinuousState(
-      std::make_unique<AcrobotStateVector<T>>(),
+      AcrobotStateVector<T>(),
       kNumDOF /* num_q */,
       kNumDOF /* num_v */,
       0 /* num_z */);

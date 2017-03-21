@@ -229,6 +229,9 @@ This will give you the ability to execute ``cpplint`` on a single file or the fu
 project and have the result presented in the CLion console with each warning
 a clickable hyperlink.
 
+(These instructions assume you are using CLion with Bazel, as you should be.
+They are slightly different for CMake project organization.)
+
 Creating the External Tools
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -244,9 +247,9 @@ Run ``Cpplint`` on Single File
 
    :Name: ``Cpplint File``
    :Description: ``Apply cpplint to the current file.``
-   :Program: ``$ProjectFileDir$/common/test/cpplint_wrapper.py``
+   :Program: ``$Projectpath$/drake/common/test/cpplint_wrapper.py``
    :Parameters: ``$FilePath$``
-   :Working directory: ``$ProjectFileDir$``
+   :Working directory: <empty> (CLion may set this; if so leave it.)
 5. Make sure that *only* the following Options are checked (the
    ``Synchronize files after execution`` is unnecessary because cpplint is
    a read-only operation):
@@ -274,9 +277,9 @@ differences:
 
     :Name: ``Cpplint Project``
     :Description: ``Apply cpplint to the entire project.``
-    :Program: ``$ProjectFileDir$/common/test/cpplint_wrapper.py``
+    :Program: ``$Projectpath$/drake/common/test/cpplint_wrapper.py``
     :Parameters: <empty>
-    :Working directory: ``$ProjectFileDir$``
+    :Working directory: <empty> (CLion may set this; if so leave it.)
 
 Continue on with steps 5 to the end.
 

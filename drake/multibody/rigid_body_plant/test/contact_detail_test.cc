@@ -1,11 +1,11 @@
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
-#include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
 #include <memory>
 
 #include <gtest/gtest.h>
 
 #include "drake/multibody/rigid_body_plant/contact_force.h"
+#include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
 // Tests the ContactDetail class and its derivative classes.
 namespace drake {

@@ -1,14 +1,14 @@
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
+
 #include <memory>
 
+#include <gtest/gtest.h>
 #include "bot_core/atlas_command_t.hpp"
-
-#include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/framework/value.h"

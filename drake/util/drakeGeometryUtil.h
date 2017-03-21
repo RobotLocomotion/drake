@@ -4,10 +4,11 @@
 
 #pragma once
 
-#include <Eigen/Dense>
 #include <cmath>
 #include <cstring>
 #include <random>
+
+#include <Eigen/Dense>
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"

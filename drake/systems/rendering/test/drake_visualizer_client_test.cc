@@ -1,6 +1,6 @@
 #include "drake/systems/rendering/drake_visualizer_client.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/lcmt_viewer_geometry_data.hpp"

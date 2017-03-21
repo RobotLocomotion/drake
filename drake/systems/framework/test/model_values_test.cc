@@ -1,6 +1,6 @@
 #include "drake/systems/framework/model_values.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_copyable.h"
@@ -8,8 +8,8 @@
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/value.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {

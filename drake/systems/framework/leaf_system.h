@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <regex>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -21,9 +22,9 @@
 #include "drake/systems/framework/discrete_state.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/model_values.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/sparsity_matrix.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
 
@@ -239,7 +240,7 @@ class LeafSystem : public System<T> {
     return new BasicVector<T>(descriptor.size());
   }
 
-  /// Allocates a vector that is suitable as an input value for @p descriptor.
+  /// Allocates an AbstractValue suitable as an input value for @p descriptor.
   /// The default implementation in this class either clones the model_value
   /// (if the port was declared via DeclareAbstractInputPort) or else aborts.
   ///
@@ -255,6 +256,69 @@ class LeafSystem : public System<T> {
     DRAKE_ABORT_MSG("A concrete leaf system with abstract input ports should "
                     "pass a model_value to DeclareAbstractInputPort, or else "
                     "must override DoAllocateInputAbstract");
+  }
+
+
+  /// Emits a graphviz fragment for this System. Leaf systems are visualized as
+  /// records. For instance, a leaf system with 2 inputs and 1 output is:
+  ///
+  /// @verbatim
+  /// 123456 [shape= record, label="name | {<u0> 0 |<y0> 0} | {<u1> 1 | }"];
+  /// @endverbatim
+  ///
+  /// which looks like:
+  ///
+  /// @verbatim
+  /// +------------+----+
+  /// | name  | u0 | u1 |
+  /// |       | y0 |    |
+  /// +-------+----+----+
+  /// @endverbatim
+  void GetGraphvizFragment(std::stringstream *dot) const override {
+    // Use the this pointer as a unique ID for the node in the dotfile.
+    const int64_t id = this->GetGraphvizId();
+    std::string name = this->get_name();
+    if (name.empty()) {
+      const std::string type = NiceTypeName::Canonicalize(
+          NiceTypeName::Demangle(typeid(*this).name()));
+      // Drop the template parameters.
+      name = std::regex_replace(type, std::regex("<.*>$"), "");
+    }
+
+    // Open the attributes and label.
+    *dot << id << " [shape=record, label=\"" << name << "|{";
+
+    // Append input ports to the label.
+    // TODO(david-german-tri): Provide a way to customize port names.
+    *dot << "{";
+    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+      if (i != 0) *dot << "|";
+      *dot << "<u" << i << ">u" << i;
+    }
+    *dot << "}";
+
+    // Append output ports to the label.
+    *dot << " | {";
+    for (int i = 0; i < this->get_num_output_ports(); ++i) {
+      if (i != 0) *dot << "|";
+      *dot << "<y" << i << ">y" << i;
+    }
+    *dot << "}";
+
+    // Close the label and attributes.
+    *dot << "}\"];" << std::endl;
+  }
+
+  void GetGraphvizInputPortToken(const InputPortDescriptor<T> &port,
+                                 std::stringstream *dot) const final {
+    DRAKE_DEMAND(port.get_system() == this);
+    *dot << this->GetGraphvizId() << ":u" << port.get_index();
+  }
+
+  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T> &port,
+                                  std::stringstream *dot) const final {
+    DRAKE_DEMAND(port.get_system() == this);
+    *dot << this->GetGraphvizId() << ":y" << port.get_index();
   }
 
   // =========================================================================

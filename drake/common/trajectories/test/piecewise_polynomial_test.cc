@@ -1,13 +1,14 @@
+#include "drake/common/trajectories/piecewise_polynomial.h"
+
 #include <iostream>
 #include <random>
 #include <vector>
 
 #include <Eigen/Core>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/test/random_piecewise_polynomial.h"
 
 using Eigen::Matrix;

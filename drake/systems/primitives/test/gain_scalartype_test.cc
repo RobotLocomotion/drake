@@ -4,14 +4,14 @@
 #include <stdexcept>
 #include <string>
 
+#include <gtest/gtest.h>
+
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
-
-#include "gtest/gtest.h"
+#include "drake/systems/framework/input_port_value.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;

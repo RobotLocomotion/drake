@@ -3,9 +3,9 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <unsupported/Eigen/AutoDiff>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
@@ -15,7 +15,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/input_port_value.h"
 
 namespace drake {
 namespace systems {

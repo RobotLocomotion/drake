@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
@@ -28,8 +28,8 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
   auto context_rbp = rbp.CreateDefaultContext();
   auto context_p = p.CreateDefaultContext();
 
-  auto u_rbp = context_rbp->FixInputPort(0, Vector1d::Zero());
-  auto u_p = context_p->FixInputPort(0, Vector1d::Zero());
+  auto& u_rbp = context_rbp->FixInputPort(0, Vector1d::Zero());
+  auto& u_p = context_p->FixInputPort(0, Vector1d::Zero());
 
   Eigen::Vector4d x;
   Vector1d u;
@@ -46,8 +46,8 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
     context_rbp->get_mutable_continuous_state_vector()->SetFromVector(x);
     context_p->get_mutable_continuous_state_vector()->SetFromVector(x);
 
-    u_rbp->SetFromVector(u);
-    u_p->SetFromVector(u);
+    u_rbp.GetMutableVectorData<double>()->SetFromVector(u);
+    u_p.GetMutableVectorData<double>()->SetFromVector(u);
 
     rbp.CalcTimeDerivatives(*context_rbp, xdot_rbp.get());
     p.CalcTimeDerivatives(*context_p, xdot_p.get());

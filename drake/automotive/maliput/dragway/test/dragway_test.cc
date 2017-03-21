@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/branch_point.h"
 #include "drake/automotive/maliput/dragway/junction.h"

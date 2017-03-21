@@ -3,7 +3,7 @@
 #include <cmath>
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace automotive {

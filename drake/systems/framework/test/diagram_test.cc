@@ -1,7 +1,7 @@
 #include "drake/systems/framework/diagram.h"
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -196,6 +196,38 @@ TEST_F(DiagramTest, Topology) {
 TEST_F(DiagramTest, Path) {
   const std::string path = adder0()->GetPath();
   EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!::adder0", path);
+}
+
+TEST_F(DiagramTest, Graphviz) {
+  const std::string id = std::to_string(
+      reinterpret_cast<int64_t>(diagram_.get()));
+  const std::string dot = diagram_->GetGraphvizString();
+  // Check that the Diagram is labeled with its name.
+  EXPECT_NE(std::string::npos, dot.find(
+      "label=\"Unicode Snowman's Favorite Diagram!!1!☃!\";")) << dot;
+  // Check that input ports are declared in blue, and output ports in green.
+  EXPECT_NE(std::string::npos, dot.find(
+      "_" + id + "_u1[color=blue, label=\"u1\"")) << dot;
+  EXPECT_NE(std::string::npos, dot.find(
+      "_" + id + "_y2[color=green, label=\"y2\"")) << dot;
+  // Check that subsystem records appear.
+  EXPECT_NE(std::string::npos, dot.find(
+      "[shape=record, label=\"adder1|{{<u0>u0|<u1>u1} | {<y0>y0}}\"]")) << dot;
+  // Check that internal edges appear.
+  const std::string adder1_id = std::to_string(
+      reinterpret_cast<int64_t>(diagram_->adder1()));
+  const std::string adder2_id = std::to_string(
+      reinterpret_cast<int64_t>(diagram_->adder2()));
+  // [Adder 1, output 0] -> [Adder 2, input 1]
+  EXPECT_NE(std::string::npos,
+            dot.find(adder1_id + ":y0 -> " + adder2_id + ":u1;")) << dot;
+  // Check that synthetic I/O edges appear: inputs in blue, outputs in green.
+  // [Diagram Input 2] -> [Adder 1, input 1]
+  EXPECT_NE(std::string::npos, dot.find(
+      "_" + id + "_u2 -> " + adder1_id + ":u1 [color=blue];")) << dot;
+  // [Adder 2, output 0] -> [Diagram Output 1]
+  EXPECT_NE(std::string::npos, dot.find(
+      adder2_id + ":y0 -> _" + id + "_y1 [color=green];")) << dot;
 }
 
 // Tests that both variants of GetMutableSubsystemState do what they say on
@@ -459,6 +491,19 @@ class DiagramOfDiagramsTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
+
+TEST_F(DiagramOfDiagramsTest, Graphviz) {
+  const std::string dot = diagram_->GetGraphvizString();
+  // Check that both subdiagrams appear.
+  EXPECT_NE(std::string::npos, dot.find("label=\"subdiagram0\""));
+  EXPECT_NE(std::string::npos, dot.find("label=\"subdiagram1\""));
+  // Check that edges between the two subdiagrams exist.
+  const std::string id0 = std::to_string(
+      reinterpret_cast<int64_t>(subdiagram0_));
+  const std::string id1 = std::to_string(
+      reinterpret_cast<int64_t>(subdiagram1_));
+  EXPECT_NE(std::string::npos, dot.find("_" + id0 + "_y0 -> _" + id1 + "_u0"));
+}
 
 // Tests that a diagram composed of diagrams can be evaluated.
 TEST_F(DiagramOfDiagramsTest, EvalOutput) {

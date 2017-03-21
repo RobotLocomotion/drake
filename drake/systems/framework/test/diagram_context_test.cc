@@ -4,14 +4,14 @@
 #include <vector>
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/integrator.h"
@@ -124,7 +124,7 @@ class DiagramContextTest : public ::testing::Test {
     context_->FixInputPort(1, BasicVector<double>::Make({256}));
   }
 
-  // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
+  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {

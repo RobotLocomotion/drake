@@ -9,7 +9,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "framework",
     srcs = [],
-    hdrs = [],
+    hdrs = ["systems.h"],
     deps = [
         ":cache",
         ":context",
@@ -162,9 +162,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "system_output",
-    srcs = ["system_output.cc"],
-    hdrs = ["system_output.h"],
+    name = "output_port_value",
+    srcs = ["output_port_value.cc"],
+    hdrs = ["output_port_value.h"],
     deps = [
         ":output_port_listener_interface",
         ":value",
@@ -179,16 +179,16 @@ drake_cc_library(
     srcs = ["input_port_evaluator_interface.cc"],
     hdrs = ["input_port_evaluator_interface.h"],
     deps = [
-        ":system_output",
+        ":output_port_value",
         ":system_port_descriptor",
         "//drake/common",
     ],
 )
 
 drake_cc_library(
-    name = "system_input",
-    srcs = ["system_input.cc"],
-    hdrs = ["system_input.h"],
+    name = "input_port_value",
+    srcs = ["input_port_value.cc"],
+    hdrs = ["input_port_value.h"],
     deps = [
         ":input_port_evaluator_interface",
         ":vector",
@@ -202,9 +202,9 @@ drake_cc_library(
     hdrs = ["context.h"],
     deps = [
         ":input_port_evaluator_interface",
+        ":input_port_value",
         ":parameters",
         ":state",
-        ":system_input",
         "//drake/common",
     ],
 )
@@ -480,17 +480,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "system_input_test",
+    name = "input_port_value_test",
     deps = [
-        ":system_input",
+        ":input_port_value",
         "//drake/common",
     ],
 )
 
 drake_cc_googletest(
-    name = "system_output_test",
+    name = "output_port_value_test",
     deps = [
-        ":system_output",
+        ":output_port_value",
         "//drake/common",
     ],
 )

@@ -421,7 +421,7 @@ class Rod2D : public systems::LeafSystem<T> {
   static T CalcMuStribeck(const T& us, const T& ud, const T& v);
 
   // Solves linear complementarity problems for time stepping.
-  solvers::MobyLCPSolver lcp_;
+  solvers::MobyLCPSolver<T> lcp_;
 
   // The simulation type, unable to be changed after object construction.
   const SimulationType simulation_type_;
