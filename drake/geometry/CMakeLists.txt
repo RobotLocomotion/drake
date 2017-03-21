@@ -6,7 +6,7 @@ set(sources
 # List headers that should be installed with Drake so that they
 # are available elsewhere via #include "drake/geometry/xxx.h".
 set(installed_headers
-    type_safe_int_id.h
+    identifier.h
     )
 
 # List headers that are needed by code here but should not

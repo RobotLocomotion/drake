@@ -1,15 +1,17 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <functional>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/never_destroyed.h"
 
 namespace drake {
 namespace geometry {
 
 /**
- A type-safe integer-based identifier class.
+ A simple identifier class.
 
  This class serves as an upgrade to the standard practice of passing `int`s
  around as unique identifiers (or, as in this case, `int64_t`s). In the common
@@ -22,9 +24,10 @@ namespace geometry {
 
  It is possible for a programmer to accidentally switch the two ids in an
  invocation. This mistake would still be _syntactically_ correct; it will
- successfully compile but  lead to inscrutable run-time errors. The type-safe
- identifier provides the same speed and efficiency of passing `int64_t`s, but
- provides compile-time checking. The function would now look like:
+ successfully compile but  lead to inscrutable run-time errors. This identifier
+ class provides the same speed and efficiency of passing `int64_t`s, but
+ enforces unique types and limits the valid operations, providng compile-time
+ checking. The function would now look like:
 
  @code
  void foo(BarId bar_id, ThingId thing_id)
@@ -32,28 +35,28 @@ namespace geometry {
 
  and the compiler will catch instances where the order is reversed.
 
- The type-safe identifier is a _stripped down_ 64-bit int. Each uniquely
- declared identifier type has the following properties:
+ The identifier is a _stripped down_ 64-bit int. Each uniquely declared
+ identifier type has the following properties:
 
-   - The identifier has only a single public constructor: the copy constructor
-     (see note below).
+   - The identifier's default constructor produces _invalid_ identifiers.
+   - Valid identifiers must be constructed via the copy constructor or through
+     Identifier::get_new_id().
    - The identifier is immutable.
    - The identifier can only be tested for equality/inequality with other
      identifiers of the _same_ type.
    - Identifiers of different types are _not_ interconvertible.
    - The identifier can be queried for its underlying `int64_t` value.
-   - The identifier can be written to an output stream. Its underlying `int64_t`
+   - The identifier can be written to an output stream; its underlying `int64_t`
      value gets written.
    - Identifiers are not guaranteed to possess _meaningful_ ordering. I.e.,
      identifiers for two objects created sequentially may not have sequential
      identifier values.
    - Identifiers can only be generated from the static method get_new_id().
 
- There is no such thing as an "invalid" identifier; there is no sentinel
- value which indicates uninitialized or undefined. Operations which return
- an identifier, but can fail, should communicate this in the function interface
- (e.g. through a std::optional<IdType> return value). If an identifier
- exists, it should be considered valid.
+ While there _is_ the concept of an invalid identifier, this only exists to
+ facilitate use with STL containers that require default constructors. In
+ practice, methods should not return invalid identifiers. We prefer the practice
+ of returning std::optional<Identifier> instead.
 
  It is the designed intent of this class, that ids derived from this class can
  be passed and returned by value. Passing ids by const reference should be
@@ -61,18 +64,18 @@ namespace geometry {
 
  The following alias will create a unique identifier type for class `Foo`:
  @code{.cpp}
- using FooId = TypeSafeIntId<Foo>;
+ using FooId = Identifier<Foo>;
  @endcode
 
  __Examples of valid and invalid operations__
 
- The TypeSafeIntId guarantees that id instances of different types can't be
+ The Identifier guarantees that id instances of different types can't be
  compared or combined. Efforts to do so will cause a compile-time failure.
  For example:
 
  @code
-    using AId = TypeSafeIntId<class A>;
-    using BId = TypeSafeIntId<class B>;
+    using AId = Identifier<class A>;
+    using BId = Identifier<class B>;
     AId a1;                              // Compiler error. There is no default constructor.
     AId a2 = AId::get_new_id();          // Ok.
     AId a3(a2);                          // Ok.
@@ -86,38 +89,21 @@ namespace geometry {
     a3 = 7;                              // Compiler error.
  @endcode
 
- __Implications of having *only* a copy constructor__
-
- As noted, the only constructor that TypeSafeIntId has is the copy constructor.
- This has several implications:
-
-   1. Working with STL containers. Generally, the lack of a default constructor,
-      is not a problem. Using `emplace_back()` and methods of this type work
-      fine. However, you can't use methods that require a default constructor
-      (e.g., `std::vector::resize()`). This will produce a compilation error.
-   2. Member of a class. With no default constructor and no public constructor
-      at all, ids _can_ be included as members, but they _can't_ be initialized
-      at declaration. The only way to initialize them is in the constructors
-      initialization list. This supports the idea that if an identifier exists
-      it is valid.  The class which owns the identifier must responsible for
-      initializing it (either from the factory `get_new_id()` method or via
-      the copy constructor on a supplied identifier.
-
  __Type-safe Index vs Identifier__
 
- In principle, the type-safe *identifier* is related to the TypeSafeIndex. In
- some sense, both are "type-safe `int`s". They differ in their semantics. We can
+ In principle, the *identifier* is related to the TypeSafeIndex. In
+ some sense, both are "type-safe" `int`s. They differ in their semantics. We can
  consider `ints`, indexes, and identifiers as a list of `int` types with
  _decreasing_ functionality.
 
    - The int, obviously, has the full range of C++ ints.
    - The TypeSafeIndex can be implicitly cast *to* an int, but there are a
-     limited number of operations _on_ the index that produces other instances
+     limited number of operations _on_ the index that produce other instances
      of the index (e.g., increment, in-place addition, etc.) They can be
      compared with `int` and other indexes of the same type. This behavior
      arises from the intention of having them serve as an _index_ in an
-     ordered set (e.g., `std::vector`.)
-   - The TypeSafeIntId is the most restricted. They exist solely to serve as a
+     ordered set (e.g., `std::vector`).
+   - The Identifier is the most restricted. They exist solely to serve as a
      unique identifier. They are immutable when created. Very few operations
      exist on them (comparison for _equality_ with other identifiers of the same
      type, hashing, writing to output stream). These *cannot* be used as
@@ -137,57 +123,56 @@ namespace geometry {
                           instantiation from another.
  */
 template <class Tag>
-class TypeSafeIntId {
+class Identifier {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TypeSafeIntId)
+  /** Default constructor; the result is an _invalid_ identifier. This only
+   exists to satisfy demands of working with various container classes. */
+  Identifier() : value_(0) {}
+
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Identifier)
 
   /** Extracts the underlying representation from the identifier. */
   int64_t get_value() const { return value_; }
 
+  /** Reports if the id is valid. */
+  bool is_valid() const { return value_ > 0; }
+
   /** Compares one identifier with another of the same type for equality. */
-  bool operator==(TypeSafeIntId other) const {
+  bool operator==(Identifier other) const {
     return value_ == other.value_;
   }
 
   /** Compares one identifier with another of the same type for inequality. */
-  bool operator!=(TypeSafeIntId other) const {
+  bool operator!=(Identifier other) const {
     return value_ != other.value_;
   }
 
   /** Generates a new identifier for this id type. This new identifier will be
    different from all previous identifiers created. This method does _not_
    make any guarantees about the values of ids from successive invocations.
-   This class is _not_ thread safe. If thread safety is required, the caller is
-   responsible for executing this in a thread-safe context.
    */
-  static TypeSafeIntId get_new_id() {
-    return TypeSafeIntId(next_index_++);
+  static Identifier get_new_id() {
+    // Note that id 0 is reserved for uninitialized variable which is created
+    // by the default constructor. As a result, we have an invariant that
+    // get_new_id() > 0.
+    static never_destroyed<std::atomic<int64_t>> next_index(1);
+    return Identifier(next_index.access()++);
   }
 
  private:
   // Instantiates an identifier from the underlying representation type.
-  explicit TypeSafeIntId(int64_t val) : value_(val) {}
+  explicit Identifier(int64_t val) : value_(val) {}
 
   // The underlying value.
   int64_t value_;
-
-  // Internal counter for generating ids.
-  static int64_t next_index_;
 };
 
-// We initialize this to 1 (instead of zero) as an aid to human debugging.
-// There are too many zeros in the system already. And as the default
-// value of int-types is zero, this will clearly distinguish between default
-// and meaningful initialization.
-template <typename Tag>
-int64_t TypeSafeIntId<Tag>::next_index_ = 1;
-
 /** Streaming output operator.
- @relates TypeSafeIntId
+ @relates Identifier
  */
 template <typename Tag>
 inline std::ostream& operator<<(std::ostream& out,
-                                const TypeSafeIntId<Tag>& id) {
+                                const Identifier<Tag>& id) {
   out << id.get_value();
   return out;
 }
@@ -197,11 +182,11 @@ inline std::ostream& operator<<(std::ostream& out,
 
 namespace std {
 /** Enables use of the identifier to serve as a key in STL containers.
- @relates TypeSafeIntId
+ @relates Identifier
  */
 template <typename Tag>
-struct hash<drake::geometry::TypeSafeIntId<Tag>> {
-  size_t operator()(const drake::geometry::TypeSafeIntId<Tag>& id) const {
+struct hash<drake::geometry::Identifier<Tag>> {
+  size_t operator()(const drake::geometry::Identifier<Tag>& id) const {
     return hash<int64_t>()(id.get_value());
   }
 };

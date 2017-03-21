@@ -109,7 +109,7 @@ namespace drake {
 ///     can be compared with `int` and other indexes of the same type. This
 ///     behavior arises from the intention of having them serve as an _index_ in
 ///     an ordered set (e.g., `std::vector`.)
-///   - The TypeSafeIntId is the most restricted. They exist solely to serve as
+///   - The Identifier is the most restricted. They exist solely to serve as
 ///     a unique identifier. They are immutable when created. Very few
 ///     operations exist on them (comparison for _equality_ with other
 ///     identifiers of the same type, hashing, writing to output stream).
@@ -122,7 +122,7 @@ namespace drake {
 /// implementation from the idea of the object. Combined with its immutability,
 /// it would serve well as a element of a public API.
 ///
-/// @sa TypeSafeIntId
+/// @sa Identifier
 ///
 /// @tparam Tag The name of the tag associated with a class type. The class
 ///             need not be a defined class.

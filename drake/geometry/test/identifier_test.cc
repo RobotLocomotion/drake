@@ -1,6 +1,7 @@
-#include "drake/geometry/type_safe_int_id.h"
+#include "drake/geometry/identifier.h"
 
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "gtest/gtest.h"
@@ -12,8 +13,9 @@ namespace  {
 // Creates various dummy index types to test.
 using std::stringstream;
 using std::unordered_set;
-using AId = TypeSafeIntId<class ATag>;
-using BId = TypeSafeIntId<class BTag>;
+using std::unordered_map;
+using AId = Identifier<class ATag>;
+using BId = Identifier<class BTag>;
 
 // The nature of gtest means these tests can be instantiated in any order.
 // Any local instantiation of identifiers could lead to arbitrary values.
@@ -22,9 +24,9 @@ using BId = TypeSafeIntId<class BTag>;
 // are constant w.r.t. execution order.  That is why these exist.
 // For this to work, the following assumptions must be true:
 //   1. It must run in a scope where these are the only invocations of
-//      TypeSafeIntId::get_new_id() (or, at the very least, these are the
+//      Identifier::get_new_id() (or, at the very least, these are the
 //      first).
-//   2. The TypeSafeIntId::get_new_id() returns 0 with the first
+//   2. The Identifier::get_new_id() returns 0 with the first
 //      invocation and each successive invocation increases the value by 1.
 const AId a1 = AId::get_new_id();
 const AId a2 = AId::get_new_id();
@@ -35,17 +37,20 @@ const BId b = BId::get_new_id();
 
 // Verifies the copy constructor. This implicitly tests the expected property
 // of the get_new_id() factory method and the get_value() method.
-GTEST_TEST(TypeSafeIntId, Constructor) {
+GTEST_TEST(IdentifierTest, Constructor) {
   EXPECT_EQ(a1.get_value(), 1);
   EXPECT_EQ(a2.get_value(), 2);
   EXPECT_EQ(a3.get_value(), 3);
   AId temp(a2);
   EXPECT_EQ(temp.get_value(), 2);
+  AId bad;
+  EXPECT_FALSE(bad.is_valid());
+  EXPECT_TRUE(a2.is_valid());
 };
 
 // Confirms that assignment behaves correctly. This also implicitly tests
 // equality and inequality.
-GTEST_TEST(TypeSafeIntId, AssignmentAndComparison) {
+GTEST_TEST(IdentifierTest, AssignmentAndComparison) {
   EXPECT_TRUE(a2 != a3);
   AId temp = a2;
   EXPECT_TRUE(temp == a2);
@@ -53,9 +58,9 @@ GTEST_TEST(TypeSafeIntId, AssignmentAndComparison) {
   EXPECT_TRUE(temp == a3);
 }
 
-// Confirms that frame ids are configured to serve as unique keys in
+// Confirms that ids are configured to serve as unique keys in
 // STL containers.
-GTEST_TEST(TypeSafeIntId, ServeAsMapKey) {
+GTEST_TEST(IdentifierTest, ServeAsMapKey) {
   unordered_set<AId> ids;
 
   // This is a *different* id with the *same* value as a1. It should *not*
@@ -77,8 +82,24 @@ GTEST_TEST(TypeSafeIntId, ServeAsMapKey) {
   EXPECT_EQ(ids.find(a3), ids.end());
 }
 
+// Confirms that ids are configured to serve as values in STL containers.
+GTEST_TEST(IdentifierTest, ServeAsMapValue) {
+  unordered_map<BId, AId> ids;
+
+  BId b1 = BId::get_new_id();
+  BId b2 = BId::get_new_id();
+  BId b3 = BId::get_new_id();
+  ids.emplace(b1, a1);
+  ids.emplace(b2, a2);
+  EXPECT_EQ(ids.find(b3), ids.end());
+  EXPECT_NE(ids.find(b2), ids.end());
+  EXPECT_NE(ids.find(b1), ids.end());
+  ids[b3] = a3;
+  EXPECT_NE(ids.find(b3), ids.end());
+}
+
 // Tests the streaming behavior.
-GTEST_TEST(TypeSafeIntId, StreamOperator) {
+GTEST_TEST(IdentifierTest, StreamOperator) {
   stringstream ss;
   ss << a2;
   EXPECT_EQ(ss.str(), "2");
@@ -116,7 +137,7 @@ template <typename T, typename U> \
 bool has_ ## OP_NAME ## _helper(...) { return false; } \
 template <typename T, typename U> \
 bool has_ ## OP_NAME() { return has_ ## OP_NAME ## _helper<T, U>(1); } \
-GTEST_TEST(TypeSafeIntId, OP_NAME ## OperatorAvailiblity) { \
+GTEST_TEST(IdentifierTest, OP_NAME ## OperatorAvailiblity) { \
   EXPECT_FALSE((has_ ## OP_NAME<AId, BId>())); \
   EXPECT_TRUE((has_ ## OP_NAME<AId, AId>())); \
   EXPECT_FALSE((has_ ## OP_NAME<AId, int>())); \
@@ -137,7 +158,7 @@ bool can_cast_helper(...) { return false; }
 template <typename T, typename U>
 bool can_cast() { return can_cast_helper<T, U>(1); }
 
-GTEST_TEST(TypeSafeIntId, ConstructorAvailability) {
+GTEST_TEST(IdentifierTest, ConstructorAvailability) {
   // This only tests another id type and some reasonable int tests. This assumes
   // no one will attempt to cast to anything more exotic.
   EXPECT_FALSE((can_cast<AId, BId>()));
