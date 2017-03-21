@@ -159,7 +159,11 @@ std::vector<LinearProblems> linear_problems();
  */
 class InfeasibleLinearProgramTest0 : public ::testing::Test {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InfeasibleLinearProgramTest0)
+
   InfeasibleLinearProgramTest0();
+
+  ~InfeasibleLinearProgramTest0() override {}
 
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
@@ -173,7 +177,11 @@ class InfeasibleLinearProgramTest0 : public ::testing::Test {
  */
 class UnboundedLinearProgramTest0 : public ::testing::Test {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnboundedLinearProgramTest0)
+
   UnboundedLinearProgramTest0();
+
+  ~UnboundedLinearProgramTest0() override {}
 
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
