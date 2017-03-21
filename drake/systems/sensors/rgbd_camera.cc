@@ -86,19 +86,19 @@ const std::array<vtkSmartPointer<T>, 3>
 MakeVtkInstanceArray(const vtkNew<T>& element1,
                      const vtkNew<T>& element2,
                      const vtkNew<T>& element3) {
-  return  std::array<vtkSmartPointer<T>, 3>{
+  return  std::array<vtkSmartPointer<T>, 3>{{
       vtkSmartPointer<T>(element1.GetPointer()),
       vtkSmartPointer<T>(element2.GetPointer()),
-      vtkSmartPointer<T>(element3.GetPointer())};
+      vtkSmartPointer<T>(element3.GetPointer())}};
 }
 
 template <typename T>
 const std::array<vtkSmartPointer<T>, 2>
 MakeVtkInstanceArray(const vtkNew<T>& element1,
                      const vtkNew<T>& element2) {
-  return  std::array<vtkSmartPointer<T>, 2>{
+  return  std::array<vtkSmartPointer<T>, 2>{{
       vtkSmartPointer<T>(element1.GetPointer()),
-      vtkSmartPointer<T>(element2.GetPointer())};
+      vtkSmartPointer<T>(element2.GetPointer())}};
 }
 
 // Defines a color based on its three primary additive colors: red, green, and
@@ -524,7 +524,7 @@ void RgbdCamera::Impl::UpdateModelPoses(
     const int model_instance_id = body->get_model_instance_id();
 
     const std::array<std::map<int, vtkSmartPointer<vtkActor>>, 2>
-        id_object_maps{color_depth_id_object_map_, label_id_object_map_};
+        id_object_maps{{color_depth_id_object_map_, label_id_object_map_}};
     for (auto& id_object_map : id_object_maps) {
       auto& actor = id_object_map.at(model_instance_id);
       actor->SetUserTransform(vtk_transform);
