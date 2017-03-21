@@ -53,6 +53,7 @@ drake_cc_library(
     hdrs = [
         "implicit_euler_integrator.h",
         "implicit_euler_integrator-inl.h",
+        "line_search.h",
     ],
     deps = [
         ":integrator_base",
