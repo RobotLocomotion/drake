@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "bot_core/atlas_command_t.hpp"
 #include <gtest/gtest.h>
+#include "bot_core/atlas_command_t.hpp"
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
