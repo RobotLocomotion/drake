@@ -517,8 +517,8 @@ void RgbdCamera::Impl::UpdateModelPoses(
         cache, 0, body->get_body_index());
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(X_CBody);
-    // `color_depth_id_object_map_` and `label_id_object_map_` are modified here.
-    // This is OK because 1) we are just copying data to the memory spaces
+    // `color_depth_id_object_map_` and `label_id_object_map_` are modified
+    // here. This is OK because 1) we are just copying data to the memory spaces
     // allocated at the construction time and 2) we are not outputting these
     // data to outside the class.
     const int model_instance_id = body->get_model_instance_id();
