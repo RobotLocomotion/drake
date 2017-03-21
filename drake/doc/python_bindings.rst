@@ -11,7 +11,7 @@ Using the Python Bindings
 
 To use the Drake Python bindings, you need to build Drake and then ensure that Python knows where to find the Drake bindings. When building with CMake, the ``pydrake`` package will be installed by default to ``build/install/lib/python2.7/dist-packages``. You will need to add this folder to your ``PYTHONPATH`` environment variable. For example, if you have Drake installed in ``/home/user/drake-distro/build/install``, then you should do::
 
-	export PYTHONPATH="$PYTHONPATH:/home/user/drake-distro/build/lib/python2.7/dist-packages"
+	export PYTHONPATH="$PYTHONPATH:/home/user/drake-distro/build/install/lib/python2.7/dist-packages"
 
 With your Python path configured appropriately, you should be able to import pydrake::
 
