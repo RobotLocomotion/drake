@@ -11,15 +11,15 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "type_safe_int_id",
+    name = "identifier",
     srcs = [],
-    hdrs = ["type_safe_int_id.h"],
+    hdrs = ["identifier.h"],
     deps = ["//drake/common"],
 )
 
 drake_cc_googletest(
-    name = "type_safe_int_id_test",
-    deps = [":type_safe_int_id"],
+    name = "identifier_test",
+    deps = [":identifier"],
 )
 
 cpplint()
