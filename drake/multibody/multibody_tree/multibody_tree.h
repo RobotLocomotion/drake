@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/body.h"
-#include "drake/multibody/multibody_tree/frame.h"
+#include "drake/multibody/multibody_tree/material_frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
 namespace drake {
@@ -77,7 +77,6 @@ class MultibodyTree {
     // Users can add new multibody elements, however the topology gets
     // invalidated.
     BodyIndex index = topology_.add_body();
-    //FrameIndex body_frame_index = topology_.bodies[index].body_frame;
 
     // MultibodyTree has access to these methods since it is a friend of
     // MultibodyTreeElement. Users of Body<T>, however, do not have access to
@@ -86,10 +85,6 @@ class MultibodyTree {
     body->set_index(index);
     BodyType* raw_body_ptr = body.get();
     owned_bodies_.push_back(std::move(body));
-
-    // Create and add a BodyFrame associated with this body.
-    //BodyFrame<T>::Create(this, *raw_body_ptr);
-
     return raw_body_ptr;
   }
 
@@ -172,6 +167,7 @@ class MultibodyTree {
     // AddBody() was called before this method which already created valid
     // topologies for the body and its associated body frame.
     BodyIndex body_index = body_frame->get_body_index();
+    DRAKE_DEMAND(body_index < get_num_bodies());
     FrameIndex frame_index = topology_.bodies[body_index].body_frame;
 
     // MultibodyTree has access to these methods since it is a friend of
@@ -183,7 +179,7 @@ class MultibodyTree {
     owned_material_frames_.push_back(std::move(body_frame));
     return raw_body_ptr;
   }
-  
+
   /// Returns the number of MaterialFrame objects in the MultibodyTree.
   /// Material frames include body frames associated with each of the bodies in
   /// the system including the _world_ body. Therefore the minimum number of
@@ -240,23 +236,11 @@ class MultibodyTree {
     DRAKE_ASSERT(body.get_index() < get_num_material_frames());
     DRAKE_ASSERT(body.get_body_frame_index() < get_num_material_frames());
     // TODO(amcastro-tri): Uses static_cast in Release builds.
+    // The assertion below would only fail if there was a bug in the logic
+    // creating body frames when adding bodies.
     auto body_frame =
         dynamic_cast<BodyFrame<T>*>(
             owned_material_frames_[body.get_body_frame_index()].get());
-    DRAKE_ASSERT(body_frame != nullptr);
-    return *body_frame;
-  }
-
-  /// Returns a constant reference to the body frame associated with the body
-  /// uniquely identified by `body_index` in `this` %MultibodyTree.
-  /// This method aborts in Debug builds when `body_index` does not indentify
-  /// a body in this multibody tree.
-  const BodyFrame<T>& get_body_frame(BodyIndex body_index) const {
-    DRAKE_ASSERT(body_index < get_num_material_frames());
-    // TODO(amcastro-tri): Uses static_cast in Release builds.
-    auto body_frame =
-        dynamic_cast<BodyFrame<T>*>(
-            owned_material_frames_[body_index].get());
     DRAKE_ASSERT(body_frame != nullptr);
     return *body_frame;
   }
