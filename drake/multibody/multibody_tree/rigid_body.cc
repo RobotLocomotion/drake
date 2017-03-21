@@ -17,10 +17,8 @@ const RigidBody<T>& RigidBody<T>::Create(MultibodyTree<T>* tree) {
   // and an exception would call the destructor.
   RigidBody<T>* body =
       tree->AddBody(std::unique_ptr<RigidBody<T>>(new RigidBody<T>()));
-  FrameIndex frame_index = body->CreateBodyFrame(tree).get_index();
-
   // Create and add a BodyFrame associated with this rigid body.
-  //FrameIndex frame_index = BodyFrame<T>::Create(tree, *body).get_index();
+  FrameIndex frame_index = body->CreateBodyFrame(tree).get_index();
   body->set_body_frame_index(frame_index);
 
   return *body;

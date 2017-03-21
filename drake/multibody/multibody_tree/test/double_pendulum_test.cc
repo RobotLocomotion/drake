@@ -1,13 +1,12 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 #include <memory>
-#include <sstream>
-#include <string>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/rigid_body_frame.h"
 
 namespace drake {
 namespace multibody {
@@ -90,6 +89,18 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   EXPECT_EQ(shoulder_outboard_frame.get_index(), FrameIndex(3));
   EXPECT_EQ(elbow_inboard_frame.get_index(), FrameIndex(4));
   EXPECT_EQ(elbow_outboard_frame.get_index(), FrameIndex(5));
+
+  // Check that frames are associated with the correct bodies.
+  EXPECT_EQ(shoulder_inboard_frame.get_body_index(), world_body.get_index());
+  EXPECT_EQ(shoulder_outboard_frame.get_body_index(), upper_link.get_index());
+  EXPECT_EQ(elbow_inboard_frame.get_body_index(), upper_link.get_index());
+  EXPECT_EQ(elbow_outboard_frame.get_body_index(), lower_link.get_index());
+
+  // Checks we can retrieve the body associated with a frame.
+  EXPECT_EQ(&shoulder_inboard_frame.get_body(), &world_body);
+  EXPECT_EQ(&shoulder_outboard_frame.get_body(), &upper_link);
+  EXPECT_EQ(&elbow_inboard_frame.get_body(), &upper_link);
+  EXPECT_EQ(&elbow_outboard_frame.get_body(), &lower_link);
 
   // Compile() stage.
   EXPECT_FALSE(model->topology_is_valid());  // Not valid before Compile().
