@@ -1,6 +1,7 @@
 #include "drake/systems/controllers/pid_controller.h"
 
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -76,6 +77,12 @@ TEST_F(PidControllerTest, GetterVectors) {
   EXPECT_DEATH(controller.get_Kp_singleton(), ".*");
   EXPECT_DEATH(controller.get_Ki_singleton(), ".*");
   EXPECT_DEATH(controller.get_Kd_singleton(), ".*");
+}
+
+TEST_F(PidControllerTest, Graphviz) {
+  const std::string dot = controller_.GetGraphvizString();
+  EXPECT_NE(std::string::npos, dot.find(
+      "label=\"PID Controller | { {<u0> q |<u1> q_d} |<y0> y}\"")) << dot;
 }
 
 // Evaluates the output and asserts correctness.
