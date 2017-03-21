@@ -1,5 +1,18 @@
 #pragma once
 
+/// @file
+/// This file defines "topological" structures to represent the logical
+/// connectivities between multibody tree components. For instance, the
+/// BodyTopology for a Body will contain the topological information specifying
+/// its inboard body (or parent body) in the parent tree, its outboard bodies
+/// (or children) and the level or depth in the MultibodyTree.
+/// All of this information is independent of the particular scalar type T the
+/// MultibodyTree, and its components, are instantiated with.
+/// All of the data structures defined in this file are meant to be the most
+/// minimalist representation that can store this information.
+/// All of these data structures are meant to be copiable to aid the process of
+/// cloning or transmogrifying multibody tree compoments.
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -10,6 +23,7 @@
 namespace drake {
 namespace multibody {
 
+/// Data structure to store the topological information associated with a Body.
 struct BodyTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyTopology);
 
@@ -32,6 +46,8 @@ struct BodyTopology {
   FrameIndex body_frame;
 };
 
+/// Data structure to store the topological information associated with a
+/// MaterialFrame.
 struct MaterialFrameTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaterialFrameTopology);
 
@@ -51,14 +67,13 @@ struct MaterialFrameTopology {
   BodyIndex body;
 };
 
+/// Data structure to store the topological information associated with an
+/// entire MultibodyTree.
 struct MultibodyTreeTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyTreeTopology);
 
   // Default constructor creates an empty, invalid, topology.
   MultibodyTreeTopology() {}
-
-  std::vector<BodyTopology> bodies;
-  std::vector<MaterialFrameTopology> material_frames;
 
   // Returns the number of bodies in the multibody tree.
   int get_num_bodies() const {return static_cast<int>(bodies.size()); }
@@ -106,6 +121,9 @@ struct MultibodyTreeTopology {
   bool is_valid_frame_id(FrameIndex index) {
     return index < get_num_material_frames();
   }
+
+  std::vector<BodyTopology> bodies;
+  std::vector<MaterialFrameTopology> material_frames;
 };
 
 }  // namespace multibody
