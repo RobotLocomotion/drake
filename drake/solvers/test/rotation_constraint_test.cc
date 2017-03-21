@@ -567,11 +567,11 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
 
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormickCorner,
-    ::testing::Combine(::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6,
-                                            7}),            // Orthant
-                       ::testing::ValuesIn({true, false}),  // bmin or bmax
-                       ::testing::ValuesIn({0, 1, 2})));    // column index
-
+    ::testing::Combine(
+        ::testing::ValuesIn<std::vector<int>>({0, 1, 2, 3, 4, 5, 6,
+                                               7}),             // Orthant
+        ::testing::ValuesIn<std::vector<bool>>({true, false}),  // bmin or bmax
+        ::testing::ValuesIn<std::vector<int>>({0, 1, 2})));     // column index
 
 // Make sure that no two row or column vectors in R, which satisfies the
 // McCormick relaxation, can lie in either the same or the opposite orthant.
@@ -584,17 +584,17 @@ class TestMcCormickOrthant
   TestMcCormickOrthant()
       : prog_(),
         R_(NewRotationMatrixVars(&prog_)) {
-    int num_bin = std::get<0>(GetParam());
-    int orthant = std::get<1>(GetParam());
-    bool is_row_vector = std::get<2>(GetParam());
-    int vec1 = std::get<3>(GetParam()).first;
-    int vec2 = std::get<3>(GetParam()).second;
-    bool is_same_orthant = std::get<4>(GetParam());
-    DRAKE_DEMAND(vec1 != vec2);
-    DRAKE_DEMAND(vec1 >= 0);
-    DRAKE_DEMAND(vec2 >= 0);
-    DRAKE_DEMAND(vec1 <= 2);
-    DRAKE_DEMAND(vec2 <= 2);
+    const int num_bin = std::get<0>(GetParam());
+    const int orthant = std::get<1>(GetParam());
+    const bool is_row_vector = std::get<2>(GetParam());
+    const int idx0 = std::get<3>(GetParam()).first;
+    const int idx1 = std::get<3>(GetParam()).second;
+    const bool is_same_orthant = std::get<4>(GetParam());
+    DRAKE_DEMAND(idx0 != idx1);
+    DRAKE_DEMAND(idx0 >= 0);
+    DRAKE_DEMAND(idx1 >= 0);
+    DRAKE_DEMAND(idx0 <= 2);
+    DRAKE_DEMAND(idx1 <= 2);
 
     AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, num_bin);
 
@@ -602,39 +602,40 @@ class TestMcCormickOrthant
     if (is_row_vector) {
       R_hat = R_.transpose();
     }
-    Eigen::Vector3d vec1_lb =
+    Eigen::Vector3d vec0_lb =
         Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
-    Eigen::Vector3d vec1_ub =
+    Eigen::Vector3d vec0_ub =
         Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
     // positive or negative x axis?
     if (orthant & (1 << 2)) {
-      vec1_lb(0) = 1E-3;
+      vec0_lb(0) = 1E-3;
     } else {
-      vec1_ub(0) = -1E-3;
+      vec0_ub(0) = -1E-3;
     }
     // positive or negative y axis?
     if (orthant & (1 << 1)) {
-      vec1_lb(1) = 1E-3;
+      vec0_lb(1) = 1E-3;
     } else {
-      vec1_ub(1) = -1E-3;
+      vec0_ub(1) = -1E-3;
     }
     // positive or negative z axis?
     if (orthant & (1 << 0)) {
-      vec1_lb(2) = 1E-3;
+      vec0_lb(2) = 1E-3;
     } else {
-      vec1_ub(2) = -1E-3;
+      vec0_ub(2) = -1E-3;
     }
-    // If we want to verify vec1 and vec2 CANNOT be in the same orthant,
-    // then set vec2_lb = vec1_lb, vec2_ub = vec1_ub;
-    // otherwise set vec2_lb = -vec2_ub, vec2_ub = -vec1_lb.
-    Eigen::Vector3d vec2_lb = vec1_lb;
-    Eigen::Vector3d vec2_ub = vec1_ub;
+    // If we want to verify vec1 and vec2 cannot be in the SAME orthant,
+    // then set vec1_lb = vec0_lb, vec1_ub = vec0_ub;
+    // otherwise if we want to verify vec1 and vec2 cannot be in the OPPOSITE
+    // orthant, then set vec1_lb = -vec1_ub, vec1_ub = -vec0_lb.
+    Eigen::Vector3d vec1_lb = vec0_lb;
+    Eigen::Vector3d vec1_ub = vec0_ub;
     if (!is_same_orthant) {
-      vec2_lb = -vec1_ub;
-      vec2_ub = -vec1_lb;
+      vec1_lb = -vec0_ub;
+      vec1_ub = -vec0_lb;
     }
-    prog_.AddBoundingBoxConstraint(vec1_lb, vec1_ub, R_hat.col(vec1));
-    prog_.AddBoundingBoxConstraint(vec2_lb, vec2_ub, R_hat.col(vec2));
+    prog_.AddBoundingBoxConstraint(vec0_lb, vec0_ub, R_hat.col(idx0));
+    prog_.AddBoundingBoxConstraint(vec1_lb, vec1_ub, R_hat.col(idx1));
   }
 
   ~TestMcCormickOrthant() override {}
@@ -662,12 +663,16 @@ std::array<std::pair<int, int>, 3> vector_indices() {
 
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormickOrthant,
-    ::testing::Combine(
-        ::testing::ValuesIn({1}),  // # of binary variables per half axis
-        ::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6, 7}),  // orthant index
-        ::testing::ValuesIn({false, true}),    // row vector or column vector
-        ::testing::ValuesIn(vector_indices()),   // vector indices
-        ::testing::ValuesIn({false, true})));  // same of opposite orthant
+    ::testing::Combine(::testing::ValuesIn<std::vector<int>>(
+                           {1}),  // # of binary variables per half axis
+                       ::testing::ValuesIn<std::vector<int>>(
+                           {0, 1, 2, 3, 4, 5, 6, 7}),  // orthant index
+                       ::testing::ValuesIn<std::vector<bool>>(
+                           {false, true}),  // row vector or column vector
+                       ::testing::ValuesIn<std::array<std::pair<int, int>, 3>>(
+                           vector_indices()),  // vector indices
+                       ::testing::ValuesIn<std::vector<bool>>(
+                           {false, true})));  // same of opposite orthant
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

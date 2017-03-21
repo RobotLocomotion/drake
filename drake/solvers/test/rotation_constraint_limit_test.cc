@@ -135,11 +135,13 @@ TEST_P(TestMinimumDistanceWOrthonormalSocp, Test) {
 }
 
 INSTANTIATE_TEST_CASE_P(RotationTest, TestMinimumDistance,
-    ::testing::ValuesIn({1, 2, 3})
-);
+                        ::testing::ValuesIn<std::vector<int>>(
+                            {1, 2,
+                             3}));  // number of binary variables per half axis
 
 INSTANTIATE_TEST_CASE_P(RotationTest, TestMinimumDistanceWOrthonormalSocp,
-    ::testing::ValuesIn({1, 2, 3})
-);
+                        ::testing::ValuesIn<std::vector<int>>(
+                            {1, 2,
+                             3}));  // number of binary variables per half axis
 }  // namespace solvers
 }  // namespace drake

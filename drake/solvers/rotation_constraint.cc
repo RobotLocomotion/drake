@@ -667,6 +667,9 @@ void AddMcCormickVectorConstraints(
  * To impose the constraint that R.col(0) and R.col(1) are not both in the first
  * orthant, we consider the constraint
  * Bpos0.col(0).sum() + Bpos0.col(1).sum() <= 5.
+ * Namely, not all 6 entries in Bpos0.col(0) and Bpos0.col(1) can be 1 at the
+ * same time, which is another way of saying R.col(0) and R.col(1) cannot be
+ * both in the first orthant.
  * Similarly we can impose the constraint on the other orthant.
  * @param prog Add the constraint to this mathematical program.
  * @param Bpos0 Defined in AddRotationMatrixMcCormickEnvelopeMilpConstraints(),
@@ -678,60 +681,44 @@ void AddNotInSameOrOppositeOrthantConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos0,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bneg0) {
-  for (int i = 0; i < 3; ++i) {
-    for (int j = i + 1; j < 3; ++j) {
-      for (int o = 0; o < 8; ++o) {
-        // To enforce that R.col(i) and R.col(j) are not simultaneously in the
-        // o'th orthant, we will impose the constraint
-        // vars_same_orthant.sum() < = 5. The variables in vars_same_orthant
-        // depend on the orthant number o.
-        // To enforce that R.col(i) and R.col(j) are not in the opposite
-        // orthants, we will impose the constraint
-        // vars_oppo_orthant.sum() <= 5. The variables in vars_oppo_orthant
-        // depnd on the orthant number o.
-        Eigen::Matrix<symbolic::Variable, 6, 1> vars_same_orthant;
-        Eigen::Matrix<symbolic::Variable, 6, 1> vars_oppo_orthant;
-        // Choose +x axis?
-        if (o & (1 << 2)) {
-          vars_same_orthant(0) = Bpos0(0, i);
-          vars_same_orthant(1) = Bpos0(0, j);
-          vars_oppo_orthant(0) = Bpos0(0, i);
-          vars_oppo_orthant(1) = Bneg0(0, j);
+  const std::array<std::pair<int, int>, 3> column_idx = {
+      {{0, 1}, {0, 2}, {1, 2}}};
+  for (const auto& column_pair : column_idx) {
+    const int col_idx0 = column_pair.first;
+    const int col_idx1 = column_pair.second;
+    for (int o = 0; o < 8; ++o) {
+      // To enforce that R.col(i) and R.col(j) are not simultaneously in the
+      // o'th orthant, we will impose the constraint
+      // vars_same_orthant.sum() < = 5. The variables in vars_same_orthant
+      // depend on the orthant number o.
+      // To enforce that R.col(i) and R.col(j) are not in the opposite
+      // orthants, we will impose the constraint
+      // vars_oppo_orthant.sum() <= 5. The variables in vars_oppo_orthant
+      // depnd on the orthant number o.
+      Eigen::Matrix<symbolic::Variable, 6, 1> vars_same_orthant;
+      Eigen::Matrix<symbolic::Variable, 6, 1> vars_oppo_orthant;
+      for (int axis = 0; axis < 3; ++axis) {
+        // axis chooses x, y, or z axis.
+        if (o & (1 << axis)) {
+          // If the orthant has positive value along the `axis`, then
+          // `vars_same_orthant` choose the positive component Bpos0.
+          vars_same_orthant(2 * axis)     = Bpos0(axis, col_idx0);
+          vars_same_orthant(2 * axis + 1) = Bpos0(axis, col_idx1);
+          vars_oppo_orthant(2 * axis)     = Bpos0(axis, col_idx0);
+          vars_oppo_orthant(2 * axis + 1) = Bneg0(axis, col_idx1);
         } else {
-          vars_same_orthant(0) = Bneg0(0, i);
-          vars_same_orthant(1) = Bneg0(0, j);
-          vars_oppo_orthant(0) = Bneg0(0, i);
-          vars_oppo_orthant(1) = Bpos0(0, j);
+          // If the orthant has negative value along the `axis`, then
+          // `vars_same_orthant` choose the negative component Bneg0.
+          vars_same_orthant(2 * axis)     = Bneg0(axis, col_idx0);
+          vars_same_orthant(2 * axis + 1) = Bneg0(axis, col_idx1);
+          vars_oppo_orthant(2 * axis)     = Bneg0(axis, col_idx0);
+          vars_oppo_orthant(2 * axis + 1) = Bpos0(axis, col_idx1);
         }
-        // Choose +y axis?
-        if (o & (1 << 1)) {
-          vars_same_orthant(2) = Bpos0(1, i);
-          vars_same_orthant(3) = Bpos0(1, j);
-          vars_oppo_orthant(2) = Bpos0(1, i);
-          vars_oppo_orthant(3) = Bneg0(1, j);
-        } else {
-          vars_same_orthant(2) = Bneg0(1, i);
-          vars_same_orthant(3) = Bneg0(1, j);
-          vars_oppo_orthant(2) = Bneg0(1, i);
-          vars_oppo_orthant(3) = Bpos0(1, j);
-        }
-        // Choose +z axis?
-        if (o & (1 << 0)) {
-          vars_same_orthant(4) = Bpos0(2, i);
-          vars_same_orthant(5) = Bpos0(2, j);
-          vars_oppo_orthant(4) = Bpos0(2, i);
-          vars_oppo_orthant(5) = Bneg0(2, j);
-        } else {
-          vars_same_orthant(4) = Bneg0(2, i);
-          vars_same_orthant(5) = Bneg0(2, j);
-          vars_oppo_orthant(4) = Bneg0(2, i);
-          vars_oppo_orthant(5) = Bpos0(2, j);
-        }
-        prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
-                                  vars_same_orthant);
-        prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
-                                  vars_oppo_orthant);
       }
+      prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
+                                vars_same_orthant);
+      prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
+                                vars_oppo_orthant);
     }
   }
 }
