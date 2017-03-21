@@ -136,7 +136,7 @@
     ...
 }
 
-# This causes "possibly lost" warnings for valgrind memchecks.
+# This suppresses "possibly lost" warnings for valgrind memchecks.
 # The cause of the error seems to be in the btAlignedAllocDefault function
 # in btAlignedAllocator.cpp file of the bullet3 library.  We believe that the function
 # may return a pointer not pointing at the head of the allocated memory, which
@@ -149,6 +149,4 @@
     fun:_ZL14btAllocDefaultm
     fun:_ZL21btAlignedAllocDefaultmi
     fun:_Z22btAlignedAllocInternalmi
-    ...
-    fun:_ZN14DrakeCollision27BulletCollisionWorldWrapperC1Ev
 }
