@@ -1,68 +1,29 @@
 #pragma once
 
-#include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
-
-#include <iostream>
 
 namespace drake {
 namespace multibody {
 
-// Forward declarations.
-template <class T> class Body;
-template <class T> class MultibodyTree;
-template <class T> class RigidBody;
-
+/// %Frame is an abstract base class representation for the concept of a frame
+/// in multibody dynamics. Frames can be thought as a set of three orthogonal
+/// axes forming right-handed orthoganl basis located at a point called the
+/// frame's origin.
+/// The concept of the _pose_ of a frame F only makes sense when measured and
+/// expressed in another frame E. Therefore the pose `X_EF` of a frame F
+/// measured and expressed in a frame E can only be specified provided these two
+/// frames are defined.
+/// This class does not store the pose of a frame but it only represents the
+/// frame itself.
+/// Specific frame classes inheriting from %Frame will typically provide methods
+/// to access or compute the pose of the frame instance they represent measured
+/// and expressed in specific frames as a function of the state of the parent
+/// MultibodyTree.
+///
+/// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class Frame : public MultibodyTreeElement<Frame<T>, FrameIndex> {};
-
-template <typename T>
-class MaterialFrame : public Frame<T> {
- public:
-  BodyIndex get_body_index() const { return body_index_;}
-
- protected:
-  // Only derived classes can use this constructor.
-  explicit MaterialFrame(const Body<T>& body);
-
- private:
-  const BodyIndex body_index_;
-
-  /// At MultibodyTree::Compile() time, each frame will retrieve its topology
-  /// from the parent MultibodyTree.
-  virtual void Compile() {}
-};
-
-template <typename T>
-class BodyFrame : public MaterialFrame<T> {
- public:
-  /// Creates a new BodyFrame and adds it to the MultibodyTree @p tree.
-  /// The MultibodyTree @param tree takes ownership of the frame.
-  static const BodyFrame<T>& Create(MultibodyTree<T>* tree, const Body<T>& body);
-
- private:
-  // Do not allow users to create a body frames using its public constructors
-  // but force them to use the factory method Create().
-
- public: // TODO: REMOVE. RIGHT NOW FOR TESTING.
-  BodyFrame(const Body<T>& body);
-};
-
-/// This class represents a frame `F` with pose `X_BF` measured and expressed in
-/// the body frame `B` of a rigid body.
-template <typename T>
-class RigidBodyFrame : public MaterialFrame<T> {
- public:
-  static RigidBodyFrame<T>& Create(
-      MultibodyTree<T>* tree,
-      const RigidBody<T>& body, const Isometry3<T>& X_BM);
-
- private:
-  RigidBodyFrame(const RigidBody<T>& B, const Isometry3<T>& X_BM);
-
-  Isometry3<T> X_BM_;
-};
 
 }  // namespace multibody
 }  // namespace drake
