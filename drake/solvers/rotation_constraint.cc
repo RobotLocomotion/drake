@@ -1,5 +1,7 @@
+/* clang-format off */
 #include "drake/solvers/rotation_constraint.h"
 #include "drake/solvers/rotation_constraint_internal.h"
+/* clang-format on */
 
 #include <algorithm>
 #include <cmath>

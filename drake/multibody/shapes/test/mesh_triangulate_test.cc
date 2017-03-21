@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/multibody/shapes/geometry.h"
+/* clang-format on */
 
 #include <gtest/gtest.h>
 

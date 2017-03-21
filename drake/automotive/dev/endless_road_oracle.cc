@@ -1,5 +1,7 @@
+/* clang-format off */
 #include "drake/automotive/dev/endless_road_oracle.h"
 #include "drake/automotive/dev/endless_road_oracle-internal.h"
+/* clang-format on */
 
 #include <algorithm>
 #include <cmath>
