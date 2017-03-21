@@ -568,12 +568,18 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     DRAKE_DEMAND(!error);
   }
 
-
   for (const auto it : prog.GetSolverOptionsInt(SolverType::kGurobi)) {
     error = GRBsetintparam(model_env, it.first.c_str(), it.second);
     DRAKE_DEMAND(!error);
   }
 
+  for (int i=0; i<prog.initial_guess().rows(); i++){
+    if (!isnan(prog.initial_guess()(i))){
+      error = GRBsetdblattrelement(model, "Start", i, prog.initial_guess()(i));
+      DRAKE_DEMAND(!error);
+    }
+  }
+  
   error = GRBoptimize(model);
 
   SolutionResult result = SolutionResult::kUnknownError;

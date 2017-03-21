@@ -2384,7 +2384,7 @@ class MathematicalProgram {
 
     num_vars_ += num_new_vars;
     x_initial_guess_.conservativeResize(num_vars_);
-    x_initial_guess_.tail(num_new_vars) = Eigen::VectorXd::Zero(num_new_vars);
+    x_initial_guess_.tail(num_new_vars).fill(std::numeric_limits<double>::quiet_NaN());
   }
 
   MatrixXDecisionVariable NewVariables(VarType type, int rows, int cols,
