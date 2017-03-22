@@ -10,6 +10,7 @@ namespace drake {
 namespace geometry {
 namespace {
 
+
 // Creates various dummy index types to test.
 using std::stringstream;
 using std::unordered_set;
@@ -17,110 +18,117 @@ using std::unordered_map;
 using AId = Identifier<class ATag>;
 using BId = Identifier<class BTag>;
 
-// The nature of gtest means these tests can be instantiated in any order.
-// Any local instantiation of identifiers could lead to arbitrary values.
-// This renders the tests that *care* about values very fragile.  The simplest
-// way to account for this is to have these translation-unit-level globals that
-// are constant w.r.t. execution order.  That is why these exist.
-// For this to work, the following assumptions must be true:
-//   1. It must run in a scope where these are the only invocations of
-//      Identifier::get_new_id() (or, at the very least, these are the
-//      first).
-//   2. The Identifier::get_new_id() returns 0 with the first
-//      invocation and each successive invocation increases the value by 1.
-const AId a1 = AId::get_new_id();
-const AId a2 = AId::get_new_id();
-const AId a3 = AId::get_new_id();
-const BId b = BId::get_new_id();
+class IdentifierTests : public ::testing::Test {
+ protected:
+  // Configuration of test *case* variables (instead of per-test) is important.
+  // The tests can evaluate in any order and run in the same memory space.
+  // Those tests that depend on identifier *value* could easily become invalid
+  // based on execution order. This guarantees a fixed set of identifiers
+  // with known values.
+  static void SetUpTestCase() {
+    a1_ = AId::get_new_id();  // Xhould have the value 1.
+    a2_ = AId::get_new_id();  // Xhould have the value 2.
+    a3_ = AId::get_new_id();  // Xhould have the value 3.
+    b_ = BId::get_new_id();   // Xhould have the value 1.
+  }
 
-// These tests confirm that *compilable* functionality behaves correctly.
+  static AId a1_;
+  static AId a2_;
+  static AId a3_;
+  static BId b_;
+};
+
+AId IdentifierTests::a1_;
+AId IdentifierTests::a2_;
+AId IdentifierTests::a3_;
+BId IdentifierTests::b_;
 
 // Verifies the copy constructor. This implicitly tests the expected property
 // of the get_new_id() factory method and the get_value() method.
-GTEST_TEST(IdentifierTest, Constructor) {
-  EXPECT_EQ(a1.get_value(), 1);
-  EXPECT_EQ(a2.get_value(), 2);
-  EXPECT_EQ(a3.get_value(), 3);
-  AId temp(a2);
+TEST_F(IdentifierTests, Constructor) {
+  EXPECT_EQ(a1_.get_value(), 1);
+  EXPECT_EQ(a2_.get_value(), 2);
+  EXPECT_EQ(a3_.get_value(), 3);
+  AId temp(a2_);
   EXPECT_EQ(temp.get_value(), 2);
   AId bad;
   EXPECT_FALSE(bad.is_valid());
-  EXPECT_TRUE(a2.is_valid());
+  EXPECT_TRUE(a2_.is_valid());
   // In Debug builds, attempting to acquire the value is an error.
 #ifndef DRAKE_ASSERT_IS_DISARMED
   AId invalid;
   int64_t value = -1;
   ASSERT_DEATH({value = invalid.get_value();}, "");
 #endif
-};
+}
 
 // Confirms that assignment behaves correctly. This also implicitly tests
 // equality and inequality.
-GTEST_TEST(IdentifierTest, AssignmentAndComparison) {
-  EXPECT_TRUE(a2 != a3);
-  AId temp = a2;
-  EXPECT_TRUE(temp == a2);
-  temp = a3;
-  EXPECT_TRUE(temp == a3);
+TEST_F(IdentifierTests, AssignmentAndComparison) {
+  EXPECT_TRUE(a2_ != a3_);
+  AId temp = a2_;
+  EXPECT_TRUE(temp == a2_);
+  temp = a3_;
+  EXPECT_TRUE(temp == a3_);
   // In Debug builds, comparison of invalid ids is an error.
 #ifndef DRAKE_ASSERT_IS_DISARMED
   AId invalid;
   bool result = true;
-  ASSERT_DEATH({result = invalid == a1;}, "");
-  ASSERT_DEATH({result = invalid != a1;}, "");
+  ASSERT_DEATH({result = invalid == a1_;}, "");
+  ASSERT_DEATH({result = invalid != a1_;}, "");
 #endif
 }
 
 // Confirms that ids are configured to serve as unique keys in
 // STL containers.
-GTEST_TEST(IdentifierTest, ServeAsMapKey) {
+TEST_F(IdentifierTests, ServeAsMapKey) {
   unordered_set<AId> ids;
 
   // This is a *different* id with the *same* value as a1. It should *not*
   // introduce a new value to the set.
-  AId temp = a1;
+  AId temp = a1_;
 
   EXPECT_EQ(ids.size(), 0);
-  ids.insert(a1);
-  EXPECT_NE(ids.find(a1), ids.end());
+  ids.insert(a1_);
+  EXPECT_NE(ids.find(a1_), ids.end());
   EXPECT_NE(ids.find(temp), ids.end());
 
   EXPECT_EQ(ids.size(), 1);
-  ids.insert(a2);
+  ids.insert(a2_);
   EXPECT_EQ(ids.size(), 2);
 
   ids.insert(temp);
   EXPECT_EQ(ids.size(), 2);
 
-  EXPECT_EQ(ids.find(a3), ids.end());
+  EXPECT_EQ(ids.find(a3_), ids.end());
 
   // In Debug builds, invalid identifiers cannot be used as keys.
 #ifndef DRAKE_ASSERT_IS_DISARMED
   AId invalid;
   ASSERT_DEATH({ids.insert(invalid);}, "");
+#endif
 }
 
 // Confirms that ids are configured to serve as values in STL containers.
-GTEST_TEST(IdentifierTest, ServeAsMapValue) {
+TEST_F(IdentifierTests, ServeAsMapValue) {
   unordered_map<BId, AId> ids;
 
   BId b1 = BId::get_new_id();
   BId b2 = BId::get_new_id();
   BId b3 = BId::get_new_id();
-  ids.emplace(b1, a1);
-  ids.emplace(b2, a2);
+  ids.emplace(b1, a1_);
+  ids.emplace(b2, a2_);
   EXPECT_EQ(ids.find(b3), ids.end());
   EXPECT_NE(ids.find(b2), ids.end());
   EXPECT_NE(ids.find(b1), ids.end());
-  ids[b3] = a3;
+  ids[b3] = a3_;
   EXPECT_NE(ids.find(b3), ids.end());
-#endif
 }
 
 // Tests the streaming behavior.
-GTEST_TEST(IdentifierTest, StreamOperator) {
+TEST_F(IdentifierTests, StreamOperator) {
   stringstream ss;
-  ss << a2;
+  ss << a2_;
   EXPECT_EQ(ss.str(), "2");
   // In Debug builds, writing the identifier value to a stream is an error.
 #ifndef DRAKE_ASSERT_IS_DISARMED
@@ -161,7 +169,7 @@ template <typename T, typename U> \
 bool has_ ## OP_NAME ## _helper(...) { return false; } \
 template <typename T, typename U> \
 bool has_ ## OP_NAME() { return has_ ## OP_NAME ## _helper<T, U>(1); } \
-GTEST_TEST(IdentifierTest, OP_NAME ## OperatorAvailiblity) { \
+TEST_F(IdentifierTests, OP_NAME ## OperatorAvailiblity) { \
   EXPECT_FALSE((has_ ## OP_NAME<AId, BId>())); \
   EXPECT_TRUE((has_ ## OP_NAME<AId, AId>())); \
   EXPECT_FALSE((has_ ## OP_NAME<AId, int>())); \
@@ -172,8 +180,10 @@ BINARY_TEST(==, Equals)
 BINARY_TEST(!=, NotEquals)
 BINARY_TEST(=, Assignment)
 
-// Compile-time assertion
-GTEST_TEST(IdentifierTest, Convertible) {
+// This test should pass, as long as it compiles. If the Identifier class were
+// to change and allow conversion between identifiers (or between identifiers
+// and ints), this would fail to compile.
+TEST_F(IdentifierTests, Convertible) {
   static_assert(!std::is_convertible<AId, BId>::value,
                 "Identifiers of different types should not be convertible.");
   static_assert(!std::is_convertible<AId, int>::value,
@@ -181,6 +191,7 @@ GTEST_TEST(IdentifierTest, Convertible) {
   static_assert(!std::is_convertible<int, AId>::value,
                 "Identifiers should not be convertible from ints");
 }
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
