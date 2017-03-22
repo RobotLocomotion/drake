@@ -58,7 +58,9 @@ TEST_F(IdentifierTests, Constructor) {
 #ifndef DRAKE_ASSERT_IS_DISARMED
   AId invalid;
   int64_t value = -1;
-  ASSERT_DEATH({value = invalid.get_value();}, "");
+  EXPECT_DEATH({value = invalid.get_value();}, "");
+  // This let's gcc thinks the variable is used.
+  EXPECT_EQ(value, -1);
 #endif
 }
 
@@ -74,8 +76,10 @@ TEST_F(IdentifierTests, AssignmentAndComparison) {
 #ifndef DRAKE_ASSERT_IS_DISARMED
   AId invalid;
   bool result = true;
-  ASSERT_DEATH({result = invalid == a1_;}, "");
-  ASSERT_DEATH({result = invalid != a1_;}, "");
+  EXPECT_DEATH({result = invalid == a1_;}, "");
+  EXPECT_DEATH({result = invalid != a1_;}, "");
+  // This let's gcc thinks the variable is used.
+  EXPECT_EQ(result, true);
 #endif
 }
 
