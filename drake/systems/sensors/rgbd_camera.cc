@@ -354,7 +354,6 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
 
 void RgbdCamera::Impl::CreateRenderingWorld() {
   auto X_CW = (X_WB_initial_ * X_BC_).inverse();
-
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
@@ -364,7 +363,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
       continue;
     }
 
-    int const model_id = body->get_model_instance_id();
+    // TODO(kunimatsu-tri) Add support for multiple visuals.
     // Assuming that a rigid body owns only a visual element.
     if (body->get_visual_elements().size() >= 2) {
       throw std::runtime_error("RigidBody '" + body->get_name() +
@@ -372,11 +371,6 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
     }
 
     const auto& visual = body->get_visual_elements().at(0);
-    // Converts visual's pose in the world to the one in the camera coordinate
-    // system.
-    auto pose = X_CW * visual.getWorldTransform();
-    vtkSmartPointer<vtkTransform> vtk_transform =
-        VtkUtil::ConvertToVtkTransform(pose);
 
     vtkNew<vtkActor> actor;
     vtkNew<vtkActor> actor_for_label;
@@ -467,18 +461,25 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
 
     // Registers actors.
     if (shape_matched) {
+      // Converts visual's pose in the world to the one in the camera coordinate
+      // system.
+      const int body_id = body->get_body_index();
+      const auto pose = X_CW * visual.getWorldTransform();
+      vtkSmartPointer<vtkTransform> vtk_transform =
+          VtkUtil::ConvertToVtkTransform(pose);
+
       actor->SetMapper(mapper.GetPointer());
       actor->SetUserTransform(vtk_transform);
-      color_depth_id_object_map_[model_id] =
+      color_depth_id_object_map_[body_id] =
           vtkSmartPointer<vtkActor>(actor.GetPointer());
       color_depth_renderer_->AddActor(actor.GetPointer());
 
-      const auto& color = color_palette_.get_normalized_color(model_id);
+      const auto& color = color_palette_.get_normalized_color(body_id);
       actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
       actor_for_label->GetProperty()->LightingOff();
       actor_for_label->SetMapper(mapper.GetPointer());
       actor_for_label->SetUserTransform(vtk_transform);
-      label_id_object_map_[model_id] =
+      label_id_object_map_[body_id] =
           vtkSmartPointer<vtkActor>(actor_for_label.GetPointer());
       label_renderer_->AddActor(actor_for_label.GetPointer());
     }
@@ -513,20 +514,25 @@ void RgbdCamera::Impl::UpdateModelPoses(
       continue;
     }
 
-    auto const X_CBody = X_CW * tree_.relativeTransform(
-        cache, 0, body->get_body_index());
+    if (body->get_visual_elements().empty()) {
+      continue;
+    }
+
+    const auto& visual = body->get_visual_elements().at(0);
+
+    const auto X_CVisual = X_CW * tree_.CalcBodyPoseInWorldFrame(
+        cache, *body.get()) * visual.getLocalTransform();
+
     vtkSmartPointer<vtkTransform> vtk_transform =
-        VtkUtil::ConvertToVtkTransform(X_CBody);
+        VtkUtil::ConvertToVtkTransform(X_CVisual);
     // `color_depth_id_object_map_` and `label_id_object_map_` are modified
     // here. This is OK because 1) we are just copying data to the memory spaces
     // allocated at the construction time and 2) we are not outputting these
     // data to outside the class.
-    const int model_instance_id = body->get_model_instance_id();
-
     const std::array<std::map<int, vtkSmartPointer<vtkActor>>, 2>
         id_object_maps{{color_depth_id_object_map_, label_id_object_map_}};
     for (auto& id_object_map : id_object_maps) {
-      auto& actor = id_object_map.at(model_instance_id);
+      auto& actor = id_object_map.at(body->get_body_index());
       actor->SetUserTransform(vtk_transform);
     }
   }
