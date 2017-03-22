@@ -15,12 +15,13 @@ namespace multibody {
 template<typename T> class Body;
 
 /// All Body objects, regardless of whether they represent rigid bodies or
-/// flexible bodies, have a %BodyFrame (also refered as _reference frame_ in the
-/// literature for flexible body mechanics with FEM) associated with them.
-/// These body frames can be thought as a set of three orthogonal axes forming
-/// an orthoganl basis located at point called the frame's origin. These
-/// %BodyFrame objects translate and rotate with their associated body and
-/// therefore their location and orientation is a function of time.
+/// flexible bodies, have a %BodyFrame associated with them (also referred to as
+/// a _reference frame_ in the literature for flexible body mechanics with FEM).
+/// These body frames can be thought of as a set of three orthogonal axes
+/// forming a right-handed orthogonal basis located at a point called the
+/// frame's origin. These %BodyFrame objects translate and rotate with their
+/// associated body and therefore their location and orientation is a function
+/// of time.
 /// For RigidBody objects %BodyFrame represents the frame in which their center
 /// of mass and rotational inertia are provided. The %BodyFrame associated with
 /// a body does not necessarily need to be located at its center of mass nor
