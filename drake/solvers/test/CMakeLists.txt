@@ -74,11 +74,6 @@ target_link_libraries(ipopt_solver_test drakeOptimizationTest)
 drake_add_cc_test(snopt_solver_test)
 target_link_libraries(snopt_solver_test drakeOptimizationTest)
 
-if(dreal_FOUND)
-  drake_add_cc_test(dreal_solver_test)
-  target_link_libraries(dreal_solver_test drakeOptimization)
-endif()
-
 if (mosek_FOUND)
   drake_add_cc_test(rotation_constraint_test rotation_constraint_test.cc)
   set_tests_properties(rotation_constraint_test PROPERTIES TIMEOUT 900)

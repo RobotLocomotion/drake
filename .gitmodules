@@ -74,10 +74,6 @@
 [submodule "externals/gflags"]
 	path = externals/gflags
 	url = https://github.com/gflags/gflags.git
-[submodule "externals/dreal"]
-	path = externals/dreal
-	url = https://github.com/dreal/dreal3.git
-	ignore = untracked
 [submodule "externals/bullet"]
 	path = externals/bullet
 	url = https://github.com/RobotLocomotion/bullet3.git
