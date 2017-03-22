@@ -84,7 +84,7 @@ class RotationalInertia {
 
   /// Creates a principal rotational inertia with identical diagonal elements
   /// equal to `I` and zero products of inertia.
-  /// As examples, consider the moments of inertia taken about their geometric
+  /// As examples, consider the moments of inertia about their geometric
   /// center for a sphere or a cube.
   /// Throws an exception if `I` is negative.
   explicit RotationalInertia(const T& I) {
@@ -185,11 +185,11 @@ class RotationalInertia {
   /// Adds in a rotational inertia to `this` rotational inertia. This operation
   /// is only valid if both inertias are computed about the same point P and
   /// expressed in the same frame E. Considering `this` inertia to be `I_SP_E`
-  /// for some system S, taken about some point P, the supplied inertia must
-  /// be for some system B taken about the _same_ point P; B's inertia is
+  /// for some system S, about some point P, the supplied inertia must
+  /// be for some system B about the _same_ point P; B's inertia is
   /// then included in S.
   /// @param[in] I_BP_E A rotational inertia of some body B to be added to
-  ///                  `this` inertia. It must have been taken about the same
+  ///                  `this` inertia. It must be defined about the same
   ///                   point P as `this` inertia, and expressed in the same
   ///                   frame E.
   /// @returns A reference to `this` rotational inertia, which has been updated
@@ -203,12 +203,12 @@ class RotationalInertia {
   /// with another rotational inertia `I_BP_E`.
   /// This operation is only valid if both inertias are computed about the same
   /// point P and expressed in the same frame E. Considering `this` inertia
-  /// to be `I_SP_E` for some system S, taken about some point P, the
-  /// supplied inertia must be for some system B taken about the _same_ point
+  /// to be `I_SP_E` for some system S, about some point P, the
+  /// supplied inertia must be for some system B about the _same_ point
   /// P; the returned _combined_ inertia `I_CP_E` for the combined system C
-  /// includes both, the inertia of `this` system S and that of system B.
+  /// includes both the inertia of `this` system S and that of system B.
   /// @param[in] I_BP_E A rotational inertia of some body B to be added to
-  ///                  `this` inertia. It must have been taken about the same
+  ///                  `this` inertia. It must be defined about the same
   ///                   point P as `this` inertia, and expressed in the same
   ///                   frame E.
   /// @retval I_CP_E The rotational inertia of the combined system C including
@@ -222,10 +222,10 @@ class RotationalInertia {
   /// Subtracts a rotational inertia from `this` rotational inertia. This
   /// operation is only valid if both inertias are computed about the same point
   /// P and expressed in the same frame E. Considering `this` inertia to be
-  /// `I_SP_E` for some system S, taken about some point P, the supplied
-  /// inertia must be for some system B taken about the _same_ point P.
+  /// `I_SP_E` for some system S, about some point P, the supplied
+  /// inertia must be for some system B about the _same_ point P.
   /// @param[in] I_BP_E A rotational inertia of some body B to be added to
-  ///                  `this` inertia. It must have been taken about the same
+  ///                  `this` inertia. It must be defined about the same
   ///                   point P as `this` inertia, and expressed in the same
   ///                   frame E.
   /// @returns A reference to `this` rotational inertia, which has been updated
@@ -247,12 +247,12 @@ class RotationalInertia {
   /// geometry without the empty space.
   /// This operation is only valid if both inertias are computed about the same
   /// point P and expressed in the same frame E. Considering `this` inertia
-  /// to be `I_SP_E` for some system S, taken about some point P, the
-  /// supplied inertia must be for some system B taken about the _same_ point
+  /// to be `I_SP_E` for some system S, about some point P, the
+  /// supplied inertia must be for some system B about the _same_ point
   /// P; the returned _combined_ inertia `I_CP_E` for the combined system C
   /// includes the inertia of `this` system S and subtracts that of system B.
   /// @param[in] I_BP_E A rotational inertia of some body B to be added to
-  ///                  `this` inertia. It must have been taken about the same
+  ///                  `this` inertia. It must be defined about the same
   ///                   point P as `this` inertia, and expressed in the same
   ///                   frame E.
   /// @retval I_CP_E The rotational inertia of the combined system C including
@@ -437,9 +437,9 @@ class RotationalInertia {
   }
 
   /// Given `this` rotational inertia `I_SP_E` for some system or body S,
-  /// taken about a point P and expressed in frame
-  /// E, this method computes the same inertia re-expressed in another
-  /// frame `A` as `I_SP_A = R_AE * I_SP_E * (R_AE)ᵀ`.
+  /// about a point P and expressed in frame E, this method computes the same
+  /// inertia re-expressed in another frame `A` as
+  /// `I_SP_A = R_AE * I_SP_E * (R_AE)ᵀ`.
   /// This operation is performed in-place modifying the original object.
   /// @param[in] R_AE Rotation matrix from frame E to frame `A`.
   /// @returns A reference to `this` rotational inertia about P but now
