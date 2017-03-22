@@ -3,12 +3,13 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include "drake/tools/test/gen/sample.h"
+
 #include <memory>
 #include <vector>
 
 #include "drake/lcmt_sample_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "drake/tools/test/gen/sample.h"
 
 namespace drake {
 namespace tools {
