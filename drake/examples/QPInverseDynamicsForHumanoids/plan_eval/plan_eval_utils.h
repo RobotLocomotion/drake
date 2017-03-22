@@ -55,8 +55,7 @@ class PiecewiseCubicTrajectory {
    */
   MatrixX<T> get_velocity(double time) const {
     MatrixX<T> ret = qd_.value(time);
-    if (!q_.isTimeInRange(time))
-      ret.setZero();
+    if (!q_.isTimeInRange(time)) ret.setZero();
     return ret;
   }
 
@@ -66,8 +65,7 @@ class PiecewiseCubicTrajectory {
    */
   MatrixX<T> get_acceleration(double time) const {
     MatrixX<T> ret = qdd_.value(time);
-    if (!q_.isTimeInRange(time))
-      ret.setZero();
+    if (!q_.isTimeInRange(time)) ret.setZero();
     return ret;
   }
 
@@ -140,9 +138,12 @@ class PiecewiseCartesianTrajectory {
    * @p poses.
    * @param times Breaks used to build the splines.
    * @param poses Knots used to build the splines.
+   * @param vel0 Start linear velocity.
+   * @parma vel1 End linear velocity.
    */
-  static PiecewiseCartesianTrajectory<T> MakeCubicLinearWithZeroEndVelocity(
-      const std::vector<T>& times, const std::vector<Isometry3<T>>& poses) {
+  static PiecewiseCartesianTrajectory<T> MakeCubicLinearWithEndLinearVelocity(
+      const std::vector<T>& times, const std::vector<Isometry3<T>>& poses,
+      const Vector3<T>& vel0, const Vector3<T>& vel1) {
     std::vector<MatrixX<T>> pos_knots(poses.size());
     eigen_aligned_std_vector<Matrix3<T>> rot_knots(poses.size());
     for (size_t i = 0; i < poses.size(); ++i) {
@@ -151,8 +152,7 @@ class PiecewiseCartesianTrajectory {
     }
 
     return PiecewiseCartesianTrajectory(
-        PiecewisePolynomial<T>::Cubic(times, pos_knots, MatrixX<T>::Zero(3, 1),
-                                      MatrixX<T>::Zero(3, 1)),
+        PiecewisePolynomial<T>::Cubic(times, pos_knots, vel0, vel1),
         PiecewiseQuaternionSlerp<T>(times, rot_knots));
   }
 

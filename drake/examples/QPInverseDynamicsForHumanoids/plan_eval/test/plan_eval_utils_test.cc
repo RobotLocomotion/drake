@@ -91,7 +91,9 @@ class PiecewiseCartesianTrajectoryTest : public ::testing::Test {
     }
 
     dut_ = PiecewiseCartesianTrajectory<
-        double>::MakeCubicLinearWithZeroEndVelocity(times, knots);
+        double>::MakeCubicLinearWithEndLinearVelocity(times, knots,
+                                                      Vector3<double>::Zero(),
+                                                      Vector3<double>::Zero());
 
     test_times_ = {times.front() - 0.2, times.front(),
                    (times.front() + times.back()) / 2., times.back(),
