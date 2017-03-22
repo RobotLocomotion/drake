@@ -438,12 +438,12 @@ class RotationalInertia {
 
   /// Given `this` rotational inertia `I_SP_E` for some system or body S,
   /// about a point P and expressed in frame E, this method computes the same
-  /// inertia re-expressed in another frame `A` as
+  /// inertia re-expressed in another frame A as
   /// `I_SP_A = R_AE * I_SP_E * (R_AE)ᵀ`.
   /// This operation is performed in-place modifying the original object.
-  /// @param[in] R_AE Rotation matrix from frame E to frame `A`.
+  /// @param[in] R_AE Rotation matrix from frame E to frame A.
   /// @returns A reference to `this` rotational inertia about P but now
-  ///          re-expressed in frame `A`, that is, `I_SP_A`.
+  ///          re-expressed in frame A, that is, `I_SP_A`.
   RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AE) {
     // There is an interesting discussion on Eigen's forum here:
     // https://forum.kde.org/viewtopic.php?f=74&t=97282
@@ -467,12 +467,12 @@ class RotationalInertia {
     return *this;
   }
 
-  /// Re-express `this` inertia `I_SP_E` from frame E to frame `A` and return
+  /// Re-express `this` inertia `I_SP_E` from frame E to frame A and return
   /// the result. See ReExpressInPlace() for details.
   ///
-  /// @param[in] R_AE Rotation matrix from frame E to frame `A`.
+  /// @param[in] R_AE Rotation matrix from frame E to frame A.
   /// @retval I_SP_A The same rotational inertia of S about P but now
-  ///                re-expressed in frame`A`.
+  ///                re-expressed in frame A.
   /// @see ReExpressInPlace()
   RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
