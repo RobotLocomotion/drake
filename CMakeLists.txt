@@ -54,14 +54,6 @@ drake_add_external(ccd PUBLIC CMAKE
     -DBUILD_TESTING=OFF
     -DENABLE_DOUBLE_PRECISION=ON)
 
-# dreal
-drake_add_external(dreal PUBLIC CMAKE PYTHON
-  CMAKE_ARGS
-    -DBUILD_TESTING=OFF
-    -DSUPPORT_ODE=OFF
-    -DUSE_NLOPT=OFF
-  SOURCE_SUBDIR src)
-
 # gflags
 drake_add_external(gflags PUBLIC CMAKE
   CMAKE_ARGS
@@ -254,7 +246,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_BOT_CORE_LCMTYPES:BOOL=${WITH_BOT_CORE_LCMTYPES}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_CCD:BOOL=${WITH_CCD}
-    -DWITH_DREAL:BOOL=${WITH_DREAL}
     -DWITH_EIGEN3:BOOL=${WITH_EIGEN}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_FCL:BOOL=${WITH_FCL}
     -DWITH_GFLAGS:BOOL=${WITH_GFLAGS}
@@ -290,7 +281,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     bot_core_lcmtypes
     bullet
     ccd
-    dreal
     eigen
     fcl
     gflags
