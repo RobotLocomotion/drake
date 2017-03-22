@@ -84,7 +84,7 @@ GTEST_TEST(CalculateQuaternionDtFromAngularVelocityExpressedInBTest, testA) {
 
   // Initialize each variable that is to be regarded as an independent variable
   // (for purposes of partial differentiation) with its numerical value (i.e.,
-  // (where the function and its nth derivatives are to be evaluated) and the
+  // where the function and its derivative is to be evaluated) and the
   // appropriate entry for it in the 7d array.
   const Eigen::Quaterniond a = GetGenericArbitraryQuaternion(M_PI/6, true);
   const AutoDiff7d e0(a.w(),   7, 0);
@@ -135,14 +135,14 @@ GTEST_TEST(CalculateQuaternionDtFromAngularVelocityExpressedInBTest, testA) {
 
 // This function tests CalculateQuaternionDtFromAngularVelocityExpressedInB.
 GTEST_TEST(CalculateAngularVelocityExpressedInBFromQuaternionDtTest, testA) {
-  // For convenience, locally typedef Vector7d and AutoDiff7d.
+  // For convenience, locally typedef Vector8d and AutoDiff8d.
   using Vector8d = Eigen::Matrix<double, 8, 1>;
   using AutoDiff8d = Eigen::AutoDiffScalar<Vector8d>;
 
   // Initialize each variable that is to be regarded as an independent variable
   // (for purposes of partial differentiation) with its numerical value (i.e.,
-  // (where the function and its nth derivatives are to be evaluated) and the
-  // appropriate entry for it in the 7d array.
+  // where the function and its derivative is to be evaluated) and the
+  // appropriate entry for it in the 8d array.
   // e0Dt, e1Dt, e2Dt are initialized with arbitrary values of 0, 1, 2, and
   // e3Dt is initialized so it satisfies: e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
   const Eigen::Quaterniond a = GetGenericArbitraryQuaternion(M_PI/6, true);
