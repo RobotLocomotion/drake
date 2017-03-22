@@ -22,12 +22,14 @@ namespace multibody {
 
 /// This class provides an abstraction for the physical concept of the mass
 /// distribution of a body (or system of bodies), about a particular point.
-/// (We will say "body" throughout the documentation of this class, but the same
-/// concepts apply to a system of bodies as well.) Given a point, the mass
-/// distribution of a body is generally described by the first three mass
-/// weighted moments about that point. These moments are: the mass of the body
-/// (or zeroth moment), the center of mass vector (or first moment) and
-/// finally the rotational inertia (or second moment).
+/// In this documentation with "system" we mean a multi-body system
+/// which could consist of a single body or even of a collection of bodies
+/// (throughout this documentation "body" is many times used instead of "system"
+/// but the same concepts apply to a system of bodies as well.)
+/// Given a point, the mass distribution of a body is generally described by the
+/// first three mass weighted moments about that point. These moments are: the
+/// mass of the body (or zeroth moment), the center of mass vector (or first
+/// moment) and finally the rotational inertia (or second moment).
 // TODO(amcastro-tri): Add reference to a book describing the concept of i-th
 // moments for those not familiar with it.
 /// We choose to use the term **rotational inertia** as used by [Jain 2010] to
@@ -243,12 +245,12 @@ class RotationalInertia {
 
   /// Returns the combined inertia obtained by subtracting another rotational
   /// inertia `I_BP_E` from `this` rotational inertia. This operation is useful
-  /// when computing the inertia of a geometry with an empty space; its inertia
+  /// when computing the inertia of a geometry with a hole in it; its inertia
   /// can be computed by subtracting the _inertia_ of the empty space from the
-  /// geometry without the empty space. Consider for example a cube with a
-  /// cylindrical whole passing through from one side to the other side of the
-  /// cube. The inertia of this _combined_ body can be computed by subtracting
-  /// the inertia of a cylinder from the inertia of a solid cube.
+  /// full inertia of the geometry without the empty space. Consider for example
+  /// a cube with a cylindrical hole passing through from one side to the other
+  /// side of the cube. The inertia of this _combined_ body can be computed by
+  /// subtracting the inertia of a cylinder from the inertia of a solid cube.
   /// This operation is only valid if both inertias are computed about the same
   /// point P and expressed in the same frame E. Considering `this` inertia
   /// to be `I_SP_E` for some system S, about some point P, the

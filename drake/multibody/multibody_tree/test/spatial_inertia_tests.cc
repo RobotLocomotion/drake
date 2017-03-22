@@ -149,6 +149,8 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
 
   // Check that the compound inertia corresponds to that of a larger box of
   // length 4.0.
+  // We compute here in `com` the center of mass of the combined system
+  // consisting of the two boxes.
   const double mass = mass_left + mass_right;
   const Vector3d com(
       (mass_left * MLeftBox_Wo_W.get_com() +

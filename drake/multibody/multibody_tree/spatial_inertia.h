@@ -21,7 +21,7 @@ namespace multibody {
 /// S which could consist of a single body B or even of a collection of bodies
 /// (throughout this documentation "body" is many times used instead of "system"
 /// but the same concepts apply to a system of bodies as well.)
-/// As an element of ℝ⁶ˣ⁶ it is a symmetric, positive definite matrix that
+/// As an element of ℝ⁶ˣ⁶ it is a symmetric, positive semi-definite matrix that
 /// logically consists of `3x3` sub-matrices arranged like so, [Jain 2010]:
 /// <pre>
 ///              Spatial mass matrix
@@ -41,7 +41,7 @@ namespace multibody {
 /// S computed about a point P, m is the mass of this system, `p_PScm` is the
 /// position vector from point P to the center of mass `Scm` of system S with
 /// `p_PScm×` denoting its skew-symmetric cross product matrix (defined such
-/// that `a× b = a.cross(b)`), and `Id` is the identity matrix in ℛ³ˣ³. See
+/// that `a× b = a.cross(b)`), and `Id` is the identity matrix in ℝ³ˣ³. See
 /// Section 2.1, p. 17 of [Jain 2010].
 /// The logical arrangement as shown above is chosen to be consisten with our
 /// logical arrangement for spatial vectors as documented in
@@ -186,7 +186,7 @@ class SpatialInertia {
   ///   - abs(this->get_mass() - other.get_mass()) < tolerance.
   ///   - this->get_com().isApprox(other.get_com(), tolerance).
   ///   - this->get_rotational_inertia().IsApprox(
-  ///               other.get_rotational_inertia(), tolerance()).
+  ///               other.get_rotational_inertia(), tolerance).
   ///
   /// @returns `true` if `other` is within the specified `precision`. Returns
   ///   `false` otherwise.
