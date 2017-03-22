@@ -17,12 +17,12 @@ namespace multibody {
 
 /// This class represents the physical concept of a _Spatial Inertia_. A
 /// spatial inertia (or spatial mass matrix) encapsulates the mass, center of
-/// mass, and rotational inertia of the mass distribution of a system S which
-/// could consist of a single body B or even of a collection of bodies
+/// mass, and rotational inertia of the mass distribution of a multi-body system
+/// S which could consist of a single body B or even of a collection of bodies
 /// (throughout this documentation "body" is many times used instead of "system"
 /// but the same concepts apply to a system of bodies as well.)
-/// As an element of ℛ⁶ˣ⁶ it is a symmetric, positive definite matrix that
-/// logically consists of `3x3` sub-matrices arranged like so:
+/// As an element of ℝ⁶ˣ⁶ it is a symmetric, positive definite matrix that
+/// logically consists of `3x3` sub-matrices arranged like so, [Jain 2010]:
 /// <pre>
 ///              Spatial mass matrix
 ///           ------------ ------------
@@ -38,10 +38,15 @@ namespace multibody {
 /// </pre>
 /// where, with the monogram notation described in
 /// @ref multibody_spatial_inertia, `I_SP` is the rotational inertia of system
-/// S computed about a point P, m is the mass of this system, `p_PBcm` is the
-/// position vector from point P to the center of mass `Scm` of system with
-/// `p_PScm×` denoting its skew-symmetric cross product matrix, and `Id` is the
-/// identity matrix in ℛ³ˣ³.
+/// S computed about a point P, m is the mass of this system, `p_PScm` is the
+/// position vector from point P to the center of mass `Scm` of system S with
+/// `p_PScm×` denoting its skew-symmetric cross product matrix (defined such
+/// that `a× b = a.cross(b)`), and `Id` is the identity matrix in ℛ³ˣ³. See
+/// Section 2.1, p. 17 of [Jain 2010].
+/// The logical arrangement as shown above is chosen to be consisten with our
+/// logical arrangement for spatial vectors as documented in
+/// @ref multibody_spatial_algebra for which the rotational component comes
+/// first followed by the translational component.
 ///
 /// In typeset material we use the symbol @f$ [M^{S/P}]_E @f$ to represent the
 /// spatial inertia of a system S about point P, expressed in frame E. For
@@ -50,19 +55,23 @@ namespace multibody {
 /// comments as `Bp`. So if the system is a body B and the about point is `Bp`,
 /// the monogram notation reads `M_BBp_E`, which can be abbreviated to `M_Bp_E`
 /// since the about point `Bp` also identifies the system. Common cases are that
-/// the about point is the origin `Bo` of the body, or its the center of mass
+/// the about point is the origin `Bo` of the body, or it's the center of mass
 /// `Bcm` for which the rotational inertia in monogram notation would read as
 /// `I_Bo_E` and `I_Bcm_E`, respectively.
-/// Given `M_BP_E` (@f$[M^{B/P}]_E@f$), its rotational inertia is `I_BP_E`
-/// (@f$[I^{B/P}]_E@f$) and the position vector of the center of mass measured
-/// from point P and expressed in E is `p_PBcm_E` (@f$[^Pp^{B_{cm}}]_E@f$).
+/// Given `M_BP_E` (@f$[M^{B/P}]_E@f$), the rotational inertia of this spatial
+/// inertia is `I_BP_E` (@f$[I^{B/P}]_E@f$) and the position vector of the
+/// center of mass measured from point P and expressed in E is `p_PBcm_E`
+/// (@f$[^Pp^{B_{cm}}]_E@f$).
 ///
 /// @note This class does not implement any mechanism to track the frame E in
 /// which a spatial inertia is expressed or about what point is computed.
 /// Methods and operators on this class have no means to determine frame
 /// consistency through operations. It is therefore the responsibility of users
-/// of this class to keep track of frames in which operations are performed. The
-/// best way to do that is to use a disciplined notation as described below.
+/// of this class to keep track of frames in which operations are performed. We
+/// suggest doing that using disciplined notation, as described above.
+///
+/// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
+///                algorithms. Springer Science & Business Media.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -75,8 +84,8 @@ class SpatialInertia {
   /// uninitialized values.
   SpatialInertia() {}
 
-  /// Constructs a spatial for a physical system S about a point P from a given
-  /// mass, center of mass and rotational inertia. The center of mass is
+  /// Constructs a spatial inertia for a physical system S about a point P from
+  /// a given mass, center of mass and rotational inertia. The center of mass is
   /// specified by the position vector `p_PScm_E` from point P to the systems'
   /// center of mass point `Scm`, expressed in a frame E.
   /// The rotational inertia is provided as the UnitInertia `G_SP_E` of system S
@@ -136,6 +145,10 @@ class SpatialInertia {
   ///   - `Ixx + Iyy >= Izz`
   ///   - `Ixx + Izz >= Iyy`
   ///   - `Iyy + Izz >= Ixx`
+  /// These are the tests performed by
+  /// RotationalInertia::CouldBePhysicallyValid() which become a sufficient
+  /// condition when performed on a rotational inertia about a body's center of
+  /// mass.
   /// @see RotationalInertia::CouldBePhysicallyValid().
   bool IsPhysicallyValid() const {
     if (IsNaN()) return false;
@@ -159,8 +172,8 @@ class SpatialInertia {
     return M;
   }
 
-  /// Sets `this` spatial inertia to have NaN entries. Typically used for the
-  /// quick detection of uninitialized values.
+  /// Sets `this` spatial inertia to have NaN entries. Typically used for quick
+  /// detection of uninitialized values.
   void SetNaN() {
     mass_ = nan();
     p_PScm_E_.setConstant(nan());
@@ -186,18 +199,19 @@ class SpatialInertia {
         I_SP_E_.IsApprox(other.get_rotational_inertia(), tolerance);
   }
 
-  /// Adds in a spatial inertia to `this` spatial inertia. This operation is
-  /// only valid if both spatial inertias are computed about the same point `P`
-  /// and expressed in the same frame `E`. Considering `this` spatial inertia to
-  /// be `M_SP_E` for some system `S`, taken about some point `P`, the supplied
-  /// spatial inertia `M_BP_E` must be for some system `B` taken about the
-  /// _same_ point `P`; `B`'s inertia is then included in `S`.
+  /// Adds in a spatial inertia to `this` spatial inertia.
   /// @param[in] M_BP_E A spatial inertia of some body `B` to be added to
-  ///                  `this` spatial inertia. It must have been taken about the
+  ///                  `this` spatial inertia. It must be defined about the
   ///                   same point `P` as `this` inertia, and expressed in the
   ///                   same frame `E`.
   /// @returns A reference to `this` spatial inertia, which has been updated
   ///          to include the given spatial inertia `M_BP_E`.
+  ///
+  /// @warning This operation is only valid if both spatial inertias are
+  /// computed about the same point P and expressed in the same frame E.
+  /// Considering `this` spatial inertia to be `M_SP_E` for some system S,
+  /// about some point P, the supplied spatial inertia `M_BP_E` must be for
+  /// some system B about the _same_ point P; B's inertia is then included in S.
   SpatialInertia& operator+=(const SpatialInertia<T>& M_BP_E) {
     p_PScm_E_ = get_mass() * get_com() + M_BP_E.get_mass() * M_BP_E.get_com();
     mass_ += M_BP_E.get_mass();
@@ -213,7 +227,11 @@ class SpatialInertia {
   ///
   /// @param[in] R_AE Rotation matrix from frame E to frame A.
   /// @returns A reference to `this` rotational inertia about the same point P
-  ///          but now re-expressed in frame `A`, that is, `M_SP_A`.
+  ///          but now re-expressed in frame A, that is, `M_SP_A`.
+  ///
+  /// @warning This method does not check whether the input matrix `R_AE`
+  /// represents a valid rotation or not. It is the resposibility of users to
+  /// provide valid rotation matrices.
   SpatialInertia& ReExpressInPlace(const Matrix3<T>& R_AE) {
     p_PScm_E_ = R_AE * p_PScm_E_;    // Now p_PScm_A
     I_SP_E_.ReExpressInPlace(R_AE);  // Now I_SP_A
@@ -226,15 +244,15 @@ class SpatialInertia {
   ///
   /// @param[in] R_AE Rotation matrix from frame E to frame A.
   /// @retval M_SP_A The same spatial inertia of S about P but now
-  ///                re-expressed in frame`A`.
-  /// @see ReExpressInPlace()
+  ///                re-expressed in frame A.
+  /// @see ReExpressInPlace() for details.
   SpatialInertia ReExpress(const Matrix3<T>& R_AE) const {
     return SpatialInertia(*this).ReExpressInPlace(R_AE);
   }
 
   /// Given `this` spatial inertia `M_SP_E` for some physical system or body S,
-  /// computed about point P, and expressed in frame E, this method uses uses
-  /// the _parallel axis theorem_ for spatial inertias to compute the same
+  /// computed about point P, and expressed in frame E, this method uses
+  /// the _Parallel Axis Theorem_ for spatial inertias to compute the same
   /// spatial inertia about a new point Q. The result still is expressed in
   /// frame E.
   /// This operation is performed in-place modifying the original object.
@@ -257,8 +275,8 @@ class SpatialInertia {
   }
 
   /// Given `this` spatial inertia `M_SP_E` for some physical system or body S,
-  /// computed about point P, and expressed in frame E, this method uses uses
-  /// the _parallel axis theorem_ for spatial inertias to compute the same
+  /// computed about point P, and expressed in frame E, this method uses
+  /// the _Parallel Axis Theorem_ for spatial inertias to compute the same
   /// spatial inertia about a new point Q. The result still is expressed in
   /// frame E.
   /// @see ShiftInPlace() for more details.

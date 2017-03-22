@@ -134,9 +134,13 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
   // Check if after transformation this still is a physically valid inertia.
   EXPECT_TRUE(MLeftBox_Wo_W.IsPhysicallyValid());
 
-  // Spatial inertia of a prism with a squared transverse area of size
-  // L x L and length 2 * L.
-  // This is computed by adding the above spatial inertias.
+  // The result of adding the spatial inertia of two bodies is the spatial
+  // inertia of the combined system of the two bodies as if they were welded
+  // together. For this unit tests, the bodies are two cubes side to side. One
+  // is located to the left of the world's origin Wo at x = -1.0 and the second
+  // one is located to the right of Wo at x = 1.0. Therefore adding these two
+  // spatial inertia objects results in a combined body the shape of a prism
+  // of length 2 * L and squared parallel bases of size L x L.
   // Notice that the about point Wo and the expressed-in frame W is the same as
   // in the two individual components.
   SpatialInertia<double> MPrism_Wo_W(MLeftBox_Wo_W);

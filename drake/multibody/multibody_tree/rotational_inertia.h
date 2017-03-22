@@ -230,6 +230,7 @@ class RotationalInertia {
   ///                   frame E.
   /// @returns A reference to `this` rotational inertia, which has been updated
   ///          to include the given inertia.
+  ///
   /// @warning This operation might lead to physically invalid rotational
   /// inertia. Use CouldBePhysicallyValid() to perform a number of necessary
   /// (but not sufficient) checks for a rotational inertia to be physically
@@ -244,7 +245,10 @@ class RotationalInertia {
   /// inertia `I_BP_E` from `this` rotational inertia. This operation is useful
   /// when computing the inertia of a geometry with an empty space; its inertia
   /// can be computed by subtracting the _inertia_ of the empty space from the
-  /// geometry without the empty space.
+  /// geometry without the empty space. Consider for example a cube with a
+  /// cylindrical whole passing through from one side to the other side of the
+  /// cube. The inertia of this _combined_ body can be computed by subtracting
+  /// the inertia of a cylinder from the inertia of a solid cube.
   /// This operation is only valid if both inertias are computed about the same
   /// point P and expressed in the same frame E. Considering `this` inertia
   /// to be `I_SP_E` for some system S, about some point P, the
