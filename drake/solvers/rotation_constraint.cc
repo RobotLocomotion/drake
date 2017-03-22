@@ -182,15 +182,16 @@ void AddOrthogonalConstraint(
   Eigen::Matrix<double, 5, 1> b;
 
   // |v1+v2|^2 <= 2
-  // Implemented as a Lorenz cone using z = [ sqrt(2); v1+v2 ].
-  Vector4<symbolic::Expression> z;
-  z << std::sqrt(2), v1 + v2;
-  prog->AddLorentzConeConstraint(z);
+  // Implemented as a rotated Lorenz cone using z = Ax+b = [ 1; 2; v1+v2 ].
+  A.topRows<2>() = Eigen::Matrix<double, 2, 6>::Zero();
+  A.bottomRows<3>() << Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity();
+  b << 1, 2, 0, 0, 0;
+  prog->AddRotatedLorentzConeConstraint(A, b, {v1, v2});
 
   // |v1-v2|^2 <= 2
-  // Implemented as a Lorenz cone using z = [ sqrt(2); v1-v2 ].
-  z.tail<3>() = v1 - v2;
-  prog->AddLorentzConeConstraint(z);
+  // Implemented as a rotated Lorenz cone using z = Ax+b = [ 1; 2; v1-v2 ].
+  A.block<3, 3>(2, 3) = -Eigen::Matrix3d::Identity();
+  prog->AddRotatedLorentzConeConstraint(A, b, {v1, v2});
 }
 
 }  // namespace
@@ -657,73 +658,6 @@ void AddMcCormickVectorConstraints(
   }
 }
 
-/**
- * Add the constraint that vector R.col(i) and R.col(j) are not in the
- * same or opposite orthants. This constraint should be satisfied since
- * R.col(i) should be perpendicular to R.col(j). For example, if both
- * R.col(i) and R.col(j) are in the first orthant (+++), their inner product
- * has to be non-negative. If the inner product of two first orthant vectors
- * is exactly zero, then both vectors has to be on the boundaries of the first
- * orthant. But we can then assign the vector to a different orthant. The same
- * proof applies to the opposite orthant case.
- * To impose the constraint that R.col(0) and R.col(1) are not both in the first
- * orthant, we consider the constraint
- * Bpos0.col(0).sum() + Bpos0.col(1).sum() <= 5.
- * Namely, not all 6 entries in Bpos0.col(0) and Bpos0.col(1) can be 1 at the
- * same time, which is another way of saying R.col(0) and R.col(1) cannot be
- * both in the first orthant.
- * Similarly we can impose the constraint on the other orthant.
- * @param prog Add the constraint to this mathematical program.
- * @param Bpos0 Defined in AddRotationMatrixMcCormickEnvelopeMilpConstraints(),
- * Bpos0(i,j) = 1 => R(i, j) >= 0.
- * @param Bneg0 Defined in AddRotationMatrixMcCormickEnvelopeMilpConstraints(),
- * Bneg0(i,j) = 1 => R(i, j) <= 0.
- */
-void AddNotInSameOrOppositeOrthantConstraint(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos0,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bneg0) {
-  const std::array<std::pair<int, int>, 3> column_idx = {
-      {{0, 1}, {0, 2}, {1, 2}}};
-  for (const auto& column_pair : column_idx) {
-    const int col_idx0 = column_pair.first;
-    const int col_idx1 = column_pair.second;
-    for (int o = 0; o < 8; ++o) {
-      // To enforce that R.col(i) and R.col(j) are not simultaneously in the
-      // o'th orthant, we will impose the constraint
-      // vars_same_orthant.sum() < = 5. The variables in vars_same_orthant
-      // depend on the orthant number o.
-      // To enforce that R.col(i) and R.col(j) are not in the opposite
-      // orthants, we will impose the constraint
-      // vars_oppo_orthant.sum() <= 5. The variables in vars_oppo_orthant
-      // depnd on the orthant number o.
-      Eigen::Matrix<symbolic::Variable, 6, 1> vars_same_orthant;
-      Eigen::Matrix<symbolic::Variable, 6, 1> vars_oppo_orthant;
-      for (int axis = 0; axis < 3; ++axis) {
-        // axis chooses x, y, or z axis.
-        if (o & (1 << axis)) {
-          // If the orthant has positive value along the `axis`, then
-          // `vars_same_orthant` choose the positive component Bpos0.
-          vars_same_orthant(2 * axis)     = Bpos0(axis, col_idx0);
-          vars_same_orthant(2 * axis + 1) = Bpos0(axis, col_idx1);
-          vars_oppo_orthant(2 * axis)     = Bpos0(axis, col_idx0);
-          vars_oppo_orthant(2 * axis + 1) = Bneg0(axis, col_idx1);
-        } else {
-          // If the orthant has negative value along the `axis`, then
-          // `vars_same_orthant` choose the negative component Bneg0.
-          vars_same_orthant(2 * axis)     = Bneg0(axis, col_idx0);
-          vars_same_orthant(2 * axis + 1) = Bneg0(axis, col_idx1);
-          vars_oppo_orthant(2 * axis)     = Bneg0(axis, col_idx0);
-          vars_oppo_orthant(2 * axis + 1) = Bpos0(axis, col_idx1);
-        }
-      }
-      prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
-                                vars_same_orthant);
-      prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
-                                vars_oppo_orthant);
-    }
-  }
-}
 }  // namespace
 
 std::pair<std::vector<MatrixDecisionVariable<3, 3>>,
@@ -771,57 +705,62 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
         // R(i,j) > phi(k) => Bpos[k](i,j) = 1
         // R(i,j) < phi(k) => Bpos[k](i,j) = 0
         // R(i,j) = phi(k) => Bpos[k](i,j) = 0 or 1
-        // Since -s1 <= R(i, j) - phi(k) <= s2,
-        // where s1 = 1 + phi(k), s2 = 1 - phi(k). The point
-        // [R(i,j) - phi(k), Bpos[k](i,j)] has to lie within the convex hull,
-        // whose vertices are (-s1, 0), (0, 0), (s2, 1), (0, 1). By computing
-        // the edges of this convex hull, we get
-        // -s1 + s1*Bpos[k](i,j) <= R(i,j)-phi(k) <= s2 * Bpos[k](i,j)
-        double s1 = 1 + phi(k);
-        double s2 = 1 - phi(k);
-        prog->AddLinearConstraint(R(i, j) - phi(k) >= -s1 + s1 * Bpos[k](i, j));
-        prog->AddLinearConstraint(R(i, j) - phi(k) <= s2 * Bpos[k](i, j));
+        // -2 + 2*Bpos[k](i,j) <= R(i,j)-phi(k) <= Bpos[k](i,j)
 
-        // -R(i,j) > phi(k) => Bneg[k](i,j) = 1
-        // -R(i,j) < phi(k) => Bneg[k](i,j) = 0
+        // Tight on the lower bound:
+        prog->AddLinearConstraint(
+            Eigen::RowVector2d(1, -2), -2 + phi(k), phi(k),
+            VectorDecisionVariable<2>{R(i, j), Bpos[k](i, j)});
+        // Tight on the upper bound:
+        prog->AddLinearConstraint(
+            Eigen::RowVector2d(1, -1), -2 + phi(k), phi(k),
+            VectorDecisionVariable<2>{R(i, j), Bpos[k](i, j)});
+
+        // -R(i,j) >= phi(k) => Bneg[k](i,j) = 1
+        // -R(i,j) <= phi(k) => Bneg[k](i,j) = 0
         // -R(i,j) = phi(k) => Bneg[k](i,j) = 0 or 1
-        // Since -s2 <= R(i, j) + phi(k) <= s1,
-        // where s1 = 1 + phi(k), s2 = 1 - phi(k). The point
-        // [R(i,j) + phi(k), Bneg[k](i,j)] has to lie within the convex hull
-        // whose vertices are (-s2, 1), (0, 0), (s1, 0), (0, 1). By computing
-        // the edges of the convex hull, we get
-        // -s2 * Bneg[k](i,j) <= R(i,j)+phi(k) <= s1-s1*Bneg[k](i,j)
-        prog->AddLinearConstraint(R(i, j) + phi(k) <= s1 - s1 * Bneg[k](i, j));
-        prog->AddLinearConstraint(R(i, j) + phi(k) >= -s2 * Bneg[k](i, j));
+        // -Bneg[k](i,j) <= R(i,j)+phi(k) <= 2-2*Bneg[k](i,j)
+
+        // Tight on the lower bound:
+        prog->AddLinearConstraint(
+            Eigen::RowVector2d(1, 1), -phi(k), 2 - phi(k),
+            VectorDecisionVariable<2>{R(i, j), Bneg[k](i, j)});
+        // Tight on the lower bound:
+        prog->AddLinearConstraint(
+            Eigen::RowVector2d(1, 2), -phi(k), 2 - phi(k),
+            VectorDecisionVariable<2>{R(i, j), Bneg[k](i, j)});
 
         if (k == num_binary_vars_per_half_axis - 1) {
           //   Cpos[k](i,j) = Bpos[k](i,j)
-          prog->AddLinearConstraint(Cpos[k](i, j) == Bpos[k](i, j));
-
+          prog->AddLinearEqualityConstraint(
+              Eigen::RowVector2d(1, -1), 0,
+              {Cpos[k].block<1, 1>(i, j), Bpos[k].block<1, 1>(i, j)});
           //   Cneg[k](i,j) = Bneg[k](i,j)
-          prog->AddLinearConstraint(Cneg[k](i, j) == Bneg[k](i, j));
+          prog->AddLinearEqualityConstraint(
+              Eigen::RowVector2d(1, -1), 0,
+              {Cneg[k].block<1, 1>(i, j), Bneg[k].block<1, 1>(i, j)});
         } else {
           //   Cpos[k](i,j) = Bpos[k](i,j) - Bpos[k+1](i,j)
-          prog->AddLinearConstraint(Cpos[k](i, j) ==
-                                    Bpos[k](i, j) - Bpos[k + 1](i, j));
+          prog->AddLinearEqualityConstraint(
+              Eigen::RowVector3d(1, -1, 1), 0,
+              {Cpos[k].block<1, 1>(i, j), Bpos[k].block<1, 1>(i, j),
+               Bpos[k + 1].block<1, 1>(i, j)});
           //   Cneg[k](i,j) = Bneg[k](i,j) - Bneg[k+1](i,j)
-          prog->AddLinearConstraint(Cneg[k](i, j) ==
-                                    Bneg[k](i, j) - Bneg[k + 1](i, j));
+          prog->AddLinearEqualityConstraint(
+              Eigen::RowVector3d(1, -1, 1), 0,
+              {Cneg[k].block<1, 1>(i, j), Bneg[k].block<1, 1>(i, j),
+               Bneg[k + 1].block<1, 1>(i, j)});
         }
       }
-      // R(i,j) has to pick a side, either non-positive or non-negative.
-      prog->AddLinearConstraint(Bpos[0](i, j) + Bneg[0](i, j) == 1);
+      // Bpos[0](i,j) + Bneg[0](i,j) = 1.  (have to pick a side).
+      prog->AddLinearEqualityConstraint(
+          Eigen::RowVector2d(1, 1), 1,
+          {Bpos[0].block<1, 1>(i, j), Bneg[0].block<1, 1>(i, j)});
 
       // for debugging: constrain to positive orthant.
       //      prog->AddBoundingBoxConstraint(1,1,{Bpos[0].block<1,1>(i,j)});
     }
   }
-
-  // Add constraint that no two rows (or two columns) can lie in the same
-  // orthant (or opposite orthant).
-  AddNotInSameOrOppositeOrthantConstraint(prog, Bpos[0], Bneg[0]);
-  AddNotInSameOrOppositeOrthantConstraint(prog, Bpos[0].transpose(),
-                                          Bneg[0].transpose());
 
   // Add angle limit constraints.
   // Bounding box will turn on/off an orthant.  It's sufficient to add the
