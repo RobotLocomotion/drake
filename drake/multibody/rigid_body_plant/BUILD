@@ -79,6 +79,7 @@ drake_cc_library(
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/lcmtypes:viewer",
         "//drake/multibody:rigid_body_tree",
+        "//drake/multibody:rigid_body_tree_create_lcm_viewer_load_message",
         "//drake/systems/lcm",
         "//drake/systems/primitives:signal_log",
         "//drake/systems/rendering:drake_visualizer_client",

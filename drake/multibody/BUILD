@@ -186,6 +186,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "rigid_body_tree_create_lcm_viewer_load_message",
+    srcs = ["rigid_body_tree_create_lcm_viewer_load_message.cc"],
+    hdrs = ["rigid_body_tree_create_lcm_viewer_load_message.h"],
+    deps = [
+        ":rigid_body_tree",
+        "//drake/lcmtypes:viewer",
+        "//drake/systems/rendering:drake_visualizer_client",
+    ],
+)
+
 # This provides a public label for the whole RigidBodyTree.
 drake_cc_library(
     name = "rigid_body_tree",

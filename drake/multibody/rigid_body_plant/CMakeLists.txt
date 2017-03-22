@@ -34,6 +34,7 @@ set(lcm_dependent_requires)
 if (lcm_FOUND)
   set(lcm_dependent_link_libraries
     drakeLcmSystem
+    drakeRbtCreateLcmViewerLoadMessage
     drakeSystemPrimitives
     drakeRenderingLcm)
   set(lcm_dependent_requires drake-lcm-system2 drake-rendering-lcm)

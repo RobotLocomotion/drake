@@ -92,6 +92,17 @@ target_link_libraries(drakeGlobalIK
 drake_install_libraries(drakeGlobalIK)
 drake_install_headers(global_inverse_kinematics.h)
 
+if (lcm_FOUND)
+  add_library_with_exports(LIB_NAME drakeRbtCreateLcmViewerLoadMessage
+      SOURCE_FILES rigid_body_tree_create_lcm_viewer_load_message.cc)
+  target_link_libraries(drakeRbtCreateLcmViewerLoadMessage
+      drakeLCMTypes
+      drakeRBM
+      drakeRenderingLcm)
+  drake_install_libraries(drakeRbtCreateLcmViewerLoadMessage)
+  drake_install_headers(rigid_body_tree_create_lcm_viewer_load_message.h)
+endif ()
+
 add_subdirectory(benchmarks)
 add_subdirectory(collision)
 add_subdirectory(constraint)
