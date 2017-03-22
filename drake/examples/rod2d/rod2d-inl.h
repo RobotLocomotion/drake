@@ -231,7 +231,7 @@ int Rod2D<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
       return 2;
 
     case Rod2D::kStickingTwoContacts:
-      // The rod is undergoing sliding contact without impact at two points of
+      // The rod is undergoing sticking contact without impact at two points of
       // contact. Two witness functions are necessary: one to check whether
       // the rod is to separate from the half-space and one more to check
       // whether the rod is to transition from sticking to sliding.

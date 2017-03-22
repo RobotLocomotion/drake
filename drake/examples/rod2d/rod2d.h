@@ -175,24 +175,28 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Possible dynamic modes for the 2D rod.
   enum Mode {
     /// Mode is invalid.
-    kInvalid,
+        kInvalid,
 
     /// Rod is currently undergoing ballistic motion.
-    kBallisticMotion,
+        kBallisticMotion,
 
     /// Rod is sliding while undergoing non-impacting contact at one contact
     /// point (a rod endpoint); the other rod endpoint is not in contact.
-    kSlidingSingleContact,
+        kSlidingSingleContact,
 
     /// Rod is sticking while undergoing non-impacting contact at one contact
     /// point (a rod endpoint); the other rod endpoint is not in contact.
-    kStickingSingleContact,
+        kStickingSingleContact,
 
-    /// Rod is sliding at two contact points without impact.
-    kSlidingTwoContacts,
+    /// Rod is sliding at two contact points without impact. It should be
+    /// evident that the tangent velocity at two endpoints of the rod must be
+    /// both zero or both nonzero.
+        kSlidingTwoContacts,
 
-    /// Rod is sticking at two contact points without impact.
-    kStickingTwoContacts
+    /// Rod is sticking at two contact points without impact.  It should be
+    /// evident that the tangent velocity at two endpoints of the rod must be
+    /// both zero or both nonzero.
+        kStickingTwoContacts
   };
 
   /// Constructor for the 2D rod system using the piecewise DAE (differential
