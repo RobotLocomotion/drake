@@ -116,7 +116,7 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
   plant->set_state_vector(plant_context, state0);
 
   simulator.Initialize();
-  simulator.StepTo(0.1);
+  simulator.StepTo(0.02);
 
   auto state_output = diagram->AllocateOutput(simulator.get_context());
   diagram->CalcOutput(simulator.get_context(), state_output.get());
