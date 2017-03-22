@@ -33,6 +33,7 @@ set(lcm_dependent_link_libraries)
 set(lcm_dependent_requires)
 if (lcm_FOUND)
   set(lcm_dependent_link_libraries
+    drakeCreateLoadRobotMessage
     drakeLcmSystem
     drakeSystemPrimitives
     drakeRenderingLcm)
@@ -71,6 +72,17 @@ drake_install_pkg_config_file(drake-rigid-body-plant
     drake-rbm
     drake-system-framework
     eigen3)
+
+if (lcm_FOUND)
+  add_library_with_exports(LIB_NAME drakeCreateLoadRobotMessage
+      SOURCE_FILES create_load_robot_message.cc)
+  target_link_libraries(drakeCreateLoadRobotMessage
+      drakeLCMTypes
+      drakeRBM
+      drakeRenderingLcm)
+  drake_install_libraries(drakeCreateLoadRobotMessage)
+  drake_install_headers(create_load_robot_message.h)
+endif ()
 
 if(BUILD_TESTING)
   add_subdirectory(test)

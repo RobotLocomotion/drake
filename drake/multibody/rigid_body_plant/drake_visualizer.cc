@@ -4,6 +4,7 @@
 #include <thread>
 
 #include "drake/common/text_logging.h"
+#include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
 #include "drake/systems/rendering/drake_visualizer_client.h"
 
 namespace drake {
@@ -18,7 +19,7 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
                                  drake::lcm::DrakeLcmInterface* lcm,
                                  bool enable_playback)
     : lcm_(lcm),
-      load_message_(CreateLoadMessage(tree)),
+      load_message_(multibody::CreateLoadRobotMessage<double>(tree)),
       draw_message_translator_(tree) {
   set_name("drake_visualizer");
   const int vector_size =
@@ -149,24 +150,6 @@ void DrakeVisualizer::PublishLoadRobot() const {
   lcm_->Publish("DRAKE_VIEWER_LOAD_ROBOT", lcm_message_bytes.data(),
       lcm_message_length);
   sent_load_robot_ = true;
-}
-
-lcmt_viewer_load_robot DrakeVisualizer::CreateLoadMessage(
-    const RigidBodyTree<double>& tree) {
-  lcmt_viewer_load_robot load_message;
-  load_message.num_links = tree.bodies.size();
-  for (const auto& body : tree.bodies) {
-    lcmt_viewer_link_data link;
-    link.name = body->get_name();
-    link.robot_num = body->get_model_instance_id();
-    link.num_geom = body->get_visual_elements().size();
-    for (const auto& visual_element : body->get_visual_elements()) {
-      link.geom.push_back(rendering::MakeGeometryData(visual_element));
-    }
-    load_message.link.push_back(link);
-  }
-
-  return load_message;
 }
 
 }  // namespace systems

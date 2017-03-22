@@ -112,13 +112,6 @@ class DrakeVisualizer : public LeafSystem<double> {
 
   void DoPublish(const systems::Context<double>& context) const override;
 
-  // Returns a partially-initialized lcmt_viewer_load_robot message. After this
-  // method is called, all dynamically-sized member variables are correctly
-  // sized, and the names and model instance IDs of the rigid bodies are set
-  // within load_message_.
-  static lcmt_viewer_load_robot CreateLoadMessage(
-      const RigidBodyTree<double>& tree);
-
   // Publishes a lcmt_viewer_load_robot message containing a description
   // of what should be visualized. The message is intended to be received by the
   // Drake Visualizer.
