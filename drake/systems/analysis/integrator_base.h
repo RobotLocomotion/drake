@@ -342,7 +342,7 @@ class IntegratorBase {
    *
    * @param publish_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) at which the next publish will occur.
-   * @param update_dt The step size, >= 0.0 (exception will be thrown
+   * @param update_dt The step size, > 0.0 (exception will be thrown
    *        if this is not the case) at which the next update will occur.
    * @param boundary_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) marking the end of the user-designated
@@ -354,11 +354,49 @@ class IntegratorBase {
    * @warning Users should generally not call this function directly; within
    *          simulation circumstances, users will typically call
    *          `Simulator::StepTo()`. In other circumstances, users will
-   *          typically call `IntegratorBase::StepOnceExactly()`.
+   *          typically call `IntegratorBase::StepExactlyFixed()`.
    */
   // TODO(edrumwri): Make the stretch size configurable.
   StepResult StepOnceAtMost(const T& publish_dt, const T& update_dt,
                             const T& boundary_dt);
+
+  /// Stepping function for integrators operating outside of simulation
+  /// circumstances. This method is designed for integrator
+  /// users that do not wish to consider publishing or discontinuous,
+  /// mid-interval updates _and_ are using integrators with error control.
+  /// @warning Users should simulate systems using `Simulator::StepTo()` in
+  ///          place of this function (which was created for off-simulation
+  ///          purposes), generally.
+  /// @note Users desiring this functionality for integrators operating in
+  ///       fixed step mode should use StepExactlyFixed().
+  /// @param dt The non-negative integration step to take.
+  /// @throws std::logic_error If the integrator has not been initialized or
+  ///                          dt is negative **or** if the integrator
+  ///                          is operating in fixed step mode.
+  /// @sa StepExactlyFixed()
+  void StepExactlyVariable(const T& dt) {
+    using std::max;
+
+    if (this->get_fixed_step_mode()) {
+      throw std::logic_error("StepExactlyVariable() requires variable "
+                             "stepping.");
+    }
+    const Context<T>& context = get_context();
+    const T inf = std::numeric_limits<double>::infinity();
+    T t_remaining = dt;
+
+    // Note: A concern below is that the while loop while run forever because
+    // t_remaining could be small, but not quite zero, if dt is relatively
+    // small compared to the context time. In such a case, t_final will be
+    // equal to context.get_time() in the expression immediately below,
+    // context.get_time() will not change during the call to StepOnceAtMost(),
+    // and t_remaining will be equal to zero.
+    const T t_final = context.get_time() + t_remaining;
+    do {
+      StepOnceAtMost(inf, inf, t_remaining);
+      t_remaining = t_final - context.get_time();
+    } while (t_remaining > 0);
+  }
 
   /// Stepping function for integrators operating outside of simulation
   /// circumstances. This method is designed for integrator
@@ -371,14 +409,20 @@ class IntegratorBase {
   /// @warning Users should simulate systems using `Simulator::StepTo()` in
   ///          place of this function (which was created for off-simulation
   ///          purposes), generally.
+  /// @note Users desiring this functionality for integrators not operating in
+  ///       fixed step mode should use StepExactlyVariable()- these functions
+  ///       are kept distinct to make clear to the caller which of these
+  ///       functions uses fixed integration steps.
+  /// @param dt The non-negative integration step to take.
   /// @throws std::logic_error If the integrator has not been initialized or
-  ///                          boundary_dt is negative **or** if the integrator
+  ///                          dt is negative **or** if the integrator
   ///                          is not operating in fixed step mode.
-  void StepOnceExactly(const T& boundary_dt) {
+  /// @sa StepExactlyVariable()
+  void StepExactlyFixed(const T& dt) {
     if (!this->get_fixed_step_mode())
-      throw std::logic_error("StepOnceExactly() requires fixed stepping.");
+      throw std::logic_error("StepExactlyFixed() requires fixed stepping.");
     const T inf = std::numeric_limits<double>::infinity();
-    StepOnceAtMost(inf, inf, boundary_dt);
+    StepOnceAtMost(inf, inf, dt);
   }
 
   /**
@@ -1235,12 +1279,15 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
-  // Verify that update dt is positive
-  DRAKE_DEMAND(update_dt > 0.0);
+  // Verify that update dt is positive.
+  if (update_dt <= 0.0)
+    throw std::logic_error("Update dt must be strictly positive.");
 
-  // Verify that other dt's are non-negative
-  DRAKE_DEMAND(publish_dt >= 0.0);
-  DRAKE_DEMAND(boundary_dt >= 0.0);
+  // Verify that other dt's are non-negative.
+  if (publish_dt < 0.0)
+    throw std::logic_error("Publish dt is negative.");
+  if (boundary_dt < 0.0)
+    throw std::logic_error("Boundary dt is negative.");
 
   // The size of the integration step is the minimum of the time until the next
   // update event, the time until the next publish event, the boundary time

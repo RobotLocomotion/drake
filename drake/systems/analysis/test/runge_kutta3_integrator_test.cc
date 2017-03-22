@@ -66,6 +66,24 @@ TEST_F(RK3IntegratorTest, ErrorEstSupport) {
   EXPECT_NO_THROW(integrator_->request_initial_step_size_target(dt));
 }
 
+// Verifies that the stepping works with large magnitude times and small
+// magnitude step sizes.
+TEST_F(RK3IntegratorTest, MagDisparity) {
+  // Set a large magnitude time.
+  context_->set_time(1.0);
+
+  // Set integrator parameters.
+  integrator_->set_maximum_step_size(0.1);
+  integrator_->set_minimum_step_size(1e-40);
+  integrator_->set_target_accuracy(1e-3);
+
+  // Take all the defaults.
+  integrator_->Initialize();
+
+  // Take a variable step.
+  integrator_->StepExactlyVariable(1e-40);
+}
+
 // Test scaling vectors
 TEST_F(RK3IntegratorTest, Scaling) {
   // Setting maximum integrator step size is necessary to prevent integrator
@@ -302,7 +320,7 @@ TEST_F(RK3IntegratorTest, IllegalFixedStep) {
   // Initialize the integrator.
   integrator_->Initialize();
 
-  EXPECT_THROW(integrator_->StepOnceExactly(1e-8), std::logic_error);
+  EXPECT_THROW(integrator_->StepExactlyFixed(1e-8), std::logic_error);
 }
 
 // Verifies statistics validity for error controlled integrator.
@@ -383,12 +401,12 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   // Integrate for ten thousand steps using a RK2 integrator with
   // small step size.
   const double dt = 5e-5;
-  const double inf = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> rk2(plant, dt, context.get());
   rk2.Initialize();
   const double t_final = 1.0;
-  for (double t = 0.0; std::abs(t - t_final) >= dt; t += dt)
-    rk2.StepOnceAtMost(inf, inf, dt);  // Steps forward by dt.
+  const int n_steps = t_final / dt;
+  for (int i = 0; i< n_steps; ++i)
+    rk2.StepExactlyFixed(dt);
 
   // Get the final state.
   VectorX<double> x_final_rk2 = context->get_continuous_state_vector().
@@ -412,12 +430,10 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   rk3.set_target_accuracy(1e-6);
   rk3.Initialize();
 
-  // StepOnceAtFixedSize for one second.
-  double t_remaining = t_final - context->get_time();
-  do {
-    rk3.StepOnceAtMost(t_remaining, t_remaining, t_remaining);
-    t_remaining = t_final - context->get_time();
-  } while (t_remaining > 0.0);
+  // Verify that StepExactlyVariable works.
+  const double tol = std::numeric_limits<double>::epsilon();
+  rk3.StepExactlyVariable(t_final - context->get_time());
+  EXPECT_NEAR(context->get_time(), t_final, tol);
 
   // Verify that the final states are "close".
   VectorX<double> x_final_rk3 = context->get_continuous_state_vector().
