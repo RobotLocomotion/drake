@@ -3,10 +3,11 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include "drake/automotive/gen/endless_road_car_config.h"
+
 #include <memory>
 #include <vector>
 
-#include "drake/automotive/gen/endless_road_car_config.h"
 #include "drake/lcmt_endless_road_car_config_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 

@@ -201,12 +201,13 @@ TRANSLATOR_HH_PREAMBLE = """
 
 %(generated_code_warning)s
 
+#include "%(relative_cxx_dir)s/%(snake)s.h"
+
 #include <memory>
 #include <vector>
 
-#include "%(relative_cxx_dir)s/%(snake)s.h"
-#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/lcmt_%(snake)s_t.hpp"
+#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 %(opening_namespace)s
 """

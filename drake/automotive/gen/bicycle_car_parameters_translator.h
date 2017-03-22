@@ -3,10 +3,11 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include "drake/automotive/gen/bicycle_car_parameters.h"
+
 #include <memory>
 #include <vector>
 
-#include "drake/automotive/gen/bicycle_car_parameters.h"
 #include "drake/lcmt_bicycle_car_parameters_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 

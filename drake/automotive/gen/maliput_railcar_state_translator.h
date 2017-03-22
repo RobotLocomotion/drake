@@ -3,10 +3,11 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include "drake/automotive/gen/maliput_railcar_state.h"
+
 #include <memory>
 #include <vector>
 
-#include "drake/automotive/gen/maliput_railcar_state.h"
 #include "drake/lcmt_maliput_railcar_state_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
