@@ -10,14 +10,14 @@ namespace multibody {
 // Forward declarations.
 template<typename T> class Body;
 
-/// %MaterialFrame is an abstract base class representation for the concept of
+/// %MaterialFrame is an abstract base class representation of the concept of
 /// a frame associated with a physical body.
 /// Like the Frame class, %MaterialFrame does not store the pose of a frame but
 /// it only represents the frame itself.
 /// Specific material frame classes inheriting from %Frame will typically
 /// provide methods to access or compute the pose of the frame instance they
 /// represent measured and expressed in specific frames as a function of the
-/// state of the parent MultibodyTree.
+/// state of the MultibodyTree to which it belongs.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>

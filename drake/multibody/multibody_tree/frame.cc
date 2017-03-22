@@ -13,10 +13,6 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-MaterialFrame<T>::MaterialFrame(const Body<T>& body) :
-    body_index_(body.get_index()) {}
-
-template <typename T>
 const BodyFrame<T>& BodyFrame<T>::Create(
     MultibodyTree<T>* tree, const Body<T>& body) {
   // Notice that here we cannot use std::make_unique since constructors are made
