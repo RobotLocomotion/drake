@@ -21,6 +21,7 @@ drake_cc_library(
         "drake_compat.h",
         "drake_copyable.h",
         "drake_deprecated.h",
+        "drake_optional.h",
         "drake_throw.h",
         "eigen_stl_types.h",
         "eigen_types.h",
@@ -331,6 +332,13 @@ drake_cc_googletest(
     name = "drake_deprecated_test",
     # Remove spurious warnings from the default build output.
     copts = ["-Wno-deprecated-declarations"],
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_optional_test",
     deps = [
         ":common",
     ],
