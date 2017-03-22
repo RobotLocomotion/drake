@@ -162,7 +162,7 @@ class TorqueFreeCylinderExactSolution{
   const Vector3d w_NB_B_drake   = state_as_vector.segment<3>(7);
   const Vector3d v_NBo_B_drake  = state_as_vector.segment<3>(10);
 
-  // xyzDt is [ẋ, ẏ, ż̈], Bo's velocity in N, expressed in N, i.e., the time-
+  // xyzDt is [ẋ, ẏ, ż̈] Bo's velocity in N, expressed in N, i.e., the time-
   //           derivative of [x, y, z] (Bo's position from No, expressed in N).
   // quatDt_NB is the time-derivative of quat_NB, i.e., [ė0  ė1  ė2  ė3].
   // wDt_NB_B  is B's angular acceleration in N, expressed in B, and
@@ -274,6 +274,11 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
   rk3.set_maximum_step_size(dt_max);  // Need before Initialize (or exception).
   rk3.set_target_accuracy(maximum_absolute_error_per_integration_step);
   rk3.Initialize();
+
+  // TODO(Mitiguy) Replace the code below with Evan's StepOnceExactly integrator
+  // method once feature request (issue #5581) request for the integrator
+  // counter is in place - which allows testing of Step Once Exactly" to ensure
+  // it works as well (or probably better) than this temporary solution.
 
   // Integrate to within a small amount of dt of t_final.
   const double epsilon_based_on_dt_max = 1.0E-11 * dt_max;
@@ -412,7 +417,7 @@ void  TestDrakeSolutionForVariousInitialValues(
   // Test a variety of initial normalized quaternions.
   // Since cylinder B is axis-symmetric for axis Bz, iterate on BodyXY rotation
   // sequence with 0 <= thetaX <= 2*pi and 0 <= thetaY <= pi.
-  int test_counter = 0u;
+  int test_counter = 0;
   for (double thetaX = 0; thetaX <= 2*M_PI; thetaX += 0.02*M_PI) {
     for (double thetaY = 0; thetaY <= M_PI; thetaY += 0.05*M_PI) {
       const Vector3<double> spaceXYZ_angles = {thetaX, thetaY, 0};
@@ -643,7 +648,7 @@ TorqueFreeCylinderExactSolution::CalculateExactRotationalSolutionNB(
  * std::tuple | Description
  * -----------|-----------------------------------------------------------
  * xyz        | Vector3d [x, y, z], Bcm's position from No, expressed in N.
- * xyzDt      | Vector3d [ẋ, ẏ, ż̈], Bcm's velocity in N, expressed in N.
+ * xyzDt      | Vector3d [ẋ, ẏ, ż̈] Bcm's velocity in N, expressed in N.
  * xyzDDt     | Vector3d [ẍ  ÿ  z̈], Bcm's acceleration in N, expressed in N.
  */
 std::tuple<Vector3d, Vector3d, Vector3d>
