@@ -135,3 +135,18 @@
     obj:/usr/local/bin/python
     ...
 }
+
+# This suppresses "possibly lost" warnings for valgrind memchecks.
+# The cause of the error seems to be in the btAlignedAllocDefault function
+# in btAlignedAllocator.cpp file of the bullet3 library.  We believe that the function
+# may return a pointer not pointing at the head of the allocated memory, which
+# causes the "possibly lost" warnings. [ *((void **)(ret)-1) = (void *)(real); ]
+{
+    <bullet3-1>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    fun:_ZL14btAllocDefaultm
+    fun:_ZL21btAlignedAllocDefaultmi
+    fun:_Z22btAlignedAllocInternalmi
+}
