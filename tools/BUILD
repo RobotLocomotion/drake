@@ -84,13 +84,11 @@ sh_binary(
     visibility = ["//visibility:private"],
 )
 
-# This genrule will fail loudly if ccache is on the path.
-genrule(
+# This rule will fail loudly if ccache is on the path.
+load("//tools:ccache.bzl", "ccache_is_bad")
+
+ccache_is_bad(
     name = "ccache_is_bad",
-    srcs = [],
-    outs = ["ccache.txt"],
-    cmd = "$(location :complain_about_ccache) | tee $(@)",
-    tools = [":complain_about_ccache"],
     visibility = ["//visibility:private"],
 )
 
