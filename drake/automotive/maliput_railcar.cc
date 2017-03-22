@@ -47,10 +47,8 @@ template <typename T> constexpr T MaliputRailcar<T>::kDefaultMaxSpeed;
 template <typename T> constexpr T MaliputRailcar<T>::kDefaultVelocityLimitKp;
 
 template <typename T>
-MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction,
-    double start_time)
-    : start_time_(start_time),
-      initial_lane_direction_(initial_lane_direction) {
+MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
+    : initial_lane_direction_(initial_lane_direction) {
   command_input_port_index_ =
       this->DeclareInputPort(systems::kVectorValued, 1).get_index();
   state_output_port_index_ =
@@ -201,12 +199,7 @@ void MaliputRailcar<T>::DoCalcTimeDerivatives(
       dynamic_cast<MaliputRailcarState<T>*>(vector_derivatives);
   DRAKE_ASSERT(rates != nullptr);
 
-  if (context.get_time() < T(start_time_)) {
-    rates->set_s(T(0));
-    rates->set_speed(T(0));
-  } else {
-    ImplCalcTimeDerivatives(config, *state, lane_direction, *input, rates);
-  }
+  ImplCalcTimeDerivatives(config, *state, lane_direction, *input, rates);
 }
 
 template<typename T>
