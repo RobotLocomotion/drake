@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/never_destroyed.h"
 
@@ -26,7 +27,7 @@ namespace geometry {
  invocation. This mistake would still be _syntactically_ correct; it will
  successfully compile but  lead to inscrutable run-time errors. This identifier
  class provides the same speed and efficiency of passing `int64_t`s, but
- enforces unique types and limits the valid operations, providng compile-time
+ enforces unique types and limits the valid operations, providing compile-time
  checking. The function would now look like:
 
  @code
@@ -54,9 +55,13 @@ namespace geometry {
    - Identifiers can only be generated from the static method get_new_id().
 
  While there _is_ the concept of an invalid identifier, this only exists to
- facilitate use with STL containers that require default constructors. In
- practice, methods should not return invalid identifiers. We prefer the practice
- of returning std::optional<Identifier> instead.
+ facilitate use with STL containers that require default constructors. Using an
+ invalid identifier in any operation is considered an error. In Debug build,
+ attempts to compare, get the value of, hash, or write an invalid identifier to
+ a stream will cause program failure.
+
+ Functions that query for identifiers should not return invalid identifiers. We
+ prefer the practice of returning std::optional<Identifier> instead.
 
  It is the designed intent of this class, that ids derived from this class can
  be passed and returned by value. Passing ids by const reference should be
@@ -64,7 +69,7 @@ namespace geometry {
 
  The following alias will create a unique identifier type for class `Foo`:
  @code{.cpp}
- using FooId = Identifier<Foo>;
+ using FooId = Identifier<FooTag>;
  @endcode
 
  __Examples of valid and invalid operations__
@@ -74,8 +79,8 @@ namespace geometry {
  For example:
 
  @code
-    using AId = Identifier<class A>;
-    using BId = Identifier<class B>;
+    using AId = Identifier<class ATag>;
+    using BId = Identifier<class BTag>;
     AId a1;                              // Compiler error. There is no default constructor.
     AId a2 = AId::get_new_id();          // Ok.
     AId a3(a2);                          // Ok.
@@ -125,31 +130,42 @@ namespace geometry {
 template <class Tag>
 class Identifier {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Identifier)
+
   /** Default constructor; the result is an _invalid_ identifier. This only
    exists to satisfy demands of working with various container classes. */
   Identifier() : value_(0) {}
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Identifier)
-
-  /** Extracts the underlying representation from the identifier. */
-  int64_t get_value() const { return value_; }
+  /** Extracts the underlying representation from the identifier. This is
+   considered invalid for invalid ids and is strictly enforced in Debug builds.
+   */
+  int64_t get_value() const {
+    DRAKE_ASSERT(is_valid());
+    return value_; }
 
   /** Reports if the id is valid. */
   bool is_valid() const { return value_ > 0; }
 
-  /** Compares one identifier with another of the same type for equality. */
+  /** Compares one identifier with another of the same type for equality. This
+   is considered invalid for invalid ids and is strictly enforced in Debug
+   builds. */
   bool operator==(Identifier other) const {
+    DRAKE_ASSERT(is_valid() && other.is_valid());
     return value_ == other.value_;
   }
 
-  /** Compares one identifier with another of the same type for inequality. */
+  /** Compares one identifier with another of the same type for inequality. This
+   is considered invalid for invalid ids and is strictly enforced in Debug
+   builds. */
   bool operator!=(Identifier other) const {
-    return value_ != other.value_;
+    DRAKE_ASSERT(is_valid() && other.is_valid());
+    return value_ != other.value_ && is_valid() && other.is_valid();
   }
 
   /** Generates a new identifier for this id type. This new identifier will be
    different from all previous identifiers created. This method does _not_
    make any guarantees about the values of ids from successive invocations.
+   This method is guaranteed to be thread safe.
    */
   static Identifier get_new_id() {
     // Note that id 0 is reserved for uninitialized variable which is created
@@ -167,7 +183,8 @@ class Identifier {
   int64_t value_;
 };
 
-/** Streaming output operator.
+/** Streaming output operator.   This is considered invalid for invalid ids and
+ is strictly enforced in Debug builds.
  @relates Identifier
  */
 template <typename Tag>

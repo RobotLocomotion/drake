@@ -39,7 +39,7 @@ namespace drake {
 ///     type.
 ///   - In general, indices of different types are _not_ interconvertible.
 ///
-/// There is no such thing as an "invalid" identifier; there is no sentinel
+/// There is no such thing as an "invalid" index; there is no sentinel
 /// value which indicates uninitialized or undefined. Operations which return
 /// an index, but can fail, should communicate this in the function interface
 /// (e.g. through the std::optional<IndexType> return value). If an index
@@ -97,7 +97,7 @@ namespace drake {
 ///
 /// __Type-safe Index vs Identifier__
 ///
-/// In principle, the type-safe *identifier* is related to the TypeSafeIndex. In
+/// In principle, the TypeSafeIndex is related to the Identifier. In
 /// some sense, both are "type-safe `int`s". They differ in their semantics. We
 /// can consider `ints`, indexes, and identifiers as a list of `int` types with
 /// _decreasing_ functionality.

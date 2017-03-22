@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace geometry {
-namespace  {
+namespace {
 
 // Creates various dummy index types to test.
 using std::stringstream;
@@ -46,6 +46,12 @@ GTEST_TEST(IdentifierTest, Constructor) {
   AId bad;
   EXPECT_FALSE(bad.is_valid());
   EXPECT_TRUE(a2.is_valid());
+  // In Debug builds, attempting to acquire the value is an error.
+#ifndef DRAKE_ASSERT_IS_DISARMED
+  AId invalid;
+  int64_t value = -1;
+  ASSERT_DEATH({value = invalid.get_value();}, "");
+#endif
 };
 
 // Confirms that assignment behaves correctly. This also implicitly tests
@@ -56,6 +62,13 @@ GTEST_TEST(IdentifierTest, AssignmentAndComparison) {
   EXPECT_TRUE(temp == a2);
   temp = a3;
   EXPECT_TRUE(temp == a3);
+  // In Debug builds, comparison of invalid ids is an error.
+#ifndef DRAKE_ASSERT_IS_DISARMED
+  AId invalid;
+  bool result = true;
+  ASSERT_DEATH({result = invalid == a1;}, "");
+  ASSERT_DEATH({result = invalid != a1;}, "");
+#endif
 }
 
 // Confirms that ids are configured to serve as unique keys in
@@ -80,6 +93,11 @@ GTEST_TEST(IdentifierTest, ServeAsMapKey) {
   EXPECT_EQ(ids.size(), 2);
 
   EXPECT_EQ(ids.find(a3), ids.end());
+
+  // In Debug builds, invalid identifiers cannot be used as keys.
+#ifndef DRAKE_ASSERT_IS_DISARMED
+  AId invalid;
+  ASSERT_DEATH({ids.insert(invalid);}, "");
 }
 
 // Confirms that ids are configured to serve as values in STL containers.
@@ -96,6 +114,7 @@ GTEST_TEST(IdentifierTest, ServeAsMapValue) {
   EXPECT_NE(ids.find(b1), ids.end());
   ids[b3] = a3;
   EXPECT_NE(ids.find(b3), ids.end());
+#endif
 }
 
 // Tests the streaming behavior.
@@ -103,6 +122,11 @@ GTEST_TEST(IdentifierTest, StreamOperator) {
   stringstream ss;
   ss << a2;
   EXPECT_EQ(ss.str(), "2");
+  // In Debug builds, writing the identifier value to a stream is an error.
+#ifndef DRAKE_ASSERT_IS_DISARMED
+  AId invalid;
+  ASSERT_DEATH({ss << invalid;}, "");
+#endif
 }
 
 // These tests confirm that behavior that *shouldn't* be compilable isn't.
@@ -148,25 +172,15 @@ BINARY_TEST(==, Equals)
 BINARY_TEST(!=, NotEquals)
 BINARY_TEST(=, Assignment)
 
-
-// This tests that an identifier can't be cast into anything else.
-template <typename ID, typename U,
-          typename = decltype(static_cast<U>(GenerateLValue<ID>().get_thing()))>
-bool can_cast_helper(int) { return true; }
-template <typename T, typename U>
-bool can_cast_helper(...) { return false; }
-template <typename T, typename U>
-bool can_cast() { return can_cast_helper<T, U>(1); }
-
-GTEST_TEST(IdentifierTest, ConstructorAvailability) {
-  // This only tests another id type and some reasonable int tests. This assumes
-  // no one will attempt to cast to anything more exotic.
-  EXPECT_FALSE((can_cast<AId, BId>()));
-  EXPECT_FALSE((can_cast<AId, int>()));
-  EXPECT_FALSE((can_cast<AId, size_t>()));
-  EXPECT_FALSE((can_cast<AId, int64_t>()));
+// Compile-time assertion
+GTEST_TEST(IdentifierTest, Convertible) {
+  static_assert(!std::is_convertible<AId, BId>::value,
+                "Identifiers of different types should not be convertible.");
+  static_assert(!std::is_convertible<AId, int>::value,
+                "Identifiers should not be convertible to ints.");
+  static_assert(!std::is_convertible<int, AId>::value,
+                "Identifiers should not be convertible from ints");
 }
-
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
