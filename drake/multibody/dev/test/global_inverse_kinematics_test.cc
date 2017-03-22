@@ -66,7 +66,8 @@ class KukaTest : public ::testing::Test {
 
       const Eigen::Matrix3d body_Ri =
           global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
-      EXPECT_TRUE((body_Ri.array().abs() <= 1).all());
+      // Use 1E-10 for the error tolerance.
+      EXPECT_TRUE((body_Ri.array().abs() <= 1 + 1E-10).all());
       EXPECT_LE(body_Ri.trace(), 3);
       EXPECT_GE(body_Ri.trace(), -1);
       // TODO(hongkai.dai): We will have a more meaningful bound on the
