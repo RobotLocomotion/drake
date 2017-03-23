@@ -2,10 +2,7 @@
 
 #include <array>
 #include <fstream>
-#include <limits>
 #include <map>
-#include <memory>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -15,12 +12,10 @@
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
-#include <vtkImageShiftScale.h>
 #include <vtkNew.h>
 #include <vtkOBJReader.h>
 #include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
-#include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkProperty.h>
 #include <vtkRenderWindow.h>
@@ -31,7 +26,7 @@
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
 
-#include "drake/math/roll_pitch_yaw_using_quaternion.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
@@ -293,9 +288,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
              Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))),
       X_WB_initial_(
           Eigen::Translation3d(position[0], position[1], position[2]) *
-          (Eigen::AngleAxisd(orientation[0], Eigen::Vector3d::UnitX()) *
-           Eigen::AngleAxisd(orientation[1], Eigen::Vector3d::UnitY()) *
-           Eigen::AngleAxisd(orientation[2], Eigen::Vector3d::UnitZ()))),
+          Eigen::Isometry3d(math::rpy2rotmat(orientation))),
       kCameraFixed(fix_camera), color_palette_(tree.bodies.size()) {
   if (!show_window) {
     for (auto& window : MakeVtkInstanceArray(color_depth_render_window_,
