@@ -218,7 +218,7 @@ TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
   ImplicitEulerIntegrator<double> integrator(*spring_damper, large_dt,
                                              context.get());
 
-  // Enable fixed stepping to enable StepOnceExactly().
+  // Enable fixed stepping to enable StepExactlyFixed().
   integrator.set_fixed_step_mode(true);
 
   // Use central differencing to yield a presumably more accurate
@@ -237,7 +237,7 @@ TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
   spring_damper->set_velocity(context.get(), initial_velocity);
 
   // Integrate once.
-  integrator.StepOnceExactly(large_dt);
+  integrator.StepExactlyFixed(large_dt);
 
   // Count the number of function evaluations.
   const int n_feval_reform = integrator.get_num_function_evaluations();
@@ -249,7 +249,7 @@ TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
   // Reset the initial conditions and integrate once again.
   spring_damper->set_position(context.get(), initial_position);
   spring_damper->set_velocity(context.get(), initial_velocity);
-  integrator.StepOnceExactly(large_dt);
+  integrator.StepExactlyFixed(large_dt);
 
   // Make sure that the number of function evaluations has gone down.
   const int n_feval_noreform = integrator.get_num_function_evaluations();
@@ -529,7 +529,7 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
       const double c2 = initial_velocity[i] / omega;
 
       // Integrate for the desired step size.
-      integrator.StepOnceExactly(dts[j]);
+      integrator.StepExactlyFixed(dts[j]);
 
       // Check the time.
       EXPECT_NEAR(context->get_time(), dts[j], ttol);
@@ -589,7 +589,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
       c2 * std::sin(omega * large_dt);
 
   // Integrate exactly one step.
-  integrator.StepOnceExactly(large_dt);
+  integrator.StepExactlyFixed(large_dt);
 
   // Get the positional error.
   const double pos_err = std::abs(x_des -
@@ -602,7 +602,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   // Integrate again and verify that positional error has increased.
   spring_mass.set_position(context.get(), initial_position);
   spring_mass.set_velocity(context.get(), initial_velocity);
-  integrator.StepOnceExactly(large_dt);
+  integrator.StepExactlyFixed(large_dt);
   EXPECT_GT(std::abs(x_des -
       context->get_continuous_state_vector().GetAtIndex(0)), pos_err);
 
@@ -614,7 +614,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   integrator.set_delta_objective_tolerance(1.0);
   spring_mass.set_position(context.get(), initial_position);
   spring_mass.set_velocity(context.get(), initial_velocity);
-  integrator.StepOnceExactly(large_dt);
+  integrator.StepExactlyFixed(large_dt);
   EXPECT_GT(std::abs(x_des -
       context->get_continuous_state_vector().GetAtIndex(0)), pos_err);
 
@@ -625,7 +625,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   integrator.set_delta_state_tolerance(100.0);
   spring_mass.set_position(context.get(), initial_position);
   spring_mass.set_velocity(context.get(), initial_velocity);
-  integrator.StepOnceExactly(large_dt);
+  integrator.StepExactlyFixed(large_dt);
   EXPECT_GT(std::abs(x_des -
       context->get_continuous_state_vector().GetAtIndex(0)), pos_err);
 }
