@@ -372,7 +372,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   // integrators, we should be able to attain the same accuracy.
   const double dt = 1e-4;
 
-  // Spring-mass system is necessary only to setup the problem.
+  // Set integrator parameters.
   ImplicitEulerIntegrator<double> integrator(spring_mass, dt, context.get());
   integrator.set_target_accuracy(1e-4);
   integrator.set_minimum_step_size(1e-6);
@@ -462,6 +462,95 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
 
   // Verify that integrator statistics are valid
   CheckGeneralStatsValidity(&integrator);
+}
+
+// Checks the error estimator for the implicit Euler integrator using the
+// spring-mass system:
+// d^2x/dt^2 = -kx/m
+// solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
+// where omega = sqrt(k/m)
+// x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
+// for t = 0, x(0) = c1, x'(0) = c2*omega
+TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
+  const double spring_k = 300.0;  // N/m
+
+  // Create a new spring-mass system.
+  SpringMassSystem<double> spring_mass(spring_k, mass, false /* no forcing */);
+
+  // Set the integrator to operate in fixed step mode and with very tight
+  // tolerances.
+  ImplicitEulerIntegrator<double> integrator(spring_mass, large_dt,
+                                             context.get());
+  integrator.set_fixed_step_mode(true);
+  integrator.set_convergence_tolerance(1e-14);
+  integrator.set_delta_objective_tolerance(1e-14);
+  integrator.set_jacobian_reformulation_min_loops(0);
+  integrator.set_jacobian_reformulation_tolerance(1.0);
+
+  // Use automatic differentiation because we can.
+  integrator.set_jacobian_computation_scheme(
+      ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+      kAutomatic);
+
+  // Create the initial positions and velocities.
+  const int n_initial_conditions = 3;
+  const double initial_position[n_initial_conditions] = { 0.1, 1.0, 0.0 };
+  const double initial_velocity[n_initial_conditions] = { 0.01, 1.0, -10.0 };
+  const double omega = std::sqrt(spring_k / mass);
+
+  // Create the integration step size array. NOTE: dt values smaller than 1e-5
+  // and greater than 1e-2 (or so) result in very poor error estimates.
+  const int n_dts = 4;
+  const double dts[n_dts] = { 1e-5, 1e-4, 1e-3, 1e-2 };
+
+  // Take all the defaults.
+  integrator.Initialize();
+
+  // Set the allowed error on the time.
+  const double ttol = 10 * std::numeric_limits<double>::epsilon();
+
+  // Set the error estimate allowed error percentage.
+  const double rtol = 0.11;
+
+  // Iterate the specified number of initial conditions.
+  // Iterate over the number of integration step sizes.
+  for (int j = 0; j < n_dts; ++j) {
+    for (int i = 0; i < n_initial_conditions; ++i) {
+      // Reset the time.
+      context->set_time(0.0);
+
+      // Set initial condition.
+      spring_mass.set_position(context.get(), initial_position[i]);
+      spring_mass.set_velocity(context.get(), initial_velocity[i]);
+
+      // Setup c1 and c2 for ODE constants.
+      const double c1 = initial_position[i];
+      const double c2 = initial_velocity[i] / omega;
+
+      // Integrate for the desired step size.
+      integrator.StepOnceExactly(dts[j]);
+
+      // Check the time.
+      EXPECT_NEAR(context->get_time(), dts[j], ttol);
+
+      // Get the error estimate.
+      const double est_err = std::abs(
+          integrator.get_error_estimate()->CopyToVector()[0]);
+
+      // Get the final position of the spring.
+      const double x_final =
+          context->get_continuous_state()->get_vector().GetAtIndex(0);
+
+      // Get the true position.
+      const double x_final_true = c1 * std::cos(omega * dts[j]) +
+          c2 * std::sin(omega * dts[j]);
+
+      // Check the relative error on position.
+      const double err = std::abs(x_final - x_final_true);
+      const double rel_est_err = std::abs(err - est_err) / err;
+      EXPECT_LT(rel_est_err, rtol);
+    }
+  }
 }
 
 // Try a purely continuous system with no sampling to verify that the

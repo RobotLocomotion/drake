@@ -200,17 +200,64 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCDiffJacobianF(
   return J;
 }
 
-// Steps forward by dt.
+// Calculates the norm of the errors of the configuration variables, velocity
+// variables, and auxiliary variables.
 template <class T>
-void ImplicitEulerIntegrator<T>::Step(const T &dt) {
-  using std::abs;
+void ImplicitEulerIntegrator<T>::CalcErrorNorms(const Context<T>& context,
+                                                T* q_nrm, T* v_nrm, T* z_nrm) {
+  DRAKE_DEMAND(q_nrm);
+  DRAKE_DEMAND(v_nrm);
+  DRAKE_DEMAND(z_nrm);
 
-  // Calculate the Jacobian matrix at x0.
-  Context<T>* context = this->get_mutable_context();
-  const VectorX<T> x0 = context->get_continuous_state_vector().CopyToVector();
+  // 1. Get the changes in state.
+  const VectorBase<T>& dgq = dx_state_->get_generalized_position();
+  const VectorBase<T>& dgv = dx_state_->get_generalized_velocity();
+  const VectorBase<T>& dgz = dx_state_->get_misc_continuous_state();
+
+  // 2. (re-)Initialize pinvN_dq_err_ and weighted_q_err_, if necessary.
+  // Reinitialization might be required if the system state variables can
+  // change during the course of the integration.
+  if (pinvN_ddq_ == nullptr) {
+    pinvN_ddq_ = std::make_unique<BasicVector<T>>(dgv.size());
+    weighted_dq_ = std::make_unique<BasicVector<T>>(dgq.size());
+  }
+  DRAKE_DEMAND(pinvN_ddq_->size() == dgv.size());
+  DRAKE_DEMAND(weighted_dq_->size() == dgq.size());
+
+  // TODO(edrumwri): Acquire characteristic time properly from the system
+  //                 (i.e., modify the System to provide this value).
+  const double characteristic_time = 1.0;
+
+  // 3. Compute the infinity norm of the weighted velocity variables.
+  const auto& qbar_v_weight = this->get_generalized_state_weight_vector();
+  unweighted_delta_ = dgv.CopyToVector();
+  *v_nrm = qbar_v_weight.cwiseProduct(unweighted_delta_).
+      template lpNorm<Eigen::Infinity>() * characteristic_time;
+
+  // 4. Compute the infinity norm of the weighted auxiliary variables.
+  const auto& z_weight = this->get_misc_state_weight_vector();
+  unweighted_delta_ = dgz.CopyToVector();
+  *z_nrm = (z_weight.cwiseProduct(unweighted_delta_))
+      .template lpNorm<Eigen::Infinity>();
+
+  // 5. Compute N * Wq * dq = N * Wꝗ * N+ * dq.
+  const System<T>& system = this->get_system();
+  unweighted_delta_ = dgq.CopyToVector();
+  system.MapQDotToVelocity(context, unweighted_delta_, pinvN_ddq_.get());
+  system.MapVelocityToQDot(
+      context, qbar_v_weight.cwiseProduct(pinvN_ddq_->CopyToVector()),
+      weighted_dq_.get());
+  *q_nrm = weighted_dq_->CopyToVector().template lpNorm<Eigen::Infinity>();
+}
+
+// Steps forward by dt using the implicit Euler method.
+template <class T>
+void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
+  using std::abs;
 
   // Advance the context time; this means that all derivatives will be computed
   // at t+dt.
+  Context<T>* context = this->get_mutable_context();
   context->set_time(context->get_time() + dt);
 
   // Get the current continuous state.
@@ -233,14 +280,20 @@ void ImplicitEulerIntegrator<T>::Step(const T &dt) {
   // Set the initial value of the objective function f = g^Tg
   double f_last = 0.5*goutput.norm();
 
-  // The Jacobian matrix yields the relationship J dxtplus/dt = dg/dt.
-  // Converting this from a derivative into a differential yields
-  // J dxtplus = dg. Setting dg \equiv -g, we now solve this linear
-  // equation for dxtplus, which gives a descent direction toward
-  // reducing ||g||. J will be n x n, where n is the number of state
+  // The Jacobian matrix of g() with respect to x(t+h) yields the relationship
+  // Jg dxtplus/dt = dg/dt. Converting this from a derivative into a
+  // differential yields Jg dxtplus = dg. Setting dg \equiv -g, we now solve
+  // this linear equation for dxtplus, which gives a descent direction toward
+  // reducing ||g||. Jg will be n x n, where n is the number of state
   // variables. It will generally possess no "nice" properties (e.g.,
-  // symmetry) or even be guaranteed to be invertible.
-  MatrixX<T> Jg = MatrixX<T>::Identity(n, n) - (CalcJacobian(xtplus) * dt);
+  // symmetry) or even be guaranteed to be invertible. This matrix Jg is
+  // commonly referred to as the "iteration matrix" in literature on implicit
+  // integration.
+  // NOTE: We compute the negation of this iteration matrix to encourage
+  //       Eigen to subtract elements from the diagonal- a O(n) operation- in
+  //       place of the O(n^2) operation naively implied by:
+  //       Jg = MatrixX<T>::Identity(n, n) - (CalcJacobian(xtplus) * dt);
+  MatrixX<T> Jg = (CalcJacobian(xtplus) * dt) - MatrixX<T>::Identity(n, n);
   LU_.compute(Jg);
   int n_loops_since_fresh_J = 0;
 
@@ -253,20 +306,20 @@ void ImplicitEulerIntegrator<T>::Step(const T &dt) {
     num_nr_loops_++;
 
     // Compute and factorize the Jacobian matrix if necessary.
-    if (last_alpha < reform_J_tol_ &&
+    if (last_alpha <= reform_J_tol_ &&
         n_loops_since_fresh_J > reform_J_min_loops_) {
-      Jg = MatrixX<T>::Identity(n, n) - (CalcJacobian(xtplus) * dt);
+      Jg = (CalcJacobian(xtplus) * dt) - MatrixX<T>::Identity(n, n);
       LU_.compute(Jg);
       n_loops_since_fresh_J = 0;
     }
 
     // Compute the state update.
-    VectorX<T> dx = LU_.solve(-goutput);
+    VectorX<T> dx = LU_.solve(goutput);
 
     // Compute the gradient of f = 0.5*g'*g, used for line search, computed with
     // respect to x. This also allows us to handle a single Jacobian matrix.
     // If grad*dx > 0, f will be non-decreasing.
-    const VectorX<T> grad = goutput.transpose() * Jg;
+    const VectorX<T> grad = -goutput.transpose() * Jg;
     double slope = grad.dot(dx);
     DRAKE_DEMAND(slope < 0);
 
@@ -283,53 +336,10 @@ void ImplicitEulerIntegrator<T>::Step(const T &dt) {
     last_alpha = lout.alpha;
     alpha_sum_ += last_alpha;
 
-    // The six steps below check to see whether the update is close to zero.
-    // This test is necessary because the ODE function output is not scaled, and
-    // the outputs of that function are expected to be large in stiff regions.
-
-    // 1. Get the change in configuration, velocity, and auxiliary variables.
+    // Check whether the update is close to zero.
+    T q_nrm, v_nrm, z_nrm;
     dx_state_->get_mutable_vector()->SetFromVector(xtplus - lout.x_new);
-    const VectorBase<T>& dgq = dx_state_->get_generalized_position();
-    const VectorBase<T>& dgv = dx_state_->get_generalized_velocity();
-    const VectorBase<T>& dgz = dx_state_->get_misc_continuous_state();
-
-    // 2. (re-)Initialize pinvN_dq_err_ and weighted_q_err_, if necessary.
-    // Reinitialization might be required if the system state variables can
-    // change during the course of the integration.
-    if (pinvN_ddq_ == nullptr) {
-      pinvN_ddq_ = std::make_unique<BasicVector<T>>(dgv.size());
-      weighted_dq_ = std::make_unique<BasicVector<T>>(dgq.size());
-    }
-    DRAKE_DEMAND(pinvN_ddq_->size() == dgv.size());
-    DRAKE_DEMAND(weighted_dq_->size() == dgq.size());
-
-    // TODO(edrumwri): Acquire characteristic time properly from the system
-    //                 (i.e., modify the System to provide this value).
-    const double characteristic_time = 1.0;
-
-    // 3. Compute the infinity norm of the weighted velocity variables.
-    const auto& qbar_v_weight = this->get_generalized_state_weight_vector();
-    unweighted_delta_ = dgv.CopyToVector();
-    T v_nrm = qbar_v_weight.cwiseProduct(unweighted_delta_).
-        template lpNorm<Eigen::Infinity>() * characteristic_time;
-
-    // 4. Compute the infinity norm of the weighted auxiliary variables.
-    const auto& z_weight = this->get_misc_state_weight_vector();
-    unweighted_delta_ = dgz.CopyToVector();
-    T z_nrm = (z_weight.cwiseProduct(unweighted_delta_))
-        .template lpNorm<Eigen::Infinity>();
-
-    // 5. Compute N * Wq * dq = N * Wꝗ * N+ * dq.
-    const System<T>& system = this->get_system();
-    unweighted_delta_ = dgq.CopyToVector();
-    system.MapQDotToVelocity(*context, unweighted_delta_, pinvN_ddq_.get());
-    system.MapVelocityToQDot(
-        *context, qbar_v_weight.cwiseProduct(pinvN_ddq_->CopyToVector()),
-        weighted_dq_.get());
-    T q_nrm = weighted_dq_->CopyToVector().template lpNorm<Eigen::Infinity>();
-
-    // 6. Check whether update was sufficiently small that convergence is
-    //    indicated.
+    CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
     if (q_nrm < delta_update_tol_ && v_nrm < delta_update_tol_ &&
         z_nrm < delta_update_tol_)
       return;
@@ -343,6 +353,116 @@ void ImplicitEulerIntegrator<T>::Step(const T &dt) {
     // Update x, g_output, and f
     goutput = lout.g_output;
     xtplus = lout.x_new;
+    f_last = lout.f_new;
+  }
+}
+
+// Steps forward by dt using the implicit trapezoid method.
+// @param dt the integration step
+// @param dx0 the time derivatives computed at the beginning of the integration
+//        step.
+// @param xtplus the state computed by the implicit Euler method.
+template <class T>
+void ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
+                                                       const VectorX<T>& dx0,
+                                                       VectorX<T>* xtplus) {
+  using std::abs;
+
+  // Advance the context time; this means that all derivatives will be computed
+  // at t+dt.
+  Context<T>* context = this->get_mutable_context();
+  context->set_time(context->get_time() + dt);
+
+  // Get the current continuous state.
+  const VectorX<T> xt = context->get_continuous_state_vector().CopyToVector();
+  const int n = xt.size();
+  DRAKE_DEMAND(xtplus && xtplus->size() == n);
+
+  // Define g(x(t+h)) ≡ x(t+h) - x(t) - h/2 (f(t,x(t)) + f(t+h,x(t+h)) and
+  // evaluate it at the current x(t+h).
+  std::function<VectorX<T>(const VectorX<T>&)> g =
+      [&xt, dt, &dx0, this](const VectorX<T>& x) {
+        return (x - xt - dt/2*(dx0 + CalcTimeDerivatives(x).eval())).eval();
+      };
+  VectorX<T> goutput = g(*xtplus);
+
+  // Set the initial value of the objective function f = g^Tg
+  double f_last = 0.5*goutput.norm();
+
+  // The Jacobian matrix of g() with respect to x(t+h) yields the relationship
+  // Jg dxtplus/dt = dg/dt. Converting this from a derivative into a
+  // differential yields Jg dxtplus = dg. Setting dg \equiv -g, we now solve
+  // this linear equation for dxtplus, which gives a descent direction toward
+  // reducing ||g||. Jg will be n x n, where n is the number of state
+  // variables. It will generally possess no "nice" properties (e.g.,
+  // symmetry) or even be guaranteed to be invertible. This matrix Jg is
+  // commonly referred to as the "iteration matrix" in literature on implicit
+  // integration.
+  // NOTE: We compute the negation of this iteration matrix to encourage
+  //       Eigen to subtract elements from the diagonal- a O(n) operation- in
+  //       place of the O(n^2) operation naively implied by:
+  //       Jg = MatrixX<T>::Identity(n, n) - (CalcJacobian(xtplus) * dt);
+  MatrixX<T> Jg = (CalcJacobian(*xtplus) * dt/2) - MatrixX<T>::Identity(n, n);
+  LU_.compute(Jg);
+  int n_loops_since_fresh_J = 0;
+
+  // Set value of last alpha (initialized to NaN to indicate not set).
+  double last_alpha = std::nan("");
+
+  // Evaluate the objective function.
+  while (f_last > convergence_tol_) {
+    // Update the number of Newton-Raphson loops.
+    num_nr_loops_++;
+
+    // Compute and factorize the Jacobian matrix if necessary.
+    if (last_alpha <= reform_J_tol_ &&
+        n_loops_since_fresh_J > reform_J_min_loops_) {
+      Jg = (CalcJacobian(*xtplus) * dt/2) - MatrixX<T>::Identity(n, n);
+      LU_.compute(Jg);
+      n_loops_since_fresh_J = 0;
+    }
+
+    // Compute the state update.
+    VectorX<T> dx = LU_.solve(goutput);
+
+    // Compute the gradient of f = 0.5*g'*g, used for line search, computed with
+    // respect to x. This also allows us to handle a single Jacobian matrix.
+    // If grad*dx > 0, f will be non-decreasing.
+    const VectorX<T> grad = -goutput.transpose() * Jg;
+    double slope = grad.dot(dx);
+    DRAKE_DEMAND(slope < 0);
+
+    // Search the ray α ∈ [0, 1] for a "good" value that minimizes
+    // || x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ||. The
+    // ray search is relativelly expensive, as it requres evaluating f().
+    // Therefore, a good ray search will optimize the computational tradeoff
+    // between finding the value of \alpha that minimizes the norm above and
+    // forming the next Jacobian and solving the next linear system.
+    typename LineSearch<T>::LineSearchOutput lout =
+        LineSearch<T>::search_line(*xtplus, dx, f_last, grad, g,
+                                   goutput.norm());
+
+    // Store the last alpha and update the alpha sum statistic.
+    last_alpha = lout.alpha;
+    alpha_sum_ += last_alpha;
+
+    // Check whether the update is close to zero.
+    T q_nrm, v_nrm, z_nrm;
+    dx_state_->get_mutable_vector()->SetFromVector(*xtplus - lout.x_new);
+    CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
+    if (q_nrm < delta_update_tol_ && v_nrm < delta_update_tol_ &&
+        z_nrm < delta_update_tol_)
+      return;
+
+    // Now check whether the change in the objective function is sufficiently
+    // small *and* Jacobian is fresh.
+    if (std::abs(f_last - lout.f_new) < delta_f_tol_ &&
+        n_loops_since_fresh_J == 0)
+      return;
+
+    // Update x, g_output, and f
+    goutput = lout.g_output;
+    *xtplus = lout.x_new;
     f_last = lout.f_new;
   }
 }
@@ -395,29 +515,49 @@ void ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T &dt) {
   Context<T>* context = this->get_mutable_context();
 
   // Compute the derivative at x0.
+  T t0 = context->get_time();
+  const VectorX<T> xt0 = context->get_continuous_state_vector().CopyToVector();
   const System<T>& system = this->get_system();
   std::unique_ptr<ContinuousState<T>> derivs = system.AllocateTimeDerivatives();
   system.CalcTimeDerivatives(*context, derivs.get());
   const VectorX<T> dx0 = derivs->CopyToVector();
 
   // Do the single step.
-  Step(dt);
+  StepImplicitEuler(dt);
 
-  // Compute the derivative at xtf.
-  system.CalcTimeDerivatives(*context, derivs.get());
-  const VectorX<T> dxf = derivs->CopyToVector();
+  // Get the new state.
+  const VectorX<T> xtplus_euler =
+      context->get_continuous_state_vector().CopyToVector();
 
-  // Note: this second order error estimate comes from some code from @sherm1.
-  // It *seems* to give reasonable error estimates, at least compared to a
-  // previous, trusted error estimation process that used two half steps.
-  // TODO(edrumwri): Verify this error estimate mathematically.
+  // Reset the state.
+  context->set_time(t0);
+  context->get_mutable_continuous_state()->SetFromVector(xt0);
 
-  // Compute the stiff second order error estimate.
-  VectorX<T> e2s = dt/2 * (dx0 - dxf);
+  // The error estimation process uses the implicit trapezoid method, which
+  // is defined as:
+  // x(t+h) = x(t) + h/2 (f(t, x(t) + f(t+h, x(t+h))
+  // x(t+h) from the implicit Euler method is presumably a good starting point.
 
-  // Compute the non-stiff second order error estimate using the last computed
-  // Jacobian matrix factorization.
-  err_est_vec_ = LU_.solve(e2s);
+  // The error estimate is derived as follows (thanks to Michael Sherman):
+  // x*(t+h) = xᵢₑ(t+h) + O(h²)      [implicit Euler]
+  //         = xₜᵣ(t+h) + O(h³)      [implicit trapezoid]
+  // This implies:
+  // xᵢₑ(t+h) + O(h²) = xₜᵣ(t+h) + O(h³)
+  // Given that the second order term subsumes the third order one:
+  // xᵢₑ(t+h) - xₜᵣ(t+h) = O(h²)
+  // Therefore the difference between the implicit trapezoid solution and the
+  // implicit Euler solution gives a second-order error estimate.
+
+  // Compute the implicit trapezoid solution.
+  VectorX<T> xtplus_trapezoid = xtplus_euler;
+  StepImplicitTrapezoid(dt, dx0, &xtplus_trapezoid);
+
+  // Reset the state to that computed by implicit Euler.
+  context->set_time(t0 + dt);
+  context->get_mutable_continuous_state()->SetFromVector(xtplus_euler);
+
+  // Compute the error estimate.
+  err_est_vec_ = xtplus_euler - xtplus_trapezoid;
 
   // Update the caller-accessible error estimate and statistics.
   this->get_mutable_error_estimate()->get_mutable_vector()->

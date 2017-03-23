@@ -15,7 +15,7 @@ namespace systems {
 
 /**
  * A first-order, fully implicit integrator without error estimation.
- * @tparam T A double or autodiff type.
+ * @tparam T A double type.
  *
  * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
  * this class, please refer to http://drake.mit.edu/cxx_inl.html.
@@ -39,12 +39,16 @@ namespace systems {
  * </pre>
  * given unknowns x(t+h).
  *
- * This "implicit Euler" method is known to be A-Stable, meaning that applying
- * it at a fixed integration step to the  "test" equation `y(t) = eᵏᵗ` yields
- * zero (for `k < 0` and `t → ∞`). The practical effect is that the integrator
- * tends to be stable for any given step size on a system of ordinary
- * differential equations, given that the nonlinear system of equations is
- * solvable.
+ * This "implicit Euler" method is known to be L-Stable, meaning both that
+ * applying it at a fixed integration step to the  "test" equation `y(t) = eᵏᵗ`
+ * yields zero (for `k < 0` and `t → ∞`) *and* that it is also A-Stable.
+ * A-Stability, in turn, means that the method can integrate the linear constant
+ * coefficient system `dx/dt = Ax` at any step size without the solution
+ * become unstable (growing without bound). The practical effect of L-Stability
+ * is that the integrator tends to be stable for any given step size on an
+ * arbitrary system of ordinary differential equations. See [Lambert, 1991],
+ * Ch. 6 for an approachable discussion on stiff differential equations and
+ * L- and A-Stability.
  *
  * The time complexity of this method is often dominated by the time to form
  * the Jacobian matrix consisting of the partial derivatives of the nonlinear
@@ -84,6 +88,9 @@ namespace systems {
  * large `h`. Use of error control and initializing `g(x(t+h))` to `g(x(t))`
  * both guard against (but do not, at least as of yet, provably prevent) that
  * possibility.
+ *
+ * - [Lambert, 1991]  J. D. Lambert. Numerical Methods for Ordinary Differential
+ *                    Equations. John Wiley & Sons, 1991.
  */
 template <class T>
 class ImplicitEulerIntegrator : public IntegratorBase<T> {
@@ -232,9 +239,18 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// tolerance *and* the minimum number of Newton-Raphson loops must be
   /// executed before the Jacobian matrix can be reformed and factorized.
   /// Default value is 1e-8.
+  /// @param tol the tolerance value, which must be between zero (Jacobian will
+  ///            never be freshened) and one (Jacobian can be freshened every
+  ///            Newton-Raphson iteration, if the minimum number of
+  ///            reformulation loops is zero).
   /// @sa get_jacobian_reformulation_tolerance()
   /// @sa set_jacobian_reformulation_min_loops()
-  void set_jacobian_reformulation_tolerance(double tol) { reform_J_tol_ = tol; }
+  /// @throws std::logic_error if tol outside [0, 1].
+  void set_jacobian_reformulation_tolerance(double tol) {
+    if (tol < 0.0 || tol > 1.0)
+      throw std::logic_error("Invalid Jacobian reformulation tolerance.");
+    reform_J_tol_ = tol;
+  }
 
   /// Gets the scaling tolerance below which a fresh Jacobian matrix may be
   /// formed and factorized.
@@ -265,11 +281,14 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
  private:
   MatrixX<T> CalcJacobian(const VectorX<T>& xtplus);
   void DoStepOnceFixedSize(const T& dt) override;
-  void Step(const T &dt);
+  void StepImplicitEuler(const T& dt);
+  void StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
+                             VectorX<T>* xtplus);
   MatrixX<T> ComputeFDiffJacobianF(const VectorX<T>& xtplus);
   MatrixX<T> ComputeCDiffJacobianF(const VectorX<T>& xtplus);
   Eigen::MatrixXd ComputeADiffJacobianF(const Eigen::VectorXd& xtplus);
   VectorX<T> CalcTimeDerivatives(const VectorX<T>& x);
+  void CalcErrorNorms(const Context<T>& context, T* q_nrm, T* v_nrm, T* z_nrm);
 
   // The Euclidean norm tolerance at which the nonlinear system solving
   // process will halt.
