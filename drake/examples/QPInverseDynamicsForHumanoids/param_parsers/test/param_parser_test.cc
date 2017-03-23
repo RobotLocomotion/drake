@@ -316,8 +316,8 @@ TEST_F(ParamParserTests, DoFParams) {
   TestDofMotionsParamsHelper(motion, Kp, Kd, *rbt_alias_, kTolerance);
 }
 
-// Tests MakeQpInput
-TEST_F(ParamParserTests, MakeQpInput) {
+// Tests MakeQpInput from using group names.
+TEST_F(ParamParserTests, MakeQpInputFromGroupNames) {
   QpInput qp_input =
       paramset_.MakeQpInput({"pelvis"},               /* contact groups */
                             {"pelvis", "right_foot"}, /* tracked body groups */
@@ -368,6 +368,29 @@ TEST_F(ParamParserTests, MakeQpInput) {
   EXPECT_TRUE(
       CompareMatrices(qp_input.desired_centroidal_momentum_dot().weights(),
                       weights, kTolerance, MatrixCompareType::absolute));
+}
+
+// Tests MakeQpInput from RigidBody*.
+TEST_F(ParamParserTests, MakeQpInputFromRigidBodyPtr) {
+  QpInput expected =
+      paramset_.MakeQpInput({"pelvis"},               /* contact groups */
+                            {"pelvis", "right_foot"}, /* tracked body groups */
+                            *rbt_alias_);
+
+  const std::vector<const RigidBody<double>*>& pelvis_group =
+      rbt_alias_->get_body_group("pelvis");
+  const std::vector<const RigidBody<double>*>& r_foot_group =
+      rbt_alias_->get_body_group("right_foot");
+
+  std::vector<const RigidBody<double>*> contact_bodies = pelvis_group;
+  std::vector<const RigidBody<double>*> tracked_bodies = pelvis_group;
+  tracked_bodies.insert(tracked_bodies.end(),
+      r_foot_group.begin(), r_foot_group.end());
+
+  QpInput qp_input =
+      paramset_.MakeQpInput(contact_bodies, tracked_bodies, *rbt_alias_);
+
+  EXPECT_EQ(qp_input, expected);
 }
 
 }  // namespace
