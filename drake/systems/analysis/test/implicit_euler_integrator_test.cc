@@ -152,7 +152,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
 };
 
 TEST_F(ImplicitIntegratorTest, MiscAPI) {
-  // Create the integrator as a double and as an autodiff type
+  // Create the integrator for a System<double>.
   ImplicitEulerIntegrator<double> integrator(*spring, dt, context.get());
 
   // Verify defaults match documentation.
@@ -313,12 +313,12 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
       ImplicitEulerIntegrator<double>::JacobianComputationScheme::
       kCentralDifference);
 
-  // Reset the time, position, gnom velocity.
+  // Reset the time, position, and velocity.
   context->set_time(0.0);
   spring_damper->set_position(context.get(), initial_position);
   spring_damper->set_velocity(context.get(), initial_velocity);
 
-  // Integrate for 1 second again.
+  // Integrate for t_final seconds again.
   for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
     integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, large_dt));
   x_final = xc_final.GetAtIndex(0);
@@ -329,7 +329,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   EXPECT_NEAR(0.0, v_final, vtol);
   CheckGeneralStatsValidity(&integrator);
 
-  // Switch to central differencing.
+  // Switch to automatic differencing.
   integrator.set_jacobian_computation_scheme(
       ImplicitEulerIntegrator<double>::JacobianComputationScheme::
       kAutomatic);
@@ -339,7 +339,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   spring_damper->set_position(context.get(), initial_position);
   spring_damper->set_velocity(context.get(), initial_velocity);
 
-  // Integrate for 1 second again.
+  // Integrate for t_final seconds again.
   for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
     integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, large_dt));
   x_final = xc_final.GetAtIndex(0);
@@ -425,7 +425,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   spring_mass.set_position(context.get(), initial_position);
   spring_mass.set_velocity(context.get(), initial_velocity);
 
-  // Integrate for 1 second again.
+  // Integrate for t_final seconds again.
   for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
     integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
 
@@ -449,7 +449,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   spring_mass.set_position(context.get(), initial_position);
   spring_mass.set_velocity(context.get(), initial_velocity);
 
-  // Integrate for 1 second again.
+  // Integrate for t_final seconds again.
   for (t = 0.0; std::abs(t - t_final) >= ttol; t = context->get_time())
     integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
 
@@ -509,7 +509,8 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
   // Set the allowed error on the time.
   const double ttol = 10 * std::numeric_limits<double>::epsilon();
 
-  // Set the error estimate allowed error percentage.
+  // Set the error estimate allowed error percentage. 11% error is achievable
+  // for these step sizes and this problem.
   const double rtol = 0.11;
 
   // Iterate the specified number of initial conditions.

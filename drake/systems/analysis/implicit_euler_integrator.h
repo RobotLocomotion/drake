@@ -14,7 +14,7 @@ namespace drake {
 namespace systems {
 
 /**
- * A first-order, fully implicit integrator without error estimation.
+ * A first-order, fully implicit integrator with second order error estimation.
  * @tparam T A double type.
  *
  * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
