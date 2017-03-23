@@ -1,6 +1,7 @@
 #include "drake/automotive/maliput_railcar.h"
 
 #include <cmath>
+#include <limits>
 #include <memory>
 
 #include <Eigen/Dense>
@@ -486,6 +487,16 @@ TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
   // quaternions is equal to zero. The following tolerance was empirically
   // determined.
   EXPECT_NEAR(with_s_orientation.dot(against_s_orientation), 0, 1e-15);
+}
+
+// Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the
+// speed is zero.
+TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeWithSpeedZero) {
+  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(true /* with_s */));
+  continuous_state()->set_speed(0);
+  systems::UpdateActions<double> actions;
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_DOUBLE_EQ(actions.time, std::numeric_limits<double>::infinity());
 }
 
 // Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the
