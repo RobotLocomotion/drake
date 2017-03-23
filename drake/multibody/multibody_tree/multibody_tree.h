@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/body.h"
-#include "drake/multibody/multibody_tree/material_frame.h"
+#include "drake/multibody/multibody_tree/physical_frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
 namespace drake {
@@ -123,8 +123,8 @@ class MultibodyTree {
   ///                   add.
   template <class FrameType>
   FrameType* AddMaterialFrame(std::unique_ptr<FrameType> frame) {
-    static_assert(std::is_convertible<FrameType*, MaterialFrame<T>*>::value,
-                  "FrameType must be a sub-class of MaterialFrame<T>.");
+    static_assert(std::is_convertible<FrameType*, PhysicalFrame<T>*>::value,
+                  "FrameType must be a sub-class of PhysicalFrame<T>.");
     if (frame == nullptr) {
       throw std::logic_error("Input frame is an invalid nullptr.");
     }
@@ -220,7 +220,7 @@ class MultibodyTree {
   /// Returns a constant reference to the material frame with unique index
   /// `frame_index`. This method aborts in Debug builds when `frame_index` does
   /// not correspond to a frame in this multibody tree.
-  const MaterialFrame<T>& get_material_frame(FrameIndex frame_index) const {
+  const PhysicalFrame<T>& get_material_frame(FrameIndex frame_index) const {
     DRAKE_ASSERT(frame_index < get_num_material_frames());
     DRAKE_ASSERT_VOID(
         owned_material_frames_[frame_index]->HasThisParentTreeOrThrow(this));
@@ -283,7 +283,7 @@ class MultibodyTree {
   void validate_topology() { topology_.validate(); }
 
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
-  std::vector<std::unique_ptr<MaterialFrame<T>>> owned_material_frames_;
+  std::vector<std::unique_ptr<PhysicalFrame<T>>> owned_material_frames_;
 
   MultibodyTreeTopology topology_;
 };

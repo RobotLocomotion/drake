@@ -28,7 +28,7 @@ RigidBodyFrame<T>& RigidBodyFrame<T>::Create(
 template <typename T>
 RigidBodyFrame<T>::RigidBodyFrame(
     const RigidBody<T>& body, const Isometry3<T>& X_BM) :
-    MaterialFrame<T>(body.get_index()), X_BM_(X_BM) {}
+    PhysicalFrame<T>(body.get_index()), X_BM_(X_BM) {}
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyFrame<double>;

@@ -31,10 +31,10 @@ drake_cc_library(
     hdrs = [
         "body.h",
         "frame.h",
-        "material_frame.h",
         "multibody_tree.h",
         "multibody_tree_element.h",
         "multibody_tree_topology.h",
+        "physical_frame.h",
         "rigid_body.h",
         "rigid_body_frame.h",
     ],

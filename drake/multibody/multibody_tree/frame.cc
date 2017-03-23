@@ -24,7 +24,7 @@ const BodyFrame<T>& BodyFrame<T>::Create(
 }
 
 template <typename T>
-BodyFrame<T>::BodyFrame(const Body<T>& body) : MaterialFrame<T>(body) {}
+BodyFrame<T>::BodyFrame(const Body<T>& body) : PhysicalFrame<T>(body) {}
 
 template <typename T>
 RigidBodyFrame<T>& RigidBodyFrame<T>::Create(
@@ -42,7 +42,7 @@ RigidBodyFrame<T>& RigidBodyFrame<T>::Create(
 template <typename T>
 RigidBodyFrame<T>::RigidBodyFrame(
     const RigidBody<T>& body, const Isometry3<T>& X_BM) :
-    MaterialFrame<T>(body), X_BM_(X_BM) {}
+    PhysicalFrame<T>(body), X_BM_(X_BM) {}
 
 // Explicitly instantiates on the most common scalar types.
 template class BodyFrame<double>;

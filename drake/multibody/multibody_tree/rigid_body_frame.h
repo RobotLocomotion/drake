@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/material_frame.h"
+#include "drake/multibody/multibody_tree/physical_frame.h"
 
 namespace drake {
 namespace multibody {
@@ -15,7 +15,7 @@ template <class T> class RigidBody;
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class RigidBodyFrame : public MaterialFrame<T> {
+class RigidBodyFrame : public PhysicalFrame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyFrame)
 
