@@ -6,7 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/rigid_body_frame.h"
+#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 
 namespace drake {
 namespace multibody {
@@ -58,8 +58,13 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // X_UlSo specifies the pose of the shoulder outboard frame So in the body
   // frame Ul of the upper link.
   Isometry3d X_UlSo(Translation3d(0.0, half_link_length, 0.0));
+  // In this case the frame is created explicitly from the body frame of
+  // upper_link. Another option is to use the FixedOffsetFrame::Create() method
+  // directly taking a Body, as shown below, which creates a frame with a fixed
+  // offset from the body frame moving with the body.
   const auto& shoulder_outboard_frame =
-      RigidBodyFrame<double>::Create(model, upper_link, X_UlSo);
+      FixedOffsetFrame<double>::Create(
+          model, upper_link.get_body_frame(), X_UlSo);
 
   // Create frames associated with the pendulum's elbow.
   // An inboard frame Ei is rigidly attached the upper link. It is located at
@@ -71,11 +76,14 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   Isometry3d X_UlEi(Translation3d(0.0, -half_link_length, 0.0));
   // X_LlEo specifies the pose of the elbow outboard frame Eo in the body
   // frame Ll of the lower link.
+  // In this case we create a frame using the FixedOffsetFrame::Create() method
+  // taking a Body, i.e. creating a frame with a fixed offset from the upper
+  // link body frame.
   const auto& elbow_inboard_frame =
-      RigidBodyFrame<double>::Create(model, upper_link, X_UlEi);
+      FixedOffsetFrame<double>::Create(model, upper_link, X_UlEi);
   Isometry3d X_LlEo(Translation3d(0.0, -half_link_length, 0.0));
   const auto& elbow_outboard_frame =
-      RigidBodyFrame<double>::Create(model, lower_link, X_LlEo);
+      FixedOffsetFrame<double>::Create(model, lower_link, X_LlEo);
 
   // Verify the new number of frames.
   EXPECT_EQ(model->get_num_physical_frames(), 6);
