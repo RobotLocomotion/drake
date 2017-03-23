@@ -21,7 +21,7 @@ template<typename T> class Body;
 /// attached to specific material points or sections of a flexible body.
 /// Like the Frame class, %PhysicalFrame is not a placeholder for the pose of a
 /// frame but it only represents the concept of a frame itself.
-/// Specific material frame classes inheriting from %PhysicalFrame will
+/// Specific physical frame classes inheriting from %PhysicalFrame will
 /// typically provide methods to access or compute the pose of the frame
 /// instance they represent measured and expressed in specific frames as a
 /// function of the state of the MultibodyTree to which the frame belongs.

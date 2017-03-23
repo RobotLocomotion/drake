@@ -1,5 +1,6 @@
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 
+#include <exception>
 #include <memory>
 
 #include "drake/common/eigen_autodiff_types.h"
@@ -30,6 +31,12 @@ template <typename T>
 FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
     MultibodyTree<T>* tree,
     const PhysicalFrame<T>& P, const Isometry3<T>& X_PF) {
+  if (dynamic_cast<const BodyFrame<T>*>(&P) == nullptr) {
+    throw std::logic_error(
+        "Chaining of FixedOffsetFrame frames is not yet supported. "
+            "Therefore we only allow to fix frames to body frames.");
+  }
+
   // Notice that here we cannot use std::make_unique since constructors are made
   // private to avoid users creating bodies by other means other than calling
   // Create().

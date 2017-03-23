@@ -50,8 +50,10 @@ class FixedOffsetFrame : public PhysicalFrame<T> {
   /// Users must call the Compile() method on `tree` in order to re-compute and
   /// validate its topology. See the documentation on Compile() for details.
   ///
-  /// @warning This factory allows to chain multiple FixedOffsetFrame objects.
-  /// However, chaining is still not supported.
+  /// @warning This factory will allow, in future implementations, to chain
+  /// multiple frames of type FixedOffsetFrame. However, this chaining is not
+  /// yet supported and attempts to fix a %FixedOffsetFrame to a frame with type
+  /// other than BodyFrame will throw an exception of type std::logic_error.
   ///
   /// @param[in, out] tree The parent MultibodyTree to which this frame will be
   ///                      added.
@@ -60,6 +62,11 @@ class FixedOffsetFrame : public PhysicalFrame<T> {
   /// @param[in] X_PF The fixed pose of the newly created frame measured and
   ///                 expressed in the physical frame `P`.
   /// @returns A constant reference to the newly created frame.
+  // TODO(amcastro-tri): allow to chain multiple frames of type
+  // FixedOffsetFrame. An approach would consist on holding a reference to the
+  // parent frame of the root FixedOffsetFrame of the chain and X_PF_ would
+  // then be set to (at construction) to the pose of this frame on that parent
+  // frame.
   static FixedOffsetFrame<T>& Create(
       MultibodyTree<T>* tree,
       const PhysicalFrame<T>& P, const Isometry3<T>& X_PF);
