@@ -10,8 +10,8 @@ namespace systems {
 namespace rendering {
 namespace {
 
-// Tests that a SpatialVelocity can be assigned to and read from FrameVelocity.
-GTEST_TEST(FrameVelocityTest, AssignAndRead) {
+// Tests that a SpatialVelocity can be set from and read as a FrameVelocity.
+GTEST_TEST(FrameVelocityTest, SetAndRead) {
   // The velocity is initialized to zero.
   FrameVelocity<double> vec;
   EXPECT_EQ(Vector6<double>::Zero(), vec.get_value());
@@ -24,6 +24,25 @@ GTEST_TEST(FrameVelocityTest, AssignAndRead) {
                               vec.get_velocity().rotational()));
   EXPECT_TRUE(CompareMatrices(Vector3<double>(4, 5, 6),
                               vec.get_velocity().translational()));
+}
+
+// Tests that FrameVelocity is copyable and assignable.
+GTEST_TEST(FrameVelocityTest, CopyAndAssign) {
+  FrameVelocity<double> vec;
+  vec[2] = 42;
+
+  // Self-assignment.
+  vec = vec;
+  EXPECT_EQ(42, vec[2]);
+
+  // Copying.
+  FrameVelocity<double> copy(vec);
+  EXPECT_EQ(42, copy.GetAtIndex(2));
+
+  // Assignment.
+  copy[3] = 43;
+  vec = copy;
+  EXPECT_EQ(43, vec.GetAtIndex(3));
 }
 
 GTEST_TEST(FrameVelocityTest, Clone) {
