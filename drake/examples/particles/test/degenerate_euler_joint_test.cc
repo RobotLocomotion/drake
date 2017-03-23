@@ -81,6 +81,39 @@ REGISTER_TYPED_TEST_CASE_P(SingleDOFEulerJointTest, OutputTest);
 
 INSTANTIATE_TYPED_TEST_CASE_P(WithDoubles, SingleDOFEulerJointTest, double);
 
+/// @class DegenerateEulerJoint
+/// @test \b WrongOutputDOFTest makes sure a DegenerateEulerJoint
+/// aborts when its translating matrix doesn't imply a 6 degrees of
+/// freedom output (rows != 6).
+GTEST_TEST(DegenerateEulerJointSanityChecks, WrongOutputDOFTest) {
+  // Scalar type is fixed as it makes no difference.
+  ASSERT_DEATH({
+      DegenerateEulerJoint<double> bad_joint(MatrixX<double>(4, 4));
+    }, "assertion '.*' failed.");
+}
+
+/// @class DegenerateEulerJoint
+/// @test \b TooManyInputDOFTest makes sure a DegenerateEulerJoint
+/// aborts when its translating matrix implies a 6 or more degrees of
+/// freedom input (cols >= 6).
+GTEST_TEST(DegenerateEulerJointSanityChecks, TooManyInputDOFTest) {
+  // Scalar type is fixed as it makes no difference.
+  ASSERT_DEATH({
+      DegenerateEulerJoint<double> bad_joint(MatrixX<double>(6, 8));
+    }, "assertion '.*' failed.");
+}
+
+/// @class DegenerateEulerJoint
+/// @test \b TooFewInputDOFTest makes sure a DegenerateEulerJoint
+/// aborts when its translating matrix implies a less than 1 degree of
+/// freedom input (cols < 1).
+GTEST_TEST(DegenerateEulerJointSanityChecks, TooFewInputDOFTest) {
+  // Scalar type is fixed as it makes no difference.
+  ASSERT_DEATH({
+      DegenerateEulerJoint<double> bad_joint(MatrixX<double>(6, 0));
+    }, "assertion '.*' failed.");
+}
+
 }  // namespace
 }  // namespace particles
 }  // namespace examples
