@@ -353,8 +353,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// rod is separated from the halfspace, negative values when the rod is
   /// interpenetrating the halfspace, and zero values when the rod is "kissing"
   /// the halfspace.
-  static T CalcSignedDistance(const Rod2D& rod,
-                              const systems::Context<T>& context);
+  T CalcSignedDistance(const systems::Context<T>& context) const;
 
   /// The witness function for the signed distance between one endpoint of the
   /// rod (not already touching the half-space) and the half-space for the case
@@ -366,8 +365,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// @pre One endpoint of the rod is in contact with the ground, indicated by
   ///      the mode variable being set appropriately. Assertion failure is
   ///      triggered if this is not the case.
-  static T CalcEndpointDistance(const Rod2D& rod,
-                                const systems::Context<T>& context);
+  T CalcEndpointDistance(const systems::Context<T>& context) const;
 
   /// The witness function that determines whether the rod should separate from
   /// the halfspace. The witness function will return a negative value when
@@ -377,9 +375,7 @@ class Rod2D : public systems::LeafSystem<T> {
   ///      and the halfspace will be approximately zero and that the vertical
   ///      velocity at the point of contact will be approximately zero.
   ///      Assertion failure is triggered if the rod is in a ballistic mode.
-  static T CalcNormalAccelWithoutContactForces(const Rod2D& rod,
-                                               const systems::Context<T>&
-                                                 context);
+T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
 
   /// Evaluates the witness function for sliding direction changes. The witness
   /// function will bracket a zero crossing when the direction of sliding
@@ -388,8 +384,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// a negative value (first crossing zero), as the rod begins sliding to the
   /// left (assuming that the rod remains in contact with the halfspace over
   /// the interval).
-  static T CalcSlidingDot(const Rod2D<T>& rod,
-                          const systems::Context<T>& context);
+  T CalcSlidingDot(const systems::Context<T>& context) const;
 
   /// Evaluates the witness function for determining whether the rod in sticking
   /// frictional contact should transition to sliding contact. When the rod
@@ -397,8 +392,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// function will return a non-negative value. If the witness function returns
   /// a negative value at the end of an interval, a transition from sticking
   /// to sliding has been indicated.
-  static T CalcStickingFrictionForceSlack(const Rod2D<T>& rod,
-                                          const systems::Context<T>& context);
+  T CalcStickingFrictionForceSlack(const systems::Context<T>& context) const;
 
   /// Gets the number of witness functions for the system active in the system
   /// for a given state (using @p context).

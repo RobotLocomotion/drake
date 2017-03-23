@@ -734,17 +734,17 @@ TEST_F(Rod2DDAETest, SignedDistWitness) {
   // Rod initially touches the half-space in a kissing configuration and is
   // oriented at a 45 degree angle; check that the signed distance is zero.
   const double tol = 10*std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(dut_->CalcSignedDistance(*dut_, *context_), 0.0, tol);
+  EXPECT_NEAR(dut_->CalcSignedDistance(*context_), 0.0, tol);
 
   // Set the rod to a non-contacting configuration and check that the signed
   // distance is positive.
   SetBallisticState();
-  EXPECT_GT(dut_->CalcSignedDistance(*dut_, *context_), 0);
+  EXPECT_GT(dut_->CalcSignedDistance(*context_), 0);
 
   // Set the rod to an interpenetrating configuration and check that the
   // signed distance is negative.
   SetInterpenetratingConfig();
-  EXPECT_LT(dut_->CalcSignedDistance(*dut_, *context_), 0);
+  EXPECT_LT(dut_->CalcSignedDistance(*context_), 0);
 }
 
 // Checks the witness function for calculating the distance of rod's other
@@ -752,18 +752,18 @@ TEST_F(Rod2DDAETest, SignedDistWitness) {
 TEST_F(Rod2DDAETest, OtherEndpointDistWitness) {
   // Rod is initially in the Painleve state. Verify that the distance
   // on the other endpoint is positive.
-  EXPECT_GT(dut_->CalcEndpointDistance(*dut_, *context_), 0);
+  EXPECT_GT(dut_->CalcEndpointDistance(*context_), 0);
 
   // Move the rod into an interpenetrating configuration without changing the
   // mode variables.
   SetInterpenetratingConfig();
-  EXPECT_LT(dut_->CalcEndpointDistance(*dut_, *context_), 0);
+  EXPECT_LT(dut_->CalcEndpointDistance(*context_), 0);
 
   // Move the rod into a kissing configuration with the rod lying horizontally
   // without changing the mode variables.
   SetRestingHorizontalConfig();
   const double tol = 10*std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(dut_->CalcEndpointDistance(*dut_, *context_), 0, tol);
+  EXPECT_NEAR(dut_->CalcEndpointDistance(*context_), 0, tol);
 }
 
 // Evaluates the witness function for when the rod should separate from the
@@ -779,7 +779,7 @@ TEST_F(Rod2DDAETest, SeparationWitness) {
   xc[2] = M_PI_2;
 
   // Ensure that witness is negative.
-  EXPECT_LT(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 0);
+  EXPECT_LT(dut_->CalcNormalAccelWithoutContactForces(*context_), 0);
 
   // Now add a large upward force and verify that the witness is positive.
   const double flarge_up = 100.0;
@@ -789,21 +789,21 @@ TEST_F(Rod2DDAETest, SeparationWitness) {
   ext_input->SetAtIndex(1, flarge_up);
   ext_input->SetAtIndex(2, 0.0);
   context_->FixInputPort(0, std::move(ext_input));
-  EXPECT_GT(dut_->CalcNormalAccelWithoutContactForces(*dut_, *context_), 0);
+  EXPECT_GT(dut_->CalcNormalAccelWithoutContactForces(*context_), 0);
 }
 
 // Evaluates the witness function for sliding velocity direction changes.
 TEST_F(Rod2DDAETest, VelocityChangesWitness) {
   // Verify that the sliding velocity before the Painleve configuration is
   // negative.
-  EXPECT_LT(dut_->CalcSlidingDot(*dut_, *context_), 0);
+  EXPECT_LT(dut_->CalcSlidingDot(*context_), 0);
 
   // Switch to the mirrored Painleve configuration.
   SetSecondInitialConfig();
 
   // Verify that the sliding velocity before the second Painleve configuration
   // is positive.
-  EXPECT_GT(dut_->CalcSlidingDot(*dut_, *context_), 0);
+  EXPECT_GT(dut_->CalcSlidingDot(*context_), 0);
 }
 
 // Checks the witness for transition from sticking to sliding.
@@ -826,13 +826,13 @@ TEST_F(Rod2DDAETest, StickingSlidingWitness) {
   // Verify that the "slack" is positive.
   const double inf = std::numeric_limits<double>::infinity();
   dut_->set_mu_coulomb(inf);
-  EXPECT_GT(dut_->CalcStickingFrictionForceSlack(*dut_, *context_), 0);
+  EXPECT_GT(dut_->CalcStickingFrictionForceSlack(*context_), 0);
 
   // Set the coefficient of friction to zero.
   dut_->set_mu_coulomb(0.0);
 
   // Verify that the "slack" is negative.
-  EXPECT_LT(dut_->CalcStickingFrictionForceSlack(*dut_, *context_), 0);
+  EXPECT_LT(dut_->CalcStickingFrictionForceSlack(*context_), 0);
 }
 
 /// Class for testing the Rod 2D example using a first order time
@@ -910,6 +910,11 @@ TEST_F(Rod2DTimeSteppingTest, RodGoesToRest) {
   // should be nearly zero.
   EXPECT_TRUE(std::fabs(theta) < 1e-6 || std::fabs(theta - M_PI) < 1e-6);
   EXPECT_NEAR(theta_dot, 0.0, 1e-6);
+}
+
+// Validates the number of witness functions is determined correctly.
+TEST_F(Rod2DTimeSteppingTest, NumWitnessFunctions) {
+  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
 }
 
 // This test checks to see whether a single semi-explicit step of the piecewise
@@ -1225,6 +1230,11 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
   Vector3d F_Ro_W_both = dut_->CalcCompliantContactForces(*context_);
   EXPECT_TRUE(F_Ro_W_both.isApprox(F_Ro_W_left+F_Ro_W_right, kTightTol));
   EXPECT_NEAR(F_Ro_W_both[2], 0., kTightTol);
+}
+
+// Validates the number of witness functions is determined correctly.
+TEST_F(Rod2DCompliantTest, NumWitnessFunctions) {
+  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
 }
 
 }  // namespace

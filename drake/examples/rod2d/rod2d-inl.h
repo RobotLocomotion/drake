@@ -53,14 +53,13 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
 }
 
 template <class T>
-T Rod2D<T>::CalcSignedDistance(const Rod2D<T>& rod,
-                               const systems::Context<T>& context) {
+T Rod2D<T>::CalcSignedDistance(const systems::Context<T>& context) const {
   using std::sin;
   using std::cos;
   using std::min;
 
   // Verify the system is simulated using piecewise DAE.
-  DRAKE_DEMAND(rod.get_simulation_type() ==
+  DRAKE_DEMAND(get_simulation_type() ==
       Rod2D<T>::SimulationType::kPiecewiseDAE);
 
   // Get the necessary parts of the state.
@@ -75,20 +74,19 @@ T Rod2D<T>::CalcSignedDistance(const Rod2D<T>& rod,
   int k1 = 1;
   int k2 = -1;
   const Vector2<T> ep1 = CalcRodEndpoint(x, y, k1, ctheta, stheta,
-                                         rod.get_rod_half_length());
+                                         get_rod_half_length());
   const Vector2<T> ep2 = CalcRodEndpoint(x, y, k2, ctheta, stheta,
-                                         rod.get_rod_half_length());
+                                         get_rod_half_length());
 
   return min(ep1[1], ep2[1]);
 }
 
 template <class T>
-T Rod2D<T>::CalcEndpointDistance(const Rod2D<T>& rod,
-                                 const systems::Context<T>& context) {
+T Rod2D<T>::CalcEndpointDistance(const systems::Context<T>& context) const {
   using std::sin;
 
   // Verify the system is simulated using piecewise DAE.
-  DRAKE_DEMAND(rod.get_simulation_type() ==
+  DRAKE_DEMAND(get_simulation_type() ==
       Rod2D<T>::SimulationType::kPiecewiseDAE);
 
   // Get the necessary parts of the state.
@@ -102,22 +100,21 @@ T Rod2D<T>::CalcEndpointDistance(const Rod2D<T>& rod,
   const Mode mode = context.template get_abstract_state<Mode>(0);
   DRAKE_DEMAND(mode == Mode::kSlidingSingleContact ||
                mode == Mode::kStickingSingleContact);
-  const int k = rod.get_k(context);
+  const int k = get_k(context);
 
   // Get the vertical position of the other rod endpoint.
   const int k2 = -k;
-  return y + k2 * stheta * rod.get_rod_half_length();
+  return y + k2 * stheta * get_rod_half_length();
 }
 
 template <class T>
-T Rod2D<T>::CalcNormalAccelWithoutContactForces(const Rod2D<T>& rod,
-                                                const systems::Context<T>&
-                                                     context) {
-  DRAKE_ASSERT_VOID(rod.CheckValidContext(context));
+T Rod2D<T>::CalcNormalAccelWithoutContactForces(const systems::Context<T>&
+                                                     context) const {
+  DRAKE_ASSERT_VOID(this->CheckValidContext(context));
   using std::sin;
 
   // Verify the system is simulated using piecewise DAE.
-  DRAKE_DEMAND(rod.get_simulation_type() ==
+  DRAKE_DEMAND(get_simulation_type() ==
                Rod2D<T>::SimulationType::kPiecewiseDAE);
 
   // Get the necessary parts of the state.
@@ -129,13 +126,13 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const Rod2D<T>& rod,
   // the endpoint in contact.
   const Mode mode = context.template get_abstract_state<Mode>(0);
   DRAKE_DEMAND(mode != Mode::kBallisticMotion);
-  const int k = rod.get_k(context);
-  const T half_rod_length = rod.get_rod_half_length();
+  const int k = get_k(context);
+  const T half_rod_length = get_rod_half_length();
   const T stheta = sin(theta);
 
   // Get the external force.
   const int port_index = 0;
-  const auto input = rod.EvalEigenVectorInput(context, port_index);
+  const auto input = this->EvalEigenVectorInput(context, port_index);
   const Vector3<T> fapplied = input.segment(0, 3);
   const T& fY = fapplied(1);
   const T& tau = fapplied(2);
@@ -146,8 +143,8 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const Rod2D<T>& rod,
   // cy = y + k * half_rod_length * sin(θ)  [rod endpoint vertical location]
   // dcy/dt = dy/dt + k * half_rod_length * cos(θ) * dθ/dt
   // d²cy/dt² = d²y/dt² - k * half_rod_length * sin(θ) * (dθ/dt)² * d²θ/dt²
-  const T yddot = rod.get_gravitational_acceleration() + fY/rod.get_rod_mass();
-  const T thetaddot = tau/rod.get_rod_moment_of_inertia();
+  const T yddot = get_gravitational_acceleration() + fY/get_rod_mass();
+  const T thetaddot = tau/get_rod_moment_of_inertia();
   T cyddot = yddot -
         k * half_rod_length * stheta * thetadot * thetadot * thetaddot;
 
@@ -155,12 +152,11 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const Rod2D<T>& rod,
 }
 
 template <class T>
-T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
-                           const systems::Context<T>& context) {
+T Rod2D<T>::CalcSlidingDot(const systems::Context<T>& context) const {
   using std::sin;
 
   // Verify the system is simulated using piecewise DAE.
-  DRAKE_DEMAND(rod.get_simulation_type() ==
+  DRAKE_DEMAND(get_simulation_type() ==
       Rod2D<T>::SimulationType::kPiecewiseDAE);
 
   // Verify rod is undergoing sliding contact.
@@ -169,7 +165,7 @@ T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
                mode == Mode::kSlidingTwoContacts);
 
   // Get the point of contact.
-  const int k = rod.get_k(context);
+  const int k = get_k(context);
 
   // Get the relevant parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -179,24 +175,24 @@ T Rod2D<T>::CalcSlidingDot(const Rod2D<T>& rod,
 
   // Compute the velocity at the point of contact
   const T stheta = sin(theta);
-  const T half_rod_length = rod.get_rod_half_length();
+  const T half_rod_length = get_rod_half_length();
   const T xcdot = xdot - k * stheta * half_rod_length * thetadot;
   return xcdot;
 }
 
 template <class T>
-T Rod2D<T>::CalcStickingFrictionForceSlack(const Rod2D<T>& rod,
-                                           const systems::Context<T>& context) {
+T Rod2D<T>::CalcStickingFrictionForceSlack(const systems::Context<T>& context)
+                                               const {
   using std::abs;
 
   // Compute the contact forces, assuming sticking contact.
-  const Vector2<T> cf = rod.CalcStickingContactForces(context);
+  const Vector2<T> cf = CalcStickingContactForces(context);
   const T &fN = cf(0);
   const T &fF = cf(1);
 
   // Compute the difference between how much force *can* be applied to effect
   // sticking and how much force needs to be applied to effect sticking.
-  const double mu = rod.get_mu_coulomb();
+  const double mu = get_mu_coulomb();
   return mu * fN - abs(fF);
 }
 
