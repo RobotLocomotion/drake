@@ -54,14 +54,6 @@ TEST_F(IdentifierTests, Constructor) {
   AId bad;
   EXPECT_FALSE(bad.is_valid());
   EXPECT_TRUE(a2_.is_valid());
-  // In Debug builds, attempting to acquire the value is an error.
-#ifndef DRAKE_ASSERT_IS_DISARMED
-  AId invalid;
-  int64_t value = -1;
-  EXPECT_DEATH({value = invalid.get_value();}, "");
-  // This lets gcc thinks the variable is used.
-  EXPECT_EQ(value, -1);
-#endif
 }
 
 // Confirms that assignment behaves correctly. This also implicitly tests
@@ -72,15 +64,6 @@ TEST_F(IdentifierTests, AssignmentAndComparison) {
   EXPECT_TRUE(temp == a2_);
   temp = a3_;
   EXPECT_TRUE(temp == a3_);
-  // In Debug builds, comparison of invalid ids is an error.
-#ifndef DRAKE_ASSERT_IS_DISARMED
-  AId invalid;
-  bool result = true;
-  EXPECT_DEATH({result = invalid == a1_;}, "");
-  EXPECT_DEATH({result = invalid != a1_;}, "");
-  // This lets gcc thinks the variable is used.
-  EXPECT_EQ(result, true);
-#endif
 }
 
 // Confirms that ids are configured to serve as unique keys in
@@ -105,12 +88,6 @@ TEST_F(IdentifierTests, ServeAsMapKey) {
   EXPECT_EQ(ids.size(), 2);
 
   EXPECT_EQ(ids.find(a3_), ids.end());
-
-  // In Debug builds, invalid identifiers cannot be used as keys.
-#ifndef DRAKE_ASSERT_IS_DISARMED
-  AId invalid;
-  ASSERT_DEATH({ids.insert(invalid);}, "");
-#endif
 }
 
 // Confirms that ids are configured to serve as values in STL containers.
@@ -134,11 +111,6 @@ TEST_F(IdentifierTests, StreamOperator) {
   stringstream ss;
   ss << a2_;
   EXPECT_EQ(ss.str(), "2");
-  // In Debug builds, writing the identifier value to a stream is an error.
-#ifndef DRAKE_ASSERT_IS_DISARMED
-  AId invalid;
-  ASSERT_DEATH({ss << invalid;}, "");
-#endif
 }
 
 // These tests confirm that behavior that *shouldn't* be compilable isn't.
@@ -195,6 +167,68 @@ TEST_F(IdentifierTests, Convertible) {
   static_assert(!std::is_convertible<int, AId>::value,
                 "Identifiers should not be convertible from ints");
 }
+
+// Suite of tests to catch the debug-build assertions.
+#ifndef DRAKE_ASSERT_IS_DISARMED
+
+class IdentifierDeathTests : public IdentifierTests {};
+
+// Attempting to acquire the value is an error.
+TEST_F(IdentifierDeathTests, InvalidGetValueCall) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  AId invalid;
+  int64_t value = -1;
+  ASSERT_DEATH(
+      {value = invalid.get_value();},
+      "abort: failure at .*identifier.h:.+ in get_value.+"
+          "assertion 'is_valid\\(\\)' failed");
+  // This lets gcc thinks the variable is used.
+  EXPECT_EQ(value, -1);
+}
+
+// Comparison of invalid ids is an error.
+TEST_F(IdentifierDeathTests, InvlalidEqualityCompare) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  AId invalid;
+  bool result = true;
+  EXPECT_DEATH(
+      {result = invalid == a1_;},
+      "abort: failure at .*identifier.h:.+ in operator==.+"
+          "assertion 'is_valid\\(\\) && other.is_valid\\(\\)' failed");
+  // This lets gcc thinks the variable is used.
+  EXPECT_EQ(result, true);
+}
+
+// Comparison of invalid ids is an error.
+TEST_F(IdentifierDeathTests, InvlalidInequalityCompare) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  AId invalid;
+  bool result = true;
+  EXPECT_DEATH(
+      {result = invalid != a1_;},
+      "abort: failure at .*identifier.h:.+ in operator!=.+"
+          "assertion 'is_valid\\(\\) && other.is_valid\\(\\)' failed");
+  // This lets gcc thinks the variable is used.
+  EXPECT_EQ(result, true);
+}
+
+// Hashing an invalid id is an error.
+TEST_F(IdentifierDeathTests, InvalidHash) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  std::unordered_set<AId> ids;
+  AId invalid;
+  ASSERT_DEATH({ids.insert(invalid);}, "");
+}
+
+// Streaming an invalid id is an error.
+TEST_F(IdentifierDeathTests, InvalidStream) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  AId invalid;
+  std::stringstream ss;
+  ASSERT_DEATH({ss << invalid;}, "");
+}
+
+#endif  // DRAKE_ASSERT_IS_DISARMED
 
 }  // namespace
 }  // namespace geometry
