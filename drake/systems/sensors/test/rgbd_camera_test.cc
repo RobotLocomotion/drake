@@ -31,6 +31,7 @@ namespace {
 // Linux and Macintosh OSX.
 const double kTolerance = 1e-12;
 const double kColorPixelTolerance = 1.001;
+const double kDepthTolerance = 1e-4;
 const double kFovY = M_PI_4;
 const bool kShowWindow = true;
 
@@ -152,6 +153,22 @@ class RenderingSim : public systems::Diagram<double> {
 // is added.
 const std::array<uint8_t, 4> kTerrainColor{{204u, 229u, 255u, 255u}};
 
+const int kWidth = 640;
+const int kHeight = 480;
+
+struct UV {
+  int u;
+  int v;
+};
+
+UV kCorners[4] = {
+  UV{0, 0},
+  UV{kWidth - 1, 0},
+  UV{0, kHeight - 1},
+  UV{kWidth - 1, kHeight - 1}
+};
+
+
 class ImageTest : public ::testing::Test {
  public:
   typedef std::function<void(
@@ -268,7 +285,7 @@ class ImageTest : public ::testing::Test {
                       kColorPixelTolerance);
         }
         // Assuming depth value provides 0.1 mm precision.
-        ASSERT_NEAR(depth_image.at(u, v)[0], depth, 1e-4);
+        ASSERT_NEAR(depth_image.at(u, v)[0], depth, kDepthTolerance);
       }
     }
   }
@@ -302,27 +319,17 @@ class ImageTest : public ::testing::Test {
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
-  struct UV {
-    int u;
-    int v;
-  };
-
   // Verifies the color and depth of the image at the center and four corners.
   static void VerifySphere(const sensors::Image<uint8_t>& color_image,
                            const sensors::Image<float>& depth_image) {
     // Verifies the four corner points.
-    UV kCorners[4] = {UV{0, 0},
-                      UV{color_image.width() - 1, 0},
-                      UV{0, color_image.height() - 1},
-                      UV{color_image.width() - 1,
-                         color_image.height() - 1}};
 
     for (const auto& corner : kCorners) {
       for (int ch = 0; ch < color_image.num_channels(); ++ch) {
         ASSERT_NEAR(color_image.at(corner.u, corner.v)[ch],
                     kTerrainColor[ch], kColorPixelTolerance);
       }
-      ASSERT_NEAR(depth_image.at(corner.u, corner.v)[0], 2.f, 1e-4);
+      ASSERT_NEAR(depth_image.at(corner.u, corner.v)[0], 2.f, kDepthTolerance);
     }
 
     // Verifies the center point's color.
@@ -339,7 +346,36 @@ class ImageTest : public ::testing::Test {
                 255u, kColorPixelTolerance);
 
     // Verifies the center point's depth.
-    ASSERT_NEAR(depth_image.at(half_width, half_height)[0], 1.f, 1e-4);
+    ASSERT_NEAR(depth_image.at(half_width, half_height)[0], 1.f,
+                kDepthTolerance);
+  }
+
+    // Verifies the color and depth of the image at the two visuals (boxes).
+  static void VerifyMultipleVisuals(const sensors::Image<uint8_t>& color_image,
+                                    const sensors::Image<float>& depth_image) {
+    // Verifies the four corner points.
+    for (const auto& corner : kCorners) {
+      for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+        ASSERT_NEAR(color_image.at(corner.u, corner.v)[ch],
+                    kTerrainColor[ch], kColorPixelTolerance);
+      }
+      ASSERT_NEAR(depth_image.at(corner.u, corner.v)[0], 4.999f,
+                  kDepthTolerance);
+    }
+
+    // Verifies the four corner points.
+    UV kRightBox{kWidth / 2 + 144, kHeight / 2};
+    UV kLeftBox{kWidth / 2 - 144, kHeight / 2};
+    for (int ch = 0; ch < color_image.num_channels() - 1; ++ch) {
+      ASSERT_NEAR(color_image.at(kRightBox.u, kRightBox.v)[ch],
+                  179u, kColorPixelTolerance);
+      ASSERT_NEAR(color_image.at(kLeftBox.u, kLeftBox.v)[ch],
+                  179u, kColorPixelTolerance);
+    }
+    ASSERT_NEAR(depth_image.at(kRightBox.u, kRightBox.v)[0],
+                3.999f, kDepthTolerance);
+    ASSERT_NEAR(depth_image.at(kLeftBox.u, kLeftBox.v)[0],
+                3.999f, kDepthTolerance);
   }
 
   static void VerifyMovingCamera(const sensors::Image<uint8_t>& color_image,
@@ -462,14 +498,14 @@ TEST_F(ImageTest, LabelRenderingTest) {
   VerifyLabelImage();
 }
 
-// Verifies an exception is thrown if a link has more than two visuals.
-GTEST_TEST(RenderingTest, MultipleVisualsTest) {
+// Verifies the case that a model has multiple visuals.
+TEST_F(ImageTest, MultipleVisualsTest) {
   // The following SDF includes a link that has more than two visuals.
-  const std::string sdf("/systems/sensors/test/models/bad.sdf");
-  RenderingSim diagram(GetDrakePath() + sdf);
-  EXPECT_THROW(diagram.InitFixedCamera(Eigen::Vector3d(0., 0., 1.),
-                                       Eigen::Vector3d(0., 0., 0.)),
-               std::runtime_error);
+  const std::string sdf("/systems/sensors/test/models/multiple_visuals.sdf");
+  SetUp(sdf,
+        Eigen::Vector3d(0., 0., 4.999),
+        Eigen::Vector3d(0., M_PI_2, 0.));
+  Verify(ImageTest::VerifyMultipleVisuals);
 }
 
 }  // namespace
