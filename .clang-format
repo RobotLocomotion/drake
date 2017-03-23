@@ -1,8 +1,46 @@
+# -*- yaml -*-
+
+# This file determines clang-format's style settings; for details, refer to
+# http://clang.llvm.org/docs/ClangFormatStyleOptions.html
+
 ---
 BasedOnStyle:  Google
 ---
 Language: Cpp
+
 # Force pointers to the type for C++.
 DerivePointerAlignment: false
 PointerAlignment: Left
+
+# Specify the #include statement order.  This implements the order mandated by
+# the Google C++ Style Guide: related header, C headers, C++ headers, library
+# headers, and finally the project headers.
+#
+# To obtain updated lists of system headers used in the below expressions, see:
+# http://stackoverflow.com/questions/2027991/list-of-standard-header-files-in-c-and-c/2029106#2029106.
+IncludeCategories:
+  # Spacers used by drake/tools/formatter.py.
+  - Regex:    '^<clang-format-priority-15>$'
+    Priority: 15
+  - Regex:    '^<clang-format-priority-25>$'
+    Priority: 25
+  - Regex:    '^<clang-format-priority-35>$'
+    Priority: 35
+  - Regex:    '^<clang-format-priority-45>$'
+    Priority: 45
+  # C system headers.
+  - Regex:    '^[<"](aio\.h|arpa/inet\.h|assert\.h|complex\.h|cpio\.h|ctype\.h|curses\.h|dirent\.h|dlfcn\.h|errno\.h|fcntl\.h|fenv\.h|float\.h|fmtmsg\.h|fnmatch\.h|ftw\.h|glob\.h|grp\.h|iconv\.h|inttypes\.h|iso646\.h|langinfo\.h|libgen\.h|limits\.h|locale\.h|math\.h|monetary\.h|mqueue\.h|ndbm\.h|netdb\.h|net/if\.h|netinet/in\.h|netinet/tcp\.h|nl_types\.h|poll\.h|pthread\.h|pwd\.h|regex\.h|sched\.h|search\.h|semaphore\.h|setjmp\.h|signal\.h|spawn\.h|stdalign\.h|stdarg\.h|stdatomic\.h|stdbool\.h|stddef\.h|stdint\.h|stdio\.h|stdlib\.h|stdnoreturn\.h|string\.h|strings\.h|stropts\.h|sys/ipc\.h|syslog\.h|sys/mman\.h|sys/msg\.h|sys/resource\.h|sys/select\.h|sys/sem\.h|sys/shm\.h|sys/socket\.h|sys/stat\.h|sys/statvfs\.h|sys/time\.h|sys/times\.h|sys/types\.h|sys/uio\.h|sys/un\.h|sys/utsname\.h|sys/wait\.h|tar\.h|term\.h|termios\.h|tgmath\.h|threads\.h|time\.h|trace\.h|uchar\.h|ulimit\.h|uncntrl\.h|unistd\.h|utime\.h|utmpx\.h|wchar\.h|wctype\.h|wordexp\.h)[">]$'
+    Priority: 20
+  # C++ system headers.
+  - Regex:    '^[<"](algorithm|array|atomic|bitset|cassert|ccomplex|cctype|cerrno|cfenv|cfloat|chrono|cinttypes|ciso646|climits|clocale|cmath|codecvt|complex|condition_variable|csetjmp|csignal|cstdalign|cstdarg|cstdbool|cstddef|cstdint|cstdio|cstdlib|cstring|ctgmath|ctime|cuchar|cwchar|cwctype|deque|exception|forward_list|fstream|functional|future|initializer_list|iomanip|ios|iosfwd|iostream|istream|iterator|limits|list|locale|map|memory|mutex|new|numeric|ostream|queue|random|ratio|regex|scoped_allocator|set|shared_mutex|sstream|stack|stdexcept|streambuf|string|strstream|system_error|thread|tuple|type_traits|typeindex|typeinfo|unordered_map|unordered_set|utility|valarray|vector)[">]$'
+    Priority: 30
+  # Other libraries' h files (with angles).
+  - Regex:    '^<'
+    Priority: 40
+  # Your project's h files.
+  - Regex:    '^"drake'
+    Priority: 50
+  # Other libraries' h files (with quotes).
+  - Regex:    '^"'
+    Priority: 41
 ---

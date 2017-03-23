@@ -2,6 +2,13 @@
 
 package(default_visibility = ["//visibility:public"])
 
+# Depend on this when you need to call clang-format.  (We don't have a label
+# for the binary yet, but this will stand in for it in the meantime.)
+filegroup(
+    name = "clang-format",
+    srcs = ["//:.clang-format"],
+)
+
 sh_binary(
     name = "valgrind",
     srcs = ["valgrind.sh"],

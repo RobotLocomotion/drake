@@ -3,34 +3,37 @@
 
 set -ex
 
-mkdir tmp
-
 # Dump some debugging output.
 find .
+
+# Move the originals (which are symlinks) out of the way.
+tool_outputs="lcmt_sample_t.lcm sample.cc sample.h sample_translator.cc sample_translator.h"
+for item in $tool_outputs; do
+    mv drake/tools/test/gen/"$item"{,.orig}
+done
 
 # Run the code generator.
 # TODO(jwnimmer-tri) De-duplicate this with lcm_vector_gen.sh.
 ./drake/tools/lcm_vector_gen \
-  --lcmtype-dir="tmp" \
-  --cxx-dir="tmp" \
+  --lcmtype-dir="drake/tools/test/gen" \
+  --cxx-dir="drake/tools/test/gen" \
   --namespace="drake::tools::test" \
   --title="Sample" \
   --workspace=$(pwd) \
   --named_vector_file="drake/tools/test/sample.named_vector"
 
 # Dump some debugging output.
-find tmp
+find drake/tools/test/gen
 
 # Re-format the code.
 # TODO(jwnimmer-tri) De-duplicate this with lcm_vector_gen.sh.
-clang-format --style=file -i tmp/*.h tmp/*.cc
+for item in $tool_outputs; do
+    clang-format --style=file -i drake/tools/test/gen/"$item"
+done
 
 # Insist that the generated output matches the current copy in git.
-for item in lcmt_sample_t.lcm sample.cc sample.h sample_translator.cc sample_translator.h; do
-    # Fuzz out a desirable difference in the generated code.
-    sed -i -e 's|include "tmp|include "drake/tools/test/gen|' tmp/"$item"
-    # The files should be identical now.
-    diff --unified=20 drake/tools/test/gen/"$item" tmp/"$item"
+for item in ; do
+    diff --unified=20 drake/tools/test/gen/"$item"{.orig,}
 done
 
 echo "PASS"
