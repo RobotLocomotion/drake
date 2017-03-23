@@ -135,7 +135,7 @@ class MultibodyTree {
     DRAKE_DEMAND(body_index < get_num_bodies());
 
     // Assume we are calling from AddBody
-    FrameIndex frame_index = topology_.add_material_frame(body_index);
+    FrameIndex frame_index = topology_.add_physical_frame(body_index);
 
     // MultibodyTree has access to these methods since it is a friend of
     // MultibodyTreeElement. Users of Frame<T>, however, do not have access to
