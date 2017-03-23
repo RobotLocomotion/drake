@@ -304,7 +304,11 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   const Eigen::VectorXd& initial_guess = prog.initial_guess();
   std::vector<double> x(initial_guess.size());
   for (size_t i = 0; i < x.size(); i++) {
-    x[i] = initial_guess[i];
+    if (!std::isnan(initial_guess[i])) {
+      x[i] = initial_guess[i];
+    } else {
+      x[i] = 0.0;
+    }
   }
 
   std::vector<double> xlow(nx, -std::numeric_limits<double>::infinity());
