@@ -8,7 +8,9 @@
 #include <Eigen/Geometry>
 
 #include "drake/automotive/calc_smooth_acceleration.h"
+#include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
+#include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/math/roll_pitch_yaw_using_quaternion.h"
@@ -21,6 +23,8 @@ namespace drake {
 using maliput::api::GeoPosition;
 using maliput::api::IsoLaneVelocity;
 using maliput::api::Lane;
+using maliput::api::LaneEnd;
+using maliput::api::LaneEndSet;
 using maliput::api::LanePosition;
 using maliput::api::Rotation;
 using systems::BasicVector;
@@ -209,23 +213,19 @@ void MaliputRailcar<T>::ImplCalcTimeDerivatives(
     const LaneDirection& lane_direction,
     const BasicVector<T>& input,
     MaliputRailcarState<T>* rates) const {
-  if (state.s() < 0 || state.s() >= lane_direction.lane->length()) {
-    rates->set_s(0);
-  } else {
-    const T speed = state.speed();
-    const T sigma_v = cond(lane_direction.with_s, speed, -speed);
-    const LanePosition motion_derivatives =
-        lane_direction.lane->EvalMotionDerivatives(
-            LanePosition(state.s(), config.r(), config.h()),
-            IsoLaneVelocity(sigma_v, 0 /* rho_v */, 0 /* eta_v */));
-    // Since the railcar's IsoLaneVelocity's rho_v and eta_v values are both
-    // zero, we expect the resulting motion derivative's r and h values to
-    // also be zero. The IsoLaneVelocity's sigma_v, which may be non-zero, maps
-    // to the motion derivative's s value.
-    DRAKE_ASSERT(motion_derivatives.r == 0);
-    DRAKE_ASSERT(motion_derivatives.h == 0);
-    rates->set_s(motion_derivatives.s);
-  }
+  const T speed = state.speed();
+  const T sigma_v = cond(lane_direction.with_s, speed, -speed);
+  const LanePosition motion_derivatives =
+      lane_direction.lane->EvalMotionDerivatives(
+          LanePosition(state.s(), config.r(), config.h()),
+          IsoLaneVelocity(sigma_v, 0 /* rho_v */, 0 /* eta_v */));
+  // Since the railcar's IsoLaneVelocity's rho_v and eta_v values are both
+  // zero, we expect the resulting motion derivative's r and h values to
+  // also be zero. The IsoLaneVelocity's sigma_v, which may be non-zero, maps
+  // to the motion derivative's s value.
+  DRAKE_ASSERT(motion_derivatives.r == 0);
+  DRAKE_ASSERT(motion_derivatives.h == 0);
+  rates->set_s(motion_derivatives.s);
 
   const T desired_acceleration = input.GetAtIndex(0);
   const T smooth_acceleration = calc_smooth_acceleration(
@@ -349,11 +349,45 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
     const systems::Context<T>& context,
     systems::State<T>* next_state) const {
 
-  // Copy the present state to the new one.
+  const MaliputRailcarState<T>* const current_railcar_state =
+      dynamic_cast<const MaliputRailcarState<T>*>(
+          &context.get_continuous_state_vector());
+  DRAKE_ASSERT(current_railcar_state != nullptr);
+  const LaneDirection& current_lane_direction =
+      context.template get_abstract_state<LaneDirection>(0);
+  DRAKE_ASSERT(current_lane_direction.lane != nullptr);
+
+  // Copies the present state into the new one.
   next_state->CopyFrom(context.get_state());
 
-  // TODO(liang.fok): Update state to allow MaliputRailcar to proceed onto an
-  // ongoing branch from the current Maliput lane.
+  ContinuousState<T>* cs = next_state->get_mutable_continuous_state();
+  DRAKE_ASSERT(cs != nullptr);
+  VectorBase<T>* cv = cs->get_mutable_vector();
+  DRAKE_ASSERT(cv != nullptr);
+  MaliputRailcarState<T>* const next_railcar_state =
+      dynamic_cast<MaliputRailcarState<T>*>(cv);
+  DRAKE_ASSERT(next_railcar_state != nullptr);
+
+  // Sets the speed to be zero if the car is at or is after the end of the road.
+  if (current_lane_direction.with_s) {
+    const int num_branches = current_lane_direction.lane->
+        GetOngoingBranches(LaneEnd::kFinish)->size();
+    if (num_branches == 0 &&
+        current_railcar_state->s() >= current_lane_direction.lane->length()) {
+      next_railcar_state->set_speed(0);
+    }
+  } else {
+    const int num_branches = current_lane_direction.lane->
+        GetOngoingBranches(LaneEnd::kStart)->size();
+    if (num_branches == 0 && current_railcar_state->s() <= 0) {
+      next_railcar_state->set_speed(0);
+    }
+  }
+
+  if (next_railcar_state->speed() != 0) {
+    // TODO(liang.fok): Update state to allow MaliputRailcar to proceed onto an
+    // ongoing branch.
+  }
 }
 
 // This section must match the API documentation in maliput_railcar.h.
