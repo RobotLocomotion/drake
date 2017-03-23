@@ -360,6 +360,10 @@ class Rod2D : public systems::LeafSystem<T> {
                        systems::State<T>* state) const override;
 
  private:
+  void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
+                                    Vector2<T>* fN, Vector2<T>* fF) const;
+  void CalcTwoContactSlidingForces(const systems::Context<T>& context,
+                                    Vector2<T>* fN, Vector2<T>* fF) const;
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
     const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
@@ -383,6 +387,10 @@ class Rod2D : public systems::LeafSystem<T> {
                         systems::VectorBase<T>* const f,
                         const T& fN, const T& fF,
                         const T& xc, const T& yc) const;
+  void SetAccelerations(const systems::Context<T>& context,
+                        systems::VectorBase<T>* const f,
+                        const Vector2<T>& fN, const Vector2<T>& fF,
+                        const Vector2<T>& c1, const Vector2<T>& c2) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
 
