@@ -43,7 +43,7 @@ template<typename T> class Body;
 /// However, users can still access the frame associated with a body, see
 /// Body::get_body_frame(). This access is more than a convenience, but it
 /// allows users to specify mobilizers between a body frame and any other
-/// MaterialFrame in the multibody tree.
+/// PhysicalFrame in the multibody tree.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -119,7 +119,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // constructor.
   // Even though this method is called within a body which already has a valid
   // parent multibody tree, its parent tree is passed as an argument in order to
-  // have mutable access to it and add a new material frame for this body.
+  // have mutable access to it and add a new body frame for this body.
   const BodyFrame<T>& CreateBodyFrame(MultibodyTree<T>* tree) const {
     this->HasParentTreeOrThrow();
     this->HasThisParentTreeOrThrow(tree);
