@@ -11,6 +11,7 @@
 #include "drake/math/random_rotation.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
 
 using Eigen::Vector3d;
@@ -52,17 +53,17 @@ GTEST_TEST(RotationTest, TestRPYLimits) {
     // Bounds are loose, so just test that feasible points are indeed feasible.
     const double rmin =
         (limits & kRoll_0_to_PI)
-            ? 0
-            : (limits & kRoll_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
+        ? 0
+        : (limits & kRoll_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
     const double rmax = (limits & kRoll_NegPI_2_to_PI_2) ? M_PI_2 : M_PI;
     const double pmin =
         (limits & kPitch_0_to_PI)
-            ? 0
-            : (limits & kPitch_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
+        ? 0
+        : (limits & kPitch_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
     const double pmax = (limits & kPitch_NegPI_2_to_PI_2) ? M_PI_2 : M_PI;
     const double ymin = (limits & kYaw_0_to_PI)
-                            ? 0
-                            : (limits & kYaw_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
+                        ? 0
+                        : (limits & kYaw_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
     const double ymax = (limits & kYaw_NegPI_2_to_PI_2) ? M_PI_2 : M_PI;
 
     for (double roll = rmin; roll <= rmax; roll += M_PI / 6) {
@@ -71,10 +72,10 @@ GTEST_TEST(RotationTest, TestRPYLimits) {
           Matrix3d R = drake::math::rpy2rotmat(Vector3d(roll, pitch, yaw));
           Eigen::Map<Eigen::Matrix<double, 9, 1>> vecR(R.data(), R.size());
           prog.SetDecisionVariableValues(vecR);
-          for (const auto& b : bb_constraints) {
+          for (const auto &b : bb_constraints) {
             Eigen::VectorXd x = prog.EvalBindingAtSolution(b);
-            const Eigen::VectorXd& lb = b.constraint()->lower_bound();
-            const Eigen::VectorXd& ub = b.constraint()->upper_bound();
+            const Eigen::VectorXd &lb = b.constraint()->lower_bound();
+            const Eigen::VectorXd &ub = b.constraint()->upper_bound();
             for (int i = 0; i < x.size(); i++) {
               EXPECT_GE(x(i), lb(i));
               EXPECT_LE(x(i), ub(i));
@@ -117,13 +118,17 @@ GTEST_TEST(RotationTest, TestSpectralPsd) {
   Eigen::Matrix4d U;
   // clang-format off
   // NOLINTNEXTLINE(whitespace/comma)
-  U << 1-R(0,0)-R(1,1)+R(2,2), R(0,2)+R(2,0), R(0,1)-R(1,0), R(1,2)+R(2,1),
-  // NOLINTNEXTLINE(whitespace/comma)
-       R(0,2)+R(2,0), 1+R(0,0)-R(1,1)-R(2,2), R(1,2)-R(2,1), R(0,1)+R(1,0),
-  // NOLINTNEXTLINE(whitespace/comma)
-       R(0,1)-R(1,0), R(1,2)-R(2,1), 1+R(0,0)+R(1,1)+R(2,2), R(2,0)-R(0,2),
-  // NOLINTNEXTLINE(whitespace/comma)
-       R(1,2)+R(2,1), R(0,1)+R(1,0), R(2,0)-R(0,2), 1-R(0,0)+R(1,1)-R(2,2);
+  U << 1 - R(0, 0) - R(1, 1) + R(2, 2), R(0, 2) + R(2, 0), R(0, 1) - R(1, 0),
+      R(1, 2) + R(2, 1),
+      // NOLINTNEXTLINE(whitespace/comma)
+      R(0, 2) + R(2, 0), 1 + R(0, 0) - R(1, 1) - R(2, 2), R(1, 2) - R(2, 1),
+      R(0, 1) + R(1, 0),
+      // NOLINTNEXTLINE(whitespace/comma)
+      R(0, 1) - R(1, 0), R(1, 2) - R(2, 1), 1 + R(0, 0) + R(1, 1) + R(2, 2),
+      R(2, 0) - R(0, 2),
+      // NOLINTNEXTLINE(whitespace/comma)
+      R(1, 2) + R(2, 1), R(0, 1) + R(1, 0), R(2, 0) - R(0, 2), 1 - R(0, 0)
+      + R(1, 1) - R(2, 2);
   // clang-format on
 
   auto lambda_mag = U.eigenvalues().array().real();
@@ -192,7 +197,7 @@ void CompareIntersectionResults(std::vector<Vector3d> desired,
   }
 }
 
-void CompareHalfspaceRelaxation(const std::vector<Vector3d>& pts) {
+void CompareHalfspaceRelaxation(const std::vector<Vector3d> &pts) {
   // Computes a possibly less tight n and d analytically. For each triangle with
   // vertices pts[i], pts[j] and pts[k], determine if the halfspace coinciding
   // with the triangle is a cutting plane (namely all vertices in pts are on one
@@ -212,7 +217,7 @@ void CompareHalfspaceRelaxation(const std::vector<Vector3d>& pts) {
         }
         double d_tmp = normal_tmp.transpose() * pts[i];
         bool is_cutting_plane = true;
-        for (const auto& pt : pts) {
+        for (const auto &pt : pts) {
           if (pt.transpose() * normal_tmp < d_tmp - 1E-10) {
             is_cutting_plane = false;
             break;
@@ -230,7 +235,7 @@ void CompareHalfspaceRelaxation(const std::vector<Vector3d>& pts) {
   internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(pts, &n_expected,
                                                                &d_expected);
   EXPECT_GE(d_expected, d - 1E-8);
-  for (const auto& pt : pts) {
+  for (const auto &pt : pts) {
     EXPECT_GE(pt.transpose() * n_expected - d_expected, -1E-6);
   }
 }
@@ -342,9 +347,9 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
 }
 
 bool IsFeasibleCheck(
-    MathematicalProgram* prog,
-    const std::shared_ptr<LinearEqualityConstraint>& feasibility_constraint,
-    const Eigen::Ref<const Matrix3d>& R_sample) {
+    MathematicalProgram *prog,
+    const std::shared_ptr<LinearEqualityConstraint> &feasibility_constraint,
+    const Eigen::Ref<const Matrix3d> &R_sample) {
   Eigen::Map<const Eigen::Matrix<double, 9, 1>> R_sample_vec(R_sample.data());
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
@@ -391,6 +396,18 @@ GTEST_TEST(RotationTest, TestMcCormick) {
     R_test = math::YRotation(M_PI_4) * R_test;
     EXPECT_TRUE(IsFeasible(R_test));
 
+    R_test = math::ZRotation(M_PI_2);
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    R_test = math::ZRotation(-M_PI_2);
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    R_test = math::YRotation(M_PI_2);
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    R_test = math::YRotation(-M_PI_2);
+    EXPECT_TRUE(IsFeasible(R_test));
+
     // This one caught a bug (in the loop finding the most conservative linear
     // constraint for a given region) during random testing.
     R_test << 0.17082017792981191, 0.65144498431260445, -0.73921573253413542,
@@ -405,7 +422,7 @@ GTEST_TEST(RotationTest, TestMcCormick) {
 
     // Checks the dot product constraints.
     R_test = Matrix3d::Constant(1.0 / sqrt(3.0));  // All rows and columns are
-                                                   // on the unit sphere.
+    // on the unit sphere.
     EXPECT_FALSE(IsFeasible(R_test));
     // All in different octants, all unit length, but not orthogonal.
     // R.col(0).dot(R.col(1)) = 1/3;
@@ -552,11 +569,112 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
 
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormickCorner,
-    ::testing::Combine(::testing::ValuesIn({0, 1, 2, 3, 4, 5, 6,
-                                            7}),            // Orthant
-                       ::testing::ValuesIn({true, false}),  // bmin or bmax
-                       ::testing::ValuesIn({0, 1, 2})));    // column index
+    ::testing::Combine(
+        ::testing::ValuesIn<std::vector<int>>({0, 1, 2, 3, 4, 5, 6,
+                                               7}),             // Orthant
+        ::testing::ValuesIn<std::vector<bool>>({true, false}),  // bmin or bmax
+        ::testing::ValuesIn<std::vector<int>>({0, 1, 2})));     // column index
 
+// Make sure that no two row or column vectors in R, which satisfies the
+// McCormick relaxation, can lie in either the same or the opposite orthant.
+class TestMcCormickOrthant
+    : public ::testing::TestWithParam<
+          std::tuple<int, int, bool, std::pair<int, int>, bool>> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormickOrthant)
+
+  TestMcCormickOrthant()
+      : prog_(),
+        R_(NewRotationMatrixVars(&prog_)) {
+    const int num_bin = std::get<0>(GetParam());
+    const int orthant = std::get<1>(GetParam());
+    const bool is_row_vector = std::get<2>(GetParam());
+    const int idx0 = std::get<3>(GetParam()).first;
+    const int idx1 = std::get<3>(GetParam()).second;
+    const bool is_same_orthant = std::get<4>(GetParam());
+    DRAKE_DEMAND(idx0 != idx1);
+    DRAKE_DEMAND(idx0 >= 0);
+    DRAKE_DEMAND(idx1 >= 0);
+    DRAKE_DEMAND(idx0 <= 2);
+    DRAKE_DEMAND(idx1 <= 2);
+
+    AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, num_bin);
+
+    MatrixDecisionVariable<3, 3> R_hat = R_;
+    if (is_row_vector) {
+      R_hat = R_.transpose();
+    }
+    Eigen::Vector3d vec0_lb =
+        Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+    Eigen::Vector3d vec0_ub =
+        Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+    // positive or negative x axis?
+    if (orthant & (1 << 2)) {
+      vec0_lb(0) = 1E-3;
+    } else {
+      vec0_ub(0) = -1E-3;
+    }
+    // positive or negative y axis?
+    if (orthant & (1 << 1)) {
+      vec0_lb(1) = 1E-3;
+    } else {
+      vec0_ub(1) = -1E-3;
+    }
+    // positive or negative z axis?
+    if (orthant & (1 << 0)) {
+      vec0_lb(2) = 1E-3;
+    } else {
+      vec0_ub(2) = -1E-3;
+    }
+    // If we want to verify vec1 and vec2 cannot be in the SAME orthant,
+    // then set vec1_lb = vec0_lb, vec1_ub = vec0_ub;
+    // otherwise if we want to verify vec1 and vec2 cannot be in the OPPOSITE
+    // orthant, then set vec1_lb = -vec1_ub, vec1_ub = -vec0_lb.
+    Eigen::Vector3d vec1_lb = vec0_lb;
+    Eigen::Vector3d vec1_ub = vec0_ub;
+    if (!is_same_orthant) {
+      vec1_lb = -vec0_ub;
+      vec1_ub = -vec0_lb;
+    }
+    prog_.AddBoundingBoxConstraint(vec0_lb, vec0_ub, R_hat.col(idx0));
+    prog_.AddBoundingBoxConstraint(vec1_lb, vec1_ub, R_hat.col(idx1));
+  }
+
+  ~TestMcCormickOrthant() override {}
+
+ protected:
+  MathematicalProgram prog_;
+  MatrixDecisionVariable<3, 3> R_;
+};
+
+TEST_P(TestMcCormickOrthant, test) {
+  GurobiSolver gurobi_solver;
+  if (gurobi_solver.available()) {
+    SolutionResult sol_result = gurobi_solver.Solve(prog_);
+    // Since no two row or column vectors in R can lie in either the same of the
+    // opposite orthant, the program should be infeasible.
+    EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded ||
+        sol_result == SolutionResult::kInfeasibleConstraints);
+  }
+}
+
+std::array<std::pair<int, int>, 3> vector_indices() {
+  std::array<std::pair<int, int>, 3> idx = {{{0, 1}, {0, 2}, {1, 2}}};
+  return idx;
+}
+
+INSTANTIATE_TEST_CASE_P(
+    RotationTest, TestMcCormickOrthant,
+    ::testing::Combine(::testing::ValuesIn<std::vector<int>>(
+                           {1}),  // # of binary variables per half axis
+                       ::testing::ValuesIn<std::vector<int>>(
+                           {0, 1, 2, 3, 4, 5, 6, 7}),  // orthant index
+                       ::testing::ValuesIn<std::vector<bool>>(
+                           {false, true}),  // row vector or column vector
+                       ::testing::ValuesIn<std::array<std::pair<int, int>, 3>>(
+                           vector_indices()),  // vector indices
+                       ::testing::ValuesIn<std::vector<bool>>(
+                           {false, true})));  // same of opposite orthant
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

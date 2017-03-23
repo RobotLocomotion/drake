@@ -47,10 +47,8 @@ template <typename T> constexpr T MaliputRailcar<T>::kDefaultMaxSpeed;
 template <typename T> constexpr T MaliputRailcar<T>::kDefaultVelocityLimitKp;
 
 template <typename T>
-MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction,
-    double start_time)
-    : start_time_(start_time),
-      initial_lane_direction_(initial_lane_direction) {
+MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
+    : initial_lane_direction_(initial_lane_direction) {
   command_input_port_index_ =
       this->DeclareInputPort(systems::kVectorValued, 1).get_index();
   state_output_port_index_ =
@@ -145,10 +143,22 @@ void MaliputRailcar<T>::ImplCalcPose(const MaliputRailcarConfig<T>& config,
   const Rotation rotation =
       lane_direction.lane->GetOrientation(lane_position);
 
+  using std::atan2;
+  using std::sin;
+  using std::cos;
+
+  // Adjust the rotation based on whether the vehicle is traveling with s or
+  // against s.
+  const Rotation adjusted_rotation =
+      (lane_direction.with_s ? rotation :
+          Rotation(-rotation.roll,
+                   -rotation.pitch,
+                   atan2(-sin(rotation.yaw), -cos(rotation.yaw))));
   pose->set_translation(
       Eigen::Translation<T, 3>(geo_position.x, geo_position.y, geo_position.z));
   pose->set_rotation(math::RollPitchYawToQuaternion(
-      Vector3<T>(rotation.roll, rotation.pitch, rotation.yaw)));
+      Vector3<T>(adjusted_rotation.roll, adjusted_rotation.pitch,
+                 adjusted_rotation.yaw)));
 }
 
 template <typename T>
@@ -189,12 +199,7 @@ void MaliputRailcar<T>::DoCalcTimeDerivatives(
       dynamic_cast<MaliputRailcarState<T>*>(vector_derivatives);
   DRAKE_ASSERT(rates != nullptr);
 
-  if (context.get_time() < T(start_time_)) {
-    rates->set_s(T(0));
-    rates->set_speed(T(0));
-  } else {
-    ImplCalcTimeDerivatives(config, *state, lane_direction, *input, rates);
-  }
+  ImplCalcTimeDerivatives(config, *state, lane_direction, *input, rates);
 }
 
 template<typename T>

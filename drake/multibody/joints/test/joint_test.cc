@@ -1,8 +1,7 @@
 #include <memory>
 
-#include <gtest/gtest.h>
-
 #include <Eigen/Geometry>
+#include <gtest/gtest.h>
 
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/helical_joint.h"

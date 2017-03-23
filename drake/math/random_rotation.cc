@@ -2,4 +2,3 @@
 // random_rotation.h is a stand-alone header.
 
 #include "drake/math/random_rotation.h"
-

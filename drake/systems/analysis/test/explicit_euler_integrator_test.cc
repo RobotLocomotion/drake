@@ -30,6 +30,9 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   // Test that setting the target accuracy or initial step size target fails.
   EXPECT_THROW(int_dbl.set_target_accuracy(1.0), std::logic_error);
   EXPECT_THROW(int_dbl.request_initial_step_size_target(1.0), std::logic_error);
+
+  // Verify that attempting to integrate in variable step mode fails.
+  EXPECT_THROW(int_dbl.StepExactlyVariable(1.0), std::logic_error);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
@@ -54,6 +57,22 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_THROW(integrator.StepOnceAtMost(dt, dt, dt), std::logic_error);
 }
 
+/// Checks that the integrator can catch invalid dt's.
+GTEST_TEST(IntegratorTest, InvalidDts) {
+  // Spring-mass system is necessary only to setup the problem.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  const double dt = 1e-3;
+  auto context = spring_mass.CreateDefaultContext();
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, dt, context.get());
+  integrator.Initialize();
+
+  EXPECT_NO_THROW(integrator.StepOnceAtMost(dt, dt, dt));
+  EXPECT_THROW(integrator.StepOnceAtMost(dt, 0.0, dt), std::logic_error);
+  EXPECT_THROW(integrator.StepOnceAtMost(-1, dt, dt), std::logic_error);
+  EXPECT_THROW(integrator.StepOnceAtMost(dt, dt, -1), std::logic_error);
+}
+
 /// Verifies error estimation is unsupported.
 GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   // Spring-mass system is necessary only to setup the problem.
@@ -68,6 +87,35 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
   EXPECT_THROW(integrator.request_initial_step_size_target(dt),
                std::logic_error);
+}
+
+// Verifies that the stepping works with large magnitude times and small
+// magnitude step sizes.
+GTEST_TEST(IntegratorTest, MagDisparity) {
+  const double spring_k = 300.0;  // N/m
+  const double mass = 2.0;      // kg
+
+  // Create the spring-mass system.
+  SpringMassSystem<double> spring_mass(spring_k, mass, 0.);
+
+  // Create a context.
+  auto context = spring_mass.CreateDefaultContext();
+
+  // Set a large magnitude time.
+  context->set_time(1e10);
+
+  // Setup the integration size and infinity.
+  const double dt = 1e-6;
+
+  // Create the integrator.
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, dt, context.get());  // Use default Context.
+
+  // Take all the defaults.
+  integrator.Initialize();
+
+  // Take a fixed integration step.
+  integrator.StepExactlyFixed(dt);
 }
 
 // Try a purely continuous system with no sampling.
@@ -200,7 +248,7 @@ GTEST_TEST(IntegratorTest, StepSize) {
   // The step ends on the simulation end time.
   {
     const double boundary_dt = 0.0009;
-    integrator.StepOnceExactly(boundary_dt);
+    integrator.StepExactlyFixed(boundary_dt);
     EXPECT_EQ(t + boundary_dt, context->get_time());
     t = context->get_time();
   }

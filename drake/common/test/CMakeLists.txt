@@ -6,6 +6,9 @@ target_link_libraries(autodiff_overloads_test drakeCommon)
 drake_add_cc_test(double_overloads_test)
 target_link_libraries(double_overloads_test drakeCommon)
 
+drake_add_cc_test(drake_optional_test)
+target_link_libraries(double_overloads_test drakeCommon)
+
 drake_add_cc_test(drake_throw_test)
 target_link_libraries(drake_throw_test drakeCommon)
 
