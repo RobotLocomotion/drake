@@ -1,6 +1,6 @@
 /// @file   uniformly_accelerated_particle.cc
 ///
-/// @brief  A simple 1DOF, constantly accelerated particle example
+/// @brief  A simple 1DOF, constantly accelerated particle example.
 
 
 #include <memory>
@@ -68,7 +68,7 @@ class UniformlyAcceleratedParticle : public systems::Diagram<T> {
 
   /// Wires up the whole system diagram.
   ///
-  /// @param[in] lcm interface to be used for messaging
+  /// @param[in] lcm interface to be used for messaging.
   void BuildAndConnect(lcm::DrakeLcmInterface* lcm);
 
  private:

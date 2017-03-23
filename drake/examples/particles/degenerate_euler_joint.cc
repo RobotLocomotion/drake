@@ -16,9 +16,9 @@ DegenerateEulerJoint<T>::DegenerateEulerJoint(const MatrixX<T>& translator)
     : translator_(translator) {
   // Output degrees of freedom must be 6.
   DRAKE_DEMAND(this->translator_.rows() == 6);
-  // Cannot have negative input degrees of freedom!
+  // Cannot have less than 1 input degree of freedom!
   DRAKE_DEMAND(this->translator_.cols() > 0);
-  // Cannot more than 5 input degrees of freedom!
+  // Cannot have more than 5 input degrees of freedom!
   DRAKE_DEMAND(this->translator_.cols() < 6);
   // Twice the degrees of freedom to allocate for positions plus velocities.
   this->DeclareInputPort(systems::kVectorValued, 2 * this->translator_.cols());
