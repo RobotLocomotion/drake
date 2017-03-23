@@ -17,7 +17,7 @@ drake_install_headers(
   particle.h
   degenerate_euler_joint.h
   )
-drake_install_pkg_config_file(drake-bouncing-ball
+drake_install_pkg_config_file(drake-particles
   TARGET drakeParticles
   LIBS -ldrakeParticles
   REQUIRES
