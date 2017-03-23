@@ -12,7 +12,8 @@ namespace rendering {
 
 template <typename T>
 PoseBundle<T>::PoseBundle(int num_poses)
-    : poses_(num_poses), names_(num_poses), ids_(num_poses) {
+    : poses_(num_poses), velocities_(num_poses),
+      names_(num_poses), ids_(num_poses) {
 }
 
 template <typename T>
@@ -33,6 +34,18 @@ template <typename T>
 void PoseBundle<T>::set_pose(int index, const Isometry3<T>& pose) {
   DRAKE_DEMAND(index >= 0 && index < get_num_poses());
   poses_[index] = pose;
+}
+
+template <typename T>
+const FrameVelocity<T>& PoseBundle<T>::get_velocity(int index) const {
+  DRAKE_DEMAND(index >= 0 && index < get_num_poses());
+  return velocities_[index];
+}
+
+template <typename T>
+void PoseBundle<T>::set_velocity(int index, const FrameVelocity<T>& velocity) {
+  DRAKE_DEMAND(index >= 0 && index < get_num_poses());
+  velocities_[index] = velocity;
 }
 
 template <typename T>
