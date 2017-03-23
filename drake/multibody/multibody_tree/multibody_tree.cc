@@ -41,7 +41,7 @@ void MultibodyTree<T>::Compile() {
   }
 
   // Here, give frames the chance to perform any compile-time setup.
-  for (const auto& frame : owned_material_frames_) {
+  for (const auto& frame : owned_physical_frames_) {
     frame->Compile();
   }
 

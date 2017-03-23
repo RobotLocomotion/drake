@@ -36,7 +36,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // Initially there is only one body, the world.
   EXPECT_EQ(model->get_num_bodies(), 1);
   // And there is only one frame, the world frame.
-  EXPECT_EQ(model->get_num_material_frames(), 1);
+  EXPECT_EQ(model->get_num_physical_frames(), 1);
 
   // Retrieves the world body.
   const Body<double>& world_body = model->get_world_body();
@@ -47,7 +47,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
 
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model->get_num_bodies(), 3);
-  EXPECT_EQ(model->get_num_material_frames(), 3);
+  EXPECT_EQ(model->get_num_physical_frames(), 3);
 
   // Shoulder's inboard frame Si in this model IS the world frame. We will place
   // a mobilizer between the shoulder inboard and outboard frames.
@@ -78,7 +78,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
       RigidBodyFrame<double>::Create(model, lower_link, X_LlEo);
 
   // Verify the new number of frames.
-  EXPECT_EQ(model->get_num_material_frames(), 6);
+  EXPECT_EQ(model->get_num_physical_frames(), 6);
 
   // Frame indexes are unique and are assigned by MultibodyTree starting with
   // frame_index = 0 for the world frame and increase in the same order frames
