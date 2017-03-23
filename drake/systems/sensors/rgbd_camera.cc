@@ -464,9 +464,9 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
       // Converts visual's pose in the world to the one in the camera coordinate
       // system.
       const int body_id = body->get_body_index();
-      const auto pose = X_CW * visual.getWorldTransform();
+      const auto X_CVisual = X_CW * visual.getWorldTransform();
       vtkSmartPointer<vtkTransform> vtk_transform =
-          VtkUtil::ConvertToVtkTransform(pose);
+          VtkUtil::ConvertToVtkTransform(X_CVisual);
 
       actor->SetMapper(mapper.GetPointer());
       actor->SetUserTransform(vtk_transform);
@@ -521,7 +521,7 @@ void RgbdCamera::Impl::UpdateModelPoses(
     const auto& visual = body->get_visual_elements().at(0);
 
     const auto X_CVisual = X_CW * tree_.CalcBodyPoseInWorldFrame(
-        cache, *body.get()) * visual.getLocalTransform();
+        cache, *body) * visual.getLocalTransform();
 
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(X_CVisual);
