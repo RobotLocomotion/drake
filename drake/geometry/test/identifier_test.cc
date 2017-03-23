@@ -26,10 +26,10 @@ class IdentifierTests : public ::testing::Test {
   // based on execution order. This guarantees a fixed set of identifiers
   // with known values.
   static void SetUpTestCase() {
-    a1_ = AId::get_new_id();  // Xhould have the value 1.
-    a2_ = AId::get_new_id();  // Xhould have the value 2.
-    a3_ = AId::get_new_id();  // Xhould have the value 3.
-    b_ = BId::get_new_id();   // Xhould have the value 1.
+    a1_ = AId::get_new_id();  // Should have the value 1.
+    a2_ = AId::get_new_id();  // Should have the value 2.
+    a3_ = AId::get_new_id();  // Should have the value 3.
+    b_ = BId::get_new_id();   // Should have the value 1.
   }
 
   static AId a1_;
@@ -59,7 +59,7 @@ TEST_F(IdentifierTests, Constructor) {
   AId invalid;
   int64_t value = -1;
   EXPECT_DEATH({value = invalid.get_value();}, "");
-  // This let's gcc thinks the variable is used.
+  // This lets gcc thinks the variable is used.
   EXPECT_EQ(value, -1);
 #endif
 }
@@ -78,7 +78,7 @@ TEST_F(IdentifierTests, AssignmentAndComparison) {
   bool result = true;
   EXPECT_DEATH({result = invalid == a1_;}, "");
   EXPECT_DEATH({result = invalid != a1_;}, "");
-  // This let's gcc thinks the variable is used.
+  // This lets gcc thinks the variable is used.
   EXPECT_EQ(result, true);
 #endif
 }

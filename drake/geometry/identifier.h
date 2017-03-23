@@ -69,7 +69,7 @@ namespace geometry {
 
  The following alias will create a unique identifier type for class `Foo`:
  @code{.cpp}
- using FooId = Identifier<FooTag>;
+ using FooId = Identifier<class FooTag>;
  @endcode
 
  __Examples of valid and invalid operations__
