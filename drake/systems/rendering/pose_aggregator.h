@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -18,17 +19,26 @@ namespace rendering {
 // TODO(david-german-tri, SeanCurtis-TRI): Evolve PoseAggregator into
 // GeometrySystem after GeometryWorld becomes available.
 
-/// PoseAggregator is a multiplexer for heterogeneous sources of poses.
+// TODO(david-german-tri): Rename PoseAggregator to KinematicsAggregator, since
+// it includes both poses and velocities now.
+
+/// PoseAggregator is a multiplexer for heterogeneous sources of poses and the
+/// velocities of those poses.
 /// Supported sources are:
 /// - The state output of a RigidBodyPlant.
-/// - A PoseVector input, which is a single pose {R, p}, and vector-valued.
-/// - A PoseBundle input, which is a collection of poses, and abstract-valued.
+/// - A PoseVector input, which is a single pose {R, p}, and is vector-valued.
+/// - A FrameVelocity input, which corresponds to a PoseVector input, and
+///   contains a single velocity {ω, v}, and is vector-valued.
+/// - A PoseBundle input, which is a collection of poses and velocities, and is
+///   abstract-valued.
 ///
 /// PoseAggregator is stateless.
 ///
-/// The output is a flat PoseBundle that contains all the poses from all the
-/// inputs, except for the "world" bodies in a RigidBodyTree. By convention,
-/// each aggregated pose is in the same world frame of reference.
+/// The output is a flat PoseBundle that contains all the poses and velocities
+/// from all the inputs, except for the "world" bodies in a RigidBodyTree.
+/// Unspecified velocities are zero, as are RigidBodyTree velocities.
+/// By convention, each aggregated pose or velocity is in the same world frame
+/// of reference.
 ///
 /// The output poses are named in the form `<source>` or `<source>::<pose>`.
 /// - For poses derived from a RigidBodyPlant input, `<source>` is the name of
@@ -82,6 +92,16 @@ class PoseAggregator : public LeafSystem<T> {
   const InputPortDescriptor<T>& AddSingleInput(const std::string& name,
                                                int model_instance_id);
 
+  /// Adds an input for a PoseVector, and a corresponding input for a
+  /// FrameVelocity. @p name must be unique for all inputs with the same
+  /// @p model_instance_id.
+  ///
+  /// @return A pair where the first element is the descriptor for the pose
+  ///         input, and the second element is the descriptor for the velocity
+  ///         input.
+  std::pair<const InputPortDescriptor<T>&, const InputPortDescriptor<T>&>
+  AddSinglePoseAndVelocityInput(const std::string& name, int model_instance_id);
+
   /// Adds an input for a PoseBundle containing @p num_poses poses.
   const InputPortDescriptor<T>& AddBundleInput(const std::string& bundle_name,
                                                int num_poses);
@@ -99,17 +119,18 @@ class PoseAggregator : public LeafSystem<T> {
  private:
   enum PoseInputType {
     kUnknown = 0,
-    kSingle = 1,
-    kBundle = 2,
-    kRigidBodyTree = 3,
+    kSinglePose = 1,
+    kSingleVelocity = 2,
+    kBundle = 3,
+    kRigidBodyTree = 4,
   };
 
   struct InputRecord {
     PoseInputType type{kUnknown};
     int num_poses{0};
-    // name is only valid if type is kSingle or kBundle.
+    // name is only valid if type is kSingle{Pose, Velocity} or kBundle.
     std::string name{};
-    // model_instance_id is only valid if type is kSingle.
+    // model_instance_id is only valid if type is kSingle{Pose, Velocity}.
     int model_instance_id{-1};
     // tree is only valid if type is kRigidBodyTree.
     const RigidBodyTree<double>* tree{};
@@ -123,6 +144,10 @@ class PoseAggregator : public LeafSystem<T> {
   // Returns an InputRecord for a generic single pose input.
   static InputRecord MakeSinglePoseInputRecord(const std::string& name,
                                                int model_instance_id);
+
+  // Returns an InputRecord for a generic single velocity input.
+  static InputRecord MakeSingleVelocityInputRecord(const std::string& name,
+                                                   int model_instance_id);
 
   // Returns an InputRecord for a generic PoseBundle input.
   static InputRecord MakePoseBundleInputRecord(const std::string& bundle_name,
