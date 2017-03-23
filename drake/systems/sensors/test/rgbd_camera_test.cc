@@ -282,6 +282,7 @@ class ImageTest : public ::testing::Test {
   static void VerifyBox(
       const sensors::Image<uint8_t>& color_image,
       const sensors::Image<float>& depth_image) {
+    // This is given by the material diffuse element in `box.sdf`.
     const std::array<uint8_t, 4> kPixelColor{{255u, 255u, 255u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
@@ -289,12 +290,14 @@ class ImageTest : public ::testing::Test {
   static void VerifyCylinder(
       const sensors::Image<uint8_t>& color_image,
       const sensors::Image<float>& depth_image) {
-    const std::array<uint8_t, 4> kPixelColor{{255u, 255u, 255u, 255u}};
+    // This is given by the material diffuse element in `cylinder.sdf`.
+    const std::array<uint8_t, 4> kPixelColor{{255u, 0u, 255u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
   static void VerifyMeshBox(const sensors::Image<uint8_t>& color_image,
                             const sensors::Image<float>& depth_image) {
+    // This is given by `box.png` which is the texture file for `box.obj`.
     const std::array<uint8_t, 4> kPixelColor{{33u, 241u, 4u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
@@ -325,10 +328,16 @@ class ImageTest : public ::testing::Test {
     // Verifies the center point's color.
     const int half_width = color_image.width() / 2;
     const int half_height = color_image.height() / 2;
-    for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+    // If there is no material diffuse information provided in the SDF file, the
+    // default color given by our SDF parser is `(0.7, 0.7, 0.7, 1.0)` which is
+    // `(179u, 179u, 179u, 255u)` in `uint8_t`.
+    for (int ch = 0; ch < color_image.num_channels() - 1; ++ch) {
       ASSERT_NEAR(color_image.at(half_width, half_height)[ch],
-                  255u, kColorPixelTolerance);
+                  179u, kColorPixelTolerance);
     }
+    ASSERT_NEAR(color_image.at(half_width, half_height)[3],
+                255u, kColorPixelTolerance);
+
     // Verifies the center point's depth.
     ASSERT_NEAR(depth_image.at(half_width, half_height)[0], 1.f, 1e-4);
   }

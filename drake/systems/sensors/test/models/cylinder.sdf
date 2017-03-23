@@ -15,7 +15,9 @@
             <radius>10</radius>
           </cylinder>
         </geometry>
-        <material/>
+        <material>
+          <diffuse>1.0 0.0 1.0 1.0</diffuse>
+        </material>
       </visual>
       <collision name="cylinder">
         <geometry>
