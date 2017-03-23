@@ -133,12 +133,25 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const Rod2D<T>& rod,
   const T half_rod_length = rod.get_rod_half_length();
   const T stheta = sin(theta);
 
-  // Compute the normal acceleration at the point of contact (yc_ddot),
-  // *assuming zero contact force*.
-  T ycddot = rod.get_gravitational_acceleration() -
-        k * half_rod_length * stheta * thetadot * thetadot;
+  // Get the external force.
+  const int port_index = 0;
+  const auto input = rod.EvalEigenVectorInput(context, port_index);
+  const Vector3<T> fapplied = input.segment(0, 3);
+  const T& fY = fapplied(1);
+  const T& tau = fapplied(2);
 
-  return ycddot;
+  // Compute the normal acceleration at the point of contact (yc_ddot),
+  // *assuming zero contact force*. This equation comes from the kinematics of
+  // the rod:
+  // cy = y + k * half_rod_length * sin(θ)  [rod endpoint vertical location]
+  // dcy/dt = dy/dt + k * half_rod_length * cos(θ) * dθ/dt
+  // d²cy/dt² = d²y/dt² - k * half_rod_length * sin(θ) * (dθ/dt)² * d²θ/dt²
+  const T yddot = rod.get_gravitational_acceleration() + fY/rod.get_rod_mass();
+  const T thetaddot = tau/rod.get_rod_moment_of_inertia();
+  T cyddot = yddot -
+        k * half_rod_length * stheta * thetadot * thetadot * thetaddot;
+
+  return cyddot;
 }
 
 template <class T>
@@ -177,11 +190,12 @@ T Rod2D<T>::CalcStickingFrictionForceSlack(const Rod2D<T>& rod,
   using std::abs;
 
   // Compute the contact forces, assuming sticking contact.
-  const Vector2 <T> cf = rod.CalcStickingContactForces(context);
+  const Vector2<T> cf = rod.CalcStickingContactForces(context);
   const T &fN = cf(0);
   const T &fF = cf(1);
 
-  // Compute the difference between how much force *can* be applied
+  // Compute the difference between how much force *can* be applied to effect
+  // sticking and how much force needs to be applied to effect sticking.
   const double mu = rod.get_mu_coulomb();
   return mu * fN - abs(fF);
 }
@@ -217,7 +231,7 @@ int Rod2D<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
       // second for checking for contact between the other rod endpoint
       // and the ground, and a third for checking for the transition from
       // sticking to sliding.
-      return 2;
+      return 3;
 
     case Rod2D::kSlidingTwoContacts:
       // The rod is undergoing sliding contact without impact at two points of
@@ -1012,6 +1026,7 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   using std::abs;
+  using std::max;
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -1043,17 +1058,34 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   // Compute the horizontal velocity at the point of contact.
   const T cxdot = xdot - k * stheta * half_length_ * thetadot;
 
-  // Compute the normal acceleration at the point of contact (cy_ddot),
-  // *assuming zero contact force*.
-  T cyddot = get_gravitational_acceleration() -
-      k * half_length_ * stheta * thetadot * thetadot;
-
   // Get the inputs.
   const int port_index = 0;
   const auto input = this->EvalEigenVectorInput(context, port_index);
   const double fX = input(0);
   const double fY = input(1);
   const double tau = input(2);
+
+  // Compute the normal acceleration at the point of contact (yc_ddot),
+  // *assuming zero contact force*. This equation comes from the kinematics of
+  // the rod:
+  // cy = y + k * half_rod_length * sin(θ)  [rod endpoint vertical location]
+  // dcy/dt = dy/dt + k * half_rod_length * cos(θ) * dθ/dt
+  // d²cy/dt² = d²y/dt² - k * half_rod_length * sin(θ) * (dθ/dt)² * d²θ/dt²
+  T yddot = get_gravitational_acceleration() + fY/mass_;
+  T thetaddot = tau/J_;
+  T cyddot = yddot -
+      k * half_length_ * stheta * thetadot * thetadot * thetaddot;
+
+  // If the normal acceleration is non-negative, no contact forces need be
+  // applied.
+  const T zero_tol = 10 * std::numeric_limits<double>::epsilon() *
+      max(T(1), thetadot) * max(T(1), thetaddot);
+  if (cyddot > -zero_tol) {
+    f->SetAtIndex(3, fX / mass_);
+    f->SetAtIndex(4, fY / mass_ + g_);
+    f->SetAtIndex(5, tau / J_);
+    return;
+  }
 
   // These equations were determined by issuing the following
   // commands in Mathematica:
@@ -1103,21 +1135,11 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   f->SetAtIndex(4, (fN + fY) / mass_ + get_gravitational_acceleration());
   f->SetAtIndex(5, ((cx - x) * fN - (cy - y) * fF + tau) / J);
 
-  // Compute the normal acceleration at the contact point (a check).
-  const T yddot = f->GetAtIndex(4);
-  const T thetaddot = f->GetAtIndex(5);
-  cyddot =
-      yddot +
-          r * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
-
   // Lines below currently unused but are occasionally helpful for
   // debugging.
   //        const T xddot = f->GetAtIndex(3);
   //        const T cxddot = xddot + r*k*(-stheta*thetaddot -
   //                                        +ctheta*thetadot*thetadot)/2;
-
-  // Verify that the normal acceleration is zero.
-  DRAKE_DEMAND(abs(cyddot) < std::numeric_limits<double>::epsilon() * 10);
 }
 
 // Computes the accelerations of the rod center of mass for the case of the rod

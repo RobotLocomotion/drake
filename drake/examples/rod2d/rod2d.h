@@ -189,8 +189,8 @@ class Rod2D : public systems::LeafSystem<T> {
         kStickingSingleContact,
 
     /// Rod is sliding at two contact points without impact. It should be
-    /// evident that the tangent velocity at two endpoints of the rod must be
-    /// both zero or both nonzero.
+    /// evident that the tangent velocity at the two endpoints of the rod must
+    /// be equal.
         kSlidingTwoContacts,
 
     /// Rod is sticking at two contact points without impact.  It should be
@@ -387,7 +387,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// right, CalcSlidingDot() will return a positive value, which evolves into
   /// a negative value (first crossing zero), as the rod begins sliding to the
   /// left (assuming that the rod remains in contact with the halfspace over
-  /// the intervall).
+  /// the interval).
   static T CalcSlidingDot(const Rod2D<T>& rod,
                           const systems::Context<T>& context);
 
