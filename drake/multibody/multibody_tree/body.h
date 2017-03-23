@@ -6,7 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
-#include "drake/multibody/multibody_tree/material_frame.h"
+#include "drake/multibody/multibody_tree/physical_frame.h"
 
 namespace drake {
 namespace multibody {
@@ -47,7 +47,7 @@ template<typename T> class Body;
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class BodyFrame : public MaterialFrame<T> {
+class BodyFrame : public PhysicalFrame<T> {
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
   // every time a Body object is created and they are both associated with each
   // other. Moreover, BodyFrame objects can *only* be created by Body objects
@@ -64,7 +64,7 @@ class BodyFrame : public MaterialFrame<T> {
   // Only Body objects can create BodyFrame objects since Body is a friend of
   // BodyFrame. BodyFrame objects are *only* created from within
   // Body::CreateBodyFrame().
-  explicit BodyFrame(BodyIndex body_index) : MaterialFrame<T>(body_index) {}
+  explicit BodyFrame(BodyIndex body_index) : PhysicalFrame<T>(body_index) {}
 };
 
 // Forward declarations for Body<T>.
