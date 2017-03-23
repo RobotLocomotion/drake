@@ -35,6 +35,7 @@ list(APPEND optimization_files
   mathematical_program.cc
   mathematical_program_solver_interface.cc
   moby_lcp_solver.cc
+  no_dreal.cc
   system_identification.cc
   )
 if(ipopt_FOUND)
@@ -48,12 +49,6 @@ if(NLopt_FOUND)
   list(APPEND optimization_requires nlopt)
 else()
   list(APPEND optimization_files no_nlopt.cc)
-endif()
-if(dreal_FOUND)
-  list(APPEND optimization_files dreal_solver.cc)
-  list(APPEND optimization_requires dreal)
-else()
-  list(APPEND optimization_files no_dreal.cc)
 endif()
 if(snopt_FOUND)
   list(APPEND optimization_files snopt_solver.cc)
@@ -121,9 +116,6 @@ if(NLopt_FOUND)
   target_include_directories(drakeOptimization PUBLIC ${NLOPT_INCLUDE_DIRS})
   target_link_libraries(drakeOptimization nlopt)
 endif()
-if(dreal_FOUND)
-  target_link_libraries(drakeOptimization dreal)
-endif()
 if(snopt_FOUND)
   target_link_libraries(drakeOptimization snopt_c)
 endif()
@@ -152,4 +144,3 @@ drake_install_libraries(drakeRotationConstraint)
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
-

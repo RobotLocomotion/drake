@@ -234,9 +234,9 @@ class ImageTest : public ::testing::Test {
     const int kExpectedNumIds{5};
     EXPECT_EQ(kExpectedNumIds, actual_ids.size());
 
-    ASSERT_EQ(label_image.at(320, 205)[0], 0);
-    ASSERT_EQ(label_image.at(470, 205)[0], 1);
-    ASSERT_EQ(label_image.at(170, 205)[0], 2);
+    ASSERT_EQ(label_image.at(320, 205)[0], 1);
+    ASSERT_EQ(label_image.at(470, 205)[0], 2);
+    ASSERT_EQ(label_image.at(170, 205)[0], 3);
     // Terrain
     ASSERT_EQ(label_image.at(0, 479)[0], RgbdCamera::Label::kFlatTerrain);
     // Sky

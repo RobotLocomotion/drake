@@ -41,6 +41,7 @@ set(installed_headers
   drake_compat.h
   drake_copyable.h
   drake_deprecated.h
+  drake_optional.h
   drake_path.h
   drake_throw.h
   dummy_value.h

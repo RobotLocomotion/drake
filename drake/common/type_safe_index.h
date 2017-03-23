@@ -6,50 +6,126 @@
 
 namespace drake {
 
-/// A type-safe non-negative index that can be associated to a tag name.
-/// Different instantiations of TypeSafeIndex are not interconvertible.
-/// TypeSafeIndex allows for instantiations from an `int` as well as it allows
-/// to convert back to an `int` via its conversion operator. Negative index
-/// values are not allowed.
-/// TypeSafeIndex can be used in places where an index is needed and therefore
-/// basic operations such as prefix and postfix increment/decrement are
-/// implemented. As an example, consider the creation of an index associated
-/// with class `Foo`. This can be done in code as: <pre>
-///   using FooIndex = TypeSafeIndex<class FooTag>;
-/// </pre>
-/// where the class `FooTag` above should simply be a dummy argument, a
-/// never-defined type.
+/// A type-safe non-negative index class.
+///
+/// This class serves as an upgrade to the standard practice of passing `int`s
+/// around as indices. In the common practice, a method that takes indices into
+/// multiple collections would have an interface like:
+///
+/// @code
+/// void foo(int bar_index, int thing_index);
+/// @endcode
+///
+/// It is possible for a programmer to accidentally switch the two index values
+/// in an invocation.  This mistake would still be _syntactically_ correct; it
+/// will successfully compile but lead to inscrutable run-time errors. The
+/// type-safe index provides the same speed and efficiency of passing `int`s,
+/// but provides compile-time checking. The function would now look like:
+///
+/// @code
+/// void foo(BarIndex bar_index, ThingIndex thing_index);
+/// @endcode
+///
+/// and the compiler will catch instances where the order is reversed.
+///
+/// The type-safe index is a _stripped down_ `int`. Each uniquely declared
+/// index type has the following properties:
+///
+///   - Index values are _explicitly_ constructed from `int` values.
+///   - The index is implicitly convertible to an `int` (to serve as an index).
+///   - The index supports increment, decrement, and in-place addition and
+///     subtraction to support standard index-like operations.
+///   - An index _cannot_ be constructed or compared to an index of another
+///     type.
+///   - In general, indices of different types are _not_ interconvertible.
+///
+/// There is no such thing as an "invalid" index; there is no sentinel
+/// value which indicates uninitialized or undefined. Operations which return
+/// an index, but can fail, should communicate this in the function interface
+/// (e.g. through the std::optional<IndexType> return value). If an index
+/// exists, it should be considered valid.
+///
+/// It is the designed intent of this class, that indices derived from this
+/// class can be passed and returned by value. Passing indices by const
+/// reference should be considered a misuse.
+///
+/// This is the recommended method to create a unique index type associated with
+/// class `Foo`:
+///
+/// @code
+/// using FooIndex = TypeSafeIndex<class FooTag>;
+/// @endcode
+///
+/// This references a non-existent, and ultimately anonymous, class `FooTag`.
+/// This is sufficient to create a unique index type. It is certainly possible
+/// to use an existing class (e.g., `Foo`). But this provides no functional
+/// benefit.
+///
+/// __Examples of valid and invalid operations__
 ///
 /// The TypeSafeIndex guarantees that index instances of different types can't
 /// be compared or combined.  Efforts to do so will cause a compile-time
 /// failure.  However, comparisons or operations on _other_ types that are
 /// convertible to an int will succeed.  For example:
-/// @code{.cpp}
+/// @code
 ///    using AIndex = TypeSafeIndex<class A>;
 ///    using BIndex = TypeSafeIndex<class B>;
 ///    AIndex a(1);
 ///    BIndex b(1);
-///    if (a == 2) { ... }   // Ok.
+///    if (a == 2) { ... }      // Ok.
 ///    size_t sz = 7;
-///    if (a == sz) { ... }  // Ok.
-///    if (a == b) { ... }   // <-- Compiler error.
+///    if (a == sz) { ... }     // Ok.
+///    if (a == b) { ... }      // <-- Compiler error.
 /// @endcode
 ///
-/// The intent of these classes is to seamlessly serve as indices into typical
-/// indexed objects (e.g., vector, array, etc.). At the same time, we want to
-/// avoid implicit conversions _from_ int to an index.  These two design
+/// As previously stated, the intent of this class is to seamlessly serve as an
+/// index into indexed objects (e.g., vector, array, etc.). At the same time, we
+/// want to avoid implicit conversions _from_ int to an index.  These two design
 /// constraints combined lead to a limitation in how TypeSafeIndex instances
 /// can be used.  Specifically, we've lost a common index pattern:
-/// @code{.cpp}
+///
+/// @code
 ///    for (MyIndex a = 0; a < N; ++a) { ... }
 /// @endcode
+///
 /// This pattern no longer works because it requires implicit conversion of int
 /// to TypeSafeIndex. Instead, the following pattern needs to be used:
-/// @code{.cpp}
+///
+/// @code
 ///    for (MyIndex a(0); a < N; ++a) { ... }
 /// @endcode
 ///
-/// @tparam Tag The name of the tag associated with a class type.
+/// __Type-safe Index vs Identifier__
+///
+/// In principle, the TypeSafeIndex is related to the Identifier. In
+/// some sense, both are "type-safe `int`s". They differ in their semantics. We
+/// can consider `ints`, indexes, and identifiers as a list of `int` types with
+/// _decreasing_ functionality.
+///
+///   - The int, obviously, has the full range of C++ ints.
+///   - The TypeSafeIndex can be implicitly cast *to* an int, but there are a
+///     limited number of operations _on_ the index that produces other
+///     instances of the index (e.g., increment, in-place addition, etc.) They
+///     can be compared with `int` and other indexes of the same type. This
+///     behavior arises from the intention of having them serve as an _index_ in
+///     an ordered set (e.g., `std::vector`.)
+///   - The Identifier is the most restricted. They exist solely to serve as
+///     a unique identifier. They are immutable when created. Very few
+///     operations exist on them (comparison for _equality_ with other
+///     identifiers of the same type, hashing, writing to output stream).
+///
+/// Ultimately, indexes _can_ serve as identifiers (within the scope of the
+/// object they index into). Although, their mutability could make this a
+/// dangerous practice for a public API. Identifiers are more general in that
+/// they don't reflect an object's position in memory (hence the inability to
+/// transform to or compare with an `int`). This decouples details of
+/// implementation from the idea of the object. Combined with its immutability,
+/// it would serve well as a element of a public API.
+///
+/// @sa Identifier
+///
+/// @tparam Tag The name of the tag associated with a class type. The class
+///             need not be a defined class.
 template <class Tag>
 class TypeSafeIndex {
  public:

@@ -121,10 +121,39 @@ Using CLion with Bazel
 ======================
 
 First, install Bazel and build Drake with Bazel, following
-:ref:`the Drake Bazel instructions <bazel>`. When using CLion with Bazel, it
-is especially important to make sure that ``ccache`` is never on your ``PATH``
-when you run CLion, because CLion will cache the ``PATH`` aggressively. We do
-not yet have a proven technique for purging it.
+:ref:`the Drake Bazel instructions <bazel>`.
+
+A Note About Environment Variables
+----------------------------------
+CLion forwards environment variables to the processes it launches, including
+the Bazel client and server. We have a number of Bazel repository rules that
+consult environment variables, especially ``PATH``, to locate external
+dependencies. Therefore, some care is necessary to make sure CLion is launched
+with the environment you actually want!
+
+**Ubuntu users** will generally get good behavior by default, because ``apt``
+installs binaries in reasonable, standard paths, and because most CLion launch
+mechanisms will have already sourced the ``.bashrc``. Do be careful that
+``ccache`` is not on your ``PATH``, though.  If you launch CLion with ``ccache``
+on your ``PATH``, and then CLion launches a Bazel server, you'll need to quit
+CLion, kill the Bazel server, and run ``bazel clean`` to recover.
+
+**OS X users** will get broken behavior by default.  When you run an OS X app
+graphically, the parent process is `launchd` (PID 1), which provides its own
+standard environment variables to the child process.  In particular, it provides
+a minimal ``PATH`` that does not include ``/usr/local/bin``, where most Homebrew
+executables are installed.  Consequently, the Bazel build will fail to find
+Homebrew dependencies like ``glib``, ``pkg-config``, and ``gfortran``.
+
+The simplest solution is not to launch CLion graphically. Instead, configure
+your shell environment properly in ``.bashrc``, and launch CLion from the
+command line::
+
+  /Applications/CLion.app/Contents/MacOS/clion
+
+If you strongly prefer clicking on buttons, you might be able to configure the
+``launchd`` environment using ``launchctl``, but this process is finicky. We
+have no reliable recipe for it yet.
 
 Installing the Bazel Plugin
 ---------------------------

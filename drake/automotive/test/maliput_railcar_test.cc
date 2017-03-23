@@ -1,6 +1,7 @@
 #include "drake/automotive/maliput_railcar.h"
 
 #include <cmath>
+#include <limits>
 #include <memory>
 
 #include <Eigen/Dense>
@@ -31,7 +32,7 @@ namespace {
 
 class MaliputRailcarTest : public ::testing::Test {
  protected:
-  void InitializeDragwayLane(double start_time = 0, bool with_s = true) {
+  void InitializeDragwayLane(bool with_s = true) {
     // Defines the dragway's parameters.
     const int kNumLanes{1};
     const double kDragwayLength{50};
@@ -40,11 +41,10 @@ class MaliputRailcarTest : public ::testing::Test {
     Initialize(
         std::make_unique<const maliput::dragway::RoadGeometry>(
             maliput::api::RoadGeometryId({"RailcarTestDragway"}), kNumLanes,
-            kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth),
-        start_time, with_s);
+            kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth), with_s);
   }
 
-  void InitializeCurvedMonoLane(double start_time = 0, bool with_s = true) {
+  void InitializeCurvedMonoLane(bool with_s = true) {
     maliput::monolane::Builder builder(
         maliput::api::RBounds(-2, 2),   /* lane_bounds       */
         maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
@@ -57,15 +57,30 @@ class MaliputRailcarTest : public ::testing::Test {
         EndpointZ(0, 0, 0, 0));                                /* z_end */
     Initialize(
         builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})),
-        start_time, with_s);
+        with_s);
+  }
+
+  void InitializeSlopedCurvedMonoLane(bool with_s = true) {
+    maliput::monolane::Builder builder(
+        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
+        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
+        0.01,                           /* linear tolerance  */
+        0.5 * M_PI / 180.0);            /* angular_tolerance */
+    builder.Connect(
+        "point.0",                                             /* id    */
+        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),  /* start */
+        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
+        EndpointZ(2, 0, 0.5, 0));                              /* z_end */
+    Initialize(
+        builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})),
+        with_s);
   }
 
   void Initialize(std::unique_ptr<const maliput::api::RoadGeometry> road,
-      double start_time, bool with_s) {
+      bool with_s) {
     road_ = std::move(road);
     const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
-    dut_.reset(new MaliputRailcar<double>(LaneDirection(lane, with_s),
-                                          start_time));
+    dut_.reset(new MaliputRailcar<double>(LaneDirection(lane, with_s)));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -397,52 +412,10 @@ TEST_F(MaliputRailcarTest, InputPortNotConnected) {
   EXPECT_DOUBLE_EQ(result->speed(), 0.0);
 }
 
-// Tests that a MaliputRailcar does not start moving until after the start time
-// has passed.
-TEST_F(MaliputRailcarTest, NonZeroStartTime) {
-  const double kStartTime{10};
-  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(kStartTime));
-
-  // Grabs a pointer to where the EvalTimeDerivatives results end up.
-  const MaliputRailcarState<double>* const result =
-      dynamic_cast<const MaliputRailcarState<double>*>(
-          derivatives_->get_mutable_vector());
-  ASSERT_NE(nullptr, result);
-
-  const double kDesiredAcceleration{1};
-  const double kSpeed{3};
-
-  // Verifies that the vehicle has zero derivatives prior to the start time even
-  // if the input contains a non-zero acceleration command.
-  SetInputValue(kDesiredAcceleration);
-  context_->set_time(kStartTime - 1e-8);
-  ASSERT_NO_FATAL_FAILURE(
-      dut_->CalcTimeDerivatives(*context_, derivatives_.get()));
-  EXPECT_DOUBLE_EQ(result->s(), 0);
-  EXPECT_DOUBLE_EQ(result->speed(), 0);
-
-  // Verifies that the vehicle has the expected derivatives at the start time.
-  context_->set_time(kStartTime);
-  continuous_state()->set_speed(kSpeed);
-  ASSERT_NO_FATAL_FAILURE(
-      dut_->CalcTimeDerivatives(*context_, derivatives_.get()));
-  EXPECT_DOUBLE_EQ(result->s(), kSpeed);
-  EXPECT_DOUBLE_EQ(result->speed(), kDesiredAcceleration);
-
-  // Verifies that the vehicle has the expected derivatives after the start
-  // time.
-  context_->set_time(kStartTime + 1e-8);
-  ASSERT_NO_FATAL_FAILURE(
-      dut_->CalcTimeDerivatives(*context_, derivatives_.get()));
-  EXPECT_DOUBLE_EQ(result->s(), kSpeed);
-  EXPECT_DOUBLE_EQ(result->speed(), kDesiredAcceleration);
-}
-
 // Tests the correctness of the derivatives when the vehicle travels in the
 // decreasing `s` direction.
-TEST_F(MaliputRailcarTest, DecreasingS) {
-  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(0 /* start_time */,
-                                                false /* with_s */));
+TEST_F(MaliputRailcarTest, DecreasingSDragway) {
+  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(false /* with_s */));
   // Grabs a pointer to where the EvalTimeDerivatives results end up.
   const MaliputRailcarState<double>* const result =
       dynamic_cast<const MaliputRailcarState<double>*>(
@@ -458,13 +431,78 @@ TEST_F(MaliputRailcarTest, DecreasingS) {
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(), -MaliputRailcar<double>::kDefaultInitialSpeed);
   EXPECT_DOUBLE_EQ(result->speed(), kAccelCmd);
+
+  // Verifies that the vehicle's pose is correct. Since the vehicle is traveling
+  // against s, its orientation is expected to be flipped.
+  dut_->CalcOutput(*context_, output_.get());
+  const PoseVector<double>* pose = pose_output();
+  PoseVector<double> expected_pose;
+  expected_pose.set_translation({0, 0, 0});
+  expected_pose.set_rotation({0, 0, 0, -1});
+  // The following tolerance was determined empirically.
+  EXPECT_TRUE(CompareMatrices(
+      pose->get_value(), expected_pose.get_value(), 1e-15 /* tolerance */));
+}
+
+TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
+  EXPECT_NO_FATAL_FAILURE(InitializeSlopedCurvedMonoLane(false /* with_s */));
+  // Sets the r != 0 and s != 0.
+  const double kS{2.25};
+  const double kInitialSpeed{2};
+  MaliputRailcarConfig<double> config;
+  config.set_r(1);
+  config.set_h(0);
+  config.set_initial_speed(kInitialSpeed);
+  config.set_max_speed(30);
+  config.set_velocity_limit_kp(8);
+  SetConfig(config);
+  continuous_state()->set_s(kS);
+  continuous_state()->set_speed(kInitialSpeed);
+
+  // Obtains the against-s pose.
+  dut_->CalcOutput(*context_, output_.get());
+  const PoseVector<double>* against_s_pose = pose_output();
+  Eigen::Translation<double, 3> against_s_translation =
+      against_s_pose->get_translation();
+  Eigen::Quaternion<double> against_s_orientation =
+      against_s_pose->get_rotation();
+
+  // Obtains the with-s pose.
+  EXPECT_NO_FATAL_FAILURE(InitializeSlopedCurvedMonoLane(true /* with_s */));
+  SetConfig(config);
+  continuous_state()->set_s(kS);
+  continuous_state()->set_speed(kInitialSpeed);
+  dut_->CalcOutput(*context_, output_.get());
+  const PoseVector<double>* with_s_pose = pose_output();
+
+  Eigen::Translation<double, 3> with_s_translation =
+      with_s_pose->get_translation();
+  Eigen::Quaternion<double> with_s_orientation = with_s_pose->get_rotation();
+
+  // Verifies that the with-s and against-s translations are equal.
+  EXPECT_TRUE(with_s_translation.isApprox(against_s_translation));
+
+  // Verifies that the with-s and against-s orientations are opposite of
+  // each other. This is done by checking that the dot product of the two
+  // quaternions is equal to zero. The following tolerance was empirically
+  // determined.
+  EXPECT_NEAR(with_s_orientation.dot(against_s_orientation), 0, 1e-15);
+}
+
+// Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the
+// speed is zero.
+TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeWithSpeedZero) {
+  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(true /* with_s */));
+  continuous_state()->set_speed(0);
+  systems::UpdateActions<double> actions;
+  dut_->CalcNextUpdateTime(*context_, &actions);
+  EXPECT_DOUBLE_EQ(actions.time, std::numeric_limits<double>::infinity());
 }
 
 // Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the
 // road network is a dragway and with_s is true.
 TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayWithS) {
-  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(0 /* start_time */,
-                                                true /* with_s */));
+  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(true /* with_s */));
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
@@ -499,8 +537,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayWithS) {
 
 // Same as the previous unit test except with_s is false.
 TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayAgainstS) {
-  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(0 /* start_time */,
-                                                false /* with_s */));
+  EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(false /* with_s */));
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
@@ -536,8 +573,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayAgainstS) {
 // Same as the previous unit test except the road network is a curved monolane
 // and with_s is true.
 TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
-  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane(0 /* start_time */,
-                                                   true /* with_s */));
+  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane(true /* with_s */));
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
@@ -580,8 +616,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
 
 // Same as the previous unit test except with_s is false.
 TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
-  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane(0 /* start_time */,
-                                                   false /* with_s */));
+  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane(false /* with_s */));
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
