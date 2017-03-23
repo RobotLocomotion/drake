@@ -21,7 +21,7 @@ RigidBodyFrame<T>& RigidBodyFrame<T>::Create(
   // Create().
   // However we can still create a unique_ptr as below where ownership is clear
   // and an exception would call the destructor.
-  return *tree->AddMaterialFrame(
+  return *tree->AddPhysicalFrame(
       std::unique_ptr<RigidBodyFrame<T>>(new RigidBodyFrame<T>(body, X_BM)));
 }
 

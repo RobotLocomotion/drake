@@ -89,7 +89,7 @@ class MultibodyTree {
   }
 
   /// Takes ownership of `frame`, assigns a unique index to it, and adds it to
-  /// `this` %MultibodyTree. Returns a bare pointer to the material frame just
+  /// `this` %MultibodyTree. Returns a bare pointer to the physical frame just
   /// added, which will remain valid for the lifetime of `this` %MultibodyTree.
   /// This call invalidates the topology of this %MultibodyTree and, therefore,
   /// the Compile() method must be called before invoking methods which
@@ -98,10 +98,10 @@ class MultibodyTree {
   /// Example of usage:
   /// @code
   ///   MultibodyTree<T> model;
-  ///   auto foo = model.AddMaterialFrame(
-  ///                std::make_unique<RigidBodyFrame<T>>());
+  ///   auto foo = model.AddPhysicalFrame(
+  ///                std::make_unique<FixedOffsetFrame<T>>());
   /// @endcode
-  /// where `auto` here resolves to `RigidBodyFrame<T>*`.
+  /// where `auto` here resolves to `FixedOffsetFrame<T>*`.
   ///
   /// @throws std::logic_error if `frame` is a nullptr.
   ///
@@ -114,15 +114,15 @@ class MultibodyTree {
   /// therefore, the Compile() method must be called before invoking methods
   /// which require valid topology.
   ///
-  /// @param[in] frame A unique pointer to a material frame to be added to
+  /// @param[in] frame A unique pointer to a physical frame to be added to
   ///                  `this` %MultibodyTree.
-  /// @returns A bare pointer to the material frame just added, which will
+  /// @returns A bare pointer to the physical frame just added, which will
   ///          remain valid for the lifetime of `this` MultibodyTree.
   ///
-  /// @tparam FrameType The type of the specific sub-class of MaterialFrame to
+  /// @tparam FrameType The type of the specific sub-class of PhysicalFrame to
   ///                   add.
   template <class FrameType>
-  FrameType* AddMaterialFrame(std::unique_ptr<FrameType> frame) {
+  FrameType* AddPhysicalFrame(std::unique_ptr<FrameType> frame) {
     static_assert(std::is_convertible<FrameType*, PhysicalFrame<T>*>::value,
                   "FrameType must be a sub-class of PhysicalFrame<T>.");
     if (frame == nullptr) {
@@ -143,7 +143,7 @@ class MultibodyTree {
     frame->set_parent_tree(this);
     frame->set_index(frame_index);
     FrameType* raw_frame_ptr = frame.get();
-    owned_material_frames_.push_back(std::move(frame));
+    owned_physical_frames_.push_back(std::move(frame));
     return raw_frame_ptr;
   }
 
@@ -158,7 +158,7 @@ class MultibodyTree {
   ///
   /// @pre AddBody() was already called from within a body create method to
   /// create the body associated with this frame. Therefore there is a valid
-  /// MaterialFrameTopology for this frame.
+  /// PhysicalFrameTopology for this frame.
   BodyFrame<T>* AddBodyFrame(std::unique_ptr<BodyFrame<T>> body_frame) {
     if (body_frame == nullptr) {
       throw std::logic_error("Input body_frame is an invalid nullptr.");
@@ -176,16 +176,16 @@ class MultibodyTree {
     body_frame->set_parent_tree(this);
     body_frame->set_index(frame_index);
     BodyFrame<T>* raw_body_ptr = body_frame.get();
-    owned_material_frames_.push_back(std::move(body_frame));
+    owned_physical_frames_.push_back(std::move(body_frame));
     return raw_body_ptr;
   }
 
-  /// Returns the number of MaterialFrame objects in the MultibodyTree.
-  /// Material frames include body frames associated with each of the bodies in
+  /// Returns the number of PhysicalFrame objects in the MultibodyTree.
+  /// Physical frames include body frames associated with each of the bodies in
   /// the system including the _world_ body. Therefore the minimum number of
-  /// material frames in a MultibodyTree is one.
-  int get_num_material_frames() const {
-    return static_cast<int>(owned_material_frames_.size());
+  /// physical frames in a MultibodyTree is one.
+  int get_num_physical_frames() const {
+    return static_cast<int>(owned_physical_frames_.size());
   }
 
   /// Returns the number of bodies in the MultibodyTree including the *world*
@@ -217,14 +217,14 @@ class MultibodyTree {
     return *owned_bodies_[body_index].get();
   }
 
-  /// Returns a constant reference to the material frame with unique index
+  /// Returns a constant reference to the physical frame with unique index
   /// `frame_index`. This method aborts in Debug builds when `frame_index` does
   /// not correspond to a frame in this multibody tree.
-  const PhysicalFrame<T>& get_material_frame(FrameIndex frame_index) const {
-    DRAKE_ASSERT(frame_index < get_num_material_frames());
+  const PhysicalFrame<T>& get_physical_frame(FrameIndex frame_index) const {
+    DRAKE_ASSERT(frame_index < get_num_physical_frames());
     DRAKE_ASSERT_VOID(
-        owned_material_frames_[frame_index]->HasThisParentTreeOrThrow(this));
-    return *owned_material_frames_[frame_index];
+        owned_physical_frames_[frame_index]->HasThisParentTreeOrThrow(this));
+    return *owned_physical_frames_[frame_index];
   }
 
   /// Returns a constant reference to the body frame associated with the
@@ -233,14 +233,14 @@ class MultibodyTree {
   /// body in this multibody tree.
   const BodyFrame<T>& get_body_frame(const Body<T>& body) const {
     DRAKE_ASSERT_VOID(body.HasThisParentTreeOrThrow(this));
-    DRAKE_ASSERT(body.get_index() < get_num_material_frames());
-    DRAKE_ASSERT(body.get_body_frame_index() < get_num_material_frames());
+    DRAKE_ASSERT(body.get_index() < get_num_physical_frames());
+    DRAKE_ASSERT(body.get_body_frame_index() < get_num_physical_frames());
     // TODO(amcastro-tri): Uses static_cast in Release builds.
     // The assertion below would only fail if there was a bug in the logic
     // creating body frames when adding bodies.
     auto body_frame =
         dynamic_cast<BodyFrame<T>*>(
-            owned_material_frames_[body.get_body_frame_index()].get());
+            owned_physical_frames_[body.get_body_frame_index()].get());
     DRAKE_ASSERT(body_frame != nullptr);
     return *body_frame;
   }
@@ -283,7 +283,7 @@ class MultibodyTree {
   void validate_topology() { topology_.validate(); }
 
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
-  std::vector<std::unique_ptr<PhysicalFrame<T>>> owned_material_frames_;
+  std::vector<std::unique_ptr<PhysicalFrame<T>>> owned_physical_frames_;
 
   MultibodyTreeTopology topology_;
 };
