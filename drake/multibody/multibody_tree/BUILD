@@ -24,19 +24,19 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_tree",
     srcs = [
+        "fixed_offset_frame.cc",
         "multibody_tree.cc",
         "rigid_body.cc",
-        "rigid_body_frame.cc",
     ],
     hdrs = [
         "body.h",
+        "fixed_offset_frame.h",
         "frame.h",
         "multibody_tree.h",
         "multibody_tree_element.h",
         "multibody_tree_topology.h",
         "physical_frame.h",
         "rigid_body.h",
-        "rigid_body_frame.h",
     ],
     deps = [
         ":multibody_tree_indexes",
