@@ -156,4 +156,11 @@ struct EigenSizeMinPreferFixed {
   // clang-format on
 };
 
+/// MultiplyEigenSizes<a, b> gives a * b if both of a and b are fixed
+/// sizes. Otherwise it gives Eigen::Dynamic.
+template <int a, int b>
+struct MultiplyEigenSizes {
+  static constexpr int value =
+      (a == Eigen::Dynamic || b == Eigen::Dynamic) ? Eigen::Dynamic : a * b;
+};
 }  // namespace drake
