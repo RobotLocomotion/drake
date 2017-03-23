@@ -162,7 +162,7 @@ class TorqueFreeCylinderExactSolution{
   const Vector3d w_NB_B_drake   = state_as_vector.segment<3>(7);
   const Vector3d v_NBo_B_drake  = state_as_vector.segment<3>(10);
 
-  // xyzDt is [ẋ, ẏ, ż̈] Bo's velocity in N, expressed in N, i.e., the time-
+  // xyzDt is [ẋ, ẏ, ż] Bo's velocity in N, expressed in N, i.e., the time-
   //           derivative of [x, y, z] (Bo's position from No, expressed in N).
   // quatDt_NB is the time-derivative of quat_NB, i.e., [ė0  ė1  ė2  ė3].
   // wDt_NB_B  is B's angular acceleration in N, expressed in B, and
@@ -277,7 +277,7 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
 
   // TODO(Mitiguy) Replace the code below with Evan's StepOnceExactly integrator
   // method once feature request (issue #5581) request for the integrator
-  // counter is in place - which allows testing of Step Once Exactly" to ensure
+  // counter is in place - which allows testing of StepOnceExactly to ensure
   // it works as well (or probably better) than this temporary solution.
 
   // Integrate to within a small amount of dt of t_final.
@@ -648,7 +648,7 @@ TorqueFreeCylinderExactSolution::CalculateExactRotationalSolutionNB(
  * std::tuple | Description
  * -----------|-----------------------------------------------------------
  * xyz        | Vector3d [x, y, z], Bcm's position from No, expressed in N.
- * xyzDt      | Vector3d [ẋ, ẏ, ż̈] Bcm's velocity in N, expressed in N.
+ * xyzDt      | Vector3d [ẋ, ẏ, ż]  Bcm's velocity in N, expressed in N.
  * xyzDDt     | Vector3d [ẍ  ÿ  z̈], Bcm's acceleration in N, expressed in N.
  */
 std::tuple<Vector3d, Vector3d, Vector3d>
