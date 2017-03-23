@@ -716,7 +716,7 @@ TEST_F(Rod2DDAETest, NumWitnessFunctions) {
   // (c) Sticking single contact.
   context_->get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
     Rod2D<double>::kStickingSingleContact;
-  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 2);
+  EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 3);
 
   // (d) Sliding two contacts.
   context_->get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
