@@ -19,6 +19,12 @@ py_binary(
     ],
 )
 
+py_library(
+    name = "formatter",
+    srcs = ["formatter.py"],
+    data = ["//:.clang-format"],
+)
+
 # === test/ ===
 
 lcm_cc_library(
@@ -81,6 +87,12 @@ sh_test(
         ":lcm_vector_gen",
         "//:.clang-format",
     ],
+)
+
+py_test(
+    name = "formatter_test",
+    srcs = ["test/formatter_test.py"],
+    deps = [":formatter"],
 )
 
 cpplint(data = ["test/gen/drake/CPPLINT.cfg"])
