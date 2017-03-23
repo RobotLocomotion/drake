@@ -21,6 +21,17 @@ template <typename T>
 FrameVelocity<T>::~FrameVelocity() {}
 
 template <typename T>
+FrameVelocity<T>::FrameVelocity(const FrameVelocity<T>& other)
+    : BasicVector<T>(kSize) {
+  this->set_value(other.get_value());
+}
+
+template <typename T>
+void FrameVelocity<T>::operator=(const FrameVelocity<T>& other) {
+  this->set_value(other.get_value());
+}
+
+template <typename T>
 multibody::SpatialVelocity<T> FrameVelocity<T>::get_velocity() const {
   return multibody::SpatialVelocity<T>(this->get_value());
 }
