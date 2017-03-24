@@ -471,7 +471,8 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
       const int body_id = body->get_body_index();
       const auto& color = color_palette_.get_normalized_color(body_id);
       actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
-      // This is to disable shadows and to get an object painted a single color.
+      // This is to disable shadows and to get an object painted with a single
+      // color.
       actor_for_label->GetProperty()->LightingOff();
 
       // Converts visual's pose in the world to the one in the camera coordinate
