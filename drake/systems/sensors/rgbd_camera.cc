@@ -254,6 +254,10 @@ class RgbdCamera::Impl {
   const bool kCameraFixed;
   ColorPalette color_palette_;
   vtkNew<vtkActor> terrain_actor_;
+  // An array of maps which take pairs of a body index in RBT and a vector of
+  // vtkSmartPointer to vtkActor. The each vtkActor corresponds to an visual
+  // element specified in SDF / URDF. The first element of this array is for
+  // color and depth rendering and the second is for label image rendering.
   std::array<std::map<int, std::vector<vtkSmartPointer<vtkActor>>>, 2>
       id_object_maps_;
   vtkNew<vtkRenderer> color_depth_renderer_;
