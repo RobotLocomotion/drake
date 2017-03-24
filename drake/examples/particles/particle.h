@@ -1,8 +1,3 @@
-///
-/// @file   particle.h
-/// @brief  Particle system interface.
-///
-
 #pragma once
 
 #include "drake/common/drake_copyable.h"
@@ -40,10 +35,10 @@ class Particle : public systems::LeafSystem<T> {
 
  protected:
   void DoCalcOutput(const systems::Context<T>& context,
-   systems::SystemOutput<T>* output) const override;
+      systems::SystemOutput<T>* output) const override;
 
   void DoCalcTimeDerivatives(const systems::Context<T>& context,
-   systems::ContinuousState<T>* derivatives) const override;
+      systems::ContinuousState<T>* derivatives) const override;
 };
 
 }  // namespace particles

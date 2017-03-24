@@ -1,8 +1,3 @@
-///
-/// @file   degenerate_euler_joint.h
-/// @brief  DegenerateEulerJoint system interface.
-///
-
 #pragma once
 
 #include <Eigen/Core>

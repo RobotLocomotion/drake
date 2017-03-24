@@ -1,18 +1,12 @@
-///
-/// @file   particle_test.cc
-/// @brief  Test cases for Particle systems, using doubles.
-///
-
 #include <memory>
 
 #include "gtest/gtest.h"
 
+#include "drake/examples/particles/particle.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/framework/vector_base.h"
-
-#include "drake/examples/particles/particle.h"
 
 namespace drake {
 namespace examples {

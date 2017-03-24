@@ -1,10 +1,3 @@
-///
-/// @file   degenerate_euler_joint.cc
-///
-/// @brief  DegenerateEulerJoint System implementation, plus
-/// instantiation with commonly used scalar types.
-///
-
 #include "drake/examples/particles/degenerate_euler_joint.h"
 
 namespace drake {
@@ -12,7 +5,8 @@ namespace examples {
 namespace particles {
 
 template <typename T>
-DegenerateEulerJoint<T>::DegenerateEulerJoint(const MatrixX<T>& translator)
+DegenerateEulerJoint<T>::DegenerateEulerJoint(
+    const MatrixX<T>& translator)
     : translator_(translator) {
   // Output degrees of freedom must be 6.
   DRAKE_DEMAND(this->translator_.rows() == 6);
@@ -27,8 +21,8 @@ DegenerateEulerJoint<T>::DegenerateEulerJoint(const MatrixX<T>& translator)
 
 template <typename T>
 void DegenerateEulerJoint<T>::DoCalcOutput(
-  const systems::Context<T>& context,
-  systems::SystemOutput<T>* output) const {
+    const systems::Context<T>& context,
+    systems::SystemOutput<T>* output) const {
   // Get current input position and velocity.
   const systems::BasicVector<T>* input_vector =
     this->EvalVectorInput(context, 0);

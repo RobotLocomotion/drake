@@ -1,10 +1,3 @@
-///
-/// @file   particle.cc
-///
-/// @brief Particle System implementation, plus instantiation with
-/// commonly used scalar types.
-///
-
 #include "drake/examples/particles/particle.h"
 
 namespace drake {
@@ -23,8 +16,8 @@ Particle<T>::Particle() {
 
 template <typename T>
 void Particle<T>::DoCalcOutput(
-  const systems::Context<T>& context,
-  systems::SystemOutput<T>* output) const {
+    const systems::Context<T>& context,
+    systems::SystemOutput<T>* output) const {
   // Get current state from context.
   const systems::VectorBase<T>& continuous_state_vector =
       context.get_continuous_state_vector();
@@ -37,8 +30,8 @@ void Particle<T>::DoCalcOutput(
 
 template <typename T>
 void Particle<T>::DoCalcTimeDerivatives(
-  const systems::Context<T>& context,
-  systems::ContinuousState<T>* derivatives) const {
+    const systems::Context<T>& context,
+    systems::ContinuousState<T>* derivatives) const {
   // Get current state from context.
   const systems::VectorBase<T>& continuous_state_vector =
     context.get_continuous_state_vector();

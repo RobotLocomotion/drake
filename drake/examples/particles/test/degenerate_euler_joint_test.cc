@@ -1,18 +1,12 @@
-///
-/// @file   degenerate_euler_joint_test.cc
-/// @brief  Test cases for DegenerateEulerJoint systems, using doubles.
-///
-
 #include <memory>
 
 #include "gtest/gtest.h"
 
+#include "drake/examples/particles/degenerate_euler_joint.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
-
-#include "drake/examples/particles/degenerate_euler_joint.h"
 
 namespace drake {
 namespace examples {

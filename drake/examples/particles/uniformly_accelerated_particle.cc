@@ -1,14 +1,15 @@
-/// @file   uniformly_accelerated_particle.cc
 ///
 /// @brief  A simple 1DOF, constantly accelerated particle example.
-
+///
 
 #include <memory>
 #include <limits>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
+#include "drake/examples/particles/degenerate_euler_joint.h"
+#include "drake/examples/particles/particle.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -16,9 +17,6 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-
-#include "drake/examples/particles/degenerate_euler_joint.h"
-#include "drake/examples/particles/particle.h"
 
 DEFINE_double(initial_position, 0.0,
               "Particle initial x position");
@@ -37,8 +35,8 @@ namespace particles {
 namespace {
 
 /// Fixed path to particle SDF model (for visualization purposes only).
-static const char* kParticleSdfPath =
-  "/examples/uniformly_accelerated_particle/models/particle.sdf";
+static const char* const kParticleSdfPath =
+  "/examples/particles/models/particle.sdf";
 
 /// A sample diagram for visualizing a 1DOF particle to which a
 /// a constant acceleration is applied.
@@ -73,11 +71,11 @@ class UniformlyAcceleratedParticle : public systems::Diagram<T> {
 
  private:
   /// Acceleration to be applied to the particle.
-  T acceleration_;
+  const T acceleration_;
   /// RigidBodyTree particle representation
   /// (for visualizations purposes only).
-  std::unique_ptr< RigidBodyTree<T> > tree_{
-    std::make_unique< RigidBodyTree<T> >()};
+  std::unique_ptr<RigidBodyTree<T>> tree_{
+    std::make_unique<RigidBodyTree<T>>()};
   /// Sanity check flag for diagram
   /// post-construction initialization.
   bool built_{false};
@@ -85,12 +83,11 @@ class UniformlyAcceleratedParticle : public systems::Diagram<T> {
 
 template <typename T>
 UniformlyAcceleratedParticle<T>::UniformlyAcceleratedParticle(
-  const T& acceleration)
-  : acceleration_(acceleration) {}
+    const T& acceleration) : acceleration_(acceleration) {}
 
 template <typename T>
 void UniformlyAcceleratedParticle<T>::BuildAndConnect(
-  lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm) {
   DRAKE_DEMAND(!built_);
   // Parse particle sdf into rigid body tree.
   parsers::sdf::AddModelInstancesFromSdfFileToWorld(
@@ -105,14 +102,14 @@ void UniformlyAcceleratedParticle<T>::BuildAndConnect(
   auto constant_acceleration_vector_source =
     builder.template AddSystem<systems::ConstantVectorSource<T>>(acceleration_);
   // Adding particle.
-  auto particle = builder.template AddSystem< Particle<T> >();
+  auto particle = builder.template AddSystem<Particle<T>>();
   // Adding particle joint.
   MatrixX<T> translating_matrix(6, 1);
   // Only first generalized coordinate gets through.
   translating_matrix.setZero();
   translating_matrix(0, 0) = 1.0;
   auto particle_joint =
-      builder.template AddSystem <DegenerateEulerJoint<T>>(translating_matrix);
+      builder.template AddSystem<DegenerateEulerJoint<T>>(translating_matrix);
   // Adding visualizer client.
   auto visualizer =
       builder.template AddSystem<systems::DrakeVisualizer>(*tree_, lcm);
@@ -127,7 +124,7 @@ void UniformlyAcceleratedParticle<T>::BuildAndConnect(
 template <typename T>
 std::unique_ptr<systems::Context<T>>
 UniformlyAcceleratedParticle<T>::CreateContext(
-  const T& position, const T& velocity) const {
+    const T& position, const T& velocity) const {
   DRAKE_DEMAND(built_);
   // Allocate context.
   auto context = this->AllocateContext();
