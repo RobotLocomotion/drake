@@ -86,10 +86,10 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
     prog.SetSolverOption(SolverType::kGurobi, "Presolve", 0);
     prog.SetSolverOption(SolverType::kGurobi, "Heuristics", 0.0);
 
-    double x_expected_to_test[] = {0.0, 1.0};
+    double x_expected0_to_test[] = {0.0, 1.0};
     for (int i = 0; i < 2; i++) {
       Eigen::VectorXd x_expected(1);
-      x_expected[0] = x_expected_to_test[i];
+      x_expected[0] = x_expected0_to_test[i];
       prog.SetInitialGuess(x, x_expected);
       SolutionResult result = solver.Solve(prog);
       EXPECT_EQ(result, SolutionResult::kSolutionFound);

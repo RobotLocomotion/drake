@@ -573,7 +573,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     DRAKE_DEMAND(!error);
   }
 
-  for (int i = 0; i < prog.initial_guess().rows(); i++) {
+  for (size_t i = 0; i < prog.num_vars(); i++) {
     if (!std::isnan(prog.initial_guess()(i))) {
       error = GRBsetdblattrelement(model, "Start",
                                    i, prog.initial_guess()(i));
