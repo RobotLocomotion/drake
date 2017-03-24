@@ -112,6 +112,7 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const systems::Context<T>&
                                                      context) const {
   DRAKE_ASSERT_VOID(this->CheckValidContext(context));
   using std::sin;
+  using std::cos;
 
   // Verify the system is simulated using piecewise DAE.
   DRAKE_DEMAND(get_simulation_type() ==
@@ -127,8 +128,8 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const systems::Context<T>&
   const Mode mode = context.template get_abstract_state<Mode>(0);
   DRAKE_DEMAND(mode != Mode::kBallisticMotion);
   const int k = get_k(context);
-  const T half_rod_length = get_rod_half_length();
   const T stheta = sin(theta);
+  const T ctheta = cos(theta);
 
   // Get the external force.
   const int port_index = 0;
@@ -142,11 +143,13 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const systems::Context<T>&
   // the rod:
   // cy = y + k * half_rod_length * sin(θ)  [rod endpoint vertical location]
   // dcy/dt = dy/dt + k * half_rod_length * cos(θ) * dθ/dt
-  // d²cy/dt² = d²y/dt² - k * half_rod_length * sin(θ) * (dθ/dt)² * d²θ/dt²
+  // d²cy/dt² = d²y/dt² - k * half_rod_length * sin(θ) * (dθ/dt)² +
+  //            k * half_rod_length * cos(θ) * d²θ/dt²
   const T yddot = get_gravitational_acceleration() + fY/get_rod_mass();
   const T thetaddot = tau/get_rod_moment_of_inertia();
   T cyddot = yddot -
-        k * half_rod_length * stheta * thetadot * thetadot * thetaddot;
+      k * half_length_ * stheta * thetadot * thetadot +
+      k * half_length_ * ctheta * thetaddot;
 
   return cyddot;
 }
@@ -1066,11 +1069,13 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   // the rod:
   // cy = y + k * half_rod_length * sin(θ)  [rod endpoint vertical location]
   // dcy/dt = dy/dt + k * half_rod_length * cos(θ) * dθ/dt
-  // d²cy/dt² = d²y/dt² - k * half_rod_length * sin(θ) * (dθ/dt)² * d²θ/dt²
-  T yddot = get_gravitational_acceleration() + fY/mass_;
-  T thetaddot = tau/J_;
+  // d²cy/dt² = d²y/dt² - k * half_rod_length * sin(θ) * (dθ/dt)² +
+  //                      k * half_rod_length * cos(θ) * d²θ/dt²
+  const T yddot = get_gravitational_acceleration() + fY/mass_;
+  const T thetaddot = tau/J_;
   T cyddot = yddot -
-      k * half_length_ * stheta * thetadot * thetadot * thetaddot;
+      k * half_length_ * stheta * thetadot * thetadot +
+      k * half_length_ * ctheta * thetaddot;
 
   // If the normal acceleration is non-negative, no contact forces need be
   // applied.
