@@ -58,6 +58,7 @@ drake_cc_library(
     srcs = ["pose_bundle.cc"],
     hdrs = ["pose_bundle.h"],
     deps = [
+        ":frame_velocity",
         "//drake/common",
         "//drake/common:autodiff",
     ],
