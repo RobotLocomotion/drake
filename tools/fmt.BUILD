@@ -13,6 +13,7 @@ cc_library(
         "fmt/*.h",
     ]),
     hdrs = glob(["fmt/*.h"]),
+    includes = ["."],
 )
 
 pkg_tar(
