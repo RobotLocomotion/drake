@@ -156,6 +156,7 @@ const std::array<uint8_t, 4> kTerrainColor{{204u, 229u, 255u, 255u}};
 const int kWidth = 640;
 const int kHeight = 480;
 
+// Pixel coordinate system values.
 struct UV {
   int u;
   int v;
@@ -350,7 +351,7 @@ class ImageTest : public ::testing::Test {
                 kDepthTolerance);
   }
 
-    // Verifies the color and depth of the image at the two visuals (boxes).
+  // Verifies the color and depth of the image at the two visuals (boxes).
   static void VerifyMultipleVisuals(const sensors::Image<uint8_t>& color_image,
                                     const sensors::Image<float>& depth_image) {
     // Verifies the four corner points.

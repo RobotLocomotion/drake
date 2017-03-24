@@ -352,14 +352,14 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
       continue;
     }
 
-    for (size_t i = 0; i < body->get_visual_elements().size(); ++i) {
-      if (i == 0) {
-        for (auto& map : id_object_maps_) {
-          std::vector<vtkSmartPointer<vtkActor>> vec;
-          map[body->get_body_index()] = vec;
-        }
+    if (!body->get_visual_elements().empty()) {
+      for (auto& id_object_map : id_object_maps_) {
+        std::vector<vtkSmartPointer<vtkActor>> vec;
+        id_object_map[body->get_body_index()] = vec;
       }
-      const auto& visual = body->get_visual_elements()[i];
+    }
+
+    for (const auto& visual : body->get_visual_elements()) {
       vtkNew<vtkActor> actor;
       vtkNew<vtkPolyDataMapper> mapper;
       bool shape_matched = true;
@@ -414,7 +414,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
           mesh_reader->SetFileName(mesh_filename);
           mesh_reader->Update();
 
-          // TODO(kunimatsu-tri) Guessing the texture file name is bad.  Instead,
+          // TODO(kunimatsu-tri) Guessing the texture file name is bad. Instead,
           // get it from somewhere like `DrakeShapes::MeshWithTexture` when it's
           // implemented.
           // TODO(kunimatsu-tri) Add support for other file formats.
@@ -472,12 +472,12 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         auto renderers = MakeVtkInstanceArray<vtkRenderer>(
             color_depth_renderer_, label_renderer_);
         auto actors = MakeVtkInstanceArray<vtkActor>(actor, actor_for_label);
-        for (size_t j = 0; j < actors.size(); ++j) {
-          actors[j]->SetMapper(mapper.GetPointer());
-          actors[j]->SetUserTransform(vtk_transform);
-          renderers[j]->AddActor(actors[j].GetPointer());
-          id_object_maps_[j][body_id].push_back(
-              vtkSmartPointer<vtkActor>(actors[j].GetPointer()));
+        for (size_t i = 0; i < actors.size(); ++i) {
+          actors[i]->SetMapper(mapper.GetPointer());
+          actors[i]->SetUserTransform(vtk_transform);
+          renderers[i]->AddActor(actors[i].GetPointer());
+          id_object_maps_[i][body_id].push_back(
+              vtkSmartPointer<vtkActor>(actors[i].GetPointer()));
         }
       }
     }
