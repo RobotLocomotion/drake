@@ -23,13 +23,17 @@ drake_setup_options()
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(avl PUBLIC CMAKE FORTRAN)
 drake_add_external(eigen PUBLIC CMAKE)
+drake_add_external(fmt PUBLIC CMAKE ALWAYS)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(qt_property_browser CMAKE QT)
 drake_add_external(sedumi PUBLIC CMAKE MATLAB)
-drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE MATLAB)
 drake_add_external(xfoil PUBLIC CMAKE FORTRAN)
 drake_add_external(yalmip PUBLIC CMAKE MATLAB)
+
+# spdlog
+drake_add_external(spdlog PUBLIC CMAKE
+  DEPENDS fmt)
 
 # bullet
 drake_add_external(bullet PUBLIC CMAKE
@@ -283,6 +287,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     ccd
     eigen
     fcl
+    fmt
     gflags
     google_styleguide
     googletest

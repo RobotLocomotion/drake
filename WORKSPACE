@@ -58,6 +58,14 @@ github_archive(
     sha256 = "5166c036eacd625b86f725bfba356547e0bc497232649662c61cde7b1b423292",
 )
 
+github_archive(
+    name = "fmt",
+    repository = "fmtlib/fmt",
+    commit = "3.0.1",
+    build_file = "tools/fmt.BUILD",
+    sha256 = "dce62ab75a161dd4353a98364feb166d35e7eea382169d59d9ce842c49c55bad",
+)
+
 maven_jar(
     name = "net_sf_jchart2d_jchart2d",
     artifact = "net.sf.jchart2d:jchart2d:3.3.2",
