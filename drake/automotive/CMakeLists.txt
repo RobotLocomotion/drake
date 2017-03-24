@@ -60,6 +60,7 @@ target_link_libraries(drakeAutomotive
   drakeSystemFramework
   drakeSystemPrimitives
   drakeRendering
+  fmt
   Eigen3::Eigen
   yaml-cpp
   )

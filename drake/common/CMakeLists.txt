@@ -89,7 +89,7 @@ set(drakeCommon_REQUIRES)
 if(spdlog_FOUND)
   target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
   target_link_libraries(drakeCommon spdlog::spdlog)
-  set(drakeCommon_CFLAGS -DHAVE_SPDLOG)
+  set(drakeCommon_CFLAGS -DHAVE_SPDLOG -DSPDLOG_FMT_EXTERNAL)
   set(drakeCommon_REQUIRES spdlog)
 endif()
 
