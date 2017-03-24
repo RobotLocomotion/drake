@@ -376,6 +376,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
     vtkNew<vtkActor> actor_for_label;
     vtkNew<vtkPolyDataMapper> mapper;
     bool shape_matched = true;
+    bool texture_found = false;
     const DrakeShapes::Geometry& geometry = visual.getGeometry();
     switch (visual.getShape()) {
       case DrakeShapes::BOX: {
@@ -443,6 +444,7 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
           texture->SetInputConnection(texture_reader->GetOutputPort());
           texture->InterpolateOn();
           actor->SetTexture(texture.GetPointer());
+          texture_found = true;
         }
 
         mapper->SetInputConnection(mesh_reader->GetOutputPort());
@@ -461,27 +463,35 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
 
     // Registers actors.
     if (shape_matched) {
+      if (!texture_found) {
+        const auto color = visual.getMaterial();
+        actor->GetProperty()->SetColor(color[0], color[1], color[2]);
+      }
+
+      const int body_id = body->get_body_index();
+      const auto& color = color_palette_.get_normalized_color(body_id);
+      actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
+      // This is to disable shadows and to get an object painted with a single
+      // color.
+      actor_for_label->GetProperty()->LightingOff();
+
       // Converts visual's pose in the world to the one in the camera coordinate
       // system.
-      const int body_id = body->get_body_index();
       const auto X_CVisual = X_CW * visual.getWorldTransform();
       vtkSmartPointer<vtkTransform> vtk_transform =
           VtkUtil::ConvertToVtkTransform(X_CVisual);
 
-      actor->SetMapper(mapper.GetPointer());
-      actor->SetUserTransform(vtk_transform);
-      color_depth_id_object_map_[body_id] =
-          vtkSmartPointer<vtkActor>(actor.GetPointer());
-      color_depth_renderer_->AddActor(actor.GetPointer());
-
-      const auto& color = color_palette_.get_normalized_color(body_id);
-      actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
-      actor_for_label->GetProperty()->LightingOff();
-      actor_for_label->SetMapper(mapper.GetPointer());
-      actor_for_label->SetUserTransform(vtk_transform);
-      label_id_object_map_[body_id] =
-          vtkSmartPointer<vtkActor>(actor_for_label.GetPointer());
-      label_renderer_->AddActor(actor_for_label.GetPointer());
+      auto renderers = MakeVtkInstanceArray<vtkRenderer>(
+          color_depth_renderer_, label_renderer_);
+      auto actors = MakeVtkInstanceArray<vtkActor>(actor, actor_for_label);
+      std::array<std::map<int, vtkSmartPointer<vtkActor>>*, 2> maps{{
+          &color_depth_id_object_map_, &label_id_object_map_}};
+      for (size_t i = 0; i < actors.size(); ++i) {
+        actors[i]->SetMapper(mapper.GetPointer());
+        actors[i]->SetUserTransform(vtk_transform);
+        renderers[i]->AddActor(actors[i].GetPointer());
+        (*maps[i])[body_id] = vtkSmartPointer<vtkActor>(actors[i].GetPointer());
+      }
     }
   }
 
@@ -529,10 +539,10 @@ void RgbdCamera::Impl::UpdateModelPoses(
     // here. This is OK because 1) we are just copying data to the memory spaces
     // allocated at the construction time and 2) we are not outputting these
     // data to outside the class.
-    const std::array<std::map<int, vtkSmartPointer<vtkActor>>, 2>
-        id_object_maps{{color_depth_id_object_map_, label_id_object_map_}};
-    for (auto& id_object_map : id_object_maps) {
-      auto& actor = id_object_map.at(body->get_body_index());
+    const std::array<const std::map<int, vtkSmartPointer<vtkActor>>*, 2>
+        id_object_maps{{&color_depth_id_object_map_, &label_id_object_map_}};
+    for (auto id_object_map : id_object_maps) {
+      auto& actor = id_object_map->at(body->get_body_index());
       actor->SetUserTransform(vtk_transform);
     }
   }
