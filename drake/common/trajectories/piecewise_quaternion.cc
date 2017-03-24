@@ -8,7 +8,7 @@ namespace drake {
 
 template <typename Scalar>
 bool PiecewiseQuaternionSlerp<Scalar>::is_approx(
-    const PiecewiseQuaternionSlerp<Scalar>& other, Scalar tol) const {
+    const PiecewiseQuaternionSlerp<Scalar>& other, const Scalar& tol) const {
   // Velocities are derived from the quaternions, and I don't want to
   // overload units for tol, so I am skipping the checks on velocities.
   if (!this->segmentTimesEqual(other, tol))

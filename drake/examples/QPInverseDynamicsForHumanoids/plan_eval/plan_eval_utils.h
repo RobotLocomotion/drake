@@ -184,9 +184,10 @@ class PiecewiseCartesianTrajectory {
    */
   Isometry3<T> get_pose(double time) const {
     Isometry3<T> pose;
-    pose.translation() = position_.get_position(time);
-    pose.linear() = orientation_.orientation(time).toRotationMatrix();
-    pose.makeAffine();
+    pose.fromPositionOrientationScale(
+        position_.get_position(time),
+        orientation_.orientation(time).toRotationMatrix(),
+        Vector3<double>::Ones());
     return pose;
   }
 
