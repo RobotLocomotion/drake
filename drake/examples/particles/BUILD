@@ -9,6 +9,13 @@ load(
     "drake_cc_binary"
 )
 
+filegroup(
+    name = "models",
+    srcs = glob([
+        "models/*.sdf"
+    ])
+)
+
 drake_cc_library(
     name = "particles",
     srcs = [

@@ -1,7 +1,3 @@
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()
-
 add_library_with_exports(LIB_NAME drakeParticles SOURCE_FILES
   particle.cc
   degenerate_euler_joint.cc
@@ -36,3 +32,8 @@ target_link_libraries(uniformly_accelerated_particle_demo
   drakeMultibodyParsers
   drakeRendering
   )
+drake_install_executables(TARGETS uniformly_accelerated_particle_demo)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
