@@ -17,6 +17,15 @@ py_binary(
     deps = [
         ":named_vector",
     ],
+    data = [
+        "//tools:clang-format",
+    ]
+)
+
+py_library(
+    name = "formatter",
+    srcs = ["formatter.py"],
+    data = ["//tools:clang-format"],
 )
 
 # === test/ ===
@@ -79,8 +88,13 @@ sh_test(
         "test/gen/sample_translator.h",
         "test/sample.named_vector",
         ":lcm_vector_gen",
-        "//:.clang-format",
     ],
+)
+
+py_test(
+    name = "formatter_test",
+    srcs = ["test/formatter_test.py"],
+    deps = [":formatter"],
 )
 
 cpplint(data = ["test/gen/drake/CPPLINT.cfg"])
