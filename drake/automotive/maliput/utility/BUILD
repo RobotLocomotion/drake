@@ -23,8 +23,8 @@ drake_cc_library(
     ],
     deps = [
         "//drake/automotive/maliput/api",
+        "//drake/common",
         "//drake/math:geometric_transform",
-        "@fmt//:fmt",
     ],
 )
 
