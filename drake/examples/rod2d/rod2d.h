@@ -154,6 +154,7 @@ Outputs: planar position (state indices 0 and 1) and orientation (state
 
 - [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
                    Impact". SIAM Rev., 42(1), 3-39, 2000. **/
+// TODO(edrumwri): Track energy and add a test to check it.
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:
