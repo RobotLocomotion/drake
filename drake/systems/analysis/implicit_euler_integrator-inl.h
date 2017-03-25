@@ -103,7 +103,7 @@ Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
 template <class T>
 VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives(
     const VectorX<T>& x) {
-   const System<T>& system = this->get_system();
+  const System<T>& system = this->get_system();
   Context<T>* context = this->get_mutable_context();
   SPDLOG_DEBUG(drake::log(), "    IE Calc Derivatives t={}",
                context->get_time());
