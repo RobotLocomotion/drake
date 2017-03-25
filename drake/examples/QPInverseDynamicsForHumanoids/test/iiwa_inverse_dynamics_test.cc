@@ -42,9 +42,10 @@ GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
   HumanoidStatus robot_status(*robot, alias_groups);
 
   QPController con;
-  QpInput input = paramset.MakeQpInput({}, /* contacts */
-                                       {}, /* tracked bodies*/
-                                       alias_groups);
+  std::vector<std::string> contact_group_names = {};
+  std::vector<std::string> tracked_body_names = {};
+  QpInput input = paramset.MakeQpInput(
+      contact_group_names, tracked_body_names, alias_groups);
   QpOutput output(GetDofNames(*robot));
 
   // Sets up desired q and v.

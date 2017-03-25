@@ -290,20 +290,39 @@ class ParamSet {
 
   /**
    * Returns a QpInput for the given contacts and tracked bodies using the
-   * parameters hold by this instance. Note that this function only sets the
+   * parameters held by this instance. Note that this function only sets the
    * `weights` and `constraint_types` fields for DesiredBodyMotion and
    * DesiredDofMotions, the desire accelerations need to be set separately by
    * some control policy.
-   * @param contact_body_groups, Names of body groups that are in contact.
+   * @param contact_body_groups Names of body groups that are in contact.
    * For each body of each group, a ContactInformation will be populated in the
    * returned QpInput.
-   * @param tracked_body_groups, Names of body groups that are being tracked.
+   * @param tracked_body_groups Names of body groups that are being tracked.
    * For each body of each group, a DesiredBodyMotion will be populated in the
    * returned QpInput.
+   * @param alias_group Specifies the relationship between body / joint groups
+   * and the RigidBodyTree it is constructed from.
    */
   QpInput MakeQpInput(
       const std::vector<std::string>& contact_body_groups,
       const std::vector<std::string>& tracked_body_groups,
+      const RigidBodyTreeAliasGroups<double>& alias_group) const;
+
+  /**
+   * Returns a QpInput for the given contacts and tracked bodies using the
+   * parameters held by this instance. Note that this function only sets the
+   * `weights` and `constraint_types` fields for DesiredBodyMotion and
+   * DesiredDofMotions, the desire accelerations need to be set separately by
+   * some control policy.
+   * @param contact_bodies Pointers to bodies in contact.
+   * @param tracked_bodies Pointers to bodies that have Cartesian tracking
+   * objectives.
+   * @param alias_group Specifies the relationship between body / joint groups
+   * and the RigidBodyTree it is constructed from.
+   */
+  QpInput MakeQpInput(
+      const std::vector<const RigidBody<double>*>& contact_bodies,
+      const std::vector<const RigidBody<double>*>& tracked_bodies,
       const RigidBodyTreeAliasGroups<double>& alias_group) const;
 
   /**

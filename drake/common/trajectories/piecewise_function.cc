@@ -26,6 +26,10 @@ PiecewiseFunction::~PiecewiseFunction() {
   // empty
 }
 
+bool PiecewiseFunction::isTimeInRange(double time) const {
+  return (time >= getStartTime() && time <= getEndTime());
+}
+
 int PiecewiseFunction::getNumberOfSegments() const {
   return static_cast<int>(breaks.size() - 1);
 }

@@ -65,8 +65,9 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
           systems::AbstractValue::Make<HumanoidStatus>(robot_status));
 
   // Makes a source for qp input.
-  QpInput input = paramset.MakeQpInput({}, /* contacts */
-                                       {}, /* tracked bodies*/
+  const std::vector<std::string> empty;
+  QpInput input = paramset.MakeQpInput(empty, /* contacts */
+                                       empty, /* tracked bodies*/
                                        alias_groups);
   VectorX<double> kp, kd;
   paramset.LookupDesiredDofMotionGains(&kp, &kd);
