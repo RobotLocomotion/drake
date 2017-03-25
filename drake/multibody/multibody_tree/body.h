@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/frame.h"
+#include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
@@ -126,6 +127,12 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// Returns a const reference to the associated BodyFrame.
   const BodyFrame<T>& get_body_frame() const {
     return body_frame_;
+  }
+
+  const Isometry3<T>& get_pose_in_world(
+      const MultibodyTreeContext<T>& context) const {
+    return this->get_parent_tree().get_body_pose_in_world(
+        context, this->get_index());
   }
 
  private:
