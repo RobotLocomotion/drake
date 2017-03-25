@@ -99,8 +99,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   ~ImplicitEulerIntegrator() override = default;
 
-  // TODO(edrumwri): consider making the convergence tolerance a parameter
-  // to the constructor in ImplicitEulerIntegrator.
   explicit ImplicitEulerIntegrator(const System<T>& system,
                                    const T& max_step_size,
                                    Context<T>* context = nullptr)
@@ -189,34 +187,11 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   /// @name Tunable parameters.
   /// Parameters for tuning the speed of the implicit integration process;
-  /// some of the parameters (e.g., the delta zero tolerance, the convergence
-  /// tolerance, the delta objective function tolerance) may affect the accuracy
-  /// of the solution, while the others- those that determine the frequency with
+  /// the delta zero tolerance may affect the accuracy of the solution, while
+  /// other parameters- those that determine the frequency with
   /// which the Jacobian matrix is reformulated and refactorized- affect only
   /// the speed that the solution will be found.
   /// @{
-
-  /// Gets the tolerance to the change in the objective function below which
-  /// the nonlinear system solving process will halt.
-  /// @sa set_delta_objective_tolerance()
-  double get_delta_objective_tolerance() const { return delta_f_tol_; }
-
-  /// Sets the tolerance to the change in the objective function below which
-  /// the nonlinear system solving process will halt. The objective function is
-  /// defined as 1/2gᵀg, where g ≡ x(t+h) - x(t) - hẋ(t+h, x(t+h)). In other
-  /// words, if the change in the objective function within a nonlinear system
-  /// solve step is less than @p tol, the nonlinear system solve will
-  /// finish. The default tolerance value is 1e-8.
-  void set_delta_objective_tolerance(double tol) { delta_f_tol_ = tol; }
-
-  /// Gets the tolerance below which the nonlinear system solving process will
-  /// halt.
-  double get_convergence_tolerance() const { return convergence_tol_; }
-
-  /// Sets the tolerance below which the nonlinear system solving tolerance will
-  /// halt. The default value (the square root of machine epsilon) is generally
-  /// sufficient.
-  void set_convergence_tolerance(double tol) { convergence_tol_ = tol; }
 
   /// Gets the tolerance below which changes to the state variables during the
   /// integration process should indicate that the Newton-Raphson process
@@ -279,6 +254,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   void DoResetStatistics() override;
 
  private:
+  void CalcIterationMatrix(const VectorX<T>& xtplus, double scale);
   MatrixX<T> CalcJacobian(const VectorX<T>& xtplus);
   void DoStepOnceFixedSize(const T& dt) override;
   void StepImplicitEuler(const T& dt);
@@ -290,20 +266,10 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   VectorX<T> CalcTimeDerivatives(const VectorX<T>& x);
   void CalcErrorNorms(const Context<T>& context, T* q_nrm, T* v_nrm, T* z_nrm);
 
-  // The Euclidean norm tolerance at which the nonlinear system solving
-  // process will halt.
-  double convergence_tol_{std::sqrt(std::numeric_limits<double>::epsilon())};
-
   // The tolerance at which the updates to the state variables indicate that
   // no change is effectively occurring, thereby allowing the nonlinear system
   // solving process to complete.
   double delta_update_tol_{std::sqrt(std::numeric_limits<double>::epsilon())};
-
-  // If a change to the objective function 1/2gᵀg, where
-  // g ≡ x(t+h) - x(t) - hẋ(t+h, x(t+h)), of less than this tolerance is
-  // observed *and* the Jacobian is fresh, the nonlinear system solve will
-  // terminate.
-  double delta_f_tol_{1e-8};
 
   // The minimum update scaling that *must* be observed before a Jacobian
   // can be freshened.
@@ -342,10 +308,14 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   JacobianComputationScheme jacobian_scheme_{
       JacobianComputationScheme::kForwardDifference};
 
+  // The computed iteration matrix.
+  MatrixX<T> Jg_;
+
   // Various statistics
   int num_function_evaluations_{0};
   int num_jacobian_function_evaluations_{0};
   int num_nr_loops_{0};
+  int n_loops_since_fresh_J_{0};
   double alpha_sum_{0.0};
 };
 }  // namespace systems

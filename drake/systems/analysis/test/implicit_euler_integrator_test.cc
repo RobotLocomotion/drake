@@ -160,7 +160,6 @@ TEST_F(ImplicitIntegratorTest, MiscAPI) {
   const double sqrt_eps = std::sqrt(eps);
   EXPECT_NEAR(integrator.get_delta_update_tolerance(), sqrt_eps, eps);
   EXPECT_NEAR(integrator.get_jacobian_reformulation_tolerance(), 1e-8, eps);
-  EXPECT_NEAR(integrator.get_delta_objective_tolerance(), 1e-8, eps);
   EXPECT_EQ(integrator.get_jacobian_reformulation_min_loops(), 5);
   EXPECT_EQ(integrator.get_jacobian_computation_scheme(),
             ImplicitEulerIntegrator<double>::JacobianComputationScheme::
@@ -482,8 +481,6 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
   ImplicitEulerIntegrator<double> integrator(spring_mass, large_dt,
                                              context.get());
   integrator.set_fixed_step_mode(true);
-  integrator.set_convergence_tolerance(1e-14);
-  integrator.set_delta_objective_tolerance(1e-14);
   integrator.set_jacobian_reformulation_min_loops(0);
   integrator.set_jacobian_reformulation_tolerance(1.0);
 
@@ -595,33 +592,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   const double pos_err = std::abs(x_des -
       context->get_continuous_state_vector().GetAtIndex(0));
 
-  // Increase convergence tolerance.
-  const double old_ctol = integrator.get_convergence_tolerance();
-  integrator.set_convergence_tolerance(1.0);
-
-  // Integrate again and verify that positional error has increased.
-  spring_mass.set_position(context.get(), initial_position);
-  spring_mass.set_velocity(context.get(), initial_velocity);
-  integrator.StepExactlyFixed(large_dt);
-  EXPECT_GT(std::abs(x_des -
-      context->get_continuous_state_vector().GetAtIndex(0)), pos_err);
-
-  // Reduce convergence tolerance to default, increase delta objective
-  // function tolerance, integrate again, and verify that positional error
-  // also increases.
-  integrator.set_convergence_tolerance(old_ctol);
-  const double old_delta_ofn_tol = integrator.get_delta_objective_tolerance();
-  integrator.set_delta_objective_tolerance(1.0);
-  spring_mass.set_position(context.get(), initial_position);
-  spring_mass.set_velocity(context.get(), initial_velocity);
-  integrator.StepExactlyFixed(large_dt);
-  EXPECT_GT(std::abs(x_des -
-      context->get_continuous_state_vector().GetAtIndex(0)), pos_err);
-
-  // Reduce delta objective function tolerance to default, increase delta update
-  // tolerance, integrate again, and verify that positional error
-  // also increases.
-  integrator.set_delta_objective_tolerance(old_delta_ofn_tol);
+  // Increase the delta update tolerance, integrate again, and verify that
+  // positional error increases.
   integrator.set_delta_state_tolerance(100.0);
   spring_mass.set_position(context.get(), initial_position);
   spring_mass.set_velocity(context.get(), initial_velocity);

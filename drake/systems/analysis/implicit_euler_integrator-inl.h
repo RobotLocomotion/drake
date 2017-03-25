@@ -250,6 +250,29 @@ void ImplicitEulerIntegrator<T>::CalcErrorNorms(const Context<T>& context,
   *q_nrm = weighted_dq_->CopyToVector().template lpNorm<Eigen::Infinity>();
 }
 
+// Computes and factorizes the iteration matrix.
+template <class T>
+void ImplicitEulerIntegrator<T>::CalcIterationMatrix(const VectorX<T>& xtplus,
+                                                     double scale) {
+  // The Jacobian matrix of g() with respect to x(t+h) yields the relationship
+  // Jg dxtplus/dt = dg/dt. Converting this from a derivative into a
+  // differential yields Jg dxtplus = dg. Setting dg \equiv -g, we now solve
+  // this linear equation for dxtplus, which gives a descent direction toward
+  // reducing ||g||. Jg will be n x n, where n is the number of state
+  // variables. It will generally possess no "nice" properties (e.g.,
+  // symmetry) or even be guaranteed to be invertible. This matrix Jg is
+  // commonly referred to as the "iteration matrix" in literature on implicit
+  // integration.
+  // NOTE: We compute the negation of this iteration matrix to encourage
+  //       Eigen to subtract elements from the diagonal- a O(n) operation- in
+  //       place of the O(n^2) operation naively implied by:
+  //       Jg = MatrixX<T>::Identity(n, n) - (CalcJacobian(xtplus) * dt);
+  const int n = xtplus.size();
+  Jg_ = CalcJacobian(xtplus) * scale - MatrixX<T>::Identity(n, n);
+  LU_.compute(Jg_);
+  n_loops_since_fresh_J_ = 0;  
+}
+
 // Steps forward by dt using the implicit Euler method.
 template <class T>
 void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
@@ -280,48 +303,43 @@ void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
   // Set the initial value of the objective function f = g^Tg
   double f_last = 0.5*goutput.norm();
 
-  // The Jacobian matrix of g() with respect to x(t+h) yields the relationship
-  // Jg dxtplus/dt = dg/dt. Converting this from a derivative into a
-  // differential yields Jg dxtplus = dg. Setting dg \equiv -g, we now solve
-  // this linear equation for dxtplus, which gives a descent direction toward
-  // reducing ||g||. Jg will be n x n, where n is the number of state
-  // variables. It will generally possess no "nice" properties (e.g.,
-  // symmetry) or even be guaranteed to be invertible. This matrix Jg is
-  // commonly referred to as the "iteration matrix" in literature on implicit
-  // integration.
-  // NOTE: We compute the negation of this iteration matrix to encourage
-  //       Eigen to subtract elements from the diagonal- a O(n) operation- in
-  //       place of the O(n^2) operation naively implied by:
-  //       Jg = MatrixX<T>::Identity(n, n) - (CalcJacobian(xtplus) * dt);
-  MatrixX<T> Jg = (CalcJacobian(xtplus) * dt) - MatrixX<T>::Identity(n, n);
-  LU_.compute(Jg);
-  int n_loops_since_fresh_J = 0;
+  // Calculate and factorization the iteration matrix if necessary.
+  if (Jg_.rows() != n || Jg_.cols() != n)
+    CalcIterationMatrix(xtplus, dt);
 
   // Set value of last alpha (initialized to NaN to indicate not set).
   double last_alpha = std::nan("");
 
-  // Evaluate the objective function.
-  while (f_last > convergence_tol_) {
+  while (true) {
     // Update the number of Newton-Raphson loops.
     num_nr_loops_++;
 
     // Compute and factorize the Jacobian matrix if necessary.
     if (last_alpha <= reform_J_tol_ &&
-        n_loops_since_fresh_J > reform_J_min_loops_) {
-      Jg = (CalcJacobian(xtplus) * dt) - MatrixX<T>::Identity(n, n);
-      LU_.compute(Jg);
-      n_loops_since_fresh_J = 0;
-    }
+        n_loops_since_fresh_J_ > reform_J_min_loops_)
+      CalcIterationMatrix(xtplus, dt);
 
     // Compute the state update.
     VectorX<T> dx = LU_.solve(goutput);
 
+    // Check whether the update is close to zero.
+    T q_nrm, v_nrm, z_nrm;
+    dx_state_->get_mutable_vector()->SetFromVector(dx);
+    CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
+    if (q_nrm < delta_update_tol_ && v_nrm < delta_update_tol_ &&
+        z_nrm < delta_update_tol_)
+      return;
+
     // Compute the gradient of f = 0.5*g'*g, used for line search, computed with
     // respect to x. This also allows us to handle a single Jacobian matrix.
     // If grad*dx > 0, f will be non-decreasing.
-    const VectorX<T> grad = -goutput.transpose() * Jg;
+    const VectorX<T> grad = -goutput.transpose() * Jg_;
     double slope = grad.dot(dx);
-    DRAKE_DEMAND(slope < 0);
+    if (slope >= 0) {
+      // Reformulation of the Jacobian matrix is necessary.
+      CalcIterationMatrix(xtplus, dt);
+      continue;
+    }
 
     // Search the ray α ∈ [0, 1] for a "good" value that minimizes
     // || x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ||. The
@@ -335,20 +353,6 @@ void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
     // Store the last alpha and update the alpha sum statistic.
     last_alpha = lout.alpha;
     alpha_sum_ += last_alpha;
-
-    // Check whether the update is close to zero.
-    T q_nrm, v_nrm, z_nrm;
-    dx_state_->get_mutable_vector()->SetFromVector(xtplus - lout.x_new);
-    CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
-    if (q_nrm < delta_update_tol_ && v_nrm < delta_update_tol_ &&
-        z_nrm < delta_update_tol_)
-      return;
-
-    // Now check whether the change in the objective function is sufficiently
-    // small *and* Jacobian is fresh.
-    if (std::abs(f_last - lout.f_new) < delta_f_tol_ &&
-        n_loops_since_fresh_J == 0)
-      return;
 
     // Update x, g_output, and f
     goutput = lout.g_output;
@@ -389,48 +393,40 @@ void ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
   // Set the initial value of the objective function f = g^Tg
   double f_last = 0.5*goutput.norm();
 
-  // The Jacobian matrix of g() with respect to x(t+h) yields the relationship
-  // Jg dxtplus/dt = dg/dt. Converting this from a derivative into a
-  // differential yields Jg dxtplus = dg. Setting dg \equiv -g, we now solve
-  // this linear equation for dxtplus, which gives a descent direction toward
-  // reducing ||g||. Jg will be n x n, where n is the number of state
-  // variables. It will generally possess no "nice" properties (e.g.,
-  // symmetry) or even be guaranteed to be invertible. This matrix Jg is
-  // commonly referred to as the "iteration matrix" in literature on implicit
-  // integration.
-  // NOTE: We compute the negation of this iteration matrix to encourage
-  //       Eigen to subtract elements from the diagonal- a O(n) operation- in
-  //       place of the O(n^2) operation naively implied by:
-  //       Jg = MatrixX<T>::Identity(n, n) - (CalcJacobian(xtplus) * dt);
-  MatrixX<T> Jg = (CalcJacobian(*xtplus) * dt/2) - MatrixX<T>::Identity(n, n);
-  LU_.compute(Jg);
-  int n_loops_since_fresh_J = 0;
-
   // Set value of last alpha (initialized to NaN to indicate not set).
   double last_alpha = std::nan("");
 
   // Evaluate the objective function.
-  while (f_last > convergence_tol_) {
+  while (true) {
     // Update the number of Newton-Raphson loops.
     num_nr_loops_++;
 
     // Compute and factorize the Jacobian matrix if necessary.
     if (last_alpha <= reform_J_tol_ &&
-        n_loops_since_fresh_J > reform_J_min_loops_) {
-      Jg = (CalcJacobian(*xtplus) * dt/2) - MatrixX<T>::Identity(n, n);
-      LU_.compute(Jg);
-      n_loops_since_fresh_J = 0;
+        n_loops_since_fresh_J_ > reform_J_min_loops_) {
+      CalcIterationMatrix(*xtplus, dt/2);
     }
 
     // Compute the state update.
     VectorX<T> dx = LU_.solve(goutput);
 
+    // Check whether the unscaled update is close to zero.
+    T q_nrm, v_nrm, z_nrm;
+    dx_state_->get_mutable_vector()->SetFromVector(dx);
+    CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
+    if (q_nrm < delta_update_tol_ && v_nrm < delta_update_tol_ &&
+        z_nrm < delta_update_tol_)
+      return;
+
     // Compute the gradient of f = 0.5*g'*g, used for line search, computed with
     // respect to x. This also allows us to handle a single Jacobian matrix.
     // If grad*dx > 0, f will be non-decreasing.
-    const VectorX<T> grad = -goutput.transpose() * Jg;
+    const VectorX<T> grad = -goutput.transpose() * Jg_;
     double slope = grad.dot(dx);
-    DRAKE_DEMAND(slope < 0);
+    if (slope >= 0) {
+      // Reformulation of the Jacobian matrix is necessary.
+      CalcIterationMatrix(*xtplus, dt/2);
+    }
 
     // Search the ray α ∈ [0, 1] for a "good" value that minimizes
     // || x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ||. The
@@ -445,20 +441,6 @@ void ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
     // Store the last alpha and update the alpha sum statistic.
     last_alpha = lout.alpha;
     alpha_sum_ += last_alpha;
-
-    // Check whether the update is close to zero.
-    T q_nrm, v_nrm, z_nrm;
-    dx_state_->get_mutable_vector()->SetFromVector(*xtplus - lout.x_new);
-    CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
-    if (q_nrm < delta_update_tol_ && v_nrm < delta_update_tol_ &&
-        z_nrm < delta_update_tol_)
-      return;
-
-    // Now check whether the change in the objective function is sufficiently
-    // small *and* Jacobian is fresh.
-    if (std::abs(f_last - lout.f_new) < delta_f_tol_ &&
-        n_loops_since_fresh_J == 0)
-      return;
 
     // Update x, g_output, and f
     goutput = lout.g_output;
