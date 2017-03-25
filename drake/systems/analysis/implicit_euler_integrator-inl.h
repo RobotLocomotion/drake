@@ -9,6 +9,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/analysis/line_search.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
@@ -64,7 +65,8 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 template <class T>
 Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
     const Eigen::VectorXd& xtplus) {
-
+  SPDLOG_DEBUG(drake::log(), "  IE Compute Autodiff Jacobian t={}",
+               this->get_context().get_time());
   // Create AutoDiff versions of the state vector.
   typedef Eigen::AutoDiffScalar<Eigen::VectorXd> Scalar;
   VectorX<Scalar> a_xtplus = xtplus;
@@ -101,8 +103,10 @@ Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
 template <class T>
 VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives(
     const VectorX<T>& x) {
-  const System<T>& system = this->get_system();
+   const System<T>& system = this->get_system();
   Context<T>* context = this->get_mutable_context();
+  SPDLOG_DEBUG(drake::log(), "    IE Calc Derivatives t={}",
+               context->get_time());
   context->get_mutable_continuous_state()->get_mutable_vector()->
       SetFromVector(x);
   system.CalcTimeDerivatives(*context, derivs_.get());
@@ -121,6 +125,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeFDiffJacobianF(
 
   Context<T>* context = this->get_mutable_context();
   const int n = context->get_continuous_state()->size();
+
+  SPDLOG_DEBUG(drake::log(), "  IE Compute Forwarddiff {}-Jacobian t={}",
+               n, this->get_context().get_time());
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
@@ -163,6 +170,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCDiffJacobianF(
 
   Context<T>* context = this->get_mutable_context();
   const int n = context->get_continuous_state()->size();
+
+  SPDLOG_DEBUG(drake::log(), "  IE Compute Centraldiff {}-Jacobian t={}",
+               n, this->get_context().get_time());
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
@@ -258,6 +268,10 @@ void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
   // Advance the context time; this means that all derivatives will be computed
   // at t+dt.
   Context<T>* context = this->get_mutable_context();
+
+  SPDLOG_DEBUG(drake::log(), "StepImplicitEuler(h={}) t={}",
+               dt, context->get_time());
+
   context->set_time(context->get_time() + dt);
 
   // Get the current continuous state.
@@ -277,14 +291,14 @@ void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
   // Evaluate g(x(t+h)) = x(t+h) - x(t) - h f(t+h,x(t+h)), where h = dt;
   VectorX<T> goutput = g(xtplus);
 
-  // Set the initial value of the objective function f = g^Tg
+  // Set the initial value of the objective function f = gᵀg
   double f_last = 0.5*goutput.norm();
 
   // The Jacobian matrix of g() with respect to x(t+h) yields the relationship
   // Jg dxtplus/dt = dg/dt. Converting this from a derivative into a
-  // differential yields Jg dxtplus = dg. Setting dg \equiv -g, we now solve
+  // differential yields Jg dxtplus = dg. Setting dg ≡ -g, we now solve
   // this linear equation for dxtplus, which gives a descent direction toward
-  // reducing ||g||. Jg will be n x n, where n is the number of state
+  // reducing ‖g‖. Jg will be n x n, where n is the number of state
   // variables. It will generally possess no "nice" properties (e.g.,
   // symmetry) or even be guaranteed to be invertible. This matrix Jg is
   // commonly referred to as the "iteration matrix" in literature on implicit
@@ -316,7 +330,7 @@ void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
     // Compute the state update.
     VectorX<T> dx = LU_.solve(goutput);
 
-    // Compute the gradient of f = 0.5*g'*g, used for line search, computed with
+    // Compute the gradient of f = 0.5*gᵀ*g, used for line search, computed with
     // respect to x. This also allows us to handle a single Jacobian matrix.
     // If grad*dx > 0, f will be non-decreasing.
     const VectorX<T> grad = -goutput.transpose() * Jg;
@@ -324,10 +338,10 @@ void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
     DRAKE_DEMAND(slope < 0);
 
     // Search the ray α ∈ [0, 1] for a "good" value that minimizes
-    // || x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ||. The
+    // ‖ x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ‖. The
     // ray search is relativelly expensive, as it requres evaluating f().
     // Therefore, a good ray search will optimize the computational tradeoff
-    // between finding the value of \alpha that minimizes the norm above and
+    // between finding the value of α that minimizes the norm above and
     // forming the next Jacobian and solving the next linear system.
     typename LineSearch<T>::LineSearchOutput lout =
         LineSearch<T>::search_line(xtplus, dx, f_last, grad, g, goutput.norm());
@@ -371,6 +385,10 @@ void ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
   // Advance the context time; this means that all derivatives will be computed
   // at t+dt.
   Context<T>* context = this->get_mutable_context();
+
+  SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoid(h={}) t={}",
+               dt, context->get_time());
+
   context->set_time(context->get_time() + dt);
 
   // Get the current continuous state.
@@ -391,9 +409,9 @@ void ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
 
   // The Jacobian matrix of g() with respect to x(t+h) yields the relationship
   // Jg dxtplus/dt = dg/dt. Converting this from a derivative into a
-  // differential yields Jg dxtplus = dg. Setting dg \equiv -g, we now solve
+  // differential yields Jg dxtplus = dg. Setting dg ≡ -g, we now solve
   // this linear equation for dxtplus, which gives a descent direction toward
-  // reducing ||g||. Jg will be n x n, where n is the number of state
+  // reducing ‖g‖. Jg will be n x n, where n is the number of state
   // variables. It will generally possess no "nice" properties (e.g.,
   // symmetry) or even be guaranteed to be invertible. This matrix Jg is
   // commonly referred to as the "iteration matrix" in literature on implicit
@@ -433,7 +451,7 @@ void ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
     DRAKE_DEMAND(slope < 0);
 
     // Search the ray α ∈ [0, 1] for a "good" value that minimizes
-    // || x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ||. The
+    // ‖ x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ‖. The
     // ray search is relativelly expensive, as it requres evaluating f().
     // Therefore, a good ray search will optimize the computational tradeoff
     // between finding the value of \alpha that minimizes the norm above and
@@ -546,7 +564,8 @@ void ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T &dt) {
   // Given that the second order term subsumes the third order one:
   // xᵢₑ(t+h) - xₜᵣ(t+h) = O(h²)
   // Therefore the difference between the implicit trapezoid solution and the
-  // implicit Euler solution gives a second-order error estimate.
+  // implicit Euler solution gives a second-order error estimate for the
+  // implicit Euler result xᵢₑ.
 
   // Compute the implicit trapezoid solution.
   VectorX<T> xtplus_trapezoid = xtplus_euler;
