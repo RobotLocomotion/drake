@@ -136,8 +136,10 @@ void HumanoidStatus::Update() {
       // Make H1 = H_sensor_to_sole.
       // Assuming the sole frame has the same orientation as the foot frame.
       Isometry3<double> H1;
-      H1.linear() = kFootToSensorRotationOffset.transpose();
-      H1.translation() = -kFootToSensorPositionOffset + kFootToSoleOffset;
+      H1.fromPositionOrientationScale(
+          -kFootToSensorPositionOffset + kFootToSoleOffset,
+          kFootToSensorRotationOffset.transpose(),
+          Vector3<double>::Ones());
 
       foot_wrench_in_sole_frame_[i] =
           transformSpatialForce(H1, foot_wrench_raw_[i]);
@@ -145,10 +147,10 @@ void HumanoidStatus::Update() {
       // H2 = transformation from sensor frame to a frame that is aligned with
       // the world frame, and is located at the origin of the foot frame.
       Isometry3<double> H2;
-      H2.linear() =
-          foot(i).pose().linear() * kFootToSensorRotationOffset.transpose();
-      H2.translation() =
-          foot(i).pose().translation() - foot_sensor(i).pose().translation();
+      H2.fromPositionOrientationScale(
+          foot(i).pose().translation() - foot_sensor(i).pose().translation(),
+          foot(i).pose().linear() * kFootToSensorRotationOffset.transpose(),
+          Vector3<double>::Ones());
 
       foot_wrench_in_world_frame_[i] =
           transformSpatialForce(H2, foot_wrench_raw_[i]);

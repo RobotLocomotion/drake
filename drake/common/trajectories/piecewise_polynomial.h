@@ -5,6 +5,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_base.h"
@@ -36,7 +37,7 @@
  * under division.
  */
 template <typename CoefficientType = double>
-class PiecewisePolynomial : public PiecewisePolynomialBase {
+class PiecewisePolynomial final : public PiecewisePolynomialBase {
  public:
   typedef Polynomial<CoefficientType> PolynomialType;
   typedef drake::MatrixX<PolynomialType> PolynomialMatrix;
@@ -44,6 +45,8 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
   typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomial)
+
   virtual ~PiecewisePolynomial() {}
 
   // default constructor; just leaves segment_times and polynomials empty
