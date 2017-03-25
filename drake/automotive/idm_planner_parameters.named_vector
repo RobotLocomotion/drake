@@ -22,3 +22,12 @@ element {
      name: "delta"
      doc: "free-road exponent"
 }
+element {
+     name: "bloat_diameter"
+     doc: "diameter of circle about the vehicle's pose that encloses its physical footprint"
+     # TODO(jadecastro): replace with vehicle geometry.
+}
+element {
+     name: "distance_lower_limit"
+     doc: "lower saturation bound on net distance to prevent near-singular IDM solutions"
+}

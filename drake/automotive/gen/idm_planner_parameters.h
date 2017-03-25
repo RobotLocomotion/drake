@@ -17,7 +17,7 @@ namespace automotive {
 /// Describes the row indices of a IdmPlannerParameters.
 struct IdmPlannerParametersIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 6;
+  static const int kNumCoordinates = 8;
 
   // The index of each individual coordinate.
   static const int kVRef = 0;
@@ -26,6 +26,8 @@ struct IdmPlannerParametersIndices {
   static const int kS0 = 3;
   static const int kTimeHeadway = 4;
   static const int kDelta = 5;
+  static const int kBloatDiameter = 6;
+  static const int kDistanceLowerLimit = 7;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -66,6 +68,22 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   /// free-road exponent
   const T& delta() const { return this->GetAtIndex(K::kDelta); }
   void set_delta(const T& delta) { this->SetAtIndex(K::kDelta, delta); }
+  /// diameter of circle about the vehicle's pose that encloses its physical
+  /// footprint
+  const T& bloat_diameter() const {
+    return this->GetAtIndex(K::kBloatDiameter);
+  }
+  void set_bloat_diameter(const T& bloat_diameter) {
+    this->SetAtIndex(K::kBloatDiameter, bloat_diameter);
+  }
+  /// lower saturation bound on net distance to prevent near-singular IDM
+  /// solutions
+  const T& distance_lower_limit() const {
+    return this->GetAtIndex(K::kDistanceLowerLimit);
+  }
+  void set_distance_lower_limit(const T& distance_lower_limit) {
+    this->SetAtIndex(K::kDistanceLowerLimit, distance_lower_limit);
+  }
   //@}
 
   /// Returns whether the current values of this vector are well-formed.
@@ -78,6 +96,8 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
     result = result && !isnan(s_0());
     result = result && !isnan(time_headway());
     result = result && !isnan(delta());
+    result = result && !isnan(bloat_diameter());
+    result = result && !isnan(distance_lower_limit());
     return result;
   }
 };

@@ -9,6 +9,7 @@ namespace automotive {
 namespace pose_selector {
 namespace {
 
+using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 using systems::rendering::PoseBundle;
 
@@ -34,8 +35,7 @@ static void SetDefaultPoses(PoseVector<double>* ego_pose,
   DRAKE_DEMAND(kEgoSPosition > kTrailingSPosition && kTrailingSPosition > 0.);
 
   // Create poses for four traffic cars and one ego positioned in the right
-  // lane,
-  // interspersed as follows:
+  // lane, interspersed as follows:
   //
   //     Far Behind   Just Behind     Ego     Just Ahead   Far Ahead
   //   |------o------------o-----------o----------o------------o-------------|
@@ -85,8 +85,8 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
   const maliput::api::RoadPosition& ego_position =
       CalcRoadPosition(road, ego_pose.get_isometry());
 
-  maliput::api::RoadPosition leading_position;
-  maliput::api::RoadPosition trailing_position;
+  RoadOdometry<double> leading_position{};
+  RoadOdometry<double> trailing_position{};
   std::tie(leading_position, trailing_position) =
       FindClosestPair(road, ego_pose, traffic_poses);
 
@@ -95,7 +95,7 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
   EXPECT_EQ(kTrailingSPosition, trailing_position.pos.s);
 
   // Test that we get the same result when just the leading car is returned.
-  const maliput::api::RoadPosition& traffic_position =
+  const RoadOdometry<double>& traffic_position =
       FindClosestLeading(road, ego_pose, traffic_poses);
   EXPECT_EQ(kLeadingSPosition, traffic_position.pos.s);
 

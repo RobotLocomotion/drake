@@ -26,6 +26,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/maliput_railcar_state.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
+  idm_controller.cc
   idm_planner.cc
   linear_car.cc
   maliput/api/road_geometry.cc
@@ -68,6 +69,7 @@ drake_install_headers(
   calc_smooth_acceleration.h
   create_trajectory_params.h
   curve2.h
+  idm_controller.h
   idm_planner.h
   linear_car.h
   maliput_railcar.h
