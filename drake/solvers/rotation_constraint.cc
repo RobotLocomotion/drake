@@ -396,6 +396,21 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   // max d
   // s.t d <= nᵀ * pts.col(i)
   //     nᵀ * n <= 1
+
+  // If there are only 3 vertices in the intersection region, then the normal
+  // vector n is the normal of the triangle, formed by these three vertices.
+  if (pts.size() == 3) {
+    *n = (pts[2] - pts[0]).cross(pts[1] - pts[0]);
+    *n = *n / n->norm();
+    if (n->array().sum() < 0) {
+      *n *= -1;
+    }
+    *d = n->dot(pts[0]);
+    return;
+  }
+  // If there are more than 3 vertices in the intersection region, then we find
+  // the normal vector n through an optimization, whose formulation is mentioned
+  // above.
   MathematicalProgram prog_normal;
   auto n_var = prog_normal.NewContinuousVariables<3>();
   auto d_var = prog_normal.NewContinuousVariables<1>();
@@ -416,6 +431,77 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
 
   DRAKE_DEMAND((*n)(0) > 0 && (*n)(1) > 0 && (*n)(2) > 0);
   DRAKE_DEMAND(*d > 0 && *d < 1);
+}
+
+/**
+ * For the intersection region between the surface of the unit sphere, and the
+ * interior of a box aligned with the axes, relax this nonconvex intersetion
+ * region to its convex hull. This convex hull has some planar facets (formed
+ * by the triangles connecting the vertices of the intersection region). This
+ * function computes these planar facets. It is guaranteed that any point x on
+ * the intersection region, satisfies A * x <= b.
+ * @param[in] pts The vertices of the intersection region. Same as the `pts` in
+ * ComputeHalfSpaceRelaxationForBoxSphereIntersection()
+ * @param[out] A The rows of A are the normal vector of facets.
+ * @param b b(i) is the interscept of the i'th facet.
+ * @pre pts.size() >= 4. If there are only three vertices, then the facet is
+ * just the triangle connecting these three vertices. This facet can be computed
+ * easily, without calling this function.
+ * @pre pts[i] are all in the first orthant, namely (pts[i].array() >=0).all()
+ * should be true.
+ */
+void ComputeInnerFacetsForBoxSphereIntersection(
+    const std::vector<Eigen::Vector3d>& pts,
+    Eigen::Matrix<double, Eigen::Dynamic, 3>* A, Eigen::VectorXd* b) {
+  DRAKE_DEMAND(pts.size() >= 4);
+  for (const auto& pt : pts) {
+    DRAKE_DEMAND((pt.array() >= 0).all());
+  }
+  A->resize(0, 3);
+  b->resize(0);
+  int triangle_count = 0;
+  // Loop through each triangle, formed by connecting the vertices of the
+  // intersection region. We write the plane coinciding with the triangle as
+  // cᵀ * x >= d. If all the vertices of the intersection region satisfies
+  // cᵀ * pts[i] >= d, then we know the intersection region satisfies
+  // cᵀ * x >= d for all x being a point in the intersection region. Here we
+  // use the proof in the ComputeHalfSpaceRelaxationForBoxSphereIntersection(),
+  // that the minimal value of cᵀ * x over all x inside the intersection
+  // region, occurs at one of the vertex of the intersection region.
+  for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
+    for (int j = i + 1; j < static_cast<int>(pts.size()); ++j) {
+      for (int k = j + 1; k < static_cast<int>(pts.size()); ++k) {
+        // First compute the triangle formed by vertices pts[i], pts[j] and
+        // pts[k].
+        Eigen::Vector3d c = (pts[j] - pts[i]).cross(pts[k] - pts[i]);
+        // Make sure c points outward
+        if (c.sum() < 0) {
+          c *= -1;
+        }
+        double d = c.dot(pts[i]);
+        // A halfspace cᵀ * x >= d is valid, if all vertices pts[l] satisfy
+        // cᵀ * pts[l] >= d.
+        bool is_valid_halfspace = true;
+        // Now check if the other vertices pts[l] satisfies cᵀ * pts[l] >= d.
+        for (int l = 0; l < static_cast<int>(pts.size()); ++l) {
+          if ((l != i) && (l != j) && (l != k)) {
+            if (c.dot(pts[l]) < d - 1E-10) {
+              is_valid_halfspace = false;
+              break;
+            }
+          }
+        }
+        // If all vertices pts[l] satisfy cᵀ * pts[l] >= d, then add this
+        // constraint to A * x <= b
+        if (is_valid_halfspace) {
+          A->conservativeResize(A->rows() + 1, Eigen::NoChange);
+          b->conservativeResize(b->rows() + 1, Eigen::NoChange);
+          A->row(A->rows() - 1) = -c.transpose();
+          (*b)(b->rows() - 1) = -d;
+        }
+      }
+    }
+  }
 }
 }  // namespace internal
 

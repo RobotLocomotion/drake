@@ -234,6 +234,9 @@ void CompareHalfspaceRelaxation(const std::vector<Vector3d> &pts) {
   double d_expected;
   internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(pts, &n_expected,
                                                                &d_expected);
+  if (pts.size() == 3) {
+    EXPECT_NEAR(d_expected, d, 1E-6);
+  }
   EXPECT_GE(d_expected, d - 1E-8);
   for (const auto &pt : pts) {
     EXPECT_GE(pt.transpose() * n_expected - d_expected, -1E-6);
@@ -415,7 +418,7 @@ GTEST_TEST(RotationTest, TestMcCormick) {
         -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
     EXPECT_TRUE(IsFeasible(R_test));
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 40; i++) {
       R_test = math::UniformlyRandomRotmat(generator);
       EXPECT_TRUE(IsFeasible(R_test));
     }
