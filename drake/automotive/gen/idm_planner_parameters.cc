@@ -13,6 +13,8 @@ const int IdmPlannerParametersIndices::kB;
 const int IdmPlannerParametersIndices::kS0;
 const int IdmPlannerParametersIndices::kTimeHeadway;
 const int IdmPlannerParametersIndices::kDelta;
+const int IdmPlannerParametersIndices::kBloatDiameter;
+const int IdmPlannerParametersIndices::kDistanceLowerLimit;
 
 }  // namespace automotive
 }  // namespace drake
