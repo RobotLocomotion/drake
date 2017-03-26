@@ -14,12 +14,12 @@ py_proto_library(
 py_binary(
     name = "lcm_vector_gen",
     srcs = ["lcm_vector_gen.py"],
+    data = [
+        "//tools:clang-format",
+    ],
     deps = [
         ":named_vector",
     ],
-    data = [
-        "//tools:clang-format",
-    ]
 )
 
 py_library(

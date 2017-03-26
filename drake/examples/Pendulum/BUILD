@@ -96,7 +96,6 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
-        "@gflags//:gflags",
         "pendulum_swing_up",
         "//drake/common:drake_path",
         "//drake/common:is_approx_equal_abstol",
@@ -109,6 +108,7 @@ drake_cc_binary(
         "//drake/systems/framework",
         "//drake/systems/primitives:trajectory_source",
         "//drake/systems/trajectory_optimization:direct_collocation",
+        "@gflags//:gflags",
     ],
 )
 
