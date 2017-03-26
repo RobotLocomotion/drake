@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/automotive/car_vis_applicator.h"
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/dev/endless_road_car.h"
 #include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
@@ -19,9 +20,12 @@
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/rendering/pose_aggregator.h"
+#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 namespace automotive {
@@ -69,7 +73,7 @@ class AutomotiveSimulator {
   /// connect the vehicle model to the world.
   ///
   /// @param model_name  If this is non-empty, the car's model will be labeled
-  ///                    with this name.
+  ///                    with this name. It must be unique among all cars.
   ///
   /// @param channel_name  The simple car will subscribe to a channel
   ///                      with this name to receive commands.  Must be
@@ -273,7 +277,23 @@ class AutomotiveSimulator {
 
   // Adds the PoseAggregator.
   systems::rendering::PoseAggregator<T>* aggregator_{
-    builder_->template AddSystem<systems::rendering::PoseAggregator<T>>()};
+      builder_->template AddSystem<systems::rendering::PoseAggregator<T>>()};
+
+  // Adds a CarVisApplicator system, which takes the poses of the vehicles and
+  // outputs the poses of the visual elements that make up the visualization of
+  // the vehicles. For a system-level architecture diagram, see #5541.
+  CarVisApplicator<T>* car_vis_applicator_{
+      builder_->template AddSystem<CarVisApplicator<T>>()};
+
+  // Adds a PoseBundleToDrawMessage system, which takes the output of
+  // car_vis_applicator_ and creates an lcmt_viewer_draw message containing the
+  // latest poses of the visual elements.
+  systems::rendering::PoseBundleToDrawMessage* bundle_to_draw_{
+      builder_->template
+          AddSystem<systems::rendering::PoseBundleToDrawMessage>()};
+
+  // Takes the output of bundle_to_draw_ and passes it to lcm_ for publishing.
+  systems::lcm::LcmPublisherSystem* lcm_publisher_{};
 
   int next_vehicle_number_{0};
   bool started_{false};

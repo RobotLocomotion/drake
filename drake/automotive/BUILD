@@ -317,10 +317,12 @@ drake_cc_library(
     srcs = ["automotive_simulator.cc"],
     hdrs = ["automotive_simulator.h"],
     deps = [
+        ":car_vis_applicator",
         ":endless_road_car",
         ":endless_road_oracle",
         ":generated_translators",
         ":generated_vectors",
+        ":prius_vis",
         ":simple_car",
         ":trajectory_car",
         "//drake/automotive/maliput/api",
@@ -333,6 +335,7 @@ drake_cc_library(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:multiplexer",
         "//drake/systems/rendering:pose_aggregator",
+        "//drake/systems/rendering:pose_bundle_to_draw_message",
     ],
 )
 
