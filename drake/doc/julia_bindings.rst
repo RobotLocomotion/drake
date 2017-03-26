@@ -4,12 +4,12 @@
 Using Drake from Julia
 ***********************
 
-`Julia <http://julialang.org/>`_ is a relatively new, high-level language designed for fast scientific computing. There are two ways to access Drake's functions from Julia: ``PyCall.jl`` and ``Cxx.jl``. 
+`Julia <http://julialang.org/>`_ is a relatively new, high-level language designed for fast scientific computing. There are two ways to access Drake's functions from Julia: ``PyCall.jl`` and ``Cxx.jl``.
 
 With ``PyCall.jl``
 ==================
 
-The `PyCall.jl <https://github.com/JuliaPy/PyCall.jl>`_ package makes it easy to call Python code from Julia, including translation of basic data types like numbers, strings, and arrays to their Python equivalents. Using ``PyCall.jl``, you can run all of the Drake functions which are exposed in the :ref:`Drake Python bindings <python-bindings>`. For a demonstration of this method, see `this example notebook <https://github.com/rdeits/pydrake-julia/blob/master/pydrake_in_julia.ipynb>`_. 
+The `PyCall.jl <https://github.com/JuliaPy/PyCall.jl>`_ package makes it easy to call Python code from Julia, including translation of basic data types like numbers, strings, and arrays to their Python equivalents. Using ``PyCall.jl``, you can run all of the Drake functions which are exposed in the :ref:`Drake Python bindings <python-bindings>`. For a demonstration of this method, see `this example notebook <https://github.com/rdeits/pydrake-julia/blob/master/pydrake_in_julia.ipynb>`_.
 
 With ``Cxx.jl``
 ===============
