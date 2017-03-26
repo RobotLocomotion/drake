@@ -74,8 +74,8 @@ GTEST_TEST(PendulumTrajectoryOptimization,
   // regression test.
   double abs_diff =
       std::fabs(linear_avr_of_2_points(0, 0) - spline_interpolation(0, 0));
-  EXPECT_LT(abs_diff, 0.1);
-  EXPECT_GT(abs_diff, 0.09);
+  EXPECT_LT(abs_diff, 0.11);
+  EXPECT_GT(abs_diff, 0.1);
 }
 
 }  // namespace

@@ -3,6 +3,8 @@
 #include <limits>
 #include <stdexcept>
 
+#include "drake/common/symbolic_expression.h"
+
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
@@ -32,7 +34,10 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
       N_(num_time_samples),
       h_vars_(NewContinuousVariables(N_ - 1, "h")),
       x_vars_(NewContinuousVariables(num_states_ * N_, "x")),
-      u_vars_(NewContinuousVariables(num_inputs_ * N_, "u")) {
+      u_vars_(NewContinuousVariables(num_inputs_ * N_, "u")),
+      placeholder_t_var_(NewContinuousVariables<1>("h")),
+      placeholder_x_vars_(NewContinuousVariables(num_states_, "x")),
+      placeholder_u_vars_(NewContinuousVariables(num_inputs_, "u")) {
   DRAKE_ASSERT(num_time_samples > 1);
   DRAKE_ASSERT(num_states_ > 0);
   DRAKE_ASSERT(num_inputs_ > 0);
@@ -223,6 +228,17 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
     states.push_back(x_values.segment(i * num_states_, num_states_));
   }
   return states;
+}
+
+symbolic::Expression DirectTrajectoryOptimization::SubstitutePlaceholderVariables(const symbolic::Expression& e, int interval_index) const {
+  symbolic::Substitution sub;
+  // TODO(russt): support placeholder_t_var_, or at least throw an error if e
+  // contains placeholder_t_var_.
+  for (int i=0; i<num_states_; i++)
+    sub.insert(std::pair<symbolic::Variable,symbolic::Expression>(placeholder_x_vars_(i), x_vars_(interval_index*num_states_ + i)));
+  for (int i=0; i<num_inputs_; i++)
+    sub.insert(std::pair<symbolic::Variable,symbolic::Expression>(placeholder_u_vars_(i), u_vars_(interval_index*num_inputs_ + i)));
+  return e.Substitute(sub);
 }
 
 void DirectTrajectoryOptimization::GetResultSamples(

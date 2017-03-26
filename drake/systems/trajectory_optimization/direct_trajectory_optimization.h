@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/solvers/mathematical_program.h"
@@ -41,11 +42,10 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
 
   /// Returns the decision variable associated with the timestep, h, at time
   /// index @p index.
-  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> timestep(
+  const solvers::VectorDecisionVariable<1> timestep(
       int index) const {
     DRAKE_DEMAND(index >= 0 && index < N_);
-    return h_vars_.segment(index,
-                           1);  // TODO(russt): Replace with segment<1>(index).
+    return h_vars_.segment<1>(index);
   }
 
   /// Returns a placeholder decision variable (not actually declared as a
@@ -65,7 +65,7 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   /// AddRunningCost.  Passing these variables directly into
   /// objectives/constraints for the parent classes will result in an error.
   const solvers::VectorXDecisionVariable& state() const {
-    return placeholder_x_var_;
+    return placeholder_x_vars_;
   }
 
   /// Returns placeholder decision variables (not actually declared as decision
@@ -75,7 +75,7 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   /// AddRunningCost.  Passing these variables directly into
   /// objectives/constraints for the parent classes will result in an error.
   const solvers::VectorXDecisionVariable& input() const {
-    return placeholder_u_var_;
+    return placeholder_u_vars_;
   }
 
   /// Returns the decision variables associated with the state, x, at time
@@ -106,6 +106,25 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
       int index) const {
     DRAKE_DEMAND(index >= 0 && index < N_);
     return u_vars_.segment(index * num_inputs_, num_inputs_);
+  }
+
+  /// Adds an integrated cost to all time steps, of the form
+  ///    @f[ cost = \int_0^T g(t,x,u) dt, @f]
+  /// where any instances of time(), state(), and/or input() placeholder
+  /// variables are substituted with the relevant variables for each current
+  /// time index.  The particular integration scheme is determined by the
+  /// derived class implementation.
+  virtual void AddRunningCost(const symbolic::Expression& g) = 0;
+
+  /// Adds support for passing in a (scalar) matrix Expression, which is a
+  /// common output of most symbolic linear algebra operations.
+  /// Note: Derived classes will need to type
+  ///    using DirectTrajectoryOptimization::AddRunningCost;
+  /// to "unhide" this method.
+  virtual void AddRunningCost(const Eigen::Ref<const MatrixX<symbolic::Expression>>& g)
+  {
+    DRAKE_DEMAND(g.rows()==1 && g.cols()==1);
+    AddRunningCost(g(0,0));
   }
 
   // TODO(russt): Remove the methods below that add constraints without
@@ -312,7 +331,12 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
    */
   std::vector<Eigen::MatrixXd> GetStateVector() const;
 
-
+  /**
+   * Replace e.g. placeholder_x_var_ with x_vars_ at time interval
+   * @p interval_index, for all placeholder variables.
+   */
+  symbolic::Expression SubstitutePlaceholderVariables(
+      const symbolic::Expression& e, int interval_index) const;
 
   int num_inputs() const { return num_inputs_; }
   int num_states() const { return num_states_; }
@@ -352,8 +376,8 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   // See description of the public time(), state(), and input() accessor methods
   // for details about the placeholder variables.
   solvers::VectorDecisionVariable<1> placeholder_t_var_;
-  solvers::VectorXDecisionVariable placeholder_x_var_;
-  solvers::VectorXDecisionVariable placeholder_u_var_;
+  solvers::VectorXDecisionVariable placeholder_x_vars_;
+  solvers::VectorXDecisionVariable placeholder_u_vars_;
 };
 
 }  // namespace systems
