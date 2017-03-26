@@ -1,6 +1,7 @@
 #include "drake/automotive/automotive_simulator.h"
 
 #include <limits>
+#include <memory>
 
 #include <lcm/lcm-cpp.hpp>
 
@@ -13,12 +14,14 @@
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
 #include "drake/automotive/maliput/utility/generate_urdf.h"
+#include "drake/automotive/prius_vis.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
@@ -34,9 +37,8 @@
 
 namespace drake {
 
-using multibody::joints::kFixed;
 using multibody::joints::kRollPitchYaw;
-using systems::rendering::PoseAggregator;
+using systems::lcm::LcmPublisherSystem;
 
 namespace automotive {
 
@@ -92,7 +94,7 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
   const auto& descriptor = aggregator_->AddSingleInput(
-      "simple_car", vehicle_number);
+      model_name, vehicle_number);
   builder_->Connect(simple_car->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
 
@@ -101,6 +103,11 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
                     coord_transform->get_input_port(0));
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
+  // TODO(liang.fok): Either remove the hard-coding of a PriusVis below or
+  // update this method's signature to indicate the fact that it uses a
+  // PriusVis.
+  car_vis_applicator_->AddCarVis(
+      std::make_unique<PriusVis<T>>(vehicle_number, model_name));
   return AddSdfModel(sdf_filename, coord_transform, model_name);
 }
 
@@ -113,13 +120,15 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
   DRAKE_DEMAND(!started_);
   DRAKE_DEMAND(aggregator_ != nullptr);
   const int vehicle_number = allocate_vehicle_number();
+  const std::string model_name =
+      "trajectory_car_" + std::to_string(vehicle_number);
 
   auto trajectory_car =
       builder_->template AddSystem<TrajectoryCar<T>>(curve, speed, start_time);
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
   const auto& descriptor = aggregator_->AddSingleInput(
-      "trajectory_car", vehicle_number);
+      model_name, vehicle_number);
   builder_->Connect(trajectory_car->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
 
@@ -127,7 +136,12 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
                     coord_transform->get_input_port(0));
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_filename, coord_transform, "" /* model_name */);
+  // TODO(liang.fok): Either remove the hard-coding of a PriusVis below or
+  // update this method's signature to indicate the fact that it uses a
+  // PriusVis.
+  car_vis_applicator_->AddCarVis(
+      std::make_unique<PriusVis<T>>(vehicle_number, model_name));
+  return AddSdfModel(sdf_filename, coord_transform, model_name);
 }
 
 template <typename T>
@@ -140,6 +154,8 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
   DRAKE_DEMAND(!started_);
   DRAKE_DEMAND(endless_road_ != nullptr);
   const int vehicle_number = allocate_vehicle_number();
+  const std::string model_name =
+      "endless_road_car_" + std::to_string(vehicle_number);
 
   auto endless_road_car = builder_->template AddSystem<EndlessRoadCar<T>>(
       id, endless_road_.get(), control_type);
@@ -175,6 +191,11 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
   builder_->Connect(*endless_road_car, *coord_transform);
   AddPublisher(*endless_road_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
+  // TODO(liang.fok): Either remove the hard-coding of a PriusVis below or
+  // update this method's signature to indicate the fact that it uses a
+  // PriusVis.
+  car_vis_applicator_->AddCarVis(
+    std::make_unique<PriusVis<T>>(vehicle_number, model_name));
   return AddSdfModel(sdf_filename, coord_transform, id);
 }
 
@@ -275,7 +296,7 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
   DRAKE_DEMAND(!started_);
   static const SimpleCarStateTranslator translator;
   auto publisher =
-      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
+      builder_->template AddSystem<LcmPublisherSystem>(
           std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE", translator,
           lcm_.get());
   builder_->Connect(system.state_output(), publisher->get_input_port(0));
@@ -287,7 +308,7 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
   DRAKE_DEMAND(!started_);
   static const SimpleCarStateTranslator translator;
   auto publisher =
-      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
+      builder_->template AddSystem<LcmPublisherSystem>(
           std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE", translator,
           lcm_.get());
   builder_->Connect(system.raw_pose_output(), publisher->get_input_port(0));
@@ -299,7 +320,7 @@ void AutomotiveSimulator<T>::AddPublisher(const EndlessRoadCar<T>& system,
   DRAKE_DEMAND(!started_);
   static const EndlessRoadCarStateTranslator translator;
   auto publisher =
-      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
+      builder_->template AddSystem<LcmPublisherSystem>(
           std::to_string(vehicle_number) + "_ENDLESS_ROAD_CAR_STATE",
           translator, lcm_.get());
   builder_->Connect(system, *publisher);
@@ -312,7 +333,7 @@ void AutomotiveSimulator<T>::AddPublisher(
   DRAKE_DEMAND(!started_);
   static const EulerFloatingJointStateTranslator translator;
   auto publisher =
-      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
+      builder_->template AddSystem<LcmPublisherSystem>(
           std::to_string(vehicle_number) + "_FLOATING_JOINT_STATE",
           translator, lcm_.get());
   builder_->Connect(system, *publisher);
@@ -324,7 +345,7 @@ void AutomotiveSimulator<T>::AddPublisher(
   DRAKE_DEMAND(!started_);
   static const EulerFloatingJointStateTranslator translator;
   auto publisher =
-      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
+      builder_->template AddSystem<LcmPublisherSystem>(
           std::to_string(vehicle_number) + "_FLOATING_JOINT_STATE", translator,
           lcm_.get());
   builder_->Connect(system, *publisher);
@@ -490,6 +511,38 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   rigid_body_tree_->compile();
 
   ConnectJointStateSourcesToVisualizer();
+
+  builder_->Connect(
+      aggregator_->get_output_port(0),
+      car_vis_applicator_->get_car_poses_input_port());
+  builder_->Connect(
+      car_vis_applicator_->get_visual_geometry_poses_output_port(),
+      bundle_to_draw_->get_input_port(0));
+  // TODO(liang.fok): Replace "temp_draw_channel" with "DRAKE_VIEWER_DRAW" once
+  // lcm_publisher_'s output should actually be received by drake-visualizer.
+  // Currently, drake-visualizer is receiving lcmt_viewer_draw messages from a
+  // systems::DrakeVisualizer system that's instantiated and wired into the
+  // diagram in ConnectJointStateSourcesToVisualizer().
+  lcm_publisher_ = builder_->AddSystem(
+      LcmPublisherSystem::Make<lcmt_viewer_draw>("temp_draw_channel",
+                                                 lcm_.get()));
+  builder_->Connect(
+      bundle_to_draw_->get_output_port(0),
+      lcm_publisher_->get_input_port(0));
+
+  const lcmt_viewer_load_robot load_message =
+      car_vis_applicator_->get_load_robot_message();
+  const int num_bytes = load_message.getEncodedSize();
+  std::vector<uint8_t> load_message_bytes(num_bytes);
+  const int num_bytes_encoded =
+      load_message.encode(load_message_bytes.data(), 0, num_bytes);
+  DRAKE_ASSERT(num_bytes_encoded == num_bytes);
+  // TODO(liang.fok): Replace "temp_load_channel" with "DRAKE_VIEWER_LOAD_ROBOT"
+  // once load_message should actually be received by drake-visualizer.
+  // Currently, drake-visualizer is receiving lcmt_viewer_load_robot messages
+  // from a systems::DrakeVisualizer system that's instantiated and wired into
+  // the diagram in ConnectJointStateSourcesToVisualizer().
+  lcm_->Publish("temp_load_channel", load_message_bytes.data(), num_bytes);
 
   if (endless_road_) {
     // Now that we have all the cars, construct an appropriately tentacled

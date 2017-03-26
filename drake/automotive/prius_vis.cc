@@ -2,7 +2,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-#include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/parsers/sdf_parser.h"

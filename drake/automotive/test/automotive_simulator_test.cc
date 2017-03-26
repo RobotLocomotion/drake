@@ -2,14 +2,20 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/curve2.h"
+#include "drake/automotive/prius_vis.h"
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcmt_simple_car_state_t.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
 namespace drake {
+
+using systems::Context;
+
 namespace automotive {
 namespace {
 
@@ -248,6 +254,52 @@ GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
                            "/automotive/models/prius/prius.sdf", 13,
                            GetDrakePath() +
                            "/automotive/models/prius/prius_with_lidar.sdf", 17);
+}
+
+// Verifies that CarVisApplicator, PoseBundleToDrawMessage, and
+// LcmPublisherSystem are instantiated in AutomotiveSimulator's Diagram and
+// collectively result in the correct LCM messages being published.
+GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+  const std::string kFileName = GetDrakePath() +
+      "/automotive/models/prius/prius.sdf";
+
+  simulator->AddSimpleCarFromSdf(kFileName, "Model1", "Channel1");
+  simulator->AddSimpleCarFromSdf(kFileName, "Model2", "Channel2");
+
+  typedef Curve2<double> Curve2d;
+  typedef Curve2d::Point2 Point2d;
+  const std::vector<Point2d> waypoints{Point2d{0, 0}, Point2d{1, 0}};
+  const Curve2d curve{waypoints};
+  simulator->AddTrajectoryCarFromSdf(
+      kFileName, curve, 1 /* speed */, 0 /* start time */);
+  simulator->AddTrajectoryCarFromSdf(
+      kFileName, curve, 1 /* speed */, 0 /* start time */);
+
+  simulator->Start();
+  simulator->StepBy(1e-3);
+
+  const lcm::DrakeLcmInterface* lcm = simulator->get_lcm();
+  ASSERT_NE(lcm, nullptr);
+
+  const lcm::DrakeMockLcm* mock_lcm =
+      dynamic_cast<const lcm::DrakeMockLcm*>(lcm);
+  ASSERT_NE(mock_lcm, nullptr);
+
+  const int expected_num_links = PriusVis<double>(0, "").num_poses() * 4;
+
+  // Verifies that an lcmt_viewer_load_robot message was transmitted.
+  const lcmt_viewer_load_robot load_message =
+      mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_load_robot>(
+          "temp_load_channel");
+  EXPECT_EQ(load_message.num_links, expected_num_links);
+
+  // Verifies that an lcmt_viewer_draw message was transmitted.
+  const lcmt_viewer_draw draw_message =
+      mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
+          "temp_draw_channel");
+  EXPECT_EQ(draw_message.num_links, expected_num_links);
 }
 
 }  // namespace
