@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/automotive/curve2.h"
+#include "drake/automotive/car_vis_applicator.h"
 #include "drake/automotive/dev/endless_road_car.h"
 #include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
 #include "drake/automotive/dev/infinite_circuit_road.h"
@@ -19,9 +20,11 @@
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/rendering/pose_aggregator.h"
+#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 namespace automotive {
@@ -211,6 +214,21 @@ class AutomotiveSimulator {
   /// Advance simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
 
+  /// The following getters are intended to be used for testing.
+  ///@{
+
+  /// Returns CarVisApplicator's context.
+  ///
+  /// @pre Start() was called.
+  const systems::Context<T>& get_car_vis_applicator_context() const;
+
+  /// Returns PoseBundleToDrawMessage's context.
+  ///
+  /// @pre Start() was called.
+  const systems::Context<T>& get_pose_bundle_to_draw_message_context() const;
+
+  ///@}
+
  private:
   int allocate_vehicle_number();
   int AddSdfModel(const std::string& sdf_filename,
@@ -273,7 +291,14 @@ class AutomotiveSimulator {
 
   // Adds the PoseAggregator.
   systems::rendering::PoseAggregator<T>* aggregator_{
-    builder_->template AddSystem<systems::rendering::PoseAggregator<T>>()};
+      builder_->template AddSystem<systems::rendering::PoseAggregator<T>>()};
+
+  CarVisApplicator<T>* car_vis_applicator_{
+      builder_->template AddSystem<CarVisApplicator<T>>()};
+
+  systems::rendering::PoseBundleToDrawMessage* pose_bundle_to_draw_message_{
+      builder_->template
+          AddSystem<systems::rendering::PoseBundleToDrawMessage>()};
 
   int next_vehicle_number_{0};
   bool started_{false};

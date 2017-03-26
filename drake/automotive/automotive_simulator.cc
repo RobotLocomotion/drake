@@ -1,9 +1,11 @@
 #include "drake/automotive/automotive_simulator.h"
 
 #include <limits>
+#include <memory>
 
 #include <lcm/lcm-cpp.hpp>
 
+#include "drake/automotive/box_car_vis.h"
 #include "drake/automotive/dev/endless_road_car.h"
 #include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
 #include "drake/automotive/dev/endless_road_oracle.h"
@@ -34,9 +36,7 @@
 
 namespace drake {
 
-using multibody::joints::kFixed;
 using multibody::joints::kRollPitchYaw;
-using systems::rendering::PoseAggregator;
 
 namespace automotive {
 
@@ -101,6 +101,10 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
                     coord_transform->get_input_port(0));
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
+  // TODO(liang.fok): Update this method to take a CarVis as an input parameter
+  // and use it here. It is currently hard coded to use a BoxCarVis.
+  car_vis_applicator_->AddCarVis(
+      std::make_unique<BoxCarVis<T>>(vehicle_number, model_name));
   return AddSdfModel(sdf_filename, coord_transform, model_name);
 }
 
@@ -127,6 +131,10 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
                     coord_transform->get_input_port(0));
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
+  // TODO(liang.fok): Update this method to take a CarVis as an input parameter
+  // and use it here. It is currently hard coded to use a BoxCarVis.
+  car_vis_applicator_->AddCarVis(
+      std::make_unique<BoxCarVis<T>>(vehicle_number, "" /* model name */));
   return AddSdfModel(sdf_filename, coord_transform, "" /* model_name */);
 }
 
@@ -175,6 +183,10 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
   builder_->Connect(*endless_road_car, *coord_transform);
   AddPublisher(*endless_road_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
+  // TODO(liang.fok): Update this method to take a CarVis as an input parameter
+  // and use it here. It is currently hard coded to use a BoxCarVis.
+  car_vis_applicator_->AddCarVis(
+    std::make_unique<BoxCarVis<T>>(vehicle_number, "" /* model name */));
   return AddSdfModel(sdf_filename, coord_transform, id);
 }
 
@@ -491,6 +503,12 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
 
   ConnectJointStateSourcesToVisualizer();
 
+  builder_->Connect(aggregator_->get_output_port(0),
+                    car_vis_applicator_->get_car_poses_input_port());
+  builder_->Connect(
+      car_vis_applicator_->get_visual_geometry_poses_output_port(),
+      pose_bundle_to_draw_message_->get_input_port(0));
+
   if (endless_road_) {
     // Now that we have all the cars, construct an appropriately tentacled
     // EndlessRoadOracle and hook everything up.
@@ -573,6 +591,24 @@ void AutomotiveSimulator<T>::StepBy(const T& time_step) {
   const T time = simulator_->get_context().get_time();
   SPDLOG_TRACE(drake::log(), "Time is now {}", time);
   simulator_->StepTo(time + time_step);
+}
+
+template <typename T>
+const systems::Context<T>&
+AutomotiveSimulator<T>::get_car_vis_applicator_context() const {
+  DRAKE_DEMAND(simulator_ != nullptr);
+  DRAKE_DEMAND(diagram_ != nullptr);
+  return diagram_->GetSubsystemContext(simulator_->get_context(),
+                                       car_vis_applicator_);
+}
+
+template <typename T>
+const systems::Context<T>&
+AutomotiveSimulator<T>::get_pose_bundle_to_draw_message_context() const {
+  DRAKE_DEMAND(simulator_ != nullptr);
+  DRAKE_DEMAND(diagram_ != nullptr);
+  return diagram_->GetSubsystemContext(simulator_->get_context(),
+                                       pose_bundle_to_draw_message_);
 }
 
 template <typename T>

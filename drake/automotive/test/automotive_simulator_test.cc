@@ -6,10 +6,14 @@
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcmt_simple_car_state_t.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
 namespace drake {
+
+using systems::Context;
+
 namespace automotive {
 namespace {
 
@@ -248,6 +252,39 @@ GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
                            "/automotive/models/prius/prius.sdf", 13,
                            GetDrakePath() +
                            "/automotive/models/prius/prius_with_lidar.sdf", 17);
+}
+
+// Verifies that CarVisApplicator and PoseBundleToDrawMessage are instantiated
+// in AutomotiveSimulator's Diagram.
+GTEST_TEST(AutomotiveSimulatorTest,
+    CarVisApplicatorAndPoseBundleToDrawMessageTest) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+  const std::string kFileName = GetDrakePath() +
+      "/automotive/models/prius/prius.sdf";
+  simulator->AddSimpleCarFromSdf(kFileName, "Model1", "Channel1");
+  simulator->AddSimpleCarFromSdf(kFileName, "Model1", "Channel2");
+  simulator->Start();
+  simulator->StepBy(1e-3);
+  const Context<double>& applicator_context =
+      simulator->get_car_vis_applicator_context();
+  EXPECT_GT(applicator_context.get_time(), 0);
+  EXPECT_TRUE(applicator_context.is_stateless());
+  EXPECT_FALSE(applicator_context.has_only_continuous_state());
+  EXPECT_FALSE(applicator_context.has_only_discrete_state());
+  EXPECT_EQ(applicator_context.get_num_abstract_state_groups(), 0);
+  EXPECT_EQ(applicator_context.get_num_input_ports(), 1);
+  EXPECT_EQ(applicator_context.num_numeric_parameters(), 0);
+
+  const Context<double>& draw_context =
+      simulator->get_pose_bundle_to_draw_message_context();
+  EXPECT_GT(draw_context.get_time(), 0);
+  EXPECT_TRUE(draw_context.is_stateless());
+  EXPECT_FALSE(draw_context.has_only_continuous_state());
+  EXPECT_FALSE(draw_context.has_only_discrete_state());
+  EXPECT_EQ(draw_context.get_num_abstract_state_groups(), 0);
+  EXPECT_EQ(draw_context.get_num_input_ports(), 1);
+  EXPECT_EQ(draw_context.num_numeric_parameters(), 0);
 }
 
 }  // namespace

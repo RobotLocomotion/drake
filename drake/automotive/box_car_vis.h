@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/automotive/car_vis.h"
-#include "drake/lcmtypes/drake/lcmt_viewer_link_data.hpp"
+#include "drake/lcmt_viewer_link_data.hpp"
 #include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {

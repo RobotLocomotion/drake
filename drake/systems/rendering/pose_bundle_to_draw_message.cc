@@ -1,6 +1,6 @@
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
-#include "drake/lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
