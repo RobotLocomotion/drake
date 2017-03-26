@@ -18,8 +18,6 @@ namespace sensors {
 /// Eigen, Mat in OpenCV, and so on.
 ///
 /// The origin of image coordinate system is on the left-upper corner.
-///
-/// @ingroup sensor_systems
 template <typename T>
 class Image {
  public:
