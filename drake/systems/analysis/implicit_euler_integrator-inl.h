@@ -9,6 +9,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/analysis/line_search.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
@@ -64,7 +65,8 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 template <class T>
 Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
     const Eigen::VectorXd& xtplus) {
-
+  SPDLOG_DEBUG(drake::log(), "  IE Compute Autodiff Jacobian t={}",
+               this->get_context().get_time());
   // Create AutoDiff versions of the state vector.
   typedef Eigen::AutoDiffScalar<Eigen::VectorXd> Scalar;
   VectorX<Scalar> a_xtplus = xtplus;
@@ -90,6 +92,7 @@ Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
       system->AllocateTimeDerivatives();
   system->CalcTimeDerivatives(*context, derivs.get());
   num_jacobian_function_evaluations_++;
+  num_function_evaluations_++;
 
   // Get the Jacobian.
   auto result = derivs->CopyToVector().eval();
@@ -103,6 +106,8 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives(
     const VectorX<T>& x) {
   const System<T>& system = this->get_system();
   Context<T>* context = this->get_mutable_context();
+  SPDLOG_DEBUG(drake::log(), "    IE Calc Derivatives t={}",
+               context->get_time());
   context->get_mutable_continuous_state()->get_mutable_vector()->
       SetFromVector(x);
   system.CalcTimeDerivatives(*context, derivs_.get());
@@ -121,6 +126,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeFDiffJacobianF(
 
   Context<T>* context = this->get_mutable_context();
   const int n = context->get_continuous_state()->size();
+
+  SPDLOG_DEBUG(drake::log(), "  IE Compute Forwarddiff {}-Jacobian t={}",
+               n, this->get_context().get_time());
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
@@ -163,6 +171,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCDiffJacobianF(
 
   Context<T>* context = this->get_mutable_context();
   const int n = context->get_continuous_state()->size();
+
+  SPDLOG_DEBUG(drake::log(), "  IE Compute Centraldiff {}-Jacobian t={}",
+               n, this->get_context().get_time());
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
@@ -273,9 +284,13 @@ void ImplicitEulerIntegrator<T>::CalcIterationMatrix(const VectorX<T>& xtplus,
   n_loops_since_fresh_J_ = 0;  
 }
 
-// Steps forward by dt using the implicit Euler method.
+// Performs the bulk of the stepping computation for both implicit Euler and
+// implicit trapezoid method- they're very similar.
 template <class T>
-void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
+void ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
+                          const std::function<VectorX<T>(const VectorX<T>&)>& g,
+                          double scale,
+                          VectorX<T>* xtplus) {
   using std::abs;
 
   // Advance the context time; this means that all derivatives will be computed
@@ -283,46 +298,36 @@ void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
   Context<T>* context = this->get_mutable_context();
   context->set_time(context->get_time() + dt);
 
-  // Get the current continuous state.
-  const VectorX<T> xt = context->get_continuous_state_vector().CopyToVector();
+  // Verify xtplus
+  DRAKE_ASSERT(xtplus &&
+               xtplus->size() == context->get_continuous_state_vector().size());
 
-  // Use the current state as the candidate value for the next state.
-  // [Hairer 1996] validates this choice (p. 120).
-  VectorX<T> xtplus = xt;
-  const int n = xtplus.size();
-
-  // Setup g
-  std::function<VectorX<T>(const VectorX<T>&)> g =
-      [&xt, dt, this](const VectorX<T>& x) {
-         return (x - xt - dt*CalcTimeDerivatives(x)).eval();
-  };
+  // Get the initial state.
+  VectorX<T> xt0 = context->get_continuous_state_vector().CopyToVector();
 
   // Evaluate g(x(t+h)) = x(t+h) - x(t) - h f(t+h,x(t+h)), where h = dt;
-  VectorX<T> goutput = g(xtplus);
+  VectorX<T> goutput = g(*xtplus);
 
-  // Set the initial value of the objective function f = g^Tg
+  // Set the initial value of the objective function f = gᵀg
   double f_last = 0.5*goutput.norm();
 
-  // Calculate and factorization the iteration matrix if necessary.
+  // Calculate and factorize the iteration matrix if necessary.
+  const int n = xt0.size();
   if (Jg_.rows() != n || Jg_.cols() != n)
-    CalcIterationMatrix(xtplus, dt);
+    CalcIterationMatrix(*xtplus, dt);
 
   // Set value of last alpha (initialized to NaN to indicate not set).
   double last_alpha = std::nan("");
 
+  // Evaluate the objective function.
   while (true) {
     // Update the number of Newton-Raphson loops.
     num_nr_loops_++;
 
-    // Compute and factorize the Jacobian matrix if necessary.
-    if (last_alpha <= reform_J_tol_ &&
-        n_loops_since_fresh_J_ > reform_J_min_loops_)
-      CalcIterationMatrix(xtplus, dt);
-
     // Compute the state update.
     VectorX<T> dx = LU_.solve(goutput);
 
-    // Check whether the update is close to zero.
+    // Check whether the unscaled update is close to zero.
     T q_nrm, v_nrm, z_nrm;
     dx_state_->get_mutable_vector()->SetFromVector(dx);
     CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
@@ -330,35 +335,76 @@ void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
         z_nrm < delta_update_tol_)
       return;
 
-    // Compute the gradient of f = 0.5*g'*g, used for line search, computed with
-    // respect to x. This also allows us to handle a single Jacobian matrix.
-    // If grad*dx > 0, f will be non-decreasing.
-    const VectorX<T> grad = -goutput.transpose() * Jg_;
-    double slope = grad.dot(dx);
-    if (slope >= 0) {
-      // Reformulation of the Jacobian matrix is necessary.
-      CalcIterationMatrix(xtplus, dt);
-      continue;
+    // Evaluate f(x+dx). If it is not smaller than 99% of f(x),
+    // redetermine and refactor the Jacobian matrix.
+    VectorX<T> gcand = g(*xtplus + dx);
+    double f_new = 0.5 * gcand.norm();
+    if (f_new > std::pow(f_last,0.75)) {
+      // Resolve.
+      CalcIterationMatrix(*xtplus, dt / scale);
+      dx = LU_.solve(goutput);
+
+      // Since the Jacobian is fresh, the gradient of f = 0.5*g'*g (computed
+      // with respect to x), can be accurately determined and used for line
+      // search.
+      const VectorX<T> grad = -goutput.transpose() * Jg_;
+      double slope = grad.dot(dx);
+      DRAKE_DEMAND(slope < 0);
+
+      // Search the ray α ∈ [0, 1] for a "good" value that minimizes
+      // ‖ x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ‖. The
+      // ray search is relativelly expensive, as it requres evaluating f().
+      // Therefore, a good ray search will optimize the computational tradeoff
+      // between finding the value of \alpha that minimizes the norm above and
+      // forming the next Jacobian and solving the next linear system.
+      typename LineSearch<T>::LineSearchOutput lout =
+          LineSearch<T>::search_line(*xtplus, dx, f_last, grad, g,
+                                     goutput.norm());
+
+      // Store the last alpha and update the alpha sum statistic.
+      last_alpha = lout.alpha;
+      alpha_sum_ += last_alpha;
+
+      // Update x, g_output, and f.
+      goutput = lout.g_output;
+      *xtplus = lout.x_new;
+      f_last = lout.f_new;
+    } else {
+      // Store the last alpha and update the alpha sum statistic.
+      last_alpha = 1.0;
+      alpha_sum_ += last_alpha;
+
+      // Update x, g_output, and f
+      *xtplus += dx;
+      f_last = f_new;
+      goutput = gcand;
     }
-
-    // Search the ray α ∈ [0, 1] for a "good" value that minimizes
-    // || x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ||. The
-    // ray search is relativelly expensive, as it requres evaluating f().
-    // Therefore, a good ray search will optimize the computational tradeoff
-    // between finding the value of \alpha that minimizes the norm above and
-    // forming the next Jacobian and solving the next linear system.
-    typename LineSearch<T>::LineSearchOutput lout =
-        LineSearch<T>::search_line(xtplus, dx, f_last, grad, g, goutput.norm());
-
-    // Store the last alpha and update the alpha sum statistic.
-    last_alpha = lout.alpha;
-    alpha_sum_ += last_alpha;
-
-    // Update x, g_output, and f
-    goutput = lout.g_output;
-    xtplus = lout.x_new;
-    f_last = lout.f_new;
   }
+}
+
+// Steps forward by dt using the implicit Euler method.
+template <class T>
+void ImplicitEulerIntegrator<T>::StepImplicitEuler(const T &dt) {
+  using std::abs;
+
+  // Get the current continuous state.
+  Context<T>* context = this->get_mutable_context();
+  const VectorX<T> xt0 = context->get_continuous_state_vector().CopyToVector();
+
+  SPDLOG_DEBUG(drake::log(), "StepImplicitEuler(h={}) t={}",
+               dt, context->get_time());
+
+  // Set g
+  std::function<VectorX<T>(const VectorX<T>&)> g =
+      [&xt0, dt, this](const VectorX<T>& x) {
+        return (x - xt0 - dt*CalcTimeDerivatives(x)).eval();
+      };
+
+  // Use the current state as the candidate value for the next state.
+  // [Hairer 1996] validates this choice (p. 120).
+  VectorX<T> xtplus = xt0;
+
+  StepAbstract(dt, g, 1, &xtplus);
 }
 
 // Steps forward by dt using the implicit trapezoid method.
@@ -372,81 +418,21 @@ void ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
                                                        VectorX<T>* xtplus) {
   using std::abs;
 
-  // Advance the context time; this means that all derivatives will be computed
-  // at t+dt.
-  Context<T>* context = this->get_mutable_context();
-  context->set_time(context->get_time() + dt);
-
   // Get the current continuous state.
-  const VectorX<T> xt = context->get_continuous_state_vector().CopyToVector();
-  const int n = xt.size();
-  DRAKE_DEMAND(xtplus && xtplus->size() == n);
+  Context<T>* context = this->get_mutable_context();
+  const VectorX<T> xt0 = context->get_continuous_state_vector().CopyToVector();
+
+  SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoid(h={}) t={}",
+               dt, context->get_time());
 
   // Define g(x(t+h)) ≡ x(t+h) - x(t) - h/2 (f(t,x(t)) + f(t+h,x(t+h)) and
   // evaluate it at the current x(t+h).
   std::function<VectorX<T>(const VectorX<T>&)> g =
-      [&xt, dt, &dx0, this](const VectorX<T>& x) {
-        return (x - xt - dt/2*(dx0 + CalcTimeDerivatives(x).eval())).eval();
+      [&xt0, dt, &dx0, this](const VectorX<T>& x) {
+        return (x - xt0 - dt/2*(dx0 + CalcTimeDerivatives(x).eval())).eval();
       };
-  VectorX<T> goutput = g(*xtplus);
 
-  // Set the initial value of the objective function f = g^Tg
-  double f_last = 0.5*goutput.norm();
-
-  // Set value of last alpha (initialized to NaN to indicate not set).
-  double last_alpha = std::nan("");
-
-  // Evaluate the objective function.
-  while (true) {
-    // Update the number of Newton-Raphson loops.
-    num_nr_loops_++;
-
-    // Compute and factorize the Jacobian matrix if necessary.
-    if (last_alpha <= reform_J_tol_ &&
-        n_loops_since_fresh_J_ > reform_J_min_loops_) {
-      CalcIterationMatrix(*xtplus, dt/2);
-    }
-
-    // Compute the state update.
-    VectorX<T> dx = LU_.solve(goutput);
-
-    // Check whether the unscaled update is close to zero.
-    T q_nrm, v_nrm, z_nrm;
-    dx_state_->get_mutable_vector()->SetFromVector(dx);
-    CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
-    if (q_nrm < delta_update_tol_ && v_nrm < delta_update_tol_ &&
-        z_nrm < delta_update_tol_)
-      return;
-
-    // Compute the gradient of f = 0.5*g'*g, used for line search, computed with
-    // respect to x. This also allows us to handle a single Jacobian matrix.
-    // If grad*dx > 0, f will be non-decreasing.
-    const VectorX<T> grad = -goutput.transpose() * Jg_;
-    double slope = grad.dot(dx);
-    if (slope >= 0) {
-      // Reformulation of the Jacobian matrix is necessary.
-      CalcIterationMatrix(*xtplus, dt/2);
-    }
-
-    // Search the ray α ∈ [0, 1] for a "good" value that minimizes
-    // || x(t+h)ᵢ + dx α - x(t) - h f(t+h, x(t+h)ᵢ + dx α) ||. The
-    // ray search is relativelly expensive, as it requres evaluating f().
-    // Therefore, a good ray search will optimize the computational tradeoff
-    // between finding the value of \alpha that minimizes the norm above and
-    // forming the next Jacobian and solving the next linear system.
-    typename LineSearch<T>::LineSearchOutput lout =
-        LineSearch<T>::search_line(*xtplus, dx, f_last, grad, g,
-                                   goutput.norm());
-
-    // Store the last alpha and update the alpha sum statistic.
-    last_alpha = lout.alpha;
-    alpha_sum_ += last_alpha;
-
-    // Update x, g_output, and f
-    goutput = lout.g_output;
-    *xtplus = lout.x_new;
-    f_last = lout.f_new;
-  }
+  StepAbstract(dt, g, 2, xtplus);
 }
 
 // Compute the partial derivative of the ordinary differential equations with
@@ -501,8 +487,7 @@ void ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T &dt) {
   const VectorX<T> xt0 = context->get_continuous_state_vector().CopyToVector();
   const System<T>& system = this->get_system();
   std::unique_ptr<ContinuousState<T>> derivs = system.AllocateTimeDerivatives();
-  system.CalcTimeDerivatives(*context, derivs.get());
-  const VectorX<T> dx0 = derivs->CopyToVector();
+  const VectorX<T> dx0 = CalcTimeDerivatives(xt0);
 
   // Do the single step.
   StepImplicitEuler(dt);
@@ -528,7 +513,8 @@ void ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T &dt) {
   // Given that the second order term subsumes the third order one:
   // xᵢₑ(t+h) - xₜᵣ(t+h) = O(h²)
   // Therefore the difference between the implicit trapezoid solution and the
-  // implicit Euler solution gives a second-order error estimate.
+  // implicit Euler solution gives a second-order error estimate for the
+  // implicit Euler result xᵢₑ.
 
   // Compute the implicit trapezoid solution.
   VectorX<T> xtplus_trapezoid = xtplus_euler;

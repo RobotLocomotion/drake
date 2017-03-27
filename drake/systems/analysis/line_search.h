@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -61,6 +62,7 @@ class LineSearch {
 
     // Get the slope of the step.
     double slope = gradient.dot(dx);
+    SPDLOG_DEBUG(drake::log(), "  LineSearch slope={}", slope);
 
     // Compute the new x.
     LineSearchOutput out;

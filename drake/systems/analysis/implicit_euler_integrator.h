@@ -254,6 +254,10 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   void DoResetStatistics() override;
 
  private:
+  void StepAbstract(const T& dt,
+                    const std::function<VectorX<T>(const VectorX<T>&)>& g,
+                    double scale,
+                    VectorX<T>* xtplus);
   void CalcIterationMatrix(const VectorX<T>& xtplus, double scale);
   MatrixX<T> CalcJacobian(const VectorX<T>& xtplus);
   void DoStepOnceFixedSize(const T& dt) override;

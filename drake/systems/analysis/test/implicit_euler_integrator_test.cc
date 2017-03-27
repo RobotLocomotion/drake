@@ -201,7 +201,7 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GE(integrator->get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator->get_num_steps_taken(), 0);
   EXPECT_GT(integrator->get_num_function_evaluations(), 0);
-  EXPECT_GT(integrator->get_num_jacobian_function_evaluations(), 0);
+  EXPECT_GE(integrator->get_num_jacobian_function_evaluations(), 0);
   EXPECT_GT(integrator->get_mean_scaling_factor(), 0.0);
   EXPECT_LE(integrator->get_mean_scaling_factor(), 1.0);
   integrator->ResetStatistics();
@@ -483,6 +483,7 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
   integrator.set_fixed_step_mode(true);
   integrator.set_jacobian_reformulation_min_loops(0);
   integrator.set_jacobian_reformulation_tolerance(1.0);
+  integrator.set_delta_state_tolerance(1e-15);
 
   // Use automatic differentiation because we can.
   integrator.set_jacobian_computation_scheme(
