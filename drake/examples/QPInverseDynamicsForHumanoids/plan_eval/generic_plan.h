@@ -17,17 +17,22 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * This class represents a behavior, which conceptually serves as a bridge
- * between a high level planner (e.g. A* planner) and a low level
+ * This class represents a plan interpretor, which conceptually serves as a
+ * bridge between a high level planner (e.g. A* planner) and a low level
  * controller (e.g. PID controller). It is responsible for generating high
  * frequency / dense commands that are compatible with the low level controller
- * from the behavioral inputs. Here is a concrete example: A motion planner
- * generates a list of desired joint configurations (behavioral inputs) to be
- * tracked. The low level controller is a PID controller which takes joint
- * position and velocity set points and outputs joint torques. A simple behavior
- * can use splines to represent smooth motions through those desired
- * configurations, from which dense position and velocity set points are
- * interpolated and sent to the PID controller at high rate.
+ * from the behavioral inputs. One main advantage for this separation is that
+ * the planner does not need to worry about any stabilization or realtime
+ * requirements associated with the hardware. This class also provides an
+ * interface for simple reactive behaviors such as "move arm in a straight line
+ * until the hand touches something", which requires little computation but
+ * high rate feedback.
+ * Here is a concrete example, an . Suppose the robot is a position and
+ * velocity controlled manipulator arm, and a motion planner is used to
+ * generate a sequence of joint configurations for the robot to follow. A
+ * simple implementation can use splines to represent smooth motions through
+ * those desired configurations, from which dense position and velocity set
+ * points are interpolated and sent to the PID controller at high rate.
  *
  * For this class, the low level controller of choice is QPController. So the
  * output of this class is an QpInput. The behavioral level inputs are assumed
@@ -41,7 +46,6 @@ class GenericPlan {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericPlan)
 
  public:
-
   GenericPlan() {}
 
   /**
@@ -53,10 +57,10 @@ class GenericPlan {
   virtual ~GenericPlan() {}
 
   /**
-   * Initializes this plan. This function sets a plan to main the current joint
-   * position in @p robot_status. It assumes no contacts and no Cartesian
-   * tracking objectives are present. Derived classes can implement custom
-   * behaviors or override these in InitializeGenericPlanDerived().
+   * Initializes this plan. This function sets a dummy plan to main the current
+   * joint configuration in @p robot_status. It assumes no contacts and no
+   * Cartesian tracking objectives are present. Derived classes can implement
+   * custom behaviors or override these in InitializeGenericPlanDerived().
    * @param robot_status Current status of the robot.
    * @param paramset Parameters.
    * @param alias_groups Topological information of the robot.
@@ -161,7 +165,7 @@ class GenericPlan {
   /**
    * Returns true if there is a Cartesian trajectory for @p body.
    */
-  const bool has_body_trajectory(const RigidBody<T>* body) const {
+  bool has_body_trajectory(const RigidBody<T>* body) const {
     return body_trajectories_.find(body) != body_trajectories_.end();
   }
 
@@ -228,7 +232,7 @@ class GenericPlan {
   /**
    * Removes a Cartesian trajectory for @p body.
    */
-  const void remove_body_trajectory(const RigidBody<T>* body) {
+  void remove_body_trajectory(const RigidBody<T>* body) {
     body_trajectories_.erase(body);
   }
 

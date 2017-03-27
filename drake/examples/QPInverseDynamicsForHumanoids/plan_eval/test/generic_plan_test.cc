@@ -113,7 +113,8 @@ TEST_F(DummyPlanTest, TestInitialize) {
 TEST_F(DummyPlanTest, TestClone) {
   std::unique_ptr<GenericPlan<double>> clone = dut_->Clone();
   EXPECT_TRUE(dut_->get_contact_state() == clone->get_contact_state());
-  EXPECT_TRUE(dut_->get_dof_trajectory().is_approx(clone->get_dof_trajectory(), 1e-12));
+  EXPECT_TRUE(
+      dut_->get_dof_trajectory().is_approx(clone->get_dof_trajectory(), 1e-12));
 
   const auto& trajs = dut_->get_body_trajectories();
   const auto& cloned_trajs = clone->get_body_trajectories();
@@ -148,7 +149,8 @@ TEST_F(DummyPlanTest, TestUpdateQpInput) {
 
   VectorX<double> expected_vd =
       (kp.array() * (q_d - robot_status_->position()).array() +
-       kd.array() * (v_d - robot_status_->velocity()).array()).matrix();
+       kd.array() * (v_d - robot_status_->velocity()).array())
+          .matrix();
 
   // The weights / constraint types are hard coded in this test. They need to
   // match the numbers specified in

@@ -17,7 +17,7 @@ template <typename T>
 void GenericPlan<T>::Initialize(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
-  // Sets contact states sequence to empty from 0 to forever.
+  // Sets contact states sequence to empty from t = 0 to forever.
   ContactState empty;
   UpdateContactState(empty);
 
@@ -25,7 +25,8 @@ void GenericPlan<T>::Initialize(
   body_trajectories_.clear();
 
   // Initializes all dof trajectory to hold at the measured.
-  // Knots are constant, so the end time doesn't matter.
+  // When interpolating, time is clipped to the bounds, so the end time doesn't
+  // matter for a zoh trajectory.
   const std::vector<T> times = {robot_status.time(), robot_status.time() + 1};
   const MatrixX<T> q_d = robot_status.position();
   this->set_dof_trajectory(PiecewiseCubicTrajectory<T>(
@@ -58,11 +59,12 @@ void GenericPlan<T>::UpdateQpInput(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
     QpInput* qp_input) const {
+  // Gets all bodies that are in contact.
   const ContactState& contact_state = get_contact_state();
-
   const std::vector<const RigidBody<T>*> contact_bodies(contact_state.begin(),
                                                         contact_state.end());
 
+  // Gets all bodies that have a Cartesian tracking objective.
   std::vector<const RigidBody<T>*> tracked_bodies;
   for (const auto& tracked_body_pair : body_trajectories_) {
     tracked_bodies.push_back(tracked_body_pair.first);
@@ -72,7 +74,7 @@ void GenericPlan<T>::UpdateQpInput(
   *qp_input =
       paramset.MakeQpInput(contact_bodies, tracked_bodies, alias_groups);
 
-  // Generates desired acceleration for tracked bodies
+  // Generates desired acceleration for tracked bodies.
   const T interp_time = robot_status.time();
   for (const auto& body_motion_pair : body_trajectories_) {
     const RigidBody<T>* body = body_motion_pair.first;
