@@ -13,7 +13,11 @@
 namespace drake {
 namespace automotive {
 
-/// PriusVis displays a visualization of a 2015 Toyota Prius.
+/// PriusVis displays a visualization of a 2015 Toyota Prius. It relies on
+/// `/automotive/models/prius/prius_with_lidar.sdf` and requires that this SDF
+/// file only contain one model instance that is not connected to the world
+/// (i.e., the SDF model must not contain a link with the same name as
+/// RigidBodyTreeConstants::kWorldName).
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
