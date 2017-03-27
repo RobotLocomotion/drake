@@ -1,7 +1,5 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/manipulator_inverse_dynamics_controller.h"
 
-#include <gtest/gtest.h>
-
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
@@ -12,6 +10,8 @@
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+
+#include "gtest/gtest.h"
 
 namespace drake {
 namespace examples {
