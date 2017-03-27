@@ -25,7 +25,7 @@ def github_archive(
     The optional build_file= is the BUILD file label to use for building this
     external.  When omitted, the BUILD file(s) within the archive will be used.
 
-    The optional local_repository_override= can be used for temporary local
+    The optional local_repository_override= can be used for temporary locale
     testing; instead of retrieving the code from github enterprise, the code is
     retrieved from the local filesystem path given in the argument.
     """
@@ -62,7 +62,7 @@ def github_archive(
                 name=name,
                 build_file=build_file,
                 path=local_repository_override)
-        return
+            return
 
     if build_file == None:
         native.http_archive(
