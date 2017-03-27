@@ -442,7 +442,8 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
  * the intersection region, satisfies A * x <= b.
  * @param[in] pts The vertices of the intersection region. Same as the `pts` in
  * ComputeHalfSpaceRelaxationForBoxSphereIntersection()
- * @param[out] A The rows of A are the normal vector of facets.
+ * @param[out] A The rows of A are the normal vector of facets. Each row of A is
+ * a unit length vector.
  * @param b b(i) is the interscept of the i'th facet.
  * @pre pts.size() >= 4. If there are only three vertices, then the facet is
  * just the triangle connecting these three vertices. This facet can be computed
@@ -459,7 +460,6 @@ void ComputeInnerFacetsForBoxSphereIntersection(
   }
   A->resize(0, 3);
   b->resize(0);
-  int triangle_count = 0;
   // Loop through each triangle, formed by connecting the vertices of the
   // intersection region. We write the plane coinciding with the triangle as
   // cᵀ * x >= d. If all the vertices of the intersection region satisfies
@@ -474,6 +474,7 @@ void ComputeInnerFacetsForBoxSphereIntersection(
         // First compute the triangle formed by vertices pts[i], pts[j] and
         // pts[k].
         Eigen::Vector3d c = (pts[j] - pts[i]).cross(pts[k] - pts[i]);
+        c /= c.norm();
         // Make sure c points outward
         if (c.sum() < 0) {
           c *= -1;
@@ -618,6 +619,12 @@ void AddMcCormickVectorConstraints(
             internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(
                 pts, &normal, &d);
 
+            Eigen::VectorXd b(0);
+            Eigen::Matrix<double, Eigen::Dynamic, 3> A(0, 3);
+            if (pts.size() >= 4) {
+              internal::ComputeInnerFacetsForBoxSphereIntersection(pts, &A, &b);
+            }
+
             // theta is the maximal angle between v and normal, where v is an
             // intersecting point between the box and the sphere.
             double cos_theta = d;
@@ -631,6 +638,24 @@ void AddMcCormickVectorConstraints(
             for (int o = 0; o < 8; o++) {  // iterate over orthants
               orthant_normal = FlipVector(normal, o).transpose();
               orthant_c = PickPermutation(this_cpos, this_cneg, o);
+
+              if (A.rows() != 0) {
+                for (int i = 0; i < A.rows(); ++i) {
+                  // Add the constraint that A * v <= b, representing the inner
+                  // facets f the convex hull, obtained from the vertices of the
+                  // intersection region.
+                  // This constraint is only active if the box is active.
+                  // We impose the constraint
+                  // A.row(i) * v - b(i) <= 3 - 3 * b(i) + (b(i) - 1) * (c[xi](0) + c[yi](1) + c[zi](2))
+                  // Or in words
+                  // If c[xi](0) = 1 and c[yi](1) = 1 and c[zi](1) = 1
+                  //   A.row(i) * v <= b(i)
+                  // Otherwise
+                  //   A.row(i) * v -b(i) is not constrained
+                  Eigen::Vector3d orthant_a = FlipVector(A.row(i).transpose(), o);
+                  prog->AddLinearConstraint(orthant_a.dot(v) - b(i) <= 3 - 3 * b(i) + (b(i) - 1) * orthant_c.cast<symbolic::Expression>().sum());
+                }
+              }
 
               // Minimum vector norm constraint: normal.dot(v) >= d,
               // Since we only apply this when the box is active, since 0<=d<=1,
