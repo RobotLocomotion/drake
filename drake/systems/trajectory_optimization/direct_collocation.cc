@@ -118,11 +118,11 @@ void DircolTrajectoryOptimization::AddRunningCost(
   // TODO(russt): Insert h(i) terms.  Currently not supported because it's
   // no longer a quadratic constraint.
 
-  AddCost(0.5*SubstitutePlaceholderVariables(g,0));
+  AddCost(0.5 * SubstitutePlaceholderVariables(g, 0));
   for (int i = 1; i < N() - 2; i++) {
     AddCost(SubstitutePlaceholderVariables(g, i));
   }
-  AddCost(0.5*SubstitutePlaceholderVariables(g,N()-1));
+  AddCost(0.5 * SubstitutePlaceholderVariables(g, N() - 1));
 }
 
 // We just use a generic constraint here since we need to mangle the

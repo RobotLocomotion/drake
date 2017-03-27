@@ -20,22 +20,22 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 
-void AddSwingUpTrajectoryParams(
-    const Eigen::Vector2d& x0, const Eigen::Vector2d& xG,
-    systems::DircolTrajectoryOptimization* dircol) {
-
+void AddSwingUpTrajectoryParams(const Eigen::Vector2d& x0,
+                                const Eigen::Vector2d& xG,
+                                systems::DircolTrajectoryOptimization* dircol) {
   const int kTorqueLimit = 3;  // Arbitrary, taken from PendulumPlant.m.
   const drake::Vector1d umin(-kTorqueLimit);
   const drake::Vector1d umax(kTorqueLimit);
   dircol->AddInputBounds(umin, umax);
 
-  // TODO: Simplify to e.g. state(0) == x0 once the required overloads arrive.
-  dircol->AddLinearConstraint( dircol->initial_state().array() == x0.array() );
-  dircol->AddLinearConstraint( dircol->final_state().array() == xG.array() );
+  // TODO(soonho): Simplify to e.g. state(0) == x0 once the required
+  // overloads arrive.
+  dircol->AddLinearConstraint(dircol->initial_state().array() == x0.array());
+  dircol->AddLinearConstraint(dircol->final_state().array() == xG.array());
 
   const double R = 10;  // Cost on input "effort".
   auto u = dircol->input();
-  dircol->AddRunningCost( (R * u) * u );
+  dircol->AddRunningCost((R * u) * u);
 }
 
 }  // namespace pendulum
