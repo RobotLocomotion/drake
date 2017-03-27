@@ -133,7 +133,7 @@ int main() {
 
   // Print a time stamp update every tenth of a second.  This helps communicate
   // progress in the event that the integrator crawls to a very small timestep.
-  const double kPrintPeriod = 0.1;
+  const double kPrintPeriod = std::min(0.1, FLAGS_sim_duration);
   int step_count =
       static_cast<int>(std::ceil(FLAGS_sim_duration / kPrintPeriod));
   for (int i = 1; i <= step_count; ++i) {
