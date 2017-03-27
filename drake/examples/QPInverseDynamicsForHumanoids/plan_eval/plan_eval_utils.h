@@ -222,8 +222,8 @@ class PiecewiseCartesianTrajectory {
    * Returns true if the position and orientation trajectories are both
    * within @p tol from the other's.
    */
-  bool is_approx(const PiecewiseCartesianTrajectory<T>& other, const T& tol)
-      const {
+  bool is_approx(const PiecewiseCartesianTrajectory<T>& other,
+                 const T& tol) const {
     bool ret = position_.is_approx(other.position_, tol);
     ret &= orientation_.is_approx(other.orientation_, tol);
     return ret;
