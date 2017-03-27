@@ -35,12 +35,29 @@ class MultibodyTree {
   /// Creates a MultibodyTree containing only a **world** body.
   MultibodyTree();
 
+  /// @name Methods to add new multibody tree elements.
+  ///
+  /// These methods are an implementation detail and users do not need to
+  /// call them. The only allowed mechanism to create MultibodyTreeElement
+  /// objects is through their factory methods. For instance, see
+  /// RigidBodyFrame::Create() to create a rigid body and add it to a
+  /// MultibodyTree. However, these API's are made public so that specific
+  /// factory methods can access them. The factory method for the creation of
+  /// multibody tree elements allows for a very controlled construction that
+  /// ensures that multibody tree elements have a properly intialized reference
+  /// to their parent %MultibodyTree as they are added to it.
+  /// Multibody tree element's constructors are made private in order to enforce
+  /// users to create them via their Create() factories to prevent the creation
+  /// of MultibodyTreeElement objects with an invalid parent %MultibodyTree.
+  ///
+  /// Calling any of these methods invalidates the topology of this
+  /// %MultibodyTree and therefore, the Compile() method must be called before
+  /// invoking methods which require valid topology. See Compile() for details.
+  /// @{
+
   /// Takes ownership of `body`, assigns a unique index to it, and adds it to
   /// `this` %MultibodyTree. Returns a bare pointer to the body just added,
   /// which will remain valid for the lifetime of `this` %MultibodyTree.
-  /// This call invalidates the topology of this %MultibodyTree and, therefore,
-  /// the Compile() method must be called before invoking methods which
-  /// require valid topology. See Compile() for details.
   ///
   /// Example of usage:
   /// @code{.cpp}
@@ -50,15 +67,6 @@ class MultibodyTree {
   /// where `auto` here resolves to `RigidBody<T>*`.
   ///
   /// @throws std::logic_error if `body` is a nullptr.
-  ///
-  /// @note This method is an implementation detail and users do not need to
-  /// call it. The only allowed mechanism to create bodies is through their
-  /// factory methods. For instance, see RigidBody::Create() to create a body
-  /// and add it to a MultibodyTree.
-  ///
-  /// @note This call invalidates the topology of this %MultibodyTree and,
-  /// therefore, the Compile() method must be called before invoking methods
-  /// which require valid topology.
   ///
   /// @param[in] body A unique pointer to a body to add to `this`
   ///                 %MultibodyTree.
@@ -91,9 +99,6 @@ class MultibodyTree {
   /// Takes ownership of `frame`, assigns a unique index to it, and adds it to
   /// `this` %MultibodyTree. Returns a bare pointer to the physical frame just
   /// added, which will remain valid for the lifetime of `this` %MultibodyTree.
-  /// This call invalidates the topology of this %MultibodyTree and, therefore,
-  /// the Compile() method must be called before invoking methods which
-  /// require valid topology. See Compile() for details.
   ///
   /// Example of usage:
   /// @code
@@ -104,15 +109,6 @@ class MultibodyTree {
   /// where `auto` here resolves to `FixedOffsetFrame<T>*`.
   ///
   /// @throws std::logic_error if `frame` is a nullptr.
-  ///
-  /// @note This method is an implementation detail and users do not need to
-  /// call it. The only allowed mechanism to create frames is through their
-  /// factory methods. For instance, see RigidBodyFrame::Create() to create a
-  /// frame rigidly attached to a body and add it to a MultibodyTree.
-  ///
-  /// @note This call invalidates the topology of this %MultibodyTree and,
-  /// therefore, the Compile() method must be called before invoking methods
-  /// which require valid topology.
   ///
   /// @param[in] frame A unique pointer to a physical frame to be added to
   ///                  `this` %MultibodyTree.
@@ -129,12 +125,11 @@ class MultibodyTree {
       throw std::logic_error("Input frame is an invalid nullptr.");
     }
 
-    // Users can add new multibody elements, however the topology gets
-    // invalidated.
     BodyIndex body_index = frame->get_body_index();
     DRAKE_DEMAND(body_index < get_num_bodies());
 
-    // Assume we are calling from AddBody
+    // Users can add new multibody elements, however the topology gets
+    // invalidated.
     FrameIndex frame_index = topology_.add_physical_frame(body_index);
 
     // MultibodyTree has access to these methods since it is a friend of
@@ -149,12 +144,6 @@ class MultibodyTree {
 
   /// This method is **only** called from within private method
   /// Body::CreateBodyFrame() to create the associated body frame for a body.
-  ///
-  /// @note This method is an implementation detail and users do not need to
-  /// call it. Body frames are created when adding bodies to a %MultibodyTree by
-  /// the bodies themselves. There are no public constructors available for
-  /// BodyFrame objects and therefore users cannot create them nor they can
-  /// create unique pointers to call this method.
   ///
   /// @pre AddBody() was already called from within a body create method to
   /// create the body associated with this frame. Therefore there is a valid
@@ -179,6 +168,8 @@ class MultibodyTree {
     owned_physical_frames_.push_back(std::move(body_frame));
     return raw_body_ptr;
   }
+  /// @}
+  /// Closes Doxygen section.
 
   /// Returns the number of PhysicalFrame objects in the MultibodyTree.
   /// Physical frames include body frames associated with each of the bodies in

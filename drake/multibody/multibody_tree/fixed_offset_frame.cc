@@ -14,7 +14,7 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
+const FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
     MultibodyTree<T>* tree,
     const Body<T>& body, const Isometry3<T>& X_BF) {
   // Notice that here we cannot use std::make_unique since constructors are made
@@ -28,7 +28,7 @@ FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
 }
 
 template <typename T>
-FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
+const FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
     MultibodyTree<T>* tree,
     const PhysicalFrame<T>& P, const Isometry3<T>& X_PF) {
   if (dynamic_cast<const BodyFrame<T>*>(&P) == nullptr) {

@@ -120,8 +120,8 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   void HasThisParentTreeOrThrow(const MultibodyTree<T>* tree) const {
     DRAKE_ASSERT(tree != nullptr);
     if (parent_tree_ != tree) {
-      throw std::logic_error("This multibody component does not belong to the"
-                                 " supplied MultibodyTree.");
+      throw std::logic_error("This multibody component does not belong to the "
+                             "supplied MultibodyTree.");
     }
   }
 

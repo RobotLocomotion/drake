@@ -67,7 +67,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
           model, upper_link.get_body_frame(), X_UlSo);
 
   // Create frames associated with the pendulum's elbow.
-  // An inboard frame Ei is rigidly attached the upper link. It is located at
+  // An inboard frame Ei is rigidly attached to the upper link. It is located at
   // y = -half_link_length in the frame of the upper link body.
   // An outboard frame Eo is rigidly attached to the lower link. It is located
   // at y = +half_link_length in the frame of the lower link body.
@@ -81,7 +81,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // link body frame.
   const auto& elbow_inboard_frame =
       FixedOffsetFrame<double>::Create(model, upper_link, X_UlEi);
-  Isometry3d X_LlEo(Translation3d(0.0, -half_link_length, 0.0));
+  Isometry3d X_LlEo(Translation3d(0.0, +half_link_length, 0.0));
   const auto& elbow_outboard_frame =
       FixedOffsetFrame<double>::Create(model, lower_link, X_LlEo);
 
