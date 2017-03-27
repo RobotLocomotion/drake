@@ -243,6 +243,7 @@ drake_cc_library(
         ":car_vis",
         "//drake/common:drake_path",
         "//drake/lcmtypes:viewer",
+        "//drake/multibody/joints",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:create_load_robot_message",
         "//drake/systems/rendering:pose_bundle",
