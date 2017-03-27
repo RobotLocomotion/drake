@@ -15,6 +15,7 @@ length times v_stiction_tolerance (i.e., the highest allowable slip speed
 during stiction).
 */
 
+#include <algorithm>
 #include <memory>
 
 #include <gflags/gflags.h>
