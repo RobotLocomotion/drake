@@ -916,6 +916,41 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
   }
 }
 
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd) {
+  // Add linear constraints
+  //
+  //   (A*x == b) = |1 2| * |x0| == |5|
+  //                |3 4|   |x1|    |6|
+  //
+  //              = |  x0 + 2*x1 == 5|
+  //                |3*x0 + 4*x1 == 6|
+  //
+  // where A = |1 2|, x = |x0|, b = |5|
+  //           |3 4|      |x1|      |6|.
+  //
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  Matrix<Expression, 2, 2> A;
+  Eigen::Vector2d b;
+  // clang-format off
+  A << 1, 2,
+       3, 4;
+  b << 5,
+       6;
+  // clang-format on
+  const auto binding = prog.AddLinearConstraint(A * x == b);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  EXPECT_PRED2(ExprEqual, x(0) + 2 * x(1) - 5, Ax(0) - lb_in_ctr(0));
+  EXPECT_PRED2(ExprEqual, x(0) + 2 * x(1) - 5, Ax(0) - ub_in_ctr(0));
+  EXPECT_PRED2(ExprEqual, 3 * x(0) + 4 * x(1) - 6, Ax(1) - lb_in_ctr(1));
+  EXPECT_PRED2(ExprEqual, 3 * x(0) + 4 * x(1) - 6, Ax(1) - ub_in_ctr(1));
+}
+
 // Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
   // Add linear constraints
