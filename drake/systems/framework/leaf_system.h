@@ -282,7 +282,7 @@ class LeafSystem : public System<T> {
       const std::string type = NiceTypeName::Canonicalize(
           NiceTypeName::Demangle(typeid(*this).name()));
       // Drop the template parameters.
-      name = std::regex_replace(type, std::regex("<.*>$"), "");
+      name = std::regex_replace(type, std::regex("<.*>$"), std::string());
     }
 
     // Open the attributes and label.
