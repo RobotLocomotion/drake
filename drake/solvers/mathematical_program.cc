@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/monomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/math/matrix_util.h"
@@ -672,6 +673,59 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
+    const std::set<Formula>& formulas) {
+  const auto n = formulas.size();
+
+  // Decomposes a set of formulas into a 1D-vector of expressions, `v`, and two
+  // 1D-vector of double `lb` and `ub`.
+  VectorX<symbolic::Expression> v{n};
+  Eigen::VectorXd lb{n};
+  Eigen::VectorXd ub{n};
+  int i{0};  // index variable used in the loop
+  // After the following loop, we call `AddLinearEqualityConstraint`
+  // if `are_all_formulas_equal` is still true. Otherwise, we call
+  // `AddLinearConstraint`.  on the value of this Boolean flag.
+  bool are_all_formulas_equal{true};
+  for (const symbolic::Formula& f : formulas) {
+    if (is_equal_to(f)) {
+      // f := (lhs == rhs)
+      //      (lhs - rhs == 0)
+      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
+      lb(i) = 0.0;
+      ub(i) = 0.0;
+    } else if (is_less_than_or_equal_to(f)) {
+      // f := (lhs <= rhs)
+      //      (-∞ <= lhs - rhs <= 0)
+      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
+      lb(i) = -std::numeric_limits<double>::infinity();
+      ub(i) = 0.0;
+      are_all_formulas_equal = false;
+    } else if (is_greater_than_or_equal_to(f)) {
+      // f := (lhs >= rhs)
+      //      (∞ >= lhs - rhs >= 0)
+      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
+      lb(i) = 0.0;
+      ub(i) = std::numeric_limits<double>::infinity();
+      are_all_formulas_equal = false;
+    } else {
+      std::ostringstream oss;
+      oss << "MathematicalProgram::AddLinearConstraint is called with a "
+             "conjunction of formulas which includes a formula"
+          << f
+          << " which is not a relational formula using one of {==, <=, >=} "
+             "operators.";
+      throw std::runtime_error(oss.str());
+    }
+    ++i;
+  }
+  if (are_all_formulas_equal) {
+    return AddLinearEqualityConstraint(v, lb);
+  } else {
+    return AddLinearConstraint(v, lb, ub);
+  }
+}
+
+Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Formula& f) {
   if (is_equal_to(f)) {
     // e1 == e2
@@ -691,10 +745,14 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     return AddLinearConstraint(e2 - e1, 0.0,
                                numeric_limits<double>::infinity());
   }
+  if (is_conjunction(f)) {
+    return AddLinearConstraint(get_operands(f));
+  }
   ostringstream oss;
   oss << "MathematicalProgram::AddLinearConstraint is called with a formula "
-      << f << " which is not a relational formula using one of {==, <=, >=} "
-              "operators.";
+      << f
+      << " which is neither a relational formula using one of {==, <=, >=} "
+         "operators nor a conjunction of those relational formulas.";
   throw runtime_error(oss.str());
 }
 
