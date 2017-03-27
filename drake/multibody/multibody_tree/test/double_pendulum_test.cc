@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/systems/framework/context.h"
 
 #include <iostream>
 #define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
@@ -24,6 +25,7 @@ using Eigen::Matrix4d;
 using Eigen::Translation3d;
 using std::make_unique;
 using std::unique_ptr;
+using systems::Context;
 
 // Tests the logic to create a multibody tree model for a double pendulum.
 // This double pendulum is similar to the acrobot model described in Section 3.1
@@ -200,11 +202,18 @@ class PendulumTests : public ::testing::Test {
   const double half_link_length = link_length / 2;
   Isometry3d X_WLu_{Translation3d(0.0, -half_link_length, 0.0)};
 
-  //
-  void SetPendulumPoses(MultibodyTreeContext<double>* context) {
+  // For testing whether we can retrieve/set cache entries, this method
+  // initializes the poses of each link in their corresponding cache entries.
+  void SetPendulumPoses(Context<double>* context) {
+    DRAKE_DEMAND(context != nullptr);
+    auto mbt_context = dynamic_cast<MultibodyTreeContext<double>*>(context);
+    DRAKE_DEMAND(mbt_context != nullptr);
     PositionKinematicsCache<double>* pc =
-        context->get_mutable_position_kinematics();
+        mbt_context->get_mutable_position_kinematics();
     pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WLu_;
+    // MultibodyTree methods re-computing the PositionKinematicsCache will
+    // validate as so:
+    mbt_context->validate_position_kinematics_cache();
   }
 };
 
@@ -223,7 +232,7 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_TRUE(model->topology_is_valid());  // Valid after Compile().
 
   // Create Context.
-  std::unique_ptr<MultibodyTreeContext<double>> context;
+  std::unique_ptr<Context<double>> context;
   EXPECT_NO_THROW(context = model->CreateDefaultContext());
 
   SetPendulumPoses(context.get());
@@ -242,7 +251,7 @@ TEST_F(PendulumTests, AssertEigenDynamicMemoryAllocation) {
   EXPECT_TRUE(model_.topology_is_valid());  // Valid after Compile().
 
   // Create Context.
-  std::unique_ptr<MultibodyTreeContext<double>> context;
+  std::unique_ptr<Context<double>> context;
   EXPECT_NO_THROW(context = model_.CreateDefaultContext());
 
   // After this point MultibodyTree queries should not allocate memory.

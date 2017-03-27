@@ -13,6 +13,20 @@ package(
 )
 
 drake_cc_library(
+    name = "multibody_tree_context",
+    srcs = [],
+    hdrs = [
+        "multibody_tree_context.h",
+        "position_kinematics_cache.h",
+    ],
+    deps = [
+        ":multibody_tree_indexes",
+        "//drake/common:autodiff",
+        "//drake/systems/framework:leaf_context",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_tree",
     srcs = [
         "fixed_offset_frame.cc",
@@ -25,13 +39,12 @@ drake_cc_library(
         "frame.h",
         "frame_base.h",
         "multibody_tree.h",
-        "multibody_tree_context.h",
         "multibody_tree_element.h",
         "multibody_tree_topology.h",
-        "position_kinematics_cache.h",
         "rigid_body.h",
     ],
     deps = [
+        ":multibody_tree_context",
         ":multibody_tree_indexes",
         ":spatial_inertia",
         "//drake/common:autodiff",

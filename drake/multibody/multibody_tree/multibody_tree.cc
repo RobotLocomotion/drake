@@ -57,7 +57,7 @@ void MultibodyTree<T>::Finalize() {
 }
 
 template <typename T>
-std::unique_ptr<MultibodyTreeContext<T>>
+std::unique_ptr<systems::Context<T>>
 MultibodyTree<T>::CreateDefaultContext() const {
   if (!topology_is_valid()) {
     throw std::logic_error(
@@ -65,6 +65,9 @@ MultibodyTree<T>::CreateDefaultContext() const {
             "topology. MultibodyTree::Compile() must be called before attempting "
             "to create a context.");
   }
+
+  // TODO(amcastro-tri): pass the MultibodyTreeTopology instead of just the
+  // number of bodies.
   auto context = std::make_unique<MultibodyTreeContext<T>>(get_num_bodies());
   SetDefaults(context.get());
   return context;
@@ -72,14 +75,17 @@ MultibodyTree<T>::CreateDefaultContext() const {
 
 template <typename T>
 const Isometry3<T>& MultibodyTree<T>::get_body_pose_in_world(
-    const MultibodyTreeContext<T>& context, BodyIndex body_index) const {
+    const systems::Context<T>& context, BodyIndex body_index) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
   // TODO(amcastro-tri): body_node_index will come from the
   // MultibodyTreeTopology as:
   //    body_node_index = topology_.bodies[body_index].body_node;
   BodyNodeIndex body_node_index = BodyNodeIndex((int)body_index);
   // TODO(amcastro-tri): Check cache validity.
   //                     Check topology validity.
-  return context.get_position_kinematics().get_X_WB(body_node_index);
+  return mbt_context.get_position_kinematics().get_X_WB(body_node_index);
 }
 
 // Explicitly instantiates on the most common scalar types.

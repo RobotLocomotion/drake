@@ -103,10 +103,23 @@ class LeafContext : public Context<T> {
     cache_.Set<V>(ticket, value);
   }
 
+  bool is_cache_entry_valid(CacheTicket ticket) const {
+    return cache_.is_entry_valid(ticket);
+  }
+
   // Returns the cached value for the given @p ticket, or nullptr if the
   // cache entry has been invalidated.
   const AbstractValue* GetCachedValue(CacheTicket ticket) const {
     return cache_.Get(ticket);
+  }
+
+  // Returns the mutable cached value for the given @p ticket.
+  AbstractValue* GetMutableCachedValue(CacheTicket ticket) const {
+    return cache_.GetMutable(ticket);
+  }
+
+  void validate_cache_entry(CacheTicket ticket) {
+    cache_.validate(ticket);
   }
 
   // =========================================================================
