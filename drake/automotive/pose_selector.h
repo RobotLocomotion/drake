@@ -15,7 +15,7 @@ namespace drake {
 namespace automotive {
 
 /// Contains the position of the vehicle with respect to a lane in a road, along
-/// with its body-relative velocity vector.
+/// with its velocity vector in the world frame.
 template <typename T>
 struct RoadOdometry {
   /// Default constructor.
@@ -35,7 +35,7 @@ namespace pose_selector {
 /// Returns the leading and trailing cars that have closest `s`-coordinates in a
 /// given @p traffic_lane to an ego car as if the ego car were traveling in @p
 /// traffic_lane at its current `s`-position.  The ego car's pose @ego_pose and
-/// the poses of the traffic cars (@p traffic_pose) are assumed to exist on the
+/// the poses of the traffic cars (@p traffic_poses) are assumed to exist on the
 /// same @p road.  If @p traffic_lane is `nullptr`, the ego car's current lane
 /// is used (this is derived from a call to CalcRoadPosition).  If no
 /// leading/trailing cars are seen within @p traffic_lane, car `s`-positions are
@@ -55,6 +55,9 @@ namespace pose_selector {
 ///
 /// TODO(jadecastro): Support road networks containing multi-lane segments
 /// (#4934).
+///
+/// TODO(jadecastro): Support vehicles traveling in the negative-`s`-direction
+/// in a given Lane.
 const std::pair<RoadOdometry<double>, RoadOdometry<double>> FindClosestPair(
     const maliput::api::RoadGeometry& road,
     const systems::rendering::PoseVector<double>& ego_pose,

@@ -13,6 +13,7 @@ namespace drake {
 
 using maliput::api::RoadGeometry;
 using maliput::api::RoadPosition;
+using maliput::api::Rotation;
 using math::saturate;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseBundle;
@@ -24,13 +25,9 @@ static constexpr int kIdmParamsIndex{0};
 static constexpr int kCarParamsIndex{1};
 
 template <typename T>
-IdmController<T>::IdmController(std::unique_ptr<RoadGeometry> road)
-    : road_(std::move(road)) {
-  DRAKE_ASSERT(road_ != nullptr);
-
+IdmController<T>::IdmController(const RoadGeometry& road) : road_(road) {
   // Declare the ego car pose input.
-  ego_pose_index_ =
-      this->DeclareVectorInputPort(PoseVector<T>()).get_index();
+  ego_pose_index_ = this->DeclareVectorInputPort(PoseVector<T>()).get_index();
   // Declare the ego car velocity input.
   ego_velocity_index_ =
       this->DeclareVectorInputPort(FrameVelocity<T>()).get_index();
@@ -104,15 +101,18 @@ void IdmController<T>::ImplDoCalcOutput(
     const SimpleCarConfig<T>& car_params, DrivingCommand<T>* command) const {
   // Find the single closest car ahead.
   const RoadOdometry<T>& lead_car_odom =
-      pose_selector::FindClosestLeading(*road_, ego_pose, traffic_poses);
+      pose_selector::FindClosestLeading(road_, ego_pose, traffic_poses);
+  const RoadPosition ego_position =
+      pose_selector::CalcRoadPosition(road_, ego_pose.get_isometry());
 
-  const T& s_ego =
-      pose_selector::CalcRoadPosition(*road_, ego_pose.get_isometry()).pos.s;
-  const T& s_dot_ego = ego_velocity.get_velocity().translational().x();
+  const T& s_ego = ego_position.pos.s;
+  const T& s_dot_ego =
+      GetSVelocity(RoadOdometry<double>(ego_position, ego_velocity));
   const T& s_lead = lead_car_odom.pos.s;
-  const T& s_dot_lead = lead_car_odom.vel.get_velocity().translational().x();
+  const T& s_dot_lead = GetSVelocity(lead_car_odom);
 
-  // Saturate the net_distance at distance_lower_bound away from the ego car.
+  // Saturate the net_distance at distance_lower_bound away from the ego car to
+  // avoid near-singular solutions inherent to the IDM equation.
   const T net_distance = saturate(s_lead - s_ego - idm_params.bloat_diameter(),
                                   idm_params.distance_lower_limit(),
                                   std::numeric_limits<T>::infinity());
@@ -127,6 +127,15 @@ void IdmController<T>::ImplDoCalcOutput(
       cond(normalized_accel < T(0.), T(0.), normalized_accel));
   command->set_brake(cond(normalized_accel >= T(0.), T(0.), -normalized_accel));
   command->set_steering_angle(0.);
+}
+
+template <typename T>
+double IdmController<T>::GetSVelocity(const RoadOdometry<T>& road_odom) const {
+  Rotation rot = road_odom.lane->GetOrientation(road_odom.pos);
+  const T vx = road_odom.vel.get_velocity().translational().x();
+  const T vy = road_odom.vel.get_velocity().translational().y();
+
+  return vx * std::cos(rot.yaw) + vy * std::sin(rot.yaw);
 }
 
 template <typename T>
