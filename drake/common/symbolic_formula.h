@@ -708,6 +708,30 @@ operator!=(const ScalarType& v, const Derived& a) {
 ///
 ///    - Eigen::Matrix<double> == Eigen::Matrix<double>
 ///
+/// Note that this method returns a conjunctive formula which keeps its
+/// conjuncts as `std::set<Formula>` internally. This set is ordered by
+/// `Formula::Less` and this ordering can be *different* from the one in
+/// inputs. Also, any duplicated formulas are removed in construction.  Please
+/// check the following example.
+///
+/// @code
+///     // set up v1 = [y x y] and v2 = [1 2 1]
+///     VectorX<Expression> v1{3};
+///     VectorX<Expression> v2{3};
+///     const Variable x{"x"};
+///     const Variable y{"y"};
+///     v1 << y, x, y;
+///     v2 << 1, 2, 1;
+///     // Here v1_eq_v2 = ((x = 2) ∧ (y = 1))
+///     const Formula v1_eq_v2{v1 == v2};
+///     const std::set<Formula> conjuncts{get_operands(v1_eq_v2)};
+///     for (const Formula& f : conjuncts) {
+///       std::cerr << f << std::endl;
+///     }
+///     // The outcome of the above loop is:
+///     (x = 2)
+///     (y = 1)
+/// @endcode
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,

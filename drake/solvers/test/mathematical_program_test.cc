@@ -1,6 +1,7 @@
 #include "drake/solvers/mathematical_program.h"
 
 #include <algorithm>
+#include <set>
 #include <typeinfo>
 
 #include <gtest/gtest.h>
@@ -37,6 +38,8 @@ using drake::symbolic::Variable;
 using drake::symbolic::test::ExprEqual;
 
 using std::numeric_limits;
+using std::set;
+using std::dynamic_pointer_cast;
 
 namespace drake {
 namespace solvers {
@@ -914,6 +917,113 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
   }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
+  // Add linear constraints
+  //
+  //   (A*x == b) = |1 2| * |x0| == |5|
+  //                |3 4|   |x1|    |6|
+  //
+  //              = |  x0 + 2*x1 == 5|
+  //                |3*x0 + 4*x1 == 6|
+  //
+  // where A = |1 2|, x = |x0|, b = |5|
+  //           |3 4|      |x1|      |6|.
+  //
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  Matrix<Expression, 2, 2> A;
+  Eigen::Vector2d b;
+  // clang-format off
+  A << 1, 2,
+       3, 4;
+  b << 5,
+       6;
+  // clang-format on
+  const auto binding = prog.AddLinearConstraint(A * x == b);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  // Checks that we have LinearEqualityConstraint instead of LinearConstraint.
+  EXPECT_TRUE(dynamic_pointer_cast<LinearEqualityConstraint>(constraint_ptr) !=
+              nullptr);
+  EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+
+  set<Expression> constraint_set;
+  constraint_set.emplace(x(0) + 2 * x(1) - 5);
+  constraint_set.emplace(3 * x(0) + 4 * x(1) - 6);
+  EXPECT_EQ(constraint_set.count(Ax(0) - lb_in_ctr(0)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(0) - ub_in_ctr(0)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(1) - lb_in_ctr(1)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(1) - ub_in_ctr(1)), 1);
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
+  // Add linear constraints f1 && f2 && f3 where
+  //   f1 := (x0 + 2*x1 >= 3)
+  //   f2 := (3*x0 + 4*x1 <= 5)
+  //   f3 := (7*x0 + 2*x1 == 9).
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  const Expression e11{x(0) + 2 * x(1)};
+  const Expression e12{3};
+  const Formula f1{e11 >= e12};
+  const Expression e21{3 * x(0) + 4 * x(1)};
+  const Expression e22{5};
+  const Formula f2{e21 <= e22};
+  const Expression e31{7 * x(0) + 2 * x(1)};
+  const Expression e32{9};
+  const Formula f3{e31 == e32};
+
+  const auto binding = prog.AddLinearConstraint(f1 && f2 && f3);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  // Checks that we do not have LinearEqualityConstraint.
+  EXPECT_TRUE(dynamic_pointer_cast<LinearEqualityConstraint>(constraint_ptr) ==
+              nullptr);
+  EXPECT_EQ(constraint_ptr->num_constraints(), 3);
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+
+  set<Expression> constraint_set;
+  constraint_set.emplace(e11 - e12);
+  constraint_set.emplace(e21 - e22);
+  constraint_set.emplace(e31 - e32);
+  for (int i = 0; i < 3; ++i) {
+    if (!std::isinf(lb_in_ctr(i))) {
+      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_ctr(i)), 1);
+    }
+    if (!std::isinf(ub_in_ctr(i))) {
+      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_ctr(i)), 1);
+    }
+  }
+}
+
+GTEST_TEST(testMathematicalProgram,
+           AddLinearConstraintSymbolicFormulaAndException) {
+  // Add linear constraints:
+  //   (x0 + 2*x1 > 3)
+  //   (3*x0 + 4*x1 < 5)
+  //   (7*x0 + 2*x1 == 9)
+  //
+  // It includes relational formulas with strict inequalities (> and <). It will
+  // throw std::runtime_error.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  const Expression e11{x(0) + 2 * x(1)};
+  const Expression e12{3};
+  const Formula f1{e11 > e12};
+  const Expression e21{3 * x(0) + 4 * x(1)};
+  const Expression e22{5};
+  const Formula f2{e21 < e22};
+  const Expression e31{7 * x(0) + 2 * x(1)};
+  const Expression e32{9};
+  const Formula f3{e31 == e32};
+  EXPECT_THROW(prog.AddLinearConstraint(f1 && f2 && f3), std::runtime_error);
 }
 
 // Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
