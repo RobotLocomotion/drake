@@ -8,8 +8,8 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/examples/particles/degenerate_euler_joint.h"
 #include "drake/examples/particles/particle.h"
+#include "drake/examples/particles/utilities.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -48,12 +48,14 @@ class UniformlyAcceleratedParticle : public systems::Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniformlyAcceleratedParticle)
 
-  /// A constructor that takes the constant acceleration to
-  /// be applied to the particle.
+  /// A constructor that wires up the whole diagram,
+  /// taking a constant acceleration to be applied to
+  /// the particle and an LCM interface for visualization.
   ///
   /// @param[in] acceleration in m/s^2 units.
-  ///
-  explicit UniformlyAcceleratedParticle(const T& acceleration);
+  /// @param[in] lcm interface to be used for messaging.
+  explicit UniformlyAcceleratedParticle(const T& acceleration,
+                                        lcm::DrakeLcmInterface* lcm);
 
   /// Creates a context using AllocateContext() and sets
   /// state variables according to the initial conditions supplied.
@@ -64,31 +66,16 @@ class UniformlyAcceleratedParticle : public systems::Diagram<T> {
   std::unique_ptr<systems::Context<T>>
   CreateContext(const T& position, const T& velocity) const;
 
-  /// Wires up the whole system diagram.
-  ///
-  /// @param[in] lcm interface to be used for messaging.
-  void BuildAndConnect(lcm::DrakeLcmInterface* lcm);
-
  private:
-  /// Acceleration to be applied to the particle.
-  const T acceleration_;
   /// RigidBodyTree particle representation
   /// (for visualizations purposes only).
   std::unique_ptr<RigidBodyTree<T>> tree_{
     std::make_unique<RigidBodyTree<T>>()};
-  /// Sanity check flag for diagram
-  /// post-construction initialization.
-  bool built_{false};
 };
 
 template <typename T>
 UniformlyAcceleratedParticle<T>::UniformlyAcceleratedParticle(
-    const T& acceleration) : acceleration_(acceleration) {}
-
-template <typename T>
-void UniformlyAcceleratedParticle<T>::BuildAndConnect(
-    lcm::DrakeLcmInterface* lcm) {
-  DRAKE_DEMAND(!built_);
+    const T& acceleration, lcm::DrakeLcmInterface* lcm) {
   // Parse particle sdf into rigid body tree.
   parsers::sdf::AddModelInstancesFromSdfFileToWorld(
       GetDrakePath() + kParticleSdfPath,
@@ -100,7 +87,7 @@ void UniformlyAcceleratedParticle<T>::BuildAndConnect(
   systems::DiagramBuilder<T> builder;
   // Adding constant acceleration source.
   auto constant_acceleration_vector_source =
-    builder.template AddSystem<systems::ConstantVectorSource<T>>(acceleration_);
+    builder.template AddSystem<systems::ConstantVectorSource<T>>(acceleration);
   // Adding particle.
   auto particle = builder.template AddSystem<Particle<T>>();
   // Adding particle joint.
@@ -109,7 +96,7 @@ void UniformlyAcceleratedParticle<T>::BuildAndConnect(
   translating_matrix.setZero();
   translating_matrix(0, 0) = 1.0;
   auto particle_joint =
-      builder.template AddSystem<DegenerateEulerJoint<T>>(translating_matrix);
+      builder.template AddSystem(MakeDegenerateEulerJoint(translating_matrix));
   // Adding visualizer client.
   auto visualizer =
       builder.template AddSystem<systems::DrakeVisualizer>(*tree_, lcm);
@@ -118,14 +105,12 @@ void UniformlyAcceleratedParticle<T>::BuildAndConnect(
   builder.Connect(*particle, *particle_joint);
   builder.Connect(*particle_joint, *visualizer);
   builder.BuildInto(this);
-  built_ = true;
 }
 
 template <typename T>
 std::unique_ptr<systems::Context<T>>
 UniformlyAcceleratedParticle<T>::CreateContext(
     const T& position, const T& velocity) const {
-  DRAKE_DEMAND(built_);
   // Allocate context.
   auto context = this->AllocateContext();
   // Set continuous state.
@@ -147,10 +132,10 @@ int main(int argc, char* argv[]) {
   // Instantiate interface and start receiving.
   auto interface = std::make_unique< lcm::DrakeLcm >();
   interface->StartReceiveThread();
-  // Instantiate and configure system example.
+  // Instantiate example system.
   auto system =
-    std::make_unique<UniformlyAcceleratedParticle<double>>(FLAGS_acceleration);
-  system->BuildAndConnect(interface.get());
+      std::make_unique<UniformlyAcceleratedParticle<double>>(
+          FLAGS_acceleration, interface.get());
   // Get context with initial conditions.
   auto context =
     system->CreateContext(FLAGS_initial_position, FLAGS_initial_velocity);

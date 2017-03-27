@@ -20,15 +20,16 @@ drake_cc_library(
     name = "particles",
     srcs = [
         "particle.cc",
-        "degenerate_euler_joint.cc"
+        "utilities.cc"
     ],
     hdrs = [
         "particle.h",
-        "degenerate_euler_joint.h"
+        "utilities.h"
     ],
     deps = [
         "//drake/common",
-        "//drake/systems/framework"
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/primitives:matrix_gain"
     ]
 )
 
@@ -61,7 +62,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "degenerate_euler_joint_test",
+    name = "utilities_test",
     deps = [
         ":particles"
     ]

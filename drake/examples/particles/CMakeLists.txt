@@ -1,9 +1,10 @@
 add_library_with_exports(LIB_NAME drakeParticles SOURCE_FILES
   particle.cc
-  degenerate_euler_joint.cc
+  utilities.cc
   )
 target_link_libraries(drakeParticles
   drakeCommon
+  drakeSystemPrimitives
   drakeSystemFramework
   )
 drake_install_libraries(
@@ -11,7 +12,7 @@ drake_install_libraries(
   )
 drake_install_headers(
   particle.h
-  degenerate_euler_joint.h
+  utilities.h
   )
 drake_install_pkg_config_file(drake-particles
   TARGET drakeParticles

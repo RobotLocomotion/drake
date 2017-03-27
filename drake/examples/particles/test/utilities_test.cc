@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/examples/particles/degenerate_euler_joint.h"
+#include "drake/examples/particles/utilities.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/framework/system.h"
@@ -14,21 +14,21 @@ namespace particles {
 namespace {
 
 ///
-/// A test fixture class for DegenerateEulerJoint systems.
+/// A test fixture class for MakeDegenerateEulerJoint tests.
 ///
 /// @tparam T must be a valid Eigen ScalarType.
 ///
 template <typename T>
 class SingleDOFEulerJointTest : public ::testing::Test {
  protected:
-  /// Arrange a one-DOF DegenerateEulerJoint as
+  /// Arrange a one degree of freedom DegenerateEulerJoint as
   /// the Device Under Test.
   void SetUp() override {
     // Only the first generalized coordinate gets through.
     MatrixX<T> translating_matrix(6, 1);
     translating_matrix.setZero();
     translating_matrix(0, 0) = 1.0;
-    this->dut_ = std::make_unique<DegenerateEulerJoint<T>>(translating_matrix);
+    this->dut_ = MakeDegenerateEulerJoint(translating_matrix);
     this->context_ = this->dut_->CreateDefaultContext();
     this->output_ = this->dut_->AllocateOutput(*this->context_);
   }
@@ -43,9 +43,8 @@ class SingleDOFEulerJointTest : public ::testing::Test {
 
 TYPED_TEST_CASE_P(SingleDOFEulerJointTest);
 
-/// @class DegenerateEulerJoint
-/// @test \b OutputTest makes sure a DegenerateEulerJoint
-/// output is the right mapping of its inputs.
+/// Makes sure MakeDegenerateEulerJoint joint
+/// output iscreated by is the right mapping of its inputs.
 TYPED_TEST_P(SingleDOFEulerJointTest, OutputTest) {
   // Set input.
   const systems::InputPortDescriptor<TypeParam>& input_descriptor =
@@ -75,36 +74,33 @@ REGISTER_TYPED_TEST_CASE_P(SingleDOFEulerJointTest, OutputTest);
 
 INSTANTIATE_TYPED_TEST_CASE_P(WithDoubles, SingleDOFEulerJointTest, double);
 
-/// @class DegenerateEulerJoint
-/// @test \b WrongOutputDOFTest makes sure a DegenerateEulerJoint
-/// aborts when its translating matrix doesn't imply a 6 degrees of
-/// freedom output (rows != 6).
+/// Makes sure MakeDegenerateEulerJoint
+/// aborts when the given translating matrix doesn't imply a
+/// 6 degrees of freedom output (rows != 6).
 GTEST_TEST(DegenerateEulerJointSanityChecks, WrongOutputDOFTest) {
   // Scalar type is fixed as it makes no difference.
   ASSERT_DEATH({
-      DegenerateEulerJoint<double> bad_joint(MatrixX<double>(4, 4));
+      auto bad_joint = MakeDegenerateEulerJoint(MatrixX<double>(4, 4));
     }, "assertion '.*' failed.");
 }
 
-/// @class DegenerateEulerJoint
-/// @test \b TooManyInputDOFTest makes sure a DegenerateEulerJoint
-/// aborts when its translating matrix implies a 6 or more degrees of
-/// freedom input (cols >= 6).
+/// Makes sure MakeDegenerateEulerJoint
+/// aborts when the given translating matrix implies a 6 or more
+/// degrees of freedom input (cols >= 6).
 GTEST_TEST(DegenerateEulerJointSanityChecks, TooManyInputDOFTest) {
   // Scalar type is fixed as it makes no difference.
   ASSERT_DEATH({
-      DegenerateEulerJoint<double> bad_joint(MatrixX<double>(6, 8));
+      auto bad_joint = MakeDegenerateEulerJoint(MatrixX<double>(6, 8));
     }, "assertion '.*' failed.");
 }
 
-/// @class DegenerateEulerJoint
-/// @test \b TooFewInputDOFTest makes sure a DegenerateEulerJoint
-/// aborts when its translating matrix implies a less than 1 degree of
-/// freedom input (cols < 1).
+/// Makes sure MakeDegenerateEulerJoint aborts when the given
+/// translating matrix implies a less than 1 degree of freedom
+/// input (cols < 1).
 GTEST_TEST(DegenerateEulerJointSanityChecks, TooFewInputDOFTest) {
   // Scalar type is fixed as it makes no difference.
   ASSERT_DEATH({
-      DegenerateEulerJoint<double> bad_joint(MatrixX<double>(6, 0));
+      auto bad_joint = MakeDegenerateEulerJoint(MatrixX<double>(6, 0));
     }, "assertion '.*' failed.");
 }
 

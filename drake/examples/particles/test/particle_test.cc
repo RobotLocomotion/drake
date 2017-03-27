@@ -41,9 +41,8 @@ class ParticleTest : public ::testing::Test {
 
 TYPED_TEST_CASE_P(ParticleTest);
 
-/// @class Particle
-/// @test \b OutputTest makes sure a Particle output
-/// is consistent with its state (position and velocity).
+/// Makes sure a Particle output is consistent with its
+/// state (position and velocity).
 TYPED_TEST_P(ParticleTest, OutputTest) {
   // Initialize state.
   systems::VectorBase<TypeParam>* continuous_state_vector =
@@ -63,10 +62,8 @@ TYPED_TEST_P(ParticleTest, OutputTest) {
             static_cast<TypeParam>(1.0));  // y1 == x1
 }
 
-/// @class Particle
-/// @test \b DerivativesTest makes sure a Particle system
-/// state derivatives are consistent with its state and input
-/// (velocity and acceleration).
+/// Makes sure a Particle system state derivatives are
+/// consistent with its state and input (velocity and acceleration).
 TYPED_TEST_P(ParticleTest, DerivativesTest) {
   // Set input.
   const systems::InputPortDescriptor<TypeParam>& input_descriptor =
