@@ -4,7 +4,9 @@
 #include "drake/common/drake_path.h"
 #include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/parsers/parser_common.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
 
@@ -44,6 +46,17 @@ const vector<lcmt_viewer_link_data>& PriusVis<T>::GetVisElements() const {
 template <typename T>
 systems::rendering::PoseBundle<T> PriusVis<T>::CalcPoses(
     const Isometry3<T>& X_WM) const {
+  // This method requires that tree_ contains only a single model instance and
+  // that it is connected to the world via a RollPitchYawFloatingJoint.
+  DRAKE_ASSERT(tree_->get_num_model_instances() == 1);
+  const RollPitchYawFloatingJoint rpy_joint("", Isometry3<T>::Identity());
+  DRAKE_ASSERT(tree_->get_num_positions() > rpy_joint.get_num_positions());
+  for (int i = 0; i < rpy_joint.get_num_positions(); ++i) {
+    DRAKE_ASSERT(tree_->get_position_name(i) ==
+        std::string(parsers::FloatingJointConstants::kFloatingJointName) +
+            rpy_joint.get_position_name(i));
+  }
+
   const auto rotation = X_WM.linear();
   const auto transform = X_WM.translation();
   Vector3<T> rpy = rotation.eulerAngles(2, 1, 0);

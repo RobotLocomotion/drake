@@ -26,6 +26,9 @@ using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
 
+const char* const FloatingJointConstants::kFloatingJointName = "base";
+const char* const FloatingJointConstants::kWeldJointName = "weld";
+
 std::string GetFullPath(const std::string& file_name) {
   std::string result = file_name;
   if (result.empty()) {
@@ -154,7 +157,8 @@ int AddFloatingJoint(
     // If weld_to_frame is not specified, weld the newly added model(s) to the
     // world with zero offset.
     weld_to_body = tree->bodies[0].get();
-    floating_joint_name = "base";
+    floating_joint_name =
+        std::string(FloatingJointConstants::kFloatingJointName);
     transform_to_world = Eigen::Isometry3d::Identity();
   } else {
     // If weld_to_frame is specified and the model is being welded to the world,
@@ -169,10 +173,12 @@ int AddFloatingJoint(
             "specifying a body link!");
       }
       weld_to_body = tree->bodies[0].get();  // the world's body
-      floating_joint_name = "base";
+      floating_joint_name =
+          std::string(FloatingJointConstants::kFloatingJointName);
     } else {
       weld_to_body = weld_to_frame->get_mutable_rigid_body();
-      floating_joint_name = "weld";
+      floating_joint_name =
+          std::string(FloatingJointConstants::kWeldJointName);
     }
     transform_to_world = weld_to_frame->get_transform_to_body();
   }

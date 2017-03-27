@@ -43,6 +43,12 @@ std::string ResolveFilename(const std::string& filename,
                             const PackageMap& package_map,
                             const std::string& root_dir);
 
+/// Defines constants used by AddFloatingJoint().
+struct FloatingJointConstants {
+  static const char* const kFloatingJointName;
+  static const char* const kWeldJointName;
+};
+
 // TODO(liang.fok): Deprecate this method. See: #3361.
 /**
  * Adds a floating joint to each body specified by @p body_indices that does
