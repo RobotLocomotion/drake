@@ -44,11 +44,10 @@ const vector<lcmt_viewer_link_data>& PriusVis<T>::GetVisElements() const {
 template <typename T>
 systems::rendering::PoseBundle<T> PriusVis<T>::CalcPoses(
     const Isometry3<T>& X_WM) const {
-  const int kNumPositionDofs{14};
   const auto rotation = X_WM.linear();
   const auto transform = X_WM.translation();
   Vector3<T> rpy = rotation.eulerAngles(2, 1, 0);
-  VectorX<T> q = VectorX<T>::Zero(kNumPositionDofs);
+  VectorX<T> q = VectorX<T>::Zero(tree_->get_num_positions());
   q(0) = transform.x();
   q(1) = transform.y();
   q(2) = transform.z();
