@@ -172,6 +172,10 @@ drake_add_external(textbook PUBLIC CMAKE MATLAB PYTHON
   INSTALL_COMMAND :
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook)
 
+# tinyobjloader
+drake_add_external(tinyobjloader PUBLIC CMAKE
+  CMAKE_ARGS -DTINYOBJLOADER_COMPILATION_SHARED=ON)
+
 # yaml_cpp
 drake_add_external(yaml_cpp PUBLIC CMAKE
  CMAKE_ARGS
@@ -268,6 +272,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_SPDLOG:BOOL=${WITH_SPDLOG}
     -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
     -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
+    -DWITH_TINYOBJLOADER:BOOL=${WITH_TINYOBJLOADER}
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
     -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
@@ -302,6 +307,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     spdlog
     spotless
     textbook
+    tinyobjloader
     vtk
     xfoil
     yalmip

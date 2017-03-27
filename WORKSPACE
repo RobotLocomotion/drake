@@ -152,6 +152,13 @@ github_archive(
     sha256 = "d4b7b006ffd8918ecafda050d94c18388d9cd113a8849263bbedc7c488144ed4",
 )
 
+new_git_repository(
+    name = "tinyobjloader",
+    remote = "https://github.com/syoyo/tinyobjloader.git",
+    commit = "7c3206f9193ca259b73fec6556cdcab45c1f5723",
+    build_file = "tools/tinyobjloader.BUILD",
+)
+
 # Necessary for buildifier.
 github_archive(
     name = "io_bazel_rules_go",

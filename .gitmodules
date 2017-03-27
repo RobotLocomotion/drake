@@ -98,6 +98,9 @@
 [submodule "externals/qt_property_browser"]
 	path = externals/qt_property_browser
 	url = https://github.com/patmarion/QtPropertyBrowser
+[submodule "externals/tinyobjloader"]
+	path = externals/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader
 [submodule "externals/vtk"]
 	path = externals/vtk
 	url = git://vtk.org/VTK.git
