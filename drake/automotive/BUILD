@@ -171,7 +171,7 @@ drake_cc_library(
         ":generated_vectors",
         ":idm_planner",
         ":simple_car",
-        "pose_selector",
+        ":pose_selector",
         "//drake/automotive/maliput/api",
         "//drake/math:saturate",
         "//drake/systems/rendering:pose_bundle",

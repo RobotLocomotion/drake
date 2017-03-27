@@ -15,8 +15,8 @@ namespace {
 
 using maliput::dragway::RoadGeometry;
 using systems::rendering::FrameVelocity;
-using systems::rendering::PoseVector;
 using systems::rendering::PoseBundle;
+using systems::rendering::PoseVector;
 
 constexpr double kEgoSPosition{10.};
 
@@ -33,7 +33,7 @@ class IdmControllerTest : public ::testing::Test {
         0. /* shoulder_width */));
 
     // Initialize IdmController with the road.
-    dut_.reset(new IdmController<double>(std::move(road_)));
+    dut_.reset(new IdmController<double>(*road_));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
   }
@@ -48,11 +48,13 @@ class IdmControllerTest : public ::testing::Test {
   std::unique_ptr<maliput::dragway::RoadGeometry> road_;
 
   // Set the default poses according to the desired offset position and speeds
-  // for the lead car.  `s_offset = s_lead - s_ego` and `speed_offset =
+  // for the lead car.  `s_offset = s_lead - s_ego` and `relative_speed =
   // speed_lead - speed_ego`.
-  void SetDefaultPoses(const double ego_speed, const double s_offset,
-                       const double relative_speed) {
-    DRAKE_DEMAND(s_offset > 0.);
+  void SetDefaultPoses(const double ego_speed, const double s_offset = 0.,
+                       const double relative_speed = 0.,
+                       bool nonzero_y_speed = false) {
+    DRAKE_DEMAND(s_offset >= 0.);
+    EXPECT_LE(0., ego_speed);
 
     // Configure the ego car pose and velocity.
     auto ego_pose = std::make_unique<PoseVector<double>>();
@@ -64,8 +66,8 @@ class IdmControllerTest : public ::testing::Test {
 
     auto ego_velocity = std::make_unique<FrameVelocity<double>>();
     Vector6<double> velocity{};
-    velocity << 0. /* p */, 0. /* q */, 0. /* r */, ego_speed /* u */,
-        0. /* v */, 0. /* w */;
+    velocity << 0. /* ωx */, 0. /* ωy */, 0. /* ωz */, ego_speed /* vx */,
+        0. /* vy */, 0. /* vz */;
     ego_velocity->set_velocity(multibody::SpatialVelocity<double>(velocity));
     context_->FixInputPort(dut_->ego_velocity_input().get_index(),
                            std::move(ego_velocity));
@@ -77,6 +79,7 @@ class IdmControllerTest : public ::testing::Test {
         kEgoSPosition + s_offset /* x */, 0. /* y */, 0. /* z */);
     traffic_poses.set_pose(kLeadIndex, Eigen::Isometry3d(translation_lead));
     velocity[3] += relative_speed;
+    velocity[4] = (nonzero_y_speed) ? relative_speed : 0.;
     lead_velocity.set_velocity(multibody::SpatialVelocity<double>(velocity));
     traffic_poses.set_velocity(kLeadIndex, lead_velocity);
     traffic_poses.set_pose(kEgoIndex, Eigen::Isometry3d(translation_ego));
@@ -109,8 +112,8 @@ TEST_F(IdmControllerTest, Output) {
       output_->get_vector_data(dut_->get_output_port(0).get_index());
   const auto command = dynamic_cast<const DrivingCommand<double>*>(result);
 
-  // Set the lead car to be immediately ahead of the ego car and slower.
-  SetDefaultPoses(10. /* ego_speed */, 3. /* s_offset */, -5. /* rel_speed */);
+  // Set the lead car to be immediately ahead of the ego car and moving slower.
+  SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_speed */);
   dut_->CalcOutput(*context_, output_.get());
   const double closing_brake = command->brake();
 
@@ -119,16 +122,26 @@ TEST_F(IdmControllerTest, Output) {
   EXPECT_LT(0., closing_brake);
   EXPECT_EQ(0., command->steering_angle());  // Always zero.
 
-  // Set the lead car to be immediately ahead of the ego car and faster.
-  SetDefaultPoses(10. /* ego_speed */, 3. /* s_offset */, 5. /* rel_speed */);
+  // Set the same conditions as above, but with the lead car having a nonzero
+  // y-component in its velocity.
+  SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_speed */,
+                  true /* nonzero_y_speed */);
+  dut_->CalcOutput(*context_, output_.get());
+
+  // Expect no change to the previous results.
+  EXPECT_EQ(0., command->throttle());
+  EXPECT_EQ(closing_brake, command->brake());
+
+  // Set the lead car to be immediately ahead of the ego car and moving faster.
+  SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, 5. /* rel_speed */);
   dut_->CalcOutput(*context_, output_.get());
 
   // Expect the magnitude of the braking to be smaller when the ego is not
   // closing in on the lead car.
   EXPECT_LT(command->brake(), closing_brake);
 
-  // Set the leading car to be far away from the ego car.
-  SetDefaultPoses(10. /* ego_speed */, 1e12 /* s_offset */, 0. /* rel_speed */);
+  // Set the ego car to be alone on the road.
+  SetDefaultPoses(10. /* ego_speed */);
   dut_->CalcOutput(*context_, output_.get());
 
   // Expect no braking or throttling (input velocity is at the desired
@@ -141,9 +154,18 @@ TEST_F(IdmControllerTest, Output) {
   SetDefaultPoses(4. /* ego_speed */, 30. /* s_offset */, 0. /* rel_speed */);
   dut_->CalcOutput(*context_, output_.get());
 
-  // Expect a throttle input in this confguration (no brake).
+  // Expect a throttle input in this configuration (no brake).
   EXPECT_LT(0., command->throttle());
   EXPECT_EQ(0., command->brake());
+
+  // Set the lead car to be well within `distance_lower_limit`.
+  SetDefaultPoses(10. /* ego_speed */, 1e-3 /* s_offset */,
+                  -5. /* rel_speed */);
+  dut_->CalcOutput(*context_, output_.get());
+
+  // Expect an enormous brake input.
+  EXPECT_EQ(0., command->throttle());
+  EXPECT_LT(closing_brake, command->brake());
 }
 
 }  // namespace

@@ -21,7 +21,8 @@ namespace automotive {
 
 /// An IdmController implements the IDM (Intelligent Driver Model) planner,
 /// computed based only on the nearest car ahead.  See IdmPlanner and
-/// PoseSelector for details.
+/// PoseSelector for details.  The output of this block is a DrivingCommand that
+/// modifies the throttle and brake, but not the steering angle.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -30,7 +31,7 @@ namespace automotive {
 ///
 /// Input Port 0: @p ego_pose PoseVector for the ego car.
 ///   (InputPortDescriptor getter: ego_pose_input())
-/// Input Port 1: @p ego_velocity body-relative FrameVelocity of the ego car.
+/// Input Port 1: @p ego_velocity FrameVelocity of the ego car.
 ///   (InputPortDescriptor getter: ego_velocity_input())
 /// Input Port 2: @p traffic_poses PoseBundle for the traffic cars, possibly
 ///   inclusive of the ego car's pose.
@@ -49,7 +50,7 @@ class IdmController : public systems::LeafSystem<T> {
 
   /// Constructor.
   /// @param road is the pre-defined RoadGeometry.
-  explicit IdmController(std::unique_ptr<maliput::api::RoadGeometry> road);
+  explicit IdmController(const maliput::api::RoadGeometry& road);
   ~IdmController() override;
 
   /// See the class description for details on the following input ports.
@@ -60,16 +61,17 @@ class IdmController : public systems::LeafSystem<T> {
   /// @}
 
   // System<T> overrides.
-  // The output of this system is an algebraic relation of its inputs.
-  bool has_any_direct_feedthrough() const override { return true; }
-
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
   void SetDefaultParameters(const systems::LeafContext<T>& context,
                             systems::Parameters<T>* params) const override;
 
  private:
-  /// Converts @p pose into RoadPosition.
+  // Extracts the vehicle's `s`-direction velocity based on its RoadPosition @p
+  // pos and FrameVelocity @p vel.  Assumes the road has zero elevation.
+  const double GetSVelocity(const RoadOdometry<T>& road_odom) const;
+
+  // Converts @p pose into RoadPosition.
   const maliput::api::RoadPosition GetRoadPosition(
       const Isometry3<T>& pose) const;
 
@@ -83,7 +85,7 @@ class IdmController : public systems::LeafSystem<T> {
       const IdmPlannerParameters<T>& idm_params,
       const SimpleCarConfig<T>& car_params, DrivingCommand<T>* output) const;
 
-  const std::unique_ptr<maliput::api::RoadGeometry> road_{};
+  const maliput::api::RoadGeometry& road_;
 
   // Indices for the input ports.
   int ego_pose_index_{};
