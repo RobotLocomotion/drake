@@ -239,7 +239,8 @@ class MathematicalProgram {
   /**
    * Adds new variables to MathematicalProgram.
    * Appending new variables to an internal vector of any existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -315,7 +316,8 @@ class MathematicalProgram {
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -353,7 +355,8 @@ class MathematicalProgram {
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -384,7 +387,8 @@ class MathematicalProgram {
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -421,7 +425,8 @@ class MathematicalProgram {
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -468,7 +473,8 @@ class MathematicalProgram {
   /**
    * Adds binary variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -552,7 +558,8 @@ class MathematicalProgram {
   /**
    * Adds binary variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -1995,6 +2002,8 @@ class MathematicalProgram {
 
   /**
    * Set the initial guess for the decision variables stored in @p var to be x0.
+   * Variables begin with a default initial guess of NaN to indicate that no
+   * guess is available.
    */
   template <typename DerivedA, typename DerivedB>
   void SetInitialGuess(const Eigen::MatrixBase<DerivedA>& decision_variable_mat,
@@ -2011,6 +2020,8 @@ class MathematicalProgram {
 
   /**
    * Set the intial guess for ALL decision variables.
+   * Note that variables begin with a default initial guess of NaN to indicate
+   * that no guess is available.
    * @param x0 A vector of appropriate size (num_vars() x 1).
    */
   template <typename Derived>
@@ -2467,7 +2478,8 @@ class MathematicalProgram {
 
     num_vars_ += num_new_vars;
     x_initial_guess_.conservativeResize(num_vars_);
-    x_initial_guess_.tail(num_new_vars) = Eigen::VectorXd::Zero(num_new_vars);
+    x_initial_guess_.tail(num_new_vars).fill(
+      std::numeric_limits<double>::quiet_NaN());
   }
 
   MatrixXDecisionVariable NewVariables(VarType type, int rows, int cols,

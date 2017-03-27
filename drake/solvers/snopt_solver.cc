@@ -364,7 +364,11 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   snopt::doublereal* xupp = d->xupp.data();
   const Eigen::VectorXd x_initial_guess = prog.initial_guess();
   for (int i = 0; i < nx; i++) {
-    x[i] = static_cast<snopt::doublereal>(x_initial_guess(i));
+    if (!std::isnan(x_initial_guess(i))) {
+      x[i] = static_cast<snopt::doublereal>(x_initial_guess(i));
+    } else {
+      x[i] = 0.0;
+    }
     xlow[i] = static_cast<snopt::doublereal>(
         -std::numeric_limits<double>::infinity());
     xupp[i] = static_cast<snopt::doublereal>(  // BR
