@@ -420,6 +420,12 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
                                     numeric_limits<double>::infinity(),
                                     {n_var, d_var});
   }
+
+  // TODO(hongkai.dai): This optimization is expensive, especially if we have
+  // multiple rotation matrices, all relaxed with the same number of binary
+  // variables per half axis, the result `n` and `d` are the same. Should
+  // consider th hard-code the result, in order to save the computation.
+
   // A_lorentz * n + b_lorentz = [1; n]
   Eigen::Matrix<double, 4, 3> A_lorentz{};
   A_lorentz << Eigen::RowVector3d::Zero(), Eigen::Matrix3d::Identity();
@@ -445,16 +451,12 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
  * @param[out] A The rows of A are the normal vector of facets. Each row of A is
  * a unit length vector.
  * @param b b(i) is the interscept of the i'th facet.
- * @pre pts.size() >= 4. If there are only three vertices, then the facet is
- * just the triangle connecting these three vertices. This facet can be computed
- * easily, without calling this function.
  * @pre pts[i] are all in the first orthant, namely (pts[i].array() >=0).all()
  * should be true.
  */
 void ComputeInnerFacetsForBoxSphereIntersection(
     const std::vector<Eigen::Vector3d>& pts,
     Eigen::Matrix<double, Eigen::Dynamic, 3>* A, Eigen::VectorXd* b) {
-  DRAKE_DEMAND(pts.size() >= 4);
   for (const auto& pt : pts) {
     DRAKE_DEMAND((pt.array() >= 0).all());
   }
@@ -621,9 +623,8 @@ void AddMcCormickVectorConstraints(
 
             Eigen::VectorXd b(0);
             Eigen::Matrix<double, Eigen::Dynamic, 3> A(0, 3);
-            if (pts.size() >= 4) {
-              internal::ComputeInnerFacetsForBoxSphereIntersection(pts, &A, &b);
-            }
+
+            internal::ComputeInnerFacetsForBoxSphereIntersection(pts, &A, &b);
 
             // theta is the maximal angle between v and normal, where v is an
             // intersecting point between the box and the sphere.
@@ -639,36 +640,27 @@ void AddMcCormickVectorConstraints(
               orthant_normal = FlipVector(normal, o).transpose();
               orthant_c = PickPermutation(this_cpos, this_cneg, o);
 
-              if (A.rows() != 0) {
-                for (int i = 0; i < A.rows(); ++i) {
-                  // Add the constraint that A * v <= b, representing the inner
-                  // facets f the convex hull, obtained from the vertices of the
-                  // intersection region.
-                  // This constraint is only active if the box is active.
-                  // We impose the constraint
-                  // A.row(i) * v - b(i) <= 3 - 3 * b(i) + (b(i) - 1) * (c[xi](0) + c[yi](1) + c[zi](2))
-                  // Or in words
-                  // If c[xi](0) = 1 and c[yi](1) = 1 and c[zi](1) = 1
-                  //   A.row(i) * v <= b(i)
-                  // Otherwise
-                  //   A.row(i) * v -b(i) is not constrained
-                  Eigen::Vector3d orthant_a = FlipVector(A.row(i).transpose(), o);
-                  prog->AddLinearConstraint(orthant_a.dot(v) - b(i) <= 3 - 3 * b(i) + (b(i) - 1) * orthant_c.cast<symbolic::Expression>().sum());
-                }
+              for (int i = 0; i < A.rows(); ++i) {
+                // Add the constraint that A * v <= b, representing the inner
+                // facets f the convex hull, obtained from the vertices of the
+                // intersection region.
+                // This constraint is only active if the box is active.
+                // We impose the constraint
+                // A.row(i) * v - b(i) <= 3 - 3 * b(i) + (b(i) - 1) * (c[xi](0)
+                // + c[yi](1) + c[zi](2))
+                // Or in words
+                // If c[xi](0) = 1 and c[yi](1) = 1 and c[zi](1) = 1
+                //   A.row(i) * v <= b(i)
+                // Otherwise
+                //   A.row(i) * v -b(i) is not constrained
+                Eigen::Vector3d orthant_a =
+                    -FlipVector(-A.row(i).transpose(), o);
+                prog->AddLinearConstraint(
+                    orthant_a.dot(v) - b(i) <=
+                    3 - 3 * b(i) +
+                        (b(i) - 1) *
+                            orthant_c.cast<symbolic::Expression>().sum());
               }
-
-              // Minimum vector norm constraint: normal.dot(v) >= d,
-              // Since we only apply this when the box is active, since 0<=d<=1,
-              // and allowing normal.dot(v) to take values at least [-1,1]
-              // otherwise, the complete constraint is
-              //   normal'*x >= d - 6+2*c[xi](0)+2*c[yi](1)+2*c[zi](2)
-              // or, in words:
-              //   if c[xi](0) = 1 and c[yi](1) == 1 and c[zi](2) == 1, then
-              //     normal'*x >= d,
-              //   otherwise
-              //     normal'*x >= -1.
-              a << orthant_normal, -2, -2, -2;
-              prog->AddLinearConstraint(a, d - 6, 1, {v, orthant_c});
 
               // Max vector norm constraint: -1 <= normal'*x <= 1.
               // No need to restrict to this orthant, but also no need to apply
@@ -710,6 +702,7 @@ void AddMcCormickVectorConstraints(
               //     -sin(theta)<=n'*vi <=sin(theta),
               //   we can impose a tighter Lorentz cone constraint
               //     [|sin(theta)|, n'*v1, n'*v2] is in the Lorentz cone.
+              a << orthant_normal, -2, -2, -2;
               prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v1, orthant_c});
               prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v2, orthant_c});
 

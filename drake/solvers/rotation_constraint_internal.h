@@ -14,6 +14,10 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
 
 void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
     const std::vector<Eigen::Vector3d>& pts, Eigen::Vector3d* n, double* d);
+
+void ComputeInnerFacetsForBoxSphereIntersection(
+    const std::vector<Eigen::Vector3d>& pts,
+    Eigen::Matrix<double, Eigen::Dynamic, 3>* A, Eigen::VectorXd* b);
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
