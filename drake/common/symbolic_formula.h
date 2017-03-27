@@ -337,8 +337,7 @@ typename std::enable_if<
 operator==(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
-  const auto equal = [](const auto& e1, const auto& e2) { return e1 == e2; };
-  return a1.binaryExpr(a2, equal);
+  return a1.binaryExpr(a2, std::equal_to<void>());
 }
 
 /// Returns an Eigen array of symbolic formula where each element includes
@@ -355,8 +354,7 @@ typename std::enable_if<
 operator<=(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
-  const auto lte = [](const auto& e1, const auto& e2) { return e1 <= e2; };
-  return a1.binaryExpr(a2, lte);
+  return a1.binaryExpr(a2, std::less_equal<void>());
 }
 
 /// Returns an Eigen array of symbolic formula where each element includes
@@ -373,8 +371,7 @@ typename std::enable_if<
 operator<(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
-  const auto lt = [](const auto& e1, const auto& e2) { return e1 < e2; };
-  return a1.binaryExpr(a2, lt);
+  return a1.binaryExpr(a2, std::less<void>());
 }
 
 /// Returns an Eigen array of symbolic formula where each element includes
@@ -391,8 +388,7 @@ typename std::enable_if<
 operator>=(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
-  const auto gte = [](const auto& e1, const auto& e2) { return e1 >= e2; };
-  return a1.binaryExpr(a2, gte);
+  return a1.binaryExpr(a2, std::greater_equal<void>());
 }
 
 /// Returns an Eigen array of symbolic formula where each element includes
@@ -409,8 +405,7 @@ typename std::enable_if<
 operator>(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
-  const auto gt = [](const auto& e1, const auto& e2) { return e1 > e2; };
-  return a1.binaryExpr(a2, gt);
+  return a1.binaryExpr(a2, std::greater<void>());
 }
 
 /// Returns an Eigen array of symbolic formula where each element includes
@@ -427,8 +422,7 @@ typename std::enable_if<
 operator!=(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
-  const auto neq = [](const auto& e1, const auto& e2) { return e1 != e2; };
-  return a1.binaryExpr(a2, neq);
+  return a1.binaryExpr(a2, std::not_equal_to<void>());
 }
 
 /// Returns a symbolic formula checking if two matrices @p m1 and @p m2 are
@@ -462,11 +456,10 @@ typename std::enable_if<
 operator==(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  const auto equal = [](const auto& e1, const auto& e2) { return e1 == e2; };
   const auto logic_and = [](const Formula& f1, const Formula& f2) {
     return f1 && f2;
   };
-  return m1.binaryExpr(m2, equal).redux(logic_and);
+  return m1.binaryExpr(m2, std::equal_to<void>()).redux(logic_and);
 }
 }  // namespace symbolic
 
