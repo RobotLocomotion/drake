@@ -28,6 +28,14 @@ py_library(
     data = ["//tools:clang-format"],
 )
 
+py_binary(
+    name = "clang-format-includes",
+    main = "clang_format_includes.py",
+    srcs = ["clang_format_includes.py"],
+    deps = [":formatter"],
+    data = ["//tools:clang-format"],
+)
+
 # === test/ ===
 
 lcm_cc_library(
@@ -95,6 +103,14 @@ py_test(
     name = "formatter_test",
     srcs = ["test/formatter_test.py"],
     deps = [":formatter"],
+)
+
+sh_test(
+    name = "clang_format_includes_test",
+    srcs = ["test/clang_format_includes_test.sh"],
+    data = [
+        ":clang-format-includes",
+    ],
 )
 
 cpplint(data = ["test/gen/drake/CPPLINT.cfg"])
