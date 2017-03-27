@@ -230,14 +230,22 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
   return states;
 }
 
-symbolic::Expression DirectTrajectoryOptimization::SubstitutePlaceholderVariables(const symbolic::Expression& e, int interval_index) const {
+symbolic::Expression
+DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
+    const symbolic::Expression& e, int interval_index) const {
   symbolic::Substitution sub;
-  // TODO(russt): support placeholder_t_var_, or at least throw an error if e
-  // contains placeholder_t_var_.
-  for (int i=0; i<num_states_; i++)
-    sub.insert(std::pair<symbolic::Variable,symbolic::Expression>(placeholder_x_vars_(i), x_vars_(interval_index*num_states_ + i)));
-  for (int i=0; i<num_inputs_; i++)
-    sub.insert(std::pair<symbolic::Variable,symbolic::Expression>(placeholder_u_vars_(i), u_vars_(interval_index*num_inputs_ + i)));
+
+  // time(i) is the sum of h intervals 0...(i-1)
+  const symbolic::Expression time =
+      h_vars_.head(interval_index).cast<symbolic::Expression>().sum();
+
+  sub.emplace(placeholder_t_var_(0), time);
+  for (int i = 0; i < num_states_; i++)
+    sub.emplace(placeholder_x_vars_(i),
+                x_vars_(interval_index * num_states_ + i));
+  for (int i = 0; i < num_inputs_; i++)
+    sub.emplace(placeholder_u_vars_(i),
+                u_vars_(interval_index * num_inputs_ + i));
   return e.Substitute(sub);
 }
 

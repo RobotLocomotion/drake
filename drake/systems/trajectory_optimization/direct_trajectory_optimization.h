@@ -42,8 +42,7 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
 
   /// Returns the decision variable associated with the timestep, h, at time
   /// index @p index.
-  const solvers::VectorDecisionVariable<1> timestep(
-      int index) const {
+  const solvers::VectorDecisionVariable<1> timestep(int index) const {
     DRAKE_DEMAND(index >= 0 && index < N_);
     return h_vars_.segment<1>(index);
   }
@@ -121,10 +120,10 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   /// Note: Derived classes will need to type
   ///    using DirectTrajectoryOptimization::AddRunningCost;
   /// to "unhide" this method.
-  virtual void AddRunningCost(const Eigen::Ref<const MatrixX<symbolic::Expression>>& g)
-  {
-    DRAKE_DEMAND(g.rows()==1 && g.cols()==1);
-    AddRunningCost(g(0,0));
+  void AddRunningCost(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
+    DRAKE_DEMAND(g.rows() == 1 && g.cols() == 1);
+    AddRunningCost(g(0, 0));
   }
 
   // TODO(russt): Remove the methods below that add constraints without
@@ -236,6 +235,25 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
    */
   void AddFinalCost(std::shared_ptr<solvers::Constraint> constraint);
 
+  /// Adds a cost to the final time, of the form
+  ///    @f[ cost = e(t,x,u), @f]
+  /// where any instances of time(), state(), and/or input() placeholder
+  /// variables are substituted with the relevant variables for each current
+  /// time index.
+  void AddFinalCost(const symbolic::Expression& e) {
+    AddCost(SubstitutePlaceholderVariables(e, N_ - 1));
+  }
+
+  /// Adds support for passing in a (scalar) matrix Expression, which is a
+  /// common output of most symbolic linear algebra operations.
+  /// Note: Derived classes will need to type
+  ///    using DirectTrajectoryOptimization::AddFinalCost;
+  /// to "unhide" this method.
+  void AddFinalCost(const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
+    DRAKE_DEMAND(e.rows() == 1 && e.cols() == 1);
+    AddFinalCost(e(0, 0));
+  }
+
   /**
    * Add a cost to the final state and total time.
    *
@@ -332,7 +350,7 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   std::vector<Eigen::MatrixXd> GetStateVector() const;
 
   /**
-   * Replace e.g. placeholder_x_var_ with x_vars_ at time interval
+   * Replaces e.g. placeholder_x_var_ with x_vars_ at time interval
    * @p interval_index, for all placeholder variables.
    */
   symbolic::Expression SubstitutePlaceholderVariables(

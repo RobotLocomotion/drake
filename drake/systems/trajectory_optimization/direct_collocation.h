@@ -53,6 +53,7 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
 
   void AddRunningCost(std::shared_ptr<solvers::Constraint> constraint) override;
   using DirectTrajectoryOptimization::AddRunningCost;
+  using DirectTrajectoryOptimization::AddFinalCost;
 
   PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;
   // TODO(Lucy-tri) According to @siyuanfeng-tri, the current calculation of
