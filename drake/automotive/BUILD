@@ -219,6 +219,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "prius_vis",
+    srcs = ["prius_vis.cc"],
+    hdrs = ["prius_vis.h"],
+    data = ["//drake/automotive:models"],
+    deps = [
+        ":car_vis",
+        "//drake/common:drake_path",
+        "//drake/lcmtypes:viewer",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:create_load_robot_message",
+        "//drake/systems/rendering:pose_bundle",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
     name = "simple_car",
     srcs = ["simple_car.cc"],
     hdrs = [
@@ -661,6 +677,15 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:pose_selector",
         "//drake/automotive/maliput/dragway",
+    ],
+)
+
+drake_cc_googletest(
+    name = "prius_vis_test",
+    deps = [
+        ":prius_vis",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
     ],
 )
 
