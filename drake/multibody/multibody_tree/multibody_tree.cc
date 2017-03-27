@@ -35,12 +35,12 @@ void MultibodyTree<T>::Compile() {
   //     allocate a context and request the required cache entries.
   //   - Setup computational structures (BodyNode based).
 
-  // Here, give bodies the chance to perform any compile-time setup.
+  // Give bodies the chance to perform any compile-time setup.
   for (const auto& body : owned_bodies_) {
     body->Compile();
   }
 
-  // Here, give frames the chance to perform any compile-time setup.
+  // Give frames the chance to perform any compile-time setup.
   for (const auto& frame : owned_physical_frames_) {
     frame->Compile();
   }

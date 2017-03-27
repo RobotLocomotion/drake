@@ -63,9 +63,9 @@ namespace multibody {
 /// rotational inertia of a system `S` about point `P`, expressed in frame `E`.
 /// In code and comments we use the monogram notation as described
 /// in @ref multibody_spatial_inertia. For this inertia, the monogram notation
-/// reads `I_SP_E`. If the point `P` is fixed to a body `B`, we write that
+/// reads `I_SP_E`. If the point `P` is fixed to a body B, we write that
 /// point as @f$ B_P @f$ which appears in code and comments as `Bp`. So if the
-/// system is a body `B` and the about point is `Bp`, the monogram notation
+/// system is a body B and the about point is `Bp`, the monogram notation
 /// reads `I_BBp_E`, which can be abbreviated to `I_Bp_E` since the about point
 /// `Bp` also identifies the system. Common cases are that the
 /// about point is the origin `Bo` of the body, or its the center of mass `Bcm`
@@ -186,9 +186,9 @@ class RotationalInertia {
   /// is only valid if both inertias are computed about the same point `P` and
   /// expressed in the same frame `E`. Considering `this` inertia to be `I_SP_E`
   /// for some system `S`, taken about some point `P`, the supplied inertia must
-  /// be for some system `B` taken about the *same* point `P`; `B`'s inertia is
+  /// be for some system B taken about the *same* point `P`; B's inertia is
   /// then included in `S`.
-  /// @param[in] I_BP_E A rotational inertia of some body `B` to be added to
+  /// @param[in] I_BP_E A rotational inertia of some body B to be added to
   ///                  `this` inertia. It must have been taken about the same
   ///                   point `P` as `this` inertia, and expressed in the same
   ///                   frame `E`.

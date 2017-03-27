@@ -1,13 +1,13 @@
 #pragma once
 
 /// @file
-/// This file defines "topological" structures to represent the logical
+/// This file defines the topological structures to represent the logical
 /// connectivities between multibody tree components. For instance, the
 /// BodyTopology for a Body will contain the topological information specifying
 /// its inboard body (or parent body) in the parent tree, its outboard bodies
 /// (or children) and the level or depth in the MultibodyTree.
 /// All of this information is independent of the particular scalar type T the
-/// MultibodyTree, and its components, are instantiated with.
+/// MultibodyTree and its components are instantiated with.
 /// All of the data structures defined in this file are meant to be the most
 /// minimalist representation that can store this information.
 /// All of these data structures are meant to be copiable to aid the process of
@@ -27,11 +27,8 @@ namespace multibody {
 struct BodyTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyTopology);
 
-  // Default constructor is disabled to force the initialization with the only
-  // valid constructor with the signature BodyTopology(BodyIndex, FrameIndex).
-  BodyTopology() = delete;
-
-  // Constructs a body topology struct with unique index `unique_index`.
+  // Constructs a body topology struct with unique index `body_index` and a
+  // body frame with unique index `frame_index`.
   BodyTopology(BodyIndex body_index, FrameIndex frame_index) :
       index(body_index), body_frame(frame_index) {}
 
@@ -51,16 +48,12 @@ struct BodyTopology {
 struct PhysicalFrameTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PhysicalFrameTopology);
 
-  // Default constructor is disabled to force the initialization with the only
-  // valid constructor with the signature
-  // PhysicalFrameTopology(FrameIndex, BodyIndex).
-  PhysicalFrameTopology() = delete;
+  /// Constructs a frame topology for a frame with unique index `frame_index`
+  /// associated with a body with index `body_index`.
+  PhysicalFrameTopology(FrameIndex frame_index, BodyIndex body_index) :
+      index(frame_index), body(body_index) {}
 
-  PhysicalFrameTopology(FrameIndex unique_index, BodyIndex body_index) :
-      index(unique_index), body(body_index) {}
-
-  // Unique identifier in the MultibodyTree.  TypeSafeIndex objects must be
-  // initialized to non-negative values.
+  // Unique identifier in the MultibodyTree.
   FrameIndex index;
 
   // Unique identifier of the body this physical frame attaches to.
@@ -99,7 +92,7 @@ struct MultibodyTreeTopology {
   // All physical frames are associated with a body here identified by their
   // unique index, body_index.
   FrameIndex add_physical_frame(BodyIndex body_index) {
-    invalidate();  // Records topology has changed.
+    invalidate();
     FrameIndex frame_index(get_num_physical_frames());
     PhysicalFrameTopology frame(frame_index, body_index);
     physical_frames.push_back(frame);

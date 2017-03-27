@@ -25,8 +25,8 @@ template<typename T> class Body;
 /// For RigidBody objects %BodyFrame represents the frame in which their center
 /// of mass and rotational inertia are provided. The %BodyFrame associated with
 /// a body does not necessarily need to be located at its center of mass nor
-/// it needs to be aligned with the body's principal axes, even though it is a
-/// common use case found in practice.
+/// does it need to be aligned with the body's principal axes, even though it
+/// is a common use case found in practice.
 /// For flexible bodies, %BodyFrame provides a representation for the body's
 /// reference frame. The flexible degrees of freedom associated with a flexible
 /// body describe the body's deformation in this frame. Therefore, the motion of
@@ -34,22 +34,20 @@ template<typename T> class Body;
 /// frame, plus the motion of the material points on the body with respect to
 /// its %BodyFrame.
 ///
-/// This class %BodyFrame provides a representaion for the frame associated with
-/// a body. %BodyFrame objects are not meant to be instantiated directly by the
-/// user and therefore there are no public constructors for this class.
-/// The %BodyFrame for a Body gets constructed behind the scenes when the user
-/// creates a new Body through ones of its `Create()` factory methods, see
-/// RigidBody::Create() for an example of a Body `Create()` factory method.
-/// However, users can still access the frame associated with a body, see
-/// Body::get_body_frame(). This access is more than a convenience, but it
-/// allows users to specify mobilizers between a body frame and any other
-/// PhysicalFrame in the multibody tree.
+/// The %BodyFrame represents a body's frame. Neither makes sense without the
+/// other. Therefore, %BodyFrame instances are constructed in conjunction with
+/// its Body in the corresponding Create() method and cannot be constructed
+/// anywhere else. However, users can still access. However, users can still
+/// access the frame associated with a body, see Body::get_body_frame().
+/// This access is more than a convenience; it allows users to specify
+/// mobilizers between a body frame and any other PhysicalFrame in the multibody
+/// tree.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class BodyFrame : public PhysicalFrame<T> {
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
-  // every time a Body object is created and they are both associated with each
+  // every time a Body object is created and they are associated with each
   // other. Moreover, BodyFrame objects can *only* be created by Body objects
   // through their protected method Body::CreateBodyFrame().
   friend class Body<T>;

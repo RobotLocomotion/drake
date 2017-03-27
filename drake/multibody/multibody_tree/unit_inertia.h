@@ -83,13 +83,13 @@ class UnitInertia : public RotationalInertia<T> {
     return RotationalInertia<T>::ReExpressInPlace(R_FE);
   }
 
-  /// Given `this` unit inertia `G_BP_E` of a body `B` about a point `P` and
+  /// Given `this` unit inertia `G_BP_E` of a body B about a point `P` and
   /// expressed in frame `E`, this method computes the same unit inertia
-  /// re-expressed in another frame `F` as `G_BP_F = R_FE * G_BP_E * (R_FE)ᵀ`.
+  /// re-expressed in another frame F as `G_BP_F = R_FE * G_BP_E * (R_FE)ᵀ`.
   /// @param[in] R_FE Rotation matrix from the basis of frame `E` to the basis
-  ///                 of frame `F`.
-  /// @retval G_BP_F The same unit inertia for body `B` about point `P` but now
-  ///                re-expressed in frame`F`.
+  ///                 of frame F.
+  /// @retval G_BP_F The same unit inertia for body B about point `P` but now
+  ///                re-expressed in frameF.
   /// @warning This method does not check whether the input matrix `R_FE`
   /// represents a valid rotation or not. It is the resposibility of users to
   /// provide valid rotation matrices.
@@ -139,7 +139,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// whose location in a frame F is given by the position vector `p_FQ`
   /// (that is, p_FoQ_F).
   /// The unit inertia `G_QFo_F` of point mass `Q` about the origin `Fo` of
-  /// frame `F` and expressed in `F` for this unit mass point equals the square
+  /// frame F and expressed in F for this unit mass point equals the square
   /// of the cross product matrix of `p_FQ`. In coordinate-free form:
   /// \f[
   ///   G^{Q/F_o} = (^Fp^Q_\times)^2 = (^Fp^Q_\times)^T \, ^Fp^Q_\times =
@@ -151,7 +151,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///   G_QFo_F = px_FQ² = px_FQᵀ * px_FQ = -px_FQ * px_FQ
   /// </pre>
   /// where `px_FQ` denotes the cross product matrix of the position vector
-  /// `p_FQ` (expressed in `F`) such that the cross product with another vector
+  /// `p_FQ` (expressed in F) such that the cross product with another vector
   /// `a` can be obtained as `px.cross(a) = px * a`. The cross product matrix
   /// `px` is skew-symmetric. The square of the cross product matrix is a
   /// symmetric matrix with non-negative diagonals and obeys the triangle
