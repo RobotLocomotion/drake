@@ -291,8 +291,10 @@ namespace detail {
 /// formula.
 template <typename DerivedA, typename DerivedB,
           typename = std::enable_if<
-              std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-              std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+              std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                           Eigen::ArrayXpr>::value &&
+              std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                           Eigen::ArrayXpr>::value &&
               std::is_same<decltype(typename DerivedA::Scalar() ==
                                     typename DerivedB::Scalar()),
                            Formula>::value>>
@@ -328,8 +330,10 @@ struct RelationalOpTraits {
 ///
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::ArrayXpr>::value &&
         std::is_same<decltype(typename DerivedA::Scalar() ==
                               typename DerivedB::Scalar()),
                      Formula>::value,
@@ -345,8 +349,10 @@ operator==(const DerivedA& a1, const DerivedB& a2) {
 /// less-than-or-equal operator (<=).
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::ArrayXpr>::value &&
         std::is_same<decltype(typename DerivedA::Scalar() >=
                               typename DerivedB::Scalar()),
                      Formula>::value,
@@ -362,8 +368,10 @@ operator<=(const DerivedA& a1, const DerivedB& a2) {
 /// less-than operator (<).
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::ArrayXpr>::value &&
         std::is_same<decltype(typename DerivedA::Scalar() >
                               typename DerivedB::Scalar()),
                      Formula>::value,
@@ -379,8 +387,10 @@ operator<(const DerivedA& a1, const DerivedB& a2) {
 /// greater-than-or-equal operator (>=).
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::ArrayXpr>::value &&
         std::is_same<decltype(typename DerivedA::Scalar() >=
                               typename DerivedB::Scalar()),
                      Formula>::value,
@@ -396,8 +406,10 @@ operator>=(const DerivedA& a1, const DerivedB& a2) {
 /// greater-than operator (>).
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::ArrayXpr>::value &&
         std::is_same<decltype(typename DerivedA::Scalar() >
                               typename DerivedB::Scalar()),
                      Formula>::value,
@@ -413,8 +425,10 @@ operator>(const DerivedA& a1, const DerivedB& a2) {
 /// not-equal operator (!=).
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value &&
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::ArrayXpr>::value &&
         std::is_same<decltype(typename DerivedA::Scalar() >
                               typename DerivedB::Scalar()),
                      Formula>::value,
@@ -447,8 +461,10 @@ operator!=(const DerivedA& a1, const DerivedB& a2) {
 ///
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::MatrixXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::MatrixXpr>::value &&
         std::is_same<decltype(typename DerivedA::Scalar() ==
                               typename DerivedB::Scalar()),
                      Formula>::value,

@@ -557,6 +557,79 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorVarEqVar) {
                (var_y_ == var_x_) && (var_z_ == var_y_) && (var_x_ == var_z_));
 }
 
+TEST_F(SymbolicExpressionMatrixTest, ExpressionMatrixSegment) {
+  Eigen::Matrix<Expression, 5, 1> v;
+  v << x_, 1, y_, x_, 1;
+  const auto s1 = v.segment(0, 2);  // [x, 1]
+  const auto s2 = v.segment(1, 2);  // [1, y]
+  const auto s3 = v.segment<2>(3);  // [x, 1]
+  const Formula f1{s1 == s2};       // (x = 1) ∧ (1 = y)
+  const Formula f2{s1 == s3};       // (x = x) ∧ (1 = 1) -> True
+
+  ASSERT_TRUE(is_conjunction(f1));
+  EXPECT_EQ(get_operands(f1).size(), 2);
+  EXPECT_TRUE(is_true(f2));
+}
+
+TEST_F(SymbolicExpressionMatrixTest, ExpressionMatrixBlock) {
+  Eigen::Matrix<Expression, 3, 3> m;
+  // clang-format off
+  m << x_, y_, z_,
+       y_, 1, 2,
+       z_, 3, 4;
+  // clang-format on
+
+  // b1 = [x, y]
+  //      [y, 1]
+  const auto b1 = m.block(0, 0, 2, 2);
+  // b2 = [1, 2]
+  //      [3, 4]
+  const auto b2 = m.block<2, 2>(1, 1);
+  // (x = 1) ∧ (y = 2) ∧ (y = 3) ∧ (1 = 4) -> False
+  const Formula f{b1 == b2};
+
+  EXPECT_TRUE(is_false(f));
+}
+
+TEST_F(SymbolicExpressionMatrixTest, ExpressionArraySegment) {
+  Eigen::Array<Expression, 5, 1> v;
+  v << x_, 1, y_, x_, 1;
+  const auto s1 = v.segment(0, 2);  // [x, 1]
+  const auto s2 = v.segment<2>(1);  // [1, y]
+  const auto s3 = v.segment(3, 2);  // [x, 1]
+  const auto a1 = (s1 == s2);       // [x = 1, 1 = y]
+  const auto a2 = (s1 == s3);       // [True, True]
+
+  EXPECT_PRED2(FormulaEqual, a1(0), x_ == 1);
+  EXPECT_PRED2(FormulaEqual, a1(1), 1 == y_);
+  EXPECT_TRUE(is_true(a2(0)));
+  EXPECT_TRUE(is_true(a2(1)));
+}
+
+TEST_F(SymbolicExpressionMatrixTest, ExpressionArrayBlock) {
+  Eigen::Array<Expression, 3, 3> m;
+  // clang-format off
+  m << x_, y_, z_,
+       y_, 1, 2,
+       z_, 3, 4;
+  // clang-format on
+
+  // b1 = [x, y]
+  //      [y, 1]
+  const auto b1 = m.block<2, 2>(0, 0);
+  // b2 = [1, 2]
+  //      [3, 4]
+  const auto b2 = m.block(1, 1, 2, 2);
+  // a = [x = 1, y = 2]
+  //     [y = 3, False]
+  const auto a = (b1 == b2);
+
+  EXPECT_PRED2(FormulaEqual, a(0, 0), x_ == 1);
+  EXPECT_PRED2(FormulaEqual, a(0, 1), y_ == 2);
+  EXPECT_PRED2(FormulaEqual, a(1, 0), y_ == 3);
+  EXPECT_TRUE(is_false(a(1, 1)));
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
