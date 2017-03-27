@@ -4,7 +4,9 @@
 #include "drake/common/drake_path.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/parsers/parser_common.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
 
@@ -26,6 +28,17 @@ PriusVis<T>::PriusVis(int id, const std::string& name)
       GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
   parsers::sdf::AddModelInstancesFromSdfFileToWorld(
       kSdfFilename, kRollPitchYaw, tree_.get());
+
+  // Verifies that the model instance within tree_ meets this method's
+  // requirements. See the class description for more details.
+  DRAKE_DEMAND(tree_->get_num_model_instances() == 1);
+  const std::vector<int> base_body_indices = tree_->FindBaseBodies();
+  DRAKE_DEMAND(base_body_indices.size() == 1);
+  const RigidBody<T>& body = tree_->get_body(base_body_indices.at(0));
+  const RollPitchYawFloatingJoint* rpy_joint =
+      dynamic_cast<const RollPitchYawFloatingJoint*>(&body.getJoint());
+  DRAKE_DEMAND(rpy_joint != nullptr);
+
   lcmt_viewer_load_robot load_message =
       multibody::CreateLoadRobotMessage<T>(*tree_);
   for (const auto& link : load_message.link) {
