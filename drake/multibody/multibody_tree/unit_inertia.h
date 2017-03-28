@@ -16,7 +16,7 @@ namespace multibody {
 /// therefore be obtained by multiplying its unit inertia by its mass.
 /// Unit inertia matrices can also be called **gyration** matrices and therefore
 /// we choose to represent them in source code notation with the capital letter
-/// `G`. In contrast, the capital letter `I` is used to represent non-unit
+/// G. In contrast, the capital letter I is used to represent non-unit
 /// mass rotational inertias.
 /// This class restricts the set of allowed operations on a unit inertia to
 /// ensure the unit-mass invariant. For instance, multiplication by a scalar can
@@ -41,12 +41,12 @@ class UnitInertia : public RotationalInertia<T> {
   UnitInertia() {}
 
   /// Creates a principal unit inertia with identical diagonal elements
-  /// equal to `I` and zero products of inertia. Rotational inertias with this
+  /// equal to I and zero products of inertia. Rotational inertias with this
   /// property are called **triaxially symmetric** and their moment of inertia
   /// about all lines passing through the object's centroid are equal. For
   /// example, %UnitInertia matrices of this form arise for simple shapes such
   /// as sphere and cube solids or shells.
-  /// Throws an exception if `I` is negative.
+  /// Throws an exception if I is negative.
   /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube() for examples
   /// of **triaxially symmetric**.
   explicit UnitInertia(const T& I) : RotationalInertia<T>(I) {}
@@ -61,7 +61,7 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Creates a general unit inertia matrix with non-zero off-diagonal
   /// elements where the six components of the rotational intertia in a given
-  /// frame `E` need to be provided.
+  /// frame E need to be provided.
   /// @throws std::runtime_error if the resulting inertia is invalid
   /// according to RotationalInertia::CouldBePhysicallyValid().
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz,
@@ -83,13 +83,13 @@ class UnitInertia : public RotationalInertia<T> {
     return RotationalInertia<T>::ReExpressInPlace(R_FE);
   }
 
-  /// Given `this` unit inertia `G_BP_E` of a body `B` about a point `P` and
-  /// expressed in frame `E`, this method computes the same unit inertia
-  /// re-expressed in another frame `F` as `G_BP_F = R_FE * G_BP_E * (R_FE)ᵀ`.
-  /// @param[in] R_FE Rotation matrix from the basis of frame `E` to the basis
-  ///                 of frame `F`.
-  /// @retval G_BP_F The same unit inertia for body `B` about point `P` but now
-  ///                re-expressed in frame`F`.
+  /// Given `this` unit inertia `G_BP_E` of a body B about a point P and
+  /// expressed in frame E, this method computes the same unit inertia
+  /// re-expressed in another frame F as `G_BP_F = R_FE * G_BP_E * (R_FE)ᵀ`.
+  /// @param[in] R_FE Rotation matrix from the basis of frame E to the basis
+  ///                 of frame F.
+  /// @retval G_BP_F The same unit inertia for body B about point P but now
+  ///                re-expressed in frameF.
   /// @warning This method does not check whether the input matrix `R_FE`
   /// represents a valid rotation or not. It is the resposibility of users to
   /// provide valid rotation matrices.
@@ -98,15 +98,15 @@ class UnitInertia : public RotationalInertia<T> {
   }
 
   /// For a central unit inertia `G_Bcm_E` computed about a body's center of
-  /// mass (or centroid) `Bcm` and expressed in a frame `E`, this method shifts
+  /// mass (or centroid) `Bcm` and expressed in a frame E, this method shifts
   /// this inertia using the parallel axis theorem to be computed about a
-  /// point `Q`. This operation is performed in place, modifying the original
+  /// point Q. This operation is performed in place, modifying the original
   /// object which is no longer a central inertia.
-  /// @param[in] p_BcmQ_E A vector from the body's centroid `Bcm` to point `Q`
-  ///                     expressed in the same frame `E` in which `this`
+  /// @param[in] p_BcmQ_E A vector from the body's centroid `Bcm` to point Q
+  ///                     expressed in the same frame E in which `this`
   ///                     inertia is expressed.
   /// @returns A reference to `this` unit inertia, which has now been taken
-  ///          about point `Q` so can be written as `G_BQ_E`.
+  ///          about point Q so can be written as `G_BQ_E`.
   UnitInertia<T>& ShiftFromCentroidInPlace(const Vector3<T>& p_BcQ_E) {
     RotationalInertia<T>::operator+=(PointMass(p_BcQ_E));
     return *this;
@@ -114,10 +114,10 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Shifts this central unit inertia to a different point, and returns the
   /// result. See ShiftFromCentroidInPlace() for details.
-  /// @param[in] p_BcmQ_E A vector from the body's centroid `Bcm` to point `Q`
-  ///                     expressed in the same frame `E` in which `this`
+  /// @param[in] p_BcmQ_E A vector from the body's centroid `Bcm` to point Q
+  ///                     expressed in the same frame E in which `this`
   ///                     inertia is expressed.
-  /// @retval G_BQ_E This same unit inertia taken about a point `Q` instead of
+  /// @retval G_BQ_E This same unit inertia taken about a point Q instead of
   //                 the centroid `Bcm`.
   UnitInertia<T> ShiftFromCentroid(const Vector3<T>& p_BcQ_E) const {
     return UnitInertia<T>(*this).ShiftFromCentroidInPlace(p_BcQ_E);
@@ -138,8 +138,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// Construct a unit inertia for a point mass of unit mass located at point Q,
   /// whose location in a frame F is given by the position vector `p_FQ`
   /// (that is, p_FoQ_F).
-  /// The unit inertia `G_QFo_F` of point mass `Q` about the origin `Fo` of
-  /// frame `F` and expressed in `F` for this unit mass point equals the square
+  /// The unit inertia `G_QFo_F` of point mass Q about the origin `Fo` of
+  /// frame F and expressed in F for this unit mass point equals the square
   /// of the cross product matrix of `p_FQ`. In coordinate-free form:
   /// \f[
   ///   G^{Q/F_o} = (^Fp^Q_\times)^2 = (^Fp^Q_\times)^T \, ^Fp^Q_\times =
@@ -151,7 +151,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///   G_QFo_F = px_FQ² = px_FQᵀ * px_FQ = -px_FQ * px_FQ
   /// </pre>
   /// where `px_FQ` denotes the cross product matrix of the position vector
-  /// `p_FQ` (expressed in `F`) such that the cross product with another vector
+  /// `p_FQ` (expressed in F) such that the cross product with another vector
   /// `a` can be obtained as `px.cross(a) = px * a`. The cross product matrix
   /// `px` is skew-symmetric. The square of the cross product matrix is a
   /// symmetric matrix with non-negative diagonals and obeys the triangle

@@ -37,7 +37,7 @@ namespace multibody {
 /// A rotational inertia can be represented by the six scalar elements of a
 /// symmetric 3x3 matrix often referred also as **the inertia matrix** or also
 /// as **the inertia tensor**. We can therefore think of a rotational inertia
-/// `I` as the matrix: <pre>
+/// I as the matrix: <pre>
 ///     | Ixx Ixy Ixz |
 /// I = | Ixy Iyy Iyz |
 ///     | Ixz Iyz Izz |
@@ -85,10 +85,10 @@ class RotationalInertia {
   RotationalInertia() {}
 
   /// Creates a principal rotational inertia with identical diagonal elements
-  /// equal to `I` and zero products of inertia.
+  /// equal to I and zero products of inertia.
   /// As examples, consider the moments of inertia about their geometric
   /// center for a sphere or a cube.
-  /// Throws an exception if `I` is negative.
+  /// Throws an exception if I is negative.
   explicit RotationalInertia(const T& I) {
     DRAKE_THROW_UNLESS(I >= T(0));
     SetZero();
@@ -294,7 +294,7 @@ class RotationalInertia {
   }
 
   /// Computes the product from the right `I * w` of this rotational inertia
-  /// matrix `I` with a vector `w`.
+  /// matrix I with a vector `w`.
   /// This inertia and vector `w` must both be expressed in the same frame.
   /// @param[in] w_E Vector to multiply from the right, expressed in the same
   ///                frame E as `this` inertia matrix.
@@ -341,9 +341,9 @@ class RotationalInertia {
   /// P and aligned with the principal axes.
   ///
   /// Note: The current version of this method only works for inertias with a
-  ///       scalar type `T` that can be converted to a double discarding any
+  ///       scalar type T that can be converted to a double discarding any
   ///       supplemental scalar data, e.g., the derivatives of an
-  ///       AutoDiffScalar. It fails at runtime if the type `T` cannot be
+  ///       AutoDiffScalar. It fails at runtime if the type T cannot be
   ///       converted to `double`.
   ///
   /// @retval moments The vector of principal moments `[Ixx Iyy Izz]` sorted in

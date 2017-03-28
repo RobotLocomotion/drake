@@ -18,7 +18,7 @@ namespace multibody {
 /// section @ref multibody_spatial_vectors.
 ///
 /// @tparam SV The type of the more specialized spatial vector class.
-///            It must be a template on the scalar type `T`.
+///            It must be a template on the scalar type T.
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <template <typename> class SV, typename T>
 class SpatialVector {
@@ -26,7 +26,7 @@ class SpatialVector {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVector)
 
   /// The more specialized spatial vector class templated on the scalar
-  /// type `T`.
+  /// type T.
   using SpatialQuantity = SV<T>;
 
   /// Sizes for spatial quantities and its components in three dimensions.
@@ -61,7 +61,7 @@ class SpatialVector {
 
   /// SpatialVector constructor from an Eigen expression that represents a
   /// six-dimensional vector.
-  /// This constructor will assert the size of `V` is six (6) at compile-time
+  /// This constructor will assert the size of V is six (6) at compile-time
   /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
   /// expressions.
   template <typename OtherDerived>
@@ -153,13 +153,13 @@ class SpatialVector {
   /// Returns a constant reference to the underlying storage.
   const CoeffsEigenType& get_coeffs() const { return V_;}
 
-  /// Multiplication of a spatial vector `V` from the left by a scalar `s`.
+  /// Multiplication of a spatial vector V from the left by a scalar `s`.
   /// @relates SpatialVector.
   friend SpatialQuantity operator*(const T& s, const SpatialQuantity& V) {
     return SpatialQuantity(s * V.get_coeffs());
   }
 
-  /// Multiplication of a spatial vector `V` from the right by a scalar `s`.
+  /// Multiplication of a spatial vector V from the right by a scalar `s`.
   /// @relates SpatialVector.
   friend SpatialQuantity operator*(const SpatialQuantity& V, const T& s) {
     return s * V;  // Multiplication by scalar is commutative.

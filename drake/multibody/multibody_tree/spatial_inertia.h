@@ -200,10 +200,10 @@ class SpatialInertia {
   }
 
   /// Adds in a spatial inertia to `this` spatial inertia.
-  /// @param[in] M_BP_E A spatial inertia of some body `B` to be added to
+  /// @param[in] M_BP_E A spatial inertia of some body B to be added to
   ///                  `this` spatial inertia. It must be defined about the
-  ///                   same point `P` as `this` inertia, and expressed in the
-  ///                   same frame `E`.
+  ///                   same point P as `this` inertia, and expressed in the
+  ///                   same frame E.
   /// @returns A reference to `this` spatial inertia, which has been updated
   ///          to include the given spatial inertia `M_BP_E`.
   ///
