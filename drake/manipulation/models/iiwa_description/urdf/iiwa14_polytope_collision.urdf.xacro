@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<!-- ===================================================================== -->
+<!-- Collision models: complex meshes can drastically affect run time.
+     Therefore most collision models are omitted in this model and link 7 uses a
+     polytope model.
+-->
+<!-- ===================================================================== -->
+<robot name="iiwa14" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Import Rviz colors -->
+  <xacro:include filename="$(find iiwa_description)/urdf/materials.xacro" />
+  <!--Import the lbr iiwa macro -->
+  <xacro:include filename="$(find iiwa_description)/urdf/iiwa14.xacro"/>
+
+  <xacro:arg name="hardware_interface" default="PositionJointInterface"/>
+  <xacro:arg name="robot_name" default="iiwa"/>
+
+  <!-- Defines a base link that will serve as the model's root. -->
+  <link name="base"/>
+
+  <!--iiwa-->
+  <xacro:iiwa14 hardware_interface="$(arg hardware_interface)"
+                robot_name="$(arg robot_name)"
+                parent="base"
+                collision_type="polytope">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </xacro:iiwa14>
+</robot>

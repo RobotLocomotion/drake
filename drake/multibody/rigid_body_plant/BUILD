@@ -168,7 +168,7 @@ drake_cc_googletest(
     name = "rigid_body_plant_test",
     data = [
         ":test_models",
-        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
         "//drake/multibody:models",
         "//drake/multibody:test_models",
     ],

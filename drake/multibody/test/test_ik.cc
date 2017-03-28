@@ -60,7 +60,8 @@ GTEST_TEST(testIK, iiwaIK) {
   auto model = std::make_unique<RigidBodyTree<double>>();
 
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
+      GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_primitive_collision.urdf",
       drake::multibody::joints::kRollPitchYaw, model.get());
 
   // Create a timespan for the constraints.  It's not particularly

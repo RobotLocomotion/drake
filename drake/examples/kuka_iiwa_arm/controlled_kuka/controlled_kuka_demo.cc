@@ -43,8 +43,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-const char kUrdfPath[] =
-    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
+const char kUrdfPath[] = "/manipulation/models/iiwa_description/urdf/"
+    "iiwa14_polytope_collision.urdf";
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   auto tree = make_unique<RigidBodyTree<double>>();

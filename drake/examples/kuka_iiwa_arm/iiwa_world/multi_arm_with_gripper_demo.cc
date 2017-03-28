@@ -22,7 +22,8 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
   // subsequently added to the world.
   tree_builder->StoreModel(
       "iiwa",
-      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf");
+      "/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_polytope_collision.urdf");
   tree_builder->StoreModel("wsg",
                            "/examples/schunk_wsg/models/schunk_wsg_50.sdf");
 

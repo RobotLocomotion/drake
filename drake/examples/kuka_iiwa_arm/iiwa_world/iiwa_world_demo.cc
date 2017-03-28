@@ -34,7 +34,8 @@ int DoMain() {
 
   iiwa_world->StoreModel(
       "iiwa",
-      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf");
+      "/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_primitive_collision.urdf");
 
   iiwa_world->StoreModel(
       "table", "/examples/kuka_iiwa_arm/models/table/"

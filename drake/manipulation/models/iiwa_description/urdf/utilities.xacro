@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:property name="PI" value="3.1415926535897931"/>
+
+<!-- The following macros are adapted from the LWR 4 definitions of the RCPRG - https://github.com/RCPRG-ros-pkg/lwr_robot -->
+  <!--Little helper macros to define the inertia matrix needed for links.-->
+  <!--Cuboid-->
+  <xacro:macro name="cuboid_inertia" params="width height length mass">
+    <inertia ixx="${mass * (height * height + length * length) / 12)}"
+             iyy="${mass * (width * width + length * length) / 12)}"
+             izz="${mass * (width * width + height * height) / 12)}"
+             ixy="0" iyz="0" ixz="0"/>
+  </xacro:macro>
+
+  <!--Cylinder: length is along the y-axis! -->
+  <xacro:macro name="cylinder_inertia" params="radius length mass">
+    <inertia ixx="${mass * (3 * radius * radius + length * length) / 12)}"
+             iyy="${mass * radius* radius / 2)}"
+             izz="${mass * (3 * radius * radius + length * length) / 12)}"
+             ixy="0" iyz="0" ixz="0"/>
+  </xacro:macro>
+
+</robot>
