@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="ycb_025_mug">
+    <link name="link">
+      <inertial>
+        <mass>0.118</mass>
+        <inertia>
+          <ixx>0.04</ixx>
+          <ixy>0.0000</ixy>
+          <iyy>0.04</iyy>
+          <ixz>0.0000</ixz>
+          <iyz>0.0000</iyz>
+          <izz>0.04</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>./Ycb025Mug.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="collision_box">
+        <geometry>
+          <mesh>
+            <uri>./Ycb025Mug.obj</uri>
+          </mesh>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

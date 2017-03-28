@@ -72,7 +72,7 @@ actively maintained.
 `Texture <https://en.wikipedia.org/wiki/Texture_mapping#Texture_maps>`_ - the
 digital representation of an object's surface. A texture may include color,
 brightness, transparency, reflectivity, and other aspects. The texture is
-mapped onto a preexisting surface.
+mapped onto a preexisting surface - typically a mesh.
 
 `URDF <urdf/drakeURDF.html#://>`_- Unified Robot Description Format, an XML
 format for representing one model of a robot or other object. Unlike SDF,
@@ -123,6 +123,32 @@ found in the Drake repository and may be used to find OBJ versions:
   superseded by a new format called X3D. Allows you to specify surface color,
   textures, shininess, transparency, and other parameters. Vertices and edges
   for a 3D polygon can be specified.
+
+.. _models_texture_file_formats:
+
+Texture file format
+-------------------
+The ``drake-visualizer`` program supports VTM/VTP texture files, which it will
+draw over an OBJ mesh.  Normally OBJ files support MTL texture files, but that
+is not currently supported in ``drake-visualizer`` (see `this issue
+<https://github.com/RobotLocomotion/drake/issues/5044>`_).  Place the VTM file
+and its associated files in the same location as the OBJ file, and rename it
+to have the same base file name as the OBJ file. For an example of a model
+with a mesh and a texture, see `the Ycb025Mug in Drake
+<https://github.com/RobotLocomotion/drake/tree/master/drake/manipulation/models/Ycb025Mug/>`_.
+The ``drake-visualizer`` program is in the `Director external
+<https://github.com/RobotLocomotion/director>`_.
+
+To create VTM/VTP texture files for your OBJ mesh, one method is to get a DAE
+file which is equivalent to your OBJ file (your 3D printer may be able to output
+both DAE and OBJ, or file converters are available).  Convert the DAE file into
+a VTM texture by installing ``python-collada`` and then running this `Python
+script
+<https://github.com/openhumanoids/oh-distro/blob/master/software/models/model_transformation/convertCollada.py>`_:
+
+``$ sudo apt-get install python-collada``
+
+``$ python convertCollada.py textured.dae``
 
 .. _models_contents:
 
