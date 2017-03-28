@@ -11,7 +11,8 @@ namespace {
 
 static const int kNumJoints = 7;
 const char* const kIiwaUrdf =
-    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
+    "/manipulation/models/iiwa_description/urdf/"
+        "iiwa14_polytope_collision.urdf";
 
 GTEST_TEST(IiwaPlanSourceTest, InstanceTest) {
   // Test that the constructor works and that the expected ports are

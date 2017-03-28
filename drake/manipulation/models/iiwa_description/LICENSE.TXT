@@ -1,0 +1,12 @@
+This folder contains a model of the Kuka LBR IIWA R820 14. The files were
+originally taken from https://github.com/SalvoVirga/iiwa_stack, SHA
+2fa5bd53643e31baac06fc5902bcda7aae6ec30d. The original license for these files
+is given in the link below and copied into file iiwa_stack.LICENSE.txt.
+
+https://github.com/SalvoVirga/iiwa_stack/blob/1f45c7734223aaee570b7ee5f6327b5471090e0f/LICENSE.txt
+
+Since obtaining the model files from the above-mentioned source, they were
+substantially modified for use by Drake. For example, the original STL mesh
+files were converted to OBJ files, and various mass / inertia properties and
+collision models were modified. Our changes are covered by Drake's license terms
+(see LICENSE.TXT in Drake's root folder).

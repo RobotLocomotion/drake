@@ -44,8 +44,8 @@ int DoMain() {
   // subsequently added to the world. kRobotName alone is declared independently
   // since it is needed again later.
   const string kRobotName =
-      "/examples/kuka_iiwa_arm/models/iiwa14/"
-      "iiwa14_simplified_collision.urdf";
+      "/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf";
 
   world_sim_tree_builder->StoreModel("iiwa", kRobotName);
   world_sim_tree_builder->StoreModel("table",

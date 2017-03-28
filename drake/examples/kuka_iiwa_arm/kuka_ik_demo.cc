@@ -38,7 +38,8 @@ int main(int argc, const char* argv[]) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
 
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
+      GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_primitive_collision.urdf",
       multibody::joints::kFixed, tree.get());
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
