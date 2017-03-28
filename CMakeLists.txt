@@ -174,7 +174,9 @@ drake_add_external(textbook PUBLIC CMAKE MATLAB PYTHON
 
 # tinyobjloader
 drake_add_external(tinyobjloader PUBLIC CMAKE
-  CMAKE_ARGS -DTINYOBJLOADER_COMPILATION_SHARED=ON)
+  CMAKE_ARGS
+    -DTINYOBJLOADER_COMPILATION_SHARED=ON
+  )
 
 # yaml_cpp
 drake_add_external(yaml_cpp PUBLIC CMAKE
