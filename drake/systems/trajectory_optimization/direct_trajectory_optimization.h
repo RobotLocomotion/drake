@@ -23,7 +23,7 @@ namespace systems {
  * approaches to trajectory optimization.
  *
  * Subclasses must implement the abstract method:
- *  AddRunningCost()
+ *  DoAddRunningCost()
  * and should add any dynamic constraints in their constructor.
  *
  * This class assumes that there are a fixed number (N) time steps/samples, and
@@ -113,34 +113,15 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   /// variables are substituted with the relevant variables for each current
   /// time index.  The particular integration scheme is determined by the
   /// derived class implementation.
-  virtual void AddRunningCost(const symbolic::Expression& g) = 0;
+  void AddRunningCost(const symbolic::Expression& g) { DoAddRunningCost(g); }
 
   /// Adds support for passing in a (scalar) matrix Expression, which is a
   /// common output of most symbolic linear algebra operations.
-  /// Note: Derived classes will need to type
-  ///    using DirectTrajectoryOptimization::AddRunningCost;
-  /// to "unhide" this method.
   void AddRunningCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
     DRAKE_DEMAND(g.rows() == 1 && g.cols() == 1);
-    AddRunningCost(g(0, 0));
+    DoAddRunningCost(g(0, 0));
   }
-
-  // TODO(russt): Remove the methods below that add constraints without
-  // requesting the variable list to be passed in.  We should force the user
-  // to specify the variables to provide clarity and robustness.
-  // The "add to a list of times" utilities are still useful... we can replace
-  // them with methods of the form AddCost(..., MatrixXDecisionVariable), which
-  // adds the same constraint to each column of the variable matrix.
-
-  /**
-   * Adds an integrated cost to all time steps.
-   *
-   * @param constraint A constraint which expects a timestep, state,
-   * and input as the elements of x when Eval is invoked.
-   */
-  virtual void AddRunningCost(
-      std::shared_ptr<solvers::Constraint> constraint) = 0;
 
   /**
    * Adds an integrated cost to all time steps.
@@ -156,6 +137,21 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
     auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
     AddRunningCost(c);
     return c;
+  }
+
+  // TODO(russt): Remove the methods below that add constraints without
+  // requesting the variable list to be passed in.  We should force the user
+  // to specify the variables to provide clarity and robustness.
+  // The "add to a list of times" utilities are still useful... we can replace
+  // them with methods of the form AddCost(..., MatrixXDecisionVariable), which
+  // adds the same constraint to each column of the variable matrix.
+
+  // Adds an integrated cost to all time steps.
+  //
+  // @param constraint A constraint which expects a timestep, state, and input
+  // as the elements of x when Eval is invoked.
+  void AddRunningCost(std::shared_ptr<solvers::Constraint> constraint) {
+    DoAddRunningCost(constraint);
   }
 
   /**
@@ -381,6 +377,11 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   void GetInitialVars(double timespan_init_in,
                       const PiecewisePolynomial<double>& traj_init_u,
                       const PiecewisePolynomial<double>& traj_init_x);
+
+  virtual void DoAddRunningCost(const symbolic::Expression& g) = 0;
+
+  virtual void DoAddRunningCost(
+      std::shared_ptr<solvers::Constraint> constraint) = 0;
 
   const int num_inputs_{};
   const int num_states_{};

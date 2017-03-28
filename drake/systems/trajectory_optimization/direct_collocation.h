@@ -49,18 +49,17 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
 
   ~DircolTrajectoryOptimization() override {}
 
-  void AddRunningCost(const symbolic::Expression& e) override;
-
-  void AddRunningCost(std::shared_ptr<solvers::Constraint> constraint) override;
-  using DirectTrajectoryOptimization::AddRunningCost;
-  using DirectTrajectoryOptimization::AddFinalCost;
-
   PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;
   // TODO(Lucy-tri) According to @siyuanfeng-tri, the current calculation of
   // derivatives is not correct for floating base joints. More strongly, we
   // can't use independent splines for joints with coupled degrees of freedom.
 
  private:
+  void DoAddRunningCost(const symbolic::Expression& e) override;
+
+  void DoAddRunningCost(
+      std::shared_ptr<solvers::Constraint> constraint) override;
+
   const System<double>* system_{nullptr};
   const std::unique_ptr<Context<double>> context_{nullptr};
   const std::unique_ptr<ContinuousState<double>> continuous_state_{nullptr};
