@@ -167,10 +167,12 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
   using std::sin;
 
   // Sanity check our input.
+  /*  
   DRAKE_DEMAND(abs(input.steering_angle()) < M_PI);
   DRAKE_DEMAND(input.throttle() >= 0);
   DRAKE_DEMAND(input.brake() >= 0);
-
+  */
+  
   // Determine the requested acceleration, using throttle and brake. Then
   // compute the smooth acceleration that the vehicle actually executes.
   const T desired_acceleration =
@@ -204,6 +206,12 @@ systems::System<AutoDiffXd>* SimpleCar<T>::DoToAutoDiffXd() const {
 template <typename T>
 systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
   return new SimpleCar<symbolic::Expression>;
+}
+
+template <typename T>
+systems::BasicVector<T>* SimpleCar<T>::DoAllocateInputVector(
+    const systems::InputPortDescriptor<T>& descriptor) const {
+  return new DrivingCommand<T>();
 }
 
 template <typename T>
