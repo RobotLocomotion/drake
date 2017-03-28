@@ -314,7 +314,7 @@ void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   int n = n2 / 2, p = 0, q = 0;
   while (p < n && q < n2) {
     // Update q.
-    int q_block_size;
+    int q_block_size = 0;
     while (q < n2) {
       if (q == n2 - 1 || fabs(S(q + 1, q)) < eps) {  // block size = 1
         if (fabs(T(q, q)) > eps && fabs(S(q, q)) <= fabs(T(q, q))) {
