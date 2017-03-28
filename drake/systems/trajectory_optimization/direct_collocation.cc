@@ -109,7 +109,7 @@ class RunningCostMidWrapper : public solvers::Constraint {
 
 }  // anon namespace
 
-void DircolTrajectoryOptimization::AddRunningCost(
+void DircolTrajectoryOptimization::DoAddRunningCost(
     const symbolic::Expression& g) {
   // Trapezoidal integration:
   //    sum_{i=0...N-2} h_i/2.0 * (g_i + g_{i+1}), or
@@ -127,7 +127,7 @@ void DircolTrajectoryOptimization::AddRunningCost(
 
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
-void DircolTrajectoryOptimization::AddRunningCost(
+void DircolTrajectoryOptimization::DoAddRunningCost(
     std::shared_ptr<solvers::Constraint> constraint) {
   AddCost(std::make_shared<RunningCostEndWrapper>(constraint),
           {h_vars().head(1), x_vars().head(num_states()),
