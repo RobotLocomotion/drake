@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <fstream>
 #include <stdexcept>
-
 #include <tiny_obj_loader.h>
 
 #include "spruce.hh"

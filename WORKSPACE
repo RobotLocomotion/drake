@@ -152,11 +152,12 @@ github_archive(
     sha256 = "d4b7b006ffd8918ecafda050d94c18388d9cd113a8849263bbedc7c488144ed4",
 )
 
-new_git_repository(
+github_archive(
     name = "tinyobjloader",
-    remote = "https://github.com/syoyo/tinyobjloader.git",
-    commit = "7c3206f9193ca259b73fec6556cdcab45c1f5723",
+    repository = "syoyo/tinyobjloader",
+    commit = "9d9e987c4776d9df54e0ab65639e1befddb1d5ae",
     build_file = "tools/tinyobjloader.BUILD",
+    sha256 = "e5c7ce01a153a3d9101f6c197e10145490ecd84ba7d0b6463708a60bc2845d4b",
 )
 
 # Necessary for buildifier.
