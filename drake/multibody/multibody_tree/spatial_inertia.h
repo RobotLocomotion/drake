@@ -17,10 +17,11 @@ namespace multibody {
 
 /// This class represents the physical concept of a _Spatial Inertia_. A
 /// spatial inertia (or spatial mass matrix) encapsulates the mass, center of
-/// mass, and rotational inertia of the mass distribution of a multi-body system
-/// S which could consist of a single body B or even of a collection of bodies
-/// (throughout this documentation "body" is many times used instead of "system"
-/// but the same concepts apply to a system of bodies as well.)
+/// mass, and rotational inertia of the mass distribution of a body or composite
+/// body S, where with "composite body" we mean a collection of bodies welded
+/// together containing at least one body (throughout this documentation "body"
+/// is many times used instead of "composite body" but the same concepts apply
+/// to a collection of bodies as well.)
 /// As an element of ℝ⁶ˣ⁶ it is a symmetric, positive semi-definite matrix that
 /// logically consists of `3x3` sub-matrices arranged like so, [Jain 2010]:
 /// <pre>
@@ -37,27 +38,27 @@ namespace multibody {
 ///                Symbol: M
 /// </pre>
 /// where, with the monogram notation described in
-/// @ref multibody_spatial_inertia, `I_SP` is the rotational inertia of system
-/// S computed about a point P, m is the mass of this system, `p_PScm` is the
-/// position vector from point P to the center of mass `Scm` of system S with
-/// `p_PScm×` denoting its skew-symmetric cross product matrix (defined such
-/// that `a× b = a.cross(b)`), and `Id` is the identity matrix in ℝ³ˣ³. See
-/// Section 2.1, p. 17 of [Jain 2010].
+/// @ref multibody_spatial_inertia, `I_SP` is the rotational inertia of body or
+/// composite body S computed about a point P, m is the mass of this composite
+/// body, `p_PScm` is the position vector from point P to the center of mass
+/// `Scm` of the composite body S with `p_PScm×` denoting its skew-symmetric
+/// cross product matrix (defined such that `a× b = a.cross(b)`), and `Id` is
+/// the identity matrix in ℝ³ˣ³. See Section 2.1, p. 17 of [Jain 2010].
 /// The logical arrangement as shown above is chosen to be consisten with our
 /// logical arrangement for spatial vectors as documented in
 /// @ref multibody_spatial_algebra for which the rotational component comes
 /// first followed by the translational component.
 ///
 /// In typeset material we use the symbol @f$ [M^{S/P}]_E @f$ to represent the
-/// spatial inertia of a system S about point P, expressed in frame E. For
-/// this inertia, the monogram notation reads `M_SP_E`. If the point P is fixed
-/// to a body B, we write that point as @f$ B_P @f$ which appears in code and
-/// comments as `Bp`. So if the system is a body B and the about point is `Bp`,
-/// the monogram notation reads `M_BBp_E`, which can be abbreviated to `M_Bp_E`
-/// since the about point `Bp` also identifies the system. Common cases are that
-/// the about point is the origin `Bo` of the body, or it's the center of mass
-/// `Bcm` for which the rotational inertia in monogram notation would read as
-/// `I_Bo_E` and `I_Bcm_E`, respectively.
+/// spatial inertia of a body or composite body S about point P, expressed in
+/// frame E. For this inertia, the monogram notation reads `M_SP_E`. If the
+/// point P is fixed to a body B, we write that point as @f$ B_P @f$ which
+/// appears in code and comments as `Bp`. So if the body or composite body is B
+/// and the about point is `Bp`, the monogram notation reads `M_BBp_E`, which
+/// can be abbreviated to `M_Bp_E` since the about point `Bp` also identifies
+/// the body. Common cases are that the about point is the origin `Bo` of the
+/// body, or it's the center of mass `Bcm` for which the rotational inertia in
+/// monogram notation would read as `I_Bo_E` and `I_Bcm_E`, respectively.
 /// Given `M_BP_E` (@f$[M^{B/P}]_E@f$), the rotational inertia of this spatial
 /// inertia is `I_BP_E` (@f$[I^{B/P}]_E@f$) and the position vector of the
 /// center of mass measured from point P and expressed in E is `p_PBcm_E`
@@ -84,23 +85,23 @@ class SpatialInertia {
   /// uninitialized values.
   SpatialInertia() {}
 
-  /// Constructs a spatial inertia for a physical system S about a point P from
-  /// a given mass, center of mass and rotational inertia. The center of mass is
-  /// specified by the position vector `p_PScm_E` from point P to the systems'
-  /// center of mass point `Scm`, expressed in a frame E.
-  /// The rotational inertia is provided as the UnitInertia `G_SP_E` of system S
-  /// computed about point P and expressed in frame E.
+  /// Constructs a spatial inertia for a physical body or composite body S about
+  /// a point P from a given mass, center of mass and rotational inertia. The
+  /// center of mass is specified by the position vector `p_PScm_E` from point P
+  /// to the center of mass point `Scm`, expressed in a frame E.
+  /// The rotational inertia is provided as the UnitInertia `G_SP_E` of the body
+  /// or composite body S computed about point P and expressed in frame E.
   ///
   /// This constructor checks for the physical validity of the resulting
   /// %SpatialInertia with IsPhysicallyValid() and throws an exception in the
   /// event the provided input parameters lead to non-physically viable spatial
   /// inertia.
   ///
-  /// @param[in] mass The mass of the physical system or body S.
+  /// @param[in] mass The mass of the body or composite body S.
   /// @param[in] p_PScm_E The position vector from point P to the center of mass
-  ///                     of system or body S expressed in frame E.
-  /// @param[in] G_SP_E UnitInertia of the system or body S computed about
-  ///                   origin point P and expressed in frame E.
+  ///                     of body or composite body S expressed in frame E.
+  /// @param[in] G_SP_E UnitInertia of the body or composite body S computed
+  ///                   about origin point P and expressed in frame E.
   SpatialInertia(
       const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E) :
       mass_(mass), p_PScm_E_(p_PScm_E), I_SP_E_(mass * G_SP_E) {
@@ -115,8 +116,8 @@ class SpatialInertia {
   const T& get_mass() const { return mass_;}
 
   /// Get a constant reference to the position vector `p_PScm_E` from the
-  /// _about point_ P to the center of mass `Scm` of the physical system S,
-  /// expressed in frame E. See the documentation of this class for details.
+  /// _about point_ P to the center of mass `Scm` of the body or composite body
+  /// S, expressed in frame E. See the documentation of this class for details.
   const Vector3<T>& get_com() const { return p_PScm_E_;}
 
   /// Get a constant reference to the rotational inertia `I_SP_E` of this
@@ -209,9 +210,10 @@ class SpatialInertia {
   ///
   /// @warning This operation is only valid if both spatial inertias are
   /// computed about the same point P and expressed in the same frame E.
-  /// Considering `this` spatial inertia to be `M_SP_E` for some system S,
-  /// about some point P, the supplied spatial inertia `M_BP_E` must be for
-  /// some system B about the _same_ point P; B's inertia is then included in S.
+  /// Considering `this` spatial inertia to be `M_SP_E` for some body or
+  /// composite body S, about some point P, the supplied spatial inertia
+  /// `M_BP_E` must be for some other body or composite body B about the _same_
+  /// point P; B's inertia is then included in S.
   SpatialInertia& operator+=(const SpatialInertia<T>& M_BP_E) {
     p_PScm_E_ = get_mass() * get_com() + M_BP_E.get_mass() * M_BP_E.get_com();
     mass_ += M_BP_E.get_mass();
@@ -220,9 +222,9 @@ class SpatialInertia {
     return *this;
   }
 
-  /// Given `this` spatial inertia `M_SP_E` for some system or body S, taken
-  /// about a point P and expressed in frame E, this method computes the same
-  /// inertia re-expressed in another frame A.
+  /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
+  /// taken about a point P and expressed in frame E, this method computes the
+  /// same inertia re-expressed in another frame A.
   /// This operation is performed in-place modifying the original object.
   ///
   /// @param[in] R_AE Rotation matrix from frame E to frame A.
@@ -238,9 +240,9 @@ class SpatialInertia {
     return *this;                    // Now M_SP_A
   }
 
-  /// Given `this` spatial inertia `M_SP_E` for some system or body S, taken
-  /// about a point P and expressed in frame E, this method computes the same
-  /// inertia re-expressed in another frame A.
+  /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
+  /// taken about a point P and expressed in frame E, this method computes the
+  /// same inertia re-expressed in another frame A.
   ///
   /// @param[in] R_AE Rotation matrix from frame E to frame A.
   /// @retval M_SP_A The same spatial inertia of S about P but now
@@ -250,7 +252,7 @@ class SpatialInertia {
     return SpatialInertia(*this).ReExpressInPlace(R_AE);
   }
 
-  /// Given `this` spatial inertia `M_SP_E` for some physical system or body S,
+  /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// computed about point P, and expressed in frame E, this method uses
   /// the _Parallel Axis Theorem_ for spatial inertias to compute the same
   /// spatial inertia about a new point Q. The result still is expressed in
@@ -263,8 +265,8 @@ class SpatialInertia {
   /// @param[in] p_PQ_E Vector from the original about point P to the new
   ///                   about point Q, expressed in the same frame E `this`
   ///                   spatial inertia is expressed in.
-  /// @returns A reference to `this` spatial inertia for system S but now
-  ///          computed about about a new point Q.
+  /// @returns A reference to `this` spatial inertia for body or composite body
+  ///          S but now computed about about a new point Q.
   SpatialInertia& ShiftInPlace(const Vector3<T>& p_PQ_E) {
     const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
     I_SP_E_ += get_mass() *
@@ -274,7 +276,7 @@ class SpatialInertia {
     return *this;
   }
 
-  /// Given `this` spatial inertia `M_SP_E` for some physical system or body S,
+  /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// computed about point P, and expressed in frame E, this method uses
   /// the _Parallel Axis Theorem_ for spatial inertias to compute the same
   /// spatial inertia about a new point Q. The result still is expressed in
@@ -284,8 +286,8 @@ class SpatialInertia {
   /// @param[in] p_PQ_E Vector from the original about point P to the new
   ///                   about point Q, expressed in the same frame E `this`
   ///                   spatial inertia is expressed in.
-  /// @retval `M_SQ_E` This same spatial inertia for system S but computed
-  ///                  about about a new point Q.
+  /// @retval `M_SQ_E` This same spatial inertia for body or composite body S
+  ///                  but computed about about a new point Q.
   SpatialInertia Shift(const Vector3<T>& p_PQ_E) const {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
   }
@@ -297,12 +299,12 @@ class SpatialInertia {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
   }
 
-  // Mass of the system.
+  // Mass of the body or composite body.
   T mass_{nan()};
-  // Position vector from point P to the center of mass of physical system S,
-  // expressed in a frame E.
+  // Position vector from point P to the center of mass of body or composite
+  // body S, expressed in a frame E.
   Vector3<T> p_PScm_E_{Vector3<T>::Constant(nan())};
-  // Rotational inertia of physical system S computed about point P and
+  // Rotational inertia of body or composite body S computed about point P and
   // expressed in a frame E.
   RotationalInertia<T> I_SP_E_{};  // Defaults to NaN initialized inertia.
 };
