@@ -78,7 +78,10 @@ drake_cc_binary(
     name = "iiwa_world_demo",
     srcs = ["iiwa_world_demo.cc"],
     add_test_rule = 1,
-    data = ["//drake/examples/kuka_iiwa_arm:models"],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":world_sim_diagram_factory",
@@ -92,7 +95,10 @@ drake_cc_binary(
     name = "controlled_iiwa_world_demo",
     srcs = ["controlled_iiwa_world_demo.cc"],
     add_test_rule = 1,
-    data = ["//drake/examples/kuka_iiwa_arm:models"],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":world_sim_diagram_factory",
@@ -111,6 +117,7 @@ drake_cc_binary(
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/examples/schunk_wsg:models",
+        "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":world_sim_tree_builder",

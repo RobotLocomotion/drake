@@ -31,8 +31,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-const char* const kIiwaUrdf =
-    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
+const char* const kIiwaUrdf = "/manipulation/models/iiwa_description/urdf/"
+    "iiwa14_polytope_collision.urdf";
 const char* const kLcmStatusChannel = "IIWA_STATUS";
 const char* const kLcmCommandChannel = "IIWA_COMMAND";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
