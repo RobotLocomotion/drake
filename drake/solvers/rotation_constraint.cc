@@ -397,17 +397,28 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   // s.t d <= nᵀ * pts.col(i)
   //     nᵀ * n <= 1
 
+  // First compute a plane coinciding with a triangle, formed by 3 vertices
+  // in the intersection region. If all the vertices are on that plane, then the
+  // normal of the plane is n, and we do not need to run the optimization.
   // If there are only 3 vertices in the intersection region, then the normal
   // vector n is the normal of the triangle, formed by these three vertices.
-  if (pts.size() == 3) {
+
     *n = (pts[2] - pts[0]).cross(pts[1] - pts[0]);
     *n = *n / n->norm();
     if (n->array().sum() < 0) {
       *n *= -1;
     }
     *d = n->dot(pts[0]);
+  bool pts_on_plane = true;
+  for (int i = 3; i < static_cast<int>(pts.size()); ++i) {
+    if (std::abs(n->dot(pts[i]) - *d) > 1E-10) {
+      pts_on_plane = false;
+    }
+  }
+  if (pts_on_plane) {
     return;
   }
+
   // If there are more than 3 vertices in the intersection region, then we find
   // the normal vector n through an optimization, whose formulation is mentioned
   // above.
@@ -424,7 +435,7 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   // TODO(hongkai.dai): This optimization is expensive, especially if we have
   // multiple rotation matrices, all relaxed with the same number of binary
   // variables per half axis, the result `n` and `d` are the same. Should
-  // consider th hard-code the result, in order to save the computation.
+  // consider hard-coding the result, to avoid repeated computation.
 
   // A_lorentz * n + b_lorentz = [1; n]
   Eigen::Matrix<double, 4, 3> A_lorentz{};
@@ -441,7 +452,7 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
 
 /**
  * For the intersection region between the surface of the unit sphere, and the
- * interior of a box aligned with the axes, relax this nonconvex intersetion
+ * interior of a box aligned with the axes, relax this nonconvex intersection
  * region to its convex hull. This convex hull has some planar facets (formed
  * by the triangles connecting the vertices of the intersection region). This
  * function computes these planar facets. It is guaranteed that any point x on
