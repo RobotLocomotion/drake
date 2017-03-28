@@ -94,13 +94,13 @@ GTEST_TEST(SpatialInertia, IsApprox) {
   SpatialInertia<double> M(mass, com, G);
 
   // Creates a spatial inertia that is approximately equal to M, but not equal.
-  const double precision = 1.0e-10;
+  const double precision = 1.0e-14;
   SpatialInertia<double> other(
       (1.0 + precision) * mass,
       (1.0 + precision) * com,
       UnitInertia<double>((1.0 + precision) * G));
-  EXPECT_TRUE(M.IsApprox(other, 2.6 * precision));
-  EXPECT_FALSE(M.IsApprox(other, 2.5 * precision));
+  EXPECT_TRUE(M.IsApprox(other, 1.1 * precision));
+  EXPECT_FALSE(M.IsApprox(other, 1.0 * precision));
 }
 
 // Verifies the correctness of:

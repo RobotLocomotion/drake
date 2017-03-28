@@ -207,15 +207,19 @@ GTEST_TEST(UnitInertia, ShiftFromCentroidInPlace) {
 
   // Now test that we can perform the inverse operation and obtain the original
   // unit inertia.
+  // As a shift into a new object:
+  UnitInertia<double> G2 = G.ShiftToCentroid({0.0, 0.0, -L / 2.0});
+  // As a shift in place:
   G.ShiftToCentroidInPlace({0.0, 0.0, -L / 2.0});
   EXPECT_TRUE(G.IsApprox(UnitInertia<double>::SolidCylinder(r, L)));
+  EXPECT_TRUE(G2.IsApprox(UnitInertia<double>::SolidCylinder(r, L)));
 
   // Create a new object.
-  UnitInertia<double> G2 =
+  UnitInertia<double> G3 =
       UnitInertia<double>::
       SolidCylinder(r, L).ShiftFromCentroid({0.0, 0.0, L / 2.0});
-  EXPECT_TRUE(G2.IsApprox(G_expected));
-  EXPECT_TRUE(G2.CouldBePhysicallyValid());
+  EXPECT_TRUE(G3.IsApprox(G_expected));
+  EXPECT_TRUE(G3.CouldBePhysicallyValid());
 }
 
 // Tests that we can instantiate a unit inertia with AutoDiffScalar and

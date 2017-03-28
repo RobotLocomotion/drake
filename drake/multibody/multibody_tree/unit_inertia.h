@@ -78,6 +78,7 @@ class UnitInertia : public RotationalInertia<T> {
       RotationalInertia<T>(I) {}
 
   /// Sets `this` unit inertia to equal the provided input rotational inertia I.
+  /// The input rotational inertia I is assumed to be a unit inertia.
   /// @warning This method does not check that the provided input rotational
   /// inertia I effectively is a valid unit inertia. Use with care.
   UnitInertia<T>& SetFromUnitInertia(const RotationalInertia<T>& I) {
@@ -121,6 +122,17 @@ class UnitInertia : public RotationalInertia<T> {
     return *this;
   }
 
+  /// Shifts this central unit inertia to a different point, and returns the
+  /// result. See ShiftFromCentroidInPlace() for details.
+  /// @param[in] p_BcmQ_E A vector from the body's centroid `Bcm` to point Q
+  ///                     expressed in the same frame E in which `this`
+  ///                     inertia is expressed.
+  /// @retval G_BQ_E This same unit inertia taken about a point Q instead of
+  ///                the centroid `Bcm`.
+  UnitInertia<T> ShiftFromCentroid(const Vector3<T>& p_BcQ_E) const {
+    return UnitInertia<T>(*this).ShiftFromCentroidInPlace(p_BcQ_E);
+  }
+
   /// For the unit inertia `G_BQ_E` of a body or composite body B computed about
   /// a point Q and expressed in a frame E, this method shifts this inertia
   /// using the parallel axis theorem to be computed about the center of mass
@@ -145,16 +157,22 @@ class UnitInertia : public RotationalInertia<T> {
     return *this;
   }
 
-  /// Shifts this central unit inertia to a different point, and returns the
-  /// result. See ShiftFromCentroidInPlace() for details.
-  /// @param[in] p_BcmQ_E A vector from the body's centroid `Bcm` to point Q
-  ///                     expressed in the same frame E in which `this`
-  ///                     inertia is expressed.
-  /// @retval G_BQ_E This same unit inertia taken about a point Q instead of
-  //                 the centroid `Bcm`.
-  UnitInertia<T> ShiftFromCentroid(const Vector3<T>& p_BcQ_E) const {
-    return UnitInertia<T>(*this).ShiftFromCentroidInPlace(p_BcQ_E);
+  /// For the unit inertia `G_BQ_E` of a body or composite body B computed about
+  /// a point Q and expressed in a frame E, this method shifts this inertia
+  /// using the parallel axis theorem to be computed about the center of mass
+  /// `Bcm` of B. See ShiftToCentroidInPlace() for details.
+  /// @param[in] p_QBcm_E A position vector from the about point Q to the body's
+  ///                     centroid `Bcm` expressed in the same frame E in which
+  ///                     `this` inertia is expressed.
+  /// @retval G_Bcm_E This same unit which has now been taken about point `Bcm`
+  ///                 so that it can be written as `G_BBcm_E`, or `G_Bcm_E`.
+  ///
+  /// @warning This operation could result in a non-physical rotational inertia.
+  /// Use with care. See ShiftToCentroidInPlace() for details.
+  UnitInertia<T> ShiftToCentroid(const Vector3<T>& p_QBcm_E) const {
+    return UnitInertia<T>(*this).ShiftToCentroidInPlace(p_QBcm_E);
   }
+
 
   /// @name            Unit inertia for common 3D objects
   /// The following methods assist in the construction of %UnitInertia instances

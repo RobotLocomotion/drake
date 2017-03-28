@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <exception>
 #include <iostream>
 #include <limits>
@@ -127,10 +128,10 @@ class SpatialInertia {
   /// documentation of this class for details.
   Vector3<T> CalcComMoment() const { return mass_ * p_PScm_E_;}
 
-  /// Get a constant reference to the rotational inertia `I_SP_E` of this
+  /// Get a constant reference to the unit inertia `G_SP_E` of this
   /// spatial inertia, computed about point P and expressed in frame E. See the
   /// documentation of this class for details.
-  const RotationalInertia<T>& get_unit_inertia() const { return G_SP_E_;}
+  const UnitInertia<T>& get_unit_inertia() const { return G_SP_E_;}
 
   /// Computes the rotational inertia `I_SP_E = mass * G_SP_E` of this
   /// spatial inertia, computed about point P and expressed in frame E. See the
@@ -168,8 +169,7 @@ class SpatialInertia {
     if (mass_ < T(0)) return false;
     // The tests in RotationalInertia become a sufficient condition when
     // performed on a rotational inertia computed about a body's center of mass.
-    UnitInertia<T> G_SScm_E(G_SP_E_);
-    G_SScm_E.ShiftToCentroidInPlace(p_PScm_E_);
+    const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCentroid(p_PScm_E_);
     if (!G_SScm_E.CouldBePhysicallyValid()) return false;
     return true;  // All tests passed.
   }
@@ -193,23 +193,35 @@ class SpatialInertia {
     G_SP_E_.SetToNaN();
   }
 
-  /// Compares `this` spatial inertia to `other` rotational inertia within the
-  /// specified `tolerance`.
-  /// The comparison returns `true` if the following are true:
-  ///   - abs(this->get_mass() - other.get_mass()) < tolerance.
-  ///   - this->get_com().isApprox(other.get_com(), tolerance).
-  ///   - this->get_rotational_inertia().IsApprox(
-  ///               other.get_rotational_inertia(), tolerance).
+  /// Compares this spatial inertia `Ma` to the spatial inertia `Mb` within the
+  /// specified precision `p`. `p` is a dimensionless number specifying
+  /// the a relative precision to which the comparison is performed.
+  /// Denoting by `ma`, `xa` and `Ga` the mass, center of mass and unit inertia,
+  /// respectively, of this spatial inertia `Ma` and by `mb`, `xb` and `Gb` the
+  /// mass, center of mass and unit inertia, respectively, of the spatial
+  /// inertia `Mb`, the spatial inertias `Ma` and `Mb` are considered to be
+  /// approximately equal with each other if:
+  ///   - |ma - mb| < p min(|ma|, |mb|)
+  ///   - ‖xa - xb‖₂ < p min(‖xa‖₂, ‖xb‖₂)
+  ///   - ‖Ga - Gb‖F < p min(‖Ia‖F, ‖Ib‖F)
+  ///
+  /// where ‖⋅‖₂ denotes the ℓ²-norm of a vector and ‖⋅‖F the Frobenius norm of
+  /// a matrix.
+  ///
+  /// @param[in] Mb The spatial inertia to which this spatial inertia will be
+  ///               compared.
   ///
   /// @returns `true` if `other` is within the specified `precision`. Returns
-  ///   `false` otherwise.
-  bool IsApprox(const SpatialInertia& other,
+  ///          `false` otherwise.
+  bool IsApprox(const SpatialInertia& Mb,
                 double tolerance = Eigen::NumTraits<T>::epsilon()) {
     using std::abs;
+    using std::min;
     return
-        abs(mass_ - other.get_mass()) < tolerance &&
-        p_PScm_E_.isApprox(other.get_com(), tolerance) &&
-        G_SP_E_.IsApprox(other.get_unit_inertia(), tolerance);
+        abs(get_mass() - Mb.get_mass()) <
+            tolerance * min(get_mass(), Mb.get_mass()) &&
+        get_com().isApprox(Mb.get_com(), tolerance) &&
+        get_unit_inertia().IsApprox(Mb.get_unit_inertia(), tolerance);
   }
 
   /// Adds in a spatial inertia to `this` spatial inertia.
@@ -233,9 +245,7 @@ class SpatialInertia {
   SpatialInertia& operator+=(const SpatialInertia<T>& M_BP_E) {
     const T total_mass = get_mass() + M_BP_E.get_mass();
     DRAKE_ASSERT(total_mass != 0);
-    p_PScm_E_ =
-        (get_mass() * get_com() +
-        M_BP_E.get_mass() * M_BP_E.get_com()) / total_mass;
+    p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
     G_SP_E_.SetFromUnitInertia(
         (CalcRotationalInertia() + M_BP_E.CalcRotationalInertia()) /
             total_mass);
