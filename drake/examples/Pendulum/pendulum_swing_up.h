@@ -17,7 +17,6 @@ namespace pendulum {
  * between @p x0 and @p xG).
  */
 void AddSwingUpTrajectoryParams(
-    int num_time_samples,
     const Eigen::Vector2d& x0, const Eigen::Vector2d& xG,
     systems::DircolTrajectoryOptimization*);
 
