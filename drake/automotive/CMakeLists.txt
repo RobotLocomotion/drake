@@ -49,6 +49,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   maliput_railcar.cc
   monolane_onramp_merge.cc
   pose_selector.cc
+  road_path.cc
   simple_car.cc
   simple_powertrain.cc
   single_lane_ego_and_agent.cc
@@ -74,6 +75,7 @@ drake_install_headers(
   linear_car.h
   maliput_railcar.h
   monolane_onramp_merge.h
+  road_path.h
   pose_selector.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
