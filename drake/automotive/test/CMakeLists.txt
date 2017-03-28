@@ -37,6 +37,9 @@ target_link_libraries(pose_selector_test drakeAutomotive)
 drake_add_cc_test(idm_controller_test)
 target_link_libraries(idm_controller_test drakeAutomotive)
 
+drake_add_cc_test(road_path_test)
+target_link_libraries(road_path_test drakeAutomotive)
+
 if(lcm_FOUND)
   drake_add_cc_test(automotive_simulator_test)
   target_link_libraries(automotive_simulator_test drakeAutomotiveLcm)
