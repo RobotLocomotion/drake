@@ -128,6 +128,11 @@ found in the Drake repository and may be used to find OBJ versions:
 
 Texture file format
 -------------------
+Textures are normally used to represent the appearance of an object's surface,
+for example, the colors and patterns. To visualize the appearance of a Drake
+model, use the ``drake-visualizer`` program in the `Director external
+<https://github.com/RobotLocomotion/director>`_.
+
 The ``drake-visualizer`` program supports VTM/VTP texture files, which it will
 draw over an OBJ mesh.  Normally OBJ files support MTL texture files, but that
 is not currently supported in ``drake-visualizer`` (see `this issue
@@ -136,8 +141,6 @@ and its associated files in the same location as the OBJ file, and rename it
 to have the same base file name as the OBJ file. For an example of a model
 with a mesh and a texture, see `the Ycb025Mug in Drake
 <https://github.com/RobotLocomotion/drake/tree/master/drake/manipulation/models/Ycb025Mug/>`_.
-The ``drake-visualizer`` program is in the `Director external
-<https://github.com/RobotLocomotion/director>`_.
 
 To create VTM/VTP texture files for your OBJ mesh, one method is to get a DAE
 file which is equivalent to your OBJ file (your 3D printer may be able to output
