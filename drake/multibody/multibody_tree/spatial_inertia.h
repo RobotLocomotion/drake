@@ -22,8 +22,9 @@ namespace multibody {
 /// together containing at least one body (throughout this documentation "body"
 /// is many times used instead of "composite body" but the same concepts apply
 /// to a collection of bodies as well.)
-/// As an element of ℝ⁶ˣ⁶ it is a symmetric, positive semi-definite matrix that
-/// logically consists of `3x3` sub-matrices arranged like so, [Jain 2010]:
+/// A spatial inertia is an element of ℝ⁶ˣ⁶ that is symmetric, and positive
+/// semi-definite. It logically consists of `3x3` sub-matrices arranged like
+/// so, [Jain 2010]:
 /// <pre>
 ///              Spatial mass matrix
 ///           ------------ ------------
@@ -44,7 +45,7 @@ namespace multibody {
 /// `Scm` of the composite body S with `p_PScm×` denoting its skew-symmetric
 /// cross product matrix (defined such that `a× b = a.cross(b)`), and `Id` is
 /// the identity matrix in ℝ³ˣ³. See Section 2.1, p. 17 of [Jain 2010].
-/// The logical arrangement as shown above is chosen to be consisten with our
+/// The logical arrangement as shown above is chosen to be consistent with our
 /// logical arrangement for spatial vectors as documented in
 /// @ref multibody_spatial_algebra for which the rotational component comes
 /// first followed by the translational component.
@@ -208,6 +209,10 @@ class SpatialInertia {
   /// @returns A reference to `this` spatial inertia, which has been updated
   ///          to include the given spatial inertia `M_BP_E`.
   ///
+  /// @note This operation aborts if the mass of the resulting spatial inertia
+  ///       is zero since in that case the position vector from the about point
+  ///       to the center of mass is not well defined.
+  ///
   /// @warning This operation is only valid if both spatial inertias are
   /// computed about the same point P and expressed in the same frame E.
   /// Considering `this` spatial inertia to be `M_SP_E` for some body or
@@ -217,6 +222,7 @@ class SpatialInertia {
   SpatialInertia& operator+=(const SpatialInertia<T>& M_BP_E) {
     p_PScm_E_ = get_mass() * get_com() + M_BP_E.get_mass() * M_BP_E.get_com();
     mass_ += M_BP_E.get_mass();
+    DRAKE_ASSERT(mass_ != 0);
     p_PScm_E_ /= get_mass();
     I_SP_E_ += M_BP_E.get_rotational_inertia();
     return *this;
