@@ -748,6 +748,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "trajectory_optimization_test",
+    deps = [
+        ":simple_car",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/trajectory_optimization:direct_collocation",
+    ],
+)
+
+drake_cc_googletest(
     name = "infinite_circuit_road_test",
     srcs = ["dev/test/infinite_circuit_road_test.cc"],
     deps = [

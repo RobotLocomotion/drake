@@ -52,6 +52,9 @@ void DirectCollocationConstraint::DoEval(
   const auto u0 = x.segment(1 + (2 * num_states_), num_inputs_);
   const auto u1 = x.segment(1 + (2 * num_states_) + num_inputs_, num_inputs_);
 
+  // TODO(russt): Set derivatives of all parameters in the context to zero (but with the correct size).  time as well.
+
+
   // TODO(sam.creasey): We should cache the dynamics outputs to avoid
   // recalculating for every knot point as we advance.
   TaylorVecXd xdot0;
@@ -86,9 +89,7 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
   context_->SetTimeStateAndParametersFrom(context);
 
   // Allocate the input port and keep an alias around.
-  input_port_value_ =
-      new FreestandingInputPortValue(std::make_unique<BasicVector<AutoDiffXd>>(
-          system_->get_input_port(0).size()));
+  input_port_value_ = new FreestandingInputPortValue(system_->AllocateInputVector(system_->get_input_port(0)));
   std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
   context_->SetInputPortValue(0, std::move(input_port_value));
 }

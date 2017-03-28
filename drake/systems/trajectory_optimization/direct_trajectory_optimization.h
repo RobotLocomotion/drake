@@ -117,12 +117,13 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
 
   /// Adds support for passing in a (scalar) matrix Expression, which is a
   /// common output of most symbolic linear algebra operations.
+  /*
   void AddRunningCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
     DRAKE_DEMAND(g.rows() == 1 && g.cols() == 1);
     DoAddRunningCost(g(0, 0));
   }
-
+  */
   /**
    * Adds an integrated cost to all time steps.
    *
