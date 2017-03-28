@@ -505,6 +505,16 @@ class RotationalInertia {
     return s * I_BP_E;  // Multiplication by a scalar is commutative.
   }
 
+  /// Divides `this` %RotationalInertia by a positive scalar s.
+  /// Aborts if the scalar s is not positive.
+  friend RotationalInertia<T> operator/(const RotationalInertia<T>& I_BP_E,
+                                        const T& s) {
+    DRAKE_ASSERT(s > 0);
+    RotationalInertia<T> I_over_s;
+    I_over_s.get_mutable_triangular_view() = I_BP_E.get_matrix() / s;
+    return I_over_s;
+  }
+
  private:
   // Utility method used to swap matrix indexes (i, j) depending on the
   // TriangularViewInUse portion of this inertia. The swap is performed so that

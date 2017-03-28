@@ -77,10 +77,19 @@ class UnitInertia : public RotationalInertia<T> {
   explicit UnitInertia(const RotationalInertia<T>& I) :
       RotationalInertia<T>(I) {}
 
+  /// Sets `this` unit inertia to equal the provided input rotational inertia I.
+  /// @warning This method does not check that the provided input rotational
+  /// inertia I effectively is a valid unit inertia. Use with care.
+  UnitInertia<T>& SetFromUnitInertia(const RotationalInertia<T>& I) {
+    RotationalInertia<T>::operator=(I);
+    return *this;
+  }
+
   /// Re-express a unit inertia in a different frame, performing the operation
   /// in place and modifying the original object. @see ReExpress() for details.
   UnitInertia<T>& ReExpressInPlace(const Matrix3<T>& R_FE) {
-    return RotationalInertia<T>::ReExpressInPlace(R_FE);
+    RotationalInertia<T>::ReExpressInPlace(R_FE);
+    return *this;
   }
 
   /// Given `this` unit inertia `G_BP_E` of a body B about a point P and
@@ -109,6 +118,30 @@ class UnitInertia : public RotationalInertia<T> {
   ///          about point Q so can be written as `G_BQ_E`.
   UnitInertia<T>& ShiftFromCentroidInPlace(const Vector3<T>& p_BcQ_E) {
     RotationalInertia<T>::operator+=(PointMass(p_BcQ_E));
+    return *this;
+  }
+
+  /// For the unit inertia `G_BQ_E` of a body or composite body B computed about
+  /// a point Q and expressed in a frame E, this method shifts this inertia
+  /// using the parallel axis theorem to be computed about the center of mass
+  /// `Bcm` of B. This operation is performed in place, modifying the original
+  /// object.
+  ///
+  /// @param[in] p_QBcm_E A position vector from the about point Q to the body's
+  ///                     centroid `Bcm` expressed in the same frame E in which
+  ///                     `this` inertia is expressed.
+  /// @returns A reference to `this` unit inertia, which has now been taken
+  ///          about point `Bcm` so can be written as `G_BBcm_E`, or `G_Bcm_E`.
+  ///
+  /// @warning This operation could result in a non-physical rotational inertia.
+  /// The shifted inertia is obtained by subtracting the point mass unit inertia
+  /// of point `Bcm` about point Q as:
+  ///   G_Bcm_E = G_BQ_E - G_BcmQ_E = G_BQ_E - px_QBcm_E²
+  /// Therefore the resulting inertia could have negative moments of inertia if
+  /// the unit inertia of the unit mass at point `Bcm` is larger than `G_BQ_E`.
+  /// Use with care.
+  UnitInertia<T>& ShiftToCentroidInPlace(const Vector3<T>& p_QBcm_E) {
+    RotationalInertia<T>::operator-=(PointMass(p_QBcm_E));
     return *this;
   }
 

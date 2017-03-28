@@ -42,8 +42,8 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
 
   ASSERT_EQ(M.get_mass(), mass);
   ASSERT_EQ(M.get_com(), com);
-  ASSERT_TRUE(M.get_rotational_inertia().IsApprox(
-      mass * G, std::numeric_limits<double>::epsilon()));
+  ASSERT_TRUE(M.get_unit_inertia().IsApprox(
+      G, std::numeric_limits<double>::epsilon()));
 
   Matrix6<double> Mmatrix = M.CopyToFullMatrix6();
   Matrix6<double> expected_matrix;
@@ -191,8 +191,8 @@ GTEST_TEST(SpatialInertia, ReExpress) {
   EXPECT_TRUE(M_CP_W.get_com().isApprox(
       -Vector3d::UnitZ(), numeric_limits<double>::epsilon()));
 
-  Vector3d moments_E = M_CP_E.get_rotational_inertia().get_moments();
-  Vector3d moments_W = M_CP_W.get_rotational_inertia().get_moments();
+  Vector3d moments_E = M_CP_E.get_unit_inertia().get_moments();
+  Vector3d moments_W = M_CP_W.get_unit_inertia().get_moments();
   // Since rotation is along the x-axis the first moment about x does
   // not change.
   EXPECT_NEAR(moments_W(0), moments_E(0), numeric_limits<double>::epsilon());
@@ -243,7 +243,7 @@ GTEST_TEST(SpatialInertia, Shift) {
   const double I_end =
       mass * (3 * radius * radius + length * length) / 12  /*About centroid.*/
       + mass * length * length / 4;  /*Parallel axis theorem shift.*/
-  const auto& I_Xo_W = M_BBtop_W.get_rotational_inertia();
+  const auto I_Xo_W = M_BBtop_W.CalcRotationalInertia();
   EXPECT_NEAR(I_Xo_W(0, 0), I_end, numeric_limits<double>::epsilon());
   EXPECT_NEAR(I_Xo_W(2, 2), I_end, numeric_limits<double>::epsilon());
 }

@@ -105,7 +105,7 @@ class SpatialInertia {
   ///                   about origin point P and expressed in frame E.
   SpatialInertia(
       const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E) :
-      mass_(mass), p_PScm_E_(p_PScm_E), I_SP_E_(mass * G_SP_E) {
+      mass_(mass), p_PScm_E_(p_PScm_E), G_SP_E_(G_SP_E) {
     if (!IsPhysicallyValid()) {
       throw std::runtime_error(
           "The resulting spatial inertia is not physically valid."
@@ -121,17 +121,28 @@ class SpatialInertia {
   /// S, expressed in frame E. See the documentation of this class for details.
   const Vector3<T>& get_com() const { return p_PScm_E_;}
 
+  /// Computes the center of mass moment vector `mass * p_PScm_E` given the
+  /// position vector `p_PScm_E` from the _about point_ P to the center of mass
+  /// `Scm` of the body or composite body S, expressed in frame E. See the
+  /// documentation of this class for details.
+  Vector3<T> CalcComMoment() const { return mass_ * p_PScm_E_;}
+
   /// Get a constant reference to the rotational inertia `I_SP_E` of this
   /// spatial inertia, computed about point P and expressed in frame E. See the
   /// documentation of this class for details.
-  const RotationalInertia<T>& get_rotational_inertia() const { return I_SP_E_;}
+  const RotationalInertia<T>& get_unit_inertia() const { return G_SP_E_;}
+
+  /// Computes the rotational inertia `I_SP_E = mass * G_SP_E` of this
+  /// spatial inertia, computed about point P and expressed in frame E. See the
+  /// documentation of this class for details.
+  RotationalInertia<T> CalcRotationalInertia() const { return mass_ * G_SP_E_;}
 
   /// Returns `true` if any of the elements in this spatial inertia is NaN
   /// and `false` otherwise.
   bool IsNaN() const {
     using std::isnan;
     if (isnan(mass_)) return true;
-    if (I_SP_E_.IsNaN()) return true;
+    if (G_SP_E_.IsNaN()) return true;
     if (p_PScm_E_.array().isNaN().any()) return true;
     return false;
   }
@@ -157,9 +168,9 @@ class SpatialInertia {
     if (mass_ < T(0)) return false;
     // The tests in RotationalInertia become a sufficient condition when
     // performed on a rotational inertia computed about a body's center of mass.
-    RotationalInertia<T> I_SScm_E(I_SP_E_);
-    I_SScm_E -= mass_ * UnitInertia<T>::PointMass(p_PScm_E_);
-    if (!I_SScm_E.CouldBePhysicallyValid()) return false;
+    UnitInertia<T> G_SScm_E(G_SP_E_);
+    G_SScm_E.ShiftToCentroidInPlace(p_PScm_E_);
+    if (!G_SScm_E.CouldBePhysicallyValid()) return false;
     return true;  // All tests passed.
   }
 
@@ -167,7 +178,7 @@ class SpatialInertia {
   Matrix6<T> CopyToFullMatrix6() const {
     using drake::math::VectorToSkewSymmetric;
     Matrix6<T> M;
-    M.template block<3, 3>(0, 0) = I_SP_E_.CopyToFullMatrix3();
+    M.template block<3, 3>(0, 0) = mass_ * G_SP_E_.CopyToFullMatrix3();
     M.template block<3, 3>(0, 3) = mass_ * VectorToSkewSymmetric(p_PScm_E_);
     M.template block<3, 3>(3, 0) = -M.template block<3, 3>(0, 3);
     M.template block<3, 3>(3, 3) = mass_ * Matrix3<T>::Identity();
@@ -179,7 +190,7 @@ class SpatialInertia {
   void SetNaN() {
     mass_ = nan();
     p_PScm_E_.setConstant(nan());
-    I_SP_E_.SetToNaN();
+    G_SP_E_.SetToNaN();
   }
 
   /// Compares `this` spatial inertia to `other` rotational inertia within the
@@ -198,7 +209,7 @@ class SpatialInertia {
     return
         abs(mass_ - other.get_mass()) < tolerance &&
         p_PScm_E_.isApprox(other.get_com(), tolerance) &&
-        I_SP_E_.IsApprox(other.get_rotational_inertia(), tolerance);
+        G_SP_E_.IsApprox(other.get_unit_inertia(), tolerance);
   }
 
   /// Adds in a spatial inertia to `this` spatial inertia.
@@ -220,11 +231,15 @@ class SpatialInertia {
   /// `M_BP_E` must be for some other body or composite body B about the _same_
   /// point P; B's inertia is then included in S.
   SpatialInertia& operator+=(const SpatialInertia<T>& M_BP_E) {
-    p_PScm_E_ = get_mass() * get_com() + M_BP_E.get_mass() * M_BP_E.get_com();
-    mass_ += M_BP_E.get_mass();
-    DRAKE_ASSERT(mass_ != 0);
-    p_PScm_E_ /= get_mass();
-    I_SP_E_ += M_BP_E.get_rotational_inertia();
+    const T total_mass = get_mass() + M_BP_E.get_mass();
+    DRAKE_ASSERT(total_mass != 0);
+    p_PScm_E_ =
+        (get_mass() * get_com() +
+        M_BP_E.get_mass() * M_BP_E.get_com()) / total_mass;
+    G_SP_E_.SetFromUnitInertia(
+        (CalcRotationalInertia() + M_BP_E.CalcRotationalInertia()) /
+            total_mass);
+    mass_ = total_mass;
     return *this;
   }
 
@@ -242,7 +257,7 @@ class SpatialInertia {
   /// provide valid rotation matrices.
   SpatialInertia& ReExpressInPlace(const Matrix3<T>& R_AE) {
     p_PScm_E_ = R_AE * p_PScm_E_;    // Now p_PScm_A
-    I_SP_E_.ReExpressInPlace(R_AE);  // Now I_SP_A
+    G_SP_E_.ReExpressInPlace(R_AE);  // Now I_SP_A
     return *this;                    // Now M_SP_A
   }
 
@@ -275,9 +290,11 @@ class SpatialInertia {
   ///          S but now computed about about a new point Q.
   SpatialInertia& ShiftInPlace(const Vector3<T>& p_PQ_E) {
     const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
-    I_SP_E_ += get_mass() *
-        (UnitInertia<T>::PointMass(p_QScm_E) -
-         UnitInertia<T>::PointMass(p_PScm_E_));
+    // The following two lines apply the parallel axis theorem (in place) so
+    // that:
+    //   G_SQ = G_SP + px_QScm² - px_PScm²
+    G_SP_E_.ShiftFromCentroidInPlace(p_QScm_E);
+    G_SP_E_.ShiftToCentroidInPlace(p_PScm_E_);
     p_PScm_E_ = p_QScm_E;
     return *this;
   }
@@ -312,7 +329,7 @@ class SpatialInertia {
   Vector3<T> p_PScm_E_{Vector3<T>::Constant(nan())};
   // Rotational inertia of body or composite body S computed about point P and
   // expressed in a frame E.
-  RotationalInertia<T> I_SP_E_{};  // Defaults to NaN initialized inertia.
+  UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
 };
 
 /// Insertion operator to write SpatialInertia objects into a `std::ostream`.
@@ -325,7 +342,7 @@ std::ostream& operator<<(std::ostream& o,
       << " mass = " << M.get_mass() << std::endl
       << " com = [" << M.get_com().transpose() << "]ᵀ" << std::endl
       << " I = " << std::endl
-      << M.get_rotational_inertia();
+      << M.CalcRotationalInertia();
 }
 
 }  // namespace multibody
