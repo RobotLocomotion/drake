@@ -210,18 +210,19 @@ class SpatialInertia {
   ///
   /// @param[in] Mb The spatial inertia to which this spatial inertia will be
   ///               compared.
+  /// @param[in] p The specified dimensionless precision to which the
+  ///              comparison will be performed.
   ///
   /// @returns `true` if `other` is within the specified `precision`. Returns
   ///          `false` otherwise.
   bool IsApprox(const SpatialInertia& Mb,
-                double tolerance = Eigen::NumTraits<T>::epsilon()) {
+                double p = Eigen::NumTraits<T>::epsilon()) {
     using std::abs;
     using std::min;
     return
-        abs(get_mass() - Mb.get_mass()) <
-            tolerance * min(get_mass(), Mb.get_mass()) &&
-        get_com().isApprox(Mb.get_com(), tolerance) &&
-        get_unit_inertia().IsApprox(Mb.get_unit_inertia(), tolerance);
+        abs(get_mass() - Mb.get_mass()) < p * min(get_mass(), Mb.get_mass()) &&
+        get_com().isApprox(Mb.get_com(), p) &&
+        get_unit_inertia().IsApprox(Mb.get_unit_inertia(), p);
   }
 
   /// Adds in a spatial inertia to `this` spatial inertia.
