@@ -62,7 +62,6 @@ class LineSearch {
 
     // Get the slope of the step.
     double slope = gradient.dot(dx);
-    SPDLOG_DEBUG(drake::log(), "  LineSearch slope={}", slope);
 
     // Compute the new x.
     LineSearchOutput out;

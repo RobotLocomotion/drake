@@ -106,8 +106,6 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives(
     const VectorX<T>& x) {
   const System<T>& system = this->get_system();
   Context<T>* context = this->get_mutable_context();
-  SPDLOG_DEBUG(drake::log(), "    IE Calc Derivatives t={}",
-               context->get_time());
   context->get_mutable_continuous_state()->get_mutable_vector()->
       SetFromVector(x);
   system.CalcTimeDerivatives(*context, derivs_.get());
@@ -281,7 +279,6 @@ void ImplicitEulerIntegrator<T>::CalcIterationMatrix(const VectorX<T>& xtplus,
   const int n = xtplus.size();
   Jg_ = CalcJacobian(xtplus) * scale - MatrixX<T>::Identity(n, n);
   LU_.compute(Jg_);
-  n_loops_since_fresh_J_ = 0;  
 }
 
 // Performs the bulk of the stepping computation for both implicit Euler and
@@ -319,6 +316,8 @@ void ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // Set value of last alpha (initialized to NaN to indicate not set).
   double last_alpha = std::nan("");
 
+  SPDLOG_DEBUG(drake::log(), "StepAbstract() entered");
+
   // Evaluate the objective function.
   while (true) {
     // Update the number of Newton-Raphson loops.
@@ -339,7 +338,14 @@ void ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // redetermine and refactor the Jacobian matrix.
     VectorX<T> gcand = g(*xtplus + dx);
     double f_new = 0.5 * gcand.norm();
-    if (f_new > std::pow(f_last,0.75)) {
+    SPDLOG_DEBUG(drake::log(), "f(x): {}  f(x+dx): {}",
+                        f_last, f_new);
+
+    const double rexp = (f_last > 1) ? -reformulation_exponent_ :
+                                       +reformulation_exponent_;
+    if (f_new > std::pow(f_last, rexp)) {
+      SPDLOG_DEBUG(drake::log(), "Reforming/refactoring Jacobian");
+
       // Resolve.
       CalcIterationMatrix(*xtplus, dt / scale);
       dx = LU_.solve(goutput);
@@ -349,6 +355,7 @@ void ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
       // search.
       const VectorX<T> grad = -goutput.transpose() * Jg_;
       double slope = grad.dot(dx);
+      SPDLOG_DEBUG(drake::log(), "Slope: {}", slope);
       DRAKE_DEMAND(slope < 0);
 
       // Search the ray α ∈ [0, 1] for a "good" value that minimizes
@@ -360,6 +367,7 @@ void ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
       typename LineSearch<T>::LineSearchOutput lout =
           LineSearch<T>::search_line(*xtplus, dx, f_last, grad, g,
                                      goutput.norm());
+      SPDLOG_DEBUG(drake::log(), "Determined alpha: {}", lout.alpha);
 
       // Store the last alpha and update the alpha sum statistic.
       last_alpha = lout.alpha;
@@ -481,6 +489,9 @@ template <class T>
 void ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T &dt) {
   // Save the current state and time.
   Context<T>* context = this->get_mutable_context();
+
+  SPDLOG_DEBUG(drake::log(), "IE DoStepOnceFixedSize(h={}) t={}",
+                      dt, context->get_time());
 
   // Compute the derivative at x0.
   T t0 = context->get_time();

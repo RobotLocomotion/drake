@@ -158,9 +158,8 @@ TEST_F(ImplicitIntegratorTest, MiscAPI) {
   // Verify defaults match documentation.
   const double eps = std::numeric_limits<double>::epsilon();
   const double sqrt_eps = std::sqrt(eps);
-  EXPECT_NEAR(integrator.get_delta_update_tolerance(), sqrt_eps, eps);
-  EXPECT_NEAR(integrator.get_jacobian_reformulation_tolerance(), 1e-8, eps);
-  EXPECT_EQ(integrator.get_jacobian_reformulation_min_loops(), 5);
+  EXPECT_NEAR(integrator.get_delta_state_tolerance(), sqrt_eps, eps);
+  EXPECT_NEAR(integrator.get_jacobian_reformulation_exponent(), 1.5, eps);
   EXPECT_EQ(integrator.get_jacobian_computation_scheme(),
             ImplicitEulerIntegrator<double>::JacobianComputationScheme::
                 kForwardDifference);
@@ -242,8 +241,7 @@ TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
   const int n_feval_reform = integrator.get_num_function_evaluations();
 
   // Don't allow any Jacobian reformulation.
-  integrator.set_jacobian_reformulation_tolerance(0.0);
-  integrator.set_jacobian_reformulation_min_loops(0);
+  integrator.set_jacobian_reformulation_exponent(100.0);
 
   // Reset the initial conditions and integrate once again.
   spring_damper->set_position(context.get(), initial_position);
@@ -481,8 +479,6 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
   ImplicitEulerIntegrator<double> integrator(spring_mass, large_dt,
                                              context.get());
   integrator.set_fixed_step_mode(true);
-  integrator.set_jacobian_reformulation_min_loops(0);
-  integrator.set_jacobian_reformulation_tolerance(1.0);
   integrator.set_delta_state_tolerance(1e-15);
 
   // Use automatic differentiation because we can.

@@ -196,56 +196,39 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// Gets the tolerance below which changes to the state variables during the
   /// integration process should indicate that the Newton-Raphson process
   /// has converged.
-  double get_delta_update_tolerance() const { return delta_update_tol_; }
+  double get_delta_state_tolerance() const { return delta_update_tol_; }
 
   /// Sets the tolerance below which changes to the state variables during the
   /// integration process should indicate that the Newton-Raphson process
   /// has converged.
   void set_delta_state_tolerance(double tol) { delta_update_tol_ = tol; }
 
-  /// Sets the scaling tolerance determined by the line search process in the
-  /// nonlinear system of equations solve below which a fresh Jacobian matrix
-  /// can be formed and factorized. If this tolerance is set to be too loose
-  /// (large), the Jacobian may be "freshened" more frequently than desired
-  /// (i.e., the true Newton step may be computed more than necessary). If the
-  /// tolerance is set to be too tight (small), the gradient direction used in
-  /// the nonlinear system solve will not be optimal, implying that more
-  /// ODE function evaluations than necessary may be required. Both this
-  /// tolerance *and* the minimum number of Newton-Raphson loops must be
-  /// executed before the Jacobian matrix can be reformed and factorized.
-  /// Default value is 1e-8.
-  /// @param tol the tolerance value, which must be between zero (Jacobian will
-  ///            never be freshened) and one (Jacobian can be freshened every
-  ///            Newton-Raphson iteration, if the minimum number of
-  ///            reformulation loops is zero).
-  /// @sa get_jacobian_reformulation_tolerance()
-  /// @sa set_jacobian_reformulation_min_loops()
-  /// @throws std::logic_error if tol outside [0, 1].
-  void set_jacobian_reformulation_tolerance(double tol) {
-    if (tol < 0.0 || tol > 1.0)
-      throw std::logic_error("Invalid Jacobian reformulation tolerance.");
-    reform_J_tol_ = tol;
+  /// Gets the exponent on the decrease in error in the objective function
+  /// above which the Jacobian matrix will be reformulated and refactorized.
+  double get_jacobian_reformulation_exponent() const {
+    return reformulation_exponent_; }
+
+  /// Sets the exponent on the decrease in error in the objective function
+  /// above which the Jacobian matrix will be reformulated and refactorized.
+  /// The Jacobian matrix is "freshened" if `f(x+α dx)`, the error in the
+  /// objective function- which is zero if the objective function is perfectly
+  /// satisfied- is reduced _less than:<pre>
+  /// f(x)ᵝ  for f(x) > 1
+  /// f(x)⁻ᵝ for f(x) ≤ 1</pre>
+  /// The closer this value is to one, the less aggressively the Jacobian
+  /// matrix will be freshened. The Newton-Raphson procedure is expected to
+  /// achieve quadratic convergence, which would indicate a setting of β = 2.
+  /// Recommended values lie in the range (1, 2].
+  /// @throws std::logic_error if beta is less than 1.0.
+  /// @param beta the reformulation exponent (default = 1.5). Set this to a
+  ///             very large value to reformulate the Jacobian matrix on every
+  ///             Newton-Raphson iteration.
+  void set_jacobian_reformulation_exponent(double beta) {
+    if (beta <= 1.0)
+      throw std::logic_error("Jacobian reformulation exponent too small.");
+    reformulation_exponent_ = beta;
   }
 
-  /// Gets the scaling tolerance below which a fresh Jacobian matrix may be
-  /// formed and factorized.
-  /// @sa get_jacobian_reformulation_min_loops()
-  double get_jacobian_reformulation_tolerance() const { return reform_J_tol_; }
-
-  /// Sets the number of Newton Raphson loops that must be executed before the
-  /// Jacobian matrix can be reformed and factorized. This minimum number
-  /// of loop executions must be met *and* the scaling tolerance (see
-  /// get_jacobian_reformulation_tolerance()) must be satisfied for the
-  /// Jacobian matrix to be reformulated and factorized. Default value is 5.
-  void set_jacobian_reformulation_min_loops(int min_loops) {
-    reform_J_min_loops_ = min_loops;
-  }
-
-  /// Gets the number of Newton Raphson loops that must be executed before the
-  /// Jacobian matrix can be reformed and factorized.
-  /// @sa set_jacobian_reformulation_min_loops()
-  int get_jacobian_reformulation_min_loops() const {
-    return reform_J_min_loops_; }
   /// @}
 
  protected:
@@ -275,13 +258,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   // solving process to complete.
   double delta_update_tol_{std::sqrt(std::numeric_limits<double>::epsilon())};
 
-  // The minimum update scaling that *must* be observed before a Jacobian
-  // can be freshened.
-  double reform_J_tol_{1e-8};
-
-  // The minimum number of loops a Jacobian *must* be used before it can be
-  // freshened.
-  int reform_J_min_loops_{5};
+  // The exponent for recomputing and refactorizing the Jacobian matrix.
+  double reformulation_exponent_{1.5};
 
   // This is a pre-allocated temporary for use by integration. It stores
   // the derivatives computed at x(t+h).
@@ -319,7 +297,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   int num_function_evaluations_{0};
   int num_jacobian_function_evaluations_{0};
   int num_nr_loops_{0};
-  int n_loops_since_fresh_J_{0};
   double alpha_sum_{0.0};
 };
 }  // namespace systems
