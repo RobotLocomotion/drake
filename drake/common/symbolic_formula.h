@@ -335,6 +335,7 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator==(const DerivedA& a1, const DerivedB& a2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::equal_to<void>());
@@ -352,6 +353,7 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator<=(const DerivedA& a1, const DerivedB& a2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::less_equal<void>());
@@ -369,6 +371,7 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator<(const DerivedA& a1, const DerivedB& a2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::less<void>());
@@ -386,6 +389,7 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator>=(const DerivedA& a1, const DerivedB& a2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::greater_equal<void>());
@@ -403,6 +407,7 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator>(const DerivedA& a1, const DerivedB& a2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::greater<void>());
@@ -420,6 +425,7 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator!=(const DerivedA& a1, const DerivedB& a2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::not_equal_to<void>());
@@ -454,6 +460,7 @@ typename std::enable_if<
                      Formula>::value,
     Formula>::type
 operator==(const DerivedA& m1, const DerivedB& m2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   const auto logic_and = [](const Formula& f1, const Formula& f2) {
