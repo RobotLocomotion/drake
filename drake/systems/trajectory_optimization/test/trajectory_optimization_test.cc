@@ -43,11 +43,11 @@ class MyDirectTrajOpt : public DirectTrajectoryOptimization {
       : DirectTrajectoryOptimization(num_inputs, num_states, num_time_samples,
                                      traj_time_lower_bound,
                                      traj_time_upper_bound) {}
-  void AddRunningCost(const symbolic::Expression& g) override {}
-  void AddRunningCost(
+
+ private:
+  void DoAddRunningCost(const symbolic::Expression& g) override {}
+  void DoAddRunningCost(
       std::shared_ptr<solvers::Constraint> constraint) override {}
-  using DirectTrajectoryOptimization::AddRunningCost;
-  using DirectTrajectoryOptimization::AddFinalCost;
 };
 
 GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
