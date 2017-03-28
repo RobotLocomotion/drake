@@ -13,10 +13,11 @@ using maliput::api::Lane;
 using maliput::api::LanePosition;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadPosition;
+using systems::rendering::FrameVelocity;
 using systems::rendering::PoseBundle;
 using systems::rendering::PoseVector;
 
-const std::pair<RoadPosition, RoadPosition> FindClosestPair(
+const std::pair<RoadOdometry<double>, RoadOdometry<double>> FindClosestPair(
     const RoadGeometry& road, const PoseVector<double>& ego_pose,
     const PoseBundle<double>& traffic_poses, const Lane* traffic_lane) {
   const RoadPosition& ego_position =
@@ -26,14 +27,19 @@ const std::pair<RoadPosition, RoadPosition> FindClosestPair(
   const Lane* const lane =
       (traffic_lane == nullptr) ? ego_position.lane : traffic_lane;
 
-  // Default the leading and trailing positions to extend to, respectively,
-  // positive and negative infinity.
-  RoadPosition result_leading = RoadPosition(
+  // Default the leading and trailing vehicles with positions extending to,
+  // respectively, positive and negative infinity and with zero velocities.
+  RoadPosition pos_leading = RoadPosition(
       lane, LanePosition(std::numeric_limits<double>::infinity(), 0., 0.));
-  RoadPosition result_trailing = RoadPosition(
+  RoadOdometry<double> result_leading =
+      RoadOdometry<double>(pos_leading, FrameVelocity<double>());
+  RoadPosition pos_trailing = RoadPosition(
       lane, LanePosition(-std::numeric_limits<double>::infinity(), 0., 0.));
+  RoadOdometry<double> result_trailing =
+      RoadOdometry<double>(pos_trailing, FrameVelocity<double>());
+
   for (int i = 0; i < traffic_poses.get_num_poses(); ++i) {
-    const RoadPosition& traffic_position =
+    const RoadPosition traffic_position =
         CalcRoadPosition(road, traffic_poses.get_pose(i));
     const double& s_traffic = traffic_position.pos.s;
 
@@ -46,17 +52,20 @@ const std::pair<RoadPosition, RoadPosition> FindClosestPair(
       if (result_trailing.pos.s < s_traffic &&
           s_traffic < result_leading.pos.s) {
         // N.B. The ego car and traffic may reside in different lanes.
-        if (s_traffic >= ego_position.pos.s)
-          result_leading = traffic_position;
-        else
-          result_trailing = traffic_position;
+        if (s_traffic >= ego_position.pos.s) {
+          result_leading = RoadOdometry<double>(traffic_position,
+                                                traffic_poses.get_velocity(i));
+        } else {
+          result_trailing = RoadOdometry<double>(traffic_position,
+                                                 traffic_poses.get_velocity(i));
+        }
       }
     }
   }
   return std::make_pair(result_leading, result_trailing);
 }
 
-const RoadPosition FindClosestLeading(
+const RoadOdometry<double> FindClosestLeading(
     const RoadGeometry& road, const PoseVector<double>& ego_pose,
     const PoseBundle<double>& traffic_poses) {
   return FindClosestPair(road, ego_pose, traffic_poses).first;

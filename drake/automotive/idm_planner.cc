@@ -51,6 +51,11 @@ void IdmPlanner<T>::SetDefaultParameters(IdmPlannerParameters<T>* idm_params) {
   idm_params->set_s_0(T(1.));  // minimum desired net distance [m].
   idm_params->set_time_headway(T(0.1));  // desired headway to lead vehicle [s].
   idm_params->set_delta(T(4.));  // recommended choice of acceleration exponent.
+  idm_params->set_bloat_diameter(T(4.5));  // diameter of circle about the
+                                           // vehicle's pose that encloses its
+                                           // physical footprint.
+  idm_params->set_distance_lower_limit(T(1e-2));  // lower saturation bound on
+                                                  // the net distance.
 }
 
 // These instantiations must match the API documentation in idm_planner.h.

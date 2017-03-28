@@ -164,6 +164,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "idm_controller",
+    srcs = ["idm_controller.cc"],
+    hdrs = ["idm_controller.h"],
+    deps = [
+        ":generated_vectors",
+        ":idm_planner",
+        ":simple_car",
+        ":pose_selector",
+        "//drake/automotive/maliput/api",
+        "//drake/math:saturate",
+        "//drake/systems/rendering:pose_bundle",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
     name = "idm_planner",
     srcs = ["idm_planner.cc"],
     hdrs = ["idm_planner.h"],
@@ -655,6 +671,14 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:simple_car",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "idm_controller_test",
+    deps = [
+        "//drake/automotive:idm_controller",
+        "//drake/automotive/maliput/dragway",
     ],
 )
 

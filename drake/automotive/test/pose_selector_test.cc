@@ -9,6 +9,7 @@ namespace automotive {
 namespace pose_selector {
 namespace {
 
+using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 using systems::rendering::PoseBundle;
 
@@ -20,6 +21,8 @@ constexpr double kEgoRPosition{-0.5 * kLaneWidth};
 constexpr double kLeadingSPosition{31.};
 constexpr double kTrailingSPosition{7.};
 constexpr double kSOffset{4.};
+constexpr double kTrafficXVelocity{27.};
+
 constexpr int kFarAheadIndex{0};
 constexpr int kJustAheadIndex{1};
 constexpr int kJustBehindIndex{2};
@@ -34,8 +37,7 @@ static void SetDefaultPoses(PoseVector<double>* ego_pose,
   DRAKE_DEMAND(kEgoSPosition > kTrailingSPosition && kTrailingSPosition > 0.);
 
   // Create poses for four traffic cars and one ego positioned in the right
-  // lane,
-  // interspersed as follows:
+  // lane, interspersed as follows:
   //
   //     Far Behind   Just Behind     Ego     Just Ahead   Far Ahead
   //   |------o------------o-----------o----------o------------o-------------|
@@ -44,6 +46,9 @@ static void SetDefaultPoses(PoseVector<double>* ego_pose,
       kEgoSPosition /* s */, kEgoRPosition /* r */, 0. /* h */));
   const Eigen::Translation3d translation_far_ahead(
       kLeadingSPosition + kSOffset /* s */, kEgoRPosition /* r */, 0. /* h */);
+  FrameVelocity<double> velocity_far_ahead{};
+  velocity_far_ahead.get_mutable_value() << 0. /* ωx */, 0. /* ωy */,
+      0. /* ωz */, kTrafficXVelocity /* vx */, 0. /* vy */, 0. /* vz */;
   const Eigen::Translation3d translation_just_ahead(
       kLeadingSPosition /* s */, kEgoRPosition /* r */, 0. /* h */);
   const Eigen::Translation3d translation_just_behind(
@@ -52,6 +57,7 @@ static void SetDefaultPoses(PoseVector<double>* ego_pose,
       kTrailingSPosition - kSOffset /* s */, kEgoRPosition /* r */, 0. /* h */);
   traffic_poses->set_pose(kFarAheadIndex,
                           Eigen::Isometry3d(translation_far_ahead));
+  traffic_poses->set_velocity(kFarAheadIndex, velocity_far_ahead);
   traffic_poses->set_pose(kJustAheadIndex,
                           Eigen::Isometry3d(translation_just_ahead));
   traffic_poses->set_pose(kJustBehindIndex,
@@ -85,57 +91,61 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
   const maliput::api::RoadPosition& ego_position =
       CalcRoadPosition(road, ego_pose.get_isometry());
 
-  maliput::api::RoadPosition leading_position;
-  maliput::api::RoadPosition trailing_position;
-  std::tie(leading_position, trailing_position) =
+  RoadOdometry<double> leading_odometry{};
+  RoadOdometry<double> trailing_odometry{};
+  std::tie(leading_odometry, trailing_odometry) =
       FindClosestPair(road, ego_pose, traffic_poses);
 
   // Verifies that we are on the road and that the correct car was identified.
-  EXPECT_EQ(kLeadingSPosition, leading_position.pos.s);
-  EXPECT_EQ(kTrailingSPosition, trailing_position.pos.s);
+  EXPECT_EQ(kLeadingSPosition, leading_odometry.pos.s);
+  EXPECT_EQ(kTrailingSPosition, trailing_odometry.pos.s);
 
   // Test that we get the same result when just the leading car is returned.
-  const maliput::api::RoadPosition& traffic_position =
+  const RoadOdometry<double>& traffic_odometry =
       FindClosestLeading(road, ego_pose, traffic_poses);
-  EXPECT_EQ(kLeadingSPosition, traffic_position.pos.s);
+  EXPECT_EQ(kLeadingSPosition, traffic_odometry.pos.s);
 
   // Peer into the adjacent lane to the left.
-  std::tie(leading_position, trailing_position) = FindClosestPair(
+  std::tie(leading_odometry, trailing_odometry) = FindClosestPair(
       road, ego_pose, traffic_poses, ego_position.lane->to_left());
 
   // Expect to see no cars in the left lane.
-  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_position.pos.s);
-  EXPECT_EQ(-std::numeric_limits<double>::infinity(), trailing_position.pos.s);
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s);
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(), trailing_odometry.pos.s);
 
   // Bump the "just ahead" car into the lane to the left.
   Isometry3<double> isometry_just_ahead =
       traffic_poses.get_pose(kJustAheadIndex);
   isometry_just_ahead.translation().y() += kLaneWidth;
   traffic_poses.set_pose(kJustAheadIndex, isometry_just_ahead);
-  std::tie(leading_position, std::ignore) =
+  std::tie(leading_odometry, std::ignore) =
       FindClosestPair(road, ego_pose, traffic_poses);
 
-  // Expect the "far ahead" car to be identified.
-  EXPECT_EQ(kLeadingSPosition + kSOffset, leading_position.pos.s);
+  // Expect the "far ahead" car to be identified and with the correct speed.
+  EXPECT_EQ(kLeadingSPosition + kSOffset, leading_odometry.pos.s);
+  EXPECT_EQ(kTrafficXVelocity, leading_odometry.vel[3]);
 
   // Bump the "far ahead" car into the lane to the left.
   Isometry3<double> isometry_far_ahead = traffic_poses.get_pose(kFarAheadIndex);
   isometry_far_ahead.translation().y() += kLaneWidth;
   traffic_poses.set_pose(kFarAheadIndex, isometry_far_ahead);
-  std::tie(leading_position, std::ignore) =
+  std::tie(leading_odometry, std::ignore) =
       FindClosestPair(road, ego_pose, traffic_poses);
 
   // Looking forward, we expect there to be no car in sight.
-  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_position.pos.s);
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s);
+  for (int i = 0; i < 6; ++i) {
+    EXPECT_EQ(0., leading_odometry.vel[i]);  // Defaults to zero velocity.
+  }
 
   // Peer into the adjacent lane to the left.
-  std::tie(leading_position, trailing_position) = FindClosestPair(
+  std::tie(leading_odometry, trailing_odometry) = FindClosestPair(
       road, ego_pose, traffic_poses, ego_position.lane->to_left());
 
   // Expect there to be no car behind on the immediate left and the "just ahead"
   // car to be leading.
-  EXPECT_EQ(kLeadingSPosition, leading_position.pos.s);
-  EXPECT_EQ(-std::numeric_limits<double>::infinity(), trailing_position.pos.s);
+  EXPECT_EQ(kLeadingSPosition, leading_odometry.pos.s);
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(), trailing_odometry.pos.s);
 }
 
 }  // namespace
