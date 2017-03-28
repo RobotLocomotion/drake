@@ -6,6 +6,7 @@ def github_archive(
         commit = None,
         sha256 = None,
         build_file = None,
+        local_repository_override=None,
         **kwargs):
     """A macro to be called in the WORKSPACE that adds an external from github
     using a workspace rule.
@@ -24,6 +25,9 @@ def github_archive(
     The optional build_file= is the BUILD file label to use for building this
     external.  When omitted, the BUILD file(s) within the archive will be used.
 
+    The optional local_repository_override= can be used for temporary local
+    testing; instead of retrieving the code from github, the code is retrieved
+    from the local filesystem path given in the argument.
     """
     if repository == None:
         fail("Missing repository=")
@@ -47,6 +51,18 @@ def github_archive(
         # Github archives omit the "v" in version tags, for some reason.
         strip_commit = commit[1:]
     strip_prefix = project + "-" + strip_commit
+
+    if local_repository_override != None:
+        if build_file == None:
+            native.local_repository(
+                name=name,
+                path=local_repository_override)
+        else:
+            native.new_local_repository(
+                name=name,
+                build_file=build_file,
+                path=local_repository_override)
+        return
 
     if build_file == None:
         native.http_archive(
