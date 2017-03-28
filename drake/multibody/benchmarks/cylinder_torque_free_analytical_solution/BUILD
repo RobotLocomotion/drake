@@ -21,6 +21,7 @@ filegroup(
 
 drake_cc_googletest(
     name = "cylinder_torque_free_analytical_solution",
+    size = "medium",
     data = [":models"],
     deps = [
         "//drake/common:drake_path",
