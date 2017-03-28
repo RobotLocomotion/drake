@@ -12,7 +12,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 
-using std::string;
 using std::ifstream;
 using std::istringstream;
 using std::ostream;
@@ -310,7 +309,7 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
   }
 
   string path;
-  size_t idx = obj_file_name.rfind('/');
+  const size_t idx = obj_file_name.rfind('/');
   if (idx != string::npos) {
     path = obj_file_name.substr(0, idx + 1);
   }
@@ -320,7 +319,7 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
   std::vector<tinyobj::material_t> materials;
   std::string err;
 
-  // Would be nice to hand off triangulation for non-triangular faces
+  // Would be nice to hand off triangulation of non-triangular faces
   // to tinyobjloader, however tinyobjloader does no checking that
   // the triangulation is in fact correct.
   bool do_tinyobj_triangulation = false;
@@ -335,28 +334,31 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
   }
 
   // Store the vertices.
-  for (size_t index = 0; index < attrib.vertices.size() ; index += 3) {
+  for (int index = 0;
+       index < static_cast<int>(attrib.vertices.size());
+       index += 3) {
     vertices->push_back(Vector3d(attrib.vertices[index] * scale_[0],
                                  attrib.vertices[index + 1] * scale_[1],
                                  attrib.vertices[index + 2] * scale_[2]));
   }
 
-  // Counter for triangles added to compensate for non-triangular faces
+  // Counter for triangles added to compensate for non-triangular faces.
   int added_triangles = 0;
-  // Counter keeping track of indices, used to check against the #vertices above
+  // Counter keeping track of indices, used to check against the number
+  // of vertices later to ensure all is correct.
   int maximum_index = 0;
 
   // Iterate over the shapes.
   for (auto const& shape : shapes) {
-    unsigned int index_offset = 0;
+    int index_offset = 0;
 
     // For each face in the shape.
-    for (unsigned int face = 0;
-         face < shape.mesh.num_face_vertices.size(); ++face) {
-      const size_t vert_count = shape.mesh.num_face_vertices[face];
+    for (int face = 0;
+         face < static_cast<int>(shape.mesh.num_face_vertices.size()); ++face) {
+      const int vert_count = shape.mesh.num_face_vertices[face];
 
       std::vector<int> indices;
-      for (size_t vert = 0; vert < vert_count; ++vert) {
+      for (int vert = 0; vert < vert_count; ++vert) {
         // Store the vertex index.
         int vertex_index = shape.mesh.indices[index_offset + vert].vertex_index;
         maximum_index = std::max(maximum_index, vertex_index);
@@ -364,7 +366,7 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
       }
 
       // Make sure the face has three vertices. This can only occur if
-      // do_tiny_obj_triangulation is false and faces are non triangular
+      // do_tiny_obj_triangulation is false and faces are non triangular.
       if (indices.size() != 3) {
         if (triangulate == TriangulatePolicy::kTry && indices.size() > 3) {
           // This is a very naive triangulation.  It simply creates a fan
@@ -395,7 +397,7 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
             if (valid) {
               double dot_product = lastNormal.dot(testNormal);
               if (dot_product < 0) {
-                throw std::runtime_error("Trying to triangulate face #" +
+                throw std::runtime_error("Trying to triangulate face number " +
                     std::to_string(face) + " in '" + obj_file_name +
                     "' led to bad triangles. The triangle based " +
                     "on vertices " + std::to_string(indices[0]) +
@@ -405,7 +407,7 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
                     "direction from the previous triangle. " +
                     "Consider triangulating by hand.");
               } else if (dot_product < kCosThreshold) {
-                throw std::runtime_error("Trying to triangulate face #" +
+                throw std::runtime_error("Trying to triangulate face number " +
                     std::to_string(face) + " in '" + obj_file_name +
                     "'.  The face is not sufficiently planar. " +
                     "Consider triangulating by hand.");
@@ -417,7 +419,7 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
           }
           if (!valid) {
             // Problems in computing the normal are logged in GetNormal.
-            throw std::runtime_error("Unable to triangulate face #" +
+            throw std::runtime_error("Unable to triangulate face number " +
                 std::to_string(face) + " in '" + obj_file_name +
                 "'. See log for details.");
           }

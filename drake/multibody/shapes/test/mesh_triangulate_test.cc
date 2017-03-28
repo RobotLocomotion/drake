@@ -99,8 +99,8 @@ GTEST_TEST(MeshShapeTests, DetectBadTriangulation) {
                      Mesh::TriangulatePolicy::kTry);
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
-    const std::string kExpectedMessage = "Trying to triangulate face #4 in '" +
-        kFileName + "' led to bad triangles. The triangle based on "
+    const std::string kExpectedMessage = "Trying to triangulate face number 4"
+        " in '" + kFileName + "' led to bad triangles. The triangle based on "
         "vertices 3, 0, and 1 (0-indexed) is wound in the opposite direction "
         "from the previous triangle. Consider triangulating by hand.";
     EXPECT_EQ(e.what(), kExpectedMessage);
@@ -121,8 +121,8 @@ GTEST_TEST(MeshShapeTests, DetectNonPlanarTriangulation) {
       Mesh::TriangulatePolicy::kTry);
   GTEST_FAIL();
   } catch (std::runtime_error& e) {
-  const std::string kExpectedMessage = "Trying to triangulate face #1 in '" +
-      kFileName + "'.  The face is not sufficiently planar. " +
+  const std::string kExpectedMessage = "Trying to triangulate face number 1"
+      " in '" + kFileName + "'.  The face is not sufficiently planar. " +
       "Consider triangulating by hand.";
   EXPECT_EQ(e.what(), kExpectedMessage);
   }
@@ -149,7 +149,7 @@ GTEST_TEST(MeshShapeTests, TriangulateConcaveFaceSuccess) {
 
 // Tests the triangulation code's response when a face references a vertex
 // not yet written in the file. A simple parser may be thrown by this, but
-// a good parser should handle it (e.g. tinyobjloader does)
+// a good parser should handle it (e.g. tinyobjloader does).
 GTEST_TEST(MeshShapeTests, DetectTriangulateParseOrderError) {
   const std::string kFileName = drake::GetDrakePath() +
       "/multibody/shapes/test/out_of_order_vertex.obj";
@@ -182,8 +182,8 @@ GTEST_TEST(MeshShapeTests, DetectTriangulateDegenerateTriangle) {
     // can run, even if this one "fails".
     EXPECT_TRUE(false);
   } catch (std::runtime_error& e) {
-    const std::string kExpectedMessage = "Unable to triangulate face #0 in "
-        "'" + kFileName + "'. See log for details.";
+    const std::string kExpectedMessage = "Unable to triangulate face number 0"
+        " in '" + kFileName + "'. See log for details.";
     EXPECT_EQ(e.what(), kExpectedMessage);
   }
 
@@ -197,8 +197,8 @@ GTEST_TEST(MeshShapeTests, DetectTriangulateDegenerateTriangle) {
     // An exception *should* be thrown; no exception implies test failure.
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
-    const std::string kExpectedMessage = "Unable to triangulate face #0 in "
-        "'" + kFileName2 + "'. See log for details.";
+    const std::string kExpectedMessage = "Unable to triangulate face number 0"
+        " in '" + kFileName2 + "'. See log for details.";
     EXPECT_EQ(e.what(), kExpectedMessage);
   }
 }
