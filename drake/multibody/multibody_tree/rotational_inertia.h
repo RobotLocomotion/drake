@@ -21,11 +21,12 @@ namespace drake {
 namespace multibody {
 
 /// This class provides an abstraction for the physical concept of the mass
-/// distribution of a body (or system of bodies), about a particular point.
-/// In this documentation with "system" we mean a multi-body system
-/// which could consist of a single body or even of a collection of bodies
-/// (throughout this documentation "body" is many times used instead of "system"
-/// but the same concepts apply to a system of bodies as well.)
+/// distribution of a body (or a collection of bodies forming a composite body),
+/// about a particular point.
+/// In this documentation with "composite body" we mean a collection of bodies
+/// welded together which contains at least one body (throughout this
+/// documentation "body" is many times used instead of "composite body" but the
+/// same concepts apply to a collection of bodies as well.)
 /// Given a point, the mass distribution of a body is generally described by the
 /// first three mass weighted moments about that point. These moments are: the
 /// mass of the body (or zeroth moment), the center of mass vector (or first
@@ -62,14 +63,14 @@ namespace multibody {
 /// that is to use a disciplined notation as described below.
 ///
 /// In typeset material we use the symbol @f$ [I^{S/P}]_E @f$ to represent the
-/// rotational inertia of a system S about point P, expressed in frame E.
-/// In code and comments we use the monogram notation as described
+/// rotational inertia of a body or composite body S about point P, expressed in
+/// frame E. In code and comments we use the monogram notation as described
 /// in @ref multibody_spatial_inertia. For this inertia, the monogram notation
 /// reads `I_SP_E`. If the point P is fixed to a body B, we write that
 /// point as @f$ B_P @f$ which appears in code and comments as `Bp`. So if the
-/// system is a body B and the about point is `Bp`, the monogram notation
-/// reads `I_BBp_E`, which can be abbreviated to `I_Bp_E` since the about point
-/// `Bp` also identifies the system. Common cases are that the
+/// body or composite body is B and the about point is `Bp`, the monogram
+/// notation reads `I_BBp_E`, which can be abbreviated to `I_Bp_E` since the
+/// about point `Bp` also identifies body. Common cases are that the
 /// about point is the origin `Bo` of the body, or its the center of mass `Bcm`
 /// for which the rotational inertia in monogram notation would read
 /// as `I_Bo_E` and `I_Bcm_E`, respectively.
@@ -187,9 +188,9 @@ class RotationalInertia {
   /// Adds in a rotational inertia to `this` rotational inertia. This operation
   /// is only valid if both inertias are computed about the same point P and
   /// expressed in the same frame E. Considering `this` inertia to be `I_SP_E`
-  /// for some system S, about some point P, the supplied inertia must
-  /// be for some system B about the _same_ point P; B's inertia is
-  /// then included in S.
+  /// for some body or composite body S, about some point P, the supplied
+  /// inertia must be for some body or composite body B about the _same_ point
+  /// P; B's inertia is then included in S.
   /// @param[in] I_BP_E A rotational inertia of some body B to be added to
   ///                  `this` inertia. It must be defined about the same
   ///                   point P as `this` inertia, and expressed in the same
@@ -205,17 +206,18 @@ class RotationalInertia {
   /// with another rotational inertia `I_BP_E`.
   /// This operation is only valid if both inertias are computed about the same
   /// point P and expressed in the same frame E. Considering `this` inertia
-  /// to be `I_SP_E` for some system S, about some point P, the
-  /// supplied inertia must be for some system B about the _same_ point
-  /// P; the returned _combined_ inertia `I_CP_E` for the combined system C
-  /// includes both the inertia of `this` system S and that of system B.
+  /// to be `I_SP_E` for some body or composite body S, about some point P, the
+  /// supplied inertia must be for some body or composite body B about the
+  /// _same_ point P; the returned _combined_ inertia `I_CP_E` for the composite
+  /// body C includes both the inertia of `this` body S and that of body B.
   /// @param[in] I_BP_E A rotational inertia of some body B to be added to
   ///                  `this` inertia. It must be defined about the same
   ///                   point P as `this` inertia, and expressed in the same
   ///                   frame E.
-  /// @retval I_CP_E The rotational inertia of the combined system C including
-  ///                both, the rotational inertia `I_SP_E` of `this` system S
-  ///                and the rotational inertia `I_BP_E` of system B.
+  /// @retval I_CP_E The rotational inertia of the combined composite body C
+  ///                including both, the rotational inertia `I_SP_E` of `this`
+  ///                body or composite body S and the rotational inertia
+  ///                `I_BP_E` of body or composite body B.
   /// @see operator+=().
   RotationalInertia<T> operator+(const RotationalInertia<T>& I_BP_E) {
     return RotationalInertia(*this) += I_BP_E;
@@ -224,8 +226,9 @@ class RotationalInertia {
   /// Subtracts a rotational inertia from `this` rotational inertia. This
   /// operation is only valid if both inertias are computed about the same point
   /// P and expressed in the same frame E. Considering `this` inertia to be
-  /// `I_SP_E` for some system S, about some point P, the supplied
-  /// inertia must be for some system B about the _same_ point P.
+  /// `I_SP_E` for some body or composite body S, about some point P, the
+  /// supplied inertia must be for some body or composite body B about the
+  /// _same_ point P.
   /// @param[in] I_BP_E A rotational inertia of some body B to be added to
   ///                  `this` inertia. It must be defined about the same
   ///                   point P as `this` inertia, and expressed in the same
@@ -253,17 +256,19 @@ class RotationalInertia {
   /// subtracting the inertia of a cylinder from the inertia of a solid cube.
   /// This operation is only valid if both inertias are computed about the same
   /// point P and expressed in the same frame E. Considering `this` inertia
-  /// to be `I_SP_E` for some system S, about some point P, the
-  /// supplied inertia must be for some system B about the _same_ point
-  /// P; the returned _combined_ inertia `I_CP_E` for the combined system C
-  /// includes the inertia of `this` system S and subtracts that of system B.
+  /// to be `I_SP_E` for some body or composite body S, about some point P, the
+  /// supplied inertia must be for some other body or composite body B about the
+  /// _same_ point P; the returned _combined_ inertia `I_CP_E` for the composite
+  /// body C includes the inertia of `this` composite body S and subtracts that
+  /// of composite body B.
   /// @param[in] I_BP_E A rotational inertia of some body B to be added to
   ///                  `this` inertia. It must be defined about the same
   ///                   point P as `this` inertia, and expressed in the same
   ///                   frame E.
-  /// @retval I_CP_E The rotational inertia of the combined system C including
-  ///                the rotational inertia `I_SP_E` of `this` system S and
-  ///                subtracts the rotational inertia `I_BP_E` of system B.
+  /// @retval I_CP_E The rotational inertia of the composite body C including
+  ///                the rotational inertia `I_SP_E` of `this` body or composite
+  ///                body S and subtracts the rotational inertia `I_BP_E` of
+  ///                body or composite body B.
   /// @see operator-=().
   ///
   /// @warning This operation might lead to physically invalid rotational
@@ -442,8 +447,8 @@ class RotationalInertia {
     return true;  // All tests passed.
   }
 
-  /// Given `this` rotational inertia `I_SP_E` for some system or body S,
-  /// about a point P and expressed in frame E, this method computes the same
+  /// Given `this` rotational inertia `I_SP_E` for some body or composite body
+  /// S, about a point P and expressed in frame E, this method computes the same
   /// inertia re-expressed in another frame A as
   /// `I_SP_A = R_AE * I_SP_E * (R_AE)ᵀ`.
   /// This operation is performed in-place modifying the original object.
@@ -528,11 +533,11 @@ class RotationalInertia {
     return I_SP_E_.template triangularView<Eigen::Lower>();
   }
 
-  // Inertia matrix of a system S about point P, expressed in frame E. The
-  // system, point, and frame are implicit here. RotationalInertia only keeps
-  // track of the inertia measures, which are assumed to correspond to some
-  // S, P, and E. Users are responsible for keeping track of the frame in which
-  // a particular inertia is expressed in.
+  // Inertia matrix of a body or composite body S about point P, expressed in
+  // frame E. The body S, point P, and expressed-in frame E are implicit here.
+  // RotationalInertia only keeps track of the inertia measures, which are
+  // assumed to correspond to some S, P, and E. Users are responsible for
+  // keeping track of the frame in which a particular inertia is expressed in.
   // Initially set to NaN to aid finding when by mistake we use the strictly
   // upper portion of the matrix. Only the lower portion should be used.
   Matrix3<T> I_SP_E_{Matrix3<T>::Constant(std::numeric_limits<
