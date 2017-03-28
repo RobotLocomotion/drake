@@ -150,3 +150,34 @@
     fun:_ZL21btAlignedAllocDefaultmi
     fun:_Z22btAlignedAllocInternalmi
 }
+
+#########################################################
+# These suppressions are taken from the valgrind source code.
+# file darwin12.supp
+#########################################################
+
+
+## Leaks (apparently) in even hello-world style programs
+{
+   <osx-1>
+   Memcheck:Leak
+   fun:malloc_zone_calloc
+   fun:*NX*Hash*
+}
+
+
+{
+	<osx-2>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:*alloc*
+    ...
+    fun:_ZN16ImageLoaderMachO11doImageInitERKN11ImageLoader11LinkContextE
+    fun:_ZN16ImageLoaderMachO16doInitializationERKN11ImageLoader11LinkContextE
+    fun:_ZN11ImageLoader23recursiveInitializationERKNS_11LinkContextEjRNS_21InitializerTimingListERNS_15UninitedUpwardsE
+    
+    
+}
+
+##----------------------------------------------------------------------##
+    
