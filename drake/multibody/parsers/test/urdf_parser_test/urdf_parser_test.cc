@@ -98,8 +98,6 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
   const string file_no_conflict_1 = root + "non_conflicting_materials_1.urdf";
   const string file_no_conflict_2 = root + "non_conflicting_materials_2.urdf";
   const string file_no_conflict_3 = root + "non_conflicting_materials_3.urdf";
-  const string file_duplicate = root + "duplicate_materials.urdf";
-  const string file_conflict = root + "conflicting_materials.urdf";
 
   auto tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
@@ -113,20 +111,32 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_no_conflict_3, tree.get()));
 
-  tree = make_unique<RigidBodyTree<double>>();
-  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-      file_duplicate, tree.get()), ".*");
-
-  tree = make_unique<RigidBodyTree<double>>();
-  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-      file_conflict, tree.get()), ".*");
-
   // This URDF defines the same color multiple times in different links.
   const string file_same_color_diff_links = root +
       "/duplicate_but_same_materials.urdf";
   tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_same_color_diff_links, tree.get()));
+}
+
+GTEST_TEST(URDFParserDeathTest, TestDuplicateMaterials) {
+  const string root = GetDrakePath() +
+       "/multibody/parsers/test/urdf_parser_test/";
+  const string file_duplicate = root + "duplicate_materials.urdf";
+
+  auto tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_duplicate, tree.get()), ".*");
+}
+
+GTEST_TEST(URDFParserDeathTest, TestConflictingMaterials) {
+  const string root = GetDrakePath() +
+       "/multibody/parsers/test/urdf_parser_test/";
+  const string file_conflict = root + "conflicting_materials.urdf";
+
+  auto tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_conflict, tree.get()), ".*");
 }
 
 string ReadTextFile(const string& file) {
