@@ -6,8 +6,7 @@
 #include <stdexcept>
 
 #include <tiny_obj_loader.h>
-
-#include "spruce.hh"
+#include <spruce.hh>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
