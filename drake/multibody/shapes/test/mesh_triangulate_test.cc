@@ -149,7 +149,7 @@ GTEST_TEST(MeshShapeTests, TriangulateConcaveFaceSuccess) {
 
 // Tests the triangulation code's response when a face references a vertex
 // not yet written in the file. A simple parser may be thrown by this, but
-// a good parser should handle it (e.g. tinyobjloader does)
+// a good parser should handle it (e.g. tinyobjloader does).
 GTEST_TEST(MeshShapeTests, DetectTriangulateParseOrderError) {
   const std::string kFileName = drake::GetDrakePath() +
       "/multibody/shapes/test/out_of_order_vertex.obj";
