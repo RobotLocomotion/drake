@@ -206,7 +206,7 @@ TEST_F(KukaTest, ReachableWithCost) {
     // The position tolerance and the orientation tolerance is chosen
     // according to the Gurobi solver tolerance.
     double position_error = 1E-5;
-    double orientation_error = 2E-5;
+    double orientation_error = 3E-5;
     CheckGlobalIKSolution(position_error, orientation_error);
 
     const Eigen::VectorXd q_w_cost =
