@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/examples/particles/particle.h"
 #include "drake/systems/framework/basic_vector.h"

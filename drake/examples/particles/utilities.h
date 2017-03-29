@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/primitives/matrix_gain.h"
 
@@ -23,8 +22,12 @@ namespace particles {
 ///     \end{bmatrix}
 /// @f]
 ///
-/// @param[in] translator 6xN matrix to translate inputs to outputs.
-/// @return MatrixGain system representing the joint.
+/// @param[in] translator 6xN matrix to translate inputs to outputs, where
+/// 0 < N < 6.
+/// @return MatrixGain representing the joint.
+/// @throws std::runtime_error whenever @p translator matrix implies
+/// M DOF output where M is not 6, or an N DOF input where N is not a
+/// positive non-zero integer that is less than 6.
 ///
 /// @tparam T must be a valid Eigen ScalarType.
 ///
