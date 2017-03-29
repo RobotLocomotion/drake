@@ -207,7 +207,6 @@
    fun:_ZNSs4_Rep8_M_cloneERKSaIcEm
    fun:_ZNSs7reserveEm
    fun:_ZNSs6appendERKSs
-   fun:_ZN6spruce4path6appendERKSs
 }
 
 # str function: DRAKE_ABORT_MSG(error_buff.str().c_str());
