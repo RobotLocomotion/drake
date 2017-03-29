@@ -250,3 +250,15 @@
    fun:_ZNSt15basic_stringbufIcSt11char_traitsIcESaIcEE8overflowEi
 }
 
+# append function urdf_parser_test.cc
+# const string file_duplicate = root + "duplicate_materials.urdf";
+{
+   <ubuntu-14.04-8>  
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:_Znwm
+   fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+   fun:_ZNSs4_Rep8_M_cloneERKSaIcEm
+   fun:_ZNSs7reserveEm
+   fun:_ZNSs6appendEPKcm
+}
