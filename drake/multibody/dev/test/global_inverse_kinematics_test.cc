@@ -20,8 +20,8 @@ std::unique_ptr<RigidBodyTree<double>> ConstructKuka() {
   std::unique_ptr<RigidBodyTree<double>> rigid_body_tree =
       std::make_unique<RigidBodyTree<double>>();
   const std::string model_path = drake::GetDrakePath() +
-                                 "/examples/kuka_iiwa_arm/models/iiwa14/"
-                                 "iiwa14_simplified_collision.urdf";
+                                 "/manipulation/models/iiwa_description/urdf/"
+                                 "iiwa14_polytope_collision.urdf";
 
   parsers::urdf::AddModelInstanceFromUrdfFile(
       model_path,

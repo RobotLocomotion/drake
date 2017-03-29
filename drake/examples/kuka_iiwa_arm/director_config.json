@@ -1,12 +1,12 @@
 {
   "modelName" : "kuka_iiwa",
   "urdfConfig": {
-    "default": "models/iiwa14/iiwa14_simplified_collision.urdf",
-    "robotState": "models/iiwa14/iiwa14_simplified_collision.urdf",
-    "ik":         "models/iiwa14/iiwa14_simplified_collision.urdf",
-    "chull":      "models/iiwa14/iiwa14_simplified_collision.urdf",
-    "playback":   "models/iiwa14/iiwa14_simplified_collision.urdf",
-    "teleop":     "models/iiwa14/iiwa14_simplified_collision.urdf"
+    "default": "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf",
+    "robotState": "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf",
+    "ik":         "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf",
+    "chull":      "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf",
+    "playback":   "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf",
+    "teleop":     "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf"
   },
 
   "teleopJointGroups" : [

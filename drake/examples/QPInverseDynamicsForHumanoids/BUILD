@@ -127,7 +127,7 @@ drake_cc_googletest(
     data = [
         "config/iiwa.alias_groups",
         "config/iiwa.id_controller_config",
-        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
     ],
     tags = [
         "exclusive",
