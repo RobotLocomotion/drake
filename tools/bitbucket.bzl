@@ -34,6 +34,8 @@ def bitbucket_archive(
         # This is mostly-required, but we fallback to a wrong-default value to
         # allow the first attempt to fail and print the correct sha256.
         sha256 = "0" * 64
+    if strip_prefix == None :
+        fail("Missing strip_prefix=")
 
     urls = [
         "https://bitbucket.org/%s/get/%s.tar.gz" % (repository, commit)
