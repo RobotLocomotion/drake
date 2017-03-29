@@ -32,9 +32,12 @@ class Sample : public systems::BasicVector<T> {
   /// An abbreviation for our row index constants.
   typedef SampleIndices K;
 
-  /// Default constructor.  Sets all rows to zero.
+  /// Default constructor.  Sets all rows to their default value.
+  /// @arg @c x defaults to 42.0 in units of m/s.
+  /// @arg @c two_word defaults to 0.0 in units of unknown.
   Sample() : systems::BasicVector<T>(K::kNumCoordinates) {
-    this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
+    this->set_x(42.0);
+    this->set_two_word(0.0);
   }
 
   Sample<T>* DoClone() const override { return new Sample; }
@@ -42,10 +45,12 @@ class Sample : public systems::BasicVector<T> {
   /// @name Getters and Setters
   //@{
   /// Some coordinate
+  /// @note @c x is expressed in units of m/s.
   const T& x() const { return this->GetAtIndex(K::kX); }
   void set_x(const T& x) { this->SetAtIndex(K::kX, x); }
   /// A very long documentation string that will certainly flow across multiple
   /// lines of C++
+  /// @note @c two_word is expressed in units of unknown.
   const T& two_word() const { return this->GetAtIndex(K::kTwoWord); }
   void set_two_word(const T& two_word) {
     this->SetAtIndex(K::kTwoWord, two_word);

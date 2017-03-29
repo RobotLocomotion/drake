@@ -28,6 +28,10 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
   // Size.
   EXPECT_EQ(dut.size(), SampleIndices::kNumCoordinates);
 
+  // Default values.
+  EXPECT_EQ(dut.x(), 42.0);
+  EXPECT_EQ(dut.two_word(), 0.0);
+
   // Accessors.
   dut.set_x(11.0);
   dut.set_two_word(22.0);
