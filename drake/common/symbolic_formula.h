@@ -308,7 +308,7 @@ struct RelationalOpTraits {
 };
 }  // namespace detail
 
-/// Returns an Eigen array of symbolic formula where each element includes
+/// Returns an Eigen array of symbolic formulas where each element includes
 /// element-wise symbolic-equality of two arrays @p m1 and @p m2.
 ///
 /// The following table describes the return type of @p m1 == @p m2.
@@ -345,7 +345,63 @@ operator==(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::equal_to<void>());
 }
 
-/// Returns an Eigen array of symbolic formula where each element includes
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between an array @p a and a scalar @p v using
+/// equal-to operator (==). That is, for all i and j, the (i, j)-th entry of `(a
+/// == v)` has a symbolic formula `a(i, j) == v`.
+///
+/// Here is an example using this operator overloading.
+/// @code
+///     Eigen::Array<Variable, 2, 2> a;
+///     a << Variable{"x"}, Variable{"y"},
+///          Variable{"z"}, Variable{"w"};
+///     Eigen::Array<Formula, 2, 2> f = (a == 3.5);
+///     // Here f = |(x == 3.5)  (y == 3.5)|
+///     //          |(z == 3.5)  (w == 3.5)|.
+/// @endcode
+template <typename Derived, typename ScalarType>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(typename Derived::Scalar() == ScalarType()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator==(const Derived& a, const ScalarType& v) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
+  return a.unaryExpr(
+      [&v](const typename Derived::Scalar& x) { return x == v; });
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between a scalar @p v and an array @p using equal-to
+/// operator (==). That is, for all i and j, the (i, j)-th entry of `(v == a)`
+/// has a symbolic formula `v == a(i, j)`.
+///
+/// Here is an example using this operator overloading.
+/// @code
+///     Eigen::Array<Variable, 2, 2> a;
+///     a << Variable{"x"}, Variable{"y"},
+///          Variable{"z"}, Variable{"w"};
+///     Eigen::Array<Formula, 2, 2> f = (3.5 == a);
+///     // Here f = |(3.5 == x)  (3.5 == y)|
+///     //          |(3.5 == z)  (3.5 == w)|.
+/// @endcode
+template <typename ScalarType, typename Derived>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(ScalarType() == typename Derived::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator==(const ScalarType& v, const Derived& a) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
+  return a.unaryExpr(
+      [&v](const typename Derived::Scalar& x) { return v == x; });
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
 /// element-wise comparison of two arrays @p a1 and @p a2 using
 /// less-than-or-equal operator (<=).
 template <typename DerivedA, typename DerivedB>
@@ -354,7 +410,7 @@ typename std::enable_if<
                  Eigen::ArrayXpr>::value &&
         std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
                      Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename DerivedA::Scalar() >=
+        std::is_same<decltype(typename DerivedA::Scalar() <=
                               typename DerivedB::Scalar()),
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
@@ -365,16 +421,52 @@ operator<=(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::less_equal<void>());
 }
 
-/// Returns an Eigen array of symbolic formula where each element includes
-/// element-wise comparison of two arrays @p a1 and @p a2 using
-/// less-than operator (<).
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between an array @p a and a scalar @p v using
+/// less-than-or-equal operator (<=). That is, for all i and j, the (i, j)-th
+/// entry of `(a <= v)` has a symbolic formula `a(i, j) <= v`.
+template <typename Derived, typename ScalarType>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(typename Derived::Scalar() <= ScalarType()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator<=(const Derived& a, const ScalarType& v) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
+  return a.unaryExpr(
+      [&v](const typename Derived::Scalar& x) { return x <= v; });
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between a scalar @p v and an array @p using
+/// less-than-or-equal operator (<=). That is, for all i and j, the (i, j)-th
+/// entry of `(v <= a)` has a symbolic formula `v <= a(i, j)`.
+template <typename ScalarType, typename Derived>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(ScalarType() <= typename Derived::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator<=(const ScalarType& v, const Derived& a) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
+  return a.unaryExpr(
+      [&v](const typename Derived::Scalar& x) { return v <= x; });
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison of two arrays @p a1 and @p a2 using less-than
+/// operator (<).
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
                  Eigen::ArrayXpr>::value &&
         std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
                      Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename DerivedA::Scalar() >
+        std::is_same<decltype(typename DerivedA::Scalar() <
                               typename DerivedB::Scalar()),
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
@@ -385,7 +477,41 @@ operator<(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::less<void>());
 }
 
-/// Returns an Eigen array of symbolic formula where each element includes
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between an array @p a and a scalar @p v using
+/// less-than operator (<). That is, for all i and j, the (i, j)-th
+/// entry of `(a < v)` has a symbolic formula `a(i, j) < v`.
+template <typename Derived, typename ScalarType>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(typename Derived::Scalar() < ScalarType()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator<(const Derived& a, const ScalarType& v) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
+  return a.unaryExpr([&v](const typename Derived::Scalar& x) { return x < v; });
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between a scalar @p v and an array @p using
+/// less-than operator (<). That is, for all i and j, the (i, j)-th
+/// entry of `(v < a)` has a symbolic formula `v < a(i, j)`.
+template <typename ScalarType, typename Derived>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(ScalarType() < typename Derived::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator<(const ScalarType& v, const Derived& a) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
+  return a.unaryExpr([&v](const typename Derived::Scalar& x) { return v < x; });
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
 /// element-wise comparison of two arrays @p a1 and @p a2 using
 /// greater-than-or-equal operator (>=).
 template <typename DerivedA, typename DerivedB>
@@ -405,9 +531,50 @@ operator>=(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::greater_equal<void>());
 }
 
-/// Returns an Eigen array of symbolic formula where each element includes
-/// element-wise comparison of two arrays @p a1 and @p a2 using
-/// greater-than operator (>).
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between an array @p a and a scalar @p v using
+/// greater-than-or-equal operator (>=). That is, for all i and j, the (i, j)-th
+/// entry of `(a >= v)` has a symbolic formula `a(i, j) >= v`.
+template <typename Derived, typename ScalarType>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(typename Derived::Scalar() >= ScalarType()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator>=(const Derived& a, const ScalarType& v) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
+  return a.unaryExpr(
+      [&v](const typename Derived::Scalar& x) { return x >= v; });
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between a scalar @p v and an array @p using
+/// less-than-or-equal operator (<=) instead of greater-than-or-equal operator
+/// (>=). That is, for all i and j, the (i, j)-th entry of `(v >= a)` has a
+/// symbolic formula `a(i, j) <= v`.
+///
+/// Note that given `v >= a`, this methods returns the result of `a <= v`. First
+/// of all, this formulation is mathematically equivalent to the original
+/// formulation. We implement this method in this way to be consistent with
+/// Eigen's semantics. See the definition of `EIGEN_MAKE_CWISE_COMP_R_OP` in
+/// ArrayCwiseBinaryOps.h file in Eigen.
+template <typename ScalarType, typename Derived>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(ScalarType() >= typename Derived::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator>=(const ScalarType& v, const Derived& a) {
+  return a <= v;
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison of two arrays @p a1 and @p a2 using greater-than
+/// operator (>).
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
@@ -425,16 +592,56 @@ operator>(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::greater<void>());
 }
 
-/// Returns an Eigen array of symbolic formula where each element includes
-/// element-wise comparison of two arrays @p a1 and @p a2 using
-/// not-equal operator (!=).
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between an array @p a and a scalar @p v using
+/// greater-than operator (>). That is, for all i and j, the (i, j)-th
+/// entry of `(a > v)` has a symbolic formula `a(i, j) > v`.
+template <typename Derived, typename ScalarType>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(typename Derived::Scalar() > ScalarType()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator>(const Derived& a, const ScalarType& v) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
+  return a.unaryExpr([&v](const typename Derived::Scalar& x) { return x > v; });
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between a scalar @p v and an array @p using
+/// less-than operator (<) instead of greater-than operator (>). That is, for
+/// all i and j, the (i, j)-th entry of `(v > a)` has a symbolic formula `a(i,
+/// j) < v`.
+///
+/// Note that given `v > a`, this methods returns the result of `a < v`. First
+/// of all, this formulation is mathematically equivalent to the original
+/// formulation. We implement this method in this way to be consistent with
+/// Eigen's semantics. See the definition of `EIGEN_MAKE_CWISE_COMP_R_OP` in
+/// ArrayCwiseBinaryOps.h file in Eigen.
+template <typename ScalarType, typename Derived>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(ScalarType() > typename Derived::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator>(const ScalarType& v, const Derived& a) {
+  return a < v;
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison of two arrays @p a1 and @p a2 using not-equal
+/// operator (!=).
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
                  Eigen::ArrayXpr>::value &&
         std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
                      Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename DerivedA::Scalar() >
+        std::is_same<decltype(typename DerivedA::Scalar() !=
                               typename DerivedB::Scalar()),
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
@@ -443,6 +650,42 @@ operator!=(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::not_equal_to<void>());
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between an array @p a and a scalar @p v using
+/// not-equal operator (!=). That is, for all i and j, the (i, j)-th
+/// entry of `(a != v)` has a symbolic formula `a(i, j) != v`.
+template <typename Derived, typename ScalarType>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(typename Derived::Scalar() != ScalarType()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator!=(const Derived& a, const ScalarType& v) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
+  return a.unaryExpr(
+      [&v](const typename Derived::Scalar& x) { return x != v; });
+}
+
+/// Returns an Eigen array of symbolic formulas where each element includes
+/// element-wise comparison between a scalar @p v and an array @p using
+/// not-equal operator (!=). That is, for all i and j, the (i, j)-th
+/// entry of `(v != a)` has a symbolic formula `v != a(i, j)`.
+template <typename ScalarType, typename Derived>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
+                 Eigen::ArrayXpr>::value &&
+        std::is_same<decltype(ScalarType() != typename Derived::Scalar()),
+                     Formula>::value,
+    Eigen::Array<Formula, Derived::RowsAtCompileTime,
+                 Derived::ColsAtCompileTime>>::type
+operator!=(const ScalarType& v, const Derived& a) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
+  return a.unaryExpr(
+      [&v](const typename Derived::Scalar& x) { return v != x; });
 }
 
 /// Returns a symbolic formula checking if two matrices @p m1 and @p m2 are
@@ -536,5 +779,177 @@ struct NumTraits<drake::symbolic::Formula>
     : GenericNumTraits<drake::symbolic::Formula> {
   static inline int digits10() { return 0; }
 };
+
+namespace internal {
+
+/// Provides specialization for scalar_cmp_op to handle the case "Expr == Expr"
+template <>
+struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
+                     cmp_EQ>
+    : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Expression& a,
+             const drake::symbolic::Expression& b) const {
+    return a == b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Expr < Expr".
+template <>
+struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
+                     cmp_LT>
+    : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Expression& a,
+             const drake::symbolic::Expression& b) const {
+    return a < b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Expr <= Expr".
+template <>
+struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
+                     cmp_LE>
+    : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Expression& a,
+             const drake::symbolic::Expression& b) const {
+    return a <= b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Expr > Expr".
+template <>
+struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
+                     cmp_GT>
+    : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Expression& a,
+             const drake::symbolic::Expression& b) const {
+    return a > b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Expr >= Expr".
+template <>
+struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
+                     cmp_GE>
+    : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Expression& a,
+             const drake::symbolic::Expression& b) const {
+    return a >= b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Expr != Expr".
+template <>
+struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
+                     cmp_NEQ>
+    : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Expression& a,
+             const drake::symbolic::Expression& b) const {
+    return a != b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Var == Var".
+template <>
+struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
+                     cmp_EQ>
+    : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Variable& a,
+             const drake::symbolic::Variable& b) const {
+    return a == b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Var < Var".
+template <>
+struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
+                     cmp_LT>
+    : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Variable& a,
+             const drake::symbolic::Variable& b) const {
+    return a < b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Var <= Var".
+template <>
+struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
+                     cmp_LE>
+    : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Variable& a,
+             const drake::symbolic::Variable& b) const {
+    return a <= b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Var > Var".
+template <>
+struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
+                     cmp_GT>
+    : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Variable& a,
+             const drake::symbolic::Variable& b) const {
+    return a > b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Var >= Var".
+template <>
+struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
+                     cmp_GE>
+    : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Variable& a,
+             const drake::symbolic::Variable& b) const {
+    return a >= b;
+  }
+};
+
+/// Provides specialization for scalar_cmp_op to handle the case "Var != Var".
+template <>
+struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
+                     cmp_NEQ>
+    : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
+  typedef drake::symbolic::Formula result_type;
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
+  operator()(const drake::symbolic::Variable& a,
+             const drake::symbolic::Variable& b) const {
+    return a != b;
+  }
+};
+
+}  // namespace internal
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
