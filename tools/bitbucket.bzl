@@ -6,6 +6,7 @@ def bitbucket_archive(
         commit = None,
         sha256 = None,
         build_file = None,
+        strip_prefix = None,
         **kwargs):
     """A macro to be called in the WORKSPACE that adds an external from
     bitbucket using a workspace rule.
@@ -41,8 +42,6 @@ def bitbucket_archive(
     repository_split = repository.split("/")
     if len(repository_split) != 2:
         fail("The repository= must be formatted as 'organization/project'")
-    _, project = repository_split
-    strip_prefix = project + "-" + commit
 
     if build_file == None:
         native.http_archive(

@@ -1,10 +1,11 @@
 # -*- python -*-
 
 cc_library(
-    name = "lib",
-    srcs = glob([
-        "src/**/*.cc",
-    ]),
+    name = "ignition_math",
+    srcs = glob(
+        ["src/*.cc"],
+        exclude = ["src/*_TEST.cc"],
+    ),
     hdrs = glob([
         "include/**/**/*.hh",
     ]),
