@@ -35,9 +35,20 @@ class BicycleCarParameters : public systems::BasicVector<T> {
   /// An abbreviation for our row index constants.
   typedef BicycleCarParametersIndices K;
 
-  /// Default constructor.  Sets all rows to zero.
+  /// Default constructor.  Sets all rows to their default value:
+  /// @arg @c mass defaults to 2278.0 in units of kg.
+  /// @arg @c lf defaults to 1.292 in units of m.
+  /// @arg @c lr defaults to 1.515 in units of m.
+  /// @arg @c Iz defaults to 3210.0 in units of kg m^2.
+  /// @arg @c Cf defaults to 10.8e4 in units of N / rad.
+  /// @arg @c Cr defaults to 10.8e4 in units of N / rad.
   BicycleCarParameters() : systems::BasicVector<T>(K::kNumCoordinates) {
-    this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
+    this->set_mass(2278.0);
+    this->set_lf(1.292);
+    this->set_lr(1.515);
+    this->set_Iz(3210.0);
+    this->set_Cf(10.8e4);
+    this->set_Cr(10.8e4);
   }
 
   BicycleCarParameters<T>* DoClone() const override {
@@ -47,21 +58,27 @@ class BicycleCarParameters : public systems::BasicVector<T> {
   /// @name Getters and Setters
   //@{
   /// mass
+  /// @note @c mass is expressed in units of kg.
   const T& mass() const { return this->GetAtIndex(K::kMass); }
   void set_mass(const T& mass) { this->SetAtIndex(K::kMass, mass); }
   /// distance from the center of mass to the front axle
+  /// @note @c lf is expressed in units of m.
   const T& lf() const { return this->GetAtIndex(K::kLf); }
   void set_lf(const T& lf) { this->SetAtIndex(K::kLf, lf); }
   /// distance from the center of mass to the rear axle
+  /// @note @c lr is expressed in units of m.
   const T& lr() const { return this->GetAtIndex(K::kLr); }
   void set_lr(const T& lr) { this->SetAtIndex(K::kLr, lr); }
   /// moment of inertia about the yaw-axis
+  /// @note @c Iz is expressed in units of kg m^2.
   const T& Iz() const { return this->GetAtIndex(K::kIz); }
   void set_Iz(const T& Iz) { this->SetAtIndex(K::kIz, Iz); }
   /// cornering stiffness (front)
+  /// @note @c Cf is expressed in units of N / rad.
   const T& Cf() const { return this->GetAtIndex(K::kCf); }
   void set_Cf(const T& Cf) { this->SetAtIndex(K::kCf, Cf); }
   /// cornering stiffness (rear)
+  /// @note @c Cr is expressed in units of N / rad.
   const T& Cr() const { return this->GetAtIndex(K::kCr); }
   void set_Cr(const T& Cr) { this->SetAtIndex(K::kCr, Cr); }
   //@}

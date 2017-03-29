@@ -43,19 +43,8 @@ const T IdmPlanner<T>::Evaluate(const IdmPlannerParameters<T>& params,
 
 template <typename T>
 void IdmPlanner<T>::SetDefaultParameters(IdmPlannerParameters<T>* idm_params) {
-  // Default values from https://en.wikipedia.org/wiki/Intelligent_driver_model.
   DRAKE_DEMAND(idm_params != nullptr);
-  idm_params->set_v_ref(10.);  // desired velocity in free traffic [m/s].
-  idm_params->set_a(T(1.));    // max acceleration [m/s^2].
-  idm_params->set_b(T(3.));    // comfortable braking deceleration [m/s^2].
-  idm_params->set_s_0(T(1.));  // minimum desired net distance [m].
-  idm_params->set_time_headway(T(0.1));  // desired headway to lead vehicle [s].
-  idm_params->set_delta(T(4.));  // recommended choice of acceleration exponent.
-  idm_params->set_bloat_diameter(T(4.5));  // diameter of circle about the
-                                           // vehicle's pose that encloses its
-                                           // physical footprint.
-  idm_params->set_distance_lower_limit(T(1e-2));  // lower saturation bound on
-                                                  // the net distance.
+  idm_params->SetFrom(IdmPlannerParameters<T>());
 }
 
 // These instantiations must match the API documentation in idm_planner.h.
