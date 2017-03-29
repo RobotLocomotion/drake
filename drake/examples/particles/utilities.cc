@@ -8,19 +8,19 @@ template<typename T>
 std::unique_ptr<typename systems::MatrixGain<T>>
 MakeDegenerateEulerJoint(const MatrixX<T>& translator) {
   // Get translation matrix dimensions.
-  int row_count = translator.rows();
-  int col_count = translator.cols();
+  int input_dof = translator.rows();
+  int output_dof = translator.cols();
   // Output degrees of freedom must be 6.
-  DRAKE_DEMAND(row_count == 6);
+  DRAKE_THROW_UNLESS(input_dof == 6);
   // Cannot have less than 1 input degree of freedom!
-  DRAKE_DEMAND(col_count > 0);
+  DRAKE_THROW_UNLESS(output_dof > 0);
   // Cannot have more than 5 input degrees of freedom!
-  DRAKE_DEMAND(col_count < 6);
+  DRAKE_THROW_UNLESS(output_dof < 6);
   // Build 12x2N matrix.
-  MatrixX<T> full_translator(2 * row_count, 2 * col_count);
+  MatrixX<T> full_translator(2 * input_dof, 2 * output_dof);
   full_translator.setZero();
-  full_translator.topLeftCorner(row_count, col_count) = translator;
-  full_translator.bottomRightCorner(row_count, col_count) = translator;
+  full_translator.topLeftCorner(input_dof, output_dof) = translator;
+  full_translator.bottomRightCorner(input_dof, output_dof) = translator;
   // Return matrix gain representing the joint.
   return std::make_unique<typename systems::MatrixGain<T>>(full_translator);
 }

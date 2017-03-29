@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/examples/particles/utilities.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -43,8 +43,8 @@ class SingleDOFEulerJointTest : public ::testing::Test {
 
 TYPED_TEST_CASE_P(SingleDOFEulerJointTest);
 
-/// Makes sure MakeDegenerateEulerJoint joint
-/// output iscreated by is the right mapping of its inputs.
+/// Makes sure that MakeDegenerateEulerJoint joint
+/// output is the right mapping of its inputs.
 TYPED_TEST_P(SingleDOFEulerJointTest, OutputTest) {
   // Set input.
   const systems::InputPortDescriptor<TypeParam>& input_descriptor =
@@ -74,34 +74,34 @@ REGISTER_TYPED_TEST_CASE_P(SingleDOFEulerJointTest, OutputTest);
 
 INSTANTIATE_TYPED_TEST_CASE_P(WithDoubles, SingleDOFEulerJointTest, double);
 
-/// Makes sure MakeDegenerateEulerJoint
-/// aborts when the given translating matrix doesn't imply a
-/// 6 degrees of freedom output (rows != 6).
-GTEST_TEST(DegenerateEulerJointSanityChecks, WrongOutputDOFTest) {
+/// Makes sure that MakeDegenerateEulerJoint throws when the given
+/// translating matrix doesn't imply a 6 degrees of freedom output
+/// (rows != 6).
+GTEST_TEST(DegenerateEulerJointDimensionalityChecks, WrongOutputDOFTest) {
   // Scalar type is fixed as it makes no difference.
-  ASSERT_DEATH({
+  ASSERT_THROW({
       auto bad_joint = MakeDegenerateEulerJoint(MatrixX<double>(4, 4));
-    }, "assertion '.*' failed.");
+    }, std::runtime_error);
 }
 
-/// Makes sure MakeDegenerateEulerJoint
-/// aborts when the given translating matrix implies a 6 or more
-/// degrees of freedom input (cols >= 6).
-GTEST_TEST(DegenerateEulerJointSanityChecks, TooManyInputDOFTest) {
+/// Makes sure that MakeDegenerateEulerJoint throws when the given
+/// translating matrix implies a 6 or more degrees of freedom input
+/// (cols >= 6).
+GTEST_TEST(DegenerateEulerJointDimensionalityChecks, TooManyInputDOFTest) {
   // Scalar type is fixed as it makes no difference.
-  ASSERT_DEATH({
+  ASSERT_THROW({
       auto bad_joint = MakeDegenerateEulerJoint(MatrixX<double>(6, 8));
-    }, "assertion '.*' failed.");
+    }, std::runtime_error);
 }
 
-/// Makes sure MakeDegenerateEulerJoint aborts when the given
+/// Makes sure that MakeDegenerateEulerJoint throws when the given
 /// translating matrix implies a less than 1 degree of freedom
 /// input (cols < 1).
-GTEST_TEST(DegenerateEulerJointSanityChecks, TooFewInputDOFTest) {
+GTEST_TEST(DegenerateEulerJointDimensionalityChecks, TooFewInputDOFTest) {
   // Scalar type is fixed as it makes no difference.
-  ASSERT_DEATH({
+  ASSERT_THROW({
       auto bad_joint = MakeDegenerateEulerJoint(MatrixX<double>(6, 0));
-    }, "assertion '.*' failed.");
+    }, std::runtime_error);
 }
 
 }  // namespace
