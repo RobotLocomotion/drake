@@ -178,16 +178,10 @@ std::unique_ptr<systems::Parameters<T>> BicycleCar<T>::AllocateParameters()
 template <typename T>
 void BicycleCar<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
                                       systems::Parameters<T>* params) const {
-  // Parameters representative of a Cadillac SRX (from Althoff & Dolan, 2014).
   auto p = dynamic_cast<BicycleCarParameters<T>*>(
       params->get_mutable_numeric_parameter(0));
   DRAKE_DEMAND(p != nullptr);
-  p->set_mass(T(2278.));  // Mass [kg].
-  p->set_lf(T(1.292));    // Distance from center of mass to front axle [m].
-  p->set_lr(T(1.515));    // Distance from center of mass to rear axle [m].
-  p->set_Iz(T(3210.));    // Moment of inertia about the yaw-axis [kg m^2].
-  p->set_Cf(T(10.8e4));   // Cornering stiffness (front) [N / rad].
-  p->set_Cr(T(10.8e4));   // Cornering stiffness (rear) [N / rad].
+  p->SetFrom(BicycleCarParameters<T>());
 }
 
 // These instantiations must match the API documentation in bicycle.h.
