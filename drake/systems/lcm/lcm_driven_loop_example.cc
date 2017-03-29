@@ -10,9 +10,11 @@ void test() {
 
   auto sys = systems::lcm::LcmSubscriberSystem::Make<bot_core::robot_state_t>(
       "EST_ROBOT_STATE", &lcm);
-  auto msg_to_time = std::make_unique<systems::lcm::UtimeMessageToSeconds<bot_core::robot_state_t>>();
+  auto msg_to_time = std::make_unique<
+      systems::lcm::UtimeMessageToSeconds<bot_core::robot_state_t>>();
 
-  lcm::LcmDrivenLoop dut(&lcm, *sys, nullptr, sys.get(), std::move(msg_to_time));
+  lcm::LcmDrivenLoop dut(&lcm, *sys, nullptr, sys.get(),
+                         std::move(msg_to_time));
 
   dut.RunWithDefaultInitialization();
 }

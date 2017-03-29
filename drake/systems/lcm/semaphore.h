@@ -1,11 +1,12 @@
 #pragma once
-#include <mutex>
+
+#include <algorithm>
 #include <condition_variable>
-#include <iostream>
+#include <mutex>
 
 class Semaphore {
  public:
-  explicit Semaphore(unsigned long max_count) : max_count_(max_count) {}
+  explicit Semaphore(uint64_t max_count) : max_count_(max_count) {}
 
   void notify() {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -16,24 +17,15 @@ class Semaphore {
 
   void wait() {
     std::unique_lock<std::mutex> lock(mutex_);
-    // Handle spurious wake-ups.
+    // Handles spurious wake-ups.
     while (!count_)
       condition_.wait(lock);
     count_--;
   }
 
-  bool try_wait() {
-    std::unique_lock<std::mutex> lock(mutex_);
-    if (count_) {
-      count_--;
-      return true;
-    }
-    return false;
-  }
-
  private:
   std::mutex mutex_;
   std::condition_variable condition_;
-  unsigned long count_{0};
-  const unsigned long max_count_{1};
+  uint64_t count_{0};
+  const uint64_t max_count_{1};
 };

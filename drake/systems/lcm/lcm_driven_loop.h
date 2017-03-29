@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
@@ -13,7 +16,8 @@ class LcmMessageToTimeInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmMessageToTimeInterface)
   virtual ~LcmMessageToTimeInterface() {}
 
-  virtual double GetTimeInSeconds(const AbstractValue& abstract_value) const = 0;
+  virtual double GetTimeInSeconds(
+      const AbstractValue& abstract_value) const = 0;
 
  protected:
   LcmMessageToTimeInterface() {}
@@ -79,8 +83,8 @@ class LcmDrivenLoop {
  public:
   // The max count for semaphore_ needs to be 1. Otherwise the behavior is not
   // correct if we handle messages slower than the incoming rate.
-  LcmDrivenLoop(drake::lcm::DrakeLcm* lcm,
-                const System<double>& system, std::unique_ptr<Context<double>> context,
+  LcmDrivenLoop(drake::lcm::DrakeLcm* lcm, const System<double>& system,
+                std::unique_ptr<Context<double>> context,
                 LcmSubscriberSystem* driving_subscriber,
                 std::unique_ptr<LcmMessageToTimeInterface> time_converter)
       : lcm_(lcm), time_converter_(std::move(time_converter)), semaphore_(1) {
@@ -89,7 +93,8 @@ class LcmDrivenLoop {
 
     system_ = &system;
     driving_sub_ = driving_subscriber;
-    stepper_ = std::make_unique<Simulator<double>>(*system_, std::move(context));
+    stepper_ =
+        std::make_unique<Simulator<double>>(*system_, std::move(context));
 
     driving_sub_->set_notification(&semaphore_);
 
@@ -132,11 +137,7 @@ class LcmDrivenLoop {
       driving_sub_->CalcOutput(*sub_context_, sub_output_.get());
 
       // Sets the context time to the lcm message's time.
-      msg_time =
-          time_converter_->GetTimeInSeconds(*(sub_output_->get_data(0)));
-      std::cout << "msg t: " << msg_time << std::endl;
-      std::cout << "msg dt: " << msg_time - stepper_->get_context().get_time()
-                << std::endl;
+      msg_time = time_converter_->GetTimeInSeconds(*(sub_output_->get_data(0)));
 
       // Do everything else normally.
       stepper_->StepTo(msg_time);
@@ -156,8 +157,7 @@ class LcmDrivenLoop {
    */
   void RunWithDefaultInitialization() {
     const AbstractValue& first_msg = WaitForMessage();
-    double msg_time =
-        time_converter_->GetTimeInSeconds(first_msg);
+    double msg_time = time_converter_->GetTimeInSeconds(first_msg);
     // Init our time to the msg time.
     stepper_->get_mutable_context()->set_time(msg_time);
 
@@ -191,24 +191,32 @@ class LcmDrivenLoop {
     publish_on_every_received_message_ = flag;
   }
 
+  /**
+   * Returns a mutable pointer to the context.
+   */
   Context<double>* get_mutable_context() {
     return stepper_->get_mutable_context();
   }
 
-  const LcmMessageToTimeInterface* get_message_to_time_converter() const {
-    return time_converter_.get();
+  /**
+   * Returns a const reference to the message to seconds converter.
+   */
+  const LcmMessageToTimeInterface& get_message_to_time_converter() const {
+    return *time_converter_;
   }
 
  private:
   // The lcm interface for publishing and subscribing.
   drake::lcm::DrakeLcm* lcm_;
 
+  // Extracts time in seconds from received lcm messages.
   std::unique_ptr<LcmMessageToTimeInterface> time_converter_;
 
+  // If true, explicitly calls system_.Publish() after every step in the loop.
   bool publish_on_every_received_message_{true};
 
-  // The semaphore that blocks the thread that calls Run() until a message
-  // triggers driving_sub_'s message handler which wakes up this semaphore.
+  // The semaphore that blocks the loop thread until a message triggers
+  // driving_sub_'s message handler which wakes up this semaphore.
   Semaphore semaphore_;
 
   // The system that does stuff.

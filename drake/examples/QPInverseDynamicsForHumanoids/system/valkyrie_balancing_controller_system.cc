@@ -92,16 +92,19 @@ void controller_loop() {
   // Makes a Lcm driven loop that's blocked by robot_state_subscriber.
   systems::lcm::LcmDrivenLoop loop(
       &lcm, *diagram, nullptr, &robot_state_subscriber,
-      std::make_unique<systems::lcm::UtimeMessageToSeconds<bot_core::robot_state_t>>());
+      std::make_unique<
+          systems::lcm::UtimeMessageToSeconds<bot_core::robot_state_t>>());
 
   // Do initialization based on the first received message.
   const systems::AbstractValue& first_msg = loop.WaitForMessage();
-  double msg_time = loop.get_message_to_time_converter()->GetTimeInSeconds(first_msg);
+  double msg_time =
+      loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
   loop.get_mutable_context()->set_time(msg_time);
 
   // Sets plan eval's desired to the nominal state.
   systems::Context<double>* plan_eval_context =
-      diagram->GetMutableSubsystemContext(loop.get_mutable_context(), plan_eval);
+      diagram->GetMutableSubsystemContext(loop.get_mutable_context(),
+                                          plan_eval);
   DRAKE_DEMAND(valkyrie::kRPYValkyrieDof == robot->get_num_positions());
   VectorX<double> desired_q =
       valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
