@@ -355,6 +355,10 @@ class PolynomialConstraint : public Constraint {
 
   ~PolynomialConstraint() override {}
 
+  const VectorXPoly& polynomials() const {return polynomials_;}
+
+  const std::vector<Polynomiald::VarType> poly_vars() const {return poly_vars_;}
+
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
               Eigen::VectorXd &y) const override;

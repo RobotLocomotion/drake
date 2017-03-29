@@ -373,6 +373,12 @@ GTEST_TEST(testNonlinearProgram, MinDistanceFromPlaneToOrigin) {
     }
   }
 }
+
+GTEST_TEST(testNonlinearProgram, ConvexCubicProgramExample) {
+  ConvexCubicProgramExample prob;
+  prob.SetInitialGuessForAllVariables(Vector1d(1));
+  RunNonlinearProgram(&prob, [&]() {prob.CheckSolution();});
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
