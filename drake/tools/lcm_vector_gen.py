@@ -75,16 +75,56 @@ def generate_indices_storage(cc, caller_context, fields):
     put(cc, '', 1)
 
 
-DEFAULT_CTOR = """
+# One variant of a default constructor (all zeros).  (Depending on the
+# named_vector details, we will either use this variant or the subsequent one.)
+DEFAULT_CTOR_ZEROS = """
   /// Default constructor.  Sets all rows to zero.
   %(camel)s() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 """
+# A second variant of a default constructor (field-by-field setting).
+DEFAULT_CTOR_CUSTOM_BEGIN_API = """
+  /// Default constructor.  Sets all rows to their default value:
+"""
+DEFAULT_CTOR_CUSTOM_FIELD_API = """
+  /// @arg @c %(field)s defaults to %(default_value)s in units of %(doc_units)s.
+"""
+DEFAULT_CTOR_CUSTOM_BEGIN_BODY = """
+  %(camel)s() : systems::BasicVector<T>(K::kNumCoordinates) {
+"""
+DEFAULT_CTOR_CUSTOM_FIELD_BODY = """
+    this->set_%(field)s(%(default_value)s);
+"""
+DEFAULT_CTOR_CUSTOM_END = """
+}
+"""
+DEFAULT_CTOR_FIELD_DEFAULT_VALUE = '0.0'  # When not otherwise overridden.
+DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
 
 
-def generate_default_ctor(hh, context, _):
-    put(hh, DEFAULT_CTOR % context, 2)
+def generate_default_ctor(hh, caller_context, fields):
+    # If all defaults are 0.0 and unit-less, then emit the simple ctor.
+    if all([item['default_value'] == DEFAULT_CTOR_FIELD_DEFAULT_VALUE and
+            item['doc_units'] == DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
+            for item in fields]):
+        put(hh, DEFAULT_CTOR_ZEROS % caller_context, 2)
+        return
+    # Otherwise, emit a customized ctor.
+    put(hh, DEFAULT_CTOR_CUSTOM_BEGIN_API % caller_context, 1)
+    for field in fields:
+        context = dict(caller_context)
+        context.update(field=field['name'])
+        context.update(default_value=field['default_value'])
+        context.update(doc_units=field['doc_units'])
+        put(hh, DEFAULT_CTOR_CUSTOM_FIELD_API % context, 1)
+    put(hh, DEFAULT_CTOR_CUSTOM_BEGIN_BODY % caller_context, 1)
+    for field in fields:
+        context = dict(caller_context)
+        context.update(field=field['name'])
+        context.update(default_value=field['default_value'])
+        put(hh, DEFAULT_CTOR_CUSTOM_FIELD_BODY % context, 1)
+    put(hh, DEFAULT_CTOR_CUSTOM_END % caller_context, 2)
 
 
 DO_CLONE = """
@@ -102,12 +142,17 @@ ACCESSOR_BEGIN = """
   /// @name Getters and Setters
   //@{
 """
-ACCESSOR = """
-    /// %(doc)s
-    const T& %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
-    void set_%(field)s(const T& %(field)s) {
-      this->SetAtIndex(K::%(kname)s, %(field)s);
-    }
+ACCESSOR_FIELD_DOC = """
+  /// %(doc)s
+"""
+ACCESSOR_FIELD_DOC_UNITS = """
+  /// @note @c %(field)s is expressed in units of %(doc_units)s.
+"""
+ACCESSOR_FIELD_METHODS = """
+  const T& %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
+  void set_%(field)s(const T& %(field)s) {
+    this->SetAtIndex(K::%(kname)s, %(field)s);
+  }
 """
 ACCESSOR_END = """
   //@}
@@ -115,14 +160,18 @@ ACCESSOR_END = """
 
 
 def generate_accessors(hh, caller_context, fields):
-    context = dict(caller_context)
-    put(hh, ACCESSOR_BEGIN % context, 1)
+    put(hh, ACCESSOR_BEGIN % caller_context, 1)
     for field in fields:
+        context = dict(caller_context)
         context.update(field=field['name'])
         context.update(kname=to_kname(field['name']))
         context.update(doc=field['doc'])
-        put(hh, ACCESSOR % context, 1)
-    put(hh, ACCESSOR_END % context, 2)
+        context.update(doc_units=field['doc_units'])
+        put(hh, ACCESSOR_FIELD_DOC % context, 1)
+        if context['doc_units'] != DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS:
+            put(hh, ACCESSOR_FIELD_DOC_UNITS % context, 1)
+        put(hh, ACCESSOR_FIELD_METHODS  % context, 1)
+    put(hh, ACCESSOR_END % caller_context, 2)
 
 
 IS_VALID_BEGIN = """
@@ -356,10 +405,27 @@ def generate_code(args):
         with open(args.named_vector_file, "r") as f:
             vec = named_vector_pb2.NamedVector()
             google.protobuf.text_format.Merge(f.read(), vec)
-            fields = [{'name': el.name, 'doc': el.doc} for el in vec.element]
+            fields = [{
+                'name': el.name,
+                'doc': el.doc,
+                'default_value': el.default_value,
+                'doc_units': el.doc_units,
+                } for el in vec.element]
     else:
         # Parse the field names from the command line.
-        fields = [{'name': x, 'doc': x} for x in args.fields]
+        fields = [{
+            'name': x,
+            'doc': x,
+            'default_value': '',
+            'doc_units': '',
+        } for x in args.fields]
+
+    # Default some field attributes if they are missing.
+    for item in fields:
+        if len(item['default_value']) == 0:
+            item['default_value'] = DEFAULT_CTOR_FIELD_DEFAULT_VALUE
+        if len(item['doc_units']) == 0:
+            item['doc_units'] = DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
 
     # The context provides string substitutions for the C++ code blocks in the
     # literal strings throughout this program.
