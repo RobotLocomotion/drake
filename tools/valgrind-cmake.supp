@@ -167,16 +167,12 @@
 
 
 {
-	<osx-2>
+    <osx-2>
     Memcheck:Leak
     match-leak-kinds: possible
     fun:*alloc*
     ...
-    fun:_ZN16ImageLoaderMachO11doImageInitERKN11ImageLoader11LinkContextE
-    fun:_ZN16ImageLoaderMachO16doInitializationERKN11ImageLoader11LinkContextE
-    fun:_ZN11ImageLoader23recursiveInitializationERKNS_11LinkContextEjRNS_21InitializerTimingListERNS_15UninitedUpwardsE
-    
-    
+    fun:*ImageLoader*
 }
 
 ##----------------------------------------------------------------------##
