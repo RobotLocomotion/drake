@@ -249,8 +249,8 @@ drake_cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        "@gflags//:gflags",
         ":common",
+        "@gflags//:gflags",
     ],
 )
 

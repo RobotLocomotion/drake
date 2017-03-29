@@ -544,10 +544,12 @@ std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
   return cost;
 }
 
-Binding<PolynomialConstraint> MathematicalProgram::AddPolynomialCost(const symbolic::Expression& e) {
+Binding<PolynomialConstraint> MathematicalProgram::AddPolynomialCost(
+    const symbolic::Expression& e) {
   if (!e.is_polynomial()) {
     std::ostringstream oss;
-    oss << "Expression" << e << " is not a polynomial. AddPolynomialCost only support polynomial expression.\n";
+    oss << "Expression" << e << " is not a polynomial. AddPolynomialCost only "
+                                "support polynomial expression.\n";
     throw std::runtime_error(oss.str());
   }
   const symbolic::Variables& vars = e.GetVariables();
@@ -562,7 +564,10 @@ Binding<PolynomialConstraint> MathematicalProgram::AddPolynomialCost(const symbo
   }
   Vector1d lb(-numeric_limits<double>::infinity());
   Vector1d ub(numeric_limits<double>::infinity());
-  Binding<PolynomialConstraint> polynomial_cost(std::make_shared<PolynomialConstraint>(Vector1<Polynomiald>(polynomial), polynomial_vars, lb, ub), var_vec);
+  Binding<PolynomialConstraint> polynomial_cost(
+      std::make_shared<PolynomialConstraint>(Vector1<Polynomiald>(polynomial),
+                                             polynomial_vars, lb, ub),
+      var_vec);
   AddCost(polynomial_cost);
   return polynomial_cost;
 }

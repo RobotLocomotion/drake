@@ -1748,7 +1748,8 @@ GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
   }
 }
 
-void CheckAddedPolynomialCost(MathematicalProgram* prog, const symbolic::Expression& e) {
+void CheckAddedPolynomialCost(MathematicalProgram* prog,
+                              const symbolic::Expression& e) {
   int num_cost = prog->generic_costs().size();
   const auto binding = prog->AddPolynomialCost(e);
   EXPECT_EQ(prog->generic_costs().size(), ++num_cost);
@@ -1765,7 +1766,8 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const symbolic::Express
     map_expected.emplace(m_symbolic, m.coefficient);
   }
   // Now compare the reconstructed symbolic polynomial with `e`.
-  const auto map = symbolic::DecomposePolynomialIntoMonomial(e, e.GetVariables());
+  const auto map =
+      symbolic::DecomposePolynomialIntoMonomial(e, e.GetVariables());
   EXPECT_EQ(map.size(), map_expected.size());
   for (const auto& m : map) {
     const auto m_expected_it = map_expected.find(m.first);
@@ -1784,7 +1786,8 @@ GTEST_TEST(testMathematicalProgram, testAddPolynomialCost) {
   CheckAddedPolynomialCost(&prog, pow(x(0), 2) * x(1));
 
   // Add a 4th order cost
-  CheckAddedPolynomialCost(&prog, x(0) * x(0) * x(1) * x(1) + pow(x(0), 3) * x(1) + 2 * x(1));
+  CheckAddedPolynomialCost(
+      &prog, x(0) * x(0) * x(1) * x(1) + pow(x(0), 3) * x(1) + 2 * x(1));
 }
 
 GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {

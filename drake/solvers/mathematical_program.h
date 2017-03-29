@@ -917,7 +917,8 @@ class MathematicalProgram {
    * @param e A symbolic expression in the polynomial form.
    * @return The newly created cost and the bound variables.
    */
-  Binding<PolynomialConstraint> AddPolynomialCost(const symbolic::Expression& e);
+  Binding<PolynomialConstraint> AddPolynomialCost(
+      const symbolic::Expression& e);
 
   /**
    * Adds a cost in the symbolic form.
