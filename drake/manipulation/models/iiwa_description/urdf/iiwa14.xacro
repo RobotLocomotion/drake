@@ -19,7 +19,7 @@
       params="parent hardware_interface robot_name collision_type *origin">
 
     <!--joint between {parent} and link_0-->
-    <joint name="${parent}_joint" type="fixed">
+    <joint name="${robot_name}_${parent}_joint" type="fixed">
       <xacro:insert_block name="origin"/>
       <parent link="${parent}"/>
       <child link="${robot_name}_link_0"/>
@@ -452,13 +452,14 @@
       <child link="${robot_name}_link_ee"/>
       <origin rpy="0 -1.57079632679 0" xyz="0 0 0.045"/>
     </joint>
-    <link name="iiwa_link_ee">
+    <link name="${robot_name}_link_ee">
     </link>
-    <frame name="iiwa_frame_ee" link="iiwa_link_ee"
+    <frame name="${robot_name}_frame_ee" link="${robot_name}_link_ee"
            xyz="0.09 0 0" rpy="3.14159265359 0 1.57079632679"/>
     <!--Extensions -->
     <xacro:iiwa_gazebo robot_name="${robot_name}" />
-    <xacro:iiwa_transmission hardware_interface="${hardware_interface}"/>
+    <xacro:iiwa_transmission hardware_interface="${hardware_interface}"
+        robot_name="${robot_name}"/>
 
   </xacro:macro>
 

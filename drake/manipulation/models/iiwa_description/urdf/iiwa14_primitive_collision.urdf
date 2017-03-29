@@ -40,7 +40,7 @@
   <!-- Defines a base link that will serve as the model's root. -->
   <link name="base"/>
   <!--joint between {parent} and link_0-->
-  <joint name="base_joint" type="fixed">
+  <joint name="iiwa_base_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="base"/>
     <child link="iiwa_link_0"/>
