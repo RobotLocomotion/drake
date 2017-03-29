@@ -23,6 +23,8 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/demultiplexer.h"
 
+#include "drake/systems/lcm/lcm_driven_loop.h"
+
 using robotlocomotion::robot_plan_t;
 
 namespace drake {
@@ -57,7 +59,6 @@ int DoMain() {
   auto command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_command>(
           kLcmCommandChannel, &lcm));
-  command_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto command_sender = builder.AddSystem<IiwaCommandSender>();
 
   builder.Connect(plan_sub->get_output_port(0),
@@ -74,39 +75,13 @@ int DoMain() {
                   command_pub->get_input_port(0));
   auto diagram = builder.Build();
 
-  lcm.StartReceiveThread();
   drake::log()->info("controller started");
 
-  // Loops until the first status message arrives.
-  std::unique_ptr<systems::Context<double>> initial_context =
-      diagram->CreateDefaultContext();
-  while (true) {
-    // Sets Context's time to the timestamp in the bot_core::robot_state_t msg.
-    const lcmt_iiwa_status* msg =
-        status_receiver->EvalInputValue<lcmt_iiwa_status>(
-            diagram->GetSubsystemContext(*initial_context, status_receiver), 0);
-    initial_context->set_time(static_cast<double>(msg->utime) / 1e6);
-    if (initial_context->get_time() != 0) break;
-  }
-  double iiwa_time = initial_context->get_time();
-  drake::log()->info("status received");
+  systems::lcm::LcmDrivenLoop loop(&lcm, *diagram, nullptr, status_sub,
+      std::make_unique<systems::lcm::UtimeMessageToSeconds<lcmt_iiwa_status>>());
 
-  systems::Simulator<double> simulator(*diagram, std::move(initial_context));
-  simulator.set_publish_every_time_step(false);
-  simulator.Initialize();
-
-  // Loop forever, continuing to update the simulation based on the incoming
-  // status message.
-  while (true) {
-    while (iiwa_time <= simulator.get_context().get_time()) {
-      const lcmt_iiwa_status* msg =
-          status_receiver->EvalInputValue<lcmt_iiwa_status>(
-              diagram->GetSubsystemContext(
-                  simulator.get_context(), status_receiver), 0);
-      iiwa_time = static_cast<double>(msg->utime) / 1e6;
-    }
-    simulator.StepTo(iiwa_time);
-  }
+  loop.RunWithDefaultInitialization();
+  return 0;
 }
 
 }  // namespace

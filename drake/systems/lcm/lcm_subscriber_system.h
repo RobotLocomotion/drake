@@ -15,6 +15,8 @@
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 #include "drake/systems/lcm/serializer.h"
 
+#include "drake/systems/lcm/semaphore.h"
+
 namespace drake {
 namespace systems {
 namespace lcm {
@@ -114,6 +116,14 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
 
+  /**
+   * Set the notification, so that every time a message is received, @p sem
+   * will be notified.
+   */
+  void set_notification(Semaphore* sem) {
+    notification_ = sem;
+  }
+
  protected:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;
@@ -151,6 +161,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   // The bytes of the most recently received LCM message.
   std::vector<uint8_t> received_message_;
+
+  Semaphore* notification_{nullptr};
 };
 
 }  // namespace lcm

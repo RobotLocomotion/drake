@@ -140,6 +140,11 @@ void LcmSubscriberSystem::HandleMessage(const std::string& channel,
               << "\" instead of channel \"" << channel_ << "\". Ignoring it."
               << std::endl;
   }
+
+  // Wakes up whoever is sleeping on this.
+  if (notification_) {
+    notification_->notify();
+  }
 }
 
 const LcmAndVectorBaseTranslator& LcmSubscriberSystem::get_translator() const {

@@ -126,6 +126,7 @@ drake_cc_binary(
         "//drake/multibody/parsers",
         "//drake/systems/framework",
         "//drake/systems/lcm",
+        "//drake/systems/lcm:lcm_driven_loop",
         "//drake/systems/primitives:constant_value_source",
         "@bot_core_lcmtypes//:lib",
     ],

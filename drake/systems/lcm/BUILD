@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library", "drake_cc_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -32,11 +32,38 @@ drake_cc_library(
         "lcm_publisher_system.h",
         "lcm_subscriber_system.h",
         "serializer.h",
+        "semaphore.h"
     ],
     deps = [
         ":translator",
         "//drake/lcm:interface",
         "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_driven_loop",
+    srcs = [
+    ],
+    hdrs = [
+        "lcm_driven_loop.h",
+    ],
+    deps = [
+        ":lcm",
+        "//drake/lcm:interface",
+        "//drake/systems/framework",
+        "//drake/systems/analysis",
+    ],
+)
+
+drake_cc_binary(
+    name = "lcm_driven_loop_example",
+    srcs = ["lcm_driven_loop_example.cc"],
+    deps = [
+        "//drake/lcm",
+        "//drake/systems/framework",
+        "//drake/systems/lcm:lcm_driven_loop",
+        "@bot_core_lcmtypes//:lib",
     ],
 )
 
