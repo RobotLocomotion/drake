@@ -262,3 +262,22 @@
    fun:_ZNSs7reserveEm
    fun:_ZNSs6appendEPKcm
 }
+
+# Leak from standard libraries.
+{
+    <ubuntu-14.04-8>  
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs4_Rep8_M_cloneERKSaIcEm
+    fun:_ZNSs7reserveEm
+    fun:_ZNSs9push_backEc
+    fun:_ZNSt20back_insert_iteratorISsEaSERKc
+    fun:_ZNSt11__copy_moveILb0ELb0ESt26random_access_iterator_tagE8__copy_mIPKcSt20back_insert_iteratorISsEEET0_T_S8_S7_
+    fun:_ZSt13__copy_move_aILb0EPKcSt20back_insert_iteratorISsEET1_T0_S5_S4_
+    fun:_ZSt14__copy_move_a2ILb0EN9__gnu_cxx17__normal_iteratorIPKcSsEESt20back_insert_iteratorISsEET1_T0_S8_S7_
+    fun:_ZSt4copyIN9__gnu_cxx17__normal_iteratorIPKcSsEESt20back_insert_iteratorISsEET0_T_S8_S7_
+    fun:_ZSt13regex_replaceISt20back_insert_iteratorISsEN9__gnu_cxx17__normal_iteratorIPKcSsEESt12regex_traitsIcEcET_S9_T0_SA_RKSt11basic_regexIT2_T1_EPKSC_NSt15regex_constants15match_flag_typeE
+    fun:_ZSt13regex_replaceISt20back_insert_iteratorISsEN9__gnu_cxx17__normal_iteratorIPKcSsEESt12regex_traitsIcEcSt11char_traitsIcESaIcEET_SC_T0_SD_RKSt11basic_regexIT2_T1_ERKSbISF_T3_T4_ENSt15regex_constants15match_flag_typeE
+}
