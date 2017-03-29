@@ -1,5 +1,7 @@
 #include "drake/automotive/prius_vis.h"
 
+#include <Eigen/Geometry>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
@@ -17,6 +19,7 @@ using multibody::joints::kRollPitchYaw;
 using systems::rendering::PoseBundle;
 
 namespace automotive {
+template <typename T> constexpr double PriusVis<T>::kVisOffset;
 
 template <typename T>
 PriusVis<T>::PriusVis(int id, const std::string& name)
@@ -44,8 +47,19 @@ const vector<lcmt_viewer_link_data>& PriusVis<T>::GetVisElements() const {
 template <typename T>
 systems::rendering::PoseBundle<T> PriusVis<T>::CalcPoses(
     const Isometry3<T>& X_WM) const {
-  const auto rotation = X_WM.linear();
-  const auto transform = X_WM.translation();
+  // Computes X_MV, the transform from the visualization's frame to the model's
+  // frame. The 'V' in the variable name stands for "visualization". This is
+  // necessary because the model frame's origin is centered at the midpoint of
+  // the vehicle's rear axle whereas the visualization frame's origin is
+  // centered in the middle of a body called "chassis_floor". The axes of the
+  // two frames are parallel with each other. However, the distance between the
+  // origins of the two frames is 1.40948 m along the model's x-axis.
+  const Isometry3<T> X_MV(Eigen::Translation<T, 3>(T(1.40948) /* x offset */,
+                                                   T(0)       /* y offset */,
+                                                   T(0)       /* z offset */));
+  const Isometry3<T> X_WV = X_WM * X_MV;
+  const auto rotation = X_WV.linear();
+  const auto transform = X_WV.translation();
   Vector3<T> rpy = rotation.eulerAngles(2, 1, 0);
   VectorX<T> q = VectorX<T>::Zero(tree_->get_num_positions());
   q(0) = transform.x();
