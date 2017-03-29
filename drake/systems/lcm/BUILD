@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library", "drake_cc_binary")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -56,17 +56,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_binary(
-    name = "lcm_driven_loop_example",
-    srcs = ["lcm_driven_loop_example.cc"],
-    deps = [
-        "//drake/lcm",
-        "//drake/systems/framework",
-        "//drake/systems/lcm:lcm_driven_loop",
-        "@bot_core_lcmtypes//:lib",
-    ],
-)
-
 drake_cc_library(
     name = "lcmt_drake_signal_translator",
     srcs = ["lcmt_drake_signal_translator.cc"],
@@ -79,6 +68,16 @@ drake_cc_library(
 )
 
 # === test ===
+drake_cc_googletest(
+    name = "lcm_driven_loop_test",
+    deps = [
+        "//drake/lcm",
+        "//drake/lcmtypes:drake_signal",
+        "//drake/systems/framework",
+        "//drake/systems/lcm:lcm_driven_loop",
+        "//drake/lcm:mock",
+    ],
+)
 
 drake_cc_googletest(
     name = "lcm_publisher_system_test",
@@ -108,6 +107,13 @@ drake_cc_googletest(
         ":translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
+    ],
+)
+
+drake_cc_googletest(
+    name = "semaphore_test",
+    deps = [
+        ":lcm",
     ],
 )
 

@@ -3,7 +3,7 @@
 #include <memory>
 #include <utility>
 
-#include "drake/lcm/drake_lcm.h"
+#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
@@ -83,7 +83,7 @@ class LcmDrivenLoop {
  public:
   // The max count for semaphore_ needs to be 1. Otherwise the behavior is not
   // correct if we handle messages slower than the incoming rate.
-  LcmDrivenLoop(drake::lcm::DrakeLcm* lcm, const System<double>& system,
+  LcmDrivenLoop(drake::lcm::DrakeLcmInterface* lcm, const System<double>& system,
                 std::unique_ptr<Context<double>> context,
                 LcmSubscriberSystem* driving_subscriber,
                 std::unique_ptr<LcmMessageToTimeInterface> time_converter)
@@ -207,7 +207,7 @@ class LcmDrivenLoop {
 
  private:
   // The lcm interface for publishing and subscribing.
-  drake::lcm::DrakeLcm* lcm_;
+  drake::lcm::DrakeLcmInterface* lcm_;
 
   // Extracts time in seconds from received lcm messages.
   std::unique_ptr<LcmMessageToTimeInterface> time_converter_;
