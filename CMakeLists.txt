@@ -87,14 +87,6 @@ drake_add_external(gurobi CMAKE MATLAB
     -DWITH_MATLAB=${Matlab_FOUND}
     -DWITH_PYTHON=OFF)
 
-# ignition-math
-drake_add_external(ignition_math PUBLIC CMAKE
- CMAKE_ARGS
-   -DBUILD_SHARED_LIBS=ON
-   -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
-   -DIGNITION_MATH_BUILD_CONTRIB=OFF
-   -DIGNITION_MATH_BUILD_TOOLS=OFF)
-
 # ipopt
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # Work around horrific clang* = clang, */cl* = msvc bug in BuildTools/coin.m4
@@ -288,7 +280,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
     -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
-    -DWITH_IGNITION_MATH:BOOL=${WITH_IGNITION_MATH}
     -DUSE_CLANG_TIDY:BOOL=${USE_CLANG_TIDY}
     -DUSE_INCLUDE_WHAT_YOU_USE:BOOL=${USE_INCLUDE_WHAT_YOU_USE}
     -DUSE_LINK_WHAT_YOU_USE:BOOL=${USE_LINK_WHAT_YOU_USE}
@@ -306,7 +297,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     google_styleguide
     googletest
     gurobi
-    ignition_math
     ipopt
     iris
     lcm
