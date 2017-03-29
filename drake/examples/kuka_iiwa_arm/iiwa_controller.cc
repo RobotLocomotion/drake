@@ -19,11 +19,10 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_driven_loop.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/demultiplexer.h"
-
-#include "drake/systems/lcm/lcm_driven_loop.h"
 
 using robotlocomotion::robot_plan_t;
 
