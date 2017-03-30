@@ -58,6 +58,27 @@ GTEST_TEST(PendulumTrajectoryOptimization,
     EXPECT_TRUE(CompareMatrices(states.col(i), state_traj.value(times_out[i]),
                                 1e-10, MatrixCompareType::absolute));
   }
+
+  // Test interpolation
+  for (int i = 0; i < kNumTimeSamples - 1; ++i) {
+    double t_l = times_out[i];
+    double t_r = times_out[i + 1];
+    double h_i = t_r - t_l;
+    const Eigen::Vector2d x_l = state_traj.value(t_l);
+    const Eigen::Vector2d x_r = state_traj.value(t_r);
+    const Eigen::Vector2d xdot_l = state_traj.derivative()->value(t_l);
+    const Eigen::Vector2d xdot_r = state_traj.derivative()->value(t_r);
+    // For a cubic polynomial, if x_l, x_r, xdot_l, xdot_r are known, then the
+    // 4 coefficients of the cubic polynomial can be computed from x_l, x_r,
+    // xdot_l, xdot_r, and thus the midpoint of the polynomial can be computed
+    // from x_l, x_r, xdot_l, xdot_r. Check out equation 9 of
+    // Direct Trajectory Optimization Using NOnlinear Programming and
+    // Collocation. By C.R. Hargraves and S.W. Paris
+    const Eigen::Vector2d xm = 0.5 * (x_l + x_r) + h_i / 8 * (xdot_l - xdot_r);
+    const Eigen::Vector2d spline_midpoint(state_traj.value((t_l + t_r) / 2));
+    EXPECT_TRUE(CompareMatrices(xm, spline_midpoint, 1E-10,
+                                MatrixCompareType::absolute));
+  }
 }
 
 }  // namespace
