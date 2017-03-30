@@ -13,6 +13,8 @@ template <typename T>
 const T IdmPlanner<T>::Evaluate(const IdmPlannerParameters<T>& params,
                                 const T& ego_velocity, const T& target_distance,
                                 const T& target_distance_dot) {
+  DRAKE_DEMAND(params.IsValid());
+
   using std::pow;
   using std::sqrt;
 
