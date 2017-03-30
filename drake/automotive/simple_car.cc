@@ -168,17 +168,13 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
 
   // Sanity check our input.
   DRAKE_DEMAND(abs(input.steering_angle()) < M_PI);
-  DRAKE_DEMAND(input.throttle() >= 0);
-  DRAKE_DEMAND(input.brake() >= 0);
 
-  // Determine the requested acceleration, using throttle and brake. Then
-  // compute the smooth acceleration that the vehicle actually executes.
-  const T desired_acceleration =
-      params.max_acceleration() * (input.throttle() - input.brake());
-  T smooth_acceleration =
-    calc_smooth_acceleration(
-        desired_acceleration, params.max_velocity(), params.velocity_limit_kp(),
-        state.velocity());
+  // Compute the smooth acceleration that the vehicle actually executes.
+  // TODO(jwnimmer-tri) We should saturate to params.max_acceleration().
+  const T desired_acceleration = input.acceleration();
+  const T smooth_acceleration = calc_smooth_acceleration(
+      desired_acceleration, params.max_velocity(), params.velocity_limit_kp(),
+      state.velocity());
 
   // Determine steering.
   const T saturated_steering_angle = math::saturate(
