@@ -48,7 +48,8 @@ void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0,
       kNumViaPoints, start_via_pts(free_axis0), end_via_pts(free_axis0));
   via_pts(free_axis1, 0) = start_via_pts(free_axis1);
   via_pts(free_axis1, kNumViaPoints - 1) = end_via_pts(free_axis1);
-  bool positive_free_axis1 = arc_end0(free_axis1) >= 0 || arc_end1(free_axis1);
+  bool positive_free_axis1 =
+      arc_end0(free_axis1) > 0 || arc_end1(free_axis1) > 0;
   for (int i = 1; i < kNumViaPoints - 1; ++i) {
     // A point `x` on the arc satisfies
     // x(free_axis0)^2 + x(free_axis1)^2 = 1 - x(fixed_axis)^2
