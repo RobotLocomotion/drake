@@ -52,8 +52,8 @@ template <typename T>
 void SimpleCar<T>::DoCalcOutput(const systems::Context<T>& context,
                                 systems::SystemOutput<T>* output) const {
   // Obtain the parameters.
-  const SimpleCarConfig<T>& config =
-      this->template GetNumericParameter<SimpleCarConfig>(context, 0);
+  const SimpleCarParams<T>& params =
+      this->template GetNumericParameter<SimpleCarParams>(context, 0);
 
   // Obtain the input.
   const DrivingCommand<T>* const input =
@@ -81,7 +81,7 @@ void SimpleCar<T>::DoCalcOutput(const systems::Context<T>& context,
   FrameVelocity<T>* const velocity =
       dynamic_cast<FrameVelocity<T>*>(output->GetMutableVectorData(2));
   DRAKE_ASSERT(pose != nullptr);
-  ImplCalcVelocity(config, *state, *input, velocity);
+  ImplCalcVelocity(params, *state, *input, velocity);
 }
 
 template <typename T>
@@ -105,12 +105,12 @@ void SimpleCar<T>::ImplCalcPose(const SimpleCarState<T>& state,
 
 template <typename T>
 void SimpleCar<T>::ImplCalcVelocity(
-    const SimpleCarConfig<T>& config, const SimpleCarState<T>& state,
+    const SimpleCarParams<T>& params, const SimpleCarState<T>& state,
     const DrivingCommand<T>& input,
     systems::rendering::FrameVelocity<T>* velocity) const {
   // Calculate the derivatives.
   SimpleCarState<T> rates;
-  ImplCalcTimeDerivatives(config, state, input, &rates);
+  ImplCalcTimeDerivatives(params, state, input, &rates);
 
   // Convert the state derivatives into a spatial velocity.
   multibody::SpatialVelocity<T> output;
@@ -131,8 +131,8 @@ void SimpleCar<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   // Obtain the parameters.
-  const SimpleCarConfig<T>& config =
-      this->template GetNumericParameter<SimpleCarConfig>(context, 0);
+  const SimpleCarParams<T>& params =
+      this->template GetNumericParameter<SimpleCarParams>(context, 0);
 
   // Obtain the state.
   const SimpleCarState<T>* const state = dynamic_cast<const SimpleCarState<T>*>(
@@ -153,11 +153,11 @@ void SimpleCar<T>::DoCalcTimeDerivatives(
       dynamic_cast<SimpleCarState<T>*>(vector_derivatives);
   DRAKE_ASSERT(rates);
 
-  ImplCalcTimeDerivatives(config, *state, *input, rates);
+  ImplCalcTimeDerivatives(params, *state, *input, rates);
 }
 
 template <typename T>
-void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarConfig<T>& config,
+void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
                                            const SimpleCarState<T>& state,
                                            const DrivingCommand<T>& input,
                                            SimpleCarState<T>* rates) const {
@@ -174,18 +174,18 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarConfig<T>& config,
   // Determine the requested acceleration, using throttle and brake. Then
   // compute the smooth acceleration that the vehicle actually executes.
   const T desired_acceleration =
-      config.max_acceleration() * (input.throttle() - input.brake());
+      params.max_acceleration() * (input.throttle() - input.brake());
   T smooth_acceleration =
     calc_smooth_acceleration(
-        desired_acceleration, config.max_velocity(), config.velocity_limit_kp(),
+        desired_acceleration, params.max_velocity(), params.velocity_limit_kp(),
         state.velocity());
 
   // Determine steering.
   const T saturated_steering_angle = math::saturate(
       input.steering_angle(),
-      -config.max_abs_steering_angle(),
-      config.max_abs_steering_angle());
-  const T curvature = tan(saturated_steering_angle) / config.wheelbase();
+      -params.max_abs_steering_angle(),
+      params.max_abs_steering_angle());
+  const T curvature = tan(saturated_steering_angle) / params.wheelbase();
 
   // Don't allow small negative velocities to affect position or heading.
   const T nonneg_velocity = max(T(0), state.velocity());
@@ -209,31 +209,31 @@ systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
 template <typename T>
 std::unique_ptr<systems::Parameters<T>>
 SimpleCar<T>::AllocateParameters() const {
-  auto params = std::make_unique<SimpleCarConfig<T>>();
+  auto params = std::make_unique<SimpleCarParams<T>>();
   return std::make_unique<systems::Parameters<T>>(std::move(params));
 }
 
 template <typename T>
 void SimpleCar<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
                                         systems::Parameters<T>* params) const {
-  SimpleCarConfig<T>* config = dynamic_cast<SimpleCarConfig<T>*>(
+  SimpleCarParams<T>* simple_car_params = dynamic_cast<SimpleCarParams<T>*>(
       params->get_mutable_numeric_parameter(0));
-  DRAKE_DEMAND(config != nullptr);
-  SetDefaultParameters(config);
+  DRAKE_DEMAND(simple_car_params != nullptr);
+  SetDefaultParameters(simple_car_params);
 }
 
 template <typename T>
-void SimpleCar<T>::SetDefaultParameters(SimpleCarConfig<T>* config) {
-  DRAKE_DEMAND(config != nullptr);
+void SimpleCar<T>::SetDefaultParameters(SimpleCarParams<T>* params) {
+  DRAKE_DEMAND(params != nullptr);
   constexpr double kInchToMeter = 0.0254;
   constexpr double kDegToRadian = 0.0174532925199;
   // This approximates a 2010 Toyota Prius.
-  config->set_wheelbase(static_cast<T>(106.3 * kInchToMeter));
-  config->set_track(static_cast<T>(59.9 * kInchToMeter));
-  config->set_max_abs_steering_angle(static_cast<T>(27 * kDegToRadian));
-  config->set_max_velocity(static_cast<T>(45.0));       // meters/second
-  config->set_max_acceleration(static_cast<T>(4.0));    // meters/second**2
-  config->set_velocity_limit_kp(static_cast<T>(10.0));  // Hz
+  params->set_wheelbase(static_cast<T>(106.3 * kInchToMeter));
+  params->set_track(static_cast<T>(59.9 * kInchToMeter));
+  params->set_max_abs_steering_angle(static_cast<T>(27 * kDegToRadian));
+  params->set_max_velocity(static_cast<T>(45.0));       // meters/second
+  params->set_max_acceleration(static_cast<T>(4.0));    // meters/second**2
+  params->set_velocity_limit_kp(static_cast<T>(10.0));  // Hz
 }
 
 // These instantiations must match the API documentation in simple_car.h.

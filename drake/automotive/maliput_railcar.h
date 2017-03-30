@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/automotive/gen/maliput_railcar_config.h"
+#include "drake/automotive/gen/maliput_railcar_params.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/common/drake_copyable.h"
@@ -38,8 +38,8 @@ struct LaneDirection {
 /// MaliputRailcar models a vehicle that follows a maliput::api::Lane as if it
 /// were on rails and neglecting all physics.
 ///
-/// Configuration:
-///   * See MaliputRailcarConfig.
+/// Parameters:
+///   * See MaliputRailcarParams.
 ///
 /// State vector:
 ///   * See MaliputRailcarState.
@@ -52,7 +52,7 @@ struct LaneDirection {
 ///   - command_input(): Contains the desired acceleration. This port
 ///     contains a systems::BasicVector of size 1. It is optional in that it
 ///     need not be connected. When it is unconnected, the railcar will travel
-///     at its initial velocity, which is specified in MaliputRailcarConfig.
+///     at its initial velocity, which is specified in MaliputRailcarParams.
 ///
 /// <B>Output Port Accessors:</B>
 ///
@@ -96,8 +96,8 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   void SetDefaultParameters(const systems::LeafContext<T>& context,
                             systems::Parameters<T>* params) const override;
 
-  /// Sets `config` to contain the default parameters for MaliputRailcar.
-  static void SetDefaultParameters(MaliputRailcarConfig<T>* config);
+  /// Sets `params` to contain the default parameters for MaliputRailcar.
+  static void SetDefaultParameters(MaliputRailcarParams<T>* params);
 
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
@@ -142,26 +142,26 @@ class MaliputRailcar : public systems::LeafSystem<T> {
       LaneDirection* output) const;
 
   void ImplCalcPose(
-      const MaliputRailcarConfig<T>& config,
+      const MaliputRailcarParams<T>& params,
       const MaliputRailcarState<T>& state,
       const LaneDirection& lane_direction,
       systems::rendering::PoseVector<T>* pose) const;
 
   void ImplCalcTimeDerivatives(
-      const MaliputRailcarConfig<T>& config,
+      const MaliputRailcarParams<T>& params,
       const MaliputRailcarState<T>& state,
       const LaneDirection& lane_direction,
       const systems::BasicVector<T>& input,
       MaliputRailcarState<T>* rates) const;
 
   void ImplCalcTimeDerivativesDouble(
-      const MaliputRailcarConfig<double>& config,
+      const MaliputRailcarParams<double>& params,
       const MaliputRailcarState<double>& state,
       MaliputRailcarState<double>* rates) const;
 
   // Calculates the vehicle's `r` coordinate based on whether it's traveling
   // with or against `s` in the current lane relative to the initial lane.
-  T CalcR(const MaliputRailcarConfig<T>& config,
+  T CalcR(const MaliputRailcarParams<T>& params,
           const LaneDirection& lane_direction) const;
 
   const LaneDirection initial_lane_direction_{};

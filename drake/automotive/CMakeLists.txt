@@ -22,9 +22,9 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/endless_road_oracle_output.cc
   gen/euler_floating_joint_state.cc
   gen/idm_planner_parameters.cc
-  gen/maliput_railcar_config.cc
+  gen/maliput_railcar_params.cc
   gen/maliput_railcar_state.cc
-  gen/simple_car_config.cc
+  gen/simple_car_params.cc
   gen/simple_car_state.cc
   idm_controller.cc
   idm_planner.cc
@@ -110,9 +110,9 @@ if(lcm_FOUND)
     gen/endless_road_car_state_translator.cc
     gen/endless_road_oracle_output_translator.cc
     gen/euler_floating_joint_state_translator.cc
-    gen/maliput_railcar_config_translator.cc
+    gen/maliput_railcar_params_translator.cc
     gen/maliput_railcar_state_translator.cc
-    gen/simple_car_config_translator.cc
+    gen/simple_car_params_translator.cc
     gen/simple_car_state_translator.cc
     prius_vis.cc
     )

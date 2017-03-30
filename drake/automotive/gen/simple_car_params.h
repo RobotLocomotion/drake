@@ -14,8 +14,8 @@
 namespace drake {
 namespace automotive {
 
-/// Describes the row indices of a SimpleCarConfig.
-struct SimpleCarConfigIndices {
+/// Describes the row indices of a SimpleCarParams.
+struct SimpleCarParamsIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 6;
 
@@ -30,17 +30,17 @@ struct SimpleCarConfigIndices {
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class SimpleCarConfig : public systems::BasicVector<T> {
+class SimpleCarParams : public systems::BasicVector<T> {
  public:
   /// An abbreviation for our row index constants.
-  typedef SimpleCarConfigIndices K;
+  typedef SimpleCarParamsIndices K;
 
   /// Default constructor.  Sets all rows to zero.
-  SimpleCarConfig() : systems::BasicVector<T>(K::kNumCoordinates) {
+  SimpleCarParams() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
-  SimpleCarConfig<T>* DoClone() const override { return new SimpleCarConfig; }
+  SimpleCarParams<T>* DoClone() const override { return new SimpleCarParams; }
 
   /// @name Getters and Setters
   //@{

@@ -206,7 +206,7 @@ class MaliputRailcarTest : public ::testing::Test {
   }
 
   // Sets the configuration parameters of the railcar.
-  void SetConfig(const MaliputRailcarConfig<double>& config) {
+  void SetParams(const MaliputRailcarParams<double>& params) {
     LeafContext<double>* leaf_context =
         dynamic_cast<LeafContext<double>*>(context_.get());
     ASSERT_NE(leaf_context, nullptr);
@@ -214,10 +214,10 @@ class MaliputRailcarTest : public ::testing::Test {
     BasicVector<double>* vector_param =
         parameters.get_mutable_numeric_parameter(0);
     ASSERT_NE(vector_param, nullptr);
-    MaliputRailcarConfig<double>* railcar_config =
-        dynamic_cast<MaliputRailcarConfig<double>*>(vector_param);
-    ASSERT_NE(railcar_config, nullptr);
-    railcar_config->SetFrom(config);
+    MaliputRailcarParams<double>* railcar_params =
+        dynamic_cast<MaliputRailcarParams<double>*>(vector_param);
+    ASSERT_NE(railcar_params, nullptr);
+    railcar_params->SetFrom(params);
   }
 
   // Obtains the lanes created by the call to InitializeTwoLaneStretchOfRoad().
@@ -264,13 +264,13 @@ class MaliputRailcarTest : public ::testing::Test {
 
     const double kForwardSpeed(10);
 
-    MaliputRailcarConfig<double> config;
-    config.set_r(1);
-    config.set_h(0);
-    config.set_initial_speed(kForwardSpeed);
-    config.set_max_speed(30);
-    config.set_velocity_limit_kp(8);
-    SetConfig(config);
+    MaliputRailcarParams<double> params;
+    params.set_r(1);
+    params.set_h(0);
+    params.set_initial_speed(kForwardSpeed);
+    params.set_max_speed(30);
+    params.set_velocity_limit_kp(8);
+    SetParams(params);
 
     context_->set_time(straight_lane->length() / kForwardSpeed);
 
@@ -426,13 +426,13 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputDragway) {
   const double kH{8.2};
 
   // Sets the parameters to be non-zero values.
-  MaliputRailcarConfig<double> config;
-  config.set_r(kR);
-  config.set_h(kH);
-  config.set_initial_speed(1);
-  config.set_max_speed(30);
-  config.set_velocity_limit_kp(8);
-  SetConfig(config);
+  MaliputRailcarParams<double> params;
+  params.set_r(kR);
+  params.set_h(kH);
+  params.set_initial_speed(1);
+  params.set_max_speed(30);
+  params.set_velocity_limit_kp(8);
+  SetParams(params);
   dut_->CalcOutput(*context_, output_.get());
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
@@ -447,13 +447,13 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
   const double kH{8.2};
 
   // Sets the parameters to be non-zero values.
-  MaliputRailcarConfig<double> config;
-  config.set_r(kR);
-  config.set_h(kH);
-  config.set_initial_speed(1);
-  config.set_max_speed(30);
-  config.set_velocity_limit_kp(8);
-  SetConfig(config);
+  MaliputRailcarParams<double> params;
+  params.set_r(kR);
+  params.set_h(kH);
+  params.set_initial_speed(1);
+  params.set_max_speed(30);
+  params.set_velocity_limit_kp(8);
+  SetParams(params);
   dut_->CalcOutput(*context_, output_.get());
   auto start_pose = pose_output();
   Eigen::Isometry3d expected_start_pose = Eigen::Isometry3d::Identity();
@@ -514,13 +514,13 @@ TEST_F(MaliputRailcarTest, DerivativesDragway) {
   const double kS{1.5};
   const double kSlowSpeed{2};
   const double kMaxSpeed{30};
-  MaliputRailcarConfig<double> config;
-  config.set_r(-2);
-  config.set_h(0);
-  config.set_initial_speed(kSlowSpeed);
-  config.set_max_speed(kMaxSpeed);
-  config.set_velocity_limit_kp(8);
-  SetConfig(config);
+  MaliputRailcarParams<double> params;
+  params.set_r(-2);
+  params.set_h(0);
+  params.set_initial_speed(kSlowSpeed);
+  params.set_max_speed(kMaxSpeed);
+  params.set_velocity_limit_kp(8);
+  SetParams(params);
   continuous_state()->set_s(kS);
   continuous_state()->set_speed(kSlowSpeed);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
@@ -565,13 +565,13 @@ TEST_F(MaliputRailcarTest, DerivativesMonolane) {
 
   // Checks the derivatives given a non-default continuous state with r != 0.
   continuous_state()->set_s(1.5);
-  MaliputRailcarConfig<double> config;
-  config.set_r(kR);
-  config.set_h(0);
-  config.set_initial_speed(kInitialSpeed);
-  config.set_max_speed(30);
-  config.set_velocity_limit_kp(8);
-  SetConfig(config);
+  MaliputRailcarParams<double> params;
+  params.set_r(kR);
+  params.set_h(0);
+  params.set_initial_speed(kInitialSpeed);
+  params.set_max_speed(30);
+  params.set_velocity_limit_kp(8);
+  SetParams(params);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_DOUBLE_EQ(result->s(),
       kInitialSpeed * kCurvedRoadRadius / (kCurvedRoadRadius - kR));
@@ -597,13 +597,13 @@ TEST_F(MaliputRailcarTest, InputPortNotConnected) {
   // zero acceleration.
   const double kS{2.25};
   const double kInitialSpeed{2};
-  MaliputRailcarConfig<double> config;
-  config.set_r(-2);
-  config.set_h(0);
-  config.set_initial_speed(kInitialSpeed);
-  config.set_max_speed(30);
-  config.set_velocity_limit_kp(8);
-  SetConfig(config);
+  MaliputRailcarParams<double> params;
+  params.set_r(-2);
+  params.set_h(0);
+  params.set_initial_speed(kInitialSpeed);
+  params.set_max_speed(30);
+  params.set_velocity_limit_kp(8);
+  SetParams(params);
   continuous_state()->set_s(kS);
   continuous_state()->set_speed(kInitialSpeed);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
@@ -648,13 +648,13 @@ TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
   // Sets the r != 0 and s != 0.
   const double kS{2.25};
   const double kInitialSpeed{2};
-  MaliputRailcarConfig<double> config;
-  config.set_r(1);
-  config.set_h(0);
-  config.set_initial_speed(kInitialSpeed);
-  config.set_max_speed(30);
-  config.set_velocity_limit_kp(8);
-  SetConfig(config);
+  MaliputRailcarParams<double> params;
+  params.set_r(1);
+  params.set_h(0);
+  params.set_initial_speed(kInitialSpeed);
+  params.set_max_speed(30);
+  params.set_velocity_limit_kp(8);
+  SetParams(params);
   continuous_state()->set_s(kS);
   continuous_state()->set_speed(kInitialSpeed);
 
@@ -668,7 +668,7 @@ TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
 
   // Obtains the with-s pose.
   EXPECT_NO_FATAL_FAILURE(InitializeSlopedCurvedMonoLane(true /* with_s */));
-  SetConfig(config);
+  SetParams(params);
   continuous_state()->set_s(kS);
   continuous_state()->set_speed(kInitialSpeed);
   dut_->CalcOutput(*context_, output_.get());
@@ -778,13 +778,13 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
 
   systems::UpdateActions<double> actions;
 
-  MaliputRailcarConfig<double> config;
-  config.set_r(0);
-  config.set_h(0);
-  config.set_initial_speed(kSpeed);
-  config.set_max_speed(30);
-  config.set_velocity_limit_kp(8);
-  SetConfig(config);
+  MaliputRailcarParams<double> params;
+  params.set_r(0);
+  params.set_h(0);
+  params.set_initial_speed(kSpeed);
+  params.set_max_speed(30);
+  params.set_velocity_limit_kp(8);
+  SetParams(params);
 
   // Computes the time to reach the end of the lane assuming a speed of kSpeed
   // and zero acceleration.
@@ -800,15 +800,15 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
 
   // Sets `r` to be positive and verifies that the time to reach the end is
   // shorter.
-  config.set_r(1);
-  SetConfig(config);
+  params.set_r(1);
+  SetParams(params);
   dut_->CalcNextUpdateTime(*context_, &actions);
   EXPECT_LT(actions.time, kZeroAccelerationTime);
 
   // Sets `r` to be negative and verifies that the time to reach the end is
   // longer.
-  config.set_r(-1);
-  SetConfig(config);
+  params.set_r(-1);
+  SetParams(params);
   dut_->CalcNextUpdateTime(*context_, &actions);
   EXPECT_GT(actions.time, kZeroAccelerationTime);
 }
@@ -821,13 +821,13 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
 
   systems::UpdateActions<double> actions;
 
-  MaliputRailcarConfig<double> config;
-  config.set_r(0);
-  config.set_h(0);
-  config.set_initial_speed(kSpeed);
-  config.set_max_speed(30);
-  config.set_velocity_limit_kp(8);
-  SetConfig(config);
+  MaliputRailcarParams<double> params;
+  params.set_r(0);
+  params.set_h(0);
+  params.set_initial_speed(kSpeed);
+  params.set_max_speed(30);
+  params.set_velocity_limit_kp(8);
+  SetParams(params);
 
   // Computes the time to reach the end of the lane assuming a speed of kSpeed
   // and zero acceleration.
@@ -843,15 +843,15 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
 
   // Sets `r` to be positive and verifies that the time to reach the end is
   // shorter.
-  config.set_r(1);
-  SetConfig(config);
+  params.set_r(1);
+  SetParams(params);
   dut_->CalcNextUpdateTime(*context_, &actions);
   EXPECT_LT(actions.time, kZeroAccelerationTime);
 
   // Sets `r` to be negative and verifies that the time to reach the end is
   // longer.
-  config.set_r(-1);
-  SetConfig(config);
+  params.set_r(-1);
+  SetParams(params);
   dut_->CalcNextUpdateTime(*context_, &actions);
   EXPECT_GT(actions.time, kZeroAccelerationTime);
 }
@@ -913,13 +913,13 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
 
   const double kSpeed(10);
 
-  MaliputRailcarConfig<double> config;
-  config.set_r(1);
-  config.set_h(0);
-  config.set_initial_speed(kSpeed);
-  config.set_max_speed(30);
-  config.set_velocity_limit_kp(8);
-  SetConfig(config);
+  MaliputRailcarParams<double> params;
+  params.set_r(1);
+  params.set_h(0);
+  params.set_initial_speed(kSpeed);
+  params.set_max_speed(30);
+  params.set_velocity_limit_kp(8);
+  SetParams(params);
 
   systems::DiscreteEvent<double> event;
   event.action = systems::DiscreteEvent<double>::kUnrestrictedUpdateAction;
@@ -957,8 +957,8 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
     for (const auto with_s : std::list<bool>{true, false}) {
       lane_direction().with_s = with_s;
       for (const auto r : std::list<double>{-1, 0, 1}) {
-        config.set_r(r);
-        SetConfig(config);
+        params.set_r(r);
+        SetParams(params);
         dut_->CalcUnrestrictedUpdate(
             *context_, event, context_->get_mutable_state());
         EXPECT_EQ(continuous_state()->speed(), kSpeed);
@@ -982,8 +982,8 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
     for (const auto with_s : std::list<bool>{true, false}) {
       lane_direction().with_s = with_s;
       for (const auto r : std::list<double>{-1, 0, 1}) {
-        config.set_r(r);
-        SetConfig(config);
+        params.set_r(r);
+        SetParams(params);
         dut_->CalcUnrestrictedUpdate(
             *context_, event, context_->get_mutable_state());
         EXPECT_EQ(continuous_state()->speed(), kSpeed);
