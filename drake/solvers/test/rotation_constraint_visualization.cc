@@ -123,8 +123,34 @@ void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax,
 void DrawBoxSphereIntersection(const Eigen::Vector3d& bmin,
                                const Eigen::Vector3d& bmax,
                                const Eigen::RowVector3d& color) {
-  const auto& intersection_pts =
-      internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
+  DRAKE_DEMAND((bmax.array() > bmin.array()).all());
+  // First convert bmin and bmax to the first orthant.
+  Eigen::Vector3d orthant_bmin;
+  Eigen::Vector3d orthant_bmax;
+  // orthant_sign(i) = 1 if the i'th axis of the box is positive, otherwise it
+  // is -1.
+  Eigen::Vector3i orthant_sign;
+  for (int i = 0; i < 3; ++i) {
+    if (bmin(i) >= 0) {
+      orthant_bmin(i) = bmin(i);
+      orthant_bmax(i) = bmax(i);
+      orthant_sign(i) = 1;
+    } else if (bmax(i) <= 0) {
+      orthant_bmin(i) = -bmax(i);
+      orthant_bmax(i) = -bmin(i);
+      orthant_sign(i) = -1;
+    }
+  }
+  // Compute the intersection points between the sphere in the first orthant,
+  // with the box orthant_bmin <= x <= orthant_bmax
+  auto intersection_pts =
+      internal::ComputeBoxEdgesAndSphereIntersection(orthant_bmin, orthant_bmax);
+  // Now convert the intersection point back to the right orthant.
+  for (int i = 0; i < static_cast<int>(intersection_pts.size()); ++i) {
+    for (int j = 0; j < 3; ++j) {
+      intersection_pts[i](j) *= orthant_sign(j);
+    }
+  }
   // Draw the line that connects adjacent intersection points.
   // For each intersection point, find out the neighbouring points, and then
   // draw the arc between these two points. The neighbouring points should have
