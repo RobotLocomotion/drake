@@ -257,7 +257,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
   // Checks the chassis_floor body of the first car.
   EXPECT_EQ(draw_message.link_name.at(0), "chassis_floor");
   EXPECT_EQ(draw_message.robot_num.at(0), 0);
-  EXPECT_NEAR(draw_message.position.at(0).at(0), 0.99, 1e-8);
+  EXPECT_NEAR(draw_message.position.at(0).at(0),
+      PriusVis<double>::kVisOffset + 0.99, 1e-6);
   EXPECT_NEAR(draw_message.position.at(0).at(1), 0, 1e-8);
   EXPECT_NEAR(draw_message.position.at(0).at(2), 0.378326, 1e-8);
   EXPECT_NEAR(draw_message.quaternion.at(0).at(0), 1, 1e-8);
