@@ -257,7 +257,7 @@ macro(drake_setup_options)
     "Visualization ToolKit")
 
   drake_system_dependency(
-    TINYOBJLOADER OPTIONAL REQUIRES tinyobjloader
+    TINYOBJLOADER REQUIRES tinyobjloader
     "library for reading wavefront mesh files")
 
   drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
