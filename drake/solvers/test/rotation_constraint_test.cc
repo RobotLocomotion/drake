@@ -306,8 +306,8 @@ GTEST_TEST(RotationTest, TestHalfSpaceRelaxation) {
 GTEST_TEST(RotationTest, TestInnerFacetsAndHalfSpace) {
   // We show that the inner facet is tighter than the half space for some case.
   // To this end, we show that for a box [0 0.5 0] <= x <= [0.5 1 0.5], there is
-  // some point lying in between the inner facets A*x<=b, and the half space
-  // nᵀ*x>=d.
+  // some point that does not satisfy the inner facets constraint A*x<=b, but
+  // satisfies the half space constraint nᵀ*x>=d.
   const Eigen::Vector3d bmin(0, 0.5, 0);
   const Eigen::Vector3d bmax(0.5, 1, 0.5);
   const auto intersection_pts =
