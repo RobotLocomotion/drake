@@ -48,7 +48,7 @@ lcm::DrakeLcmInterface* AutomotiveSimulator<T>::get_lcm() {
 
 template <typename T>
 systems::DiagramBuilder<T>* AutomotiveSimulator<T>::get_builder() {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   return builder_.get();
 }
 
@@ -57,7 +57,7 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
     const std::string& model_name,
     const std::string& channel_name,
     const SimpleCarState<T>& initial_state) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
   const int id = allocate_vehicle_number();
 
@@ -88,7 +88,7 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
     const Curve2<double>& curve,
     double speed,
     double start_time) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
   const int id = allocate_vehicle_number();
   const std::string model_name =
@@ -117,7 +117,7 @@ int AutomotiveSimulator<T>::AddPriusEndlessRoadCar(
     const EndlessRoadCarState<T>& initial_state,
     typename EndlessRoadCar<T>::ControlType control_type,
     const std::string& channel_name) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(endless_road_ != nullptr);
   const int id = allocate_vehicle_number();
   const std::string model_name = "endless_road_car_" + std::to_string(id);
@@ -164,7 +164,7 @@ int AutomotiveSimulator<T>::AddPriusEndlessRoadCar(
 template <typename T>
 const maliput::api::RoadGeometry* AutomotiveSimulator<T>::SetRoadGeometry(
     std::unique_ptr<const maliput::api::RoadGeometry> road) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   road_ = std::move(road);
   GenerateAndLoadRoadNetworkUrdf();
   return road_.get();
@@ -176,7 +176,7 @@ AutomotiveSimulator<T>::SetRoadGeometry(
     std::unique_ptr<const maliput::api::RoadGeometry> road,
     const maliput::api::LaneEnd& start,
     const std::vector<const maliput::api::Lane*>& path) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   road_ = std::move(road);
   endless_road_ = std::make_unique<maliput::utility::InfiniteCircuitRoad>(
       maliput::api::RoadGeometryId({"ForeverRoad"}),
@@ -201,7 +201,7 @@ void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
 template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
                                           int vehicle_number) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   static const SimpleCarStateTranslator translator;
   auto publisher =
       builder_->template AddSystem<LcmPublisherSystem>(
@@ -213,7 +213,7 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
 template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
                                           int vehicle_number) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   static const SimpleCarStateTranslator translator;
   auto publisher =
       builder_->template AddSystem<LcmPublisherSystem>(
@@ -225,7 +225,7 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
 template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(const EndlessRoadCar<T>& system,
                                           int vehicle_number) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   static const EndlessRoadCarStateTranslator translator;
   auto publisher =
       builder_->template AddSystem<LcmPublisherSystem>(
@@ -238,7 +238,7 @@ template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(
     const EndlessRoadCarToEulerFloatingJoint<T>& system,
     int vehicle_number) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   static const EulerFloatingJointStateTranslator translator;
   auto publisher =
       builder_->template AddSystem<LcmPublisherSystem>(
@@ -250,7 +250,7 @@ void AutomotiveSimulator<T>::AddPublisher(
 template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(
     const SimpleCarToEulerFloatingJoint<T>& system, int vehicle_number) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   static const EulerFloatingJointStateTranslator translator;
   auto publisher =
       builder_->template AddSystem<LcmPublisherSystem>(
@@ -262,14 +262,14 @@ void AutomotiveSimulator<T>::AddPublisher(
 template <typename T>
 void AutomotiveSimulator<T>::AddSystem(
     std::unique_ptr<systems::System<T>> system) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   builder_->AddSystem(std::move(system));
 }
 
 template <typename T>
 systems::System<T>& AutomotiveSimulator<T>::GetBuilderSystemByName(
     std::string name) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   systems::System<T>* result{nullptr};
   for (systems::System<T>* system : builder_->GetMutableSystems()) {
     if (system->get_name() == name) {
@@ -284,7 +284,7 @@ systems::System<T>& AutomotiveSimulator<T>::GetBuilderSystemByName(
 template <typename T>
 const systems::System<T>& AutomotiveSimulator<T>::GetDiagramSystemByName(
     std::string name) const {
-  DRAKE_DEMAND(started_);
+  DRAKE_DEMAND(has_started());
   const systems::System<T>* result{nullptr};
   for (const systems::System<T>* system : diagram_->GetSystems()) {
     if (system->get_name() == name) {
@@ -316,7 +316,7 @@ void AutomotiveSimulator<T>::SendLoadRobotMessage(
 
 template <typename T>
 void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   TransmitLoadTerrainMessage();
 
   builder_->Connect(
@@ -409,8 +409,6 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   simulator_->get_mutable_integrator()->set_maximum_step_size(0.01);
   simulator_->get_mutable_integrator()->set_minimum_step_size(0.01);
   simulator_->Initialize();
-
-  started_ = true;
 }
 
 template <typename T>
@@ -422,7 +420,7 @@ void AutomotiveSimulator<T>::StepBy(const T& time_step) {
 
 template <typename T>
 int AutomotiveSimulator<T>::allocate_vehicle_number() {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!has_started());
   return next_vehicle_number_++;
 }
 

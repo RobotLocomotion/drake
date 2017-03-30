@@ -29,7 +29,8 @@
 namespace drake {
 namespace automotive {
 
-/// A helper class to construct and run automotive-related simulations.
+/// AutomotiveSimulator is a helper class for constructing and running
+/// automotive-related simulations.
 ///
 /// @tparam T must be a valid Eigen ScalarType.
 ///
@@ -55,19 +56,18 @@ class AutomotiveSimulator {
   /// @pre Start() has NOT been called.
   systems::DiagramBuilder<T>* get_builder();
 
-  /// Adds a SimpleCar system to this simulation, including its DrivingCommand
-  /// LCM input and EulerFloatingJoint output.
+  /// Adds a SimpleCar to this simulation visualized as a Toyota Prius. This
+  /// includes its DrivingCommand LCM input and EulerFloatingJoint output.
   ///
   /// @pre Start() has NOT been called.
   ///
-  /// @param model_name  If this is non-empty, the car's model will be labeled
-  ///                    with this name. It must be unique among all cars.
+  /// @param model_name If this is non-empty, the car's model will be labeled
+  /// with this name. It must be unique among all cars.
   ///
-  /// @param channel_name  The simple car will subscribe to a channel
-  ///                      with this name to receive commands.  Must be
-  ///                      non-empty.
+  /// @param channel_name  The SimpleCar will subscribe to an LCM channel of
+  /// this name to receive commands.  It must be non-empty.
   ///
-  /// @param initial_state The initial state of the SimpleCar.
+  /// @param initial_state The SimpleCar's initial state.
   ///
   /// @return The ID of the car that was just added to the simulation.
   int AddPriusSimpleCar(const std::string& model_name,
@@ -75,8 +75,8 @@ class AutomotiveSimulator {
                         const SimpleCarState<T>& initial_state =
                             SimpleCarState<T>());
 
-  /// Adds a TrajectoryCar system to this simulation, including its
-  /// EulerFloatingJoint output.
+  /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius. This
+  /// includes its EulerFloatingJoint output.
   ///
   /// @pre Start() has NOT been called.
   ///
@@ -91,15 +91,19 @@ class AutomotiveSimulator {
                             double speed,
                             double start_time);
 
-  /// Adds an EndlessRoadCar system to this simulation, including its
-  /// EulerFloatingJoint output.
+  /// Adds an EndlessRoadCar to this simulation visualized as a Toyota Prius.
+  /// This includes its EulerFloatingJoint output.
   ///
   /// @param id  ID string for the car instance
+  ///
   /// @param initial_state  Initial state of the car at start of simulation.
+  ///
   /// @param control_type  The controller type; see EndlessRoadCar.
-  /// @param channel_name  If @p control_type is kUser, then this must be
-  ///                      non-empty and the car will subscribe to a channel
-  ///                      with this name to receive commands.
+  ///
+  /// @param channel_name  If @p control_type is kUser, this parameter must be
+  /// non-empty and the car will subscribe to an LCM channel of this name to
+  /// receive commands.
+  ///
   /// @return The ID of the car that was just added to the simulation.
   /// @pre Start() has NOT been called.
   /// @pre SetRoadGeometry() HAS been called.
@@ -112,7 +116,7 @@ class AutomotiveSimulator {
   /// Sets the RoadGeometry for this simulation.
   ///
   /// The provided RoadGeometry will be wrapped with in an InfiniteCircuitRoad.
-  /// @p start specifies at which end of which lane the cicuit shall begin.
+  /// @p start specifies at which end of which lane the circuit shall begin.
   /// @p path specifies the route of the circuit; if @p path is empty, some
   /// default will be constructed.  See maliput::utility::InfiniteCircuitRoad
   /// for details.
@@ -132,37 +136,11 @@ class AutomotiveSimulator {
   const maliput::api::RoadGeometry* SetRoadGeometry(
       std::unique_ptr<const maliput::api::RoadGeometry> road);
 
-  /// Adds an LCM publisher for the given @p system.
-  /// @pre Start() has NOT been called.
-  void AddPublisher(const EndlessRoadCar<T>& system, int vehicle_number);
-
-  /// Adds an LCM publisher for the given @p system.
-  /// @pre Start() has NOT been called.
-  void AddPublisher(const SimpleCar<T>& system, int vehicle_number);
-
-  /// Adds an LCM publisher for the given @p system.
-  /// @pre Start() has NOT been called.
-  void AddPublisher(const TrajectoryCar<T>& system, int vehicle_number);
-
-  /// Adds an LCM publisher for the given @p system.
-  /// @pre Start() has NOT been called.
-  void AddPublisher(const EndlessRoadCarToEulerFloatingJoint<T>& system,
-                    int vehicle_number);
-
-  /// Adds an LCM publisher for the given @p system.
-  /// @pre Start() has NOT been called.
-  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
-                    int vehicle_number);
-
-  /// Take ownership of the given @p system.
-  /// @pre Start() has NOT been called.
-  void AddSystem(std::unique_ptr<systems::System<T>> system);
-
   /// Returns the System whose name matches @p name.  Throws an exception if no
   /// such system has been added, or multiple such systems have been added.
   //
   /// This is the builder variant of the method.  It can only be used prior to
-  /// Start().
+  /// Start() being called.
   ///
   /// @pre Start() has NOT been called.
   systems::System<T>& GetBuilderSystemByName(std::string name);
@@ -171,26 +149,58 @@ class AutomotiveSimulator {
   /// such system has been added, or multiple such systems have been added.
   ///
   /// This is the diagram variant of the method, which can only be used after
-  /// Start().
+  /// Start() is called.
   ///
   /// @pre Start() has been called.
   const systems::System<T>& GetDiagramSystemByName(std::string name) const;
 
-  /// Build the Diagram and initialize the Simulator.  No further changes to
+  /// Builds the Diagram and initializes the Simulator.  No further changes to
   /// the diagram may occur after this has been called.
+  ///
   /// @pre Start() has NOT been called.
+  ///
+  /// @param target_realtime_rate This value is passed to
+  /// systems::Simulator::set_target_realtime_rate().
+  //
   // TODO(jwnimmer-tri) Perhaps this should be Build(), that returns an
   // AutomotiveSimulator, and our class should be AutomotiveSimulatorBuilder?
   // Port a few more demo programs, then decide what looks best.
-  // @param target_realtime_rate This value is passed to the
-  // set_target_realtime_rate method of the simulator.
   void Start(double target_realtime_rate = 0.0);
 
-  /// Advance simulated time by the given @p time_step increment in seconds.
+  /// Returns whether the automotive simulator has started.
+  bool has_started() const { return diagram_ != nullptr; }
+
+  /// Advances simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
 
  private:
   int allocate_vehicle_number();
+
+  // Adds an LCM publisher for the given @p system.
+  // @pre Start() has NOT been called.
+  void AddPublisher(const EndlessRoadCar<T>& system, int vehicle_number);
+
+  // Adds an LCM publisher for the given @p system.
+  // @pre Start() has NOT been called.
+  void AddPublisher(const SimpleCar<T>& system, int vehicle_number);
+
+  // Adds an LCM publisher for the given @p system.
+  // @pre Start() has NOT been called.
+  void AddPublisher(const TrajectoryCar<T>& system, int vehicle_number);
+
+  // Adds an LCM publisher for the given @p system.
+  // @pre Start() has NOT been called.
+  void AddPublisher(const EndlessRoadCarToEulerFloatingJoint<T>& system,
+                    int vehicle_number);
+
+  // Adds an LCM publisher for the given @p system.
+  // @pre Start() has NOT been called.
+  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
+                    int vehicle_number);
+
+  // Takes ownership of the given @p system.
+  // @pre Start() has NOT been called.
+  void AddSystem(std::unique_ptr<systems::System<T>> system);
 
   // Generates the URDF model of the road network and loads it into the
   // `RigidBodyTree`. Member variable `road_` must be set prior to calling this
@@ -246,11 +256,10 @@ class AutomotiveSimulator {
   systems::lcm::LcmPublisherSystem* lcm_publisher_{};
 
   int next_vehicle_number_{0};
-  bool started_{false};
 
   // For simulation.
-  std::unique_ptr<systems::Diagram<T>> diagram_;
-  std::unique_ptr<systems::Simulator<T>> simulator_;
+  std::unique_ptr<systems::Diagram<T>> diagram_{};
+  std::unique_ptr<systems::Simulator<T>> simulator_{};
 };
 
 }  // namespace automotive
