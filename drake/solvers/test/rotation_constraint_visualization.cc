@@ -143,8 +143,8 @@ void DrawBoxSphereIntersection(const Eigen::Vector3d& bmin,
   }
   // Compute the intersection points between the sphere in the first orthant,
   // with the box orthant_bmin <= x <= orthant_bmax
-  auto intersection_pts =
-      internal::ComputeBoxEdgesAndSphereIntersection(orthant_bmin, orthant_bmax);
+  auto intersection_pts = internal::ComputeBoxEdgesAndSphereIntersection(
+      orthant_bmin, orthant_bmax);
   // Now convert the intersection point back to the right orthant.
   for (int i = 0; i < static_cast<int>(intersection_pts.size()); ++i) {
     for (int j = 0; j < 3; ++j) {
