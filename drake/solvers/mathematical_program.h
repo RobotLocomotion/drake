@@ -6,6 +6,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -1060,6 +1061,8 @@ class MathematicalProgram {
    *  1. e1  <=  e2 , which is 0 <= e2 - e1 <= ∞
    *  2. e1  >=  e2 , which is 0 <= e1 - e2 <= ∞
    *  3. e1  ==  e2
+   *  4. A conjunction of relational formulas where each conjunct is
+   *     a relational formula matched by 1, 2, or 3.
    *
    * Note that first two cases might return an object of
    * Binding<BoundingBoxConstraint> depending on @p f. Also the third case
@@ -2516,6 +2519,9 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> DoAddLinearEqualityConstraint(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
       const Eigen::Ref<const Eigen::VectorXd>& b);
+
+  Binding<LinearConstraint> AddLinearConstraint(
+      const std::set<symbolic::Formula>& formulas);
 };
 }  // namespace solvers
 }  // namespace drake
