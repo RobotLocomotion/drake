@@ -14,7 +14,7 @@ namespace systems {
 namespace lcm {
 namespace {
 
-const int kStart = 0;
+const int kStart = 3;
 const int kEnd = 10;
 
 // Converts millisecond timestamp field to second.
@@ -54,12 +54,14 @@ class DummySys : public systems::LeafSystem<double> {
 void publish() {
   ::lcm::LCM lcm;
   lcmt_drake_signal msg;
-  usleep(5000);
+  const int kSleepMicroSec = 100000;
+
+  usleep(kSleepMicroSec);
 
   for (int i = kStart; i <= kEnd; i++) {
     msg.timestamp = 1000 * i;
     lcm.publish("test", &msg);
-    usleep(1000);
+    usleep(kSleepMicroSec);
   }
 }
 
@@ -94,8 +96,9 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
 
   // Makes the expected output.
   VectorX<double> expected(kEnd - kStart);
-  for (int i = kStart; i <= kEnd; i++) {
-    expected(i) = i;
+  int ctr = 0;
+  for (int i = kStart; i < kEnd; i++) {
+    expected(ctr++) = i;
   }
   EXPECT_TRUE(drake::CompareMatrices(expected.transpose(), logger->data(),
                                      1e-12,

@@ -117,7 +117,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   /**
    * Sets the notification. Every time a message is handled by Lcm callback
-   * function, @p sem will be notified.
+   * function, @p sem will be notified once.
    */
   void set_notification(Semaphore* sem) {
     notification_ = sem;
@@ -140,7 +140,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
                       std::unique_ptr<SerializerInterface> serializer,
                       drake::lcm::DrakeLcmInterface* lcm);
 
-  // Callback entry point from LCM into this class.
+  // Callback entry point from LCM into this class. Also wakes up one thread
+  // block on notification_ if it's not nullptr.
   void HandleMessage(const std::string& channel, const void* message_buffer,
       int message_size) override;
 

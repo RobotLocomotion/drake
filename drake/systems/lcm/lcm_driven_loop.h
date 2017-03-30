@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
 #include <limits>
+#include <memory>
 #include <utility>
 
 #include "drake/lcm/drake_lcm.h"
@@ -101,42 +101,13 @@ class LcmDrivenLoop {
                 std::unique_ptr<Context<double>> context,
                 drake::lcm::DrakeLcm* lcm,
                 LcmSubscriberSystem* driving_subscriber,
-                std::unique_ptr<LcmMessageToTimeInterface> time_converter)
-      : system_(system),
-        lcm_(lcm),
-        time_converter_(std::move(time_converter)),
-        semaphore_(1),
-        driving_sub_(driving_subscriber),
-        stepper_(
-            std::make_unique<Simulator<double>>(system_, std::move(context))) {
-    DRAKE_DEMAND(lcm != nullptr);
-    DRAKE_DEMAND(driving_subscriber != nullptr);
-    DRAKE_DEMAND(time_converter_ != nullptr);
-
-    // Tells the driving subscriber to wake this up when it gets a new message.
-    driving_sub_->set_notification(&semaphore_);
-
-    // Allocates extra context and output just for the driving subscriber, so
-    // that this can explicitly query the message.
-    sub_context_ = driving_sub_->CreateDefaultContext();
-    sub_output_ = driving_sub_->AllocateOutput(*sub_context_);
-
-    // Disables simulator's publish on its internal time step.
-    stepper_->set_publish_every_time_step(false);
-
-    // Starts the subscribing thread.
-    lcm_->StartReceiveThread();
-  }
+                std::unique_ptr<LcmMessageToTimeInterface> time_converter);
 
   /**
    * Returns a const reference of AbstractValue that contains the received Lcm
    * message.
    */
-  const AbstractValue& WaitForMessage() {
-    semaphore_.wait();
-    driving_sub_->CalcOutput(*sub_context_, sub_output_.get());
-    return *(sub_output_->get_data(0));
-  }
+  const AbstractValue& WaitForMessage();
 
   /**
    * Starts the main loop assuming that the context (e.g. state and time) has
@@ -145,23 +116,7 @@ class LcmDrivenLoop {
    * received Lcm message.
    */
   void RunAssumingInitializedTo(
-      double stop_time = std::numeric_limits<double>::infinity()) {
-    double msg_time;
-    stepper_->Initialize();
-
-    while (true) {
-      msg_time = time_converter_->GetTimeInSeconds(WaitForMessage());
-      if (msg_time >= stop_time) break;
-
-      stepper_->StepTo(msg_time);
-
-      // Explicitly publish after we are done with all the intermediate
-      // computation.
-      if (publish_on_every_received_message_) {
-        system_.Publish(stepper_->get_context());
-      }
-    }
-  }
+      double stop_time = std::numeric_limits<double>::infinity());
 
   /**
    * Waits for the first Lcm message, sets the context's time to the message's
@@ -169,37 +124,28 @@ class LcmDrivenLoop {
    * special initialization is required by the underlying system.
    */
   void RunWithDefaultInitializationTo(
-      double stop_time = std::numeric_limits<double>::infinity()) {
-    const AbstractValue& first_msg = WaitForMessage();
-    double msg_time = time_converter_->GetTimeInSeconds(first_msg);
-    // Init our time to the msg time.
-    stepper_->get_mutable_context()->set_time(msg_time);
-
-    RunAssumingInitializedTo(stop_time);
-  }
+      double stop_time = std::numeric_limits<double>::infinity());
 
   /**
-   * If @p flag is set to true, the main loop will explicitly have all
-   * subsystems publish after it handles one driving message. The user should
-   * either make sure ((no subsystems have DeclarePublishPeriodSec() or
-   * set_publish_period() calls) and @p flag being ture), or
-   * ((every subsytem have there desired publish rates set properly with
-   * DeclarePublishPeriodSec() or set_publish_period() calls) and @p flag
-   * being false) to avoid repeated publishing. The former corresponds to
-   * "publish everything whenever a new message has been handled". The
-   * latrer roughly corresponds to "All subsystems publish on their declared
-   * rates." However, this strongly depends on the timing of the driving
-   * message and computation in message handling, and the publish is likely
-   * to be not uniform. Suppose the driving message comes at 1 hz, and the
-   * message handlers take very little time to handle one message, and are
-   * declared to be publishing at 200hz. What you should oberserve is that no
-   * messages will be published for 1 second, and 200 messages will be
-   * published almost at once. This is most likely not the intended behavior,
-   * and indicates some basic assumptions are probably wrong.
+   * If @p flag is set to true, the main loop will explicitly call Publish()
+   * on the given system after it handles one driving message.
    *
-   * The first setup is recommended, because it fits the intuitive "one state
-   * in, one control out" picture better. The second setup is also fine given
-   * everything happens "fast enough".
+   * To correctly implement "publish everything whenever a new message has
+   * been handled", the user needs to make sure that no subsystems in the
+   * given system have declared period publish, and @p flag is true.
+   * This is the recommended publish setup because of its simplicity, and
+   * suites typical "one state message in, one control message out " use case.
+   *
+   * Alternatively, the user can set @p flag to false, and declare periodic
+   * publish events for all the appropriate subsystems. However, the actual
+   * publishing behavior strongly depends on the timing of the driving message
+   * and computation in message handling, and the publish is unlikely to be
+   * uniform. Suppose the driving message comes at 1 hz, and the message
+   * handlers take very little time to handle one message, and are declared to
+   * be publishing at 200hz. What you should observe is that no messages will
+   * be published for 1 second, and 200 messages will be published almost at
+   * once. This is most likely not the intended behavior, and indicates some
+   * basic assumptions might be incorrect.
    */
   void set_publish_on_every_received_message(bool flag) {
     publish_on_every_received_message_ = flag;

@@ -44,14 +44,14 @@ drake_cc_library(
 drake_cc_library(
     name = "lcm_driven_loop",
     srcs = [
+        "lcm_driven_loop.cc",
     ],
     hdrs = [
         "lcm_driven_loop.h",
     ],
     deps = [
         ":lcm",
-        "//drake/lcm:interface",
-        "//drake/systems/framework",
+        "//drake/lcm:lcm",
         "//drake/systems/analysis",
     ],
 )

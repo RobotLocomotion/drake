@@ -141,7 +141,7 @@ void LcmSubscriberSystem::HandleMessage(const std::string& channel,
               << std::endl;
   }
 
-  // Wakes up whoever is sleeping on this.
+  // Wakes up one thread that's blocked on this.
   if (notification_) {
     notification_->notify();
   }
