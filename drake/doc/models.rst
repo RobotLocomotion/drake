@@ -144,9 +144,10 @@ to have the same base file name as the OBJ file.
 To create VTM/VTP texture files for your OBJ mesh, one method is to get a DAE
 file which is equivalent to your OBJ file (your 3D scanner may be able to output
 both DAE and OBJ, or file converters are available).  Convert the DAE file into
-a VTM texture by installing ``python-collada`` and then running this `Python
-script
-<https://github.com/openhumanoids/oh-distro/blob/2d44880dba349e29072aedfc0ff24878a26d5c7a/software/models/model_transformation/convertCollada.py>`_:
+a VTM texture by running this `Python script
+<https://raw.githubusercontent.com/openhumanoids/oh-distro/master/software/models/model_transformation/convertCollada.py>`_.
+Save the script to the place where your DAE file is stored. Then run the
+following commands, and the script will create VTM and VTP files.
 
 ``$ sudo apt-get install python-collada``
 
