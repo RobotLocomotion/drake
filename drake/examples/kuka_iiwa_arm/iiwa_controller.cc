@@ -16,7 +16,6 @@
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -65,25 +64,12 @@ int DoMain() {
                   plan_source->get_plan_input_port());
   builder.Connect(status_sub->get_output_port(0),
                   plan_source->get_status_input_port());
-
   builder.Connect(status_sub->get_output_port(0),
                   status_receiver->get_input_port(0));
-
-  Eigen::VectorXd Kp = Eigen::VectorXd::Zero(kNumJoints);
-  Eigen::VectorXd Ki = Eigen::VectorXd::Ones(kNumJoints) * 0.05;
-  Eigen::VectorXd Kd = Eigen::VectorXd::Zero(kNumJoints);
-
-  // q_d = q_ref + ki * int (q_d - q).
-  auto control_ports = systems::PidControlledSystem<double>::ConnectController(
-      command_sender->get_input_port(0),
-      status_receiver->get_measured_position_output_port(), nullptr, Kp, Ki, Kd,
-      &builder);
   builder.Connect(plan_source->get_output_port(0),
                   target_demux->get_input_port(0));
   builder.Connect(target_demux->get_output_port(0),
-                  control_ports.control_input_port);
-  builder.Connect(plan_source->get_output_port(0),
-                  control_ports.state_input_port);
+                  command_sender->get_input_port(0));
   builder.Connect(command_sender->get_output_port(0),
                   command_pub->get_input_port(0));
   auto diagram = builder.Build();
