@@ -1,9 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <limits>
 #include <utility>
 
-#include "drake/lcm/drake_lcm_interface.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
@@ -11,6 +12,10 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+/**
+ * A generic translator interface that extracts time in seconds from an
+ * abstract type.
+ */
 class LcmMessageToTimeInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmMessageToTimeInterface)
@@ -23,6 +28,10 @@ class LcmMessageToTimeInterface {
   LcmMessageToTimeInterface() {}
 };
 
+/**
+ * A translator class for Lcm message types that have a "utime" field, which
+ * is in micro seconds.
+ */
 template <typename MessageType>
 class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  public:
@@ -37,85 +46,94 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
 };
 
 /**
- * This is a very crude first pass to implement a loop that's driven by a lcm
- * message. Moreover, context time is explicitly slaved to whatever time is in
- * the received lcm message, and most likely some states are also slaved to the
- * incoming message implicitly. This is intended to implement a control loop
- * that handles a state message from the network, computes some numbers and then
- * sends some command out.
+ * This class implements a loop that's driven by a Lcm message. The context time
+ * is explicitly slaved to the time in the received Lcm message. Some states are
+ * also likely to be slaved to the message implicitly (e.g. robot states). This
+ * is intended to implement a control loop that handles a state message from
+ * the network, computes some numbers and then sends some command out.
  *
  * This class uses the Simulator class internally for event handling
  * (kPublishAction, kDiscreteUpdateAction, kUnrestrictedUpdateAction) and
- * state "integration" (e.g. I term in a PID). Since this class is intended to
- * solve a more specific subset of problems, the user needs to be mindful of how
- * their system is configured, especially about event timing. The main message
- * handling loop is roughly:
+ * state "integration" (e.g. I term in a PID). The user needs to be mindful of
+ * how
+ * their system is configured, especially about event timing since time is
+ * slaved to some outside source.
+ *
+ * The main message handling loop is roughly:
  * <pre>
  * msg = wait_for_message("channel");
- * stepper.context.Initliaze(msg.time, msg);
- * while(true) {
+ * simulator.context.Initilaize(msg);
+ * while(context.time < T_max) {
  *   msg = wait_for_message("channel");
- *   stepper.StepTo(msg.time);
+ *   simulator.StepTo(msg.time);
  *   if (publish) {
- *     system.Publish(stepper.context);
+ *     system.Publish(simulator.context);
  *   }
  * }
- *
+ * </pre>
  *
  * There are a couple assumptions in this implementation.
- * 1. The loop is blocked only on one lcm message.
- * 2. It's pointless to recompute without a new lcm message (thus the handler
- * thread is de-scheduled).
- * 3. The message needs to have a utime field that is set properly, in units of
- * microseconds..
- * 4. The computation for the given system should be faster than the incoming
+ * 1. The loop is blocked only on one Lcm message.
+ * 2. It's pointless to recompute without a new Lcm message, thus the handler
+ * loop is blocking.
+ * 3. The computation for the given system should be faster than the incoming
  * message rate.
  *
  * Subtle things about lcm subscribers:
  * LcmSubscriberSystem's output is not guaranteed to be the same given the same
- * context. E.g. if a lcm messages comes in between two calls to CalcOutput, the
+ * context. E.g. if a Lcm messages comes in between two calls to CalcOutput, the
  * second call would return the new message while the "state" in the context
- * remains the same. It is thus recommended that all the lcm message sources are
- * connected with a ZOH block that only pulls from the actual subscriber when
- * time changes.
+ * remains the same. The LcmSubscriberSystem will be fixed.
  */
 class LcmDrivenLoop {
  public:
-  // The max count for semaphore_ needs to be 1. Otherwise the behavior is not
-  // correct if we handle messages slower than the incoming rate.
-  LcmDrivenLoop(drake::lcm::DrakeLcmInterface* lcm, const System<double>& system,
+  /**
+   * Constructor.
+   * @param system Const reference to the handler system.
+   * @param context Unique pointer to a context allocated for @p system.
+   * @param lcm Pointer to Lcm interface. Cannot be nullptr.
+   * @param driving_subscriber Pointer to the driving subscriber. Cannot be
+   * nullptr.
+   * @param time_converter Unique pointer to a converter that extracts time in
+   * seconds from the driving message time. Cannot be nullptr.
+   */
+  LcmDrivenLoop(const System<double>& system,
                 std::unique_ptr<Context<double>> context,
+                drake::lcm::DrakeLcm* lcm,
                 LcmSubscriberSystem* driving_subscriber,
                 std::unique_ptr<LcmMessageToTimeInterface> time_converter)
-      : lcm_(lcm), time_converter_(std::move(time_converter)), semaphore_(1) {
+      : system_(system),
+        lcm_(lcm),
+        time_converter_(std::move(time_converter)),
+        semaphore_(1),
+        driving_sub_(driving_subscriber),
+        stepper_(
+            std::make_unique<Simulator<double>>(system_, std::move(context))) {
     DRAKE_DEMAND(lcm != nullptr);
     DRAKE_DEMAND(driving_subscriber != nullptr);
+    DRAKE_DEMAND(time_converter_ != nullptr);
 
-    system_ = &system;
-    driving_sub_ = driving_subscriber;
-    stepper_ =
-        std::make_unique<Simulator<double>>(*system_, std::move(context));
-
+    // Tells the driving subscriber to wake this up when it gets a new message.
     driving_sub_->set_notification(&semaphore_);
 
+    // Allocates extra context and output just for the driving subscriber, so
+    // that this can explicitly query the message.
     sub_context_ = driving_sub_->CreateDefaultContext();
     sub_output_ = driving_sub_->AllocateOutput(*sub_context_);
 
+    // Disables simulator's publish on its internal time step.
     stepper_->set_publish_every_time_step(false);
 
+    // Starts the subscribing thread.
     lcm_->StartReceiveThread();
   }
 
   /**
-   * Returns a const reference to the AbstractValue that contains the received
-   * lcm message.
+   * Returns a const reference of AbstractValue that contains the received Lcm
+   * message.
    */
   const AbstractValue& WaitForMessage() {
-    // Wake up for the first message in driving_sub_, so that we can initialize
-    // the time properly.
     semaphore_.wait();
-
-    // Get the time from the received message.
     driving_sub_->CalcOutput(*sub_context_, sub_output_.get());
     return *(sub_output_->get_data(0));
   }
@@ -126,42 +144,38 @@ class LcmDrivenLoop {
    * if the underly System needs custom initialization depending on the first
    * received Lcm message.
    */
-  void RunAssumingInitialized() {
+  void RunAssumingInitializedTo(
+      double stop_time = std::numeric_limits<double>::infinity()) {
     double msg_time;
     stepper_->Initialize();
 
     while (true) {
-      // Wake up only when there is a new message in driving_sub_.
-      semaphore_.wait();
+      msg_time = time_converter_->GetTimeInSeconds(WaitForMessage());
+      if (msg_time >= stop_time) break;
 
-      driving_sub_->CalcOutput(*sub_context_, sub_output_.get());
-
-      // Sets the context time to the lcm message's time.
-      msg_time = time_converter_->GetTimeInSeconds(*(sub_output_->get_data(0)));
-
-      // Do everything else normally.
       stepper_->StepTo(msg_time);
 
       // Explicitly publish after we are done with all the intermediate
       // computation.
       if (publish_on_every_received_message_) {
-        system_->Publish(stepper_->get_context());
+        system_.Publish(stepper_->get_context());
       }
     }
   }
 
   /**
    * Waits for the first Lcm message, sets the context's time to the message's
-   * time, then calls RunAssumingInitliazed(). This is convenient if no special
-   * initialization is necessary for the underlying System.
+   * time, then calls RunAssumingInitliazedTo(). This is convenient if no
+   * special initialization is required by the underlying system.
    */
-  void RunWithDefaultInitialization() {
+  void RunWithDefaultInitializationTo(
+      double stop_time = std::numeric_limits<double>::infinity()) {
     const AbstractValue& first_msg = WaitForMessage();
     double msg_time = time_converter_->GetTimeInSeconds(first_msg);
     // Init our time to the msg time.
     stepper_->get_mutable_context()->set_time(msg_time);
 
-    RunAssumingInitialized();
+    RunAssumingInitializedTo(stop_time);
   }
 
   /**
@@ -206,8 +220,11 @@ class LcmDrivenLoop {
   }
 
  private:
+  // The system that does stuff.
+  const System<double>& system_;
+
   // The lcm interface for publishing and subscribing.
-  drake::lcm::DrakeLcmInterface* lcm_;
+  drake::lcm::DrakeLcm* lcm_;
 
   // Extracts time in seconds from received lcm messages.
   std::unique_ptr<LcmMessageToTimeInterface> time_converter_;
@@ -216,23 +233,16 @@ class LcmDrivenLoop {
   bool publish_on_every_received_message_{true};
 
   // The semaphore that blocks the loop thread until a message triggers
-  // driving_sub_'s message handler which wakes up this semaphore.
+  // driving_sub_'s message handler.
   Semaphore semaphore_;
 
-  // The system that does stuff.
-  const System<double>* system_;
-
-  // THE message handler. stepper_.context's time will be latched to whatever
-  // time is being subscribed in driving_sub_.
+  // THE message subscriber.
   LcmSubscriberSystem* driving_sub_;
 
   // Reusing the simulator to manage event handling and state progression.
   std::unique_ptr<Simulator<double>> stepper_;
 
-  // Separate context and output port just to get the time out of
-  // driving_sub_.. I can't think of a general way to get the correct sub
-  // context out of stepper_.context if driving_sub_ is buried deep down
-  // somewhere in system_.
+  // Separate context and output port for the driving subscriber.
   std::unique_ptr<Context<double>> sub_context_;
   std::unique_ptr<SystemOutput<double>> sub_output_;
 };

@@ -71,11 +71,12 @@ drake_cc_library(
 drake_cc_googletest(
     name = "lcm_driven_loop_test",
     deps = [
+        "//drake/common:eigen_matrix_compare",
         "//drake/lcm",
         "//drake/lcmtypes:drake_signal",
         "//drake/systems/framework",
         "//drake/systems/lcm:lcm_driven_loop",
-        "//drake/lcm:mock",
+        "//drake/systems/primitives:signal_logger",
     ],
 )
 
@@ -107,13 +108,6 @@ drake_cc_googletest(
         ":translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
-    ],
-)
-
-drake_cc_googletest(
-    name = "semaphore_test",
-    deps = [
-        ":lcm",
     ],
 )
 

@@ -77,11 +77,11 @@ int DoMain() {
   drake::log()->info("controller started");
 
   systems::lcm::LcmDrivenLoop loop(
-      &lcm, *diagram, nullptr, status_sub,
+      *diagram, nullptr, &lcm, status_sub,
       std::make_unique<
           systems::lcm::UtimeMessageToSeconds<lcmt_iiwa_status>>());
 
-  loop.RunWithDefaultInitialization();
+  loop.RunWithDefaultInitializationTo();
   return 0;
 }
 
