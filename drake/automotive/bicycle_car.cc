@@ -118,6 +118,8 @@ void BicycleCar<T>::ImplCalcTimeDerivatives(
     const systems::BasicVector<T>& steering,
     const systems::BasicVector<T>& force,
     BicycleCarState<T>* derivatives) const {
+  DRAKE_DEMAND(params.IsValid());
+
   using std::pow;
   using std::cos;
   using std::sin;

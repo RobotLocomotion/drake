@@ -59,26 +59,32 @@ class BicycleCarParameters : public systems::BasicVector<T> {
   //@{
   /// mass
   /// @note @c mass is expressed in units of kg.
+  /// @note @c mass has a limited domain of [0.0, +Inf].
   const T& mass() const { return this->GetAtIndex(K::kMass); }
   void set_mass(const T& mass) { this->SetAtIndex(K::kMass, mass); }
   /// distance from the center of mass to the front axle
   /// @note @c lf is expressed in units of m.
+  /// @note @c lf has a limited domain of [0.0, +Inf].
   const T& lf() const { return this->GetAtIndex(K::kLf); }
   void set_lf(const T& lf) { this->SetAtIndex(K::kLf, lf); }
   /// distance from the center of mass to the rear axle
   /// @note @c lr is expressed in units of m.
+  /// @note @c lr has a limited domain of [0.0, +Inf].
   const T& lr() const { return this->GetAtIndex(K::kLr); }
   void set_lr(const T& lr) { this->SetAtIndex(K::kLr, lr); }
   /// moment of inertia about the yaw-axis
   /// @note @c Iz is expressed in units of kg m^2.
+  /// @note @c Iz has a limited domain of [0.0, +Inf].
   const T& Iz() const { return this->GetAtIndex(K::kIz); }
   void set_Iz(const T& Iz) { this->SetAtIndex(K::kIz, Iz); }
   /// cornering stiffness (front)
   /// @note @c Cf is expressed in units of N / rad.
+  /// @note @c Cf has a limited domain of [0.0, +Inf].
   const T& Cf() const { return this->GetAtIndex(K::kCf); }
   void set_Cf(const T& Cf) { this->SetAtIndex(K::kCf, Cf); }
   /// cornering stiffness (rear)
   /// @note @c Cr is expressed in units of N / rad.
+  /// @note @c Cr has a limited domain of [0.0, +Inf].
   const T& Cr() const { return this->GetAtIndex(K::kCr); }
   void set_Cr(const T& Cr) { this->SetAtIndex(K::kCr, Cr); }
   //@}
@@ -88,11 +94,17 @@ class BicycleCarParameters : public systems::BasicVector<T> {
     using std::isnan;
     auto result = (T(0) == T(0));
     result = result && !isnan(mass());
+    result = result && (mass() >= T(0.0));
     result = result && !isnan(lf());
+    result = result && (lf() >= T(0.0));
     result = result && !isnan(lr());
+    result = result && (lr() >= T(0.0));
     result = result && !isnan(Iz());
+    result = result && (Iz() >= T(0.0));
     result = result && !isnan(Cf());
+    result = result && (Cf() >= T(0.0));
     result = result && !isnan(Cr());
+    result = result && (Cr() >= T(0.0));
     return result;
   }
 };
