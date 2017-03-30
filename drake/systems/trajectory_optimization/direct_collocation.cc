@@ -25,7 +25,8 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
   context_->SetTimeStateAndParametersFrom(context);
 
   // Allocate the input port and keep an alias around.
-  input_port_value_ = new FreestandingInputPortValue(system->AllocateInputVector(system->get_input_port(0)));
+  input_port_value_ = new FreestandingInputPortValue(
+      system->AllocateInputVector(system->get_input_port(0)));
   std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
   context_->SetInputPortValue(0, std::move(input_port_value));
 

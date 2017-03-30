@@ -200,8 +200,8 @@ void EvaluateNonlinearConstraints(
     const MathematicalProgram& prog,
     const std::vector<Binding<C>>& constraint_list, snopt::doublereal F[],
     snopt::doublereal G[], size_t* constraint_index, size_t* grad_index,
-    const math::AutoDiffMatrixType<Eigen::VectorXd, Eigen::Dynamic>& tx) {
-  TaylorVecXd this_x;
+    const Eigen::VectorXd& xvec) {
+  Eigen::VectorXd this_x;
   for (const auto& binding : constraint_list) {
     const auto& c = binding.constraint();
     size_t num_constraints = c->num_constraints();
@@ -209,12 +209,12 @@ void EvaluateNonlinearConstraints(
     int num_v_variables = binding.GetNumElements();
     this_x.resize(num_v_variables);
     for (int i = 0; i < num_v_variables; ++i) {
-      this_x(i) = tx(prog.FindDecisionVariableIndex(binding.variables()(i)));
+      this_x(i) = xvec(prog.FindDecisionVariableIndex(binding.variables()(i)));
     }
 
     TaylorVecXd ty;
     ty.resize(num_constraints);
-    c->Eval(this_x, ty);
+    c->Eval(math::initializeAutoDiff(this_x), ty);
 
     for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints);
          i++) {
@@ -224,8 +224,8 @@ void EvaluateNonlinearConstraints(
     for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints);
          i++) {
       for (int j = 0; j < num_v_variables; ++j) {
-        G[(*grad_index)++] = static_cast<snopt::doublereal>(ty(i).derivatives()(
-            prog.FindDecisionVariableIndex(binding.variables()(j))));
+        G[(*grad_index)++] =
+            static_cast<snopt::doublereal>(ty(i).derivatives()(j));
       }
     }
   }
@@ -257,8 +257,8 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   memset(G, 0, (*n) * sizeof(snopt::doublereal));
 
   // evaluate cost
-  auto tx = math::initializeAutoDiff(xvec);
-  TaylorVecXd ty(1), this_x;
+  Eigen::VectorXd this_x;
+  TaylorVecXd ty(1);
 
   for (auto const& binding : current_problem->GetAllCosts()) {
     auto const& obj = binding.constraint();
@@ -266,19 +266,18 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     int num_v_variables = binding.GetNumElements();
     this_x.resize(num_v_variables);
     for (int j = 0; j < num_v_variables; ++j) {
-      this_x(j) = tx(
+      this_x(j) = xvec(
           current_problem->FindDecisionVariableIndex(binding.variables()(j)));
     }
 
-    obj->Eval(this_x, ty);
+    obj->Eval(math::initializeAutoDiff(this_x), ty);
 
     F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
-    for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
+    for (int j = 0; j < num_v_variables; ++j) {
       size_t vj_index =
           current_problem->FindDecisionVariableIndex(binding.variables()(j));
-      G[vj_index] +=
-          static_cast<snopt::doublereal>(ty(0).derivatives()(vj_index));
+      G[vj_index] += static_cast<snopt::doublereal>(ty(0).derivatives()(j));
     }
   }
 
@@ -289,13 +288,13 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   size_t grad_index = *n;
   EvaluateNonlinearConstraints(*current_problem,
                                current_problem->generic_constraints(), F, G,
-                               &constraint_index, &grad_index, tx);
+                               &constraint_index, &grad_index, xvec);
   EvaluateNonlinearConstraints(*current_problem,
                                current_problem->lorentz_cone_constraints(), F,
-                               G, &constraint_index, &grad_index, tx);
+                               G, &constraint_index, &grad_index, xvec);
   EvaluateNonlinearConstraints(
       *current_problem, current_problem->rotated_lorentz_cone_constraints(), F,
-      G, &constraint_index, &grad_index, tx);
+      G, &constraint_index, &grad_index, xvec);
 
   return 0;
 }
