@@ -753,6 +753,7 @@ drake_cc_googletest(
         ":simple_car",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/trajectory_optimization:direct_collocation",
+        "//drake/lcm:lcm_call_matlab"
     ],
 )
 
