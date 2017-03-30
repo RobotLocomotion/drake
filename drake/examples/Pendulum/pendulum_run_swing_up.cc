@@ -106,7 +106,7 @@ int do_main(int argc, char* argv[]) {
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(kTrajectoryTimeUpperBound);
+  simulator.StepTo(pp_xtraj.get_end_time());
 
   systems::Context<double>* pendulum_context =
       controller->GetMutableSubsystemContext(controller_context, pendulum);

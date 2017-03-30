@@ -58,24 +58,6 @@ GTEST_TEST(PendulumTrajectoryOptimization,
     EXPECT_TRUE(CompareMatrices(states.col(i), state_traj.value(times_out[i]),
                                 1e-10, MatrixCompareType::absolute));
   }
-
-  // Test interpolation.
-  const double t1(times_out[2]);
-  const double t2(times_out[3]);
-  // The value at t2 is larger than the value at t1, for this example.
-
-  const Eigen::MatrixXd linear_avr_of_2_points((state_traj.value(t2) +
-      state_traj.value(t1)) * 0.5);
-  const Eigen::MatrixXd spline_interpolation(state_traj.value((t2 + t1) *
-      0.5));
-
-  // In this particular point we expect the spline to be quite different from
-  // linear_avr_of_2_points at the midpoint: not trying to be exact, but want a
-  // regression test.
-  double abs_diff =
-      std::fabs(linear_avr_of_2_points(0, 0) - spline_interpolation(0, 0));
-  EXPECT_LT(abs_diff, 0.11);
-  EXPECT_GT(abs_diff, 0.1);
 }
 
 }  // namespace
