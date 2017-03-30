@@ -9,7 +9,10 @@ It is assumed that ``drake-distro`` is
 Using CLion with CMake
 ======================
 
-(We recommend using Bazel rather than CMake; see instructions below.)
+(We recommend using Bazel rather than CMake; see instructions below.
+**CAUTION**: the Bazel plugin does not necessarily work with the latest
+CLion. We have tested it up to CLion 2016.3.5 and it does not
+currently work with CLion 2017.1.)
 
 Installing CLion
 ----------------
@@ -119,6 +122,8 @@ not exist, create it.
 
 Using CLion with Bazel
 ======================
+
+(See note above about CLion versions compatible with Bazel.)
 
 First, install Bazel and build Drake with Bazel, following
 :ref:`the Drake Bazel instructions <bazel>`.
