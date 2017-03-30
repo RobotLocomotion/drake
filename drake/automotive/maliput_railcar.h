@@ -155,9 +155,14 @@ class MaliputRailcar : public systems::LeafSystem<T> {
       MaliputRailcarState<T>* rates) const;
 
   void ImplCalcTimeDerivativesDouble(
-    const MaliputRailcarConfig<double>& config,
-    const MaliputRailcarState<double>& state,
-    MaliputRailcarState<double>* rates) const;
+      const MaliputRailcarConfig<double>& config,
+      const MaliputRailcarState<double>& state,
+      MaliputRailcarState<double>* rates) const;
+
+  // Calculates the vehicle's `r` coordinate based on whether it's traveling
+  // with or against `s` in the current lane relative to the initial lane.
+  T CalcR(const MaliputRailcarConfig<T>& config,
+          const LaneDirection& lane_direction) const;
 
   const LaneDirection initial_lane_direction_{};
   int command_input_port_index_{};

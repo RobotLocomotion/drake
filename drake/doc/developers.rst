@@ -170,6 +170,7 @@ make the review faster.
 - @psiorx (MIT)
 - @sammy-tri (Toyota Research Institute)
 - @sherm1 (Toyota Research Institute)
+- @soonho-tri (Toyota Research Institute)
 - @RussTedrake (MIT / Toyota Research Institute)
 
 **Merge.** If you have write access to RobotLocomotion/drake, a green
@@ -250,3 +251,4 @@ Version Control
     :maxdepth: 1
 
     no_push_to_origin
+

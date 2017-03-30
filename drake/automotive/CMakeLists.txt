@@ -26,6 +26,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/maliput_railcar_state.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
+  idm_controller.cc
   idm_planner.cc
   linear_car.cc
   maliput/api/road_geometry.cc
@@ -68,6 +69,7 @@ drake_install_headers(
   calc_smooth_acceleration.h
   create_trajectory_params.h
   curve2.h
+  idm_controller.h
   idm_planner.h
   linear_car.h
   maliput_railcar.h
@@ -97,6 +99,9 @@ if(lcm_FOUND)
 
   add_library_with_exports(LIB_NAME drakeAutomotiveLcm SOURCE_FILES
     automotive_simulator.cc
+    box_car_vis.cc
+    car_vis.cc
+    car_vis_applicator.cc
     gen/bicycle_car_parameters_translator.cc
     gen/bicycle_car_state_translator.cc
     gen/driving_command_translator.cc
@@ -108,15 +113,21 @@ if(lcm_FOUND)
     gen/maliput_railcar_state_translator.cc
     gen/simple_car_config_translator.cc
     gen/simple_car_state_translator.cc
+    prius_vis.cc
     )
   target_link_libraries(drakeAutomotiveLcm
     drakeAutomotive
+    drakeLCMTypes
     drakeMultibodyParsers
     drakeRigidBodyPlant
     )
   drake_install_libraries(drakeAutomotiveLcm)
   drake_install_headers(
     automotive_simulator.h
+    box_car_vis.h
+    car_vis.h
+    car_vis_applicator.h
+    prius_vis.h
     # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
     )
   drake_install_pkg_config_file(drake-automotive-lcm
@@ -129,7 +140,6 @@ if(lcm_FOUND)
   add_executable(automotive_demo automotive_demo.cc)
   target_link_libraries(automotive_demo
       drakeAutomotiveLcm
-      drakeLCMTypes
       drakeMaliputDragway)
 
   add_executable(car_sim_lcm car_sim_lcm.cc car_sim_lcm_common.cc)

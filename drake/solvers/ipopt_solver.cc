@@ -266,7 +266,11 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       const Eigen::VectorXd& initial_guess = problem_->initial_guess();
       DRAKE_ASSERT(initial_guess.size() == n);
       for (Index i = 0; i < n; i++) {
-        x[i] = initial_guess[i];
+        if (!std::isnan(initial_guess[i])) {
+          x[i] = initial_guess[i];
+        } else {
+          x[i] = 0.0;
+        }
       }
     }
 

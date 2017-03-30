@@ -440,7 +440,7 @@ drake_cc_googletest(
     name = "test_ik",
     data = [
         "//drake/examples/Atlas:models",
-        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":inverse_kinematics",

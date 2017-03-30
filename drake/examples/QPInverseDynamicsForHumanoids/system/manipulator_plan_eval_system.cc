@@ -42,8 +42,9 @@ void ManipulatorPlanEvalSystem::Initialize(systems::State<double>* state) {
                                              &(plan.mutable_Kd()));
 
   QpInput& qp_input = get_mutable_qp_input(state);
-  qp_input = get_paramset().MakeQpInput({}, /* contacts */
-                                        {}, /* tracked bodies */
+  const std::vector<std::string> empty;
+  qp_input = get_paramset().MakeQpInput(empty, /* contacts */
+                                        empty, /* tracked bodies */
                                         get_alias_groups());
 }
 

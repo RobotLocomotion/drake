@@ -93,6 +93,42 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "box_car_vis",
+    srcs = ["box_car_vis.cc"],
+    hdrs = ["box_car_vis.h"],
+    deps = [
+        ":car_vis",
+        "//drake/multibody/shapes",
+        "//drake/systems/rendering:drake_visualizer_client",
+    ],
+)
+
+drake_cc_library(
+    name = "car_vis",
+    srcs = ["car_vis.cc"],
+    hdrs = ["car_vis.h"],
+    deps = [
+        "//drake/lcmtypes:viewer",
+        "//drake/systems/rendering:pose_bundle",
+    ],
+)
+
+drake_cc_library(
+    name = "car_vis_applicator",
+    srcs = ["car_vis_applicator.cc"],
+    hdrs = ["car_vis_applicator.h"],
+    deps = [
+        ":box_car_vis",
+        ":car_vis",
+        ":generated_vectors",
+        "//drake/lcmtypes:viewer",
+        "//drake/systems/framework",
+        "//drake/systems/rendering:drake_visualizer_client",
+        "//drake/systems/rendering:pose_aggregator",
+    ],
+)
+
+drake_cc_library(
     name = "curve2",
     srcs = ["curve2.cc"],
     hdrs = ["curve2.h"],
@@ -124,6 +160,22 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         ":infinite_circuit_road",
+    ],
+)
+
+drake_cc_library(
+    name = "idm_controller",
+    srcs = ["idm_controller.cc"],
+    hdrs = ["idm_controller.h"],
+    deps = [
+        ":generated_vectors",
+        ":idm_planner",
+        ":simple_car",
+        ":pose_selector",
+        "//drake/automotive/maliput/api",
+        "//drake/math:saturate",
+        "//drake/systems/rendering:pose_bundle",
+        "//drake/systems/rendering:pose_vector",
     ],
 )
 
@@ -177,6 +229,22 @@ drake_cc_library(
     visibility = [],
     deps = [
         "//drake/automotive/maliput/api",
+        "//drake/systems/rendering:pose_bundle",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "prius_vis",
+    srcs = ["prius_vis.cc"],
+    hdrs = ["prius_vis.h"],
+    data = ["//drake/automotive:models"],
+    deps = [
+        ":car_vis",
+        "//drake/common:drake_path",
+        "//drake/lcmtypes:viewer",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:create_load_robot_message",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -249,10 +317,12 @@ drake_cc_library(
     srcs = ["automotive_simulator.cc"],
     hdrs = ["automotive_simulator.h"],
     deps = [
+        ":car_vis_applicator",
         ":endless_road_car",
         ":endless_road_oracle",
         ":generated_translators",
         ":generated_vectors",
+        ":prius_vis",
         ":simple_car",
         ":trajectory_car",
         "//drake/automotive/maliput/api",
@@ -265,6 +335,7 @@ drake_cc_library(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:multiplexer",
         "//drake/systems/rendering:pose_aggregator",
+        "//drake/systems/rendering:pose_bundle_to_draw_message",
     ],
 )
 
@@ -524,6 +595,24 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "box_car_vis_test",
+    deps = [
+        ":box_car_vis",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_googletest(
+    name = "car_vis_applicator_test",
+    deps = [
+        ":car_vis_applicator",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//drake/automotive:curve2",
@@ -589,6 +678,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "idm_controller_test",
+    deps = [
+        "//drake/automotive:idm_controller",
+        "//drake/automotive/maliput/dragway",
+    ],
+)
+
+drake_cc_googletest(
     name = "idm_planner_test",
     deps = [
         "//drake/automotive:idm_planner",
@@ -607,6 +704,15 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:pose_selector",
         "//drake/automotive/maliput/dragway",
+    ],
+)
+
+drake_cc_googletest(
+    name = "prius_vis_test",
+    deps = [
+        ":prius_vis",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
     ],
 )
 

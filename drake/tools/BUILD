@@ -14,9 +14,26 @@ py_proto_library(
 py_binary(
     name = "lcm_vector_gen",
     srcs = ["lcm_vector_gen.py"],
+    data = [
+        "//tools:clang-format",
+    ],
     deps = [
         ":named_vector",
     ],
+)
+
+py_library(
+    name = "formatter",
+    srcs = ["formatter.py"],
+    data = ["//tools:clang-format"],
+)
+
+py_binary(
+    name = "clang-format-includes",
+    main = "clang_format_includes.py",
+    srcs = ["clang_format_includes.py"],
+    deps = [":formatter"],
+    data = ["//tools:clang-format"],
 )
 
 # === test/ ===
@@ -79,7 +96,20 @@ sh_test(
         "test/gen/sample_translator.h",
         "test/sample.named_vector",
         ":lcm_vector_gen",
-        "//:.clang-format",
+    ],
+)
+
+py_test(
+    name = "formatter_test",
+    srcs = ["test/formatter_test.py"],
+    deps = [":formatter"],
+)
+
+sh_test(
+    name = "clang_format_includes_test",
+    srcs = ["test/clang_format_includes_test.sh"],
+    data = [
+        ":clang-format-includes",
     ],
 )
 

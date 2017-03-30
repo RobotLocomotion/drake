@@ -119,8 +119,8 @@ class InverseDynamicsTest : public ::testing::Test {
 TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() +
-      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
+      drake::GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_primitive_collision.urdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
   Init(std::move(tree), true /* pure gravity compensation */);
@@ -137,8 +137,8 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
 TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() +
-      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
+      drake::GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_primitive_collision.urdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
   Init(std::move(tree), false /* inverse dynamics */);

@@ -52,6 +52,216 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
   this->DeclareOutputPort(systems::kVectorValued, 6);
 }
 
+template <class T>
+T Rod2D<T>::CalcSignedDistance(const systems::Context<T>& context) const {
+  using std::sin;
+  using std::cos;
+  using std::min;
+
+  // Verify the system is simulated using piecewise DAE.
+  DRAKE_DEMAND(get_simulation_type() ==
+      Rod2D<T>::SimulationType::kPiecewiseDAE);
+
+  // Get the necessary parts of the state.
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const T& x = state.GetAtIndex(0);
+  const T& y = state.GetAtIndex(1);
+  const T& theta = state.GetAtIndex(2);
+
+  // Get the two rod endpoints.
+  const T ctheta = cos(theta);
+  const T stheta = sin(theta);
+  int k1 = 1;
+  int k2 = -1;
+  const Vector2<T> ep1 = CalcRodEndpoint(x, y, k1, ctheta, stheta,
+                                         get_rod_half_length());
+  const Vector2<T> ep2 = CalcRodEndpoint(x, y, k2, ctheta, stheta,
+                                         get_rod_half_length());
+
+  return min(ep1[1], ep2[1]);
+}
+
+template <class T>
+T Rod2D<T>::CalcEndpointDistance(const systems::Context<T>& context) const {
+  using std::sin;
+
+  // Verify the system is simulated using piecewise DAE.
+  DRAKE_DEMAND(get_simulation_type() ==
+      Rod2D<T>::SimulationType::kPiecewiseDAE);
+
+  // Get the necessary parts of the state.
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const T& y = state.GetAtIndex(1);
+  const T& theta = state.GetAtIndex(2);
+  const T stheta = sin(theta);
+
+  // Get the abstract variables that determine the current system mode and
+  // the endpoint in contact.
+  const Mode mode = context.template get_abstract_state<Mode>(0);
+  DRAKE_DEMAND(mode == Mode::kSlidingSingleContact ||
+               mode == Mode::kStickingSingleContact);
+  const int k = get_k(context);
+
+  // Get the vertical position of the other rod endpoint.
+  const int k2 = -k;
+  return y + k2 * stheta * get_rod_half_length();
+}
+
+template <class T>
+T Rod2D<T>::CalcNormalAccelWithoutContactForces(const systems::Context<T>&
+                                                     context) const {
+  DRAKE_ASSERT_VOID(this->CheckValidContext(context));
+  using std::sin;
+  using std::cos;
+
+  // Verify the system is simulated using piecewise DAE.
+  DRAKE_DEMAND(get_simulation_type() ==
+               Rod2D<T>::SimulationType::kPiecewiseDAE);
+
+  // Get the necessary parts of the state.
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const T& theta = state.GetAtIndex(2);
+  const T& thetadot = state.GetAtIndex(5);
+
+  // Get the abstract variables that determine the current system mode and
+  // the endpoint in contact.
+  const Mode mode = context.template get_abstract_state<Mode>(0);
+  DRAKE_DEMAND(mode != Mode::kBallisticMotion);
+  const int k = get_k(context);
+  const T stheta = sin(theta);
+  const T ctheta = cos(theta);
+
+  // Get the external force.
+  const int port_index = 0;
+  const auto input = this->EvalEigenVectorInput(context, port_index);
+  const Vector3<T> fapplied = input.segment(0, 3);
+  const T& fY = fapplied(1);
+  const T& tau = fapplied(2);
+
+  // Compute the normal acceleration at the point of contact (yc_ddot),
+  // *assuming zero contact force*. This equation comes from the kinematics of
+  // the rod:
+  // cy = y + k * half_rod_length * sin(θ)  [rod endpoint vertical location]
+  // dcy/dt = dy/dt + k * half_rod_length * cos(θ) * dθ/dt
+  // d²cy/dt² = d²y/dt² - k * half_rod_length * sin(θ) * (dθ/dt)² +
+  //            k * half_rod_length * cos(θ) * d²θ/dt²
+  const T yddot = get_gravitational_acceleration() + fY/get_rod_mass();
+  const T thetaddot = tau/get_rod_moment_of_inertia();
+  T cyddot = yddot -
+      k * half_length_ * stheta * thetadot * thetadot +
+      k * half_length_ * ctheta * thetaddot;
+
+  return cyddot;
+}
+
+template <class T>
+T Rod2D<T>::CalcSlidingDot(const systems::Context<T>& context) const {
+  using std::sin;
+
+  // Verify the system is simulated using piecewise DAE.
+  DRAKE_DEMAND(get_simulation_type() ==
+      Rod2D<T>::SimulationType::kPiecewiseDAE);
+
+  // Verify rod is undergoing sliding contact.
+  const Mode mode = context.template get_abstract_state<Mode>(0);
+  DRAKE_DEMAND(mode == Mode::kSlidingSingleContact ||
+               mode == Mode::kSlidingTwoContacts);
+
+  // Get the point of contact.
+  const int k = get_k(context);
+
+  // Get the relevant parts of the state.
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const T& theta = state.GetAtIndex(2);
+  const T& xdot = state.GetAtIndex(3);
+  const T& thetadot = state.GetAtIndex(5);
+
+  // Compute the velocity at the point of contact
+  const T stheta = sin(theta);
+  const T half_rod_length = get_rod_half_length();
+  const T xcdot = xdot - k * stheta * half_rod_length * thetadot;
+  return xcdot;
+}
+
+template <class T>
+T Rod2D<T>::CalcStickingFrictionForceSlack(const systems::Context<T>& context)
+                                               const {
+  using std::abs;
+
+  // Compute the contact forces, assuming sticking contact.
+  const Vector2<T> cf = CalcStickingContactForces(context);
+  const T &fN = cf(0);
+  const T &fF = cf(1);
+
+  // Compute the difference between how much force *can* be applied to effect
+  // sticking and how much force needs to be applied to effect sticking.
+  const double mu = get_mu_coulomb();
+  return mu * fN - abs(fF);
+}
+
+template <class T>
+int Rod2D<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
+                                             context) const {
+  // No witness functions if this is not a piecewise DAE model.
+  if (simulation_type_ != SimulationType::kPiecewiseDAE)
+    return 0;
+
+  // Get the abstract variable that determines the current system mode.
+  Mode mode = context.template get_abstract_state<Mode>(0);
+
+  switch (mode) {
+    case Rod2D::kBallisticMotion:
+      // The rod is in ballistic flight, there is just one witness function:
+      // the signed distance between the rod and the half-space.
+      return 1;
+
+    case Rod2D::kSlidingSingleContact:
+      // The rod is undergoing contact without impact and is sliding at a single
+      // point of contact. Three witness functions are necessary: one for
+      // checking whether the rod is to separate from the half-space, another
+      // for checking whether the direction of sliding has changed, and a third
+      // for checking for contact between the other rod endpoint and the ground.
+      return 3;
+
+    case Rod2D::kStickingSingleContact:
+      // The rod is undergoing contact without impact and is sticking at a
+      // single point of contact. Three witness functions are necessary: one for
+      // checking whether the rod is to separate from the half-space, a
+      // second for checking for contact between the other rod endpoint
+      // and the ground, and a third for checking for the transition from
+      // sticking to sliding.
+      return 3;
+
+    case Rod2D::kSlidingTwoContacts:
+      // The rod is undergoing sliding contact without impact at two points of
+      // contact. Two witness functions are necessary: one for checking
+      // whether the rod is to separate from the half-space and one more to
+      // check whether the rod is to transition from sliding to sticking.
+      // TODO(edrumwri): Add two more witness functions- one to check separation
+      //                 from half-space for second contact point and another
+      //                 to check transition from sliding to sticking from
+      //                 second contact point.
+      return 2;
+
+    case Rod2D::kStickingTwoContacts:
+      // The rod is undergoing sticking contact without impact at two points of
+      // contact. Two witness functions are necessary: one to check whether
+      // the rod is to separate from the half-space and one more to check
+      // whether the rod is to transition from sticking to sliding.
+      // TODO(edrumwri): Add two more witness functions- one to check separation
+      //                 from half-space for second contact point and another
+      //                 to check transition from sticking to sliding from
+      //                 second contact point.
+      return 2;
+
+    default:
+      DRAKE_ABORT();
+  }
+
+  DRAKE_ABORT();
+  return 0;
+}
+
 /// Gets the integer variable 'k' used to determine the point of contact
 /// indicated by the current mode.
 /// @throws std::logic_error if this is a time-stepping system (implying that
@@ -815,6 +1025,7 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   using std::abs;
+  using std::max;
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -846,17 +1057,36 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   // Compute the horizontal velocity at the point of contact.
   const T cxdot = xdot - k * stheta * half_length_ * thetadot;
 
-  // Compute the normal acceleration at the point of contact (cy_ddot),
-  // *assuming zero contact force*.
-  T cyddot = get_gravitational_acceleration() -
-      k * half_length_ * stheta * thetadot * thetadot;
-
   // Get the inputs.
   const int port_index = 0;
   const auto input = this->EvalEigenVectorInput(context, port_index);
   const double fX = input(0);
   const double fY = input(1);
   const double tau = input(2);
+
+  // Compute the normal acceleration at the point of contact (yc_ddot),
+  // *assuming zero contact force*. This equation comes from the kinematics of
+  // the rod:
+  // cy = y + k * half_rod_length * sin(θ)  [rod endpoint vertical location]
+  // dcy/dt = dy/dt + k * half_rod_length * cos(θ) * dθ/dt
+  // d²cy/dt² = d²y/dt² - k * half_rod_length * sin(θ) * (dθ/dt)² +
+  //                      k * half_rod_length * cos(θ) * d²θ/dt²
+  const T yddot = get_gravitational_acceleration() + fY/mass_;
+  const T thetaddot = tau/J_;
+  T cyddot = yddot -
+      k * half_length_ * stheta * thetadot * thetadot +
+      k * half_length_ * ctheta * thetaddot;
+
+  // If the normal acceleration is non-negative, no contact forces need be
+  // applied.
+  const T zero_tol = 10 * std::numeric_limits<double>::epsilon() *
+      max(T(1), thetadot) * max(T(1), thetaddot);
+  if (cyddot > -zero_tol) {
+    f->SetAtIndex(3, fX / mass_);
+    f->SetAtIndex(4, fY / mass_ + g_);
+    f->SetAtIndex(5, tau / J_);
+    return;
+  }
 
   // These equations were determined by issuing the following
   // commands in Mathematica:
@@ -906,21 +1136,11 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   f->SetAtIndex(4, (fN + fY) / mass_ + get_gravitational_acceleration());
   f->SetAtIndex(5, ((cx - x) * fN - (cy - y) * fF + tau) / J);
 
-  // Compute the normal acceleration at the contact point (a check).
-  const T yddot = f->GetAtIndex(4);
-  const T thetaddot = f->GetAtIndex(5);
-  cyddot =
-      yddot +
-          r * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
-
   // Lines below currently unused but are occasionally helpful for
   // debugging.
   //        const T xddot = f->GetAtIndex(3);
   //        const T cxddot = xddot + r*k*(-stheta*thetaddot -
   //                                        +ctheta*thetadot*thetadot)/2;
-
-  // Verify that the normal acceleration is zero.
-  DRAKE_DEMAND(abs(cyddot) < std::numeric_limits<double>::epsilon() * 10);
 }
 
 // Computes the accelerations of the rod center of mass for the case of the rod
@@ -1049,11 +1269,13 @@ void Rod2D<T>::CalcAccelerationsTwoContact(
 
   // Look to see whether there is sliding velocity.
   if (abs(xdot) < std::numeric_limits<double>::epsilon()) {
+    // TODO(edrumwri): Handle sticking contact for two points of contact.
     // Set the time derivatives to "resting".
     f->SetAtIndex(3, T(0));
     f->SetAtIndex(4, T(0));
     f->SetAtIndex(5, T(0));
   } else {
+    // TODO(edrumwri): Check/correct this assumption as necessary.
     // This code assumes no sliding will occur with contacts at multiple
     // points unless the system is initialized to such a condition. This
     // assumption has been neither proven nor rigorously validated.
@@ -1067,6 +1289,7 @@ bool Rod2D<T>::IsImpacting(const systems::Context<T>& context) const {
   using std::cos;
 
   // Note: we do not consider modes here.
+  // TODO(edrumwri): Handle two-point contacts.
 
   // Get state data necessary to compute the point of contact.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -1199,8 +1422,8 @@ template <typename T>
 std::unique_ptr<systems::AbstractValues> Rod2D<T>::AllocateAbstractState()
     const {
   if (simulation_type_ == SimulationType::kPiecewiseDAE) {
-    // Piecewise DAE approach needs two abstract variables (one mode and one
-    // contact point indicator).
+    // Piecewise DAE approach needs two abstract variables: one mode and one
+    // contact point indicator.
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
     abstract_data.push_back(
         std::make_unique<systems::Value<Rod2D<T>::Mode>>(
@@ -1221,6 +1444,7 @@ template <typename T>
 void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
                                   systems::State<T>* state) const {
   using std::sqrt;
+  using std::sin;
 
   // Initial state corresponds to an inconsistent configuration for piecewise
   // DAE.
@@ -1245,9 +1469,8 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
 
       // Determine and set the point of contact.
       const double theta = x0(2);
-      const int k = (std::sin(theta) > 0) ? -1 : 1;
-      state->get_mutable_abstract_state()
-          ->get_mutable_value(1)
+      const int k = (sin(theta) > 0) ? -1 : 1;
+      state->get_mutable_abstract_state()->get_mutable_value(1)
           .template GetMutableValue<int>() = k;
     }
   }

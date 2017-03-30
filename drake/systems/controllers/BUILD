@@ -141,7 +141,7 @@ drake_cc_googletest(
     name = "inverse_dynamics_test",
     data = [
         "//drake/examples/SimpleFourBar:models",
-        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":inverse_dynamics",
@@ -153,7 +153,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "inverse_dynamics_controller_test",
     data = [
-        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":inverse_dynamics_controller",

@@ -35,6 +35,11 @@ class PiecewiseFunction {
 
   double getEndTime() const;
 
+  /**
+   * Returns true iff `t >= getStartTime() && t <= getEndTime()`.
+   */
+  bool isTimeInRange(double t) const;
+
   int getSegmentIndex(double t) const;
 
   const std::vector<double>& getSegmentTimes() const;

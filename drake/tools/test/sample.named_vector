@@ -1,6 +1,8 @@
 element {
     name: "x"
     doc: "Some coordinate"
+    doc_units: "m/s"
+    default_value: "42.0"
 }
 element {
     name: "two_word"

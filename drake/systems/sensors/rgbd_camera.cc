@@ -2,10 +2,7 @@
 
 #include <array>
 #include <fstream>
-#include <limits>
 #include <map>
-#include <memory>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -15,12 +12,10 @@
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
-#include <vtkImageShiftScale.h>
 #include <vtkNew.h>
 #include <vtkOBJReader.h>
 #include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
-#include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkProperty.h>
 #include <vtkRenderWindow.h>
@@ -31,7 +26,7 @@
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
 
-#include "drake/math/roll_pitch_yaw_using_quaternion.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
@@ -259,8 +254,12 @@ class RgbdCamera::Impl {
   const bool kCameraFixed;
   ColorPalette color_palette_;
   vtkNew<vtkActor> terrain_actor_;
-  std::map<int, vtkSmartPointer<vtkActor>> color_depth_id_object_map_;
-  std::map<int, vtkSmartPointer<vtkActor>> label_id_object_map_;
+  // An array of maps which take pairs of a body index in RBT and a vector of
+  // vtkSmartPointer to vtkActor. The each vtkActor corresponds to an visual
+  // element specified in SDF / URDF. The first element of this array is for
+  // color and depth rendering and the second is for label image rendering.
+  std::array<std::map<int, std::vector<vtkSmartPointer<vtkActor>>>, 2>
+      id_object_maps_;
   vtkNew<vtkRenderer> color_depth_renderer_;
   vtkNew<vtkRenderer> label_renderer_;
   vtkNew<vtkRenderWindow> color_depth_render_window_;
@@ -293,9 +292,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
              Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))),
       X_WB_initial_(
           Eigen::Translation3d(position[0], position[1], position[2]) *
-          (Eigen::AngleAxisd(orientation[0], Eigen::Vector3d::UnitX()) *
-           Eigen::AngleAxisd(orientation[1], Eigen::Vector3d::UnitY()) *
-           Eigen::AngleAxisd(orientation[2], Eigen::Vector3d::UnitZ()))),
+          Eigen::Isometry3d(math::rpy2rotmat(orientation))),
       kCameraFixed(fix_camera), color_palette_(tree.bodies.size()) {
   if (!show_window) {
     for (auto& window : MakeVtkInstanceArray(color_depth_render_window_,
@@ -359,138 +356,133 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
       continue;
     }
 
-    if (body->get_visual_elements().empty()) {
-      continue;
+    if (!body->get_visual_elements().empty()) {
+      for (auto& id_object_map : id_object_maps_) {
+        std::vector<vtkSmartPointer<vtkActor>> vec;
+        id_object_map[body->get_body_index()] = vec;
+      }
     }
 
-    // TODO(kunimatsu-tri) Add support for multiple visuals.
-    // Assuming that a rigid body owns only a visual element.
-    if (body->get_visual_elements().size() >= 2) {
-      throw std::runtime_error("RigidBody '" + body->get_name() +
-                               "' has two or more visuals.");
-    }
+    for (const auto& visual : body->get_visual_elements()) {
+      vtkNew<vtkActor> actor;
+      vtkNew<vtkPolyDataMapper> mapper;
+      bool shape_matched = true;
+      bool texture_found = false;
+      const DrakeShapes::Geometry& geometry = visual.getGeometry();
+      switch (visual.getShape()) {
+        case DrakeShapes::BOX: {
+          auto box = dynamic_cast<const DrakeShapes::Box&>(geometry);
+          vtkNew<vtkCubeSource> vtk_cube;
+          vtk_cube->SetXLength(box.size(0));
+          vtk_cube->SetYLength(box.size(1));
+          vtk_cube->SetZLength(box.size(2));
 
-    const auto& visual = body->get_visual_elements().at(0);
+          mapper->SetInputConnection(vtk_cube->GetOutputPort());
+          break;
+        }
+        case DrakeShapes::SPHERE: {
+          auto sphere = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
+          vtkNew<vtkSphereSource> vtk_sphere;
+          vtk_sphere->SetRadius(sphere.radius);
+          vtk_sphere->SetThetaResolution(50);
+          vtk_sphere->SetPhiResolution(50);
 
-    vtkNew<vtkActor> actor;
-    vtkNew<vtkActor> actor_for_label;
-    vtkNew<vtkPolyDataMapper> mapper;
-    bool shape_matched = true;
-    bool texture_found = false;
-    const DrakeShapes::Geometry& geometry = visual.getGeometry();
-    switch (visual.getShape()) {
-      case DrakeShapes::BOX: {
-        auto box = dynamic_cast<const DrakeShapes::Box&>(geometry);
-        vtkNew<vtkCubeSource> vtk_cube;
-        vtk_cube->SetXLength(box.size(0));
-        vtk_cube->SetYLength(box.size(1));
-        vtk_cube->SetZLength(box.size(2));
+          mapper->SetInputConnection(vtk_sphere->GetOutputPort());
+          break;
+        }
+        case DrakeShapes::CYLINDER: {
+          auto cylinder = dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
+          vtkNew<vtkCylinderSource> vtk_cylinder;
+          vtk_cylinder->SetHeight(cylinder.length);
+          vtk_cylinder->SetRadius(cylinder.radius);
+          vtk_cylinder->SetResolution(50);
 
-        mapper->SetInputConnection(vtk_cube->GetOutputPort());
-        break;
+          // Since the cylinder in vtkCylinderSource is y-axis aligned, we need
+          // to rotate it to be z-axis aligned because that is what Drake uses.
+          vtkNew<vtkTransform> transform;
+          transform->RotateX(90);
+          vtkNew<vtkTransformPolyDataFilter> transform_filter;
+          transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
+          transform_filter->SetTransform(transform.GetPointer());
+          transform_filter->Update();
+
+          mapper->SetInputConnection(transform_filter->GetOutputPort());
+          break;
+        }
+        case DrakeShapes::MESH: {
+          const auto mesh_filename = dynamic_cast<const DrakeShapes::Mesh&>(
+              geometry).resolved_filename_.c_str();
+
+          // TODO(kunimatsu-tri) Add support for other file formats.
+          vtkNew<vtkOBJReader> mesh_reader;
+          mesh_reader->SetFileName(mesh_filename);
+          mesh_reader->Update();
+
+          // TODO(kunimatsu-tri) Guessing the texture file name is bad. Instead,
+          // get it from somewhere like `DrakeShapes::MeshWithTexture` when it's
+          // implemented.
+          // TODO(kunimatsu-tri) Add support for other file formats.
+          const std::string texture_file(
+              RemoveFileExtension(mesh_filename) + ".png");
+          std::ifstream file_exist(texture_file);
+
+          if (file_exist) {
+            vtkNew<vtkPNGReader> texture_reader;
+            texture_reader->SetFileName(texture_file.c_str());
+            texture_reader->Update();
+
+            vtkNew<vtkTexture> texture;
+            texture->SetInputConnection(texture_reader->GetOutputPort());
+            texture->InterpolateOn();
+            actor->SetTexture(texture.GetPointer());
+            texture_found = true;
+          }
+
+          mapper->SetInputConnection(mesh_reader->GetOutputPort());
+          break;
+        }
+        case DrakeShapes::CAPSULE: {
+          // TODO(kunimatsu-tri) Implement this as needed.
+          shape_matched = false;
+          break;
+        }
+        default: {
+          shape_matched = false;
+          break;
+        }
       }
-      case DrakeShapes::SPHERE: {
-        auto sphere = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
-        vtkNew<vtkSphereSource> vtk_sphere;
-        vtk_sphere->SetRadius(sphere.radius);
-        vtk_sphere->SetThetaResolution(50);
-        vtk_sphere->SetPhiResolution(50);
 
-        mapper->SetInputConnection(vtk_sphere->GetOutputPort());
-        break;
-      }
-      case DrakeShapes::CYLINDER: {
-        auto cylinder = dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
-        vtkNew<vtkCylinderSource> vtk_cylinder;
-        vtk_cylinder->SetHeight(cylinder.length);
-        vtk_cylinder->SetRadius(cylinder.radius);
-        vtk_cylinder->SetResolution(50);
-
-        // Since the cylinder in vtkCylinderSource is y-axis aligned, we need to
-        // rotate it to be z-axis aligned because that is what Drake uses.
-        vtkNew<vtkTransform> transform;
-        transform->RotateX(90);
-        vtkNew<vtkTransformPolyDataFilter> transform_filter;
-        transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
-        transform_filter->SetTransform(transform.GetPointer());
-        transform_filter->Update();
-
-        mapper->SetInputConnection(transform_filter->GetOutputPort());
-        break;
-      }
-      case DrakeShapes::MESH: {
-        const auto mesh_filename = dynamic_cast<const DrakeShapes::Mesh&>(
-            geometry).resolved_filename_.c_str();
-
-        // TODO(kunimatsu-tri) Add support for other file formats.
-        vtkNew<vtkOBJReader> mesh_reader;
-        mesh_reader->SetFileName(mesh_filename);
-        mesh_reader->Update();
-
-        // TODO(kunimatsu-tri) Guessing the texture file name is bad.  Instead,
-        // get it from somewhere like `DrakeShapes::MeshWithTexture` when it's
-        // implemented.
-        // TODO(kunimatsu-tri) Add support for other file formats.
-        const std::string texture_file(
-            RemoveFileExtension(mesh_filename) + ".png");
-        std::ifstream file_exist(texture_file);
-
-        if (file_exist) {
-          vtkNew<vtkPNGReader> texture_reader;
-          texture_reader->SetFileName(texture_file.c_str());
-          texture_reader->Update();
-
-          vtkNew<vtkTexture> texture;
-          texture->SetInputConnection(texture_reader->GetOutputPort());
-          texture->InterpolateOn();
-          actor->SetTexture(texture.GetPointer());
-          texture_found = true;
+      // Registers actors.
+      if (shape_matched) {
+        if (!texture_found) {
+          const auto color = visual.getMaterial();
+          actor->GetProperty()->SetColor(color[0], color[1], color[2]);
         }
 
-        mapper->SetInputConnection(mesh_reader->GetOutputPort());
-        break;
-      }
-      case DrakeShapes::CAPSULE: {
-        // TODO(kunimatsu-tri) Implement this as needed.
-        shape_matched = false;
-        break;
-      }
-      default: {
-        shape_matched = false;
-        break;
-      }
-    }
+        const int body_id = body->get_body_index();
+        const auto& color = color_palette_.get_normalized_color(body_id);
+        vtkNew<vtkActor> actor_for_label;
+        actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
+        // This is to disable shadows and to get an object painted with a single
+        // color.
+        actor_for_label->GetProperty()->LightingOff();
 
-    // Registers actors.
-    if (shape_matched) {
-      if (!texture_found) {
-        const auto color = visual.getMaterial();
-        actor->GetProperty()->SetColor(color[0], color[1], color[2]);
-      }
+        // Converts visual's pose in the world to the one in the camera
+        // coordinate system.
+        const auto X_CVisual = X_CW * visual.getWorldTransform();
+        vtkSmartPointer<vtkTransform> vtk_transform =
+            VtkUtil::ConvertToVtkTransform(X_CVisual);
 
-      const int body_id = body->get_body_index();
-      const auto& color = color_palette_.get_normalized_color(body_id);
-      actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
-      // This is to disable shadows and to get an object painted with a single
-      // color.
-      actor_for_label->GetProperty()->LightingOff();
-
-      // Converts visual's pose in the world to the one in the camera coordinate
-      // system.
-      const auto X_CVisual = X_CW * visual.getWorldTransform();
-      vtkSmartPointer<vtkTransform> vtk_transform =
-          VtkUtil::ConvertToVtkTransform(X_CVisual);
-
-      auto renderers = MakeVtkInstanceArray<vtkRenderer>(
-          color_depth_renderer_, label_renderer_);
-      auto actors = MakeVtkInstanceArray<vtkActor>(actor, actor_for_label);
-      std::array<std::map<int, vtkSmartPointer<vtkActor>>*, 2> maps{{
-          &color_depth_id_object_map_, &label_id_object_map_}};
-      for (size_t i = 0; i < actors.size(); ++i) {
-        actors[i]->SetMapper(mapper.GetPointer());
-        actors[i]->SetUserTransform(vtk_transform);
-        renderers[i]->AddActor(actors[i].GetPointer());
-        (*maps[i])[body_id] = vtkSmartPointer<vtkActor>(actors[i].GetPointer());
+        auto renderers = MakeVtkInstanceArray<vtkRenderer>(
+            color_depth_renderer_, label_renderer_);
+        auto actors = MakeVtkInstanceArray<vtkActor>(actor, actor_for_label);
+        for (size_t i = 0; i < actors.size(); ++i) {
+          actors[i]->SetMapper(mapper.GetPointer());
+          actors[i]->SetUserTransform(vtk_transform);
+          renderers[i]->AddActor(actors[i].GetPointer());
+          id_object_maps_[i][body_id].push_back(
+              vtkSmartPointer<vtkActor>(actors[i].GetPointer()));
+        }
       }
     }
   }
@@ -524,26 +516,20 @@ void RgbdCamera::Impl::UpdateModelPoses(
       continue;
     }
 
-    if (body->get_visual_elements().empty()) {
-      continue;
-    }
+    for (size_t i = 0; i < body->get_visual_elements().size(); ++i) {
+      const auto& visual = body->get_visual_elements()[i];
+      const auto X_CVisual = X_CW * tree_.CalcBodyPoseInWorldFrame(
+          cache, *body) * visual.getLocalTransform();
 
-    const auto& visual = body->get_visual_elements().at(0);
-
-    const auto X_CVisual = X_CW * tree_.CalcBodyPoseInWorldFrame(
-        cache, *body) * visual.getLocalTransform();
-
-    vtkSmartPointer<vtkTransform> vtk_transform =
-        VtkUtil::ConvertToVtkTransform(X_CVisual);
-    // `color_depth_id_object_map_` and `label_id_object_map_` are modified
-    // here. This is OK because 1) we are just copying data to the memory spaces
-    // allocated at the construction time and 2) we are not outputting these
-    // data to outside the class.
-    const std::array<const std::map<int, vtkSmartPointer<vtkActor>>*, 2>
-        id_object_maps{{&color_depth_id_object_map_, &label_id_object_map_}};
-    for (auto id_object_map : id_object_maps) {
-      auto& actor = id_object_map->at(body->get_body_index());
-      actor->SetUserTransform(vtk_transform);
+      vtkSmartPointer<vtkTransform> vtk_transform =
+          VtkUtil::ConvertToVtkTransform(X_CVisual);
+      // `id_object_maps_` is modified here. This is OK because 1) we are just
+      // copying data to the memory spaces allocated at the construction time
+      // and 2) we are not outputting these data to outside the class.
+      for (auto& id_object_map : id_object_maps_) {
+        auto& actor = id_object_map.at(body->get_body_index()).at(i);
+        actor->SetUserTransform(vtk_transform);
+      }
     }
   }
 
@@ -552,7 +538,7 @@ void RgbdCamera::Impl::UpdateModelPoses(
     vtkSmartPointer<vtkTransform> vtk_transform =
         VtkUtil::ConvertToVtkTransform(X_CW);
     // `terrain_actor_` is modified here, but this is OK.  For the detail, see
-    // the comment above for `color_depth_id_object_map_`.
+    // the comment above for `id_object_maps_`.
     terrain_actor_->SetUserTransform(vtk_transform);
   }
 }

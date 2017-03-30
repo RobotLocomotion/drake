@@ -17,7 +17,7 @@ namespace automotive {
 /// Describes the row indices of a IdmPlannerParameters.
 struct IdmPlannerParametersIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 6;
+  static const int kNumCoordinates = 8;
 
   // The index of each individual coordinate.
   static const int kVRef = 0;
@@ -26,6 +26,8 @@ struct IdmPlannerParametersIndices {
   static const int kS0 = 3;
   static const int kTimeHeadway = 4;
   static const int kDelta = 5;
+  static const int kBloatDiameter = 6;
+  static const int kDistanceLowerLimit = 7;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -35,9 +37,24 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   /// An abbreviation for our row index constants.
   typedef IdmPlannerParametersIndices K;
 
-  /// Default constructor.  Sets all rows to zero.
+  /// Default constructor.  Sets all rows to their default value:
+  /// @arg @c v_ref defaults to 10.0 in units of m/s.
+  /// @arg @c a defaults to 1.0 in units of m/s^2.
+  /// @arg @c b defaults to 3.0 in units of m/s^2.
+  /// @arg @c s_0 defaults to 1.0 in units of m.
+  /// @arg @c time_headway defaults to 0.1 in units of s.
+  /// @arg @c delta defaults to 4.0 in units of dimensionless.
+  /// @arg @c bloat_diameter defaults to 4.5 in units of m.
+  /// @arg @c distance_lower_limit defaults to 1e-2 in units of m.
   IdmPlannerParameters() : systems::BasicVector<T>(K::kNumCoordinates) {
-    this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
+    this->set_v_ref(10.0);
+    this->set_a(1.0);
+    this->set_b(3.0);
+    this->set_s_0(1.0);
+    this->set_time_headway(0.1);
+    this->set_delta(4.0);
+    this->set_bloat_diameter(4.5);
+    this->set_distance_lower_limit(1e-2);
   }
 
   IdmPlannerParameters<T>* DoClone() const override {
@@ -47,25 +64,49 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   /// @name Getters and Setters
   //@{
   /// desired velocity in free traffic
+  /// @note @c v_ref is expressed in units of m/s.
   const T& v_ref() const { return this->GetAtIndex(K::kVRef); }
   void set_v_ref(const T& v_ref) { this->SetAtIndex(K::kVRef, v_ref); }
   /// max acceleration
+  /// @note @c a is expressed in units of m/s^2.
   const T& a() const { return this->GetAtIndex(K::kA); }
   void set_a(const T& a) { this->SetAtIndex(K::kA, a); }
   /// comfortable braking deceleration
+  /// @note @c b is expressed in units of m/s^2.
   const T& b() const { return this->GetAtIndex(K::kB); }
   void set_b(const T& b) { this->SetAtIndex(K::kB, b); }
   /// minimum desired net distance
+  /// @note @c s_0 is expressed in units of m.
   const T& s_0() const { return this->GetAtIndex(K::kS0); }
   void set_s_0(const T& s_0) { this->SetAtIndex(K::kS0, s_0); }
   /// desired time headway to vehicle in front
+  /// @note @c time_headway is expressed in units of s.
   const T& time_headway() const { return this->GetAtIndex(K::kTimeHeadway); }
   void set_time_headway(const T& time_headway) {
     this->SetAtIndex(K::kTimeHeadway, time_headway);
   }
   /// free-road exponent
+  /// @note @c delta is expressed in units of dimensionless.
   const T& delta() const { return this->GetAtIndex(K::kDelta); }
   void set_delta(const T& delta) { this->SetAtIndex(K::kDelta, delta); }
+  /// diameter of circle about the vehicle's pose that encloses its physical
+  /// footprint
+  /// @note @c bloat_diameter is expressed in units of m.
+  const T& bloat_diameter() const {
+    return this->GetAtIndex(K::kBloatDiameter);
+  }
+  void set_bloat_diameter(const T& bloat_diameter) {
+    this->SetAtIndex(K::kBloatDiameter, bloat_diameter);
+  }
+  /// lower saturation bound on net distance to prevent near-singular IDM
+  /// solutions
+  /// @note @c distance_lower_limit is expressed in units of m.
+  const T& distance_lower_limit() const {
+    return this->GetAtIndex(K::kDistanceLowerLimit);
+  }
+  void set_distance_lower_limit(const T& distance_lower_limit) {
+    this->SetAtIndex(K::kDistanceLowerLimit, distance_lower_limit);
+  }
   //@}
 
   /// Returns whether the current values of this vector are well-formed.
@@ -78,6 +119,8 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
     result = result && !isnan(s_0());
     result = result && !isnan(time_headway());
     result = result && !isnan(delta());
+    result = result && !isnan(bloat_diameter());
+    result = result && !isnan(distance_lower_limit());
     return result;
   }
 };
