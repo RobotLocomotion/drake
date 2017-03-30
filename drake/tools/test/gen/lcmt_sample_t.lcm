@@ -9,4 +9,5 @@ struct lcmt_sample_t {
 
   double x;  // Some coordinate
   double two_word;  // A very long documentation string that will certainly flow across multiple lines of C++
+  double absone;  // A signed, normalized value
 }
