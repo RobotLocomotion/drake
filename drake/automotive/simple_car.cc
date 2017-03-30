@@ -167,12 +167,13 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
   using std::sin;
 
   // Sanity check our input.
-  /*  
   DRAKE_DEMAND(abs(input.steering_angle()) < M_PI);
+  // TODO(jwnummer): Update DrivingCommand to a single value for throttle/brake (+/-).
+  /*
   DRAKE_DEMAND(input.throttle() >= 0);
   DRAKE_DEMAND(input.brake() >= 0);
   */
-  
+
   // Determine the requested acceleration, using throttle and brake. Then
   // compute the smooth acceleration that the vehicle actually executes.
   const T desired_acceleration =
