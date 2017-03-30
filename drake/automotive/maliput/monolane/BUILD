@@ -2,7 +2,8 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_binary", "drake_cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_binary", "drake_cc_googletest",
+     "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -109,7 +110,6 @@ drake_cc_binary(
 
 py_test(
     name = "yaml_load_test",
-    size = "small",
     srcs = ["test/yaml_load_test.py"],
     args = ["drake/automotive/maliput/monolane/yaml_load"],
     data = [

@@ -5,8 +5,8 @@ def bitbucket_archive(
         repository = None,
         commit = None,
         sha256 = None,
-        build_file = None,
         strip_prefix = None,
+        build_file = None,
         **kwargs):
     """A macro to be called in the WORKSPACE that adds an external from
     bitbucket using a workspace rule.
@@ -22,9 +22,11 @@ def bitbucket_archive(
     unsure, you can omit this argument (or comment it out) and then the
     checksum-mismatch error message message will offer a suggestion.
 
+    The required build_prefix= is the directory prefix to strip from the
+    extracted files.
+
     The optional build_file= is the BUILD file label to use for building this
     external.  When omitted, the BUILD file(s) within the archive will be used.
-
     """
     if repository == None:
         fail("Missing repository=")

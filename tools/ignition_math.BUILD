@@ -7,7 +7,7 @@ cc_library(
         exclude = ["src/*_TEST.cc"],
     ),
     hdrs = glob([
-        "include/**/**/*.hh",
+        "include/**/*.hh",
     ]),
     includes = ["include"],
     visibility = ["//visibility:public"],
