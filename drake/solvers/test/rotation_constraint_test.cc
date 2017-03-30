@@ -303,6 +303,41 @@ GTEST_TEST(RotationTest, TestHalfSpaceRelaxation) {
   EXPECT_NEAR(n.dot(pts[1]), d, 1E-8);
 }
 
+GTEST_TEST(RotationTest, TestInnerFacetsAndHalfSpace) {
+  // We show that the inner facet is tighter than the half space for some case.
+  // To this end, we show that for a box [0 0.5 0] <= x <= [0.5 1 0.5], there is
+  // some point lying in between the inner facets,, and the half space.
+  const Eigen::Vector3d bmin(0, 0.5, 0);
+  const Eigen::Vector3d bmax(0.5, 1, 0.5);
+  const auto intersection_pts =
+      internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
+  DRAKE_DEMAND(intersection_pts.size() == 4);
+  Eigen::Vector3d n;
+  double d;
+  internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(intersection_pts,
+                                                               &n, &d);
+  Eigen::Matrix<double, Eigen::Dynamic, 3> A;
+  Eigen::VectorXd b;
+  internal::ComputeInnerFacetsForBoxSphereIntersection(intersection_pts, &A,
+                                                       &b);
+  // Now form the optimization program
+  // A.row(i) * x > b(i) + epsilon for at least one i
+  // nᵀ * x >= d
+  // bmin <= x <= bmax
+  // We will show that there is a feasible solution to this program.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  auto z = prog.NewBinaryVariables(b.rows(), "z");
+  for (int i = 0; i < b.rows(); ++i) {
+    prog.AddLinearConstraint((A.row(i) * x)(0) >= b(i) + 1E-5 + (z(i) - 1) * 2);
+  }
+  prog.AddLinearConstraint(z.cast<symbolic::Expression>().sum() >= 1);
+  prog.AddLinearConstraint(n.dot(x) >= d);
+  prog.AddBoundingBoxConstraint(bmin, bmax, x);
+  SolutionResult sol_result = prog.Solve();
+  EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+}
+
 // Test a number of closed-form solutions for the intersection of a box in the
 // positive orthant with the unit circle.
 GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
