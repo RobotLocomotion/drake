@@ -37,11 +37,9 @@ void GetLastPublishedJointValue(
   translator.Deserialize(message.data(), message.size(), joint_value);
 }
 
-// A helper method for unit testing SimpleCar. Parameter @p sdf_filename is the
-// name of the file containing the model of the vehicle to be used by the
-// SimpleCar.
-void TestSimpleCarWithSdf(const std::string& sdf_filename,
-    int num_vehicle_bodies) {
+// Covers AddPriusSimpleCar (and thus AddPublisher), Start, StepBy,
+// GetSystemByName.
+GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   // TODO(jwnimmer-tri) Do something better than "0_" here.
   const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
   const std::string kCommandChannelName = "DRIVING_COMMAND";
@@ -51,17 +49,13 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   const std::string joint_state_name =
       systems::lcm::LcmPublisherSystem::make_name(kJointStateChannelName);
 
-  // Set up a basic simulation with just SimpleCar and its hangers-on.
+  // Set up a basic simulation with just a Prius SimpleCar.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
-  const int model_instance_id =
-      simulator->AddSimpleCarFromSdf(sdf_filename, "", kCommandChannelName);
+  const int id = simulator->AddPriusSimpleCar("Foo", kCommandChannelName);
+  EXPECT_EQ(id, 0);
 
-  // Obtain the number of bodies belonging to the model.
-  const int num_vehicle_bodies_in_tree =
-      simulator->get_rigid_body_tree()
-          .FindModelInstanceBodies(model_instance_id).size();
-  EXPECT_EQ(num_vehicle_bodies_in_tree, num_vehicle_bodies);
+  const int num_vis_elements = PriusVis<double>(0, "").num_poses();
 
   // Grab the systems we want while testing GetBuilderSystemByName() in the
   // process.
@@ -72,20 +66,6 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
-
-  // Confirm that the RigidBodyTree has been appropriately amended.
-  const auto& tree = simulator->get_rigid_body_tree();
-  EXPECT_EQ(1, tree.get_num_model_instances());
-  // One body belongs to the world, the rest belong to the car.
-  ASSERT_EQ(1 + num_vehicle_bodies, tree.get_num_bodies());
-
-  // Get the rigid bodies belonging to the vehicle's model instance.
-  const std::vector<const RigidBody<double>*> vehicle_bodies =
-      tree.FindModelInstanceBodies(model_instance_id);
-  EXPECT_EQ(static_cast<int>(vehicle_bodies.size()), num_vehicle_bodies);
-
-  const auto& body = tree.get_body(1);
-  EXPECT_EQ(vehicle_bodies.at(0)->get_name(), body.get_name());
 
   // Set full throttle.
   DrivingCommand<double> command;
@@ -128,11 +108,9 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   lcmt_viewer_draw published_draw_message =
       mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>(channel_name);
 
-  // One body belongs to the world, the rest belong to the car model.
-  EXPECT_EQ(published_draw_message.num_links, 1 + num_vehicle_bodies);
-  EXPECT_EQ(published_draw_message.link_name.at(0), "world");
-  EXPECT_EQ(published_draw_message.link_name.at(1),
-            vehicle_bodies.at(0)->get_name());
+  EXPECT_EQ(published_draw_message.num_links, num_vis_elements);
+  EXPECT_EQ(published_draw_message.link_name.at(0), "chassis_floor");
+  EXPECT_EQ(published_draw_message.link_name.at(1), "front_axle");
 
   // The subsystem pointers must not change.
   EXPECT_EQ(&simulator->GetDiagramSystemByName(driving_command_name),
@@ -140,19 +118,8 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   EXPECT_EQ(&simulator->GetDiagramSystemByName(joint_state_name), &state_pub);
 }
 
-// Cover AddSimpleCar (and thus AddPublisher), Start, StepBy, GetSystemByName.
-GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPriusWithLidar) {
-  TestSimpleCarWithSdf(GetDrakePath() +
-                       "/automotive/models/prius/prius_with_lidar.sdf", 17);
-}
-
-GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPrius) {
-  TestSimpleCarWithSdf(GetDrakePath() +
-                       "/automotive/models/prius/prius.sdf", 13);
-}
-
 // Tests the ability to initialize a SimpleCar to a non-zero initial state.
-GTEST_TEST(AutomotiveSimulatorTest, TestSimpleCarInitialState) {
+GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCarInitialState) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
   const double kX{10};
@@ -166,8 +133,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestSimpleCarInitialState) {
   initial_state.set_heading(kHeading);
   initial_state.set_velocity(kVelocity);
 
-  simulator->AddSimpleCarFromSdf(
-      GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
+  simulator->AddPriusSimpleCar(
       "My Test Model",
       "Channel",
       initial_state);
@@ -187,11 +153,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestSimpleCarInitialState) {
   EXPECT_EQ(state_message.velocity, kVelocity);
 }
 
-// A helper method for unit testing TrajectoryCar. Parameters @p sdf_filename_1
-// and @p sdf_filename_2 are the names of the files containing the models of the
-// vehicles to be used by two TrajectoryCars.
-void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
-                              const std::string& sdf_file_2, int num_bodies_2) {
+// Cover AddTrajectoryCar (and thus AddPublisher).
+GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
   typedef Curve2<double> Curve2d;
   typedef Curve2d::Point2 Point2d;
   const std::vector<Point2d> waypoints{
@@ -200,60 +163,127 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
   };
   const Curve2d curve{waypoints};
 
-  // Set up a basic simulation with just some TrajectoryCars.
+  // Set up a basic simulation with a couple Prius TrajectoryCars. The first
+  // car starts a time zero while the second starts at time 10. They both follow
+  // a straight 100 m long line.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
-  const int model_instance_id_1 =
-      simulator->AddTrajectoryCarFromSdf(sdf_file_1, curve, 1.0, 0.0);
-  const int model_instance_id_2 =
-      simulator->AddTrajectoryCarFromSdf(sdf_file_2, curve, 1.0, 10.0);
-
-  // Obtain the number of bodies in the models.
-  const std::vector<const RigidBody<double>*> vehicle_bodies_1 =
-      simulator->get_rigid_body_tree().FindModelInstanceBodies(
-          model_instance_id_1);
-  const std::vector<const RigidBody<double>*> vehicle_bodies_2 =
-      simulator->get_rigid_body_tree().FindModelInstanceBodies(
-          model_instance_id_2);
-  EXPECT_EQ(static_cast<int>(vehicle_bodies_1.size()), num_bodies_1);
-  EXPECT_EQ(static_cast<int>(vehicle_bodies_2.size()), num_bodies_2);
+  const int id1 = simulator->AddPriusTrajectoryCar(curve, 1.0, 0.0);
+  const int id2 = simulator->AddPriusTrajectoryCar(curve, 1.0, 10.0);
+  EXPECT_EQ(id1, 0);
+  EXPECT_EQ(id2, 1);
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
 
-  // Confirm that the RigidBodyTree has been appropriately amended.
-  const auto& tree = simulator->get_rigid_body_tree();
-  EXPECT_EQ(2, tree.get_num_model_instances());
-  // One body belongs to the world, the rest belong to two car models.
-  ASSERT_EQ(1 + num_bodies_1 + num_bodies_2, tree.get_num_bodies());
-
-  // Verifies that the first car was added to the tree.
-  EXPECT_EQ(vehicle_bodies_1.at(0)->get_name(), tree.get_body(1).get_name());
-
-  // Verifies that the second car was added to the tree.
-  EXPECT_EQ(vehicle_bodies_2.at(0)->get_name(),
-            tree.get_body(num_bodies_1 + 1).get_name());
-
-  // Run for a while.
+  // Simulate for one second.
   for (int i = 0; i < 100; ++i) {
     simulator->StepBy(0.01);
   }
 
-  // TODO(jwnimmer-tri) Confirm that appropriate draw messages are coming out.
-  // In particular, ensure that the link values for each body are consistent
-  // with the trajectory car -- that the indices haven't been messed up.
-  // Let's wait until we have LCM mocking (#3546) before doing this.
+  const lcm::DrakeLcmInterface* lcm = simulator->get_lcm();
+  ASSERT_NE(lcm, nullptr);
 
-  // No aborts is good enough.
-  EXPECT_TRUE(true);
-}
+  const lcm::DrakeMockLcm* mock_lcm =
+      dynamic_cast<const lcm::DrakeMockLcm*>(lcm);
+  ASSERT_NE(mock_lcm, nullptr);
 
-// Cover AddTrajectoryCar (and thus AddPublisher).
-GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
-  TestTrajectoryCarWithSdf(GetDrakePath() +
-                           "/automotive/models/prius/prius.sdf", 13,
-                           GetDrakePath() +
-                           "/automotive/models/prius/prius_with_lidar.sdf", 17);
+  const int expected_num_links = PriusVis<double>(0, "").num_poses() * 2;
+
+  // Verifies that the correct lcmt_viewer_load_robot message was transmitted.
+  const lcmt_viewer_load_robot load_message =
+      mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_load_robot>(
+          "DRAKE_VIEWER_LOAD_ROBOT");
+  EXPECT_EQ(load_message.num_links, expected_num_links);
+
+  struct LinkInfo {
+    LinkInfo(std::string name_in, int robot_num_in, int num_geom_in)
+      : name(name_in), robot_num(robot_num_in), num_geom(num_geom_in) {}
+    std::string name;
+    int robot_num{};
+    int num_geom{};
+  };
+
+  const std::vector<LinkInfo> expected_load {
+    LinkInfo("chassis_floor", 0, 1),
+    LinkInfo("front_axle", 0, 1),
+    LinkInfo("left_tie_rod_arm", 0, 2),
+    LinkInfo("left_hub", 0, 1),
+    LinkInfo("tie_rod", 0, 1),
+    LinkInfo("left_wheel", 0, 3),
+    LinkInfo("right_tie_rod_arm", 0, 2),
+    LinkInfo("right_hub", 0, 1),
+    LinkInfo("right_wheel", 0, 3),
+    LinkInfo("rear_axle", 0, 1),
+    LinkInfo("left_wheel_rear", 0, 3),
+    LinkInfo("right_wheel_rear", 0, 3),
+    LinkInfo("body", 0, 1),
+    LinkInfo("front_lidar_link", 0, 1),
+    LinkInfo("top_lidar_link", 0, 1),
+    LinkInfo("rear_right_lidar_link", 0, 1),
+    LinkInfo("rear_left_lidar_link", 0, 1),
+    LinkInfo("chassis_floor", 1, 1),
+    LinkInfo("front_axle", 1, 1),
+    LinkInfo("left_tie_rod_arm", 1, 2),
+    LinkInfo("left_hub", 1, 1),
+    LinkInfo("tie_rod", 1, 1),
+    LinkInfo("left_wheel", 1, 3),
+    LinkInfo("right_tie_rod_arm", 1, 2),
+    LinkInfo("right_hub", 1, 1),
+    LinkInfo("right_wheel", 1, 3),
+    LinkInfo("rear_axle", 1, 1),
+    LinkInfo("left_wheel_rear", 1, 3),
+    LinkInfo("right_wheel_rear", 1, 3),
+    LinkInfo("body", 1, 1),
+    LinkInfo("front_lidar_link", 1, 1),
+    LinkInfo("top_lidar_link", 1, 1),
+    LinkInfo("rear_right_lidar_link", 1, 1),
+    LinkInfo("rear_left_lidar_link", 1, 1)
+  };
+
+  for (int i = 0; i < load_message.num_links; ++i) {
+    EXPECT_EQ(load_message.link.at(i).name, expected_load.at(i).name);
+    EXPECT_EQ(load_message.link.at(i).robot_num, expected_load.at(i).robot_num);
+    EXPECT_EQ(load_message.link.at(i).num_geom, expected_load.at(i).num_geom);
+  }
+
+  // Verifies that the correct lcmt_viewer_draw message was transmitted. The
+  // tolerance values were empirically determined.
+  const lcmt_viewer_draw draw_message =
+      mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
+          "DRAKE_VIEWER_DRAW");
+  EXPECT_EQ(draw_message.num_links, expected_num_links);
+
+  // Checks the chassis_floor body of the first car.
+  EXPECT_EQ(draw_message.link_name.at(0), "chassis_floor");
+  EXPECT_EQ(draw_message.robot_num.at(0), 0);
+  EXPECT_NEAR(draw_message.position.at(0).at(0), 0.99, 1e-8);
+  EXPECT_NEAR(draw_message.position.at(0).at(1), 0, 1e-8);
+  EXPECT_NEAR(draw_message.position.at(0).at(2), 0.378326, 1e-8);
+  EXPECT_NEAR(draw_message.quaternion.at(0).at(0), 1, 1e-8);
+  EXPECT_NEAR(draw_message.quaternion.at(0).at(1), 0, 1e-8);
+  EXPECT_NEAR(draw_message.quaternion.at(0).at(2), 0, 1e-8);
+  EXPECT_NEAR(draw_message.quaternion.at(0).at(3), 0, 1e-8);
+
+  // Verifies that the first car is about 1 m ahead of the second car. This is
+  // expected since the first car is traveling at 1 m/s for a second while the
+  // second car hasn't started to move yet.
+  const int n = draw_message.num_links / 2;
+  for (int i = 0; i < n; ++i) {
+    EXPECT_EQ(draw_message.link_name.at(i), draw_message.link_name.at(i + n));
+    EXPECT_EQ(draw_message.robot_num.at(i),
+              draw_message.robot_num.at(i + n) - 1);
+    EXPECT_NEAR(draw_message.position.at(i).at(0),
+                draw_message.position.at(i + n).at(0) + 0.99, 1e-6);
+    EXPECT_NEAR(draw_message.position.at(i).at(1),
+                draw_message.position.at(i + n).at(1), 1e-8);
+    EXPECT_NEAR(draw_message.position.at(i).at(2),
+                draw_message.position.at(i + n).at(2), 1e-8);
+    for (int j = 0; j < 4; ++j) {
+      EXPECT_NEAR(draw_message.quaternion.at(i).at(j),
+                  draw_message.quaternion.at(i + n).at(j), 1e-8);
+    }
+  }
 }
 
 // Verifies that CarVisApplicator, PoseBundleToDrawMessage, and
@@ -262,20 +292,16 @@ GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
 GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
-  const std::string kFileName = GetDrakePath() +
-      "/automotive/models/prius/prius.sdf";
 
-  simulator->AddSimpleCarFromSdf(kFileName, "Model1", "Channel1");
-  simulator->AddSimpleCarFromSdf(kFileName, "Model2", "Channel2");
+  simulator->AddPriusSimpleCar("Model1", "Channel1");
+  simulator->AddPriusSimpleCar("Model2", "Channel2");
 
   typedef Curve2<double> Curve2d;
   typedef Curve2d::Point2 Point2d;
   const std::vector<Point2d> waypoints{Point2d{0, 0}, Point2d{1, 0}};
   const Curve2d curve{waypoints};
-  simulator->AddTrajectoryCarFromSdf(
-      kFileName, curve, 1 /* speed */, 0 /* start time */);
-  simulator->AddTrajectoryCarFromSdf(
-      kFileName, curve, 1 /* speed */, 0 /* start time */);
+  simulator->AddPriusTrajectoryCar(curve, 1 /* speed */, 0 /* start time */);
+  simulator->AddPriusTrajectoryCar(curve, 1 /* speed */, 0 /* start time */);
 
   simulator->Start();
   simulator->StepBy(1e-3);
@@ -292,13 +318,13 @@ GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
   // Verifies that an lcmt_viewer_load_robot message was transmitted.
   const lcmt_viewer_load_robot load_message =
       mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_load_robot>(
-          "temp_load_channel");
+          "DRAKE_VIEWER_LOAD_ROBOT");
   EXPECT_EQ(load_message.num_links, expected_num_links);
 
   // Verifies that an lcmt_viewer_draw message was transmitted.
   const lcmt_viewer_draw draw_message =
       mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
-          "temp_draw_channel");
+          "DRAKE_VIEWER_DRAW");
   EXPECT_EQ(draw_message.num_links, expected_num_links);
 }
 

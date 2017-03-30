@@ -83,13 +83,6 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
 
-  // TODO(liang.fok): Generalize this demo to allow arbitrary models to be
-  // specified via command line parameters. This will involve removing some
-  // hard-coded assumptions about the model's geometry. For exeample, the call
-  // to CreateTrajectoryParams() below expects a "car" to have a particular
-  // length and width.
-  const std::string kSdfFile =
-      GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
 
   // Parse FLAGS_use_ego_car and FLAGS_ego_car_names into a vector of
@@ -120,16 +113,15 @@ int main(int argc, char* argv[]) {
     for (const std::string& name : ego_car_names) {
       const std::string& channel_name = MakeChannelName(name);
       drake::log()->info("Adding ego car subscribed to {}.", channel_name);
-      simulator->AddSimpleCarFromSdf(kSdfFile, name, channel_name);
+      simulator->AddPriusSimpleCar(name, channel_name);
     }
 
     // "Traffic model" is "drive in a figure-8".
     for (int i = 0; i < FLAGS_num_ado_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
-      simulator->AddTrajectoryCarFromSdf(kSdfFile,
-                                         std::get<0>(params),
-                                         std::get<1>(params),
-                                         std::get<2>(params));
+      simulator->AddPriusTrajectoryCar(std::get<0>(params),
+                                       std::get<1>(params),
+                                       std::get<2>(params));
     }
 
   } else {
@@ -191,9 +183,8 @@ int main(int argc, char* argv[]) {
       const std::string& channel_name = MakeChannelName(given_name);
       drake::log()->info("Adding ego car '{}' subscribed to {}.",
                          model_name, channel_name);
-      simulator->AddEndlessRoadCar(
+      simulator->AddPriusEndlessRoadCar(
           model_name,
-          kSdfFile,
           initial_state,
           EndlessRoadCar<double>::kUser, channel_name);
     }
@@ -212,9 +203,8 @@ int main(int argc, char* argv[]) {
         initial_state.set_r(0.);  // on the centerline
         initial_state.set_speed(kInitialSpeed);
         initial_state.set_heading(0.);  // straight ahead
-        simulator->AddEndlessRoadCar(
+        simulator->AddPriusEndlessRoadCar(
             "IDM-" + std::to_string(i),
-            kSdfFile,
             initial_state,
             EndlessRoadCar<double>::kIdm, "");
       }
@@ -233,9 +223,8 @@ int main(int argc, char* argv[]) {
             - ((kNumSideBySide - 1) * kLateralSpacing * 0.5));
         initial_state.set_speed(kConstantSpeed);
         initial_state.set_heading(0.);  // straight ahead
-        simulator->AddEndlessRoadCar(
+        simulator->AddPriusEndlessRoadCar(
             "CV-" + std::to_string(i),
-            kSdfFile,
             initial_state,
             EndlessRoadCar<double>::kNone, "");
       }
