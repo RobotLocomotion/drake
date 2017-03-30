@@ -148,6 +148,9 @@ ACCESSOR_FIELD_DOC = """
 ACCESSOR_FIELD_DOC_UNITS = """
   /// @note @c %(field)s is expressed in units of %(doc_units)s.
 """
+ACCESSOR_FIELD_DOC_RANGE = """
+  /// @note @c %(field)s has a limited domain of [%(min_doc)s, %(max_doc)s].
+"""
 ACCESSOR_FIELD_METHODS = """
   const T& %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
   void set_%(field)s(const T& %(field)s) {
@@ -170,6 +173,10 @@ def generate_accessors(hh, caller_context, fields):
         put(hh, ACCESSOR_FIELD_DOC % context, 1)
         if context['doc_units'] != DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS:
             put(hh, ACCESSOR_FIELD_DOC_UNITS % context, 1)
+        if field['min_value'] or field['max_value']:
+            context.update(min_doc=(field['min_value'] or '-Inf'))
+            context.update(max_doc=(field['max_value'] or '+Inf'))
+            put(hh, ACCESSOR_FIELD_DOC_RANGE % context, 1)
         put(hh, ACCESSOR_FIELD_METHODS  % context, 1)
     put(hh, ACCESSOR_END % caller_context, 2)
 
@@ -183,6 +190,12 @@ IS_VALID_BEGIN = """
 IS_VALID = """
     result = result && !isnan(%(field)s());
 """
+IS_VALID_MIN_VALUE = """
+    result = result && (%(field)s() >= T(%(min_value)s));
+"""
+IS_VALID_MAX_VALUE = """
+    result = result && (%(field)s() <= T(%(max_value)s));
+"""
 IS_VALID_END = """
     return result;
   }
@@ -190,13 +203,19 @@ IS_VALID_END = """
 
 
 def generate_is_valid(hh, caller_context, fields):
-    context = dict(caller_context)
-    put(hh, IS_VALID_BEGIN % context, 1)
+    put(hh, IS_VALID_BEGIN % caller_context, 1)
     for field in fields:
+        context = dict(caller_context)
         context.update(field=field['name'])
         context.update(kname=to_kname(field['name']))
         put(hh, IS_VALID % context, 1)
-    put(hh, IS_VALID_END % context, 2)
+        if field['min_value']:
+            context.update(min_value=field['min_value'])
+            put(hh, IS_VALID_MIN_VALUE % context, 1)
+        if field['max_value']:
+            context.update(max_value=field['max_value'])
+            put(hh, IS_VALID_MAX_VALUE % context, 1)
+    put(hh, IS_VALID_END % caller_context, 2)
 
 
 VECTOR_HH_PREAMBLE = """
@@ -410,6 +429,8 @@ def generate_code(args):
                 'doc': el.doc,
                 'default_value': el.default_value,
                 'doc_units': el.doc_units,
+                'min_value': el.min_value,
+                'max_value': el.max_value,
                 } for el in vec.element]
     else:
         # Parse the field names from the command line.
@@ -418,6 +439,8 @@ def generate_code(args):
             'doc': x,
             'default_value': '',
             'doc_units': '',
+            'min_value': '',
+            'max_value': '',
         } for x in args.fields]
 
     # Default some field attributes if they are missing.

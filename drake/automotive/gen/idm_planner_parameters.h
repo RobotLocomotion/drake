@@ -65,33 +65,40 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   //@{
   /// desired velocity in free traffic
   /// @note @c v_ref is expressed in units of m/s.
+  /// @note @c v_ref has a limited domain of [0.0, +Inf].
   const T& v_ref() const { return this->GetAtIndex(K::kVRef); }
   void set_v_ref(const T& v_ref) { this->SetAtIndex(K::kVRef, v_ref); }
   /// max acceleration
   /// @note @c a is expressed in units of m/s^2.
+  /// @note @c a has a limited domain of [0.0, +Inf].
   const T& a() const { return this->GetAtIndex(K::kA); }
   void set_a(const T& a) { this->SetAtIndex(K::kA, a); }
   /// comfortable braking deceleration
   /// @note @c b is expressed in units of m/s^2.
+  /// @note @c b has a limited domain of [0.0, +Inf].
   const T& b() const { return this->GetAtIndex(K::kB); }
   void set_b(const T& b) { this->SetAtIndex(K::kB, b); }
   /// minimum desired net distance
   /// @note @c s_0 is expressed in units of m.
+  /// @note @c s_0 has a limited domain of [0.0, +Inf].
   const T& s_0() const { return this->GetAtIndex(K::kS0); }
   void set_s_0(const T& s_0) { this->SetAtIndex(K::kS0, s_0); }
   /// desired time headway to vehicle in front
   /// @note @c time_headway is expressed in units of s.
+  /// @note @c time_headway has a limited domain of [0.0, +Inf].
   const T& time_headway() const { return this->GetAtIndex(K::kTimeHeadway); }
   void set_time_headway(const T& time_headway) {
     this->SetAtIndex(K::kTimeHeadway, time_headway);
   }
   /// free-road exponent
   /// @note @c delta is expressed in units of dimensionless.
+  /// @note @c delta has a limited domain of [0.0, +Inf].
   const T& delta() const { return this->GetAtIndex(K::kDelta); }
   void set_delta(const T& delta) { this->SetAtIndex(K::kDelta, delta); }
   /// diameter of circle about the vehicle's pose that encloses its physical
   /// footprint
   /// @note @c bloat_diameter is expressed in units of m.
+  /// @note @c bloat_diameter has a limited domain of [0.0, +Inf].
   const T& bloat_diameter() const {
     return this->GetAtIndex(K::kBloatDiameter);
   }
@@ -101,6 +108,7 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   /// lower saturation bound on net distance to prevent near-singular IDM
   /// solutions
   /// @note @c distance_lower_limit is expressed in units of m.
+  /// @note @c distance_lower_limit has a limited domain of [0.0, +Inf].
   const T& distance_lower_limit() const {
     return this->GetAtIndex(K::kDistanceLowerLimit);
   }
@@ -114,13 +122,21 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
     using std::isnan;
     auto result = (T(0) == T(0));
     result = result && !isnan(v_ref());
+    result = result && (v_ref() >= T(0.0));
     result = result && !isnan(a());
+    result = result && (a() >= T(0.0));
     result = result && !isnan(b());
+    result = result && (b() >= T(0.0));
     result = result && !isnan(s_0());
+    result = result && (s_0() >= T(0.0));
     result = result && !isnan(time_headway());
+    result = result && (time_headway() >= T(0.0));
     result = result && !isnan(delta());
+    result = result && (delta() >= T(0.0));
     result = result && !isnan(bloat_diameter());
+    result = result && (bloat_diameter() >= T(0.0));
     result = result && !isnan(distance_lower_limit());
+    result = result && (distance_lower_limit() >= T(0.0));
     return result;
   }
 };

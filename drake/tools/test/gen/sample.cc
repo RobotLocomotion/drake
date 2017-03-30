@@ -10,6 +10,7 @@ namespace test {
 const int SampleIndices::kNumCoordinates;
 const int SampleIndices::kX;
 const int SampleIndices::kTwoWord;
+const int SampleIndices::kAbsone;
 
 }  // namespace test
 }  // namespace tools
