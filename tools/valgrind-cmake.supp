@@ -175,5 +175,13 @@
     fun:*ImageLoader*
 }
 
+{
+    <osx-3>
+    Memcheck:Leak
+    match-leak-kinds: definite
+    fun:*alloc*
+    ...
+    fun:*ImageLoader*
+}
 ##----------------------------------------------------------------------##
     
