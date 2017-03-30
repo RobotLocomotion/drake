@@ -132,6 +132,20 @@ drake_add_external(pythonqt CMAKE PYTHON QT
     -DPythonQt_Wrap_Qtuitools:BOOL=ON
 )
 
+# qhull
+drake_add_external(qhull CMAKE PUBLIC QT CMAKE_ARGS -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
+
+ExternalProject_Add_Step(qhull install_libraries
+  COMMAND "${CMAKE_COMMAND}" -E make_directory
+    "${CMAKE_INSTALL_PREFIX}/lib"
+  COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+    "${PROJECT_BINARY_DIR}/externals/qhull/libqhullstatic_r.a"
+    "${PROJECT_BINARY_DIR}/externals/qhull/libqhullstatic.a"
+    "${PROJECT_BINARY_DIR}/externals/qhull/libqhullcpp.a"
+    "${CMAKE_INSTALL_PREFIX}/lib"
+  DEPENDEES build
+)
+
 # snopt
 drake_add_external(snopt CMAKE MATLAB
   CMAKE_ARGS
@@ -262,6 +276,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PYBIND11:BOOL=${WITH_PYBIND11}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
+    -DWITH_QHULL:BOOL=${WITH_QHULL}
     -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
     -DWITH_SIGNALSCOPE:BOOL=${WITH_SIGNALSCOPE}
     -DWITH_SNOPT:BOOL=${WITH_SNOPT}
@@ -296,6 +311,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     nlopt
     octomap
     pybind11
+    qhull
     robotlocomotion_lcmtypes
     sedumi
     snopt

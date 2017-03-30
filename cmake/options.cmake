@@ -342,6 +342,9 @@ macro(drake_setup_options)
   drake_optional_external(MOSEK OFF
     "Convex optimization solver\; free for academics")
 
+  drake_optional_external(QHULL ON
+    "Convex hull, Delaunay triangulation, Voronoi diagrams, Halfspace intersection")
+
   drake_optional_external(SIGNALSCOPE OFF
     "Live plotting tool for LCM messages")
 

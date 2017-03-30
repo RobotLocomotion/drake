@@ -104,3 +104,6 @@
 [submodule "externals/pybind11"]
 	path = externals/pybind11
 	url = https://github.com/RobotLocomotion/pybind11
+[submodule "externals/qhull"]
+	path = externals/qhull
+	url = git://github.com/qhull/qhull.git
