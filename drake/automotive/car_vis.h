@@ -39,11 +39,11 @@ class CarVis {
   /// Returns the visualization elements.
   virtual const std::vector<lcmt_viewer_link_data>& GetVisElements() const = 0;
 
-  /// Computes and returns the poses of the bodies that constitute the vehicle's
+  /// Computes and returns the poses of the bodies that are part of the
   /// visualization. The provided `X_WM` is the pose of the vehicle model in the
-  /// world frame. The origin of the model's frame is assumed to be in the
-  /// middle of the vehicle's rear axle. The poses in the returned PoseBundle
-  /// are for the visualization's elements, and are also in the world frame. The
+  /// world frame. It typically serves as the "root" or "base frame" of a
+  /// visualization model. The poses in the returned PoseBundle are for the
+  /// visualization geometry's elements, and are also in the world frame. The
   /// size of this bundle is the value returned by num_poses().
   virtual systems::rendering::PoseBundle<T> CalcPoses(
       const Isometry3<T>& X_WM) const = 0;

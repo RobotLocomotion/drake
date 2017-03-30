@@ -31,10 +31,6 @@ class PriusVis : public CarVis<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PriusVis)
 
-  /// Defines the distance between the visual model's origin and the middle of
-  /// the rear axle.
-  static constexpr double kVisOffset{1.40948};
-
   PriusVis(int id, const std::string& name);
 
   const std::vector<lcmt_viewer_link_data>& GetVisElements() const override;
