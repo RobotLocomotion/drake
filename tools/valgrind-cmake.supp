@@ -159,13 +159,14 @@
 
 ## Leaks (apparently) in even hello-world style programs
 {
-   <osx-1>
-   Memcheck:Leak
-   fun:malloc_zone_calloc
-   fun:*NX*Hash*
+    <osx-1>
+    Memcheck:Leak
+    fun:malloc_zone_calloc
+    fun:*NX*Hash*
 }
 
 
+# Added by looking at the logs
 {
     <osx-2>
     Memcheck:Leak
@@ -175,6 +176,7 @@
     fun:*ImageLoader*
 }
 
+# Added by looking at the logs
 {
     <osx-3>
     Memcheck:Leak
@@ -183,5 +185,43 @@
     ...
     fun:*ImageLoader*
 }
+
+# From valgrind source code, OSX1012:8-Leak
+# For both possible and definite.  Saw a possible but
+# was for definite in valgrind source code.
+{
+    <osx-4>
+    Memcheck:Leak
+    fun:?alloc
+    ...
+    fun:libSystem_initializer
+    ...
+}
+
+# Changed "?alloc" to "*alloc" because
+# there were a lot of "reallocs"
+# OSX1012:16-Leak
+{
+    <osx-5>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:*alloc
+    ...
+    fun:_read_images
+}
+
+# Changed from reachable to possible.
+# OSX1012:14-Leak
+{
+    <osx-6>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:?alloc
+    ...
+    fun:libSystem_atfork_child
+    ...
+}
+
+
 ##----------------------------------------------------------------------##
     
