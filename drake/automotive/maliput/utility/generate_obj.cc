@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "spdlog/fmt/ostr.h"
+#include "fmt/ostream.h"
 
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
@@ -209,26 +209,29 @@ class GeoMesh {
   std::tuple<int, int>
   EmitObj(std::ostream& os, const std::string& material,
           int vertex_index_offset, int normal_index_offset) {
-    os << "# Vertices\n";
+    fmt::print(os, "# Vertices\n");
     for (const GeoVertex* gv : vertices_.vector()) {
-      os << "v " << gv->v().x << " " << gv->v().y << " " << gv->v().z << "\n";
+      fmt::print(os, "v {} {} {}\n",
+                 gv->v().x, gv->v().y, gv->v().z);
     }
-    os << "# Normals\n";
+    fmt::print(os, "# Normals\n");
     for (const GeoNormal* gn : normals_.vector()) {
-      os << "vn " << gn->n().x << " " << gn->n().y << " " << gn->n().z << "\n";
+      fmt::print(os, "vn {} {} {}\n",
+                 gn->n().x, gn->n().y, gn->n().z);
     }
-    os << "\n"
-       << "# Faces\n";
+    fmt::print(os, "\n");
+    fmt::print(os, "# Faces\n");
     if (!material.empty()) {
-      os << "usemtl " << material << "\n";
+      fmt::print(os, "usemtl {}\n", material);
     }
     for (const IndexFace& f : faces_) {
-      os << "f";
+      fmt::print(os, "f");
       for (const IndexFace::Vertex& ifv : f.vertices()) {
-        os << " " << (ifv.vertex_index + 1 + vertex_index_offset)
-           << "//" << (ifv.normal_index + 1 + normal_index_offset);
+        fmt::print(os, " {}//{}",
+                   (ifv.vertex_index + 1 + vertex_index_offset),
+                   (ifv.normal_index + 1 + normal_index_offset));
       }
-      os << "\n";
+      fmt::print(os, "\n");
     }
     return std::make_tuple(vertex_index_offset + vertices_.vector().size(),
                            normal_index_offset + normals_.vector().size());

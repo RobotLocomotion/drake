@@ -104,3 +104,6 @@
 [submodule "externals/pybind11"]
 	path = externals/pybind11
 	url = https://github.com/RobotLocomotion/pybind11
+[submodule "externals/fmt"]
+	path = externals/fmt
+	url = https://github.com/fmtlib/fmt.git
