@@ -3,7 +3,7 @@
 
 package drake;
 
-struct lcmt_maliput_railcar_config_t {
+struct lcmt_maliput_railcar_params_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 

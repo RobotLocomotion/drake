@@ -6,8 +6,8 @@
 #include <memory>
 #include <vector>
 
-#include "drake/automotive/gen/maliput_railcar_config.h"
-#include "drake/lcmt_maliput_railcar_config_t.hpp"
+#include "drake/automotive/gen/maliput_railcar_params.h"
+#include "drake/lcmt_maliput_railcar_params_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
@@ -15,14 +15,14 @@ namespace automotive {
 
 /**
  * Translates between LCM message objects and VectorBase objects for the
- * MaliputRailcarConfig type.
+ * MaliputRailcarParams type.
  */
-class MaliputRailcarConfigTranslator
+class MaliputRailcarParamsTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
-  MaliputRailcarConfigTranslator()
+  MaliputRailcarParamsTranslator()
       : LcmAndVectorBaseTranslator(
-            MaliputRailcarConfigIndices::kNumCoordinates) {}
+            MaliputRailcarParamsIndices::kNumCoordinates) {}
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
       const override;
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,

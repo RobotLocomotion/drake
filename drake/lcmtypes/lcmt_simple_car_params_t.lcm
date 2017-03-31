@@ -3,7 +3,7 @@
 
 package drake;
 
-struct lcmt_simple_car_config_t {
+struct lcmt_simple_car_params_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 

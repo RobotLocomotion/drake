@@ -6,8 +6,8 @@
 #include <memory>
 #include <vector>
 
-#include "drake/automotive/gen/simple_car_config.h"
-#include "drake/lcmt_simple_car_config_t.hpp"
+#include "drake/automotive/gen/simple_car_params.h"
+#include "drake/lcmt_simple_car_params_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
@@ -15,13 +15,13 @@ namespace automotive {
 
 /**
  * Translates between LCM message objects and VectorBase objects for the
- * SimpleCarConfig type.
+ * SimpleCarParams type.
  */
-class SimpleCarConfigTranslator
+class SimpleCarParamsTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
-  SimpleCarConfigTranslator()
-      : LcmAndVectorBaseTranslator(SimpleCarConfigIndices::kNumCoordinates) {}
+  SimpleCarParamsTranslator()
+      : LcmAndVectorBaseTranslator(SimpleCarParamsIndices::kNumCoordinates) {}
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
       const override;
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,

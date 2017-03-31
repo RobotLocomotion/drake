@@ -64,8 +64,8 @@ void IdmController<T>::DoCalcOutput(const systems::Context<T>& context,
   const IdmPlannerParameters<T>& idm_params =
       this->template GetNumericParameter<IdmPlannerParameters>(context,
                                                                kIdmParamsIndex);
-  const SimpleCarConfig<T>& car_params =
-      this->template GetNumericParameter<SimpleCarConfig>(context,
+  const SimpleCarParams<T>& car_params =
+      this->template GetNumericParameter<SimpleCarParams>(context,
                                                           kCarParamsIndex);
 
   // Obtain the input/output data structures.
@@ -98,7 +98,7 @@ void IdmController<T>::ImplDoCalcOutput(
     const PoseVector<T>& ego_pose, const FrameVelocity<T>& ego_velocity,
     const PoseBundle<T>& traffic_poses,
     const IdmPlannerParameters<T>& idm_params,
-    const SimpleCarConfig<T>& car_params, DrivingCommand<T>* command) const {
+    const SimpleCarParams<T>& car_params, DrivingCommand<T>* command) const {
   // Find the single closest car ahead.
   const RoadOdometry<T>& lead_car_odom =
       pose_selector::FindClosestLeading(road_, ego_pose, traffic_poses);
@@ -145,7 +145,7 @@ std::unique_ptr<systems::Parameters<T>> IdmController<T>::AllocateParameters()
   params.insert(params.begin() + kIdmParamsIndex,
                 std::make_unique<IdmPlannerParameters<T>>());
   params.insert(params.begin() + kCarParamsIndex,
-                std::make_unique<SimpleCarConfig<T>>());
+                std::make_unique<SimpleCarParams<T>>());
   return std::make_unique<systems::Parameters<T>>(std::move(params));
 }
 
@@ -159,7 +159,7 @@ void IdmController<T>::SetDefaultParameters(
   IdmPlanner<T>::SetDefaultParameters(idm_params);
 
   // Set the default SimpleCar parameters (for max_acceleration).
-  auto car_params = dynamic_cast<SimpleCarConfig<T>*>(
+  auto car_params = dynamic_cast<SimpleCarParams<T>*>(
       params->get_mutable_numeric_parameter(kCarParamsIndex));
   SimpleCar<T>::SetDefaultParameters(car_params);
 }

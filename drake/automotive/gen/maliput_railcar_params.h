@@ -14,8 +14,8 @@
 namespace drake {
 namespace automotive {
 
-/// Describes the row indices of a MaliputRailcarConfig.
-struct MaliputRailcarConfigIndices {
+/// Describes the row indices of a MaliputRailcarParams.
+struct MaliputRailcarParamsIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 5;
 
@@ -29,18 +29,18 @@ struct MaliputRailcarConfigIndices {
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class MaliputRailcarConfig : public systems::BasicVector<T> {
+class MaliputRailcarParams : public systems::BasicVector<T> {
  public:
   /// An abbreviation for our row index constants.
-  typedef MaliputRailcarConfigIndices K;
+  typedef MaliputRailcarParamsIndices K;
 
   /// Default constructor.  Sets all rows to zero.
-  MaliputRailcarConfig() : systems::BasicVector<T>(K::kNumCoordinates) {
+  MaliputRailcarParams() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
-  MaliputRailcarConfig<T>* DoClone() const override {
-    return new MaliputRailcarConfig;
+  MaliputRailcarParams<T>* DoClone() const override {
+    return new MaliputRailcarParams;
   }
 
   /// @name Getters and Setters

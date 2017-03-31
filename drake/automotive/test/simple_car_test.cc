@@ -196,12 +196,12 @@ TEST_F(SimpleCarTest, OutputVelocityIsClamped) {
 TEST_F(SimpleCarTest, Derivatives) {
   const double kTolerance = 1e-10;
 
-  SimpleCarConfig<double> default_config;
-  SimpleCar<double>::SetDefaultParameters(&default_config);
-  const double wheelbase = default_config.wheelbase();
-  const double max_abs_steering_angle = default_config.max_abs_steering_angle();
+  SimpleCarParams<double> default_params;
+  SimpleCar<double>::SetDefaultParameters(&default_params);
+  const double wheelbase = default_params.wheelbase();
+  const double max_abs_steering_angle = default_params.max_abs_steering_angle();
   const double max_abs_curvature = std::tan(max_abs_steering_angle) / wheelbase;
-  const double max_acceleration = default_config.max_acceleration();
+  const double max_acceleration = default_params.max_acceleration();
 
   // Grab a pointer to where the EvalTimeDerivatives results end up.
   const SimpleCarState<double>* const result =
@@ -281,14 +281,14 @@ TEST_F(SimpleCarTest, Derivatives) {
   EXPECT_NEAR(-0.3 * max_acceleration, result->velocity(), kTolerance);
 
   // When velocity is past max_speed, a damping term takes over.
-  const double too_fast = default_config.max_velocity() + 0.001;
+  const double too_fast = default_params.max_velocity() + 0.001;
   continuous_state()->set_velocity(too_fast);
   SetInputValue(0.0, 0.0, 0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(too_fast, result->x());
   EXPECT_EQ(0.0, result->y());
   EXPECT_EQ(0.0, result->heading());
-  EXPECT_NEAR(-0.001 * default_config.velocity_limit_kp(),
+  EXPECT_NEAR(-0.001 * default_params.velocity_limit_kp(),
               result->velocity(), kTolerance);
   // ... but not when the brake is larger.
   SetInputValue(0.0, 0.0, 0.1);
@@ -306,7 +306,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   EXPECT_EQ(0.0, result->x());   // N.B. Not -0.001!
   EXPECT_EQ(0.0, result->y());
   EXPECT_EQ(0.0, result->heading());  // N.B. Not rotating!
-  EXPECT_NEAR(0.001 * default_config.velocity_limit_kp(),
+  EXPECT_NEAR(0.001 * default_params.velocity_limit_kp(),
               result->velocity(), kTolerance);
   // ... but not when the throttle is larger.
   SetInputValue(M_PI_2, 0.1, 0.0);
