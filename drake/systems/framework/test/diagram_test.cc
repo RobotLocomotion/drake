@@ -972,6 +972,8 @@ class SystemWithAbstractState : public LeafSystem<double> {
     state_num = id_ + context.get_time();
   }
 
+  // Initializes the continuous state to id_, and the abstract value to
+  // 2 * id_.
   void DoInitializeContext(Context<double>* context) const override {
     context->get_mutable_continuous_state_vector()->SetAtIndex(0, id_);
     context->get_mutable_abstract_state<double>(0) = 2 * id_;
@@ -1068,9 +1070,11 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
 }
 
+// Tests InitializeContext for diagrams.
 GTEST_TEST(DiagramInitializationTest, DiagramInitialization) {
   DiagramBuilder<double> builder;
 
+  // First arg is the id.
   auto sys0 = builder.AddSystem<SystemWithAbstractState>(1, 0.1);
   auto sys1 = builder.AddSystem<SystemWithAbstractState>(2, 0.1);
   auto sys2 = builder.AddSystem<SystemWithAbstractState>(3, 0.1);
@@ -1082,6 +1086,7 @@ GTEST_TEST(DiagramInitializationTest, DiagramInitialization) {
 
   dut->InitializeContext(context.get());
 
+  // Continuous state should equal to the id.
   EXPECT_EQ(dut->GetSubsystemContext(*context, sys0)
                 .get_continuous_state_vector()
                 .GetAtIndex(0),
@@ -1095,6 +1100,7 @@ GTEST_TEST(DiagramInitializationTest, DiagramInitialization) {
                 .GetAtIndex(0),
             3);
 
+  // Abstract state should equal to the 2 * id.
   EXPECT_EQ(
       dut->GetSubsystemContext(*context, sys0).get_abstract_state<double>(0),
       2);

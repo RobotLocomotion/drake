@@ -107,6 +107,8 @@ class DrakeVisualizer : public LeafSystem<double> {
       const PiecewisePolynomial<double>& input_trajectory) const;
 
  private:
+  void DoInitializeContext(systems::Context<double>* context) const override;
+
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override {}
 

@@ -100,17 +100,16 @@ class System {
 
   virtual ~System() {}
 
-  void InitializeContext(Context<T>* context) const {
-    DRAKE_DEMAND(context != nullptr);
-    DoInitializeContext(context);
-  }
-
-  virtual void DoInitializeContext(Context<T>* context) const = 0;
-
   //----------------------------------------------------------------------------
   /// @name           Resource allocation and initialization
   /// These methods are used to allocate and initialize Context resources.
   //@{
+
+  /// Initializes @p context.
+  void InitializeContext(Context<T>* context) const {
+    DRAKE_DEMAND(context != nullptr);
+    DoInitializeContext(context);
+  }
 
   /// Allocates a context, initialized with the correct numbers of concrete
   /// input ports and state variables for this System.  Since input port
@@ -1028,6 +1027,10 @@ class System {
     return DeclareOutputPort(kAbstractValued, 0 /* size */);
   }
   //@}
+
+  /// NVI implementation of InitializeContext(). Derived class needs to override
+  /// this.
+  virtual void DoInitializeContext(Context<T>* context) const = 0;
 
   //----------------------------------------------------------------------------
   /// @name               Virtual methods for input allocation

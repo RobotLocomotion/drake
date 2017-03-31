@@ -111,15 +111,12 @@ void DrakeVisualizer::PlaybackTrajectory(
                 message_bytes.size());
 }
 
+void DrakeVisualizer::DoInitializeContext(systems::Context<double>* context)
+    const {
+  PublishLoadRobot();
+}
+
 void DrakeVisualizer::DoPublish(const Context<double>& context) const {
-  // TODO(liang.fok): Replace the following code once System 2.0's API allows
-  // systems to declare that they need a certain action to be performed at
-  // simulation time t_0.
-  //
-  // Before any draw commands, we need to send the load_robot message.
-  if (context.get_time() == 0.0) {
-    PublishLoadRobot();
-  }
   DRAKE_DEMAND(sent_load_robot_);
 
   // Obtains the input vector, which contains the generalized q,v state of the

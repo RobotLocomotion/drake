@@ -78,6 +78,7 @@ class TestSystem : public System<double> {
   }
 
  protected:
+  // Makes a continuous state in @p context that equals to 42.
   void DoInitializeContext(Context<double>* context) const override {
     auto vec = std::make_unique<BasicVector<double>>(1);
     vec->SetAtIndex(0, 42);
