@@ -17,6 +17,7 @@
 workspace(name = "drake")
 
 load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
+load("//tools:bitbucket.bzl", "bitbucket_archive")
 load("//tools:github.bzl", "github_archive")
 load('@bazel_tools//tools/build_defs/repo:git.bzl', 'git_repository')
 
@@ -254,4 +255,13 @@ new_local_repository(
     path = "not/real/stub",
     build_file_content = ("cc_library(name = 'python_headers', " +
                           "visibility = ['//visibility:public'])")
+)
+
+bitbucket_archive(
+    name = "ignition_math",
+    repository = "ignitionrobotics/ign-math",
+    commit = "ignition-math3_3.0.0",
+    sha256 = "9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd",
+    build_file = "tools/ignition_math.BUILD",
+    strip_prefix = "ignitionrobotics-ign-math-a06d26055d07",
 )
