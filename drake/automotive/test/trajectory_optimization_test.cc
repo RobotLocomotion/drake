@@ -13,6 +13,9 @@ namespace drake {
 namespace automotive {
 namespace {
 
+// Sets up a simple trajectory optimization problem that finds a series
+// of DrivingCommand's that takes the SimpleCar from an initial condition
+// off the x-axis back to the x-axis.
 GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   SimpleCar<double> plant;
   auto context = plant.CreateDefaultContext();
@@ -31,6 +34,9 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   xf.set_velocity(x0.velocity());
 
   const int kNumTimeSamples = 10;
+  
+  // The solved trajectory may deviate from the initial guess at a reasonable 
+  // duration.
   const double kTrajectoryTimeLowerBound = 0.8 * initial_duration,
                kTrajectoryTimeUpperBound = 1.2 * initial_duration;
 
