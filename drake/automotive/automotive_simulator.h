@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/automotive/car_vis_applicator.h"
@@ -11,7 +12,9 @@
 #include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
 #include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
+#include "drake/automotive/gen/maliput_railcar_state.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput_railcar.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
@@ -53,13 +56,13 @@ class AutomotiveSimulator {
   lcm::DrakeLcmInterface* get_lcm();
 
   /// Returns the DiagramBuilder.
-  /// @pre Start() has NOT been called.
+  /// @pre Start() has NOT been called, otherwise the process aborts.
   systems::DiagramBuilder<T>* get_builder();
 
   /// Adds a SimpleCar to this simulation visualized as a Toyota Prius. This
   /// includes its DrivingCommand LCM input and EulerFloatingJoint output.
   ///
-  /// @pre Start() has NOT been called.
+  /// @pre Start() has NOT been called, otherwise the process aborts.
   ///
   /// @param model_name If this is non-empty, the car's model will be labeled
   /// with this name. It must be unique among all cars.
@@ -78,7 +81,7 @@ class AutomotiveSimulator {
   /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius. This
   /// includes its EulerFloatingJoint output.
   ///
-  /// @pre Start() has NOT been called.
+  /// @pre Start() has NOT been called, otherwise the process aborts.
   ///
   /// @param[in] curve See documentation of TrajectoryCar::TrajectoryCar.
   ///
@@ -105,13 +108,51 @@ class AutomotiveSimulator {
   /// receive commands.
   ///
   /// @return The ID of the car that was just added to the simulation.
-  /// @pre Start() has NOT been called.
+  /// @pre Start() has NOT been called, otherwise the process aborts.
   /// @pre SetRoadGeometry() HAS been called.
   int AddPriusEndlessRoadCar(
       const std::string& id,
       const EndlessRoadCarState<T>& initial_state,
       typename EndlessRoadCar<T>::ControlType control_type,
       const std::string& channel_name);
+
+  /// Adds a MaliputRailcar to this simulation visualized as a Toyota Prius.
+  ///
+  /// @pre Start() has NOT been called, otherwise the process aborts.
+  ///
+  /// @pre SetRoadGeometry() was called. Otherwise, a std::runtime_error will be
+  /// thrown.
+  ///
+  /// @param model_name If this is non-empty, the car's model will be labeled
+  /// with this name. It must be unique among all cars.
+  ///
+  /// @param initial_lane_direction The MaliputRailcar's initial lane and
+  /// direction on the lane. The lane in this parameter must be part of the
+  /// maliput::api::RoadGeometry that is added via SetRoadGeometry(). Otherwise
+  /// a std::runtime_error will be thrown.
+  ///
+  /// @param params The MaliputRailcar's parameters.
+  ///
+  /// @param initial_state The MaliputRailcar's initial state.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
+  int AddPriusMaliputRailcar(
+      const std::string& model_name,
+      const LaneDirection& initial_lane_direction,
+      const MaliputRailcarParams<T>& params = MaliputRailcarParams<T>(),
+      const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
+
+  /// Sets the acceleration command of a particular MaliputRailcar.
+  ///
+  /// @param id The ID of the MaliputRailcar. This is the ID that was returned
+  /// by the method that added the MaliputRailcar to the simulation. If no
+  /// MaliputRailcar with such an ID exists, a std::runtime_error is thrown.
+  ///
+  /// @param acceleration The acceleration command to issue to the
+  /// MaliputRailcar.
+  ///
+  /// @pre Start() has been called, otherwise the process aborts.
+  void SetMaliputRailcarAccelerationCommand(int id, double acceleration);
 
   /// Sets the RoadGeometry for this simulation.
   ///
@@ -132,7 +173,7 @@ class AutomotiveSimulator {
 
   /// Sets the RoadGeometry for this simulation.
   ///
-  /// @pre Start() has NOT been called.
+  /// @pre Start() has NOT been called, otherwise the process aborts.
   const maliput::api::RoadGeometry* SetRoadGeometry(
       std::unique_ptr<const maliput::api::RoadGeometry> road);
 
@@ -142,7 +183,7 @@ class AutomotiveSimulator {
   /// This is the builder variant of the method.  It can only be used prior to
   /// Start() being called.
   ///
-  /// @pre Start() has NOT been called.
+  /// @pre Start() has NOT been called, otherwise the process aborts.
   systems::System<T>& GetBuilderSystemByName(std::string name);
 
   /// Returns the System whose name matches @p name.  Throws an exception if no
@@ -151,13 +192,13 @@ class AutomotiveSimulator {
   /// This is the diagram variant of the method, which can only be used after
   /// Start() is called.
   ///
-  /// @pre Start() has been called.
+  /// @pre Start() has been called, otherwise the process aborts.
   const systems::System<T>& GetDiagramSystemByName(std::string name) const;
 
   /// Builds the Diagram and initializes the Simulator.  No further changes to
   /// the diagram may occur after this has been called.
   ///
-  /// @pre Start() has NOT been called.
+  /// @pre Start() has NOT been called, otherwise the process aborts.
   ///
   /// @param target_realtime_rate This value is passed to
   /// systems::Simulator::set_target_realtime_rate().
@@ -213,6 +254,10 @@ class AutomotiveSimulator {
 
   void SendLoadRobotMessage(const lcmt_viewer_load_robot& message);
 
+  void InitializeSimpleCars();
+  void InitializeEndlessRoadcars();
+  void InitializeMaliputRailcars();
+
   // For both building and simulation.
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
   std::unique_ptr<const maliput::api::RoadGeometry> road_{};
@@ -233,6 +278,13 @@ class AutomotiveSimulator {
   // Holds the desired initial states of each SimpleCar. It is used to
   // initialize the simulation's diagram's state.
   std::map<const SimpleCar<T>*, SimpleCarState<T>> simple_car_initial_states_;
+
+  // Holds the desired initial states of each MaliputRailcar. It is used to
+  // initialize the simulation's diagram's state.
+  std::map<const MaliputRailcar<T>*, std::pair<MaliputRailcarParams<T>,
+                                               MaliputRailcarState<T>>>
+      railcar_configs_;
+
   // === End for building. ===
 
   // Adds the PoseAggregator.
@@ -256,6 +308,9 @@ class AutomotiveSimulator {
   systems::lcm::LcmPublisherSystem* lcm_publisher_{};
 
   int next_vehicle_number_{0};
+
+  // Maps a vehicle id to a pointer to the system that implements the vehicle.
+  std::map<int, systems::System<T>*> vehicles_;
 
   // For simulation.
   std::unique_ptr<systems::Diagram<T>> diagram_{};
