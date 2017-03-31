@@ -147,6 +147,7 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         ":infinite_circuit_road",
+        "//drake/math:saturate",
     ],
 )
 
@@ -617,16 +618,6 @@ drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//drake/automotive:curve2",
-    ],
-)
-
-drake_cc_googletest(
-    name = "endless_road_car_test",
-    srcs = ["dev/test/endless_road_car_test.cc"],
-    deps = [
-        "//drake/automotive:endless_road_car",
-        "//drake/automotive/maliput/monolane:builder",
-        "//drake/automotive/maliput/utility",
     ],
 )
 

@@ -200,16 +200,16 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   // respectively (see calculations above that relate vehicle longitudinal speed
   // with wheel rotational speed). Thus, the gain (`D`) should be:
   //
-  // ---------------------------------------------------------------------
-  // Index |   kSteeringAngle   |   kThrottle         |    kBrake
-  // ---------------------------------------------------------------------
-  //   0   |         1          |       0             |      0
-  //   1   |         0          |       0             |      0
-  //   2   |         0          |       0             |      0
-  //   3   |         0          |       0             |      0
-  //   4   |         0          |  1. / kWheelRadius  | -1. / kWheelRadius
-  //   5   |         0          |  1. / kWheelRadius  | -1. / kWheelRadius
-  // ---------------------------------------------------------------------
+  // -------------------------------------------------
+  // Index |   kSteeringAngle   |   kAcceleration
+  // -------------------------------------------------
+  //   0   |         1          |       0
+  //   1   |         0          |       0
+  //   2   |         0          |       0
+  //   3   |         0          |       0
+  //   4   |         0          |  1. / kWheelRadius
+  //   5   |         0          |  1. / kWheelRadius
+  // -------------------------------------------------
   //
   // TODO(liang.fok): Add a system that accounts for the difference in reference
   // wheel rotational velocities necessary in vehicles with Ackermann steering.
@@ -221,12 +221,12 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
       controller->get_input_port(1).size(),
       command_subscriber->get_output_port(0).size());
   matrix_gain <<
-      1,                 0,                  0,
-      0,                 0,                  0,
-      0,                 0,                  0,
-      0,                 0,                  0,
-      0, 1. / kWheelRadius, -1. / kWheelRadius,
-      0, 1. / kWheelRadius, -1. / kWheelRadius;
+      1,                 0,
+      0,                 0,
+      0,                 0,
+      0,                 0,
+      0, 1. / kWheelRadius,
+      0, 1. / kWheelRadius;
   DRAKE_ASSERT(matrix_gain.rows() == controller->get_input_port(1).size());
   DRAKE_ASSERT(matrix_gain.cols() ==
       command_subscriber->get_output_port(0).size());

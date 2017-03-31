@@ -24,8 +24,7 @@ void DrivingCommandTranslator::Serialize(
   drake::lcmt_driving_command_t message;
   message.timestamp = static_cast<int64_t>(time * 1000);
   message.steering_angle = vector->steering_angle();
-  message.throttle = vector->throttle();
-  message.brake = vector->brake();
+  message.acceleration = vector->acceleration();
   const int lcm_message_length = message.getEncodedSize();
   lcm_message_bytes->resize(lcm_message_length);
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
@@ -44,8 +43,7 @@ void DrivingCommandTranslator::Deserialize(
     throw std::runtime_error("Failed to decode LCM message driving_command.");
   }
   my_vector->set_steering_angle(message.steering_angle);
-  my_vector->set_throttle(message.throttle);
-  my_vector->set_brake(message.brake);
+  my_vector->set_acceleration(message.acceleration);
 }
 
 }  // namespace automotive

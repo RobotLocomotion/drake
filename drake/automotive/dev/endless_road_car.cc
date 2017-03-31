@@ -151,9 +151,7 @@ EndlessRoadCar<T>::ComputeUserAccelerations(
     const EndlessRoadCarConfig<T>& config) const {
 
   // Simplistic throttle and brake yields longitudinal acceleration.
-  const T forward_acceleration =
-      (input.throttle() * config.max_acceleration()) -
-      (input.brake() * config.max_deceleration());
+  const T forward_acceleration = input.acceleration();
 
   // Simplistic steering: centripetal acceleration --> lateral acceleration.
   const T speed = state.speed();
