@@ -178,10 +178,6 @@ class LcmDrivenLoop {
   // If true, explicitly calls system_.Publish() after every step in the loop.
   bool publish_on_every_received_message_{true};
 
-  // The semaphore that blocks the loop thread until a message triggers
-  // driving_sub_'s message handler.
-  Semaphore semaphore_;
-
   // THE message subscriber.
   LcmSubscriberSystem* driving_sub_;
 
@@ -191,6 +187,8 @@ class LcmDrivenLoop {
   // Separate context and output port for the driving subscriber.
   std::unique_ptr<Context<double>> sub_context_;
   std::unique_ptr<SystemOutput<double>> sub_output_;
+
+  int message_count_{0};
 };
 
 }  // namespace lcm

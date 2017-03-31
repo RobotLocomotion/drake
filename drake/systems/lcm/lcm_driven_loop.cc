@@ -11,16 +11,12 @@ LcmDrivenLoop::LcmDrivenLoop(
     : system_(system),
       lcm_(lcm),
       time_converter_(std::move(time_converter)),
-      semaphore_(1),
       driving_sub_(driving_subscriber),
       stepper_(
           std::make_unique<Simulator<double>>(system_, std::move(context))) {
   DRAKE_DEMAND(lcm != nullptr);
   DRAKE_DEMAND(driving_subscriber != nullptr);
   DRAKE_DEMAND(time_converter_ != nullptr);
-
-  // Tells the driving subscriber to wake this up when it gets a new message.
-  driving_sub_->set_notification(&semaphore_);
 
   // Allocates extra context and output just for the driving subscriber, so
   // that this can explicitly query the message.
@@ -35,7 +31,12 @@ LcmDrivenLoop::LcmDrivenLoop(
 }
 
 const AbstractValue& LcmDrivenLoop::WaitForMessage() {
-  semaphore_.wait();
+  std::unique_lock<std::mutex> lock(driving_sub_->received_message_mutex_);
+  while (message_count_ == driving_sub_->received_message_count_)
+    driving_sub_->received_message_condition_variable_.wait(lock);
+  message_count_ = driving_sub_->received_message_count_;
+  lock.unlock();
+
   driving_sub_->CalcOutput(*sub_context_, sub_output_.get());
   return *(sub_output_->get_data(0));
 }

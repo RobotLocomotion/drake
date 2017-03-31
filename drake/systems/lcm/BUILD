@@ -32,7 +32,6 @@ drake_cc_library(
         "lcm_publisher_system.h",
         "lcm_subscriber_system.h",
         "serializer.h",
-        "semaphore.h"
     ],
     deps = [
         ":translator",

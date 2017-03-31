@@ -54,6 +54,10 @@ class DummySys : public systems::LeafSystem<double> {
 void publish() {
   ::lcm::LCM lcm;
   lcmt_drake_signal msg;
+  msg.dim = 0;
+  msg.val.resize(msg.dim);
+  msg.coord.resize(msg.dim);
+
   const int kSleepMicroSec = 100000;
 
   usleep(kSleepMicroSec);

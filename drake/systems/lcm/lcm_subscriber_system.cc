@@ -134,16 +134,14 @@ void LcmSubscriberSystem::HandleMessage(const std::string& channel,
     std::lock_guard<std::mutex> lock(received_message_mutex_);
     received_message_.clear();
     received_message_.insert(received_message_.begin(), rbuf_begin, rbuf_end);
+
+    received_message_count_++;
+    received_message_condition_variable_.notify_all();
   } else {
     std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
               << "message for channel \"" << channel
               << "\" instead of channel \"" << channel_ << "\". Ignoring it."
               << std::endl;
-  }
-
-  // Wakes up one thread that's blocked on this.
-  if (notification_) {
-    notification_->notify();
   }
 }
 

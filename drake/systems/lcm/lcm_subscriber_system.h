@@ -1,5 +1,6 @@
 #pragma once
 
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -13,12 +14,13 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
-#include "drake/systems/lcm/semaphore.h"
 #include "drake/systems/lcm/serializer.h"
 
 namespace drake {
 namespace systems {
 namespace lcm {
+
+class LcmDrivenLoop;
 
 /**
  * Receives LCM messages from a given channel and outputs them to a
@@ -28,6 +30,8 @@ namespace lcm {
 class LcmSubscriberSystem : public LeafSystem<double>,
     public drake::lcm::DrakeLcmMessageHandlerInterface  {
  public:
+  friend LcmDrivenLoop;
+
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem)
 
   /**
@@ -115,14 +119,6 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
 
-  /**
-   * Sets the notification. Every time a message is handled by Lcm callback
-   * function, @p sem will be notified once.
-   */
-  void set_notification(Semaphore* sem) {
-    notification_ = sem;
-  }
-
  protected:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;
@@ -162,8 +158,11 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   // The bytes of the most recently received LCM message.
   std::vector<uint8_t> received_message_;
 
-  // If not null, notification_->notify() is called in HandleMessage().
-  Semaphore* notification_{nullptr};
+  // A message counter that's incremented every time the handler is called.
+  int received_message_count_{0};
+
+  // A condition variable that's signaled every time the handler is called.
+  std::condition_variable received_message_condition_variable_;
 };
 
 }  // namespace lcm
