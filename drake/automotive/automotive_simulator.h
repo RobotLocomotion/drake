@@ -11,7 +11,9 @@
 #include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
 #include "drake/automotive/dev/infinite_circuit_road.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
+#include "drake/automotive/gen/maliput_railcar_state.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput_railcar.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
@@ -112,6 +114,34 @@ class AutomotiveSimulator {
       const EndlessRoadCarState<T>& initial_state,
       typename EndlessRoadCar<T>::ControlType control_type,
       const std::string& channel_name);
+
+  /// Adds a MaliputRailcar to this simulation visualized as a Toyota Prius.
+  /// This includes its acceleration command LCM input.
+  ///
+  /// @pre Start() has NOT been called.
+  ///
+  /// @pre SetRoadGeometry() was called. Otherwise, a std::runtime_error will be
+  /// thrown.
+  ///
+  /// @param model_name If this is non-empty, the car's model will be labeled
+  /// with this name. It must be unique among all cars.
+  ///
+  /// @param channel_name  The MaliputRailcar will subscribe to an LCM channel
+  /// of this name to receive commands.  It must be non-empty.
+  ///
+  /// @param initial_lane_direction The MaliputRailcar's initial lane and
+  /// direction on the lane. The lane in this parameter must be part of the
+  /// maliput::api::RoadGeometry that is added via SetRoadGeometry(). Otherwise
+  /// a std::runtime_error will be thrown.
+  ///
+  /// @param initial_state The MaliputRailcar's initial state.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
+  int AddPriusMaliputRailCar(
+      const std::string& model_name,
+      const std::string& channel_name,
+      const LaneDirection& initial_lane_direction,
+      const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
 
   /// Sets the RoadGeometry for this simulation.
   ///
@@ -233,6 +263,12 @@ class AutomotiveSimulator {
   // Holds the desired initial states of each SimpleCar. It is used to
   // initialize the simulation's diagram's state.
   std::map<const SimpleCar<T>*, SimpleCarState<T>> simple_car_initial_states_;
+
+  // Holds the desired initial states of each MaliputRailcar. It is used to
+  // initialize the simulation's diagram's state.
+  std::map<const MaliputRailcar<T>*, MaliputRailcarState<T>>
+      railcar_initial_states_;
+
   // === End for building. ===
 
   // Adds the PoseAggregator.

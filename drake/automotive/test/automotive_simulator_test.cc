@@ -1,19 +1,26 @@
 #include "drake/automotive/automotive_simulator.h"
 
+#include <stdexcept>
+
 #include <gtest/gtest.h>
 
 #include "drake/automotive/curve2.h"
+#include "drake/automotive/maliput_railcar.h"
+#include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/prius_vis.h"
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcmt_simple_car_state_t.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 namespace drake {
 
+using systems::BasicVector;
 using systems::Context;
 
 namespace automotive {
@@ -285,6 +292,82 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
                   draw_message.quaternion.at(i + n).at(j), 1e-8);
     }
   }
+}
+
+// Covers AddMaliputRailcar().
+GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
+  const std::string kCommandChannelName = "RAILCAR_DRIVING_COMMAND";
+  const std::string driving_command_name =
+      systems::lcm::LcmSubscriberSystem::make_name(kCommandChannelName);
+
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+  lcm::DrakeMockLcm* lcm =
+      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
+  ASSERT_NE(lcm, nullptr);
+
+  EXPECT_THROW(simulator->AddPriusMaliputRailCar("foo", "bar", LaneDirection()),
+      std::runtime_error);
+
+  const maliput::api::RoadGeometry* road{};
+  EXPECT_NO_THROW(road = simulator->SetRoadGeometry(
+      std::make_unique<const maliput::dragway::RoadGeometry>(
+          maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
+          100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+
+  const int id = simulator->AddPriusMaliputRailCar("model_name",
+      kCommandChannelName,
+      LaneDirection(road->junction(0)->segment(0)->lane(0)),
+      MaliputRailcarState<double>() /* initial state */);
+  EXPECT_EQ(id, 0);
+
+  auto& command_subscriber = dynamic_cast<systems::lcm::LcmSubscriberSystem&>(
+      simulator->GetBuilderSystemByName(driving_command_name));
+
+  simulator->Start();
+
+  // Sets the commanded acceleration to be zero.
+  BasicVector<double> command(1);
+  command.SetAtIndex(0, 0);
+  std::vector<uint8_t> message_bytes;
+  command_subscriber.get_translator().Serialize(0.0 /* time */, command,
+      &message_bytes);
+  lcm->InduceSubscriberCallback(kCommandChannelName, &message_bytes[0],
+      message_bytes.size());
+
+  // Take two simulation steps to trigger the plublishing of an LCM draw
+  // message.
+  simulator->StepBy(0.005);
+  simulator->StepBy(0.005);
+
+  // Verifies that the vehicle hasn't moved yet. This is expected since the
+  // commanded acceleration is zero.
+  const lcmt_viewer_draw draw_message1 =
+      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  EXPECT_EQ(draw_message1.num_links, PriusVis<double>(0, "").num_poses());
+  EXPECT_EQ(draw_message1.link_name.at(0), "chassis_floor");
+  EXPECT_NEAR(draw_message1.position.at(0).at(0), PriusVis<double>::kVisOffset,
+      1e-4);  // This tolerance was determined empirically.
+
+  // Sets the commanded acceleration to be 10 m/s^2.
+  command.SetAtIndex(0, 10);
+  command_subscriber.get_translator().Serialize(0.0 /* time */, command,
+      &message_bytes);
+  lcm->InduceSubscriberCallback(kCommandChannelName, &message_bytes[0],
+      message_bytes.size());
+
+  // Advances the simulation to allow the MaliputRailcar to begin accelerating.
+  simulator->StepBy(0.005);
+  simulator->StepBy(0.005);
+
+  // Verifies that the MaliputRailcar has moved forward relative to prior to
+  // issuing a nonzero acceleration command.
+  const lcmt_viewer_draw draw_message2 =
+      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  EXPECT_EQ(draw_message2.num_links, PriusVis<double>(0, "").num_poses());
+  EXPECT_EQ(draw_message2.link_name.at(0), "chassis_floor");
+  EXPECT_LT(draw_message1.position.at(0).at(0),
+            draw_message2.position.at(0).at(0));
 }
 
 // Verifies that CarVisApplicator, PoseBundleToDrawMessage, and
