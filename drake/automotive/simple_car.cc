@@ -168,7 +168,8 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
 
   // Sanity check our input.
   DRAKE_DEMAND(abs(input.steering_angle()) < M_PI);
-  // TODO(jwnummer): Update DrivingCommand to a single value for throttle/brake (+/-).
+  // TODO(jwnummer): Update DrivingCommand to a single value for throttle/brake
+  // (+/-).
   /*
   DRAKE_DEMAND(input.throttle() >= 0);
   DRAKE_DEMAND(input.brake() >= 0);
@@ -179,15 +180,13 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
   const T desired_acceleration =
       params.max_acceleration() * (input.throttle() - input.brake());
   T smooth_acceleration =
-    calc_smooth_acceleration(
-        desired_acceleration, params.max_velocity(), params.velocity_limit_kp(),
-        state.velocity());
+      calc_smooth_acceleration(desired_acceleration, params.max_velocity(),
+                               params.velocity_limit_kp(), state.velocity());
 
   // Determine steering.
-  const T saturated_steering_angle = math::saturate(
-      input.steering_angle(),
-      -params.max_abs_steering_angle(),
-      params.max_abs_steering_angle());
+  const T saturated_steering_angle =
+      math::saturate(input.steering_angle(), -params.max_abs_steering_angle(),
+                     params.max_abs_steering_angle());
   const T curvature = tan(saturated_steering_angle) / params.wheelbase();
 
   // Don't allow small negative velocities to affect position or heading.
@@ -216,8 +215,8 @@ systems::BasicVector<T>* SimpleCar<T>::DoAllocateInputVector(
 }
 
 template <typename T>
-std::unique_ptr<systems::Parameters<T>>
-SimpleCar<T>::AllocateParameters() const {
+std::unique_ptr<systems::Parameters<T>> SimpleCar<T>::AllocateParameters()
+    const {
   auto params = std::make_unique<SimpleCarParams<T>>();
   return std::make_unique<systems::Parameters<T>>(std::move(params));
 }
