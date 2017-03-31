@@ -178,10 +178,9 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
       state.velocity());
 
   // Determine steering.
-  const T saturated_steering_angle = math::saturate(
-      input.steering_angle(),
-      -params.max_abs_steering_angle(),
-      params.max_abs_steering_angle());
+  const T saturated_steering_angle =
+      math::saturate(input.steering_angle(), -params.max_abs_steering_angle(),
+                     params.max_abs_steering_angle());
   const T curvature = tan(saturated_steering_angle) / params.wheelbase();
 
   // Don't allow small negative velocities to affect position or heading.
