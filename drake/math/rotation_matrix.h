@@ -290,12 +290,14 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
  * @param axis The axis of the rotation matrix. A unit length vector.
  * @param angle_lb The lower bound of the rotation angle.
  * @param angle_ub The upper bound of the rotation angle.
- * @return The projected rotation matrix.
+ * @return The rotation angle of the projected matrix.
  * @pre angle_lb >= -2π, angle_ub <= 2π. Throw std::runtime_error if these
  * bounds are violated.
  */
-template<typename Derived>
-Matrix3<typename Derived::Scalar> ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M, const Eigen::Ref<const Eigen::Vector3d>& axis, double angle_lb, double angle_ub) {
+template <typename Derived>
+double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
+                                  const Eigen::Ref<const Eigen::Vector3d>& axis,
+                                  double angle_lb, double angle_ub) {
   using Scalar = typename Derived::Scalar;
   if (M.rows() != 3 || M.cols() != 3) {
     throw std::runtime_error("The input matrix should be of size 3 x 3.");
@@ -310,24 +312,29 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMatWithAxis(const Eigen::Matrix
   A << 0, -a(2), a(1),
        a(2), 0, -a(0),
        -a(1), a(0), 0;
-  // clang-format on;
-  Scalar alpha = atan2(-(M.transpose() * A * A).trace(), (A.transpose() * M).trace());
+  // clang-format on
+  Scalar alpha =
+      atan2(-(M.transpose() * A * A).trace(), (A.transpose() * M).trace());
   Scalar theta;
   // The bounds on θ + α is [-4π, 4π].
-  if (angle_lb <= M_PI_2 - alpha && M_PI_2 - alpha <= angle_ub) {
-    theta = M_PI_2 - alpha;
-  } else if (angle_lb <= M_PI * 2.5 - alpha && M_PI * 2.5 - alpha <= angle_ub){
-    theta = M_PI * 2.5 - alpha;
-  } else if (angle_lb <= M_PI * -1.5 - alpha && M_PI * -1.5 - alpha <= angle_ub) {
-    theta = M_PI * -1.5 - alpha;
-  } else if (angle_lb <= M_PI * -3.5 - alpha && M_PI * -3.5 - alpha <= angle_ub) {
-    theta = M_PI * -3.5 - alpha;
-  } else if (sin(angle_lb + alpha) >= sin(angle_ub + alpha)) {
-    theta = angle_lb;
-  } else {
-    theta = angle_ub;
+  bool is_maximal_at_boundary = true;
+  for (int i = -2; i < 2; ++i) {
+    double max_sin_angle = M_PI * (0.5 + 2 * i);
+    if (angle_lb + alpha <= max_sin_angle &&
+        max_sin_angle <= angle_ub + alpha) {
+      theta = max_sin_angle - alpha;
+      is_maximal_at_boundary = false;
+      break;
+    }
   }
-  return Eigen::AngleAxis<Scalar>(theta, a).toRotationMatrix();
+  if (is_maximal_at_boundary) {
+    if (sin(angle_lb + alpha) >= sin(angle_ub + alpha)) {
+      theta = angle_lb;
+    } else {
+      theta = angle_ub;
+    }
+  }
+  return theta;
 }
 }  // namespace math
 }  // namespace drake
