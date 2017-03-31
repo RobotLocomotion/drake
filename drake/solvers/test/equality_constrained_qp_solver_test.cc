@@ -41,6 +41,9 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   auto x_value = prog.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
                               MatrixCompareType::absolute));
+  double expected_optimal_cost = 0.;
+  auto actual_optimal_cost = prog.GetOptimalCost();
+  EXPECT_NEAR(expected_optimal_cost, actual_optimal_cost, 1e-10);
 // There are no inequality constraints, and only quadratic costs,
 // so this should hold:
   CheckSolver(prog, SolverType::kEqualityConstrainedQP);
@@ -66,6 +69,9 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
                               MatrixCompareType::absolute))
             << "\tExpected: " << expected_answer.transpose()
             << "\tActual: " << actual_answer.transpose();
+  expected_optimal_cost = 0;
+  actual_optimal_cost = prog.GetOptimalCost();
+  EXPECT_NEAR(expected_optimal_cost, actual_optimal_cost, 1e-10);
 
   // Problem still has only quadratic costs, so solver should be the same.
   CheckSolver(prog, SolverType::kEqualityConstrainedQP);
@@ -101,6 +107,9 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   auto x_value = prog.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
                               MatrixCompareType::absolute));
+  double expected_optimal_cost = -0.25;
+  double actual_optimal_cost = prog.GetOptimalCost();
+  EXPECT_NEAR(expected_optimal_cost, actual_optimal_cost, 1e-10);
 
   // This problem is now an Equality Constrained QP and should
   // use this solver:
@@ -129,6 +138,9 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
                               MatrixCompareType::absolute))
             << "\tExpected: " << expected_answer.transpose()
             << "\tActual: " << actual_answer.transpose();
+  expected_optimal_cost = -0.25;
+  actual_optimal_cost = prog.GetOptimalCost();
+  EXPECT_NEAR(expected_optimal_cost, actual_optimal_cost, 1e-10);
 }
 }  // namespace test
 }  // namespace solvers

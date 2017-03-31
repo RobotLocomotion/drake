@@ -27,6 +27,9 @@ enum class ConstraintForm {
   kFormula = 3,
 };
 
+double evaluate_cost(const MathematicalProgram& prog,
+                     const detail::VecIn<double> &x);
+
 class OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptimizationProgram)
