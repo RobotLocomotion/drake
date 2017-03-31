@@ -177,10 +177,9 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
       state.velocity());
 
   // Determine steering.
-  const T saturated_steering_angle = math::saturate(
-      input.steering_angle(),
-      -params.max_abs_steering_angle(),
-      params.max_abs_steering_angle());
+  const T saturated_steering_angle =
+      math::saturate(input.steering_angle(), -params.max_abs_steering_angle(),
+                     params.max_abs_steering_angle());
   const T curvature = tan(saturated_steering_angle) / params.wheelbase();
 
   // Don't allow small negative velocities to affect position or heading.
@@ -209,8 +208,8 @@ systems::BasicVector<T>* SimpleCar<T>::DoAllocateInputVector(
 }
 
 template <typename T>
-std::unique_ptr<systems::Parameters<T>>
-SimpleCar<T>::AllocateParameters() const {
+std::unique_ptr<systems::Parameters<T>> SimpleCar<T>::AllocateParameters()
+    const {
   auto params = std::make_unique<SimpleCarParams<T>>();
   return std::make_unique<systems::Parameters<T>>(std::move(params));
 }

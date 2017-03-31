@@ -73,10 +73,10 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   Eigen::MatrixXd states;
   std::vector<double> times_out;
   prog.GetResultSamples(&inputs, &states, &times_out);
-  lcm::LcmCallMatlab("plot",states.row(SimpleCarStateIndices::kX),states.row(SimpleCarStateIndices::kY));
-  lcm::LcmCallMatlab("xlabel","x (m)");
-  lcm::LcmCallMatlab("ylabel","y (m)");
-
+  lcm::LcmCallMatlab("plot", states.row(SimpleCarStateIndices::kX),
+                     states.row(SimpleCarStateIndices::kY));
+  lcm::LcmCallMatlab("xlabel", "x (m)");
+  lcm::LcmCallMatlab("ylabel", "y (m)");
 }
 
 }  // namespace
