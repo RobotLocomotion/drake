@@ -226,6 +226,14 @@ TEST_F(SymbolicExpansionTest, IfThenElse) {
                runtime_error);
 }
 
+// Expand() should not change uninterpreted functions.
+TEST_F(SymbolicExpansionTest, UninterpretedFunction) {
+  const Expression uf1{uninterpreted_function("uf1", {})};
+  const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
+  EXPECT_PRED2(ExprEqual, uf1, uf1.Expand());
+  EXPECT_PRED2(ExprEqual, uf2, uf2.Expand());
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

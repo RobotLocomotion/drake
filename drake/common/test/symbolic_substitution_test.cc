@@ -374,6 +374,34 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaSubstitution) {
   }
 }
 
+TEST_F(SymbolicSubstitutionTest, UninterpretedFunction) {
+  const Expression uf1{uninterpreted_function("uf1", {})};
+  const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
+  const Substitution s1{{var_x_, 1.0}, {var_y_, x_ + y_}};
+  const Substitution s2{{var_x_, y_}, {var_y_, z_}};
+  const Substitution s3{{var_x_, 3.0}, {var_y_, 4.0}};
+
+  // uf1 has no variables inside and substitution has no effect as a result.
+  EXPECT_PRED2(ExprEqual, uf1.Substitute(s1), uf1);
+  EXPECT_PRED2(ExprEqual, uf1.Substitute(s2), uf1);
+  EXPECT_PRED2(ExprEqual, uf1.Substitute(s3), uf1);
+
+  //   s1[x].GetVariables() ∪ s1[y].GetVariables()
+  // = (1.0).GetVariables() ∪ (x + y).GetVariables()
+  // = ∅ ∪ {x, y} = {x, y}.
+  EXPECT_PRED2(ExprEqual, uf2.Substitute(s1), uf2);
+
+  //   s2[x].GetVariables() ∪ s2[y].GetVariables()
+  // = {y} ∪ {z} = {y, z}.
+  EXPECT_PRED2(ExprEqual, uf2.Substitute(s2),
+               uninterpreted_function("uf2", {var_y_, var_z_}));
+
+  //   s3[x].GetVariables() ∪ s3[y].GetVariables()
+  // = ∅ ∪ ∅ = ∅.
+  EXPECT_PRED2(ExprEqual, uf2.Substitute(s3),
+               uninterpreted_function("uf2", {}));
+}
+
 class ForallFormulaSubstitutionTest : public SymbolicSubstitutionTest {
  protected:
   const Expression e_{x_ + y_ + z_};
@@ -432,7 +460,8 @@ TEST_F(ForallFormulaSubstitutionTest, VarExpr1) {
       const Variable& var{s.first};
       const Expression& e{s.second};
       EXPECT_TRUE(vars.include(var));
-      // var is a quantified variable, so Substitute doesn't change anything.
+      // var is a quantified variable, so Substitute doesn't change
+      // anything.
       EXPECT_PRED2(FormulaEqual, f, f.Substitute(var, e));
     }
   }
@@ -457,8 +486,8 @@ TEST_F(ForallFormulaSubstitutionTest, VarExpr2) {
       const Expression& e{s.second};
       EXPECT_FALSE(vars.include(var));
 
-      // var is not a quantified variable, so the substitution goes inside of
-      // the quantifier block. As a result, the following holds:
+      // var is not a quantified variable, so the substitution goes inside
+      // of the quantifier block. As a result, the following holds:
       //
       //     forall({v_1, ..., v_n}, f).subst(var, e)   -- (1)
       //   = forall({v_1, ..., v_n}, f.subst(var, e))   -- (2)
@@ -467,8 +496,8 @@ TEST_F(ForallFormulaSubstitutionTest, VarExpr2) {
       try {
         f1 = {f.Substitute(var, e)};
       } catch (const exception&) {
-        // If (1) throws an exception, then (2) should throws an exception as
-        // well.
+        // If (1) throws an exception, then (2) should throws an exception
+        // as well.
         EXPECT_ANY_THROW(forall(vars, nested_f.Substitute(var, e)));
         continue;
       }
@@ -515,8 +544,8 @@ TEST_F(ForallFormulaSubstitutionTest, VarExprSubstitution) {
       try {
         f1 = {f.Substitute(s)};
       } catch (const exception&) {
-        // If (1) throws an exception, then (2) should throws an exception as
-        // well.
+        // If (1) throws an exception, then (2) should throws an exception
+        // as well.
         EXPECT_ANY_THROW(forall(vars, nested_f.Substitute(s_minus_vars)));
         continue;
       }
