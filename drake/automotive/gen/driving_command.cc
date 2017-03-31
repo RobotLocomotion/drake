@@ -8,8 +8,7 @@ namespace automotive {
 
 const int DrivingCommandIndices::kNumCoordinates;
 const int DrivingCommandIndices::kSteeringAngle;
-const int DrivingCommandIndices::kThrottle;
-const int DrivingCommandIndices::kBrake;
+const int DrivingCommandIndices::kAcceleration;
 
 }  // namespace automotive
 }  // namespace drake

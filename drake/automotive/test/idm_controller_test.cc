@@ -103,7 +103,7 @@ TEST_F(IdmControllerTest, Topology) {
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& output_descriptor = dut_->get_output_port(0);
   EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
-  EXPECT_EQ(3 /* DrivingCommand output */, output_descriptor.size());
+  EXPECT_EQ(2 /* DrivingCommand output */, output_descriptor.size());
 }
 
 TEST_F(IdmControllerTest, Output) {
@@ -115,11 +115,10 @@ TEST_F(IdmControllerTest, Output) {
   // Set the lead car to be immediately ahead of the ego car and moving slower.
   SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_sdot */);
   dut_->CalcOutput(*context_, output_.get());
-  const double closing_brake = command->brake();
+  const double closing_accel = command->acceleration();  // A negative number.
 
-  // Expect the car to brake in this configuration, and therefore zero throttle.
-  EXPECT_EQ(0., command->throttle());
-  EXPECT_LT(0., closing_brake);
+  // Expect the car to decelerate in this configuration.
+  EXPECT_GT(0., closing_accel);
   EXPECT_EQ(0., command->steering_angle());  // Always zero.
 
   // Set the same conditions as above, but with the lead car having a nonzero
@@ -129,43 +128,38 @@ TEST_F(IdmControllerTest, Output) {
   dut_->CalcOutput(*context_, output_.get());
 
   // Expect no change to the previous results.
-  EXPECT_EQ(0., command->throttle());
-  EXPECT_EQ(closing_brake, command->brake());
+  EXPECT_EQ(closing_accel, command->acceleration());
 
   // Set the lead car to be immediately ahead of the ego car and moving faster.
   SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, 5. /* rel_sdot */);
   dut_->CalcOutput(*context_, output_.get());
 
-  // Expect the magnitude of the braking to be smaller when the ego is not
+  // Expect the magnitude of the deceleration to be smaller when the ego is not
   // closing in on the lead car.
-  EXPECT_LT(command->brake(), closing_brake);
+  EXPECT_GT(command->acceleration(), closing_accel);
 
   // Set the ego car to be alone on the road.  We effectively enable this by
   // setting the poses of all traffic cars to be that of the ego car.
   SetDefaultPoses(10. /* ego_speed */);
   dut_->CalcOutput(*context_, output_.get());
 
-  // Expect no braking or throttling (input velocity is at the desired
-  // velocity).
-  EXPECT_EQ(0., command->throttle());
-  EXPECT_NEAR(0., command->brake(), 1e-4);
+  // Expect zero acceleration (input velocity is at the desired velocity).
+  EXPECT_NEAR(0., command->acceleration(), 1e-4);
 
   // Set the lead car well ahead of the ego, with the ego moving slower than the
   // desired velocity.
   SetDefaultPoses(4. /* ego_speed */, 30. /* s_offset */, 0. /* rel_sdot */);
   dut_->CalcOutput(*context_, output_.get());
 
-  // Expect a throttle input in this configuration (no brake).
-  EXPECT_LT(0., command->throttle());
-  EXPECT_EQ(0., command->brake());
+  // Expect a positive acceleration in this configuration.
+  EXPECT_LT(0., command->acceleration());
 
   // Set the lead car to be well within `distance_lower_limit`.
   SetDefaultPoses(10. /* ego_speed */, 1e-3 /* s_offset */, -5. /* rel_sdot */);
   dut_->CalcOutput(*context_, output_.get());
 
-  // Expect an enormous brake input.
-  EXPECT_EQ(0., command->throttle());
-  EXPECT_LT(closing_brake, command->brake());
+  // Expect an enormous deceleration.
+  EXPECT_GT(closing_accel, command->acceleration());
 }
 
 }  // namespace
