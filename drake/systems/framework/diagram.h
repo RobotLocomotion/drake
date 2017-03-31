@@ -312,6 +312,14 @@ class Diagram : public System<T>,
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
 
+  void DoInitializeContext(Context<T>* context) const override {
+    // Evaluate the derivatives of each constituent system.
+    for (const System<T>* const system : sorted_systems_) {
+      system->InitializeContext(
+          this->GetMutableSubsystemContext(context, system));
+    }
+  }
+
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override {
     // Down-cast the context and output to DiagramContext and DiagramOutput.
