@@ -683,6 +683,12 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
           if (rescode == MSK_RES_OK) {
             prog.SetDecisionVariableValues(sol_vector);
           }
+          MSKrealt optimal_cost;
+          rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
+          DRAKE_ASSERT(rescode == MSK_RES_OK);
+          if (rescode == MSK_RES_OK) {
+            prog.SetOptimalCost(optimal_cost);
+          }
           break;
         }
         case MSK_SOL_STA_DUAL_INFEAS_CER:

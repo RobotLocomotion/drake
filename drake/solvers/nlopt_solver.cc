@@ -374,8 +374,9 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
 
   SolutionResult result = SolutionResult::kSolutionFound;
   nlopt::result nlopt_result = nlopt::FAILURE;
+
+  double minf = 0;
   try {
-    double minf = 0;
     nlopt_result = opt.optimize(x, minf);
   } catch (std::invalid_argument&) {
     result = SolutionResult::kInvalidInput;
@@ -395,6 +396,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   }
 
   prog.SetDecisionVariableValues(sol);
+  prog.SetOptimalCost(minf);
   prog.SetSolverResult(solver_type(), nlopt_result);
   return result;
 }

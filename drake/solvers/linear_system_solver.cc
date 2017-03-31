@@ -46,6 +46,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   // least-squares solution
   prog.SetDecisionVariableValues(
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
+  prog.SetOptimalCost(0.);
 
   prog.SetSolverResult(solver_type(), 0);
   return SolutionResult::kSolutionFound;

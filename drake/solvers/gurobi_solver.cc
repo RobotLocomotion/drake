@@ -636,6 +636,11 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
         }
       }
       prog.SetDecisionVariableValues(prog_sol_vector);
+
+      // Obtain optimal cost
+      double optimal_cost = std::numeric_limits<double>::quiet_NaN();
+      GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &optimal_cost);
+      prog.SetOptimalCost(optimal_cost);
     }
   }
 
