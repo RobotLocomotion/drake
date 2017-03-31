@@ -130,13 +130,14 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression e_min_{min(x_, y_)};
   const Expression e_max_{max(x_, y_)};
   const Expression e_ite_{if_then_else(x_ < y_, x_, y_)};
+  const Expression e_nan_{Expression::NaN()};
+  const Expression e_uf_{uninterpreted_function("uf", {var_x_, var_y_})};
 
   const vector<Expression> collection_{
-      e_constant_, e_var_,  e_add_,   e_neg_,  e_mul_,
-      e_div_,      e_log_,  e_abs_,   e_exp_,  e_sqrt_,
-      e_pow_,      e_sin_,  e_cos_,   e_tan_,  e_asin_,
-      e_acos_,     e_atan_, e_atan2_, e_sinh_, e_cosh_,
-      e_tanh_,     e_min_,  e_max_,   e_ite_,  Expression::NaN()};
+      e_constant_, e_var_,  e_add_,  e_neg_,   e_mul_,  e_div_,  e_log_,
+      e_abs_,      e_exp_,  e_sqrt_, e_pow_,   e_sin_,  e_cos_,  e_tan_,
+      e_asin_,     e_acos_, e_atan_, e_atan2_, e_sinh_, e_cosh_, e_tanh_,
+      e_min_,      e_max_,  e_ite_,  e_nan_,   e_uf_};
 };
 
 TEST_F(SymbolicExpressionTest, Dummy) {
@@ -355,6 +356,22 @@ TEST_F(SymbolicExpressionTest, IsIfThenElse) {
   EXPECT_EQ(cnt, 1);
 }
 
+TEST_F(SymbolicExpressionTest, IsNaN) {
+  EXPECT_TRUE(is_nan(e_nan_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_nan(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsUninterpretedFunction) {
+  EXPECT_TRUE(is_uninterpreted_function(e_uf_));
+  const vector<Expression>::difference_type cnt{count_if(
+      collection_.begin(), collection_.end(),
+      [](const Expression& e) { return is_uninterpreted_function(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
 TEST_F(SymbolicExpressionTest, GetConstantValue) {
   EXPECT_EQ(get_constant_value(c1_), -10.0);
   EXPECT_EQ(get_constant_value(c2_), 1.0);
@@ -432,31 +449,16 @@ TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
 }
 
 TEST_F(SymbolicExpressionTest, IsPolynomial) {
-  const vector<pair<Expression, bool>> test_vec{{e_constant_, true},
-                                                {e_var_, true},
-                                                {e_neg_, true},
-                                                {e_add_, true},
-                                                {e_mul_, true},
-                                                {e_div_, false},
-                                                {e_log_, false},
-                                                {e_abs_, false},
-                                                {e_exp_, false},
-                                                {e_sqrt_, false},
-                                                {e_pow_, false},
-                                                {e_sin_, false},
-                                                {e_cos_, false},
-                                                {e_tan_, false},
-                                                {e_asin_, false},
-                                                {e_acos_, false},
-                                                {e_atan_, false},
-                                                {e_atan2_, false},
-                                                {e_sinh_, false},
-                                                {e_cosh_, false},
-                                                {e_tanh_, false},
-                                                {e_min_, false},
-                                                {e_max_, false},
-                                                {e_ite_, false},
-                                                {Expression::NaN(), false}};
+  const vector<pair<Expression, bool>> test_vec{
+      {e_constant_, true}, {e_var_, true},   {e_neg_, true},
+      {e_add_, true},      {e_mul_, true},   {e_div_, false},
+      {e_log_, false},     {e_abs_, false},  {e_exp_, false},
+      {e_sqrt_, false},    {e_pow_, false},  {e_sin_, false},
+      {e_cos_, false},     {e_tan_, false},  {e_asin_, false},
+      {e_acos_, false},    {e_atan_, false}, {e_atan2_, false},
+      {e_sinh_, false},    {e_cosh_, false}, {e_tanh_, false},
+      {e_min_, false},     {e_max_, false},  {e_ite_, false},
+      {e_nan_, false},     {e_uf_, false}};
   for (const pair<Expression, bool>& p : test_vec) {
     EXPECT_EQ(p.first.is_polynomial(), p.second);
   }
@@ -539,9 +541,9 @@ TEST_F(SymbolicExpressionTest, ToPolynomial1) {
 
 TEST_F(SymbolicExpressionTest, ToPolynomial2) {
   const vector<Expression> test_vec{
-      e_log_,  e_abs_,  e_exp_,  e_sqrt_, e_sin_,   e_cos_,
-      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_, e_sinh_,
-      e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_,   Expression::NaN()};
+      e_log_,  e_abs_,  e_exp_,  e_sqrt_,           e_sin_,  e_cos_,  e_tan_,
+      e_asin_, e_acos_, e_atan_, e_atan2_,          e_sinh_, e_cosh_, e_tanh_,
+      e_min_,  e_max_,  e_ite_,  Expression::NaN(), e_uf_};
   for (const Expression& e : test_vec) {
     EXPECT_FALSE(e.is_polynomial());
     EXPECT_THROW(e.ToPolynomial(), runtime_error);
@@ -549,11 +551,11 @@ TEST_F(SymbolicExpressionTest, ToPolynomial2) {
 }
 
 TEST_F(SymbolicExpressionTest, LessKind) {
-  CheckOrdering({e_constant_, e_var_,  e_add_,   e_neg_,  e_mul_,
-                 e_div_,      e_log_,  e_abs_,   e_exp_,  e_sqrt_,
-                 e_pow_,      e_sin_,  e_cos_,   e_tan_,  e_asin_,
-                 e_acos_,     e_atan_, e_atan2_, e_sinh_, e_cosh_,
-                 e_tanh_,     e_min_,  e_max_,   e_ite_,  Expression::NaN()});
+  CheckOrdering({e_constant_, e_var_,  e_add_,  e_neg_,  e_mul_,  e_div_,
+                 e_log_,      e_abs_,  e_exp_,  e_sqrt_, e_pow_,  e_sin_,
+                 e_cos_,      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_,
+                 e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_,
+                 e_nan_,      e_uf_});
 }
 
 TEST_F(SymbolicExpressionTest, LessConstant) { CheckOrdering({c1_, c2_, c3_}); }
@@ -745,6 +747,14 @@ TEST_F(SymbolicExpressionTest, LessIfThenElse) {
   const Expression ite4{if_then_else(f2, y_, z_)};
   const Expression ite5{if_then_else(f2, z_, x_)};
   CheckOrdering({ite1, ite2, ite3, ite4, ite5});
+}
+
+TEST_F(SymbolicExpressionTest, LessUninterpretedFunction) {
+  const Expression uf1_1{uninterpreted_function("uf1", {var_x_, var_y_})};
+  const Expression uf1_2{uninterpreted_function("uf1", {var_x_, var_z_})};
+  const Expression uf2_1{uninterpreted_function("uf2", {var_x_, var_z_})};
+  const Expression uf2_2{uninterpreted_function("uf2", {var_z_})};
+  CheckOrdering({uf1_1, uf1_2, uf2_1, uf2_2});
 }
 
 TEST_F(SymbolicExpressionTest, Variable) {
@@ -1683,6 +1693,26 @@ TEST_F(SymbolicExpressionTest, Cond2) {
   EXPECT_EQ(e.Evaluate({{var_x_, 1}}), 0.0);
 }
 
+TEST_F(SymbolicExpressionTest, UninterpretedFunction_GetVariables_GetName) {
+  const Expression uf1{uninterpreted_function("uf1", {})};
+  EXPECT_TRUE(uf1.GetVariables().empty());
+  EXPECT_EQ(get_uninterpreted_function_name(uf1), "uf1");
+
+  const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
+  EXPECT_EQ(get_uninterpreted_function_name(uf2), "uf2");
+  const Variables vars_in_uf2{uf2.GetVariables()};
+  EXPECT_EQ(vars_in_uf2.size(), 2);
+  EXPECT_TRUE(vars_in_uf2.include(var_x_));
+  EXPECT_TRUE(vars_in_uf2.include(var_y_));
+}
+
+TEST_F(SymbolicExpressionTest, UninterpretedFunction_Evaluate) {
+  const Expression uf1{uninterpreted_function("uf1", {})};
+  const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
+  EXPECT_THROW(uf1.Evaluate(), std::runtime_error);
+  EXPECT_THROW(uf2.Evaluate(), std::runtime_error);
+}
+
 TEST_F(SymbolicExpressionTest, GetVariables) {
   const Variables vars1{(x_ + y_ * log(x_ + y_)).GetVariables()};
   EXPECT_TRUE(vars1.include(var_x_));
@@ -1722,6 +1752,7 @@ TEST_F(SymbolicExpressionTest, ToString) {
 
   EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
   EXPECT_EQ(e2.to_string(), "cos(((pow(y, 2) * z) + pow(x, 2)))");
+  EXPECT_EQ(e_uf_.to_string(), "uf({x, y})");
 }
 
 }  // namespace
