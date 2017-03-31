@@ -91,7 +91,7 @@ void controller_loop() {
 
   // Makes a Lcm driven loop that's blocked by robot_state_subscriber.
   systems::lcm::LcmDrivenLoop loop(
-      *diagram, nullptr, &lcm, &robot_state_subscriber,
+      *diagram, robot_state_subscriber, nullptr, &lcm,
       std::make_unique<
           systems::lcm::UtimeMessageToSeconds<bot_core::robot_state_t>>());
 

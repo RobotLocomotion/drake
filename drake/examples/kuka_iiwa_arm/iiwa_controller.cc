@@ -77,7 +77,7 @@ int DoMain() {
   drake::log()->info("controller started");
 
   systems::lcm::LcmDrivenLoop loop(
-      *diagram, nullptr, &lcm, status_sub,
+      *diagram, *status_sub, nullptr, &lcm,
       std::make_unique<
           systems::lcm::UtimeMessageToSeconds<lcmt_iiwa_status>>());
 

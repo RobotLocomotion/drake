@@ -55,8 +55,7 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * This class uses the Simulator class internally for event handling
  * (kPublishAction, kDiscreteUpdateAction, kUnrestrictedUpdateAction) and
  * state "integration" (e.g. I term in a PID). The user needs to be mindful of
- * how
- * their system is configured, especially about event timing since time is
+ * their system's configuration especially about event timing, since time is
  * slaved to some outside source.
  *
  * The main message handling loop is roughly:
@@ -79,7 +78,7 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * 3. The computation for the given system should be faster than the incoming
  * message rate.
  *
- * Subtle things about lcm subscribers:
+ * TODO(siyuan): Fix this:
  * LcmSubscriberSystem's output is not guaranteed to be the same given the same
  * context. E.g. if a Lcm messages comes in between two calls to CalcOutput, the
  * second call would return the new message while the "state" in the context
@@ -87,20 +86,24 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  */
 class LcmDrivenLoop {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmDrivenLoop)
+
   /**
    * Constructor.
-   * @param system Const reference to the handler system.
+   * @param system Const reference to the handler system. Its life span must be
+   * longer than this.
+   * @param driving_subscriber Const reference to the driving subscriber. Its
+   * life span must be longer than this.
    * @param context Unique pointer to a context allocated for @p system.
-   * @param lcm Pointer to Lcm interface. Cannot be nullptr.
-   * @param driving_subscriber Pointer to the driving subscriber. Cannot be
-   * nullptr.
+   * @param lcm Pointer to Lcm interface. Cannot be nullptr. Its life span must
+   * be longer than this.
    * @param time_converter Unique pointer to a converter that extracts time in
    * seconds from the driving message time. Cannot be nullptr.
    */
   LcmDrivenLoop(const System<double>& system,
+                const LcmSubscriberSystem& driving_subscriber,
                 std::unique_ptr<Context<double>> context,
                 drake::lcm::DrakeLcm* lcm,
-                LcmSubscriberSystem* driving_subscriber,
                 std::unique_ptr<LcmMessageToTimeInterface> time_converter);
 
   /**
@@ -112,7 +115,7 @@ class LcmDrivenLoop {
   /**
    * Starts the main loop assuming that the context (e.g. state and time) has
    * already been properly initialized by the caller. This version is useful
-   * if the underly System needs custom initialization depending on the first
+   * if the underlying System needs custom initialization depending on the first
    * received Lcm message.
    */
   void RunAssumingInitializedTo(
@@ -169,6 +172,9 @@ class LcmDrivenLoop {
   // The system that does stuff.
   const System<double>& system_;
 
+  // THE message subscriber.
+  const LcmSubscriberSystem& driving_sub_;
+
   // The lcm interface for publishing and subscribing.
   drake::lcm::DrakeLcm* lcm_;
 
@@ -177,9 +183,6 @@ class LcmDrivenLoop {
 
   // If true, explicitly calls system_.Publish() after every step in the loop.
   bool publish_on_every_received_message_{true};
-
-  // THE message subscriber.
-  LcmSubscriberSystem* driving_sub_;
 
   // Reusing the simulator to manage event handling and state progression.
   std::unique_ptr<Simulator<double>> stepper_;

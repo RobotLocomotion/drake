@@ -145,6 +145,16 @@ void LcmSubscriberSystem::HandleMessage(const std::string& channel,
   }
 }
 
+int LcmSubscriberSystem::WaitForMessage(int old_message_count) const {
+  std::unique_lock<std::mutex> lock(received_message_mutex_);
+  while (old_message_count == received_message_count_)
+    received_message_condition_variable_.wait(lock);
+  int new_message_count = received_message_count_;
+  lock.unlock();
+
+  return new_message_count;
+}
+
 const LcmAndVectorBaseTranslator& LcmSubscriberSystem::get_translator() const {
   DRAKE_DEMAND(translator_ != nullptr);
   return *translator_;

@@ -86,7 +86,7 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   auto msg_to_time = std::make_unique<MilliSecTimeStampMessageToSeconds>();
 
   // Makes the lcm driven loop.
-  lcm::LcmDrivenLoop dut(*sys, nullptr, &lcm, sub, std::move(msg_to_time));
+  lcm::LcmDrivenLoop dut(*sys, *sub, nullptr, &lcm, std::move(msg_to_time));
 
   // Starts the publishing thread, this will first sleep for long enough so that
   // dut can go sleep first.

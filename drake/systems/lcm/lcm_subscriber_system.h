@@ -20,8 +20,6 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-class LcmDrivenLoop;
-
 /**
  * Receives LCM messages from a given channel and outputs them to a
  * System<double>'s port. The output port value is the most recently
@@ -30,8 +28,6 @@ class LcmDrivenLoop;
 class LcmSubscriberSystem : public LeafSystem<double>,
     public drake::lcm::DrakeLcmMessageHandlerInterface  {
  public:
-  friend LcmDrivenLoop;
-
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem)
 
   /**
@@ -119,6 +115,12 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
 
+  /**
+   * Blocks the caller until @p old_message_count is different from the
+   * internal message counter, and the internal message counter is returned.
+   */
+  int WaitForMessage(int old_message_count) const;
+
  protected:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;
@@ -162,7 +164,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   int received_message_count_{0};
 
   // A condition variable that's signaled every time the handler is called.
-  std::condition_variable received_message_condition_variable_;
+  mutable std::condition_variable received_message_condition_variable_;
 };
 
 }  // namespace lcm

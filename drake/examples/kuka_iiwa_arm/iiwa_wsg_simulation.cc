@@ -18,6 +18,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
+#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
@@ -185,7 +186,7 @@ int DoMain() {
   auto wsg_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
-  wsg_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
+  wsg_status_pub->set_publish_period(schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
       model->get_wsg_state_port().size(), 0, 1);
