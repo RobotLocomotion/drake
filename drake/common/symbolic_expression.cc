@@ -688,6 +688,10 @@ Expression if_then_else(const Formula& f_cond, const Expression& e_then,
   return Expression{make_shared<ExpressionIfThenElse>(f_cond, e_then, e_else)};
 }
 
+Expression uninterpreted_function(const string& name, const Variables& vars) {
+  return Expression{make_shared<ExpressionUninterpretedFunction>(name, vars)};
+}
+
 bool is_constant(const Expression& e) { return is_constant(*e.ptr_); }
 bool is_constant(const Expression& e, const double v) {
   return is_constant(e) && (to_constant(e)->get_value() == v);
@@ -721,6 +725,9 @@ bool is_tanh(const Expression& e) { return is_tanh(*e.ptr_); }
 bool is_min(const Expression& e) { return is_min(*e.ptr_); }
 bool is_max(const Expression& e) { return is_max(*e.ptr_); }
 bool is_if_then_else(const Expression& e) { return is_if_then_else(*e.ptr_); }
+bool is_uninterpreted_function(const Expression& e) {
+  return is_uninterpreted_function(*e.ptr_);
+}
 
 double get_constant_value(const Expression& e) {
   return to_constant(e)->get_value();

@@ -729,6 +729,31 @@ class ExpressionIfThenElse : public ExpressionCell {
   const Expression e_else_;
 };
 
+/** Symbolic expression representing an uninterpreted function. */
+class ExpressionUninterpretedFunction : public ExpressionCell {
+ public:
+  /** Constructs an uninterpreted-function expression from @p name and @p vars.
+   */
+  ExpressionUninterpretedFunction(const std::string& name,
+                                  const Variables& vars);
+  Variables GetVariables() const override;
+  bool EqualTo(const ExpressionCell& e) const override;
+  bool Less(const ExpressionCell& e) const override;
+  Polynomial<double> ToPolynomial() const override;
+  double Evaluate(const Environment& env) const override;
+  Expression Expand() const override;
+  Expression Substitute(const Substitution& s) const override;
+  Expression Differentiate(const Variable& x) const override;
+  std::ostream& Display(std::ostream& os) const override;
+
+  /** Returns the name of this expression. */
+  const std::string& get_name() const { return name_; }
+
+ private:
+  const std::string name_;
+  const Variables variables_;
+};
+
 /** Checks if @p c is a constant expression. */
 bool is_constant(const ExpressionCell& c);
 /** Checks if @p c is a variable expression. */
@@ -775,6 +800,8 @@ bool is_min(const ExpressionCell& c);
 bool is_max(const ExpressionCell& c);
 /** Checks if @p c is an if-then-else expression. */
 bool is_if_then_else(const ExpressionCell& c);
+/** Checks if @p c is an uninterpreted-function expression. */
+bool is_uninterpreted_function(const ExpressionCell& c);
 
 /** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
  *  @c shared_ptr<ExpressionConstant>.
@@ -1061,6 +1088,18 @@ std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
  *  \pre{@c *(e.ptr_) is of @c ExpressionIfThenElse.}
  */
 std::shared_ptr<ExpressionIfThenElse> to_if_then_else(const Expression& e);
+
+/** Casts @p expr_ptr of shared_ptr<ExpressionCell> to
+ *  @c shared_ptr<ExpressionUninterpretedFunction>.
+ *  \pre{@c *expr_ptr is of @c ExpressionUninterpretedFunction.}
+ */
+std::shared_ptr<ExpressionUninterpretedFunction> to_uninterpreted_function(
+    const std::shared_ptr<ExpressionCell> expr_ptr);
+/** Casts @p e of Expression to @c shared_ptr<ExpressionUninterpretedFunction>.
+ *  \pre{@c *(e.ptr_) is of @c ExpressionUninterpretedFunction.}
+ */
+std::shared_ptr<ExpressionUninterpretedFunction> to_uninterpreted_function(
+    const Expression& e);
 
 }  // namespace symbolic
 }  // namespace drake

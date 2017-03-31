@@ -11,6 +11,7 @@
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -41,6 +42,7 @@ using std::runtime_error;
 using std::setprecision;
 using std::shared_ptr;
 using std::static_pointer_cast;
+using std::string;
 
 namespace {
 bool is_integer(const double v) {
@@ -664,8 +666,9 @@ void ExpressionAddFactory::AddMap(
 ExpressionMul::ExpressionMul(
     const double constant,
     const map<Expression, Expression>& base_to_exponent_map)
-    : ExpressionCell{ExpressionKind::Mul, hash_combine(hash<double>{}(constant),
-                                                       base_to_exponent_map),
+    : ExpressionCell{ExpressionKind::Mul,
+                     hash_combine(hash<double>{}(constant),
+                                  base_to_exponent_map),
                      determine_polynomial(base_to_exponent_map)},
       constant_(constant),
       base_to_exponent_map_(base_to_exponent_map) {
@@ -734,8 +737,9 @@ Polynomial<double> ExpressionMul::ToPolynomial() const {
   DRAKE_ASSERT(is_polynomial());
   return accumulate(
       base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
-      Polynomial<double>{constant_}, [](const Polynomial<double>& polynomial,
-                                        const pair<Expression, Expression>& p) {
+      Polynomial<double>{constant_},
+      [](const Polynomial<double>& polynomial,
+         const pair<Expression, Expression>& p) {
         const Expression& base{p.first};
         const Expression& exponent{p.second};
         DRAKE_ASSERT(base.is_polynomial());
@@ -1629,6 +1633,93 @@ ostream& ExpressionIfThenElse::Display(ostream& os) const {
             << ")";
 }
 
+// ExpressionUninterpretedFunction
+// --------------------
+ExpressionUninterpretedFunction::ExpressionUninterpretedFunction(
+    const string& name, const Variables& vars)
+    : ExpressionCell{ExpressionKind::UninterpretedFunction,
+                     hash_combine(hash_value<string>{}(name), vars), false},
+      name_{name},
+      variables_{vars} {}
+
+Variables ExpressionUninterpretedFunction::GetVariables() const {
+  return variables_;
+}
+
+bool ExpressionUninterpretedFunction::EqualTo(const ExpressionCell& e) const {
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
+  const ExpressionUninterpretedFunction& uf_e{
+      static_cast<const ExpressionUninterpretedFunction&>(e)};
+  return name_ == uf_e.name_ && variables_ == uf_e.variables_;
+}
+
+bool ExpressionUninterpretedFunction::Less(const ExpressionCell& e) const {
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
+  const ExpressionUninterpretedFunction& uf_e{
+      static_cast<const ExpressionUninterpretedFunction&>(e)};
+  if (name_ < uf_e.name_) {
+    return true;
+  }
+  if (uf_e.name_ < name_) {
+    return false;
+  }
+  return variables_ < uf_e.variables_;
+}
+
+Polynomial<double> ExpressionUninterpretedFunction::ToPolynomial() const {
+  throw runtime_error(
+      "Uninterpreted-function expression is not polynomial-convertible.");
+}
+
+double ExpressionUninterpretedFunction::Evaluate(const Environment& env) const {
+  throw runtime_error("Uninterpreted-function expression cannot be evaluated.");
+}
+
+Expression ExpressionUninterpretedFunction::Expand() const {
+  return uninterpreted_function(name_, variables_);
+}
+
+Expression ExpressionUninterpretedFunction::Substitute(
+    const Substitution& s) const {
+  // This method implements the following substitution:
+  //     uf(name, {v₁, ..., vₙ}).Substitute(s)
+  //   = uf(name, ⋃ᵢ s[vᵢ].GetVariables())
+  //
+  // For example, we have:
+  //     uf("uf1", {x, y}).Substitute({x ↦ 1, y ↦ y + z})
+  //   = uf("uf1", ∅ ∪ {y, z})
+  //   = uf("uf1", {y, z}).
+  Variables new_vars;
+  for (const auto& var : variables_) {
+    if (s.count(var) > 0) {
+      new_vars += s.at(var).GetVariables();
+    }
+  }
+  return uninterpreted_function(name_, new_vars);
+}
+
+Expression ExpressionUninterpretedFunction::Differentiate(
+    const Variable& x) const {
+  if (variables_.include(x)) {
+    // This uninterpreted function does have `x` as an argument, but we don't
+    // have sufficient information to differentiate it with respect to `x`.
+    ostringstream oss;
+    oss << "Uninterpreted-function expression ";
+    Display(oss);
+    oss << " is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    // `x` is free in this uninterpreted function.
+    return Expression::Zero();
+  }
+}
+
+ostream& ExpressionUninterpretedFunction::Display(ostream& os) const {
+  return os << name_ << "(" << variables_ << ")";
+}
+
 bool is_constant(const ExpressionCell& c) {
   return c.get_kind() == ExpressionKind::Constant;
 }
@@ -1697,6 +1788,9 @@ bool is_max(const ExpressionCell& c) {
 }
 bool is_if_then_else(const ExpressionCell& c) {
   return c.get_kind() == ExpressionKind::IfThenElse;
+}
+bool is_uninterpreted_function(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::UninterpretedFunction;
 }
 
 shared_ptr<ExpressionConstant> to_constant(
@@ -1892,6 +1986,16 @@ shared_ptr<ExpressionIfThenElse> to_if_then_else(
 }
 shared_ptr<ExpressionIfThenElse> to_if_then_else(const Expression& e) {
   return to_if_then_else(e.ptr_);
+}
+
+shared_ptr<ExpressionUninterpretedFunction> to_uninterpreted_function(
+    const shared_ptr<ExpressionCell> expr_ptr) {
+  DRAKE_ASSERT(is_uninterpreted_function(*expr_ptr));
+  return static_pointer_cast<ExpressionUninterpretedFunction>(expr_ptr);
+}
+shared_ptr<ExpressionUninterpretedFunction> to_uninterpreted_function(
+    const Expression& e) {
+  return to_uninterpreted_function(e.ptr_);
 }
 
 }  // namespace symbolic
