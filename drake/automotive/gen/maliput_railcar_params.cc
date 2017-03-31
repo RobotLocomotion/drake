@@ -9,7 +9,6 @@ namespace automotive {
 const int MaliputRailcarParamsIndices::kNumCoordinates;
 const int MaliputRailcarParamsIndices::kR;
 const int MaliputRailcarParamsIndices::kH;
-const int MaliputRailcarParamsIndices::kInitialSpeed;
 const int MaliputRailcarParamsIndices::kMaxSpeed;
 const int MaliputRailcarParamsIndices::kVelocityLimitKp;
 
