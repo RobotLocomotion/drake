@@ -69,7 +69,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
 
   // Set full throttle.
   DrivingCommand<double> command;
-  command.set_throttle(1.0);
+  command.set_acceleration(11.0);  // Arbitrary large positive.
   lcm::DrakeMockLcm* mock_lcm =
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
   ASSERT_NE(nullptr, mock_lcm);

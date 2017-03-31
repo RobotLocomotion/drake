@@ -135,14 +135,8 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
           get_rigid_body_tree();
   auto publisher = builder.AddSystem<DrakeVisualizer>(tree_ptr, lcm);
 
-  // Instantiates a system for receiving user commands. The user command
-  // consists of the following three-vector:
-  //
-  // [steering angle position, throttle speed, brake speed]
-  //
-  // The throttle and brake speeds are with respect to the vehicle's
-  // longitudinal position.
-  //
+  // Instantiates a system for receiving user commands, of type
+  // DrivingCommand.
   auto command_subscriber =
       builder.template AddSystem<systems::lcm::LcmSubscriberSystem>(
           "DRIVING_COMMAND", driving_command_translator, lcm);
@@ -178,10 +172,9 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   const double kWheelRadius = 0.323342;
 
   // Instantiates a MatrixGain system to covert from user command space to
-  // actuator command space. As mentioned above, the user command space consists
-  // of the following three-vector:
+  // actuator command space.  The user command space consists of:
   //
-  // [steering angle position, throttle speed, brake speed]
+  // [steering angle position, acceleration]
   //
   // The actuator command space consists of a six-vector:
   //
@@ -194,22 +187,22 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   //   y = Du
   //
   // The user's steering angle position command can be passed straight
-  // through using a gain of 1. The user's throttle and brake commands need to
-  // be multiplied by a gain of 1 / kWheelRadius and -1. / kWheelRadius to get
+  // through using a gain of 1. The user's acceleration command needs to
+  // be multiplied by a gain of 1 / kWheelRadius to get
   // the reference rotational velocities for the left and right wheels,
   // respectively (see calculations above that relate vehicle longitudinal speed
   // with wheel rotational speed). Thus, the gain (`D`) should be:
   //
-  // ---------------------------------------------------------------------
-  // Index |   kSteeringAngle   |   kThrottle         |    kBrake
-  // ---------------------------------------------------------------------
-  //   0   |         1          |       0             |      0
-  //   1   |         0          |       0             |      0
-  //   2   |         0          |       0             |      0
-  //   3   |         0          |       0             |      0
-  //   4   |         0          |  1. / kWheelRadius  | -1. / kWheelRadius
-  //   5   |         0          |  1. / kWheelRadius  | -1. / kWheelRadius
-  // ---------------------------------------------------------------------
+  // -------------------------------------------------
+  // Index |   kSteeringAngle   |   kAcceleration
+  // -------------------------------------------------
+  //   0   |         1          |       0
+  //   1   |         0          |       0
+  //   2   |         0          |       0
+  //   3   |         0          |       0
+  //   4   |         0          |  1. / kWheelRadius
+  //   5   |         0          |  1. / kWheelRadius
+  // -------------------------------------------------
   //
   // TODO(liang.fok): Add a system that accounts for the difference in reference
   // wheel rotational velocities necessary in vehicles with Ackermann steering.
@@ -221,12 +214,12 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
       controller->get_input_port(1).size(),
       command_subscriber->get_output_port(0).size());
   matrix_gain <<
-      1,                 0,                  0,
-      0,                 0,                  0,
-      0,                 0,                  0,
-      0,                 0,                  0,
-      0, 1. / kWheelRadius, -1. / kWheelRadius,
-      0, 1. / kWheelRadius, -1. / kWheelRadius;
+      1,                 0,
+      0,                 0,
+      0,                 0,
+      0,                 0,
+      0, 1. / kWheelRadius,
+      0, 1. / kWheelRadius;
   DRAKE_ASSERT(matrix_gain.rows() == controller->get_input_port(1).size());
   DRAKE_ASSERT(matrix_gain.cols() ==
       command_subscriber->get_output_port(0).size());
