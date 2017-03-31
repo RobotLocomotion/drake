@@ -67,28 +67,16 @@ namespace systems {
  * required to (repeatedly) solve least squares problems as part of the
  * nonlinear system solution process.
  *
- * This implementation uses a novel solution process compared to methods
- * described in existing literature on implicit integration techniques. Those
- * techniques use "vanilla" Newton-Raphson (NR), relying upon obvious
+ * This implementation uses Newton-Raphson (NR) and relies upon the obvious
  * convergence to a solution for `g = 0` where
  * `g(x(t+h)) ≡ x(t+h) - x(t) - h f(t+h,x(t+h))` as `h` becomes sufficiently
- * small. Those methods require logic to determine whether to keep taking NR
- * iterates or whether to decrease `h` and begin iterating anew.  It should be
- *  clear that for sufficiently small `h`, `g(x(t+h)) = 0` will be satisfiable.
+ * small. It also uses the implicit trapezoid method- fed the result from
+ * implicit Euler for (hopefully) faster convergence- to compute the error
+ * estimate. General implementational details were gleaned from [Hairer, 1996].
  *
- * This novel solution process uses globally convergent NR with line search,
- * which is guaranteed to converge to a "local minimum", a point at which the
- * norm of `∇g` will be equal to zero. In other words, given a proposed update
- * Δx to the state variables, this method computes a scalar value α such that
- * `||g(x(t+h) + αΔx)||` is significantly reduced over `||g(x(t+h)||`.  `g = 0`
- * is *not* guaranteed at the end of this solution process, which seems to put
- * this method at a significant disadvantage compared to existing methods.
- * However, those methods generally terminate before `g = 0`! The danger in
- * the novel approach is that the determined `||g(x(t+h)||` is inaccurate for
- * large `h`. Use of error control and initializing `g(x(t+h))` to `g(x(t))`
- * both guard against (but do not, at least as of yet, provably prevent) that
- * possibility.
- *
+ * - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
+ *                    Equations II (Stiff and Differential-Algebraic Problems).
+ *                    Springer, 1996.
  * - [Lambert, 1991]  J. D. Lambert. Numerical Methods for Ordinary Differential
  *                    Equations. John Wiley & Sons, 1991.
  */
@@ -125,8 +113,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// to ε^(2/3), from 2n forward dynamics calls. See
   /// [Nocedal 2004, pp. 167-169].
   ///
-  /// [Nocedal 2004] J. Nocedal and S. Wright. Numerical Optimization. Springer,
-  ///                2004.
+  /// - [Nocedal 2004] J. Nocedal and S. Wright. Numerical Optimization.
+  ///                  Springer, 2004.
   enum class JacobianComputationScheme {
     /// O(h) Forward differencing.
     kForwardDifference,
@@ -169,20 +157,102 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     return num_function_evaluations_;
   }
 
+  /// Gets the number of implicit-trapezoid-only ODE function evaluations since
+  /// the last call to ResetStatistics().
+  int get_num_itr_function_evaluations() const {
+    return num_itr_function_evaluations_;
+  }
+
+  /// Gets the number of implicit-Euler-only ODE function evaluations since
+  /// the last call to ResetStatistics().
+  int get_num_ieu_function_evaluations() const {
+    return num_function_evaluations_ - num_itr_function_evaluations_;
+  }
+
   /// Gets the number of ODE function evaluations *used only for computing
   /// the Jacobian matrices* since the last call to ResetStatistics().
   int get_num_jacobian_function_evaluations() const {
     return num_jacobian_function_evaluations_;
   }
 
+  /// Gets the number of implicit-trapezoid-only ODE function evaluations *used
+  /// only for computing the Jacobian matrices* since the last call to
+  /// ResetStatistics().
+  int get_num_itr_jacobian_function_evaluations() const {
+    return num_itr_jacobian_function_evaluations_;
+  }
+
+  /// Gets the number of implicit-Euler-only ODE function evaluations *used
+  /// only for computing the Jacobian matrices* since the last call to
+  /// ResetStatistics().
+  int get_num_ieu_jacobian_function_evaluations() const {
+    return num_jacobian_function_evaluations_ -
+        num_itr_jacobian_function_evaluations_;
+  }
+
   /// Gets the number of loops used in the Newton-Raphson nonlinear systems of
   /// equation solving process since the last call to ResetStatistics().
   int get_num_newton_raphson_loops() const { return num_nr_loops_; }
 
-  /// Gets the mean scaling factor applied to each state update since the last
-  /// call to ResetStatistics(). The ideal (and maximum) value is 1.0. Minimum
-  /// value is 0.0.
-  double get_mean_scaling_factor() const { return alpha_sum_ / num_nr_loops_; }
+  /// Gets the number of implicit-trapezoid-only loops used in the
+  /// Newton-Raphson nonlinear systems of equation solving process since the
+  /// last call to ResetStatistics().
+  int get_num_itr_newton_raphson_loops() const { return num_itr_nr_loops_; }
+
+  /// Gets the number of implicit-Euler-only loops used in the
+  /// Newton-Raphson nonlinear systems of equation solving process since the
+  /// last call to ResetStatistics().
+  int get_num_ieu_newton_raphson_loops() const { return num_nr_loops_ -
+        num_itr_nr_loops_; }
+
+  /// Gets the number of Jacobian reformulations since the last call to
+  /// ResetStatistics().
+  int get_num_jacobian_reformulations() const { return num_jacobian_reforms_; }
+
+  /// Gets the number of implicit-trapezoid-only Jacobian matrix reformulations
+  /// since the last call to ResetStatistics().
+  int get_num_itr_jacobian_reformulations() const {
+    return num_itr_jacobian_reforms_; }
+
+  /// Gets the number of implicit-Euler-only Jacobian matrix reformulations
+  /// since the last call to ResetStatistics().
+  int get_num_ieu_jacobian_reformulations() const {
+    return num_jacobian_reforms_ - num_itr_jacobian_reforms_;
+  }
+
+  /// Gets the number of iteration matrix factorizations since the last
+  /// call to ResetStatistics().
+  int get_num_iter_refactors() const {
+    return num_iter_refactors_;
+  }
+
+  /// Gets the number of implicit-trapezoid-only iteration matrix factorizations
+  /// since the last call to ResetStatistics().
+  int get_num_itr_iter_refactors() const {
+    return num_itr_iter_refactors_;
+  }
+
+  /// Gets the number of implicit-Euler-only iteration matrix factorizations
+  /// since the last call to ResetStatistics().
+  int get_num_ieu_iter_refactors() const {
+    return num_iter_refactors_ - num_itr_iter_refactors_;
+  }
+
+  /// Gets the number of failed StepAbstract() calls.
+  int get_num_step_abstract_failures() const {
+    return num_step_abstract_failures_;
+  }
+
+  /// Gets the number of step size shrinkages due to StepAbstract() failures.
+  int get_num_step_shrinkages_from_step_abstract_failures() const {
+    return num_shrinkages_from_step_abstract_failures_;
+  }
+
+  /// Gets the number of step size shrinkages due to error control.
+  int get_num_step_shrinkages_from_error_control() const {
+    return num_shrinkages_from_error_control_;
+  }
+
   /// @}
 
   /// @name Tunable parameters.
@@ -203,32 +273,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// has converged.
   void set_delta_state_tolerance(double tol) { delta_update_tol_ = tol; }
 
-  /// Gets the exponent on the decrease in error in the objective function
-  /// above which the Jacobian matrix will be reformulated and refactorized.
-  double get_jacobian_reformulation_exponent() const {
-    return reformulation_exponent_; }
-
-  /// Sets the exponent on the decrease in error in the objective function
-  /// above which the Jacobian matrix will be reformulated and refactorized.
-  /// The Jacobian matrix is "freshened" if `f(x+α dx)`, the error in the
-  /// objective function- which is zero if the objective function is perfectly
-  /// satisfied- is reduced _less than:<pre>
-  /// f(x)ᵝ  for f(x) > 1
-  /// f(x)⁻ᵝ for f(x) ≤ 1</pre>
-  /// The closer this value is to one, the less aggressively the Jacobian
-  /// matrix will be freshened. The Newton-Raphson procedure is expected to
-  /// achieve quadratic convergence, which would indicate a setting of β = 2.
-  /// Recommended values lie in the range (1, 2].
-  /// @throws std::logic_error if beta is less than 1.0.
-  /// @param beta the reformulation exponent (default = 1.5). Set this to a
-  ///             very large value to reformulate the Jacobian matrix on every
-  ///             Newton-Raphson iteration.
-  void set_jacobian_reformulation_exponent(double beta) {
-    if (beta <= 1.0)
-      throw std::logic_error("Jacobian reformulation exponent too small.");
-    reformulation_exponent_ = beta;
-  }
-
   /// @}
 
  protected:
@@ -237,16 +281,18 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   void DoResetStatistics() override;
 
  private:
-  void StepAbstract(const T& dt,
-                    const std::function<VectorX<T>(const VectorX<T>&)>& g,
-                    double scale,
-                    VectorX<T>* xtplus);
-  void CalcIterationMatrix(const VectorX<T>& xtplus, double scale);
-  MatrixX<T> CalcJacobian(const VectorX<T>& xtplus);
+  T StepOnceAtMostPaired(const T& dt, VectorX<T>* xtplus_euler,
+                         VectorX<T>* xtplus_trap);
+  T StepAbstract(T dt,
+                 const std::function<VectorX<T>(const VectorX<T>&)>& g,
+                 double scale,
+                 bool shrink_ok,
+                 VectorX<T>* xtplus);
+  MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
   void DoStepOnceFixedSize(const T& dt) override;
-  void StepImplicitEuler(const T& dt);
-  void StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
-                             VectorX<T>* xtplus);
+  T StepImplicitEuler(const T& dt);
+  T StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
+                          VectorX<T>* xtplus);
   MatrixX<T> ComputeFDiffJacobianF(const VectorX<T>& xtplus);
   MatrixX<T> ComputeCDiffJacobianF(const VectorX<T>& xtplus);
   Eigen::MatrixXd ComputeADiffJacobianF(const Eigen::VectorXd& xtplus);
@@ -258,16 +304,13 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   // solving process to complete.
   double delta_update_tol_{std::sqrt(std::numeric_limits<double>::epsilon())};
 
-  // The exponent for recomputing and refactorizing the Jacobian matrix.
-  double reformulation_exponent_{1.5};
-
   // This is a pre-allocated temporary for use by integration. It stores
   // the derivatives computed at x(t+h).
   std::unique_ptr<ContinuousState<T>> derivs_;
 
-  // For LU factorization with full pivoting; this yields a solution to a
-  // system of linear equations that is somewhat robust.
-  Eigen::FullPivLU<MatrixX<T>> LU_;
+  // A simple LU factorization is all that is needed; robustness in the solve
+  // comes naturally as dt << 1.
+  Eigen::PartialPivLU<MatrixX<T>> LU_;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;
@@ -290,14 +333,30 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   JacobianComputationScheme jacobian_scheme_{
       JacobianComputationScheme::kForwardDifference};
 
-  // The computed iteration matrix.
-  MatrixX<T> Jg_;
+  // The Jacobian matrix.
+  MatrixX<T> J_;
 
-  // Various statistics
+  // The computed iteration matrix.
+  MatrixX<T> A_;
+
+  // Statistics that indicate why step sizes decrease.
+  int num_shrinkages_from_error_control_{0};
+  int num_shrinkages_from_step_abstract_failures_{0};
+  int num_step_abstract_failures_{0};
+
+  // Various combined statistics.
+  int num_jacobian_reforms_{0};
+  int num_iter_refactors_{0};
   int num_function_evaluations_{0};
   int num_jacobian_function_evaluations_{0};
   int num_nr_loops_{0};
-  double alpha_sum_{0.0};
+
+  // Implicit trapezoid specific statistics.
+  int num_itr_jacobian_reforms_{0};
+  int num_itr_iter_refactors_{0};
+  int num_itr_function_evaluations_{0};
+  int num_itr_jacobian_function_evaluations_{0};
+  int num_itr_nr_loops_{0};
 };
 }  // namespace systems
 }  // namespace drake

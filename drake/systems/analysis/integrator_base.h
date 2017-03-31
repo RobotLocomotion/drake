@@ -802,6 +802,18 @@ class IntegratorBase {
     return z_weight_.head(z_weight_.rows());
   }
 
+  /// Gets whether the integrator should throw an exception when the
+  /// minimum step size is exceeded for purposes of error control. Default
+  /// is `true`.
+  bool get_min_step_size_exceeded_throws() const {
+    return min_step_exceeded_throws_; }
+
+  /// Sets whether the integrator should throw an exception when the
+  /// minimum step size is exceeded for purposes of error control. Default
+  /// is `true`.
+  void set_min_step_size_exceeded_throws(bool throws) {
+    min_step_exceeded_throws_ = throws; }
+
   /**
    * @}
    */
@@ -958,9 +970,6 @@ class IntegratorBase {
    */
   VectorX<T>& get_mutable_interval_start_state_deriv() { return xcdot0_save_; }
 
- private:
-  void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
-
   // Sets the actual initial step size taken.
   void set_actual_initial_step_size_taken(const T& dt) {
     actual_initial_step_size_taken_ = dt;
@@ -979,6 +988,9 @@ class IntegratorBase {
     largest_step_size_taken_ = dt;
   }
 
+  void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
+
+ private:
   // Sets the number of steps taken.
   void set_num_steps_taken(int64_t steps) { num_steps_taken_ = steps; }
 
@@ -1016,6 +1028,9 @@ class IntegratorBase {
   // Whether error-controlled integrator is running in fixed step mode. Value
   // is irrelevant for integrators without error estimation capabilities.
   bool fixed_step_mode_{false};
+
+  // When the minimum step is exceeded, does the integrator throw an exception?
+  bool min_step_exceeded_throws_{true};
 
   // Statistics.
   T actual_initial_step_size_taken_{nan()};
@@ -1274,10 +1289,11 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   if (!isnan(get_maximum_step_size()))
     new_step_size = min(new_step_size, get_maximum_step_size());
   if (get_minimum_step_size() > 0) {
-    if (new_step_size < get_minimum_step_size())
-      throw std::runtime_error(
-          "Error control wants to select step smaller "
-          "than minimum allowed for this integrator.");
+    if (new_step_size < get_minimum_step_size() && min_step_exceeded_throws_) {
+        throw std::runtime_error(
+            "Error control wants to select step smaller "
+                "than minimum allowed for this integrator.");
+    }
     new_step_size = max(new_step_size, get_minimum_step_size());
   }
 

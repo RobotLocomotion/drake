@@ -159,7 +159,6 @@ TEST_F(ImplicitIntegratorTest, MiscAPI) {
   const double eps = std::numeric_limits<double>::epsilon();
   const double sqrt_eps = std::sqrt(eps);
   EXPECT_NEAR(integrator.get_delta_state_tolerance(), sqrt_eps, eps);
-  EXPECT_NEAR(integrator.get_jacobian_reformulation_exponent(), 1.5, eps);
   EXPECT_EQ(integrator.get_jacobian_computation_scheme(),
             ImplicitEulerIntegrator<double>::JacobianComputationScheme::
                 kForwardDifference);
@@ -201,8 +200,6 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GE(integrator->get_num_steps_taken(), 0);
   EXPECT_GT(integrator->get_num_function_evaluations(), 0);
   EXPECT_GE(integrator->get_num_jacobian_function_evaluations(), 0);
-  EXPECT_GT(integrator->get_mean_scaling_factor(), 0.0);
-  EXPECT_LE(integrator->get_mean_scaling_factor(), 1.0);
   integrator->ResetStatistics();
 }
 
@@ -239,9 +236,6 @@ TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
 
   // Count the number of function evaluations.
   const int n_feval_reform = integrator.get_num_function_evaluations();
-
-  // Don't allow any Jacobian reformulation.
-  integrator.set_jacobian_reformulation_exponent(100.0);
 
   // Reset the initial conditions and integrate once again.
   spring_damper->set_position(context.get(), initial_position);
@@ -684,3 +678,10 @@ TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
 }  // namespace
 }  // namespace systems
 }  // namespace drake
+
+int main(int argc, char **argv) {
+  drake::log()->set_level(spdlog::level::debug);
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
+
