@@ -17,12 +17,11 @@ namespace automotive {
 /// Describes the row indices of a DrivingCommand.
 struct DrivingCommandIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 3;
+  static const int kNumCoordinates = 2;
 
   // The index of each individual coordinate.
   static const int kSteeringAngle = 0;
-  static const int kThrottle = 1;
-  static const int kBrake = 2;
+  static const int kAcceleration = 1;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -32,31 +31,34 @@ class DrivingCommand : public systems::BasicVector<T> {
   /// An abbreviation for our row index constants.
   typedef DrivingCommandIndices K;
 
-  /// Default constructor.  Sets all rows to zero.
+  /// Default constructor.  Sets all rows to their default value:
+  /// @arg @c steering_angle defaults to 0.0 in units of rad.
+  /// @arg @c acceleration defaults to 0.0 in units of m/s^2.
   DrivingCommand() : systems::BasicVector<T>(K::kNumCoordinates) {
-    this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
+    this->set_steering_angle(0.0);
+    this->set_acceleration(0.0);
   }
 
   DrivingCommand<T>* DoClone() const override { return new DrivingCommand; }
 
   /// @name Getters and Setters
   //@{
-  /// The desired steering angle [radians] of a virtual center wheel, positive
-  /// results in the vehicle turning left.
+  /// The desired steering angle of a virtual center wheel, positive results in
+  /// the vehicle turning left.
+  /// @note @c steering_angle is expressed in units of rad.
   const T& steering_angle() const {
     return this->GetAtIndex(K::kSteeringAngle);
   }
   void set_steering_angle(const T& steering_angle) {
     this->SetAtIndex(K::kSteeringAngle, steering_angle);
   }
-  /// The normalized desired acceleration (in the range [0.0..1.0]).
-  const T& throttle() const { return this->GetAtIndex(K::kThrottle); }
-  void set_throttle(const T& throttle) {
-    this->SetAtIndex(K::kThrottle, throttle);
+  /// The signed acceleration, positive means speed up; negative means slow
+  /// down, but should not move in reverse.
+  /// @note @c acceleration is expressed in units of m/s^2.
+  const T& acceleration() const { return this->GetAtIndex(K::kAcceleration); }
+  void set_acceleration(const T& acceleration) {
+    this->SetAtIndex(K::kAcceleration, acceleration);
   }
-  /// The normalized desired deceleration (in the range [0.0..1.0]).
-  const T& brake() const { return this->GetAtIndex(K::kBrake); }
-  void set_brake(const T& brake) { this->SetAtIndex(K::kBrake, brake); }
   //@}
 
   /// Returns whether the current values of this vector are well-formed.
@@ -64,8 +66,7 @@ class DrivingCommand : public systems::BasicVector<T> {
     using std::isnan;
     auto result = (T(0) == T(0));
     result = result && !isnan(steering_angle());
-    result = result && !isnan(throttle());
-    result = result && !isnan(brake());
+    result = result && !isnan(acceleration());
     return result;
   }
 };
