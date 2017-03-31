@@ -1,87 +1,87 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:macro name="iiwa_transmission" params="hardware_interface">
+  <xacro:macro name="iiwa_transmission" params="hardware_interface robot_name">
 
-    <transmission name="iiwa_tran_1">
+    <transmission name="${robot_name}_tran_1">
       <robotNamespace>/${robot_name}</robotNamespace>
       <type>transmission_interface/SimpleTransmission</type>
-      <joint name="iiwa_joint_1">
+      <joint name="${robot_name}_joint_1">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
       </joint>
-      <actuator name="iiwa_motor_1">
+      <actuator name="${robot_name}_motor_1">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
 	<mechanicalReduction>1</mechanicalReduction>
       </actuator>
     </transmission>
 
-    <transmission name="iiwa_tran_2">
+    <transmission name="${robot_name}_tran_2">
       <robotNamespace>/${robot_name}</robotNamespace>
       <type>transmission_interface/SimpleTransmission</type>
-      <joint name="iiwa_joint_2">
+      <joint name="${robot_name}_joint_2">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
       </joint>
-      <actuator name="iiwa_motor_2">
+      <actuator name="${robot_name}_motor_2">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
 	<mechanicalReduction>1</mechanicalReduction>
       </actuator>
     </transmission>
 
-    <transmission name="iiwa_tran_3">
+    <transmission name="${robot_name}_tran_3">
       <robotNamespace>/${robot_name}</robotNamespace>
       <type>transmission_interface/SimpleTransmission</type>
-      <joint name="iiwa_joint_3">
+      <joint name="${robot_name}_joint_3">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
       </joint>
-      <actuator name="iiwa_motor_3">
+      <actuator name="${robot_name}_motor_3">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
 	<mechanicalReduction>1</mechanicalReduction>
       </actuator>
     </transmission>
 
-    <transmission name="iiwa_tran_4">
+    <transmission name="${robot_name}_tran_4">
       <robotNamespace>/${robot_name}</robotNamespace>
       <type>transmission_interface/SimpleTransmission</type>
-      <joint name="iiwa_joint_4">
+      <joint name="${robot_name}_joint_4">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
       </joint>
-      <actuator name="iiwa_motor_4">
+      <actuator name="${robot_name}_motor_4">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
 	<mechanicalReduction>1</mechanicalReduction>
       </actuator>
     </transmission>
 
-    <transmission name="iiwa_tran_5">
+    <transmission name="${robot_name}_tran_5">
       <robotNamespace>/${robot_name}</robotNamespace>
       <type>transmission_interface/SimpleTransmission</type>
-      <joint name="iiwa_joint_5">
+      <joint name="${robot_name}_joint_5">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
       </joint>
-      <actuator name="iiwa_motor_5">
+      <actuator name="${robot_name}_motor_5">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
 	<mechanicalReduction>1</mechanicalReduction>
       </actuator>
     </transmission>
 
-    <transmission name="iiwa_tran_6">
+    <transmission name="${robot_name}_tran_6">
       <robotNamespace>/${robot_name}</robotNamespace>
       <type>transmission_interface/SimpleTransmission</type>
-      <joint name="iiwa_joint_6">
+      <joint name="${robot_name}_joint_6">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
       </joint>
-      <actuator name="iiwa_motor_6">
+      <actuator name="${robot_name}_motor_6">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
 	<mechanicalReduction>1</mechanicalReduction>
       </actuator>
     </transmission>
 
-    <transmission name="iiwa_tran_7">
+    <transmission name="${robot_name}_tran_7">
       <robotNamespace>/${robot_name}</robotNamespace>
       <type>transmission_interface/SimpleTransmission</type>
-      <joint name="iiwa_joint_7">
+      <joint name="${robot_name}_joint_7">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
       </joint>
-      <actuator name="iiwa_motor_7">
+      <actuator name="${robot_name}_motor_7">
 	<hardwareInterface>${hardware_interface}</hardwareInterface>
 	<mechanicalReduction>1</mechanicalReduction>
       </actuator>
