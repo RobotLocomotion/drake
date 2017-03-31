@@ -573,7 +573,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
 
     // This log statement is required for users to work around #3673, and can
     // be removed when that issue is resolved.
-    drake::log()->info("Made joint {} a loop joint.", name);
+    drake::log()->trace("Made joint {} a loop joint.", name);
   } else {
     // Update the reference frames of the child link's inertia, visual,
     // and collision elements to be this joint's frame.
@@ -659,7 +659,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
 
     // This log statement is required for users to work around #3673, and
     // can be removed when that issue is resolved.
-    drake::log()->info("Adding joint {} to the plant.", name);
+    drake::log()->trace("Adding joint {} to the plant.", name);
   }
 }
 
