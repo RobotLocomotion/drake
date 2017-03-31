@@ -2153,6 +2153,18 @@ class MathematicalProgram {
   }
 
   /**
+   * Getter for optimal cost at the solution. Will return NaN if there has
+   * been no successful solution.
+   */
+  double GetOptimalCost() const {
+    return optimal_cost_;
+  }
+
+  void SetOptimalCost(double optimal_cost) {
+    optimal_cost_ = optimal_cost;
+  }
+
+  /**
    * Getter for all generic costs.
    */
   const std::vector<Binding<Constraint>>& generic_costs() const {
@@ -2401,6 +2413,7 @@ class MathematicalProgram {
   std::shared_ptr<SolverData> solver_data_;
   SolverType solver_type_;
   int solver_result_;
+  double optimal_cost_;
   std::map<SolverType, std::map<std::string, double>> solver_options_double_;
   std::map<SolverType, std::map<std::string, int>> solver_options_int_;
   std::map<SolverType, std::map<std::string, std::string>> solver_options_str_;
