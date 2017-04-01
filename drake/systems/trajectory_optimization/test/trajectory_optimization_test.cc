@@ -170,8 +170,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
 
   // Tests adding constrainst to the original mathematical program, via
   // the state variable accessor and symbolic formula.
-  direct_traj.AddLinearConstraint(direct_traj.initial_state().array() ==
-                                  Eigen::Vector2d::Zero().array());
+  direct_traj.AddLinearConstraint(direct_traj.initial_state().array() == 0.0);
 
   // Adds a final cost
   direct_traj.AddFinalCostFunc(FinalCost());
@@ -240,12 +239,10 @@ GTEST_TEST(TrajectoryOptimizationTest, DoubleIntegratorTest) {
   // u \in [-1,1].
   prog.AddInputBounds(Vector1d(-1.0), Vector1d(1.0));
   // xf = [0,0].
-  prog.AddLinearConstraint(prog.final_state().array() ==
-                           Eigen::Vector2d::Zero().array());
+  prog.AddLinearConstraint(prog.final_state().array() == 0.0);
 
   // x0 = [-1,0].
-  prog.AddLinearConstraint(prog.initial_state().array() ==
-                           Eigen::Vector2d(-1.0, 0.0).array());
+  prog.AddLinearConstraint(prog.initial_state() == Eigen::Vector2d(-1.0, 0.0));
 
   // Cost is just total time.
   prog.AddFinalCost(prog.time().cast<symbolic::Expression>());
@@ -272,12 +269,10 @@ GTEST_TEST(TrajectoryOptimizationTest, MinimumTimeTest) {
   // Note: No input limits this time.
 
   // xf = [0,0].
-  prog.AddLinearConstraint(prog.final_state().array() ==
-                           Eigen::Vector2d::Zero().array());
+  prog.AddLinearConstraint(prog.final_state().array() == 0.0);
 
   // x0 = [-1,0].
-  prog.AddLinearConstraint(prog.initial_state().array() ==
-                           Eigen::Vector2d(-1.0, 0.0).array());
+  prog.AddLinearConstraint(prog.initial_state() == Eigen::Vector2d(-1.0, 0.0));
 
   // Cost is just total time.
   prog.AddFinalCost(prog.time().cast<symbolic::Expression>());

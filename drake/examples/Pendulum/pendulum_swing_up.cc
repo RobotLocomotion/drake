@@ -28,10 +28,8 @@ void AddSwingUpTrajectoryParams(const Eigen::Vector2d& x0,
   const drake::Vector1d umax(kTorqueLimit);
   dircol->AddInputBounds(umin, umax);
 
-  // TODO(soonho): Simplify to e.g. state(0) == x0 once the required
-  // overloads arrive.
-  dircol->AddLinearConstraint(dircol->initial_state().array() == x0.array());
-  dircol->AddLinearConstraint(dircol->final_state().array() == xG.array());
+  dircol->AddLinearConstraint(dircol->initial_state() == x0);
+  dircol->AddLinearConstraint(dircol->final_state() == xG);
 
   const double R = 10;  // Cost on input "effort".
   auto u = dircol->input();
