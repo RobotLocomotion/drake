@@ -159,19 +159,64 @@ TEST_F(SymbolicExpressionMatrixTest, CheckStructuralEquality) {
   EXPECT_FALSE(CheckStructuralEquality(B_ * A_, B_ * C_));
 }
 
-
-// Checks if m1 == m2 returns a formula which is a conjunction of
-// m1(i, j) == m2(i, j) for all i and j.
+// Checks the following two formulas are identical:
+//   - m1 == m2
+//   - ⋀ᵢⱼ (m1.array() == m2.array())
 bool CheckMatrixOperatorEq(const MatrixX<Expression>& m1,
                            const MatrixX<Expression>& m2) {
-  const Formula f{m1 == m2};
-  Formula f_expected{};  // True
-  for (int i = 0; i < m1.rows(); ++i) {
-    for (int j = 0; j < m1.cols(); ++j) {
-      f_expected = f_expected && (m1(i, j) == m2(i, j));
-    }
-  }
-  return f.EqualTo(f_expected);
+  const Formula f1{m1 == m2};
+  const Formula f2{(m1.array() == m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
+}
+
+// Checks the following two formulas are identical:
+//   - m1 != m2
+//   - ⋀ᵢⱼ (m1.array() != m2.array())
+bool CheckMatrixOperatorNeq(const MatrixX<Expression>& m1,
+                            const MatrixX<Expression>& m2) {
+  const Formula f1{m1 != m2};
+  const Formula f2{(m1.array() != m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
+}
+
+// Checks the following two formulas are identical:
+//   - m1 < m2
+//   - ⋀ᵢⱼ (m1.array() < m2.array())
+bool CheckMatrixOperatorLt(const MatrixX<Expression>& m1,
+                           const MatrixX<Expression>& m2) {
+  const Formula f1{m1 < m2};
+  const Formula f2{(m1.array() < m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
+}
+
+// Checks the following two formulas are identical:
+//   - m1 <= m2
+//   - ⋀ᵢⱼ (m1.array() <= m2.array())
+bool CheckMatrixOperatorLte(const MatrixX<Expression>& m1,
+                            const MatrixX<Expression>& m2) {
+  const Formula f1{m1 <= m2};
+  const Formula f2{(m1.array() <= m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
+}
+
+// Checks the following two formulas are identical:
+//   - m1 > m2
+//   - ⋀ᵢⱼ (m1.array() > m2.array())
+bool CheckMatrixOperatorGt(const MatrixX<Expression>& m1,
+                           const MatrixX<Expression>& m2) {
+  const Formula f1{m1 > m2};
+  const Formula f2{(m1.array() > m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
+}
+
+// Checks the following two formulas are identical:
+//   - m1 >= m2
+//   - ⋀ᵢⱼ (m1.array() >= m2.array())
+bool CheckMatrixOperatorGte(const MatrixX<Expression>& m1,
+                            const MatrixX<Expression>& m2) {
+  const Formula f1{m1 >= m2};
+  const Formula f2{(m1.array() >= m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
 }
 
 TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqExpr1) {
@@ -184,6 +229,11 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqExpr1) {
   ASSERT_TRUE(is_conjunction(f));
   EXPECT_EQ(get_operands(f).size(), 3);
   EXPECT_TRUE(CheckMatrixOperatorEq(m1, m2));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(m1, m2));
+  EXPECT_TRUE(CheckMatrixOperatorLt(m1, m2));
+  EXPECT_TRUE(CheckMatrixOperatorLte(m1, m2));
+  EXPECT_TRUE(CheckMatrixOperatorGt(m1, m2));
+  EXPECT_TRUE(CheckMatrixOperatorGte(m1, m2));
 }
 
 TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqExpr2) {
@@ -283,6 +333,91 @@ TEST_F(SymbolicExpressionMatrixTest, ExpressionMatrixBlock) {
   const Formula f{b1 == b2};
 
   EXPECT_TRUE(is_false(f));
+}
+
+// Checks relational operators (==, !=, <=, <, >=, >) between
+// Matrix<Expression> and Matrix<Expression>.
+TEST_F(SymbolicExpressionMatrixTest, MatrixExprRopMatrixExpr) {
+  EXPECT_TRUE(CheckMatrixOperatorEq(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorEq(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(B_ * A_, B_ * C_));
+}
+
+// Checks relational operators (==, !=, <=, <, >=, >) between
+// Matrix<Expression> and Matrix<Variable>
+TEST_F(SymbolicExpressionMatrixTest, MatrixExprRopMatrixVar) {
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_var_2_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_var_2_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_var_2_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_var_2_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_var_2_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_2_, matrix_expr_1_));
+}
+
+// Checks relational operators (==, !=, <=, <, >=, >) between
+// Matrix<Expression> and Matrix<double>
+TEST_F(SymbolicExpressionMatrixTest, MatrixExprRopMatrixDouble) {
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_double_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_double_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_double_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_double_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_double_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_double_, matrix_expr_1_));
+}
+
+// Checks relational operators (==, !=, <=, <, >=, >) between
+// Matrix<Variable> and Matrix<double>
+TEST_F(SymbolicExpressionMatrixTest, MatrixVarRopMatrixDouble) {
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_double_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_double_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_double_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_double_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_double_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_double_, matrix_var_1_));
+}
+
+// Checks relational operators (==, !=, <=, <, >=, >) between
+// Matrix<Variable> and Matrix<Variable>
+TEST_F(SymbolicExpressionMatrixTest, MatrixVarRopMatrixVar) {
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_var_2_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_var_2_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_var_2_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_var_2_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_var_2_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_2_, matrix_var_1_));
 }
 
 }  // namespace
