@@ -190,6 +190,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lane_direction",
+    srcs = ["lane_direction.cc"],
+    hdrs = ["lane_direction.h"],
+    deps = [
+        "//drake/automotive/maliput/api",
+    ],
+)
+
+drake_cc_library(
     name = "linear_car",
     srcs = ["linear_car.cc"],
     hdrs = ["linear_car.h"],
@@ -206,6 +215,7 @@ drake_cc_library(
     deps = [
         ":calc_smooth_acceleration",
         ":generated_vectors",
+        ":lane_direction",
         "//drake/automotive/maliput/api",
         "//drake/math:geometric_transform",
         "//drake/systems/rendering:pose_vector",
@@ -248,6 +258,22 @@ drake_cc_library(
         "//drake/multibody/rigid_body_plant:create_load_robot_message",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "road_path",
+    srcs = ["road_path.cc"],
+    hdrs = ["road_path.h"],
+    visibility = [],
+    deps = [
+        ":lane_direction",
+        ":monolane_onramp_merge",
+        "//drake/automotive/maliput/api",
+        "//drake/common",
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/common/trajectories/qp_spline:spline_generation",
+        "//drake/math:saturate",
     ],
 )
 
@@ -704,6 +730,16 @@ drake_cc_googletest(
         ":prius_vis",
         "//drake/common:eigen_matrix_compare",
         "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "road_path_test",
+    deps = [
+        ":road_path",
+        "//drake/automotive/maliput/dragway",
+        "//drake/automotive/maliput/monolane",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 
