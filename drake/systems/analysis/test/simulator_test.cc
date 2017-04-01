@@ -130,7 +130,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
   EXPECT_EQ(simulator.get_num_discrete_updates(), 0);
 
-  EXPECT_EQ(spring_mass.get_publish_count(), 1001);
+  EXPECT_EQ(spring_mass.get_publish_count(), 1000);
   EXPECT_EQ(spring_mass.get_update_count(), 0);
 
   // Current time is 1. An earlier final time should fail.
@@ -207,11 +207,11 @@ GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
   simulator.get_mutable_context()->set_time(0.);
   simulator.Initialize();
   // Publish should happen on initialization.
-  EXPECT_EQ(1, simulator.get_num_publishes());
+  EXPECT_EQ(0, simulator.get_num_publishes());
 
   // Simulate for 1 simulated second.  Publish should not happen.
   simulator.StepTo(1.);
-  EXPECT_EQ(1, simulator.get_num_publishes());
+  EXPECT_EQ(0, simulator.get_num_publishes());
 }
 
 // Repeat the previous test but now the continuous steps are interrupted
@@ -530,8 +530,8 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(0.5);
   EXPECT_EQ(500, num_disc_updates);
-  // Publication occurs at 400Hz, and also at initialization.
-  EXPECT_EQ(200 + 1, num_publishes);
+  // Publication occurs at 400Hz.
+  EXPECT_EQ(200, num_publishes);
 }
 
 // Tests that the order of events in a simulator time step is first update

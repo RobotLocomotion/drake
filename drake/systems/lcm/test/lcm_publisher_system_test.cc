@@ -170,6 +170,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   drake::systems::Simulator<double> simulator(*dut, std::move(context));
   simulator.set_publish_every_time_step(false);
   simulator.Initialize();
+  dut->Publish(simulator.get_context());
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.StepTo(time);

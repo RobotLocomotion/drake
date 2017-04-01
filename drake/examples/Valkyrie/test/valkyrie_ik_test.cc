@@ -274,6 +274,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
 
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput(*context);
+  diagram->InitializeContext(context.get());
   diagram->Publish(*context);
 }
 

@@ -462,13 +462,7 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   EXPECT_EQ("drake_visualizer", dut.get_name());
 
   auto context = dut.CreateDefaultContext();
-
-  // Sets the time to be zero. This is necessary since the load robot message
-  // is only transmitted when the time is zero.
-  //
-  // TODO(liang.fok) Remove this assumption once systems are able to declare
-  // that they want to publish at the simulation's start time.
-  context->set_time(0);
+  dut.InitializeContext(context.get());
 
   EXPECT_EQ(1, context->get_num_input_ports());
 
@@ -511,6 +505,7 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   drake::systems::Simulator<double> simulator(dut, std::move(context));
   simulator.set_publish_every_time_step(false);
   simulator.Initialize();
+  dut.Publish(simulator.get_context());
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.StepTo(time);
