@@ -15,7 +15,7 @@ namespace {
 using std::ptr_fun;
 using test::FormulaEqual;
 
-class SymbolicExpressionMatrixTest : public ::testing::Test {
+class SymbolicExpressionArrayTest : public ::testing::Test {
  protected:
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
@@ -522,7 +522,7 @@ CheckArrayOperatorNeq(const DerivedA& m1, const DerivedB& m2) {
   return CheckArrayOperatorNeq(m1.array(), m2.array());
 }
 
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprEqArrayExpr) {
+TEST_F(SymbolicExpressionArrayTest, ArrayExprEqArrayExpr) {
   const Eigen::Array<Formula, 3, 2> a1{A_.array() == A_.array()};
   const Eigen::Array<Formula, 2, 3> a2{B_.array() == B_.array()};
   const Eigen::Array<Formula, 3, 2> a3{C_.array() == C_.array()};
@@ -533,7 +533,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayExprEqArrayExpr) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
 // and Array<Expression>.
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopArrayExpr) {
+TEST_F(SymbolicExpressionArrayTest, ArrayExprRopArrayExpr) {
   EXPECT_TRUE(CheckArrayOperatorEq(A_, C_));
   EXPECT_TRUE(CheckArrayOperatorEq(B_ * A_, B_ * C_));
   EXPECT_TRUE(CheckArrayOperatorLte(A_, C_));
@@ -550,7 +550,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopArrayExpr) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
 // and Array<Variable>
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopArrayVar) {
+TEST_F(SymbolicExpressionArrayTest, ArrayExprRopArrayVar) {
   EXPECT_TRUE(CheckArrayOperatorEq(array_expr_1_, array_var_2_));
   EXPECT_TRUE(CheckArrayOperatorEq(array_var_2_, array_expr_1_));
   EXPECT_TRUE(CheckArrayOperatorLte(array_expr_1_, array_var_2_));
@@ -567,7 +567,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopArrayVar) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
 // and Array<double>
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopArrayDouble) {
+TEST_F(SymbolicExpressionArrayTest, ArrayExprRopArrayDouble) {
   EXPECT_TRUE(CheckArrayOperatorEq(array_expr_1_, array_double_));
   EXPECT_TRUE(CheckArrayOperatorEq(array_double_, array_expr_1_));
   EXPECT_TRUE(CheckArrayOperatorLte(array_expr_1_, array_double_));
@@ -584,7 +584,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopArrayDouble) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
 // and Array<double>
-TEST_F(SymbolicExpressionMatrixTest, ArrayVarRopArrayDouble) {
+TEST_F(SymbolicExpressionArrayTest, ArrayVarRopArrayDouble) {
   EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, array_double_));
   EXPECT_TRUE(CheckArrayOperatorEq(array_double_, array_var_1_));
   EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, array_double_));
@@ -601,7 +601,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayVarRopArrayDouble) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
 // and Array<Variable>
-TEST_F(SymbolicExpressionMatrixTest, ArrayVarRopArrayVar) {
+TEST_F(SymbolicExpressionArrayTest, ArrayVarRopArrayVar) {
   EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, array_var_2_));
   EXPECT_TRUE(CheckArrayOperatorEq(array_var_2_, array_var_1_));
   EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, array_var_2_));
@@ -618,7 +618,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayVarRopArrayVar) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
 // and Expression.
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopExpr) {
+TEST_F(SymbolicExpressionArrayTest, ArrayExprRopExpr) {
   EXPECT_TRUE(CheckArrayOperatorEq(A_.array(), Expression{0.0}));
   EXPECT_TRUE(CheckArrayOperatorEq(x_ + y_, (B_ * C_).array()));
   EXPECT_TRUE(CheckArrayOperatorLte(A_.array(), Expression{0.0}));
@@ -635,7 +635,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopExpr) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
 // and Variable.
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopVar) {
+TEST_F(SymbolicExpressionArrayTest, ArrayExprRopVar) {
   EXPECT_TRUE(CheckArrayOperatorEq(A_.array(), var_x_));
   EXPECT_TRUE(CheckArrayOperatorEq(var_x_, (B_ * C_).array()));
   EXPECT_TRUE(CheckArrayOperatorLte(A_.array(), var_x_));
@@ -652,7 +652,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopVar) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
 // and double.
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopDouble) {
+TEST_F(SymbolicExpressionArrayTest, ArrayExprRopDouble) {
   EXPECT_TRUE(CheckArrayOperatorEq(A_.array(), 0.0));
   EXPECT_TRUE(CheckArrayOperatorEq(1.0, (B_ * C_).array()));
   EXPECT_TRUE(CheckArrayOperatorLte(A_.array(), 0.0));
@@ -669,7 +669,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopDouble) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
 // and Expression.
-TEST_F(SymbolicExpressionMatrixTest, ArraryVarRopExpr) {
+TEST_F(SymbolicExpressionArrayTest, ArraryVarRopExpr) {
   EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, x_ + y_));
   EXPECT_TRUE(CheckArrayOperatorEq(x_ + y_, array_var_1_));
   EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, x_ + y_));
@@ -686,7 +686,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArraryVarRopExpr) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
 // and Variable.
-TEST_F(SymbolicExpressionMatrixTest, ArraryVarRopVar) {
+TEST_F(SymbolicExpressionArrayTest, ArraryVarRopVar) {
   EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, var_x_));
   EXPECT_TRUE(CheckArrayOperatorEq(var_x_, array_var_1_));
   EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, var_x_));
@@ -703,7 +703,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArraryVarRopVar) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
 // and double.
-TEST_F(SymbolicExpressionMatrixTest, ArraryVarRopDouble) {
+TEST_F(SymbolicExpressionArrayTest, ArraryVarRopDouble) {
   EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, 3.0));
   EXPECT_TRUE(CheckArrayOperatorEq(3.0, array_var_1_));
   EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, 3.0));
@@ -720,7 +720,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArraryVarRopDouble) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<double>
 // and Expression.
-TEST_F(SymbolicExpressionMatrixTest, ArraryDoubleRopExpr) {
+TEST_F(SymbolicExpressionArrayTest, ArraryDoubleRopExpr) {
   EXPECT_TRUE(CheckArrayOperatorEq(array_double_, x_ + y_));
   EXPECT_TRUE(CheckArrayOperatorEq(x_ + y_, array_double_));
   EXPECT_TRUE(CheckArrayOperatorLte(array_double_, x_ + y_));
@@ -737,7 +737,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArraryDoubleRopExpr) {
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<double>
 // and Variable.
-TEST_F(SymbolicExpressionMatrixTest, ArraryDoubleRopVar) {
+TEST_F(SymbolicExpressionArrayTest, ArraryDoubleRopVar) {
   EXPECT_TRUE(CheckArrayOperatorEq(array_double_, var_x_));
   EXPECT_TRUE(CheckArrayOperatorEq(var_x_, array_double_));
   EXPECT_TRUE(CheckArrayOperatorLte(array_double_, var_x_));
@@ -752,7 +752,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArraryDoubleRopVar) {
   EXPECT_TRUE(CheckArrayOperatorNeq(var_x_, array_double_));
 }
 
-TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorReturnType) {
+TEST_F(SymbolicExpressionArrayTest, ArrayOperatorReturnType) {
   Eigen::Array<Variable, 2, Eigen::Dynamic> m1(2, 2);
   Eigen::Array<Variable, Eigen::Dynamic, 2> m2(2, 2);
   EXPECT_TRUE(
@@ -769,7 +769,7 @@ TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorReturnType) {
       (std::is_same<decltype(m1 > m2), Eigen::Array<Formula, 2, 2>>::value));
 }
 
-TEST_F(SymbolicExpressionMatrixTest, ExpressionArraySegment) {
+TEST_F(SymbolicExpressionArrayTest, ExpressionArraySegment) {
   Eigen::Array<Expression, 5, 1> v;
   v << x_, 1, y_, x_, 1;
   const auto s1 = v.segment(0, 2);  // [x, 1]
@@ -784,7 +784,7 @@ TEST_F(SymbolicExpressionMatrixTest, ExpressionArraySegment) {
   EXPECT_TRUE(is_true(a2(1)));
 }
 
-TEST_F(SymbolicExpressionMatrixTest, ExpressionArrayBlock) {
+TEST_F(SymbolicExpressionArrayTest, ExpressionArrayBlock) {
   Eigen::Array<Expression, 3, 3> m;
   // clang-format off
   m << x_, y_, z_,

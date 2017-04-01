@@ -306,22 +306,25 @@ struct RelationalOpTraits {
                    EigenSizeMinPreferFixed<DerivedA::ColsAtCompileTime,
                                            DerivedB::ColsAtCompileTime>::value>;
 };
+/// Returns @p f1 ∧ @p f2. We have it because gcc-4.8 does not have
+/// `std::logical_and`.
+inline Formula logic_and(const Formula& f1, const Formula& f2) {
+  return f1 && f2;
+}
 }  // namespace detail
 
 /// Returns an Eigen array of symbolic formulas where each element includes
 /// element-wise symbolic-equality of two arrays @p m1 and @p m2.
 ///
 /// The following table describes the return type of @p m1 == @p m2.
-/// +--------------------------------------------------------------+
-/// |   LHS \ RHS    | EA<Expression> | EA<Variable> | EA<double>  |
-/// -----------------+----------------+--------------+--------------
-/// | EA<Expression> | EA<Formula>    | EA<Formula>  | EA<Formula> |
-/// -----------------+----------------+--------------+--------------
-/// | EA<Variable>   | EA<Formula>    | EA<Formula>  | EA<Formula> |
-/// -----------------+----------------+--------------+--------------
-/// | EA<double>     | EA<Formula>    | EA<Formula>  | EA<bool>    |
-/// +--------------------------------------------------------------+
-///                (EA is a short-hand of Eigen::Array)
+///
+///    LHS \ RHS    | EA<Expression> | EA<Variable> | EA<double>
+/// ----------------|----------------|--------------|--------------
+///  EA<Expression> | EA<Formula>    | EA<Formula>  | EA<Formula>
+///  EA<Variable>   | EA<Formula>    | EA<Formula>  | EA<Formula>
+///  EA<double>     | EA<Formula>    | EA<Formula>  | EA<bool>
+///
+/// In the table, `EA` is a short-hand of `Eigen::Array`.
 ///
 /// Note that this function does *not* provide operator overloading for the
 /// following case. It returns `Eigen::Array<bool>` and is provided by Eigen.
@@ -692,16 +695,14 @@ operator!=(const ScalarType& v, const Derived& a) {
 /// equal.
 ///
 /// The following table describes the return type of @p m1 == @p m2.
-/// +-------------------------------------------------------------+
-/// |   LHS \ RHS    | EM<Expression> | EM<Variable> | EM<double> |
-/// -----------------+----------------+--------------+-------------
-/// | EM<Expression> | Formula        | Formula      | Formula    |
-/// -----------------+----------------+--------------+-------------
-/// | EM<Variable>   | Formula        | Formula      | Formula    |
-/// -----------------+----------------+--------------+-------------
-/// | EM<double>     | Formula        | Formula      | bool       |
-/// +-------------------------------------------------------------+
-///                (EM is a short-hand of Eigen::Matrix)
+///
+///    LHS \ RHS    | EM<Expression> | EM<Variable> | EM<double>
+/// ----------------|----------------|--------------|------------
+///  EM<Expression> | Formula        | Formula      | Formula
+///  EM<Variable>   | Formula        | Formula      | Formula
+///  EM<double>     | Formula        | Formula      | bool
+///
+/// In the table, `EM` is a short-hand of `Eigen::Matrix`.
 ///
 /// Note that this function does *not* provide operator overloading for the
 /// following case. It returns `bool` and is provided by Eigen.
@@ -746,11 +747,159 @@ operator==(const DerivedA& m1, const DerivedB& m2) {
   namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  const auto logic_and = [](const Formula& f1, const Formula& f2) {
-    return f1 && f2;
-  };
-  return m1.binaryExpr(m2, std::equal_to<void>()).redux(logic_and);
+  return m1.binaryExpr(m2, std::equal_to<void>()).redux(detail::logic_and);
 }
+
+/// Returns a symbolic formula representing element-wise comparison between two
+/// matrices @p m1 and @p m2 using not-equal (!=) operator.
+///
+/// The following table describes the return type of @p m1 != @p m2.
+///
+///    LHS \ RHS    | EM<Expression> | EM<Variable> | EM<double>
+/// ----------------|----------------|--------------|------------
+///  EM<Expression> | Formula        | Formula      | Formula
+///  EM<Variable>   | Formula        | Formula      | Formula
+///  EM<double>     | Formula        | Formula      | bool
+///
+/// In the table, `EM` is a short-hand of `Eigen::Matrix`.
+///
+/// Note that this function does *not* provide operator overloading for the
+/// following case. It returns `bool` and is provided by Eigen.
+///
+///    - Eigen::Matrix<double> != Eigen::Matrix<double>
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::MatrixXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::MatrixXpr>::value &&
+        std::is_same<decltype(typename DerivedA::Scalar() !=
+                              typename DerivedB::Scalar()),
+                     Formula>::value,
+    Formula>::type
+operator!=(const DerivedA& m1, const DerivedB& m2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  return m1.binaryExpr(m2, std::not_equal_to<void>()).redux(detail::logic_and);
+}
+
+/// Returns a symbolic formula representing element-wise comparison between two
+/// matrices @p m1 and @p m2 using less-than (<) operator.
+///
+/// The following table describes the return type of @p m1 < @p m2.
+///
+///    LHS \ RHS    | EM<Expression> | EM<Variable> | EM<double>
+/// ----------------|----------------|--------------|------------
+///  EM<Expression> | Formula        | Formula      | Formula
+///  EM<Variable>   | Formula        | Formula      | Formula
+///  EM<double>     | Formula        | Formula      | N/A
+///
+/// In the table, `EM` is a short-hand of `Eigen::Matrix`.
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::MatrixXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::MatrixXpr>::value &&
+        std::is_same<decltype(typename DerivedA::Scalar() <
+                              typename DerivedB::Scalar()),
+                     Formula>::value,
+    Formula>::type
+operator<(const DerivedA& m1, const DerivedB& m2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  return m1.binaryExpr(m2, std::less<void>()).redux(detail::logic_and);
+}
+
+/// Returns a symbolic formula representing element-wise comparison between two
+/// matrices @p m1 and @p m2 using less-than-or-equal operator (<=).
+///
+/// The following table describes the return type of @p m1 <= @p m2.
+///
+///    LHS \ RHS    | EM<Expression> | EM<Variable> | EM<double>
+/// ----------------|----------------|--------------|------------
+///  EM<Expression> | Formula        | Formula      | Formula
+///  EM<Variable>   | Formula        | Formula      | Formula
+///  EM<double>     | Formula        | Formula      | N/A
+///
+/// In the table, `EM` is a short-hand of `Eigen::Matrix`.
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::MatrixXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::MatrixXpr>::value &&
+        std::is_same<decltype(typename DerivedA::Scalar() <=
+                              typename DerivedB::Scalar()),
+                     Formula>::value,
+    Formula>::type
+operator<=(const DerivedA& m1, const DerivedB& m2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  return m1.binaryExpr(m2, std::less_equal<void>()).redux(detail::logic_and);
+}
+
+/// Returns a symbolic formula representing element-wise comparison between two
+/// matrices @p m1 and @p m2 using greater-than operator (>).
+///
+/// The following table describes the return type of @p m1 > @p m2.
+///
+///    LHS \ RHS    | EM<Expression> | EM<Variable> | EM<double>
+/// ----------------|----------------|--------------|------------
+///  EM<Expression> | Formula        | Formula      | Formula
+///  EM<Variable>   | Formula        | Formula      | Formula
+///  EM<double>     | Formula        | Formula      | N/A
+///
+/// In the table, `EM` is a short-hand of `Eigen::Matrix`.
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::MatrixXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::MatrixXpr>::value &&
+        std::is_same<decltype(typename DerivedA::Scalar() >
+                              typename DerivedB::Scalar()),
+                     Formula>::value,
+    Formula>::type
+operator>(const DerivedA& m1, const DerivedB& m2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  return m1.binaryExpr(m2, std::greater<void>()).redux(detail::logic_and);
+}
+
+/// Returns a symbolic formula representing element-wise comparison between two
+/// matrices @p m1 and @p m2 using greater-than-or-equal operator (>=).
+///
+/// The following table describes the return type of @p m1 >= @p m2.
+///
+///    LHS \ RHS    | EM<Expression> | EM<Variable> | EM<double>
+/// ----------------|----------------|--------------|------------
+///  EM<Expression> | Formula        | Formula      | Formula
+///  EM<Variable>   | Formula        | Formula      | Formula
+///  EM<double>     | Formula        | Formula      | N/A
+///
+/// In the table, `EM` is a short-hand of `Eigen::Matrix`.
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
+                 Eigen::MatrixXpr>::value &&
+        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
+                     Eigen::MatrixXpr>::value &&
+        std::is_same<decltype(typename DerivedA::Scalar() >=
+                              typename DerivedB::Scalar()),
+                     Formula>::value,
+    Formula>::type
+operator>=(const DerivedA& m1, const DerivedB& m2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  return m1.binaryExpr(m2, std::greater_equal<void>()).redux(detail::logic_and);
+}
+
 }  // namespace symbolic
 
 /** Computes the hash value of a symbolic formula. */
