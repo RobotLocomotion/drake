@@ -680,7 +680,6 @@ TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
 }  // namespace drake
 
 int main(int argc, char **argv) {
-  drake::log()->set_level(spdlog::level::debug);
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
