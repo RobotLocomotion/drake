@@ -1,7 +1,5 @@
 #include "drake/common/symbolic_expression.h"
 
-#include <functional>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic_formula.h"
@@ -12,8 +10,6 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-using std::equal_to;
-using std::ptr_fun;
 using test::FormulaEqual;
 
 class SymbolicExpressionMatrixTest : public ::testing::Test {
@@ -43,12 +39,6 @@ class SymbolicExpressionMatrixTest : public ::testing::Test {
   Eigen::Matrix<Variable, 2, 2, Eigen::DontAlign> matrix_var_2_;
   Eigen::Matrix<double, 2, 2, Eigen::DontAlign> matrix_double_;
 
-  Eigen::Array<Expression, 2, 2, Eigen::DontAlign> array_expr_1_;
-  Eigen::Array<Expression, 2, 2, Eigen::DontAlign> array_expr_2_;
-  Eigen::Array<Variable, 2, 2, Eigen::DontAlign> array_var_1_;
-  Eigen::Array<Variable, 2, 2, Eigen::DontAlign> array_var_2_;
-  Eigen::Array<double, 2, 2, Eigen::DontAlign> array_double_;
-
   void SetUp() override {
     // clang-format off
     A_ << x_, one_,       //  [x  1]
@@ -73,12 +63,6 @@ class SymbolicExpressionMatrixTest : public ::testing::Test {
     matrix_double_ << 1.0, 2.0,
                       3.0, 4.0;
     // clang-format on
-
-    array_expr_1_ = matrix_expr_1_.array();
-    array_expr_2_ = matrix_expr_2_.array();
-    array_var_1_ = matrix_var_1_.array();
-    array_var_2_ = matrix_var_2_.array();
-    array_double_ = matrix_double_.array();
   }
 };
 
@@ -175,718 +159,64 @@ TEST_F(SymbolicExpressionMatrixTest, CheckStructuralEquality) {
   EXPECT_FALSE(CheckStructuralEquality(B_ * A_, B_ * C_));
 }
 
-// Given two Eigen arrays a1 and a2, it checks if a1 == a2 returns an array
-// whose (i, j) element is a formula a1(i, j) == a2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::ArrayXpr>::value,
-    bool>::type
-CheckArrayOperatorEq(const DerivedA& a1, const DerivedB& a2) {
-  const auto arr = (a1 == a2);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a1(i, j) == a2(i, j))) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given a scalar-type object @p v and an Eigen array @p a, it checks if v == a
-// returns an array whose (i, j)-element is a formula v == a(i, j).
-template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() == typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorEq(const ScalarType& v, const Derived& a) {
-  const Eigen::Array<Formula, Derived::RowsAtCompileTime,
-                     Derived::ColsAtCompileTime>
-      arr = (v == a);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(v == a(i, j))) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given an Eigen array @p a and a scalar-type object @p v, it checks if a == v
-// returns an array whose (i, j)-element is a formula a(i, j) == v.
-template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() == ScalarType()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorEq(const Derived& a, const ScalarType& v) {
-  const Eigen::Array<Formula, Derived::RowsAtCompileTime,
-                     Derived::ColsAtCompileTime>
-      arr = (a == v);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a(i, j) == v)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given two Eigen matrices m1 and m2, it checks if m1.array() == m2.array()
-// returns an array whose (i, j) element is a formula m1(i, j) == m2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
-CheckArrayOperatorEq(const DerivedA& m1, const DerivedB& m2) {
-  return CheckArrayOperatorEq(m1.array(), m2.array());
-}
-
-// Given two Eigen arrays a1 and a2, it checks if a1 <= a2 returns an array
-// whose (i, j) element is a formula a1(i, j) <= a2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
-    bool>::type
-CheckArrayOperatorLte(const DerivedA& a1, const DerivedB& a2) {
-  const auto arr = (a1 <= a2);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a1(i, j) <= a2(i, j))) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given a scalar-type object @p v and an Eigen array @p a, it checks if v <= a
-// returns an array whose (i, j)-element is a formula v <= a(i, j).
-template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() <= typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorLte(const ScalarType& v, const Derived& a) {
-  const auto arr = (v <= a);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(v <= a(i, j))) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given an Eigen array @p a and a scalar-type object @p v, it checks if a <= v
-// returns an array whose (i, j)-element is a formula a(i, j) <= v.
-template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() <= ScalarType()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorLte(const Derived& a, const ScalarType& v) {
-  const auto arr = (a <= v);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a(i, j) <= v)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given two Eigen matrices m1 and m2, it checks if m1.array() <= m2.array()
-// returns an array whose (i, j) element is a formula m1(i, j) <= m2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
-CheckArrayOperatorLte(const DerivedA& m1, const DerivedB& m2) {
-  return CheckArrayOperatorLte(m1.array(), m2.array());
-}
-
-// Given two Eigen arrays a1 and a2, it checks if a1 < a2 returns an array whose
-// (i, j) element is a formula a1(i, j) < a2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
-    bool>::type
-CheckArrayOperatorLt(const DerivedA& a1, const DerivedB& a2) {
-  const auto arr = (a1 < a2);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a1(i, j) < a2(i, j))) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given a scalar-type object @p v and an Eigen array @p a, it checks if v < a
-// returns an array whose (i, j)-element is a formula v < a(i, j).
-template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() < typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorLt(const ScalarType& v, const Derived& a) {
-  const auto arr = (v < a);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(v < a(i, j))) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given an Eigen array @p a and a scalar-type object @p v, it checks if a < v
-// returns an array whose (i, j)-element is a formula a(i, j) < v.
-template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() < ScalarType()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorLt(const Derived& a, const ScalarType& v) {
-  const auto arr = (a < v);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a(i, j) < v)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given two Eigen matrices m1 and m2, it checks if m1.array() < m2.array()
-// returns an array whose (i, j) element is a formula m1(i, j) < m2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
-CheckArrayOperatorLt(const DerivedA& m1, const DerivedB& m2) {
-  return CheckArrayOperatorLt(m1.array(), m2.array());
-}
-
-// Given two Eigen arrays a1 and a2, it checks if a1 >= a2 returns an array
-// whose (i, j) element is a formula a1(i, j) >= a2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
-    bool>::type
-CheckArrayOperatorGte(const DerivedA& a1, const DerivedB& a2) {
-  const auto arr = (a1 >= a2);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a1(i, j) >= a2(i, j))) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given a scalar-type object @p v and an Eigen array @p a, it checks if v >= a
-// returns an array whose (i, j)-element is a formula a(i, j) <= v.
-template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() >= typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorGte(const ScalarType& v, const Derived& a) {
-  const auto arr = (v >= a);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      // Note that arr(i, j) should be `a(i, j) <= v` instead of `v >= a(i, j)`.
-      if (!arr(i, j).EqualTo(a(i, j) <= v)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given an Eigen array @p a and a scalar-type object @p v, it checks if a >= v
-// returns an array whose (i, j)-element is a formula a(i, j) >= v.
-template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() >= ScalarType()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorGte(const Derived& a, const ScalarType& v) {
-  const auto arr = (a >= v);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      // TODO(soonho): Add note here.
-      if (!arr(i, j).EqualTo(a(i, j) >= v)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given two Eigen matrices m1 and m2, it checks if m1.array() >= m2.array()
-// returns an array whose (i, j) element is a formula m1(i, j) >= m2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
-CheckArrayOperatorGte(const DerivedA& m1, const DerivedB& m2) {
-  return CheckArrayOperatorGte(m1.array(), m2.array());
-}
-
-// Given two Eigen arrays a1 and a2, it checks if a1 > a2 returns an array whose
-// (i, j) element is a formula a1(i, j) > a2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
-    bool>::type
-CheckArrayOperatorGt(const DerivedA& a1, const DerivedB& a2) {
-  const auto arr = (a1 > a2);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a1(i, j) > a2(i, j))) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given a scalar-type object @p v and an Eigen array @p a, it checks if v > a
-// returns an array whose (i, j)-element is a formula a(i, j) < v.
-template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() > typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorGt(const ScalarType& v, const Derived& a) {
-  const auto arr = (v > a);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      // Note that arr(i, j) should be `a(i, j) < v` instead of `v > a(i, j)`.
-      if (!arr(i, j).EqualTo(a(i, j) < v)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given an Eigen array @p a and a scalar-type object @p v, it checks if a > v
-// returns an array whose (i, j)-element is a formula a(i, j) > v.
-template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() > ScalarType()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorGt(const Derived& a, const ScalarType& v) {
-  const auto arr = (a > v);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a(i, j) > v)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given two Eigen matrices m1 and m2, it checks if m1.array() > m2.array()
-// returns an array whose (i, j) element is a formula m1(i, j) > m2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
-CheckArrayOperatorGt(const DerivedA& m1, const DerivedB& m2) {
-  return CheckArrayOperatorGt(m1.array(), m2.array());
-}
-
-// Given two Eigen arrays a1 and a2, it checks if a1 != a2 returns an array
-// whose (i, j) element is a formula a1(i, j) != a2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
-    bool>::type
-CheckArrayOperatorNeq(const DerivedA& a1, const DerivedB& a2) {
-  const auto arr = (a1 != a2);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a1(i, j) != a2(i, j))) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given a scalar-type object @p v and an Eigen array @p a, it checks if v != a
-// returns an array whose (i, j)-element is a formula v != a(i, j).
-template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() != typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorNeq(const ScalarType& v, const Derived& a) {
-  const auto arr = (v != a);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(v != a(i, j))) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given an Eigen array @p a and a scalar-type object @p v, it checks if a != v
-// returns an array whose (i, j)-element is a formula a(i, j) != v.
-template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() != ScalarType()),
-                     Formula>::value,
-    bool>::type
-CheckArrayOperatorNeq(const Derived& a, const ScalarType& v) {
-  const auto arr = (a != v);
-  for (int i = 0; i < arr.rows(); ++i) {
-    for (int j = 0; j < arr.cols(); ++j) {
-      if (!arr(i, j).EqualTo(a(i, j) != v)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// Given two Eigen matrices m1 and m2, it checks if m1.array() != m2.array()
-// returns an array whose (i, j) element is a formula m1(i, j) != m2(i, j).
-template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
-CheckArrayOperatorNeq(const DerivedA& m1, const DerivedB& m2) {
-  return CheckArrayOperatorNeq(m1.array(), m2.array());
-}
-
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprEqArrayExpr) {
-  const Eigen::Array<Formula, 3, 2> a1{A_.array() == A_.array()};
-  const Eigen::Array<Formula, 2, 3> a2{B_.array() == B_.array()};
-  const Eigen::Array<Formula, 3, 2> a3{C_.array() == C_.array()};
-  EXPECT_TRUE(a1.unaryExpr(ptr_fun(is_true)).all());
-  EXPECT_TRUE(a2.unaryExpr(ptr_fun(is_true)).all());
-  EXPECT_TRUE(a3.unaryExpr(ptr_fun(is_true)).all());
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
-// and Array<Expression>.
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopArrayExpr) {
-  EXPECT_TRUE(CheckArrayOperatorEq(A_, C_));
-  EXPECT_TRUE(CheckArrayOperatorEq(B_ * A_, B_ * C_));
-  EXPECT_TRUE(CheckArrayOperatorLte(A_, C_));
-  EXPECT_TRUE(CheckArrayOperatorLte(B_ * A_, B_ * C_));
-  EXPECT_TRUE(CheckArrayOperatorLt(A_, C_));
-  EXPECT_TRUE(CheckArrayOperatorLt(B_ * A_, B_ * C_));
-  EXPECT_TRUE(CheckArrayOperatorGte(A_, C_));
-  EXPECT_TRUE(CheckArrayOperatorGte(B_ * A_, B_ * C_));
-  EXPECT_TRUE(CheckArrayOperatorGt(A_, C_));
-  EXPECT_TRUE(CheckArrayOperatorGt(B_ * A_, B_ * C_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(A_, C_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(B_ * A_, B_ * C_));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
-// and Array<Variable>
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopArrayVar) {
-  EXPECT_TRUE(CheckArrayOperatorEq(array_expr_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorEq(array_var_2_, array_expr_1_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_expr_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_var_2_, array_expr_1_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_expr_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_var_2_, array_expr_1_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_expr_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_var_2_, array_expr_1_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_expr_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_var_2_, array_expr_1_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_expr_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_2_, array_expr_1_));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
-// and Array<double>
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopArrayDouble) {
-  EXPECT_TRUE(CheckArrayOperatorEq(array_expr_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorEq(array_double_, array_expr_1_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_expr_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_double_, array_expr_1_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_expr_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_double_, array_expr_1_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_expr_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_double_, array_expr_1_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_expr_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_double_, array_expr_1_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_expr_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_double_, array_expr_1_));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
-// and Array<double>
-TEST_F(SymbolicExpressionMatrixTest, ArrayVarRopArrayDouble) {
-  EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorEq(array_double_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_double_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_var_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_double_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_var_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_double_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_var_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_double_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_1_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_double_, array_var_1_));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
-// and Array<Variable>
-TEST_F(SymbolicExpressionMatrixTest, ArrayVarRopArrayVar) {
-  EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorEq(array_var_2_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_var_2_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_var_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_var_2_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_var_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_var_2_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_var_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_var_2_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_1_, array_var_2_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_2_, array_var_1_));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
-// and Expression.
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopExpr) {
-  EXPECT_TRUE(CheckArrayOperatorEq(A_.array(), Expression{0.0}));
-  EXPECT_TRUE(CheckArrayOperatorEq(x_ + y_, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorLte(A_.array(), Expression{0.0}));
-  EXPECT_TRUE(CheckArrayOperatorLte(x_ + y_, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorLt(A_.array(), Expression{0.0}));
-  EXPECT_TRUE(CheckArrayOperatorLt(x_ + y_, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorGte(A_.array(), Expression{0.0}));
-  EXPECT_TRUE(CheckArrayOperatorGte(x_ + y_, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorGt(A_.array(), Expression{0.0}));
-  EXPECT_TRUE(CheckArrayOperatorGt(x_ + y_, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorNeq(A_.array(), Expression{0.0}));
-  EXPECT_TRUE(CheckArrayOperatorNeq(x_ + y_, (B_ * C_).array()));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
-// and Variable.
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopVar) {
-  EXPECT_TRUE(CheckArrayOperatorEq(A_.array(), var_x_));
-  EXPECT_TRUE(CheckArrayOperatorEq(var_x_, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorLte(A_.array(), var_x_));
-  EXPECT_TRUE(CheckArrayOperatorLte(var_x_, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorLt(A_.array(), var_x_));
-  EXPECT_TRUE(CheckArrayOperatorLt(var_x_, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorGte(A_.array(), var_x_));
-  EXPECT_TRUE(CheckArrayOperatorGte(var_x_, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorGt(A_.array(), var_x_));
-  EXPECT_TRUE(CheckArrayOperatorGt(var_x_, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorNeq(A_.array(), var_x_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(var_x_, (B_ * C_).array()));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
-// and double.
-TEST_F(SymbolicExpressionMatrixTest, ArrayExprRopDouble) {
-  EXPECT_TRUE(CheckArrayOperatorEq(A_.array(), 0.0));
-  EXPECT_TRUE(CheckArrayOperatorEq(1.0, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorLte(A_.array(), 0.0));
-  EXPECT_TRUE(CheckArrayOperatorLte(1.0, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorLt(A_.array(), 0.0));
-  EXPECT_TRUE(CheckArrayOperatorLt(1.0, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorGte(A_.array(), 0.0));
-  EXPECT_TRUE(CheckArrayOperatorGte(1.0, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorGt(A_.array(), 0.0));
-  EXPECT_TRUE(CheckArrayOperatorGt(1.0, (B_ * C_).array()));
-  EXPECT_TRUE(CheckArrayOperatorNeq(A_.array(), 0.0));
-  EXPECT_TRUE(CheckArrayOperatorNeq(1.0, (B_ * C_).array()));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
-// and Expression.
-TEST_F(SymbolicExpressionMatrixTest, ArraryVarRopExpr) {
-  EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorEq(x_ + y_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorLte(x_ + y_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_var_1_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorLt(x_ + y_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_var_1_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorGte(x_ + y_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_var_1_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorGt(x_ + y_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_1_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(x_ + y_, array_var_1_));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
-// and Variable.
-TEST_F(SymbolicExpressionMatrixTest, ArraryVarRopVar) {
-  EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorEq(var_x_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorLte(var_x_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_var_1_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorLt(var_x_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_var_1_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorGte(var_x_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_var_1_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorGt(var_x_, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_1_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(var_x_, array_var_1_));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<Variable>
-// and double.
-TEST_F(SymbolicExpressionMatrixTest, ArraryVarRopDouble) {
-  EXPECT_TRUE(CheckArrayOperatorEq(array_var_1_, 3.0));
-  EXPECT_TRUE(CheckArrayOperatorEq(3.0, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_var_1_, 3.0));
-  EXPECT_TRUE(CheckArrayOperatorLte(3.0, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_var_1_, 3.0));
-  EXPECT_TRUE(CheckArrayOperatorLt(3.0, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_var_1_, 3.0));
-  EXPECT_TRUE(CheckArrayOperatorGte(3.0, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_var_1_, 3.0));
-  EXPECT_TRUE(CheckArrayOperatorGt(3.0, array_var_1_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_var_1_, 3.0));
-  EXPECT_TRUE(CheckArrayOperatorNeq(3.0, array_var_1_));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<double>
-// and Expression.
-TEST_F(SymbolicExpressionMatrixTest, ArraryDoubleRopExpr) {
-  EXPECT_TRUE(CheckArrayOperatorEq(array_double_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorEq(x_ + y_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_double_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorLte(x_ + y_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_double_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorLt(x_ + y_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_double_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorGte(x_ + y_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_double_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorGt(x_ + y_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_double_, x_ + y_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(x_ + y_, array_double_));
-}
-
-// Checks relational operators (==, !=, <=, <, >=, >) between Array<double>
-// and Variable.
-TEST_F(SymbolicExpressionMatrixTest, ArraryDoubleRopVar) {
-  EXPECT_TRUE(CheckArrayOperatorEq(array_double_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorEq(var_x_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorLte(array_double_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorLte(var_x_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorLt(array_double_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorLt(var_x_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorGte(array_double_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorGte(var_x_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorGt(array_double_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorGt(var_x_, array_double_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(array_double_, var_x_));
-  EXPECT_TRUE(CheckArrayOperatorNeq(var_x_, array_double_));
-}
-
-TEST_F(SymbolicExpressionMatrixTest, ArrayOperatorReturnType) {
-  Eigen::Array<Variable, 2, Eigen::Dynamic> m1(2, 2);
-  Eigen::Array<Variable, Eigen::Dynamic, 2> m2(2, 2);
-  EXPECT_TRUE(
-      (std::is_same<decltype(m1 == m2), Eigen::Array<Formula, 2, 2>>::value));
-  EXPECT_TRUE(
-      (std::is_same<decltype(m1 != m2), Eigen::Array<Formula, 2, 2>>::value));
-  EXPECT_TRUE(
-      (std::is_same<decltype(m1 <= m2), Eigen::Array<Formula, 2, 2>>::value));
-  EXPECT_TRUE(
-      (std::is_same<decltype(m1 < m2), Eigen::Array<Formula, 2, 2>>::value));
-  EXPECT_TRUE(
-      (std::is_same<decltype(m1 >= m2), Eigen::Array<Formula, 2, 2>>::value));
-  EXPECT_TRUE(
-      (std::is_same<decltype(m1 > m2), Eigen::Array<Formula, 2, 2>>::value));
-}
-
-// Checks if m1 == m2 returns a formula which is a conjunction of
-// m1(i, j) == m2(i, j) for all i and j.
+// Checks the following two formulas are identical:
+//   - m1 == m2
+//   - ⋀ᵢⱼ (m1.array() == m2.array())
 bool CheckMatrixOperatorEq(const MatrixX<Expression>& m1,
                            const MatrixX<Expression>& m2) {
-  const Formula f{m1 == m2};
-  Formula f_expected{};  // True
-  for (int i = 0; i < m1.rows(); ++i) {
-    for (int j = 0; j < m1.cols(); ++j) {
-      f_expected = f_expected && (m1(i, j) == m2(i, j));
-    }
-  }
-  return f.EqualTo(f_expected);
+  const Formula f1{m1 == m2};
+  const Formula f2{(m1.array() == m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
+}
+
+// Checks the following two formulas are identical:
+//   - m1 != m2
+//   - ⋀ᵢⱼ (m1.array() != m2.array())
+bool CheckMatrixOperatorNeq(const MatrixX<Expression>& m1,
+                            const MatrixX<Expression>& m2) {
+  const Formula f1{m1 != m2};
+  const Formula f2{(m1.array() != m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
+}
+
+// Checks the following two formulas are identical:
+//   - m1 < m2
+//   - ⋀ᵢⱼ (m1.array() < m2.array())
+bool CheckMatrixOperatorLt(const MatrixX<Expression>& m1,
+                           const MatrixX<Expression>& m2) {
+  const Formula f1{m1 < m2};
+  const Formula f2{(m1.array() < m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
+}
+
+// Checks the following two formulas are identical:
+//   - m1 <= m2
+//   - ⋀ᵢⱼ (m1.array() <= m2.array())
+bool CheckMatrixOperatorLte(const MatrixX<Expression>& m1,
+                            const MatrixX<Expression>& m2) {
+  const Formula f1{m1 <= m2};
+  const Formula f2{(m1.array() <= m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
+}
+
+// Checks the following two formulas are identical:
+//   - m1 > m2
+//   - ⋀ᵢⱼ (m1.array() > m2.array())
+bool CheckMatrixOperatorGt(const MatrixX<Expression>& m1,
+                           const MatrixX<Expression>& m2) {
+  const Formula f1{m1 > m2};
+  const Formula f2{(m1.array() > m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
+}
+
+// Checks the following two formulas are identical:
+//   - m1 >= m2
+//   - ⋀ᵢⱼ (m1.array() >= m2.array())
+bool CheckMatrixOperatorGte(const MatrixX<Expression>& m1,
+                            const MatrixX<Expression>& m2) {
+  const Formula f1{m1 >= m2};
+  const Formula f2{(m1.array() >= m2.array()).redux(detail::logic_and)};
+  return f1.EqualTo(f2);
 }
 
 TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqExpr1) {
@@ -899,6 +229,11 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqExpr1) {
   ASSERT_TRUE(is_conjunction(f));
   EXPECT_EQ(get_operands(f).size(), 3);
   EXPECT_TRUE(CheckMatrixOperatorEq(m1, m2));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(m1, m2));
+  EXPECT_TRUE(CheckMatrixOperatorLt(m1, m2));
+  EXPECT_TRUE(CheckMatrixOperatorLte(m1, m2));
+  EXPECT_TRUE(CheckMatrixOperatorGt(m1, m2));
+  EXPECT_TRUE(CheckMatrixOperatorGte(m1, m2));
 }
 
 TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqExpr2) {
@@ -1000,43 +335,89 @@ TEST_F(SymbolicExpressionMatrixTest, ExpressionMatrixBlock) {
   EXPECT_TRUE(is_false(f));
 }
 
-TEST_F(SymbolicExpressionMatrixTest, ExpressionArraySegment) {
-  Eigen::Array<Expression, 5, 1> v;
-  v << x_, 1, y_, x_, 1;
-  const auto s1 = v.segment(0, 2);  // [x, 1]
-  const auto s2 = v.segment<2>(1);  // [1, y]
-  const auto s3 = v.segment(3, 2);  // [x, 1]
-  const auto a1 = (s1 == s2);       // [x = 1, 1 = y]
-  const auto a2 = (s1 == s3);       // [True, True]
-
-  EXPECT_PRED2(FormulaEqual, a1(0), x_ == 1);
-  EXPECT_PRED2(FormulaEqual, a1(1), 1 == y_);
-  EXPECT_TRUE(is_true(a2(0)));
-  EXPECT_TRUE(is_true(a2(1)));
+// Checks relational operators (==, !=, <=, <, >=, >) between
+// Matrix<Expression> and Matrix<Expression>.
+TEST_F(SymbolicExpressionMatrixTest, MatrixExprRopMatrixExpr) {
+  EXPECT_TRUE(CheckMatrixOperatorEq(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorEq(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(B_ * A_, B_ * C_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(A_, C_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(B_ * A_, B_ * C_));
 }
 
-TEST_F(SymbolicExpressionMatrixTest, ExpressionArrayBlock) {
-  Eigen::Array<Expression, 3, 3> m;
-  // clang-format off
-  m << x_, y_, z_,
-       y_, 1, 2,
-       z_, 3, 4;
-  // clang-format on
+// Checks relational operators (==, !=, <=, <, >=, >) between
+// Matrix<Expression> and Matrix<Variable>
+TEST_F(SymbolicExpressionMatrixTest, MatrixExprRopMatrixVar) {
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_var_2_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_var_2_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_var_2_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_var_2_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_var_2_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_expr_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_2_, matrix_expr_1_));
+}
 
-  // b1 = [x, y]
-  //      [y, 1]
-  const auto b1 = m.block<2, 2>(0, 0);
-  // b2 = [1, 2]
-  //      [3, 4]
-  const auto b2 = m.block(1, 1, 2, 2);
-  // a = [x = 1, y = 2]
-  //     [y = 3, False]
-  const auto a = (b1 == b2);
+// Checks relational operators (==, !=, <=, <, >=, >) between
+// Matrix<Expression> and Matrix<double>
+TEST_F(SymbolicExpressionMatrixTest, MatrixExprRopMatrixDouble) {
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_double_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_double_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_double_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_double_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_double_, matrix_expr_1_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_expr_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_double_, matrix_expr_1_));
+}
 
-  EXPECT_PRED2(FormulaEqual, a(0, 0), x_ == 1);
-  EXPECT_PRED2(FormulaEqual, a(0, 1), y_ == 2);
-  EXPECT_PRED2(FormulaEqual, a(1, 0), y_ == 3);
-  EXPECT_TRUE(is_false(a(1, 1)));
+// Checks relational operators (==, !=, <=, <, >=, >) between
+// Matrix<Variable> and Matrix<double>
+TEST_F(SymbolicExpressionMatrixTest, MatrixVarRopMatrixDouble) {
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_double_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_double_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_double_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_double_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_double_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_1_, matrix_double_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_double_, matrix_var_1_));
+}
+
+// Checks relational operators (==, !=, <=, <, >=, >) between
+// Matrix<Variable> and Matrix<Variable>
+TEST_F(SymbolicExpressionMatrixTest, MatrixVarRopMatrixVar) {
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorEq(matrix_var_2_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorLte(matrix_var_2_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorLt(matrix_var_2_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorGte(matrix_var_2_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorGt(matrix_var_2_, matrix_var_1_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_1_, matrix_var_2_));
+  EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_2_, matrix_var_1_));
 }
 
 }  // namespace
