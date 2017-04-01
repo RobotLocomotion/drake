@@ -79,13 +79,6 @@ class BicycleCar : public systems::LeafSystem<T> {
   /// Returns a descriptor of the output port that contains the bicycle states.
   const systems::OutputPortDescriptor<T>& get_state_output_port() const;
 
-  /// Sets the parameters in the @p context to default values.
-  void SetDefaultParameters(const systems::LeafContext<T>& context,
-                            systems::Parameters<T>* params) const override;
-
-  // LeafSystem<T> overrides
-  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
-
   // System<T> overrides.
   // Declare that the outputs are all algebraically isolated from the input.
   bool has_any_direct_feedthrough() const override { return false; }

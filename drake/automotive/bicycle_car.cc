@@ -36,6 +36,8 @@ BicycleCar<T>::BicycleCar() {
   steering_input_port_ = steering_input.get_index();
   force_input_port_ = force_input.get_index();
   state_output_port_ = state_output.get_index();
+
+  this->DeclareNumericParameter(BicycleCarParameters<T>());
 }
 
 template <typename T>
@@ -168,22 +170,6 @@ void BicycleCar<T>::ImplCalcTimeDerivatives(
   derivatives->set_vel(vel_dot);
   derivatives->set_sx(sx_dot);
   derivatives->set_sy(sy_dot);
-}
-
-template <typename T>
-std::unique_ptr<systems::Parameters<T>> BicycleCar<T>::AllocateParameters()
-    const {
-  auto params = std::make_unique<BicycleCarParameters<T>>();
-  return std::make_unique<systems::Parameters<T>>(std::move(params));
-}
-
-template <typename T>
-void BicycleCar<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
-                                      systems::Parameters<T>* params) const {
-  auto p = dynamic_cast<BicycleCarParameters<T>*>(
-      params->get_mutable_numeric_parameter(0));
-  DRAKE_DEMAND(p != nullptr);
-  p->SetFrom(BicycleCarParameters<T>());
 }
 
 // These instantiations must match the API documentation in bicycle.h.

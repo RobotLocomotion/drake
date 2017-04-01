@@ -34,6 +34,8 @@ IdmController<T>::IdmController(const RoadGeometry& road) : road_(road) {
   traffic_index_ = this->DeclareAbstractInputPort().get_index();
   // Declare the output port.
   this->DeclareVectorOutputPort(DrivingCommand<T>());
+
+  this->DeclareNumericParameter(IdmPlannerParameters<T>());
 }
 
 template <typename T>
@@ -128,25 +130,6 @@ double IdmController<T>::GetSVelocity(const RoadOdometry<T>& road_odom) const {
   const T vy = road_odom.vel.get_velocity().translational().y();
 
   return vx * std::cos(rot.yaw) + vy * std::sin(rot.yaw);
-}
-
-template <typename T>
-std::unique_ptr<systems::Parameters<T>> IdmController<T>::AllocateParameters()
-    const {
-  static_assert(kIdmParamsIndex == 0, "");
-  std::vector<std::unique_ptr<systems::BasicVector<T>>> params;
-  params.emplace_back(std::make_unique<IdmPlannerParameters<T>>());
-  return std::make_unique<systems::Parameters<T>>(std::move(params));
-}
-
-template <typename T>
-void IdmController<T>::SetDefaultParameters(
-    const systems::LeafContext<T>& context,
-    systems::Parameters<T>* params) const {
-  // Set the default IDM parameters.
-  auto idm_params = dynamic_cast<IdmPlannerParameters<T>*>(
-      params->get_mutable_numeric_parameter(0));
-  IdmPlanner<T>::SetDefaultParameters(idm_params);
 }
 
 // These instantiations must match the API documentation in idm_controller.h.
