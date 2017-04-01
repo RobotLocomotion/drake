@@ -170,8 +170,8 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         ":idm_planner",
-        ":simple_car",
         ":pose_selector",
+        ":simple_car",
         "//drake/automotive/maliput/api",
         "//drake/math:saturate",
         "//drake/systems/rendering:pose_bundle",
