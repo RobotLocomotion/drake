@@ -71,13 +71,6 @@ class MaliputRailcar : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  // LeafSystem<T> overrides.
-  void SetDefaultParameters(const systems::LeafContext<T>& context,
-                            systems::Parameters<T>* params) const override;
-
-  /// Sets `params` to contain the default parameters for MaliputRailcar.
-  static void SetDefaultParameters(MaliputRailcarParams<T>* params);
-
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
@@ -92,18 +85,13 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   const systems::OutputPortDescriptor<T>& pose_output() const;
   /// @}
 
-  static constexpr T kDefaultR = T(0);
-  static constexpr T kDefaultH = T(0);
   static constexpr T kDefaultInitialS = T(0);
   static constexpr T kDefaultInitialSpeed = T(1);
-  static constexpr T kDefaultMaxSpeed = T(45);
-  static constexpr T kDefaultVelocityLimitKp = T(10);
 
  protected:
   // LeafSystem<T> overrides.
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
-  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
   bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
                               int input_port, int output_port) const override;
   void DoCalcNextUpdateTime(const systems::Context<T>& context,

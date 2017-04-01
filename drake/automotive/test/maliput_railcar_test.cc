@@ -267,7 +267,6 @@ class MaliputRailcarTest : public ::testing::Test {
     MaliputRailcarParams<double> params;
     params.set_r(1);
     params.set_h(0);
-    params.set_initial_speed(kForwardSpeed);
     params.set_max_speed(30);
     params.set_velocity_limit_kp(8);
     SetParams(params);
@@ -429,7 +428,6 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputDragway) {
   MaliputRailcarParams<double> params;
   params.set_r(kR);
   params.set_h(kH);
-  params.set_initial_speed(1);
   params.set_max_speed(30);
   params.set_velocity_limit_kp(8);
   SetParams(params);
@@ -450,7 +448,6 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
   MaliputRailcarParams<double> params;
   params.set_r(kR);
   params.set_h(kH);
-  params.set_initial_speed(1);
   params.set_max_speed(30);
   params.set_velocity_limit_kp(8);
   SetParams(params);
@@ -517,7 +514,6 @@ TEST_F(MaliputRailcarTest, DerivativesDragway) {
   MaliputRailcarParams<double> params;
   params.set_r(-2);
   params.set_h(0);
-  params.set_initial_speed(kSlowSpeed);
   params.set_max_speed(kMaxSpeed);
   params.set_velocity_limit_kp(8);
   SetParams(params);
@@ -568,7 +564,6 @@ TEST_F(MaliputRailcarTest, DerivativesMonolane) {
   MaliputRailcarParams<double> params;
   params.set_r(kR);
   params.set_h(0);
-  params.set_initial_speed(kInitialSpeed);
   params.set_max_speed(30);
   params.set_velocity_limit_kp(8);
   SetParams(params);
@@ -600,7 +595,6 @@ TEST_F(MaliputRailcarTest, InputPortNotConnected) {
   MaliputRailcarParams<double> params;
   params.set_r(-2);
   params.set_h(0);
-  params.set_initial_speed(kInitialSpeed);
   params.set_max_speed(30);
   params.set_velocity_limit_kp(8);
   SetParams(params);
@@ -651,7 +645,6 @@ TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
   MaliputRailcarParams<double> params;
   params.set_r(1);
   params.set_h(0);
-  params.set_initial_speed(kInitialSpeed);
   params.set_max_speed(30);
   params.set_velocity_limit_kp(8);
   SetParams(params);
@@ -781,7 +774,6 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
   MaliputRailcarParams<double> params;
   params.set_r(0);
   params.set_h(0);
-  params.set_initial_speed(kSpeed);
   params.set_max_speed(30);
   params.set_velocity_limit_kp(8);
   SetParams(params);
@@ -824,7 +816,6 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
   MaliputRailcarParams<double> params;
   params.set_r(0);
   params.set_h(0);
-  params.set_initial_speed(kSpeed);
   params.set_max_speed(30);
   params.set_velocity_limit_kp(8);
   SetParams(params);
@@ -916,7 +907,6 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   MaliputRailcarParams<double> params;
   params.set_r(1);
   params.set_h(0);
-  params.set_initial_speed(kSpeed);
   params.set_max_speed(30);
   params.set_velocity_limit_kp(8);
   SetParams(params);

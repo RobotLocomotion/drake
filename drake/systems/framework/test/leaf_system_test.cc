@@ -313,7 +313,8 @@ TEST_F(LeafSystemTest, DeclareAbstractOutput) {
   EXPECT_EQ(42, UnpackIntValue(output->get_data(1)));
 }
 
-// A system that exercises the model_value-based input and output ports.
+// A system that exercises the model_value-based input and output ports,
+// as well as model-declared params.
 class DeclaredModelPortsSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeclaredModelPortsSystem);
@@ -326,6 +327,8 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     this->DeclareOutputPort(kVectorValued, 3);
     this->DeclareVectorOutputPort(MyVector4d());
     this->DeclareAbstractOutputPort(Value<std::string>("44"));
+
+    this->DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
   }
 
   void DoCalcOutput(const Context<double>& context,
@@ -411,6 +414,20 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsOutput) {
   std::string downcast_output2{};
   EXPECT_NO_THROW(downcast_output2 = output2->GetValueOrThrow<std::string>());
   EXPECT_EQ(downcast_output2, "44");
+}
+
+// Tests that the leaf system reserved the declared parameters of interesting
+// custom type.
+GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
+  DeclaredModelPortsSystem dut;
+  auto context = dut.CreateDefaultContext();
+  ASSERT_EQ(context->num_numeric_parameters(), 1);
+  const BasicVector<double>* const param = context->get_numeric_parameter(0);
+  // Check that type was preserved.
+  ASSERT_NE(nullptr, dynamic_cast<const MyVector2d*>(param));
+  EXPECT_EQ(2, param->size());
+  EXPECT_EQ(1.1, param->GetAtIndex(0));
+  EXPECT_EQ(2.2, param->GetAtIndex(1));
 }
 
 // Tests both that an unrestricted update callback is called and that

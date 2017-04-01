@@ -41,13 +41,8 @@ using systems::rendering::PoseVector;
 
 namespace automotive {
 
-// Linkage for MaliputRailcar constants.
-template <typename T> constexpr T MaliputRailcar<T>::kDefaultR;
-template <typename T> constexpr T MaliputRailcar<T>::kDefaultH;
 template <typename T> constexpr T MaliputRailcar<T>::kDefaultInitialS;
 template <typename T> constexpr T MaliputRailcar<T>::kDefaultInitialSpeed;
-template <typename T> constexpr T MaliputRailcar<T>::kDefaultMaxSpeed;
-template <typename T> constexpr T MaliputRailcar<T>::kDefaultVelocityLimitKp;
 
 template <typename T>
 MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
@@ -62,6 +57,7 @@ MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
   pose_output_port_index_ =
       this->DeclareVectorOutputPort(PoseVector<T>()).get_index();
   this->DeclareContinuousState(MaliputRailcarState<T>());
+  this->DeclareNumericParameter(MaliputRailcarParams<T>());
 }
 
 template <typename T>
@@ -256,36 +252,9 @@ MaliputRailcar<T>::AllocateAbstractState() const {
 }
 
 template <typename T>
-std::unique_ptr<systems::Parameters<T>>
-MaliputRailcar<T>::AllocateParameters() const {
-  auto params = std::make_unique<MaliputRailcarParams<T>>();
-  return std::make_unique<Parameters<T>>(std::move(params));
-}
-
-template <typename T>
 bool MaliputRailcar<T>::DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
     int input_port, int output_port) const {
   return false;
-}
-
-template <typename T>
-void MaliputRailcar<T>::SetDefaultParameters(
-    const LeafContext<T>& context, Parameters<T>* params) const {
-  MaliputRailcarParams<T>* railcar_params =
-      dynamic_cast<MaliputRailcarParams<T>*>(
-          params->get_mutable_numeric_parameter(0));
-  DRAKE_DEMAND(railcar_params != nullptr);
-  SetDefaultParameters(railcar_params);
-}
-
-template <typename T>
-void MaliputRailcar<T>::SetDefaultParameters(MaliputRailcarParams<T>* params) {
-  DRAKE_DEMAND(params != nullptr);
-  params->set_r(kDefaultR);
-  params->set_h(kDefaultH);
-  params->set_initial_speed(kDefaultInitialSpeed);
-  params->set_max_speed(kDefaultMaxSpeed);
-  params->set_velocity_limit_kp(kDefaultVelocityLimitKp);
 }
 
 template <typename T>
