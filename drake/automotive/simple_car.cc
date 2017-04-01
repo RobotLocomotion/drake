@@ -202,12 +202,6 @@ systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
 }
 
 template <typename T>
-systems::BasicVector<T>* SimpleCar<T>::DoAllocateInputVector(
-    const systems::InputPortDescriptor<T>& descriptor) const {
-  return new DrivingCommand<T>();
-}
-
-template <typename T>
 std::unique_ptr<systems::Parameters<T>> SimpleCar<T>::AllocateParameters()
     const {
   auto params = std::make_unique<SimpleCarParams<T>>();

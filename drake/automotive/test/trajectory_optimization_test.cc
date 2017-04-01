@@ -34,8 +34,8 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   xf.set_velocity(x0.velocity());
 
   const int kNumTimeSamples = 10;
-  
-  // The solved trajectory may deviate from the initial guess at a reasonable 
+
+  // The solved trajectory may deviate from the initial guess at a reasonable
   // duration.
   const double kTrajectoryTimeLowerBound = 0.8 * initial_duration,
                kTrajectoryTimeUpperBound = 1.2 * initial_duration;
@@ -47,12 +47,14 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   // Input limits (note that the steering limit imposed by SimpleCar is larger).
   DrivingCommand<double> lower_limit, upper_limit;
   lower_limit.set_steering_angle(-M_PI_2);
-  lower_limit.set_throttle(0.0);
-  lower_limit.set_brake(0.0);
+  lower_limit.set_acceleration(-std::numeric_limits<double>::infinity());
   upper_limit.set_steering_angle(M_PI_2);
-  upper_limit.set_throttle(std::numeric_limits<double>::infinity());
-  upper_limit.set_brake(std::numeric_limits<double>::infinity());
+  upper_limit.set_acceleration(std::numeric_limits<double>::infinity());
   prog.AddInputBounds(lower_limit.get_value(), upper_limit.get_value());
+
+  // Ensure that time intervals are (relatively) evenly spaced.
+  prog.AddTimeIntervalBounds(kTrajectoryTimeLowerBound / kNumTimeSamples,
+                             kTrajectoryTimeUpperBound / kNumTimeSamples);
 
   // Fix initial conditions.
   prog.AddLinearConstraint(prog.initial_state().array() ==
@@ -62,9 +64,10 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   prog.AddLinearConstraint(prog.final_state().array() ==
                            xf.get_value().array());
 
-  // Cost function: int_0^T [ u'u ] dt
+  // Cost function: int_0^T [ u'u ] dt.
   prog.AddRunningCost(prog.input().transpose() * prog.input());
 
+  // Initial guess is a straight line from the initial state to the final state.
   auto initial_state_trajectory = PiecewisePolynomial<double>::FirstOrderHold(
       {0, initial_duration}, {x0.get_value(), xf.get_value()});
 
@@ -75,6 +78,7 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
 
   // Plot the solution.
+  // Note: see lcm_call_matlab.h for instructions on viewing the plot.
   Eigen::MatrixXd inputs;
   Eigen::MatrixXd states;
   std::vector<double> times_out;
@@ -83,6 +87,10 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
                      states.row(SimpleCarStateIndices::kY));
   lcm::LcmCallMatlab("xlabel", "x (m)");
   lcm::LcmCallMatlab("ylabel", "y (m)");
+
+  // Checks that the input commands found are not too large.
+  EXPECT_LE(inputs.row(0).lpNorm<1>(), 0.1);
+  EXPECT_LE(inputs.row(1).lpNorm<1>(), 1);
 }
 
 }  // namespace
