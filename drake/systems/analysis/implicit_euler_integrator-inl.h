@@ -356,8 +356,6 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     const int n = xtplus->size();
     A_ = J * (dt / scale) - MatrixX<T>::Identity(n, n);
     LU_.compute(A_);
-    if (!LU_.isInvertible())
-      break;
     VectorX<T> dx = LU_.solve(goutput);
     double dx_norm = dx.norm();
 
