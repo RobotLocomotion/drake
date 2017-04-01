@@ -238,14 +238,14 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     return num_iter_refactors_ - num_itr_iter_refactors_;
   }
 
-  /// Gets the number of failed StepAbstract() calls.
-  int get_num_step_abstract_failures() const {
-    return num_step_abstract_failures_;
+  /// Gets the number of failed sub-steps (implying step halving was required).
+  int get_num_substep_failures() const {
+    return num_substep_failures_;
   }
 
-  /// Gets the number of step size shrinkages due to StepAbstract() failures.
-  int get_num_step_shrinkages_from_step_abstract_failures() const {
-    return num_shrinkages_from_step_abstract_failures_;
+  /// Gets the number of step size shrinkages due to sub-step failures.
+  int get_num_step_shrinkages_from_substep_failures() const {
+    return num_shrinkages_from_substep_failures_;
   }
 
   /// Gets the number of step size shrinkages due to error control.
@@ -341,8 +341,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   // Statistics that indicate why step sizes decrease.
   int num_shrinkages_from_error_control_{0};
-  int num_shrinkages_from_step_abstract_failures_{0};
-  int num_step_abstract_failures_{0};
+  int num_shrinkages_from_substep_failures_{0};
+  int num_substep_failures_{0};
 
   // Various combined statistics.
   int num_jacobian_reforms_{0};

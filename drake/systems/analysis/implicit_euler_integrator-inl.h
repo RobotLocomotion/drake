@@ -25,8 +25,8 @@ void ImplicitEulerIntegrator<T>::DoResetStatistics() {
   num_jacobian_reforms_ = num_itr_jacobian_reforms_ = 0;
   num_iter_refactors_ = num_itr_iter_refactors_ = 0;
   num_shrinkages_from_error_control_ = 0;
-  num_shrinkages_from_step_abstract_failures_ = 0;
-  num_step_abstract_failures_ = 0;
+  num_shrinkages_from_substep_failures_ = 0;
+  num_substep_failures_ = 0;
 }
 
 template <class T>
@@ -355,6 +355,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     // it, and solving it.
     const int n = xtplus->size();
     A_ = J * (dt / scale) - MatrixX<T>::Identity(n, n);
+    num_iter_refactors_++;
     LU_.compute(A_);
     VectorX<T> dx = LU_.solve(goutput);
     double dx_norm = dx.norm();
@@ -408,7 +409,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
 
   // If we're here, then the simple Newton-Raphson approach failed. Record a
   // StepAbstract() failure.
-  num_step_abstract_failures_++;
+  num_substep_failures_++;
 
   // If this function was called by StepImplicitEuler() (implying that shrink_ok
   // is true), we want to continue shrinking the step size until StepAbstract()
@@ -534,6 +535,7 @@ template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& tf,
                                                     const VectorX<T>& xtplus) {
   this->get_mutable_context()->set_time(tf);
+  num_jacobian_reforms_++;
 
   switch (jacobian_scheme_) {
     case JacobianComputationScheme::kForwardDifference:
@@ -618,7 +620,7 @@ std::pair<bool, T> ImplicitEulerIntegrator<T>::DoStepOnceAtMost(
       dt_actual = StepOnceAtMostPaired(dt, &xtplus_ie, &xtplus_itr);
       if (dt_actual < dt) {
         dt_was_artificially_limited = true;
-        num_shrinkages_from_step_abstract_failures_++;
+        num_shrinkages_from_substep_failures_++;
       }
 
       // Compute the error estimate.

@@ -195,11 +195,26 @@ TEST_F(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
 // Checks the validity of general integrator statistics and resets statistics.
 void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GT(integrator->get_num_newton_raphson_loops(), 0);
-  EXPECT_GE(integrator->get_previous_integration_step_size(), 0.0);
-  EXPECT_GE(integrator->get_largest_step_size_taken(), 0.0);
+  EXPECT_GT(integrator->get_num_itr_newton_raphson_loops(), 0);
+  EXPECT_GT(integrator->get_num_ieu_newton_raphson_loops(), 0);
+  EXPECT_GT(integrator->get_previous_integration_step_size(), 0.0);
+  EXPECT_GT(integrator->get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator->get_num_steps_taken(), 0);
   EXPECT_GT(integrator->get_num_function_evaluations(), 0);
-  EXPECT_GE(integrator->get_num_jacobian_function_evaluations(), 0);
+  EXPECT_GT(integrator->get_num_itr_function_evaluations(), 0);
+  EXPECT_GT(integrator->get_num_ieu_function_evaluations(), 0);
+  EXPECT_GT(integrator->get_num_jacobian_function_evaluations(), 0);
+  EXPECT_GT(integrator->get_num_itr_jacobian_function_evaluations(), 0);
+  EXPECT_GT(integrator->get_num_ieu_jacobian_function_evaluations(), 0);
+  EXPECT_GE(integrator->get_num_jacobian_reformulations(), 0);
+  EXPECT_GE(integrator->get_num_itr_jacobian_reformulations(), 0);
+  EXPECT_GE(integrator->get_num_ieu_jacobian_reformulations(), 0);
+  EXPECT_GE(integrator->get_num_iter_refactors(), 0);
+  EXPECT_GE(integrator->get_num_itr_iter_refactors(), 0);
+  EXPECT_GE(integrator->get_num_ieu_iter_refactors(), 0);
+  EXPECT_GE(integrator->get_num_substep_failures(), 0);
+  EXPECT_GE(integrator->get_num_step_shrinkages_from_substep_failures(), 0);
+  EXPECT_GE(integrator->get_num_step_shrinkages_from_error_control(), 0);
   integrator->ResetStatistics();
 }
 
@@ -233,6 +248,11 @@ TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
 
   // Integrate once.
   integrator.StepExactlyFixed(large_dt);
+
+  // Verify that there was (at least one) sub-step failure and that it was due
+  // to a substep failure. 
+  EXPECT_GT(integrator.get_num_substep_failures(), 0);
+  EXPECT_GT(integrator.get_num_shrinkages_from_substep_failures(), 0); 
 
   // Count the number of function evaluations.
   const int n_feval_reform = integrator.get_num_function_evaluations();
@@ -405,6 +425,9 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
 
   // Verify that integrator statistics are valid.
   CheckGeneralStatsValidity(&integrator);
+
+  // Verify that there was a step size shrinkage from error control.
+  EXPECT_GT(integrator.get_num_shrinkages_from_error_control(), 0); 
 
   // Switch to central differencing.
   integrator.set_jacobian_computation_scheme(
