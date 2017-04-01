@@ -32,6 +32,8 @@ The one-time platform setup is the same as for a CMake build:
 When using Bazel, be sure that **ccache is not on your default $PATH**, e.g.,
 ``env | grep ccache`` is empty.
 
+.. _using_bazel:
+
 Developing Drake using Bazel
 ============================
 
