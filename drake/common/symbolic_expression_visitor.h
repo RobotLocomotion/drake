@@ -129,6 +129,9 @@ Result VisitExpression(const Visitor& v, const Expression& e, Args&&... args) {
 
     case ExpressionKind::NaN:
       throw std::runtime_error("NaN is detected while visiting an expression.");
+
+    case ExpressionKind::UninterpretedFunction:
+      return v(to_uninterpreted_function(e), std::forward<Args>(args)...);
   }
 }
 
