@@ -1,13 +1,14 @@
 // Purpose: Tests various quaternion functions and methods.
 //-----------------------------------------------------------------------------
+#include "drake/math/quaternion.h"
+
 #include <cmath>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
-#include "drake/math/quaternion.h"
-
 
 namespace drake {
 namespace math {

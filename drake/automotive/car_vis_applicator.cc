@@ -1,7 +1,7 @@
 #include "drake/automotive/car_vis_applicator.h"
 
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Geometry>

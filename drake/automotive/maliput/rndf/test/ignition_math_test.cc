@@ -1,5 +1,4 @@
 #include "gtest/gtest.h"
-
 #include "ignition/math/Angle.hh"
 
 namespace drake {
