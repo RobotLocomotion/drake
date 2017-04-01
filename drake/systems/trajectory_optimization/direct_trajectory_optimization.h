@@ -223,6 +223,15 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
                              const Eigen::VectorXd& upper_bound);
 
   /**
+   * Add bounds on all time intervals, such that
+   * lower_bound <= h_vars_(i) <= upper_bound
+   * for all time intervals.
+   * @param lower_bound  A scalar double lower bound.
+   * @param upper_bound  A scalar double upper bound.
+   */
+  void AddTimeIntervalBounds(double lower_bound, double upper_bound);
+
+  /**
    * Add a cost to the final state and total time.
    *
    * @param constraint A constraint which expects total time as the

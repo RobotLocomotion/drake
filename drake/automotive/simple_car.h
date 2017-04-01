@@ -70,8 +70,6 @@ class SimpleCar : public systems::LeafSystem<T> {
   // System<T> overrides
   systems::System<AutoDiffXd>* DoToAutoDiffXd() const override;
   systems::System<symbolic::Expression>* DoToSymbolic() const override;
-  systems::BasicVector<T>* DoAllocateInputVector(
-      const systems::InputPortDescriptor<T>& descriptor) const override;
 
  private:
   void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
