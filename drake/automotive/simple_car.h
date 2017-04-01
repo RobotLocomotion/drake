@@ -62,13 +62,6 @@ class SimpleCar : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  // LeafSystem<T> overrides
-  void SetDefaultParameters(const systems::LeafContext<T>& context,
-                            systems::Parameters<T>* params) const override;
-
-  /// Sets `params` to contain the default parameters for SimpleCar.
-  static void SetDefaultParameters(SimpleCarParams<T>* params);
-
   const systems::OutputPortDescriptor<T>& state_output() const;
   const systems::OutputPortDescriptor<T>& pose_output() const;
   const systems::OutputPortDescriptor<T>& velocity_output() const;
@@ -77,9 +70,6 @@ class SimpleCar : public systems::LeafSystem<T> {
   // System<T> overrides
   systems::System<AutoDiffXd>* DoToAutoDiffXd() const override;
   systems::System<symbolic::Expression>* DoToSymbolic() const override;
-
-  // LeafSystem<T> overrides
-  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
  private:
   void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;

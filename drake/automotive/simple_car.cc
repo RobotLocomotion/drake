@@ -31,6 +31,7 @@ SimpleCar<T>::SimpleCar() {
   this->DeclareVectorOutputPort(PoseVector<T>());
   this->DeclareVectorOutputPort(FrameVelocity<T>());
   this->DeclareContinuousState(SimpleCarState<T>());
+  this->DeclareNumericParameter(SimpleCarParams<T>());
 }
 
 template <typename T>
@@ -200,36 +201,6 @@ systems::System<AutoDiffXd>* SimpleCar<T>::DoToAutoDiffXd() const {
 template <typename T>
 systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
   return new SimpleCar<symbolic::Expression>;
-}
-
-template <typename T>
-std::unique_ptr<systems::Parameters<T>>
-SimpleCar<T>::AllocateParameters() const {
-  auto params = std::make_unique<SimpleCarParams<T>>();
-  return std::make_unique<systems::Parameters<T>>(std::move(params));
-}
-
-template <typename T>
-void SimpleCar<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
-                                        systems::Parameters<T>* params) const {
-  SimpleCarParams<T>* simple_car_params = dynamic_cast<SimpleCarParams<T>*>(
-      params->get_mutable_numeric_parameter(0));
-  DRAKE_DEMAND(simple_car_params != nullptr);
-  SetDefaultParameters(simple_car_params);
-}
-
-template <typename T>
-void SimpleCar<T>::SetDefaultParameters(SimpleCarParams<T>* params) {
-  DRAKE_DEMAND(params != nullptr);
-  constexpr double kInchToMeter = 0.0254;
-  constexpr double kDegToRadian = 0.0174532925199;
-  // This approximates a 2010 Toyota Prius.
-  params->set_wheelbase(static_cast<T>(106.3 * kInchToMeter));
-  params->set_track(static_cast<T>(59.9 * kInchToMeter));
-  params->set_max_abs_steering_angle(static_cast<T>(27 * kDegToRadian));
-  params->set_max_velocity(static_cast<T>(45.0));       // meters/second
-  params->set_max_acceleration(static_cast<T>(4.0));    // meters/second**2
-  params->set_velocity_limit_kp(static_cast<T>(10.0));  // Hz
 }
 
 // These instantiations must match the API documentation in simple_car.h.

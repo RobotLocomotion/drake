@@ -27,9 +27,7 @@ class SimpleCarTest : public ::testing::Test {
   }
 
   void SetInputValue(double steering_angle, double normalized_acceleration) {
-    SimpleCarParams<double> default_params;
-    SimpleCar<double>::SetDefaultParameters(&default_params);
-
+    const SimpleCarParams<double> default_params;
     auto value = std::make_unique<DrivingCommand<double>>();
     value->set_steering_angle(steering_angle);
     value->set_acceleration(
@@ -199,8 +197,7 @@ TEST_F(SimpleCarTest, OutputVelocityIsClamped) {
 TEST_F(SimpleCarTest, Derivatives) {
   const double kTolerance = 1e-10;
 
-  SimpleCarParams<double> default_params;
-  SimpleCar<double>::SetDefaultParameters(&default_params);
+  const SimpleCarParams<double> default_params;
   const double wheelbase = default_params.wheelbase();
   const double max_abs_steering_angle = default_params.max_abs_steering_angle();
   const double max_abs_curvature = std::tan(max_abs_steering_angle) / wheelbase;

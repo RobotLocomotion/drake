@@ -43,12 +43,6 @@ const T IdmPlanner<T>::Evaluate(const IdmPlannerParameters<T>& params,
   return a * (1. - accel_free_road - accel_interaction);
 }
 
-template <typename T>
-void IdmPlanner<T>::SetDefaultParameters(IdmPlannerParameters<T>* idm_params) {
-  DRAKE_DEMAND(idm_params != nullptr);
-  idm_params->SetFrom(IdmPlannerParameters<T>());
-}
-
 // These instantiations must match the API documentation in idm_planner.h.
 template class IdmPlanner<double>;
 template class IdmPlanner<drake::TaylorVarXd>;

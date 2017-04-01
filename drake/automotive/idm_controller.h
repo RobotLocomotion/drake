@@ -58,12 +58,6 @@ class IdmController : public systems::LeafSystem<T> {
   const systems::InputPortDescriptor<T>& traffic_input() const;
   /// @}
 
-  // System<T> overrides.
-  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
-
-  void SetDefaultParameters(const systems::LeafContext<T>& context,
-                            systems::Parameters<T>* params) const override;
-
  private:
   // Extracts the vehicle's `s`-direction velocity based on its RoadPosition @p
   // pos and FrameVelocity @p vel.  Assumes the road has zero elevation.
