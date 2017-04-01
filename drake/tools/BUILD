@@ -30,10 +30,10 @@ py_library(
 
 py_binary(
     name = "clang-format-includes",
-    main = "clang_format_includes.py",
     srcs = ["clang_format_includes.py"],
-    deps = [":formatter"],
     data = ["//tools:clang-format"],
+    main = "clang_format_includes.py",
+    deps = [":formatter"],
 )
 
 # === test/ ===

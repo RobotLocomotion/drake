@@ -25,8 +25,8 @@ drake_cc_library(
         "plan_eval_utils.h",
     ],
     deps = [
-        "//drake/common/trajectories:piecewise_quaternion",
         "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/common/trajectories:piecewise_quaternion",
         "//drake/multibody:rigid_body_tree",
     ],
 )
