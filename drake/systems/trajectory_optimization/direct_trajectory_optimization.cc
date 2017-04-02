@@ -16,7 +16,7 @@ VectorXd VectorDiff(const VectorXd& vec) {
   const int len_minus1 = vec.size() - 1;
   return vec.tail(len_minus1) - vec.head(len_minus1);
 }
-}  // anon namespace
+}  // namespace
 
 // DirectTrajectoryOptimization
 // For readability of long lines, these single-letter variables names are
@@ -44,23 +44,13 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   DRAKE_ASSERT(trajectory_time_lower_bound <= trajectory_time_upper_bound);
   // Construct total time linear constraint.
   // TODO(Lucy-tri) add case for all timesteps independent (if needed).
-  MatrixXd id_zero(N_ - 2, N_ - 1);
-  id_zero << MatrixXd::Identity(N_ - 2, N_ - 2), MatrixXd::Zero(N_ - 2, 1);
-  MatrixXd zero_id(N_ - 2, N_ - 1);
-  zero_id << MatrixXd::Zero(N_ - 2, 1), MatrixXd::Identity(N_ - 2, N_ - 2);
-  MatrixXd a_time(N_ - 1, N_ - 1);
-  a_time << MatrixXd::Ones(1, N_ - 1), id_zero - zero_id;
-
-  VectorXd lower(N_ - 1);
-  lower << trajectory_time_lower_bound, MatrixXd::Zero(N_ - 2, 1);
-  VectorXd upper(N_ - 1);
-  upper << trajectory_time_upper_bound, MatrixXd::Zero(N_ - 2, 1);
-  AddLinearConstraint(a_time, lower, upper, h_vars_);
-
-  // Ensure that all h values are non-negative.
-  VectorXd all_inf(N_ - 1);
-  all_inf.fill(std::numeric_limits<double>::infinity());
-  AddBoundingBoxConstraint(MatrixXd::Zero(N_ - 1, 1), all_inf, h_vars_);
+  AddLinearConstraint(h_vars_.cast<symbolic::Expression>().sum(),
+                      trajectory_time_lower_bound, trajectory_time_upper_bound);
+  for (int i = 0; i < N_ - 2; ++i) {
+    AddLinearEqualityConstraint(h_vars_(i + 1) - h_vars_(i), 0.0);
+  }
+  // // Ensure that all h values are non-negative.
+  AddLinearConstraint(h_vars_.array() >= 0.0);
 }
 
 void DirectTrajectoryOptimization::AddInputBounds(
@@ -138,7 +128,7 @@ class FinalCostWrapper : public solvers::Constraint {
   std::shared_ptr<Constraint> constraint_;
 };
 
-}  // anon namespace
+}  // namespace
 
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
