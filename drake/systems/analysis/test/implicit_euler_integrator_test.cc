@@ -442,12 +442,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   // Create a new spring-mass system.
   SpringMassSystem<double> spring_mass(spring_k, mass, false /* no forcing */);
 
-  // Create a new dt. This is actually a larger dt than that used for the same
-  // time with the explicit Euler integrator. As these are both first order
-  // integrators, we should be able to attain the same accuracy.
-  const double dt = 1e-4;
-
-  // Set integrator parameters.
+  // Set integrator parameters; we want error control to initially "fail",
+  // necessitating step size adjustment.
   ImplicitEulerIntegrator<double> integrator(spring_mass, context.get());
   integrator.set_maximum_step_size(large_dt);
   integrator.request_initial_step_size_target(large_dt);
