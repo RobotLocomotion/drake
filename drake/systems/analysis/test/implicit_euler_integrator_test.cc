@@ -16,7 +16,7 @@ namespace {
 template <class T>
 class Robertson : public LeafSystem<T> {
   public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VanDerPolSystem)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Robertson)
     Robertson() {
       this->DeclareContinuousState(3);
     }
