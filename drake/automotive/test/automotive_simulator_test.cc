@@ -188,7 +188,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
       dynamic_cast<const lcm::DrakeMockLcm*>(lcm);
   ASSERT_NE(mock_lcm, nullptr);
 
-  const int expected_num_links = PriusVis<double>(0, "").num_poses() * 2;
+  // Plus one to include the world.
+  const int expected_num_links = PriusVis<double>(0, "").num_poses() * 2 + 1;
 
   // Verifies that the correct lcmt_viewer_load_robot message was transmitted.
   const lcmt_viewer_load_robot load_message =
@@ -238,7 +239,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
     LinkInfo("front_lidar_link", 1, 1),
     LinkInfo("top_lidar_link", 1, 1),
     LinkInfo("rear_right_lidar_link", 1, 1),
-    LinkInfo("rear_left_lidar_link", 1, 1)
+    LinkInfo("rear_left_lidar_link", 1, 1),
+    LinkInfo("world", 0, 0)
   };
 
   for (int i = 0; i < load_message.num_links; ++i) {
@@ -252,7 +254,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
   const lcmt_viewer_draw draw_message =
       mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
           "DRAKE_VIEWER_DRAW");
-  EXPECT_EQ(draw_message.num_links, expected_num_links);
+  // Minus one to omit world, which remains still.
+  EXPECT_EQ(draw_message.num_links, expected_num_links - 1);
 
   // Checks the chassis_floor body of the first car.
   EXPECT_EQ(draw_message.link_name.at(0), "chassis_floor");
@@ -287,6 +290,17 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
   }
 }
 
+bool ContainsWorld(const lcmt_viewer_load_robot& message) {
+  bool result = false;
+  for (int i = 0; i < message.num_links; ++i) {
+    if (message.link.at(i).name ==
+        std::string(RigidBodyTreeConstants::kWorldName)) {
+      result = true;
+    }
+  }
+  return result;
+}
+
 // Verifies that CarVisApplicator, PoseBundleToDrawMessage, and
 // LcmPublisherSystem are instantiated in AutomotiveSimulator's Diagram and
 // collectively result in the correct LCM messages being published.
@@ -314,19 +328,22 @@ GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
       dynamic_cast<const lcm::DrakeMockLcm*>(lcm);
   ASSERT_NE(mock_lcm, nullptr);
 
-  const int expected_num_links = PriusVis<double>(0, "").num_poses() * 4;
+  // Plus one to include the world.
+  const int expected_num_links = PriusVis<double>(0, "").num_poses() * 4 + 1;
 
   // Verifies that an lcmt_viewer_load_robot message was transmitted.
   const lcmt_viewer_load_robot load_message =
       mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_load_robot>(
           "DRAKE_VIEWER_LOAD_ROBOT");
   EXPECT_EQ(load_message.num_links, expected_num_links);
+  EXPECT_TRUE(ContainsWorld(load_message));
 
   // Verifies that an lcmt_viewer_draw message was transmitted.
   const lcmt_viewer_draw draw_message =
       mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
           "DRAKE_VIEWER_DRAW");
-  EXPECT_EQ(draw_message.num_links, expected_num_links);
+  // Minus one to omit world, which remains still.
+  EXPECT_EQ(draw_message.num_links, expected_num_links - 1);
 }
 
 }  // namespace
