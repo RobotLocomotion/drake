@@ -26,9 +26,9 @@ class Robertson : public LeafSystem<T> {
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* deriv) const override {
     // Get state.
-    const T& y1 = context.get_continuous_state_vector()->GetAtIndex(0);
-    const T& y2 = context.get_continuous_state_vector()->GetAtIndex(1);
-    const T& y3 = context.get_continuous_state_vector()->GetAtIndex(2);
+    const T& y1 = context.get_continuous_state_vector().GetAtIndex(0);
+    const T& y2 = context.get_continuous_state_vector().GetAtIndex(1);
+    const T& y3 = context.get_continuous_state_vector().GetAtIndex(2);
 
     // Compute derivatives.
     T y1_prime = -0.04*y1 + 1e4*y2*y3;
@@ -36,9 +36,9 @@ class Robertson : public LeafSystem<T> {
     T y3_prime = 3e7*y2*y2;
 
     // Set the derivatives.
-    deriv->SetAtIndex(0, y1_prime);
-    deriv->SetAtIndex(1, y2_prime);
-    deriv->SetAtIndex(2, y3_prime);
+    deriv->get_mutable_vector()->SetAtIndex(0, y1_prime);
+    deriv->get_mutable_vector()->SetAtIndex(1, y2_prime);
+    deriv->get_mutable_vector()->SetAtIndex(2, y3_prime);
   }
 
   void DoCalcOutput(const Context<T>& context,
