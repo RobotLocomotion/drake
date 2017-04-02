@@ -88,10 +88,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   ~ImplicitEulerIntegrator() override = default;
 
   explicit ImplicitEulerIntegrator(const System<T>& system,
-                                   const T& max_step_size,
                                    Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {
-    IntegratorBase<T>::set_maximum_step_size(max_step_size);
     derivs_ = system.AllocateTimeDerivatives();
   }
 
