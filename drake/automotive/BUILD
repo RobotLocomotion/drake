@@ -199,16 +199,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "linear_car",
-    srcs = ["linear_car.cc"],
-    hdrs = ["linear_car.h"],
-    deps = [
-        ":generated_vectors",
-        "//drake/common:symbolic",
-    ],
-)
-
-drake_cc_library(
     name = "maliput_railcar",
     srcs = ["maliput_railcar.cc"],
     hdrs = ["maliput_railcar.h"],
@@ -302,17 +292,6 @@ drake_cc_library(
     hdrs = ["simple_powertrain.h"],
     deps = [
         "//drake/systems/primitives:linear_system",
-    ],
-)
-
-drake_cc_library(
-    name = "single_lane_ego_and_agent",
-    srcs = ["single_lane_ego_and_agent.cc"],
-    hdrs = ["single_lane_ego_and_agent.h"],
-    deps = [
-        ":idm_planner",
-        ":linear_car",
-        "//drake/systems/primitives:constant_vector_source",
     ],
 )
 
@@ -710,13 +689,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "linear_car_test",
-    deps = [
-        "//drake/automotive:linear_car",
-    ],
-)
-
-drake_cc_googletest(
     name = "pose_selector_test",
     deps = [
         "//drake/automotive:pose_selector",
@@ -754,13 +726,6 @@ drake_cc_googletest(
     name = "simple_car_to_euler_floating_joint_test",
     deps = [
         "//drake/automotive:simple_car",
-    ],
-)
-
-drake_cc_googletest(
-    name = "single_lane_ego_and_agent_test",
-    deps = [
-        "//drake/automotive:single_lane_ego_and_agent",
     ],
 )
 

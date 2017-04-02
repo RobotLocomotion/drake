@@ -28,7 +28,6 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/simple_car_state.cc
   idm_controller.cc
   idm_planner.cc
-  linear_car.cc
   maliput/api/road_geometry.cc
   maliput/dragway/branch_point.cc
   maliput/dragway/junction.cc
@@ -52,7 +51,6 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   road_path.cc
   simple_car.cc
   simple_powertrain.cc
-  single_lane_ego_and_agent.cc
   trajectory_car.cc
   )
 target_link_libraries(drakeAutomotive
@@ -73,7 +71,6 @@ drake_install_headers(
   curve2.h
   idm_controller.h
   idm_planner.h
-  linear_car.h
   maliput_railcar.h
   monolane_onramp_merge.h
   road_path.h
@@ -81,7 +78,6 @@ drake_install_headers(
   simple_car.h
   simple_car_to_euler_floating_joint.h
   simple_powertrain.h
-  single_lane_ego_and_agent.h
   trajectory_car.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
   )
