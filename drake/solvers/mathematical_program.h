@@ -914,6 +914,14 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Adds a cost term in the polynomial form.
+   * @param e A symbolic expression in the polynomial form.
+   * @return The newly created cost and the bound variables.
+   */
+  Binding<PolynomialConstraint> AddPolynomialCost(
+      const symbolic::Expression& e);
+
+  /**
    * Adds a cost in the symbolic form.
    * Note that the constant part of the cost is ignored. So if you set
    * `e = x + 2`, then only the cost on `x` is added, the constant term 2 is

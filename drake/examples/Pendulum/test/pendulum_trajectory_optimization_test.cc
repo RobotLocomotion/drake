@@ -59,23 +59,29 @@ GTEST_TEST(PendulumTrajectoryOptimization,
                                 1e-10, MatrixCompareType::absolute));
   }
 
-  // Test interpolation.
-  const double t1(times_out[2]);
-  const double t2(times_out[3]);
-  // The value at t2 is larger than the value at t1, for this example.
-
-  const Eigen::MatrixXd linear_avr_of_2_points((state_traj.value(t2) +
-      state_traj.value(t1)) * 0.5);
-  const Eigen::MatrixXd spline_interpolation(state_traj.value((t2 + t1) *
-      0.5));
-
-  // In this particular point we expect the spline to be quite different from
-  // linear_avr_of_2_points at the midpoint: not trying to be exact, but want a
-  // regression test.
-  double abs_diff =
-      std::fabs(linear_avr_of_2_points(0, 0) - spline_interpolation(0, 0));
-  EXPECT_LT(abs_diff, 0.11);
-  EXPECT_GT(abs_diff, 0.1);
+  // Test interpolation
+  for (int i = 0; i < kNumTimeSamples - 1; ++i) {
+    double t_l = times_out[i];
+    double t_r = times_out[i + 1];
+    double h_i = t_r - t_l;
+    const Eigen::Vector2d x_l = state_traj.value(t_l);
+    const Eigen::Vector2d x_r = state_traj.value(t_r);
+    const Eigen::Vector2d xdot_l = state_traj.derivative()->value(t_l);
+    const Eigen::Vector2d xdot_r = state_traj.derivative()->value(t_r);
+    // For a cubic polynomial, if x_l, x_r, xdot_l, xdot_r are known, then the
+    // 4 coefficients of the cubic polynomial can be computed from x_l, x_r,
+    // xdot_l, xdot_r, and thus the midpoint of the polynomial can be computed
+    // from x_l, x_r, xdot_l, xdot_r. Check out equation 9 of
+    // Direct Trajectory Optimization Using Nonlinear Programming and
+    // Collocation. By C.R. Hargraves and S.W. Paris
+    const Eigen::Vector2d xm = 0.5 * (x_l + x_r) + h_i / 8 * (xdot_l - xdot_r);
+    const Eigen::Vector2d spline_midpoint(state_traj.value((t_l + t_r) / 2));
+    EXPECT_TRUE(CompareMatrices(xm, spline_midpoint, 1E-10,
+                                MatrixCompareType::absolute));
+  }
+  // TODO(hongkai.dai): Add a test on the optimal cost, when #5685 is merged, so
+  // as to make sure the cost parsed in the optimization program, is the same
+  // integrated cost as we want.
 }
 
 }  // namespace

@@ -545,6 +545,34 @@ std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
   return cost;
 }
 
+Binding<PolynomialConstraint> MathematicalProgram::AddPolynomialCost(
+    const symbolic::Expression& e) {
+  if (!e.is_polynomial()) {
+    std::ostringstream oss;
+    oss << "Expression" << e << " is not a polynomial. AddPolynomialCost only "
+                                "support polynomial expression.\n";
+    throw std::runtime_error(oss.str());
+  }
+  const symbolic::Variables& vars = e.GetVariables();
+  const Polynomiald polynomial = e.ToPolynomial();
+  std::vector<Polynomiald::VarType> polynomial_vars(vars.size());
+  VectorXDecisionVariable var_vec(vars.size());
+  int polynomial_var_count = 0;
+  for (const auto& var : vars) {
+    polynomial_vars[polynomial_var_count] = var.get_id();
+    var_vec[polynomial_var_count] = var;
+    ++polynomial_var_count;
+  }
+  Vector1d lb(-numeric_limits<double>::infinity());
+  Vector1d ub(numeric_limits<double>::infinity());
+  Binding<PolynomialConstraint> polynomial_cost(
+      std::make_shared<PolynomialConstraint>(Vector1<Polynomiald>(polynomial),
+                                             polynomial_vars, lb, ub),
+      var_vec);
+  AddCost(polynomial_cost);
+  return polynomial_cost;
+}
+
 Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
   if (!e.is_polynomial()) {
     std::ostringstream oss;
@@ -566,11 +594,7 @@ Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
   const auto& map_var_to_index = e_extracted.second;
 
   if (total_degree > 2) {
-    std::ostringstream oss;
-    oss << "Expression " << e << " has degree higher than 2. Currently AddCost "
-                                 "only supports quadratic or linear "
-                                 "expressions.\n";
-    throw std::runtime_error(oss.str());
+    return AddPolynomialCost(e);
   } else if (total_degree == 2) {
     return  AddQuadraticCostWithMonomialToCoeffMap(
         monomial_to_coeff_map, vars_vec, map_var_to_index, this);

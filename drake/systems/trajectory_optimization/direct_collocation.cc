@@ -113,16 +113,16 @@ void DircolTrajectoryOptimization::DoAddRunningCost(
     const symbolic::Expression& g) {
   // Trapezoidal integration:
   //    sum_{i=0...N-2} h_i/2.0 * (g_i + g_{i+1}), or
-  // g_0*h_0/2.0 + [sum_{i=1...N-1} g_i*(h_{i-1} + h_i)/2.0] + g_N*h_{N-1}/2.0.
+  // g_0*h_0/2.0 + [sum_{i=1...N-2} g_i*(h_{i-1} + h_i)/2.0] +
+  // g_{N-1}*h_{N-2}/2.0.
 
-  // TODO(russt): Insert h(i) terms.  Currently not supported because it's
-  // no longer a quadratic constraint.
-
-  AddCost(0.5 * SubstitutePlaceholderVariables(g, 0));
+  AddCost(0.5 * SubstitutePlaceholderVariables(g * h_vars()(0) / 2, 0));
   for (int i = 1; i < N() - 2; i++) {
-    AddCost(SubstitutePlaceholderVariables(g, i));
+    AddCost(SubstitutePlaceholderVariables(
+        g * (h_vars()(i - 1) + h_vars()(i)) / 2, i));
   }
-  AddCost(0.5 * SubstitutePlaceholderVariables(g, N() - 1));
+  AddCost(0.5 *
+          SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
 // We just use a generic constraint here since we need to mangle the

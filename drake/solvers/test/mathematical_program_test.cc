@@ -1858,16 +1858,54 @@ GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
   }
 }
 
+void CheckAddedPolynomialCost(MathematicalProgram* prog,
+                              const symbolic::Expression& e) {
+  int num_cost = prog->generic_costs().size();
+  const auto binding = prog->AddPolynomialCost(e);
+  EXPECT_EQ(prog->generic_costs().size(), ++num_cost);
+  EXPECT_EQ(binding.constraint(), prog->generic_costs().back().constraint());
+  // Now reconstruct the symbolic expression from `binding`.
+  const auto polynomial = binding.constraint()->polynomials()(0);
+  symbolic::MonomialToCoefficientMap map_expected;
+  for (const auto& m : polynomial.GetMonomials()) {
+    std::map<symbolic::Variable::Id, int> map_var_to_power;
+    for (const auto& term : m.terms) {
+      map_var_to_power.emplace(term.var, term.power);
+    }
+    symbolic::Monomial m_symbolic(map_var_to_power);
+    map_expected.emplace(m_symbolic, m.coefficient);
+  }
+  // Now compare the reconstructed symbolic polynomial with `e`.
+  const auto map =
+      symbolic::DecomposePolynomialIntoMonomial(e, e.GetVariables());
+  EXPECT_EQ(map.size(), map_expected.size());
+  for (const auto& m : map) {
+    const auto m_expected_it = map_expected.find(m.first);
+    EXPECT_NE(m_expected_it, map_expected.end());
+    EXPECT_EQ(m_expected_it->second, m.second);
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, testAddPolynomialCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  // Add a cubic cost
+  CheckAddedPolynomialCost(&prog, pow(x(0), 3));
+
+  // Add a cubic cost
+  CheckAddedPolynomialCost(&prog, pow(x(0), 2) * x(1));
+
+  // Add a 4th order cost
+  CheckAddedPolynomialCost(
+      &prog, x(0) * x(0) * x(1) * x(1) + pow(x(0), 3) * x(1) + 2 * x(1));
+}
+
 GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
   // Add a non-polynomial cost.
   EXPECT_THROW(prog.AddCost(sin(x(0))), std::runtime_error);
-
-  // Add a third order polynomial cost.
-  EXPECT_THROW(prog.AddCost(x(0) * x(0) * x(1)), std::runtime_error);
-  EXPECT_THROW(prog.AddCost(pow(x(0), 3)), std::runtime_error);
 
   // Add a cost containing variable not included in the mathematical program.
   symbolic::Variable y("y");
