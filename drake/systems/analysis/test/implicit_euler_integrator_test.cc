@@ -252,7 +252,7 @@ TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
   // Verify that there was (at least one) sub-step failure and that it was due
   // to a substep failure. 
   EXPECT_GT(integrator.get_num_substep_failures(), 0);
-  EXPECT_GT(integrator.get_num_shrinkages_from_substep_failures(), 0); 
+  EXPECT_GT(integrator.get_num_step_shrinkages_from_substep_failures(), 0); 
 
   // Count the number of function evaluations.
   const int n_feval_reform = integrator.get_num_function_evaluations();
@@ -427,7 +427,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   CheckGeneralStatsValidity(&integrator);
 
   // Verify that there was a step size shrinkage from error control.
-  EXPECT_GT(integrator.get_num_shrinkages_from_error_control(), 0); 
+  EXPECT_GT(integrator.get_num_step_shrinkages_from_error_control(), 0); 
 
   // Switch to central differencing.
   integrator.set_jacobian_computation_scheme(
