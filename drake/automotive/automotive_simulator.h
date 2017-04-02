@@ -207,9 +207,9 @@ class AutomotiveSimulator {
   // method.
   void GenerateAndLoadRoadNetworkUrdf();
 
-  // Obtains a lcmt_load_robot message from tree_ and sends it to
-  // DrakeVisualizer.
-  void TransmitLoadTerrainMessage();
+  // Creates a lcmt_load_robot message containing all visual elements in the
+  // simulation and sends it to the drake-visualizer.
+  void TransmitLoadMessage();
 
   void SendLoadRobotMessage(const lcmt_viewer_load_robot& message);
 

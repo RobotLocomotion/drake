@@ -297,9 +297,20 @@ const systems::System<T>& AutomotiveSimulator<T>::GetDiagramSystemByName(
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::TransmitLoadTerrainMessage() {
-  const lcmt_viewer_load_robot load_message =
+void AutomotiveSimulator<T>::TransmitLoadMessage() {
+  const lcmt_viewer_load_robot load_car_message =
+      car_vis_applicator_->get_load_robot_message();
+  const lcmt_viewer_load_robot load_terrain_message =
       multibody::CreateLoadRobotMessage<T>(*tree_);
+  lcmt_viewer_load_robot load_message;
+  load_message.num_links = load_car_message.num_links +
+                           load_terrain_message.num_links;
+  for (int i = 0; i < load_car_message.num_links; ++i) {
+    load_message.link.push_back(load_car_message.link.at(i));
+  }
+  for (int i = 0; i < load_terrain_message.num_links; ++i) {
+    load_message.link.push_back(load_terrain_message.link.at(i));
+  }
   SendLoadRobotMessage(load_message);
 }
 
@@ -317,7 +328,7 @@ void AutomotiveSimulator<T>::SendLoadRobotMessage(
 template <typename T>
 void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   DRAKE_DEMAND(!has_started());
-  TransmitLoadTerrainMessage();
+  TransmitLoadMessage();
 
   builder_->Connect(
       aggregator_->get_output_port(0),
@@ -331,10 +342,6 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   builder_->Connect(
       bundle_to_draw_->get_output_port(0),
       lcm_publisher_->get_input_port(0));
-
-  const lcmt_viewer_load_robot load_message =
-      car_vis_applicator_->get_load_robot_message();
-  SendLoadRobotMessage(load_message);
 
   if (endless_road_) {
     // Now that we have all the cars, construct an appropriately tentacled
