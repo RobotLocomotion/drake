@@ -12,43 +12,43 @@ namespace drake {
 namespace systems {
 namespace {
 
-// Robertson's stiff chemical reaction problem. 
+// Robertson's stiff chemical reaction problem.
 template <class T>
 class Robertson : public LeafSystem<T> {
-  public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Robertson)
-    Robertson() {
-      this->DeclareContinuousState(3);
-    }
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Robertson)
+  Robertson() {
+    this->DeclareContinuousState(3);
+  }
 
-    bool has_any_direct_feedthrough() const override { return false; }
+  bool has_any_direct_feedthrough() const override { return false; }
 
-    void DoCalcTimeDerivatives(const Context<T>& context,
-                               ContinuousState<T>* deriv) const override {
-      // Get state.
-      const T& y1 = context.get_continuous_state_vector()->GetAtIndex(0);
-      const T& y2 = context.get_continuous_state_vector()->GetAtIndex(1);
-      const T& y3 = context.get_continuous_state_vector()->GetAtIndex(2);
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* deriv) const override {
+    // Get state.
+    const T& y1 = context.get_continuous_state_vector()->GetAtIndex(0);
+    const T& y2 = context.get_continuous_state_vector()->GetAtIndex(1);
+    const T& y3 = context.get_continuous_state_vector()->GetAtIndex(2);
 
-      // Compute derivatives.
-      T y1_prime = -0.04*y1 + 1e4*y2*y3;
-      T y2_prime = 0.04*y1 - 1e4*y2*y3 - 3e7*y2*y2;
-      T y3_prime = 3e7*y2*y2; 
+    // Compute derivatives.
+    T y1_prime = -0.04*y1 + 1e4*y2*y3;
+    T y2_prime = 0.04*y1 - 1e4*y2*y3 - 3e7*y2*y2;
+    T y3_prime = 3e7*y2*y2;
 
-      // Set the derivatives.
-      derivs->SetAtIndex(0, y1_prime);
-      derivs->SetAtIndex(1, y2_prime);
-      derivs->SetAtIndex(2, y3_prime);
-    }
+    // Set the derivatives.
+    derivs->SetAtIndex(0, y1_prime);
+    derivs->SetAtIndex(1, y2_prime);
+    derivs->SetAtIndex(2, y3_prime);
+  }
 
-    void DoCalcOutput(const Context<T>& context,
-                      SystemOutput<T>* output) const override {
-    }
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {
+  }
 };
 
 GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   std::unique_ptr<Robertson<double>> robertson = std::make_unique<Robertson>();
-  std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext(); 
+  std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
 
   // Set the initial conditions for Robertson's system.
   VectorBase<double>* state = robertson->get_mutable_continuous_state()->
@@ -68,7 +68,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   integrator.set_maximum_step_size(dt);
   integrator.set_target_accuracy(y2_tol);
   integrator.Initialize();
- 
+
   // Integrate the system
   integrator.StepExactlyVariable(t_final);
 
@@ -315,9 +315,9 @@ TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
   integrator.StepExactlyFixed(large_dt);
 
   // Verify that there was (at least one) sub-step failure and that it was due
-  // to a substep failure. 
+  // to a substep failure.
   EXPECT_GT(integrator.get_num_substep_failures(), 0);
-  EXPECT_GT(integrator.get_num_step_shrinkages_from_substep_failures(), 0); 
+  EXPECT_GT(integrator.get_num_step_shrinkages_from_substep_failures(), 0);
 
   // Count the number of function evaluations.
   const int n_feval_reform = integrator.get_num_function_evaluations();
@@ -487,7 +487,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   CheckGeneralStatsValidity(&integrator);
 
   // Verify that there was a step size shrinkage from error control.
-  EXPECT_GT(integrator.get_num_step_shrinkages_from_error_control(), 0); 
+  EXPECT_GT(integrator.get_num_step_shrinkages_from_error_control(), 0);
 
   // Switch to central differencing.
   integrator.set_jacobian_computation_scheme(
