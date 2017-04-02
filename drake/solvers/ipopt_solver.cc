@@ -388,6 +388,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         result_ = SolutionResult::kInfeasibleConstraints;
         break;
       }
+      case Ipopt::MAXITER_EXCEEDED: {
+        result_ = SolutionResult::kIterationLimit;
+        break;
+      }
       default: {
         result_ = SolutionResult::kUnknownError;
         break;
@@ -492,6 +496,8 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   app->Options()->SetNumericValue("acceptable_tol", tol);
   app->Options()->SetNumericValue("acceptable_constr_viol_tol", tol);
   app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+  // Note: 0<= print_level <= 12, with higher numbers more verbose.  4 is very
+  // useful for debugging.
   app->Options()->SetIntegerValue("print_level", 2);
 
   for (const auto& it : prog.GetSolverOptionsDouble(SolverType::kIpopt)) {
