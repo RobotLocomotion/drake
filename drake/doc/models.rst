@@ -1,8 +1,8 @@
 .. _models:
 
-***************
-Models in Drake
-***************
+*************************
+Geometric Models in Drake
+*************************
 
 .. contents:: `Table of contents`
    :depth: 3
