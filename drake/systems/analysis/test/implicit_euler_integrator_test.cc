@@ -36,9 +36,9 @@ class Robertson : public LeafSystem<T> {
     T y3_prime = 3e7*y2*y2;
 
     // Set the derivatives.
-    derivs->SetAtIndex(0, y1_prime);
-    derivs->SetAtIndex(1, y2_prime);
-    derivs->SetAtIndex(2, y3_prime);
+    deriv->SetAtIndex(0, y1_prime);
+    deriv->SetAtIndex(1, y2_prime);
+    deriv->SetAtIndex(2, y3_prime);
   }
 
   void DoCalcOutput(const Context<T>& context,
@@ -47,11 +47,12 @@ class Robertson : public LeafSystem<T> {
 };
 
 GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
-  std::unique_ptr<Robertson<double>> robertson = std::make_unique<Robertson>();
+  std::unique_ptr<Robertson<double>> robertson = 
+    std::make_unique<Robertson<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
 
   // Set the initial conditions for Robertson's system.
-  VectorBase<double>* state = robertson->get_mutable_continuous_state()->
+  VectorBase<double>* state = context->get_mutable_continuous_state()->
                                 get_mutable_vector();
   state->SetAtIndex(0, 1);
   state->SetAtIndex(1, 0);
@@ -65,7 +66,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
 
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*robertson, context.get());
-  integrator.set_maximum_step_size(dt);
+  integrator.set_maximum_step_size(1e-2);
   integrator.set_target_accuracy(y2_tol);
   integrator.Initialize();
 
@@ -74,7 +75,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
 
   // Verify the solution and that too many steps were not required.
   EXPECT_NEAR(state->GetAtIndex(1), des_y2_soln, y2_tol);
-  EXPECT_LT(integrator.get_num_steps(), 40);
+  EXPECT_LT(integrator.get_num_steps_taken(), 40);
 }
 
 // This is a spring-mass-damper system.
@@ -364,7 +365,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   integrator.StepExactlyVariable(t_final);
 
   // Check the time.
-  EXPECT_NEAR(context->get_time(), t, ttol);
+  EXPECT_NEAR(context->get_time(), t_final, ttol);
 
   // Get the final position and velocity.
   const VectorBase<double>& xc_final = context->get_continuous_state()->
@@ -413,7 +414,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   spring_damper->set_velocity(context.get(), initial_velocity);
 
   // Integrate for t_final seconds again.
-  integrator.StepExactlyVariable(t_final;
+  integrator.StepExactlyVariable(t_final);
   x_final = xc_final.GetAtIndex(0);
   v_final = xc_final.GetAtIndex(1);
 
@@ -480,7 +481,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
 
   // Check the solution to the same tolerance as the explicit Euler
   // integrator.
-  EXPECT_NEAR(c1 * std::cos(omega * t) + c2 * std::sin(omega * t), x_final,
+  EXPECT_NEAR(c1 * std::cos(omega * t_final) +
+              c2 * std::sin(omega * t_final), x_final,
               5e-3);
 
   // Verify that integrator statistics are valid.
@@ -505,7 +507,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   // Check results again.
   x_final =
       context->get_continuous_state()->get_vector().GetAtIndex(0);
-  EXPECT_NEAR(c1 * std::cos(omega * t) + c2 * std::sin(omega * t), x_final,
+  EXPECT_NEAR(c1 * std::cos(omega * t_final) +
+              c2 * std::sin(omega * t_final), x_final,
               5e-3);
   EXPECT_NEAR(context->get_time(), t_final, ttol);
 
@@ -528,7 +531,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   // Check results again.
   x_final =
       context->get_continuous_state()->get_vector().GetAtIndex(0);
-  EXPECT_NEAR(c1 * std::cos(omega * t) + c2 * std::sin(omega * t), x_final,
+  EXPECT_NEAR(c1 * std::cos(omega * t_final) +
+              c2 * std::sin(omega * t_final), x_final,
               5e-3);
   EXPECT_NEAR(context->get_time(), t_final, ttol);
 
