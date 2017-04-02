@@ -19,7 +19,7 @@ Install the prerequisites::
     brew tap-pin robotlocomotion/director
     brew update
     brew upgrade
-    brew install autoconf automake clang-format cmake doxygen gcc glib \
+    brew install autoconf automake bazel clang-format cmake doxygen gcc glib \
       graphviz gtk+ jpeg libpng libtool libyaml mpfr ninja numpy python \
       qt qwt scipy valgrind vtk5 wget
     pip install -U beautifulsoup4 html5lib lxml PyYAML Sphinx
