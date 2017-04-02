@@ -1,21 +1,24 @@
 #include "drake/automotive/automotive_simulator.h"
 
+#include <stdexcept>
+
 #include <gtest/gtest.h>
 
 #include "drake/automotive/curve2.h"
+#include "drake/automotive/lane_direction.h"
+#include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/prius_vis.h"
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcmt_simple_car_state_t.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 namespace drake {
-
-using systems::Context;
-
 namespace automotive {
 namespace {
 
@@ -288,6 +291,96 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
                   draw_message.quaternion.at(i + n).at(j), 1e-8);
     }
   }
+}
+
+// Returns the x-position of the vehicle based on an lcmt_viewer_draw message.
+// It also checks that the y-position of the vehicle is euqal to the provided y
+// value.
+double GetPosition(const lcmt_viewer_draw& message, double y) {
+  EXPECT_EQ(message.num_links, PriusVis<double>(0, "").num_poses());
+  EXPECT_EQ(message.link_name.at(0), "chassis_floor");
+  EXPECT_DOUBLE_EQ(message.position.at(0).at(1), y);
+  return message.position.at(0).at(0);
+}
+
+// Covers AddMaliputRailcar().
+GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+  lcm::DrakeMockLcm* lcm =
+      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
+  ASSERT_NE(lcm, nullptr);
+  const double kR{0.5};
+  MaliputRailcarParams<double> params;
+  params.set_r(kR);
+
+  EXPECT_THROW(
+      simulator->AddPriusMaliputRailcar("foo", LaneDirection()),
+      std::runtime_error);
+
+  const maliput::api::RoadGeometry* road{};
+  EXPECT_NO_THROW(road = simulator->SetRoadGeometry(
+      std::make_unique<const maliput::dragway::RoadGeometry>(
+          maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
+          100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+
+  EXPECT_THROW(
+      simulator->AddPriusMaliputRailcar("bar", LaneDirection(), params),
+      std::runtime_error);
+
+  const auto different_road =
+      std::make_unique<const maliput::dragway::RoadGeometry>(
+          maliput::api::RoadGeometryId({"DifferentDragway"}), 2 /* num lanes */,
+          50 /* length */, 3 /* lane width */, 2 /* shoulder width */);
+
+  EXPECT_THROW(simulator->AddPriusMaliputRailcar("bar",
+      LaneDirection(different_road->junction(0)->segment(0)->lane(0)), params),
+      std::runtime_error);
+
+  const int id = simulator->AddPriusMaliputRailcar("model_name",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      MaliputRailcarState<double>() /* initial state */);
+  EXPECT_EQ(id, 0);
+
+  simulator->Start();
+
+  // Takes two steps to trigger the publishing of an LCM draw message.
+  simulator->StepBy(0.005);
+  simulator->StepBy(0.005);
+
+  const double initial_x = PriusVis<double>::kVisOffset;
+
+  // Verifies the acceleration is zero even if
+  // AutomotiveSimulator::SetMaliputRailcarAccelerationCommand() was not called.
+  const lcmt_viewer_draw draw_message0 =
+      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  // The following tolerance was determined empirically.
+  EXPECT_NEAR(GetPosition(draw_message0, kR), initial_x, 1e-4);
+
+  // Sets the commanded acceleration to be zero.
+  simulator->SetMaliputRailcarAccelerationCommand(id, 0);
+  simulator->StepBy(0.005);
+  simulator->StepBy(0.005);
+
+  // Verifies that the vehicle hasn't moved yet. This is expected since the
+  // commanded acceleration is zero.
+  const lcmt_viewer_draw draw_message1 =
+      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  // The following tolerance was determined empirically.
+  EXPECT_NEAR(GetPosition(draw_message1, kR), initial_x, 1e-4);
+
+  // Sets the commanded acceleration to be 10 m/s^2.
+  simulator->SetMaliputRailcarAccelerationCommand(id, 10);
+
+  // Advances the simulation to allow the MaliputRailcar to begin accelerating.
+  simulator->StepBy(0.005);
+  simulator->StepBy(0.005);
+
+  // Verifies that the MaliputRailcar has moved forward relative to prior to
+  // the nonzero acceleration command being issued.
+  const lcmt_viewer_draw draw_message2 =
+      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  EXPECT_LT(draw_message1.position.at(0).at(0), GetPosition(draw_message2, kR));
 }
 
 bool ContainsWorld(const lcmt_viewer_load_robot& message) {

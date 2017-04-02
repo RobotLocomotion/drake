@@ -328,6 +328,7 @@ drake_cc_library(
         ":endless_road_oracle",
         ":generated_translators",
         ":generated_vectors",
+        ":maliput_railcar",
         ":prius_vis",
         ":simple_car",
         ":trajectory_car",
@@ -338,6 +339,7 @@ drake_cc_library(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/lcm",
+        "//drake/systems/lcm:lcmt_drake_signal_translator",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:multiplexer",
         "//drake/systems/rendering:pose_aggregator",
@@ -588,6 +590,7 @@ drake_cc_googletest(
     local = 1,
     deps = [
         "//drake/automotive:automotive_simulator",
+        "//drake/automotive/maliput/dragway",
         "//drake/lcm:mock",
     ],
 )
