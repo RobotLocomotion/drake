@@ -258,7 +258,7 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
  * We can formulate this as an optimization problem
  * <pre>
  *   min_θ trace((R - M)ᵀ*(R - M))
- *   subject to R = I + sinθ * A + (1 - cosθ) * A²
+ *   subject to R = I + sinθ * A + (1 - cosθ) * A²   (1)
  *              angle_lb <= θ <= angle_ub
  * </pre>
  * where `A` is the cross product matrix of the rotation axis `a`.
@@ -267,6 +267,9 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
  *       [ a₃  0  -a₁]
  *       [-a₂  a₁  0 ]
  * </pre>
+ * Equation (1) is the Rodriguez Formula, to compute the rotation matrix from
+ * the rotation anxis `a` and the rotation angle θ. For more details, refer to
+ * http://mathworld.wolfram.com/RodriguesRotationFormula.html
  * The objective function can be simplified as
  * <pre>
  *   max_θ trace(Rᵀ * M + Mᵀ * R)
@@ -291,8 +294,8 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
  * @param angle_lb The lower bound of the rotation angle.
  * @param angle_ub The upper bound of the rotation angle.
  * @return The rotation angle of the projected matrix.
- * @pre angle_lb >= -2π, angle_ub <= 2π. Throw std::runtime_error if these
- * bounds are violated.
+ * @pre angle_lb >= -2π, angle_ub <= 2π. angle_ub >= angle_lb.
+ * Throw std::runtime_error if these bounds are violated.
  */
 template <typename Derived>
 double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
@@ -304,6 +307,11 @@ double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
   }
   if (angle_lb < -2 * M_PI || angle_ub > 2 * M_PI) {
     throw std::runtime_error("The angle bounds has to ben within [-2π, 2π]");
+  }
+  if (angle_ub < angle_lb) {
+    throw std::runtime_error(
+        "The angle upper bound should be no smaller than the angle lower "
+        "bound.");
   }
   Vector3<Scalar> a = axis;
   a = a / a.norm();
