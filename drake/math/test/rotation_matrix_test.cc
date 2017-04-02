@@ -87,14 +87,14 @@ void CheckProjectionWithAxis(const Eigen::Matrix3d& M,
       Eigen::AngleAxisd(ProjectMatToRotMatWithAxis(M, axis, angle_lb, angle_ub),
                         axis)
           .toRotationMatrix();
-  double R_error = (R - M).squaredNorm();
+  const double R_error = (R - M).squaredNorm();
   const int kNumAngles = 100;
   const Eigen::Matrix<double, kNumAngles, 1> theta =
       Eigen::Matrix<double, kNumAngles, 1>::LinSpaced(angle_lb, angle_ub);
   for (int i = 0; i < kNumAngles; ++i) {
     const Eigen::Matrix3d Ri =
         Eigen::AngleAxisd(theta(i), axis).toRotationMatrix();
-    double Ri_error = (Ri - M).squaredNorm();
+    const double Ri_error = (Ri - M).squaredNorm();
     EXPECT_GE(Ri_error, R_error - 1E-10);
   }
 }
@@ -102,7 +102,7 @@ void CheckProjectionWithAxis(const Eigen::Matrix3d& M,
 GTEST_TEST(RotationMatrixTest, TestProjectionWithAxis) {
   // For a matrix on SO(3) with the desired axis, the projected matrix should
   // be the same, if the angle falls inside the bound.
-  Eigen::Vector3d axis(1.0 / 3.0, 2.0 / 3.0, -2.0 / 3.0);
+  const Eigen::Vector3d axis(1.0 / 3.0, 2.0 / 3.0, -2.0 / 3.0);
 
   Eigen::Matrix3d M = Eigen::AngleAxisd(0.2, axis).toRotationMatrix();
 
