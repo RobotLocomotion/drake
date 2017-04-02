@@ -1,15 +1,35 @@
-********************************
-Binary installation (mac, linux)
-********************************
+**********************************
+Binary installation (OS X, Ubuntu)
+**********************************
 
-Note: This is still new and relatively untested.  Please report any issues you have.
+Important Note (October, 2016)
+==============================
+
+Drake is currently undergoing a major renovation, with all of the core
+libraries moving into C++.  The examples will move and the existing APIs will
+change.
+
+We are actively working on a binary release of the new software, but are not
+quite finished.  See https://github.com/RobotLocomotion/drake/issues/1766 for
+details.
+
+In the meantime, we suggest you :ref:`build from source <build_from_source>`
+instead.
+
+
+Using older (2015) releases
+===========================
+
+We cannot offer support for older releases, but we still host the binaries for
+reference.
 
 Download the appropriate binary release for your platform
 https://github.com/RobotLocomotion/drake/releases
 Simply extract the archive file into a folder of your choice (mine is called ``drake-distro``).
 
+
 Running MATLAB examples
-=======================
+-----------------------
 
 To run the MATLAB examples, change directories (in MATLAB) into the ``drake-distro/drake`` folder and at the MATLAB prompt do::
 
