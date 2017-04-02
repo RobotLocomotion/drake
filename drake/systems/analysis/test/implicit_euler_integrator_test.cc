@@ -61,7 +61,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   // Tolerance and desired solution are set by eyeball from
   // [Hairier, 1996], p. 4.
   const double t_final = 0.3;
-  const double des_y2_soln = 0.00035;
+  const double des_y2_soln = 0.000035;
   const double y2_tol = 5e-5;
 
   // Create the integrator.
@@ -75,7 +75,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
 
   // Verify the solution and that too many steps were not required.
   EXPECT_NEAR(state->GetAtIndex(1), des_y2_soln, y2_tol);
-  EXPECT_LT(integrator.get_num_steps_taken(), 40);
+  EXPECT_LT(integrator.get_num_steps_taken(), 65);
 }
 
 // This is a spring-mass-damper system.
@@ -208,6 +208,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
   std::unique_ptr<ModifiedSpringMassDamperSystem<double>> mod_spring_damper;
   const double dt = 1e-3;                // Default integration step size.
   const double large_dt = 1e-1;          // Large integration step size.
+  const double huge_dt = 1e0;            // Unusable integration step size.
   const double spring_k = 1.0;           // Default spring constant.
   const double stiff_spring_k = 1e10;    // Default constant for a stiff spring.
   const double damping_b = 1e4;          // Default semi-stiff damper constant.
@@ -294,7 +295,8 @@ TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
   ImplicitEulerIntegrator<double> integrator(*spring_damper, context.get());
 
   // Enable fixed stepping to enable StepExactlyFixed().
-  integrator.set_maximum_step_size(large_dt);
+  integrator.set_maximum_step_size(huge_dt);
+  integrator.request_initial_step_size_target(huge_dt);
   integrator.set_fixed_step_mode(true);
 
   // Use central differencing to yield a presumably more accurate
@@ -447,7 +449,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
 
   // Set integrator parameters.
   ImplicitEulerIntegrator<double> integrator(spring_mass, context.get());
-  integrator.set_maximum_step_size(dt);
+  integrator.set_maximum_step_size(large_dt);
+  integrator.request_initial_step_size_target(large_dt);
   integrator.set_target_accuracy(1e-4);
   integrator.set_minimum_step_size(1e-6);
 
