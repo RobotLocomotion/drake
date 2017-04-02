@@ -70,16 +70,18 @@ The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
 integration. All other configurations are provided on a best-effort basis.
 
-The "Unix Makefiles" and "Ninja" CMake generators are supported.
+For CMake builds, the "Unix Makefiles" and "Ninja" CMake generators are
+supported.
 
-The supported version of MATLAB is R2015b.
+For CMake builds, the supported version of MATLAB is R2015b.
 
-In CMake, minimal configuration is defined as the minimal required externals
+For CMake builds,
+minimal configuration is defined as the minimal required externals
 from the superbuild. This is configured by turning off all externals using
 ``ccmake`` or ``cmake-gui`` except for ``WITH_EIGEN``, ``WITH_GOOGLETEST``,
 and  ``WITH_GFLAGS``, which should be set to ``ON``.
 
-An incomplete but rapidly growing subset of Drake and Drake's externals is
+Almost all of Drake and Drake's externals are
 supported on Bazel. "Superbuild Deps" are not meaningful in the context
 of Bazel, since there is no configurable superbuild. MATLAB is not supported on
 Bazel, and there are no plans to add support.
