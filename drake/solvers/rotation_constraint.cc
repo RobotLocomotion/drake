@@ -403,12 +403,13 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   // If there are only 3 vertices in the intersection region, then the normal
   // vector n is the normal of the triangle, formed by these three vertices.
 
-    *n = (pts[2] - pts[0]).cross(pts[1] - pts[0]);
-    *n = *n / n->norm();
-    if (n->array().sum() < 0) {
-      *n *= -1;
-    }
-    *d = n->dot(pts[0]);
+  *n = (pts[2] - pts[0]).cross(pts[1] - pts[0]);
+  *n = *n / n->norm();
+  if (n->array().sum() < 0) {
+    *n *= -1;
+  }
+  *d = n->dot(pts[0]);
+  // Determine if the other vertices are on the plane nᵀ * x = d.
   bool pts_on_plane = true;
   for (int i = 3; i < static_cast<int>(pts.size()); ++i) {
     if (std::abs(n->dot(pts[i]) - *d) > 1E-10) {
@@ -419,17 +420,15 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
     return;
   }
 
-  // If there are more than 3 vertices in the intersection region, then we find
-  // the normal vector n through an optimization, whose formulation is mentioned
-  // above.
+  // If there are more than 3 vertices in the intersection region, and these
+  // vertices are not co-planar, then we find the normal vector `n` through an
+  // optimization, whose formulation is mentioned above.
   MathematicalProgram prog_normal;
   auto n_var = prog_normal.NewContinuousVariables<3>();
   auto d_var = prog_normal.NewContinuousVariables<1>();
-  prog_normal.AddLinearCost(Vector1d(-1), d_var);
+  prog_normal.AddLinearCost(-d_var(0));
   for (const auto& pt : pts) {
-    prog_normal.AddLinearConstraint(Eigen::Vector4d(pt(0), pt(1), pt(2), -1), 0,
-                                    numeric_limits<double>::infinity(),
-                                    {n_var, d_var});
+    prog_normal.AddLinearConstraint(n_var.dot(pt) >= d_var(0));
   }
 
   // TODO(hongkai.dai): This optimization is expensive, especially if we have
@@ -437,11 +436,9 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   // variables per half axis, the result `n` and `d` are the same. Should
   // consider hard-coding the result, to avoid repeated computation.
 
-  // A_lorentz * n + b_lorentz = [1; n]
-  Eigen::Matrix<double, 4, 3> A_lorentz{};
-  A_lorentz << Eigen::RowVector3d::Zero(), Eigen::Matrix3d::Identity();
-  Eigen::Vector4d b_lorentz(1, 0, 0, 0);
-  prog_normal.AddLorentzConeConstraint(A_lorentz, b_lorentz, n_var);
+  Vector4<symbolic::Expression> lorentz_cone_vars;
+  lorentz_cone_vars << 1, n_var;
+  prog_normal.AddLorentzConeConstraint(lorentz_cone_vars);
   prog_normal.Solve();
   *n = prog_normal.GetSolution(n_var);
   *d = prog_normal.GetSolution(d_var(0));
