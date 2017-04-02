@@ -47,7 +47,7 @@ class Robertson : public LeafSystem<T> {
 };
 
 GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
-  std::unique_ptr<Robertson<double>> robertson = 
+  std::unique_ptr<Robertson<double>> robertson =
     std::make_unique<Robertson<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
 
