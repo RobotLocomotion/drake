@@ -16,6 +16,7 @@ enum SolutionResult {
   kUnbounded = -3,
   kUnknownError = -4,
   kInfeasible_Or_Unbounded = -5,
+  kIterationLimit = -6,
 };
 
 enum class SolverType {

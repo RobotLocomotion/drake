@@ -173,9 +173,9 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
   // Compute the smooth acceleration that the vehicle actually executes.
   // TODO(jwnimmer-tri) We should saturate to params.max_acceleration().
   const T desired_acceleration = input.acceleration();
-  const T smooth_acceleration = calc_smooth_acceleration(
-      desired_acceleration, params.max_velocity(), params.velocity_limit_kp(),
-      state.velocity());
+  const T smooth_acceleration =
+      calc_smooth_acceleration(desired_acceleration, params.max_velocity(),
+                               params.velocity_limit_kp(), state.velocity());
 
   // Determine steering.
   const T saturated_steering_angle =
@@ -201,7 +201,7 @@ template <typename T>
 systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
   return new SimpleCar<symbolic::Expression>;
 }
-  
+
 // These instantiations must match the API documentation in simple_car.h.
 template class SimpleCar<double>;
 #if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
