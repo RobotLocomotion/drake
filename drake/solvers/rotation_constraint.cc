@@ -354,6 +354,66 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
   return intersections;
 }
 
+/**
+ * Compute the outward unit length normal of the triangle, with the three
+ * vertices being `pt0`, `pt1` and `pt2`.
+ * @param pt0 A vertex of the triangle, in the first orthant (+++).
+ * @param pt1 A vertex of the triangle, in the first orthant (+++).
+ * @param pt2 A vertex of the triangle, in the first orthant (+++).
+ * @param n The unit length normal vector of the triangle, pointing outward from
+ * the origin.
+ * @param d The intersecpt of the plane. Namely nᵀ * x = d for any point x on
+ * the triangle.
+ */
+void ComputeTriangleOutwardNormal(const Eigen::Vector3d& pt0,
+                                  const Eigen::Vector3d& pt1,
+                                  const Eigen::Vector3d& pt2,
+                                  Eigen::Vector3d* n, double* d) {
+  DRAKE_DEMAND((pt0.array() >= 0).all());
+  DRAKE_DEMAND((pt1.array() >= 0).all());
+  DRAKE_DEMAND((pt2.array() >= 0).all());
+  *n = (pt2 - pt0).cross(pt1 - pt0);
+  // If the three points are almost colinear, then throw an error.
+  double n_norm = n->norm();
+  if (n_norm < 1E-3) {
+    throw std::runtime_error("The points are almost colinear.");
+  }
+  *n = (*n) / n_norm;
+  if (n->sum() < 0) {
+    (*n) *= -1;
+  }
+  *d = pt0.dot(*n);
+  DRAKE_DEMAND((n->array() >= 0).all());
+}
+
+/**
+ * For the vertices in `pts`, determine if these vertices are co-planar. If they
+ * are, then compute that plane nᵀ * x = d.
+ * @param pts The vertices to be checked.
+ * @param n The unit length normal vector of the plane, points outward from the
+ * origin. If the vertices are not co-planar, leave `n` to 0.
+ * @param d The intersecpt of the plane. If the vertices are not co-planar, set
+ * this to 0.
+ * @return If the vertices are co-planar, set this to true. Otherwise set to
+ * false.
+ */
+bool AreAllVerticesCoPlanar(const std::vector<Eigen::Vector3d>& pts,
+                            Eigen::Vector3d* n, double* d) {
+  DRAKE_DEMAND(pts.size() >= 3);
+  ComputeTriangleOutwardNormal(pts[0], pts[1], pts[2], n, d);
+  // Determine if the other vertices are on the plane nᵀ * x = d.
+  bool pts_on_plane = true;
+  for (int i = 3; i < static_cast<int>(pts.size()); ++i) {
+    if (std::abs(n->dot(pts[i]) - *d) > 1E-10) {
+      pts_on_plane = false;
+      n->setZero();
+      *d = 0;
+      break;
+    }
+  }
+  return pts_on_plane;
+}
+
 /*
  * For the intersection region between the surface of the unit sphere, and the
  * interior of a box aligned with the axes, use a half space relaxation for
@@ -403,19 +463,7 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   // If there are only 3 vertices in the intersection region, then the normal
   // vector n is the normal of the triangle, formed by these three vertices.
 
-  *n = (pts[2] - pts[0]).cross(pts[1] - pts[0]);
-  *n = *n / n->norm();
-  if (n->array().sum() < 0) {
-    *n *= -1;
-  }
-  *d = n->dot(pts[0]);
-  // Determine if the other vertices are on the plane nᵀ * x = d.
-  bool pts_on_plane = true;
-  for (int i = 3; i < static_cast<int>(pts.size()); ++i) {
-    if (std::abs(n->dot(pts[i]) - *d) > 1E-10) {
-      pts_on_plane = false;
-    }
-  }
+  bool pts_on_plane = AreAllVerticesCoPlanar(pts, n, d);
   if (pts_on_plane) {
     return;
   }
@@ -483,13 +531,9 @@ void ComputeInnerFacetsForBoxSphereIntersection(
       for (int k = j + 1; k < static_cast<int>(pts.size()); ++k) {
         // First compute the triangle formed by vertices pts[i], pts[j] and
         // pts[k].
-        Eigen::Vector3d c = (pts[j] - pts[i]).cross(pts[k] - pts[i]);
-        c /= c.norm();
-        // Make sure c points outward
-        if (c.sum() < 0) {
-          c *= -1;
-        }
-        double d = c.dot(pts[i]);
+        Eigen::Vector3d c;
+        double d;
+        ComputeTriangleOutwardNormal(pts[i], pts[j], pts[k], &c, &d);
         // A halfspace cᵀ * x >= d is valid, if all vertices pts[l] satisfy
         // cᵀ * pts[l] >= d.
         bool is_valid_halfspace = true;
