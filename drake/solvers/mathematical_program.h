@@ -714,7 +714,7 @@ class MathematicalProgram {
   typename std::enable_if<
       (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
           (!std::is_convertible<F, Binding<Constraint>>::value),
-      std::shared_ptr<Constraint>>::type
+      Binding<Constraint>>::type
   AddCost(F&& f, const VariableRefList& vars) {
     return AddCost(f, ConcatenateVariableRefList(vars));
   }
@@ -729,11 +729,10 @@ class MathematicalProgram {
   typename std::enable_if<
       (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
           (!std::is_convertible<F, Binding<Constraint>>::value),
-      std::shared_ptr<Constraint>>::type
+      Binding<Constraint>>::type
   AddCost(F&& f, const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     auto c = MakeCost(std::forward<F>(f));
-    AddCost(c, vars);
-    return c;
+    return AddCost(c, vars);
   }
 
   // libstdc++ 4.9 evaluates
@@ -742,7 +741,7 @@ class MathematicalProgram {
   // incorrectly as `true` so our enable_if overload is not used.
   // Provide an explicit alternative for this case.
   template <typename F>
-  std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f,
+  Binding<Constraint> AddCost(std::unique_ptr<F>&& f,
                                       const VariableRefList& vars) {
     return AddCost(f, ConcatenateVariableRefList(vars));
   }
@@ -757,13 +756,12 @@ class MathematicalProgram {
   typename std::enable_if<
       (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
           (!std::is_convertible<F, Binding<Constraint>>::value),
-      std::shared_ptr<Constraint>>::type
+      Binding<Constraint>>::type
   AddCost(std::unique_ptr<F>&& f,
           const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     auto c = std::make_shared<ConstraintImpl<std::unique_ptr<F>>>(
         std::forward<std::unique_ptr<F>>(f));
-    AddCost(c, vars);
-    return c;
+    return AddCost(c, vars);
   }
 
   /**
