@@ -37,8 +37,7 @@ namespace automotive {
 ///
 /// Output Port 0: A DrivingCommand with the following elements:
 ///   * steering angle (unused - outputs zero).
-///   * throttle (>= 0)
-///   * brake (>= 0)
+///   * acceleration.
 ///
 /// @ingroup automotive_systems
 template <typename T>
@@ -56,19 +55,15 @@ class IdmController : public systems::LeafSystem<T> {
   const systems::InputPortDescriptor<T>& ego_pose_input() const;
   const systems::InputPortDescriptor<T>& ego_velocity_input() const;
   const systems::InputPortDescriptor<T>& traffic_input() const;
+  const systems::OutputPortDescriptor<T>& driving_command_output() const;
   /// @}
 
- private:
-  // Extracts the vehicle's `s`-direction velocity based on its RoadPosition @p
-  // pos and FrameVelocity @p vel.  Assumes the road has zero elevation.
-  double GetSVelocity(const RoadOdometry<T>& road_odom) const;
-
-  // Converts @p pose into RoadPosition.
-  const maliput::api::RoadPosition GetRoadPosition(
-      const Isometry3<T>& pose) const;
-
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
+ protected:
+  const maliput::api::RoadGeometry& road() const { return road_; }
+  int ego_pose_index() const { return ego_pose_index_; }
+  int ego_velocity_index() const { return ego_velocity_index_; }
+  int traffic_index() const { return traffic_index_; }
+  int driving_command_index() const { return driving_command_index_; }
 
   void ImplDoCalcOutput(
       const systems::rendering::PoseVector<T>& ego_pose,
@@ -77,12 +72,21 @@ class IdmController : public systems::LeafSystem<T> {
       const IdmPlannerParameters<T>& idm_params,
       DrivingCommand<T>* output) const;
 
+ private:
+  // Converts @p pose into RoadPosition.
+  const maliput::api::RoadPosition GetRoadPosition(
+      const Isometry3<T>& pose) const;
+
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+
   const maliput::api::RoadGeometry& road_;
 
   // Indices for the input ports.
   int ego_pose_index_{};
   int ego_velocity_index_{};
   int traffic_index_{};
+  int driving_command_index_{};
 };
 
 }  // namespace automotive
