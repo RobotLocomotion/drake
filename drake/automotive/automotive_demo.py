@@ -154,6 +154,7 @@ class Launcher(object):
             if child.process.poll() is None:
                 child.process.kill()
 
+
 the_launcher = Launcher()
 
 
@@ -246,6 +247,7 @@ def main():
         the_launcher.kill()
 
     sys.exit(the_launcher.returncode)
+
 
 if __name__ == '__main__':
     main()

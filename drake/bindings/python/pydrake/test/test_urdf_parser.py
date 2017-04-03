@@ -33,5 +33,6 @@ class TestUrdfParser(unittest.TestCase):
                          msg='Incorrect number of bodies: {0} vs. {1}'.format(
                              robot.get_num_bodies(), expected_num_bodies))
 
+
 if __name__ == '__main__':
     unittest.main()
