@@ -207,7 +207,7 @@ class SixHumpCamelCost {
 GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2);
-  auto cost = prog.AddCost(SixHumpCamelCost(), x);
+  auto cost = prog.AddCost(SixHumpCamelCost(), x).constraint();
 
   prog.SetInitialGuess(x, Vector2d::Random());
   RunNonlinearProgram(&prog, [&]() {
@@ -247,7 +247,7 @@ GTEST_TEST(testNonlinearProgram, linearPolynomialConstraint) {
   std::shared_ptr<Constraint> resulting_constraint =
       problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                       Vector1d::Constant(2),
-                                      Vector1d::Constant(2), x_var);
+                                      Vector1d::Constant(2), x_var).constraint();
   // Check that the resulting constraint is a LinearConstraint.
   EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
             nullptr);

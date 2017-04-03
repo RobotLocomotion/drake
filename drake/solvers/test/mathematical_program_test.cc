@@ -324,14 +324,15 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   // 5. Imposes constraint on a dynamic-sized vector of decision variables.
   // 6. Imposes constraint using a vector of lower/upper bound, as compared
   //    to the previous three cases which use a scalar lower/upper bound.
-  auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, x1);
+  auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, x1).constraint();
   auto constraint2 =
-      prog.AddBoundingBoxConstraint(0, 1, {x1.col(0), x1.col(1)});
-  auto constraint3 = prog.AddBoundingBoxConstraint(0, 1, x2);
-  auto constraint4 = prog.AddBoundingBoxConstraint(0, 1, x3);
-  auto constraint5 = prog.AddBoundingBoxConstraint(0, 1, x4);
+      prog.AddBoundingBoxConstraint(0, 1, {x1.col(0), x1.col(1)}).constraint();
+  auto constraint3 = prog.AddBoundingBoxConstraint(0, 1, x2).constraint();
+  auto constraint4 = prog.AddBoundingBoxConstraint(0, 1, x3).constraint();
+  auto constraint5 = prog.AddBoundingBoxConstraint(0, 1, x4).constraint();
   auto constraint6 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
-                                                   Eigen::Vector4d::Ones(), x3);
+                                                   Eigen::Vector4d::Ones(), x3)
+                                                   .constraint();
 
   // Checks that the bound variables are correct.
   for (const auto& binding : prog.bounding_box_constraints()) {
@@ -494,7 +495,8 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
   // Add an object that can be converted to a ConstraintImpl object on a
   // VectorDecisionVariable object.
   auto returned_cost3 = prog.AddCost(generic_trivial_cost2,
-                                     VectorDecisionVariable<2>(x(0), y(1)));
+                                     VectorDecisionVariable<2>(x(0), y(1)))
+                                     .constraint();
   ++num_generic_costs;
   VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost3,
                    Eigen::Vector2d(1, 2), num_generic_costs);
@@ -502,7 +504,8 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
   // Add an object that can be converted to a ConstraintImpl object on a
   // VariableRefList object.
   auto returned_cost4 =
-      prog.AddCost(generic_trivial_cost2, {x.head<1>(), y.tail<1>()});
+      prog.AddCost(generic_trivial_cost2, {x.head<1>(), y.tail<1>()})
+                   .constraint();
   ++num_generic_costs;
   VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost4,
                    Eigen::Vector2d(1, 2), num_generic_costs);
@@ -1697,7 +1700,7 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<4>("X");
 
-  auto psd_cnstr = prog.AddPositiveSemidefiniteConstraint(X);
+  auto psd_cnstr = prog.AddPositiveSemidefiniteConstraint(X).constraint();
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
   const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
   EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.constraint().get());
@@ -1737,7 +1740,7 @@ void CheckAddedQuadraticCost(MathematicalProgram* prog,
                              const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
                              const VectorXDecisionVariable& x) {
   int num_quadratic_cost = prog->quadratic_costs().size();
-  auto cnstr = prog->AddQuadraticCost(Q, b, x);
+  auto cnstr = prog->AddQuadraticCost(Q, b, x).constraint();
 
   EXPECT_EQ(++num_quadratic_cost, prog->quadratic_costs().size());
   // Check if the newly added quadratic constraint, and the returned
@@ -1834,9 +1837,8 @@ GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
   x_desired << 5, 6;
   Eigen::Vector2d b = A * x_desired;
 
-  std::shared_ptr<QuadraticConstraint> obj1 =
-      prog.AddQuadraticErrorCost(Q, x_desired, x);
-  std::shared_ptr<QuadraticConstraint> obj2 = prog.AddL2NormCost(A, b, x);
+  auto obj1 = prog.AddQuadraticErrorCost(Q, x_desired, x).constraint();
+  auto obj2 = prog.AddL2NormCost(A, b, x).constraint();
 
   // Test the objective at a 6 arbitrary values (to guarantee correctness
   // of the six-parameter quadratic form.
