@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/physical_frame.h"
 
 namespace drake {
@@ -56,13 +57,13 @@ class BodyFrame : public PhysicalFrame<T> {
 
  public:
   // Implementation for MultibodyTreeElement::Compile().
-  void Compile() final {}
+  void Compile(const MultibodyTree<T>& tree) final {}
 
  private:
   // Only Body objects can create BodyFrame objects since Body is a friend of
   // BodyFrame. BodyFrame objects are *only* created from within
   // Body::CreateBodyFrame().
-  explicit BodyFrame(BodyIndex body_index) : PhysicalFrame<T>(body_index) {}
+  explicit BodyFrame(const Body<T>& body) : PhysicalFrame<T>(body) {}
 };
 
 // Forward declarations for Body<T>.
@@ -93,47 +94,26 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// Returns a constant reference to the associated BodyFrame in the parent
   /// MultibodyTree.
   const BodyFrame<T>& get_body_frame() const {
-    return this->get_parent_tree().get_body_frame(*this);
+    return body_frame_;
   }
 
-  /// Returns the unique identifier of the body frame associated to this body in
-  /// its parent MultibodyTree.
-  FrameIndex get_body_frame_index() const { return body_frame_index_; }
-
-  /// At MultibodyTree::Compile() time, each body will retrieve its topology
+  /// At MultibodyTree::Compile() time, each body retrieves its topology
   /// from the parent MultibodyTree.
-  virtual void Compile() {}
+  void Compile(const MultibodyTree<T>& tree) final {
+    topology_ = tree.get_topology().bodies[this->get_index()];
+  }
 
  protected:
   // Default constructor. Only sub-classes can use it.
-  Body() = default;
-
-  // Only sub-classes' Create() methods can set the body frame index.
-  void set_body_frame_index(FrameIndex index) { body_frame_index_ = index; }
-
-  // This method is called within the Create() methods of a sub-class inheriting
-  // from Body to create the BodyFrame associated with this body.
-  // Since Body<T> is a friend of BodyFrame<T>, it has access to its private
-  // constructor.
-  // Even though this method is called within a body which already has a valid
-  // parent multibody tree, its parent tree is passed as an argument in order to
-  // have mutable access to it and add a new body frame for this body.
-  const BodyFrame<T>& CreateBodyFrame(MultibodyTree<T>* tree) const {
-    this->HasParentTreeOrThrow();
-    this->HasThisParentTreeOrThrow(tree);
-    // Notice that here we cannot use std::make_unique since constructors are
-    // made private to avoid users creating bodies by other means other than
-    // calling Create().
-    // However we can still create a unique_ptr as below where ownership is
-    // clear
-    return *tree->AddBodyFrame(
-        std::unique_ptr<BodyFrame<T>>(new BodyFrame<T>(this->get_index())));
-  }
+  Body() : body_frame_(*this) {};
 
  private:
   // Unique index to the associated BodyFrame in the parent MultibodyTree.
   // TypeSafeIndex objects must be initialized.
-  FrameIndex body_frame_index_{0};
+  //FrameIndex body_frame_index_{0};
+  BodyFrame<T> body_frame_;
+
+  BodyTopology topology_;
 };
 
 }  // namespace multibody

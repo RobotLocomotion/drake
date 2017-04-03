@@ -49,7 +49,7 @@ const FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
     const PhysicalFrame<T>& P, const Isometry3<T>& X_PF) :
-    PhysicalFrame<T>(P.get_body_index()), X_PF_(X_PF) {}
+    PhysicalFrame<T>(P.get_body()), X_PF_(X_PF) {}
 
 // Explicitly instantiates on the most common scalar types.
 template class FixedOffsetFrame<double>;

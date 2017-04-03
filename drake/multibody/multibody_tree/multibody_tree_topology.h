@@ -27,20 +27,23 @@ namespace multibody {
 struct BodyTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyTopology);
 
+  // Default construction with invalid initialization.
+  BodyTopology() {}
+
   // Constructs a body topology struct with unique index `body_index` and a
   // body frame with unique index `frame_index`.
   BodyTopology(BodyIndex body_index, FrameIndex frame_index) :
       index(body_index), body_frame(frame_index) {}
 
   // Unique id in the MultibodyTree.
-  BodyIndex index;
+  BodyIndex index{0};
+
+  // Body frame.
+  FrameIndex body_frame{0};
 
   // Depth level in the MultibodyTree, level = 0 for the world.
   // Initialized to an invalid negative value.
   int level{-1};
-
-  // Body frame.
-  FrameIndex body_frame;
 };
 
 /// Data structure to store the topological information associated with a
@@ -48,16 +51,19 @@ struct BodyTopology {
 struct PhysicalFrameTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PhysicalFrameTopology);
 
+  // Default construction with invalid initialization.
+  PhysicalFrameTopology() {}
+
   /// Constructs a frame topology for a frame with unique index `frame_index`
   /// associated with a body with index `body_index`.
   PhysicalFrameTopology(FrameIndex frame_index, BodyIndex body_index) :
       index(frame_index), body(body_index) {}
 
   // Unique identifier in the MultibodyTree.
-  FrameIndex index;
+  FrameIndex index{0};
 
   // Unique identifier of the body this physical frame attaches to.
-  BodyIndex body;
+  BodyIndex body{0};
 };
 
 /// Data structure to store the topological information associated with an
