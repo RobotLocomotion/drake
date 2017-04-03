@@ -140,6 +140,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "is_dynamic_castable",
+    testonly = 1,
+    hdrs = [
+        "test/is_dynamic_castable.h",
+    ],
+    deps = [
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "symbolic_test_util",
     testonly = 1,
     hdrs = [
@@ -419,6 +430,13 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "is_dynamic_castable_test",
+    deps = [
+        ":is_dynamic_castable",
     ],
 )
 
