@@ -18,6 +18,7 @@ drake_cc_library(
     ],
     hdrs = [
         "constants.h",
+        "copyable_unique_ptr.h",
         "drake_assert.h",
         "drake_compat.h",
         "drake_cloneable.h",
@@ -375,6 +376,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_cloneable_test",
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "copyable_unique_ptr_test",
     deps = [
         ":common",
     ],
