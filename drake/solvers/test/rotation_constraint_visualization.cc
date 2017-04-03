@@ -140,6 +140,10 @@ void DrawBoxSphereIntersection(const Eigen::Vector3d& bmin,
       orthant_bmin(i) = -bmax(i);
       orthant_bmax(i) = -bmin(i);
       orthant_sign(i) = -1;
+    } else {
+      throw std::runtime_error(
+          "The box bmin <= x <= bmax should satisfy either bmin(i) >=0 or "
+          "bmax(i) <= 0");
     }
   }
   // Compute the intersection points between the sphere in the first orthant,
