@@ -82,6 +82,11 @@ void DirectTrajectoryOptimization::AddTimeIntervalBounds(
   AddBoundingBoxConstraint(lower_bound, upper_bound, h);
 }
 
+void DirectTrajectoryOptimization::AddTimeIntervalBounds(double lower_bound,
+                                                         double upper_bound) {
+  AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
+}
+
 namespace {
 /// Since the final cost evaluation needs a total time, we need a
 /// wrapper which will calculate the total time from the individual

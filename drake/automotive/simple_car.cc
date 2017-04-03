@@ -173,15 +173,14 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
   // Compute the smooth acceleration that the vehicle actually executes.
   // TODO(jwnimmer-tri) We should saturate to params.max_acceleration().
   const T desired_acceleration = input.acceleration();
-  const T smooth_acceleration = calc_smooth_acceleration(
-      desired_acceleration, params.max_velocity(), params.velocity_limit_kp(),
-      state.velocity());
+  const T smooth_acceleration =
+      calc_smooth_acceleration(desired_acceleration, params.max_velocity(),
+                               params.velocity_limit_kp(), state.velocity());
 
   // Determine steering.
-  const T saturated_steering_angle = math::saturate(
-      input.steering_angle(),
-      -params.max_abs_steering_angle(),
-      params.max_abs_steering_angle());
+  const T saturated_steering_angle =
+      math::saturate(input.steering_angle(), -params.max_abs_steering_angle(),
+                     params.max_abs_steering_angle());
   const T curvature = tan(saturated_steering_angle) / params.wheelbase();
 
   // Don't allow small negative velocities to affect position or heading.

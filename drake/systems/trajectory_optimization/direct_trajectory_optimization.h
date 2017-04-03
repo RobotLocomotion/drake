@@ -117,8 +117,8 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
 
   /// Adds support for passing in a (scalar) matrix Expression, which is a
   /// common output of most symbolic linear algebra operations.
-  void AddRunningCost(
-      const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
+  template <typename Derived>
+  void AddRunningCost(const Eigen::MatrixBase<Derived>& g) {
     DRAKE_DEMAND(g.rows() == 1 && g.cols() == 1);
     DoAddRunningCost(g(0, 0));
   }
@@ -221,6 +221,15 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
    */
   void AddTimeIntervalBounds(const Eigen::VectorXd& lower_bound,
                              const Eigen::VectorXd& upper_bound);
+
+  /**
+   * Add bounds on all time intervals, such that
+   * lower_bound <= h_vars_(i) <= upper_bound
+   * for all time intervals.
+   * @param lower_bound  A scalar double lower bound.
+   * @param upper_bound  A scalar double upper bound.
+   */
+  void AddTimeIntervalBounds(double lower_bound, double upper_bound);
 
   /**
    * Add a cost to the final state and total time.

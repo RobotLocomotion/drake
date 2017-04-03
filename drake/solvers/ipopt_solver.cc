@@ -102,15 +102,13 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   // variables in the same order they appear in xvec), but this is not
   // currently done).
   int num_v_variables = variables.rows();
-  auto tx = math::initializeAutoDiff(xvec);
-  TaylorVecXd this_x(num_v_variables);
-
+  Eigen::VectorXd this_x(num_v_variables);
   for (int i = 0; i < num_v_variables; ++i) {
-    this_x(i) = tx(prog.FindDecisionVariableIndex(variables(i)));
+    this_x(i) = xvec(prog.FindDecisionVariableIndex(variables(i)));
   }
 
   TaylorVecXd ty(c.num_constraints());
-  c.Eval(this_x, ty);
+  c.Eval(math::initializeAutoDiff(this_x), ty);
 
   // Store the results.  Since IPOPT directly knows the bounds of the
   // constraint, we don't need to apply any bounding information here.
@@ -122,13 +120,9 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   // gradient array.
   size_t grad_idx = 0;
 
-  std::vector<size_t> v_index(variables.rows());
-  for (int i = 0; i < variables.rows(); ++i) {
-    v_index[i] = prog.FindDecisionVariableIndex(variables(i));
-  }
   for (size_t i = 0; i < c.num_constraints(); i++) {
     for (int j = 0; j < variables.rows(); j++) {
-      grad[grad_idx++] = ty(i).derivatives()(v_index[j]);
+      grad[grad_idx++] = ty(i).derivatives()(j);
     }
   }
 
@@ -394,6 +388,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         result_ = SolutionResult::kInfeasibleConstraints;
         break;
       }
+      case Ipopt::MAXITER_EXCEEDED: {
+        result_ = SolutionResult::kIterationLimit;
+        break;
+      }
       default: {
         result_ = SolutionResult::kUnknownError;
         break;
@@ -413,9 +411,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   void EvaluateCosts(Index n, const Number* x) {
     const Eigen::VectorXd xvec = MakeEigenVector(n, x);
 
-    auto tx = math::initializeAutoDiff(xvec);
     TaylorVecXd ty(1);
-    TaylorVecXd this_x;
+    Eigen::VectorXd this_x;
 
     memcpy(cost_cache_->x.data(), x, n * sizeof(Number));
     cost_cache_->result[0] = 0;
@@ -426,17 +423,17 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       this_x.resize(num_v_variables);
       for (int i = 0; i < num_v_variables; ++i) {
         this_x(i) =
-            tx(problem_->FindDecisionVariableIndex(binding.variables()(i)));
+            xvec(problem_->FindDecisionVariableIndex(binding.variables()(i)));
       }
 
-      binding.constraint()->Eval(this_x, ty);
+      binding.constraint()->Eval(math::initializeAutoDiff(this_x), ty);
 
       cost_cache_->result[0] += ty(0).value();
 
       for (int j = 0; j < num_v_variables; ++j) {
         const size_t vj_index =
             problem_->FindDecisionVariableIndex(binding.variables()(j));
-        cost_cache_->grad[vj_index] += ty(0).derivatives()(vj_index);
+        cost_cache_->grad[vj_index] += ty(0).derivatives()(j);
       }
     }
   }
@@ -499,6 +496,8 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   app->Options()->SetNumericValue("acceptable_tol", tol);
   app->Options()->SetNumericValue("acceptable_constr_viol_tol", tol);
   app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+  // Note: 0<= print_level <= 12, with higher numbers more verbose.  4 is very
+  // useful for debugging.
   app->Options()->SetIntegerValue("print_level", 2);
 
   for (const auto& it : prog.GetSolverOptionsDouble(SolverType::kIpopt)) {
