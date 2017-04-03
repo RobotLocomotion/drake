@@ -126,6 +126,8 @@ Code Review
 Review Process
 --------------
 
+All pull requests to Drake are subject to code review.
+
 For complex changes, especially those that will span multiple PRs, please
 open a GitHub issue and solicit design feedback before you invest a lot of
 time in code.
@@ -174,6 +176,13 @@ make the review faster.
 - @sherm1 (Toyota Research Institute)
 - @soonho-tri (Toyota Research Institute)
 - @RussTedrake (MIT / Toyota Research Institute)
+
+All directories named ``dev`` are exempt from platform review, as are certain
+other directories, as documented in their ``README`` files.  If a pull request
+only modifies files in exempt directories, no platform review is required.
+However, other Drake contributors are free to merge PRs that break exempt
+directories, simply by removing the broken targets from the build. Therefore,
+code in nonexempt directories must not depend on exempt directories in any way.
 
 **Merge.** If you have write access to RobotLocomotion/drake, a green
 "Merge Pull Request" button will appear when your change is fully reviewed and
