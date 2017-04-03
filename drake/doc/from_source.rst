@@ -55,6 +55,10 @@ setup steps:
     ubuntu_trusty
     ubuntu_xenial
 
+See :ref:`supported configurations <supported-configurations>`
+for the configurations and platforms that Drake officially supports.
+All else being equal, we would recommend developers use Ubuntu Xenial.
+
 .. _build_the_collection:
 
 Build the collection
