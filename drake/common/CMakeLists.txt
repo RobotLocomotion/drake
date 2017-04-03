@@ -36,6 +36,7 @@ set(installed_headers
   autodiff_overloads.h
   cond.h
   constants.h
+  copyable_unique_ptr.h
   double_overloads.h
   drake_assert.h
   drake_compat.h
