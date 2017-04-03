@@ -208,7 +208,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
   std::unique_ptr<ModifiedSpringMassDamperSystem<double>> mod_spring_damper;
   const double dt = 1e-3;                // Default integration step size.
   const double large_dt = 1e-1;          // Large integration step size.
-  const double huge_dt = 1e0;            // Unusable integration step size.
   const double spring_k = 1.0;           // Default spring constant.
   const double stiff_spring_k = 1e10;    // Default constant for a stiff spring.
   const double damping_b = 1e4;          // Default semi-stiff damper constant.
@@ -283,56 +282,6 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GE(integrator->get_num_step_shrinkages_from_substep_failures(), 0);
   EXPECT_GE(integrator->get_num_step_shrinkages_from_error_control(), 0);
   integrator->ResetStatistics();
-}
-
-// Checks that decreasing the likelihood that the Jacobian will be reformulated
-// increases the number of function evaluations.
-TEST_F(ImplicitIntegratorTest, JacobianReformTol) {
-  // Create a context.
-  auto context = spring_damper->CreateDefaultContext();
-
-  // Create the integrator.
-  ImplicitEulerIntegrator<double> integrator(*spring_damper, context.get());
-
-  // Enable fixed stepping to enable StepExactlyFixed().
-  integrator.set_maximum_step_size(huge_dt);
-  integrator.request_initial_step_size_target(huge_dt);
-  integrator.set_fixed_step_mode(true);
-
-  // Use central differencing to yield a presumably more accurate
-  // Jacobian matrix.
-  integrator.set_jacobian_computation_scheme(
-      ImplicitEulerIntegrator<double>::JacobianComputationScheme::
-      kCentralDifference);
-
-  // Initialize the integrator.
-  integrator.Initialize();
-
-  // Set the initial conditions for the spring and amper.
-  const double initial_position = 1;
-  const double initial_velocity = 0.1;
-  spring_damper->set_position(context.get(), initial_position);
-  spring_damper->set_velocity(context.get(), initial_velocity);
-
-  // Integrate once.
-  integrator.StepExactlyFixed(large_dt);
-
-  // Verify that there was (at least one) sub-step failure and that it was due
-  // to a substep failure.
-  EXPECT_GT(integrator.get_num_substep_failures(), 0);
-  EXPECT_GT(integrator.get_num_step_shrinkages_from_substep_failures(), 0);
-
-  // Count the number of function evaluations.
-  const int n_feval_reform = integrator.get_num_function_evaluations();
-
-  // Reset the initial conditions and integrate once again.
-  spring_damper->set_position(context.get(), initial_position);
-  spring_damper->set_velocity(context.get(), initial_velocity);
-  integrator.StepExactlyFixed(large_dt);
-
-  // Make sure that the number of function evaluations has gone down.
-  const int n_feval_noreform = integrator.get_num_function_evaluations();
-  EXPECT_GT(n_feval_noreform, n_feval_reform);
 }
 
 // Integrate the mass-spring-damping system using huge stiffness and damping.
@@ -447,7 +396,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   ImplicitEulerIntegrator<double> integrator(spring_mass, context.get());
   integrator.set_maximum_step_size(large_dt);
   integrator.request_initial_step_size_target(large_dt);
-  integrator.set_target_accuracy(1e-4);
+  integrator.set_target_accuracy(1e-5);
   integrator.set_minimum_step_size(1e-6);
 
   // Setup the initial position and initial velocity.
