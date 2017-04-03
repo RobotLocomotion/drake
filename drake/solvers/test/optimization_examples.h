@@ -27,6 +27,9 @@ enum class ConstraintForm {
   kFormula = 3,
 };
 
+void ExpectSolutionCostAccurate(const MathematicalProgram &prog, double tol);
+bool CheckSolutionCostAccurate(const MathematicalProgram &prog, double tol);
+
 class OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptimizationProgram)

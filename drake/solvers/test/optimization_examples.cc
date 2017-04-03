@@ -35,6 +35,30 @@ std::set<CostForm> quadratic_cost_form() {
   return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
 }
 
+double EvaluateSolutionCost(const MathematicalProgram &prog) {
+  Eigen::VectorXd cost = Eigen::VectorXd::Zero(1);
+  for (auto const& binding : prog.GetAllCosts()) {
+    cost += prog.EvalBindingAtSolution(binding);
+  }
+  return cost(0);
+}
+
+/*
+ * Expect that the optimal cost stored by the solver in the MathematicalProgram
+ * be nearly the same as the cost reevaluated at the solution
+ */
+void ExpectSolutionCostAccurate(const MathematicalProgram &prog, double tol) {
+  EXPECT_NEAR(EvaluateSolutionCost(prog), prog.GetOptimalCost(), tol);
+}
+
+/*
+ * Boolean version of ExpectSolutionCostAccurate for existing methods that return
+ * boolean values
+ */
+bool CheckSolutionCostAccurate(const MathematicalProgram &prog, double tol) {
+  return std::abs(EvaluateSolutionCost(prog) - prog.GetOptimalCost()) < tol;
+}
+
 OptimizationProgram::OptimizationProgram(CostForm cost_form,
                                          ConstraintForm cnstr_form)
     : prog_(std::make_unique<MathematicalProgram>()) {}
@@ -93,6 +117,9 @@ bool LinearSystemExample1::CheckSolution() const {
       return false;
     }
   }
+  if (std::abs(prog_->GetOptimalCost()) > tol()) {
+    return false;
+  }
   return true;
 }
 
@@ -110,6 +137,9 @@ bool LinearSystemExample2::CheckSolution() const {
                        MatrixCompareType::absolute)) {
     return false;
   }
+  if (std::abs(prog()->GetOptimalCost()) > tol()) {
+    return false;
+  }
   return true;
 }
 
@@ -124,6 +154,9 @@ bool LinearSystemExample3::CheckSolution() const {
   }
   if (!CompareMatrices(prog()->GetSolution(y()), b().topRows<2>() / 2, tol(),
                        MatrixCompareType::absolute)) {
+    return false;
+  }
+  if (std::abs(prog()->GetOptimalCost()) > tol()) {
     return false;
   }
   return true;
@@ -151,6 +184,9 @@ bool LinearMatrixEqualityExample::CheckSolution() const {
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
   es.compute(X_value);
   if (!(es.eigenvalues().array() >= 0).all()) {
+    return false;
+  }
+  if (std::abs(prog_->GetOptimalCost()) > 1E-8) {
     return false;
   }
   return true;
@@ -194,7 +230,8 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
 bool NonConvexQPproblem1::CheckSolution() const {
   const auto& x_value = prog_->GetSolution(x_);
   return CompareMatrices(x_value, x_expected_, 1E-9,
-                         MatrixCompareType::absolute);
+                         MatrixCompareType::absolute) &&
+         CheckSolutionCostAccurate(*prog_, 1E-5);
 }
 
 void NonConvexQPproblem1::AddConstraint() {
@@ -260,7 +297,8 @@ NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
 bool NonConvexQPproblem2::CheckSolution() const {
   const auto& x_value = prog_->GetSolution(x_);
   return CompareMatrices(x_value, x_expected_, 1E-3,
-                         MatrixCompareType::absolute);
+                         MatrixCompareType::absolute) &&
+         CheckSolutionCostAccurate(*prog_, 1E-4);
 }
 
 void NonConvexQPproblem2::AddQuadraticCost() {
@@ -328,7 +366,8 @@ LowerBoundedProblem::LowerBoundedProblem(ConstraintForm cnstr_form)
 bool LowerBoundedProblem::CheckSolution() const {
   const auto& x_value = prog_->GetSolution(x_);
   return CompareMatrices(x_value, x_expected_, 1E-3,
-                         MatrixCompareType::absolute);
+                         MatrixCompareType::absolute) &&
+         CheckSolutionCostAccurate(*prog_, 1E-2);
 }
 
 void LowerBoundedProblem::SetInitialGuess1() {
@@ -427,7 +466,8 @@ bool GloptiPolyConstrainedMinimizationProblem::CheckSolution() const {
   return (CompareMatrices(x_value, expected_, 1E-4,
                           MatrixCompareType::absolute)) &&
          (CompareMatrices(y_value, expected_, 1E-4,
-                          MatrixCompareType::absolute));
+                          MatrixCompareType::absolute)) &&
+         CheckSolutionCostAccurate(*prog_, 1E-4);
 }
 
 void GloptiPolyConstrainedMinimizationProblem::AddGenericCost() {
@@ -593,14 +633,16 @@ bool MinDistanceFromPlaneToOrigin::CheckSolution(bool rotated_cone) const {
                            MatrixCompareType::absolute) &&
            CompareMatrices(t_rotated_lorentz_value,
                            Vector1d(x_expected_.squaredNorm()), 1E-3,
-                           MatrixCompareType::absolute);
+                           MatrixCompareType::absolute) &&
+           CheckSolutionCostAccurate(*prog_rotated_lorentz_, 1E-3);
   } else {
     auto x_lorentz_value = prog_lorentz_->GetSolution(x_lorentz_);
     auto t_lorentz_value = prog_lorentz_->GetSolution(t_lorentz_);
     return CompareMatrices(x_lorentz_value, x_expected_, 1E-3,
                            MatrixCompareType::absolute) &&
            CompareMatrices(t_lorentz_value, Vector1d(x_expected_.norm()), 1E-3,
-                           MatrixCompareType::absolute);
+                           MatrixCompareType::absolute) &&
+           CheckSolutionCostAccurate(*prog_lorentz_, 1E-3);
   }
 }
 }  // namespace test
