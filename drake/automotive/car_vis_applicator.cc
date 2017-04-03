@@ -87,7 +87,7 @@ void CarVisApplicator<T>::DoCalcOutput(
   if (vehicle_poses.get_num_poses() != static_cast<int>(visualizers_.size())) {
     throw std::runtime_error("CarVisApplicator::DoCalcOutput(): Input "
         "PoseBundle has " + std::to_string(vehicle_poses.get_num_poses()) +
-        "poses. Expected " + std::to_string(visualizers_.size()) + ".");
+        " poses. Expected " + std::to_string(visualizers_.size()) + ".");
   }
 
   for (int i = 0; i < vehicle_poses.get_num_poses(); ++i) {
