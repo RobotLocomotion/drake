@@ -35,7 +35,7 @@ const AbstractValue& LcmDrivenLoop::WaitForMessage() {
   return *(sub_output_->get_data(0));
 }
 
-void LcmDrivenLoop::RunAssumingInitializedTo(double stop_time) {
+void LcmDrivenLoop::RunToSecondsAssumingInitialized(double stop_time) {
   double msg_time;
   stepper_->Initialize();
 
@@ -51,15 +51,6 @@ void LcmDrivenLoop::RunAssumingInitializedTo(double stop_time) {
       system_.Publish(stepper_->get_context());
     }
   }
-}
-
-void LcmDrivenLoop::RunWithDefaultInitializationTo(double stop_time) {
-  const AbstractValue& first_msg = WaitForMessage();
-  double msg_time = time_converter_->GetTimeInSeconds(first_msg);
-  // Inits context time to the msg time.
-  stepper_->get_mutable_context()->set_time(msg_time);
-
-  RunAssumingInitializedTo(stop_time);
 }
 
 }  // namespace lcm

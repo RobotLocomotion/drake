@@ -47,22 +47,30 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
 
 /**
  * This class implements a loop that's driven by a Lcm message. The context time
- * is explicitly slaved to the time in the received Lcm message. Some states are
- * also likely to be slaved to the message implicitly (e.g. robot states). This
- * is intended to implement a control loop that handles a state message from
- * the network, computes some numbers and then sends some command out.
+ * is explicitly slaved to the time in the received Lcm message. This class is
+ * intended to provide a generalized way to implement a message handling loop:
+ * an input message arrives, from which a response is computed and published.
+ * A common use case is to implement a distributed controller for a physical
+ * robot, where low level communication with the hardware is handled in a
+ * separate process than the controller. The device driver sends a message
+ * containing the estimated state. The controller process that message and
+ * sends back a command in response. The device driver finally receives and
+ * executes the command.
+ *
+ * This class is designed to be agnostic to different types of the driving Lcm
+ * message to provide a generic API. The Lcm message is internally encapsulated
+ * in AbstractValue, which erases its type. In addition, the message time stamp
+ * is the only required information by this class, which can be extracted by
+ * an instance of LcmMessageToTimeInterface. It is assumed that the caller is
+ * maintaining the type information of the message, and is able to supply an
+ * time converter.
  *
  * This class uses the Simulator class internally for event handling
  * (kPublishAction, kDiscreteUpdateAction, kUnrestrictedUpdateAction) and
- * state "integration" (e.g. I term in a PID). The user needs to be mindful of
- * their system's configuration especially about event timing, since time is
- * slaved to some outside source.
- *
- * The main message handling loop is roughly:
+ * state "integration" (e.g. the I term in a PID). The main message handling
+ * loop conceptually is:
  * <pre>
- * msg = wait_for_message("channel");
- * simulator.context.Initilaize(msg);
- * while(context.time < T_max) {
+ * while(context.time < stop_time) {
  *   msg = wait_for_message("channel");
  *   simulator.StepTo(msg.time);
  *   if (publish) {
@@ -71,10 +79,23 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * }
  * </pre>
  *
- * There are a couple assumptions in this implementation.
+ * Since time is slaved to some outside source, the user needs to be mindful of
+ * `system`'s configuration especially about event timing. For example, let us
+ * assume that `system` is configured to perform a discrete time action every
+ * 5ms (at 200Hz), and the necessary computation for `system` to step forward
+ * in time is very small. Now, suppose the driving message arrives at 1 Hz in
+ * real time. One would observe 200 such actions occur in rapid succession
+ * followed nearly one second of silence. This is because
+ * `msg = wait_for_message("channel")` takes about one second in real time,
+ * and `simulator.StepTo(msg.time)`, which forwards the simulator's clock by
+ * one second and performs 200 actions takes about 0 seconds in real time.
+ * This problem becomes less significant as the intervals between consecutive
+ * driving messages goes to zero.
+ *
+ * This implementation relies on several assumptions:
  * 1. The loop is blocked only on one Lcm message.
- * 2. It's pointless to recompute without a new Lcm message, thus the handler
- * loop is blocking.
+ * 2. It's pointless to call system.CalcOutput() without a new Lcm message,
+ * thus the handler loop is blocking.
  * 3. The computation for the given system should be faster than the incoming
  * message rate.
  *
@@ -91,14 +112,16 @@ class LcmDrivenLoop {
   /**
    * Constructor.
    * @param system Const reference to the handler system. Its life span must be
-   * longer than this.
+   * longer than `this`.
    * @param driving_subscriber Const reference to the driving subscriber. Its
-   * life span must be longer than this.
-   * @param context Unique pointer to a context allocated for @p system.
-   * @param lcm Pointer to Lcm interface. Cannot be nullptr. Its life span must
-   * be longer than this.
+   * life span must be longer than `this`.
+   * @param context Unique pointer to a context allocated for @p system. Can be
+   * nullptr, in which case a context will be allocated internally.
+   * @param lcm Pointer to Lcm interface. Its life span must be longer than
+   * `this`. @p lcm cannot be nullptr, otherwise `this` aborts.
    * @param time_converter Unique pointer to a converter that extracts time in
-   * seconds from the driving message time. Cannot be nullptr.
+   * seconds from the driving message time. Cannot be nullptr, otherwise `this`
+   * aborts.
    */
   LcmDrivenLoop(const System<double>& system,
                 const LcmSubscriberSystem& driving_subscriber,
@@ -108,47 +131,26 @@ class LcmDrivenLoop {
 
   /**
    * Returns a const reference of AbstractValue that contains the received Lcm
-   * message.
+   * message. The call is assumed to know the type of the actual message and
+   * have means to inspect the message.
    */
+  // TODO(siyuan): add a time out version.
   const AbstractValue& WaitForMessage();
 
   /**
-   * Starts the main loop assuming that the context (e.g. state and time) has
-   * already been properly initialized by the caller. This version is useful
-   * if the underlying System needs custom initialization depending on the first
-   * received Lcm message.
+   * Starts the message handling loop assuming the context (e.g. state and
+   * time) has already been properly initialized by the caller if necessary.
+   * @param stop_time End time in seconds relative to the time stamp in the
+   * driving Lcm message.
    */
-  void RunAssumingInitializedTo(
+  void RunToSecondsAssumingInitialized(
       double stop_time = std::numeric_limits<double>::infinity());
 
   /**
-   * Waits for the first Lcm message, sets the context's time to the message's
-   * time, then calls RunAssumingInitliazedTo(). This is convenient if no
-   * special initialization is required by the underlying system.
-   */
-  void RunWithDefaultInitializationTo(
-      double stop_time = std::numeric_limits<double>::infinity());
-
-  /**
-   * If @p flag is set to true, the main loop will explicitly call Publish()
-   * on the given system after it handles one driving message.
-   *
-   * To correctly implement "publish everything whenever a new message has
-   * been handled", the user needs to make sure that no subsystems in the
-   * given system have declared period publish, and @p flag is true.
-   * This is the recommended publish setup because of its simplicity, and
-   * suites typical "one state message in, one control message out " use case.
-   *
-   * Alternatively, the user can set @p flag to false, and declare periodic
-   * publish events for all the appropriate subsystems. However, the actual
-   * publishing behavior strongly depends on the timing of the driving message
-   * and computation in message handling, and the publish is unlikely to be
-   * uniform. Suppose the driving message comes at 1 hz, and the message
-   * handlers take very little time to handle one message, and are declared to
-   * be publishing at 200hz. What you should observe is that no messages will
-   * be published for 1 second, and 200 messages will be published almost at
-   * once. This is most likely not the intended behavior, and indicates some
-   * basic assumptions might be incorrect.
+   * Sets a flag that forces Publish() in the message handling loop.
+   * To achieve "publish whenever a new message has been handled", the user
+   * needs to make sure that no subsystems have declared period publish, and
+   * @p flag is true.
    */
   void set_publish_on_every_received_message(bool flag) {
     publish_on_every_received_message_ = flag;

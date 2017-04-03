@@ -110,8 +110,8 @@ void controller_loop() {
       valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
   plan_eval->Initialize(desired_q, plan_eval_context->get_mutable_state());
 
-  // Start the loop.
-  loop.RunAssumingInitializedTo();
+  // Starts the loop.
+  loop.RunToSecondsAssumingInitialized();
 }
 
 }  // end namespace qp_inverse_dynamics

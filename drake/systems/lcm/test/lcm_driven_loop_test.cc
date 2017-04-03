@@ -30,7 +30,7 @@ class MilliSecTimeStampMessageToSeconds : public LcmMessageToTimeInterface {
   }
 };
 
-// A dummy test system that outputs the input message's timestamp in seconds.
+// A dummy test system that outputs the input message's time stamp in seconds.
 class DummySys : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySys);
@@ -60,6 +60,10 @@ void publish() {
 
   const int kSleepMicroSec = 100000;
 
+  // This thread will first sleep for long enough to ensure `sys` to always
+  // receive the first message for test consistency. In practice, this is
+  // less important if `sys` does not need to receive the very first published
+  // message.
   usleep(kSleepMicroSec);
 
   for (int i = kStart; i <= kEnd; i++) {
@@ -69,6 +73,9 @@ void publish() {
   }
 }
 
+// The receiving Diagram in this test consists of a LcmSubscriberSystem,
+// a DummySys and a SignalLogger. The intended behavior is that every time
+// a new Lcm message arrives, its timestamp will be logged by the SignalLogger.
 GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   drake::lcm::DrakeLcm lcm;
   DiagramBuilder<double> builder;
@@ -82,18 +89,25 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   builder.Connect(*dummy, *logger);
   auto sys = builder.Build();
 
-  // Makes the converter from timestamp of milliseconds to seconds.
-  auto msg_to_time = std::make_unique<MilliSecTimeStampMessageToSeconds>();
-
   // Makes the lcm driven loop.
-  lcm::LcmDrivenLoop dut(*sys, *sub, nullptr, &lcm, std::move(msg_to_time));
+  lcm::LcmDrivenLoop dut(*sys, *sub, nullptr, &lcm,
+      std::make_unique<MilliSecTimeStampMessageToSeconds>());
+  // This ensures that dut calls sys->Publish() every time it handles a
+  // message, which triggers the logger to save its input (message time stamp)
+  // to the log.
+  dut.set_publish_on_every_received_message(true);
 
-  // Starts the publishing thread, this will first sleep for long enough so that
-  // dut can go sleep first.
+  // Starts the publishing thread.
   std::thread pub_thread(&publish);
 
+  // Waits for the first message.
+  const AbstractValue& first_msg = dut.WaitForMessage();
+  double msg_time =
+      dut.get_message_to_time_converter().GetTimeInSeconds(first_msg);
+  dut.get_mutable_context()->set_time(msg_time);
+
   // Starts the loop.
-  dut.RunWithDefaultInitializationTo(static_cast<double>(kEnd));
+  dut.RunToSecondsAssumingInitialized(static_cast<double>(kEnd));
 
   // Reaps the publishing thread.
   pub_thread.join();
@@ -104,6 +118,8 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   for (int i = kStart; i < kEnd; i++) {
     expected(ctr++) = i;
   }
+  // Compare logger's date, which are the message time stamps. They should
+  // match the values set in the publishing thread.
   EXPECT_TRUE(drake::CompareMatrices(expected.transpose(), logger->data(),
                                      1e-12,
                                      drake::MatrixCompareType::absolute));
