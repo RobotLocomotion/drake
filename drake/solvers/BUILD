@@ -455,6 +455,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:is_dynamic_castable",
         "//drake/common:symbolic_test_util",
     ],
 )
@@ -511,6 +512,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:is_dynamic_castable",
     ],
 )
 
