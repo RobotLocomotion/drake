@@ -10,16 +10,16 @@
 #include "drake/math/saturate.h"
 
 namespace drake {
+namespace automotive {
 
 using maliput::api::RoadGeometry;
 using maliput::api::RoadPosition;
 using maliput::api::Rotation;
 using math::saturate;
+using pose_selector::RoadOdometry;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseBundle;
 using systems::rendering::PoseVector;
-
-namespace automotive {
 
 static constexpr int kIdmParamsIndex{0};
 
@@ -97,6 +97,8 @@ void IdmController<T>::ImplDoCalcOutput(
     const PoseBundle<T>& traffic_poses,
     const IdmPlannerParameters<T>& idm_params,
     DrivingCommand<T>* command) const {
+  DRAKE_DEMAND(idm_params.IsValid());
+
   // Find the single closest car ahead.
   const RoadOdometry<T>& lead_car_odom =
       pose_selector::FindClosestLeading(road_, ego_pose, traffic_poses);
@@ -104,10 +106,10 @@ void IdmController<T>::ImplDoCalcOutput(
       pose_selector::CalcRoadPosition(road_, ego_pose.get_isometry());
 
   const T& s_ego = ego_position.pos.s;
-  const T& s_dot_ego =
-      GetSVelocity(RoadOdometry<double>(ego_position, ego_velocity));
+  const T& s_dot_ego = pose_selector::GetSVelocity(
+      RoadOdometry<double>(ego_position, ego_velocity));
   const T& s_lead = lead_car_odom.pos.s;
-  const T& s_dot_lead = GetSVelocity(lead_car_odom);
+  const T& s_dot_lead = pose_selector::GetSVelocity(lead_car_odom);
 
   // Saturate the net_distance at distance_lower_bound away from the ego car to
   // avoid near-singular solutions inherent to the IDM equation.
@@ -121,15 +123,6 @@ void IdmController<T>::ImplDoCalcOutput(
       idm_params, s_dot_ego, net_distance, closing_velocity);
   command->set_acceleration(command_acceleration);
   command->set_steering_angle(0.);
-}
-
-template <typename T>
-double IdmController<T>::GetSVelocity(const RoadOdometry<T>& road_odom) const {
-  Rotation rot = road_odom.lane->GetOrientation(road_odom.pos);
-  const T vx = road_odom.vel.get_velocity().translational().x();
-  const T vy = road_odom.vel.get_velocity().translational().y();
-
-  return vx * std::cos(rot.yaw) + vy * std::sin(rot.yaw);
 }
 
 // These instantiations must match the API documentation in idm_controller.h.
