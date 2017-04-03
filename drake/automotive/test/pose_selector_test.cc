@@ -148,6 +148,33 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
   EXPECT_EQ(-std::numeric_limits<double>::infinity(), trailing_odometry.pos.s);
 }
 
+GTEST_TEST(PoseSelectorTest, TestGetSVelocity) {
+  // Create a single-lane dragway.
+  const maliput::dragway::RoadGeometry road(
+      maliput::api::RoadGeometryId({"Single-lane dragway"}), 1 /* num_lanes */,
+      kLaneLength, kLaneWidth, 0. /* shoulder width */);
+  const maliput::api::Lane* lane = road.junction(0)->segment(0)->lane(0);
+
+  maliput::api::RoadPosition position =
+      maliput::api::RoadPosition(lane, maliput::api::LanePosition(0., 0., 0.));
+  FrameVelocity<double> velocity{};
+
+  // Expect the s-velocity to be zero.
+  EXPECT_EQ(0., GetSVelocity(RoadOdometry<double>(position, velocity)));
+
+  // Set the velocity to be along the lane's s-coordinate.
+  velocity[3] = 10.;
+  // Expect the s-velocity to match.
+  EXPECT_EQ(10., GetSVelocity(RoadOdometry<double>(position, velocity)));
+
+  // Set a velocity vector at 45-degrees with the lane's s-coordinate.
+  velocity[3] = 10. * std::cos(M_PI / 4.);
+  velocity[4] = 10. * std::sin(M_PI / 4.);
+  // Expect the s-velocity to be attenuated by sqrt(2) / 2.
+  EXPECT_NEAR(10. * std::sqrt(2.) / 2.,
+              GetSVelocity(RoadOdometry<double>(position, velocity)), 1e-12);
+}
+
 }  // namespace
 }  // namespace pose_selector
 }  // namespace automotive
