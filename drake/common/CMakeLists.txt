@@ -41,6 +41,7 @@ set(installed_headers
   call_matlab.h ${PROTO_HDRS}
   cond.h
   constants.h
+  copyable_unique_ptr.h
   double_overloads.h
   drake_assert.h
   drake_compat.h
