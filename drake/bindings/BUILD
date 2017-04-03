@@ -3,6 +3,7 @@
 
 load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_binary")
+load("//tools:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -261,3 +262,5 @@ py_test(
 )
 
 cpplint()
+
+python_lint()
