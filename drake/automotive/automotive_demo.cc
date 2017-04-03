@@ -6,15 +6,20 @@
 
 #include "drake/automotive/automotive_simulator.h"
 #include "drake/automotive/create_trajectory_params.h"
+#include "drake/automotive/gen/maliput_railcar_params.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
+
 
 DEFINE_string(simple_car_names, "",
               "A comma-separated list (e.g. 'Russ,Jeremy,Liang' would spawn 3 "
               "cars subscribed to DRIVING_COMMAND_Russ, "
               "DRIVING_COMMAND_Jeremy, and DRIVING_COMMAND_Liang)");
 DEFINE_int32(num_trajectory_car, 1, "Number of TrajectoryCar vehicles");
+DEFINE_int32(num_maliput_railcar, 0, "Number of MaliputRailcar vehicles. This "
+             "option is currently only applied when the road network is a "
+             "dragway.");
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
@@ -99,6 +104,20 @@ void AddVehicles(RoadNetworkType road_network_type,
       simulator->AddPriusTrajectoryCar(std::get<0>(params),
                                        std::get<1>(params),
                                        std::get<2>(params));
+    }
+    for (int i = 0; i < FLAGS_num_maliput_railcar; ++i) {
+      const int lane_index = i % FLAGS_num_dragway_lanes;
+      const double speed = FLAGS_dragway_base_speed +
+          lane_index * FLAGS_dragway_lane_speed_delta;
+      MaliputRailcarParams<double> params;
+      params.set_r(0);
+      params.set_h(0);
+      MaliputRailcarState<double> state;
+      state.set_speed(speed);
+      const maliput::api::Lane* lane =
+          dragway_road_geometry->junction(0)->segment(0)->lane(lane_index);
+      simulator->AddPriusMaliputRailcar("MaliputRailcar" + std::to_string(i),
+                                        LaneDirection(lane), params, state);
     }
   } else {
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
