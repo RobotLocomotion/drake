@@ -127,7 +127,7 @@ cc_binary(
     visibility = [],
     deps = [
         ":lcm",
-        "@python2//:lib",
+        "@python//:python",
     ],
 )
 
