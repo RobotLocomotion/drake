@@ -8,10 +8,6 @@
 
 #include "drake/automotive/car_vis_applicator.h"
 #include "drake/automotive/curve2.h"
-#include "drake/automotive/dev/endless_road_car.h"
-#include "drake/automotive/dev/endless_road_car_to_euler_floating_joint.h"
-#include "drake/automotive/dev/infinite_circuit_road.h"
-#include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput_railcar.h"
@@ -94,28 +90,6 @@ class AutomotiveSimulator {
                             double speed,
                             double start_time);
 
-  /// Adds an EndlessRoadCar to this simulation visualized as a Toyota Prius.
-  /// This includes its EulerFloatingJoint output.
-  ///
-  /// @param id  ID string for the car instance
-  ///
-  /// @param initial_state  Initial state of the car at start of simulation.
-  ///
-  /// @param control_type  The controller type; see EndlessRoadCar.
-  ///
-  /// @param channel_name  If @p control_type is kUser, this parameter must be
-  /// non-empty and the car will subscribe to an LCM channel of this name to
-  /// receive commands.
-  ///
-  /// @return The ID of the car that was just added to the simulation.
-  /// @pre Start() has NOT been called.
-  /// @pre SetRoadGeometry() HAS been called.
-  int AddPriusEndlessRoadCar(
-      const std::string& id,
-      const EndlessRoadCarState<T>& initial_state,
-      typename EndlessRoadCar<T>::ControlType control_type,
-      const std::string& channel_name);
-
   /// Adds a MaliputRailcar to this simulation visualized as a Toyota Prius.
   ///
   /// @pre Start() has NOT been called.
@@ -153,23 +127,6 @@ class AutomotiveSimulator {
   ///
   /// @pre Start() has been called.
   void SetMaliputRailcarAccelerationCommand(int id, double acceleration);
-
-  /// Sets the RoadGeometry for this simulation.
-  ///
-  /// The provided RoadGeometry will be wrapped with in an InfiniteCircuitRoad.
-  /// @p start specifies at which end of which lane the circuit shall begin.
-  /// @p path specifies the route of the circuit; if @p path is empty, some
-  /// default will be constructed.  See maliput::utility::InfiniteCircuitRoad
-  /// for details.
-  ///
-  /// @p start and @p path provide pointers to objects owned by @p road, so
-  /// their lifetime requirements are dictated by @p road.
-  ///
-  /// @pre Start() has NOT been called.
-  const maliput::utility::InfiniteCircuitRoad* SetRoadGeometry(
-      std::unique_ptr<const maliput::api::RoadGeometry> road,
-      const maliput::api::LaneEnd& start,
-      const std::vector<const maliput::api::Lane*>& path);
 
   /// Sets the RoadGeometry for this simulation.
   ///
@@ -219,10 +176,6 @@ class AutomotiveSimulator {
 
   // Adds an LCM publisher for the given @p system.
   // @pre Start() has NOT been called.
-  void AddPublisher(const EndlessRoadCar<T>& system, int vehicle_number);
-
-  // Adds an LCM publisher for the given @p system.
-  // @pre Start() has NOT been called.
   void AddPublisher(const MaliputRailcar<T>& system, int vehicle_number);
 
   // Adds an LCM publisher for the given @p system.
@@ -232,11 +185,6 @@ class AutomotiveSimulator {
   // Adds an LCM publisher for the given @p system.
   // @pre Start() has NOT been called.
   void AddPublisher(const TrajectoryCar<T>& system, int vehicle_number);
-
-  // Adds an LCM publisher for the given @p system.
-  // @pre Start() has NOT been called.
-  void AddPublisher(const EndlessRoadCarToEulerFloatingJoint<T>& system,
-                    int vehicle_number);
 
   // Adds an LCM publisher for the given @p system.
   // @pre Start() has NOT been called.
@@ -259,13 +207,11 @@ class AutomotiveSimulator {
   void SendLoadRobotMessage(const lcmt_viewer_load_robot& message);
 
   void InitializeSimpleCars();
-  void InitializeEndlessRoadcars();
   void InitializeMaliputRailcars();
 
   // For both building and simulation.
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
   std::unique_ptr<const maliput::api::RoadGeometry> road_{};
-  std::unique_ptr<const maliput::utility::InfiniteCircuitRoad> endless_road_{};
 
   // === Start for building. ===
   std::unique_ptr<RigidBodyTree<T>> tree_{
@@ -273,11 +219,6 @@ class AutomotiveSimulator {
 
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
       std::make_unique<systems::DiagramBuilder<T>>()};
-
-  // Holds the desired initial states of each EndlessRoadCar. It is used to
-  // initialize the simulation's diagram's state and to connect the
-  // EndlessRoadCars to the EndlessRoadOracle sensor.
-  std::map<const EndlessRoadCar<T>*, EndlessRoadCarState<T>> endless_road_cars_;
 
   // Holds the desired initial states of each SimpleCar. It is used to
   // initialize the simulation's diagram's state.

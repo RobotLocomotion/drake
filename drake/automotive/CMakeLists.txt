@@ -1,4 +1,3 @@
-add_subdirectory(dev)
 add_subdirectory(gen)
 add_subdirectory(maliput)
 
@@ -11,15 +10,9 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   calc_smooth_acceleration.cc
   create_trajectory_params.cc
   curve2.cc
-  dev/endless_road_car.cc
-  dev/endless_road_oracle.cc
-  dev/infinite_circuit_road.cc
   gen/bicycle_car_parameters.cc
   gen/bicycle_car_state.cc
   gen/driving_command.cc
-  gen/endless_road_car_config.cc
-  gen/endless_road_car_state.cc
-  gen/endless_road_oracle_output.cc
   gen/euler_floating_joint_state.cc
   gen/idm_planner_parameters.cc
   gen/maliput_railcar_params.cc
@@ -104,9 +97,6 @@ if(lcm_FOUND)
     gen/bicycle_car_parameters_translator.cc
     gen/bicycle_car_state_translator.cc
     gen/driving_command_translator.cc
-    gen/endless_road_car_config_translator.cc
-    gen/endless_road_car_state_translator.cc
-    gen/endless_road_oracle_output_translator.cc
     gen/euler_floating_joint_state_translator.cc
     gen/maliput_railcar_params_translator.cc
     gen/maliput_railcar_state_translator.cc
