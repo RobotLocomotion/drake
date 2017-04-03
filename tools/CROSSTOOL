@@ -172,6 +172,7 @@ toolchain {
   compilation_mode_flags {
     mode: DBG
     compiler_flag: "-g"
+    compiler_flag: "-O0"
   }
   compilation_mode_flags {
     mode: OPT
@@ -252,6 +253,7 @@ toolchain {
   compilation_mode_flags {
     mode: DBG
     compiler_flag: "-g"
+    compiler_flag: "-O0"
   }
   compilation_mode_flags {
     mode: OPT
@@ -325,6 +327,7 @@ toolchain {
   compilation_mode_flags {
     mode: DBG
     compiler_flag: "-g"
+    compiler_flag: "-O0"
   }
   compilation_mode_flags {
     mode: OPT
@@ -411,6 +414,7 @@ toolchain {
     mode: DBG
     # Enable debug symbols.
     compiler_flag: "-g"
+    compiler_flag: "-O0"
   }
   compilation_mode_flags {
     mode: OPT
