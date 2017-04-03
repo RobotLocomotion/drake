@@ -48,23 +48,6 @@ The following demos are available:
    car which can be driven anywhere on the infinite plane.  (See "Driving
    the Prius" below to make it go.)
 
- * Original "Maliput Village" demo, showing behavior at intersections:
-   `bazel run drake/automotive:village-demo`
-
-   This will show 15 _ado_ cars driving on a fixed, but self-intersecting,
-   path through the "Maliput Village" road network.  One can add a driveable
-   _ego_ car as well, by adding an extra argument:
-   `bazel run drake/automotive:village-demo -- -use_ego_car=true`
-   The _ego_ car is constrained to drive on the same route as the _ado_ cars,
-   though its velocity and heading along that route can be controlled by the
-   user.
-
- * "Maliput Village" demo showing merging behavior:
-   `bazel run drake/automotive:merging-demo`
-
-   Same general idea as the `village-demo`, but with a different path for
-   cars which includes a merge.
-
  * A 3-lane dragway with four `TrajectoryCar` vehicles traveling down each lane
    at different speeds plus one `SimpleCar` and one `MaliputRailcar`:
 
