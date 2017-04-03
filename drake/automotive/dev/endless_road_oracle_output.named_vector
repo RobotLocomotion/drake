@@ -1,8 +1,0 @@
-element {
-    name: "net_delta_sigma"
-    doc: "net ('bumper-to-bumper') longitudinal path distance to the closest preceding vehicle/obstacle [meters]"
-}
-element {
-    name: "delta_sigma_dot"
-    doc: "difference in longitudinal velocity of sensing vehicle relative to the closest preceding vehicle/obstacle [m/s, +value means obstacle is slower]"
-}
