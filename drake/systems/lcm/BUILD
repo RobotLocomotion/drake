@@ -71,6 +71,7 @@ drake_cc_googletest(
         ":lcmt_drake_signal_translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
+        "//drake/systems/framework/test_utilities:my_vector",
     ],
 )
 
