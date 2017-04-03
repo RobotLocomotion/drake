@@ -37,8 +37,7 @@ namespace automotive {
 ///
 /// Output Port 0: A DrivingCommand with the following elements:
 ///   * steering angle (unused - outputs zero).
-///   * throttle (>= 0)
-///   * brake (>= 0)
+///   * acceleration.
 ///
 /// @ingroup automotive_systems
 template <typename T>
@@ -59,10 +58,6 @@ class IdmController : public systems::LeafSystem<T> {
   /// @}
 
  private:
-  // Extracts the vehicle's `s`-direction velocity based on its RoadPosition @p
-  // pos and FrameVelocity @p vel.  Assumes the road has zero elevation.
-  double GetSVelocity(const RoadOdometry<T>& road_odom) const;
-
   // Converts @p pose into RoadPosition.
   const maliput::api::RoadPosition GetRoadPosition(
       const Isometry3<T>& pose) const;
