@@ -8,10 +8,10 @@ Optional: Setting up the MATLAB Compiler
 ========================================
 
 Make sure that the MATLAB executable is in your path.  (e.g., typing ``matlab``
- at the system command line should start an instance of MATLAB).  For example,
- on Mac you might consider
- ``sudo ln -s /Applications/MATLAB_R2014a.app/bin/matlab /usr/bin/matlab``,
- or you can actually add the MATLAB/bin directory to your system path.
+at the system command line should start an instance of MATLAB).  For example,
+on Mac you might consider
+``sudo ln -s /Applications/MATLAB_R2014a.app/bin/matlab /usr/bin/matlab``,
+or you can actually add the MATLAB/bin directory to your system path.
 
 .. _getting_drake:
 
@@ -54,6 +54,10 @@ setup steps:
     mac
     ubuntu_trusty
     ubuntu_xenial
+
+See :ref:`supported configurations <supported-configurations>`
+for the configurations and platforms that Drake officially supports.
+All else being equal, we would recommend developers use Ubuntu Xenial.
 
 .. _build_the_collection:
 
