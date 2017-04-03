@@ -88,9 +88,22 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // Verify the new number of frames.
   EXPECT_EQ(model->get_num_physical_frames(), 6);
 
-  // Frame indexes are unique and are assigned by MultibodyTree starting with
-  // frame_index = 0 for the world frame and increase in the same order frames
-  // are added.
+  // Compile() stage.
+  EXPECT_FALSE(model->topology_is_valid());  // Not valid before Compile().
+  EXPECT_NO_THROW(model->Compile());
+  EXPECT_TRUE(model->topology_is_valid());  // Valid after Compile().
+
+  // Frame indexes are assigned by MultibodyTree. The number of physical frames
+  // equals the number of body frames (one per body) plus the number of
+  // additional frames added to the system (like FixedOffsetFrame objects).
+  // The first MultibodyTree::get_num_bodies() frame indexes (starting at zero)
+  // correspond to the body frames. All other physical frames have indexes from
+  // MultibodyTree::get_num_bodies() to
+  // MultibodyTree::get_num_physical_frames() - 1.
+  // The order of the frames and their indexes is an implementation detail that
+  // users do not need to know about. Therefore this unit tests would need to
+  // change in the future if we decide to change th "internal detail" on how we
+  // assign these indexes.
   EXPECT_EQ(shoulder_inboard_frame.get_index(), FrameIndex(0));
   EXPECT_EQ(upper_link.get_body_frame().get_index(), FrameIndex(1));
   EXPECT_EQ(lower_link.get_body_frame().get_index(), FrameIndex(2));
@@ -99,21 +112,20 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   EXPECT_EQ(elbow_outboard_frame.get_index(), FrameIndex(5));
 
   // Check that frames are associated with the correct bodies.
-  EXPECT_EQ(shoulder_inboard_frame.get_body_index(), world_body.get_index());
-  EXPECT_EQ(shoulder_outboard_frame.get_body_index(), upper_link.get_index());
-  EXPECT_EQ(elbow_inboard_frame.get_body_index(), upper_link.get_index());
-  EXPECT_EQ(elbow_outboard_frame.get_body_index(), lower_link.get_index());
+  EXPECT_EQ(
+      shoulder_inboard_frame.get_body().get_index(), world_body.get_index());
+  EXPECT_EQ(
+      shoulder_outboard_frame.get_body().get_index(), upper_link.get_index());
+  EXPECT_EQ(
+      elbow_inboard_frame.get_body().get_index(), upper_link.get_index());
+  EXPECT_EQ(
+      elbow_outboard_frame.get_body().get_index(), lower_link.get_index());
 
   // Checks we can retrieve the body associated with a frame.
   EXPECT_EQ(&shoulder_inboard_frame.get_body(), &world_body);
   EXPECT_EQ(&shoulder_outboard_frame.get_body(), &upper_link);
   EXPECT_EQ(&elbow_inboard_frame.get_body(), &upper_link);
   EXPECT_EQ(&elbow_outboard_frame.get_body(), &lower_link);
-
-  // Compile() stage.
-  EXPECT_FALSE(model->topology_is_valid());  // Not valid before Compile().
-  EXPECT_NO_THROW(model->Compile());
-  EXPECT_TRUE(model->topology_is_valid());  // Valid after Compile().
 }
 
 }  // namespace

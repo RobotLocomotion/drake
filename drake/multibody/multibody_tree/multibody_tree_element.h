@@ -84,7 +84,14 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
     return *parent_tree_;
   }
 
-  /// Returns the unique index in its parent MultibodyTree to this element.
+  /// Returns the unique index in its parent MultibodyTree of this element.
+  /// The index of an element is an internal bookeeping detail for
+  /// MultibodyTree and users do not need to know about it. This method is made
+  /// public only so that the implementation can be unit tested.
+  /// @warning The return of this method is undefined before
+  ///          MultibodyTree::Compile() is called.
+  /// @pre MultibodyTree::Compile() must be called before this method can be
+  ///      invoked.
   ElementIndexType get_index() const { return index_;}
 
   /// Checks whether this MultibodyTreeElement has been registered into a
@@ -127,7 +134,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
 
   /// Gives MultibodyTree elements the opportunity to perform internal setup
   /// when MultibodyTree::Compile() is invoked.
-  virtual void Compile() = 0;
+  virtual void Compile(const MultibodyTree<T>& tree) = 0;
 
   // TODO(amcastro-tri): Add DeepClone API for transmogrification to other
   // scalar types.

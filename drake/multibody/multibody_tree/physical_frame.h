@@ -3,7 +3,6 @@
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
-
 namespace drake {
 namespace multibody {
 
@@ -31,22 +30,18 @@ class PhysicalFrame : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhysicalFrame)
 
-  /// Returns the unique BodyIndex of the body associated with this frame.
-  BodyIndex get_body_index() const { return body_index_;}
-
   /// Returns a constant reference to the body associated to this frame.
   const Body<T>& get_body() const {
-    return this->get_parent_tree().get_body(get_body_index());
+    return body_;
   }
 
  protected:
   // Only derived classes can use this constructor.
-  explicit PhysicalFrame(BodyIndex body_index) : body_index_(body_index) {}
+  explicit PhysicalFrame(const Body<T>& body) : body_(body) {}
 
  private:
-  // The unique index in the parent multibody tree of the body associated with
-  // this frame.
-  const BodyIndex body_index_;
+  // The body associated with this frame.
+  const Body<T>& body_;
 };
 
 }  // namespace multibody

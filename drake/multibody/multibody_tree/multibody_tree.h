@@ -55,9 +55,9 @@ class MultibodyTree {
   /// invoking methods which require valid topology. See Compile() for details.
   /// @{
 
-  /// Takes ownership of `body`, assigns a unique index to it, and adds it to
-  /// `this` %MultibodyTree. Returns a bare pointer to the body just added,
-  /// which will remain valid for the lifetime of `this` %MultibodyTree.
+  /// Takes ownership of `body`, and adds it to `this` %MultibodyTree. Returns a
+  /// bare pointer to the body just added, which will remain valid for the
+  /// lifetime of `this` %MultibodyTree.
   ///
   /// Example of usage:
   /// @code{.cpp}
@@ -81,24 +81,15 @@ class MultibodyTree {
     if (body == nullptr) {
       throw std::logic_error("Input body is an invalid nullptr.");
     }
-
-    // Users can add new multibody elements, however the topology gets
-    // invalidated.
-    BodyIndex index = topology_.add_body();
-
-    // MultibodyTree has access to these methods since it is a friend of
-    // MultibodyTreeElement. Users of Body<T>, however, do not have access to
-    // these methods.
-    body->set_parent_tree(this);
-    body->set_index(index);
+    topology_.invalidate();
     BodyType* raw_body_ptr = body.get();
     owned_bodies_.push_back(std::move(body));
     return raw_body_ptr;
   }
 
-  /// Takes ownership of `frame`, assigns a unique index to it, and adds it to
-  /// `this` %MultibodyTree. Returns a bare pointer to the physical frame just
-  /// added, which will remain valid for the lifetime of `this` %MultibodyTree.
+  /// Takes ownership of `frame` and adds it to `this` %MultibodyTree. Returns a
+  /// bare pointer to the physical frame just added, which will remain valid for
+  /// the lifetime of `this` %MultibodyTree.
   ///
   /// Example of usage:
   /// @code
@@ -124,59 +115,20 @@ class MultibodyTree {
     if (frame == nullptr) {
       throw std::logic_error("Input frame is an invalid nullptr.");
     }
-
-    BodyIndex body_index = frame->get_body_index();
-    DRAKE_DEMAND(body_index < get_num_bodies());
-
-    // Users can add new multibody elements, however the topology gets
-    // invalidated.
-    FrameIndex frame_index = topology_.add_physical_frame(body_index);
-
-    // MultibodyTree has access to these methods since it is a friend of
-    // MultibodyTreeElement. Users of Frame<T>, however, do not have access to
-    // these methods.
-    frame->set_parent_tree(this);
-    frame->set_index(frame_index);
+    topology_.invalidate();
     FrameType* raw_frame_ptr = frame.get();
     owned_physical_frames_.push_back(std::move(frame));
     return raw_frame_ptr;
   }
-
-  /// This method is **only** called from within private method
-  /// Body::CreateBodyFrame() to create the associated body frame for a body.
-  ///
-  /// @pre AddBody() was already called from within a body create method to
-  /// create the body associated with this frame. Therefore there is a valid
-  /// PhysicalFrameTopology for this frame.
-  BodyFrame<T>* AddBodyFrame(std::unique_ptr<BodyFrame<T>> body_frame) {
-    if (body_frame == nullptr) {
-      throw std::logic_error("Input body_frame is an invalid nullptr.");
-    }
-
-    // AddBody() was called before this method which already created valid
-    // topologies for the body and its associated body frame.
-    BodyIndex body_index = body_frame->get_body_index();
-    DRAKE_DEMAND(body_index < get_num_bodies());
-    FrameIndex frame_index = topology_.bodies[body_index].body_frame;
-
-    // MultibodyTree has access to these methods since it is a friend of
-    // MultibodyTreeElement. Users of BodyFrame<T>, however, do not have access
-    // to these methods.
-    body_frame->set_parent_tree(this);
-    body_frame->set_index(frame_index);
-    BodyFrame<T>* raw_body_ptr = body_frame.get();
-    owned_physical_frames_.push_back(std::move(body_frame));
-    return raw_body_ptr;
-  }
   /// @}
-  /// Closes Doxygen section.
+  // Closes Doxygen section.
 
   /// Returns the number of PhysicalFrame objects in the MultibodyTree.
   /// Physical frames include body frames associated with each of the bodies in
   /// the system including the _world_ body. Therefore the minimum number of
   /// physical frames in a MultibodyTree is one.
   int get_num_physical_frames() const {
-    return static_cast<int>(owned_physical_frames_.size());
+    return static_cast<int>(owned_physical_frames_.size()) + get_num_bodies();
   }
 
   /// Returns the number of bodies in the MultibodyTree including the *world*
@@ -214,35 +166,21 @@ class MultibodyTree {
   const PhysicalFrame<T>& get_physical_frame(FrameIndex frame_index) const {
     DRAKE_ASSERT(frame_index < get_num_physical_frames());
     DRAKE_ASSERT_VOID(
-        owned_physical_frames_[frame_index]->HasThisParentTreeOrThrow(this));
-    return *owned_physical_frames_[frame_index];
-  }
-
-  /// Returns a constant reference to the body frame associated with the
-  /// given `body`.
-  /// This method aborts in Debug builds when `body` does not correspond to a
-  /// body in this multibody tree.
-  const BodyFrame<T>& get_body_frame(const Body<T>& body) const {
-    DRAKE_ASSERT_VOID(body.HasThisParentTreeOrThrow(this));
-    DRAKE_ASSERT(body.get_index() < get_num_physical_frames());
-    DRAKE_ASSERT(body.get_body_frame_index() < get_num_physical_frames());
-    // TODO(amcastro-tri): Uses static_cast in Release builds.
-    // The assertion below would only fail if there was a bug in the logic
-    // creating body frames when adding bodies.
-    auto body_frame =
-        dynamic_cast<BodyFrame<T>*>(
-            owned_physical_frames_[body.get_body_frame_index()].get());
-    DRAKE_ASSERT(body_frame != nullptr);
-    return *body_frame;
+        physical_frames_[frame_index]->HasThisParentTreeOrThrow(this));
+    return *physical_frames_[frame_index];
   }
 
   /// Returns `true` if this %MultibodyTree was compiled with Compile() after
   /// all multibody elements were added, and `false` otherwise.
   /// The addition of new multibody elements invalidates the topology of the
-  /// %MultibodyTree, while a call to Compile() validates the topology, if
-  /// successful.
+  /// %MultibodyTree, while a call to Compile() validates the topology.
   /// @see Compile().
   bool topology_is_valid() const { return topology_.is_valid; }
+
+  /// Returns the topology information for this multibody tree. Users should not
+  /// need to call this method since MultibodyTreeTopology is an internal
+  /// bookkeeping detail.
+  const MultibodyTreeTopology& get_topology() const { return topology_; }
 
   /// This method must be called after all elements in the tree (joints, bodies,
   /// force elements, constraints) were added and before any computations are
@@ -275,8 +213,16 @@ class MultibodyTree {
 
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<PhysicalFrame<T>>> owned_physical_frames_;
+  // List of all frames in the system ordered by their FrameIndex (which gets
+  // assigned at Compile() time).
+  std::vector<PhysicalFrame<T>*> physical_frames_;
 
   MultibodyTreeTopology topology_;
+
+  // This is the first stage of the Compile() method. It essentially assigns
+  // indexes to each multibody component so that there is a one-to-one mapping
+  // between multibody topologies and the actual multibody elements.
+  void CreateTopologyAnalogues();
 };
 
 }  // namespace multibody

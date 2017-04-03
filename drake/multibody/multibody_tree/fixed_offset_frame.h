@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/physical_frame.h"
 
 namespace drake {
@@ -74,7 +75,9 @@ class FixedOffsetFrame : public PhysicalFrame<T> {
       MultibodyTree<T>* tree,
       const PhysicalFrame<T>& P, const Isometry3<T>& X_PF);
 
-  void Compile() final {}
+  void Compile(const MultibodyTree<T>& tree) final {
+    topology_ = tree.get_topology().physical_frames[this->get_index()];
+  }
 
  private:
   // Users are forced to create new rigid body frames with the Create()
@@ -84,6 +87,8 @@ class FixedOffsetFrame : public PhysicalFrame<T> {
   // The fixed pose of this frame F measured and expressed in another physical
   // frame P.
   Isometry3<T> X_PF_;
+
+  PhysicalFrameTopology topology_;
 };
 
 }  // namespace multibody
