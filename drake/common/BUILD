@@ -140,6 +140,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "of_dynamic",
+    testonly = 1,
+    hdrs = [
+        "test/of_dynamic.h",
+    ],
+    deps = [
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "symbolic_test_util",
     testonly = 1,
     hdrs = [
@@ -419,6 +430,13 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "of_dynamic_test",
+    deps = [
+        ":of_dynamic",
     ],
 )
 

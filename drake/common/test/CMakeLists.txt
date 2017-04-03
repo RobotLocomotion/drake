@@ -36,6 +36,9 @@ target_link_libraries(never_destroyed_test drakeCommon)
 drake_add_cc_test(monomial_test)
 target_link_libraries(monomial_test drakeCommon)
 
+drake_add_cc_test(of_dynamic_test)
+target_link_libraries(of_dynamic_test drakeCommon)
+
 drake_add_cc_test(nice_type_name_test)
 target_link_libraries(nice_type_name_test drakeCommon)
 
