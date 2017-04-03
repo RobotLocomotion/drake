@@ -79,6 +79,14 @@ const RoadPosition CalcRoadPosition(const RoadGeometry& road,
       nullptr, nullptr, nullptr);
 }
 
+double GetSVelocity(const RoadOdometry<double>& road_odom) {
+  maliput::api::Rotation rot = road_odom.lane->GetOrientation(road_odom.pos);
+  const double vx = road_odom.vel.get_velocity().translational().x();
+  const double vy = road_odom.vel.get_velocity().translational().y();
+
+  return vx * std::cos(rot.yaw) + vy * std::sin(rot.yaw);
+}
+
 }  // namespace pose_selector
 }  // namespace automotive
 }  // namespace drake
