@@ -9,7 +9,7 @@ load(
 )
 
 package(
-    default_visibility = [":__subpackages__"],
+    default_visibility = ["//drake/examples/kuka_iiwa_arm/dev:__subpackages__"],
 )
 
 drake_cc_library(

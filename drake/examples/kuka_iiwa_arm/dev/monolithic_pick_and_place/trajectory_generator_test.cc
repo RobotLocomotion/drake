@@ -7,7 +7,6 @@
  */
 
 #include <vector>
-
 #include <gflags/gflags.h>
 #include "robotlocomotion/robot_plan_t.hpp"
 
@@ -137,37 +136,11 @@ class PlanSourceTester : public systems::LeafSystem<double> {
 int DoMain(void) {
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
-  ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
-  std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
-      BuildCombinedPlant<double>(&iiwa_instance, &wsg_instance, &box_instance);
-
-  auto plant =
-      builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
-          std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
-
-  auto drake_visualizer = builder.template AddSystem<DrakeVisualizer>(
-      plant->get_plant().get_rigid_body_tree(), &lcm);
-
-  builder.Connect(plant->get_output_port_plant_state(),
-                  drake_visualizer->get_input_port(0));
-  auto iiwa_plan_source =
-      builder.template AddSystem<IiwaStateFeedbackPlanSource>(
-          drake::GetDrakePath() + kIiwaUrdf, 0.01);
-  builder.Connect(plant->get_output_port_iiwa_state(),
-                  iiwa_plan_source->get_input_port_state());
-  builder.Connect(iiwa_plan_source->get_output_port_state_trajectory(),
-                  plant->get_input_port_iiwa_state_command());
-  builder.Connect(iiwa_plan_source->get_output_port_acceleration_trajectory(),
-                  plant->get_input_port_iiwa_acceleration_command());
-
-  auto wsg_trajectory_generator_ =
-      builder.template AddSystem<SchunkWsgTrajectoryGenerator>(
-          plant->get_output_port_wsg_state().size(), 0);
-  builder.Connect(plant->get_output_port_wsg_state(),
-                  wsg_trajectory_generator_->get_state_input_port());
-  builder.Connect(wsg_trajectory_generator_->get_output_port(0),
-                  plant->get_input_port_wsg_command());
+  auto plant_and_estimators = builder.template AddSystem<
+      IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>>(
+      std::make_unique<IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>>(
+          &lcm));
 
   auto iiwa_base_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
@@ -177,7 +150,6 @@ int DoMain(void) {
   parsers::urdf::AddModelInstanceFromUrdfFile(drake::GetDrakePath() + kIiwaUrdf,
                                               multibody::joints::kFixed,
                                               iiwa_base_frame, &iiwa);
-
   double kStartTime = 0.5;
   std::vector<double> t, q_wsg;
   t.push_back(kStartTime);
@@ -202,19 +174,15 @@ int DoMain(void) {
       builder.template AddSystem<PlanSourceTester>(iiwa, t, q_iiwa, q_wsg);
 
   builder.Connect(trajectory_generator_tester->get_output_port_iiwa_action(),
-                  iiwa_plan_source->get_input_port_plan());
+                  plant_and_estimators->get_input_port_iiwa_plan());
   builder.Connect(trajectory_generator_tester->get_output_port_wsg_action(),
-                  wsg_trajectory_generator_->get_command_input_port());
-
-  std::cout << "Finished diagram connections. Starting simulation.\n";
+                  plant_and_estimators->get_input_port_wsg_plan());
 
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
   simulator.Initialize();
 
   simulator.StepTo(6.0);
-
-  std::cout << "Demo completed.\n";
 
   return 0;
 }
