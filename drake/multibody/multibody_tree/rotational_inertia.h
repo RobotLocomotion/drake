@@ -45,7 +45,24 @@ namespace multibody {
 /// </pre>
 /// where diagonal elements of this matrix are referred to as the **moments of
 /// inertia** while the off-diagonal elements are referred to as the **products
-/// of inertia**. These scalar elements are the numerical values of the
+/// of inertia**. The definition of the diagonal terms is uncontroversial.
+/// However, there are two conventions in common use for the products of
+/// inertia, differing in sign. Here is the precise definition we use for
+/// each of these elements. Inertias are defined in terms of the mass dm
+/// of a differential volume of the body or system of bodies whose position
+/// from about-point P is described by [x, y, z].<pre>
+/// Ixx = ∫ (y² + z²) dm
+/// Iyy = ∫ (x² + z²) dm
+/// Izz = ∫ (x² + y²) dm
+/// Ixy = - ∫ x y dm
+/// Ixz = - ∫ x z dm
+/// Iyz = - ∫ y z dm  
+/// </pre>
+/// We use the negated convention for products of inertia, so that I serves
+/// to relate angular velocity ω and angular momentum h via `h=I⋅ω`. Be sure
+/// that your input values follow this convention.
+///
+/// The scalar elements defined above are the numerical values of the
 /// rotational inertia components measured with respect to the axes of a given
 /// frame and therefore this frame needs to be explicitly stated. These scalar
 /// elements have no meaning if a reference frame is not specified.
