@@ -48,7 +48,8 @@ void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0,
       kNumViaPoints, start_via_pts(free_axis0), end_via_pts(free_axis0));
   via_pts(free_axis1, 0) = start_via_pts(free_axis1);
   via_pts(free_axis1, kNumViaPoints - 1) = end_via_pts(free_axis1);
-  bool positive_free_axis1 = arc_end0(free_axis1) >= 0 || arc_end1(free_axis1);
+  bool positive_free_axis1 =
+      arc_end0(free_axis1) > 0 || arc_end1(free_axis1) > 0;
   for (int i = 1; i < kNumViaPoints - 1; ++i) {
     // A point `x` on the arc satisfies
     // x(free_axis0)^2 + x(free_axis1)^2 = 1 - x(fixed_axis)^2
@@ -123,8 +124,38 @@ void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax,
 void DrawBoxSphereIntersection(const Eigen::Vector3d& bmin,
                                const Eigen::Vector3d& bmax,
                                const Eigen::RowVector3d& color) {
-  const auto& intersection_pts =
-      internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
+  DRAKE_DEMAND((bmax.array() > bmin.array()).all());
+  // First convert bmin and bmax to the first orthant.
+  Eigen::Vector3d orthant_bmin;
+  Eigen::Vector3d orthant_bmax;
+  // orthant_sign(i) = 1 if the i'th axis of the box is positive, otherwise it
+  // is -1.
+  Eigen::Vector3i orthant_sign;
+  for (int i = 0; i < 3; ++i) {
+    if (bmin(i) >= 0) {
+      orthant_bmin(i) = bmin(i);
+      orthant_bmax(i) = bmax(i);
+      orthant_sign(i) = 1;
+    } else if (bmax(i) <= 0) {
+      orthant_bmin(i) = -bmax(i);
+      orthant_bmax(i) = -bmin(i);
+      orthant_sign(i) = -1;
+    } else {
+      throw std::runtime_error(
+          "The box bmin <= x <= bmax should satisfy either bmin(i) >=0 or "
+          "bmax(i) <= 0");
+    }
+  }
+  // Compute the intersection points between the sphere in the first orthant,
+  // with the box orthant_bmin <= x <= orthant_bmax
+  auto intersection_pts = internal::ComputeBoxEdgesAndSphereIntersection(
+      orthant_bmin, orthant_bmax);
+  // Now convert the intersection point back to the right orthant.
+  for (int i = 0; i < static_cast<int>(intersection_pts.size()); ++i) {
+    for (int j = 0; j < 3; ++j) {
+      intersection_pts[i](j) *= orthant_sign(j);
+    }
+  }
   // Draw the line that connects adjacent intersection points.
   // For each intersection point, find out the neighbouring points, and then
   // draw the arc between these two points. The neighbouring points should have
