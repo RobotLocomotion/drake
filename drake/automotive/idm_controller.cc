@@ -10,31 +10,29 @@
 #include "drake/math/saturate.h"
 
 namespace drake {
+namespace automotive {
 
 using maliput::api::RoadGeometry;
 using maliput::api::RoadPosition;
 using maliput::api::Rotation;
 using math::saturate;
+using pose_selector::RoadOdometry;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseBundle;
 using systems::rendering::PoseVector;
 
-namespace automotive {
-
 static constexpr int kIdmParamsIndex{0};
 
 template <typename T>
-IdmController<T>::IdmController(const RoadGeometry& road) : road_(road) {
-  // Declare the ego car pose input.
-  ego_pose_index_ = this->DeclareVectorInputPort(PoseVector<T>()).get_index();
-  // Declare the ego car velocity input.
-  ego_velocity_index_ =
-      this->DeclareVectorInputPort(FrameVelocity<T>()).get_index();
-  // Declare the traffic car pose bundle input.
-  traffic_index_ = this->DeclareAbstractInputPort().get_index();
-  // Declare the output port.
-  this->DeclareVectorOutputPort(DrivingCommand<T>());
-
+IdmController<T>::IdmController(const RoadGeometry& road)
+    : road_(road),
+      ego_pose_index_{
+          this->DeclareVectorInputPort(PoseVector<T>()).get_index()},
+      ego_velocity_index_{
+          this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()},
+      traffic_index_{this->DeclareAbstractInputPort().get_index()},
+      driving_command_index_{
+          this->DeclareVectorOutputPort(DrivingCommand<T>()).get_index()} {
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
 }
 
@@ -56,6 +54,12 @@ const systems::InputPortDescriptor<T>& IdmController<T>::ego_velocity_input()
 template <typename T>
 const systems::InputPortDescriptor<T>& IdmController<T>::traffic_input() const {
   return systems::System<T>::get_input_port(traffic_index_);
+}
+
+template <typename T>
+const systems::OutputPortDescriptor<T>&
+IdmController<T>::driving_command_output() const {
+  return systems::System<T>::get_output_port(driving_command_index_);
 }
 
 template <typename T>
@@ -81,7 +85,7 @@ void IdmController<T>::DoCalcOutput(const systems::Context<T>& context,
   DRAKE_ASSERT(traffic_poses != nullptr);
 
   systems::BasicVector<T>* const command_output_vector =
-      output->GetMutableVectorData(0);
+      output->GetMutableVectorData(driving_command_index_);
   DRAKE_ASSERT(command_output_vector != nullptr);
   DrivingCommand<T>* const driving_command =
       dynamic_cast<DrivingCommand<T>*>(command_output_vector);
@@ -97,6 +101,8 @@ void IdmController<T>::ImplDoCalcOutput(
     const PoseBundle<T>& traffic_poses,
     const IdmPlannerParameters<T>& idm_params,
     DrivingCommand<T>* command) const {
+  DRAKE_DEMAND(idm_params.IsValid());
+
   // Find the single closest car ahead.
   const RoadOdometry<T>& lead_car_odom =
       pose_selector::FindClosestLeading(road_, ego_pose, traffic_poses);
@@ -104,10 +110,10 @@ void IdmController<T>::ImplDoCalcOutput(
       pose_selector::CalcRoadPosition(road_, ego_pose.get_isometry());
 
   const T& s_ego = ego_position.pos.s;
-  const T& s_dot_ego =
-      GetSVelocity(RoadOdometry<double>(ego_position, ego_velocity));
+  const T& s_dot_ego = pose_selector::GetSVelocity(
+      RoadOdometry<double>(ego_position, ego_velocity));
   const T& s_lead = lead_car_odom.pos.s;
-  const T& s_dot_lead = GetSVelocity(lead_car_odom);
+  const T& s_dot_lead = pose_selector::GetSVelocity(lead_car_odom);
 
   // Saturate the net_distance at distance_lower_bound away from the ego car to
   // avoid near-singular solutions inherent to the IDM equation.
@@ -121,15 +127,6 @@ void IdmController<T>::ImplDoCalcOutput(
       idm_params, s_dot_ego, net_distance, closing_velocity);
   command->set_acceleration(command_acceleration);
   command->set_steering_angle(0.);
-}
-
-template <typename T>
-double IdmController<T>::GetSVelocity(const RoadOdometry<T>& road_odom) const {
-  Rotation rot = road_odom.lane->GetOrientation(road_odom.pos);
-  const T vx = road_odom.vel.get_velocity().translational().x();
-  const T vy = road_odom.vel.get_velocity().translational().y();
-
-  return vx * std::cos(rot.yaw) + vy * std::sin(rot.yaw);
 }
 
 // These instantiations must match the API documentation in idm_controller.h.
