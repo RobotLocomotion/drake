@@ -436,9 +436,6 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   // Verify that integrator statistics are valid.
   CheckGeneralStatsValidity(&integrator);
 
-  // Verify that there was a step size shrinkage from error control.
-  EXPECT_GT(integrator.get_num_step_shrinkages_from_error_control(), 0);
-
   // Switch to central differencing.
   integrator.set_jacobian_computation_scheme(
       ImplicitEulerIntegrator<double>::JacobianComputationScheme::
