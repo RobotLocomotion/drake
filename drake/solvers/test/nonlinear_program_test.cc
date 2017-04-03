@@ -13,6 +13,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/test/is_dynamic_castable.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"
@@ -249,8 +250,7 @@ GTEST_TEST(testNonlinearProgram, linearPolynomialConstraint) {
                                       Vector1d::Constant(2),
                                       Vector1d::Constant(2), x_var);
   // Check that the resulting constraint is a LinearConstraint.
-  EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
-            nullptr);
+  EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(resulting_constraint));
   // Check that it gives the correct answer as well.
   problem.SetInitialGuessForAllVariables(drake::Vector1d(0));
   RunNonlinearProgram(&problem, [&]() {

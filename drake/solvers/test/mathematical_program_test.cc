@@ -13,6 +13,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/common/test/is_dynamic_castable.h"
 #include "drake/common/test/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
@@ -39,7 +40,7 @@ using drake::symbolic::test::ExprEqual;
 
 using std::numeric_limits;
 using std::set;
-using std::dynamic_pointer_cast;
+using std::static_pointer_cast;
 
 namespace drake {
 namespace solvers {
@@ -591,11 +592,10 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
   const Expression e{x(0)};
   const auto binding = prog.AddLinearConstraint(e, -10, 10);
 
-  // Check that the constraint in the binding is of BoundingBoxConstraint by
-  // using dynamic_pointer_cast.
+  // Check that the constraint in the binding is of BoundingBoxConstraint.
+  ASSERT_TRUE(is_dynamic_castable<BoundingBoxConstraint>(binding.constraint()));
   const std::shared_ptr<BoundingBoxConstraint> constraint_ptr{
-      std::dynamic_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
-  EXPECT_TRUE(constraint_ptr != nullptr);
+      static_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
   EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
 
   // Check if the binding includes the correct linear constraint.
@@ -945,8 +945,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.constraint();
   // Checks that we have LinearEqualityConstraint instead of LinearConstraint.
-  EXPECT_TRUE(dynamic_pointer_cast<LinearEqualityConstraint>(constraint_ptr) !=
-              nullptr);
+  EXPECT_TRUE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
   EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
   const auto Ax = constraint_ptr->A() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
@@ -982,8 +981,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.constraint();
   // Checks that we do not have LinearEqualityConstraint.
-  EXPECT_TRUE(dynamic_pointer_cast<LinearEqualityConstraint>(constraint_ptr) ==
-              nullptr);
+  EXPECT_FALSE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
   EXPECT_EQ(constraint_ptr->num_constraints(), 3);
   const auto Ax = constraint_ptr->A() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
