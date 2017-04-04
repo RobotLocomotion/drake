@@ -27,13 +27,13 @@ namespace pick_and_place {
 /// feedthrough thus eliminating algebriac loops when used in conjunction
 /// with a RigidBodyPlant within the same Diagram.
 
-class IiwaStateFeedbackTrajectoryGenerator : public systems::LeafSystem<double> {
+class IiwaStateFeedbackPlanSource : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStateFeedbackTrajectoryGenerator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStateFeedbackPlanSource)
 
-  explicit IiwaStateFeedbackTrajectoryGenerator(const std::string& model_path,
-                                                const double update_interval = 0.001);
-  ~IiwaStateFeedbackTrajectoryGenerator() override;
+  explicit IiwaStateFeedbackPlanSource(const std::string& model_path,
+                                       const double update_interval = 0.001);
+  ~IiwaStateFeedbackPlanSource() override;
 
   const systems::InputPortDescriptor<double>& get_input_port_plan() const {
     return this->get_input_port(input_port_plan_);
@@ -43,13 +43,14 @@ class IiwaStateFeedbackTrajectoryGenerator : public systems::LeafSystem<double> 
     return this->get_input_port(input_port_state_);
   }
 
-  const systems::OutputPortDescriptor<double>& get_output_port_trajectory() const {
+  const systems::OutputPortDescriptor<double>& get_output_port_trajectory()
+      const {
     return this->get_output_port(output_port_trajectory_);
   }
 
  protected:
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
-  const override;
+      const override;
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
@@ -64,7 +65,6 @@ class IiwaStateFeedbackTrajectoryGenerator : public systems::LeafSystem<double> 
 
  private:
   struct InternalData;
-
   const int input_port_plan_{-1};
   const int input_port_state_{-1};
   const int output_port_trajectory_{-1};

@@ -24,18 +24,14 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 namespace {
-
-const int kNumJoints = 7;;
-
+const int kNumJoints = 7;
 }  // namespace
 
 // TODO(sam.creasey) If we had version of Trajectory which supported
 // outputting the derivatives in value(), we could avoid keeping track
 // of multiple polynomials below.
-struct IiwaStateFeedbackTrajectoryGenerator::InternalData {
-  InternalData() {
-    iiwa_state = Eigen::VectorXd::Zero(2 * kNumJoints);
-  }
+struct IiwaStateFeedbackPlanSource::InternalData {
+  InternalData() { iiwa_state = Eigen::VectorXd::Zero(2 * kNumJoints); }
   ~InternalData() {}
 
   Eigen::VectorXd iiwa_state;
@@ -45,23 +41,24 @@ struct IiwaStateFeedbackTrajectoryGenerator::InternalData {
   PiecewisePolynomial<double> pp_deriv;
 };
 
-IiwaStateFeedbackTrajectoryGenerator::IiwaStateFeedbackTrajectoryGenerator(
+IiwaStateFeedbackPlanSource::IiwaStateFeedbackPlanSource(
     const std::string& model_path, const double update_interval)
     : input_port_plan_(this->DeclareAbstractInputPort().get_index()),
       input_port_state_(
-          this->DeclareInputPort(
-              systems::kVectorValued, 2 * kNumJoints).get_index()),
-      output_port_trajectory_(this->DeclareOutputPort(
-          systems::kVectorValued, kNumJoints * 2).get_index()) {
+          this->DeclareInputPort(systems::kVectorValued, 2 * kNumJoints)
+              .get_index()),
+      output_port_trajectory_(
+          this->DeclareOutputPort(systems::kVectorValued, kNumJoints * 2)
+              .get_index()) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       model_path, multibody::joints::kFixed, &tree_);
   this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
 }
 
-IiwaStateFeedbackTrajectoryGenerator::~IiwaStateFeedbackTrajectoryGenerator() {}
+IiwaStateFeedbackPlanSource::~IiwaStateFeedbackPlanSource() {}
 
 std::unique_ptr<systems::AbstractValues>
-IiwaStateFeedbackTrajectoryGenerator::AllocateAbstractState() const {
+IiwaStateFeedbackPlanSource::AllocateAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals;
   const InternalData default_plan;
   abstract_vals.push_back(std::unique_ptr<systems::AbstractValue>(
@@ -69,7 +66,7 @@ IiwaStateFeedbackTrajectoryGenerator::AllocateAbstractState() const {
   return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
 }
 
-void IiwaStateFeedbackTrajectoryGenerator::DoCalcOutput(
+void IiwaStateFeedbackPlanSource::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
   const InternalData& plan = context.get_abstract_state<InternalData>(0);
@@ -91,10 +88,9 @@ void IiwaStateFeedbackTrajectoryGenerator::DoCalcOutput(
   }
 }
 
-void IiwaStateFeedbackTrajectoryGenerator::DoCalcUnrestrictedUpdate(
+void IiwaStateFeedbackPlanSource::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
-
   const systems::BasicVector<double>* input =
       this->EvalVectorInput(context, input_port_state_);
   DRAKE_DEMAND(input);
@@ -123,7 +119,7 @@ void IiwaStateFeedbackTrajectoryGenerator::DoCalcUnrestrictedUpdate(
   // Check if plan in input is valid
   if (plan_in_input.num_states) {
     // Check if plan is different from the currently executing / executed plan.
-    if(encoded_msg != current_plan_in_state.encoded_msg) {
+    if (encoded_msg != current_plan_in_state.encoded_msg) {
       current_plan_in_state.encoded_msg.swap(encoded_msg);
       current_plan_in_state.start_time = context.get_time();
 
@@ -132,7 +128,7 @@ void IiwaStateFeedbackTrajectoryGenerator::DoCalcUnrestrictedUpdate(
       std::map<std::string, int> name_to_idx =
           tree_.computePositionNameToIndexMap();
       for (int i = 0; i < plan_in_input.num_states; ++i) {
-        const auto &plan_state = plan_in_input.plan[i];
+        const auto& plan_state = plan_in_input.plan[i];
         for (int j = 0; j < plan_state.num_joints; ++j) {
           if (name_to_idx.count(plan_state.joint_name[j]) == 0) {
             continue;
@@ -148,27 +144,25 @@ void IiwaStateFeedbackTrajectoryGenerator::DoCalcUnrestrictedUpdate(
 
       if (knots.size() >= 3) {
         const Eigen::MatrixXd knot_dot = Eigen::MatrixXd::Zero(kNumJoints, 1);
-        current_plan_in_state.pp = PiecewisePolynomial<double>::Cubic(input_time, knots,
-                                                     knot_dot, knot_dot);
+        current_plan_in_state.pp = PiecewisePolynomial<double>::Cubic(
+            input_time, knots, knot_dot, knot_dot);
       } else {
         current_plan_in_state.pp =
             PiecewisePolynomial<double>::FirstOrderHold(input_time, knots);
       }
       current_plan_in_state.pp_deriv = current_plan_in_state.pp.derivative();
-
     }
   } else {
-
     std::vector<Eigen::MatrixXd> knots(2, measured);
     std::vector<double> times{0., 1.};
     current_plan_in_state.start_time = context.get_time();
-    current_plan_in_state.pp = PiecewisePolynomial<double>::ZeroOrderHold(times, knots);
+    current_plan_in_state.pp =
+        PiecewisePolynomial<double>::ZeroOrderHold(times, knots);
     current_plan_in_state.pp_deriv = current_plan_in_state.pp.derivative();
   }
-
 }
 
-}  // namepace pick_and_place
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
