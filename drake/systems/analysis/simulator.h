@@ -371,9 +371,8 @@ void Simulator<T>::Initialize() {
   // Restore default values.
   ResetStatistics();
 
-  // Do a publish before the simulation starts.
-  system_.Publish(*context_);
-  ++num_publishes_;
+  // TODO(siyuan / sherm1): Removed the Publish() call here. But should add an
+  // initialization event instead.
 
   // Initialize runtime variables.
   initialization_done_ = true;
