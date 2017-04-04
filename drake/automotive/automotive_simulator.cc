@@ -199,6 +199,30 @@ const RoadGeometry* AutomotiveSimulator<T>::SetRoadGeometry(
 }
 
 template <typename T>
+const maliput::api::Lane* AutomotiveSimulator<T>::FindLane(
+    const std::string& name) const {
+  if (road_ == nullptr) {
+    throw std::runtime_error("AutomotiveSimulator::FindLane(): RoadGeometry "
+        "not set. Please call SetRoadGeometry() first before calling this "
+        "method.");
+  }
+  for (int i = 0; i < road_->num_junctions(); ++i) {
+    const maliput::api::Junction* junction = road_->junction(i);
+    for (int j = 0; j < junction->num_segments(); ++j) {
+      const maliput::api::Segment* segment = junction->segment(j);
+      for (int k = 0; k < segment->num_lanes(); ++k) {
+        const maliput::api::Lane* lane = segment->lane(k);
+        if (lane->id().id == name) {
+          return lane;
+        }
+      }
+    }
+  }
+  throw std::runtime_error("AutomotiveSimulator::FindLane(): Failed to find "
+      "lane named \"" + name + "\".");
+}
+
+template <typename T>
 void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
   maliput::utility::GenerateUrdfFile(road_.get(),
                                      "/tmp", road_->id().id,
