@@ -130,8 +130,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
     mod_spring_damper = std::make_unique<
         ModifiedSpringMassDamperSystem<double>>(stiff_spring_k, damping_b,
                                                 mass, constant_force_mag);
-    stiff_double_system =
-        std::make_unique<analysis_test::StiffDoubleMassSpringSystem<double>>();
 
     // One context will be usable for three of the systems.
     context = spring->CreateDefaultContext();
@@ -145,8 +143,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
   std::unique_ptr<SpringMassSystem<double>> spring;
   std::unique_ptr<SpringMassDamperSystem<double>> spring_damper;
   std::unique_ptr<ModifiedSpringMassDamperSystem<double>> mod_spring_damper;
-  std::unique_ptr<analysis_test::StiffDoubleMassSpringSystem<double>>
-      stiff_double_system;
 
   const double dt = 1e-3;                // Default integration step size.
   const double large_dt = 1e-1;          // Large integration step size.
