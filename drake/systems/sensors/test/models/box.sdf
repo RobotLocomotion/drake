@@ -14,7 +14,9 @@
               <size>10. 10. 1.</size>
             </box>
           </geometry>
-          <material/>
+          <material>
+            <diffuse>1.0 1.0 1.0 1.0</diffuse>
+          </material>
         </visual>
         <collision name="box">
           <geometry>

@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/solvers/test/rotation_constraint_visualization.h"
+/* clang-format on */
 
 #include "drake/lcm/lcm_call_matlab.h"
 #include "drake/solvers/rotation_constraint.h"

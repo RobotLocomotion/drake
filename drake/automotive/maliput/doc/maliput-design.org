@@ -1,0 +1,470 @@
+# How to generate a proper PDF of this document:
+#
+# 1. Install "org-mode" and all of its recommended support packages.
+#     apt install org-mode
+#    (emacs ships with org-mode, installing it specifically will get you a
+#    more up-to-date version, along with all the important LaTeX dependencies.)
+#
+# 2. Edit this file in emacs.
+#
+# 3. Typing "C-c C-e l p" will generate a "maliput-design.pdf" file.
+#    Typing "C-c C-e l o" will even open it for you.
+
+#+TITLE: maliput: Modeling Road Networks for Simulation
+#+AUTHOR: Matt Marjanović (maddog@tri.global)
+#+DATE: March 21, 2017
+
+This document describes =maliput=, a model of road networks for use in
+agent and traffic simulations.  At the core of =maliput= is a
+mathematical model of the geometry and topology of a road network.
+That model is practically expressed by an abstract C++ API which is
+intended to be independent of any specific on-disk format for
+persistent road data.  Concrete implementations of the abstract API
+allow various sources of road network data to be expressed via the
+common =maliput= model.
+
+* Objectives
+
+Driving happens on roads (most of the time); the /road network/ is a
+fundamental structure in the task of driving.  Any non-trivial
+simulation of driving will involve some model of roads --- the surface
+on which the vehicles are moving.  Our top-level goals for the
+=maliput= model are:
+
+ * make it easy to develop simple but rich agents to drive the
+   /ado/-cars, the secondary vehicles which interact with and exercise
+   the behaviors of the /ego/-cars; [fn::The /ado/ are the supporting
+   actors in /Kyogen/, a form of Japanese comic theater traditionally
+   performed in the interludes between Noh plays, featuring farcical
+   depictions of daily life.]
+
+ * provide a ground-truth for measuring the performance and behavior of
+   all agents in a simulation.
+
+For both of these goals, we need to know where vehicles and other
+objects are (and where they are going) with respect to one another /in
+the context of the road/.  Thus, the =maliput= API provides methods to
+answer questions such as "How close am I to the edge of the lane?" and
+"What objects are within 100 meters ahead of me in my current lane?"
+
+=maliput= is intended to be agnostic of the data source for a road network.
+Concrete implementations for different data sources will expose the same
+abstract interface.  Some networks may be completely synthetic (constructed
+by hand, or even procedurally), others will be created from measurments
+of real-life roads.
+
+We expect to have implementations to support:
+ * assembling simple geometric primitives for procedural roads (e.g.,
+   completely synthetic roads for unit-test cases);
+ * interpolating smooth roads from geographic position and orientation
+   samples measured from real roads;
+ * loading of road networks stored in the OpenDRIVE[fn::http://opendrive.org/]
+   format.
+
+The C++ API is also intended to allow for tiling, i.e., instantiating
+fragments of very large, complex road networks on-demand and disposing
+of fragments that are no longer immediately necessary.
+
+
+* Mathematical Model
+** Overview
+At the core of =maliput= is a mathematical model for the geometry of
+the space around a road network; it is a model of both the road
+surface (of course) and the volume proximal to that surface.  In the
+abstract, one can think of "a road" as a 2D manifold (the road
+surface) embedded in 3D space (the physical universe).  The manifold
+structure is important because much of driving involves figuring out
+where things are in relation to the road.  The embedding is important,
+too, because physical sensing and actuation (and realistic
+visualization) happens in physical space.  In =maliput=, we consider the
+/road volume/ and not just the /road surface/ because we want to be
+able to describe objects and events which are not glued to the surface
+--- e.g., stop lights, street signs, watermelons falling off of
+trucks.
+
+In super-mathy terms:
+ * The surface of the Earth (and the volume around it) is generally
+   approximated by locally flat 3-dimensional Cartesian space referred to
+   as the /world frame/.
+ * The road surface is a bounded compact orientable 2-dimensional manifold
+   embedded in the $\mathbb{R}^3$ world frame via a $G^1$ continuous map from
+   $\mathbb{R}^2 \to \mathbb{R}^3$.
+ * The road surface is extended via its normals into a bounded compact
+   orientable 3-dimensional road volume, also embedded in the $\mathbb{R}^3$
+   world frame via a $G^1$ continuous map from $\mathbb{R}^3 \to \mathbb{R}^3$.
+ * We impose the $G^1$ continuity constraint to ensure that there is a
+   consistent, well-defined orientation everywhere on the manifold.
+   (Abrupt changes in curvature are allowed, but cusps/kinks are not.)
+#   Furthermore, we construct the maps over a finite partition of the
+#   road volume, and over each partition, we require that the maps are
+#   $C^1$ continuous.
+
+In the lexicon of =maliput= and its API, the road volume manifold is
+called a =RoadGeometry=.  A =RoadGeometry= is partitioned into
+=Segments=, which correspond to stretches of asphalt (and the space
+above and/or below them).  Each =Segment= is a group of one or more
+adjacent =Lanes=.  A =Lane= corresponds to a lane of travel on a road,
+and defines a specific parameterization of the parent =Segment='s
+volume from a local /lane frame/ into the world frame.  =Lanes= are
+connected at =BranchPoints=, and the graph of =Lanes= and
+=BranchPoints= describes the topology of a =RoadGeometry=.  Finally,
+=Segments= which map to intersecting volumes of the world frame (e.g.,
+intersections) are grouped together into =Junctions=.
+
+In a sense, there are two complementary object graphs in =maliput=.
+The container hierarchy (=Junctions= contain =Segments=, which contain
+=Lanes=) groups together different views of the same regions of road
+surface.  The routing graph (=Lanes= are joined end-to-end via
+=BranchPoints=) describes how one can get from one region of the road
+network to another.
+
+** =World= Frame versus =Lane= Frame
+Two types of coordinate frames are used in this model: the (single)
+=World=-frame and the (multiple) =Lane=-frames.  In both, distances
+are typically measured in units of meters.
+
+The =World=-frame corresponds to a locally-flat projection of the
+Earth's surface, e.g., via UTM projection (although no specific
+projection is currently mandated by =maliput=).  The =World=-frame is
+a right-handed orthonormal inertial coordinate system, with basis
+$(\hat{x},\hat{y},\hat{z})$ and positions expressed as triples
+$(x,y,z)$.  $\hat{z}$ is /up/, with $z$ representing an altitude or
+elevation.  $\hat{x}$ and $\hat{y}$ span the horizontal plane.  Typically,
+the "ENU" convention is used:  $\hat{x}$ points /East/ and $\hat{y}$
+points /North/.
+
+A =Lane=-frame is a right-handed orthonormal coordinate system, with
+basis $(\hat{s},\hat{r},\hat{h})$ and positions expressed as
+curvilinear coordinates $(s,r,h)$.  Each =Lane= in a =RoadGeometry=
+defines its own embedding into the =World=, and thus each =Lane=
+has its own =Lane=-frame.
+
+When embedded into the =World=, $s$ represents longitudinal distance
+(path-length) along a central reference curve (the /centerline/) which
+defines a given =Lane=, and $\hat{s}$ is tangent to the reference
+curve.  $r$ is lateral distance along the road surface; $\hat{r}$ is
+perpendicular to $\hat{s}$ and parallel to the surface.  $h$ is height
+above the road surface; $\hat{h} = \hat{s} \times \hat{r}$.  Unless
+the lane is completely straight and flat, a =Lane=-frame acts like a
+non-inertial system: the $(s,r,h)$ are not isotropic[fn::$s$ is only
+guaranteed to correspond to true physical distance when $(r,h) =
+(0,0)$ (i.e., along the centerline), and similarly $r$ only yields a
+true physical distance when $h = 0$ (i.e., along the road surface).]
+and the curves and twists in the embedding introduce fictitious
+forces in equations of motion expressed in these coordinates.
+
+We also introduce the notion of /isotropic coordinates/
+$(\sigma,\rho,\eta)$ corresponding to the non-isotropic $(s,r,h)$.  At
+every point $(s,r,h)$ in a =Lane= with its local
+$(\hat{s},\hat{r},\hat{h})$ coordinate frame, we define a
+corresponding $(\hat{\sigma},\hat{\rho},\hat{\eta})$ frame with the
+same orientation but different scale factors which make it isotropic.
+We don't use $(\sigma,\rho,\eta)$ to parameterize the space of the
+=Lane=, but rather to talk about physically-relevant velocities and
+accelerations.  In other words, at a given point in a =Lane=, the
+magnitude of a velocity $(\dot{\sigma},\dot{\rho},\dot{\eta})$ is
+unchanged when mapped to $(\dot{x},\dot{y},\dot{z})$, and the
+direction undergoes the same rotation for all velocity vectors
+anchored to that point.
+
+Finally, we will colloquially use the term "=Road=-frame" to refer to
+a 4-tuple of parameters $(L,s,r,h)$ in which:
+ * $L$ is an identifier which uniquely names a =Lane=;
+ * $(s,r,h)$ are =Lane=-frame coordinates understood in the context
+   of =Lane= $L$.
+One can construct a map $M: {(L,s,r,h)} \to \mathbb{R}^3$ from the
+road manifold into the =World=, as a union of the per- =Lane= maps.
+This $M$ is technically an /immersion/ and not an /embedding/ because
+it is not necessarily 1-to-1.  As described later on, multiple =Lanes=
+in the same =Segment= will double-cover the same region of the
+$\mathbb{R}^3$ world frame.  Also, due to our representation of
+routing, double-coverage will occur where streets cross to form
+intersections, or where highways split or merge.
+
+#+BEGIN_QUOTE
+Note:  Due to certain geometric constraints in =Lane=-frame parameterization,
+some regions of the =RoadGeometry= manifold may not be covered by the
+=Lane=-frame of any =Lane=.  We anticipate needing an additional set of
+surface/volume parameterizations in the future to complete the picture.
+#+END_QUOTE
+
+** Lanes as =Lanes=
+
+A =Lane= represents a lane of travel in a road network.  As discussed above,
+it defines a map from curvilinear coordinates to the =World=-frame:
+\[
+G_L: (s,r,h) \to (x,y,z), \text{ for } s \in [0, s_\text{max}]
+\]
+The curve traced out by $G_L$ along longitudinal coordinate $s$ (while $r$
+and $h$ are fixed to zero) is called the /centerline/ of the =Lane=.
+\[
+C_L: (s) \to (x,y,z), = G_L(s,0,0) \text{ for } s \in [0, s_\text{max}]
+\]
+The centerline is nominally the ideal trajectory of a vehicle travelling
+in the lane (and it is not necessarily in the geometric center of the lane,
+despite the name).  $G_L$ is required to be $G^1$ continuous, and
+$C_L$ is further required to be $C^1$ continuous.
+
+The space of the =Lane= is bounded in $s$ by $s \in [0,
+s_\text{max}]$.  $s_\text{max}$ is called the /length/ of the =Lane=
+and is in fact the path-length of the centerline $C_L$ (in both the
+=Lane=-frame and the =World=-frame).  The $s=0$ end of a =Lane= is
+labelled the /start end/, and the $s=s_\text{max}$ end is the /finish
+end/.  However, a =Lane= is just a stretch of pavement with no
+preferred travel direction, and there is no direction of travel
+implied by these labels.[fn::Travel restrictions on a =Lane= are
+indicated by annotations, described later on.]
+
+A =Lane= is bounded laterally by $r \in B_\text{driveable}(s)$, where
+\[
+B_\text{driveable}: (s) \to [r_\text{min}, r_\text{max}] \text{ s.t. } r_\text{min}<=0 \text{ and } r_\text{max}>=0
+\]
+defines inclusive min/max bounds which depend only on $s$.  These are
+the /driveable bounds/ for the =Lane=, the valid domain of $r$, which
+is intended to
+represent the full lateral extent of the paved, driveable asphalt for
+all adjacent =Lanes= in the same =Segment=.
+A =Lane= is also characterized by /nominal bounds/
+\[
+B_\text{nominal}: (s) \to [r_\text{min}, r_\text{max}] \text{ s.t. } B_\text{nominal} \subseteq B_\text{driveable}
+\]
+which indicate what is considered to be "in" that specific travel lane
+(e.g., between the stripes).
+
+A =Lane= is bounded in height by $h \in H_\text{driveable}(s,r)$, where
+\[
+H_\text{driveable}: (s,r) \to [h_\text{min}, h_\text{max}] \text{ s.t. } h_\text{min}<=0 \text{ and } h_\text{max}>=0
+\]
+defines inclusive min/max bounds which depend on $s$ and $r$.  These define
+the valid domain of $h$, which represents the full extent of the volume
+(above and possibly below the road surface) modelled by the =Lane=.
+Typically, $h_\text{min}$ is zero, but having $h_\text{min}<0$ allows a
+=Lane= to describe the location of subterranean features (e.g., measurements
+made by ground-penetrating radar).
+
+#+BEGIN_QUOTE
+Note: Because of the orthogonality of $(\hat{s},\hat{r},\hat{h})$, a
+curve with constant non-zero $(r,h)$ (imagine $r$ and $h$ "grid
+lines") is basically a parallel curve to the centerline $C_L$.  Thus,
+the shape of $C_L$ and/or the road surface may
+produce limits to $(r,h)$ before such a curve develops a cusp.
+The current definitions of $B_\text{driveable}$ and
+$H_\text{driveable}$ conflate the bounds of the /driveable/ volume
+(e.g., pavement and free space under bridges) with the bounds of the
+/modelled/ volume (e.g., the bounds on $r$ and $h$ which maintain
+$G^1$ continuity, avoiding cusps).  Hence, the road surface may continue
+into regions that cannot be properly represented by a =Lane='s
+parameterization.
+#+END_QUOTE
+
+** Lanes Joined End-to-End via =BranchPoints=
+
+=BranchPoints= are the points where =Lanes= are connected end-to-end.
+They are so named because they are the branch-points in the decision
+tree of an agent, driving along the network, which must decide which
+new =Lane= to follow at the end of the current =Lane=.  Each end
+(/start/, /finish/) of a =Lane= has an associated
+=BranchPoint=.[fn::Typically, this means a =Lane= has precisely two
+=BranchPoints=, except for the peculiar case of a =Lane= which loops
+around and connects to itself, at a single =BranchPoint=.]  Each
+=BranchPoint= has at least one =Lane= associated with it, typically
+two, and often more than that (when =Lanes= merge/diverge).[fn::A
+=BranchPoint= with only a single =Lane= attached to it is basically a
+dead-end.]
+
+We only allow the centerlines ($C_L(s)$) of =Lanes= to intersect at
+their ends, i.e., at =BranchPoints=.  We also require that the centerlines
+of the =Lanes= joined at a =BranchPoint= are $G^1$ continuous.  This
+implies that:
+ * The =BranchPoint= is a well-defined point in the World frame.
+ * The tangent vectors of the $C_L$ curves are (anti)parallel at the
+   =BranchPoint=.  In fact, except for the signs of $\hat{s}$ and $\hat{r}$,
+   the frames of all the =Lanes= will have the same orientation and scale.
+ * Given two =Lanes= $J$ and $K$ joined at a =BranchPoint= located at
+   the /finish/ end of $J$, then a position $(s_\text{max,J}, r, h)_J$
+   in $J$ will map to either $(0, r, h)$ or $(s_\text{max,K}, -r,
+   h)_K$ in $K$ (depending on which end of $K$ is at the =BranchPoint=).
+
+A =BranchPoint= fundamentally has two sides to it; the =Lanes=
+involved can be collected into two groups depending on the orientation
+(parallel versus antiparallel) of their tangent vectors.  One can
+imagine multiple =Lanes= converging on one side of a =BranchPoint=,
+flowing smoothly through it, and diverging into other =Lanes= on the
+other side.  The sides are arbitrary, so we label them with the
+arbitrary names "A" and "B".  With respect to a specific =Lane=,
+however, we call all the =Lanes= on the "same side" its /confluent
+lanes/ and we call all the =Lanes= on the "other side" its /ongoing
+lanes/.
+
+# TODO: figure with sample branch-point topoloties:
+# * 1:1 --- simple continuation of one lane onto another;
+# * 1:2 --- a split of one lane to two;
+# * 1:3 --- a split of one to three, e.g., paths through an intersection
+#   with left and right turns available;
+# * 2:2 --- a merge/split, e.g., entering and/or exiting a roundabout;
+# * 1:0 --- you've reached the end of the road, my friend.
+
+A =BranchPoint= bears one additional element of information.  For each
+=Lane=, one of its ongoing =Lanes= may optionally be named as its
+/default-branch/.  This serves as a semantic hint about the structure
+of the road.  The default-branch represents the notion of "which
+branch should I choose in order to continue straight ahead".  For
+example, when entering a 4-way intersection, a =Lane= may terminate
+with three ongoing branches: turning left, going straight, and turning
+right; the "go straight" branch would be designated the
+default-branch.  Likewise, at a split in a highway, one fork might
+be considered the same highway, whereas the other is considered an exit.
+(Also, note that default-branch relationships between =Lanes= need not
+be symmetric.)
+
+** Adjacent Lanes Grouped into =Segments=
+
+In real roads, the pavement is often divided into multiple adjacent
+lanes of travel; in =maliput=, adjacent =Lanes= are grouped together
+into =Segments=.  The basic idea is that a =Segment= corresponds to a
+longitudinal stretch of pavement, and each =Lane= in that =Segment=
+presents a different $(s,r,h)$ parameterization of that same pavement.
+
+We would like for the driveable-bounds of each =Lane= to map to the
+same extent of physical space in the World frame, but that isn't always
+possible due to the geometric contraints of parallel curves.  However,
+we do require that the union of the driveable-bounds of all =Lanes=
+in a =Segment= is simply-connected.  This means that:
+ * a =Segment= doesn't have any "holes" in its driveable space (e.g.,
+   no impassable monument in the middle of the road);
+ * it is always possible to drive from a position in one =Lane=-frame
+   to a position in another =Lane=-frame, though it may require
+   expressing intermediate steps in other =Lanes= to do it.
+
+Recall that for =Lanes= in general, =Lane= centerlines are only
+allowed to intersect at their endpoints, and must have parallel
+tangents if they do.  This allows us to impose another constraint
+on =Lanes= in a =Segment=:  they must be oriented and shaped such
+that there is a consistent "right-to-left" ordering in terms of
+increasing $r$.  In other words:
+ * A =Lane= $K$ is considered "left of" =Lane= $J$ if and only if
+   there exists a point on the centerline $C_{LK}$ of $K$ that has a
+   position with $r > 0$ in the =Lane=-frame of $J$.  $K$ is "right
+   of" $J$ if and only if a point exist on $C_{LK}$ with position
+   $r < 0$ in the frame of $J$.
+ * If =Lane= $K$ is to the left of =Lane= $J$, then $J$ must be to
+   the right of $K$.
+ * Every pair of =Lanes= must have a left/right relationship.
+Given the consistent ordering, we index the =Lanes= in a =Segment=
+with unique integers, beginning with zero for the rightmost =Lane= and
+increasing leftward.
+
+** Intersecting =Segments= Grouped into =Junctions=
+
+It is possible for multiple =Segments= to cover the same pavement.
+In fact, that how intersections are represented, by criss-crossing
+=Segments= which define the different paths through an intersection.
+Overlapping =Segments= also occur where the road merges or diverges,
+such as on-ramps, exit ramps, traffic circles, and a road that splits
+to go around an impassable monument.
+
+=Segments= which map to intersecting volumes in the World frame (in
+terms of the union of the driveable-bounds of their =Lanes=) are
+grouped together into a =Junction=.  The primary (sole?) purpose of a
+=Junction= is to indicate that objects in its component =Segments= may
+spatially interact with eachother (e.g., collide!).  Conversely, if
+two =Segments= belong to two distinct =Junctions=, then objects within
+their respective driveable-bounds should /not/ be touching.  (Note
+that in considering intersection, we ignore the measure-zero overlap
+that occurs where =Segments= join end-to-end.)
+
+Every =Segment= must belong to one and only one =Junction=, and a
+=Junction= is thus allowed to contain a single =Segment=.  (And,
+empty =Junctions= are not allowed.)
+
+When designing/implementing a =RoadGeometry=, it is good practice to
+structure the =Segments= to minimize the spatial extent of
+=Junctions=.  For example, a single long =Segment= which crosses
+through two intersections would cause both intersections to belong
+to the same =Junction=.  It would be better split that single =Segment=
+into three:  one crossing each intersection, and one in between that
+joins those two end-to-end (resulting in three independent =Junctions=).
+
+* Annotations Database /(TODO)/
+  * (Rules may have time-of-day component.)
+** Lane-wide rules
+   * allowed travel direction
+     * single-direction (increasing $s$, decreasing $s$)
+     * bi-directional turning lane
+     * (time-of-day restrictions)
+   * use restrictions
+     * parking
+     * high-occupancy vehicles (HOV)
+     * pedestrian
+     * emergency vehicle
+   * speed limits
+   * passing rules
+** Physical features (features with spatial location and extent)
+   * linear features
+     * striping
+   * areal features
+     * crosswalks
+     * restricted medians
+     * do-not-block zones
+   * signage
+     * stop lights, stop signs
+     * turn restrictions
+   * other (volumetric) furniture
+     * traffic cones
+     * refrigerator that fell off a truck
+   * potholes
+
+* C++ Abstract API and Concrete Implementations
+** Generic =maliput::api=
+ * /TODO:/  Explain semantics of object ID's.  (cross-referencing, tiling,
+   debugging, visualization)
+ * /TODO:/  Reference to =maliput::api= doxygen.
+*** Basic Types
+    * =GeoPosition=
+    * =LanePosition=
+    * =RoadPosition=
+    * ...
+*** =RoadGeometry=
+    * accessors for component =Junctions=
+    * accessors for component =BranchPoints=
+*** =Junction=
+    * accessors for parent =RoadGeometry=, component =Junctions=
+*** =Segment=
+    * accessors for parent =Junction=, component =Lanes=
+*** =Lane=
+    * nominal $r$ bounds,
+      $B_\text{nominal}: (s) \to [r_\text{min}, r_\text{max}]$
+    * driveable $r$ bounds,
+      $B_\text{driveable}: (s) \to [r_\text{min}, r_\text{max}]$
+    * driveable $h$ bounds,
+      $H_\text{driveable}: (s,r) \to [h_\text{min}, h_\text{max}]$
+    * embedding $G_L: (s,r,h) \to (x,y,z)$
+    * inverse $G_L^{-1}: (x,y,z) \to (s,r,h)$
+    * =Lane=-frame orientation
+      $Q: (s,r,h) \to \text{orientation of }(\hat{s},\hat{r},\hat{h})$
+    * isotropic scale factors
+      $S: (s,r,h) \to (\frac{ds}{d\sigma},\frac{dr}{d\rho},\frac{dh}{d\eta})$
+    * derivatives of $G_L$ (to compute fictitious forces)
+    * accessors for parent =Segment=, associated =BranchPoints=,
+      and left/right =Lanes=, to traverse the object graph.
+*** =BranchPoint=
+    * accessors for =Lanes= on each side ("A" versus "B")
+    * accessor for the set of confluent =Lanes= for a given =Lane=
+    * accessor for the set of ongoing =Lanes= for a given =Lane=
+    * accessor for the default branch (ongoing =Lane=) for a given =Lane=
+    * accessor for parent =RoadGeometry=
+** =maliput::monolane= Implementation
+ * /TODO:/  Reference to =maliput::api= doxygen.
+ * /TODO:/  Basics of geometric primitives
+ * /TODO:/  Basics of Builder
+ * /TODO:/  Basics of yaml format
+
+* Formatting                                                       :noexport:
+#+OPTIONS: toc:1
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [12pt]
+#+LATEX_HEADER: \usepackage[scaled=0.85]{helvet}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage[margin=1.0in]{geometry}
+#+LATEX_HEADER: \setlength{\parindent}{0pt}
+#+LATEX_HEADER: \setlength{\parskip}{0.5em}

@@ -32,6 +32,7 @@ using Eigen::VectorXd;
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
 using drake::symbolic::Expression;
+using drake::symbolic::Formula;
 using drake::symbolic::Variable;
 using drake::symbolic::test::ExprEqual;
 
@@ -913,6 +914,153 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
   }
+}
+
+// Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
+  // Add linear constraints
+  //    3 - 5*x0 +      + 10*x2        - 7*y1         >= 3
+  //                         x2                       >= -10
+  //   -5 + 2*x0 + 3*x1         + 3*y0 - 2*y1 + 6*y2  <= -7
+  //                       2*x2                       == 2
+  //                                   -   y1         >= 1
+  //
+  // Note: the second, fourth and fifth rows are actually a bounding-box
+  // constraints but we still process the five symbolic-constraints into a
+  // single linear-constraint whose coefficient matrix is the following.
+  //
+  //         [-5 0 10 0 -7 0]
+  //         [ 0 0  1 0  0 0]
+  //         [ 2 3  0 3 -2 6]
+  //         [ 0 0  2 0  0 0]
+  //         [ 0 0  0 0 -1 0]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  Matrix<Formula, 5, 1> M_f;
+  // clang-format off
+  M_f << (3 - 5 * x(0) + 10 * x(2) - 7 * y(1) >= 3),
+         x(2) >= -10,
+         -5 + 2 * x(0) + 3 * x(1) + 3 * y(0) - 2 * y(1) + 6 * y(2) <= -7,
+         2 * x(2) == 2,
+         -y(1) >= 1;
+  // clang-format on
+
+  // Check if the binding includes the correct linear constraint.
+  const auto binding = prog.AddLinearConstraint(M_f.array());
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 5u);
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  for (int i{0}; i < M_f.size(); ++i) {
+    if (!std::isinf(lb_in_ctr(i))) {
+      EXPECT_PRED2(ExprEqual,
+                   get_lhs_expression(M_f(i)) - get_rhs_expression(M_f(i)),
+                   Ax(i) - lb_in_ctr(i));
+    }
+    if (!std::isinf(ub_in_ctr(i))) {
+      EXPECT_PRED2(ExprEqual,
+                   get_lhs_expression(M_f(i)) - get_rhs_expression(M_f(i)),
+                   Ax(i) - ub_in_ctr(i));
+    }
+  }
+}
+
+// Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
+// This test uses operator>= provided for Eigen::Array<Expression> and
+// Eigen::Array<double>.
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
+  // Add linear constraints
+  //
+  //     M_f = |f1 f2|
+  //           |f3 f4|
+  //
+  // where
+  //   f1 =  3 - 5*x0        +10*x2        - 7*y1        >= 3
+  //   f2 =                      x2                      >= -10
+  //   f3 = -5 + 2*x0 + 3*x1        + 3*y0 - 2*y1 + 6*y2 >= -7
+  //   f4 =                    2*x2                      >= 2
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  Matrix<Expression, 2, 2> M_e;
+  Matrix<double, 2, 2> M_lb;
+  // clang-format off
+  M_e << 3 - 5 * x(0) + 10 * x(2) - 7 * y(1),                       x(2),
+        -5 + 2 * x(0) +  3 * x(1) + 3 * y(0) - 2 * y(1) + 6 * y(2), 2 * x(2);
+  M_lb << 3, -10,
+         -7,   2;
+  // clang-format on
+  Eigen::Array<Formula, 2, 2> M_f{M_e.array() >= M_lb.array()};
+
+  // Check if the binding includes the correct linear constraint.
+  const auto binding = prog.AddLinearConstraint(M_f);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), M_e.rows() * M_e.cols());
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  int k{0};
+  for (int i{0}; i < M_e.rows(); ++i) {
+    for (int j{0}; j < M_e.cols(); ++j, ++k) {
+      EXPECT_PRED2(ExprEqual, M_e(i, j) - M_lb(i, j), Ax(k) - lb_in_ctr(k));
+    }
+  }
+}
+
+// Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula3) {
+  // Add linear constraints
+  //
+  //   (A*x >= b) = |1 2| * |x0| >= |5|
+  //                |3 4|   |x1|    |6|
+  //
+  //              = |  x0 + 2*x1 >= 5|
+  //                |3*x0 + 4*x1 >= 6|
+  //
+  // where A = |1 2|, x = |x0|, b = |5|
+  //           |3 4|      |x1|      |6|.
+  //
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  Matrix<Expression, 2, 2> A;
+  Eigen::Vector2d b;
+  // clang-format off
+  A << 1, 2,
+       3, 4;
+  b << 5,
+       6;
+  // clang-format on
+  const auto binding = prog.AddLinearConstraint((A * x).array() >= b.array());
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  EXPECT_PRED2(ExprEqual, x(0) + 2 * x(1) - 5, Ax(0) - lb_in_ctr(0));
+  EXPECT_PRED2(ExprEqual, 3 * x(0) + 4 * x(1) - 6, Ax(1) - lb_in_ctr(1));
+}
+
+// Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
+GTEST_TEST(testMathematicalProgram,
+           AddLinearConstraintSymbolicArrayFormulaException) {
+  // Add linear constraints
+  //    3 - 5*x0 + 10*x2 - 7*y1 >  3
+  //                  x2        > -10
+  // Note that this includes strict inequality (>) and results in an exception.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  Matrix<Formula, 2, 1> M_f;
+  // clang-format off
+  M_f << (3 - 5 * x(0) + 10 * x(2) - 7 * y(1) > 3),
+                              x(2)            > -10;
+  // clang-format on
+  EXPECT_THROW(prog.AddLinearConstraint(M_f.array()), std::runtime_error);
 }
 
 namespace {

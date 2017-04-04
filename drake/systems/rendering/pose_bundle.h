@@ -7,24 +7,23 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/rendering/frame_velocity.h"
 
 namespace drake {
 namespace systems {
 namespace rendering {
 
 // TODO(david-german-tri, SeanCurtis-TRI): Subsume this functionality into
-// GeometryWorld/GeometrySystem when they become available. In particular,
-// once GeometryWorld provides an id<->semantics mapping, PoseBundle will
-// no longer need to maintain names.
+// GeometryWorld/GeometrySystem when they become available.
 
-// TODO(david-german-tri): In the meantime, provide better lookup facilities
-// here.  "Names" as currently construed are unlikely to be useful to
-// consumers of aggregated poses.
+// TODO(david-german-tri): Consider renaming this to FrameKinematicsBundle,
+// since it contains both poses and velocities.
 
-/// PoseBundle is a container for a set of poses, represented by an Isometry3.
-/// The poses are expressed in the world frame: X_WFi. Each pose has a name,
-/// and a model instance ID.  If two poses in the bundle have the same model
-/// instance ID, they must not have the same name.
+/// PoseBundle is a container for a set of poses, represented by an Isometry3,
+/// and corresponding velocities, represented by a FrameVelocity. The poses and
+/// velocities are expressed in the world frame: X_WFi, V_WFi. Each pose has a
+/// name and a model instance ID.  If two poses in the bundle have the same
+/// model instance ID, they must not have the same name.
 ///
 /// This class is explicitly instantiated for the following scalar types. No
 /// other scalar types are supported.
@@ -43,6 +42,9 @@ class PoseBundle {
   const Isometry3<T>& get_pose(int index) const;
   void set_pose(int index, const Isometry3<T>& pose);
 
+  const FrameVelocity<T>& get_velocity(int index) const;
+  void set_velocity(int index, const FrameVelocity<T>& velocity);
+
   const std::string& get_name(int index) const;
   void set_name(int index, const std::string& name);
 
@@ -53,6 +55,7 @@ class PoseBundle {
 
  private:
   std::vector<Isometry3<T>> poses_;
+  std::vector<FrameVelocity<T>> velocities_;
   std::vector<std::string> names_;
   std::vector<int> ids_;
 };

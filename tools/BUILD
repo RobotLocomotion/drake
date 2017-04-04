@@ -2,6 +2,13 @@
 
 package(default_visibility = ["//visibility:public"])
 
+# Depend on this when you need to call clang-format.  (We don't have a label
+# for the binary yet, but this will stand in for it in the meantime.)
+filegroup(
+    name = "clang-format",
+    srcs = ["//:.clang-format"],
+)
+
 sh_binary(
     name = "valgrind",
     srcs = ["valgrind.sh"],
@@ -84,13 +91,11 @@ sh_binary(
     visibility = ["//visibility:private"],
 )
 
-# This genrule will fail loudly if ccache is on the path.
-genrule(
+load("//tools:ccache.bzl", "ccache_is_bad")
+
+# This rule will fail loudly if ccache is on the path.
+ccache_is_bad(
     name = "ccache_is_bad",
-    srcs = [],
-    outs = ["ccache.txt"],
-    cmd = "$(location :complain_about_ccache) | tee $(@)",
-    tools = [":complain_about_ccache"],
     visibility = ["//visibility:private"],
 )
 
@@ -102,10 +107,10 @@ filegroup(
 
 # This filegroup contains the files on which every toolchain component should
 # always depend, regardless of platform. It is a useful place for the outputs
-# of genrules that check preconditions for the entire build.
+# of rules that check preconditions for the entire build.
 filegroup(
     name = "universal_toolchain_deps",
-    srcs = ["ccache.txt"],
+    srcs = ["ccache.txt"],  # ccache.txt is an output of :ccache_is_bad
     visibility = ["//visibility:private"],
 )
 

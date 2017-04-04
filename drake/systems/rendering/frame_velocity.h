@@ -19,10 +19,16 @@ namespace rendering {
 /// @tparam T The Eigen scalar type. Supported scalar types are double,
 ///         AutoDiffXd, and symbolic::Expression.
 template <typename T>
-class FrameVelocity : public BasicVector<T> {
+class FrameVelocity final : public BasicVector<T> {
  public:
   FrameVelocity();
   ~FrameVelocity() override;
+
+  // FrameVelocity is final, so we can implement copy and assignment without
+  // fear of object slicing. This is useful for including FrameVelocity in an
+  // AbstractValue, such as PoseBundle.
+  FrameVelocity(const FrameVelocity<T>& other);
+  FrameVelocity<T>& operator=(const FrameVelocity<T>& other);
 
   /// Returns the entire spatial velocity Xdot_WA.
   multibody::SpatialVelocity<T> get_velocity() const;

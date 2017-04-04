@@ -1,4 +1,4 @@
-#include"drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 
 #include <cmath>
 

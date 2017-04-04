@@ -36,8 +36,27 @@ const InputPortDescriptor<T>& PoseAggregator<T>::AddSingleInput(
     const std::string& name, int model_instance_id) {
   input_records_.push_back(MakeSinglePoseInputRecord(name, model_instance_id));
   const InputPortDescriptor<T>& descriptor =
-      this->DeclareInputPort(kVectorValued, PoseVector<T>::kSize);
+      this->DeclareVectorInputPort(PoseVector<T>());
   return descriptor;
+}
+
+template <typename T>
+std::pair<const InputPortDescriptor<T>&, const InputPortDescriptor<T>&>
+PoseAggregator<T>::AddSinglePoseAndVelocityInput(
+    const std::string& name, int model_instance_id) {
+  // Add an input for the pose.
+  input_records_.push_back(MakeSinglePoseInputRecord(name, model_instance_id));
+  const InputPortDescriptor<T>& pose_descriptor =
+      this->DeclareVectorInputPort(PoseVector<T>());
+  // Add an input for the velocity.
+  input_records_.push_back(MakeSingleVelocityInputRecord(name,
+                                                         model_instance_id));
+  const InputPortDescriptor<T>& velocity_descriptor =
+      this->DeclareVectorInputPort(FrameVelocity<T>());
+
+  return std::pair<const InputPortDescriptor<T>&,
+                   const InputPortDescriptor<T>&>(pose_descriptor,
+                                                  velocity_descriptor);
 }
 
 template <typename T>
@@ -79,6 +98,7 @@ void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
           DRAKE_ASSERT(pose_index < bundle.get_num_poses());
           bundle.set_pose(pose_index,
                           cache.get_element(body_index).transform_to_world);
+          // TODO(david-german-tri): Set velocities for the RigidBodyTree.
           const RigidBody<double>& body = tree.get_body(body_index);
           bundle.set_name(pose_index, MakeBodyName(body));
           bundle.set_model_instance_id(pose_index,
@@ -87,14 +107,35 @@ void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
         }
         break;
       }
-      case kSingle: {
+      case kSinglePose: {
         const PoseVector<T>* value =
             this->template EvalVectorInput<PoseVector>(context, port_index);
+        DRAKE_ASSERT(value != nullptr);
         DRAKE_ASSERT(pose_index < bundle.get_num_poses());
         bundle.set_name(pose_index, record.name);
         bundle.set_pose(pose_index, value->get_isometry());
         bundle.set_model_instance_id(pose_index, record.model_instance_id);
         pose_index++;
+        break;
+      }
+      case kSingleVelocity: {
+        // Single velocities are associated with the single pose that must
+        // immediately precede.
+        DRAKE_ASSERT(port_index > 0);
+        DRAKE_ASSERT(input_records_[port_index - 1].type == kSinglePose);
+
+        const FrameVelocity<T>* value =
+            this->template EvalVectorInput<FrameVelocity>(context, port_index);
+        DRAKE_ASSERT(value != nullptr);
+        const int prev_pose_index = pose_index - 1;
+        DRAKE_ASSERT(bundle.get_name(prev_pose_index) == record.name);
+        const int last_model_instance_id =
+            bundle.get_model_instance_id(prev_pose_index);
+        DRAKE_ASSERT(last_model_instance_id == record.model_instance_id);
+
+        // Write the velocity to the previous pose_index, and do not increment
+        // the pose_index, because this input was not a pose.
+        bundle.set_velocity(prev_pose_index, *value);
         break;
       }
       case kBundle: {
@@ -108,6 +149,7 @@ void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
         for (int j = 0; j < num_poses; ++j) {
           DRAKE_ASSERT(pose_index < bundle.get_num_poses());
           bundle.set_pose(pose_index, value->get_pose(j));
+          bundle.set_velocity(pose_index, value->get_velocity(j));
           bundle.set_name(pose_index, bundle_name + "::" + value->get_name(j));
           bundle.set_model_instance_id(pose_index,
                                        value->get_model_instance_id(j));
@@ -161,8 +203,20 @@ typename PoseAggregator<T>::InputRecord
 PoseAggregator<T>::MakeSinglePoseInputRecord(
     const std::string& name, int model_instance_id) {
   InputRecord rec;
-  rec.type = kSingle;
+  rec.type = kSinglePose;
   rec.num_poses = 1;
+  rec.name = name;
+  rec.model_instance_id = model_instance_id;
+  return rec;
+}
+
+template <typename T>
+typename PoseAggregator<T>::InputRecord
+PoseAggregator<T>::MakeSingleVelocityInputRecord(
+    const std::string& name, int model_instance_id) {
+  InputRecord rec;
+  rec.type = kSingleVelocity;
+  rec.num_poses = 0;  // A velocity is not a pose.
   rec.name = name;
   rec.model_instance_id = model_instance_id;
   return rec;

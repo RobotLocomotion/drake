@@ -329,9 +329,6 @@ macro(drake_setup_options)
     DEPENDS "NOT DISABLE_FORTRAN"
     "use w/ AVL to compute aerodynamic coefficients for airfoils")
 
-  drake_optional_external(DREAL OFF
-    "Non-linear SMT solver and automated reasoning tool")
-
   drake_optional_external(GUROBI OFF
     "Convex/integer optimization solver\; free for academics")
 
