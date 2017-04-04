@@ -30,6 +30,12 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   // Adds a new body to the world.
   const RigidBody<double>& pendulum = RigidBody<double>::Create(model);
 
+  // Indexes not valid until Comile() is called.
+  EXPECT_FALSE(model->topology_is_valid());
+  // Verifies that the topology of this model gets validated at compile stage.
+  model->Compile();
+  EXPECT_TRUE(model->topology_is_valid());
+
   // Body identifiers are unique and are assigned by MultibodyTree in increasing
   // order starting with index = 0 (world_index()) for the "world" body.
   EXPECT_EQ(world_body.get_index(), world_index());
@@ -43,11 +49,6 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   // Rigid bodies have no generalized coordinates.
   EXPECT_EQ(pendulum.get_num_flexible_positions(), 0);
   EXPECT_EQ(pendulum.get_num_flexible_velocities(), 0);
-
-  EXPECT_FALSE(model->topology_is_valid());
-  // Verifies that the topology of this model gets validated at compile stage.
-  model->Compile();
-  EXPECT_TRUE(model->topology_is_valid());
 
   // Verifies that an exception is throw if a call to Compile() is attempted to
   // an already compiled MultibodyTree.
@@ -71,6 +72,9 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
 
   const RigidBody<double>& body1 = RigidBody<double>::Create(model1.get());
   const RigidBody<double>& body2 = RigidBody<double>::Create(model2.get());
+
+  model1->Compile();
+  model2->Compile();
 
   // Tests that the created bodies indeed do have a parent MultibodyTree.
   EXPECT_NO_THROW(body1.HasParentTreeOrThrow());

@@ -121,6 +121,12 @@ struct MultibodyTreeTopology {
     return index < get_num_frames();
   }
 
+  // Clears arrays.
+  void clear() {
+    bodies.clear();
+    frames.clear();
+  }
+
   std::vector<BodyTopology> bodies;
   std::vector<FrameTopology> frames;
 };
