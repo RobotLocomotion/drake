@@ -14,8 +14,8 @@ namespace systems {
 namespace {
 
 GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
-  std::unique_ptr<RobertsonSystem<double>> robertson =
-    std::make_unique<RobertsonSystem<double>>();
+  std::unique_ptr<analysis_test::RobertsonSystem<double>> robertson =
+    std::make_unique<analysis_test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
 
   // Set the initial conditions for Robertson's system.
@@ -167,7 +167,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
         ModifiedSpringMassDamperSystem<double>>(stiff_spring_k, damping_b,
                                                 mass, constant_force_mag);
     stiff_double_system =
-        std::make_unique<StiffDoubleMassSpringSystem<double>>();
+        std::make_unique<analysis_test::StiffDoubleMassSpringSystem<double>>();
 
     // One context will be usable for three of the systems.
     context = spring->CreateDefaultContext();
@@ -181,7 +181,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
   std::unique_ptr<SpringMassSystem<double>> spring;
   std::unique_ptr<SpringMassDamperSystem<double>> spring_damper;
   std::unique_ptr<ModifiedSpringMassDamperSystem<double>> mod_spring_damper;
-  std::unique_ptr<StiffDoubleMassSpringSystem<double>> stiff_double_system;
+  std::unique_ptr<analysis_test::StiffDoubleMassSpringSystem<double>>
+      stiff_double_system;
+
   const double dt = 1e-3;                // Default integration step size.
   const double large_dt = 1e-1;          // Large integration step size.
   const double spring_k = 1.0;           // Default spring constant.

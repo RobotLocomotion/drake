@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace systems {
-namespace {
+namespace analysis_test {
 
 /// A coupled, mass spring system taken from the SD/FAST user's manual.
 /// This simple example is used to provide a stiff system for testing
@@ -105,9 +105,9 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     deriv->get_mutable_generalized_position()->SetFrom(xd);
     deriv->get_mutable_generalized_velocity()->SetFromVector(a);
 
-    // We are integrating conservative power to get the work done by conservative
-    // force elements, that is, the net energy transferred between the spring and
-    // the mass over time.
+    // We are integrating conservative power to get the work done by
+    // conservative force elements, that is, the net energy transferred between
+    // the spring and the mass over time.
     deriv->get_mutable_misc_continuous_state()->SetAtIndex(0,
         this->CalcConservativePower(context));
   }
@@ -135,7 +135,7 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
         SetAtIndex(0, 0);
   }
 
-    /// Gets the solution for the system with initial state defined at @p context.
+  /// Gets the solution for the system with initial state defined at @p context.
   void get_solution(const Context<T>& context, T t,
                     ContinuousState<T>* state) const {
     using std::cos;
@@ -171,6 +171,6 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
   }
 };
 
-}  // namespace
+}  // namespace analysis_test
 }  // namespace systems
 }  // namespace drake

@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace systems {
-namespace {
+namespace analysis_test {
 
 /// Robertson's stiff chemical reaction problem. This example is taken from
 /// [Hairer, 1996] and is described in more detail in:
@@ -57,6 +57,6 @@ class RobertsonSystem : public LeafSystem<T> {
   }
 };
 
-}  // namespace
+}  // namespace analysis_test
 }  // namespace systems
 }  // namespace drake
