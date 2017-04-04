@@ -86,6 +86,54 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
   return (std::move(plant));
 }
 
+
+template <typename T>
+class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer : public systems::Diagram<T> {
+ public:
+  /// Constructs the IiwaWsgPlantGeneratorsEstimatorsAndVisualizer.
+  /// This Diagram encapsulses a Ii
+  /// @param lcm : A reference to the lcm object to be passed onto the Visualizer
+  IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(DrakeLcm &lcm,
+                                                const double update_interval = 0.001);
+
+  const systems::InputPortDescriptor<T>& get_input_port_iiwa_plan() const {
+    return this->get_input_port(input_port_iiwa_plan_);
+  }
+
+  const systems::InputPortDescriptor<T>& get_input_port_wsg_plan() const {
+    return this->get_input_port(input_port_wsg_plan_);
+  }
+
+  const systems::OutputPortDescriptor<T>& get_output_port_wsg_status() const {
+    return this->get_output_port(output_port_wsg_status_);
+  }
+
+  const systems::OutputPortDescriptor<T>& get_output_port_iiwa_robot_state_est_msg()
+  const {
+    return this->get_output_port(output_port_iiwa_robot_state_msg_);
+  }
+
+  const systems::OutputPortDescriptor<T>& get_output_port_box_robot_state_est_msg() const {
+    return this->get_output_port(output_port_box_robot_state_msg_);
+  }
+
+ private:
+  IiwaAndWsgPlantWithStateEstimator<T>* plant_{nullptr};
+  SchunkWsgStatusSender* wsg_status_sender_{nullptr};
+  PassThrough<T>* pass_through_wsg_state_{nullptr};
+  DrakeVisualizer* drake_visualizer_{nullptr};
+  ConstantVectorSource<T>* iiwa_zero_acceleration_source_{nullptr};
+  IiwaStateFeedbackTrajectoryGenerator* iiwa_trajectory_generator_{nullptr};
+  SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
+
+  int input_port_iiwa_plan_{-1};
+  int input_port_wsg_plan_{-1};
+  int output_port_wsg_status_{-1};
+  int output_port_iiwa_robot_state_msg_{-1};
+  int output_port_box_robot_state_msg_{-1};
+};
+
+
 }  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
