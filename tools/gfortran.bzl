@@ -19,18 +19,28 @@ def _find_and_symlink(repository_ctx, lib_name):
 
 def _gfortran_impl(repository_ctx):
     """Locate libgfortran.a and libquadmath.a. Wrap them in a cc_library."""
-    _find_and_symlink(repository_ctx, "libgfortran.a")
-    _find_and_symlink(repository_ctx, "libquadmath.a")
+    if repository_ctx.os.name == "mac os x":
+        suffix = ".dylib"
+    else:
+        suffix = ".so"
+
+    libgfortran = "libgfortran{}".format(suffix)
+    libquadmath = "libquadmath{}".format(suffix)
+
+    _find_and_symlink(repository_ctx, libgfortran)
+    _find_and_symlink(repository_ctx, libquadmath)
 
     BUILD = """
     cc_library(
         name = "lib",
-        srcs = ["libgfortran.a", "libquadmath.a"],
+        srcs = ["{}", "{}"],
         hdrs = [],
         linkopts = ["-ldl"],
         visibility = ["//visibility:public"],
     )
-    """.replace("\n    ", "\n")  # Strip leading indentation.
+    """.format(libgfortran, libquadmath).replace(
+        "\n    ", "\n")  # Strip leading indentation.
+
     repository_ctx.file("BUILD", content=BUILD)
 
 gfortran_repository = repository_rule(
