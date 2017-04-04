@@ -1,5 +1,6 @@
 #pragma once
 
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -114,6 +115,12 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
 
+  /**
+   * Blocks the caller until @p old_message_count is different from the
+   * internal message counter, and the internal message counter is returned.
+   */
+  int WaitForMessage(int old_message_count) const;
+
  protected:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;
@@ -131,7 +138,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
                       std::unique_ptr<SerializerInterface> serializer,
                       drake::lcm::DrakeLcmInterface* lcm);
 
-  // Callback entry point from LCM into this class.
+  // Callback entry point from LCM into this class. Also wakes up one thread
+  // block on notification_ if it's not nullptr.
   void HandleMessage(const std::string& channel, const void* message_buffer,
       int message_size) override;
 
@@ -151,6 +159,12 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   // The bytes of the most recently received LCM message.
   std::vector<uint8_t> received_message_;
+
+  // A message counter that's incremented every time the handler is called.
+  int received_message_count_{0};
+
+  // A condition variable that's signaled every time the handler is called.
+  mutable std::condition_variable received_message_condition_variable_;
 };
 
 }  // namespace lcm

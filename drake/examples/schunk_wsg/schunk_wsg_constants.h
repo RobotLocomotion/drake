@@ -24,6 +24,9 @@ constexpr int kSchunkWsgPositionIndex = 0;
 constexpr int kSchunkWsgVelocityIndex =
     kSchunkWsgNumPositions + kSchunkWsgPositionIndex;
 
+// TODO(sammy): need to double check this.
+constexpr double kSchunkWsgLcmStatusPeriod = 0.05;
+
 /**
  * Returns the selection matrix that selects the position and velocity indices
  * that correspond to the `left_finger_sliding_joint` in the model. The
