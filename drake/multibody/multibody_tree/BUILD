@@ -32,10 +32,10 @@ drake_cc_library(
         "body.h",
         "fixed_offset_frame.h",
         "frame.h",
+        "frame_base.h",
         "multibody_tree.h",
         "multibody_tree_element.h",
         "multibody_tree_topology.h",
-        "physical_frame.h",
         "rigid_body.h",
     ],
     deps = [

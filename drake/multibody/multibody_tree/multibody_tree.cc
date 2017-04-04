@@ -21,10 +21,10 @@ MultibodyTree<T>::MultibodyTree() {
 template <typename T>
 void MultibodyTree<T>::CreateTopologyAnalogues() {
   auto& body_topologies = topology_.bodies;
-  auto& frame_topologies = topology_.physical_frames;
+  auto& frame_topologies = topology_.frames;
 
   body_topologies.reserve(get_num_bodies());
-  frame_topologies.reserve(get_num_physical_frames());
+  frame_topologies.reserve(get_num_frames());
 
   for (auto& body: owned_bodies_) {
     // MultibodyTreeTopology::add_body() generates a BodyIndex and a FrameIndex
@@ -33,13 +33,13 @@ void MultibodyTree<T>::CreateTopologyAnalogues() {
     FrameIndex frame_index = topology_.bodies[body_index].body_frame;
     DRAKE_DEMAND(int(frame_index) == int(body_index));
 
-    const PhysicalFrame<T>& body_frame = body->get_body_frame();
-    PhysicalFrame<T>* raw_body_frame_ptr =
-        const_cast<PhysicalFrame<T>*>(&body_frame);
+    const Frame<T>& body_frame = body->get_body_frame();
+    Frame<T>* raw_body_frame_ptr =
+        const_cast<Frame<T>*>(&body_frame);
 
     // All physical frames, including body frames (owned by their respective
-    // bodies), are indexed by a FrameIndex within the physical_frames_ array.
-    physical_frames_.push_back(raw_body_frame_ptr);
+    // bodies), are indexed by a FrameIndex within the frames_ array.
+    frames_.push_back(raw_body_frame_ptr);
 
     // Set indexes for later convenient use during topology
     // creation/compilation.
@@ -48,13 +48,13 @@ void MultibodyTree<T>::CreateTopologyAnalogues() {
   }
   // At this point there should be as many frames as number of bodies since all
   // frames are body frames. Other physical frames are added below.
-  DRAKE_ASSERT(topology_.get_num_physical_frames() == get_num_bodies());
+  DRAKE_ASSERT(topology_.get_num_frames() == get_num_bodies());
 
   // Create the topology counterparts for owned frames.
-  for (auto& frame: owned_physical_frames_) {
+  for (auto& frame: owned_frames_) {
     BodyIndex body_index = frame->get_body().get_index();
-    FrameIndex frame_index = topology_.add_physical_frame(body_index);
-    physical_frames_.push_back(frame.get());
+    FrameIndex frame_index = topology_.add_frame(body_index);
+    frames_.push_back(frame.get());
     frame->set_index(frame_index);
   }
 }
@@ -88,7 +88,7 @@ void MultibodyTree<T>::Compile() {
   }
 
   // Give frames the chance to perform any compile-time setup.
-  for (const auto& frame : owned_physical_frames_) {
+  for (const auto& frame : owned_frames_) {
     frame->Compile(*this);
   }
 
