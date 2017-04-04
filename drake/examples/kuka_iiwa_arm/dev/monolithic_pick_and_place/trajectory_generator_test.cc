@@ -137,10 +137,10 @@ int DoMain(void) {
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
-  auto plant_and_estimators =
-      builder.template AddSystem<
-          IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>>(
-          std::make_unique<IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>>(lcm));
+  auto plant_and_estimators = builder.template AddSystem<
+      IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>>(
+      std::make_unique<IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>>(
+          &lcm));
 
   auto iiwa_base_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
