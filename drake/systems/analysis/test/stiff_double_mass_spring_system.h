@@ -40,7 +40,7 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     return Vector2<T>(f1 - f2, f2);
   }
 
-  T DoCalcPotentialEnergy(const Context<T>& context) const {
+  T DoCalcPotentialEnergy(const Context<T>& context) const override {
     const Eigen::Vector2d k = get_spring_constants();
     const Vector2<T> x = get_position(context);
     const T stretch0 = x(0) - 0;
