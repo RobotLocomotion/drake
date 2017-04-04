@@ -133,13 +133,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // One context will be usable for three of the systems.
     context = spring->CreateDefaultContext();
-
-    // Another context is necessary for the double system.
-    double_context = stiff_double_system->CreateDefaultContext();
   }
 
   std::unique_ptr<Context<double>> context;
-  std::unique_ptr<Context<double>> double_context;
   std::unique_ptr<SpringMassSystem<double>> spring;
   std::unique_ptr<SpringMassDamperSystem<double>> spring_damper;
   std::unique_ptr<ModifiedSpringMassDamperSystem<double>> mod_spring_damper;
