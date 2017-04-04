@@ -32,6 +32,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -45,13 +46,14 @@ namespace schunk_wsg {
 namespace {
 
 using drake::systems::RungeKutta3Integrator;
+using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
 using Eigen::Vector3d;
 
 // Initial height of the box's origin.
-const double kBoxInitZ = 0.076;
+const double kBoxInitZ = 0.101;
 
 std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
     int* lifter_instance_id, int* gripper_instance_id) {
@@ -85,7 +87,7 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
       nullptr,
       Eigen::Vector3d(0, 0, kBoxInitZ), Eigen::Vector3d::Zero());
   parsers::urdf::AddModelInstanceFromUrdfFile(
-      GetDrakePath() + "/multibody/models/box_small.urdf",
+      GetDrakePath() + "/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf",
       multibody::joints::kQuaternion, box_frame, tree.get());
 
   tree->compile();
@@ -109,7 +111,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const double kDissipation = 2.0;
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
-  const double kVStictionTolerance = 0.01;
+  const double kVStictionTolerance = 0.0001;
   plant->set_normal_contact_parameters(kStiffness, kDissipation);
   plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
                                          kVStictionTolerance);
@@ -237,14 +239,42 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   auto context = simulator.get_mutable_context();
 
   simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
+/*
   simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
   simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
+*/
+simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*model, context);
+simulator.get_mutable_integrator()->request_initial_step_size_target(dt);
+simulator.get_mutable_integrator()->set_target_accuracy(0.1);
+ImplicitEulerIntegrator<double>* integrator = (ImplicitEulerIntegrator<double>*) simulator.get_mutable_integrator();
+integrator->set_maximum_step_size(1e-2);
+integrator->set_minimum_step_size(1e-4);
+integrator->set_jacobian_computation_scheme(ImplicitEulerIntegrator<double>::JacobianComputationScheme::kCentralDifference);
+//integrator->set_jacobian_computation_scheme(ImplicitEulerIntegrator<double>::JacobianComputationScheme::kForwardDifference);
+drake::log()->set_level(spdlog::level::debug);
+integrator->set_min_step_size_exceeded_throws(false);
 
   simulator.Initialize();
 
   // Simulate to one second beyond the trajectory motion.
-  const double kSimDuration = lift_breaks[lift_breaks.size() - 1] + 1.0;
-  simulator.StepTo(kSimDuration);
+  const double sim_duration = lift_breaks[lift_breaks.size() - 1] + 1.0;
+  const double print_period = dt;
+  const int step_count = static_cast<int>(std::ceil(sim_duration / print_period));
+  for (int i=0; i < step_count; ++i) { 
+    std::cout << "time: " << context->get_time() << std::endl;
+    simulator.StepTo((i+1)*print_period);
+    std::cout << "Number of function evaluations: " << integrator->get_num_function_evaluations() << std::endl; 
+    std::cout << "Number of implicit trapezoid function evaluations: " << integrator->get_num_itr_function_evaluations() << std::endl; 
+    std::cout << "Number of Jacobian function evaluations: " << integrator->get_num_jacobian_function_evaluations() << std::endl; 
+    std::cout << "Number of implicit trapezoid Jacobian function evaluations: " << integrator->get_num_itr_jacobian_function_evaluations() << std::endl; 
+    std::cout << "Number of Newton-Raphson loops: " << integrator->get_num_newton_raphson_loops() << std::endl;
+    std::cout << "Number of implicit trapezoid Newton-Raphson loops: " << integrator->get_num_itr_newton_raphson_loops() << std::endl;
+    std::cout << "Number of StepAbstract() failures: " << integrator->get_num_step_abstract_failures() << std::endl;
+    std::cout << "Number of step size shrinkages due to StepAbstract() failures: " << integrator->get_num_step_shrinkages_from_step_abstract_failures() << std::endl;
+    std::cout << "Number of step size shrinkages due to error control: " << integrator->get_num_step_shrinkages_from_error_control() << std::endl;
+    std::cout << "Minimum adapted step size: " << integrator->get_smallest_adapted_step_size_taken() << std::endl;
+    integrator->ResetStatistics(); 
+  }
 
   // Extract and log the state of the robot.
   auto state_output = model->AllocateOutput(simulator.get_context());
@@ -319,7 +349,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   double distance = displacement.norm();
 
   // Lift duration is a sub-interval of the full simulation.
-  const double kLiftDuration = kSimDuration - kLiftStart;
+  const double kLiftDuration = sim_duration - kLiftStart;
   const double kMeanSlipSpeed = distance / kLiftDuration;
   EXPECT_LT(kMeanSlipSpeed, kVStictionTolerance);
 }
@@ -328,3 +358,4 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 }  // namespace schunk_wsg
 }  // namespace examples
 }  // namespace drake
+

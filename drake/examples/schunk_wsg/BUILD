@@ -108,6 +108,7 @@ drake_cc_googletest(
     data = [
         ":models",
         "//drake/multibody:models",
+        "//drake/examples/kuka_iiwa_arm:models",
     ],
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,

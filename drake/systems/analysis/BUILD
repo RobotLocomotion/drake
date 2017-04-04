@@ -128,8 +128,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
     deps = [
-        ":robertson",
-        ":stiff_double_mass_spring",
         ":implicit_euler_integrator",
         ":my_spring_mass_system",
     ],
