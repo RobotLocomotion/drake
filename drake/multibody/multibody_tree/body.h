@@ -35,11 +35,11 @@ template<typename T> class Body;
 /// frame, plus the motion of the material points on the body with respect to
 /// its %BodyFrame.
 ///
-/// The %BodyFrame represents a body's frame. Neither makes sense without the
-/// other. Therefore, %BodyFrame instances are constructed in conjunction with
-/// its Body in the corresponding Create() method and cannot be constructed
-/// anywhere else. However, users can still access. However, users can still
-/// access the frame associated with a body, see Body::get_body_frame().
+/// A %BodyFrame and Body are tightly coupled concepts; neither makes sense
+/// without the other. Therefore, a %BodyFrame instance is constructed in
+/// conjunction with its Body in the corresponding Create() method and cannot be
+/// constructed anywhere else. However, users can still access the frame
+/// associated with a body, see Body::get_body_frame().
 /// This access is more than a convenience; it allows users to specify
 /// mobilizers between a body frame and any other Frame in the multibody
 /// tree.
@@ -105,14 +105,13 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
  protected:
   // Default constructor. Only sub-classes can use it.
-  Body() : body_frame_(*this) {};
+  Body() : body_frame_(*this) {}
 
  private:
-  // Unique index to the associated BodyFrame in the parent MultibodyTree.
-  // TypeSafeIndex objects must be initialized.
-  //FrameIndex body_frame_index_{0};
+  // Body frame associated with this body.
   BodyFrame<T> body_frame_;
 
+  // The internal bookkeeping topology struct used by MultibodyTree.
   BodyTopology topology_;
 };
 

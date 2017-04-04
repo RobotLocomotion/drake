@@ -26,12 +26,12 @@ void MultibodyTree<T>::CreateTopologyAnalogues() {
   body_topologies.reserve(get_num_bodies());
   frame_topologies.reserve(get_num_frames());
 
-  for (auto& body: owned_bodies_) {
+  for (auto& body : owned_bodies_) {
     // MultibodyTreeTopology::add_body() generates a BodyIndex and a FrameIndex
     // associated with the corresponding BodyFrame.
     BodyIndex body_index = topology_.add_body();
     FrameIndex frame_index = topology_.bodies[body_index].body_frame;
-    DRAKE_DEMAND(int(frame_index) == int(body_index));
+    DRAKE_DEMAND(static_cast<int>(frame_index) == static_cast<int>(body_index));
 
     const Frame<T>& body_frame = body->get_body_frame();
     Frame<T>* raw_body_frame_ptr =
@@ -51,7 +51,7 @@ void MultibodyTree<T>::CreateTopologyAnalogues() {
   DRAKE_ASSERT(topology_.get_num_frames() == get_num_bodies());
 
   // Create the topology counterparts for owned frames.
-  for (auto& frame: owned_frames_) {
+  for (auto& frame : owned_frames_) {
     BodyIndex body_index = frame->get_body().get_index();
     FrameIndex frame_index = topology_.add_frame(body_index);
     frames_.push_back(frame.get());
@@ -61,7 +61,6 @@ void MultibodyTree<T>::CreateTopologyAnalogues() {
 
 template <typename T>
 void MultibodyTree<T>::Compile() {
-
   // Crete the topology counterparts to all multibody objects. This process
   // results in the generation of indexes for each multibody object.
   CreateTopologyAnalogues();

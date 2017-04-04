@@ -46,14 +46,14 @@ class MultibodyTree {
   /// multibody tree elements allows for a very controlled construction that
   /// ensures that multibody tree elements have a properly intialized reference
   /// to their parent %MultibodyTree as they are added to it.
-  /// Multibody tree element's constructors are made private in order to enforce
-  /// users to create them via their Create() factories to prevent the creation
-  /// of MultibodyTreeElement objects with an invalid parent %MultibodyTree.
   ///
   /// Calling any of these methods invalidates the topology of this
   /// %MultibodyTree and therefore, the Compile() method must be called before
   /// invoking methods which require valid topology. See Compile() for details.
   /// @{
+  // TODO(amcastro-tri): add at least one example of a method that requires a
+  // valid topology in this documentation.
+  // See this Reviewable comment: https://reviewable.io/reviews/robotlocomotion/drake/5583#-KgGqGisnX9uMuYDkHpx
 
   /// Takes ownership of `body`, and adds it to `this` %MultibodyTree. Returns a
   /// bare pointer to the body just added, which will remain valid for the
@@ -145,8 +145,6 @@ class MultibodyTree {
   /// to a body in this multibody tree.
   const Body<T>& get_body(BodyIndex body_index) const {
     DRAKE_ASSERT(body_index < get_num_bodies());
-    DRAKE_ASSERT_VOID(
-        owned_bodies_[body_index]->HasThisParentTreeOrThrow(this));
     return *owned_bodies_[body_index];
   }
 
@@ -155,8 +153,6 @@ class MultibodyTree {
   /// to a body in this multibody tree.
   Body<T>& get_mutable_body(BodyIndex body_index) {
     DRAKE_ASSERT(body_index < get_num_bodies());
-    DRAKE_ASSERT_VOID(
-        owned_bodies_[body_index]->HasThisParentTreeOrThrow(this));
     return *owned_bodies_[body_index].get();
   }
 
