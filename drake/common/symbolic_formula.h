@@ -23,30 +23,32 @@ namespace symbolic {
 
 /** Kinds of symbolic formulas. */
 enum class FormulaKind {
-  False,   ///< ⊥
-  True,    ///< ⊤
-  Eq,      ///< =
-  Neq,     ///< !=
-  Gt,      ///< >
-  Geq,     ///< >=
-  Lt,      ///< <
-  Leq,     ///< <=
-  And,     ///< Conjunction (∧)
-  Or,      ///< Disjunction (∨)
-  Not,     ///< Negation (¬)
-  Forall,  ///< Universal quantification (∀)
-  Isnan,   ///< NaN check predicate
+  False,                 ///< ⊥
+  True,                  ///< ⊤
+  Eq,                    ///< =
+  Neq,                   ///< !=
+  Gt,                    ///< >
+  Geq,                   ///< >=
+  Lt,                    ///< <
+  Leq,                   ///< <=
+  And,                   ///< Conjunction (∧)
+  Or,                    ///< Disjunction (∨)
+  Not,                   ///< Negation (¬)
+  Forall,                ///< Universal quantification (∀)
+  Isnan,                 ///< NaN check predicate
+  PositiveSemidefinite,  ///< Positive semidefinite matrix
 };
 
 // Total ordering between FormulaKinds
 bool operator<(FormulaKind k1, FormulaKind k2);
 
-class FormulaCell;            // In drake/common/symbolic_formula_cell.h
-class RelationalFormulaCell;  // In drake/common/symbolic_formula_cell.h
-class NaryFormulaCell;        // In drake/common/symbolic_formula_cell.h
-class FormulaNot;             // In drake/common/symbolic_formula_cell.h
-class FormulaForall;          // In drake/common/symbolic_formula_cell.h
-class FormulaIsnan;           // In drake/common/symbolic_formula_cell.h
+class FormulaCell;                  // In drake/common/symbolic_formula_cell.h
+class RelationalFormulaCell;        // In drake/common/symbolic_formula_cell.h
+class NaryFormulaCell;              // In drake/common/symbolic_formula_cell.h
+class FormulaNot;                   // In drake/common/symbolic_formula_cell.h
+class FormulaForall;                // In drake/common/symbolic_formula_cell.h
+class FormulaIsnan;                 // In drake/common/symbolic_formula_cell.h
+class FormulaPositiveSemidefinite;  // In drake/common/symbolic_formula_cell.h
 
 /** Represents a symbolic form of a first-order logic formula.
 
@@ -177,6 +179,7 @@ class Formula {
   friend bool is_negation(const Formula& f);
   friend bool is_forall(const Formula& f);
   friend bool is_isnan(const Formula& f);
+  friend bool is_positive_semidefinite(const Formula& f);
 
   // Note that the following cast functions are only for low-level operations
   // and not exposed to the user of symbolic_formula.h. These functions are
@@ -186,6 +189,8 @@ class Formula {
   friend std::shared_ptr<FormulaNot> to_negation(const Formula& f);
   friend std::shared_ptr<FormulaForall> to_forall(const Formula& f);
   friend std::shared_ptr<FormulaIsnan> to_isnan(const Formula& f);
+  friend std::shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
+      const Formula& f);
 
  private:
   std::shared_ptr<FormulaCell> ptr_;
@@ -217,6 +222,14 @@ Formula operator>=(const Variable& v1, const Variable& v2);
  * @throws std::runtime_error if NaN is detected during evaluation.
  */
 Formula isnan(const Expression& e);
+
+/** Returns a symbolic formula constraining @p m to be a positive-semidefinite
+ * matrix. By definition, @p m, a n x n matrix, is positive-semidefinte if xᵀ m
+ * x ≥ 0 for all vector x ∈ ℝⁿ.
+ *
+ * @pre @p m is a square matrix.
+ */
+Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m);
 
 std::ostream& operator<<(std::ostream& os, const Formula& f);
 
@@ -250,6 +263,8 @@ bool is_negation(const Formula& f);
 bool is_forall(const Formula& f);
 /** Checks if @p f is an isnan formula. */
 bool is_isnan(const Formula& f);
+/** Checks if @p f is a positive-semidefinite formula. */
+bool is_positive_semidefinite(const Formula& f);
 
 /** Returns the lhs-argument of a relational formula @p f.
  *  \pre{@p f is a relational formula.}
@@ -280,6 +295,12 @@ const Variables& get_quantified_variables(const Formula& f);
  *  \pre{@p f is a forall formula.}
  */
 const Formula& get_quantified_formula(const Formula& f);
+
+/** Returns the matrix in a positive-semidefinite formula @p f.
+ *  \pre{@p f is a positive-semidefinite formula.}
+ */
+const MatrixX<Expression>& get_matrix_in_positive_semidefinite(
+    const Formula& f);
 
 namespace detail {
 /// Provides a return type of relational operations (=, ≠, ≤, <, ≥, >) between

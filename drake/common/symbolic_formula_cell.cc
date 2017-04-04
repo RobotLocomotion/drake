@@ -20,6 +20,7 @@ namespace symbolic {
 
 using std::equal;
 using std::hash;
+using std::lexicographical_compare;
 using std::ostream;
 using std::runtime_error;
 using std::set;
@@ -454,6 +455,90 @@ ostream& FormulaIsnan::Display(ostream& os) const {
   return os << "isnan(" << e_ << ")";
 }
 
+FormulaPositiveSemidefinite::FormulaPositiveSemidefinite(
+    const Eigen::Ref<const MatrixX<Expression>>& m)
+    : FormulaCell{FormulaKind::PositiveSemidefinite,
+                  // Computes hash of m by traversing its elements.
+                  hash_range(m.data(), m.data() + m.rows() * m.cols())},
+      m_{m} {
+  // m should be a square matrix.
+  DRAKE_DEMAND(m.rows() == m.cols());
+}
+
+namespace {
+// Helper Eigen-visitor class that we use to implement
+// FormulaPositiveSemidefinite::GetFreeVariables().
+struct VariablesCollector {
+  Variables vars_;
+  // called for the first coefficient
+  void init(const Expression& e, const Eigen::Index i, const Eigen::Index j) {
+    return operator()(e, i, j);
+  }
+  // called for all other coefficients
+  void operator()(const Expression& e, const Eigen::Index /* i */,
+                  const Eigen::Index /* j */) {
+    vars_ += e.GetVariables();
+  }
+};
+}  // namespace
+
+Variables FormulaPositiveSemidefinite::GetFreeVariables() const {
+  VariablesCollector vc;
+  m_.visit(vc);
+  return vc.vars_;
+}
+
+bool FormulaPositiveSemidefinite::EqualTo(const FormulaCell& f) const {
+  // Formula::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
+  const FormulaPositiveSemidefinite& f_psd{
+      static_cast<const FormulaPositiveSemidefinite&>(f)};
+  return CheckStructuralEquality(m_, f_psd.m_);
+}
+
+bool FormulaPositiveSemidefinite::Less(const FormulaCell& f) const {
+  // Formula::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
+  const FormulaPositiveSemidefinite& f_psd{
+      static_cast<const FormulaPositiveSemidefinite&>(f)};
+
+  // Compare rows.
+  if (m_.rows() < f_psd.m_.rows()) {
+    return true;
+  }
+  if (f_psd.m_.rows() < m_.rows()) {
+    return false;
+  }
+
+  // No need to compare cols since m_ and f_psd.m_ are square matrices.
+  DRAKE_ASSERT(m_.rows() == f_psd.m_.rows() && m_.cols() == f_psd.m_.cols());
+
+  // Element-wise comparison.
+  const int num_of_elements = m_.rows() * m_.cols();
+  // clang-format off
+  return lexicographical_compare(
+      m_.data(), m_.data() + num_of_elements,
+      f_psd.m_.data(), f_psd.m_.data() + num_of_elements,
+      [](const Expression& e1, const Expression& e2) { return e1.Less(e2); });
+  // clang-format on
+}
+
+bool FormulaPositiveSemidefinite::Evaluate(const Environment& env) const {
+  // Need to check if xᵀ m x ≥ * 0 for all vector x ∈ ℝⁿ.
+  // TODO(Soonho): implement this when we have SMT/delta-SMT support.
+  throw runtime_error(
+      "Checking positive_semidefinite(M) is not yet implemented.");
+}
+
+Formula FormulaPositiveSemidefinite::Substitute(const Substitution& s) const {
+  return positive_semidefinite(
+      m_.unaryExpr([&s](const Expression& e) { return e.Substitute(s); }));
+}
+
+ostream& FormulaPositiveSemidefinite::Display(ostream& os) const {
+  return os << "positive_semidefinite(" << m_ << ")";
+}
+
 bool is_false(const FormulaCell& f) {
   return f.get_kind() == FormulaKind::False;
 }
@@ -514,6 +599,10 @@ bool is_isnan(const FormulaCell& f) {
   return f.get_kind() == FormulaKind::Isnan;
 }
 
+bool is_positive_semidefinite(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::PositiveSemidefinite;
+}
+
 shared_ptr<RelationalFormulaCell> to_relational(
     const shared_ptr<FormulaCell> f_ptr) {
   DRAKE_ASSERT(is_relational(*f_ptr));
@@ -557,6 +646,17 @@ shared_ptr<FormulaIsnan> to_isnan(const shared_ptr<FormulaCell> f_ptr) {
 }
 
 shared_ptr<FormulaIsnan> to_isnan(const Formula& f) { return to_isnan(f.ptr_); }
+
+shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
+    const shared_ptr<FormulaCell> f_ptr) {
+  DRAKE_ASSERT(is_positive_semidefinite(*f_ptr));
+  return static_pointer_cast<FormulaPositiveSemidefinite>(f_ptr);
+}
+
+shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
+    const Formula& f) {
+  return to_positive_semidefinite(f.ptr_);
+}
 
 }  // namespace symbolic
 }  // namespace drake

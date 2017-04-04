@@ -295,6 +295,50 @@ class FormulaIsnan : public FormulaCell {
   const Expression e_;
 };
 
+/** Symbolic formula representing positive-semidefinite (PSD) constraint. */
+class FormulaPositiveSemidefinite : public FormulaCell {
+ public:
+  explicit FormulaPositiveSemidefinite(
+      const Eigen::Ref<const MatrixX<Expression>>& m);
+  Variables GetFreeVariables() const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  /** Checks ordering between this PSD formula and @p f. The ordering between
+   * two PSD formulas `psd1` and `psd2` are determined by the ordering between
+   * the two matrices `m1` in `psd1` and `m2` in `psd2`.
+   *
+   * First, we compare the size of `m1` and `m2`:
+   * - If `m1` is smaller than `m2`, `psd1.Less(psd2)` is true.
+   * - If `m2` is smaller than `m1`, `psd1.Less(psd2)` is false.
+   *
+   * If `m1` and `m2` are of the same size, we perform element-wise comparison
+   * by following column-major order. See the following example:
+   *
+   * @code
+   * m1 << x + y,  1.0,
+   *       -3.14,    y;
+   * m2 << x + y, -1.0,
+   *        3.14,    y;
+   * const Formula psd1{positive_semidefinite(m1)};
+   * const Formula psd2{positive_semidefinite(m2)};
+   *
+   * EXPECT_TRUE(psd1.Less(psd2));
+   * @endcode
+   *
+   * Note that in the code above, `psd1.Less(psd2)` holds because we have
+   *  - m1 in column-major ordering : (x + y)  -3.14   1.0   y_
+   *  - m2 in column-major ordering : (x + y)   3.14   1.0  -y_.
+   */
+  bool Less(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
+  Formula Substitute(const Substitution& s) const override;
+  std::ostream& Display(std::ostream& os) const override;
+  /** Returns the corresponding matrix in this PSD formula. */
+  const MatrixX<symbolic::Expression>& get_matrix() const { return m_; }
+
+ private:
+  const MatrixX<symbolic::Expression> m_;
+};
+
 /** Checks if @p f is structurally equal to False formula. */
 bool is_false(const FormulaCell& f);
 /** Checks if @p f is structurally equal to True formula. */
@@ -323,6 +367,8 @@ bool is_negation(const FormulaCell& f);
 bool is_forall(const FormulaCell& f);
 /** Checks if @p f is an isnan formula. */
 bool is_isnan(const FormulaCell& f);
+/** Checks if @p f is a positive semidefinite formula. */
+bool is_positive_semidefinite(const FormulaCell& f);
 
 /** Casts @p f_ptr of shared_ptr<FormulaCell> to
  * @c shared_ptr<RelationalFormulaCell>.
@@ -381,6 +427,20 @@ std::shared_ptr<FormulaIsnan> to_isnan(
  *  \pre{@c is_isnan(f) is true.}
  */
 std::shared_ptr<FormulaIsnan> to_isnan(const Formula& f);
+
+/** Casts @p f_ptr of shared_ptr<FormulaCell> to @c
+ * shared_ptr<FormulaPositiveSemidefinite>.
+ * @pre @c is_positive_semidefinite(*f_ptr) is true.
+ */
+std::shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
+    const std::shared_ptr<FormulaCell> f_ptr);
+
+/** Casts @p f of Formula to @c shared_ptr<FormulaPositiveSemidefinite>.
+ *
+ *  @pre @c is_positive_semidefinite(f) is true.
+ */
+std::shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
+    const Formula& f);
 
 }  // namespace symbolic
 }  // namespace drake

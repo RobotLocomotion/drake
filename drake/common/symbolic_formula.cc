@@ -266,6 +266,10 @@ Formula isnan(const Expression& e) {
   return Formula{make_shared<FormulaIsnan>(e)};
 }
 
+Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m) {
+  return Formula{make_shared<FormulaPositiveSemidefinite>(m)};
+}
+
 Formula operator==(const Variable& v1, const Variable& v2) {
   return Expression{v1} == Expression{v2};
 }
@@ -310,6 +314,9 @@ bool is_nary(const Formula& f) {
 bool is_negation(const Formula& f) { return is_negation(*f.ptr_); }
 bool is_forall(const Formula& f) { return is_forall(*f.ptr_); }
 bool is_isnan(const Formula& f) { return is_isnan(*f.ptr_); }
+bool is_positive_semidefinite(const Formula& f) {
+  return is_positive_semidefinite(*f.ptr_);
+}
 
 const Expression& get_lhs_expression(const Formula& f) {
   DRAKE_ASSERT(is_relational(f));
@@ -336,5 +343,9 @@ const Formula& get_quantified_formula(const Formula& f) {
   return to_forall(f)->get_quantified_formula();
 }
 
+const MatrixX<Expression>& get_matrix_in_positive_semidefinite(
+    const Formula& f) {
+  return to_positive_semidefinite(f)->get_matrix();
+}
 }  // namespace symbolic
 }  // namespace drake
