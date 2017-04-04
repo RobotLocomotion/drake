@@ -209,13 +209,16 @@ class GeoMesh {
   std::tuple<int, int>
   EmitObj(std::ostream& os, const std::string& material,
           int vertex_index_offset, int normal_index_offset,
-          int precision) {
+          int precision,
+          const api::GeoPosition& origin) {
     // NOLINTNEXTLINE(build/namespaces)  Usage documented by fmt library.
     using namespace fmt::literals;
     fmt::print(os, "# Vertices\n");
     for (const GeoVertex* gv : vertices_.vector()) {
       fmt::print(os, "v {x:.{p}f} {y:.{p}f} {z:.{p}f}\n",
-                 "x"_a = gv->v().x, "y"_a = gv->v().y, "z"_a = gv->v().z,
+                 "x"_a = (gv->v().x - origin.x),
+                 "y"_a = (gv->v().y - origin.y),
+                 "z"_a = (gv->v().z - origin.z),
                  "p"_a = precision);
     }
     fmt::print(os, "# Normals\n");
@@ -635,15 +638,18 @@ mtllib {}
     std::tie(vertex_index_offset, normal_index_offset) =
         asphalt_mesh.EmitObj(os, kBlandAsphalt,
                              vertex_index_offset, normal_index_offset,
-                             precision);
+                             precision,
+                             features.origin);
     std::tie(vertex_index_offset, normal_index_offset) =
         lane_mesh.EmitObj(os, kLaneHaze,
                           vertex_index_offset, normal_index_offset,
-                          precision);
+                          precision,
+                          features.origin);
     std::tie(vertex_index_offset, normal_index_offset) =
         marker_mesh.EmitObj(os, kMarkerPaint,
                             vertex_index_offset, normal_index_offset,
-                            precision);
+                            precision,
+                            features.origin);
   }
 
   // Create the MTL file referenced by the OBJ file.
