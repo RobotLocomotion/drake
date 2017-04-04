@@ -63,7 +63,7 @@ drake_cc_googletest(
     data = [
         "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
         "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
-        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
     ],
 )
 
