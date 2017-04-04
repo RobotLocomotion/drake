@@ -6,7 +6,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 
 using drake::systems::VectorBase;
@@ -17,7 +16,6 @@ using drake::systems::SystemOutput;
 using drake::systems::AbstractValues;
 using drake::systems::Simulator;
 using drake::systems::Context;
-using drake::systems::ImplicitEulerIntegrator;
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -1060,65 +1058,6 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
   EXPECT_TRUE(F_Ro_W_both.isApprox(F_Ro_W_left+F_Ro_W_right, kTightTol));
   EXPECT_NEAR(F_Ro_W_both[2], 0., kTightTol);
 }
-
-// Integrates the rod system starting from the Painleve configuration. This is
-// a stiff system.
-GTEST_TEST(StiffTest, Rod2d) {
-  const double inf = std::numeric_limits<double>::infinity();
-  examples::rod2d::Rod2D<double> rod(
-      examples::rod2d::Rod2D<double>::SimulationType::kCompliant,
-      0.0 /* no time stepping */);
-
-  // Make the system stiff.
-  rod.set_mu_coulomb(1);
-  rod.set_stiffness(1e8);
-  rod.set_dissipation(1e3);
-  rod.set_stiction_speed_tolerance(1e-6);
-  rod.set_mu_static(1.5);
-
-  // Create the context.
-  auto context = rod.CreateDefaultContext();
-
-  // Set a zero input force (this is the default).
-  std::unique_ptr<systems::BasicVector<double>> ext_input =
-      std::make_unique<systems::BasicVector<double>>(3);
-  ext_input->SetAtIndex(0, 0.0);
-  ext_input->SetAtIndex(1, 0.0);
-  ext_input->SetAtIndex(2, 0.0);
-  context->FixInputPort(0, std::move(ext_input));
-
-  // Use a relatively large step size.
-  const double dt = 1e-2;
-
-  // Create and initialize the integrator.
-  ImplicitEulerIntegrator<double> integrator(rod, dt, context.get());
-  integrator.set_target_accuracy(1e-1);
-  integrator.set_minimum_step_size(1e-6);
-  integrator.Initialize();
-
-  // Integrate for 1 second.
-  const double t_final = 1.0;
-  double t;
-  for (t = 0.0; std::abs(t - t_final) >= std::numeric_limits<double>::epsilon();
-       t = context->get_time()) {
-    const VectorBase<double>& xc = context->get_continuous_state_vector();
-    std::cout << t << " " << xc.CopyToVector().transpose() << std::endl;
-    integrator.StepOnceAtMost(inf, inf, std::min(t_final - t, dt));
-    std::cout << "Number of function evaluations: " << integrator.get_num_function_evaluations() << std::endl;
-    std::cout << "Number of implicit trapezoid function evaluations: " << integrator.get_num_itr_function_evaluations() << std::endl;
-    std::cout << "Number of Jacobian function evaluations: " << integrator.get_num_jacobian_function_evaluations() << std::endl;
-    std::cout << "Number of implicit trapezoid Jacobian function evaluations: " << integrator.get_num_itr_jacobian_function_evaluations() << std::endl;
-    std::cout << "Number of Newton-Raphson loops: " << integrator.get_num_newton_raphson_loops() << std::endl;
-    std::cout << "Number of implicit trapezoid Newton-Raphson loops: " << integrator.get_num_itr_newton_raphson_loops() << std::endl;
-    std::cout << "Number of StepAbstract() failures: " << integrator.get_num_step_abstract_failures() << std::endl;
-    std::cout << "Number of step size shrinkages due to StepAbstract() failures: " << integrator.get_num_step_shrinkages_from_step_abstract_failures() << std::endl;
-    std::cout << "Number of step size shrinkages due to error control: " << integrator.get_num_step_shrinkages_from_error_control() << std::endl;
-    std::cout << "Minimum adapted step size: " << integrator.get_smallest_adapted_step_size_taken() << std::endl;
-    std::cout << "***************" << std::endl;
-    integrator.ResetStatistics();
-  }
-}
-
 
 }  // namespace
 }  // namespace rod2d
