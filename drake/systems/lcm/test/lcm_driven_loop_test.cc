@@ -60,7 +60,7 @@ void publish() {
 
   const int kSleepMicroSec = 100000;
 
-  // This thread will first sleep for long enough to ensure `sys` to always
+  // This thread will first sleep for long enough to ensure `sys` will always
   // receive the first message for test consistency. In practice, this is
   // less important if `sys` does not need to receive the very first published
   // message.
@@ -113,13 +113,19 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   pub_thread.join();
 
   // Makes the expected output.
-  VectorX<double> expected(kEnd - kStart);
-  int ctr = 0;
+  // TODO(siyuan): expected should really be [kStart, kStart + 1, ... kEnd].
+  // The extra 0 in the front is due to Simulator calls Publish() in it's
+  // Initialization() which causes the logger to log the extra zero. This
+  // should be fixed in a separate PR that properly address the publish
+  // on initialization behavior.
+  VectorX<double> expected(kEnd - kStart + 1);
+  expected(0) = 0;
+  int ctr = 1;
   for (int i = kStart; i < kEnd; i++) {
     expected(ctr++) = i;
   }
 
-  // Compare logger's date, which are the message time stamps. They should
+  // Compare logger's data, which are the message time stamps. They should
   // match the values set in the publishing thread.
   EXPECT_TRUE(drake::CompareMatrices(expected.transpose(), logger->data(),
                                      1e-12,

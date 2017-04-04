@@ -39,7 +39,9 @@ const AbstractValue& LcmDrivenLoop::WaitForMessage() {
 
 void LcmDrivenLoop::RunToSecondsAssumingInitialized(double stop_time) {
   double msg_time;
-  system_.Publish(stepper_->get_context());
+
+  if (publish_on_every_received_message_)
+    system_.Publish(stepper_->get_context());
 
   while (true) {
     msg_time = time_converter_->GetTimeInSeconds(WaitForMessage());

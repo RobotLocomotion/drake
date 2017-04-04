@@ -51,25 +51,27 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * intended to provide a generalized way to implement a message handling loop:
  * an input message arrives, from which a response is computed and published.
  * A common use case is to implement a distributed controller for a physical
- * robot, where low level communication with the hardware is handled in a
- * separate process than the controller. The device driver sends a message
- * containing the estimated state. The controller process that message and
- * sends back a command in response. The device driver finally receives and
- * executes the command.
+ * robot, where low level communication with the hardware is handled in the
+ * device driver (a separate process than the controller). The device driver
+ * sends a message containing the estimated state. The controller processes
+ * that message and sends back a command in response. The device driver finally
+ * receives and executes the command.
  *
  * This class is designed to be agnostic to different types of the driving Lcm
  * message to provide a generic API. The Lcm message is internally encapsulated
  * in AbstractValue, which erases its type. In addition, the message time stamp
  * is the only required information by this class, which can be extracted by
- * an instance of LcmMessageToTimeInterface. It is assumed that the caller is
- * maintaining the type information of the message, and is able to supply an
- * time converter.
+ * an instance of LcmMessageToTimeInterface. It is assumed that the caller knows
+ * the concrete type of the message, and is able to supply a time converter.
  *
  * This class uses the Simulator class internally for event handling
  * (kPublishAction, kDiscreteUpdateAction, kUnrestrictedUpdateAction) and
- * state "integration" (e.g. the I term in a PID). The main message handling
- * loop conceptually is:
+ * continuous state integration (e.g. the I term in a PID). The main message
+ * handling loop conceptually is:
  * <pre>
+ * if (publish) {
+ *   system.Publish(simulator.context);
+ * }
  * while(context.time < stop_time) {
  *   msg = wait_for_message("channel");
  *   simulator.StepTo(msg.time);
@@ -85,17 +87,19 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * 5ms (at 200Hz), and the necessary computation for `system` to step forward
  * in time is very small. Now, suppose the driving message arrives at 1 Hz in
  * real time. One would observe 200 such actions occur in rapid succession
- * followed nearly one second of silence. This is because
+ * followed by nearly one second of silence. This is because
  * `msg = wait_for_message("channel")` takes about one second in real time,
  * and `simulator.StepTo(msg.time)`, which forwards the simulator's clock by
  * one second and performs 200 actions takes about 0 seconds in real time.
- * This problem becomes less significant as the intervals between consecutive
- * driving messages goes to zero.
+ * The root cause is that the 200Hz rate of the handler system is tied to the
+ * internal virtual clock rather than real time. This problem is less
+ * significant when the computation time for handling one message is roughly
+ * the same as the interval between consecutive driving messages.
  *
  * This implementation relies on several assumptions:
  * 1. The loop is blocked only on one Lcm message.
- * 2. It's pointless to call system.CalcOutput() without a new Lcm message,
- * thus the handler loop is blocking.
+ * 2. It's pointless to for the handler system to perform any computation
+ * without a new Lcm message, thus the handler loop is blocking.
  * 3. The computation for the given system should be faster than the incoming
  * message rate.
  *
@@ -121,7 +125,10 @@ class LcmDrivenLoop {
    * `this`. @p lcm cannot be nullptr, otherwise `this` aborts.
    * @param time_converter Unique pointer to a converter that extracts time in
    * seconds from the driving message time. Cannot be nullptr, otherwise `this`
-   * aborts.
+   * aborts. @p time_converter is necessary because of two reasons. 1: The Lcm
+   * message type agnostic design of this calss. 2: Lcm messages lack a uniform
+   * time stamp field that has consistent units. So extracting the time stamp
+   * dependents on the concrete message content.
    */
   LcmDrivenLoop(const System<double>& system,
                 const LcmSubscriberSystem& driving_subscriber,
@@ -130,9 +137,10 @@ class LcmDrivenLoop {
                 std::unique_ptr<LcmMessageToTimeInterface> time_converter);
 
   /**
-   * Returns a const reference of AbstractValue that contains the received Lcm
-   * message. The call is assumed to know the type of the actual message and
-   * have means to inspect the message.
+   * Blocks the caller until a driving Lcm message is received, then returns
+   * a const reference of AbstractValue to that message. The call is assumed
+   * to know the type of the actual message and have means to inspect the
+   * message.
    */
   // TODO(siyuan): add a time out version.
   const AbstractValue& WaitForMessage();
@@ -147,10 +155,10 @@ class LcmDrivenLoop {
       double stop_time = std::numeric_limits<double>::infinity());
 
   /**
-   * Sets a flag that forces Publish() in the message handling loop.
-   * To achieve "publish whenever a new message has been handled", the user
-   * needs to make sure that no subsystems have declared period publish, and
-   * @p flag is true.
+   * Sets a flag that forces Publish() at the very beginning of the message
+   * handling loop as well as inside the loop. To achieve "publish whenever
+   * a new message has been handled", the user needs to make sure that no
+   * subsystems have declared period publish, and @p flag is true.
    */
   void set_publish_on_every_received_message(bool flag) {
     publish_on_every_received_message_ = flag;

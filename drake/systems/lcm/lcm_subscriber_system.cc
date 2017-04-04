@@ -149,9 +149,14 @@ int LcmSubscriberSystem::WaitForMessage(int old_message_count) const {
   // The message buffer and counter are updated in HandleMessage(), which is
   // a callback function invoked by a different thread owned by the
   // drake::lcm::DrakeLcmInterface instance passed to the constructor. Thus,
-  // for thread safety, these needs to be properly protected by a mutex.
+  // for thread safety, these need to be properly protected by a mutex.
   std::unique_lock<std::mutex> lock(received_message_mutex_);
+
+  // This while loop is necessary to guard for spurious wakeup:
+  // https://en.wikipedia.org/wiki/Spurious_wakeup
   while (old_message_count == received_message_count_)
+    // When wait returns, lock is atomically acquired. So it's thread safe to
+    // read received_message_count_.
     received_message_condition_variable_.wait(lock);
   int new_message_count = received_message_count_;
   lock.unlock();
