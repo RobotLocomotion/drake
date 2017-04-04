@@ -86,6 +86,7 @@ MathematicalProgram::MathematicalProgram()
       x_initial_guess_(
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
       solver_result_(0),
+      optimal_cost_(std::numeric_limits<double>::quiet_NaN()),
       required_capabilities_(kNoCapabilities),
       ipopt_solver_(new IpoptSolver()),
       nlopt_solver_(new NloptSolver()),

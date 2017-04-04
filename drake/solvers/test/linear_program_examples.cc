@@ -132,6 +132,7 @@ void LinearProgram0::CheckSolution(SolverType solver_type) const {
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog(), tol);
 }
 
 LinearProgram1::LinearProgram1(CostForm cost_form, ConstraintForm cnstr_form)
@@ -171,6 +172,7 @@ void LinearProgram1::CheckSolution(SolverType solver_type) const {
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog(), tol);
 }
 
 LinearProgram2::LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form)
@@ -257,6 +259,7 @@ void LinearProgram2::CheckSolution(SolverType solver_type) const {
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog(), tol);
 }
 
 LinearProgram3::LinearProgram3(CostForm cost_form, ConstraintForm cnstr_form)
@@ -327,8 +330,14 @@ void LinearProgram3::CheckSolution(SolverType solver_type) const {
   if (solver_type == SolverType::kMosek) {
     tol = 1E-6;
   }
+  // Ipopt has a looser objective tolerance
+  double cost_tol = tol;
+  if (solver_type == SolverType::kIpopt) {
+    cost_tol = 1E-5;
+  }
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog(), cost_tol);
 }
 
 

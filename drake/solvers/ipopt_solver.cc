@@ -403,6 +403,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       solution(i) = x[i];
     }
     problem_->SetDecisionVariableValues(solution);
+    problem_->SetOptimalCost(obj_value);
   }
 
   SolutionResult result() const { return result_; }

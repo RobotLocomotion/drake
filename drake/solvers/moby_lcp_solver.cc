@@ -196,6 +196,7 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
       return SolutionResult::kUnknownError;
     }
     prog.SetDecisionVariableValues(binding.variables(), constraint_solution);
+    prog.SetOptimalCost(0.0);
   }
   return SolutionResult::kSolutionFound;
 }

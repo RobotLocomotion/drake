@@ -94,15 +94,15 @@ GTEST_TEST(testNonlinearProgram, BoundingBoxTest) {
 GTEST_TEST(testNonlinearProgram, trivialLinearSystem) {
   LinearSystemExample1 example1{};
   auto prog = example1.prog();
-  RunNonlinearProgram(prog, [&]() { EXPECT_TRUE(example1.CheckSolution()); });
+  RunNonlinearProgram(prog, [&]() { example1.CheckSolution(); });
 
   LinearSystemExample2 example2{};
   prog = example2.prog();
-  RunNonlinearProgram(prog, [&]() { EXPECT_TRUE(example2.CheckSolution()); });
+  RunNonlinearProgram(prog, [&]() { example2.CheckSolution(); });
 
   LinearSystemExample3 example3{};
   prog = example3.prog();
-  RunNonlinearProgram(prog, [&]() { EXPECT_TRUE(example3.CheckSolution()); });
+  RunNonlinearProgram(prog, [&]() { example3.CheckSolution(); });
 }
 
 GTEST_TEST(testNonlinearProgram, trivialLinearEquality) {
@@ -158,7 +158,7 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem1) {
     for (const auto& cnstr_form : NonConvexQPproblem1::constraint_forms()) {
       NonConvexQPproblem1 prob(cost_form, cnstr_form);
       RunNonlinearProgram(prob.prog(),
-                          [&]() { EXPECT_TRUE(prob.CheckSolution()); });
+                          [&]() { prob.CheckSolution(); });
     }
   }
 }
@@ -168,7 +168,7 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem2) {
     for (const auto& cnstr_form : NonConvexQPproblem2::constraint_forms()) {
       NonConvexQPproblem2 prob(cost_form, cnstr_form);
       RunNonlinearProgram(prob.prog(),
-                          [&]() { EXPECT_TRUE(prob.CheckSolution()); });
+                          [&]() { prob.CheckSolution(); });
     }
   }
 }
@@ -178,10 +178,10 @@ GTEST_TEST(testNonlinearProgram, testLowerBoundedProblem) {
     LowerBoundedProblem prob(cnstr_form);
     prob.SetInitialGuess1();
     RunNonlinearProgram(prob.prog(),
-                        [&]() { EXPECT_TRUE(prob.CheckSolution()); });
+                        [&]() { prob.CheckSolution(); });
     prob.SetInitialGuess2();
     RunNonlinearProgram(prob.prog(),
-                        [&]() { EXPECT_TRUE(prob.CheckSolution()); });
+                        [&]() { prob.CheckSolution(); });
   }
 }
 
@@ -230,7 +230,7 @@ GTEST_TEST(testNonlinearProgram, testGloptiPolyConstrainedMinimization) {
          GloptiPolyConstrainedMinimizationProblem::constraint_forms()) {
       GloptiPolyConstrainedMinimizationProblem prob(cost_form, cnstr_form);
       RunNonlinearProgram(prob.prog(),
-                          [&]() { EXPECT_TRUE(prob.CheckSolution()); });
+                          [&]() { prob.CheckSolution(); });
     }
   }
 }

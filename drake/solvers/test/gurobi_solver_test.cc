@@ -31,9 +31,11 @@ TEST_F(InfeasibleLinearProgramTest0, TestGurobiInfeasible) {
     prog_->SetSolverOption(SolverType::kGurobi, "DualReductions", 1);
     SolutionResult result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kInfeasible_Or_Unbounded);
+    EXPECT_TRUE(std::isnan(prog_->GetOptimalCost()));
     prog_->SetSolverOption(SolverType::kGurobi, "DualReductions", 0);
     result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
+    EXPECT_TRUE(std::isnan(prog_->GetOptimalCost()));
   }
 }
 
@@ -96,6 +98,7 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
       const auto& x_value = prog.GetSolution(x);
       EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                   MatrixCompareType::absolute));
+      ExpectSolutionCostAccurate(prog, 1E-6);
     }
   }
 }
