@@ -136,6 +136,7 @@ drake_cc_library(
         ":dummy_value",
         ":number_traits",
         ":polynomial",
+        "//drake/math:matrix_util",
     ],
 )
 
