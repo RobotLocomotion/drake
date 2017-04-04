@@ -111,6 +111,31 @@ class SymbolicFormulaTest : public ::testing::Test {
   const Environment env2_{{var_x_, 3}, {var_y_, 4}};
   const Environment env3_{{var_x_, -2}, {var_y_, -5}};
   const Environment env4_{{var_x_, -1}, {var_y_, -1}};
+
+  // The following matrices will be initialized in SetUp().
+  Eigen::Matrix<Expression, 2, 2> m_static_2x2_;
+  MatrixX<Expression> m_dynamic_2x2_;
+  Eigen::Matrix<Expression, 3, 3> m_static_3x3_;
+  // The following formulas will be initialized in SetUp().
+  Formula f_psd_static_2x2_;
+  Formula f_psd_dynamic_2x2_;
+  Formula f_psd_static_3x3_;
+
+  void SetUp() override {
+    // clang-format off
+    m_static_2x2_ << (x_ + y_),  -1.0,
+                          -1.0,   y_;
+    m_dynamic_2x2_.resize(2, 2);
+    m_dynamic_2x2_ << (x_ + y_),  1.0,
+                            1.0,   y_;
+    m_static_3x3_ << (x_ + y_),     3.14, z_,
+                          3.14,       y_, z_ * z_,
+                            z_,  z_ * z_, 1.0;
+    // clang-format on
+    f_psd_static_2x2_ = positive_semidefinite(m_static_2x2_);
+    f_psd_dynamic_2x2_ = positive_semidefinite(m_dynamic_2x2_);
+    f_psd_static_3x3_ = positive_semidefinite(m_static_3x3_);
+  }
 };
 
 TEST_F(SymbolicFormulaTest, LessKind) {
@@ -128,7 +153,10 @@ TEST_F(SymbolicFormulaTest, LessKind) {
         f1_ || f2_,
         !f1_,
         f_forall_,
-        f_isnan_});
+        f_isnan_,
+        f_psd_static_2x2_,
+        f_psd_dynamic_2x2_,
+        f_psd_static_3x3_});
   // clang-format on
 }
 
@@ -612,6 +640,55 @@ TEST_F(SymbolicFormulaTest, Forall2) {
   EXPECT_THROW(f1.Evaluate(), std::runtime_error);
 }
 
+TEST_F(SymbolicFormulaTest, PSD_Exception) {
+  Eigen::Matrix<Expression, 3, 3> m;
+  // clang-format off
+  m << 1.0, 2.0, 3.0,
+       4.0, 5.0, 6.0,
+       7.0, 8.0, 9.0;
+  // clang-format on
+  EXPECT_THROW(positive_semidefinite(m), std::runtime_error);
+}
+
+TEST_F(SymbolicFormulaTest, PSD_GetFreeVariables) {
+  const Variables vars1{f_psd_static_2x2_.GetFreeVariables()};
+  EXPECT_EQ(vars1.size(), 2);
+  EXPECT_TRUE(vars1.include(var_x_));
+  EXPECT_TRUE(vars1.include(var_y_));
+
+  const Variables vars2{f_psd_dynamic_2x2_.GetFreeVariables()};
+  EXPECT_EQ(vars2.size(), 2);
+  EXPECT_TRUE(vars2.include(var_x_));
+  EXPECT_TRUE(vars2.include(var_y_));
+
+  const Variables vars3{f_psd_static_3x3_.GetFreeVariables()};
+  EXPECT_EQ(vars3.size(), 3);
+  EXPECT_TRUE(vars3.include(var_x_));
+  EXPECT_TRUE(vars3.include(var_y_));
+  EXPECT_TRUE(vars3.include(var_z_));
+}
+
+TEST_F(SymbolicFormulaTest, PSD_EqualTo) {
+  EXPECT_TRUE(f_psd_static_2x2_.EqualTo(f_psd_static_2x2_));
+  EXPECT_FALSE(f_psd_static_2x2_.EqualTo(f_psd_dynamic_2x2_));
+  EXPECT_FALSE(f_psd_static_2x2_.EqualTo(f_psd_static_3x3_));
+
+  EXPECT_FALSE(f_psd_dynamic_2x2_.EqualTo(f_psd_static_2x2_));
+  EXPECT_TRUE(f_psd_dynamic_2x2_.EqualTo(f_psd_dynamic_2x2_));
+  EXPECT_FALSE(f_psd_dynamic_2x2_.EqualTo(f_psd_static_3x3_));
+
+  EXPECT_FALSE(f_psd_static_3x3_.EqualTo(f_psd_static_2x2_));
+
+  EXPECT_FALSE(f_psd_static_3x3_.EqualTo(f_psd_dynamic_2x2_));
+  EXPECT_TRUE(f_psd_static_3x3_.EqualTo(f_psd_static_3x3_));
+}
+
+TEST_F(SymbolicFormulaTest, PSD_Evaluate) {
+  EXPECT_THROW(f_psd_static_2x2_.Evaluate(), std::runtime_error);
+  EXPECT_THROW(f_psd_dynamic_2x2_.Evaluate(), std::runtime_error);
+  EXPECT_THROW(f_psd_static_3x3_.Evaluate(), std::runtime_error);
+}
+
 TEST_F(SymbolicFormulaTest, GetFreeVariables) {
   const Formula f1{x_ + y_ > 0};
   const Formula f2{y_ * z_ < 5};
@@ -656,106 +733,131 @@ TEST_F(SymbolicFormulaTest, ToString) {
 TEST_F(SymbolicFormulaTest, IsTrue) {
   EXPECT_TRUE(is_true(tt_));
   EXPECT_FALSE(any_of({ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_, f_isnan_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_true));
 }
 
 TEST_F(SymbolicFormulaTest, IsFalse) {
   EXPECT_TRUE(is_false(ff_));
   EXPECT_FALSE(any_of({tt_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_, f_isnan_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_false));
 }
 
 TEST_F(SymbolicFormulaTest, IsEqualTo) {
   EXPECT_TRUE(is_equal_to(f_eq_));
   EXPECT_FALSE(any_of({tt_, ff_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_, f_isnan_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_equal_to));
 }
 
 TEST_F(SymbolicFormulaTest, IsNotEqualTo) {
   EXPECT_TRUE(is_not_equal_to(f_neq_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_, f_isnan_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_not_equal_to));
 }
 
 TEST_F(SymbolicFormulaTest, IsLessThan) {
   EXPECT_TRUE(is_less_than(f_lt_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lte_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_, f_isnan_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_less_than));
 }
 
 TEST_F(SymbolicFormulaTest, IsLessThanOrEqualTo) {
   EXPECT_TRUE(is_less_than_or_equal_to(f_lte_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_gt_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_, f_isnan_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_less_than_or_equal_to));
 }
 
 TEST_F(SymbolicFormulaTest, IsGreaterThan) {
   EXPECT_TRUE(is_greater_than(f_gt_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gte_, f_and_,
-                       f_or_, not_f_or_, f_forall_, f_isnan_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_greater_than));
 }
 
 TEST_F(SymbolicFormulaTest, IsGreaterThanOrEqualTo) {
   EXPECT_TRUE(is_greater_than_or_equal_to(f_gte_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_and_,
-                       f_or_, not_f_or_, f_forall_, f_isnan_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_greater_than_or_equal_to));
 }
 
 TEST_F(SymbolicFormulaTest, IsRelational) {
   EXPECT_TRUE(
       all_of({f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_}, is_relational));
-  EXPECT_FALSE(any_of({tt_, ff_, f_and_, f_or_, not_f_or_, f_forall_, f_isnan_},
-                      is_relational));
+  EXPECT_FALSE(
+      any_of({tt_, ff_, f_and_, f_or_, not_f_or_, f_forall_, f_isnan_,
+              f_psd_static_2x2_, f_psd_dynamic_2x2_, f_psd_static_3x3_},
+             is_relational));
 }
 
 TEST_F(SymbolicFormulaTest, IsConjunction) {
   EXPECT_TRUE(is_conjunction(f_and_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       f_or_, not_f_or_, f_forall_, f_isnan_},
+                       f_or_, not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_conjunction));
 }
 
 TEST_F(SymbolicFormulaTest, IsDisjunction) {
   EXPECT_TRUE(is_disjunction(f_or_));
-  EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       f_and_, not_f_or_, f_forall_, f_isnan_},
-                      is_disjunction));
+  EXPECT_FALSE(
+      any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_,
+              not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+              f_psd_dynamic_2x2_, f_psd_static_3x3_},
+             is_disjunction));
 }
 
 TEST_F(SymbolicFormulaTest, IsNary) {
   EXPECT_TRUE(all_of({f_and_, f_or_}, is_nary));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       not_f_or_, f_forall_, f_isnan_},
+                       not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_nary));
 }
 
 TEST_F(SymbolicFormulaTest, IsNegation) {
   EXPECT_TRUE(is_negation(not_f_or_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       f_and_, f_or_, f_forall_, f_isnan_},
+                       f_and_, f_or_, f_forall_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_negation));
 }
 
 TEST_F(SymbolicFormulaTest, IsForall) {
   EXPECT_TRUE(is_forall(f_forall_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       f_and_, f_or_, not_f_or_, f_isnan_},
+                       f_and_, f_or_, not_f_or_, f_isnan_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_forall));
 }
 
 TEST_F(SymbolicFormulaTest, IsIsnan) {
   EXPECT_TRUE(is_isnan(f_isnan_));
   EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
-                       f_and_, f_or_, not_f_or_, f_forall_},
+                       f_and_, f_or_, not_f_or_, f_forall_, f_psd_static_2x2_,
+                       f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_isnan));
+}
+
+TEST_F(SymbolicFormulaTest, IsPositiveSemidefinite) {
+  EXPECT_TRUE(all_of({f_psd_static_2x2_, f_psd_dynamic_2x2_, f_psd_static_3x3_},
+                     is_positive_semidefinite));
+  EXPECT_FALSE(any_of({tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_,
+                       f_and_, f_or_, not_f_or_, f_forall_, f_isnan_},
+                      is_positive_semidefinite));
 }
 
 TEST_F(SymbolicFormulaTest, GetLhsExpression) {
@@ -810,6 +912,105 @@ TEST_F(SymbolicFormulaTest, GetQuantifiedFormula) {
   const Formula f{x_ + y_ > z_};
   const Formula f_forall{forall(vars, f)};
   EXPECT_PRED2(FormulaEqual, get_quantified_formula(f_forall), f);
+}
+
+TEST_F(SymbolicFormulaTest, GetMatrixInPSD1) {
+  const auto m1 = get_matrix_in_positive_semidefinite(f_psd_static_2x2_);
+  EXPECT_TRUE(CheckStructuralEquality(m_static_2x2_, m1));
+  EXPECT_FALSE(m1.IsRowMajor);  // m1 is column-major.
+
+  const auto m2 = get_matrix_in_positive_semidefinite(f_psd_dynamic_2x2_);
+  EXPECT_TRUE(CheckStructuralEquality(m_dynamic_2x2_, m2));
+  EXPECT_FALSE(m2.IsRowMajor);  // m2 is column-major.
+
+  const auto m3 = get_matrix_in_positive_semidefinite(f_psd_static_3x3_);
+  EXPECT_TRUE(CheckStructuralEquality(m_static_3x3_, m3));
+  EXPECT_FALSE(m3.IsRowMajor);  // m3 is column-major.
+}
+
+TEST_F(SymbolicFormulaTest, GetMatrixInPSD_NonSymmetric_Static) {
+  MatrixX<Expression> m(3, 3);
+  // clang-format off
+  m << 1.0, 2.0, 3.0,
+       4.0, 5.0, 6.0,
+       7.0, 8.0, 9.0;
+  // clang-format on
+
+  MatrixX<Expression> sym_from_lower(3, 3);
+  // clang-format off
+  sym_from_lower << 1.0, 4.0, 7.0,
+                    4.0, 5.0, 8.0,
+                    7.0, 8.0, 9.0;
+  // clang-format on
+
+  MatrixX<Expression> sym_from_upper(3, 3);
+  // clang-format off
+  sym_from_upper << 1.0, 2.0, 3.0,
+                    2.0, 5.0, 6.0,
+                    3.0, 6.0, 9.0;
+  // clang-format on
+
+  EXPECT_TRUE(CheckStructuralEquality(
+      get_matrix_in_positive_semidefinite(
+          positive_semidefinite_from_triangular(m, true /* is_lower */)),
+      sym_from_lower));
+
+  EXPECT_TRUE(CheckStructuralEquality(
+      get_matrix_in_positive_semidefinite(
+          positive_semidefinite(m.triangularView<Eigen::Lower>())),
+      sym_from_lower));
+
+  EXPECT_TRUE(CheckStructuralEquality(
+      get_matrix_in_positive_semidefinite(
+          positive_semidefinite_from_triangular(m, false /* is_lower */)),
+      sym_from_upper));
+
+  EXPECT_TRUE(CheckStructuralEquality(
+      get_matrix_in_positive_semidefinite(
+          positive_semidefinite(m.triangularView<Eigen::Upper>())),
+      sym_from_upper));
+}
+
+TEST_F(SymbolicFormulaTest, GetMatrixInPSD_NonSymmetric_Dynamic) {
+  Eigen::Matrix<Expression, 3, 3> m;
+  // clang-format off
+  m << 1.0, 2.0, 3.0,
+       4.0, 5.0, 6.0,
+       7.0, 8.0, 9.0;
+  // clang-format on
+  MatrixX<Expression> sym_from_lower(3, 3);
+  // clang-format off
+  sym_from_lower << 1.0, 4.0, 7.0,
+                    4.0, 5.0, 8.0,
+                    7.0, 8.0, 9.0;
+  // clang-format on
+
+  MatrixX<Expression> sym_from_upper(3, 3);
+  // clang-format off
+  sym_from_upper << 1.0, 2.0, 3.0,
+                    2.0, 5.0, 6.0,
+                    3.0, 6.0, 9.0;
+  // clang-format on
+
+  EXPECT_TRUE(CheckStructuralEquality(
+      get_matrix_in_positive_semidefinite(
+          positive_semidefinite_from_triangular(m, true /* is_lower */)),
+      sym_from_lower));
+
+  EXPECT_TRUE(CheckStructuralEquality(
+      get_matrix_in_positive_semidefinite(
+          positive_semidefinite(m.triangularView<Eigen::Lower>())),
+      sym_from_lower));
+
+  EXPECT_TRUE(CheckStructuralEquality(
+      get_matrix_in_positive_semidefinite(
+          positive_semidefinite_from_triangular(m, false /* is_lower */)),
+      sym_from_upper));
+
+  EXPECT_TRUE(CheckStructuralEquality(
+      get_matrix_in_positive_semidefinite(
+          positive_semidefinite(m.triangularView<Eigen::Upper>())),
+      sym_from_upper));
 }
 
 // Confirm that formulas compile (and pass) Drake's assert-like checks.
