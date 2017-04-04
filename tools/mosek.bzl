@@ -67,17 +67,17 @@ def _impl(repository_ctx):
                 fail("Could NOT change shared library identification name",
                      attr=result.stderr)
 
-            repository_ctx.file("empty.cc", executable=False)
+        repository_ctx.file("empty.cc", executable=False)
 
-            srcs = ["empty.cc"]
+        srcs = ["empty.cc"]
 
-            bin_path = repository_ctx.path("bin")
+        bin_path = repository_ctx.path("bin")
 
-            linkopts = [
-                "-L{}".format(bin_path),
-                "-liomp5",
-                "-lmosek64",
-            ]
+        linkopts = [
+            "-L{}".format(bin_path),
+            "-liomp5",
+            "-lmosek64",
+        ]
     else:
         srcs = [
             "bin/libiomp5.so",
