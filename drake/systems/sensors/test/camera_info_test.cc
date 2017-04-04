@@ -20,37 +20,33 @@ const double kCx = kWidth * 0.5;
 const double kCy = kHeight * 0.5;
 const double kVerticalFov = 0.78539816339744828;  // 45.0 degrees.
 
-class CameraInfoTest : public ::testing::Test {
- public:
-  CameraInfoTest() : expected_intrinsic_(
-      (Eigen::Matrix3d() <<
-           kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished()) {}
 
-  void SetUp() {}
-
-  void Verify(const CameraInfo& dut) const {
-    EXPECT_EQ(kWidth, dut.width());
-    EXPECT_EQ(kHeight, dut.height());
-    EXPECT_NEAR(kFx, dut.focal_x(), kTolerance);
-    EXPECT_NEAR(kFy, dut.focal_y(), kTolerance);
-    EXPECT_NEAR(kCx, dut.center_x(), kTolerance);
-    EXPECT_NEAR(kCy, dut.center_y(), kTolerance);
-    EXPECT_TRUE(CompareMatrices(expected_intrinsic_, dut.intrinsic_matrix(),
-                                kTolerance));
-  }
-
- private:
-  const Eigen::Matrix3d expected_intrinsic_;
+void Verify(const Eigen::Matrix3d& expected, const CameraInfo& dut) {
+  EXPECT_EQ(kWidth, dut.width());
+  EXPECT_EQ(kHeight, dut.height());
+  EXPECT_NEAR(expected(0, 0), dut.focal_x(), kTolerance);
+  EXPECT_NEAR(expected(1, 1), dut.focal_y(), kTolerance);
+  EXPECT_NEAR(expected(0, 2), dut.center_x(), kTolerance);
+  EXPECT_NEAR(expected(1, 2), dut.center_y(), kTolerance);
+  EXPECT_TRUE(CompareMatrices(expected, dut.intrinsic_matrix(),
+                              kTolerance));
 };
 
-TEST_F(CameraInfoTest, ConstructionTest) {
+GTEST_TEST(TestCameraInfo, ConstructionTest) {
+  const Eigen::Matrix3d expected(
+      (Eigen::Matrix3d() << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished());
+
   CameraInfo dut(kWidth, kHeight, kFx, kFy, kCx, kCy);
-  Verify(dut);
+  Verify(expected, dut);
 }
 
-TEST_F(CameraInfoTest, ConstructionWithFovTest) {
+// The focal lengths become identical with this constructor.
+GTEST_TEST(TestCameraInfo, ConstructionWithFovTest) {
+  const Eigen::Matrix3d expected(
+      (Eigen::Matrix3d() << kFy, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished());
+
   CameraInfo dut(kWidth, kHeight, kVerticalFov);
-  Verify(dut);
+  Verify(expected, dut);
 }
 
 }  // namespace
