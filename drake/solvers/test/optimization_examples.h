@@ -27,6 +27,8 @@ enum class ConstraintForm {
   kFormula = 3,
 };
 
+void ExpectSolutionCostAccurate(const MathematicalProgram &prog, double tol);
+
 class OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptimizationProgram)
@@ -65,7 +67,7 @@ class LinearSystemExample1 {
 
   std::shared_ptr<LinearEqualityConstraint> con() const { return con_; }
 
-  virtual bool CheckSolution() const;
+  virtual void CheckSolution() const;
 
  protected:
   double tol() const { return 1E-10; }
@@ -92,7 +94,7 @@ class LinearSystemExample2 : public LinearSystemExample1 {
 
   VectorDecisionVariable<2> y() const { return y_; }
 
-  bool CheckSolution() const override;
+  void CheckSolution() const override;
 
  private:
   VectorDecisionVariable<2> y_;
@@ -111,7 +113,7 @@ class LinearSystemExample3 : public LinearSystemExample2 {
   LinearSystemExample3();
   ~LinearSystemExample3() override {}
 
-  bool CheckSolution() const override;
+  void CheckSolution() const override;
 };
 
 /**
@@ -127,7 +129,7 @@ class LinearMatrixEqualityExample {
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
-  bool CheckSolution() const;
+  void CheckSolution() const;
 
  private:
   std::unique_ptr<MathematicalProgram> prog_;
@@ -162,7 +164,7 @@ class NonConvexQPproblem1 {
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
-  bool CheckSolution() const;
+  void CheckSolution() const;
 
  private:
   class TestProblem1Cost {
@@ -219,7 +221,7 @@ class NonConvexQPproblem2 {
 
   NonConvexQPproblem2(CostForm cost_form, ConstraintForm cnstr_form);
 
-  bool CheckSolution() const;
+  void CheckSolution() const;
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
@@ -273,7 +275,7 @@ class LowerBoundedProblem {
 
   explicit LowerBoundedProblem(ConstraintForm cnstr_form);
 
-  bool CheckSolution() const;
+  void CheckSolution() const;
 
   MathematicalProgram* prog() { return prog_.get(); }
 
@@ -379,7 +381,7 @@ class GloptiPolyConstrainedMinimizationProblem {
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
-  bool CheckSolution() const;
+  void CheckSolution() const;
 
  private:
   class GloptipolyConstrainedExampleCost {
@@ -496,7 +498,7 @@ class MinDistanceFromPlaneToOrigin {
 
   void SetInitialGuess();
 
-  bool CheckSolution(bool is_rotated_cone) const;
+  void CheckSolution(bool is_rotated_cone) const;
 
  private:
   void AddNonSymbolicConstraint();
