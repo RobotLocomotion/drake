@@ -56,8 +56,8 @@ using systems::OutputPortDescriptor;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 
-const char* const kIiwaUrdf =
-    "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
+const char* const kIiwaUrdf = "/manipulation/models/iiwa_description/urdf/"
+    "iiwa14_polytope_collision.urdf";
 
 // TODO(naveen): refactor this to reduce duplicate code.
 template <typename T>

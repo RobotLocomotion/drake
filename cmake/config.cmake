@@ -252,6 +252,7 @@ macro(drake_setup_platform)
   mark_as_advanced(LIB_SUFFIX)
 
   # Set RPATH for installed binaries
+  set(CMAKE_MACOSX_RPATH ON)
   set(CMAKE_INSTALL_RPATH
     ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
     ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}

@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+
+<!-- ===================================================================== -->
+<!-- This URDF contains two instances of the iiwa14_polytope_collision models, a
+     left one and a right one. They can be distinguished by a "left_" and
+     "right_" prefix in front of their link, joint, and transmission names.
+
+     Collision models: complex meshes can drastically affect run time.
+     Therefore most collision models are omitted in this model and link 7 uses a
+     polytope model.
+-->
+<!-- ===================================================================== -->
+<robot name="dual_iiwa14" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Import Rviz colors -->
+  <xacro:include filename="$(find iiwa_description)/urdf/materials.xacro"/>
+  <!--Import the lbr iiwa macro -->
+  <xacro:include filename="$(find iiwa_description)/urdf/iiwa14.xacro"/>
+
+  <xacro:arg name="hardware_interface" default="PositionJointInterface"/>
+  <xacro:arg name="left_robot_name" default="left_iiwa"/>
+  <xacro:arg name="right_robot_name" default="right_iiwa"/>
+
+  <!-- Defines a base link that will serve as the model's root. This is
+  necessary since URDF requires that the model be a tree.-->
+  <link name="base"/>
+
+  <!--The "left" iiwa robot. -->
+  <xacro:iiwa14 hardware_interface="$(arg hardware_interface)"
+                robot_name="$(arg left_robot_name)"
+                parent="base"
+                collision_type="polytope">
+    <origin xyz="1 0 0" rpy="0 0 0" />
+  </xacro:iiwa14>
+
+  <!--The "right" iiwa robot. -->
+  <xacro:iiwa14 hardware_interface="$(arg hardware_interface)"
+                robot_name="$(arg right_robot_name)"
+                parent="base"
+                collision_type="polytope">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </xacro:iiwa14>
+</robot>

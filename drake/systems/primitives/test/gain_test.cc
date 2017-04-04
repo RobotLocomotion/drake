@@ -77,14 +77,20 @@ GTEST_TEST(GainTest, GainVectorTest) {
   const Eigen::Vector4d expected_output(gain_values.array() *
                                         input_vector.array());
 
-  // Verifies the gain accessors are OK.
-  EXPECT_DEATH(gain_system->get_gain(), ".*");
   EXPECT_NO_THROW(gain_system->get_gain_vector());
   EXPECT_EQ(gain_system->get_gain_vector(), gain_values);
 
   // Tests ability to compute the gain of a vector.
   TestGainSystem(*gain_system, input_vector, expected_output);
 }
+
+GTEST_TEST(GainDeathTest, GainAccessorTest) {
+  const Vector4<double> gain_values(1.0, 2.0, 3.0, 4.0);
+  const auto gain_system = make_unique<Gain<double>>(gain_values);
+  // Verifies the gain accessors are OK.
+  EXPECT_DEATH(gain_system->get_gain(), ".*");
+}
+
 
 }  // namespace
 }  // namespace systems

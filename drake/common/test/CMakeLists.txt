@@ -36,6 +36,9 @@ target_link_libraries(never_destroyed_test drakeCommon)
 drake_add_cc_test(monomial_test)
 target_link_libraries(monomial_test drakeCommon)
 
+drake_add_cc_test(is_dynamic_castable_test)
+target_link_libraries(is_dynamic_castable_test drakeCommon)
+
 drake_add_cc_test(nice_type_name_test)
 target_link_libraries(nice_type_name_test drakeCommon)
 
@@ -56,6 +59,9 @@ target_link_libraries(symbolic_expression_differentiation_test drakeCommon)
 
 drake_add_cc_test(symbolic_expression_jacobian_test)
 target_link_libraries(symbolic_expression_jacobian_test drakeCommon)
+
+drake_add_cc_test(symbolic_expression_array_test)
+target_link_libraries(symbolic_expression_array_test drakeCommon)
 
 drake_add_cc_test(symbolic_expression_matrix_test)
 target_link_libraries(symbolic_expression_matrix_test drakeCommon)

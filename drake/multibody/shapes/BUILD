@@ -22,6 +22,7 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/thirdParty:spruce",
+        "@tinyobjloader//:tinyobjloader",
     ],
 )
 

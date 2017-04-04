@@ -32,6 +32,7 @@ drake_cc_googletest(
     srcs = ["test/iiwa_ik_test.cc"],
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":iiwa_ik_planner",

@@ -11,16 +11,16 @@ def impl(ctx):
   )
 
 ccache_is_bad = rule(
-    implementation=impl,
-    outputs={
-      "out": "ccache.txt",
-    },
-    attrs={
+    attrs = {
         "_script": attr.label(
-            default=Label("//tools:complain_about_ccache.sh"),
-            allow_single_file=True,
-            executable=True,
-            cfg="host",
+            default = Label("//tools:complain_about_ccache.sh"),
+            allow_single_file = True,
+            executable = True,
+            cfg = "host",
         ),
-    }
+    },
+    outputs = {
+        "out": "ccache.txt",
+    },
+    implementation = impl,
 )

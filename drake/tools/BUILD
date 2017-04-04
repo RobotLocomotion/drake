@@ -14,18 +14,26 @@ py_proto_library(
 py_binary(
     name = "lcm_vector_gen",
     srcs = ["lcm_vector_gen.py"],
+    data = [
+        "//tools:clang-format",
+    ],
     deps = [
         ":named_vector",
     ],
-    data = [
-        "//tools:clang-format",
-    ]
 )
 
 py_library(
     name = "formatter",
     srcs = ["formatter.py"],
     data = ["//tools:clang-format"],
+)
+
+py_binary(
+    name = "clang-format-includes",
+    srcs = ["clang_format_includes.py"],
+    data = ["//tools:clang-format"],
+    main = "clang_format_includes.py",
+    deps = [":formatter"],
 )
 
 # === test/ ===
@@ -95,6 +103,14 @@ py_test(
     name = "formatter_test",
     srcs = ["test/formatter_test.py"],
     deps = [":formatter"],
+)
+
+sh_test(
+    name = "clang_format_includes_test",
+    srcs = ["test/clang_format_includes_test.sh"],
+    data = [
+        ":clang-format-includes",
+    ],
 )
 
 cpplint(data = ["test/gen/drake/CPPLINT.cfg"])

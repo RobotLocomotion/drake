@@ -7,6 +7,7 @@
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 using drake::lcm::CompareLcmtDrakeSignalMessages;
@@ -16,8 +17,8 @@ namespace systems {
 namespace lcm {
 namespace {
 
-const int kDim = 10;
-const int64_t kTimestamp = 123456;
+constexpr int kDim = 10;
+constexpr int64_t kTimestamp = 123456;
 
 void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
     const std::string& channel_name, LcmSubscriberSystem* dut) {
@@ -142,26 +143,16 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
  public:
   // An output vector type that tests that subscribers permit non-default
   // types.
-  class CustomVector : public BasicVector<double> {
-   public:
-    CustomVector() : BasicVector<double>(kDim) {}
-    void SetName(int index, std::string name) { names_.at(index) = name; }
-    std::string GetName(int index) const { return names_.at(index); }
-   protected:
-    CustomVector* DoClone() const override {
-      auto result = new CustomVector;
-      result->set_value(this->get_value());
-      result->names_ = this->names_;
-      return result;
-    }
-   private:
-    std::array<std::string, kDim> names_;
-  };
+  using CustomVector = MyVector<kDim, double>;
 
   CustomDrakeSignalTranslator() : LcmAndVectorBaseTranslator(kDim) {}
 
   std::unique_ptr<BasicVector<double>> AllocateOutputVector() const override {
     return std::make_unique<CustomVector>();
+  }
+
+  static std::string NameFor(int index) {
+    return std::to_string(index) + "_name";
   }
 
   void Deserialize(
@@ -179,8 +170,8 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
 
     // Copy message into our custom_vector.
     for (int i = 0; i < kDim; ++i) {
+      EXPECT_EQ(message.coord[i], NameFor(i));
       custom_vector->SetAtIndex(i, message.val[i]);
-      custom_vector->SetName(i, message.coord[i]);
     }
   }
 
@@ -201,7 +192,7 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
 
     for (int i = 0; i < kDim; ++i) {
       message.val.at(i) = custom_vector->GetAtIndex(i);
-      message.coord.at(i) = custom_vector->GetName(i);
+      message.coord.at(i) = NameFor(i);
     }
 
     // Encode the LCM message.
@@ -226,7 +217,6 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   CustomVector sample_vector;
   for (int i = 0; i < kDim; ++i) {
     sample_vector.SetAtIndex(i, i);
-    sample_vector.SetName(i, std::to_string(i) + "_name");
   }
 
   // Induce a message transmission so we can evaluate whether the LCM
@@ -249,7 +239,6 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   ASSERT_NE(nullptr, custom_output);
   for (int i = 0; i < kDim; ++i) {
     EXPECT_EQ(sample_vector.GetAtIndex(i), custom_output->GetAtIndex(i));
-    EXPECT_EQ(sample_vector.GetName(i), custom_output->GetName(i));
   }
 }
 

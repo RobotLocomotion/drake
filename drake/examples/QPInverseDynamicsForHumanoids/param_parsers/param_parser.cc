@@ -464,6 +464,40 @@ QpInput ParamSet::MakeQpInput(
   return qp_input;
 }
 
+QpInput ParamSet::MakeQpInput(
+    const std::vector<const RigidBody<double>*>& contact_bodies,
+    const std::vector<const RigidBody<double>*>& tracked_bodies,
+    const RigidBodyTreeAliasGroups<double>& alias_group) const {
+  QpInput qp_input(GetDofNames(alias_group.get_tree()));
+
+  // Inserts all contacts.
+  for (const auto& body : contact_bodies) {
+    const ContactParam& param = FindParam(body->get_name(), contact_params_);
+    qp_input.mutable_contact_information().emplace(
+        body->get_name(), MakeContactInformationFromParam(*body, param));
+  }
+
+  // Inserts all tracked bodies.
+  for (const auto& body : tracked_bodies) {
+    const DesiredMotionParam& param =
+        FindParam(body->get_name(), body_motion_params_);
+    qp_input.mutable_desired_body_motions().emplace(
+        body->get_name(), MakeDesiredBodyMotionFromParam(*body, param));
+  }
+
+  // Makes desired DoF motions.
+  qp_input.mutable_desired_dof_motions() = MakeDesiredDofMotions();
+
+  // Copies basis regularization weight.
+  qp_input.mutable_w_basis_reg() = get_basis_regularization_weight();
+
+  // Makes DesiredCentroidalMomentumDot
+  qp_input.mutable_desired_centroidal_momentum_dot() =
+      MakeDesiredCentroidalMomentumDot();
+
+  return qp_input;
+}
+
 }  // namespace param_parsers
 }  // namespace qp_inverse_dynamics
 }  // namespace examples

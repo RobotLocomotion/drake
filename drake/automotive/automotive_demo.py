@@ -211,10 +211,6 @@ def main():
                         help="print commands instead of running them")
     args, tail = parser.parse_known_args()
 
-    # TODO(jwnimmer-tri) Remove this magic once dev_demo is gone.
-    if '-road_path' in tail:
-        demo_path = "drake/automotive/dev_demo"
-
     if '--help' in tail:
         parser.print_help(file=sys.stderr)
         subprocess.call([demo_path, "--help"])

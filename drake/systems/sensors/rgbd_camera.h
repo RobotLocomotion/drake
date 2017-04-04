@@ -53,6 +53,8 @@ namespace sensors {
 ///     in the scene. For the pixels corresponding to no body, namely the sky
 ///     and the flat terrain, we assign Label::kNoBody and Label::kFlatTerrain,
 ///     respectively.
+///
+/// @ingroup sensor_systems
 // TODO(kunimatsu-tri) Add support for the image publish capability.
 class RgbdCamera : public LeafSystem<double> {
  public:

@@ -53,7 +53,6 @@ namespace sensors {
 /// http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html
 /// and https://en.wikipedia.org/wiki/Pinhole_camera_model.
 ///
-/// @ingroup sensor_systems
 // TODO(kunimatsu-tri) Add camera distortion parameters and other parameters as
 // needed.
 class CameraInfo {

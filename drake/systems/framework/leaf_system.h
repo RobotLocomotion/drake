@@ -98,7 +98,7 @@ class LeafSystem : public System<T> {
     return std::unique_ptr<Context<T>>(context.release());
   }
 
-  /// Default implementation: set all continuous and discrete state variables
+  /// Default implementation: sets all continuous and discrete state variables
   /// to zero.  It makes no attempt to set abstract state values. Overrides
   /// must not change the number of state variables.
   void SetDefaultState(const Context<T>& context,
@@ -113,14 +113,20 @@ class LeafSystem : public System<T> {
     }
   }
 
-  /// Default implementation: set all numeric parameters to one.  It makes no
-  /// attempt to set abstract parameter values. Overrides must not change the
-  /// number of parameters.
+  /// Default implementation: sets all numeric parameters to the model vector
+  /// given to DeclareNumericParameter, or else if no model was provided sets
+  /// the numeric parameter to one.  It makes no attempt to set abstract
+  /// parameter values.  Overrides must not change the number of parameters.
   virtual void SetDefaultParameters(const LeafContext<T>& context,
                                     Parameters<T>* parameters) const {
     for (int i = 0; i < parameters->num_numeric_parameters(); i++) {
       BasicVector<T>* p = parameters->get_mutable_numeric_parameter(i);
-      p->SetFromVector(VectorX<T>::Constant(p->size(), 1.0));
+      auto model_vector = model_numeric_parameters_.CloneVectorModel<T>(i);
+      if (model_vector != nullptr) {
+        p->SetFrom(*model_vector);
+      } else {
+        p->SetFromVector(VectorX<T>::Constant(p->size(), 1.0));
+      }
     }
   }
 
@@ -282,7 +288,7 @@ class LeafSystem : public System<T> {
       const std::string type = NiceTypeName::Canonicalize(
           NiceTypeName::Demangle(typeid(*this).name()));
       // Drop the template parameters.
-      name = std::regex_replace(type, std::regex("<.*>$"), "");
+      name = std::regex_replace(type, std::regex("<.*>$"), std::string());
     }
 
     // Open the attributes and label.
@@ -354,10 +360,20 @@ class LeafSystem : public System<T> {
     return std::make_unique<AbstractValues>();
   }
 
-  /// Reserves the parameters as required by CreateDefaultContext. By default,
-  /// reserves no parameters. Systems with parameters should override.
+  /// Reserves the parameters as required by CreateDefaultContext.  The default
+  /// implementation in this class clones the model_vector for all parameters
+  /// declared via DeclareNumericParameter(), and so does not allocate any
+  /// abstract parameters.  Subclasses can override this method if the default
+  /// behavior is not sufficient.
   virtual std::unique_ptr<Parameters<T>> AllocateParameters() const {
-    return std::make_unique<Parameters<T>>();
+    std::vector<std::unique_ptr<BasicVector<T>>> numeric_params;
+    numeric_params.reserve(model_numeric_parameters_.size());
+    for (int i = 0; i < model_numeric_parameters_.size(); ++i) {
+      auto param = model_numeric_parameters_.CloneVectorModel<T>(i);
+      DRAKE_ASSERT(param != nullptr);
+      numeric_params.emplace_back(std::move(param));
+    }
+    return std::make_unique<Parameters<T>>(std::move(numeric_params));
   }
 
   /// Given a port descriptor, allocates the vector storage.  The default
@@ -630,6 +646,18 @@ class LeafSystem : public System<T> {
     return this->DeclareAbstractOutputPort();
   }
 
+  /// Declares a numeric parameter using the given @p model_vector.  This is
+  /// the best way to declare LeafSystem numeric parameters.  LeafSystem's
+  /// default implementation of AllocateParameters uses model_vector.Clone(),
+  /// and the default implementation of SetDefaultParameters will reset
+  /// parameters to their model vectors.  Returns the index of the new
+  /// parameter.
+  int DeclareNumericParameter(const BasicVector<T>& model_vector) {
+    const int next_index = model_numeric_parameters_.size();
+    model_numeric_parameters_.AddVectorModel(next_index, model_vector.Clone());
+    return next_index;
+  }
+
  private:
   // Aborts for scalar types that are not numeric, since there is no reasonable
   // definition of "next update time" outside of the real line.
@@ -736,6 +764,9 @@ class LeafSystem : public System<T> {
 
   // Model outputs to be used in AllocateOutput{Vector,Abstract}.
   detail::ModelValues model_output_values_;
+
+  // Model outputs to be used in AllocateParameters.
+  detail::ModelValues model_numeric_parameters_;
 };
 
 }  // namespace systems

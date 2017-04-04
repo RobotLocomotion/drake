@@ -24,7 +24,8 @@ namespace qp_inverse_dynamics {
 GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
   const std::string kModelPath =
       drake::GetDrakePath() +
-      "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14_simplified_collision.urdf";
+      "/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf";
 
   const std::string kAliasGroupsPath =
       drake::GetDrakePath() +
@@ -65,8 +66,9 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
           systems::AbstractValue::Make<HumanoidStatus>(robot_status));
 
   // Makes a source for qp input.
-  QpInput input = paramset.MakeQpInput({}, /* contacts */
-                                       {}, /* tracked bodies*/
+  const std::vector<std::string> empty;
+  QpInput input = paramset.MakeQpInput(empty, /* contacts */
+                                       empty, /* tracked bodies*/
                                        alias_groups);
   VectorX<double> kp, kd;
   paramset.LookupDesiredDofMotionGains(&kp, &kd);

@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_function.h"
@@ -28,8 +29,10 @@ namespace drake {
  */
 // TODO(siyuan.feng): check if this works for AutoDiffScalar.
 template <typename Scalar = double>
-class PiecewiseQuaternionSlerp : public PiecewiseFunction {
+class PiecewiseQuaternionSlerp final : public PiecewiseFunction {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseQuaternionSlerp)
+
   PiecewiseQuaternionSlerp() {}
 
   /*
@@ -97,6 +100,14 @@ class PiecewiseQuaternionSlerp : public PiecewiseFunction {
       const {
     return quaternions_;
   }
+
+  /**
+   * Returns true if all the corresponding segment times are within
+   * @p tol seconds, and the angle difference between the corresponding
+   * quaternion knot points are within @p tol.
+   */
+  bool is_approx(const PiecewiseQuaternionSlerp<Scalar>& other,
+                 const Scalar& tol) const;
 
  private:
   // Initialize quaternions_ and computes angular velocity for each segment.

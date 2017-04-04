@@ -1,6 +1,7 @@
 #include "drake/solvers/mathematical_program.h"
 
 #include <algorithm>
+#include <set>
 #include <typeinfo>
 
 #include <gtest/gtest.h>
@@ -12,6 +13,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/common/test/is_dynamic_castable.h"
 #include "drake/common/test/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
@@ -37,6 +39,8 @@ using drake::symbolic::Variable;
 using drake::symbolic::test::ExprEqual;
 
 using std::numeric_limits;
+using std::set;
+using std::static_pointer_cast;
 
 namespace drake {
 namespace solvers {
@@ -588,11 +592,10 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
   const Expression e{x(0)};
   const auto binding = prog.AddLinearConstraint(e, -10, 10);
 
-  // Check that the constraint in the binding is of BoundingBoxConstraint by
-  // using dynamic_pointer_cast.
+  // Check that the constraint in the binding is of BoundingBoxConstraint.
+  ASSERT_TRUE(is_dynamic_castable<BoundingBoxConstraint>(binding.constraint()));
   const std::shared_ptr<BoundingBoxConstraint> constraint_ptr{
-      std::dynamic_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
-  EXPECT_TRUE(constraint_ptr != nullptr);
+      static_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
   EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
 
   // Check if the binding includes the correct linear constraint.
@@ -914,6 +917,111 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
   }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
+  // Add linear constraints
+  //
+  //   (A*x == b) = |1 2| * |x0| == |5|
+  //                |3 4|   |x1|    |6|
+  //
+  //              = |  x0 + 2*x1 == 5|
+  //                |3*x0 + 4*x1 == 6|
+  //
+  // where A = |1 2|, x = |x0|, b = |5|
+  //           |3 4|      |x1|      |6|.
+  //
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  Matrix<Expression, 2, 2> A;
+  Eigen::Vector2d b;
+  // clang-format off
+  A << 1, 2,
+       3, 4;
+  b << 5,
+       6;
+  // clang-format on
+  const auto binding = prog.AddLinearConstraint(A * x == b);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  // Checks that we have LinearEqualityConstraint instead of LinearConstraint.
+  EXPECT_TRUE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
+  EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+
+  set<Expression> constraint_set;
+  constraint_set.emplace(x(0) + 2 * x(1) - 5);
+  constraint_set.emplace(3 * x(0) + 4 * x(1) - 6);
+  EXPECT_EQ(constraint_set.count(Ax(0) - lb_in_ctr(0)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(0) - ub_in_ctr(0)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(1) - lb_in_ctr(1)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(1) - ub_in_ctr(1)), 1);
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
+  // Add linear constraints f1 && f2 && f3 where
+  //   f1 := (x0 + 2*x1 >= 3)
+  //   f2 := (3*x0 + 4*x1 <= 5)
+  //   f3 := (7*x0 + 2*x1 == 9).
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  const Expression e11{x(0) + 2 * x(1)};
+  const Expression e12{3};
+  const Formula f1{e11 >= e12};
+  const Expression e21{3 * x(0) + 4 * x(1)};
+  const Expression e22{5};
+  const Formula f2{e21 <= e22};
+  const Expression e31{7 * x(0) + 2 * x(1)};
+  const Expression e32{9};
+  const Formula f3{e31 == e32};
+
+  const auto binding = prog.AddLinearConstraint(f1 && f2 && f3);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  // Checks that we do not have LinearEqualityConstraint.
+  EXPECT_FALSE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
+  EXPECT_EQ(constraint_ptr->num_constraints(), 3);
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+
+  set<Expression> constraint_set;
+  constraint_set.emplace(e11 - e12);
+  constraint_set.emplace(e21 - e22);
+  constraint_set.emplace(e31 - e32);
+  for (int i = 0; i < 3; ++i) {
+    if (!std::isinf(lb_in_ctr(i))) {
+      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_ctr(i)), 1);
+    }
+    if (!std::isinf(ub_in_ctr(i))) {
+      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_ctr(i)), 1);
+    }
+  }
+}
+
+GTEST_TEST(testMathematicalProgram,
+           AddLinearConstraintSymbolicFormulaAndException) {
+  // Add linear constraints:
+  //   (x0 + 2*x1 > 3)
+  //   (3*x0 + 4*x1 < 5)
+  //   (7*x0 + 2*x1 == 9)
+  //
+  // It includes relational formulas with strict inequalities (> and <). It will
+  // throw std::runtime_error.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  const Expression e11{x(0) + 2 * x(1)};
+  const Expression e12{3};
+  const Formula f1{e11 > e12};
+  const Expression e21{3 * x(0) + 4 * x(1)};
+  const Expression e22{5};
+  const Formula f2{e21 < e22};
+  const Expression e31{7 * x(0) + 2 * x(1)};
+  const Expression e32{9};
+  const Formula f3{e31 == e32};
+  EXPECT_THROW(prog.AddLinearConstraint(f1 && f2 && f3), std::runtime_error);
 }
 
 // Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
@@ -1748,16 +1856,54 @@ GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
   }
 }
 
+void CheckAddedPolynomialCost(MathematicalProgram* prog,
+                              const symbolic::Expression& e) {
+  int num_cost = prog->generic_costs().size();
+  const auto binding = prog->AddPolynomialCost(e);
+  EXPECT_EQ(prog->generic_costs().size(), ++num_cost);
+  EXPECT_EQ(binding.constraint(), prog->generic_costs().back().constraint());
+  // Now reconstruct the symbolic expression from `binding`.
+  const auto polynomial = binding.constraint()->polynomials()(0);
+  symbolic::MonomialToCoefficientMap map_expected;
+  for (const auto& m : polynomial.GetMonomials()) {
+    std::map<symbolic::Variable::Id, int> map_var_to_power;
+    for (const auto& term : m.terms) {
+      map_var_to_power.emplace(term.var, term.power);
+    }
+    symbolic::Monomial m_symbolic(map_var_to_power);
+    map_expected.emplace(m_symbolic, m.coefficient);
+  }
+  // Now compare the reconstructed symbolic polynomial with `e`.
+  const auto map =
+      symbolic::DecomposePolynomialIntoMonomial(e, e.GetVariables());
+  EXPECT_EQ(map.size(), map_expected.size());
+  for (const auto& m : map) {
+    const auto m_expected_it = map_expected.find(m.first);
+    EXPECT_NE(m_expected_it, map_expected.end());
+    EXPECT_EQ(m_expected_it->second, m.second);
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, testAddPolynomialCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  // Add a cubic cost
+  CheckAddedPolynomialCost(&prog, pow(x(0), 3));
+
+  // Add a cubic cost
+  CheckAddedPolynomialCost(&prog, pow(x(0), 2) * x(1));
+
+  // Add a 4th order cost
+  CheckAddedPolynomialCost(
+      &prog, x(0) * x(0) * x(1) * x(1) + pow(x(0), 3) * x(1) + 2 * x(1));
+}
+
 GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
   // Add a non-polynomial cost.
   EXPECT_THROW(prog.AddCost(sin(x(0))), std::runtime_error);
-
-  // Add a third order polynomial cost.
-  EXPECT_THROW(prog.AddCost(x(0) * x(0) * x(1)), std::runtime_error);
-  EXPECT_THROW(prog.AddCost(pow(x(0), 3)), std::runtime_error);
 
   // Add a cost containing variable not included in the mathematical program.
   symbolic::Variable y("y");

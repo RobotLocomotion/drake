@@ -329,6 +329,14 @@ TEST_F(SymbolicDifferentiationTest, NumericalTests2) {
     }
   }
 }
+
+TEST_F(SymbolicDifferentiationTest, UninterpretedFunction) {
+  const Expression uf{uninterpreted_function("uf", {var_x_, var_y_})};
+  EXPECT_THROW(uf.Differentiate(var_x_), std::runtime_error);
+  EXPECT_THROW(uf.Differentiate(var_y_), std::runtime_error);
+  EXPECT_PRED2(ExprEqual, uf.Differentiate(var_z_), Expression::Zero());
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

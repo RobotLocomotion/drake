@@ -20,8 +20,6 @@
 
 using drake::solvers::SolutionResult;
 
-typedef PiecewisePolynomial<double> PiecewisePolynomialType;
-
 namespace drake {
 namespace examples {
 namespace pendulum {
@@ -63,26 +61,25 @@ int do_main(int argc, char* argv[]) {
 
   auto context = pendulum->CreateDefaultContext();
 
-  systems::DircolTrajectoryOptimization dircol_traj(
+  systems::DircolTrajectoryOptimization dircol(
       pendulum, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
-  drake::examples::pendulum::AddSwingUpTrajectoryParams(kNumTimeSamples, x0, xG,
-                                                        &dircol_traj);
+  drake::examples::pendulum::AddSwingUpTrajectoryParams(x0, xG, &dircol);
 
   const double timespan_init = 4;
   auto traj_init_x =
-      PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
-  SolutionResult result = dircol_traj.SolveTraj(
-      timespan_init, PiecewisePolynomialType(), traj_init_x);
+      PiecewisePolynomial<double>::FirstOrderHold({0, timespan_init}, {x0, xG});
+  SolutionResult result = dircol.SolveTraj(
+      timespan_init, PiecewisePolynomial<double>(), traj_init_x);
   if (result != SolutionResult::kSolutionFound) {
     std::cerr << "Result is an Error" << std::endl;
     return 1;
   }
 
   const PiecewisePolynomialTrajectory pp_traj =
-      dircol_traj.ReconstructInputTrajectory();
+      dircol.ReconstructInputTrajectory();
   const PiecewisePolynomialTrajectory pp_xtraj =
-      dircol_traj.ReconstructStateTrajectory();
+      dircol.ReconstructStateTrajectory();
   auto input_source = builder.AddSystem<systems::TrajectorySource>(pp_traj);
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
 
@@ -109,7 +106,7 @@ int do_main(int argc, char* argv[]) {
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(kTrajectoryTimeUpperBound);
+  simulator.StepTo(pp_xtraj.get_end_time());
 
   systems::Context<double>* pendulum_context =
       controller->GetMutableSubsystemContext(controller_context, pendulum);

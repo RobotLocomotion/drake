@@ -20,8 +20,8 @@ Software Design Documents
 .. Create a bulleted list of links to software design documents (e.g.,
 .. restructured text, PDFs, Google Docs, URLs, etc.)
 
-- *Coming soon: Dynamics 2.0 Design*
-- *Coming soon: System 2.0 Design*
+- *Coming soon: Dynamics Design*
+- *Coming soon: System Design*
 
 
 Mathematical Derivation Documents

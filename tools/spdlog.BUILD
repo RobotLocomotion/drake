@@ -9,12 +9,16 @@ package(
 cc_library(
     name = "spdlog",
     hdrs = glob(["include/spdlog/**"]),
-    defines = ["HAVE_SPDLOG"],
+    defines = [
+        "HAVE_SPDLOG",
+        "SPDLOG_FMT_EXTERNAL",
+    ],
     includes = ["include"],
     linkopts = select({
         "@//tools:linux": ["-pthread"],
         "@//conditions:default": [],
     }),
+    deps = ["@fmt//:fmt"],
 )
 
 pkg_tar(

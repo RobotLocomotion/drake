@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include "spdlog/fmt/ostr.h"
+#include "fmt/ostream.h"
 
 #include "drake/automotive/maliput/utility/generate_obj.h"
 #include "drake/common/drake_assert.h"

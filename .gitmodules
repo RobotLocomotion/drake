@@ -98,9 +98,15 @@
 [submodule "externals/qt_property_browser"]
 	path = externals/qt_property_browser
 	url = https://github.com/patmarion/QtPropertyBrowser
+[submodule "externals/tinyobjloader"]
+	path = externals/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader
 [submodule "externals/vtk"]
 	path = externals/vtk
 	url = git://vtk.org/VTK.git
 [submodule "externals/pybind11"]
 	path = externals/pybind11
 	url = https://github.com/RobotLocomotion/pybind11
+[submodule "externals/fmt"]
+	path = externals/fmt
+	url = https://github.com/fmtlib/fmt.git

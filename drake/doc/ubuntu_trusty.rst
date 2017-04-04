@@ -60,6 +60,20 @@ As OpenJDK 8 is not available on Trusty, install Oracle JDK 8::
     sudo apt-get update
     sudo apt-get install oracle-java8-installer
 
+Bazel
+-----
+
+Bazel is required.  Install Bazel using the instructions at
+https://bazel.build/versions/master/docs/install-ubuntu.html.
+Be sure to install a version that is consistent with Drake's
+:ref:`Supported Configurations <supported-configurations>`.
+
+Here's a short recipe that summarizes the instructions on that page::
+
+    wget https://github.com/bazelbuild/bazel/releases/download/0.4.3/bazel_0.4.3-linux-x86_64.deb
+    echo "0cd6592ac2c5548d566fa9f874a386737e76029f5aabe1f04f8320173a05280d  bazel_0.4.3-linux-x86_64.deb" > bazel_0.4.3-linux-x86_64.deb.sha256
+    sha256sum --check bazel_0.4.3-linux-x86_64.deb.sha256 && sudo dpkg -i bazel_0.4.3-linux-x86_64.deb
+
 
 Other Prerequisites
 -------------------

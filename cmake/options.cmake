@@ -256,6 +256,10 @@ macro(drake_setup_options)
     ADDITIONAL_VERSIONS 5.8 --
     "Visualization ToolKit")
 
+  drake_system_dependency(
+    TINYOBJLOADER REQUIRES tinyobjloader
+    "library for reading wavefront mesh files")
+
   drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
     "C++ library for reading and writing YAML configuration files")
 

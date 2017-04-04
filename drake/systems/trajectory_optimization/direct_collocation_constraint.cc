@@ -32,14 +32,14 @@ DirectCollocationConstraint::DirectCollocationConstraint(int num_states,
 DirectCollocationConstraint::~DirectCollocationConstraint() {}
 
 void DirectCollocationConstraint::DoEval(
-    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
   TaylorVecXd y_t;
   Eval(math::initializeAutoDiff(x), y_t);
   y = math::autoDiffToValueMatrix(y_t);
 }
 
-void DirectCollocationConstraint::DoEval(
-    const Eigen::Ref<const TaylorVecXd> &x, TaylorVecXd &y) const {
+void DirectCollocationConstraint::DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+                                         TaylorVecXd& y) const {
   DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
 
   // Extract our input variables:
@@ -82,13 +82,33 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
       // where we might throw.
       derivatives_(system_->AllocateTimeDerivatives()) {
   DRAKE_THROW_UNLESS(system_->get_num_input_ports() == 1);
+  DRAKE_THROW_UNLESS(context.has_only_continuous_state());
+
+  // TODO(russt): Add support for time-varying dynamics OR check for
+  // time-invariance.
 
   context_->SetTimeStateAndParametersFrom(context);
+  // Set derivatives of all parameters in the context to zero (but with the
+  // correct size).
+  int num_gradients = 1 + 2 * context.get_continuous_state()->size() +
+                      2 * system.get_input_port(0).size();
+  for (int i = 0; i < context_->get_parameters().num_numeric_parameters();
+       i++) {
+    auto params = context_->get_mutable_parameters()
+                      .get_mutable_numeric_parameter(i)
+                      ->get_mutable_value();
+    for (int j = 0; j < params.size(); j++) {
+      auto& derivs = params(j).derivatives();
+      if (derivs.size() == 0) {
+        derivs.resize(num_gradients);
+        derivs.setZero();
+      }
+    }
+  }
 
   // Allocate the input port and keep an alias around.
-  input_port_value_ =
-      new FreestandingInputPortValue(std::make_unique<BasicVector<AutoDiffXd>>(
-          system_->get_input_port(0).size()));
+  input_port_value_ = new FreestandingInputPortValue(
+      system_->AllocateInputVector(system_->get_input_port(0)));
   std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
   context_->SetInputPortValue(0, std::move(input_port_value));
 }

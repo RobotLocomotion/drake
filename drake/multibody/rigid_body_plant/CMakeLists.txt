@@ -15,6 +15,7 @@ set(lcm_dependent_header_files)
 if (lcm_FOUND)
   set(lcm_dependent_header_files
     contact_results_to_lcm.h
+    create_load_robot_message.h
     drake_visualizer.h
     rigid_body_plant_that_publishes_xdot.h
     viewer_draw_translator.h)
@@ -24,6 +25,7 @@ set(lcm_dependent_source_files)
 if (lcm_FOUND)
   set(lcm_dependent_source_files
     contact_results_to_lcm.cc
+    create_load_robot_message.cc
     drake_visualizer.cc
     rigid_body_plant_that_publishes_xdot.cc
     viewer_draw_translator.cc)

@@ -18,15 +18,20 @@ namespace {
 // to touch every method as an API sanity check, so that we are reminded in
 // case we change the generated API without realizing it.
 GTEST_TEST(SampleTest, SimpleCoverage) {
-  EXPECT_EQ(SampleIndices::kNumCoordinates, 2);
+  EXPECT_EQ(SampleIndices::kNumCoordinates, 3);
   EXPECT_EQ(SampleIndices::kX, 0);
   EXPECT_EQ(SampleIndices::kTwoWord, 1);
+  EXPECT_EQ(SampleIndices::kAbsone, 2);
 
   // The device under test.
   Sample<double> dut;
 
   // Size.
   EXPECT_EQ(dut.size(), SampleIndices::kNumCoordinates);
+
+  // Default values.
+  EXPECT_EQ(dut.x(), 42.0);
+  EXPECT_EQ(dut.two_word(), 0.0);
 
   // Accessors.
   dut.set_x(11.0);
@@ -78,9 +83,18 @@ GTEST_TEST(SampleTest, SymbolicIsValid) {
   Sample<symbolic::Expression> dut;
   const symbolic::Variable x{"x"};
   const symbolic::Variable two_word{"two_word"};
+  const symbolic::Variable absone{"absone"};
   dut.set_x(x);
   dut.set_two_word(two_word);
-  EXPECT_TRUE(dut.IsValid().EqualTo(!isnan(x) && !isnan(two_word)));
+  dut.set_absone(absone);
+  const symbolic::Formula expected_is_valid =
+      !isnan(x) &&
+      !isnan(two_word) &&
+      !isnan(absone) &&
+      (x >= 0.0) &&
+      (absone >= -1.0) &&
+      (absone <= 1.0);
+  EXPECT_TRUE(dut.IsValid().EqualTo(expected_is_valid));
 }
 
 }  // namespace

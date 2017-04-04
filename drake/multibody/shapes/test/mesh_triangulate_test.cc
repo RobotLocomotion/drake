@@ -24,9 +24,9 @@ GTEST_TEST(MeshShapeTests, ParseQuadMeshFail) {
                      Mesh::TriangulatePolicy::kFailOnNonTri);
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
-    const std::string kExpectedMessage = "In file \"" + kFileName + "\" (line" +
-            " 15). Only triangular faces are supported. However 4 indices are" +
-            " provided.";
+    const std::string kExpectedMessage = "In file \"" + kFileName + "\" (face" +
+        " 0). Only triangular faces are supported. However 4 indices are" +
+        " provided.";
     EXPECT_EQ(e.what(), kExpectedMessage);
   }
 }
@@ -99,9 +99,9 @@ GTEST_TEST(MeshShapeTests, DetectBadTriangulation) {
                      Mesh::TriangulatePolicy::kTry);
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
-    const std::string kExpectedMessage = "Trying to triangulate the face in '" +
-        kFileName + "' on line 38 led to bad triangles. The triangle based on "
-        "vertices 4, 1, and 2 (1-indexed) is wound in the opposite direction "
+    const std::string kExpectedMessage = "Trying to triangulate face number 4"
+        " in '" + kFileName + "' led to bad triangles. The triangle based on "
+        "vertices 3, 0, and 1 (0-indexed) is wound in the opposite direction "
         "from the previous triangle. Consider triangulating by hand.";
     EXPECT_EQ(e.what(), kExpectedMessage);
   }
@@ -121,8 +121,8 @@ GTEST_TEST(MeshShapeTests, DetectNonPlanarTriangulation) {
       Mesh::TriangulatePolicy::kTry);
   GTEST_FAIL();
   } catch (std::runtime_error& e) {
-  const std::string kExpectedMessage = "Trying to triangulate the face in '" +
-      kFileName + "' on line 25.  The face is not sufficiently planar. " +
+  const std::string kExpectedMessage = "Trying to triangulate face number 1"
+      " in '" + kFileName + "'.  The face is not sufficiently planar. " +
       "Consider triangulating by hand.";
   EXPECT_EQ(e.what(), kExpectedMessage);
   }
@@ -147,9 +147,9 @@ GTEST_TEST(MeshShapeTests, TriangulateConcaveFaceSuccess) {
   EXPECT_EQ(triangles.size(), 6u);
 }
 
-// Tests the triangulation code's response to when a face references a vertex
-// that hasn't been parsed yet: throwing a std::runtime_error.  (Unlikely, but
-// possible within the OBJ file specification.)
+// Tests the triangulation code's response when a face references a vertex
+// not yet written in the file. A simple parser may be thrown by this, but
+// a good parser should handle it (e.g. tinyobjloader does).
 GTEST_TEST(MeshShapeTests, DetectTriangulateParseOrderError) {
   const std::string kFileName = drake::GetDrakePath() +
       "/multibody/shapes/test/out_of_order_vertex.obj";
@@ -159,11 +159,9 @@ GTEST_TEST(MeshShapeTests, DetectTriangulateParseOrderError) {
 
   try {
     mesh.LoadObjFile(&vertices, &triangles, Mesh::TriangulatePolicy::kTry);
-    GTEST_FAIL();
+    GTEST_SUCCEED();
   } catch (std::runtime_error& e) {
-    const std::string kExpectedMessage = "Unable to triangulate face in file "
-        "'" + kFileName + " on line 7. See log for details.";
-    EXPECT_EQ(e.what(), kExpectedMessage);
+    GTEST_FAIL();
   }
 }
 
@@ -184,8 +182,8 @@ GTEST_TEST(MeshShapeTests, DetectTriangulateDegenerateTriangle) {
     // can run, even if this one "fails".
     EXPECT_TRUE(false);
   } catch (std::runtime_error& e) {
-    const std::string kExpectedMessage = "Unable to triangulate face in file "
-        "'" + kFileName + " on line 8. See log for details.";
+    const std::string kExpectedMessage = "Unable to triangulate face number 0"
+        " in '" + kFileName + "'. See log for details.";
     EXPECT_EQ(e.what(), kExpectedMessage);
   }
 
@@ -199,8 +197,8 @@ GTEST_TEST(MeshShapeTests, DetectTriangulateDegenerateTriangle) {
     // An exception *should* be thrown; no exception implies test failure.
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
-    const std::string kExpectedMessage = "Unable to triangulate face in file "
-        "'" + kFileName2 + " on line 25. See log for details.";
+    const std::string kExpectedMessage = "Unable to triangulate face number 0"
+        " in '" + kFileName2 + "'. See log for details.";
     EXPECT_EQ(e.what(), kExpectedMessage);
   }
 }

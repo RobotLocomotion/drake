@@ -135,6 +135,7 @@ macro(drake_find_packages)
   set_property(TARGET Eigen3::Eigen APPEND PROPERTY
     INTERFACE_COMPILE_DEFINITIONS EIGEN_MPL2_ONLY)  # Per #4065.
 
+  drake_find_package(fmt CONFIG REQUIRED)
   drake_find_package(gflags CONFIG REQUIRED)
 
   set(GTEST_DEFINITIONS
@@ -144,6 +145,7 @@ macro(drake_find_packages)
   drake_find_package(GTest MODULE REQUIRED)
   set_property(TARGET GTest::GTest APPEND PROPERTY
     INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
+  drake_find_package(tinyobjloader CONFIG REQUIRED)
 
   # END required packages
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

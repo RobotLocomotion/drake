@@ -2,7 +2,8 @@ add_library_with_exports(LIB_NAME drakeShapes SOURCE_FILES geometry.cc element.c
 target_link_libraries(drakeShapes
     drakeCommon
     Eigen3::Eigen
-    spruce)
+    spruce
+    tinyobjloader)
 
 # if(BUILD_TESTING)
 #   add_subdirectory(test)
@@ -15,9 +16,10 @@ drake_install_pkg_config_file(drake-shapes
   LIBS -ldrakeShapes
   REQUIRES
     eigen3
-    spruce)
+    spruce
+    tinyobjloader)
+
 
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
-

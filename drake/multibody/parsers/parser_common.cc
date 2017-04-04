@@ -26,14 +26,17 @@ using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
 
-std::string GetFullPath(const std::string& file_name) {
-  std::string result = file_name;
+const char* const FloatingJointConstants::kFloatingJointName = "base";
+const char* const FloatingJointConstants::kWeldJointName = "weld";
+
+string GetFullPath(const string& file_name) {
+  string result = file_name;
   if (result.empty()) {
     throw std::runtime_error("drake::parsers::GetFullPath: ERROR: file_name is "
                              "empty.");
   }
 
-  const std::string prefix = "/";
+  const string prefix = "/";
   if (result.substr(0, prefix.size()) == prefix) {
     // The specified file is already an absolute path. The following code
     // verifies that the file exists.
@@ -82,7 +85,7 @@ string ResolveFilename(const string& filename, const PackageMap& package_map,
   spruce::path mesh_filename_spruce;
   spruce::path raw_filename_spruce(filename);
 
-  vector<std::string> split_filename = raw_filename_spruce.split();
+  vector<string> split_filename = raw_filename_spruce.split();
 
   if (split_filename.front() == "package:") {
     // A correctly formatted filename is:
@@ -154,25 +157,25 @@ int AddFloatingJoint(
     // If weld_to_frame is not specified, weld the newly added model(s) to the
     // world with zero offset.
     weld_to_body = tree->bodies[0].get();
-    floating_joint_name = "base";
+    floating_joint_name = FloatingJointConstants::kFloatingJointName;
     transform_to_world = Eigen::Isometry3d::Identity();
   } else {
     // If weld_to_frame is specified and the model is being welded to the world,
     // ensure the "body" variable within weld_to_frame is nullptr. Then, only
     // use the transform_to_body variable within weld_to_frame to initialize
     // the robot at the desired location in the world.
-    if (weld_to_frame->get_name()
-          == string(RigidBodyTreeConstants::kWorldName)) {
+    if (weld_to_frame->get_name() ==
+        string(RigidBodyTreeConstants::kWorldName)) {
       if (!weld_to_frame->has_as_rigid_body(nullptr)) {
         throw runtime_error(
             "AddFloatingJoint: Attempted to weld robot to the world while "
             "specifying a body link!");
       }
       weld_to_body = tree->bodies[0].get();  // the world's body
-      floating_joint_name = "base";
+      floating_joint_name = FloatingJointConstants::kFloatingJointName;
     } else {
       weld_to_body = weld_to_frame->get_mutable_rigid_body();
-      floating_joint_name = "weld";
+      floating_joint_name = FloatingJointConstants::kWeldJointName;
     }
     transform_to_world = weld_to_frame->get_transform_to_body();
   }
