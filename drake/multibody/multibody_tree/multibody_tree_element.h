@@ -30,7 +30,7 @@ class MultibodyTreeElement;
 /// A class representing an element or component of a MultibodyTree. Examples of
 /// multibody tree elements are bodies, joints, force elements, and constraints.
 /// Multibody tree elements are owned and managed by a parent MultibodyTree.
-/// As part of their construction process they get assigned an index that
+/// At MultibodyTree::Compile() stage, they get assigned an index that
 /// uniquely identifies them within their parent MultibodyTree.
 /// A generic multibody tree element `MultibodyComponent` is derived from
 /// this class as:
@@ -43,9 +43,13 @@ class MultibodyTreeElement;
 /// };
 /// @endcode
 ///
+/// Multibody tree elements' constructors are made private in order to enforce
+/// users to create them via their Create() factories to prevent the creation
+/// of MultibodyTreeElement objects with an invalid parent %MultibodyTree.
+///
 /// @tparam ElementType The type of the specific multibody element, for
 ///                     instance, a body or a mobilizer. It must be a template
-///                     class on the scalar type `T`.
+///                     class on the scalar type T.
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar. With the
 ///           signature below the scalar type is automatically deduced from the
 ///           `ElementType` template argument.

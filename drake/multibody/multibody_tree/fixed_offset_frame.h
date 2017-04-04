@@ -12,7 +12,7 @@ template <class T> class MultibodyTree;
 template <class T> class RigidBody;
 
 /// This class represents a frame F with a fixed pose `X_PF` measured and
-/// expressed in another physical frame `P`. For instance, we could rigidly
+/// expressed in another physical frame P. For instance, we could rigidly
 /// attach a frame F to move with a rigid body B at a fixed pose `X_BF`
 /// measured and expressed in the frame of that body. Thus, the pose of a
 /// %FixedOffsetFrame in the world depends only on its constant pose `X_BF`
@@ -35,8 +35,8 @@ class FixedOffsetFrame : public Frame<T> {
   ///
   /// @param[in, out] tree The parent MultibodyTree to which this frame will be
   ///                      added.
-  /// @param[in] body The body to which this frame is attached to with pose
-  ///                 `X_BF` in that body's frame.
+  /// @param[in] body The body in whose frame B this frame's pose `X_BF` is
+  ///                 defined.
   /// @param[in] X_BF The fixed pose of the newly created frame in the frame B
   ///                 of `body`.
   /// @returns A constant reference to the newly created frame.
@@ -45,7 +45,7 @@ class FixedOffsetFrame : public Frame<T> {
       const Body<T>& body, const Isometry3<T>& X_BF);
 
   /// Creates a physical frame with a fixed pose `X_PF` measured and expressed
-  /// in another physical frame `P`.
+  /// in another physical frame P.
   /// The new %FixedOffsetFrame is added to the MultibodyTree `tree`, which
   /// takes ownership of the newly created frame.
   ///
@@ -61,10 +61,10 @@ class FixedOffsetFrame : public Frame<T> {
   ///
   /// @param[in, out] tree The parent MultibodyTree to which this frame will be
   ///                      added.
-  /// @param[in] P The physical frame to which this frame is attached to with a
+  /// @param[in] P The physical frame to which this frame is attached with a
   ///              fixed pose.
   /// @param[in] X_PF The fixed pose of the newly created frame measured and
-  ///                 expressed in the physical frame `P`.
+  ///                 expressed in the physical frame P.
   /// @returns A constant reference to the newly created frame.
   // TODO(amcastro-tri): allow to chain multiple frames of type
   // FixedOffsetFrame. An approach would consist on holding a reference to the
@@ -88,6 +88,7 @@ class FixedOffsetFrame : public Frame<T> {
   // frame P.
   Isometry3<T> X_PF_;
 
+  // The internal bookkeeping topology struct used by MultibodyTree.
   FrameTopology topology_;
 };
 
