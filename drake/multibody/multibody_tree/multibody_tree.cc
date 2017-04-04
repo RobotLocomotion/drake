@@ -23,6 +23,10 @@ void MultibodyTree<T>::CreateTopologyAnalogues() {
   auto& body_topologies = topology_.bodies;
   auto& frame_topologies = topology_.frames;
 
+  // Clears arrays in case we are re-compiling.
+  topology_.clear();
+  frames_.clear();
+
   body_topologies.reserve(get_num_bodies());
   frame_topologies.reserve(get_num_frames());
 
@@ -61,10 +65,6 @@ void MultibodyTree<T>::CreateTopologyAnalogues() {
 
 template <typename T>
 void MultibodyTree<T>::Compile() {
-  // Crete the topology counterparts to all multibody objects. This process
-  // results in the generation of indexes for each multibody object.
-  CreateTopologyAnalogues();
-
   // If the topology is valid it means that this MultibodyTree was already
   // compiled. Since this is an expensive operation, throw an exception to alert
   // users.
@@ -73,6 +73,10 @@ void MultibodyTree<T>::Compile() {
         "Attempting to call MultibodyTree::Compile() on an already compiled "
             "MultibodyTree.");
   }
+
+  // Crete the topology counterparts to all multibody objects. This process
+  // results in the generation of indexes for each multibody object.
+  CreateTopologyAnalogues();
 
   // TODO(amcastro-tri): This is a brief list of operations to be added in
   // subsequent PR's:
@@ -84,11 +88,17 @@ void MultibodyTree<T>::Compile() {
   // Give bodies the chance to perform any compile-time setup.
   for (const auto& body : owned_bodies_) {
     body->Compile(*this);
+    // TODO(amcastro-tri): consider not depending on setting this pointer at
+    // all. Consider also removing MultibodyTreeElement altogether.
+    body->set_parent_tree(this);
   }
 
   // Give frames the chance to perform any compile-time setup.
   for (const auto& frame : owned_frames_) {
     frame->Compile(*this);
+    // TODO(amcastro-tri): consider not depending on setting this pointer at
+    // all. Consider also removing MultibodyTreeElement altogether.
+    frame->set_parent_tree(this);
   }
 
   validate_topology();
