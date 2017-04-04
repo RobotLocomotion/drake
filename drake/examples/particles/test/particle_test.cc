@@ -1,8 +1,9 @@
+#include "drake/examples/particles/particle.h"
+
 #include <memory>
 
 #include <gtest/gtest.h>
 
-#include "drake/examples/particles/particle.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_port_descriptor.h"

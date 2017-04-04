@@ -59,6 +59,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common",
+        "//drake/common:is_approx_equal_abstol",
     ],
 )
 

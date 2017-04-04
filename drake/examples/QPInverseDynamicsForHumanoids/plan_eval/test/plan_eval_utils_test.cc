@@ -1,6 +1,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/plan_eval_utils.h"
 
 #include <gtest/gtest.h>
+
 #include "drake/common/eigen_matrix_compare.h"
 
 namespace drake {

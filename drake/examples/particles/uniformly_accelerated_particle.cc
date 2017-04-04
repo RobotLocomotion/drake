@@ -2,9 +2,9 @@
 /// @brief  A simple 1DOF, constantly accelerated particle example.
 ///
 
-#include <memory>
-#include <limits>
 #include <cstdlib>
+#include <limits>
+#include <memory>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"

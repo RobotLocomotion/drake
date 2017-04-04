@@ -5,8 +5,8 @@
 #include <fstream>
 #include <stdexcept>
 
-#include <tiny_obj_loader.h>
 #include <spruce.hh>
+#include <tiny_obj_loader.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"

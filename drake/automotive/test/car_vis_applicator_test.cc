@@ -1,8 +1,8 @@
 #include "drake/automotive/car_vis_applicator.h"
 
 #include <memory>
-#include <utility>
 #include <stdexcept>
+#include <utility>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

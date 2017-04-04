@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
 #include <map>
+#include <memory>
 
 #include "drake/automotive/car_vis.h"
 #include "drake/common/drake_copyable.h"

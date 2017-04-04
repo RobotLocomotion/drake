@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -694,7 +695,7 @@ bool IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
 
   const Eigen::Vector3d w_from_quatDt =
        math::CalculateAngularVelocityExpressedInBFromQuaternionDt(quat, quatDt);
-  return CompareMatrices(w_from_quatDt, w_B, tolerance);
+  return is_approx_equal_abstol(w_from_quatDt, w_B, tolerance);
 }
 
 }  // namespace math
