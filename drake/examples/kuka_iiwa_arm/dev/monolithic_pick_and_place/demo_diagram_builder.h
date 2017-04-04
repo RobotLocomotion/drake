@@ -1,16 +1,16 @@
-# pragma once
+#pragma once
 
 #include <memory>
+#include <utility>
 
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
-#include "drake/systems/framework/diagram.h"
-#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
 using systems::ConstantVectorSource;
@@ -33,10 +33,10 @@ const double kTableTopZInWorld = 0.736 + 0.057 / 2;
 const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
 
 // TODO(naveen): refactor this to reduce duplicate code.
-template<typename T>
+template <typename T>
 std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
-    ModelInstanceInfo<T> *iiwa_instance, ModelInstanceInfo<T> *wsg_instance,
-    ModelInstanceInfo<T> *box_instance) {
+    ModelInstanceInfo<T>* iiwa_instance, ModelInstanceInfo<T>* wsg_instance,
+    ModelInstanceInfo<T>* box_instance) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
@@ -44,7 +44,7 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
   tree_builder->StoreModel("iiwa", kIiwaUrdf);
   tree_builder->StoreModel("table",
                            "/examples/kuka_iiwa_arm/models/table/"
-                               "extra_heavy_duty_table_surface_only_collision.sdf");
+                           "extra_heavy_duty_table_surface_only_collision.sdf");
   tree_builder->StoreModel(
       "box",
       "/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf");
@@ -86,7 +86,7 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
   return (std::move(plant));
 }
 
-} // namespace pick_and_place
-} // namespace kuka_iiwa_arm
-} // namespace examples
-} // namespace drake
+}  // namespace pick_and_place
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake
