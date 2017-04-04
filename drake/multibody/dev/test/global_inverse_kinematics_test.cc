@@ -68,8 +68,8 @@ class KukaTest : public ::testing::Test {
           global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
       // Use 1E-10 for the error tolerance.
       EXPECT_TRUE((body_Ri.array().abs() <= 1 + 1E-10).all());
-      EXPECT_LE(body_Ri.trace(), 3);
-      EXPECT_GE(body_Ri.trace(), -1);
+      EXPECT_LE(body_Ri.trace(), 3 + 1E-10);
+      EXPECT_GE(body_Ri.trace(), -1 - 1E-10);
       // TODO(hongkai.dai): We will have a more meaningful bound on the
       // relaxation of rotation matrix. Then clean up this print out with
       // the check on the error bound, and move this file out of dev folder.

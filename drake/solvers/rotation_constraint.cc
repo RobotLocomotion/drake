@@ -354,6 +354,66 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
   return intersections;
 }
 
+/**
+ * Compute the outward unit length normal of the triangle, with the three
+ * vertices being `pt0`, `pt1` and `pt2`.
+ * @param pt0 A vertex of the triangle, in the first orthant (+++).
+ * @param pt1 A vertex of the triangle, in the first orthant (+++).
+ * @param pt2 A vertex of the triangle, in the first orthant (+++).
+ * @param n The unit length normal vector of the triangle, pointing outward from
+ * the origin.
+ * @param d The intersecpt of the plane. Namely nᵀ * x = d for any point x on
+ * the triangle.
+ */
+void ComputeTriangleOutwardNormal(const Eigen::Vector3d& pt0,
+                                  const Eigen::Vector3d& pt1,
+                                  const Eigen::Vector3d& pt2,
+                                  Eigen::Vector3d* n, double* d) {
+  DRAKE_DEMAND((pt0.array() >= 0).all());
+  DRAKE_DEMAND((pt1.array() >= 0).all());
+  DRAKE_DEMAND((pt2.array() >= 0).all());
+  *n = (pt2 - pt0).cross(pt1 - pt0);
+  // If the three points are almost colinear, then throw an error.
+  double n_norm = n->norm();
+  if (n_norm < 1E-3) {
+    throw std::runtime_error("The points are almost colinear.");
+  }
+  *n = (*n) / n_norm;
+  if (n->sum() < 0) {
+    (*n) *= -1;
+  }
+  *d = pt0.dot(*n);
+  DRAKE_DEMAND((n->array() >= 0).all());
+}
+
+/**
+ * For the vertices in `pts`, determine if these vertices are co-planar. If they
+ * are, then compute that plane nᵀ * x = d.
+ * @param pts The vertices to be checked.
+ * @param n The unit length normal vector of the plane, points outward from the
+ * origin. If the vertices are not co-planar, leave `n` to 0.
+ * @param d The intersecpt of the plane. If the vertices are not co-planar, set
+ * this to 0.
+ * @return If the vertices are co-planar, set this to true. Otherwise set to
+ * false.
+ */
+bool AreAllVerticesCoPlanar(const std::vector<Eigen::Vector3d>& pts,
+                            Eigen::Vector3d* n, double* d) {
+  DRAKE_DEMAND(pts.size() >= 3);
+  ComputeTriangleOutwardNormal(pts[0], pts[1], pts[2], n, d);
+  // Determine if the other vertices are on the plane nᵀ * x = d.
+  bool pts_on_plane = true;
+  for (int i = 3; i < static_cast<int>(pts.size()); ++i) {
+    if (std::abs(n->dot(pts[i]) - *d) > 1E-10) {
+      pts_on_plane = false;
+      n->setZero();
+      *d = 0;
+      break;
+    }
+  }
+  return pts_on_plane;
+}
+
 /*
  * For the intersection region between the surface of the unit sphere, and the
  * interior of a box aligned with the axes, use a half space relaxation for
@@ -396,26 +456,107 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   // max d
   // s.t d <= nᵀ * pts.col(i)
   //     nᵀ * n <= 1
+
+  // First compute a plane coinciding with a triangle, formed by 3 vertices
+  // in the intersection region. If all the vertices are on that plane, then the
+  // normal of the plane is n, and we do not need to run the optimization.
+  // If there are only 3 vertices in the intersection region, then the normal
+  // vector n is the normal of the triangle, formed by these three vertices.
+
+  bool pts_on_plane = AreAllVerticesCoPlanar(pts, n, d);
+  if (pts_on_plane) {
+    return;
+  }
+
+  // If there are more than 3 vertices in the intersection region, and these
+  // vertices are not co-planar, then we find the normal vector `n` through an
+  // optimization, whose formulation is mentioned above.
   MathematicalProgram prog_normal;
   auto n_var = prog_normal.NewContinuousVariables<3>();
   auto d_var = prog_normal.NewContinuousVariables<1>();
-  prog_normal.AddLinearCost(Vector1d(-1), d_var);
+  prog_normal.AddLinearCost(-d_var(0));
   for (const auto& pt : pts) {
-    prog_normal.AddLinearConstraint(Eigen::Vector4d(pt(0), pt(1), pt(2), -1), 0,
-                                    numeric_limits<double>::infinity(),
-                                    {n_var, d_var});
+    prog_normal.AddLinearConstraint(n_var.dot(pt) >= d_var(0));
   }
-  // A_lorentz * n + b_lorentz = [1; n]
-  Eigen::Matrix<double, 4, 3> A_lorentz{};
-  A_lorentz << Eigen::RowVector3d::Zero(), Eigen::Matrix3d::Identity();
-  Eigen::Vector4d b_lorentz(1, 0, 0, 0);
-  prog_normal.AddLorentzConeConstraint(A_lorentz, b_lorentz, n_var);
+
+  // TODO(hongkai.dai): This optimization is expensive, especially if we have
+  // multiple rotation matrices, all relaxed with the same number of binary
+  // variables per half axis, the result `n` and `d` are the same. Should
+  // consider hard-coding the result, to avoid repeated computation.
+
+  Vector4<symbolic::Expression> lorentz_cone_vars;
+  lorentz_cone_vars << 1, n_var;
+  prog_normal.AddLorentzConeConstraint(lorentz_cone_vars);
   prog_normal.Solve();
   *n = prog_normal.GetSolution(n_var);
   *d = prog_normal.GetSolution(d_var(0));
 
   DRAKE_DEMAND((*n)(0) > 0 && (*n)(1) > 0 && (*n)(2) > 0);
   DRAKE_DEMAND(*d > 0 && *d < 1);
+}
+
+/**
+ * For the intersection region between the surface of the unit sphere, and the
+ * interior of a box aligned with the axes, relax this nonconvex intersection
+ * region to its convex hull. This convex hull has some planar facets (formed
+ * by the triangles connecting the vertices of the intersection region). This
+ * function computes these planar facets. It is guaranteed that any point x on
+ * the intersection region, satisfies A * x <= b.
+ * @param[in] pts The vertices of the intersection region. Same as the `pts` in
+ * ComputeHalfSpaceRelaxationForBoxSphereIntersection()
+ * @param[out] A The rows of A are the normal vector of facets. Each row of A is
+ * a unit length vector.
+ * @param b b(i) is the interscept of the i'th facet.
+ * @pre pts[i] are all in the first orthant, namely (pts[i].array() >=0).all()
+ * should be true.
+ */
+void ComputeInnerFacetsForBoxSphereIntersection(
+    const std::vector<Eigen::Vector3d>& pts,
+    Eigen::Matrix<double, Eigen::Dynamic, 3>* A, Eigen::VectorXd* b) {
+  for (const auto& pt : pts) {
+    DRAKE_DEMAND((pt.array() >= 0).all());
+  }
+  A->resize(0, 3);
+  b->resize(0);
+  // Loop through each triangle, formed by connecting the vertices of the
+  // intersection region. We write the plane coinciding with the triangle as
+  // cᵀ * x >= d. If all the vertices of the intersection region satisfies
+  // cᵀ * pts[i] >= d, then we know the intersection region satisfies
+  // cᵀ * x >= d for all x being a point in the intersection region. Here we
+  // use the proof in the ComputeHalfSpaceRelaxationForBoxSphereIntersection(),
+  // that the minimal value of cᵀ * x over all x inside the intersection
+  // region, occurs at one of the vertex of the intersection region.
+  for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
+    for (int j = i + 1; j < static_cast<int>(pts.size()); ++j) {
+      for (int k = j + 1; k < static_cast<int>(pts.size()); ++k) {
+        // First compute the triangle formed by vertices pts[i], pts[j] and
+        // pts[k].
+        Eigen::Vector3d c;
+        double d;
+        ComputeTriangleOutwardNormal(pts[i], pts[j], pts[k], &c, &d);
+        // A halfspace cᵀ * x >= d is valid, if all vertices pts[l] satisfy
+        // cᵀ * pts[l] >= d.
+        bool is_valid_halfspace = true;
+        // Now check if the other vertices pts[l] satisfies cᵀ * pts[l] >= d.
+        for (int l = 0; l < static_cast<int>(pts.size()); ++l) {
+          if ((l != i) && (l != j) && (l != k)) {
+            if (c.dot(pts[l]) < d - 1E-10) {
+              is_valid_halfspace = false;
+              break;
+            }
+          }
+        }
+        // If all vertices pts[l] satisfy cᵀ * pts[l] >= d, then add this
+        // constraint to A * x <= b
+        if (is_valid_halfspace) {
+          A->conservativeResize(A->rows() + 1, Eigen::NoChange);
+          b->conservativeResize(b->rows() + 1, Eigen::NoChange);
+          A->row(A->rows() - 1) = -c.transpose();
+          (*b)(b->rows() - 1) = -d;
+        }
+      }
+    }
+  }
 }
 }  // namespace internal
 
@@ -532,6 +673,11 @@ void AddMcCormickVectorConstraints(
             internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(
                 pts, &normal, &d);
 
+            Eigen::VectorXd b(0);
+            Eigen::Matrix<double, Eigen::Dynamic, 3> A(0, 3);
+
+            internal::ComputeInnerFacetsForBoxSphereIntersection(pts, &A, &b);
+
             // theta is the maximal angle between v and normal, where v is an
             // intersecting point between the box and the sphere.
             double cos_theta = d;
@@ -546,18 +692,27 @@ void AddMcCormickVectorConstraints(
               orthant_normal = FlipVector(normal, o).transpose();
               orthant_c = PickPermutation(this_cpos, this_cneg, o);
 
-              // Minimum vector norm constraint: normal.dot(v) >= d,
-              // Since we only apply this when the box is active, since 0<=d<=1,
-              // and allowing normal.dot(v) to take values at least [-1,1]
-              // otherwise, the complete constraint is
-              //   normal'*x >= d - 6+2*c[xi](0)+2*c[yi](1)+2*c[zi](2)
-              // or, in words:
-              //   if c[xi](0) = 1 and c[yi](1) == 1 and c[zi](2) == 1, then
-              //     normal'*x >= d,
-              //   otherwise
-              //     normal'*x >= -1.
-              a << orthant_normal, -2, -2, -2;
-              prog->AddLinearConstraint(a, d - 6, 1, {v, orthant_c});
+              for (int i = 0; i < A.rows(); ++i) {
+                // Add the constraint that A * v <= b, representing the inner
+                // facets f the convex hull, obtained from the vertices of the
+                // intersection region.
+                // This constraint is only active if the box is active.
+                // We impose the constraint
+                // A.row(i) * v - b(i) <= 3 - 3 * b(i) + (b(i) - 1) * (c[xi](0)
+                // + c[yi](1) + c[zi](2))
+                // Or in words
+                // If c[xi](0) = 1 and c[yi](1) = 1 and c[zi](1) = 1
+                //   A.row(i) * v <= b(i)
+                // Otherwise
+                //   A.row(i) * v -b(i) is not constrained
+                Eigen::Vector3d orthant_a =
+                    -FlipVector(-A.row(i).transpose(), o);
+                prog->AddLinearConstraint(
+                    orthant_a.dot(v) - b(i) <=
+                    3 - 3 * b(i) +
+                        (b(i) - 1) *
+                            orthant_c.cast<symbolic::Expression>().sum());
+              }
 
               // Max vector norm constraint: -1 <= normal'*x <= 1.
               // No need to restrict to this orthant, but also no need to apply
@@ -599,6 +754,7 @@ void AddMcCormickVectorConstraints(
               //     -sin(theta)<=n'*vi <=sin(theta),
               //   we can impose a tighter Lorentz cone constraint
               //     [|sin(theta)|, n'*v1, n'*v2] is in the Lorentz cone.
+              a << orthant_normal, -2, -2, -2;
               prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v1, orthant_c});
               prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v2, orthant_c});
 
