@@ -1,6 +1,7 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
 #include <iostream>
+#include <limits>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -113,12 +114,10 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
   if (translator_ == nullptr) {
     DRAKE_ASSERT(serializer_ != nullptr);
     last_message_count = context.get_abstract_state<int>(state_index_msg_ctr_);
-    std::cout << "a ctr: " << last_message_count << "\n";
   } else {
     DRAKE_ASSERT(serializer_ == nullptr);
     last_message_count = static_cast<int>(
         context.get_discrete_state(state_index_msg_ctr_)->GetAtIndex(0));
-    std::cout << "d ctr: " << last_message_count << "\n";
   }
 
   std::unique_lock<std::mutex> lock(received_message_mutex_);
@@ -160,7 +159,6 @@ std::unique_ptr<AbstractValues> LcmSubscriberSystem::AllocateAbstractState()
   // Only make abstract states if we are outputing abstract message.
   if (serializer_ != nullptr) {
     DRAKE_DEMAND(translator_ == nullptr);
-    // Index 0 is the message, 1 is the message counter.
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
     abstract_vals[state_index_msg_] =
         this->AllocateOutputAbstract(this->get_output_port(0));
@@ -242,16 +240,6 @@ void LcmSubscriberSystem::HandleMessage(const std::string& channel,
               << "\" instead of channel \"" << channel_ << "\". Ignoring it."
               << std::endl;
   }
-}
-
-int LcmSubscriberSystem::WaitForMessage(int old_message_count) const {
-  std::unique_lock<std::mutex> lock(received_message_mutex_);
-  while (old_message_count == received_message_count_)
-    received_message_condition_variable_.wait(lock);
-  int new_message_count = received_message_count_;
-  lock.unlock();
-
-  return new_message_count;
 }
 
 const LcmAndVectorBaseTranslator& LcmSubscriberSystem::get_translator() const {

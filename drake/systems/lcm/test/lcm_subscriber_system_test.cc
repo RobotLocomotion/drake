@@ -172,7 +172,7 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
  public:
   // An output vector type that tests that subscribers permit non-default
   // types.
-  class CustomVector final : public BasicVector<double> {
+  class CustomVector : public BasicVector<double> {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CustomVector)
 

@@ -119,12 +119,6 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
 
-  /**
-   * Blocks the caller until @p old_message_count is different from the
-   * internal message counter, and the internal message counter is returned.
-   */
-  int WaitForMessage(int old_message_count) const;
-
  protected:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;
@@ -197,6 +191,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   // A condition variable that's signaled every time the handler is called.
   mutable std::condition_variable received_message_condition_variable_;
 
+  // Index 0 is the message, 1 is the message counter.
   const int state_index_msg_{0};
   const int state_index_msg_ctr_{1};
 };
