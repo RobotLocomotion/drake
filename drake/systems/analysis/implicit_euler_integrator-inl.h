@@ -379,10 +379,8 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
         return dt;
       } else {
         // Look for divergence.
-        if (theta > 1 ||
-            pow(theta, max_loops - 1 - i)/(1 - theta) * dx_norm > k_dot_tol) {
+        if (theta > 1)
           break;
-        }
       }
     }
 
