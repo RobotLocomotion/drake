@@ -5,47 +5,11 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/systems/analysis/test/stiff_double_mass_spring_system.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
-#include "drake/systems/analysis/test/robertson_system.h"
 
 namespace drake {
 namespace systems {
 namespace {
-
-GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
-  std::unique_ptr<analysis_test::RobertsonSystem<double>> robertson =
-    std::make_unique<analysis_test::RobertsonSystem<double>>();
-  std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
-
-  // Set the initial conditions for Robertson's system.
-  VectorBase<double>* state = context->get_mutable_continuous_state()->
-                                get_mutable_vector();
-  state->SetAtIndex(0, 1);
-  state->SetAtIndex(1, 0);
-  state->SetAtIndex(2, 0);
-
-  const double t_final = robertson->get_end_time();
-  const double tol = 5e-5;
-
-  // Create the integrator.
-  ImplicitEulerIntegrator<double> integrator(*robertson, context.get());
-
-  // Very large step is necessary for this problem since given solution is
-  // at t = 1e11.
-  integrator.set_maximum_step_size(10000000.0);
-  integrator.set_target_accuracy(tol);
-
-  // Integrate the system
-  integrator.Initialize();
-  integrator.StepExactlyVariable(t_final);
-
-  // Verify the solution.
-  const Eigen::Vector3d sol = robertson->get_solution(t_final);
-  EXPECT_NEAR(state->GetAtIndex(0), sol(0), tol);
-  EXPECT_NEAR(state->GetAtIndex(1), sol(1), tol);
-  EXPECT_NEAR(state->GetAtIndex(2), sol(2), tol);
-}
 
 // This is a spring-mass-damper system.
 template <class T>
@@ -260,51 +224,6 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GE(integrator->get_num_step_shrinkages_from_substep_failures(), 0);
   EXPECT_GE(integrator->get_num_step_shrinkages_from_error_control(), 0);
   integrator->ResetStatistics();
-}
-
-// Solve a stiff double spring-mass damper. This system has a very stiff spring
-// and damper connecting two point masses together, and one of the point masses
-// is connected to "the world" using a spring with no damper. The solution of
-// this system should be identical to the solution of a undamped spring
-// connected to a mass equal to the sum of both point masses.
-TEST_F(ImplicitIntegratorTest, DoubleSpringMassDamper) {
-  // Clone the spring mass system's state.
-  std::unique_ptr<State<double>> state_copy = double_context->CloneState();
-
-  // Designate the solution tolerance.
-  const double sol_tol = 5e-3;
-
-  // Set integrator parameters.
-  ImplicitEulerIntegrator<double> integrator(*stiff_double_system,
-                                             double_context.get());
-  integrator.set_maximum_step_size(large_dt);
-  integrator.request_initial_step_size_target(large_dt);
-  integrator.set_target_accuracy(1e-5);
-  integrator.set_minimum_step_size(1e-5);
-  integrator.set_min_step_size_exceeded_throws(false);
-
-  // Get the solution at the target time.
-  const double t_final = 1.0;
-  stiff_double_system->get_solution(*double_context, t_final,
-                                    state_copy->get_mutable_continuous_state());
-
-  // Take all the defaults.
-  integrator.Initialize();
-
-  // Integrate.
-  integrator.StepExactlyVariable(t_final);
-
-  // Check the solution.
-  const VectorX<double> nsol = double_context->get_continuous_state()->
-      get_generalized_position().CopyToVector();
-  const VectorX<double> sol = state_copy->get_continuous_state()->
-      get_generalized_position().CopyToVector();
-
-  for (int i = 0; i < nsol.size(); ++i)
-    EXPECT_NEAR(sol(i), nsol(i), sol_tol);
-
-  // Verify that integrator statistics are valid.
-  CheckGeneralStatsValidity(&integrator);
 }
 
 // Integrate the mass-spring-damping system using huge stiffness and damping.
