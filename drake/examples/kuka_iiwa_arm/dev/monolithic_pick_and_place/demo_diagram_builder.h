@@ -4,9 +4,11 @@
 #include <utility>
 
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/iiwa_state_feedback_plan.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/framework/diagram.h"
@@ -16,8 +18,13 @@ namespace drake {
 using systems::ConstantVectorSource;
 using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
+using systems::DiagramBuilder;
+using lcm::DrakeLcm;
 
 namespace examples {
+using schunk_wsg::SchunkWsgTrajectoryGenerator;
+using schunk_wsg::SchunkWsgStatusSender;
+
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
@@ -91,7 +98,10 @@ template <typename T>
 class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer : public systems::Diagram<T> {
  public:
   /// Constructs the IiwaWsgPlantGeneratorsEstimatorsAndVisualizer.
-  /// This Diagram encapsulses a Ii
+  /// This Diagram encapsulses a IiwaAndWsgPlantWithStateEstimator and adds a
+  /// `systems::DrakeVisualizer`, `IiwaStateFeedbackPlanSource`,
+  /// `SchunkWsgTrajectoryGenerator` and  a `SchunkWsgStatusSender` to it. This diagram
+  /// is designed for usage within the monolithic pick and place demo.
   /// @param lcm : A reference to the lcm object to be passed onto the Visualizer
   IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(DrakeLcm &lcm,
                                                 const double update_interval = 0.001);
@@ -123,7 +133,7 @@ class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer : public systems::Diagram<T>
   PassThrough<T>* pass_through_wsg_state_{nullptr};
   DrakeVisualizer* drake_visualizer_{nullptr};
   ConstantVectorSource<T>* iiwa_zero_acceleration_source_{nullptr};
-  IiwaStateFeedbackTrajectoryGenerator* iiwa_trajectory_generator_{nullptr};
+  IiwaStateFeedbackPlanSource* iiwa_trajectory_generator_{nullptr};
   SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
 
   int input_port_iiwa_plan_{-1};
