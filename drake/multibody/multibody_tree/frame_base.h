@@ -20,6 +20,14 @@ namespace multibody {
 /// `X_EF` within this class does not make sense since it would be imposible to
 /// specify the pose of F without knowledge of a specific frame E in which its
 /// pose is measured.
+/// Frames are defined within a given physical or geometrical system (where here
+/// the term "system" should not be confused with systems::System). For
+/// instance, MultibodyTree allows to define frames which can then be attached
+/// to bodies. Within MultibodyTree the pose of the frame depends on the state
+/// of the multibody tree as a whole, which is given by its systems::Context.
+/// In this regard, a frame sub-class will map a state or Context to a pose in
+/// SE(3). This pose will only be well defined when it is measured with respect
+/// to another frame.
 ///
 /// Sub-classes of %FrameBase are responsible for communicating useful semantics
 /// about that frame's dependencies and providing implementations for defining
