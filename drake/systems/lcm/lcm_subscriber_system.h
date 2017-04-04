@@ -21,11 +21,16 @@ namespace lcm {
 
 /**
  * Receives LCM messages from a given channel and outputs them to a
- * System<double>'s port. The output port value is the most recently
- * decoded message, modulo any network or threading delays.
+ * System<double>'s port. This class stores the most recently processed Lcm
+ * message in its Context. CalcOutput() merely copies the message from the
+ * Context to the output. To process a Lcm message, the user need to call
+ * CalcNextUpdateTime(), which schedules a callback event if a new Lcm message
+ * has arrived. The message is then processed and stored in the Context by
+ * calling CalcDiscreteVariableUpdates() or CalcUnrestrictedUpdate() depending
+ * on the output type.
  */
 class LcmSubscriberSystem : public LeafSystem<double>,
-    public drake::lcm::DrakeLcmMessageHandlerInterface  {
+                            public drake::lcm::DrakeLcmMessageHandlerInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem)
 
@@ -41,8 +46,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmSubscriberSystem> Make(
-      const std::string& channel,
-      drake::lcm::DrakeLcmInterface* lcm) {
+      const std::string& channel, drake::lcm::DrakeLcmInterface* lcm) {
     return std::make_unique<LcmSubscriberSystem>(
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
   }
@@ -124,6 +128,27 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const OutputPortDescriptor<double>& descriptor) const override;
 
+  void DoCalcNextUpdateTime(const Context<double>& context,
+                            UpdateActions<double>* events) const override;
+
+  void DoCalcUnrestrictedUpdate(const Context<double>& context,
+                                State<double>* state) const override {
+    ProcessMessageAndStoreToAbstractState(state->get_mutable_abstract_state());
+  }
+
+  std::unique_ptr<AbstractValues> AllocateAbstractState() const override;
+
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>& context,
+      DiscreteState<double>* discrete_state) const override {
+    ProcessMessageAndStoreToDiscreteState(discrete_state);
+  }
+
+  std::unique_ptr<DiscreteState<double>> AllocateDiscreteState() const override;
+
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override;
+
  private:
   // All constructors delegate to here.
   LcmSubscriberSystem(const std::string& channel,
@@ -131,9 +156,16 @@ class LcmSubscriberSystem : public LeafSystem<double>,
                       std::unique_ptr<SerializerInterface> serializer,
                       drake::lcm::DrakeLcmInterface* lcm);
 
-  // Callback entry point from LCM into this class.
+  void ProcessMessageAndStoreToDiscreteState(
+      DiscreteState<double>* discrete_state) const;
+
+  void ProcessMessageAndStoreToAbstractState(
+      AbstractValues* abstract_state) const;
+
+  // Callback entry point from LCM into this class. Also wakes up one thread
+  // block on notification_ if it's not nullptr.
   void HandleMessage(const std::string& channel, const void* message_buffer,
-      int message_size) override;
+                     int message_size) override;
 
   // The channel on which to receive LCM messages.
   const std::string channel_;
@@ -151,6 +183,13 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   // The bytes of the most recently received LCM message.
   std::vector<uint8_t> received_message_;
+
+  // A message counter that's incremented every time the handler is called.
+  int received_message_count_{0};
+
+  // Index 0 is the message, 1 is the message counter.
+  const int state_index_msg_{0};
+  const int state_index_msg_ctr_{1};
 };
 
 }  // namespace lcm
