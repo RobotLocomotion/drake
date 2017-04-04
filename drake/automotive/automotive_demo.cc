@@ -142,7 +142,7 @@ void AddVehicles(RoadNetworkType road_network_type,
       // Alternate starting the MaliputRailcar vehicles between the two possible
       // starting locations.
       const int n = FLAGS_onramp_swap_start ? (i + 1) : i;
-      const std::string lane_name = (n % 2 == 0) ? "l:onramp0" : "l:post0";
+      const std::string lane_name = (n % 2 == 0) ? "l:onramp0" : "l:pre0";
       const bool with_s = false;
 
       LaneDirection lane_direction(simulator->FindLane(lane_name), with_s);
