@@ -27,10 +27,10 @@ namespace qp_inverse_dynamics {
  * interface for simple reactive behaviors such as "move arm in a straight line
  * until the hand touches something", which requires little computation but
  * high rate feedback.
- * Here is a concrete example, an . Suppose the robot is a position and
- * velocity controlled manipulator arm, and a motion planner is used to
- * generate a sequence of joint configurations for the robot to follow. A
- * simple implementation can use splines to represent smooth motions through
+ * Here is a concrete example: suppose the robot is a position and velocity
+ * controlled manipulator arm, and a motion planner is used to generate a
+ * sequence of joint configurations for the robot to follow. A simple
+ * implementation can use splines to represent smooth motions through
  * those desired configurations, from which dense position and velocity set
  * points are interpolated and sent to the PID controller at high rate.
  *
@@ -46,8 +46,6 @@ class GenericPlan {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericPlan)
 
  public:
-  GenericPlan() {}
-
   /**
    * Returns a unique pointer to a copy of this instance. Derived classes need
    * to implement CloneGenericPlanDerived() to copy custom internal fields.
@@ -75,12 +73,12 @@ class GenericPlan {
    * intended to be called in a main loop. All internal state mutations (e.g.
    * state machine transition, reference trajectory generation, etc) should
    * be done here. Derived classes need to implement custom behaviors in
-   * ExecutePlanGenericPlanDerived().
+   * ModifyPlanGenericPlanDerived().
    * @param robot_status Current status of the robot.
    * @param paramset Parameters.
    * @param alias_groups Topological information of the robot.
    */
-  void ExecutePlan(
+  void ModifyPlan(
       const HumanoidStatus& robot_stauts,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups);
@@ -136,7 +134,9 @@ class GenericPlan {
   /**
    * Returns the current planned contact state.
    */
-  const ContactState& get_contact_state() const { return contact_state_; }
+  const ContactState& get_planned_contact_state() const {
+    return contact_state_;
+  }
 
   /**
    * Returns a map of all Cartesian trajectories.
@@ -171,6 +171,13 @@ class GenericPlan {
 
  protected:
   /**
+   * It is convenient to separate allocation with initialization because
+   * the later commonly depends on extra information such as measured robot
+   * state.
+   */
+  GenericPlan() {}
+
+  /**
    * Custom fields can be cloned here.
    */
   virtual GenericPlan<T>* CloneGenericPlanDerived() const = 0;
@@ -186,7 +193,7 @@ class GenericPlan {
   /**
    * Custom state mutation can be implemented here.
    */
-  virtual void ExecutePlanGenericPlanDerived(
+  virtual void ModifyPlanGenericPlanDerived(
       const HumanoidStatus& robot_stauts,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) = 0;

@@ -47,11 +47,11 @@ void GenericPlan<T>::HandlePlanMessage(
 }
 
 template <typename T>
-void GenericPlan<T>::ExecutePlan(
+void GenericPlan<T>::ModifyPlan(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
   // Runs derived class' plan.
-  ExecutePlanGenericPlanDerived(robot_status, paramset, alias_groups);
+  ModifyPlanGenericPlanDerived(robot_status, paramset, alias_groups);
 }
 
 template <typename T>
@@ -60,7 +60,7 @@ void GenericPlan<T>::UpdateQpInput(
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
     QpInput* qp_input) const {
   // Gets all bodies that are in contact.
-  const ContactState& contact_state = get_contact_state();
+  const ContactState& contact_state = get_planned_contact_state();
   const std::vector<const RigidBody<T>*> contact_bodies(contact_state.begin(),
                                                         contact_state.end());
 

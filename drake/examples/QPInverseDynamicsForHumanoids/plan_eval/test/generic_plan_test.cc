@@ -32,7 +32,7 @@ class DummyPlan : public GenericPlan<T> {
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {}
 
-  void ExecutePlanGenericPlanDerived(
+  void ModifyPlanGenericPlanDerived(
       const HumanoidStatus& robot_stauts,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {}
@@ -81,7 +81,7 @@ class DummyPlanTest : public GenericPlanTest {
 // contacts, no tracked bodies, and holds all dof at where the plan was
 // initialized.
 TEST_F(DummyPlanTest, TestInitialize) {
-  EXPECT_TRUE(dut_->get_contact_state().empty());
+  EXPECT_TRUE(dut_->get_planned_contact_state().empty());
   EXPECT_TRUE(dut_->get_body_trajectories().empty());
 
   // The desired position interpolated at any time should be equal to the
@@ -109,10 +109,11 @@ TEST_F(DummyPlanTest, TestInitialize) {
   }
 }
 
-// Tests the cloned fields are the same as the original.
+// Tests if the cloned fields are the same as the original.
 TEST_F(DummyPlanTest, TestClone) {
   std::unique_ptr<GenericPlan<double>> clone = dut_->Clone();
-  EXPECT_TRUE(dut_->get_contact_state() == clone->get_contact_state());
+  EXPECT_EQ(dut_->get_planned_contact_state(),
+            clone->get_planned_contact_state());
   EXPECT_TRUE(
       dut_->get_dof_trajectory().is_approx(clone->get_dof_trajectory(), 1e-12));
 
@@ -135,7 +136,8 @@ TEST_F(DummyPlanTest, TestUpdateQpInput) {
   VectorX<double> v_d(robot_status_->robot().get_num_velocities());
   v_d.setZero();
 
-  // Changes the current state.
+  // Changes the current state. The choice of position and velocity is
+  // arbitrary.
   robot_status_->UpdateKinematics(0.66, 0.3 * robot_status_->position(),
                                   0.4 * robot_status_->velocity());
 
