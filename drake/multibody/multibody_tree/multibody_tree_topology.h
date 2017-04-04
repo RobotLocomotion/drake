@@ -47,16 +47,16 @@ struct BodyTopology {
 };
 
 /// Data structure to store the topological information associated with a
-/// PhysicalFrame.
-struct PhysicalFrameTopology {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PhysicalFrameTopology);
+/// Frame.
+struct FrameTopology {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameTopology);
 
   // Default construction with invalid initialization.
-  PhysicalFrameTopology() {}
+  FrameTopology() {}
 
   /// Constructs a frame topology for a frame with unique index `frame_index`
   /// associated with a body with index `body_index`.
-  PhysicalFrameTopology(FrameIndex frame_index, BodyIndex body_index) :
+  FrameTopology(FrameIndex frame_index, BodyIndex body_index) :
       index(frame_index), body(body_index) {}
 
   // Unique identifier in the MultibodyTree.
@@ -78,30 +78,30 @@ struct MultibodyTreeTopology {
   int get_num_bodies() const {return static_cast<int>(bodies.size()); }
 
   // Returns the number of physical frames in the multibody tree.
-  int get_num_physical_frames() const {
-    return static_cast<int>(physical_frames.size());
+  int get_num_frames() const {
+    return static_cast<int>(frames.size());
   }
 
   // Creates and adds a new BodyTopology to this MultibodyTreeTopology.
   // A unique index is assigned to the newly created BodyTopology and a new
-  // PhysicalFrameTopology is created and associated to the body topology.
+  // FrameTopology is created and associated to the body topology.
   BodyIndex add_body() {
     invalidate();
     BodyIndex body_index = BodyIndex(get_num_bodies());
-    FrameIndex body_frame = add_physical_frame(body_index);
+    FrameIndex body_frame = add_frame(body_index);
     BodyTopology body(body_index, body_frame);
     bodies.push_back(body);
     return body.index;
   }
 
-  // Creates and adds a PhysicalFrameTopology to this MultibodyTreeTopology.
+  // Creates and adds a FrameTopology to this MultibodyTreeTopology.
   // All physical frames are associated with a body here identified by their
   // unique index, body_index.
-  FrameIndex add_physical_frame(BodyIndex body_index) {
+  FrameIndex add_frame(BodyIndex body_index) {
     invalidate();
-    FrameIndex frame_index(get_num_physical_frames());
-    PhysicalFrameTopology frame(frame_index, body_index);
-    physical_frames.push_back(frame);
+    FrameIndex frame_index(get_num_frames());
+    FrameTopology frame(frame_index, body_index);
+    frames.push_back(frame);
     return frame_index;
   }
 
@@ -118,11 +118,11 @@ struct MultibodyTreeTopology {
   }
 
   bool is_valid_frame_id(FrameIndex index) {
-    return index < get_num_physical_frames();
+    return index < get_num_frames();
   }
 
   std::vector<BodyTopology> bodies;
-  std::vector<PhysicalFrameTopology> physical_frames;
+  std::vector<FrameTopology> frames;
 };
 
 }  // namespace multibody

@@ -2,7 +2,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
-#include "drake/multibody/multibody_tree/physical_frame.h"
+#include "drake/multibody/multibody_tree/frame.h"
 
 namespace drake {
 namespace multibody {
@@ -20,7 +20,7 @@ template <class T> class RigidBody;
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class FixedOffsetFrame : public PhysicalFrame<T> {
+class FixedOffsetFrame : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FixedOffsetFrame)
 
@@ -73,22 +73,22 @@ class FixedOffsetFrame : public PhysicalFrame<T> {
   // frame.
   static const FixedOffsetFrame<T>& Create(
       MultibodyTree<T>* tree,
-      const PhysicalFrame<T>& P, const Isometry3<T>& X_PF);
+      const Frame<T>& P, const Isometry3<T>& X_PF);
 
   void Compile(const MultibodyTree<T>& tree) final {
-    topology_ = tree.get_topology().physical_frames[this->get_index()];
+    topology_ = tree.get_topology().frames[this->get_index()];
   }
 
  private:
   // Users are forced to create new rigid body frames with the Create()
   // factories.
-  FixedOffsetFrame(const PhysicalFrame<T>& P, const Isometry3<T>& X_PF);
+  FixedOffsetFrame(const Frame<T>& P, const Isometry3<T>& X_PF);
 
   // The fixed pose of this frame F measured and expressed in another physical
   // frame P.
   Isometry3<T> X_PF_;
 
-  PhysicalFrameTopology topology_;
+  FrameTopology topology_;
 };
 
 }  // namespace multibody

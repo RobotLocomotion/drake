@@ -22,7 +22,7 @@ const FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
   // Create().
   // However we can still create a unique_ptr as below where ownership is clear
   // and an exception would call the destructor.
-  return *tree->AddPhysicalFrame(
+  return *tree->AddFrame(
       std::unique_ptr<FixedOffsetFrame<T>>(
           new FixedOffsetFrame<T>(body.get_body_frame(), X_BF)));
 }
@@ -30,7 +30,7 @@ const FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
 template <typename T>
 const FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
     MultibodyTree<T>* tree,
-    const PhysicalFrame<T>& P, const Isometry3<T>& X_PF) {
+    const Frame<T>& P, const Isometry3<T>& X_PF) {
   if (dynamic_cast<const BodyFrame<T>*>(&P) == nullptr) {
     throw std::logic_error(
         "Chaining of FixedOffsetFrame frames is not yet supported. "
@@ -42,14 +42,14 @@ const FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
   // Create().
   // However we can still create a unique_ptr as below where ownership is clear
   // and an exception would call the destructor.
-  return *tree->AddPhysicalFrame(
+  return *tree->AddFrame(
       std::unique_ptr<FixedOffsetFrame<T>>(new FixedOffsetFrame<T>(P, X_PF)));
 }
 
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
-    const PhysicalFrame<T>& P, const Isometry3<T>& X_PF) :
-    PhysicalFrame<T>(P.get_body()), X_PF_(X_PF) {}
+    const Frame<T>& P, const Isometry3<T>& X_PF) :
+    Frame<T>(P.get_body()), X_PF_(X_PF) {}
 
 // Explicitly instantiates on the most common scalar types.
 template class FixedOffsetFrame<double>;

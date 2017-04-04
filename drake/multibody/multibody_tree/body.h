@@ -7,7 +7,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
-#include "drake/multibody/multibody_tree/physical_frame.h"
+#include "drake/multibody/multibody_tree/frame.h"
 
 namespace drake {
 namespace multibody {
@@ -41,12 +41,12 @@ template<typename T> class Body;
 /// anywhere else. However, users can still access. However, users can still
 /// access the frame associated with a body, see Body::get_body_frame().
 /// This access is more than a convenience; it allows users to specify
-/// mobilizers between a body frame and any other PhysicalFrame in the multibody
+/// mobilizers between a body frame and any other Frame in the multibody
 /// tree.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class BodyFrame : public PhysicalFrame<T> {
+class BodyFrame : public Frame<T> {
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
   // every time a Body object is created and they are associated with each
   // other. Moreover, BodyFrame objects can *only* be created by Body objects
@@ -63,7 +63,7 @@ class BodyFrame : public PhysicalFrame<T> {
   // Only Body objects can create BodyFrame objects since Body is a friend of
   // BodyFrame. BodyFrame objects are *only* created from within
   // Body::CreateBodyFrame().
-  explicit BodyFrame(const Body<T>& body) : PhysicalFrame<T>(body) {}
+  explicit BodyFrame(const Body<T>& body) : Frame<T>(body) {}
 };
 
 // Forward declarations for Body<T>.
