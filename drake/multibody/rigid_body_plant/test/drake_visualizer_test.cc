@@ -480,9 +480,15 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   {
     systems::UpdateActions<double> events;
     dut.CalcNextUpdateTime(*context, &events);
-    EXPECT_EQ(events.events.size(), 1);
-    EXPECT_EQ(events.events.front().action,
+    ASSERT_EQ(events.events.size(), 1);
+    ASSERT_EQ(events.events.front().action,
               systems::DiscreteEvent<double>::kDiscreteUpdateAction);
+    // TODO(siyuan) We should really be demanding an exact time,
+    // but we have to fudge it for now to placate the simulator.  Even
+    // though the event time is not the current time, we've left the
+    // context time below unchanged, to avoid unnecessarily disturbing
+    // the unit test.
+    EXPECT_NEAR(events.time, context->get_time(), 0.01);
     std::unique_ptr<State<double>> tmp_state = context->CloneState();
     dut.CalcDiscreteVariableUpdates(*context, events.events.front(),
                                     tmp_state->get_mutable_discrete_state());
@@ -524,9 +530,15 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
     const Context<double>& sim_context = simulator.get_context();
     systems::UpdateActions<double> events;
     dut.CalcNextUpdateTime(sim_context, &events);
-    EXPECT_EQ(events.events.size(), 1);
-    EXPECT_EQ(events.events.front().action,
+    ASSERT_EQ(events.events.size(), 1);
+    ASSERT_EQ(events.events.front().action,
               systems::DiscreteEvent<double>::kDiscreteUpdateAction);
+    // TODO(siyuan) We should really be demanding an exact time,
+    // but we have to fudge it for now to placate the simulator.  Even
+    // though the event time is not the current time, we've left the
+    // context time below unchanged, to avoid unnecessarily disturbing
+    // the unit test.
+    EXPECT_NEAR(events.time, sim_context.get_time(), 0.01);
     std::unique_ptr<State<double>> tmp_state = sim_context.CloneState();
     dut.CalcDiscreteVariableUpdates(sim_context, events.events.front(),
                                     tmp_state->get_mutable_discrete_state());

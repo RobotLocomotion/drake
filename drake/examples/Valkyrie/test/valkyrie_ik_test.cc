@@ -258,7 +258,8 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   EXPECT_GT(com(2), 0);
 
   // show it in drake visualizer
-  VectorX<double> x(tree->get_num_positions() + tree->get_num_velocities());
+  VectorX<double> x = VectorX<double>::Zero(tree->get_num_positions() +
+                                            tree->get_num_velocities());
   x.head(q_sol.size()) = q_sol;
   systems::BasicVector<double> q_draw(x);
 

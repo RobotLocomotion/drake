@@ -26,6 +26,7 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size);
+  this->DeclareDiscreteState(1);
   if (enable_playback) log_.reset(new SignalLog<double>(vector_size));
 }
 
@@ -33,18 +34,12 @@ void DrakeVisualizer::set_publish_period(double period) {
   LeafSystem<double>::DeclarePublishPeriodSec(period);
 }
 
-std::unique_ptr<DiscreteState<double>>
-DrakeVisualizer::AllocateDiscreteState() const {
-  std::vector<std::unique_ptr<BasicVector<double>>> discrete_state_vec(1);
-  discrete_state_vec[0] = std::make_unique<BasicVector<double>>(1);
-  return std::make_unique<DiscreteState<double>>(std::move(discrete_state_vec));
-}
-
 void DrakeVisualizer::DoCalcNextUpdateTime(
     const Context<double>& context, UpdateActions<double>* events) const {
   if (is_load_message_sent(context)) {
     return LeafSystem<double>::DoCalcNextUpdateTime(context, events);
   } else {
+    // TODO(siyuan): cleanup after #5725 is resolved.
     events->time = context.get_time() + 0.0001;
     DiscreteEvent<double> event;
     event.action = DiscreteEvent<double>::ActionType::kDiscreteUpdateAction;

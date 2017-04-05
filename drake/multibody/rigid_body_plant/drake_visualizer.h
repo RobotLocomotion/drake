@@ -129,8 +129,6 @@ class DrakeVisualizer : public LeafSystem<double> {
     set_is_load_message_sent(state->get_mutable_discrete_state(), false);
   }
 
-  std::unique_ptr<DiscreteState<double>> AllocateDiscreteState() const override;
-
   // If initialization has not been completed, schedule a DiscreteStateUpdate
   // shortly to perform the initialization. Otherwise, returns
   // LeafSystem<double>::DoCalcNextUpdateTime(context, events)
