@@ -371,9 +371,8 @@ void Simulator<T>::Initialize() {
   // Restore default values.
   ResetStatistics();
 
-  // Do a publish before the simulation starts.
-  system_.Publish(*context_);
-  ++num_publishes_;
+  // Initializes the system.
+  system_.InitializeContext(context_.get());
 
   // Initialize runtime variables.
   initialization_done_ = true;

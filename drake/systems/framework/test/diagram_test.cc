@@ -949,6 +949,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
+    DeclareContinuousState(1);
   }
 
   ~SystemWithAbstractState() override {}
@@ -969,6 +970,13 @@ class SystemWithAbstractState : public LeafSystem<double> {
                             ->get_mutable_value(0)
                             .GetMutableValue<double>();
     state_num = id_ + context.get_time();
+  }
+
+  // Initializes the continuous state to id_, and the abstract value to
+  // 2 * id_.
+  void DoInitializeContext(Context<double>* context) const override {
+    context->get_mutable_continuous_state_vector()->SetAtIndex(0, id_);
+    context->get_mutable_abstract_state<double>(0) = 2 * id_;
   }
 
   int get_id() const { return id_; }
@@ -1060,6 +1068,48 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   context_->get_mutable_state()->CopyFrom(*x_buf);
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
   EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
+}
+
+// Tests InitializeContext for diagrams.
+GTEST_TEST(DiagramInitializationTest, DiagramInitialization) {
+  DiagramBuilder<double> builder;
+
+  // First arg is the id.
+  auto sys0 = builder.AddSystem<SystemWithAbstractState>(1, 0.1);
+  auto sys1 = builder.AddSystem<SystemWithAbstractState>(2, 0.1);
+  auto sys2 = builder.AddSystem<SystemWithAbstractState>(3, 0.1);
+
+  auto dut = builder.Build();
+
+  std::unique_ptr<Context<double>> context =
+      dut->CreateDefaultContext();
+
+  dut->InitializeContext(context.get());
+
+  // Continuous state should equal to the id.
+  EXPECT_EQ(dut->GetSubsystemContext(*context, sys0)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            1);
+  EXPECT_EQ(dut->GetSubsystemContext(*context, sys1)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            2);
+  EXPECT_EQ(dut->GetSubsystemContext(*context, sys2)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            3);
+
+  // Abstract state should equal to the 2 * id.
+  EXPECT_EQ(
+      dut->GetSubsystemContext(*context, sys0).get_abstract_state<double>(0),
+      2);
+  EXPECT_EQ(
+      dut->GetSubsystemContext(*context, sys1).get_abstract_state<double>(0),
+      4);
+  EXPECT_EQ(
+      dut->GetSubsystemContext(*context, sys2).get_abstract_state<double>(0),
+      6);
 }
 
 }  // namespace

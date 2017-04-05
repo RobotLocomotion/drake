@@ -78,6 +78,17 @@ class TestSystem : public System<double> {
   }
 
  protected:
+  // Makes a continuous state in @p context that equals to 42.
+  void DoInitializeContext(Context<double>* context) const override {
+    auto vec = std::make_unique<BasicVector<double>>(1);
+    vec->SetAtIndex(0, 42);
+
+    std::unique_ptr<ContinuousState<double>> c_state =
+        std::make_unique<ContinuousState<double>>(std::move(vec));
+
+    context->set_continuous_state(std::move(c_state));
+  }
+
   BasicVector<double>* DoAllocateInputVector(
       const InputPortDescriptor<double>& descriptor) const override {
     return nullptr;
@@ -162,6 +173,11 @@ class SystemTest : public ::testing::Test {
   TestSystem system_;
   LeafContext<double> context_;
 };
+
+TEST_F(SystemTest, InitializeContext) {
+  system_.InitializeContext(&context_);
+  EXPECT_EQ(42, context_.get_continuous_state_vector().GetAtIndex(0));
+}
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
@@ -386,6 +402,9 @@ class ValueIOTestSystem : public System<T> {
 
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
+
+ protected:
+  void DoInitializeContext(Context<T>* context) const override {}
 };
 
 class SystemIOTest : public ::testing::Test {
