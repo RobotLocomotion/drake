@@ -13,7 +13,7 @@ namespace systems {
 class FreestandingInputPortVectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
+    std::unique_ptr<BasicVector<double>> vec(new BasicVector<double>(2));
     vec->get_mutable_value() << 5, 6;
     port_value_.reset(new FreestandingInputPortValue(std::move(vec)));
     port_value_->set_invalidation_callback(
@@ -28,27 +28,28 @@ class FreestandingInputPortVectorTest : public ::testing::Test {
 };
 
 TEST_F(FreestandingInputPortVectorTest, Access) {
-  VectorX<int> expected(2);
+  VectorX<double> expected(2);
   expected << 5, 6;
   EXPECT_EQ(expected,
-            port_value_->template get_vector_data<int>()->get_value());
+            port_value_->template get_vector_data<double>()->get_value());
 }
 
 // Tests that changes to the vector data are propagated to the input port
 // that wraps it.
 TEST_F(FreestandingInputPortVectorTest, Mutation) {
   EXPECT_EQ(0, port_value_->get_version());
-  port_value_->template GetMutableVectorData<int>()->get_mutable_value()
-      << 7, 8;
+  port_value_->template GetMutableVectorData<double>()->get_mutable_value()
+      << 7,
+      8;
 
   // Check that the version number was incremented.
   EXPECT_EQ(1, port_value_->get_version());
 
   // Check that the vector contents changed.
-  VectorX<int> expected(2);
+  VectorX<double> expected(2);
   expected << 7, 8;
   EXPECT_EQ(expected,
-            port_value_->template get_vector_data<int>()->get_value());
+            port_value_->template get_vector_data<double>()->get_value());
 }
 
 class FreestandingInputPortAbstractValueTest : public ::testing::Test {
@@ -87,7 +88,7 @@ TEST_F(FreestandingInputPortAbstractValueTest, Mutation) {
 class DependentInputPortTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::unique_ptr<BasicVector<int>> vec(new BasicVector<int>(2));
+    std::unique_ptr<BasicVector<double>> vec(new BasicVector<double>(2));
     vec->get_mutable_value() << 5, 6;
     output_port_value_.reset(new OutputPortValue(std::move(vec)));
     input_port_value_.reset(
@@ -105,17 +106,18 @@ class DependentInputPortTest : public ::testing::Test {
 };
 
 TEST_F(DependentInputPortTest, Access) {
-  VectorX<int> expected(2);
+  VectorX<double> expected(2);
   expected << 5, 6;
   EXPECT_EQ(expected,
-            input_port_value_->template get_vector_data<int>()->get_value());
+            input_port_value_->template get_vector_data<double>()->get_value());
 }
 
 // Tests that changes on the output port are propagated to the input port that
 // is connected to it.
 TEST_F(DependentInputPortTest, Mutation) {
   EXPECT_EQ(0, input_port_value_->get_version());
-  output_port_value_->template GetMutableVectorData<int>()->get_mutable_value()
+  output_port_value_->template GetMutableVectorData<double>()
+          ->get_mutable_value()
       << 7,
       8;
 
@@ -126,10 +128,10 @@ TEST_F(DependentInputPortTest, Mutation) {
   EXPECT_EQ(1, latest_version_);
 
   // Check that the vector contents changed.
-  VectorX<int> expected(2);
+  VectorX<double> expected(2);
   expected << 7, 8;
   EXPECT_EQ(expected,
-            input_port_value_->template get_vector_data<int>()->get_value());
+            input_port_value_->template get_vector_data<double>()->get_value());
 }
 
 }  // namespace systems
