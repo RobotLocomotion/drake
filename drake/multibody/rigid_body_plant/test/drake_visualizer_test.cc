@@ -453,6 +453,26 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   return tree;
 }
 
+// Helper function to publish load robot model message.
+void PublishLoadRobotModelMessageHelper(
+    const DrakeVisualizer& dut, Context<double>* context) {
+  systems::UpdateActions<double> events;
+  dut.CalcNextUpdateTime(*context, &events);
+  ASSERT_EQ(events.events.size(), 1);
+  ASSERT_EQ(events.events.front().action,
+      systems::DiscreteEvent<double>::kDiscreteUpdateAction);
+  // TODO(siyuan) We should really be demanding an exact time,
+  // but we have to fudge it for now to placate the simulator.  Even
+  // though the event time is not the current time, we've left the
+  // context time below unchanged, to avoid unnecessarily disturbing
+  // the unit test. See issue #5725.
+  EXPECT_NEAR(events.time, context->get_time(), 0.01);
+  std::unique_ptr<State<double>> tmp_state = context->CloneState();
+  dut.CalcDiscreteVariableUpdates(*context, events.events.front(),
+      tmp_state->get_mutable_discrete_state());
+  context->get_mutable_state()->CopyFrom(*tmp_state);
+}
+
 // Tests the basic functionality of the DrakeVisualizer.
 GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
@@ -475,27 +495,8 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
       0, std::make_unique<systems::FreestandingInputPortValue>(
              std::move(input_data)));
 
-  // What you would need to do manually to tell dut to publish the load robot
-  // model message.
-  {
-    systems::UpdateActions<double> events;
-    dut.CalcNextUpdateTime(*context, &events);
-    ASSERT_EQ(events.events.size(), 1);
-    ASSERT_EQ(events.events.front().action,
-              systems::DiscreteEvent<double>::kDiscreteUpdateAction);
-    // TODO(siyuan) We should really be demanding an exact time,
-    // but we have to fudge it for now to placate the simulator.  Even
-    // though the event time is not the current time, we've left the
-    // context time below unchanged, to avoid unnecessarily disturbing
-    // the unit test.
-    EXPECT_NEAR(events.time, context->get_time(), 0.01);
-    std::unique_ptr<State<double>> tmp_state = context->CloneState();
-    dut.CalcDiscreteVariableUpdates(*context, events.events.front(),
-                                    tmp_state->get_mutable_discrete_state());
-    context->get_mutable_state()->CopyFrom(*tmp_state);
-  }
-
   // Publishes the `RigidBodyTree` visualization messages.
+  PublishLoadRobotModelMessageHelper(dut, context.get());
   dut.Publish(*context.get());
 
   // Verifies that the correct messages were actually transmitted.
@@ -523,28 +524,7 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(dut, std::move(context));
   simulator.set_publish_every_time_step(false);
-
-  // What you would need to do manually to tell dut to publish the load robot
-  // model message.
-  {
-    const Context<double>& sim_context = simulator.get_context();
-    systems::UpdateActions<double> events;
-    dut.CalcNextUpdateTime(sim_context, &events);
-    ASSERT_EQ(events.events.size(), 1);
-    ASSERT_EQ(events.events.front().action,
-              systems::DiscreteEvent<double>::kDiscreteUpdateAction);
-    // TODO(siyuan) We should really be demanding an exact time,
-    // but we have to fudge it for now to placate the simulator.  Even
-    // though the event time is not the current time, we've left the
-    // context time below unchanged, to avoid unnecessarily disturbing
-    // the unit test.
-    EXPECT_NEAR(events.time, sim_context.get_time(), 0.01);
-    std::unique_ptr<State<double>> tmp_state = sim_context.CloneState();
-    dut.CalcDiscreteVariableUpdates(sim_context, events.events.front(),
-                                    tmp_state->get_mutable_discrete_state());
-    simulator.get_mutable_context()->get_mutable_state()->CopyFrom(*tmp_state);
-  }
-
+  PublishLoadRobotModelMessageHelper(dut, simulator.get_mutable_context());
   simulator.Initialize();
 
   for (double time = 0; time < 4; time += 0.01) {
