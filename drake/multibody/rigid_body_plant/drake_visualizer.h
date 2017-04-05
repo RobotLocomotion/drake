@@ -18,15 +18,18 @@
 namespace drake {
 namespace systems {
 
-// TODO(liang.fok) Update the class's description once System 2.0 allows systems
-// to declare that they need a certain action to be performed at simulation time
-// t_0.
 /**
- * This is a Drake System 2.0 block that takes a RigidBodyTree and publishes LCM
+ * This is a Drake System block that takes a RigidBodyTree and publishes LCM
  * messages that are intended for the DrakeVisualizer. It does this in two
- * phases: initialization, which runs when DoPublish() is called with
- * Context::get_time() equal to zero, and run-time, which runs every time
- * DoPublish() is called.
+ * phases: initialization and run-time. This system holds a DiscreteState in
+ * its context that identifies whether the initialization phase has been
+ * completed. It is initialized to false in SetDefaultState(). The
+ * initialization phase is performed in DoCalcDiscreteVariableUpdates(), which
+ * is scheduled by DoCalcNextUpdateTime(). This class is intended to be used
+ * only in the System framework with proper event handling. If this is not the
+ * use case, users are encouraged to send the LCM messages directly through LCM.
+ * ViewerDrawTranslator and multibody::CreateLoadRobotMessage() are useful for
+ * generating the appropriate LCM messages.
  *
  * During initialization, this system block analyzes the RigidBodyTree and tells
  * Drake Visualizer what it will be visualizing. For example, these include the
@@ -107,9 +110,41 @@ class DrakeVisualizer : public LeafSystem<double> {
       const PiecewisePolynomial<double>& input_trajectory) const;
 
  private:
+  // Returns true if initialization phase has been completed.
+  bool is_load_message_sent(const Context<double>& context) const {
+    return context.get_discrete_state(0)->GetAtIndex(0) > 0;
+  }
+
+  // Sets the discrete state to @p flag.
+  void set_is_load_message_sent(DiscreteState<double>* state, bool flag) const {
+    if (flag)
+      state->get_mutable_discrete_state(0)->SetAtIndex(0, 1);
+    else
+      state->get_mutable_discrete_state(0)->SetAtIndex(0, 0);
+  }
+
+  // Set the default to "initialization phase has not been completed."
+  void SetDefaultState(const Context<double>& context, State<double>* state)
+      const override {
+    set_is_load_message_sent(state->get_mutable_discrete_state(), false);
+  }
+
+  // If initialization has not been completed, schedule a DiscreteStateUpdate
+  // shortly to perform the initialization. Otherwise, returns
+  // LeafSystem<double>::DoCalcNextUpdateTime(context, events)
+  void DoCalcNextUpdateTime(const Context<double>& context,
+                            UpdateActions<double>* events) const override;
+
+  // Sets the initialization flag to true, and calls PublishLoadRobot().
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>& context,
+      DiscreteState<double>* discrete_state) const override;
+
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override {}
 
+  // Publishes a draw message if initialization is completed. Otherwise, it
+  // emits a warning and return.
   void DoPublish(const systems::Context<double>& context) const override;
 
   // Publishes a lcmt_viewer_load_robot message containing a description
@@ -120,9 +155,6 @@ class DrakeVisualizer : public LeafSystem<double> {
   // A pointer to the LCM subsystem. It is through this object that LCM messages
   // are published.
   drake::lcm::DrakeLcmInterface* const lcm_;
-
-  // Using 'mutable' here is OK since it's only used for assertion checking.
-  mutable bool sent_load_robot_{false};
 
   // The LCM load message to send to the Drake Visualizer.
   const lcmt_viewer_load_robot load_message_;

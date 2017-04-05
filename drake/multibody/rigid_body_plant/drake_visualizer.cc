@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <thread>
+#include <utility>
 
 #include "drake/common/text_logging.h"
 #include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
@@ -25,11 +26,34 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size);
+  this->DeclareDiscreteState(1);
   if (enable_playback) log_.reset(new SignalLog<double>(vector_size));
 }
 
 void DrakeVisualizer::set_publish_period(double period) {
   LeafSystem<double>::DeclarePublishPeriodSec(period);
+}
+
+void DrakeVisualizer::DoCalcNextUpdateTime(
+    const Context<double>& context, UpdateActions<double>* events) const {
+  if (is_load_message_sent(context)) {
+    return LeafSystem<double>::DoCalcNextUpdateTime(context, events);
+  } else {
+    // TODO(siyuan): cleanup after #5725 is resolved.
+    events->time = context.get_time() + 0.0001;
+    DiscreteEvent<double> event;
+    event.action = DiscreteEvent<double>::ActionType::kDiscreteUpdateAction;
+    events->events.push_back(event);
+  }
+}
+
+void DrakeVisualizer::DoCalcDiscreteVariableUpdates(
+    const Context<double>& context,
+    DiscreteState<double>* discrete_state) const {
+  DRAKE_DEMAND(!is_load_message_sent(context));
+
+  PublishLoadRobot();
+  set_is_load_message_sent(discrete_state, true);
 }
 
 void DrakeVisualizer::ReplayCachedSimulation() const {
@@ -112,15 +136,11 @@ void DrakeVisualizer::PlaybackTrajectory(
 }
 
 void DrakeVisualizer::DoPublish(const Context<double>& context) const {
-  // TODO(liang.fok): Replace the following code once System 2.0's API allows
-  // systems to declare that they need a certain action to be performed at
-  // simulation time t_0.
-  //
-  // Before any draw commands, we need to send the load_robot message.
-  if (context.get_time() == 0.0) {
-    PublishLoadRobot();
+  if (!is_load_message_sent(context)) {
+    drake::log()->warn(
+        "DrakeVisualizer::Publish() called before PublishLoadRobot()");
+    return;
   }
-  DRAKE_DEMAND(sent_load_robot_);
 
   // Obtains the input vector, which contains the generalized q,v state of the
   // RigidBodyTree.
@@ -149,7 +169,6 @@ void DrakeVisualizer::PublishLoadRobot() const {
 
   lcm_->Publish("DRAKE_VIEWER_LOAD_ROBOT", lcm_message_bytes.data(),
       lcm_message_length);
-  sent_load_robot_ = true;
 }
 
 }  // namespace systems

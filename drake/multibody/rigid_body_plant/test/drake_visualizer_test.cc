@@ -453,6 +453,26 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   return tree;
 }
 
+// Helper function to publish load robot model message.
+void PublishLoadRobotModelMessageHelper(
+    const DrakeVisualizer& dut, Context<double>* context) {
+  systems::UpdateActions<double> events;
+  dut.CalcNextUpdateTime(*context, &events);
+  ASSERT_EQ(events.events.size(), 1);
+  ASSERT_EQ(events.events.front().action,
+      systems::DiscreteEvent<double>::kDiscreteUpdateAction);
+  // TODO(siyuan) We should really be demanding an exact time,
+  // but we have to fudge it for now to placate the simulator.  Even
+  // though the event time is not the current time, we've left the
+  // context time below unchanged, to avoid unnecessarily disturbing
+  // the unit test. See issue #5725.
+  EXPECT_NEAR(events.time, context->get_time(), 0.01);
+  std::unique_ptr<State<double>> tmp_state = context->CloneState();
+  dut.CalcDiscreteVariableUpdates(*context, events.events.front(),
+      tmp_state->get_mutable_discrete_state());
+  context->get_mutable_state()->CopyFrom(*tmp_state);
+}
+
 // Tests the basic functionality of the DrakeVisualizer.
 GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
@@ -462,13 +482,6 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   EXPECT_EQ("drake_visualizer", dut.get_name());
 
   auto context = dut.CreateDefaultContext();
-
-  // Sets the time to be zero. This is necessary since the load robot message
-  // is only transmitted when the time is zero.
-  //
-  // TODO(liang.fok) Remove this assumption once systems are able to declare
-  // that they want to publish at the simulation's start time.
-  context->set_time(0);
 
   EXPECT_EQ(1, context->get_num_input_ports());
 
@@ -483,6 +496,7 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
              std::move(input_data)));
 
   // Publishes the `RigidBodyTree` visualization messages.
+  PublishLoadRobotModelMessageHelper(dut, context.get());
   dut.Publish(*context.get());
 
   // Verifies that the correct messages were actually transmitted.
@@ -510,6 +524,7 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(dut, std::move(context));
   simulator.set_publish_every_time_step(false);
+  PublishLoadRobotModelMessageHelper(dut, simulator.get_mutable_context());
   simulator.Initialize();
 
   for (double time = 0; time < 4; time += 0.01) {
