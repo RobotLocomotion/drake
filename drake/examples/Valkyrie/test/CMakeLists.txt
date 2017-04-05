@@ -27,9 +27,5 @@ if(lcm_FOUND)
     drakeLcm
     drakeMultibodyParsers
     drakeRBM
-    drakeRigidBodyPlant
-    drakeSystemFramework
-    drakeSystemAnalysis
-    drakeSystemFramework
-    drakeSystemPrimitives)
+    drakeRigidBodyPlant)
 endif()
