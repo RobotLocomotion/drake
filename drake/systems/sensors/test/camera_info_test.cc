@@ -30,7 +30,7 @@ void Verify(const Eigen::Matrix3d& expected, const CameraInfo& dut) {
   EXPECT_NEAR(expected(1, 2), dut.center_y(), kTolerance);
   EXPECT_TRUE(CompareMatrices(expected, dut.intrinsic_matrix(),
                               kTolerance));
-};
+}
 
 GTEST_TEST(TestCameraInfo, ConstructionTest) {
   const Eigen::Matrix3d expected(
