@@ -9,7 +9,6 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -25,7 +24,6 @@ namespace rendering {
 /// PoseAggregator is a multiplexer for heterogeneous sources of poses and the
 /// velocities of those poses.
 /// Supported sources are:
-/// - The state output of a RigidBodyPlant.
 /// - A PoseVector input, which is a single pose {R, p}, and is vector-valued.
 /// - A FrameVelocity input, which corresponds to a PoseVector input, and
 ///   contains a single velocity {ω, v}, and is vector-valued.
@@ -35,14 +33,11 @@ namespace rendering {
 /// PoseAggregator is stateless.
 ///
 /// The output is a flat PoseBundle that contains all the poses and velocities
-/// from all the inputs, except for the "world" bodies in a RigidBodyTree.
-/// Unspecified velocities are zero, as are RigidBodyTree velocities.
+/// from all the inputs. Unspecified velocities are zero.
 /// By convention, each aggregated pose or velocity is in the same world frame
 /// of reference.
 ///
 /// The output poses are named in the form `<source>` or `<source>::<pose>`.
-/// - For poses derived from a RigidBodyPlant input, `<source>` is the name of
-///   the RigidBodyTree model, and `<pose>` is the name of the body.
 /// - For poses derived from a PoseVector input, <source> is the bundle name
 ///   provided at construction time, and "::<pose>" is omitted.
 /// - For poses derived from a PoseBundle input, <source> is the bundle name
@@ -55,8 +50,6 @@ namespace rendering {
 /// an integer that is greater than or equal to zero. All poses with the same
 /// model instance ID must have unique names. This enables PoseAggregator to
 /// aggregate multiple instances of the same model.
-/// - For poses derived from a RigidBodyPlant input, the instance ID is obtained
-///   from the RigidBodyTree.
 /// - For poses derived from a PoseVector input, the instance ID is specified
 ///   when the input is declared.
 /// - For poses derived from a PoseBundle input, the instance ID is obtained
@@ -81,11 +74,6 @@ class PoseAggregator : public LeafSystem<T> {
 
   PoseAggregator();
   ~PoseAggregator() override;
-
-  /// Adds an input for the state of a RigidBodyPlant. Stores an alias of @p
-  /// tree, which must live at least as long as this system.
-  const InputPortDescriptor<T>& AddRigidBodyPlantInput(
-      const RigidBodyTree<double> &tree);
 
   /// Adds an input for a PoseVector. @p name must be unique for all inputs with
   /// the same @p model_instance_id.
@@ -122,7 +110,6 @@ class PoseAggregator : public LeafSystem<T> {
     kSinglePose = 1,
     kSingleVelocity = 2,
     kBundle = 3,
-    kRigidBodyTree = 4,
   };
 
   struct InputRecord {
@@ -132,14 +119,7 @@ class PoseAggregator : public LeafSystem<T> {
     std::string name{};
     // model_instance_id is only valid if type is kSingle{Pose, Velocity}.
     int model_instance_id{-1};
-    // tree is only valid if type is kRigidBodyTree.
-    const RigidBodyTree<double>* tree{};
   };
-
-  // Returns an InputRecord for a RigidBodyTree input. The number of poses
-  // excludes the world "body".
-  static InputRecord MakeRigidBodyTreeInputRecord(
-      const RigidBodyTree<double>* tree);
 
   // Returns an InputRecord for a generic single pose input.
   static InputRecord MakeSinglePoseInputRecord(const std::string& name,
@@ -155,9 +135,6 @@ class PoseAggregator : public LeafSystem<T> {
 
   // Returns the total number of poses from all inputs.
   int CountNumPoses() const;
-
-  // Returns a name for the given @p body. See class comment for details.
-  const std::string MakeBodyName(const RigidBody<double>& body) const;
 
   // The type, size, and source of each input port.
   std::vector<InputRecord> input_records_;
