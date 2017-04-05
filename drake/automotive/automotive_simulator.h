@@ -60,8 +60,8 @@ class AutomotiveSimulator {
   ///
   /// @pre Start() has NOT been called.
   ///
-  /// @param model_name If this is non-empty, the car's model will be labeled
-  /// with this name. It must be unique among all cars.
+  /// @param name The car's name, which must be unique among all cars. Otherwise
+  /// a std::runtime_error will be thrown.
   ///
   /// @param channel_name  The SimpleCar will subscribe to an LCM channel of
   /// this name to receive commands.  It must be non-empty.
@@ -69,7 +69,7 @@ class AutomotiveSimulator {
   /// @param initial_state The SimpleCar's initial state.
   ///
   /// @return The ID of the car that was just added to the simulation.
-  int AddPriusSimpleCar(const std::string& model_name,
+  int AddPriusSimpleCar(const std::string& name,
                         const std::string& channel_name,
                         const SimpleCarState<T>& initial_state =
                             SimpleCarState<T>());
@@ -79,14 +79,18 @@ class AutomotiveSimulator {
   ///
   /// @pre Start() has NOT been called.
   ///
-  /// @param[in] curve See documentation of TrajectoryCar::TrajectoryCar.
+  /// @param name The car's name, which must be unique among all cars. Otherwise
+  /// a std::runtime_error will be thrown.
   ///
-  /// @param[in] speed See documentation of TrajectoryCar::TrajectoryCar.
+  /// @param curve See documentation of TrajectoryCar::TrajectoryCar.
   ///
-  /// @param[in] start_time See documentation of TrajectoryCar::TrajectoryCar.
+  /// @param speed See documentation of TrajectoryCar::TrajectoryCar.
+  ///
+  /// @param start_time See documentation of TrajectoryCar::TrajectoryCar.
   ///
   /// @return The ID of the car that was just added to the simulation.
-  int AddPriusTrajectoryCar(const Curve2<double>& curve,
+  int AddPriusTrajectoryCar(const std::string& name,
+                            const Curve2<double>& curve,
                             double speed,
                             double start_time);
 
@@ -97,8 +101,8 @@ class AutomotiveSimulator {
   /// @pre SetRoadGeometry() was called. Otherwise, a std::runtime_error will be
   /// thrown.
   ///
-  /// @param model_name If this is non-empty, the car's model will be labeled
-  /// with this name. It must be unique among all cars.
+  /// @param name The car's name, which must be unique among all cars. Otherwise
+  /// a std::runtime_error will be thrown.
   ///
   /// @param initial_lane_direction The MaliputRailcar's initial lane and
   /// direction on the lane. The lane in this parameter must be part of the
@@ -111,7 +115,7 @@ class AutomotiveSimulator {
   ///
   /// @return The ID of the car that was just added to the simulation.
   int AddPriusMaliputRailcar(
-      const std::string& model_name,
+      const std::string& name,
       const LaneDirection& initial_lane_direction,
       const MaliputRailcarParams<T>& params = MaliputRailcarParams<T>(),
       const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
@@ -180,6 +184,11 @@ class AutomotiveSimulator {
 
  private:
   int allocate_vehicle_number();
+
+  // Verifies that the provided `name` of a car is unique among all cars that
+  // have been added to the `AutomotiveSimulator`. Throws a std::runtime_error
+  // if it is not unique meaning a car of the same name was already added.
+  void CheckNameUniqueness(const std::string& name);
 
   // Adds an LCM publisher for the given @p system.
   // @pre Start() has NOT been called.

@@ -171,8 +171,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
   // a straight 100 m long line.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
-  const int id1 = simulator->AddPriusTrajectoryCar(curve, 1.0, 0.0);
-  const int id2 = simulator->AddPriusTrajectoryCar(curve, 1.0, 10.0);
+  const int id1 = simulator->AddPriusTrajectoryCar("alice", curve, 1.0, 0.0);
+  const int id2 = simulator->AddPriusTrajectoryCar("bob", curve, 1.0, 10.0);
   EXPECT_EQ(id1, 0);
   EXPECT_EQ(id2, 1);
 
@@ -408,8 +408,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
   typedef Curve2d::Point2 Point2d;
   const std::vector<Point2d> waypoints{Point2d{0, 0}, Point2d{1, 0}};
   const Curve2d curve{waypoints};
-  simulator->AddPriusTrajectoryCar(curve, 1 /* speed */, 0 /* start time */);
-  simulator->AddPriusTrajectoryCar(curve, 1 /* speed */, 0 /* start time */);
+  simulator->AddPriusTrajectoryCar(
+      "alice", curve, 1 /* speed */, 0 /* start time */);
+  simulator->AddPriusTrajectoryCar(
+      "bob", curve, 1 /* speed */, 0 /* start time */);
 
   simulator->Start();
   simulator->StepBy(1e-3);
@@ -437,6 +439,45 @@ GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
           "DRAKE_VIEWER_DRAW");
   // Minus one to omit world, which remains still.
   EXPECT_EQ(draw_message.num_links, expected_num_links - 1);
+}
+
+// Verifies that exceptions are thrown if a vehicle with a non-unique name is
+// added to the simulation.
+GTEST_TEST(AutomotiveSimulatorTest, TestDuplicateVehicleNameException) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+
+  EXPECT_NO_THROW(simulator->AddPriusSimpleCar("Model1", "Channel1"));
+  EXPECT_THROW(simulator->AddPriusSimpleCar("Model1", "foo"),
+      std::runtime_error);
+
+  typedef Curve2<double> Curve2d;
+  typedef Curve2d::Point2 Point2d;
+  const std::vector<Point2d> waypoints{Point2d{0, 0}, Point2d{1, 0}};
+  const Curve2d curve{waypoints};
+
+  EXPECT_NO_THROW(simulator->AddPriusTrajectoryCar(
+      "alice", curve, 1 /* speed */, 0 /* start time */));
+  EXPECT_THROW(simulator->AddPriusTrajectoryCar(
+      "alice", curve, 1 /* speed */, 0 /* start time */), std::runtime_error);
+  EXPECT_THROW(simulator->AddPriusTrajectoryCar(
+      "Model1", curve, 1 /* speed */, 0 /* start time */), std::runtime_error);
+
+  const MaliputRailcarParams<double> params;
+  const maliput::api::RoadGeometry* road{};
+  EXPECT_NO_THROW(road = simulator->SetRoadGeometry(
+      std::make_unique<const maliput::dragway::RoadGeometry>(
+          maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
+          100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+  EXPECT_NO_THROW(simulator->AddPriusMaliputRailcar("Foo",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      MaliputRailcarState<double>() /* initial state */));
+  EXPECT_THROW(simulator->AddPriusMaliputRailcar("alice",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      MaliputRailcarState<double>() /* initial state */), std::runtime_error);
+  EXPECT_THROW(simulator->AddPriusMaliputRailcar("Model1",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      MaliputRailcarState<double>() /* initial state */), std::runtime_error);
 }
 
 }  // namespace
