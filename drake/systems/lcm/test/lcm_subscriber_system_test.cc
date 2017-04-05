@@ -20,8 +20,32 @@ namespace {
 constexpr int kDim = 10;
 constexpr int64_t kTimestamp = 123456;
 
+void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
+                      SystemOutput<double>* output) {
+  UpdateActions<double> actions;
+  sub.CalcNextUpdateTime(*context, &actions);
+
+  if (!actions.events.empty()) {
+    DRAKE_DEMAND(actions.events.size() == 1);
+    std::unique_ptr<State<double>> tmp_state = context->CloneState();
+    if (actions.events.front().action ==
+        DiscreteEvent<double>::kDiscreteUpdateAction) {
+      sub.CalcDiscreteVariableUpdates(*context, actions.events.front(),
+          tmp_state->get_mutable_discrete_state());
+    } else if (actions.events.front().action ==
+        DiscreteEvent<double>::kUnrestrictedUpdateAction) {
+      sub.CalcUnrestrictedUpdate(*context, actions.events.front(),
+          tmp_state.get());
+    } else {
+      DRAKE_DEMAND(false);
+    }
+    context->get_mutable_state()->CopyFrom(*tmp_state);
+  }
+  sub.CalcOutput(*context, output);
+}
+
 void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
-    const std::string& channel_name, LcmSubscriberSystem* dut) {
+                    const std::string& channel_name, LcmSubscriberSystem* dut) {
   EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem(" + channel_name + ")");
 
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
@@ -42,9 +66,9 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
             message.getEncodedSize());
 
   lcm->InduceSubscriberCallback(dut->get_channel_name(), &buffer[0],
-      message.getEncodedSize());
+                                message.getEncodedSize());
 
-  dut->CalcOutput(*context.get(), output.get());
+  EvalOutputHelper(*dut, context.get(), output.get());
 
   const BasicVector<double>& basic_vector = *output->get_vector_data(0);
   EXPECT_EQ(basic_vector.size(), kDim);
@@ -90,9 +114,8 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
 
   // Creates a dictionary with one translator.
   LcmTranslatorDictionary dictionary;
-  dictionary.AddEntry(
-      channel_name,
-      std::make_unique<const LcmtDrakeSignalTranslator>(kDim));
+  dictionary.AddEntry(channel_name,
+                      std::make_unique<const LcmtDrakeSignalTranslator>(kDim));
 
   EXPECT_TRUE(dictionary.HasTranslator(channel_name));
 
@@ -123,7 +146,14 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
   // MockLcm produces a sample message.
   lcm.StartReceiveThread();
   const lcmt_drake_signal sample_data{
-    2, { 1.0, 2.0, }, { "x", "y", }, 12345,
+      2,
+      {
+          1.0, 2.0,
+      },
+      {
+          "x", "y",
+      },
+      12345,
   };
   const int num_bytes = sample_data.getEncodedSize();
   std::vector<uint8_t> buffer(num_bytes);
@@ -131,7 +161,8 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
   lcm.InduceSubscriberCallback(channel_name, buffer.data(), num_bytes);
 
   // Verifies that the dut produces the output message.
-  dut->CalcOutput(*context.get(), output.get());
+  EvalOutputHelper(*dut, context.get(), output.get());
+
   const AbstractValue* abstract_value = output->get_data(0);
   ASSERT_NE(abstract_value, nullptr);
   const auto& value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
@@ -155,9 +186,8 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
     return std::to_string(index) + "_name";
   }
 
-  void Deserialize(
-      const void* lcm_message_bytes, int lcm_message_length,
-      VectorBase<double>* vector_base) const override {
+  void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
+                   VectorBase<double>* vector_base) const override {
     CustomVector* const custom_vector =
         dynamic_cast<CustomVector*>(vector_base);
     ASSERT_NE(nullptr, custom_vector);
@@ -175,9 +205,8 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
     }
   }
 
-  void Serialize(double time,
-      const VectorBase<double>& vector_base,
-      std::vector<uint8_t>* lcm_message_bytes) const override {
+  void Serialize(double time, const VectorBase<double>& vector_base,
+                 std::vector<uint8_t>* lcm_message_bytes) const override {
     const CustomVector* const custom_vector =
         dynamic_cast<const CustomVector*>(&vector_base);
     ASSERT_NE(nullptr, custom_vector);
@@ -224,12 +253,12 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   std::vector<uint8_t> message_bytes;
   translator.Serialize(0.0 /* time */, sample_vector, &message_bytes);
   lcm.InduceSubscriberCallback(kChannelName, &message_bytes[0],
-      message_bytes.size());
+                               message_bytes.size());
 
   // Read back the vector via CalcOutput.
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
-  dut.CalcOutput(*context, output.get());
+  EvalOutputHelper(dut, context.get(), output.get());
   const VectorBase<double>* const output_vector = output->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
 
