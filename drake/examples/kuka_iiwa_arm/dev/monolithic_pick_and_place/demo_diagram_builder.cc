@@ -11,10 +11,8 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
-using systems::ConstantVectorSource;
 using systems::DrakeVisualizer;
 using systems::DiagramBuilder;
 using lcm::DrakeLcm;
@@ -49,19 +47,18 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
   builder.Connect(plant_->get_output_port_plant_state(),
                   drake_visualizer_->get_input_port(0));
 
-  iiwa_zero_acceleration_source_ =
-      builder.template AddSystem<systems::ConstantVectorSource>(
-          Eigen::VectorXd::Zero(7));
-  builder.Connect(iiwa_zero_acceleration_source_->get_output_port(),
-                  plant_->get_input_port_iiwa_acceleration_command());
-
   iiwa_trajectory_generator_ =
       builder.template AddSystem<IiwaStateFeedbackPlanSource>(
           drake::GetDrakePath() + kIiwaUrdf, update_interval);
   builder.Connect(plant_->get_output_port_iiwa_state(),
                   iiwa_trajectory_generator_->get_input_port_state());
-  builder.Connect(iiwa_trajectory_generator_->get_output_port_trajectory(),
-                  plant_->get_input_port_iiwa_state_command());
+  builder.Connect(
+      iiwa_trajectory_generator_->get_output_port_state_trajectory(),
+      plant_->get_input_port_iiwa_state_command());
+  builder.Connect(
+      iiwa_trajectory_generator_->get_output_port_acceleration_trajectory(),
+      plant_->get_input_port_iiwa_acceleration_command());
+
   input_port_iiwa_plan_ =
       builder.ExportInput(iiwa_trajectory_generator_->get_input_port_plan());
 

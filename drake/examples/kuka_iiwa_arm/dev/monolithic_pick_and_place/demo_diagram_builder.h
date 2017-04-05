@@ -12,10 +12,8 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
-using systems::ConstantVectorSource;
 using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
 using systems::DiagramBuilder;
@@ -135,7 +133,6 @@ class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
   SchunkWsgStatusSender* wsg_status_sender_{nullptr};
   PassThrough<T>* pass_through_wsg_state_{nullptr};
   DrakeVisualizer* drake_visualizer_{nullptr};
-  ConstantVectorSource<T>* iiwa_zero_acceleration_source_{nullptr};
   IiwaStateFeedbackPlanSource* iiwa_trajectory_generator_{nullptr};
   SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
 
