@@ -8,8 +8,10 @@
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
+#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
+using systems::PassThrough;
 namespace examples {
 namespace kuka_iiwa_arm {
 
@@ -46,38 +48,44 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
 
   const systems::RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
-  const systems::InputPortDescriptor<T>& get_iiwa_state_input_port() const {
-    return this->get_input_port(0);
+  const RigidBodyTree<T>& get_tree() const {
+    return plant_->get_rigid_body_tree();
   }
 
-  const systems::InputPortDescriptor<T>& get_iiwa_acceleration_input_port()
+  const systems::InputPortDescriptor<T>& get_input_port_iiwa_state_command()
       const {
-    return this->get_input_port(1);
+    return this->get_input_port(input_port_iiwa_state_command_);
   }
 
-  const systems::InputPortDescriptor<T>& get_wsg_input_port() const {
-    return this->get_input_port(2);
+  const systems::InputPortDescriptor<T>&
+  get_input_port_iiwa_acceleration_command() const {
+    return this->get_input_port(input_port_iiwa_acceleration_command_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_iiwa_state_port() const {
-    return this->get_output_port(0);
+  const systems::InputPortDescriptor<T>& get_input_port_wsg_command() const {
+    return this->get_input_port(input_port_wsg_command_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_wsg_state_port() const {
-    return this->get_output_port(1);
+  const systems::OutputPortDescriptor<T>& get_output_port_iiwa_state() const {
+    return this->get_output_port(output_port_iiwa_state_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_plant_output_port() const {
-    return this->get_output_port(2);
+  const systems::OutputPortDescriptor<T>& get_output_port_wsg_state() const {
+    return this->get_output_port(output_port_wsg_state_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_iiwa_robot_state_msg_port()
+  const systems::OutputPortDescriptor<T>& get_output_port_plant_state() const {
+    return this->get_output_port(output_port_plant_state_);
+  }
+
+  const systems::OutputPortDescriptor<T>& get_output_port_iiwa_robot_state_msg()
       const {
-    return this->get_output_port(3);
+    return this->get_output_port(output_port_iiwa_robot_state_t_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_box_robot_state_msg_port() const {
-    return this->get_output_port(4);
+  const systems::OutputPortDescriptor<T>& get_output_port_box_robot_state_msg()
+      const {
+    return this->get_output_port(output_port_box_robot_state_t_);
   }
 
  private:
@@ -87,6 +95,15 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
   systems::InverseDynamicsController<T>* iiwa_controller_{nullptr};
   systems::PidController<T>* wsg_controller_{nullptr};
   systems::RigidBodyPlant<T>* plant_{nullptr};
+
+  int input_port_iiwa_state_command_{-1};
+  int input_port_iiwa_acceleration_command_{-1};
+  int input_port_wsg_command_{-1};
+  int output_port_iiwa_state_{-1};
+  int output_port_wsg_state_{-1};
+  int output_port_plant_state_{-1};
+  int output_port_iiwa_robot_state_t_{-1};
+  int output_port_box_robot_state_t_{-1};
 };
 
 }  // namespace kuka_iiwa_arm
