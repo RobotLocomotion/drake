@@ -197,6 +197,70 @@ void CompareIntersectionResults(std::vector<Vector3d> desired,
   }
 }
 
+// For 2 binary variable per half axis, we know it cuts the first orthant into
+// 7 regions. 3 of these regions have 4 co-planar vertices; 3 of these regions
+// have 4 non-coplanar vertices, and one region has 3 vertices.
+GTEST_TEST(RotationTest, TestAreAllVerticesCoPlanar) {
+  Eigen::Vector3d n;
+  double d;
+
+  // 4 co-planar vertices. Due to symmetry, we only test one out of the three
+  // regions.
+  Eigen::Vector3d bmin(0.5, 0.5, 0);
+  Eigen::Vector3d bmax(1, 1, 0.5);
+  std::vector<Eigen::Vector3d> pts =
+      internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
+  EXPECT_TRUE(internal::AreAllVerticesCoPlanar(pts, &n, &d));
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_NEAR(n.norm(), 1, 1E-10);
+    EXPECT_NEAR(n.dot(pts[i]), d, 1E-10);
+    EXPECT_TRUE((n.array() > 0).all());
+  }
+
+  // 4 non co-planar vertices. Due to symmetry, we only test one out of the
+  // three regions.
+  bmin << 0.5, 0, 0;
+  bmax << 1, 0.5, 0.5;
+  pts = internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
+  EXPECT_FALSE(internal::AreAllVerticesCoPlanar(pts, &n, &d));
+  EXPECT_TRUE(CompareMatrices(n, Eigen::Vector3d::Zero()));
+  EXPECT_EQ(d, 0);
+
+  // 3 vertices
+  bmin << 0.5, 0.5, 0.5;
+  bmax << 1, 1, 1;
+  pts = internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
+  EXPECT_TRUE(internal::AreAllVerticesCoPlanar(pts, &n, &d));
+  EXPECT_TRUE(CompareMatrices(n, Eigen::Vector3d::Constant(1.0 / std::sqrt(3)),
+                              1E-10, MatrixCompareType::absolute));
+  EXPECT_NEAR(pts[0].dot(n), d, 1E-10);
+}
+
+void CheckInnerFacets(const std::vector<Vector3d>& pts) {
+  // Compute the inner facets of the convex hull of pts. Make sure for each
+  // facet, there are three points on the facet, and the facet points
+  // outward from the origin.
+  Eigen::Matrix<double, Eigen::Dynamic, 3> A;
+  Eigen::VectorXd b;
+  internal::ComputeInnerFacetsForBoxSphereIntersection(pts, &A, &b);
+  for (int i = 0; i < A.rows(); ++i) {
+    for (const auto& pt : pts) {
+      EXPECT_LE((A.row(i) * pt)(0), b(i) + 1E-10);
+    }
+    EXPECT_NEAR(A.row(i).norm(), 1, 1E-10);
+    // A.row(i) is the inverse of the facet normal, that points outward from the
+    // origin.
+    EXPECT_TRUE((A.row(i).array() <= 0).all());
+    int num_pts_on_plane = 0;
+    for (const auto& pt : pts) {
+      if (std::abs((A.row(i) * pt)(0) - b(i)) < 1E-10) {
+        ++num_pts_on_plane;
+      }
+    }
+    EXPECT_GE(num_pts_on_plane, 3);
+  }
+}
+
 void CompareHalfspaceRelaxation(const std::vector<Vector3d> &pts) {
   // Computes a possibly less tight n and d analytically. For each triangle with
   // vertices pts[i], pts[j] and pts[k], determine if the halfspace coinciding
@@ -234,10 +298,84 @@ void CompareHalfspaceRelaxation(const std::vector<Vector3d> &pts) {
   double d_expected;
   internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(pts, &n_expected,
                                                                &d_expected);
+  if (pts.size() == 3) {
+    EXPECT_NEAR(d_expected, d, 1E-6);
+  }
   EXPECT_GE(d_expected, d - 1E-8);
   for (const auto &pt : pts) {
     EXPECT_GE(pt.transpose() * n_expected - d_expected, -1E-6);
   }
+}
+
+GTEST_TEST(RotationTest, TestHalfSpaceRelaxation) {
+  // In some cases, the half space relaxation can be computed analytically. We
+  // compare the analytical result, against
+  // ComputeHalfSpaceRelaxationForBoxSphereIntersection()
+  std::vector<Eigen::Vector3d> pts;
+  Eigen::Vector3d n;
+  double d;
+
+  // For three points case, the half space relaxation is just the plane
+  // coinciding with the three points.
+  pts.emplace_back(1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0);
+  pts.emplace_back(2.0 / 3.0, 1.0 / 3.0, 2.0 / 3.0);
+  pts.emplace_back(2.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0);
+  internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(pts, &n, &d);
+  EXPECT_TRUE(CompareMatrices(n, Eigen::Vector3d::Constant(1 / std::sqrt(3)),
+                              10 * std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::absolute));
+  EXPECT_NEAR(d, std::sqrt(3) * 5 / 9, 1E-10);
+
+  // Four points, symmetric about the plane x = y. The tightest half space
+  // relaxation is not the plane coinciding with three of the points.
+  pts.clear();
+  // The first two points are on the x = y plane.
+  pts.emplace_back(1.0 / 3.0, 1.0 / 3.0, std::sqrt(7) / 3.0);
+  pts.emplace_back(2.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0);
+  // The last two points are symmetric about the x = y plane.
+  pts.emplace_back(1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0);
+  pts.emplace_back(2.0 / 3.0, 1.0 / 3.0, 2.0 / 3.0);
+  internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(pts, &n, &d);
+  // The normal vector should be on the x = y plane.
+  EXPECT_NEAR(n(0), n(1), 1E-8);
+  EXPECT_NEAR(n.dot(pts[0]), d, 1E-8);
+  EXPECT_NEAR(n.dot(pts[1]), d, 1E-8);
+}
+
+GTEST_TEST(RotationTest, TestInnerFacetsAndHalfSpace) {
+  // We show that the inner facet is tighter than the half space for some case.
+  // To this end, we show that for a box [0 0.5 0] <= x <= [0.5 1 0.5], there is
+  // some point that does not satisfy the inner facets constraint A*x<=b, but
+  // satisfies the half space constraint nᵀ*x>=d.
+  const Eigen::Vector3d bmin(0, 0.5, 0);
+  const Eigen::Vector3d bmax(0.5, 1, 0.5);
+  const auto intersection_pts =
+      internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
+  DRAKE_DEMAND(intersection_pts.size() == 4);
+  Eigen::Vector3d n;
+  double d;
+  internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(intersection_pts,
+                                                               &n, &d);
+  Eigen::Matrix<double, Eigen::Dynamic, 3> A;
+  Eigen::VectorXd b;
+  internal::ComputeInnerFacetsForBoxSphereIntersection(intersection_pts, &A,
+                                                       &b);
+  // Now form the optimization program
+  // A.row(i) * x > b(i) + epsilon for at least one i
+  // nᵀ * x >= d
+  // bmin <= x <= bmax
+  // We will show that there is a feasible solution to this program.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  auto z = prog.NewBinaryVariables(b.rows(), "z");
+  for (int i = 0; i < b.rows(); ++i) {
+    prog.AddLinearConstraint((A.row(i) * x)(0) >= b(i) + 1E-5 + (z(i) - 1) * 2);
+  }
+  prog.AddLinearConstraint(z.cast<symbolic::Expression>().sum() >= 1);
+  prog.AddLinearConstraint(n.dot(x) >= d);
+  prog.AddBoundingBoxConstraint(bmin, bmax, x);
+  SolutionResult sol_result = prog.Solve();
+  EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 }
 
 // Test a number of closed-form solutions for the intersection of a box in the
@@ -255,6 +393,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
   CompareHalfspaceRelaxation(desired);
+  CheckInnerFacets(desired);
 
   // Lifts box bottom (in z).  Still has 3 solutions.
   box_min << 0, 0, 1.0 / 3.0;
@@ -264,6 +403,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
   CompareHalfspaceRelaxation(desired);
+  CheckInnerFacets(desired);
 
   // Lowers box top (in z).  Now we have four solutions.
   box_max << 1, 1, 2.0 / 3.0;
@@ -273,6 +413,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
   CompareHalfspaceRelaxation(desired);
+  CheckInnerFacets(desired);
 
   // Gets a different four edges by shortening the box (in x).
   box_max(0) = .5;
@@ -282,6 +423,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
   CompareHalfspaceRelaxation(desired);
+  CheckInnerFacets(desired);
 
   // Now three edges again as we shorten the box (in y).
   box_max(1) = .6;
@@ -293,6 +435,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
   CompareHalfspaceRelaxation(desired);
+  CheckInnerFacets(desired);
 
   // All four intersections are on the vertical edges.
   box_min << 1.0 / 3.0, 1.0 / 3.0, 0;
@@ -305,6 +448,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
   CompareHalfspaceRelaxation(desired);
+  CheckInnerFacets(desired);
 
   // box_max right on the unit sphere.
   box_max << 1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0;
@@ -315,6 +459,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   CompareIntersectionResults(
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CheckInnerFacets(desired);
 
   // Multiple vertices are on the sphere.
   box_min << 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0;
@@ -326,6 +471,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   CompareIntersectionResults(
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CheckInnerFacets(desired);
 
   // Six intersections.
   box_min = Eigen::Vector3d::Constant(1.0 / 3.0);
@@ -344,6 +490,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
   CompareHalfspaceRelaxation(desired);
+  CheckInnerFacets(desired);
 }
 
 bool IsFeasibleCheck(
@@ -415,7 +562,7 @@ GTEST_TEST(RotationTest, TestMcCormick) {
         -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
     EXPECT_TRUE(IsFeasible(R_test));
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 40; i++) {
       R_test = math::UniformlyRandomRotmat(generator);
       EXPECT_TRUE(IsFeasible(R_test));
     }

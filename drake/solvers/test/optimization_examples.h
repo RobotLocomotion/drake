@@ -513,6 +513,27 @@ class MinDistanceFromPlaneToOrigin {
   Eigen::VectorXd x_expected_;
 };
 
+/**
+ * A simple convex optimization program
+ * min -12 * x + x³
+ * s.t  x >= 0
+ * Notice the objective function is convex in the feasible region x >= 0
+ * The optimal solution is x = 2.
+ */
+class ConvexCubicProgramExample : public MathematicalProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConvexCubicProgramExample)
+
+  ConvexCubicProgramExample();
+
+  ~ConvexCubicProgramExample() override {};
+
+  bool CheckSolution() const;
+
+ private:
+  VectorDecisionVariable<1> x_;
+};
+
 std::set<CostForm> linear_cost_form();
 
 std::set<CostForm> quadratic_cost_form();

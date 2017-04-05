@@ -75,7 +75,7 @@ if(lcm_FOUND)
     drakeLcmSystem
     drakeRBM
     drakeSystemAnalysis
-    drakeSystemControllers
+    drakeSystemPrimitives
     robotlocomotion-lcmtypes-cpp)
 
   add_executable(kuka_simulation kuka_simulation.cc)

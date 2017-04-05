@@ -43,9 +43,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
     const T xd = state[1];
     (*derivatives)[0] = xd;
 
-    // Compute the force acting on the mass. There is always a constant
-    // force pushing the mass toward -inf. The spring and damping forces are
-    // only active when x <= 0; the spring setpoint is x = 0.
+    // Compute the force acting on the mass.
     const double k = this->get_spring_constant();
     const double b = get_damping_constant();
     const T x0 = 0;
@@ -60,8 +58,10 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   double damping_constant_N_per_m_;
 };
 
-// This is a modified spring-mass-damper system that is only active in a small
-// part of state space.
+// This is a modified spring-mass-damper system for which the acceleration
+// component of the derivative function is discontinuous with respect to the
+// point mass position. Tests the ability of the integrator to deal with
+// such discontinuities.
 template <class T>
 class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
  public:
@@ -73,7 +73,9 @@ class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
     SpringMassDamperSystem<T>(spring_constant_N_per_m,
                               damping_constant_N_per_m,
                               mass_kg),
-    constant_force_(constant_force) { }
+    constant_force_(constant_force) {
+    DRAKE_ASSERT(constant_force >= 0.0);
+  }
 
   /// Gets the magnitude of the constant force acting on the system.
   double get_constant_force() const { return constant_force_; }

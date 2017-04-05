@@ -6,6 +6,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -239,7 +240,8 @@ class MathematicalProgram {
   /**
    * Adds new variables to MathematicalProgram.
    * Appending new variables to an internal vector of any existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -315,7 +317,8 @@ class MathematicalProgram {
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -353,7 +356,8 @@ class MathematicalProgram {
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -384,7 +388,8 @@ class MathematicalProgram {
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -421,7 +426,8 @@ class MathematicalProgram {
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -468,7 +474,8 @@ class MathematicalProgram {
   /**
    * Adds binary variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -552,7 +559,8 @@ class MathematicalProgram {
   /**
    * Adds binary variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are initialized to zero.
+   * The initial guess values for the new variables are set to NaN, to
+   * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
@@ -906,6 +914,14 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Adds a cost term in the polynomial form.
+   * @param e A symbolic expression in the polynomial form.
+   * @return The newly created cost and the bound variables.
+   */
+  Binding<PolynomialConstraint> AddPolynomialCost(
+      const symbolic::Expression& e);
+
+  /**
    * Adds a cost in the symbolic form.
    * Note that the constant part of the cost is ignored. So if you set
    * `e = x + 2`, then only the cost on `x` is added, the constant term 2 is
@@ -1053,6 +1069,8 @@ class MathematicalProgram {
    *  1. e1  <=  e2 , which is 0 <= e2 - e1 <= ∞
    *  2. e1  >=  e2 , which is 0 <= e1 - e2 <= ∞
    *  3. e1  ==  e2
+   *  4. A conjunction of relational formulas where each conjunct is
+   *     a relational formula matched by 1, 2, or 3.
    *
    * Note that first two cases might return an object of
    * Binding<BoundingBoxConstraint> depending on @p f. Also the third case
@@ -1995,6 +2013,8 @@ class MathematicalProgram {
 
   /**
    * Set the initial guess for the decision variables stored in @p var to be x0.
+   * Variables begin with a default initial guess of NaN to indicate that no
+   * guess is available.
    */
   template <typename DerivedA, typename DerivedB>
   void SetInitialGuess(const Eigen::MatrixBase<DerivedA>& decision_variable_mat,
@@ -2011,6 +2031,8 @@ class MathematicalProgram {
 
   /**
    * Set the intial guess for ALL decision variables.
+   * Note that variables begin with a default initial guess of NaN to indicate
+   * that no guess is available.
    * @param x0 A vector of appropriate size (num_vars() x 1).
    */
   template <typename Derived>
@@ -2467,7 +2489,8 @@ class MathematicalProgram {
 
     num_vars_ += num_new_vars;
     x_initial_guess_.conservativeResize(num_vars_);
-    x_initial_guess_.tail(num_new_vars) = Eigen::VectorXd::Zero(num_new_vars);
+    x_initial_guess_.tail(num_new_vars).fill(
+      std::numeric_limits<double>::quiet_NaN());
   }
 
   MatrixXDecisionVariable NewVariables(VarType type, int rows, int cols,
@@ -2504,6 +2527,9 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> DoAddLinearEqualityConstraint(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
       const Eigen::Ref<const Eigen::VectorXd>& b);
+
+  Binding<LinearConstraint> AddLinearConstraint(
+      const std::set<symbolic::Formula>& formulas);
 };
 }  // namespace solvers
 }  // namespace drake

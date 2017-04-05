@@ -71,6 +71,9 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
     case SolutionResult::kUnknownError: {
       return 100;  // Not a real SNOPT error.
     }
+    case SolutionResult::kIterationLimit: {
+      return 3;
+    }
   }
 
   return -1;

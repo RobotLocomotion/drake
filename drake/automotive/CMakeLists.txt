@@ -1,4 +1,3 @@
-add_subdirectory(dev)
 add_subdirectory(gen)
 add_subdirectory(maliput)
 
@@ -11,23 +10,17 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   calc_smooth_acceleration.cc
   create_trajectory_params.cc
   curve2.cc
-  dev/endless_road_car.cc
-  dev/endless_road_oracle.cc
-  dev/infinite_circuit_road.cc
   gen/bicycle_car_parameters.cc
   gen/bicycle_car_state.cc
   gen/driving_command.cc
-  gen/endless_road_car_config.cc
-  gen/endless_road_car_state.cc
-  gen/endless_road_oracle_output.cc
   gen/euler_floating_joint_state.cc
   gen/idm_planner_parameters.cc
-  gen/maliput_railcar_config.cc
+  gen/maliput_railcar_params.cc
   gen/maliput_railcar_state.cc
-  gen/simple_car_config.cc
+  gen/simple_car_params.cc
   gen/simple_car_state.cc
+  idm_controller.cc
   idm_planner.cc
-  linear_car.cc
   maliput/api/road_geometry.cc
   maliput/dragway/branch_point.cc
   maliput/dragway/junction.cc
@@ -48,9 +41,9 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   maliput_railcar.cc
   monolane_onramp_merge.cc
   pose_selector.cc
+  road_path.cc
   simple_car.cc
   simple_powertrain.cc
-  single_lane_ego_and_agent.cc
   trajectory_car.cc
   )
 target_link_libraries(drakeAutomotive
@@ -59,6 +52,7 @@ target_link_libraries(drakeAutomotive
   drakeSystemFramework
   drakeSystemPrimitives
   drakeRendering
+  fmt
   Eigen3::Eigen
   yaml-cpp
   )
@@ -68,15 +62,15 @@ drake_install_headers(
   calc_smooth_acceleration.h
   create_trajectory_params.h
   curve2.h
+  idm_controller.h
   idm_planner.h
-  linear_car.h
   maliput_railcar.h
   monolane_onramp_merge.h
+  road_path.h
   pose_selector.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
   simple_powertrain.h
-  single_lane_ego_and_agent.h
   trajectory_car.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
   )
@@ -97,26 +91,32 @@ if(lcm_FOUND)
 
   add_library_with_exports(LIB_NAME drakeAutomotiveLcm SOURCE_FILES
     automotive_simulator.cc
+    box_car_vis.cc
+    car_vis.cc
+    car_vis_applicator.cc
     gen/bicycle_car_parameters_translator.cc
     gen/bicycle_car_state_translator.cc
     gen/driving_command_translator.cc
-    gen/endless_road_car_config_translator.cc
-    gen/endless_road_car_state_translator.cc
-    gen/endless_road_oracle_output_translator.cc
     gen/euler_floating_joint_state_translator.cc
-    gen/maliput_railcar_config_translator.cc
+    gen/maliput_railcar_params_translator.cc
     gen/maliput_railcar_state_translator.cc
-    gen/simple_car_config_translator.cc
+    gen/simple_car_params_translator.cc
     gen/simple_car_state_translator.cc
+    prius_vis.cc
     )
   target_link_libraries(drakeAutomotiveLcm
     drakeAutomotive
+    drakeLCMTypes
     drakeMultibodyParsers
     drakeRigidBodyPlant
     )
   drake_install_libraries(drakeAutomotiveLcm)
   drake_install_headers(
     automotive_simulator.h
+    box_car_vis.h
+    car_vis.h
+    car_vis_applicator.h
+    prius_vis.h
     # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
     )
   drake_install_pkg_config_file(drake-automotive-lcm
@@ -129,7 +129,6 @@ if(lcm_FOUND)
   add_executable(automotive_demo automotive_demo.cc)
   target_link_libraries(automotive_demo
       drakeAutomotiveLcm
-      drakeLCMTypes
       drakeMaliputDragway)
 
   add_executable(car_sim_lcm car_sim_lcm.cc car_sim_lcm_common.cc)

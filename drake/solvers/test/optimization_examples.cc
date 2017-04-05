@@ -603,6 +603,17 @@ bool MinDistanceFromPlaneToOrigin::CheckSolution(bool rotated_cone) const {
                            MatrixCompareType::absolute);
   }
 }
+
+ConvexCubicProgramExample::ConvexCubicProgramExample() {
+  x_ = NewContinuousVariables<1>("x");
+  AddCost(pow(x_(0), 3) - 12 * x_(0));
+  AddBoundingBoxConstraint(0, std::numeric_limits<double>::infinity(), x_(0));
+}
+
+bool ConvexCubicProgramExample::CheckSolution() const {
+  const auto x_val = GetSolution((x_(0)));
+  return std::abs(x_val - 2) < 1E-6;
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

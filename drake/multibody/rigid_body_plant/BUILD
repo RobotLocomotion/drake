@@ -51,6 +51,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "create_load_robot_message",
+    srcs = ["create_load_robot_message.cc"],
+    hdrs = ["create_load_robot_message.h"],
+    deps = [
+        "//drake/lcmtypes:viewer",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/rendering:drake_visualizer_client",
+    ],
+)
+
+drake_cc_library(
     name = "rigid_body_plant_that_publishes_xdot",
     srcs = [
         "rigid_body_plant_that_publishes_xdot.cc",
@@ -76,6 +87,7 @@ drake_cc_library(
         "viewer_draw_translator.h",
     ],
     deps = [
+        ":create_load_robot_message",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/lcmtypes:viewer",
         "//drake/multibody:rigid_body_tree",
@@ -156,7 +168,7 @@ drake_cc_googletest(
     name = "rigid_body_plant_test",
     data = [
         ":test_models",
-        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
         "//drake/multibody:models",
         "//drake/multibody:test_models",
     ],

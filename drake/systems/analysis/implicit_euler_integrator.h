@@ -44,11 +44,11 @@ namespace systems {
  * yields zero (for `k < 0` and `t → ∞`) *and* that it is also A-Stable.
  * A-Stability, in turn, means that the method can integrate the linear constant
  * coefficient system `dx/dt = Ax` at any step size without the solution
- * become unstable (growing without bound). The practical effect of L-Stability
- * is that the integrator tends to be stable for any given step size on an
- * arbitrary system of ordinary differential equations. See [Lambert, 1991],
- * Ch. 6 for an approachable discussion on stiff differential equations and
- * L- and A-Stability.
+ * becoming unstable (growing without bound). The practical effect of
+ * L-Stability is that the integrator tends to be stable for any given step size
+ * on an arbitrary system of ordinary differential equations. See
+ * [Lambert, 1991], Ch. 6 for an approachable discussion on stiff differential
+ * equations and L- and A-Stability.
  *
  * The time complexity of this method is often dominated by the time to form
  * the Jacobian matrix consisting of the partial derivatives of the nonlinear
@@ -124,8 +124,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     kAutomatic
   };
 
-  /// Sets the Jacobian computation scheme. The integrator need not be
-  /// re-initialized after setting the scheme.
+  /// Sets the Jacobian computation scheme. This function can be safely called
+  /// at any time (i.e., the integrator need not be re-initialized afterward).
   void set_jacobian_computation_scheme(JacobianComputationScheme scheme) {
     jacobian_scheme_ = scheme;
   }

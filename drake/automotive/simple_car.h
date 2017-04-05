@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/automotive/gen/driving_command.h"
-#include "drake/automotive/gen/simple_car_config.h"
+#include "drake/automotive/gen/simple_car_params.h"
 #include "drake/automotive/gen/simple_car_state.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -17,8 +17,8 @@ namespace automotive {
 /// physics. Note that SimpleCar can move forward, stop, turn left, and turn
 /// right but *cannot* travel in reverse.
 ///
-/// configuration:
-/// * uses systems::Parameters wrapping a SimpleCarConfig
+/// parameters:
+/// * uses systems::Parameters wrapping a SimpleCarParams
 ///
 /// state vector (planar for now):
 /// * position: x, y, heading;
@@ -62,13 +62,6 @@ class SimpleCar : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  // LeafSystem<T> overrides
-  void SetDefaultParameters(const systems::LeafContext<T>& context,
-                            systems::Parameters<T>* params) const override;
-
-  /// Sets `config` to contain the default parameters for SimpleCar.
-  static void SetDefaultParameters(SimpleCarConfig<T>* config);
-
   const systems::OutputPortDescriptor<T>& state_output() const;
   const systems::OutputPortDescriptor<T>& pose_output() const;
   const systems::OutputPortDescriptor<T>& velocity_output() const;
@@ -78,18 +71,15 @@ class SimpleCar : public systems::LeafSystem<T> {
   systems::System<AutoDiffXd>* DoToAutoDiffXd() const override;
   systems::System<symbolic::Expression>* DoToSymbolic() const override;
 
-  // LeafSystem<T> overrides
-  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
-
  private:
   void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
   void ImplCalcPose(const SimpleCarState<T>& state,
                     systems::rendering::PoseVector<T>* pose) const;
-  void ImplCalcVelocity(const SimpleCarConfig<T>& config,
+  void ImplCalcVelocity(const SimpleCarParams<T>& params,
                         const SimpleCarState<T>& state,
                         const DrivingCommand<T>& input,
                         systems::rendering::FrameVelocity<T>* velocity) const;
-  void ImplCalcTimeDerivatives(const SimpleCarConfig<T>& config,
+  void ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
                                const SimpleCarState<T>& state,
                                const DrivingCommand<T>& input,
                                SimpleCarState<T>* rates) const;

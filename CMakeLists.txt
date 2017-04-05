@@ -23,13 +23,17 @@ drake_setup_options()
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(avl PUBLIC CMAKE FORTRAN)
 drake_add_external(eigen PUBLIC CMAKE)
+drake_add_external(fmt PUBLIC CMAKE ALWAYS)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(qt_property_browser CMAKE QT)
 drake_add_external(sedumi PUBLIC CMAKE MATLAB)
-drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE MATLAB)
 drake_add_external(xfoil PUBLIC CMAKE FORTRAN)
 drake_add_external(yalmip PUBLIC CMAKE MATLAB)
+
+# spdlog
+drake_add_external(spdlog PUBLIC CMAKE
+  DEPENDS fmt)
 
 # bullet
 drake_add_external(bullet PUBLIC CMAKE
@@ -172,6 +176,12 @@ drake_add_external(textbook PUBLIC CMAKE MATLAB PYTHON
   INSTALL_COMMAND :
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook)
 
+# tinyobjloader
+drake_add_external(tinyobjloader PUBLIC CMAKE
+  CMAKE_ARGS
+    -DTINYOBJLOADER_COMPILATION_SHARED=ON
+  )
+
 # yaml_cpp
 drake_add_external(yaml_cpp PUBLIC CMAKE
  CMAKE_ARGS
@@ -268,6 +278,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_SPDLOG:BOOL=${WITH_SPDLOG}
     -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
     -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
+    -DWITH_TINYOBJLOADER:BOOL=${WITH_TINYOBJLOADER}
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
     -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
@@ -283,6 +294,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     ccd
     eigen
     fcl
+    fmt
     gflags
     google_styleguide
     googletest
@@ -302,6 +314,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     spdlog
     spotless
     textbook
+    tinyobjloader
     vtk
     xfoil
     yalmip
@@ -309,13 +322,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
 )
 
 # director
-if(APPLE)
-  # TODO(patmarion): fix director tests on macOS and re-add TEST always
-  set(TEST_DIRECTOR)
-else()
-  set(TEST_DIRECTOR TEST)
-endif()
-drake_add_external(director PUBLIC CMAKE ${TEST_DIRECTOR} PYTHON QT VTK
+drake_add_external(director PUBLIC CMAKE TEST PYTHON QT VTK
   CMAKE_ARGS
     -DUSE_DRAKE=ON
     -DUSE_LCM=${HAVE_LCM}

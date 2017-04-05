@@ -26,7 +26,7 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
 
   // Allocate the input port and keep an alias around.
   input_port_value_ = new FreestandingInputPortValue(
-      std::make_unique<BasicVector<double>>(system_->get_input_port(0).size()));
+      system->AllocateInputVector(system->get_input_port(0)));
   std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
   context_->SetInputPortValue(0, std::move(input_port_value));
 
@@ -109,9 +109,25 @@ class RunningCostMidWrapper : public solvers::Constraint {
 
 }  // anon namespace
 
+void DircolTrajectoryOptimization::DoAddRunningCost(
+    const symbolic::Expression& g) {
+  // Trapezoidal integration:
+  //    sum_{i=0...N-2} h_i/2.0 * (g_i + g_{i+1}), or
+  // g_0*h_0/2.0 + [sum_{i=1...N-2} g_i*(h_{i-1} + h_i)/2.0] +
+  // g_{N-1}*h_{N-2}/2.0.
+
+  AddCost(0.5 * SubstitutePlaceholderVariables(g * h_vars()(0) / 2, 0));
+  for (int i = 1; i < N() - 2; i++) {
+    AddCost(SubstitutePlaceholderVariables(
+        g * (h_vars()(i - 1) + h_vars()(i)) / 2, i));
+  }
+  AddCost(0.5 *
+          SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
+}
+
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
-void DircolTrajectoryOptimization::AddRunningCost(
+void DircolTrajectoryOptimization::DoAddRunningCost(
     std::shared_ptr<solvers::Constraint> constraint) {
   AddCost(std::make_shared<RunningCostEndWrapper>(constraint),
           {h_vars().head(1), x_vars().head(num_states()),

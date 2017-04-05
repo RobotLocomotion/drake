@@ -2,7 +2,12 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_binary", "drake_cc_googletest", "drake_cc_library")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
 
 drake_cc_library(
     name = "humanoid_status_translator_system",
@@ -160,7 +165,7 @@ drake_cc_googletest(
     data = [
         "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
         "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
-        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
     ],
     tags = [
         "exclusive",
@@ -184,7 +189,7 @@ drake_cc_googletest(
     data = [
         "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
         "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
-        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
     ],
     tags = [
         "exclusive",

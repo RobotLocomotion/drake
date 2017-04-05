@@ -3,9 +3,21 @@
 # This file marks a workspace root for the Bazel build system. see
 # http://bazel.io/ .
 
+# To temporarily use a local copy of a github_archive, within this file add a
+# local_repository_archive argument to its github_archive macro call, e.g.:
+#
+# github_archive(
+#     name = "foobar",
+#     local_repository_override = "/path/to/local/foo/bar",
+#     repository = "foo/bar",
+#     commit = "0123456789abcdef0123456789abcdef01234567",
+#     sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+# )
+
 workspace(name = "drake")
 
 load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
+load("//tools:bitbucket.bzl", "bitbucket_archive")
 load("//tools:github.bzl", "github_archive")
 load('@bazel_tools//tools/build_defs/repo:git.bzl', 'git_repository')
 
@@ -56,6 +68,14 @@ github_archive(
     commit = "43a4048b92ef5b7eff6dc637a621c7da3a41d194",
     build_file = "tools/spdlog.BUILD",
     sha256 = "5166c036eacd625b86f725bfba356547e0bc497232649662c61cde7b1b423292",
+)
+
+github_archive(
+    name = "fmt",
+    repository = "fmtlib/fmt",
+    commit = "3.0.1",
+    build_file = "tools/fmt.BUILD",
+    sha256 = "dce62ab75a161dd4353a98364feb166d35e7eea382169d59d9ce842c49c55bad",
 )
 
 maven_jar(
@@ -152,6 +172,14 @@ github_archive(
     sha256 = "d4b7b006ffd8918ecafda050d94c18388d9cd113a8849263bbedc7c488144ed4",
 )
 
+github_archive(
+    name = "tinyobjloader",
+    repository = "syoyo/tinyobjloader",
+    commit = "9d9e987c4776d9df54e0ab65639e1befddb1d5ae",
+    build_file = "tools/tinyobjloader.BUILD",
+    sha256 = "e5c7ce01a153a3d9101f6c197e10145490ecd84ba7d0b6463708a60bc2845d4b",
+)
+
 # Necessary for buildifier.
 github_archive(
     name = "io_bazel_rules_go",
@@ -235,4 +263,13 @@ new_local_repository(
     path = "not/real/stub",
     build_file_content = ("cc_library(name = 'python_headers', " +
                           "visibility = ['//visibility:public'])")
+)
+
+bitbucket_archive(
+    name = "ignition_math",
+    repository = "ignitionrobotics/ign-math",
+    commit = "ignition-math3_3.0.0",
+    sha256 = "9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd",
+    build_file = "tools/ignition_math.BUILD",
+    strip_prefix = "ignitionrobotics-ign-math-a06d26055d07",
 )

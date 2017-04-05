@@ -31,64 +31,65 @@ namespace symbolic {
 
 /** Kinds of symbolic expressions. */
 enum class ExpressionKind {
-  Constant,    ///< constant (double)
-  Var,         ///< variable
-  Add,         ///< addition (+)
-  Mul,         ///< multiplication (*)
-  Div,         ///< division (/)
-  Log,         ///< logarithms
-  Abs,         ///< absolute value function
-  Exp,         ///< exponentiation
-  Sqrt,        ///< square root
-  Pow,         ///< power function
-  Sin,         ///< sine
-  Cos,         ///< cosine
-  Tan,         ///< tangent
-  Asin,        ///< arcsine
-  Acos,        ///< arccosine
-  Atan,        ///< arctangent
-  Atan2,       ///< arctangent2 (atan2(y,x) = atan(y/x))
-  Sinh,        ///< hyperbolic sine
-  Cosh,        ///< hyperbolic cosine
-  Tanh,        ///< hyperbolic tangent
-  Min,         ///< min
-  Max,         ///< max
-  IfThenElse,  ///< if then else
-  NaN,         ///< NaN
+  Constant,               ///< constant (double)
+  Var,                    ///< variable
+  Add,                    ///< addition (+)
+  Mul,                    ///< multiplication (*)
+  Div,                    ///< division (/)
+  Log,                    ///< logarithms
+  Abs,                    ///< absolute value function
+  Exp,                    ///< exponentiation
+  Sqrt,                   ///< square root
+  Pow,                    ///< power function
+  Sin,                    ///< sine
+  Cos,                    ///< cosine
+  Tan,                    ///< tangent
+  Asin,                   ///< arcsine
+  Acos,                   ///< arccosine
+  Atan,                   ///< arctangent
+  Atan2,                  ///< arctangent2 (atan2(y,x) = atan(y/x))
+  Sinh,                   ///< hyperbolic sine
+  Cosh,                   ///< hyperbolic cosine
+  Tanh,                   ///< hyperbolic tangent
+  Min,                    ///< min
+  Max,                    ///< max
+  IfThenElse,             ///< if then else
+  NaN,                    ///< NaN
+  UninterpretedFunction,  ///< Uninterpreted function
   // TODO(soonho): add Integral
 };
 
 /** Total ordering between ExpressionKinds. */
 bool operator<(ExpressionKind k1, ExpressionKind k2);
 
-class ExpressionCell;        // In drake/common/symbolic_expression_cell.h
-class ExpressionConstant;    // In drake/common/symbolic_expression_cell.h
-class ExpressionVar;         // In drake/common/symbolic_expression_cell.h
-class UnaryExpressionCell;   // In drake/common/symbolic_expression_cell.h
-class BinaryExpressionCell;  // In drake/common/symbolic_expression_cell.h
-class ExpressionAdd;         // In drake/common/symbolic_expression_cell.h
-class ExpressionMul;         // In drake/common/symbolic_expression_cell.h
-class ExpressionDiv;         // In drake/common/symbolic_expression_cell.h
-class ExpressionLog;         // In drake/common/symbolic_expression_cell.h
-class ExpressionAbs;         // In drake/common/symbolic_expression_cell.h
-class ExpressionExp;         // In drake/common/symbolic_expression_cell.h
-class ExpressionSqrt;        // In drake/common/symbolic_expression_cell.h
-class ExpressionPow;         // In drake/common/symbolic_expression_cell.h
-class ExpressionSin;         // In drake/common/symbolic_expression_cell.h
-class ExpressionCos;         // In drake/common/symbolic_expression_cell.h
-class ExpressionTan;         // In drake/common/symbolic_expression_cell.h
-class ExpressionAsin;        // In drake/common/symbolic_expression_cell.h
-class ExpressionAcos;        // In drake/common/symbolic_expression_cell.h
-class ExpressionAtan;        // In drake/common/symbolic_expression_cell.h
-class ExpressionAtan2;       // In drake/common/symbolic_expression_cell.h
-class ExpressionSinh;        // In drake/common/symbolic_expression_cell.h
-class ExpressionCosh;        // In drake/common/symbolic_expression_cell.h
-class ExpressionTanh;        // In drake/common/symbolic_expression_cell.h
-class ExpressionMin;         // In drake/common/symbolic_expression_cell.h
-class ExpressionMax;         // In drake/common/symbolic_expression_cell.h
-class ExpressionIfThenElse;  // In drake/common/symbolic_expression_cell.h
-class Formula;               // In drake/common/symbolic_formula.h
-
+class ExpressionCell;                   // In symbolic_expression_cell.h
+class ExpressionConstant;               // In symbolic_expression_cell.h
+class ExpressionVar;                    // In symbolic_expression_cell.h
+class UnaryExpressionCell;              // In symbolic_expression_cell.h
+class BinaryExpressionCell;             // In symbolic_expression_cell.h
+class ExpressionAdd;                    // In symbolic_expression_cell.h
+class ExpressionMul;                    // In symbolic_expression_cell.h
+class ExpressionDiv;                    // In symbolic_expression_cell.h
+class ExpressionLog;                    // In symbolic_expression_cell.h
+class ExpressionAbs;                    // In symbolic_expression_cell.h
+class ExpressionExp;                    // In symbolic_expression_cell.h
+class ExpressionSqrt;                   // In symbolic_expression_cell.h
+class ExpressionPow;                    // In symbolic_expression_cell.h
+class ExpressionSin;                    // In symbolic_expression_cell.h
+class ExpressionCos;                    // In symbolic_expression_cell.h
+class ExpressionTan;                    // In symbolic_expression_cell.h
+class ExpressionAsin;                   // In symbolic_expression_cell.h
+class ExpressionAcos;                   // In symbolic_expression_cell.h
+class ExpressionAtan;                   // In symbolic_expression_cell.h
+class ExpressionAtan2;                  // In symbolic_expression_cell.h
+class ExpressionSinh;                   // In symbolic_expression_cell.h
+class ExpressionCosh;                   // In symbolic_expression_cell.h
+class ExpressionTanh;                   // In symbolic_expression_cell.h
+class ExpressionMin;                    // In symbolic_expression_cell.h
+class ExpressionMax;                    // In symbolic_expression_cell.h
+class ExpressionIfThenElse;             // In symbolic_expression_cell.h
+class ExpressionUninterpretedFunction;  // In symbolic_expression_cell.h
+class Formula;                          // In symbolic_formula.h
 class Expression;
 
 // Substitution is a map from a Variable to a symbolic expression. It is used in
@@ -105,6 +106,7 @@ Its syntax tree is as follows:
        | abs(E) | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E)
        | asin(E) | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
        | min(E, E) | max(E, E) | if_then_else(F, E, E) | NaN
+       | uninterpreted_function(name, {v_1, ..., v_n})
 @endverbatim
 
 In the implementation, Expression is a simple wrapper including a shared pointer
@@ -356,6 +358,8 @@ class Expression {
   friend Expression if_then_else(const Formula& f_cond,
                                  const Expression& e_then,
                                  const Expression& e_else);
+  friend Expression uninterpreted_function(const std::string& name,
+                                           const Variables& vars);
 
   friend std::ostream& operator<<(std::ostream& os, const Expression& e);
   friend void swap(Expression& a, Expression& b) { std::swap(a.ptr_, b.ptr_); }
@@ -383,6 +387,7 @@ class Expression {
   friend bool is_min(const Expression& e);
   friend bool is_max(const Expression& e);
   friend bool is_if_then_else(const Expression& e);
+  friend bool is_uninterpreted_function(const Expression& e);
 
   // Note that the following cast functions are only for low-level operations
   // and not exposed to the user of drake/common/symbolic_expression.h
@@ -414,6 +419,8 @@ class Expression {
   friend std::shared_ptr<ExpressionMax> to_max(const Expression& e);
   friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
       const Expression& e);
+  friend std::shared_ptr<ExpressionUninterpretedFunction>
+  to_uninterpreted_function(const Expression& e);
 
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
@@ -457,6 +464,18 @@ Expression min(const Expression& e1, const Expression& e2);
 Expression max(const Expression& e1, const Expression& e2);
 Expression if_then_else(const Formula& f_cond, const Expression& e_then,
                         const Expression& e_else);
+
+/** Constructs an uninterpreted-function expression with @p name and @p vars.
+ * An uninterpreted function is an opaque function that has no other property
+ * than its name and a set of its arguments. This is useful to applications
+ * where it is good enough to provide abstract information of a function without
+ * exposing full details. Declaring sparsity of a system is a typical example.
+ *
+ * See also `FunctionalForm::Arbitrary(Variables v)` which shares the same
+ * motivation.
+ */
+Expression uninterpreted_function(const std::string& name,
+                                  const Variables& vars);
 void swap(Expression& a, Expression& b);
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
@@ -519,6 +538,8 @@ bool is_min(const Expression& e);
 bool is_max(const Expression& e);
 /** Checks if @p e is an if-then-else expression. */
 bool is_if_then_else(const Expression& e);
+/** Checks if @p e is an uninterpreted-function expression. */
+bool is_uninterpreted_function(const Expression& e);
 
 /** Returns the constant value of the constant expression @p e.
  *  \pre{@p e is a constant expression.}
@@ -530,40 +551,45 @@ double get_constant_value(const Expression& e);
 const Variable& get_variable(const Expression& e);
 /** Returns the argument in the unary expression @p e.
  *  \pre{@p e is a unary expression.}
-*/
+ */
 const Expression& get_argument(const Expression& e);
 /** Returns the first argument of the binary expression @p e.
  *  \pre{@p e is a binary expression.}
-*/
+ */
 const Expression& get_first_argument(const Expression& e);
 /** Returns the second argument of the binary expression @p e.
  *  \pre{@p e is a binary expression.}
-*/
+ */
 const Expression& get_second_argument(const Expression& e);
 /** Returns the constant part of the addition expression @p e. For instance,
  *  given 7 + 2 * x + 3 * y, it returns 7.
  *  \pre{@p e is an addition expression.}
-*/
+ */
 double get_constant_in_addition(const Expression& e);
 /** Returns the map from an expression to its coefficient in the addition
  *  expression @p e. For instance, given 7 + 2 * x + 3 * y, the return value
  *  maps 'x' to 2 and 'y' to 3.
  *  \pre{@p e is an addition expression.}
-*/
+ */
 const std::map<Expression, double>& get_expr_to_coeff_map_in_addition(
     const Expression& e);
 /** Returns the constant part of the multiplication expression @p e. For
  *  instance, given 7 * x^2 * y^3, it returns 7.
  *  \pre{@p e is a multiplication expression.}
-*/
+ */
 double get_constant_in_multiplication(const Expression& e);
 /** Returns the map from a base expression to its exponent expression in the
  * multiplication expression @p e. For instance, given 7 * x^2 * y^3 * z^x, the
  * return value maps 'x' to 2, 'y' to 3, and 'z' to 'x'.
  *  \pre{@p e is a multiplication expression.}
-*/
+ */
 const std::map<Expression, Expression>&
 get_base_to_exponent_map_in_multiplication(const Expression& e);
+
+/** Returns the name of an uninterpreted-function expression @p e.
+ *  \pre{@p e is an uninterpreted-function expression.}
+ */
+const std::string& get_uninterpreted_function_name(const Expression& e);
 
 // Matrix<Expression> * Matrix<double> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
@@ -676,7 +702,7 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
  * file. This specialization is required to handle @c double to @c
  * symbolic::Expression conversion so that we can write one such as <tt>cond(x >
  * 0.0, 1.0, -1.0)</tt>.
-*/
+ */
 template <typename... Rest>
 symbolic::Expression cond(const symbolic::Formula& f_cond, double v_then,
                           Rest... rest) {
@@ -843,6 +869,7 @@ typename std::enable_if<
         std::is_same<typename DerivedB::Scalar, Expression>::value,
     bool>::type
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   // Note that std::equal_to<Expression> calls Expression::EqualTo which checks

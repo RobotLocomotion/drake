@@ -97,7 +97,10 @@ drake_cc_library(
 drake_cc_binary(
     name = "iiwa_controller",
     srcs = ["iiwa_controller.cc"],
-    data = [":models"],
+    data = [
+        ":models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
@@ -105,8 +108,8 @@ drake_cc_binary(
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:pid_controlled_system",
         "//drake/systems/lcm",
+        "//drake/systems/primitives:demultiplexer",
         "@bot_core_lcmtypes//:lib",
         "@gflags//:gflags",
         "@robotlocomotion_lcmtypes//:lib",
@@ -120,6 +123,7 @@ drake_cc_binary(
     data = [
         ":models",
         "//drake/examples/schunk_wsg:models",
+        "//drake/manipulation/models/iiwa_description:models",
     ],
     test_rule_args = ["--simulation_sec=0.01"],
     deps = [
@@ -147,7 +151,10 @@ drake_cc_binary(
     name = "kuka_simulation",
     srcs = ["kuka_simulation.cc"],
     add_test_rule = 1,
-    data = [":models"],
+    data = [
+        ":models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":iiwa_common",
@@ -166,7 +173,10 @@ drake_cc_binary(
 drake_cc_binary(
     name = "kuka_plan_runner",
     srcs = ["kuka_plan_runner.cc"],
-    data = [":models"],
+    data = [
+        ":models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
@@ -178,7 +188,10 @@ drake_cc_binary(
 drake_cc_binary(
     name = "kuka_ik_demo",
     srcs = ["kuka_ik_demo.cc"],
-    data = [":models"],
+    data = [
+        ":models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":iiwa_common",
         "//drake/lcm",
@@ -195,7 +208,10 @@ drake_cc_binary(
     name = "run_kuka_iiwa_arm_dynamics",
     srcs = ["run_kuka_iiwa_arm_dynamics.cc"],
     add_test_rule = 1,
-    data = [":models"],
+    data = [
+        ":models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     test_rule_args = ["--duration=0.5"],
     test_rule_size = "medium",
     deps = [
@@ -229,7 +245,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iiwa_plan_source_test",
-    data = [":models"],
+    data = [
+        ":models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":iiwa_plan_source",
         "//drake/systems/framework",
@@ -238,7 +257,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "sim_diagram_builder_test",
-    data = [":models"],
+    data = [
+        ":models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":iiwa_common",
         ":sim_diagram_builder",

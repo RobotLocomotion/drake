@@ -140,6 +140,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "is_dynamic_castable",
+    testonly = 1,
+    hdrs = [
+        "test/is_dynamic_castable.h",
+    ],
+    deps = [
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "symbolic_test_util",
     testonly = 1,
     hdrs = [
@@ -423,6 +434,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "is_dynamic_castable_test",
+    deps = [
+        ":is_dynamic_castable",
+    ],
+)
+
+drake_cc_googletest(
     name = "polynomial_test",
     deps = [
         ":common",
@@ -476,6 +494,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_expression_jacobian_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_expression_array_test",
     deps = [
         ":common",
         ":symbolic",

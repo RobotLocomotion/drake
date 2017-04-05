@@ -3,6 +3,8 @@
 #include <limits>
 #include <stdexcept>
 
+#include "drake/common/symbolic_expression.h"
+
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
@@ -14,7 +16,7 @@ VectorXd VectorDiff(const VectorXd& vec) {
   const int len_minus1 = vec.size() - 1;
   return vec.tail(len_minus1) - vec.head(len_minus1);
 }
-}  // anon namespace
+}  // namespace
 
 // DirectTrajectoryOptimization
 // For readability of long lines, these single-letter variables names are
@@ -32,30 +34,23 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
       N_(num_time_samples),
       h_vars_(NewContinuousVariables(N_ - 1, "h")),
       x_vars_(NewContinuousVariables(num_states_ * N_, "x")),
-      u_vars_(NewContinuousVariables(num_inputs_ * N_, "u")) {
+      u_vars_(NewContinuousVariables(num_inputs_ * N_, "u")),
+      placeholder_t_var_(NewContinuousVariables<1>("h")),
+      placeholder_x_vars_(NewContinuousVariables(num_states_, "x")),
+      placeholder_u_vars_(NewContinuousVariables(num_inputs_, "u")) {
   DRAKE_ASSERT(num_time_samples > 1);
   DRAKE_ASSERT(num_states_ > 0);
   DRAKE_ASSERT(num_inputs_ > 0);
   DRAKE_ASSERT(trajectory_time_lower_bound <= trajectory_time_upper_bound);
   // Construct total time linear constraint.
   // TODO(Lucy-tri) add case for all timesteps independent (if needed).
-  MatrixXd id_zero(N_ - 2, N_ - 1);
-  id_zero << MatrixXd::Identity(N_ - 2, N_ - 2), MatrixXd::Zero(N_ - 2, 1);
-  MatrixXd zero_id(N_ - 2, N_ - 1);
-  zero_id << MatrixXd::Zero(N_ - 2, 1), MatrixXd::Identity(N_ - 2, N_ - 2);
-  MatrixXd a_time(N_ - 1, N_ - 1);
-  a_time << MatrixXd::Ones(1, N_ - 1), id_zero - zero_id;
-
-  VectorXd lower(N_ - 1);
-  lower << trajectory_time_lower_bound, MatrixXd::Zero(N_ - 2, 1);
-  VectorXd upper(N_ - 1);
-  upper << trajectory_time_upper_bound, MatrixXd::Zero(N_ - 2, 1);
-  AddLinearConstraint(a_time, lower, upper, h_vars_);
-
-  // Ensure that all h values are non-negative.
-  VectorXd all_inf(N_ - 1);
-  all_inf.fill(std::numeric_limits<double>::infinity());
-  AddBoundingBoxConstraint(MatrixXd::Zero(N_ - 1, 1), all_inf, h_vars_);
+  AddLinearConstraint(h_vars_.cast<symbolic::Expression>().sum(),
+                      trajectory_time_lower_bound, trajectory_time_upper_bound);
+  for (int i = 0; i < N_ - 2; ++i) {
+    AddLinearEqualityConstraint(h_vars_(i + 1) - h_vars_(i), 0.0);
+  }
+  // // Ensure that all h values are non-negative.
+  AddLinearConstraint(h_vars_.array() >= 0.0);
 }
 
 void DirectTrajectoryOptimization::AddInputBounds(
@@ -85,6 +80,11 @@ void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     h(i) = h_vars_(interval_indices[i]);
   }
   AddBoundingBoxConstraint(lower_bound, upper_bound, h);
+}
+
+void DirectTrajectoryOptimization::AddTimeIntervalBounds(double lower_bound,
+                                                         double upper_bound) {
+  AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
 }
 
 namespace {
@@ -133,7 +133,7 @@ class FinalCostWrapper : public solvers::Constraint {
   std::shared_ptr<Constraint> constraint_;
 };
 
-}  // anon namespace
+}  // namespace
 
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
@@ -223,6 +223,25 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
     states.push_back(x_values.segment(i * num_states_, num_states_));
   }
   return states;
+}
+
+symbolic::Expression
+DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
+    const symbolic::Expression& e, int interval_index) const {
+  symbolic::Substitution sub;
+
+  // time(i) is the sum of h intervals 0...(i-1)
+  const symbolic::Expression time =
+      h_vars_.head(interval_index).cast<symbolic::Expression>().sum();
+
+  sub.emplace(placeholder_t_var_(0), time);
+  for (int i = 0; i < num_states_; i++)
+    sub.emplace(placeholder_x_vars_(i),
+                x_vars_(interval_index * num_states_ + i));
+  for (int i = 0; i < num_inputs_; i++)
+    sub.emplace(placeholder_u_vars_(i),
+                u_vars_(interval_index * num_inputs_ + i));
+  return e.Substitute(sub);
 }
 
 void DirectTrajectoryOptimization::GetResultSamples(
