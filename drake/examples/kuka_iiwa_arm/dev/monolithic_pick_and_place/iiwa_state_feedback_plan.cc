@@ -39,6 +39,7 @@ struct IiwaStateFeedbackPlanSource::InternalData {
   std::vector<char> encoded_msg;
   PiecewisePolynomial<double> pp;
   PiecewisePolynomial<double> pp_deriv;
+  PiecewisePolynomial<double> pp_double_deriv;
 };
 
 IiwaStateFeedbackPlanSource::IiwaStateFeedbackPlanSource(
@@ -47,8 +48,11 @@ IiwaStateFeedbackPlanSource::IiwaStateFeedbackPlanSource(
       input_port_state_(
           this->DeclareInputPort(systems::kVectorValued, 2 * kNumJoints)
               .get_index()),
-      output_port_trajectory_(
+      output_port_state_trajectory_(
           this->DeclareOutputPort(systems::kVectorValued, kNumJoints * 2)
+              .get_index()),
+      output_port_acceleration_trajectory_(
+          this->DeclareOutputPort(systems::kVectorValued, kNumJoints)
               .get_index()) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       model_path, multibody::joints::kFixed, &tree_);
@@ -71,20 +75,28 @@ void IiwaStateFeedbackPlanSource::DoCalcOutput(
     systems::SystemOutput<double>* output) const {
   const InternalData& plan = context.get_abstract_state<InternalData>(0);
 
-  Eigen::VectorBlock<VectorX<double>> output_vec =
-      this->GetMutableOutputVector(output, 0);
+  Eigen::VectorBlock<VectorX<double>> output_state_vector =
+      this->GetMutableOutputVector(output, output_port_state_trajectory_);
+
+  Eigen::VectorBlock<VectorX<double>> output_acceleration_vector =
+      this->GetMutableOutputVector(output,
+                                   output_port_acceleration_trajectory_);
+
   if (plan.pp.getNumberOfSegments() <= 1) {
     // We don't have a plan yet, so emit the last commanded position
     // with no velocity.
     for (int i = 0; i < kNumJoints; i++) {
-      output_vec(i) = plan.iiwa_state[i];
+      output_state_vector(i) = plan.iiwa_state[i];
     }
-    output_vec.tail(kNumJoints) = Eigen::VectorXd::Zero(kNumJoints);
+    output_state_vector.tail(kNumJoints) = Eigen::VectorXd::Zero(kNumJoints);
+    output_acceleration_vector = Eigen::VectorXd::Zero(kNumJoints);
   } else {
-    output_vec.head(kNumJoints) =
+    output_state_vector.head(kNumJoints) =
         plan.pp.value(context.get_time() - plan.start_time);
-    output_vec.tail(kNumJoints) =
+    output_state_vector.tail(kNumJoints) =
         plan.pp_deriv.value(context.get_time() - plan.start_time);
+    output_acceleration_vector =
+        plan.pp_double_deriv.value(context.get_time() - plan.start_time);
   }
 }
 
@@ -151,6 +163,8 @@ void IiwaStateFeedbackPlanSource::DoCalcUnrestrictedUpdate(
             PiecewisePolynomial<double>::FirstOrderHold(input_time, knots);
       }
       current_plan_in_state.pp_deriv = current_plan_in_state.pp.derivative();
+      current_plan_in_state.pp_double_deriv =
+          current_plan_in_state.pp_deriv.derivative();
     }
   } else {
     std::vector<Eigen::MatrixXd> knots(2, measured);
@@ -159,6 +173,8 @@ void IiwaStateFeedbackPlanSource::DoCalcUnrestrictedUpdate(
     current_plan_in_state.pp =
         PiecewisePolynomial<double>::ZeroOrderHold(times, knots);
     current_plan_in_state.pp_deriv = current_plan_in_state.pp.derivative();
+    current_plan_in_state.pp_double_deriv =
+        current_plan_in_state.pp_deriv.derivative();
   }
 }
 

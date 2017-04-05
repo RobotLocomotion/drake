@@ -43,9 +43,14 @@ class IiwaStateFeedbackPlanSource : public systems::LeafSystem<double> {
     return this->get_input_port(input_port_state_);
   }
 
-  const systems::OutputPortDescriptor<double>& get_output_port_trajectory()
-      const {
-    return this->get_output_port(output_port_trajectory_);
+  const systems::OutputPortDescriptor<double>&
+  get_output_port_state_trajectory() const {
+    return this->get_output_port(output_port_state_trajectory_);
+  }
+
+  const systems::OutputPortDescriptor<double>&
+  get_output_port_acceleration_trajectory() const {
+    return this->get_output_port(output_port_acceleration_trajectory_);
   }
 
  protected:
@@ -67,7 +72,8 @@ class IiwaStateFeedbackPlanSource : public systems::LeafSystem<double> {
   struct InternalData;
   const int input_port_plan_{-1};
   const int input_port_state_{-1};
-  const int output_port_trajectory_{-1};
+  const int output_port_state_trajectory_{-1};
+  const int output_port_acceleration_trajectory_{-1};
   RigidBodyTree<double> tree_;
 };
 
