@@ -64,8 +64,7 @@ void RungeKutta2Integrator<T>::DoStepOnceFixedSize(const T& dt) {
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
-  IntegratorBase<T>::get_system().CalcTimeDerivatives(
-      IntegratorBase<T>::get_context(), derivs0_.get());
+  this->CalcTimeDerivatives(*context, derivs0_.get());
 
   // First stage is an explicit Euler step:
   // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), u(t))
@@ -75,8 +74,7 @@ void RungeKutta2Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   IntegratorBase<T>::get_mutable_context()->set_time(t);
 
   // use derivative at t+dt
-  IntegratorBase<T>::get_system().CalcTimeDerivatives(
-      *IntegratorBase<T>::get_mutable_context(), derivs1_.get());
+  this->CalcTimeDerivatives(*context, derivs1_.get());
   const auto& xcdot1 = derivs1_->get_vector();
 
   // TODO(sherm1) Use better operators when available.

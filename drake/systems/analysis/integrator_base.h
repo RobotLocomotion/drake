@@ -444,8 +444,15 @@ class IntegratorBase {
     smallest_adapted_step_size_taken_ = nan();
     largest_step_size_taken_ = nan();
     num_steps_taken_ = 0;
+    num_ode_evals_ = 0;
     error_check_failures_ = 0;
   }
+
+  /**
+   * Returns the number of ODE function evaluations since the last call to
+   * ResetStatistics() or Initialize().
+  */
+  int64_t get_num_derivative_evaluations() const { return num_ode_evals_; }
 
   /**
    * Returns the number of failures to accept an integration step due to
@@ -806,6 +813,15 @@ class IntegratorBase {
    */
 
  protected:
+  /// Evaluates the derivative function (and updates call statistics).
+  /// Subclasses should call this function rather than calling
+  /// system.CalcTimeDerivatives() directly.
+  void CalcTimeDerivatives(const Context<T>& context,
+                           ContinuousState<T>* dxdt) {
+    get_system().CalcTimeDerivatives(context, dxdt);
+    num_ode_evals_++;
+  }
+
   /**
    * Sets the working ("in use") accuracy for this integrator. The working
    * accuracy may not be equivalent to the target accuracy when the latter is
@@ -1017,6 +1033,7 @@ class IntegratorBase {
   T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
   int64_t error_check_failures_{0};
+  int64_t num_ode_evals_{0};
 
   // Applied as diagonal matrices to weight error estimates.
   Eigen::VectorXd qbar_weight_, z_weight_;
