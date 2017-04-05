@@ -103,18 +103,18 @@ class KeyboardEventProcessor:
             elif (event.key == pygame.K_DOWN):
                 self.brake_gradient = 1
             elif (event.key == pygame.K_LEFT):
-                new_msg = new_msg._replace(steering_angle = _limit_steering(
+                new_msg = new_msg._replace(steering_angle=_limit_steering(
                     last_msg.steering_angle + (
                         STEERING_BUTTON_STEP_ANGLE * TURN_LEFT_SIGN)))
             elif (event.key == pygame.K_RIGHT):
-                new_msg = new_msg._replace(steering_angle = _limit_steering(
+                new_msg = new_msg._replace(steering_angle=_limit_steering(
                     last_msg.steering_angle + (
                         STEERING_BUTTON_STEP_ANGLE * TURN_RIGHT_SIGN)))
 
         new_msg = last_msg._replace(
-            throttle = _limit_throttle(
+            throttle=_limit_throttle(
                 last_msg.throttle + self.throttle_gradient * THROTTLE_SCALE),
-            brake = _limit_brake(
+            brake=_limit_brake(
                 last_msg.brake + self.brake_gradient * BRAKE_SCALE))
 
         return new_msg
@@ -210,7 +210,8 @@ class SteeringCommandPublisher:
                     event, self.last_value)
                 msg = lcm_msg()
                 msg.steering_angle = self.last_value.steering_angle
-                msg.acceleration = self.last_value.throttle - self.last_value.brake
+                msg.acceleration = (self.last_value.throttle -
+                                    self.last_value.brake)
                 self.lc.publish(self.lcm_tag, msg.encode())
                 self.printLCMValues()
 

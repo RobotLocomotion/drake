@@ -19,10 +19,12 @@ with zipfile.ZipFile("drake/doc/sphinx.zip", "r") as archive:
 os.chdir("sphinx-tmp")
 file_url = "file://%s/index.html " % os.path.abspath(os.getcwd())
 
+
 # An HTTP handler without logging.
 class Handler(SimpleHTTPRequestHandler):
     def log_request(*_):
         pass
+
 
 # Serve the current directory for local browsing.
 sockaddr = ("127.0.0.1", 8000)

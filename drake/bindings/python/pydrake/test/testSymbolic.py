@@ -56,5 +56,6 @@ class TestSymbolicVariables(unittest.TestCase):
         self.assertEqual(str(-x), "(-1 * x)")
         self.assertEqual(str(-(x + 1)), "(-1 - x)")
 
+
 if __name__ == '__main__':
     unittest.main()
