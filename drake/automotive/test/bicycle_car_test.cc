@@ -82,6 +82,10 @@ TEST_F(BicycleCarTest, Topology) {
   EXPECT_EQ(kStateDimension, state_descriptor.size());
 }
 
+TEST_F(BicycleCarTest, DirectFeedthrough) {
+  EXPECT_FALSE(dut_->HasAnyDirectFeedthrough());
+}
+
 TEST_F(BicycleCarTest, Output) {
   const double kTolerance = 1e-10;
 

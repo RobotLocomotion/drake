@@ -172,6 +172,11 @@ void BicycleCar<T>::ImplCalcTimeDerivatives(
   derivatives->set_sy(sy_dot);
 }
 
+template <typename T>
+BicycleCar<symbolic::Expression>* BicycleCar<T>::DoToSymbolic() const {
+  return new BicycleCar<symbolic::Expression>();
+}
+
 // These instantiations must match the API documentation in bicycle.h.
 template class BicycleCar<double>;
 template class BicycleCar<AutoDiffXd>;

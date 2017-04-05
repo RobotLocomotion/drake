@@ -97,6 +97,10 @@ class BicycleCar : public systems::LeafSystem<T> {
                                const systems::BasicVector<T>& force,
                                BicycleCarState<T>* derivatives) const;
 
+  // System<T> override.  Returns an BicycleCar<symbolic::Expression> with the
+  // same dimensions as this BicycleCar.
+  BicycleCar<symbolic::Expression>* DoToSymbolic() const override;
+
   int steering_input_port_{};
   int force_input_port_{};
   int state_output_port_{};
