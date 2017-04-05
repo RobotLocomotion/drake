@@ -175,33 +175,13 @@ class Diagram : public System<T>,
     return result;
   }
 
-  /// This method is DEPRECATED. Legacy overrides will be respected for now,
-  /// but will be deleted as soon as automatic analysis can replicate them.
-  /// There will thereafter be no manual override for the direct feedthrough
-  /// properties of a Diagram: developers will be required to express the
-  /// direct feedthrough properties of each constituent System correctly, which
-  /// will enable the Diagram to deduce its own direct-feedthrough properties
-  /// without manual intervention.
-  ///
-  /// Returns `true` as a conservative default.
-  bool has_any_direct_feedthrough() const override {
-    return true;
-  }
-
   /// Returns true if any output of the Diagram might have direct-feedthrough
   /// from any input of the Diagram. The implementation is quite conservative:
   /// it will return true if there is any path on the directed acyclic graph
   /// of subsystems that begins at any input port to the Diagram, and ends at
   /// any System producing an output port of the Diagram, such that every System
   /// in that path HasAnyDirectFeedthrough.
-  ///
-  /// TODO(david-german-tri): Improve the implementation by inspecting the
-  /// fine-grained HasDirectFeedthrough(input_port, output_port) relationships
-  /// of the subsystems.
   bool HasAnyDirectFeedthrough() const final {
-    // Respect legacy overrides.
-    if (!has_any_direct_feedthrough()) return false;
-
     for (int i = 0; i < this->get_num_output_ports(); i++) {
       if (HasDirectFeedthrough(i)) {
         return true;
@@ -216,27 +196,59 @@ class Diagram : public System<T>,
   /// directed acyclic graph of subsystems that begins at any input port to
   /// the Diagram, and ends at the system producing the given @p output_port,
   /// such that every System in that path HasAnyDirectFeedthrough.
-  ///
-  /// TODO(david-german-tri): Improve the implementation by inspecting the
-  /// fine-grained HasDirectFeedthrough(input_port, output_port) relationships
-  /// of the subsystems.
   bool HasDirectFeedthrough(int output_port) const final {
-    // Respect legacy overrides.
-    if (!has_any_direct_feedthrough()) return false;
-
     DRAKE_ASSERT(output_port >= 0);
     DRAKE_ASSERT(output_port < this->get_num_output_ports());
-    return HasDirectFeedthroughFromAnyInput(output_port_ids_[output_port]);
+    for (int i = 0; i < this->get_num_input_ports(); i++) {
+      if (HasDirectFeedthrough(i, output_port)) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  /// Aborts.
-  /// Once this is implemented, the following comment will apply:
-  ///
   /// Returns true if there might be direct feedthrough from the given
   /// @p input_port of the Diagram to the given @p output_port of the Diagram.
   bool HasDirectFeedthrough(int input_port, int output_port) const final {
-    DRAKE_ABORT_MSG("The two-argument version of HasDirectFeedthrough is "
-                    "not yet implemented for Diagrams.");
+    DRAKE_ASSERT(input_port >= 0);
+    DRAKE_ASSERT(input_port < this->get_num_input_ports());
+    DRAKE_ASSERT(output_port >= 0);
+    DRAKE_ASSERT(output_port < this->get_num_output_ports());
+
+    const PortIdentifier& target_id = input_port_ids_[input_port];
+
+    // Search the graph for a direct-feedthrough connection from the output_port
+    // back to the input_port. Maintain a set of the output port identifiers
+    // that are known to have a direct-feedthrough path to the output_port.
+    std::set<PortIdentifier> active_set;
+    active_set.insert(output_port_ids_[output_port]);
+    while (!active_set.empty()) {
+      const PortIdentifier current_id = *active_set.begin();
+      active_set.erase(current_id);
+      const System<T>* sys = current_id.first;
+      for (int i = 0; i < sys->get_num_input_ports(); ++i) {
+        if (sys->HasDirectFeedthrough(i, current_id.second)) {
+          if (sys == target_id.first) {
+            // We've found a direct-feedthrough path to the input_port.
+            return true;
+          } else {
+            // We've found an intermediate input port has a direct-feedthrough
+            // path to the output_port. Add the upstream output port (if there
+            // is one) to the active set.
+            const PortIdentifier pos(sys, i);
+            auto it = dependency_graph_.find(pos);
+            if (it != dependency_graph_.end()) {
+              const PortIdentifier& upstream_output = it->second;
+              active_set.insert(upstream_output);
+            }
+          }
+        }
+      }
+    }
+    // If there are no intermediate output ports with a direct-feedthrough path
+    // to the output_port, there is no direct feedthrough to it from the
+    // input_port.
+    return false;
   }
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
@@ -1139,56 +1151,6 @@ class Diagram : public System<T>,
       }
     }
     return true;
-  }
-
-  // Returns true if any input port of the Diagram might feed directly through
-  // to the given @p output_port_id, which is an output port of some subsystem
-  // of the Diagram.
-  bool HasDirectFeedthroughFromAnyInput(
-      const PortIdentifier& output_port_id) const {
-    // TODO(david-german-tri): Make this less conservative by checking only
-    // HasAnyDirectFeedthrough(input, output), i.e. inspecting the graph of
-    // ports, not the graph of systems.
-
-    // If the system producing output_port_id has no direct-feedthrough, then
-    // there is definitely no direct-feedthrough to output_port_id.
-    const System<T>* system = output_port_id.first;
-    if (!system->HasAnyDirectFeedthrough()) {
-      return false;
-    }
-
-    // Otherwise, we need to check each of the system's input ports.
-    for (int i = 0; i < system->get_num_input_ports(); ++i) {
-      PortIdentifier input_port_id{system, i};
-
-      // If input_port_id is an input port of the entire Diagram,
-      // there may be direct-feedthrough to output_port_id. Since we don't have
-      // a full sparsity matrix yet, we err on the side of caution and report
-      // direct-feedthrough.
-      //
-      // TODO(david-german-tri): This should be an O(1) lookup, not O(N).
-      for (const PortIdentifier& diagram_input_id : input_port_ids_) {
-        if (diagram_input_id == input_port_id) {
-          return true;
-        }
-      }
-
-      // If input_port_id is connected to some other System's output port,
-      // there is direct feedthrough to output_port_id if there is
-      // direct-feedthrough to the upstream output port. Check recursively.
-      auto upstream_it = dependency_graph_.find(input_port_id);
-      if (upstream_it != dependency_graph_.end()) {
-        const PortIdentifier& upstream_port = upstream_it->second;
-        if (HasDirectFeedthroughFromAnyInput(upstream_port)) {
-          return true;
-        }
-      }
-    }
-
-    // If none of the system's input ports create a direct-feedthrough path
-    // back to an input of the Diagram, there is no direct-feedthrough to
-    // output_port_id.
-    return false;
   }
 
   /// Handles Publish callbacks that were registered in DoCalcNextUpdateTime.

@@ -105,6 +105,10 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
             plant_xcdot->get_vector().GetAtIndex(2));
 }
 
+TEST_F(SpringMassSystemTest, DirectFeedthrough) {
+  EXPECT_FALSE(model_->HasAnyDirectFeedthrough());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

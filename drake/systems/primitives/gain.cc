@@ -9,6 +9,7 @@ namespace systems {
 
 template class Gain<double>;
 template class Gain<AutoDiffXd>;
+template class Gain<symbolic::Expression>;
 
 }  // namespace systems
 }  // namespace drake

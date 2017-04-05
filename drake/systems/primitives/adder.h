@@ -33,9 +33,6 @@ class Adder : public LeafSystem<T> {
   /// @param size number of elements in each input and output signal.
   Adder(int num_inputs, int size);
 
-  /// All inputs to this system are directly fed through to its output.
-  bool has_any_direct_feedthrough() const override { return true; }
-
   /// Returns the output port.
   const OutputPortDescriptor<T>& get_output_port() const;
 
@@ -52,6 +49,10 @@ class Adder : public LeafSystem<T> {
 
   // Returns an Adder<AutoDiffXd> with the same dimensions as this Adder.
   Adder<AutoDiffXd>* DoToAutoDiffXd() const override;
+
+  // System<T> override.  Returns an Adder<symbolic::Expression> with the
+  // same dimensions as this Adder.
+  Adder<symbolic::Expression>* DoToSymbolic() const override;
 };
 
 }  // namespace systems
