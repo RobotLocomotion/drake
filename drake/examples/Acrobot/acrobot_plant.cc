@@ -152,6 +152,11 @@ AcrobotPlant<AutoDiffXd>* AcrobotPlant<T>::DoToAutoDiffXd() const {
   return new AcrobotPlant<AutoDiffXd>();
 }
 
+template <typename T>
+AcrobotPlant<symbolic::Expression>* AcrobotPlant<T>::DoToSymbolic() const {
+  return new AcrobotPlant<symbolic::Expression>();
+}
+
 template class AcrobotPlant<double>;
 template class AcrobotPlant<AutoDiffXd>;
 

@@ -63,6 +63,11 @@ PendulumPlant<AutoDiffXd>* PendulumPlant<T>::DoToAutoDiffXd() const {
   return new PendulumPlant<AutoDiffXd>();
 }
 
+template <typename T>
+PendulumPlant<symbolic::Expression>* PendulumPlant<T>::DoToSymbolic() const {
+  return new PendulumPlant<symbolic::Expression>();
+}
+
 template class PendulumPlant<double>;
 template class PendulumPlant<AutoDiffXd>;
 

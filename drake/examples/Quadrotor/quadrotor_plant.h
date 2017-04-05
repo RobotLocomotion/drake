@@ -22,9 +22,6 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
   QuadrotorPlant(double m_arg, double L_arg, const Matrix3<T>& I_arg,
                  double kF_arg, double kM_arg);
 
-  /// The input force to this system is not direct feedthrough.
-  bool has_any_direct_feedthrough() const override { return false; }
-
   ~QuadrotorPlant() override;
 
   QuadrotorPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
@@ -47,6 +44,19 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T> &context,
       systems::ContinuousState<T> *derivatives) const override;
+
+  /// Declares that the system has no direct feedthrough from any input to any
+  /// output.
+  ///
+  /// The QuadrotorPlant is incompatible with the symbolic::Expression scalar
+  /// type because it invokes the Cholesky LDLT decomposition, which uses
+  /// conditionals in its implementation. Therefore, we must specify sparsity
+  /// by hand.
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
+                              int input_port,
+                              int output_port) const override {
+    return false;
+  }
 
   // TODO(naveenoid): Declare these as parameters in the context.
  private:

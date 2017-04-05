@@ -21,6 +21,11 @@ namespace examples {
 namespace quadrotor {
 namespace {
 
+GTEST_TEST(QuadrotorPlantTest, DirectFeedthrough) {
+  QuadrotorPlant<double> quadrotor;
+  EXPECT_FALSE(quadrotor.HasAnyDirectFeedthrough());
+}
+
 // The models are integrated and compared for the duration specified by the
 // following constant.
 const double kSimulationDuration = 0.1;
