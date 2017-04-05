@@ -22,16 +22,6 @@ template <typename T>
 PoseAggregator<T>::~PoseAggregator() {}
 
 template <typename T>
-const InputPortDescriptor<T>& PoseAggregator<T>::AddRigidBodyPlantInput(
-    const RigidBodyTree<double>& tree) {
-  input_records_.push_back(MakeRigidBodyTreeInputRecord(&tree));
-  const int num_states = tree.get_num_positions() + tree.get_num_velocities();
-  const InputPortDescriptor<T>& descriptor =
-      this->DeclareInputPort(kVectorValued, num_states);
-  return descriptor;
-}
-
-template <typename T>
 const InputPortDescriptor<T>& PoseAggregator<T>::AddSingleInput(
     const std::string& name, int model_instance_id) {
   input_records_.push_back(MakeSinglePoseInputRecord(name, model_instance_id));
@@ -79,34 +69,6 @@ void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
     const InputRecord& record = input_records_[port_index];
     const int num_poses = record.num_poses;
     switch (record.type) {
-      case kRigidBodyTree: {
-        // Extract just the positions from the state of the RigidBodyTree, and
-        // use them to compute the kinematics.
-        const auto value = this->EvalEigenVectorInput(context, port_index);
-        const RigidBodyTree<double>& tree = *record.tree;
-        const int num_q = tree.get_num_positions();
-        const int num_v = tree.get_num_velocities();
-        DRAKE_ASSERT(value.size() == num_q + num_v);
-        const VectorX<T> q = value.head(num_q);
-        KinematicsCache<T> cache = tree.doKinematics(q);
-
-        // Obtain the world transform for every body in the tree, except for
-        // the world body at index 0. Concatenate the RigidBodyTree poses into
-        // the output bundle.
-        for (int i = 0; i < num_poses; ++i) {
-          const int body_index = i + 1;
-          DRAKE_ASSERT(pose_index < bundle.get_num_poses());
-          bundle.set_pose(pose_index,
-                          cache.get_element(body_index).transform_to_world);
-          // TODO(david-german-tri): Set velocities for the RigidBodyTree.
-          const RigidBody<double>& body = tree.get_body(body_index);
-          bundle.set_name(pose_index, MakeBodyName(body));
-          bundle.set_model_instance_id(pose_index,
-                                       body.get_model_instance_id());
-          pose_index++;
-        }
-        break;
-      }
       case kSinglePose: {
         const PoseVector<T>* value =
             this->template EvalVectorInput<PoseVector>(context, port_index);
@@ -178,24 +140,6 @@ int PoseAggregator<T>::CountNumPoses() const {
     num_poses += record.num_poses;
   }
   return num_poses;
-}
-
-template <typename T>
-const std::string PoseAggregator<T>::MakeBodyName(
-    const RigidBody<double>& body) const {
-  return body.get_model_name() + "::" + body.get_name();
-}
-
-template <typename T>
-typename PoseAggregator<T>::InputRecord
-PoseAggregator<T>::MakeRigidBodyTreeInputRecord(
-    const RigidBodyTree<double>* tree) {
-  InputRecord rec;
-  rec.type = kRigidBodyTree;
-  // Subtract one to omit the world body.
-  rec.num_poses = tree->get_num_bodies() - 1;
-  rec.tree = tree;
-  return rec;
 }
 
 template <typename T>
