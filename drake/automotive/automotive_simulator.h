@@ -120,6 +120,33 @@ class AutomotiveSimulator {
       const MaliputRailcarParams<T>& params = MaliputRailcarParams<T>(),
       const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
 
+  /// Adds a MaliputRailcar to this simulation visualized as a Toyota Prius that
+  /// is controlled via an IdmController.
+  ///
+  /// @pre Start() has NOT been called.
+  ///
+  /// @pre SetRoadGeometry() was called. Otherwise, a std::runtime_error will be
+  /// thrown.
+  ///
+  /// @param name The car's name, which must be unique among all cars. Otherwise
+  /// a std::runtime_error will be thrown.
+  ///
+  /// @param initial_lane_direction The MaliputRailcar's initial lane and
+  /// direction on the lane. The lane in this parameter must be part of the
+  /// maliput::api::RoadGeometry that is added via SetRoadGeometry(). Otherwise
+  /// a std::runtime_error will be thrown.
+  ///
+  /// @param params The MaliputRailcar's parameters.
+  ///
+  /// @param initial_state The MaliputRailcar's initial state.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
+  int AddIdmControlledPriusMaliputRailcar(
+      const std::string& name,
+      const LaneDirection& initial_lane_direction,
+      const MaliputRailcarParams<T>& params = MaliputRailcarParams<T>(),
+      const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
+
   /// Sets the acceleration command of a particular MaliputRailcar.
   ///
   /// @param id The ID of the MaliputRailcar. This is the ID that was returned

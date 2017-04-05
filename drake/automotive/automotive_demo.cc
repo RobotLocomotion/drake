@@ -27,6 +27,9 @@ DEFINE_int32(num_trajectory_car, 0, "Number of TrajectoryCar vehicles. This "
 DEFINE_int32(num_maliput_railcar, 0, "Number of MaliputRailcar vehicles. This "
              "option is currently only applied when the road network is a "
              "dragway or merge.");
+DEFINE_int32(num_idm_controlled_maliput_railcar, 0, "Number of IDM-controlled "
+             "MaliputRailcar vehicles. This option is currently only applied "
+             "when the road network is a dragway.");
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
@@ -86,6 +89,36 @@ std::string MakeChannelName(const std::string& name) {
   return default_prefix + "_" + name;
 }
 
+void AddMaliputRailcar(int num_cars, bool idm_controlled,
+    const maliput::dragway::RoadGeometry* dragway_road_geometry,
+    AutomotiveSimulator<double>* simulator) {
+  for (int i = 0; i < num_cars; ++i) {
+    const int lane_index = i % FLAGS_num_dragway_lanes;
+    const double speed = FLAGS_dragway_base_speed +
+        lane_index * FLAGS_dragway_lane_speed_delta;
+    MaliputRailcarParams<double> params;
+    params.set_r(0);
+    params.set_h(0);
+
+    const Lane* lane =
+        dragway_road_geometry->junction(0)->segment(0)->lane(lane_index);
+    MaliputRailcarState<double> state;
+    const int row = i / FLAGS_num_dragway_lanes;
+    // 5 m ensures a gap between consecutive rows of Prius vehicles. It was
+    // emperically chosen.
+    state.set_s(5 * row);
+    state.set_speed(speed);
+    if (idm_controlled) {
+      simulator->AddIdmControlledPriusMaliputRailcar(
+          "IdmControlledMaliputRailcar" + std::to_string(i),
+          LaneDirection(lane), params, state);
+    } else {
+      simulator->AddPriusMaliputRailcar("MaliputRailcar" + std::to_string(i),
+                                        LaneDirection(lane), params, state);
+    }
+  }
+}
+
 // Initializes the provided `simulator` with user-specified numbers of
 // `SimpleCar` vehicles and `TrajectoryCar` vehicles. If parameter
 // `road_network_type` equals `RoadNetworkType::dragway`, the provided
@@ -140,22 +173,10 @@ void AddVehicles(RoadNetworkType road_network_type,
                                        std::get<1>(params),
                                        std::get<2>(params));
     }
-    for (int i = 0; i < FLAGS_num_maliput_railcar; ++i) {
-      const int lane_index = i % FLAGS_num_dragway_lanes;
-      const double speed = FLAGS_dragway_base_speed +
-          lane_index * FLAGS_dragway_lane_speed_delta;
-      MaliputRailcarParams<double> params;
-      params.set_r(0);
-      params.set_h(0);
-
-      const Lane* lane =
-          dragway_road_geometry->junction(0)->segment(0)->lane(lane_index);
-      MaliputRailcarState<double> state;
-
-      state.set_speed(speed);
-      simulator->AddPriusMaliputRailcar("MaliputRailcar" + std::to_string(i),
-                                        LaneDirection(lane), params, state);
-    }
+    AddMaliputRailcar(FLAGS_num_maliput_railcar, false /* IDM controlled */,
+        dragway_road_geometry, simulator);
+    AddMaliputRailcar(FLAGS_num_idm_controlled_maliput_railcar,
+        true /* IDM controlled */, dragway_road_geometry, simulator);
   } else if (road_network_type == RoadNetworkType::onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
     for (int i = 0; i < FLAGS_num_maliput_railcar; ++i) {
