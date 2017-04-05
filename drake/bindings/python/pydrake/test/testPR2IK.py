@@ -35,6 +35,7 @@ def load_robot_from_urdf(urdf_file):
 
     return robot
 
+
 urdf_file = os.path.join(pydrake.getDrakePath(), "examples/PR2/pr2.urdf")
 
 # Load our model from URDF

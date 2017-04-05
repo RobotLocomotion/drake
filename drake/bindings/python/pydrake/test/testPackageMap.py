@@ -18,7 +18,8 @@ class TestPackageMap(unittest.TestCase):
     def test_populate_from_folder(self):
         pm = PackageMap()
         self.assertEqual(pm.size(), 0)
-        pm.PopulateFromFolder(os.path.join(getDrakePath(), "examples", "Atlas"))
+        pm.PopulateFromFolder(
+            os.path.join(getDrakePath(), "examples", "Atlas"))
         self.assertTrue(pm.Contains("Atlas"))
         self.assertEqual(pm.GetPath("Atlas"), os.path.join(
             getDrakePath(), "examples", "Atlas", ""))
@@ -29,8 +30,8 @@ class TestPackageMap(unittest.TestCase):
             getDrakePath(), "examples")
         pm.PopulateFromEnvironment("PYDRAKE_TEST_ROS_PACKAGE_PATH")
         self.assertTrue(pm.Contains("Atlas"))
-        self.assertEqual(pm.GetPath("Atlas"),
-            os.path.join(getDrakePath(), "examples", "Atlas", ""))
+        self.assertEqual(pm.GetPath("Atlas"), os.path.join(
+            getDrakePath(), "examples", "Atlas", ""))
         del os.environ["PYDRAKE_TEST_ROS_PACKAGE_PATH"]
 
     def test_populate_upstream(self):
@@ -39,8 +40,8 @@ class TestPackageMap(unittest.TestCase):
             os.path.join(getDrakePath(), "examples", "Atlas", "urdf",
                          "atlas_minimal_contact.urdf"))
         self.assertTrue(pm.Contains("Atlas"))
-        self.assertEqual(pm.GetPath("Atlas"),
-            os.path.join(getDrakePath(), "examples", "Atlas"))
+        self.assertEqual(pm.GetPath("Atlas"), os.path.join(
+            getDrakePath(), "examples", "Atlas"))
 
 
 if __name__ == '__main__':
