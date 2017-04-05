@@ -12,7 +12,6 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
@@ -23,7 +22,6 @@ using drake::lcm::DrakeLcm;
 using drake::multibody::joints::kFixed;
 using Eigen::VectorXd;
 using std::make_unique;
-using drake::systems::ImplicitEulerIntegrator;
 
 // Simple example of the "stiction" properties of the contact model.
 // Based on the default values (50 kg brick) and the friction coefficients,
@@ -37,7 +35,7 @@ using drake::systems::ImplicitEulerIntegrator;
 
 // Simulation parameters.
 DEFINE_double(v, 0.1, "The initial speed of the second brick");
-DEFINE_double(timestep, 1e-2, "The simulator time step");
+DEFINE_double(timestep, 1e-4, "The simulator time step");
 DEFINE_double(push, 260, "The magnitude of the force pushing on the bricks");
 DEFINE_double(stiffness, 100000, "The contact model's stiffness");
 DEFINE_double(us, 0.9, "The static coefficient of friction");
@@ -113,14 +111,9 @@ int main(int argc, char**argv) {
   // Create simulator.
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
   auto context = simulator->get_mutable_context();
-  simulator->reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
+  simulator->reset_integrator<RungeKutta2Integrator<double>>(*diagram,
                                                              FLAGS_timestep,
                                                              context);
-  ImplicitEulerIntegrator<double>* integrator = (ImplicitEulerIntegrator<double>*) simulator->get_mutable_integrator();
-  integrator->set_target_accuracy(0.11);
-  integrator->set_delta_state_tolerance(1e-6);
-  drake::log()->set_level(spdlog::level::debug);
-
   // Set initial state.
   auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);
   // 6 1-dof joints * 2 = 6 * (x, ẋ) * 2
