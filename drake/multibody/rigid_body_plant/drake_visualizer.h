@@ -24,9 +24,8 @@ namespace systems {
 /**
  * This is a Drake System 2.0 block that takes a RigidBodyTree and publishes LCM
  * messages that are intended for the DrakeVisualizer. It does this in two
- * phases: initialization, which runs when DoPublish() is called with
- * Context::get_time() equal to zero, and run-time, which runs every time
- * DoPublish() is called.
+ * phases: initialization, which is done in the constructor, and run-time, which
+ * runs every time DoPublish() is called.
  *
  * During initialization, this system block analyzes the RigidBodyTree and tells
  * Drake Visualizer what it will be visualizing. For example, these include the

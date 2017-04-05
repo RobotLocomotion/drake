@@ -26,6 +26,9 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
       tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size);
   if (enable_playback) log_.reset(new SignalLog<double>(vector_size));
+
+  // Sends a load model command to visualizer.
+  PublishLoadRobot();
 }
 
 void DrakeVisualizer::set_publish_period(double period) {
@@ -112,14 +115,6 @@ void DrakeVisualizer::PlaybackTrajectory(
 }
 
 void DrakeVisualizer::DoPublish(const Context<double>& context) const {
-  // TODO(liang.fok): Replace the following code once System 2.0's API allows
-  // systems to declare that they need a certain action to be performed at
-  // simulation time t_0.
-  //
-  // Before any draw commands, we need to send the load_robot message.
-  if (context.get_time() == 0.0) {
-    PublishLoadRobot();
-  }
   DRAKE_DEMAND(sent_load_robot_);
 
   // Obtains the input vector, which contains the generalized q,v state of the
