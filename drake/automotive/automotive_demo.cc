@@ -1,3 +1,4 @@
+#include <cmath>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -23,9 +24,18 @@ DEFINE_string(simple_car_names, "",
 DEFINE_int32(num_trajectory_car, 0, "Number of TrajectoryCar vehicles. This "
              "option is currently only applied when the road network is a flat "
              "plane or a dragway.");
-DEFINE_int32(num_maliput_railcar, 0, "Number of MaliputRailcar vehicles. This "
-             "option is currently only applied when the road network is a "
-             "dragway or merge.");
+DEFINE_int32(num_idm_controlled_maliput_railcar, 0, "Number of IDM-controlled "
+             "MaliputRailcar vehicles. This option is currently only applied "
+             "when the road network is a dragway. These cars are added after "
+             "the trajectory cars are added but before the fixed-speed "
+             "railcars are added. They are initialized to be behind the "
+             "fixed-speed railcars, if any.");
+DEFINE_int32(num_maliput_railcar, 0, "Number of fixed-speed MaliputRailcar "
+             "vehicles. This option is currently only applied when the road "
+             "network is a dragway or merge. The speed is derived based on the "
+             "road's base speed and speed delta. The railcars are added after "
+             "the IDM-controlled railcars are added and are positioned in "
+             "front of the IDM-controlled railcars.");
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
@@ -71,6 +81,11 @@ using maliput::api::Lane;
 namespace automotive {
 namespace {
 
+// The distance between the coordinates of consecutive rows of railcars on a
+// dragway. 5 m ensures a gap between consecutive rows of Prius vehicles. It was
+// empirically chosen.
+constexpr double kRailcarRowSpacing{5};
+
 enum class RoadNetworkType {
   flat = 0,
   dragway = 1,
@@ -83,6 +98,52 @@ std::string MakeChannelName(const std::string& name) {
     return default_prefix;
   }
   return default_prefix + "_" + name;
+}
+
+// Adds a MaliputRailcar to the simulation involving a dragway. It throws a
+// std::runtime_error if there is insufficient lane length for adding the
+// vehicle.
+//
+// @param num_cars The number of vehicles to add.
+//
+// @param idm_controlled Whether the vehicle should be IDM-controlled.
+//
+// @param initial_s_offset The initial s-offset against which all vehicles are
+// added. The vehicles are added in each lane of the dragway starting at this
+// s-offset. Each row of vehicles is in front of the previous row (increasing
+// s).
+//
+// @param dragway_road_geometry The road on which to add the railcars.
+//
+// @param simulator The simulator to modify.
+void AddMaliputRailcar(int num_cars, bool idm_controlled, int initial_s_offset,
+    const maliput::dragway::RoadGeometry* dragway_road_geometry,
+    AutomotiveSimulator<double>* simulator) {
+  for (int i = 0; i < num_cars; ++i) {
+    const int lane_index = i % FLAGS_num_dragway_lanes;
+    const double speed = FLAGS_dragway_base_speed +
+        lane_index * FLAGS_dragway_lane_speed_delta;
+    const MaliputRailcarParams<double> params;
+    const Lane* lane =
+        dragway_road_geometry->junction(0)->segment(0)->lane(lane_index);
+    MaliputRailcarState<double> state;
+    const int row = i / FLAGS_num_dragway_lanes;
+    const double s_offset = initial_s_offset + kRailcarRowSpacing * row;
+    if (s_offset >= lane->length()) {
+      throw std::runtime_error(
+          "Ran out of lane length to add a MaliputRailcar.");
+    }
+    state.set_s(s_offset);
+    state.set_speed(speed);
+    if (idm_controlled) {
+      simulator->AddIdmControlledPriusMaliputRailcar(
+          "IdmControlledMaliputRailcar" + std::to_string(i),
+          LaneDirection(lane), params, state);
+    } else {
+      simulator->AddPriusMaliputRailcar("MaliputRailcar" + std::to_string(i),
+                                        LaneDirection(lane), params, state);
+    }
+  }
 }
 
 // Initializes the provided `simulator` with user-specified numbers of
@@ -139,22 +200,14 @@ void AddVehicles(RoadNetworkType road_network_type,
                                        std::get<1>(params),
                                        std::get<2>(params));
     }
-    for (int i = 0; i < FLAGS_num_maliput_railcar; ++i) {
-      const int lane_index = i % FLAGS_num_dragway_lanes;
-      const double speed = FLAGS_dragway_base_speed +
-          lane_index * FLAGS_dragway_lane_speed_delta;
-      MaliputRailcarParams<double> params;
-      params.set_r(0);
-      params.set_h(0);
-
-      const Lane* lane =
-          dragway_road_geometry->junction(0)->segment(0)->lane(lane_index);
-      MaliputRailcarState<double> state;
-
-      state.set_speed(speed);
-      simulator->AddPriusMaliputRailcar("MaliputRailcar" + std::to_string(i),
-                                        LaneDirection(lane), params, state);
-    }
+    AddMaliputRailcar(FLAGS_num_idm_controlled_maliput_railcar,
+        true /* IDM controlled */, 0 /* initial s offset */,
+        dragway_road_geometry, simulator);
+    const double initial_s_offset =
+      std::ceil(FLAGS_num_idm_controlled_maliput_railcar /
+          FLAGS_num_dragway_lanes) * kRailcarRowSpacing;
+    AddMaliputRailcar(FLAGS_num_maliput_railcar, false /* IDM controlled */,
+        initial_s_offset, dragway_road_geometry, simulator);
   } else if (road_network_type == RoadNetworkType::onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
     for (int i = 0; i < FLAGS_num_maliput_railcar; ++i) {

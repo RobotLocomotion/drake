@@ -7,6 +7,7 @@
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/maliput_railcar_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
+#include "drake/automotive/idm_controller.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
@@ -168,6 +169,30 @@ int AutomotiveSimulator<T>::AddPriusMaliputRailcar(
                     aggregator_->get_input_port(descriptor.get_index()));
 
   car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
+  return id;
+}
+
+template <typename T>
+int AutomotiveSimulator<T>::AddIdmControlledPriusMaliputRailcar(
+    const std::string& name,
+    const LaneDirection& initial_lane_direction,
+    const MaliputRailcarParams<T>& params,
+    const MaliputRailcarState<T>& initial_state) {
+  const int id = AddPriusMaliputRailcar(name, initial_lane_direction, params,
+                                        initial_state);
+  const MaliputRailcar<T>* railcar =
+      dynamic_cast<const MaliputRailcar<T>*>(vehicles_.at(id));
+  DRAKE_DEMAND(railcar != nullptr);
+  auto controller =
+      builder_->template AddSystem<IdmController<T>>(*road_);
+
+  builder_->Connect(railcar->pose_output(), controller->ego_pose_input());
+  builder_->Connect(railcar->velocity_output(),
+                    controller->ego_velocity_input());
+  builder_->Connect(aggregator_->get_output_port(0),
+                    controller->traffic_input());
+  builder_->Connect(controller->acceleration_output(),
+                    railcar->command_input());
   return id;
 }
 
