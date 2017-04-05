@@ -21,10 +21,14 @@ namespace lcm {
 
 /**
  * Receives LCM messages from a given channel and outputs them to a
- * System<double>'s port. This class stores the most recently processed Lcm
- * message in its Context. CalcOutput() merely copies the message from the
- * Context to the output. To process a Lcm message, the user need to call
- * CalcNextUpdateTime(), which schedules a callback event if a new Lcm message
+ * System<double>'s port. This class stores the most recently processed LCM
+ * message in the State. When a LCM message arrives asynchronously, an update
+ * event is scheduled to process the message and store it the State at the
+ * earliest possible simulation time. The output is always consistent with the
+ * State.
+ *
+ * To process a LCM message, the user needs to call
+ * CalcNextUpdateTime(), which schedules a callback event if a new LCM message
  * has arrived. The message is then processed and stored in the Context by
  * calling CalcDiscreteVariableUpdates() or CalcUnrestrictedUpdate() depending
  * on the output type.
@@ -162,8 +166,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   void ProcessMessageAndStoreToAbstractState(
       AbstractValues* abstract_state) const;
 
-  // Callback entry point from LCM into this class. Also wakes up one thread
-  // block on notification_ if it's not nullptr.
+  // Callback entry point from LCM into this class.
   void HandleMessage(const std::string& channel, const void* message_buffer,
                      int message_size) override;
 
@@ -178,7 +181,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   // Will be non-null iff our output port is abstract-valued.
   const std::unique_ptr<SerializerInterface> serializer_;
 
-  // The mutex that guards received_message_.
+  // The mutex that guards received_message_ and received_message_count_.
   mutable std::mutex received_message_mutex_;
 
   // The bytes of the most recently received LCM message.
@@ -186,10 +189,6 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   // A message counter that's incremented every time the handler is called.
   int received_message_count_{0};
-
-  // Index 0 is the message, 1 is the message counter.
-  const int state_index_msg_{0};
-  const int state_index_msg_ctr_{1};
 };
 
 }  // namespace lcm
