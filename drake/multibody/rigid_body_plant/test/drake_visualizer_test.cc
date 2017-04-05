@@ -463,13 +463,6 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
 
   auto context = dut.CreateDefaultContext();
 
-  // Sets the time to be zero. This is necessary since the load robot message
-  // is only transmitted when the time is zero.
-  //
-  // TODO(liang.fok) Remove this assumption once systems are able to declare
-  // that they want to publish at the simulation's start time.
-  context->set_time(0);
-
   EXPECT_EQ(1, context->get_num_input_ports());
 
   // Initializes the system's input vector to contain all zeros.
@@ -481,6 +474,20 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   context->SetInputPortValue(
       0, std::make_unique<systems::FreestandingInputPortValue>(
              std::move(input_data)));
+
+  // What you would need to do manually to tell dut to publish the load robot
+  // model message.
+  {
+    systems::UpdateActions<double> events;
+    dut.CalcNextUpdateTime(*context, &events);
+    EXPECT_EQ(events.events.size(), 1);
+    EXPECT_EQ(events.events.front().action,
+              systems::DiscreteEvent<double>::kDiscreteUpdateAction);
+    std::unique_ptr<State<double>> tmp_state = context->CloneState();
+    dut.CalcDiscreteVariableUpdates(*context, events.events.front(),
+                                    tmp_state->get_mutable_discrete_state());
+    context->get_mutable_state()->CopyFrom(*tmp_state);
+  }
 
   // Publishes the `RigidBodyTree` visualization messages.
   dut.Publish(*context.get());
@@ -510,6 +517,22 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(dut, std::move(context));
   simulator.set_publish_every_time_step(false);
+
+  // What you would need to do manually to tell dut to publish the load robot
+  // model message.
+  {
+    const Context<double>& sim_context = simulator.get_context();
+    systems::UpdateActions<double> events;
+    dut.CalcNextUpdateTime(sim_context, &events);
+    EXPECT_EQ(events.events.size(), 1);
+    EXPECT_EQ(events.events.front().action,
+              systems::DiscreteEvent<double>::kDiscreteUpdateAction);
+    std::unique_ptr<State<double>> tmp_state = sim_context.CloneState();
+    dut.CalcDiscreteVariableUpdates(sim_context, events.events.front(),
+                                    tmp_state->get_mutable_discrete_state());
+    simulator.get_mutable_context()->get_mutable_state()->CopyFrom(*tmp_state);
+  }
+
   simulator.Initialize();
 
   for (double time = 0; time < 4; time += 0.01) {
