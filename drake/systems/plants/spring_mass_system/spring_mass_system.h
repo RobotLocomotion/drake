@@ -224,8 +224,7 @@ class SpringMassSystem : public LeafSystem<T> {
   }
 
   // LeafSystem<T> override.
-  std::unique_ptr<ContinuousState<T>>
-  AllocateContinuousState() const override;
+  std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 
  private:
   // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,
