@@ -24,6 +24,7 @@ DEFINE_string(simple_car_names, "",
               "would spawn 3 cars subscribed to DRIVING_COMMAND_Russ, "
               "DRIVING_COMMAND_Jeremy, and DRIVING_COMMAND_Liang). If this "
               "option is provided, num_simple_car must not be provided.");
+DEFINE_int32(num_mobil_car, 0, "Number of MOBIL-controlled SimpleCar vehicles");
 DEFINE_int32(num_trajectory_car, 0, "Number of TrajectoryCar vehicles. This "
              "option is currently only applied when the road network is a flat "
              "plane or a dragway.");
@@ -236,7 +237,21 @@ void AddVehicles(RoadNetworkType road_network_type,
         simulator->AddPriusSimpleCar("StalledCar" + std::to_string(i),
             "StalledCarChannel" + std::to_string(i), state);
       }
+
+**** FIXME
+
+    for (int i = 0; i < FLAGS_num_mobil_car; ++i) {
+      const int lane_index = 0;
+      const std::string name = "MOBIL";
+      SimpleCarState<double> state;
+      // TODO(jadecastro): Modify the state.
+      const Lane* lane =
+          dragway_road_geometry->junction(0)->segment(0)->lane(lane_index);
+      simulator->AddMobilControlledSimpleCar(name, LaneDirection(lane), state);
     }
+
+*****
+
   } else if (road_network_type == RoadNetworkType::onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
     for (int i = 0; i < FLAGS_num_maliput_railcar; ++i) {

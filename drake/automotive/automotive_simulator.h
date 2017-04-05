@@ -9,8 +9,12 @@
 #include "drake/automotive/car_vis_applicator.h"
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
+#include "drake/automotive/idm_controller.h"
+#include "drake/automotive/lane_direction.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput_railcar.h"
+#include "drake/automotive/mobil_planner.h"
+#include "drake/automotive/pure_pursuit_controller.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
@@ -71,9 +75,27 @@ class AutomotiveSimulator {
   /// @param initial_state The SimpleCar's initial state.
   ///
   /// @return The ID of the car that was just added to the simulation.
-  int AddPriusSimpleCar(
-      const std::string& name, const std::string& channel_name,
-      const SimpleCarState<T>& initial_state = SimpleCarState<T>());
+  int AddPriusSimpleCar(const std::string& name,
+                        const std::string& channel_name,
+                        const SimpleCarState<T>& initial_state =
+                        SimpleCarState<T>());
+
+  /// Adds an IDM-controlled SimpleCar to this simulation visualized as a Toyota
+  /// Prius.
+  ///
+  /// Refer to AddPriusSimpleCar header for parameter descriptions.
+  int AddIdmControlledSimpleCar(const std::string& model_name,
+                                const SimpleCarState<T>& initial_state =
+                                SimpleCarState<T>());
+
+  /// Adds a MOBIL-controlled SimpleCar to this simulation visualized as a
+  /// Toyota Prius.
+  ///
+  /// Refer to AddPriusSimpleCar header for parameter descriptions.
+  int AddMobilControlledSimpleCar(const std::string& model_name,
+                                  const LaneDirection& initial_lane_direction,
+                                  const SimpleCarState<T>& initial_state =
+                                  SimpleCarState<T>());
 
   /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius. This
   /// includes its EulerFloatingJoint output.
