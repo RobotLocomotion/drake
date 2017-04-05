@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
+#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -396,6 +397,7 @@ class Diagram : public System<T>,
   /// Classes inheriting from %Diagram need access to this method in order to
   /// pass their constituent subsystems the apropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
+  /*
   const Context<T>& GetSubsystemContext(const Context<T>& context,
                                         const System<T>* subsystem) const {
     DRAKE_DEMAND(subsystem != nullptr);
@@ -403,19 +405,85 @@ class Diagram : public System<T>,
     const int i = GetSystemIndexOrAbort(subsystem);
     return *diagram_context.GetSubsystemContext(i);
   }
+  */
+
+  template <typename BasePtr, typename DerivedPtr>
+  BasePtr GetSubsystemStuff(BasePtr base_ptr, const System<T>* subsystem,
+    std::function<BasePtr(const DerivedPtr, int)> getter) const {
+    DerivedPtr derived_ptr = dynamic_cast<DerivedPtr>(base_ptr);
+    DRAKE_DEMAND(derived_ptr != nullptr);
+
+    // subsystem is this' direct child.
+    auto it = sorted_systems_map_.find(subsystem);
+    if (it != sorted_systems_map_.end()) {
+      return getter(derived_ptr, it->second);
+      //return derived_ptr->GetSubsystemContext(it->second);
+    }
+
+    for (const auto& pair : sorted_systems_map_) {
+      const Diagram<T>* child = dynamic_cast<const Diagram<T>*>(pair.first);
+      if (child) {
+        BasePtr child_stuff_ptr = getter(derived_ptr, pair.second);
+        BasePtr grandchild_stuff_ptr =
+            child->template GetSubsystemStuff<BasePtr, DerivedPtr>(
+                child_stuff_ptr, subsystem, getter);
+        if (grandchild_stuff_ptr != nullptr) {
+          return grandchild_stuff_ptr;
+        }
+      }
+    }
+    DRAKE_DEMAND(false);
+    return nullptr;
+  }
+
+  const Context<T>& GetSubsystemContext(const Context<T>& context,
+                                        const System<T>* subsystem) const {
+    const Context<T>* sub_context =
+        GetSubsystemStuff<const Context<T>*, const DiagramContext<T>*>(
+            &context, subsystem, &DiagramContext<T>::GetSubsystemContext);
+    return *sub_context;
+    /*
+    Context<T>* sub_context =
+        GetMutableSubsystemContext(const_cast<Context<T>*>(&context), subsystem);
+    return *sub_context;
+    */
+  }
 
   /// Returns the subcontext that corresponds to the system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
   /// pass their constituent subsystems the apropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
-  Context<T>* GetMutableSubsystemContext(Context<T>* context,
-                                         const System<T>* subsystem) const {
-    DRAKE_DEMAND(context != nullptr);
-    DRAKE_DEMAND(subsystem != nullptr);
+  /*
     auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
     DRAKE_DEMAND(diagram_context != nullptr);
     const int i = GetSystemIndexOrAbort(subsystem);
     return diagram_context->GetMutableSubsystemContext(i);
+    */
+  Context<T>* GetMutableSubsystemContext(Context<T>* context,
+                                         const System<T>* subsystem) const {
+    /*
+    DRAKE_DEMAND(context != nullptr);
+    DRAKE_DEMAND(subsystem != nullptr);
+    std::list<int> path = GetSubsytemPath(subsystem);
+    DRAKE_DEMAND(!path.empty());
+
+    Context<T>* sub_context;
+    DiagramContext<T>* diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+    while (true) {
+      DRAKE_DEMAND(diagram_context != nullptr);
+      sub_context = diagram_context->GetMutableSubsystemContext(path.front());
+      path.pop_front();
+
+      if (path.empty())
+        break;
+
+      diagram_context = dynamic_cast<DiagramContext<T>*>(sub_context);
+    }
+    DRAKE_DEMAND(sub_context != nullptr);
+    return sub_context;
+    */
+    return GetSubsystemStuff<Context<T>*, DiagramContext<T>*>(
+        context, subsystem, &DiagramContext<T>::GetMutableSubsystemContext);
   }
 
   /// Retrieves the state for a particular subsystem from the context for the
@@ -436,10 +504,29 @@ class Diagram : public System<T>,
   /// diagram.
   State<T>* GetMutableSubsystemState(State<T>* state,
                                      const System<T>* subsystem) const {
+    /*
     const int i = GetSystemIndexOrAbort(subsystem);
     auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
     DRAKE_DEMAND(diagram_state != nullptr);
     return diagram_state->get_mutable_substate(i);
+    */
+    std::list<int> path = GetSubsytemPath(subsystem);
+    DRAKE_DEMAND(!path.empty());
+
+    State<T>* sub_state;
+    DiagramState<T>* diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    while (true) {
+      DRAKE_DEMAND(diagram_state != nullptr);
+      sub_state = diagram_state->get_mutable_substate(path.front());
+      path.pop_front();
+
+      if (path.empty())
+        break;
+
+      diagram_state = dynamic_cast<DiagramState<T>*>(sub_state);
+    }
+    DRAKE_DEMAND(sub_state != nullptr);
+    return sub_state;
   }
 
   /// Returns the full path of this Diagram in the tree of Diagrams. Implemented
@@ -821,6 +908,29 @@ class Diagram : public System<T>,
         new Diagram<NewType>(blueprint));
     new_diagram->Own(std::move(new_systems));
     return std::move(new_diagram);
+  }
+
+  std::list<int> GetSubsytemPath(const System<T>* subsystem) const {
+    std::list<int> path;
+
+    auto it = sorted_systems_map_.find(subsystem);
+    if (it != sorted_systems_map_.end()) {
+      path.push_front(it->second);
+      return path;
+    }
+
+    for (const auto& pair : sorted_systems_map_) {
+      const Diagram<T>* as_diagram = dynamic_cast<const Diagram<T>*>(pair.first);
+      if (as_diagram) {
+        path = as_diagram->GetSubsytemPath(subsystem);
+        if (path.size()) {
+          path.push_front(pair.second);
+          return path;
+        }
+      }
+    }
+
+    return path;
   }
 
   /// Aborts at runtime.
