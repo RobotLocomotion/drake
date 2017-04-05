@@ -67,11 +67,12 @@ systems::DiagramBuilder<T>* AutomotiveSimulator<T>::get_builder() {
 
 template <typename T>
 int AutomotiveSimulator<T>::AddPriusSimpleCar(
-    const std::string& model_name,
+    const std::string& name,
     const std::string& channel_name,
     const SimpleCarState<T>& initial_state) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
+  CheckNameUniqueness(name);
   const int id = allocate_vehicle_number();
 
   static const DrivingCommandTranslator driving_command_translator;
@@ -80,10 +81,12 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
       builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
           channel_name, driving_command_translator, lcm_.get());
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
+  simple_car->set_name(name);
+  vehicles_[id] = simple_car;
   simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
-  const auto& descriptor = aggregator_->AddSingleInput(model_name, id);
+  const auto& descriptor = aggregator_->AddSingleInput(name, id);
   builder_->Connect(simple_car->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
 
@@ -92,26 +95,28 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
                     coord_transform->get_input_port(0));
   AddPublisher(*simple_car, id);
   AddPublisher(*coord_transform, id);
-  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, model_name));
+  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
   return id;
 }
 
 template <typename T>
 int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
+    const std::string& name,
     const Curve2<double>& curve,
     double speed,
     double start_time) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
+  CheckNameUniqueness(name);
   const int id = allocate_vehicle_number();
-  const std::string model_name =
-      "trajectory_car_" + std::to_string(id);
 
   auto trajectory_car =
       builder_->template AddSystem<TrajectoryCar<T>>(curve, speed, start_time);
+  trajectory_car->set_name(name);
+  vehicles_[id] = trajectory_car;
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
-  const auto& descriptor = aggregator_->AddSingleInput(model_name, id);
+  const auto& descriptor = aggregator_->AddSingleInput(name, id);
   builder_->Connect(trajectory_car->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
 
@@ -119,19 +124,19 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
                     coord_transform->get_input_port(0));
   AddPublisher(*trajectory_car, id);
   AddPublisher(*coord_transform, id);
-  car_vis_applicator_->AddCarVis(
-      std::make_unique<PriusVis<T>>(id, model_name));
+  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
   return id;
 }
 
 template <typename T>
 int AutomotiveSimulator<T>::AddPriusMaliputRailcar(
-    const std::string& model_name,
+    const std::string& name,
     const LaneDirection& initial_lane_direction,
     const MaliputRailcarParams<T>& params,
     const MaliputRailcarState<T>& initial_state) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
+  CheckNameUniqueness(name);
   if (road_ == nullptr) {
     throw std::runtime_error("AutomotiveSimulator::AddPriusMaliputRailcar(): "
         "RoadGeometry not set. Please call SetRoadGeometry() first before "
@@ -152,15 +157,16 @@ int AutomotiveSimulator<T>::AddPriusMaliputRailcar(
 
   auto railcar =
       builder_->template AddSystem<MaliputRailcar<T>>(initial_lane_direction);
+  railcar->set_name(name);
   vehicles_[id] = railcar;
   railcar_configs_[railcar].first.set_value(params.get_value());
   railcar_configs_[railcar].second.set_value(initial_state.get_value());
 
-  const auto& descriptor = aggregator_->AddSingleInput(model_name, id);
+  const auto& descriptor = aggregator_->AddSingleInput(name, id);
   builder_->Connect(railcar->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
 
-  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, model_name));
+  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
   return id;
 }
 
@@ -437,6 +443,16 @@ template <typename T>
 int AutomotiveSimulator<T>::allocate_vehicle_number() {
   DRAKE_DEMAND(!has_started());
   return next_vehicle_number_++;
+}
+
+template <typename T>
+void AutomotiveSimulator<T>::CheckNameUniqueness(const std::string& name) {
+  for (const auto& vehicle : vehicles_) {
+    if (vehicle.second->get_name() == name) {
+      throw std::runtime_error("A vehicle named \"" + name + "\" already "
+          "exists. It has id " + std::to_string(vehicle.first) + ".");
+    }
+  }
 }
 
 template class AutomotiveSimulator<double>;
