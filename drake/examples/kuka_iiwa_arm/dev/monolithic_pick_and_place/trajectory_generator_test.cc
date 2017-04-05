@@ -148,25 +148,25 @@ int DoMain(void) {
   auto drake_visualizer = builder.template AddSystem<DrakeVisualizer>(
       plant->get_plant().get_rigid_body_tree(), &lcm);
 
-  builder.Connect(plant->get_plant_output_port(),
+  builder.Connect(plant->get_output_port_plant_state(),
                   drake_visualizer->get_input_port(0));
   auto iiwa_plan_source =
       builder.template AddSystem<IiwaStateFeedbackPlanSource>(
           drake::GetDrakePath() + kIiwaUrdf, 0.01);
-  builder.Connect(plant->get_iiwa_state_port(),
+  builder.Connect(plant->get_output_port_iiwa_state(),
                   iiwa_plan_source->get_input_port_state());
   builder.Connect(iiwa_plan_source->get_output_port_state_trajectory(),
-                  plant->get_iiwa_state_input_port());
+                  plant->get_input_port_iiwa_state_command());
   builder.Connect(iiwa_plan_source->get_output_port_acceleration_trajectory(),
-                  plant->get_iiwa_acceleration_input_port());
+                  plant->get_input_port_iiwa_acceleration_command());
 
   auto wsg_trajectory_generator_ =
       builder.template AddSystem<SchunkWsgTrajectoryGenerator>(
-          plant->get_wsg_state_port().size(), 0);
-  builder.Connect(plant->get_wsg_state_port(),
+          plant->get_output_port_wsg_state().size(), 0);
+  builder.Connect(plant->get_output_port_wsg_state(),
                   wsg_trajectory_generator_->get_state_input_port());
   builder.Connect(wsg_trajectory_generator_->get_output_port(0),
-                  plant->get_wsg_input_port());
+                  plant->get_input_port_wsg_command());
 
   auto iiwa_base_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
