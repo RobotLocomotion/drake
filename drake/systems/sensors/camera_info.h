@@ -74,15 +74,19 @@ class CameraInfo {
 
   /// Constructor that sets the image size and vertical field of view `fov_y`.
   /// We assume there is no image offset, so the image center `(center_x,`
-  /// `center_y)` is equal to `(width / 2, height / 2)`.  The horizontal field
-  /// of view `fov_x` is calculated using the aspect ratio of the image width
-  /// and height together with the vertical field of view. The focal lengths
-  /// `focal_x` and `focal_y` are calculated as follows:
+  /// `center_y)` is equal to `(width / 2, height / 2)`.  We also assume the
+  /// focal lengths `focal_x` and `focal_y` are identical.  The horizontal
+  /// field of view `fov_x` is calculated using the aspect ratio of the image
+  /// width and height together with the vertical field of view:
+  /// <pre>
+  ///   fov_x = 2 * atan(width / height * tan(fov_y / 2)).
+  /// </pre>
+  /// This can be derived from the equations of the focal lengths:
   /// <pre>
   ///   focal_x = width / 2 / tan(fov_x / 2)
   ///   focal_y = height / 2 / tan(fov_y / 2)
   /// </pre>
-  /// where `fov_x = width / height * fov_x`.
+  /// where `focal_x / focal_y = 1`.
   ///
   /// @param width The image width in pixels, must be greater than zero.
   /// @param height The image height in pixels, must be greater than zero.
