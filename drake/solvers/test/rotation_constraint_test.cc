@@ -526,7 +526,7 @@ GTEST_TEST(RotationTest, TestMcCormick) {
         prog.AddLinearEqualityConstraint(
             Eigen::Matrix<double, 9, 9>::Identity(),
             Eigen::Matrix<double, 9, 1>::Zero(),
-            {R.col(0), R.col(1), R.col(2)});
+            {R.col(0), R.col(1), R.col(2)}).constraint();
 
     // Use a simple lambda to make the tests more readable below.
     auto IsFeasible = [&](Matrix3d R_to_check) -> bool {
