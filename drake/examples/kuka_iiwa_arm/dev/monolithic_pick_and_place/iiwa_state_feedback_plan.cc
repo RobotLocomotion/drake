@@ -19,6 +19,8 @@
 
 using robotlocomotion::robot_plan_t;
 
+// IMPORTANT NOTE : This component is not to be moved out of dev. See
+// issue #5736 for more details.
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {

@@ -20,14 +20,16 @@ namespace pick_and_place {
 ///
 /// If no plan has been received, the system will create an initial
 /// plan on the first unrestricted state update which commands the arm
-/// to hold at the measured position.
+/// to hold at the measured position. This system will also function in
+/// the same manner if a plan is received with no states.
 ///
 /// This class is largely similar to IiwaPlanSource in its functionality
 /// but can be hooked up by direct state feedback and avoids a direct
 /// feedthrough thus eliminating algebriac loops when used in conjunction
 /// with a RigidBodyPlant within the same Diagram.
-
 class IiwaStateFeedbackPlanSource : public systems::LeafSystem<double> {
+// IMPORTANT NOTE : This component is not to be moved out of dev. See
+// issue #5736 for more details.
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStateFeedbackPlanSource)
 

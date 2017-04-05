@@ -150,14 +150,14 @@ int DoMain(void) {
 
   builder.Connect(plant->get_plant_output_port(),
                   drake_visualizer->get_input_port(0));
-  auto iiwa_plan_source_ =
+  auto iiwa_plan_source =
       builder.template AddSystem<IiwaStateFeedbackPlanSource>(
           drake::GetDrakePath() + kIiwaUrdf, 0.01);
   builder.Connect(plant->get_iiwa_state_port(),
-                  iiwa_plan_source_->get_input_port_state());
-  builder.Connect(iiwa_plan_source_->get_output_port_state_trajectory(),
+                  iiwa_plan_source->get_input_port_state());
+  builder.Connect(iiwa_plan_source->get_output_port_state_trajectory(),
                   plant->get_iiwa_state_input_port());
-  builder.Connect(iiwa_plan_source_->get_output_port_acceleration_trajectory(),
+  builder.Connect(iiwa_plan_source->get_output_port_acceleration_trajectory(),
                   plant->get_iiwa_acceleration_input_port());
 
   auto wsg_trajectory_generator_ =
@@ -201,7 +201,7 @@ int DoMain(void) {
       builder.template AddSystem<PlanSourceTester>(iiwa, t, q_iiwa, q_wsg);
 
   builder.Connect(trajectory_generator_tester->get_output_port_iiwa_action(),
-                  iiwa_plan_source_->get_input_port_plan());
+                  iiwa_plan_source->get_input_port_plan());
   builder.Connect(trajectory_generator_tester->get_output_port_wsg_action(),
                   wsg_trajectory_generator_->get_command_input_port());
 

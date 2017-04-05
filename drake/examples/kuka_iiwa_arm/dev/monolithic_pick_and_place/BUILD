@@ -21,23 +21,12 @@ drake_cc_library(
         "iiwa_state_feedback_plan.h",
     ],
     deps = [
-        "//drake/common/trajectories:piecewise_quaternion",
-        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/lcmtypes:schunk",
         "//drake/lcmtypes:iiwa",
-        "//drake/lcm",
         "//drake/util:lcm_util",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-        "//drake/systems/framework",
-        "@bot_core_lcmtypes//:lib",
         "@robotlocomotion_lcmtypes//:lib",
-        "//drake/systems/analysis",
     ],
 )
 
@@ -48,15 +37,9 @@ drake_cc_library(
             "pick_and_place_common.h",
     ],
     deps = [
-        "//drake/common/trajectories:piecewise_quaternion",
-        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-        "//drake/systems/framework",
-        "//drake/systems/analysis",
     ],
 )
 
@@ -64,14 +47,17 @@ drake_cc_binary(
     name = "trajectory_generator_test",
     srcs = ["trajectory_generator_test.cc"],
     deps = [
-        ":kuka_pick_and_place_monolithic",
-        ":iiwa_state_feedback_plan",
-        "//drake/systems/framework",
-        "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
+        "//drake/examples/schunk_wsg:schunk_wsg_lcm",
+        "//drake/lcm",
+        "//drake/systems/analysis",
+        "//drake/systems/framework",
         "@gflags//:gflags",
+        ":iiwa_state_feedback_plan",
+        ":kuka_pick_and_place_monolithic",
+        
     ],
 )
 
