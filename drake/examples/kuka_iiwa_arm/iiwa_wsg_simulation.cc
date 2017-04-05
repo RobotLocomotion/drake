@@ -194,10 +194,6 @@ int DoMain() {
                   model->get_input_port_wsg_command());
   builder.Connect(model->get_output_port_wsg_state(),
                   wsg_status_sender->get_input_port(0));
-  std::cout << "model->get_output_port_wsg_state() :"
-            << model->get_output_port_wsg_state().size() << "\n";
-  std::cout << "wsg_trajectory_generator->get_input_port_state() :"
-            << wsg_trajectory_generator->get_state_input_port().size() << "\n";
   builder.Connect(model->get_output_port_wsg_state(),
                   wsg_trajectory_generator->get_state_input_port());
   builder.Connect(*wsg_status_sender, *wsg_status_pub);
@@ -211,7 +207,7 @@ int DoMain() {
   auto box_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
           "OBJECT_STATE_EST", &lcm));
-  builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
+  builder.Connect(model->get_output_port_box_robot_state_msg(),
                   box_state_pub->get_input_port(0));
 
   auto sys = builder.Build();

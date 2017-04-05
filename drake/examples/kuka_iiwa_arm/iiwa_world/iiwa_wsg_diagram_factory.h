@@ -13,7 +13,6 @@
 namespace drake {
 using systems::PassThrough;
 namespace examples {
-// using schunk_wsg::SchunkWsgStatusSender;
 namespace kuka_iiwa_arm {
 
 /// A custom `systems::Diagram` composed of a `systems::RigidBodyPlant`, and a
