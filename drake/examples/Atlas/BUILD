@@ -25,4 +25,4 @@ filegroup(
     ]),
 )
 
-cpplint(data = ["//drake/examples:CPPLINT.cfg"])
+cpplint()

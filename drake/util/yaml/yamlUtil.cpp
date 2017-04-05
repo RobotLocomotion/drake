@@ -1,14 +1,14 @@
 #include "yamlUtil.h"
-// #include <regex>
 
 #include "drake/multibody/joints/floating_base_types.h"
-
-using namespace std;
 
 using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kQuaternion;
 using drake::multibody::joints::kRollPitchYaw;
+
+using std::string;
+using std::vector;
 
 YAML::Node applyDefaults(const YAML::Node& node,
                          const YAML::Node& default_node) {
@@ -287,7 +287,7 @@ struct convert<BodyMotionParams> {
     return true;
   }
 };
-}
+}  // namespace YAML
 
 QPControllerParams loadSingleParamSet(const YAML::Node& config,
                                       const RigidBodyTree<double>& robot) {
@@ -485,7 +485,7 @@ struct convert<KinematicModifications> {
       if (!node["attachments"].IsSequence()) {
         return false;
       }
-      rhs.attachments = std::vector<Attachment>();
+      rhs.attachments = vector<Attachment>();
       const Node& attachments = node["attachments"];
       for (auto it = attachments.begin(); it != attachments.end(); ++it) {
         rhs.attachments.push_back(it->as<Attachment>());
@@ -494,7 +494,7 @@ struct convert<KinematicModifications> {
     return true;
   }
 };
-}
+}  // namespace YAML
 
 KinematicModifications parseKinematicModifications(
     const YAML::Node& modifications) {

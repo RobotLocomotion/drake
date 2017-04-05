@@ -3,7 +3,10 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/util/drakeUtil.h"
 
-using namespace Eigen;
+using Eigen::Dynamic;
+using Eigen::Isometry3d;
+using Eigen::Map;
+using Eigen::VectorXd;
 
 void EncodeVector3d(const Eigen::Ref<const Eigen::Vector3d>& vec,
                     bot_core::vector_3d_t& msg) {

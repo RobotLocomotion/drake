@@ -9,8 +9,11 @@
 #include <iostream>
 #include "drake/util/convexHull.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Dynamic;
+using Eigen::Matrix;
+using Eigen::Matrix2d;
+using Eigen::Ref;
+using Eigen::Vector2d;
 
 // 2D cross product of OA and OB vectors, i.e. z-component of their 3D cross
 // product.
@@ -22,10 +25,10 @@ coord2_t cross(const Point &O, const Point &A, const Point &B) {
 
 // Returns a list of points on the convex hull in counter-clockwise order.
 // Note: the last point in the returned list is the same as the first one.
-vector<Point> convexHull(vector<Point> P) {
+std::vector<Point> convexHull(std::vector<Point> P) {
   int n = P.size();
   int k = 0;
-  vector<Point> H(2 * n);
+  std::vector<Point> H(2 * n);
 
   if (n == 2) {
     H.resize(3);
@@ -55,8 +58,9 @@ vector<Point> convexHull(vector<Point> P) {
   return H;
 }
 
-vector<Point> eigenToPoints(const Ref<const Matrix<double, 2, Dynamic>> &P) {
-  vector<Point> points;
+std::vector<Point> eigenToPoints(
+    const Ref<const Matrix<double, 2, Dynamic>>& P) {
+  std::vector<Point> points;
   points.reserve(P.cols());
   for (int i = 0; i < P.cols(); ++i) {
     Point p;
@@ -75,8 +79,8 @@ bool inConvexHull(const Ref<const Matrix<double, 2, Dynamic>> &P,
 double signedDistanceInsideConvexHull(
     const Ref<const Matrix<double, 2, Dynamic>> &pts,
     const Ref<const Vector2d> &q) {
-  vector<Point> hull_pts = convexHull(eigenToPoints(pts));
-  double d_star = numeric_limits<double>::infinity();
+  std::vector<Point> hull_pts = convexHull(eigenToPoints(pts));
+  double d_star = std::numeric_limits<double>::infinity();
 
   Matrix2d R;
   R << 0, 1, -1, 0;
