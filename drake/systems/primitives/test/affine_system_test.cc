@@ -134,7 +134,7 @@ class FeedthroughAffineSystemTest : public ::testing::Test {
 TEST_F(FeedthroughAffineSystemTest, NoFeedthroughTest) {
   SetDCornerElement(0.0);
   InitialiseSystem();
-  EXPECT_FALSE(dut_->has_any_direct_feedthrough());
+  EXPECT_FALSE(dut_->HasAnyDirectFeedthrough());
 }
 
 // Tests that the system renders as a direct feedthrough
@@ -142,7 +142,7 @@ TEST_F(FeedthroughAffineSystemTest, NoFeedthroughTest) {
 TEST_F(FeedthroughAffineSystemTest, FeedthroughTest) {
   SetDCornerElement(1e-12);
   InitialiseSystem();
-  EXPECT_TRUE(dut_->has_any_direct_feedthrough());
+  EXPECT_TRUE(dut_->HasAnyDirectFeedthrough());
 }
 
 // Tests the discrete-time update.

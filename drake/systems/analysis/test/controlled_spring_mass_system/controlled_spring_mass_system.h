@@ -39,7 +39,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   /// @param[in] Kd the derivative constant.
   /// @param[in] target_position the desired target position.
   PidControlledSpringMassSystem(const T& spring_stiffness, const T& mass,
-                                const T& Kp, const T& Ki, const T& Kd,
+                                double Kp, double Ki, double Kd,
                                 const T& target_position);
 
   ~PidControlledSpringMassSystem() override {}
@@ -58,9 +58,6 @@ class PidControlledSpringMassSystem : public Diagram<T> {
 
   /// Returns the SpringMassSystem plant of the model.
   const SpringMassSystem<T>& get_plant() const;
-
-  // System<T> overrides
-  bool has_any_direct_feedthrough() const override;
 
  private:
   // These are references into the Diagram; no ownership implied.

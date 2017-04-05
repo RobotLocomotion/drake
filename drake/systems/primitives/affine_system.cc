@@ -3,6 +3,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -68,10 +69,8 @@ void TimeVaryingAffineSystem<T>::DoCalcOutput(const Context<T>& context,
   if (num_states_ > 0) {
     const MatrixX<T> Ct = C(t);
     DRAKE_DEMAND(Ct.rows() == num_outputs_ && Ct.cols() == num_states_);
-    const auto& x = dynamic_cast<const BasicVector<T>&>(
-                        context.get_continuous_state_vector())
-                        .get_value();
-    y += Ct * x;
+    const auto x = context.get_continuous_state_vector().CopyToVector();
+    y = Ct * x;
   }
 
   if (num_inputs_ > 0) {
@@ -180,6 +179,12 @@ template <typename T>
 AffineSystem<AutoDiffXd>* AffineSystem<T>::DoToAutoDiffXd() const {
   return new AffineSystem<AutoDiffXd>(A_, B_, f0_, C_, D_, y0_,
                                       this->time_period());
+}
+
+template <typename T>
+AffineSystem<symbolic::Expression>* AffineSystem<T>::DoToSymbolic() const {
+  return new AffineSystem<symbolic::Expression>(A_, B_, f0_, C_, D_, y0_,
+                                                this->time_period());
 }
 
 template <typename T>

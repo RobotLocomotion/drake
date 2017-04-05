@@ -36,23 +36,23 @@ class Gain : public SisoVectorSystem<T> {
   ///
   /// @param[in] k the gain constant so that `y = k * u`.
   /// @param[in] size number of elements in the signal to be processed.
-  Gain(const T& k, int size);
+  Gain(double k, int size);
 
   /// Constructs a %Gain system where different gains can be applied to each
   /// input value.
   ///
   /// @param[in] k the gain vector constants so that `y_i = k_i * u_i` where
   /// subscript `i` indicates the i-th element of the vector.
-  explicit Gain(const VectorX<T>& k);
+  explicit Gain(const Eigen::VectorXd& k);
 
   /// Returns the gain constant. This method should only be called if the gain
   /// can be represented as a scalar value, i.e., every element in the gain
   /// vector is the same. It will abort if the gain cannot be represented as a
   /// single scalar value.
-  const T& get_gain() const;
+  double get_gain() const;
 
   /// Returns the gain vector constant.
-  const VectorX<T>& get_gain_vector() const;
+  const Eigen::VectorXd& get_gain_vector() const;
 
  protected:
   void DoCalcVectorOutput(
@@ -61,8 +61,11 @@ class Gain : public SisoVectorSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* output) const override;
 
-  // TODO(amcastro-tri): move gain_ to System<T>::Parameter.
-  const VectorX<T> k_;
+  // System<T> override.  Returns a Gain<symbolic::Expression> with the
+  // same dimensions as this Gain.
+  Gain<symbolic::Expression>* DoToSymbolic() const override;
+
+  const Eigen::VectorXd k_;
 };
 
 }  // namespace systems

@@ -70,8 +70,8 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kp the proportional constant.
   /// @param[in] Ki the integral constant.
   /// @param[in] Kd the derivative constant.
-  PidControlledSystem(std::unique_ptr<System<T>> plant, const T& Kp,
-                      const T& Ki, const T& Kd);
+  PidControlledSystem(std::unique_ptr<System<T>> plant, double Kp, double Ki,
+                      double Kd);
 
   /// A constructor where the gains are vector values and all of the plant's
   /// output port zero is part of the feedback signal. The length of the gain
@@ -85,8 +85,9 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Ki the integral vector constant.
   ///
   /// @param[in] Kd the derivative vector constant.
-  PidControlledSystem(std::unique_ptr<System<T>> plant, const VectorX<T>& Kp,
-                      const VectorX<T>& Ki, const VectorX<T>& Kd);
+  PidControlledSystem(std::unique_ptr<System<T>> plant,
+                      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+                      const Eigen::VectorXd& Kd);
 
   /// A constructor where the gains are scalar values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -102,7 +103,7 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       std::unique_ptr<MatrixGain<T>> feedback_selector,
-                      const T& Kp, const T& Ki, const T& Kd);
+                      double Kp, double Ki, double Kd);
 
   /// A constructor where the gains are vector values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -125,8 +126,8 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative vector constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       std::unique_ptr<MatrixGain<T>> feedback_selector,
-                      const VectorX<T>& Kp, const VectorX<T>& Ki,
-                      const VectorX<T>& Kd);
+                      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+                      const Eigen::VectorXd& Kd);
 
   ~PidControlledSystem() override;
 
@@ -156,8 +157,9 @@ class PidControlledSystem : public Diagram<T> {
   static ConnectResult ConnectController(
       const InputPortDescriptor<T>& plant_input,
       const OutputPortDescriptor<T>& plant_output,
-      std::unique_ptr<MatrixGain<T>> feedback_selector, const VectorX<T>& Kp,
-      const VectorX<T>& Ki, const VectorX<T>& Kd, DiagramBuilder<T>* builder);
+      std::unique_ptr<MatrixGain<T>> feedback_selector,
+      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+      const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
 
   /// Creates a PidController with input saturation and uses @p builder to
   /// connect @p plant_input and @p plant_output from an existing plant, adding
@@ -167,10 +169,10 @@ class PidControlledSystem : public Diagram<T> {
   static ConnectResult ConnectControllerWithInputSaturation(
       const InputPortDescriptor<T>& plant_input,
       const OutputPortDescriptor<T>& plant_output,
-      std::unique_ptr<MatrixGain<T>> feedback_selector, const VectorX<T>& Kp,
-      const VectorX<T>& Ki, const VectorX<T>& Kd,
-      const VectorX<T>& min_plant_input, const VectorX<T>& max_plant_input,
-      DiagramBuilder<T>* builder);
+      std::unique_ptr<MatrixGain<T>> feedback_selector,
+      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+      const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,
+      const VectorX<T>& max_plant_input, DiagramBuilder<T>* builder);
 
  private:
   // A helper function for the constructors. This is necessary to avoid seg
@@ -178,8 +180,8 @@ class PidControlledSystem : public Diagram<T> {
   // the plant when one constructor delegates to another constructor.
   void Initialize(std::unique_ptr<System<T>> plant,
                   std::unique_ptr<MatrixGain<T>> feedback_selector,
-                  const VectorX<T>& Kp, const VectorX<T>& Ki,
-                  const VectorX<T>& Kd);
+                  const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+                  const Eigen::VectorXd& Kd);
 
   System<T>* plant_{nullptr};
 };

@@ -9,6 +9,7 @@ namespace systems {
 
 template class PassThrough<double>;
 template class PassThrough<AutoDiffXd>;
+template class PassThrough<symbolic::Expression>;
 
 }  // namespace systems
 }  // namespace drake

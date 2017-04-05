@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -44,6 +45,10 @@ class Demultiplexer : public LeafSystem<T> {
   // port.
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
+
+  // Returns a Demultiplexer<symbolic::Expression> with the same dimensions as
+  // this Demultiplexer.
+  Demultiplexer<symbolic::Expression>* DoToSymbolic() const override;
 };
 
 }  // namespace systems

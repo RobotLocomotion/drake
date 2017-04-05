@@ -43,8 +43,8 @@ class PidController : public StateFeedbackController<T> {
    * @param ki I gain.
    * @param kd D gain.
    */
-  PidController(
-      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
+  PidController(const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
+                const Eigen::VectorXd& kd);
 
   /**
    * Constructs a PID controller where some of the input states may not be
@@ -59,43 +59,38 @@ class PidController : public StateFeedbackController<T> {
    * @param kd D gain.
    */
   PidController(std::unique_ptr<MatrixGain<T>> feedback_selector,
-      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
+                const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
+                const Eigen::VectorXd& kd);
 
   /// Returns the proportional gain constant. This method should only be called
   /// if the proportional gain can be represented as a scalar value, i.e., every
   /// element in the proportional gain vector is the same. It will throw a
   /// `std::runtime_error` if the proportional gain cannot be represented as a
   /// scalar value.
-  const T& get_Kp_singleton() const;
+  double get_Kp_singleton() const;
 
   /// Returns the integral gain constant. This method should only be called if
   /// the integral gain can be represented as a scalar value, i.e., every
   /// element in the integral gain vector is the same. It will throw a
   /// `std::runtime_error` if the integral gain cannot be represented as a
   /// scalar value.
-  const T& get_Ki_singleton() const;
+  double get_Ki_singleton() const;
 
   /// Returns the derivative gain constant. This method should only be called if
   /// the derivative gain can be represented as a scalar value, i.e., every
   /// element in the derivative gain vector is the same. It will throw a
   /// `std::runtime_error` if the derivative gain cannot be represented as a
   /// scalar value.
-  const T& get_Kd_singleton() const;
+  double get_Kd_singleton() const;
 
   /// Returns the proportional vector constant.
-  const VectorX<T>& get_Kp_vector() const;
+  const Eigen::VectorXd& get_Kp_vector() const;
 
   /// Returns the integral vector constant.
-  const VectorX<T>& get_Ki_vector() const;
+  const Eigen::VectorXd& get_Ki_vector() const;
 
   /// Returns the derivative vector constant.
-  const VectorX<T>& get_Kd_vector() const;
-
-  // System<T> overrides
-  /// A PID controller directly feedthroughs the error signal to the output when
-  /// the proportional constant is non-zero. It feeds through the rate of change
-  /// of the error signal when the derivative constant is non-zero.
-  bool has_any_direct_feedthrough() const override;
+  const Eigen::VectorXd& get_Kd_vector() const;
 
   /// Sets the integral part of the PidController to @p value.
   /// @p value must be a column vector of the appropriate size.
@@ -116,8 +111,8 @@ class PidController : public StateFeedbackController<T> {
 
  private:
   void ConnectPorts(std::unique_ptr<MatrixGain<T>> feedback_selector,
-                    const VectorX<T>& kp, const VectorX<T>& ki,
-                    const VectorX<T>& kd);
+                    const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
+                    const Eigen::VectorXd& kd);
 
   // TODO(siyuanfeng): Need to redo the PID controller, then this would go away.
   PidControllerInternal<T>* controller_;

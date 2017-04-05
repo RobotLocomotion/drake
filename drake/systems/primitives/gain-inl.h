@@ -17,14 +17,14 @@ namespace systems {
 // TODO(amcastro-tri): remove the size parameter from the constructor once
 // #3109 supporting automatic sizes is resolved.
 template <typename T>
-Gain<T>::Gain(const T& k, int size) : Gain(VectorX<T>::Ones(size) * k) {}
+Gain<T>::Gain(double k, int size) : Gain(Eigen::VectorXd::Ones(size) * k) {}
 
 template <typename T>
-Gain<T>::Gain(const VectorX<T>& k)
-    : SisoVectorSystem<T>(k.size(), k.size()), k_(k) { }
+Gain<T>::Gain(const Eigen::VectorXd& k)
+    : SisoVectorSystem<T>(k.size(), k.size()), k_(k) {}
 
 template <typename T>
-const T& Gain<T>::get_gain() const {
+double Gain<T>::get_gain() const {
   if (!k_.isConstant(k_[0])) {
     std::stringstream s;
     s << "The gain vector, [" << k_ << "], cannot be represented as a scalar "
@@ -35,7 +35,7 @@ const T& Gain<T>::get_gain() const {
 }
 
 template <typename T>
-const VectorX<T>& Gain<T>::get_gain_vector() const {
+const Eigen::VectorXd& Gain<T>::get_gain_vector() const {
   return k_;
 }
 
@@ -46,6 +46,11 @@ void Gain<T>::DoCalcVectorOutput(
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* output) const {
   *output = k_.array() * input.array();
+}
+
+template <typename T>
+Gain<symbolic::Expression>* Gain<T>::DoToSymbolic() const {
+  return new Gain<symbolic::Expression>(k_);
 }
 
 }  // namespace systems

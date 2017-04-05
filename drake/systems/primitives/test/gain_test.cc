@@ -84,6 +84,14 @@ GTEST_TEST(GainTest, GainVectorTest) {
   TestGainSystem(*gain_system, input_vector, expected_output);
 }
 
+GTEST_TEST(GainTest, DirectFeedthrough) {
+  const int kSize = 3;
+  const auto gain_system = make_unique<Gain<double>>(2.0, kSize);
+  EXPECT_TRUE(gain_system->HasAnyDirectFeedthrough());
+  const auto zero_gain = make_unique<Gain<double>>(0.0, kSize);
+  EXPECT_FALSE(zero_gain->HasAnyDirectFeedthrough());
+}
+
 GTEST_TEST(GainDeathTest, GainAccessorTest) {
   const Vector4<double> gain_values(1.0, 2.0, 3.0, 4.0);
   const auto gain_system = make_unique<Gain<double>>(gain_values);
