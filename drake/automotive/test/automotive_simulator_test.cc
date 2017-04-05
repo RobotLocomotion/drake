@@ -6,6 +6,7 @@
 
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/lane_direction.h"
+#include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/prius_vis.h"
 #include "drake/common/drake_path.h"
@@ -154,6 +155,58 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCarInitialState) {
   EXPECT_EQ(state_message.y, kY);
   EXPECT_EQ(state_message.heading, kHeading);
   EXPECT_EQ(state_message.velocity, kVelocity);
+}
+
+GTEST_TEST(AutomotiveSimulatorTest, TestIdmControlledSimpleCar) {
+  // TODO(jwnimmer-tri) Do something better than "0_" here.
+  const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
+
+  const std::string joint_state_name =
+      systems::lcm::LcmPublisherSystem::make_name(kJointStateChannelName);
+
+  // Set up a basic simulation with just a Prius SimpleCar.
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+
+  const maliput::api::RoadGeometry* road{};
+  EXPECT_NO_THROW(road = simulator->SetRoadGeometry(
+      std::make_unique<const maliput::dragway::RoadGeometry>(
+          maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
+          100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+
+  const int id = simulator->AddIdmControlledSimpleCar("Foo");
+  EXPECT_EQ(id, 0);
+
+  // Finish all initialization, so that we can test the post-init state.
+  simulator->Start();
+}
+
+GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
+  // TODO(jwnimmer-tri) Do something better than "0_" here.
+  const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
+
+  const std::string joint_state_name =
+      systems::lcm::LcmPublisherSystem::make_name(kJointStateChannelName);
+
+  // Set up a basic simulation with just a Prius SimpleCar.
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+
+  const maliput::api::RoadGeometry* road{};
+  EXPECT_NO_THROW(road = simulator->SetRoadGeometry(
+      std::make_unique<const maliput::dragway::RoadGeometry>(
+          maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
+          100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+
+  const maliput::api::Lane* lane =
+     road->junction(0)->segment(0)->lane(0);
+
+  const int id = simulator->AddMobilControlledSimpleCar("Foo",
+                                                        LaneDirection(lane));
+  EXPECT_EQ(id, 0);
+
+  // Finish all initialization, so that we can test the post-init state.
+  simulator->Start();
 }
 
 // Cover AddTrajectoryCar (and thus AddPublisher).

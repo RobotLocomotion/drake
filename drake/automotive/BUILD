@@ -185,7 +185,6 @@ drake_cc_library(
     hdrs = ["mobil_planner.h"],
     deps = [
         ":generated_vectors",
-        ":idm_controller",
         ":idm_planner",
         ":lane_direction",
         ":pose_selector",
@@ -246,9 +245,7 @@ drake_cc_library(
         ":lane_direction",
         ":pose_selector",
         "//drake/automotive/maliput/api",
-        "//drake/common:cond",
         "//drake/common:symbolic",
-        "//drake/math:saturate",
         "//drake/systems/rendering:pose_vector",
     ],
 )
@@ -343,7 +340,10 @@ drake_cc_library(
         ":generated_translators",
         ":generated_vectors",
         ":idm_controller",
+        ":lane_direction",
         ":maliput_railcar",
+        ":mobil_planner",
+        ":pure_pursuit_controller",
         ":prius_vis",
         ":simple_car",
         ":trajectory_car",
