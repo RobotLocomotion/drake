@@ -301,6 +301,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   EXPECT_GE(integrator_->get_smallest_adapted_step_size_taken(), 0.0);
   EXPECT_GE(integrator_->get_num_steps_taken(), 0);
   EXPECT_NE(integrator_->get_error_estimate(), nullptr);
+  EXPECT_GT(integrator.get_num_derivative_evaluations(), 0);
 
   // Verify that less computation was performed compared to the fixed step
   // integrator.
