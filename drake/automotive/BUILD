@@ -8,6 +8,7 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -557,3 +558,5 @@ drake_cc_googletest(
 )
 
 cpplint()
+
+python_lint()

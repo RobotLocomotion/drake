@@ -55,6 +55,14 @@ github_archive(
 )
 
 github_archive(
+    name = "pycodestyle",
+    repository = "PyCQA/pycodestyle",
+    commit = "2.3.1",
+    sha256 = "e9fc1ca3fd85648f45c0d2e33591b608a17d8b9b78e22c5f898e831351bacb03",
+    build_file = "tools/pycodestyle.BUILD",
+)
+
+github_archive(
     name = "eigen",
     repository = "RobotLocomotion/eigen-mirror",
     commit = "d3ee2bc648be3d8be8c596a9a0aefef656ff8637",
