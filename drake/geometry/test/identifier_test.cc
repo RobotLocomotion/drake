@@ -115,10 +115,6 @@ TEST_F(IdentifierTests, StreamOperator) {
 
 // These tests confirm that behavior that *shouldn't* be compilable isn't.
 
-// This class provides the compiler with an l-value to trigger compilation on.
-template <class T>
-struct GenerateLValue { T& get_thing(); };
-
 // This code allows us to turn compile-time errors into run-time errors that
 // we can incorporate in a unit test.  The macro simplifies the boilerplate.
 // This macro confirms binary operations are *valid* between two ids of
@@ -138,8 +134,7 @@ struct GenerateLValue { T& get_thing(); };
 //    +     |   add
 #define BINARY_TEST(OP, OP_NAME) \
 template <typename T, typename U, \
-    typename = decltype(GenerateLValue<T>().get_thing() OP \
-                        GenerateLValue<U>().get_thing())> \
+    typename = decltype(std::declval<T>() OP std::declval<U>())> \
 bool has_ ## OP_NAME ## _helper(int) { return true; } \
 template <typename T, typename U> \
 bool has_ ## OP_NAME ## _helper(...) { return false; } \
