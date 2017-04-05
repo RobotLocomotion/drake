@@ -24,6 +24,8 @@ DEFINE_double(max_grid_unit, utility::ObjFeatures().max_grid_unit,
 DEFINE_double(min_grid_resolution, utility::ObjFeatures().min_grid_resolution,
               "Minimum number of grid-units in either lateral or longitudinal"
               " direction in the rendered mesh covering the road surface");
+DEFINE_bool(suppress_status_messages, false, "Whether to suppress the status "
+            "messages.");
 
 int main(int argc, char* argv[]) {
   drake::log()->debug("main()");
@@ -37,7 +39,9 @@ int main(int argc, char* argv[]) {
     drake::log()->error("No output file specified.");
     return 1;
   }
-  drake::log()->info("Loading road geometry.");
+  if (!FLAGS_suppress_status_messages) {
+    drake::log()->info("Loading road geometry.");
+  }
   auto rg = mono::LoadFile(FLAGS_yaml_file);
 
 
@@ -45,7 +49,9 @@ int main(int argc, char* argv[]) {
   features.max_grid_unit = FLAGS_max_grid_unit;
   features.min_grid_resolution = FLAGS_min_grid_resolution;
 
-  drake::log()->info("Generating OBJ.");
+  if (!FLAGS_suppress_status_messages) {
+    drake::log()->info("Generating OBJ.");
+  }
   utility::GenerateObjFile(rg.get(), FLAGS_obj_dir, FLAGS_obj_file, features);
 
   return 0;
