@@ -73,7 +73,7 @@ AttributesSet kGenericSolverCapabilities =
 bool is_satisfied(AttributesSet required, AttributesSet available) {
   return ((required & ~available) == kNoCapabilities);
 }
-}  // anon namespace
+}  // namespace
 
 enum {
   INITIAL_VARIABLE_ALLOCATION_NUM = 100
@@ -245,7 +245,7 @@ ExtractVariablesFromExpression(const Expression& e) {
 // `vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds
 // for map_var_to_index both as the input and as the output.
 void ExtractAndAppendVariablesFromExpression(
-    const Expression &e, VectorXDecisionVariable* vars,
+    const Expression& e, VectorXDecisionVariable* vars,
     unordered_map<Variable::Id, int>* map_var_to_index) {
   DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) == vars->size());
   for (const Variable& var : e.GetVariables()) {
@@ -369,8 +369,7 @@ void DecomposeLinearExpression(const Eigen::Ref<const VectorX<Expression>>& v,
  */
 void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
     const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map,
-    const unordered_map<Variable::Id, int>& map_var_to_index,
-    int num_variables,
+    const unordered_map<Variable::Id, int>& map_var_to_index, int num_variables,
     Eigen::MatrixXd* Q, Eigen::VectorXd* b, double* c) {
   DRAKE_DEMAND(Q->rows() == num_variables);
   DRAKE_DEMAND(Q->cols() == num_variables);
@@ -385,8 +384,10 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
     const symbolic::Monomial& p_monomial = p.first;
     if (p_monomial.total_degree() > 2) {
       ostringstream oss;
-      oss << p.first << " has order higher than 2, cannot be handled by "
-          "DecomposeQuadraticExpressionWithMonomialToCoeffMap" << std::endl;
+      oss << p.first
+          << " has order higher than 2, cannot be handled by "
+             "DecomposeQuadraticExpressionWithMonomialToCoeffMap"
+          << std::endl;
       throw std::runtime_error(oss.str());
     }
     const auto& monomial_powers = p_monomial.get_powers();
@@ -422,8 +423,8 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
 }
 }  // anonymous namespace
 
-Binding<Constraint> MathematicalProgram::AddCost(const Binding<Constraint>&
-                                                 binding) {
+Binding<Constraint> MathematicalProgram::AddCost(
+    const Binding<Constraint>& binding) {
   required_capabilities_ |= kGenericCost;
   generic_costs_.push_back(binding);
   return generic_costs_.back();
@@ -454,7 +455,6 @@ Binding<LinearConstraint> MathematicalProgram::AddCost(
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
     const Expression& e) {
-
   auto p = ExtractVariablesFromExpression(e);
   const VectorXDecisionVariable& var = p.first;
   const auto& map_var_to_index = p.second;
@@ -470,10 +470,9 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
     const Eigen::Ref<const Eigen::VectorXd>& c,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   auto cost = std::make_shared<LinearConstraint>(
-      c.transpose(), drake::Vector1<double>::Constant(
-                         -numeric_limits<double>::infinity()),
-      drake::Vector1<double>::Constant(
-          numeric_limits<double>::infinity()));
+      c.transpose(),
+      drake::Vector1<double>::Constant(-numeric_limits<double>::infinity()),
+      drake::Vector1<double>::Constant(numeric_limits<double>::infinity()));
   return AddCost(cost, vars);
 }
 
@@ -521,9 +520,8 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
   const auto& map_var_to_index = p.second;
 
   // Now decomposes the expression into coefficients and monomials.
-  const symbolic::MonomialToCoefficientMap&
-      monomial_to_coeff_map =
-          symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map =
+      symbolic::DecomposePolynomialIntoMonomial(e, vars);
   return AddQuadraticCostWithMonomialToCoeffMap(monomial_to_coeff_map, vars_vec,
                                                 map_var_to_index, this);
 }
@@ -552,8 +550,9 @@ Binding<PolynomialConstraint> MathematicalProgram::AddPolynomialCost(
     const symbolic::Expression& e) {
   if (!e.is_polynomial()) {
     std::ostringstream oss;
-    oss << "Expression" << e << " is not a polynomial. AddPolynomialCost only "
-                                "support polynomial expression.\n";
+    oss << "Expression" << e
+        << " is not a polynomial. AddPolynomialCost only "
+           "support polynomial expression.\n";
     throw std::runtime_error(oss.str());
   }
   const symbolic::Variables& vars = e.GetVariables();
@@ -579,8 +578,9 @@ Binding<PolynomialConstraint> MathematicalProgram::AddPolynomialCost(
 Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
   if (!e.is_polynomial()) {
     std::ostringstream oss;
-    oss << "Expression " << e << " is not a polynomial. Currently AddCost does "
-                                 "not support non-polynomial expression.\n";
+    oss << "Expression " << e
+        << " is not a polynomial. Currently AddCost does "
+           "not support non-polynomial expression.\n";
     throw std::runtime_error(oss.str());
   }
   const symbolic::Variables& vars = e.GetVariables();
@@ -591,7 +591,6 @@ Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
     total_degree = std::max(total_degree, p.first.total_degree());
   }
 
-
   auto e_extracted = ExtractVariablesFromExpression(e);
   const VectorXDecisionVariable& vars_vec = e_extracted.first;
   const auto& map_var_to_index = e_extracted.second;
@@ -599,7 +598,7 @@ Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
   if (total_degree > 2) {
     return AddPolynomialCost(e);
   } else if (total_degree == 2) {
-    return  AddQuadraticCostWithMonomialToCoeffMap(
+    return AddQuadraticCostWithMonomialToCoeffMap(
         monomial_to_coeff_map, vars_vec, map_var_to_index, this);
   } else {
     Eigen::VectorXd c(vars_vec.size());
@@ -658,7 +657,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
         !(lb(i) <= constant_term && constant_term <= ub(i))) {
       // Unsatisfiable constraint with no variables, such as 1 <= 0 <= 2
       throw SymbolicError(v(i), lb(i), ub(i),
-          "unsatisfiable but called with AddLinearConstraint");
+                          "unsatisfiable but called with AddLinearConstraint");
 
     } else {
       new_lb(i) = lb(i) - constant_term;
@@ -968,7 +967,7 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
       std::ostringstream oss;
       oss << "Expression" << quadratic_expr
           << " does not have a positive semidefinite Hessian. Cannot be called "
-              "with AddLorentzConeConstraint.\n";
+             "with AddLorentzConeConstraint.\n";
       throw std::runtime_error(oss.str());
     }
     Eigen::MatrixXd R1 = ldlt_Q.matrixU();
@@ -988,15 +987,14 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
     // expr.segment(1, R1.rows()) = 1/sqrt(2) * (R * x + R⁻ᵀb)
     expr.segment(1, R1.rows()) =
         1.0 / std::sqrt(2) *
-            (R * quadratic_vars
-                + R.transpose().fullPivHouseholderQr().solve(b));
+        (R * quadratic_vars + R.transpose().fullPivHouseholderQr().solve(b));
     constant = a - 0.5 * b.dot(ldlt_Q.solve(b));
   }
   if (constant < 0) {
     std::ostringstream oss;
     oss << "Expression " << quadratic_expr
         << " is not guaranteed to be non-negative, cannot call it with "
-            "AddLorentzConeConstraint.\n";
+           "AddLorentzConeConstraint.\n";
     throw std::runtime_error(oss.str());
   }
   expr(expr.rows() - 1) = std::sqrt(constant);
@@ -1009,8 +1007,7 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
   return AddConstraint(Binding<LorentzConeConstraint>(con, vars));
 }
 
-Binding<LorentzConeConstraint>
-MathematicalProgram::AddLorentzConeConstraint(
+Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
@@ -1055,8 +1052,7 @@ MathematicalProgram::AddRotatedLorentzConeConstraint(
   return AddConstraint(constraint, vars);
 }
 
-Binding<BoundingBoxConstraint>
-MathematicalProgram::AddBoundingBoxConstraint(
+Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
@@ -1221,8 +1217,9 @@ size_t MathematicalProgram::FindDecisionVariableIndex(
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
     std::ostringstream oss;
-    oss << var << " is not a decision variable in the mathematical program, "
-                  "when calling GetSolution.\n";
+    oss << var
+        << " is not a decision variable in the mathematical program, "
+           "when calling GetSolution.\n";
     throw std::runtime_error(oss.str());
   }
   return it->second;

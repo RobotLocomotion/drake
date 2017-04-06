@@ -495,9 +495,9 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
 
   // Add an object that can be converted to a ConstraintImpl object on a
   // VectorDecisionVariable object.
-  auto returned_cost3 = prog.AddCost(generic_trivial_cost2,
-                                     VectorDecisionVariable<2>(x(0), y(1)))
-                            .constraint();
+  auto returned_cost3 =
+      prog.AddCost(generic_trivial_cost2, VectorDecisionVariable<2>(x(0), y(1)))
+          .constraint();
   ++num_generic_costs;
   VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost3,
                    Eigen::Vector2d(1, 2), num_generic_costs);
@@ -814,7 +814,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
   f.push_back(4 + x(0) >= 1 + 2 * x(0));
   f.push_back(2 * x(0) + 1 <= 4 + x(0));
   f.push_back(3 * x(0) + x(1) <= 6 + x(0) + x(1));
-  for (const auto &fi : f) {
+  for (const auto& fi : f) {
     prog.AddLinearConstraint(fi);
     EXPECT_EQ(++num_bounding_box_constraint,
               prog.bounding_box_constraints().size());
@@ -822,8 +822,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
     EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
     auto binding = prog.bounding_box_constraints().back();
     EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
-    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
-                                Vector1d(3)));
+    EXPECT_TRUE(
+        CompareMatrices(binding.constraint()->upper_bound(), Vector1d(3)));
     EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
                                 Vector1d(-numeric_limits<double>::infinity())));
   }
@@ -851,8 +851,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula2) {
     EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
     auto binding = prog.bounding_box_constraints().back();
     EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
-    EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
-                                Vector1d(2)));
+    EXPECT_TRUE(
+        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(2)));
     EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
                                 Vector1d(numeric_limits<double>::infinity())));
   }
@@ -878,8 +878,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula3) {
     EXPECT_TRUE(
         CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
 
-    VectorX<Expression> expr = binding.constraint()->A() * binding.variables()
-        - binding.constraint()->lower_bound();
+    VectorX<Expression> expr = binding.constraint()->A() * binding.variables() -
+                               binding.constraint()->lower_bound();
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), x(0) + x(2) - 1);
   }
@@ -905,8 +905,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
   f.push_back(1 >= 2 * (x(0) + x(2)) - x(0));
   for (const auto& fi : f) {
     prog.AddLinearConstraint(fi);
-    EXPECT_EQ(++num_linear_constraint,
-              prog.linear_constraints().size());
+    EXPECT_EQ(++num_linear_constraint, prog.linear_constraints().size());
     EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
     EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
     auto binding = prog.linear_constraints().back();
@@ -915,8 +914,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
     EXPECT_TRUE(
         CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-1)));
 
-    VectorX<Expression> expr = binding.constraint()->A() * binding.variables()
-        - binding.constraint()->lower_bound();
+    VectorX<Expression> expr = binding.constraint()->A() * binding.variables() -
+                               binding.constraint()->lower_bound();
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
   }
@@ -1384,8 +1383,8 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint4) {
 
 namespace {
 bool AreTwoPolynomialsNear(
-    const symbolic::MonomialToCoefficientMap &poly1,
-    const symbolic::MonomialToCoefficientMap &poly2,
+    const symbolic::MonomialToCoefficientMap& poly1,
+    const symbolic::MonomialToCoefficientMap& poly2,
     double tol = std::numeric_limits<double>::epsilon()) {
   // TODO(hongkai.dai): rewrite this part when we have function to add and
   // subtract two polynomials.
@@ -1594,8 +1593,8 @@ TEST_F(SymbolicLorentzConeTest, TestError) {
       std::runtime_error);
 
   // The quadratic expression is not always non-negative.
-  EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
-                                             x_(1) * x_(1) + x_(2) * x_(2) - 1),
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(
+                   2 * x_(0) + 3, x_(1) * x_(1) + x_(2) * x_(2) - 1),
                std::runtime_error);
   EXPECT_THROW(prog_.AddLorentzConeConstraint(
                    2 * x_(0) + 3, pow(2 * x_(0) + 3 * x_(1) + 2, 2) - 1),
