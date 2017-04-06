@@ -5,8 +5,6 @@
 #include "drake/math/axis_angle.h"
 #include "drake/math/random_rotation.h"
 
-using namespace Eigen;
-
 double angleDiff(double phi1, double phi2) {
   double d = phi2 - phi1;
   if (d > 0.0) {

@@ -2,8 +2,10 @@
 #include <stdexcept>
 #include <Eigen/Core>
 
+using Eigen::Matrix;
+using Eigen::Vector2d;
+
 namespace Atlas {
-using namespace Eigen;
 
 bool ankleCloseToLimits(double akx, double aky, double tol) {
   if (tol < 0) {
