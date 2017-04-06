@@ -203,7 +203,7 @@ class SpatialInertia {
   /// approximately equal with each other if:
   ///   - |ma - mb| < p min(|ma|, |mb|)
   ///   - ‖xa - xb‖₂ < p min(‖xa‖₂, ‖xb‖₂)
-  ///   - ‖Ga - Gb‖F < p min(‖Ia‖F, ‖Ib‖F)
+  ///   - ‖Ga - Gb‖F < p min(‖Ga‖F, ‖Gb‖F)
   ///
   /// where ‖⋅‖₂ denotes the ℓ²-norm of a vector and ‖⋅‖F the Frobenius norm of
   /// a matrix.

@@ -188,18 +188,30 @@ class RotationalInertia {
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
   /// Compares `this` inertia to `other` rotational inertia within the
-  /// specified `precision`.
-  /// The comparison is performed using the fuzzy comparison provided by Eigen's
-  /// method isApprox() returning `true` if: <pre>
-  ///   get_moments().isApprox(other.get_moments(), precision) &&
-  ///   get_products().isApprox(other.get_products(), precision);
-  /// </pre>
+  /// specified precision `p`. `p` is a dimensionless number specifying
+  /// the a relative precision to which the comparison is performed.
+  /// Two rotational inertia objects `Ia` and `Ib` are considered to be
+  /// approximately equal with each other if:
+  ///   - ‖Ia - Ib‖F < p min(‖Ia‖F, ‖Ib‖F)
+  /// where ‖⋅‖₂ denotes the ℓ²-norm of a vector and ‖⋅‖F the Frobenius norm of
+  /// a matrix, see RotationalInertia::Norm().
   /// @returns `true` if `other` is within the specified `precision`. Returns
-  ///   `false` otherwise.
+  ///          `false` otherwise.
   bool IsApprox(const RotationalInertia& other,
-                double precision = Eigen::NumTraits<T>::epsilon()) const {
-    return get_moments().isApprox(other.get_moments(), precision) &&
-           get_products().isApprox(other.get_products(), precision);
+                double p = Eigen::NumTraits<T>::epsilon()) const {
+    using std::min;
+    return (*this - other).Norm() < p * min(this->Norm(), other.Norm());
+  }
+
+  /// Returns the Frobenius norm of this rotational inertia including both lower
+  /// and upper triangular elements.
+  // The Frobenius norm of a rotational inertia I with moments m and
+  // products p is:
+  //   ‖I‖F = sqrt(‖m‖₂² + 2 ‖p‖₂²), with sqrt() the square root function and
+  //                                 ‖⋅‖₂ the ℓ²-norm of a vector.
+  T Norm() const {
+    using std::sqrt;
+    return sqrt(get_moments().squaredNorm() + 2 * get_products().squaredNorm());
   }
 
   /// Adds in a rotational inertia to `this` rotational inertia. This operation
@@ -293,7 +305,7 @@ class RotationalInertia {
   /// (but not sufficient) checks for a rotational inertia to be physically
   /// valid. Sufficient conditions are provided by the class SpatialInertia.
   /// @see SpatialInertia::IsPhysicallyValid().
-  RotationalInertia<T> operator-(const RotationalInertia<T>& I_BP_E) {
+  RotationalInertia<T> operator-(const RotationalInertia<T>& I_BP_E) const {
     return RotationalInertia(*this) -= I_BP_E;
   }
 
