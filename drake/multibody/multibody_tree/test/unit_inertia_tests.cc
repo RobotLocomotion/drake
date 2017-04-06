@@ -1,5 +1,7 @@
 #include "drake/multibody/multibody_tree/unit_inertia.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
