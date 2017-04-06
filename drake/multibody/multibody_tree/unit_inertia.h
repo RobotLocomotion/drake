@@ -77,12 +77,14 @@ class UnitInertia : public RotationalInertia<T> {
   explicit UnitInertia(const RotationalInertia<T>& I) :
       RotationalInertia<T>(I) {}
 
-  /// Sets `this` unit inertia to equal the provided input rotational inertia I.
-  /// The input rotational inertia I is assumed to be a unit inertia.
-  /// @warning This method does not check that the provided input rotational
-  /// inertia I effectively is a valid unit inertia. Use with care.
-  UnitInertia<T>& SetFromRotationalInertia(const RotationalInertia <T> &I) {
-    RotationalInertia<T>::operator=(I);
+  /// Sets `this` unit inertia from a generally non-unit inertia I corresponding
+  /// to a body with a given `mass`.
+  /// @note In Debug builds, this operation aborts if the provided `mass` is
+  ///       not strictly positive.
+  UnitInertia<T>& SetFromRotationalInertia(
+      const RotationalInertia <T> &I, const T& mass) {
+    DRAKE_ASSERT(mass > 0);
+    RotationalInertia<T>::operator=(I / mass);
     return *this;
   }
 

@@ -249,8 +249,7 @@ class SpatialInertia {
     DRAKE_ASSERT(total_mass != 0);
     p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
     G_SP_E_.SetFromRotationalInertia(
-        (CalcRotationalInertia() + M_BP_E.CalcRotationalInertia()) /
-            total_mass);
+        CalcRotationalInertia() + M_BP_E.CalcRotationalInertia(), total_mass);
     mass_ = total_mass;
     return *this;
   }
