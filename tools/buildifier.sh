@@ -16,7 +16,7 @@ fi
 
 echo "Refreshing buildifier binary ..."
 bazel build --show_result=0 //tools:buildifier
-buildifier="$workspace"/bazel-bin/external/com_github_bazelbuild_buildifier/buildifier/buildifier
+buildifier="$workspace"/bazel-bin/external/com_github_bazelbuild_buildtools/buildifier/buildifier
 if [ ! -x "$buildifier" ]; then
   echo "Failed to build buildifier at $buildifier"
   exit 1
