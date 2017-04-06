@@ -91,10 +91,8 @@ TEST_F(PiecewiseCubicTrajectoryTest, IsApprox) {
   PiecewiseCubicTrajectory<double> equal = dut_;
   EXPECT_TRUE(dut_.is_approx(equal, 1e-12));
 
-  PiecewiseCubicTrajectory<double> not_equal(
-      PiecewisePolynomial<double>::Cubic(times_, knots_,
-          Vector2<double>::Zero(),
-          Vector2<double>::Zero()));
+  PiecewiseCubicTrajectory<double> not_equal(PiecewisePolynomial<double>::Cubic(
+      times_, knots_, Vector2<double>::Zero(), Vector2<double>::Zero()));
 
   EXPECT_TRUE(!dut_.is_approx(not_equal, 1e-12));
 }
@@ -114,8 +112,8 @@ class PiecewiseCartesianTrajectoryTest : public ::testing::Test {
 
     std::vector<Isometry3<double>> knots(times.size());
     for (size_t i = 0; i < times.size(); ++i) {
-      knots[i].fromPositionOrientationScale(
-          pos_knots[i], rot_knots[i], Vector3<double>::Ones());
+      knots[i].fromPositionOrientationScale(pos_knots[i], rot_knots[i],
+                                            Vector3<double>::Ones());
     }
 
     Vector3<double> vel0(Vector3<double>::Zero());
@@ -237,14 +235,14 @@ TEST_F(PiecewiseCartesianTrajectoryTest, TestIsApprox) {
   PiecewiseQuaternionSlerp<double> new_rot_traj(times, rot_knots);
 
   {
-    PiecewiseCartesianTrajectory<double> diff_position(
-        new_pos_traj, orientation_);
+    PiecewiseCartesianTrajectory<double> diff_position(new_pos_traj,
+                                                       orientation_);
     EXPECT_TRUE(!diff_position.is_approx(dut_, 1e-12));
   }
 
   {
-    PiecewiseCartesianTrajectory<double> diff_orientation(
-        position_, new_rot_traj);
+    PiecewiseCartesianTrajectory<double> diff_orientation(position_,
+                                                          new_rot_traj);
     EXPECT_TRUE(!diff_orientation.is_approx(dut_, 1e-12));
   }
 }
