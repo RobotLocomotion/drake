@@ -203,10 +203,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
 go_repositories()
 
 github_archive(
-    name = "com_github_bazelbuild_buildifier",
-    repository = "bazelbuild/buildifier",
+    name = "com_github_bazelbuild_buildtools",
+    repository = "bazelbuild/buildtools",
     commit = "93929369232fcda305607a2e0aa7b3cd9cf8912d",
-    sha256 = "51a84592ced38213592a2d177cf551d3be9179092d3921a38154a2662610df96",
+    sha256 = "2ffb39756767165133f9861d8bf52c76d5474bb462583edfe47d2ea0a759c62b",
 )
 
 github_archive(
