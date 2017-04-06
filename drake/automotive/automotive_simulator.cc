@@ -1,5 +1,6 @@
 #include "drake/automotive/automotive_simulator.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "drake/automotive/gen/driving_command_translator.h"
@@ -230,11 +231,13 @@ const maliput::api::Lane* AutomotiveSimulator<T>::FindLane(
 
 template <typename T>
 void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
+  std::string filename = road_->id().id;
+  std::transform(filename.begin(), filename.end(), filename.begin(),
+                 [](char ch) { return ch == ' ' ? '_' : ch; });
   maliput::utility::GenerateUrdfFile(road_.get(),
-                                     "/tmp", road_->id().id,
+                                     "/tmp", filename,
                                      maliput::utility::ObjFeatures());
-  const std::string urdf_filepath =
-      std::string("/tmp/") + road_->id().id + ".urdf";
+  const std::string urdf_filepath = "/tmp/" + filename + ".urdf";
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf_filepath,
       drake::multibody::joints::kFixed,
