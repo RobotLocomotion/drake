@@ -324,6 +324,10 @@ class LowerBoundedProblem {
     }
     void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
                 TaylorVecXd& y) const override {
+      // Check that the autodiff vector was initialized to the proper (minimal)
+      // size.
+      EXPECT_EQ(x.size(), x(0).derivatives().size());
+
       EvalImpl(x, y);
     }
 
