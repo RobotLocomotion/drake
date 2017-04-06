@@ -444,9 +444,21 @@ class IntegratorBase {
     smallest_adapted_step_size_taken_ = nan();
     largest_step_size_taken_ = nan();
     num_steps_taken_ = 0;
+    num_ode_evals_ = 0;
     error_check_failures_ = 0;
     DoResetStatistics();
   }
+
+  /**
+   * Returns the number of ODE function evaluations (calls to
+   * CalcTimeDerivatives()) since the last call to ResetStatistics() or
+   * Initialize(). This count includes *all* such calls including (1)
+   * those necessary to compute Jacobian matrices; (2) those used in rejected
+   * integrated steps (for, e.g., purposes of error control); (3) those used
+   * strictly for integrator error estimation; and (4) calls that exhibit little
+   * cost (due to results being cached).
+   */
+  int64_t get_num_derivative_evaluations() const { return num_ode_evals_; }
 
   /**
    * Returns the number of failures to accept an integration step due to
@@ -823,6 +835,15 @@ class IntegratorBase {
   /// implementation of this function does nothing.
   virtual void DoResetStatistics() {}
 
+  /// Evaluates the derivative function (and updates call statistics).
+  /// Subclasses should call this function rather than calling
+  /// system.CalcTimeDerivatives() directly.
+  void CalcTimeDerivatives(const Context<T>& context,
+                           ContinuousState<T>* dxdt) {
+    get_system().CalcTimeDerivatives(context, dxdt);
+    ++num_ode_evals_;
+  }
+
   /**
    * Sets the working ("in use") accuracy for this integrator. The working
    * accuracy may not be equivalent to the target accuracy when the latter is
@@ -1038,6 +1059,7 @@ class IntegratorBase {
   T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
   int64_t error_check_failures_{0};
+  int64_t num_ode_evals_{0};
 
   // Applied as diagonal matrices to weight error estimates.
   Eigen::VectorXd qbar_weight_, z_weight_;

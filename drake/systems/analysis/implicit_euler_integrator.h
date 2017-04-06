@@ -150,28 +150,28 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// relevant to the nonlinear system of equations solution process.
   /// @{
 
-  /// Gets the number of ODE function evaluations since the last call to
-  /// ResetStatistics().
-  int get_num_function_evaluations() const {
-    return num_function_evaluations_;
-  }
-
-  /// Gets the number of ODE function evaluations *used only for the error
-  /// estimation process* since the last call to ResetStatistics().
-  int get_num_error_estimator_ode_evaluations() const {
+  /// Gets the number of ODE function evaluations
+  /// (calls to CalcTimeDerivatives()) *used only for the error estimation
+  /// process* since the last call to ResetStatistics(). This count
+  /// includes *all* such calls including (1) those necessary to compute
+  /// Jacobian matrices; and (2) calls that exhibit little
+  /// cost (due to results being cached).
+  int64_t get_num_error_estimator_derivative_evaluations() const {
     return num_err_est_function_evaluations_;
   }
 
-  /// Gets the number of ODE function evaluations *used only for computing
+  /// Gets the number of ODE function evaluations
+  /// (calls to CalcTimeDerivatives()) *used only for computing
   /// the Jacobian matrices* since the last call to ResetStatistics().
-  int get_num_jacobian_function_evaluations() const {
+  int get_num_derivative_evaluations_for_jacobian() const {
     return num_jacobian_function_evaluations_;
   }
 
-  /// Gets the number of implicit-trapezoid-only ODE function evaluations *used
-  /// only for computing the Jacobian matrices* since the last call to
+  /// Gets the number of ODE function evaluations (calls to
+  /// CalcTimeDerivatives()) *used only for computing the Jacobian matrices
+  /// needed by the error estimation process* since the last call to
   /// ResetStatistics().
-  int get_num_error_estimator_jacobian_function_evaluations() const {
+  int get_num_error_estimator_derivative_evaluations_for_jacobian() const {
     return num_err_est_jacobian_function_evaluations_;
   }
 
@@ -182,7 +182,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// Gets the number of implicit-trapezoid-only loops used in the
   /// Newton-Raphson nonlinear systems of equation solving process since the
   /// last call to ResetStatistics().
-  int get_num_error_estimator_newton_raphson_loops() const { return num_err_est_nr_loops_; }
+  int get_num_error_estimator_newton_raphson_loops() const { return
+        num_err_est_nr_loops_; }
 
   /// Gets the number of Jacobian reformulations (i.e., the number of times
   /// that the Jacobian matrix was reformed) since the last call to
@@ -317,14 +318,13 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   // Various combined statistics.
   int num_jacobian_reforms_{0};
   int num_iter_refactors_{0};
-  int num_function_evaluations_{0};
   int num_jacobian_function_evaluations_{0};
   int num_nr_loops_{0};
 
   // Implicit trapezoid specific statistics.
   int num_err_est_jacobian_reforms_{0};
   int num_err_est_iter_refactors_{0};
-  int num_err_est_function_evaluations_{0};
+  int64_t num_err_est_function_evaluations_{0};
   int num_err_est_jacobian_function_evaluations_{0};
   int num_err_est_nr_loops_{0};
 };

@@ -127,7 +127,7 @@ void SemiExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Calcuate the derivatives.
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
-  system.CalcTimeDerivatives(this->get_context(), derivs_.get());
+  this->CalcTimeDerivatives(this->get_context(), derivs_.get());
 
   // Retrieve the accelerations and auxiliary variable derivatives.
   const auto& vdot = derivs_->get_generalized_velocity();

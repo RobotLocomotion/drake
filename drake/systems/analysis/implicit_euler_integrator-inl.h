@@ -19,7 +19,7 @@ namespace systems {
 template <class T>
 void ImplicitEulerIntegrator<T>::DoResetStatistics() {
   num_nr_loops_ = num_err_est_nr_loops_ = 0;
-  num_function_evaluations_ = num_err_est_function_evaluations_ = 0;
+  num_err_est_function_evaluations_ = 0;
   num_jacobian_function_evaluations_ =
     num_err_est_jacobian_function_evaluations_ = 0;
   num_jacobian_reforms_ = num_err_est_jacobian_reforms_ = 0;
@@ -94,9 +94,8 @@ Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
   // Evaluate the derivatives at that state.
   std::unique_ptr<ContinuousState<Scalar>> derivs =
       system->AllocateTimeDerivatives();
-  system->CalcTimeDerivatives(*context, derivs.get());
+  this->CalcTimeDerivatives(*context, derivs.get());
   num_jacobian_function_evaluations_++;
-  num_function_evaluations_++;
 
   // Get the Jacobian.
   auto result = derivs->CopyToVector().eval();
@@ -108,12 +107,10 @@ Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
 template <class T>
 VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives(
     const VectorX<T>& x) {
-  const System<T>& system = this->get_system();
   Context<T>* context = this->get_mutable_context();
   context->get_mutable_continuous_state()->get_mutable_vector()->
       SetFromVector(x);
-  system.CalcTimeDerivatives(*context, derivs_.get());
-  num_function_evaluations_++;
+  this->CalcTimeDerivatives(*context, derivs_.get());
   return derivs_->CopyToVector();
 }
 
@@ -312,8 +309,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     SPDLOG_DEBUG(drake::log(), "StepAbstract()-- taking explicit Euler step");
 
     // Update the state.
-    this->get_system().CalcTimeDerivatives(*context, derivs_.get());
-    num_function_evaluations_++;
+    this->CalcTimeDerivatives(*context, derivs_.get());
     const T h = this->get_minimum_step_size();
     context->get_mutable_continuous_state()->SetFromVector(
         xt0 + h*derivs_->CopyToVector());
@@ -505,8 +501,9 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
   // Save statistics.
   int saved_num_jacobian_reforms = num_jacobian_reforms_;
   int saved_num_iter_refactors = num_iter_refactors_;
-  int saved_num_function_evaluations = num_function_evaluations_;
-  int saved_num_jacobian_function_evaluations =
+  int64_t saved_num_function_evaluations =
+      this->get_num_derivative_evaluations();
+  int64_t saved_num_jacobian_function_evaluations =
       num_jacobian_function_evaluations_;
   int saved_num_nr_loops = num_nr_loops_;
 
@@ -525,9 +522,10 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
       num_jacobian_reforms_ - saved_num_jacobian_reforms;
   num_err_est_iter_refactors_ += num_iter_refactors_ - saved_num_iter_refactors;
   num_err_est_function_evaluations_ +=
-      num_function_evaluations_ - saved_num_function_evaluations;
-  num_err_est_jacobian_function_evaluations_ += num_jacobian_function_evaluations_ -
-      saved_num_jacobian_function_evaluations;
+      this->get_num_derivative_evaluations() - saved_num_function_evaluations;
+  num_err_est_jacobian_function_evaluations_ +=
+      num_jacobian_function_evaluations_ -
+          saved_num_jacobian_function_evaluations;
   num_err_est_nr_loops_ += num_nr_loops_ - saved_num_nr_loops;
 
   return stepped;
