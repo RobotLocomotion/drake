@@ -18,6 +18,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
+#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
@@ -142,6 +143,7 @@ int DoMain() {
   DrakeVisualizer* visualizer = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
   builder.Connect(model->get_output_port_plant_state(),
                   visualizer->get_input_port(0));
+  visualizer->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Create the command subscriber and status publisher.
   auto iiwa_command_sub = builder.AddSystem(
@@ -185,6 +187,8 @@ int DoMain() {
   auto wsg_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
+  wsg_status_pub->set_publish_period(schunk_wsg::kSchunkWsgLcmStatusPeriod);
+
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
       model->get_output_port_wsg_state().size(), 0, 1);
 
@@ -203,18 +207,21 @@ int DoMain() {
           "IIWA_STATE_EST", &lcm));
   builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
                   iiwa_state_pub->get_input_port(0));
+  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto box_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
           "OBJECT_STATE_EST", &lcm));
   builder.Connect(model->get_output_port_box_robot_state_msg(),
                   box_state_pub->get_input_port(0));
+  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
 
   lcm.StartReceiveThread();
   simulator.Initialize();
+  simulator.set_publish_every_time_step(false);
   simulator.StepTo(FLAGS_simulation_sec);
 
   return 0;
