@@ -61,6 +61,7 @@ int DoMain() {
   }
   // Creates and adds LCM publisher for visualization.
   builder.AddVisualizer(&lcm);
+  builder.get_visualizer()->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Adds a iiwa controller
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
@@ -101,6 +102,7 @@ int DoMain() {
   Simulator<double> simulator(*sys);
 
   lcm.StartReceiveThread();
+  simulator.set_publish_every_time_step(false);
   simulator.Initialize();
 
   command_receiver->set_initial_position(
