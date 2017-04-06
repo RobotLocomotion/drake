@@ -1062,6 +1062,92 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
 }
 
+class NestedDiagramContextTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    DiagramBuilder<double> big_diagram_builder;
+    {
+      DiagramBuilder<double> builder;
+      integrator0_ = builder.AddSystem<Integrator<double>>(1);
+      integrator1_ = builder.AddSystem<Integrator<double>>(1);
+
+      builder.ExportOutput(integrator0_->get_output_port());
+      builder.ExportOutput(integrator1_->get_output_port());
+      builder.ExportInput(integrator0_->get_input_port());
+      builder.ExportInput(integrator1_->get_input_port());
+
+      diagram_ = big_diagram_builder.AddSystem(builder.Build());
+    }
+
+    integrator2_ = big_diagram_builder.AddSystem<Integrator<double>>(1);
+    big_diagram_builder.ExportOutput(diagram_->get_output_port(0));
+    big_diagram_builder.ExportOutput(diagram_->get_output_port(1));
+    big_diagram_builder.ExportOutput(integrator2_->get_output_port());
+
+    auto src = big_diagram_builder.AddSystem<ConstantVectorSource<double>>(1);
+    big_diagram_builder.Connect(src->get_output_port(),
+                                integrator2_->get_input_port());
+    big_diagram_builder.Connect(src->get_output_port(),
+                                diagram_->get_input_port(0));
+    big_diagram_builder.Connect(src->get_output_port(),
+                                diagram_->get_input_port(1));
+
+    big_diagram_ = big_diagram_builder.Build();
+    big_context_ = big_diagram_->CreateDefaultContext();
+    big_output_ = big_diagram_->AllocateOutput(*big_context_);
+
+    std::cout << big_output_->get_num_ports() << std::endl;
+  }
+
+  Integrator<double>* integrator0_;
+  Integrator<double>* integrator1_;
+  Integrator<double>* integrator2_;
+
+  Diagram<double>* diagram_;
+  std::unique_ptr<Diagram<double>> big_diagram_;
+  std::unique_ptr<Context<double>> big_context_;
+  std::unique_ptr<SystemOutput<double>> big_output_;
+};
+
+TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
+  big_diagram_->CalcOutput(*big_context_, big_output_.get());
+
+  EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 0);
+  EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 0);
+
+  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator0_)->
+      get_mutable_continuous_state_vector()->SetAtIndex(0, 1);
+  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator1_)->
+      get_mutable_continuous_state_vector()->SetAtIndex(0, 2);
+  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator2_)->
+      get_mutable_continuous_state_vector()->SetAtIndex(0, 3);
+
+  big_diagram_->CalcOutput(*big_context_, big_output_.get());
+
+  EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 1);
+  EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 2);
+  EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 3);
+}
+
+TEST_F(NestedDiagramContextTest, GetSubsystemState) {
+  big_diagram_->CalcOutput(*big_context_, big_output_.get());
+
+  EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 0);
+  EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 0);
+
+  big_diagram_->GetMutableSubsystemState(big_context_->get_mutable_state(), integrator0_)->get_mutable_continuous_state()->get_mutable_vector()->SetAtIndex(0, 1);
+  big_diagram_->GetMutableSubsystemState(big_context_->get_mutable_state(), integrator1_)->get_mutable_continuous_state()->get_mutable_vector()->SetAtIndex(0, 2);
+  big_diagram_->GetMutableSubsystemState(big_context_->get_mutable_state(), integrator2_)->get_mutable_continuous_state()->get_mutable_vector()->SetAtIndex(0, 3);
+
+  big_diagram_->CalcOutput(*big_context_, big_output_.get());
+
+  EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 1);
+  EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 2);
+  EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 3);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
