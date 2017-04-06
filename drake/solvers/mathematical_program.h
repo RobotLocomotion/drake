@@ -1563,6 +1563,19 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds a bounding-box constraint represented by a symbolic formula to the
+   * program. The input formula @p f is either a relational formula (i.e. `e1 <=
+   * e2`) or a conjunction of them.
+   *
+   * It throws an exception if
+   *  1. @p f is neither a relational formula nor a conjunction of them.
+   *  2. @p f includes a relational formula which can't be represented by a
+   *     bounding-box constraint.
+   */
+  Binding<LinearEqualityConstraint> AddBoundingBoxConstraint(
+      const symbolic::Formula& f);
+
+  /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables.
    * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
@@ -2572,6 +2585,13 @@ class MathematicalProgram {
   //
   // Precondition: ∀ f ∈ formulas, is_equal_to(f).
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const std::set<symbolic::Formula>& formulas);
+
+  // Adds a bounding-box constraint represented by a set of symbolic formulas to
+  // the program.
+  //
+  // Precondition: ∀ f ∈ formulas, is_relational(f).
+  Binding<LinearConstraint> AddBoundingBoxConstraint(
       const std::set<symbolic::Formula>& formulas);
 };
 }  // namespace solvers
