@@ -102,14 +102,15 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// critically) the implicit integration process. Automatic differentiation is
   /// recommended if the System supports it for reasons of both higher
   /// accuracy and increased speed. Forward differencing (i.e., numerical
-  /// differentiation) yields the best Jacobian accuracy for a given unit of
-  /// computational time: the total error in the forward-difference
-  /// approximation is close to √ε, where ε is machine epsilon, from n forward
-  /// dynamics calls (where n is the number of state variables). Central
-  /// differencing yields the most accurate numerically differentiated Jacobian
-  /// matrix: the total error in the central-difference approximation is close
-  /// to ε^(2/3), from 2n forward dynamics calls. See
-  /// [Nocedal 2004, pp. 167-169].
+  /// differentiation) yields the best numerically differenced Jacobian accuracy
+  /// for a given unit of computational time: the total error in the
+  /// forward-difference approximation is close to √ε, where ε is machine
+  /// epsilon, from n forward dynamics calls (where n is the number of state
+  /// variables). Central differencing yields the most accurate numerically
+  /// differentiated Jacobian matrix, but expends double the computational
+  /// effort for approximately 50% greater accuracy: the total error in the
+  /// central-difference approximation is close to ε^(2/3), from 2n forward
+  /// dynamics calls. See [Nocedal 2004, pp. 167-169].
   ///
   /// - [Nocedal 2004] J. Nocedal and S. Wright. Numerical Optimization.
   ///                  Springer, 2004.
@@ -155,9 +156,9 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     return num_function_evaluations_;
   }
 
-  /// Gets the number of implicit-trapezoid-only ODE function evaluations since
-  /// the last call to ResetStatistics().
-  int get_num_itr_function_evaluations() const {
+  /// Gets the number of ODE function evaluations *used only for the error
+  /// estimation process* since the last call to ResetStatistics().
+  int get_num_error_estimator_ode_evaluations() const {
     return num_itr_function_evaluations_;
   }
 
@@ -203,7 +204,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   int get_num_ieu_newton_raphson_loops() const { return num_nr_loops_ -
         num_itr_nr_loops_; }
 
-  /// Gets the number of Jacobian reformulations since the last call to
+  /// Gets the number of Jacobian reformulations (i.e., the number of times
+  /// that the Jacobian matrix was reformed) since the last call to
   /// ResetStatistics().
   int get_num_jacobian_reformulations() const { return num_jacobian_reforms_; }
 
@@ -220,7 +222,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   /// Gets the number of iteration matrix factorizations since the last
   /// call to ResetStatistics().
-  int get_num_iter_refactors() const {
+  int get_num_iteration_matrix_refactors() const {
     return num_iter_refactors_;
   }
 
@@ -236,7 +238,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     return num_iter_refactors_ - num_itr_iter_refactors_;
   }
 
-  /// Gets the number of failed sub-steps (implying step halving was required).
+  /// Gets the number of failed sub-steps (implying step halving was required
+  /// to permit solving the necessary nonlinear system of equations).
   int get_num_substep_failures() const {
     return num_substep_failures_;
   }
@@ -253,22 +256,23 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   /// @}
 
-  /// @name Tunable parameters.
-  /// Parameters for tuning the speed of the implicit integration process;
-  /// the delta zero tolerance may affect the accuracy of the solution, while
-  /// other parameters- those that determine the frequency with
-  /// which the Jacobian matrix is reformulated and refactorized- affect only
-  /// the speed that the solution will be found.
+  /// @name Implicit-integration-specific parameters.
+  /// Parameters relevant to the nonlinear system solving process.
   /// @{
 
   /// Gets the tolerance below which changes to the state variables during the
   /// integration process should indicate that the Newton-Raphson process
-  /// has converged.
+  /// has converged. Convergence is only declared if the norms of the changes to
+  /// position variables, velocity variables, and auxiliary variables are all
+  /// within this tolerance. Norms are weighted as described in
+  /// "Methods for weighting state variable errors" for IntegratorBase
+  /// documentation; this tolerance is an absolute one.
   double get_delta_state_tolerance() const { return delta_update_tol_; }
 
   /// Sets the tolerance below which changes to the state variables during the
   /// integration process should indicate that the Newton-Raphson process
   /// has converged.
+  /// @sa get_delta_state_tolerance()
   void set_delta_state_tolerance(double tol) { delta_update_tol_ = tol; }
 
   /// @}

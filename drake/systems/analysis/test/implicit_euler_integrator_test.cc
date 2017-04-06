@@ -27,11 +27,9 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
 
  protected:
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
-    SpringMassDamperSystem<AutoDiffXd>* adiff_spring =
-        new SpringMassDamperSystem<AutoDiffXd>(this->get_spring_constant(),
+    return new SpringMassDamperSystem<AutoDiffXd>(this->get_spring_constant(),
                                                get_damping_constant(),
                                                this->get_mass());
-    return adiff_spring;
   }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -82,13 +80,11 @@ class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
 
  protected:
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
-    ModifiedSpringMassDamperSystem<AutoDiffXd>* adiff_spring =
-        new ModifiedSpringMassDamperSystem<AutoDiffXd>(
+    return new ModifiedSpringMassDamperSystem<AutoDiffXd>(
             this->get_spring_constant(),
             this->get_damping_constant(),
             this->get_mass(),
             get_constant_force());
-    return adiff_spring;
   }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -203,7 +199,7 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GT(integrator->get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator->get_num_steps_taken(), 0);
   EXPECT_GT(integrator->get_num_function_evaluations(), 0);
-  EXPECT_GT(integrator->get_num_itr_function_evaluations(), 0);
+  EXPECT_GT(integrator->get_num_error_estimator_ode_evaluations(), 0);
   EXPECT_GT(integrator->get_num_ieu_function_evaluations(), 0);
   EXPECT_GT(integrator->get_num_jacobian_function_evaluations(), 0);
   EXPECT_GT(integrator->get_num_itr_jacobian_function_evaluations(), 0);
@@ -211,7 +207,7 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GE(integrator->get_num_jacobian_reformulations(), 0);
   EXPECT_GE(integrator->get_num_itr_jacobian_reformulations(), 0);
   EXPECT_GE(integrator->get_num_ieu_jacobian_reformulations(), 0);
-  EXPECT_GE(integrator->get_num_iter_refactors(), 0);
+  EXPECT_GE(integrator->get_num_iteration_matrix_refactors(), 0);
   EXPECT_GE(integrator->get_num_itr_iter_refactors(), 0);
   EXPECT_GE(integrator->get_num_ieu_iter_refactors(), 0);
   EXPECT_GE(integrator->get_num_substep_failures(), 0);

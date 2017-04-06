@@ -216,11 +216,9 @@ class SpringMassSystem : public LeafSystem<T> {
 
  protected:
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
-    SpringMassSystem<AutoDiffXd>* adiff_spring =
-        new SpringMassSystem<AutoDiffXd>(this->get_spring_constant(),
-                                         this->get_mass(),
-                                         system_is_forced_);
-    return adiff_spring;
+    return new SpringMassSystem<AutoDiffXd>(this->get_spring_constant(),
+                                            this->get_mass(),
+                                            system_is_forced_);
   }
 
   // LeafSystem<T> override.

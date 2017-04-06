@@ -328,7 +328,8 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
   const T tf = context->get_time() + dt;
   context->set_time(tf);
 
-  // Evaluate g(x(t+h)) = x(t+h) - x(t) - h f(t+h,x(t+h)), where h = dt;
+  // Evaluate the residual error using the passed-in x(t+h) as x⁰(t+h):
+  // g(x⁰(t+h)) = x⁰(t+h) - x(t) - h f(t+h,x⁰(t+h)), where h = dt;
   VectorX<T> goutput = g(*xtplus);
 
   // Initialize the "last" state update norm; this will be used to detect
@@ -344,6 +345,8 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
   // failure. [Hairer, 1996] states, "It is our experience that the code becomes
   // more efficient when we allow a relatively high number of iterations (e.g.,
   // [7 or 10])", p. 121.
+  // TODO(edrumwri): Consider making this a settable parameter. Not putting it
+  //                 toward staving off parameter overflow.
   const int max_loops = 10;
 
   // Do the Newton-Raphson loops.
@@ -351,8 +354,11 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     // Update the number of Newton-Raphson loops.
     num_nr_loops_++;
 
-    // Compute the state update by computing the iteration matrix, factorizing
-    // it, and solving it.
+    // Compute the state update by computing the negation of the iteration
+    // matrix, factorizing it, and solving it. The idea of using the negation
+    // of this matrix is that an O(n^2) identity matrix is not formed as would
+    // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
+    // TODO(edrumwri): Allow caller to provide their own solver.
     const int n = xtplus->size();
     A_ = J * (dt / scale) - MatrixX<T>::Identity(n, n);
     num_iter_refactors_++;
@@ -397,7 +403,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
         z_nrm < delta_update_tol_)
       return dt;
 
-    // Update the state and recompute g().
+    // Update the state and compute g(xⁱ⁺¹).
     *xtplus += dx;
     goutput = g(*xtplus);
 
@@ -534,6 +540,8 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& tf,
                                                     const VectorX<T>& xtplus) {
   this->get_mutable_context()->set_time(tf);
   num_jacobian_reforms_++;
+
+  // TODO(edrumwri): Give the caller the option to provide their own Jacobian.
 
   switch (jacobian_scheme_) {
     case JacobianComputationScheme::kForwardDifference:
