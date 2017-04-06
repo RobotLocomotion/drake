@@ -387,6 +387,7 @@ genrule(
     outs = ["models/speed_bump/speed_bump.obj"],
     cmd = " ".join([
         "$(location //drake/automotive/maliput/utility:yaml_to_obj)",
+        "--spdlog_level warn",
         "--yaml_file '$<'",
         "--obj_dir `dirname '$@'`",
         "--obj_file `basename '$@' .obj`",

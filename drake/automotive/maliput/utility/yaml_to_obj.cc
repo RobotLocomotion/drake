@@ -9,6 +9,7 @@
 #include "drake/automotive/maliput/monolane/loader.h"
 #include "drake/automotive/maliput/utility/generate_obj.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/text_logging_gflags.h"
 
 namespace mono = drake::maliput::monolane;
 namespace utility = drake::maliput::utility;
@@ -28,15 +29,17 @@ DEFINE_double(min_grid_resolution, utility::ObjFeatures().min_grid_resolution,
 int main(int argc, char* argv[]) {
   drake::log()->debug("main()");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::logging::HandleSpdlogGflags();
 
   if (FLAGS_yaml_file.empty()) {
-    drake::log()->error("No input file specified.");
+    drake::log()->critical("No input file specified.");
     return 1;
   }
   if (FLAGS_obj_file.empty()) {
-    drake::log()->error("No output file specified.");
+    drake::log()->critical("No output file specified.");
     return 1;
   }
+
   drake::log()->info("Loading road geometry.");
   auto rg = mono::LoadFile(FLAGS_yaml_file);
 
