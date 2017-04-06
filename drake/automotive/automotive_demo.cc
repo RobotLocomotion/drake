@@ -89,7 +89,7 @@ void AddVehicles(RoadNetworkType road_network_type,
     const maliput::api::RoadGeometry* road_geometry,
     AutomotiveSimulator<double>* simulator) {
   if (FLAGS_simple_car_names.empty()) {
-    const std::string name = "";
+    const std::string name = "SimpleCar";
     const std::string& channel_name = MakeChannelName(name);
     drake::log()->info("Adding simple car subscribed to {}.", channel_name);
     simulator->AddPriusSimpleCar(name, channel_name);
@@ -116,7 +116,8 @@ void AddVehicles(RoadNetworkType road_network_type,
            FLAGS_dragway_vehicle_delay;
       const auto& params = CreateTrajectoryParamsForDragway(
           *dragway_road_geometry, lane_index, speed, start_time);
-      simulator->AddPriusTrajectoryCar(std::get<0>(params),
+      simulator->AddPriusTrajectoryCar("TrajectoryCar" + std::to_string(i),
+                                       std::get<0>(params),
                                        std::get<1>(params),
                                        std::get<2>(params));
     }
@@ -158,7 +159,8 @@ void AddVehicles(RoadNetworkType road_network_type,
   } else {
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
-      simulator->AddPriusTrajectoryCar(std::get<0>(params),
+      simulator->AddPriusTrajectoryCar("TrajectoryCar" + std::to_string(i),
+                                       std::get<0>(params),
                                        std::get<1>(params),
                                        std::get<2>(params));
     }

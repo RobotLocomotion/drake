@@ -9,9 +9,6 @@
 #include <Eigen/Dense>
 #include <stdexcept>
 
-using namespace std;
-using namespace Eigen;
-
 void baseZeroToBaseOne(std::vector<int>& vec) {
   for (std::vector<int>::iterator iter = vec.begin(); iter != vec.end(); iter++)
     (*iter)++;
@@ -40,9 +37,9 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(
     const Eigen::MatrixBase<DerivedNormal>& normal,
     const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane) {
   // TODO(tkoolen): implement multi-column version
-  using namespace Eigen;
+  using Eigen::Vector3d;
 
-  if (abs(normal.squaredNorm() - 1.0) > 1e-12) {
+  if (std::abs(normal.squaredNorm() - 1.0) > 1e-12) {
     throw std::runtime_error(
         "Drake:resolveCenterOfPressure:BadInputs: normal should be a unit "
         "vector");
@@ -52,7 +49,7 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(
   double normal_torque_at_cop;
 
   double fz = normal.dot(force);
-  bool cop_exists = abs(fz) > 1e-12;
+  bool cop_exists = std::abs(fz) > 1e-12;
 
   if (cop_exists) {
     auto torque_at_point_on_contact_plane =

@@ -17,18 +17,18 @@ constexpr int kVelocityLength = 1;
 constexpr int kMiscLength = 1;
 constexpr int kLength = kPositionLength + kVelocityLength + kMiscLength;
 
-std::unique_ptr<VectorBase<int>> MakeSomeVector() {
-  return BasicVector<int>::Make({1, 2, 3, 4});
+std::unique_ptr<VectorBase<double>> MakeSomeVector() {
+  return BasicVector<double>::Make({1, 2, 3, 4});
 }
 
 class ContinuousStateTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    continuous_state_.reset(new ContinuousState<int>(
+    continuous_state_.reset(new ContinuousState<double>(
         MakeSomeVector(), kPositionLength, kVelocityLength, kMiscLength));
   }
 
-  std::unique_ptr<ContinuousState<int>> continuous_state_;
+  std::unique_ptr<ContinuousState<double>> continuous_state_;
 };
 
 TEST_F(ContinuousStateTest, Access) {
@@ -77,7 +77,7 @@ TEST_F(ContinuousStateTest, OutOfBoundsAccess) {
 // sum to the state vector dimension.
 TEST_F(ContinuousStateTest, OutOfBoundsConstruction) {
   EXPECT_THROW(
-      continuous_state_.reset(new ContinuousState<int>(
+      continuous_state_.reset(new ContinuousState<double>(
           MakeSomeVector(), kPositionLength, kVelocityLength, kMiscLength + 1)),
       std::out_of_range);
 }
@@ -86,7 +86,7 @@ TEST_F(ContinuousStateTest, OutOfBoundsConstruction) {
 // position variables.
 TEST_F(ContinuousStateTest, MoreVelocityThanPositionVariables) {
   EXPECT_THROW(
-      continuous_state_.reset(new ContinuousState<int>(
+      continuous_state_.reset(new ContinuousState<double>(
           MakeSomeVector(), 1 /* num_q */, 2 /* num_v */, kMiscLength + 1)),
       std::out_of_range);
 }
@@ -94,9 +94,9 @@ TEST_F(ContinuousStateTest, MoreVelocityThanPositionVariables) {
 TEST_F(ContinuousStateTest, CopyFrom) {
   // Create a zero-initialized continuous state, with the same dimensions as
   // the continuous state in the fixture.
-  ContinuousState<int> next_state(BasicVector<int>::Make({0, 0, 0, 0}),
-                                  kPositionLength, kVelocityLength,
-                                  kMiscLength);
+  ContinuousState<double> next_state(BasicVector<double>::Make({0, 0, 0, 0}),
+                                     kPositionLength, kVelocityLength,
+                                     kMiscLength);
   next_state.CopyFrom(*continuous_state_);
   EXPECT_EQ(1, next_state[0]);
   EXPECT_EQ(2, next_state[1]);

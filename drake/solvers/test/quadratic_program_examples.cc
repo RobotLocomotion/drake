@@ -120,6 +120,7 @@ void QuadraticProgram0::CheckSolution(SolverType solver_type) const {
   }
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog(), tol);
 }
 
 QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
@@ -204,6 +205,7 @@ void QuadraticProgram1::CheckSolution(SolverType solver_type) const {
   }
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog(), tol);
 }
 
 QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
@@ -243,6 +245,7 @@ void QuadraticProgram2::CheckSolution(SolverType solver_type) const {
   }
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog(), tol);
 }
 
 QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
@@ -298,6 +301,7 @@ void QuadraticProgram3::CheckSolution(SolverType solver_type) const {
   }
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog(), tol);
 }
 
 QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
@@ -347,6 +351,7 @@ void QuadraticProgram4::CheckSolution(SolverType solver_type) const {
   }
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog(), tol);
 }
 
 void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
@@ -356,13 +361,13 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
   Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
   Eigen::Vector2d x_desired;
   x_desired << 1.0, 0.0;
-  auto objective = prog.AddQuadraticErrorCost(Q, x_desired, x);
+  auto objective = prog.AddQuadraticErrorCost(Q, x_desired, x).constraint();
 
   Eigen::Matrix2d A;
   A << 1.0, 1.0, -1.0, 1.0;
   Eigen::Vector2d ub = Eigen::Vector2d::Constant(1.0);
   Eigen::Vector2d lb = Eigen::Vector2d::Constant(-1.0);
-  auto constraint = prog.AddLinearConstraint(A, lb, ub, x);
+  auto constraint = prog.AddLinearConstraint(A, lb, ub, x).constraint();
   Eigen::Vector2d x_expected;
 
   const int N = 40;  // number of points to test around the circle
@@ -416,6 +421,7 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
     const auto& x_value = prog.GetSolution(x);
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-5,
                                 MatrixCompareType::absolute));
+    ExpectSolutionCostAccurate(prog, 1E-5);
   }
 }
 }  // namespace test

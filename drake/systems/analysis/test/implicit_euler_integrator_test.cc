@@ -193,7 +193,7 @@ TEST_F(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
 // Checks the validity of general integrator statistics and resets statistics.
 void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GT(integrator->get_num_newton_raphson_loops(), 0);
-  EXPECT_GT(integrator->get_num_itr_newton_raphson_loops(), 0);
+  EXPECT_GT(integrator->get_num_error_estimator_newton_raphson_loops(), 0);
   EXPECT_GT(integrator->get_num_ieu_newton_raphson_loops(), 0);
   EXPECT_GT(integrator->get_previous_integration_step_size(), 0.0);
   EXPECT_GT(integrator->get_largest_step_size_taken(), 0.0);
@@ -202,13 +202,13 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GT(integrator->get_num_error_estimator_ode_evaluations(), 0);
   EXPECT_GT(integrator->get_num_ieu_function_evaluations(), 0);
   EXPECT_GT(integrator->get_num_jacobian_function_evaluations(), 0);
-  EXPECT_GT(integrator->get_num_itr_jacobian_function_evaluations(), 0);
+  EXPECT_GT(integrator->get_num_error_estimator_jacobian_function_evaluations(), 0);
   EXPECT_GT(integrator->get_num_ieu_jacobian_function_evaluations(), 0);
   EXPECT_GE(integrator->get_num_jacobian_reformulations(), 0);
-  EXPECT_GE(integrator->get_num_itr_jacobian_reformulations(), 0);
+  EXPECT_GE(integrator->get_num_error_estimator_jacobian_reformulations(), 0);
   EXPECT_GE(integrator->get_num_ieu_jacobian_reformulations(), 0);
   EXPECT_GE(integrator->get_num_iteration_matrix_refactors(), 0);
-  EXPECT_GE(integrator->get_num_itr_iter_refactors(), 0);
+  EXPECT_GE(integrator->get_num_error_estimator_iteration_matrix_refactors(), 0);
   EXPECT_GE(integrator->get_num_ieu_iter_refactors(), 0);
   EXPECT_GE(integrator->get_num_substep_failures(), 0);
   EXPECT_GE(integrator->get_num_step_shrinkages_from_substep_failures(), 0);

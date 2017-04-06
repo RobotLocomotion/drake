@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <type_traits>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -203,14 +204,9 @@ GTEST_TEST(TypeSafeIndex, ValueAssignment) {
 //    <     |   less_than
 //    +     |   add
 
-// This class provides the compiler with an l-value to trigger compilation on.
-template <class T>
-struct GenerateLValue { T& get_thing(); };
-
 #define BINARY_TEST(OP, OP_NAME) \
 template <typename T, typename U, \
-    typename = decltype(GenerateLValue<T>().get_thing() OP \
-                        GenerateLValue<U>().get_thing())> \
+    typename = decltype(std::declval<T>() OP std::declval<U>())> \
 bool has_ ## OP_NAME ## _helper(int) { return true; } \
 template <typename T, typename U> \
 bool has_ ## OP_NAME ## _helper(...) { return false; } \
@@ -262,7 +258,7 @@ BINARY_TEST(=, Assignment)
 
 // This tests that one index cannot be *constructed* from another index type,
 // but can be constructed from int types.
-template <typename T, typename U, typename = decltype(T(U(1)))>
+template <typename T, typename U, typename = decltype(T(U()))>
 bool has_construct_helper(int) { return true; }
 template <typename T, typename U>
 bool has_construct_helper(...) { return false; }

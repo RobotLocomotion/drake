@@ -9,6 +9,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {

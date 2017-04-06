@@ -24,5 +24,10 @@ void PassThrough<T>::DoCalcVectorOutput(
   *output = input;
 }
 
+template <typename T>
+PassThrough<symbolic::Expression>* PassThrough<T>::DoToSymbolic() const {
+  return new PassThrough<symbolic::Expression>(this->get_input_port().size());
+}
+
 }  // namespace systems
 }  // namespace drake

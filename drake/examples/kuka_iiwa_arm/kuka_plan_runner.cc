@@ -149,8 +149,10 @@ class RobotPlanRunner {
     for (int k = 0; k < static_cast<int>(plan->plan.size()); ++k) {
       input_time.push_back(plan->plan[k].utime / 1e6);
     }
+    const Eigen::MatrixXd knot_dot = Eigen::MatrixXd::Zero(kNumJoints, 1);
     plan_.reset(new PiecewisePolynomialTrajectory(
-        PiecewisePolynomial<double>::FirstOrderHold(input_time, knots)));
+        PiecewisePolynomial<double>::Cubic(input_time, knots,
+                                           knot_dot, knot_dot)));
     ++plan_number_;
   }
 

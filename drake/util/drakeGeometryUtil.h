@@ -122,6 +122,7 @@ void angularvel2rpydotMatrix(
   Scalar p = rpy(1);
   Scalar y = rpy(2);
 
+  // NOLINTNEXTLINE(build/namespaces): Needed for ADL.
   using namespace std;
   Scalar sy = sin(y);
   Scalar cy = cos(y);
@@ -377,7 +378,6 @@ dTransformSpatialForce(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
 
 template <typename DerivedI>
 bool isRegularInertiaMatrix(const Eigen::MatrixBase<DerivedI>& I) {
-  using namespace Eigen;
   using Scalar = typename DerivedI::Scalar;
   bool ret = true;
 
@@ -387,7 +387,7 @@ bool isRegularInertiaMatrix(const Eigen::MatrixBase<DerivedI>& I) {
   const auto& m = I(3, 3);
   ret = ret && (J - J.transpose()).isZero();  // J symmetric
   ret = ret &&
-        (m * Matrix<Scalar, 3, 3>::Identity() -
+        (m * Eigen::Matrix<Scalar, 3, 3>::Identity() -
          I.template bottomRightCorner<3, 3>())
             .isZero();  // mass part is a scalar matrix
   ret = ret &&
@@ -405,7 +405,6 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     const Eigen::Transform<typename DerivedI::Scalar, drake::kSpaceDimension,
                            Eigen::Isometry>& T_current_to_new,
     const Eigen::MatrixBase<DerivedI>& I) {
-  using namespace Eigen;
   using Scalar = typename DerivedI::Scalar;
 
   if (isRegularInertiaMatrix(I)) {
@@ -418,35 +417,36 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     const auto& p = T_current_to_new.translation();
 
     auto J = I.template topLeftCorner<3, 3>();
-    Matrix<Scalar, 3, 1> c;
+    Eigen::Matrix<Scalar, 3, 1> c;
     c << I(2, 4), I(0, 5), I(1, 3);
     const auto& m = I(3, 3);
 
-    auto vectorToSkewSymmetricSquared = [](const Matrix<Scalar, 3, 1>& a) {
-      Matrix<Scalar, 3, 3> ret;
-      auto a0_2 = a(0) * a(0);
-      auto a1_2 = a(1) * a(1);
-      auto a2_2 = a(2) * a(2);
+    auto vectorToSkewSymmetricSquared =
+        [](const Eigen::Matrix<Scalar, 3, 1>& a) {
+          Eigen::Matrix<Scalar, 3, 3> ret;
+          auto a0_2 = a(0) * a(0);
+          auto a1_2 = a(1) * a(1);
+          auto a2_2 = a(2) * a(2);
 
-      ret(0, 0) = -a1_2 - a2_2;
-      ret(0, 1) = a(0) * a(1);
-      ret(0, 2) = a(0) * a(2);
+          ret(0, 0) = -a1_2 - a2_2;
+          ret(0, 1) = a(0) * a(1);
+          ret(0, 2) = a(0) * a(2);
 
-      ret(1, 0) = ret(0, 1);
-      ret(1, 1) = -a0_2 - a2_2;
-      ret(1, 2) = a(1) * a(2);
+          ret(1, 0) = ret(0, 1);
+          ret(1, 1) = -a0_2 - a2_2;
+          ret(1, 2) = a(1) * a(2);
 
-      ret(2, 0) = ret(0, 2);
-      ret(2, 1) = ret(1, 2);
-      ret(2, 2) = -a0_2 - a1_2;
-      return ret;
-    };
+          ret(2, 0) = ret(0, 2);
+          ret(2, 1) = ret(1, 2);
+          ret(2, 2) = -a0_2 - a1_2;
+          return ret;
+        };
 
     drake::SquareTwistMatrix<Scalar> I_new;
     auto c_new = (R * c).eval();
     auto J_new = I_new.template topLeftCorner<3, 3>();
 
-    if (m > NumTraits<Scalar>::epsilon()) {
+    if (m > Eigen::NumTraits<Scalar>::epsilon()) {
       J_new = vectorToSkewSymmetricSquared(c_new);
       c_new.noalias() += m * p;
       J_new -= vectorToSkewSymmetricSquared(c_new);
@@ -454,7 +454,8 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     } else {
       J_new.setZero();
     }
-    J_new.noalias() += R * J.template selfadjointView<Lower>() * R.transpose();
+    J_new.noalias() +=
+        R * J.template selfadjointView<Eigen::Lower>() * R.transpose();
 
     I_new.template topRightCorner<3, 3>() =
         drake::math::VectorToSkewSymmetric(c_new);
@@ -640,7 +641,6 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 1> flipExpmap(
     const Eigen::MatrixBase<Derived>& expmap) {
-  using namespace Eigen;
   typedef typename Derived::Scalar Scalar;
   static_assert(
       Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1,
@@ -658,7 +658,6 @@ template <typename Derived1, typename Derived2>
 Eigen::Matrix<typename Derived1::Scalar, 3, 1> unwrapExpmap(
     const Eigen::MatrixBase<Derived1>& expmap1,
     const Eigen::MatrixBase<Derived2>& expmap2) {
-  using namespace Eigen;
   static_assert(
       Derived1::RowsAtCompileTime == 3 && Derived1::ColsAtCompileTime == 1,
       "Wrong size.");
@@ -669,7 +668,7 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> unwrapExpmap(
       std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value,
       "Scalar types don't match.");
   typedef typename Derived1::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real Real;
+  typedef typename Eigen::NumTraits<Scalar>::Real Real;
 
   auto expmap2_flip = flipExpmap(expmap2);
   Real distance1 = (expmap1 - expmap2).squaredNorm();

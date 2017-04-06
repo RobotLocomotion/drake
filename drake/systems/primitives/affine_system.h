@@ -139,10 +139,6 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
                const Eigen::Ref<const Eigen::VectorXd>& y0,
                double time_period = 0.0);
 
-  /// The input to this system is direct feedthrough only if the coefficient
-  /// matrix `D` is non-zero.
-  bool has_any_direct_feedthrough() const override { return !D_.isZero(0.0); }
-
   /// @name Helper getter methods.
   /// @{
   const Eigen::MatrixXd& A() const { return A_; }
@@ -177,6 +173,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
 
   // System<T> override.
   AffineSystem<AutoDiffXd>* DoToAutoDiffXd() const final;
+  AffineSystem<symbolic::Expression>* DoToSymbolic() const final;
 
   const Eigen::MatrixXd A_;
   const Eigen::MatrixXd B_;

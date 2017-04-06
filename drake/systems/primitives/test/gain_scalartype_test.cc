@@ -92,7 +92,7 @@ class SymbolicGainTest : public ::testing::Test {
     input_ = make_unique<BasicVector<symbolic::Expression>>(3 /* length */);
   }
 
-  const symbolic::Expression kGain_{2.0};
+  double kGain_{2.0};
   unique_ptr<System<symbolic::Expression>> gain_;
   unique_ptr<Context<symbolic::Expression>> context_;
   unique_ptr<SystemOutput<symbolic::Expression>> output_;
@@ -121,9 +121,9 @@ TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
   EXPECT_NE(nullptr, output_vector);
   Eigen::Matrix<symbolic::Expression, 3, 1> expected{kGain_ * input_vector};
   EXPECT_EQ(expected, output_vector->get_value());
-  EXPECT_EQ(expected(0).Evaluate(), kGain_.Evaluate() * 1.0);
-  EXPECT_EQ(expected(1).Evaluate(), kGain_.Evaluate() * 3.14);
-  EXPECT_EQ(expected(2).Evaluate(), kGain_.Evaluate() * 2.18);
+  EXPECT_EQ(expected(0).Evaluate(), kGain_ * 1.0);
+  EXPECT_EQ(expected(1).Evaluate(), kGain_ * 3.14);
+  EXPECT_EQ(expected(2).Evaluate(), kGain_ * 2.18);
 }
 }  // namespace
 }  // namespace systems

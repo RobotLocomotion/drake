@@ -148,6 +148,20 @@ TEST_F(PidControllerTest, CalcTimeDerivatives) {
   EXPECT_EQ(error_signal_, -derivatives_->CopyToVector());
 }
 
+TEST_F(PidControllerTest, DirectFeedthrough) {
+  // When the proportional or derivative gain is nonzero, there is direct
+  // feedthrough from both the state and error inputs to the output.
+  EXPECT_TRUE(controller_.HasAnyDirectFeedthrough());
+  EXPECT_TRUE(controller_.HasDirectFeedthrough(0, 0));
+  EXPECT_TRUE(controller_.HasDirectFeedthrough(1, 0));
+
+  // When the gains are all zero, there is no direct feedthrough from any
+  // input to any output.
+  const VectorX<double> zero{VectorX<double>::Zero(port_size_)};
+  PidController<double> zero_controller(zero, zero, zero);
+  EXPECT_FALSE(zero_controller.HasAnyDirectFeedthrough());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

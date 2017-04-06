@@ -60,6 +60,10 @@ TEST_F(PassThroughTest, PassThroughIsStateless) {
   EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
+TEST_F(PassThroughTest, DirectFeedthrough) {
+  EXPECT_TRUE(pass_through_->HasAnyDirectFeedthrough());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

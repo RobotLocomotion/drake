@@ -18,6 +18,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
+#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
@@ -56,7 +57,8 @@ using systems::OutputPortDescriptor;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 
-const char* const kIiwaUrdf = "/manipulation/models/iiwa_description/urdf/"
+const char* const kIiwaUrdf =
+    "/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
 // TODO(naveen): refactor this to reduce duplicate code.
@@ -139,8 +141,9 @@ int DoMain() {
 
   drake::lcm::DrakeLcm lcm;
   DrakeVisualizer* visualizer = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
-  builder.Connect(model->get_plant_output_port(),
+  builder.Connect(model->get_output_port_plant_state(),
                   visualizer->get_input_port(0));
+  visualizer->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Create the command subscriber and status publisher.
   auto iiwa_command_sub = builder.AddSystem(
@@ -163,11 +166,11 @@ int DoMain() {
   builder.Connect(iiwa_command_sub->get_output_port(0),
                   iiwa_command_receiver->get_input_port(0));
   builder.Connect(iiwa_command_receiver->get_output_port(0),
-                  model->get_iiwa_state_input_port());
+                  model->get_input_port_iiwa_state_command());
   builder.Connect(iiwa_zero_acceleration_source->get_output_port(),
-                  model->get_iiwa_acceleration_input_port());
+                  model->get_input_port_iiwa_acceleration_command());
 
-  builder.Connect(model->get_iiwa_state_port(),
+  builder.Connect(model->get_output_port_iiwa_state(),
                   iiwa_status_sender->get_state_input_port());
   builder.Connect(iiwa_command_receiver->get_output_port(0),
                   iiwa_status_sender->get_command_input_port());
@@ -179,41 +182,46 @@ int DoMain() {
           "SCHUNK_WSG_COMMAND", &lcm));
   auto wsg_trajectory_generator =
       builder.AddSystem<SchunkWsgTrajectoryGenerator>(
-          model->get_wsg_state_port().size(), 0);
+          model->get_output_port_wsg_state().size(), 0);
 
   auto wsg_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
+  wsg_status_pub->set_publish_period(schunk_wsg::kSchunkWsgLcmStatusPeriod);
+
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-      model->get_wsg_state_port().size(), 0, 1);
+      model->get_output_port_wsg_state().size(), 0, 1);
 
   builder.Connect(wsg_command_sub->get_output_port(0),
                   wsg_trajectory_generator->get_command_input_port());
   builder.Connect(wsg_trajectory_generator->get_output_port(0),
-                  model->get_wsg_input_port());
-  builder.Connect(model->get_wsg_state_port(),
+                  model->get_input_port_wsg_command());
+  builder.Connect(model->get_output_port_wsg_state(),
                   wsg_status_sender->get_input_port(0));
-  builder.Connect(model->get_wsg_state_port(),
+  builder.Connect(model->get_output_port_wsg_state(),
                   wsg_trajectory_generator->get_state_input_port());
   builder.Connect(*wsg_status_sender, *wsg_status_pub);
 
   auto iiwa_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
           "IIWA_STATE_EST", &lcm));
-  builder.Connect(model->get_iiwa_robot_state_msg_port(),
+  builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
                   iiwa_state_pub->get_input_port(0));
+  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto box_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
           "OBJECT_STATE_EST", &lcm));
-  builder.Connect(model->get_box_robot_state_msg_port(),
+  builder.Connect(model->get_output_port_box_robot_state_msg(),
                   box_state_pub->get_input_port(0));
+  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
 
   lcm.StartReceiveThread();
   simulator.Initialize();
+  simulator.set_publish_every_time_step(false);
   simulator.StepTo(FLAGS_simulation_sec);
 
   return 0;

@@ -159,13 +159,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// Gets the number of ODE function evaluations *used only for the error
   /// estimation process* since the last call to ResetStatistics().
   int get_num_error_estimator_ode_evaluations() const {
-    return num_itr_function_evaluations_;
-  }
-
-  /// Gets the number of implicit-Euler-only ODE function evaluations since
-  /// the last call to ResetStatistics().
-  int get_num_ieu_function_evaluations() const {
-    return num_function_evaluations_ - num_itr_function_evaluations_;
+    return num_err_est_function_evaluations_;
   }
 
   /// Gets the number of ODE function evaluations *used only for computing
@@ -177,16 +171,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// Gets the number of implicit-trapezoid-only ODE function evaluations *used
   /// only for computing the Jacobian matrices* since the last call to
   /// ResetStatistics().
-  int get_num_itr_jacobian_function_evaluations() const {
-    return num_itr_jacobian_function_evaluations_;
-  }
-
-  /// Gets the number of implicit-Euler-only ODE function evaluations *used
-  /// only for computing the Jacobian matrices* since the last call to
-  /// ResetStatistics().
-  int get_num_ieu_jacobian_function_evaluations() const {
-    return num_jacobian_function_evaluations_ -
-        num_itr_jacobian_function_evaluations_;
+  int get_num_error_estimator_jacobian_function_evaluations() const {
+    return num_err_est_jacobian_function_evaluations_;
   }
 
   /// Gets the number of loops used in the Newton-Raphson nonlinear systems of
@@ -196,13 +182,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// Gets the number of implicit-trapezoid-only loops used in the
   /// Newton-Raphson nonlinear systems of equation solving process since the
   /// last call to ResetStatistics().
-  int get_num_itr_newton_raphson_loops() const { return num_itr_nr_loops_; }
-
-  /// Gets the number of implicit-Euler-only loops used in the
-  /// Newton-Raphson nonlinear systems of equation solving process since the
-  /// last call to ResetStatistics().
-  int get_num_ieu_newton_raphson_loops() const { return num_nr_loops_ -
-        num_itr_nr_loops_; }
+  int get_num_error_estimator_newton_raphson_loops() const { return num_err_est_nr_loops_; }
 
   /// Gets the number of Jacobian reformulations (i.e., the number of times
   /// that the Jacobian matrix was reformed) since the last call to
@@ -211,14 +191,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   /// Gets the number of implicit-trapezoid-only Jacobian matrix reformulations
   /// since the last call to ResetStatistics().
-  int get_num_itr_jacobian_reformulations() const {
-    return num_itr_jacobian_reforms_; }
-
-  /// Gets the number of implicit-Euler-only Jacobian matrix reformulations
-  /// since the last call to ResetStatistics().
-  int get_num_ieu_jacobian_reformulations() const {
-    return num_jacobian_reforms_ - num_itr_jacobian_reforms_;
-  }
+  int get_num_error_estimator_jacobian_reformulations() const {
+    return num_err_est_jacobian_reforms_; }
 
   /// Gets the number of iteration matrix factorizations since the last
   /// call to ResetStatistics().
@@ -228,14 +202,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   /// Gets the number of implicit-trapezoid-only iteration matrix factorizations
   /// since the last call to ResetStatistics().
-  int get_num_itr_iter_refactors() const {
-    return num_itr_iter_refactors_;
-  }
-
-  /// Gets the number of implicit-Euler-only iteration matrix factorizations
-  /// since the last call to ResetStatistics().
-  int get_num_ieu_iter_refactors() const {
-    return num_iter_refactors_ - num_itr_iter_refactors_;
+  int get_num_error_estimator_iteration_matrix_refactors() const {
+    return num_err_est_iter_refactors_;
   }
 
   /// Gets the number of failed sub-steps (implying step halving was required
@@ -354,11 +322,11 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   int num_nr_loops_{0};
 
   // Implicit trapezoid specific statistics.
-  int num_itr_jacobian_reforms_{0};
-  int num_itr_iter_refactors_{0};
-  int num_itr_function_evaluations_{0};
-  int num_itr_jacobian_function_evaluations_{0};
-  int num_itr_nr_loops_{0};
+  int num_err_est_jacobian_reforms_{0};
+  int num_err_est_iter_refactors_{0};
+  int num_err_est_function_evaluations_{0};
+  int num_err_est_jacobian_function_evaluations_{0};
+  int num_err_est_nr_loops_{0};
 };
 }  // namespace systems
 }  // namespace drake

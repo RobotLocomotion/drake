@@ -110,7 +110,10 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     Eigen::VectorXd lambda = qr.solve(AiG_T.transpose() * c + b);
 
     // Solve G*x = A'y - c
-    prog.SetDecisionVariableValues(llt.solve(A.transpose() * lambda - c));
+    const Eigen::VectorXd x = llt.solve(A.transpose() * lambda - c);
+    prog.SetDecisionVariableValues(x);
+    const double optimal_cost = 0.5 * x.dot(G * x + c);
+    prog.SetOptimalCost(optimal_cost);
     prog.SetSolverResult(solver_type(), 0);
     return SolutionResult::kSolutionFound;
   }
@@ -139,7 +142,11 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // Compute the least-squares solution.
   Eigen::VectorXd sol =
       A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
-  prog.SetDecisionVariableValues(sol.segment(0, prog.num_vars()));
+  const Eigen::VectorXd x = sol.segment(0, prog.num_vars());
+  prog.SetDecisionVariableValues(x);
+
+  const double optimal_cost = 0.5 * x.dot(G * x + c);
+  prog.SetOptimalCost(optimal_cost);
 
   prog.SetSolverResult(solver_type(), 0);
   return SolutionResult::kSolutionFound;

@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/siso_vector_system.h"
 
 namespace drake {
@@ -50,6 +51,10 @@ class PassThrough : public SisoVectorSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* output) const override;
+
+  /// Returns an PassThrough<symbolic::Expression> with the same dimensions as
+  /// this PassThrough.
+  PassThrough<symbolic::Expression>* DoToSymbolic() const override;
 };
 
 }  // namespace systems

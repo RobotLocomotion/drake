@@ -40,6 +40,9 @@ const int kNumJoints = 7;
 // Create a system which has an integrator on the interpolated
 // reference position for received plans.
 int DoMain() {
+  DRAKE_ABORT_MSG("this example is temporarily broken, and will be "
+      "fixed after #5672 is merged");
+
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 

@@ -94,15 +94,15 @@ GTEST_TEST(testNonlinearProgram, BoundingBoxTest) {
 GTEST_TEST(testNonlinearProgram, trivialLinearSystem) {
   LinearSystemExample1 example1{};
   auto prog = example1.prog();
-  RunNonlinearProgram(prog, [&]() { EXPECT_TRUE(example1.CheckSolution()); });
+  RunNonlinearProgram(prog, [&]() { example1.CheckSolution(); });
 
   LinearSystemExample2 example2{};
   prog = example2.prog();
-  RunNonlinearProgram(prog, [&]() { EXPECT_TRUE(example2.CheckSolution()); });
+  RunNonlinearProgram(prog, [&]() { example2.CheckSolution(); });
 
   LinearSystemExample3 example3{};
   prog = example3.prog();
-  RunNonlinearProgram(prog, [&]() { EXPECT_TRUE(example3.CheckSolution()); });
+  RunNonlinearProgram(prog, [&]() { example3.CheckSolution(); });
 }
 
 GTEST_TEST(testNonlinearProgram, trivialLinearEquality) {
@@ -158,7 +158,7 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem1) {
     for (const auto& cnstr_form : NonConvexQPproblem1::constraint_forms()) {
       NonConvexQPproblem1 prob(cost_form, cnstr_form);
       RunNonlinearProgram(prob.prog(),
-                          [&]() { EXPECT_TRUE(prob.CheckSolution()); });
+                          [&]() { prob.CheckSolution(); });
     }
   }
 }
@@ -168,7 +168,7 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem2) {
     for (const auto& cnstr_form : NonConvexQPproblem2::constraint_forms()) {
       NonConvexQPproblem2 prob(cost_form, cnstr_form);
       RunNonlinearProgram(prob.prog(),
-                          [&]() { EXPECT_TRUE(prob.CheckSolution()); });
+                          [&]() { prob.CheckSolution(); });
     }
   }
 }
@@ -178,10 +178,10 @@ GTEST_TEST(testNonlinearProgram, testLowerBoundedProblem) {
     LowerBoundedProblem prob(cnstr_form);
     prob.SetInitialGuess1();
     RunNonlinearProgram(prob.prog(),
-                        [&]() { EXPECT_TRUE(prob.CheckSolution()); });
+                        [&]() { prob.CheckSolution(); });
     prob.SetInitialGuess2();
     RunNonlinearProgram(prob.prog(),
-                        [&]() { EXPECT_TRUE(prob.CheckSolution()); });
+                        [&]() { prob.CheckSolution(); });
   }
 }
 
@@ -208,7 +208,7 @@ class SixHumpCamelCost {
 GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2);
-  auto cost = prog.AddCost(SixHumpCamelCost(), x);
+  auto cost = prog.AddCost(SixHumpCamelCost(), x).constraint();
 
   prog.SetInitialGuess(x, Vector2d::Random());
   RunNonlinearProgram(&prog, [&]() {
@@ -230,7 +230,7 @@ GTEST_TEST(testNonlinearProgram, testGloptiPolyConstrainedMinimization) {
          GloptiPolyConstrainedMinimizationProblem::constraint_forms()) {
       GloptiPolyConstrainedMinimizationProblem prob(cost_form, cnstr_form);
       RunNonlinearProgram(prob.prog(),
-                          [&]() { EXPECT_TRUE(prob.CheckSolution()); });
+                          [&]() { prob.CheckSolution(); });
     }
   }
 }
@@ -248,7 +248,8 @@ GTEST_TEST(testNonlinearProgram, linearPolynomialConstraint) {
   std::shared_ptr<Constraint> resulting_constraint =
       problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                       Vector1d::Constant(2),
-                                      Vector1d::Constant(2), x_var);
+                                      Vector1d::Constant(2), x_var)
+             .constraint();
   // Check that the resulting constraint is a LinearConstraint.
   EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(resulting_constraint));
   // Check that it gives the correct answer as well.

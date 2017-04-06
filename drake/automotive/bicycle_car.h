@@ -79,10 +79,6 @@ class BicycleCar : public systems::LeafSystem<T> {
   /// Returns a descriptor of the output port that contains the bicycle states.
   const systems::OutputPortDescriptor<T>& get_state_output_port() const;
 
-  // System<T> overrides.
-  // Declare that the outputs are all algebraically isolated from the input.
-  bool has_any_direct_feedthrough() const override { return false; }
-
  private:
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
@@ -96,6 +92,10 @@ class BicycleCar : public systems::LeafSystem<T> {
                                const systems::BasicVector<T>& steering,
                                const systems::BasicVector<T>& force,
                                BicycleCarState<T>* derivatives) const;
+
+  // System<T> override.  Returns an BicycleCar<symbolic::Expression> with the
+  // same dimensions as this BicycleCar.
+  BicycleCar<symbolic::Expression>* DoToSymbolic() const override;
 
   int steering_input_port_{};
   int force_input_port_{};

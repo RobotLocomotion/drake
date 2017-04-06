@@ -15,7 +15,7 @@ namespace systems {
 template <typename T>
 PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
     double spring_stiffness, double mass,
-    const T& Kp, const T& Ki, const T& Kd,
+    double Kp, double Ki, double Kd,
     const T& target_position) : Diagram<T>() {
   DRAKE_ASSERT(spring_stiffness >= 0);
   DRAKE_ASSERT(mass >= 0);
@@ -28,9 +28,8 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   plant_ = builder.template
       AddSystem<SpringMassSystem>(spring_stiffness, mass, true /* is forced */);
   controller_ = builder.template AddSystem<PidController>(
-      VectorX<T>::Constant(1, Kp),
-      VectorX<T>::Constant(1, Ki),
-      VectorX<T>::Constant(1, Kd));
+      VectorX<double>::Constant(1, Kp), VectorX<double>::Constant(1, Ki),
+      VectorX<double>::Constant(1, Kd));
   VectorX<T> desired(2);
   desired << target_position, 0;
   target_ = builder.template AddSystem<ConstantVectorSource>(desired);
@@ -67,11 +66,6 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   // consists of a vector with position, velocity and energy.
   builder.ExportOutput(plant_->get_output_port());
   builder.BuildInto(this);
-}
-
-template <typename T>
-bool PidControlledSpringMassSystem<T>::has_any_direct_feedthrough() const {
-  return false;
 }
 
 template <typename T>

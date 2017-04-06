@@ -35,6 +35,22 @@ std::set<CostForm> quadratic_cost_form() {
   return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
 }
 
+double EvaluateSolutionCost(const MathematicalProgram &prog) {
+  double cost{0};
+  for (auto const& binding : prog.GetAllCosts()) {
+    cost += prog.EvalBindingAtSolution(binding)(0);
+  }
+  return cost;
+}
+
+/*
+ * Expect that the optimal cost stored by the solver in the MathematicalProgram
+ * be nearly the same as the cost reevaluated at the solution
+ */
+void ExpectSolutionCostAccurate(const MathematicalProgram &prog, double tol) {
+  EXPECT_NEAR(EvaluateSolutionCost(prog), prog.GetOptimalCost(), tol);
+}
+
 OptimizationProgram::OptimizationProgram(CostForm cost_form,
                                          ConstraintForm cnstr_form)
     : prog_(std::make_unique<MathematicalProgram>()) {}
@@ -75,25 +91,20 @@ LinearSystemExample1::LinearSystemExample1()
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, b_{}, con_{} {
   x_ = prog_->NewContinuousVariables<4>();
   b_ = Vector4d::Random();
-  con_ = prog_->AddLinearEqualityConstraint(Matrix4d::Identity(), b_, x_);
+  con_ = prog_->AddLinearEqualityConstraint(Matrix4d::Identity(), b_, x_)
+              .constraint();
   prog_->SetInitialGuessForAllVariables(Vector4d::Zero());
 }
 
-bool LinearSystemExample1::CheckSolution() const {
+void LinearSystemExample1::CheckSolution() const {
   auto x_sol = prog_->GetSolution(x_);
-  if (!CompareMatrices(x_sol, b_, tol(), MatrixCompareType::absolute)) {
-    return false;
-  }
+  EXPECT_TRUE(CompareMatrices(x_sol, b_, tol(), MatrixCompareType::absolute));
   for (int i = 0; i < 4; ++i) {
-    if (std::abs(x_sol(i) - b_(i)) > tol()) {
-      return false;
-    }
-    if (!CompareMatrices(x_sol.head(i), b_.head(i), tol(),
-                         MatrixCompareType::absolute)) {
-      return false;
-    }
+    EXPECT_NEAR(b_(i), x_sol(i), tol());
+    EXPECT_TRUE(CompareMatrices(x_sol.head(i), b_.head(i), tol(),
+                                MatrixCompareType::absolute));
   }
-  return true;
+  EXPECT_NEAR(0.0, prog_->GetOptimalCost(), tol());
 }
 
 LinearSystemExample2::LinearSystemExample2() : LinearSystemExample1(), y_{} {
@@ -102,31 +113,23 @@ LinearSystemExample2::LinearSystemExample2() : LinearSystemExample1(), y_{} {
                                       b().topRows<2>(), y_);
 }
 
-bool LinearSystemExample2::CheckSolution() const {
-  if (!LinearSystemExample1::CheckSolution()) {
-    return false;
-  }
-  if (!CompareMatrices(prog()->GetSolution(y_), b().topRows<2>() / 2, tol(),
-                       MatrixCompareType::absolute)) {
-    return false;
-  }
-  return true;
+void LinearSystemExample2::CheckSolution() const {
+  LinearSystemExample1::CheckSolution();
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(y_), b().topRows<2>() / 2,
+                              tol(), MatrixCompareType::absolute));
+  EXPECT_NEAR(0.0, prog()->GetOptimalCost(), tol());
 }
 
 LinearSystemExample3::LinearSystemExample3() : LinearSystemExample2() {
   con()->UpdateConstraint(3 * Matrix4d::Identity(), b());
 }
 
-bool LinearSystemExample3::CheckSolution() const {
-  if (!CompareMatrices(prog()->GetSolution(x()), b() / 3, tol(),
-                       MatrixCompareType::absolute)) {
-    return false;
-  }
-  if (!CompareMatrices(prog()->GetSolution(y()), b().topRows<2>() / 2, tol(),
-                       MatrixCompareType::absolute)) {
-    return false;
-  }
-  return true;
+void LinearSystemExample3::CheckSolution() const {
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x()), b() / 3, tol(),
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(y()), b().topRows<2>() / 2,
+                              tol(), MatrixCompareType::absolute));
+  EXPECT_NEAR(0.0, prog()->GetOptimalCost(), tol());
 }
 
 LinearMatrixEqualityExample::LinearMatrixEqualityExample()
@@ -141,19 +144,15 @@ LinearMatrixEqualityExample::LinearMatrixEqualityExample()
                                      -Eigen::Matrix3d::Identity(), true);
 }
 
-bool LinearMatrixEqualityExample::CheckSolution() const {
+void LinearMatrixEqualityExample::CheckSolution() const {
   auto X_value = prog_->GetSolution(X_);
-  if (!CompareMatrices(A_.transpose() * X_value + X_value * A_,
-                       -Eigen::Matrix3d::Identity(), 1E-8,
-                       MatrixCompareType::absolute)) {
-    return false;
-  }
+  EXPECT_TRUE(CompareMatrices(A_.transpose() * X_value + X_value * A_,
+                              -Eigen::Matrix3d::Identity(), 1E-8,
+                              MatrixCompareType::absolute));
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
   es.compute(X_value);
-  if (!(es.eigenvalues().array() >= 0).all()) {
-    return false;
-  }
-  return true;
+  EXPECT_TRUE((es.eigenvalues().array() >= 0).all());
+  EXPECT_NEAR(0.0, prog_->GetOptimalCost(), 1E-8);
 }
 
 NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
@@ -191,10 +190,11 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
       x_, x_expected_ + 0.01 * Eigen::Matrix<double, 5, 1>::Random());
 }
 
-bool NonConvexQPproblem1::CheckSolution() const {
+void NonConvexQPproblem1::CheckSolution() const {
   const auto& x_value = prog_->GetSolution(x_);
-  return CompareMatrices(x_value, x_expected_, 1E-9,
-                         MatrixCompareType::absolute);
+  EXPECT_TRUE(CompareMatrices(x_value, x_expected_, 1E-9,
+                              MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog_, 1E-5);
 }
 
 void NonConvexQPproblem1::AddConstraint() {
@@ -257,10 +257,11 @@ NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
       x_, x_expected_ + 0.01 * Eigen::Matrix<double, 6, 1>::Random());
 }
 
-bool NonConvexQPproblem2::CheckSolution() const {
+void NonConvexQPproblem2::CheckSolution() const {
   const auto& x_value = prog_->GetSolution(x_);
-  return CompareMatrices(x_value, x_expected_, 1E-3,
-                         MatrixCompareType::absolute);
+  EXPECT_TRUE(CompareMatrices(x_value, x_expected_, 1E-3,
+                              MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog_, 1E-4);
 }
 
 void NonConvexQPproblem2::AddQuadraticCost() {
@@ -325,10 +326,11 @@ LowerBoundedProblem::LowerBoundedProblem(ConstraintForm cnstr_form)
   x_expected_ << 5, 1, 5, 0, 5, 10;
 }
 
-bool LowerBoundedProblem::CheckSolution() const {
+void LowerBoundedProblem::CheckSolution() const {
   const auto& x_value = prog_->GetSolution(x_);
-  return CompareMatrices(x_value, x_expected_, 1E-3,
-                         MatrixCompareType::absolute);
+  EXPECT_TRUE(CompareMatrices(x_value, x_expected_, 1E-3,
+                              MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog_, 1E-2);
 }
 
 void LowerBoundedProblem::SetInitialGuess1() {
@@ -421,13 +423,14 @@ GloptiPolyConstrainedMinimizationProblem::
   prog_->SetInitialGuess(y_, initial_guess);
 }
 
-bool GloptiPolyConstrainedMinimizationProblem::CheckSolution() const {
+void GloptiPolyConstrainedMinimizationProblem::CheckSolution() const {
   const auto& x_value = prog_->GetSolution(x_);
   const auto& y_value = prog_->GetSolution(y_);
-  return (CompareMatrices(x_value, expected_, 1E-4,
-                          MatrixCompareType::absolute)) &&
-         (CompareMatrices(y_value, expected_, 1E-4,
-                          MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x_value, expected_, 1E-4,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(y_value, expected_, 1E-4,
+                              MatrixCompareType::absolute));
+  ExpectSolutionCostAccurate(*prog_, 1E-4);
 }
 
 void GloptiPolyConstrainedMinimizationProblem::AddGenericCost() {
@@ -583,24 +586,27 @@ void MinDistanceFromPlaneToOrigin::SetInitialGuess() {
       x_rotated_lorentz_, x_expected_ + 0.1 * VectorXd::Ones(A_.cols()));
 }
 
-bool MinDistanceFromPlaneToOrigin::CheckSolution(bool rotated_cone) const {
+void MinDistanceFromPlaneToOrigin::CheckSolution(bool rotated_cone) const {
   if (rotated_cone) {
     auto x_rotated_lorentz_value =
         prog_rotated_lorentz_->GetSolution(x_rotated_lorentz_);
     auto t_rotated_lorentz_value =
         prog_rotated_lorentz_->GetSolution(t_rotated_lorentz_);
-    return CompareMatrices(x_rotated_lorentz_value, x_expected_, 1E-3,
-                           MatrixCompareType::absolute) &&
-           CompareMatrices(t_rotated_lorentz_value,
-                           Vector1d(x_expected_.squaredNorm()), 1E-3,
-                           MatrixCompareType::absolute);
+    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz_value, x_expected_, 1E-3,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(t_rotated_lorentz_value,
+                                Vector1d(x_expected_.squaredNorm()), 1E-3,
+                                MatrixCompareType::absolute));
+    ExpectSolutionCostAccurate(*prog_rotated_lorentz_, 1E-3);
   } else {
     auto x_lorentz_value = prog_lorentz_->GetSolution(x_lorentz_);
     auto t_lorentz_value = prog_lorentz_->GetSolution(t_lorentz_);
-    return CompareMatrices(x_lorentz_value, x_expected_, 1E-3,
-                           MatrixCompareType::absolute) &&
-           CompareMatrices(t_lorentz_value, Vector1d(x_expected_.norm()), 1E-3,
-                           MatrixCompareType::absolute);
+    EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected_, 1E-3,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(t_lorentz_value,
+                                Vector1d(x_expected_.norm()), 1E-3,
+                                MatrixCompareType::absolute));
+    ExpectSolutionCostAccurate(*prog_lorentz_, 1E-3);
   }
 }
 

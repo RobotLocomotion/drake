@@ -104,7 +104,7 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
           (MathematicalProgram::*)(
           const Expression&))
           &MathematicalProgram::AddLinearCost)
-    .def("AddQuadraticCost", (std::shared_ptr<QuadraticConstraint>
+    .def("AddQuadraticCost", (Binding<QuadraticConstraint>
          (MathematicalProgram::*)(
           const Eigen::Ref<const Eigen::MatrixXd>&,
           const Eigen::Ref<const Eigen::VectorXd>&,

@@ -953,6 +953,7 @@ struct NumTraits<drake::symbolic::Formula>
   static inline int digits10() { return 0; }
 };
 
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 namespace internal {
 
 /// Provides specialization for scalar_cmp_op to handle the case "Expr == Expr"
@@ -1124,5 +1125,7 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
 };
 
 }  // namespace internal
+#endif  // EIGEN_VERSION_AT_LEAST(...)
+
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
