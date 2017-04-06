@@ -84,7 +84,7 @@ void IiwaStateFeedbackPlanSource::DoCalcOutput(
       this->GetMutableOutputVector(output,
                                    output_port_acceleration_trajectory_);
 
-  if (plan.pp.getNumberOfSegments() <= 1) {
+  if (plan.pp.getNumberOfSegments() < 1) {
     // We don't have a plan yet, so emit the last commanded position
     // with no velocity.
     for (int i = 0; i < kNumJoints; i++) {
