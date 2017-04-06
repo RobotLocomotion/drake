@@ -125,7 +125,7 @@ void AddMaterialToMaterialMap(const string& material_name,
                  << std::endl
                  << "  - new RGBA values: " << color_rgba.transpose()
                  << std::endl;
-      DRAKE_ABORT_MSG(error_buff.str().c_str());
+      throw std::runtime_error(error_buff.str());
     }
   } else {
     // Adds the new color to the materials map.

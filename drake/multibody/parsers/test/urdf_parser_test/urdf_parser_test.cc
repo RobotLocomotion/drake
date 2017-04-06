@@ -119,24 +119,25 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
       file_same_color_diff_links, tree.get()));
 }
 
-GTEST_TEST(URDFParserDeathTest, TestDuplicateMaterials) {
+
+GTEST_TEST(URDFParserTest, TestDuplicateMaterials) {
   const string root = GetDrakePath() +
        "/multibody/parsers/test/urdf_parser_test/";
   const string file_duplicate = root + "duplicate_materials.urdf";
 
   auto tree = make_unique<RigidBodyTree<double>>();
-  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-      file_duplicate, tree.get()), ".*");
+  EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_duplicate, tree.get()), std::runtime_error);
 }
 
-GTEST_TEST(URDFParserDeathTest, TestConflictingMaterials) {
+GTEST_TEST(URDFParserTest, TestConflictingMaterials) {
   const string root = GetDrakePath() +
        "/multibody/parsers/test/urdf_parser_test/";
   const string file_conflict = root + "conflicting_materials.urdf";
 
   auto tree = make_unique<RigidBodyTree<double>>();
-  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-      file_conflict, tree.get()), ".*");
+  EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_conflict, tree.get()), std::runtime_error);
 }
 
 string ReadTextFile(const string& file) {
