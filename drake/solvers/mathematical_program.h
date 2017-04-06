@@ -1213,6 +1213,18 @@ class MathematicalProgram {
       const symbolic::Expression& e, double b);
 
   /**
+   * Adds a linear equality constraint represented by a symbolic formula to the
+   * program. The input formula @p f is either an equality formula (`e1 == e2`)
+   * or a conjunction of equality formulas.
+   *
+   * It throws an exception if
+   *  1. @p f is neither an equality formula nor a conjunction of equalities.
+   *  2. @p f includes a non-linear expression.
+   */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const symbolic::Formula& f);
+
+  /**
    * Adds linear equality constraints \f$ v = b \f$, where \p v(i) is a symbolic
    * linear expression. Throws an exception if
    * 1. @p v(i) is a non-linear expression.
@@ -2548,7 +2560,18 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
       const Eigen::Ref<const Eigen::VectorXd>& b);
 
+  // Adds a linear constraint represented by a set of symbolic formulas to the
+  // program.
+  //
+  // Precondition: ∀ f ∈ formulas, is_relational(f).
   Binding<LinearConstraint> AddLinearConstraint(
+      const std::set<symbolic::Formula>& formulas);
+
+  // Adds a linear-equality constraint represented by a set of symbolic formulas
+  // to the program.
+  //
+  // Precondition: ∀ f ∈ formulas, is_equal_to(f).
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const std::set<symbolic::Formula>& formulas);
 };
 }  // namespace solvers
