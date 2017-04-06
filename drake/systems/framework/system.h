@@ -666,6 +666,27 @@ class System {
   /// @name                      Utility methods
   //@{
 
+  virtual Context<T>* DoGetMutableTargetSystemContext(
+      Context<T>* context, const System<T>* target_system) const {
+    if (target_system == this)
+      return context;
+    return nullptr;
+  }
+
+  virtual const Context<T>* DoGetTargetSystemContext(
+      const Context<T>* context, const System<T>* target_system) const {
+    if (target_system == this)
+      return context;
+    return nullptr;
+  }
+
+  virtual State<T>* DoGetMutableTargetSystemState(
+      State<T>* state, const System<T>* target_system) const {
+    if (target_system == this)
+      return state;
+    return nullptr;
+  }
+
   /// Sets the name of the system. It is recommended that the name not include
   /// the character ':', since the path delimiter is "::". When creating a
   /// Diagram, names of sibling subsystems should be unique.

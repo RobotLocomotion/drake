@@ -397,12 +397,15 @@ class Diagram : public System<T>,
   /// pass their constituent subsystems the apropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
   const Context<T>& GetSubsystemContext(const Context<T>& context,
-                                        const System<T>* subsystem) const {
-    const Context<T>* subcontext =
-        GetSubsystemStuff<const Context<T>*, const DiagramContext<T>*>(
-            &context, subsystem, &DiagramContext<T>::GetSubsystemContext);
-    DRAKE_DEMAND(subcontext != nullptr);
-    return *subcontext;
+                                        const System<T>* target_system) const {
+    const Context<T>* ret =
+        System<T>::DoGetTargetSystemContext(&context, target_system);
+    if (ret != nullptr)
+      return *ret;
+
+    ret = DoGetTargetSystemContext(&context, target_system);
+    DRAKE_DEMAND(ret != nullptr);
+    return *ret;
   }
 
   /// Returns the subcontext that corresponds to the system @p subsystem.
@@ -410,11 +413,15 @@ class Diagram : public System<T>,
   /// pass their constituent subsystems the apropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
   Context<T>* GetMutableSubsystemContext(Context<T>* context,
-                                         const System<T>* subsystem) const {
-    Context<T>* subcontext = GetSubsystemStuff<Context<T>*, DiagramContext<T>*>(
-        context, subsystem, &DiagramContext<T>::GetMutableSubsystemContext);
-    DRAKE_DEMAND(subcontext != nullptr);
-    return subcontext;
+                                         const System<T>* target_system) const {
+    Context<T>* ret =
+        System<T>::DoGetMutableTargetSystemContext(context, target_system);
+    if (ret != nullptr)
+      return ret;
+
+    ret = DoGetMutableTargetSystemContext(context, target_system);
+    DRAKE_DEMAND(ret != nullptr);
+    return ret;
   }
 
   /// Retrieves the state for a particular subsystem from the context for the
@@ -435,10 +442,14 @@ class Diagram : public System<T>,
   /// diagram.
   State<T>* GetMutableSubsystemState(State<T>* state,
                                      const System<T>* subsystem) const {
-    State<T>* substate = GetSubsystemStuff<State<T>*, DiagramState<T>*>(
-        state, subsystem, &DiagramState<T>::get_mutable_substate);
-    DRAKE_DEMAND(substate != nullptr);
-    return substate;
+    State<T>* ret =
+        System<T>::DoGetMutableTargetSystemState(state, subsystem);
+    if (ret != nullptr)
+      return ret;
+
+    ret = DoGetMutableTargetSystemState(state, subsystem);
+    DRAKE_DEMAND(ret != nullptr);
+    return ret;
   }
 
   /// Returns the full path of this Diagram in the tree of Diagrams. Implemented
@@ -586,6 +597,36 @@ class Diagram : public System<T>,
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
+
+  Context<T>* DoGetMutableTargetSystemContext(
+      Context<T>* context, const System<T>* target_system) const final {
+    Context<T>* target_context =
+        GetSubsystemStuff<Context<T>*, DiagramContext<T>*>(
+            context, target_system,
+            &System<T>::DoGetMutableTargetSystemContext,
+            &DiagramContext<T>::GetMutableSubsystemContext);
+    return target_context;
+  }
+
+  const Context<T>* DoGetTargetSystemContext(
+      const Context<T>* context, const System<T>* target_system) const final {
+    const Context<T>* target_context =
+        GetSubsystemStuff<const Context<T>*, const DiagramContext<T>*>(
+            context, target_system,
+            &System<T>::DoGetTargetSystemContext,
+            &DiagramContext<T>::GetSubsystemContext);
+    return target_context;
+  }
+
+  State<T>* DoGetMutableTargetSystemState(
+      State<T>* state, const System<T>* target_system) const final {
+    State<T>* target_state =
+        GetSubsystemStuff<State<T>*, DiagramState<T>*>(
+            state, target_system,
+            &System<T>::DoGetMutableTargetSystemState,
+            &DiagramState<T>::get_mutable_substate);
+    return target_state;
+  }
 
   void DoPublish(const Context<T>& context) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
@@ -775,10 +816,9 @@ class Diagram : public System<T>,
   template <typename BasePtr, typename DerivedPtr>
   BasePtr GetSubsystemStuff(BasePtr base_ptr, const System<T>* target_system,
     std::function<BasePtr(const DerivedPtr, int)> getter) const {
-    DRAKE_DEMAND(base_ptr != nullptr);
-
     DerivedPtr derived_ptr = dynamic_cast<DerivedPtr>(base_ptr);
     DRAKE_DEMAND(derived_ptr != nullptr);
+    DRAKE_DEMAND(base_ptr != nullptr);
 
     // target_system is my direct child.
     auto it = sorted_systems_map_.find(target_system);
@@ -798,6 +838,33 @@ class Diagram : public System<T>,
         }
       }
     }
+    return nullptr;
+  }
+
+  template <typename BaseStuffPtr, typename DerivedStuffPtr>
+  BaseStuffPtr GetSubsystemStuff(BaseStuffPtr my_stuff, const System<T>* target_system,
+    std::function<BaseStuffPtr(const System<T>*, BaseStuffPtr, const System<T>*)> recursive_getter,
+    std::function<BaseStuffPtr(DerivedStuffPtr, int)> get_child_stuff) const {
+
+    DerivedStuffPtr my_stuff_as_derived = dynamic_cast<DerivedStuffPtr>(my_stuff);
+    DRAKE_DEMAND(my_stuff_as_derived != nullptr);
+    DRAKE_DEMAND(target_system != nullptr);
+
+    // target_system is my direct child.
+    auto it = sorted_systems_map_.find(target_system);
+    if (it != sorted_systems_map_.end()) {
+      return get_child_stuff(my_stuff_as_derived, it->second);
+    }
+
+    for (const auto& pair : sorted_systems_map_) {
+      const System<T>* child = pair.first;
+      BaseStuffPtr child_stuff = get_child_stuff(my_stuff_as_derived, pair.second);
+      BaseStuffPtr grandchild_stuff = recursive_getter(child, child_stuff, target_system);
+
+      if (grandchild_stuff)
+        return grandchild_stuff;
+    }
+
     return nullptr;
   }
 

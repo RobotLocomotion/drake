@@ -232,6 +232,7 @@ TEST_F(DiagramTest, Graphviz) {
 
 // Tests that both variants of GetMutableSubsystemState do what they say on
 // the tin.
+/*
 TEST_F(DiagramTest, GetMutableSubsystemState) {
   State<double>* state_from_context = diagram_->GetMutableSubsystemState(
       context_.get(), diagram_->integrator0());
@@ -247,6 +248,8 @@ TEST_F(DiagramTest, GetMutableSubsystemState) {
   EXPECT_EQ(9, xc[1]);
   EXPECT_EQ(27, xc[2]);
 }
+*/
+
 // Tests that the diagram computes the correct sum.
 TEST_F(DiagramTest, CalcOutput) {
   AttachInputs();
@@ -1121,8 +1124,6 @@ class NestedDiagramContextTest : public ::testing::Test {
     big_diagram_->set_name("big_diagram");
     big_context_ = big_diagram_->CreateDefaultContext();
     big_output_ = big_diagram_->AllocateOutput(*big_context_);
-
-    std::cout << big_output_->get_num_ports() << std::endl;
   }
 
   Integrator<double>* integrator0_;
@@ -1162,6 +1163,23 @@ TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
       ->SetAtIndex(0, 4);
 
   big_diagram_->CalcOutput(*big_context_, big_output_.get());
+
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator0_)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            1);
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator1_)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            2);
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator2_)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            3);
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator3_)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            4);
 
   EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 1);
   EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 2);
