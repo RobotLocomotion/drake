@@ -19,6 +19,7 @@ drake_cc_library(
         "constants.h",
         "drake_assert.h",
         "drake_compat.h",
+        "drake_cloneable.h",
         "drake_copyable.h",
         "drake_deprecated.h",
         "drake_optional.h",
@@ -335,6 +336,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_assert_test_compile",
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_cloneable_test",
     deps = [
         ":common",
     ],
