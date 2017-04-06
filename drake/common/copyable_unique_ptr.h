@@ -12,6 +12,7 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_cloneable.h"
 
 namespace drake {
 
@@ -42,6 +43,12 @@ class copyable_unique_ptr {
   typedef T  element_type; ///< Type of the contained object.
   typedef T* pointer;      ///< Type of a pointer to the contained object.
   typedef T& reference;    ///< Type of a reference to the contained object.
+
+  static_assert(std::is_copy_constructible<T>::value ||
+                is_cloneable<T>::value,
+                "copyable_unique_ptr can only be used with a 'copyable' class"
+                ", requiring either a public copy constructor or a valid "
+                "clone method of the form: `unique_ptr<T> Clone() const`.");
 
   /** @name                    Constructors **/
   /**@{**/
@@ -309,9 +316,23 @@ class copyable_unique_ptr {
  private:
   template <class U> friend class copyable_unique_ptr;
 
+  template <typename U>
+  static
+  typename std::enable_if<!std::is_copy_constructible<U>::value &&
+                          is_cloneable<T>::value, U*>::type
+  cloneOrNull_(const U* src, int) {
+    return src->Clone().release();
+  };
+
+  template <typename U>
+  static
+  U* cloneOrNull_(const U* src, ...) {
+    return new U(*src);
+  }
+
   // If src is non-null, clone it; otherwise return nullptr.
   static T* cloneOrNull(const T* src) {
-    return src ? src->Clone().release() : nullptr;
+    return src ? cloneOrNull_(src, 1) : nullptr;
   }
 
   T*      p;          // this may be null
