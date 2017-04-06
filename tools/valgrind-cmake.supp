@@ -151,8 +151,8 @@
     fun:_Z22btAlignedAllocInternalmi
 }
 
-# This memory leak seems to be caused by EXPECT_DEATH, when we remove those expectations
-# all the problems in urdf_parser_test go away.
+# These memory leaks seem to be caused by EXPECT_DEATHs, when we remove those expectations
+# all the problems in urdf_parser_test and pid_controller_test go away.
 # static const std::string days[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 # In file pattern_formatter_impl.h
 {
