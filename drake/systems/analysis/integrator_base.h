@@ -449,9 +449,14 @@ class IntegratorBase {
   }
 
   /**
-   * Returns the number of ODE function evaluations since the last call to
-   * ResetStatistics() or Initialize().
-  */
+   * Returns the number of ODE function evaluations (calls to
+   * CalcTimeDerivatives()) since the last call to ResetStatistics() or
+   * Initialize(). This count includes *all* such calls including (1)
+   * those necessary to compute Jacobian matrices; (2) those used in rejected
+   * integrated steps (for, e.g., purposes of error control); (3) those used
+   * strictly for integrator error estimation; and (4) calls that exhibit little
+   * cost (due to results being cached).
+   */
   int64_t get_num_derivative_evaluations() const { return num_ode_evals_; }
 
   /**
@@ -819,7 +824,8 @@ class IntegratorBase {
   void CalcTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* dxdt) {
     get_system().CalcTimeDerivatives(context, dxdt);
-    num_ode_evals_++;
+    ++num_ode_evals_
+        ;
   }
 
   /**
