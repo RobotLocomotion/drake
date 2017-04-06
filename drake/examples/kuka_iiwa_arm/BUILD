@@ -109,6 +109,7 @@ drake_cc_binary(
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
         "//drake/systems/lcm",
+        "//drake/systems/lcm:lcm_driven_loop",
         "//drake/systems/primitives:demultiplexer",
         "@bot_core_lcmtypes//:lib",
         "@gflags//:gflags",

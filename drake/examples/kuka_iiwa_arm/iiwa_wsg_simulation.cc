@@ -205,6 +205,8 @@ int DoMain() {
   auto iiwa_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
           "IIWA_STATE_EST", &lcm));
+  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
+
   builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
                   iiwa_state_pub->get_input_port(0));
   iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
@@ -212,6 +214,8 @@ int DoMain() {
   auto box_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
           "OBJECT_STATE_EST", &lcm));
+  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
+
   builder.Connect(model->get_output_port_box_robot_state_msg(),
                   box_state_pub->get_input_port(0));
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
