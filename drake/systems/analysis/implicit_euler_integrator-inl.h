@@ -18,12 +18,12 @@ namespace systems {
 
 template <class T>
 void ImplicitEulerIntegrator<T>::DoResetStatistics() {
-  num_nr_loops_ = num_itr_nr_loops_ = 0;
-  num_function_evaluations_ = num_itr_function_evaluations_ = 0;
+  num_nr_loops_ = num_err_est_nr_loops_ = 0;
+  num_function_evaluations_ = num_err_est_function_evaluations_ = 0;
   num_jacobian_function_evaluations_ =
-    num_itr_jacobian_function_evaluations_ = 0;
-  num_jacobian_reforms_ = num_itr_jacobian_reforms_ = 0;
-  num_iter_refactors_ = num_itr_iter_refactors_ = 0;
+    num_err_est_jacobian_function_evaluations_ = 0;
+  num_jacobian_reforms_ = num_err_est_jacobian_reforms_ = 0;
+  num_iter_refactors_ = num_err_est_iter_refactors_ = 0;
   num_shrinkages_from_error_control_ = 0;
   num_shrinkages_from_substep_failures_ = 0;
   num_substep_failures_ = 0;
@@ -521,14 +521,14 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
   T stepped = StepAbstract(dt, g, 2, false, xtplus);
 
   // Move statistics to implicit trapezoid-specific.
-  num_itr_jacobian_reforms_ +=
+  num_err_est_jacobian_reforms_ +=
       num_jacobian_reforms_ - saved_num_jacobian_reforms;
-  num_itr_iter_refactors_ += num_iter_refactors_ - saved_num_iter_refactors;
-  num_itr_function_evaluations_ +=
+  num_err_est_iter_refactors_ += num_iter_refactors_ - saved_num_iter_refactors;
+  num_err_est_function_evaluations_ +=
       num_function_evaluations_ - saved_num_function_evaluations;
-  num_itr_jacobian_function_evaluations_ += num_jacobian_function_evaluations_ -
+  num_err_est_jacobian_function_evaluations_ += num_jacobian_function_evaluations_ -
       saved_num_jacobian_function_evaluations;
-  num_itr_nr_loops_ += num_nr_loops_ - saved_num_nr_loops;
+  num_err_est_nr_loops_ += num_nr_loops_ - saved_num_nr_loops;
 
   return stepped;
 }
