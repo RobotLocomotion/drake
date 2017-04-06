@@ -120,6 +120,8 @@ int DoMain() {
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
+  status_pub->set_publish_period(kSchunkWsgLcmStatusPeriod);
+
   auto status_sender = builder.AddSystem<SchunkWsgStatusSender>(
       tree.get_num_positions() + tree.get_num_velocities(),
       model->position_index(), model->velocity_index());
@@ -138,6 +140,7 @@ int DoMain() {
 
   lcm.StartReceiveThread();
   simulator.Initialize();
+  simulator.set_publish_every_time_step(false);
   simulator.StepTo(FLAGS_simulation_sec);
   return 0;
 }

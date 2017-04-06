@@ -162,6 +162,11 @@ class SimDiagramBuilder {
    */
   systems::DiagramBuilder<T>* get_mutable_builder() { return &builder_; }
 
+  /**
+   * Returns a pointer to the DrakeVisualizer.
+   */
+  systems::DrakeVisualizer* get_visualizer() { return visualizer_; }
+
  private:
   // Connects all the controllers' torque output to plant's torque input, and
   // plant's state output to controllers' state input.
