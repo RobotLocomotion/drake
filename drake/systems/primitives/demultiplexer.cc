@@ -37,6 +37,13 @@ void Demultiplexer<T>::DoCalcOutput(const Context<T>& context,
   }
 }
 
+template <typename T>
+Demultiplexer<symbolic::Expression>* Demultiplexer<T>::DoToSymbolic() const {
+  const int size = this->get_input_port(0).size();
+  return new Demultiplexer<symbolic::Expression>(
+      size, size / this->get_num_output_ports());
+}
+
 template class Demultiplexer<double>;
 template class Demultiplexer<AutoDiffXd>;
 

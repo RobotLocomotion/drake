@@ -110,6 +110,13 @@ TEST_F(DemultiplexerTest, DemultiplexerIsStateless) {
   EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
+TEST_F(DemultiplexerTest, DirectFeedthrough) {
+  EXPECT_TRUE(demux_->HasAnyDirectFeedthrough());
+  for (int i = 0; i < demux_->get_num_output_ports(); ++i) {
+    EXPECT_TRUE(demux_->HasDirectFeedthrough(0, i));
+  }
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

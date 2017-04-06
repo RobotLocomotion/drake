@@ -47,7 +47,7 @@ class PidControllerInternal : public Diagram<T> {
   /// @param Ki the integral constant.
   /// @param Kd the derivative constant.
   /// @param size number of elements in the error signal to be processed.
-  PidControllerInternal(const T& Kp, const T& Ki, const T& Kd, int size);
+  PidControllerInternal(double Kp, double Ki, double Kd, int size);
 
   /// Constructs a %PidControllerInternal system where each gain can have a
   /// different value.
@@ -55,8 +55,8 @@ class PidControllerInternal : public Diagram<T> {
   /// @param Kp the vector of proportional gain constants.
   /// @param Ki the vector of integral gain constants.
   /// @param Kd the vector of derivative gain constants.
-  PidControllerInternal(const VectorX<T>& Kp, const VectorX<T>& Ki,
-                const VectorX<T>& Kd);
+  PidControllerInternal(const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+                        const Eigen::VectorXd& Kd);
 
   ~PidControllerInternal() override {}
 
@@ -65,36 +65,30 @@ class PidControllerInternal : public Diagram<T> {
   /// element in the proportional gain vector is the same. It will throw a
   /// `std::runtime_error` if the proportional gain cannot be represented as a
   /// scalar value.
-  const T& get_Kp_singleton() const;
+  double get_Kp_singleton() const;
 
   /// Returns the integral gain constant. This method should only be called if
   /// the integral gain can be represented as a scalar value, i.e., every
   /// element in the integral gain vector is the same. It will throw a
   /// `std::runtime_error` if the integral gain cannot be represented as a
   /// scalar value.
-  const T& get_Ki_singleton() const;
+  double get_Ki_singleton() const;
 
   /// Returns the derivative gain constant. This method should only be called if
   /// the derivative gain can be represented as a scalar value, i.e., every
   /// element in the derivative gain vector is the same. It will throw a
   /// `std::runtime_error` if the derivative gain cannot be represented as a
   /// scalar value.
-  const T& get_Kd_singleton() const;
+  double get_Kd_singleton() const;
 
   /// Returns the proportional vector constant.
-  const VectorX<T>& get_Kp_vector() const;
+  const Eigen::VectorXd& get_Kp_vector() const;
 
   /// Returns the integral vector constant.
-  const VectorX<T>& get_Ki_vector() const;
+  const Eigen::VectorXd& get_Ki_vector() const;
 
   /// Returns the derivative vector constant.
-  const VectorX<T>& get_Kd_vector() const;
-
-  // System<T> overrides
-  /// A PID controller directly feedthroughs the error signal to the output when
-  /// the proportional constant is non-zero. It feeds through the rate of change
-  /// of the error signal when the derivative constant is non-zero.
-  bool has_any_direct_feedthrough() const override;
+  const Eigen::VectorXd& get_Kd_vector() const;
 
   /// Sets the integral of the %PidControllerInternal to @p value.
   /// @p value must be a column vector of the appropriate size.
@@ -120,16 +114,16 @@ class PidControllerInternal : public Diagram<T> {
 };
 
 template <typename T>
-PidControllerInternal<T>::PidControllerInternal(
-    const T& Kp, const T& Ki, const T& Kd, int size)
-    : PidControllerInternal(
-        VectorX<T>::Ones(size) * Kp,
-        VectorX<T>::Ones(size) * Ki,
-        VectorX<T>::Ones(size) * Kd) { }
+PidControllerInternal<T>::PidControllerInternal(double Kp, double Ki, double Kd,
+                                                int size)
+    : PidControllerInternal(Eigen::VectorXd::Ones(size) * Kp,
+                            Eigen::VectorXd::Ones(size) * Ki,
+                            Eigen::VectorXd::Ones(size) * Kd) {}
 
 template <typename T>
-PidControllerInternal<T>::PidControllerInternal(
-    const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd)
+PidControllerInternal<T>::PidControllerInternal(const Eigen::VectorXd& Kp,
+                                                const Eigen::VectorXd& Ki,
+                                                const Eigen::VectorXd& Kd)
     : Diagram<T>() {
   const int size = Kp.size();
   DRAKE_ASSERT(size > 0);
@@ -169,38 +163,33 @@ PidControllerInternal<T>::PidControllerInternal(
 }
 
 template <typename T>
-const T& PidControllerInternal<T>::get_Kp_singleton() const {
+double PidControllerInternal<T>::get_Kp_singleton() const {
   return proportional_gain_->get_gain();
 }
 
 template <typename T>
-const T& PidControllerInternal<T>::get_Ki_singleton() const {
+double PidControllerInternal<T>::get_Ki_singleton() const {
   return integral_gain_->get_gain();
 }
 
 template <typename T>
-const T& PidControllerInternal<T>::get_Kd_singleton() const {
+double PidControllerInternal<T>::get_Kd_singleton() const {
   return derivative_gain_->get_gain();
 }
 
 template <typename T>
-const VectorX<T>& PidControllerInternal<T>::get_Kp_vector() const {
+const Eigen::VectorXd& PidControllerInternal<T>::get_Kp_vector() const {
   return proportional_gain_->get_gain_vector();
 }
 
 template <typename T>
-const VectorX<T>& PidControllerInternal<T>::get_Ki_vector() const {
+const Eigen::VectorXd& PidControllerInternal<T>::get_Ki_vector() const {
   return integral_gain_->get_gain_vector();
 }
 
 template <typename T>
-const VectorX<T>& PidControllerInternal<T>::get_Kd_vector() const {
+const Eigen::VectorXd& PidControllerInternal<T>::get_Kd_vector() const {
   return derivative_gain_->get_gain_vector();
-}
-
-template <typename T>
-bool PidControllerInternal<T>::has_any_direct_feedthrough() const {
-  return !get_Kp_vector().isZero() || !get_Kd_vector().isZero();
 }
 
 template <typename T>
@@ -230,23 +219,23 @@ void PidControllerInternal<T>::set_integral_value(
 }
 
 template <typename T>
-PidController<T>::PidController(
-    const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd) {
+PidController<T>::PidController(const Eigen::VectorXd& kp,
+                                const Eigen::VectorXd& ki,
+                                const Eigen::VectorXd& kd) {
   ConnectPorts(nullptr, kp, ki, kd);
 }
 
 template <typename T>
 PidController<T>::PidController(
-    std::unique_ptr<MatrixGain<T>> feedback_selector,
-    const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd) {
+    std::unique_ptr<MatrixGain<T>> feedback_selector, const Eigen::VectorXd& kp,
+    const Eigen::VectorXd& ki, const Eigen::VectorXd& kd) {
   ConnectPorts(std::move(feedback_selector), kp, ki, kd);
 }
 
 template <typename T>
 void PidController<T>::ConnectPorts(
-    std::unique_ptr<MatrixGain<T>> feedback_selector,
-    const VectorX<T>& kp, const VectorX<T>& ki,
-    const VectorX<T>& kd) {
+    std::unique_ptr<MatrixGain<T>> feedback_selector, const Eigen::VectorXd& kp,
+    const Eigen::VectorXd& ki, const Eigen::VectorXd& kd) {
   DRAKE_DEMAND(kp.size() == kd.size());
   DRAKE_DEMAND(ki.size() == kd.size());
 
@@ -317,32 +306,32 @@ void PidController<T>::ConnectPorts(
 }
 
 template <typename T>
-const T& PidController<T>::get_Kp_singleton() const {
+double PidController<T>::get_Kp_singleton() const {
   return controller_->get_Kp_singleton();
 }
 
 template <typename T>
-const T& PidController<T>::get_Ki_singleton() const {
+double PidController<T>::get_Ki_singleton() const {
   return controller_->get_Ki_singleton();
 }
 
 template <typename T>
-const T& PidController<T>::get_Kd_singleton() const {
+double PidController<T>::get_Kd_singleton() const {
   return controller_->get_Kd_singleton();
 }
 
 template <typename T>
-const VectorX<T>& PidController<T>::get_Kp_vector() const {
+const Eigen::VectorXd& PidController<T>::get_Kp_vector() const {
   return controller_->get_Kp_vector();
 }
 
 template <typename T>
-const VectorX<T>& PidController<T>::get_Ki_vector() const {
+const Eigen::VectorXd& PidController<T>::get_Ki_vector() const {
   return controller_->get_Ki_vector();
 }
 
 template <typename T>
-const VectorX<T>& PidController<T>::get_Kd_vector() const {
+const Eigen::VectorXd& PidController<T>::get_Kd_vector() const {
   return controller_->get_Kd_vector();
 }
 
@@ -354,11 +343,6 @@ void PidController<T>::set_integral_value(
   // TODO(siyuanfeng): need to get rid of the - once we switch the integrator
   // to be int(q_d - q), right now it's (q - q_d).
   controller_->set_integral_value(integrator_context, -value);
-}
-
-template <typename T>
-bool PidController<T>::has_any_direct_feedthrough() const {
-  return !get_Kp_vector().isZero() || !get_Kd_vector().isZero();
 }
 
 // Adds a simple record-based representation of the PID controller to @p dot.

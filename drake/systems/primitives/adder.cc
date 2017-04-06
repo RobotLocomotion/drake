@@ -48,9 +48,16 @@ Adder<AutoDiffXd>* Adder<T>::DoToAutoDiffXd() const {
                                this->get_input_port(0).size());
 }
 
+template <typename T>
+Adder<symbolic::Expression>* Adder<T>::DoToSymbolic() const {
+  return new Adder<symbolic::Expression>(this->get_num_input_ports(),
+                                         this->get_input_port(0).size());
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class Adder<double>;
 template class Adder<AutoDiffXd>;
+template class Adder<symbolic::Expression>;
 
 }  // namespace systems
 }  // namespace drake

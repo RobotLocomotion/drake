@@ -191,6 +191,12 @@ TEST_F(DiagramTest, Topology) {
   EXPECT_TRUE(diagram_->HasDirectFeedthrough(0));
   EXPECT_TRUE(diagram_->HasDirectFeedthrough(1));
   EXPECT_FALSE(diagram_->HasDirectFeedthrough(2));
+  // Specifically, outputs 0 and 1 have direct feedthrough from all inputs.
+  for (int i = 0; i < kSize; ++i) {
+    EXPECT_TRUE(diagram_->HasDirectFeedthrough(i, 0));
+    EXPECT_TRUE(diagram_->HasDirectFeedthrough(i, 1));
+    EXPECT_FALSE(diagram_->HasDirectFeedthrough(i, 2));
+  }
 }
 
 TEST_F(DiagramTest, Path) {
@@ -520,6 +526,21 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   EXPECT_EQ(1249, output_->get_vector_data(0)->get_value().x());
   EXPECT_EQ(2489, output_->get_vector_data(1)->get_value().x());
   EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
+}
+
+TEST_F(DiagramOfDiagramsTest, DirectFeedthrough) {
+  // The diagram has direct feedthrough.
+  EXPECT_TRUE(diagram_->HasAnyDirectFeedthrough());
+  // Specifically, outputs 0 and 1 have direct feedthrough, but not output 2.
+  EXPECT_TRUE(diagram_->HasDirectFeedthrough(0));
+  EXPECT_TRUE(diagram_->HasDirectFeedthrough(1));
+  EXPECT_FALSE(diagram_->HasDirectFeedthrough(2));
+  // Specifically, outputs 0 and 1 have direct feedthrough from all inputs.
+  for (int i = 0; i < kSize; ++i) {
+    EXPECT_TRUE(diagram_->HasDirectFeedthrough(i, 0));
+    EXPECT_TRUE(diagram_->HasDirectFeedthrough(i, 1));
+    EXPECT_FALSE(diagram_->HasDirectFeedthrough(i, 2));
+  }
 }
 
 // A Diagram that adds a constant to an input, and outputs the sum.
