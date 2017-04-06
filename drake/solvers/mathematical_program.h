@@ -1040,8 +1040,7 @@ class MathematicalProgram {
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double lb, double ub,
       const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-    return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
-                               vars);
+    return AddLinearConstraint(a, Vector1d(lb), Vector1d(ub), vars);
   }
 
   /**
@@ -1065,7 +1064,7 @@ class MathematicalProgram {
    * ub</tt> includes trivial/unsatisfiable constraints.
    */
   Binding<LinearConstraint> AddLinearConstraint(
-      const Eigen::Ref<const drake::VectorX<symbolic::Expression>>& v,
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub);
 
@@ -1406,7 +1405,7 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
       const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-    return AddLinearEqualityConstraint(a, drake::Vector1d(beq), vars);
+    return AddLinearEqualityConstraint(a, Vector1d(beq), vars);
   }
 
   /**
@@ -1484,8 +1483,7 @@ class MathematicalProgram {
   Binding<BoundingBoxConstraint> AddBoundingBoxConstraint(
       double lb, double ub, const symbolic::Variable& var) {
     MatrixDecisionVariable<1, 1> var_matrix(var);
-    return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
-                                    var_matrix);
+    return AddBoundingBoxConstraint(Vector1d(lb), Vector1d(ub), var_matrix);
   }
 
   /**

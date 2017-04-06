@@ -471,8 +471,8 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   auto cost = std::make_shared<LinearConstraint>(
       c.transpose(),
-      drake::Vector1<double>::Constant(-numeric_limits<double>::infinity()),
-      drake::Vector1<double>::Constant(numeric_limits<double>::infinity()));
+      Vector1<double>::Constant(-numeric_limits<double>::infinity()),
+      Vector1<double>::Constant(numeric_limits<double>::infinity()));
   return AddCost(cost, vars);
 }
 
@@ -623,13 +623,12 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Expression& e, const double lb, const double ub) {
-  return AddLinearConstraint(drake::Vector1<Expression>(e),
-                             drake::Vector1<double>(lb),
-                             drake::Vector1<double>(ub));
+  return AddLinearConstraint(Vector1<Expression>(e), Vector1<double>(lb),
+                             Vector1<double>(ub));
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
-    const Eigen::Ref<const drake::VectorX<Expression>>& v,
+    const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub) {
   DRAKE_ASSERT(v.rows() == lb.rows() && v.rows() == ub.rows());
@@ -830,8 +829,7 @@ Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
                                                  double b) {
-  return AddLinearEqualityConstraint(drake::Vector1<Expression>(e),
-                                     Vector1d(b));
+  return AddLinearEqualityConstraint(Vector1<Expression>(e), Vector1d(b));
 }
 
 Binding<LinearEqualityConstraint>
@@ -1156,10 +1154,9 @@ Binding<Constraint> MathematicalProgram::AddPolynomialConstraint(
 Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
     const Binding<PositiveSemidefiniteConstraint>& binding) {
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
-  DRAKE_ASSERT(
-      drake::math::IsSymmetric(Eigen::Map<const MatrixXDecisionVariable>(
-          binding.variables().data(), binding.constraint()->matrix_rows(),
-          binding.constraint()->matrix_rows())));
+  DRAKE_ASSERT(math::IsSymmetric(Eigen::Map<const MatrixXDecisionVariable>(
+      binding.variables().data(), binding.constraint()->matrix_rows(),
+      binding.constraint()->matrix_rows())));
   positive_semidefinite_constraint_.push_back(binding);
   return positive_semidefinite_constraint_.back();
 }
@@ -1168,7 +1165,7 @@ Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
     std::shared_ptr<PositiveSemidefiniteConstraint> con,
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var) {
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
-  DRAKE_ASSERT(drake::math::IsSymmetric(symmetric_matrix_var));
+  DRAKE_ASSERT(math::IsSymmetric(symmetric_matrix_var));
   int num_rows = symmetric_matrix_var.rows();
   // TODO(hongkai.dai): this dynamic memory allocation/copying is ugly.
   VectorXDecisionVariable flat_symmetric_matrix_var(num_rows * num_rows);
