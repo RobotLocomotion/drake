@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
-#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -399,39 +398,11 @@ class Diagram : public System<T>,
   /// @p subsystem is not actually a subsystem of this diagram.
   const Context<T>& GetSubsystemContext(const Context<T>& context,
                                         const System<T>* subsystem) const {
-    const Context<T>* sub_context =
+    const Context<T>* subcontext =
         GetSubsystemStuff<const Context<T>*, const DiagramContext<T>*>(
             &context, subsystem, &DiagramContext<T>::GetSubsystemContext);
-    return *sub_context;
-  }
-
-  template <typename BasePtr, typename DerivedPtr>
-  BasePtr GetSubsystemStuff(BasePtr base_ptr, const System<T>* target_system,
-    std::function<BasePtr(const DerivedPtr, int)> getter) const {
-    DerivedPtr derived_ptr = dynamic_cast<DerivedPtr>(base_ptr);
-    DRAKE_DEMAND(derived_ptr != nullptr);
-
-    // target_system is my direct child.
-    auto it = sorted_systems_map_.find(target_system);
-    if (it != sorted_systems_map_.end()) {
-      return getter(derived_ptr, it->second);
-      //return derived_ptr->GetSubsystemContext(it->second);
-    }
-
-    for (const auto& pair : sorted_systems_map_) {
-      const Diagram<T>* child = dynamic_cast<const Diagram<T>*>(pair.first);
-      if (child) {
-        BasePtr child_stuff_ptr = getter(derived_ptr, pair.second);
-        BasePtr grandchild_stuff_ptr =
-            child->template GetSubsystemStuff<BasePtr, DerivedPtr>(
-                child_stuff_ptr, target_system, getter);
-        if (grandchild_stuff_ptr != nullptr) {
-          return grandchild_stuff_ptr;
-        }
-      }
-    }
-    DRAKE_DEMAND(false);
-    return nullptr;
+    DRAKE_DEMAND(subcontext != nullptr);
+    return *subcontext;
   }
 
   /// Returns the subcontext that corresponds to the system @p subsystem.
@@ -440,8 +411,10 @@ class Diagram : public System<T>,
   /// @p subsystem is not actually a subsystem of this diagram.
   Context<T>* GetMutableSubsystemContext(Context<T>* context,
                                          const System<T>* subsystem) const {
-    return GetSubsystemStuff<Context<T>*, DiagramContext<T>*>(
+    Context<T>* subcontext = GetSubsystemStuff<Context<T>*, DiagramContext<T>*>(
         context, subsystem, &DiagramContext<T>::GetMutableSubsystemContext);
+    DRAKE_DEMAND(subcontext != nullptr);
+    return subcontext;
   }
 
   /// Retrieves the state for a particular subsystem from the context for the
@@ -464,6 +437,7 @@ class Diagram : public System<T>,
                                      const System<T>* subsystem) const {
     State<T>* substate = GetSubsystemStuff<State<T>*, DiagramState<T>*>(
         state, subsystem, &DiagramState<T>::get_mutable_substate);
+    DRAKE_DEMAND(substate != nullptr);
     return substate;
   }
 
@@ -787,6 +761,46 @@ class Diagram : public System<T>,
   }
 
  private:
+  /// Tries to recursively find @p target_system's BasePtr (context / state /
+  /// etc). If @p target_system is not a sub system of this, nullptr is
+  /// returned.
+  /// @tparam BasePtr Can be Context<T>*, const Context<T>*, State<T>* and
+  /// const State<T>*.
+  /// @tparam DerivedPtr Can be DiagramContext<T>*, const DiagramContext<T>*,
+  /// DiagramState<T>* and const DiagramState<T>*.
+  /// @p base_ptr Pointer to this' stuff.
+  /// @p target_system The subsystem of interest.
+  /// @p getter A member function of Derived that returns BasePtr given a
+  /// index. E.g. DiagramContext<T>::GetSubsystemContext()
+  template <typename BasePtr, typename DerivedPtr>
+  BasePtr GetSubsystemStuff(BasePtr base_ptr, const System<T>* target_system,
+    std::function<BasePtr(const DerivedPtr, int)> getter) const {
+    DRAKE_DEMAND(base_ptr != nullptr);
+
+    DerivedPtr derived_ptr = dynamic_cast<DerivedPtr>(base_ptr);
+    DRAKE_DEMAND(derived_ptr != nullptr);
+
+    // target_system is my direct child.
+    auto it = sorted_systems_map_.find(target_system);
+    if (it != sorted_systems_map_.end()) {
+      return getter(derived_ptr, it->second);
+    }
+
+    for (const auto& pair : sorted_systems_map_) {
+      const Diagram<T>* child = dynamic_cast<const Diagram<T>*>(pair.first);
+      if (child) {
+        BasePtr child_stuff_ptr = getter(derived_ptr, pair.second);
+        BasePtr grandchild_stuff_ptr =
+            child->template GetSubsystemStuff<BasePtr, DerivedPtr>(
+                child_stuff_ptr, target_system, getter);
+        if (grandchild_stuff_ptr != nullptr) {
+          return grandchild_stuff_ptr;
+        }
+      }
+    }
+    return nullptr;
+  }
+
   /// Uses this Diagram<double> to manufacture a Diagram<NewType>, given a
   /// @p converter for subsystems from System<double> to System<NewType>.
   /// SFINAE overload for std::is_same<T, double>.
@@ -846,29 +860,6 @@ class Diagram : public System<T>,
         new Diagram<NewType>(blueprint));
     new_diagram->Own(std::move(new_systems));
     return std::move(new_diagram);
-  }
-
-  std::list<int> GetSubsytemPath(const System<T>* subsystem) const {
-    std::list<int> path;
-
-    auto it = sorted_systems_map_.find(subsystem);
-    if (it != sorted_systems_map_.end()) {
-      path.push_front(it->second);
-      return path;
-    }
-
-    for (const auto& pair : sorted_systems_map_) {
-      const Diagram<T>* as_diagram = dynamic_cast<const Diagram<T>*>(pair.first);
-      if (as_diagram) {
-        path = as_diagram->GetSubsytemPath(subsystem);
-        if (path.size()) {
-          path.push_front(pair.second);
-          return path;
-        }
-      }
-    }
-
-    return path;
   }
 
   /// Aborts at runtime.
