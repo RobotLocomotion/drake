@@ -302,8 +302,8 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
 
   // Check a variable that is not a decision variable of the mathematical
   // program.
-  symbolic::Variable z1("z1");
-  symbolic::Variable z2("z2");
+  Variable z1("z1");
+  Variable z2("z2");
   EXPECT_THROW(prog.GetSolution(z1), runtime_error);
   EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, z2)),
                runtime_error);
@@ -829,7 +829,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
   int num_bounding_box_constraint = 0;
 
   // x(0) <= 3
-  vector<symbolic::Formula> f;
+  vector<Formula> f;
   f.push_back(x(0) <= 3);
   f.push_back(3 >= x(0));
   f.push_back(x(0) + 2 <= 5);
@@ -857,7 +857,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula2) {
 
   int num_bounding_box_constraint = 0;
   // x0 >= 2
-  vector<symbolic::Formula> f;
+  vector<Formula> f;
   f.push_back(x(0) >= 2);
   f.push_back(2 <= x(0));
   f.push_back(-x(0) <= -2);
@@ -887,7 +887,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula3) {
 
   int num_linear_equality_constraint = 0;
 
-  vector<symbolic::Formula> f;
+  vector<Formula> f;
   f.push_back(x(0) + x(2) == 1);
   f.push_back(x(0) + 2 * x(2) == 1 + x(2));
   for (const auto& fi : f) {
@@ -914,7 +914,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
 
   int num_linear_constraint = 0;
 
-  vector<symbolic::Formula> f;
+  vector<Formula> f;
   f.push_back(x(0) + 2 * x(2) <= 1);
   f.push_back(x(0) + 3 * x(2) <= 1 + x(2));
   f.push_back(-1 <= -x(0) - 2 * x(2));
@@ -1684,8 +1684,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
 
 namespace {
 template <typename Derived>
-typename enable_if<
-    is_same<typename Derived::Scalar, symbolic::Expression>::value>::type
+typename enable_if<is_same<typename Derived::Scalar, Expression>::value>::type
 CheckAddedSymbolicPositiveSemidefiniteConstraint(
     MathematicalProgram* prog, const Eigen::MatrixBase<Derived>& V) {
   int num_psd_cnstr = prog->positive_semidefinite_constraints().size();
@@ -1746,7 +1745,7 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
 
   // Adds [X.topLeftCorner<2, 2>()  0                        ] is psd
   //      [ 0                     X.bottomRightCorner<2, 2>()]
-  Eigen::Matrix<symbolic::Expression, 4, 4> Y{};
+  Eigen::Matrix<Expression, 4, 4> Y{};
   // clang-format off
   Y << Matrix2d::Identity() * X.topLeftCorner<2, 2>(), Matrix2d::Zero(),
        Matrix2d::Zero(), Matrix2d::Identity() * X.bottomRightCorner<2, 2>();
@@ -1878,8 +1877,7 @@ GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
   }
 }
 
-void CheckAddedPolynomialCost(MathematicalProgram* prog,
-                              const symbolic::Expression& e) {
+void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
   int num_cost = prog->generic_costs().size();
   const auto binding = prog->AddPolynomialCost(e);
   EXPECT_EQ(prog->generic_costs().size(), ++num_cost);
@@ -1888,7 +1886,7 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog,
   const auto polynomial = binding.constraint()->polynomials()(0);
   symbolic::MonomialToCoefficientMap map_expected;
   for (const auto& m : polynomial.GetMonomials()) {
-    map<symbolic::Variable::Id, int> map_var_to_power;
+    map<Variable::Id, int> map_var_to_power;
     for (const auto& term : m.terms) {
       map_var_to_power.emplace(term.var, term.power);
     }
@@ -1928,7 +1926,7 @@ GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
   EXPECT_THROW(prog.AddCost(sin(x(0))), runtime_error);
 
   // Add a cost containing variable not included in the mathematical program.
-  symbolic::Variable y("y");
+  Variable y("y");
   EXPECT_THROW(prog.AddCost(x(0) + y), runtime_error);
   EXPECT_THROW(prog.AddCost(x(0) * x(0) + y), runtime_error);
 }

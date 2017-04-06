@@ -518,7 +518,7 @@ Binding<QuadraticConstraint> AddQuadraticCostWithMonomialToCoeffMap(
 }
 
 Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
-    const symbolic::Expression& e) {
+    const Expression& e) {
   // First build an Eigen vector, that contains all the bound variables.
   const symbolic::Variables& vars = e.GetVariables();
   auto p = ExtractVariablesFromExpression(e);
@@ -553,7 +553,7 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
 }
 
 Binding<PolynomialConstraint> MathematicalProgram::AddPolynomialCost(
-    const symbolic::Expression& e) {
+    const Expression& e) {
   if (!e.is_polynomial()) {
     ostringstream oss;
     oss << "Expression" << e
@@ -707,7 +707,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
   // Decomposes a set of formulas into a 1D-vector of expressions, `v`, and two
   // 1D-vector of double `lb` and `ub`.
-  VectorX<symbolic::Expression> v{n};
+  VectorX<Expression> v{n};
   Eigen::VectorXd lb{n};
   Eigen::VectorXd ub{n};
   int i{0};  // index variable used in the loop
@@ -715,7 +715,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   // if `are_all_formulas_equal` is still true. Otherwise, we call
   // `AddLinearConstraint`.  on the value of this Boolean flag.
   bool are_all_formulas_equal{true};
-  for (const symbolic::Formula& f : formulas) {
+  for (const Formula& f : formulas) {
     if (is_equal_to(f)) {
       // f := (lhs == rhs)
       //      (lhs - rhs == 0)
@@ -903,8 +903,7 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
-    const symbolic::Expression& linear_expr,
-    const symbolic::Expression& quadratic_expr) {
+    const Expression& linear_expr, const Expression& quadratic_expr) {
   const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);
   const auto& quadratic_vars = quadratic_p.first;
   const auto& quadratic_var_to_index_map = quadratic_p.second;
