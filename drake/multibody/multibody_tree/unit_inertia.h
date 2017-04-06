@@ -81,7 +81,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// The input rotational inertia I is assumed to be a unit inertia.
   /// @warning This method does not check that the provided input rotational
   /// inertia I effectively is a valid unit inertia. Use with care.
-  UnitInertia<T>& SetFromUnitInertia(const RotationalInertia<T>& I) {
+  UnitInertia<T>& SetFromRotationalInertia(const RotationalInertia <T> &I) {
     RotationalInertia<T>::operator=(I);
     return *this;
   }

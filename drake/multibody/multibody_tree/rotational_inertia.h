@@ -193,12 +193,19 @@ class RotationalInertia {
   /// Two rotational inertia objects `Ia` and `Ib` are considered to be
   /// approximately equal with each other if:
   ///   - ‖Ia - Ib‖F < p min(‖Ia‖F, ‖Ib‖F)
+  ///
   /// where ‖⋅‖₂ denotes the ℓ²-norm of a vector and ‖⋅‖F the Frobenius norm of
   /// a matrix, see RotationalInertia::Norm().
+  ///
+  /// @param[in] other The spatial inertia to which this spatial inertia will be
+  ///                  compared.
+  /// @param[in] p The specified dimensionless precision to which the
+  ///              comparison will be performed.
+  ///              @default std::numeric_limits<double>::epsilon().
   /// @returns `true` if `other` is within the specified `precision`. Returns
   ///          `false` otherwise.
   bool IsApprox(const RotationalInertia& other,
-                double p = Eigen::NumTraits<T>::epsilon()) const {
+                double p = std::numeric_limits<double>::epsilon()) const {
     using std::min;
     return (*this - other).Norm() < p * min(this->Norm(), other.Norm());
   }

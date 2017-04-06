@@ -212,11 +212,12 @@ class SpatialInertia {
   ///               compared.
   /// @param[in] p The specified dimensionless precision to which the
   ///              comparison will be performed.
+  ///              @default std::numeric_limits<double>::epsilon().
   ///
   /// @returns `true` if `other` is within the specified `precision`. Returns
   ///          `false` otherwise.
   bool IsApprox(const SpatialInertia& Mb,
-                double p = Eigen::NumTraits<T>::epsilon()) {
+                double p = std::numeric_limits<double>::epsilon()) {
     using std::abs;
     using std::min;
     return
@@ -247,7 +248,7 @@ class SpatialInertia {
     const T total_mass = get_mass() + M_BP_E.get_mass();
     DRAKE_ASSERT(total_mass != 0);
     p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
-    G_SP_E_.SetFromUnitInertia(
+    G_SP_E_.SetFromRotationalInertia(
         (CalcRotationalInertia() + M_BP_E.CalcRotationalInertia()) /
             total_mass);
     mass_ = total_mass;
