@@ -91,7 +91,8 @@ LinearSystemExample1::LinearSystemExample1()
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, b_{}, con_{} {
   x_ = prog_->NewContinuousVariables<4>();
   b_ = Vector4d::Random();
-  con_ = prog_->AddLinearEqualityConstraint(Matrix4d::Identity(), b_, x_);
+  con_ = prog_->AddLinearEqualityConstraint(Matrix4d::Identity(), b_, x_)
+                                            .constraint();
   prog_->SetInitialGuessForAllVariables(Vector4d::Zero());
 }
 

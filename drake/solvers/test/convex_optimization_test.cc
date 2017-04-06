@@ -95,14 +95,16 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   Eigen::VectorXd b_lorentz1 = Eigen::VectorXd::Zero(1 + R1.cols());
   Eigen::VectorXd b_lorentz2 = Eigen::VectorXd::Zero(1 + R2.cols());
   auto lorentz_cone1 = prog.AddLorentzConeConstraint(A_lorentz1, b_lorentz1,
-                                                     {t.segment<1>(0), a});
+                                                     {t.segment<1>(0), a})
+                                                     .constraint();
   auto lorentz_cone2 = prog.AddLorentzConeConstraint(A_lorentz2, b_lorentz2,
                                                      {t.segment<1>(1), a});
+                                                     .constraint();
   // a'*(x2 - x1) = 1
   prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, a);
 
   // Add cost
-  auto cost = prog.AddLinearCost(Eigen::Vector2d(1.0, 1.0), t);
+  auto cost = prog.AddLinearCost(Eigen::Vector2d(1.0, 1.0), t).constraint();
 
   RunSolver(&prog, solver);
 
@@ -578,7 +580,8 @@ GTEST_TEST(TestSemidefiniteProgram, TestCommonLyapunov) {
            0, 0, -1;
     // clang-format on
     auto binding1 = prog.AddPositiveSemidefiniteConstraint(
-        -A1.transpose() * P - P * A1 - 1E-3 * Matrix3d::Identity());
+        -A1.transpose() * P - P * A1 - 1E-3 * Matrix3d::Identity())
+        .constraint();
 
     Eigen::Matrix3d A2;
     // clang-format off
@@ -587,7 +590,8 @@ GTEST_TEST(TestSemidefiniteProgram, TestCommonLyapunov) {
            0, 0, -0.4;
     // clang-format on
     auto binding2 = prog.AddPositiveSemidefiniteConstraint(
-        -A2.transpose() * P - P * A2 - 1E-3 * Matrix3d::Identity());
+        -A2.transpose() * P - P * A2 - 1E-3 * Matrix3d::Identity())
+        .constraint();
 
     RunSolver(&prog, *solver);
 
