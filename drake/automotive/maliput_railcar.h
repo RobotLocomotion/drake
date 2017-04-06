@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/sparsity_matrix.h"
+#include "drake/systems/rendering/frame_velocity.h"
 #include "drake/systems/rendering/pose_vector.h"
 
 namespace drake {
@@ -43,6 +44,10 @@ namespace automotive {
 ///
 ///   - pose_output(): Contains PoseVector `X_WC`, where `C` is the car frame
 ///     and `W` is the world frame.
+///
+///   - velocity_output(): Contains FrameVelocity `V_WC_W`, where `C` is the car
+///     frame and `W` is the world frame. Currently the rotational component is
+///     always zero, see #5751.
 ///
 /// @tparam T must support certain arithmetic operations;
 /// for details, see drake::symbolic::Expression.
@@ -107,6 +112,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   const systems::OutputPortDescriptor<T>& state_output() const;
   const systems::OutputPortDescriptor<T>& lane_state_output() const;
   const systems::OutputPortDescriptor<T>& pose_output() const;
+  const systems::OutputPortDescriptor<T>& velocity_output() const;
   /// @}
 
   static constexpr T kDefaultInitialS = T(0);
@@ -138,6 +144,12 @@ class MaliputRailcar : public systems::LeafSystem<T> {
       const LaneDirection& lane_direction,
       systems::rendering::PoseVector<T>* pose) const;
 
+  void ImplCalcVelocity(
+      const MaliputRailcarParams<T>& params,
+      const MaliputRailcarState<T>& state,
+      const LaneDirection& lane_direction,
+      systems::rendering::FrameVelocity<T>* pose) const;
+
   void ImplCalcTimeDerivatives(
       const MaliputRailcarParams<T>& params,
       const MaliputRailcarState<T>& state,
@@ -160,6 +172,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   int state_output_port_index_{};
   int lane_state_output_port_index_{};
   int pose_output_port_index_{};
+  int velocity_output_port_index_{};
 };
 
 }  // namespace automotive
