@@ -37,7 +37,7 @@ exports_files(
 
 alias(
     name = "buildifier",
-    actual = "@com_github_bazelbuild_buildifier//buildifier",
+    actual = "@com_github_bazelbuild_buildtools//buildifier",
 )
 
 # This pulls the otherwise-unused libbot targets into the "//..." label tree.
