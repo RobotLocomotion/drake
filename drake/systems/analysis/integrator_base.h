@@ -824,8 +824,7 @@ class IntegratorBase {
   void CalcTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* dxdt) {
     get_system().CalcTimeDerivatives(context, dxdt);
-    ++num_ode_evals_
-        ;
+    ++num_ode_evals_;
   }
 
   /**
