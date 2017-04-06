@@ -1,5 +1,7 @@
 #include "drake/multibody/multibody_tree/unit_inertia.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
@@ -299,14 +301,10 @@ GTEST_TEST(UnitInertia, AutoDiff) {
 // instantiated and invoked. Otherwise, only the passing version will be
 // instantiated. There is a variation of this block of code for each disallowed
 // operator.
-//
-// This template generates an l-value at compile time for the templates below.
-template <class T>
-struct GenerateLValue { T& get_thing(); };
 
 // This overload gets chosen if the *= double would compile.
 template <typename T,
-    typename = decltype(GenerateLValue<T>().get_thing() *= 1.)>
+    typename = decltype(std::declval<T&>() *= 1.)>
 bool has_times_equal_helper(int) { return true; }
 
 // This overload gets chosen if the above can't compile.
@@ -333,7 +331,7 @@ GTEST_TEST(UnitInertia, TimesEqualScalar) {
 // See the explanation for these template helpers in the analogous
 // implementation for has_times_equal() above.
 template <typename T,
-    typename = decltype(GenerateLValue<T>().get_thing() /= 1.)>
+    typename = decltype(std::declval<T&>() /= 1.)>
 bool has_divide_equal_helper(int) { return true; }
 template <typename T>
 bool has_divide_equal_helper(...) { return false; }
@@ -353,7 +351,7 @@ GTEST_TEST(UnitInertia, DivideEqualScalar) {
 // See the explanation for this template helpers in the analogous implementation
 // for has_times_equal() above.
 template <typename T,
-    typename = decltype(GenerateLValue<T>().get_thing() += T())>
+    typename = decltype(std::declval<T&>() += T())>
 bool has_plus_equal_helper(int) { return true; }
 template <typename T>
 bool has_plus_equal_helper(...) { return false; }
