@@ -192,6 +192,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_GT(integrator.get_largest_step_size_taken(), 0.0);
   EXPECT_GT(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
+  EXPECT_GT(integrator.get_num_derivative_evaluations(), 0);
 }
 
 }  // namespace
