@@ -21,6 +21,7 @@
 #include "drake/common/monomial.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/test/is_dynamic_castable.h"
 #include "drake/common/test/symbolic_test_util.h"
@@ -51,6 +52,7 @@ using std::all_of;
 using std::cref;
 using std::enable_if;
 using std::endl;
+using std::is_permutation;
 using std::is_same;
 using std::make_shared;
 using std::map;
@@ -1401,6 +1403,102 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint4) {
   // Checks Aᵀ * X + X * A = E.
   CheckAddedSymmetricSymbolicLinearEqualityConstraint(
       &prog, M, Eigen::Matrix2d::Identity());
+}
+
+// Tests `AddLinearEqualityConstraint(const symbolic::Formula& f)` method with a
+// case where `f` is a linear-equality formula (instead of a conjunction of
+// them).
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint5) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  // f = (3x₀ + 2x₁ + 3 == 5).
+  const Formula f{3 * x(0) + 2 * x(1) + 3 == 5};
+  const Binding<LinearEqualityConstraint> binding{
+      prog.AddLinearEqualityConstraint(f)};
+  EXPECT_EQ(prog.linear_equality_constraints().size(), 1u);
+
+  const Expression expr_in_added_constraint{
+      (binding.constraint()->A() * binding.variables() -
+       binding.constraint()->lower_bound())(0)};
+  // expr_in_added_constraint should be:
+  //    lhs(f) - rhs(f)
+  //  = (3x₀ + 2x₁ + 3) - 5
+  //  = 3x₀ + 2x₁ - 2.
+  EXPECT_PRED2(ExprEqual, expr_in_added_constraint, 3 * x(0) + 2 * x(1) - 2);
+  EXPECT_PRED2(ExprEqual, expr_in_added_constraint,
+               get_lhs_expression(f) - get_rhs_expression(f));
+}
+
+// Tests `AddLinearEqualityConstraint(const symbolic::Formula& f)` method with a
+// case where `f` is a conjunction of linear-equality formulas .
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
+  // Test problem: Ax = b where
+  //
+  // A = |-3.0  0.0  2.0|  x = |x0|  b = | 9.0|
+  //     | 0.0  7.0 -3.0|      |x1|      | 3.0|
+  //     | 2.0  5.0  0.0|      |x2|      |-5.0|
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Eigen::Matrix3d A;
+  Vector3d b;
+  // clang-format off
+  A << -3.0, 0.0,  2.0,
+        0.0, 7.0, -3.0,
+        2.0, 5.0,  0.0;
+  b << 9.0,
+       3.0,
+      -5.0;
+  // clang-format on
+  const Formula f{A * x == b};
+  const Binding<LinearEqualityConstraint> binding{
+      prog.AddLinearEqualityConstraint(f)};
+  EXPECT_EQ(prog.linear_equality_constraints().size(), 1u);
+
+  // Checks if AddLinearEqualityConstraint added the constraint correctly.
+  const Eigen::Matrix<Expression, 3, 1> exprs_in_added_constraint{
+      binding.constraint()->A() * binding.variables() -
+      binding.constraint()->lower_bound()};
+  const Eigen::Matrix<Expression, 3, 1> expected_exprs{A * x - b};
+
+  // Since a conjunctive symbolic formula uses `std::set` as an internal
+  // representation, we need to check if `exprs_in_added_constraint` is a
+  // permutation of `expected_exprs`.
+  EXPECT_TRUE(is_permutation(
+      exprs_in_added_constraint.data(), exprs_in_added_constraint.data() + 3,
+      expected_exprs.data(), expected_exprs.data() + 3, ExprEqual));
+}
+
+// Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if `f`
+// is a non-linear equality formula.
+GTEST_TEST(testMathematicalProgram,
+           AddSymbolicLinearEqualityConstraintException1) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  // f = (3x₀² + 2x₁ + 3 == 5).
+  const Formula f{3 * x(0) * x(0) + 2 * x(1) + 3 == 5};
+  EXPECT_THROW(prog.AddLinearEqualityConstraint(f), runtime_error);
+}
+
+// Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if a
+// conjunctive formula `f` includes a relational formula other than equality.
+GTEST_TEST(testMathematicalProgram,
+           AddSymbolicLinearEqualityConstraintException2) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  // f = (3x₀ + 2x₁ + 3 >= 5 && 7x₀ - 5x₁ == 0).
+  const Formula f{3 * x(0) + 2 * x(1) + 3 >= 5 && 7 * x(0) - 5 * x(1) == 0};
+  EXPECT_THROW(prog.AddLinearEqualityConstraint(f), runtime_error);
+}
+
+// Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if `f`
+// is neither a linear-equality formula nor a conjunctive formula.
+GTEST_TEST(testMathematicalProgram,
+           AddSymbolicLinearEqualityConstraintException3) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  // f = (3x₀ + 2x₁ + 3 == 5 || 7x₀ - 5x₁ == 0).
+  const Formula f{3 * x(0) + 2 * x(1) + 3 == 5 || 7 * x(0) - 5 * x(1) == 0};
+  EXPECT_THROW(prog.AddLinearEqualityConstraint(f), runtime_error);
 }
 
 namespace {
