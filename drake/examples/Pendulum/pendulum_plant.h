@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/symbolic_formula.h"
 #include "drake/examples/Pendulum/gen/pendulum_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -27,9 +28,6 @@ class PendulumPlant : public systems::LeafSystem<T> {
   using MyContext = systems::Context<T>;
   using MyContinuousState = systems::ContinuousState<T>;
   using MyOutput = systems::SystemOutput<T>;
-
-  /// The input force to this system is not direct feedthrough.
-  bool has_any_direct_feedthrough() const override { return false; }
 
   /// Returns the input port to the externally applied force.
   const systems::InputPortDescriptor<T>& get_tau_port() const;
@@ -62,6 +60,7 @@ class PendulumPlant : public systems::LeafSystem<T> {
  protected:
   // System<T> override.
   PendulumPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
+  PendulumPlant<symbolic::Expression>* DoToSymbolic() const override;
 
  private:
   void DoCalcOutput(const MyContext& context, MyOutput* output) const override;

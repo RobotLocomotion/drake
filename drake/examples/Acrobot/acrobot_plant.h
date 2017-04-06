@@ -69,9 +69,6 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   /// Creates an instance of AcrobotPlant using parameters of MIT lab's acrobot.
   static std::unique_ptr<AcrobotPlant<T>> CreateAcrobotMIT();
 
-  /// The input force to this system is not direct feedthrough.
-  bool has_any_direct_feedthrough() const override { return false; }
-
   ///@{
   /// Manipulator equation of Acrobot: H * qdotdot + C = B*u.
   /// H[2x2] is the mass matrix.
@@ -108,6 +105,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
   // System<T> override.
   AcrobotPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
+  AcrobotPlant<symbolic::Expression>* DoToSymbolic() const override;
 
   // TODO(russt): Declare these as parameters in the context.
 
