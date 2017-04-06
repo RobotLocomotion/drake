@@ -45,6 +45,7 @@ using std::string;
 using std::to_string;
 using std::unordered_map;
 using std::vector;
+using std::set;
 
 using symbolic::Expression;
 using symbolic::Formula;
@@ -835,6 +836,49 @@ Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
                                                  double b) {
   return AddLinearEqualityConstraint(Vector1<Expression>(e), Vector1d(b));
+}
+
+Binding<LinearEqualityConstraint>
+MathematicalProgram::AddLinearEqualityConstraint(const set<Formula>& formulas) {
+  const auto n = formulas.size();
+  // Decomposes a set of formulas, `{e₁₁ == e₁₂, ..., eₙ₁ == eₙ₂}`
+  // into a 1D-vector of expressions, `v = [e₁₁ - e₁₂, ..., eₙ₁ - eₙ₂]`.
+  VectorX<symbolic::Expression> v{n};
+  int i{0};  // index variable used in the loop
+  for (const symbolic::Formula& f : formulas) {
+    if (is_equal_to(f)) {
+      // f := (lhs == rhs)
+      //      (lhs - rhs == 0)
+      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
+    } else {
+      ostringstream oss;
+      oss << "MathematicalProgram::AddLinearEqualityConstraint is called with "
+          << "a conjunction of formulas which includes a non-equality formula "
+          << f << ".";
+      throw runtime_error(oss.str());
+    }
+    ++i;
+  }
+  return AddLinearEqualityConstraint(v, Eigen::VectorXd::Zero(n));
+}
+
+Binding<LinearEqualityConstraint>
+MathematicalProgram::AddLinearEqualityConstraint(const Formula& f) {
+  if (is_equal_to(f)) {
+    // e1 == e2
+    const Expression& e1{get_lhs_expression(f)};
+    const Expression& e2{get_rhs_expression(f)};
+    return AddLinearEqualityConstraint(e1 - e2, 0.0);
+  }
+  if (is_conjunction(f)) {
+    return AddLinearEqualityConstraint(get_operands(f));
+  }
+  ostringstream oss;
+  oss << "MathematicalProgram::AddLinearConstraint is called with a formula "
+      << f
+      << " which is neither an equality formula nor a conjunction of equality "
+         "formulas.";
+  throw runtime_error(oss.str());
 }
 
 Binding<LinearEqualityConstraint>
