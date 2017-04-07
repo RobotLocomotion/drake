@@ -57,7 +57,7 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
 
   systems::DiscreteEvent<double> update_event;
   update_event.action = systems::DiscreteEvent<double>::kDiscreteUpdateAction;
-  std::unique_ptr<systems::DiscreteState<double>> update =
+  std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();
   update->SetFrom(*context->get_mutable_discrete_state());
   dut.CalcDiscreteVariableUpdates(*context, {update_event}, update.get());
@@ -129,7 +129,7 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusReceiverTest) {
 
   systems::DiscreteEvent<double> update_event;
   update_event.action = systems::DiscreteEvent<double>::kDiscreteUpdateAction;
-  std::unique_ptr<systems::DiscreteState<double>> update =
+  std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();
   update->SetFrom(*context->get_mutable_discrete_state());
   dut.CalcDiscreteVariableUpdates(*context, {update_event}, update.get());

@@ -41,7 +41,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      systems::DiscreteState<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const override;
 };
 
 /// Creates and outputs lcmt_iiwa_command messages
@@ -117,7 +117,7 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      systems::DiscreteState<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const override;
 
  private:
   const int measured_position_output_port_{};

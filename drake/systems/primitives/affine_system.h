@@ -75,7 +75,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   /// may override this for performance reasons.
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
-      drake::systems::DiscreteState<T>* updates) const override;
+      drake::systems::DiscreteValues<T>* updates) const override;
 
  private:
   const int num_states_{0};
@@ -169,7 +169,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
 
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
-      drake::systems::DiscreteState<T>* updates) const final;
+      drake::systems::DiscreteValues<T>* updates) const final;
 
   // System<T> override.
   AffineSystem<AutoDiffXd>* DoToAutoDiffXd() const final;

@@ -35,7 +35,7 @@ namespace systems {
 template <typename T>
 struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
-  typedef std::function<void(const Context<T>&, DiscreteState<T>*)>
+  typedef std::function<void(const Context<T>&, DiscreteValues<T>*)>
       DiscreteUpdateCallback;
   typedef std::function<void(const Context<T>&, State<T>*)>
       UnrestrictedUpdateCallback;
@@ -160,8 +160,7 @@ class System {
   /// as the output argument to Update.
   /// By default, allocates nothing. Systems with discrete state variables
   /// should override.
-  virtual std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
-  const {
+  virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const {
     return nullptr;
   }
 
@@ -484,7 +483,7 @@ class System {
   /// provided.
   void CalcDiscreteVariableUpdates(const Context<T>& context,
                                    const DiscreteEvent<T>& event,
-                                   DiscreteState<T> *discrete_state) const {
+                                   DiscreteValues<T>* discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kDiscreteUpdateAction);
     if (event.do_calc_discrete_variable_update == nullptr) {
@@ -1112,7 +1111,7 @@ class System {
   /// has the same constituent structure as was produced by
   /// AllocateDiscreteVariables().
   virtual void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context, DiscreteState<T>* discrete_state) const {}
+      const Context<T>& context, DiscreteValues<T>* discrete_state) const {}
 
   /// Updates the @p state *in an unrestricted fashion* on unrestricted update
   /// events. Override this function if you need your System to update

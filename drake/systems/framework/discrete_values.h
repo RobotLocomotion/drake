@@ -12,34 +12,34 @@
 namespace drake {
 namespace systems {
 
-/// The DiscreteState is a container for the numerical state values that are
-/// updated discontinuously on time or state based triggers. It may own its
-/// underlying data, for use with leaf Systems, or not, for use with Diagrams.
+/// The DiscreteValues is a container for numerical but non-continuous state
+/// and parameters. It may own its underlying data, for use with leaf Systems,
+/// or not, for use with Diagrams.
 ///
-/// DiscreteState is an ordered collection of vectors xd = [xd0, xd1...].
+/// DiscreteValues is an ordered collection of vectors xd = [xd0, xd1...].
 /// Requesting a specific index from this collection is the most granular way
 /// to retrieve discrete state from the Context, and thus is the unit of
 /// cache invalidation. System authors are encouraged to partition their
-/// DiscreteState such that each cacheable computation within the System may
-/// depend on only the elements of DiscreteState that it needs.
+/// DiscreteValues such that each cacheable computation within the System may
+/// depend on only the elements of DiscreteValues that it needs.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
-class DiscreteState {
+class DiscreteValues {
  public:
-  // DiscreteState is not copyable or moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteState)
+  // DiscreteValues is not copyable or moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteValues)
 
   /// Constructs an empty discrete state.
-  DiscreteState() {}
+  DiscreteValues() {}
 
   /// Constructs a discrete state that does not own the underlying @p data.
-  /// The data must outlive this DiscreteState.
-  explicit DiscreteState(const std::vector<BasicVector<T>*>& data)
+  /// The data must outlive this DiscreteValues.
+  explicit DiscreteValues(const std::vector<BasicVector<T>*>& data)
       : data_(data) {}
 
   /// Constructs a discrete state that owns the underlying @p data.
-  explicit DiscreteState(std::vector<std::unique_ptr<BasicVector<T>>>&& data)
+  explicit DiscreteValues(std::vector<std::unique_ptr<BasicVector<T>>>&& data)
       : owned_data_(std::move(data)) {
     // Initialize the unowned pointers.
     for (auto& datum : owned_data_) {
@@ -48,20 +48,16 @@ class DiscreteState {
   }
 
   /// Constructs a discrete state that owns a single @p datum vector.
-  explicit DiscreteState(std::unique_ptr<BasicVector<T>> datum) {
+  explicit DiscreteValues(std::unique_ptr<BasicVector<T>> datum) {
     data_.push_back(datum.get());
     owned_data_.push_back(std::move(datum));
   }
 
-  virtual ~DiscreteState() {}
+  virtual ~DiscreteValues() {}
 
-  int size() const {
-    return static_cast<int>(data_.size());
-  }
+  int size() const { return static_cast<int>(data_.size()); }
 
-  const std::vector<BasicVector<T>*>& get_data() const {
-    return data_;
-  }
+  const std::vector<BasicVector<T>*>& get_data() const { return data_; }
 
   const BasicVector<T>* get_discrete_state(int index) const {
     DRAKE_ASSERT(index >= 0 && index < size());
@@ -73,29 +69,25 @@ class DiscreteState {
     return data_[index];
   }
 
-  /// Writes the values from @p other into this DiscreteState, possibly
+  /// Writes the values from @p other into this DiscreteValues, possibly
   /// writing through to unowned data. Asserts if the dimensions don't match.
-  void CopyFrom(const DiscreteState<T>& other) {
-    SetFromGeneric(other);
-  }
+  void CopyFrom(const DiscreteValues<T>& other) { SetFromGeneric(other); }
 
-  /// Resets the values in this DiscreteState from the values in @p other,
+  /// Resets the values in this DiscreteValues from the values in @p other,
   /// possibly writing through to unowned data. Asserts if the dimensions don't
   /// match.
-  void SetFrom(const DiscreteState<double>& other) {
-    SetFromGeneric(other);
-  }
+  void SetFrom(const DiscreteValues<double>& other) { SetFromGeneric(other); }
 
-  /// Returns a deep copy of all the data in this DiscreteState. The clone
+  /// Returns a deep copy of all the data in this DiscreteValues. The clone
   /// will own its own data. This is true regardless of whether the state being
   /// cloned had ownership of its data or not.
-  std::unique_ptr<DiscreteState> Clone() const {
+  std::unique_ptr<DiscreteValues> Clone() const {
     std::vector<std::unique_ptr<BasicVector<T>>> cloned_data;
     cloned_data.reserve(data_.size());
     for (const BasicVector<T>* datum : data_) {
       cloned_data.push_back(datum->Clone());
     }
-    return std::make_unique<DiscreteState>(std::move(cloned_data));
+    return std::make_unique<DiscreteValues>(std::move(cloned_data));
   }
 
  private:
@@ -108,7 +100,7 @@ class DiscreteState {
   std::vector<std::unique_ptr<BasicVector<T>>> owned_data_;
 
   template <typename U>
-  void SetFromGeneric(const DiscreteState<U>& other) {
+  void SetFromGeneric(const DiscreteValues<U>& other) {
     DRAKE_ASSERT(size() == other.size());
     for (int i = 0; i < size(); i++) {
       DRAKE_ASSERT(other.get_discrete_state(i) != nullptr);

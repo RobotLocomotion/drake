@@ -234,7 +234,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   // TODO(edrumwri): Remove this when discrete state has been created
   // automatically.
   // Create the discrete state.
-  context->set_discrete_state(std::make_unique<DiscreteState<double>>());
+  context->set_discrete_state(std::make_unique<DiscreteValues<double>>());
 
   // Set initial condition using the Simulator's internal context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
@@ -461,7 +461,7 @@ class DiscreteSystem : public LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      drake::systems::DiscreteState<double>* updates) const override {
+      drake::systems::DiscreteValues<double>* updates) const override {
     if (update_callback_ != nullptr) update_callback_(context);
   }
 

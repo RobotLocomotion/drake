@@ -19,7 +19,7 @@
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
-#include "drake/systems/framework/discrete_state.h"
+#include "drake/systems/framework/discrete_values.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/model_values.h"
 #include "drake/systems/framework/output_port_value.h"
@@ -106,7 +106,7 @@ class LeafSystem : public System<T> {
     DRAKE_DEMAND(state != nullptr);
     ContinuousState<T>* xc = state->get_mutable_continuous_state();
     xc->SetFromVector(VectorX<T>::Zero(xc->size()));
-    DiscreteState<T>* xd = state->get_mutable_discrete_state();
+    DiscreteValues<T>* xd = state->get_mutable_discrete_state();
     for (int i = 0; i < xd->size(); i++) {
       BasicVector<T>* s = xd->get_mutable_discrete_state(i);
       s->SetFromVector(VectorX<T>::Zero(s->size()));
@@ -178,7 +178,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Returns the AllocateDiscreteState value, which must not be nullptr.
-  std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables()
       const override {
     return AllocateDiscreteState();
   }
@@ -346,12 +346,12 @@ class LeafSystem : public System<T> {
 
   /// Reserves the discrete state as required by CreateDefaultContext. By
   /// default, reserves no state. Systems with discrete state should override.
-  virtual std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const {
+  virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteState() const {
     if (model_discrete_state_vector_ != nullptr) {
-      return std::make_unique<DiscreteState<T>>(
+      return std::make_unique<DiscreteValues<T>>(
           model_discrete_state_vector_->Clone());
     }
-    return std::make_unique<DiscreteState<T>>();
+    return std::make_unique<DiscreteValues<T>>();
   }
 
   /// Reserves the abstract state as required by CreateDefaultContext. By

@@ -332,7 +332,7 @@ class Simulator {
   bool initialization_done_{false};
 
   // Pre-allocated temporaries for updated discrete states.
-  std::unique_ptr<DiscreteState<T>> discrete_updates_;
+  std::unique_ptr<DiscreteValues<T>> discrete_updates_;
 
   // Pre-allocated temporaries for states from unrestricted updates.
   std::unique_ptr<State<T>> unrestricted_updates_;
@@ -434,7 +434,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       // Do restricted (discrete variable) updates next.
       for (const DiscreteEvent<T>& event : update_actions.events) {
         if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
-          DiscreteState<T> *xd = context_->get_mutable_discrete_state();
+          DiscreteValues<T>* xd = context_->get_mutable_discrete_state();
           // Systems with discrete update events must have discrete state.
           DRAKE_DEMAND(xd != nullptr);
           // First, compute the discrete updates into a temporary buffer.

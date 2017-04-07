@@ -1,4 +1,4 @@
-#include "drake/systems/framework/discrete_state.h"
+#include "drake/systems/framework/discrete_values.h"
 
 #include <memory>
 
@@ -24,7 +24,7 @@ class DiscreteStateTest : public ::testing::Test {
 };
 
 TEST_F(DiscreteStateTest, OwnedState) {
-  DiscreteState<double> xd(std::move(data_));
+  DiscreteValues<double> xd(std::move(data_));
   EXPECT_EQ(1.0, xd.get_discrete_state(0)->GetAtIndex(0));
   EXPECT_EQ(1.0, xd.get_discrete_state(0)->GetAtIndex(1));
   EXPECT_EQ(2.0, xd.get_discrete_state(1)->GetAtIndex(0));
@@ -32,7 +32,7 @@ TEST_F(DiscreteStateTest, OwnedState) {
 }
 
 TEST_F(DiscreteStateTest, UnownedState) {
-  DiscreteState<double> xd(
+  DiscreteValues<double> xd(
       std::vector<BasicVector<double>*>{data_[0].get(), data_[1].get()});
   EXPECT_EQ(1.0, xd.get_discrete_state(0)->GetAtIndex(0));
   EXPECT_EQ(1.0, xd.get_discrete_state(0)->GetAtIndex(1));
@@ -41,9 +41,9 @@ TEST_F(DiscreteStateTest, UnownedState) {
 }
 
 TEST_F(DiscreteStateTest, Clone) {
-  DiscreteState<double> xd(
+  DiscreteValues<double> xd(
       std::vector<BasicVector<double>*>{data_[0].get(), data_[1].get()});
-  std::unique_ptr<DiscreteState<double>> clone = xd.Clone();
+  std::unique_ptr<DiscreteValues<double>> clone = xd.Clone();
   EXPECT_EQ(1.0, clone->get_discrete_state(0)->GetAtIndex(0));
   EXPECT_EQ(1.0, clone->get_discrete_state(0)->GetAtIndex(1));
   EXPECT_EQ(2.0, clone->get_discrete_state(1)->GetAtIndex(0));
@@ -51,9 +51,9 @@ TEST_F(DiscreteStateTest, Clone) {
 }
 
 TEST_F(DiscreteStateTest, SetFrom) {
-  DiscreteState<AutoDiffXd> ad_xd(BasicVector<AutoDiffXd>::Make(
-      {AutoDiffXd(1.0), AutoDiffXd(2.0)}));
-  DiscreteState<double> double_xd(BasicVector<double>::Make({3.0, 4.0}));
+  DiscreteValues<AutoDiffXd> ad_xd(
+      BasicVector<AutoDiffXd>::Make({AutoDiffXd(1.0), AutoDiffXd(2.0)}));
+  DiscreteValues<double> double_xd(BasicVector<double>::Make({3.0, 4.0}));
   ad_xd.SetFrom(double_xd);
 
   const BasicVector<AutoDiffXd>& vec = *ad_xd.get_discrete_state(0);

@@ -14,7 +14,7 @@ namespace examples {
 namespace schunk_wsg {
 
 using systems::Context;
-using systems::DiscreteState;
+using systems::DiscreteValues;
 using systems::SystemOutput;
 
 SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
@@ -51,7 +51,7 @@ void SchunkWsgTrajectoryGenerator::DoCalcOutput(
 
 void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    DiscreteState<double>* discrete_state) const {
+    DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
@@ -89,9 +89,9 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
   }
 }
 
-std::unique_ptr<DiscreteState<double>>
+std::unique_ptr<DiscreteValues<double>>
 SchunkWsgTrajectoryGenerator::AllocateDiscreteState() const {
-  return std::make_unique<DiscreteState<double>>(
+  return std::make_unique<DiscreteValues<double>>(
       std::make_unique<SchunkWsgTrajectoryGeneratorStateVector<double>>());
 }
 

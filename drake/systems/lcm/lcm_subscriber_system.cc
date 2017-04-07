@@ -86,7 +86,7 @@ void LcmSubscriberSystem::SetDefaultState(const Context<double>& context,
 // However, this computational concern will not exist once caching is properly
 // implemented and in place. Same for ProcessMessageAndStoreToAbstractState()
 void LcmSubscriberSystem::ProcessMessageAndStoreToDiscreteState(
-    DiscreteState<double>* discrete_state) const {
+    DiscreteValues<double>* discrete_state) const {
   DRAKE_ASSERT(translator_ != nullptr);
   DRAKE_ASSERT(serializer_ == nullptr);
 
@@ -148,7 +148,7 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
   }
 }
 
-std::unique_ptr<DiscreteState<double>>
+std::unique_ptr<DiscreteValues<double>>
 LcmSubscriberSystem::AllocateDiscreteState() const {
   // Only make discrete states if we are outputing vector values.
   if (translator_ != nullptr) {
@@ -158,7 +158,7 @@ LcmSubscriberSystem::AllocateDiscreteState() const {
         this->AllocateOutputVector(this->get_output_port(0));
     discrete_state_vec[kStateIndexMessageCount] =
         std::make_unique<BasicVector<double>>(1);
-    return std::make_unique<DiscreteState<double>>(
+    return std::make_unique<DiscreteValues<double>>(
         std::move(discrete_state_vec));
   }
   DRAKE_DEMAND(serializer_ != nullptr);

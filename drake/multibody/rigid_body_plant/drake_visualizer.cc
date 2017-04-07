@@ -49,7 +49,7 @@ void DrakeVisualizer::DoCalcNextUpdateTime(
 
 void DrakeVisualizer::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    DiscreteState<double>* discrete_state) const {
+    DiscreteValues<double>* discrete_state) const {
   DRAKE_DEMAND(!is_load_message_sent(context));
 
   PublishLoadRobot();

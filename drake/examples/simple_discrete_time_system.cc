@@ -23,7 +23,7 @@ class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
   // x[n+1] = x[n]^3
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      drake::systems::DiscreteState<double>* updates) const override {
+      drake::systems::DiscreteValues<double>* updates) const override {
     double x = context.get_discrete_state(0)->GetAtIndex(0);
     double xn = std::pow(x, 3.0);
     updates->get_mutable_discrete_state(0)->SetAtIndex(0, xn);
@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
   drake::systems::Simulator<double> simulator(system);
 
   // Set the initial conditions x(0).
-  drake::systems::DiscreteState<double>& xd =
+  drake::systems::DiscreteValues<double>& xd =
       *simulator.get_mutable_context()->get_mutable_discrete_state();
   xd.get_mutable_discrete_state(0)->SetAtIndex(0, 0.99);
 

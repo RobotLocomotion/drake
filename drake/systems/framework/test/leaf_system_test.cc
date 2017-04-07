@@ -439,8 +439,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   context->set_continuous_state(
     std::make_unique<ContinuousState<double>>(
       std::make_unique<BasicVector<double>>(9), 3, 3, 3));
-  context->set_discrete_state(
-    std::make_unique<DiscreteState<double>>(
+  context->set_discrete_state(std::make_unique<DiscreteValues<double>>(
       std::make_unique<BasicVector<double>>(1)));
   std::vector<std::unique_ptr<AbstractValue>> abstract_data;
   abstract_data.push_back(PackValue(3));
@@ -492,7 +491,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     disc_data.push_back(std::make_unique<BasicVector<double>>(1));
     disc_data.push_back(std::make_unique<BasicVector<double>>(1));
     s->set_discrete_state(
-         std::make_unique<DiscreteState<double>>(std::move(disc_data)));
+        std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
   };
 
   // Call the unrestricted update function again, again verifying that an
@@ -501,8 +500,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
                std::logic_error);
 
   // Restore the discrete state (size).
-  x->set_discrete_state(
-    std::make_unique<DiscreteState<double>>(
+  x->set_discrete_state(std::make_unique<DiscreteValues<double>>(
       std::make_unique<BasicVector<double>>(1)));
 
   // Change the event to indicate to change the abstract state dimension.

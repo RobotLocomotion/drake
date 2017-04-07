@@ -117,7 +117,7 @@ class SisoVectorSystem : public LeafSystem<T> {
   /// DoCalcVectorDiscreteVariableUpdates().
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
-      DiscreteState<T>* discrete_state) const final {
+      DiscreteValues<T>* discrete_state) const final {
     // Short-circuit when there's no work to do.
     if (discrete_state->size() == 0) {
       return;

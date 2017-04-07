@@ -32,9 +32,9 @@ class MySpringMassSystem : public SpringMassSystem<T> {
    * is a kludge until discrete variables are automatically allocated in
    * a system.
    */
-  std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
-    const override {
-    return std::make_unique<DiscreteState<T>>();
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables()
+      const override {
+    return std::make_unique<DiscreteValues<T>>();
   }
 
  private:
@@ -45,9 +45,9 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 
   // The discrete equation update here is for the special case of zero
   // discrete variables- in other words, this is just a counter.
-  void DoCalcDiscreteVariableUpdates(const Context<T>& context,
-                                     DiscreteState<T>* discrete_state)
-    const override {
+  void DoCalcDiscreteVariableUpdates(
+      const Context<T>& context,
+      DiscreteValues<T>* discrete_state) const override {
     ++update_count_;
   }
 

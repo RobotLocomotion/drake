@@ -315,8 +315,8 @@ void Rod2D<T>::DoCalcOutput(const systems::Context<T>& context,
 /// half-explicit time stepping scheme.
 template <class T>
 void Rod2D<T>::DoCalcDiscreteVariableUpdates(
-                           const systems::Context<T>& context,
-                           systems::DiscreteState<T>* discrete_state) const {
+    const systems::Context<T>& context,
+    systems::DiscreteValues<T>* discrete_state) const {
   // Set ERP (error reduction parameter) and CFM (constraint force mixing)
   // to make this problem "mostly rigid" and with rapid stabilization. These
   // parameters are described in the Open Dynamics Engine user manual (see

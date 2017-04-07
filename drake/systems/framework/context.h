@@ -120,26 +120,26 @@ class Context {
 
   /// Returns a mutable pointer to the discrete component of the state,
   /// which may be of size zero.
-  DiscreteState<T>* get_mutable_discrete_state() {
+  DiscreteValues<T>* get_mutable_discrete_state() {
     return get_mutable_state()->get_mutable_discrete_state();
   }
 
   /// Returns a mutable pointer to element @p index of the discrete state.
   /// Asserts if @p index doesn't exist.
   BasicVector<T>* get_mutable_discrete_state(int index) {
-    DiscreteState<T>* xd = get_mutable_discrete_state();
+    DiscreteValues<T>* xd = get_mutable_discrete_state();
     return xd->get_mutable_discrete_state(index);
   }
 
   /// Sets the discrete state to @p xd, deleting whatever was there before.
-  void set_discrete_state(std::unique_ptr<DiscreteState<T>> xd) {
+  void set_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
     get_mutable_state()->set_discrete_state(std::move(xd));
   }
 
   /// Returns a const pointer to the discrete component of the
   /// state at @p index.  Asserts if @p index doesn't exist.
   const BasicVector<T>* get_discrete_state(int index) const {
-    const DiscreteState<T>* xd = get_state().get_discrete_state();
+    const DiscreteValues<T>* xd = get_state().get_discrete_state();
     return xd->get_discrete_state(index);
   }
 

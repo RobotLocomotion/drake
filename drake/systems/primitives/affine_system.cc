@@ -119,7 +119,7 @@ void TimeVaryingAffineSystem<T>::DoCalcTimeDerivatives(
 template <typename T>
 void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
-    drake::systems::DiscreteState<T>* updates) const {
+    drake::systems::DiscreteValues<T>* updates) const {
   if (num_states_ == 0 || time_period_ == 0.0) return;
 
   const T t = context.get_time();
@@ -236,7 +236,7 @@ void AffineSystem<T>::DoCalcTimeDerivatives(
 template <typename T>
 void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
-    drake::systems::DiscreteState<T>* updates) const {
+    drake::systems::DiscreteValues<T>* updates) const {
   if (this->num_states() == 0 || this->time_period() == 0.0) return;
 
   const auto& x = context.get_discrete_state(0)->get_value();
