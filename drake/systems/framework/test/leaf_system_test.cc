@@ -26,7 +26,7 @@ class TestSystem : public LeafSystem<T> {
   TestSystem() {
     this->set_name("TestSystem");
     this->DeclareOutputPort(kVectorValued, 17);
-    this->DeclareAbstractOutputPort();
+    this->DeclareAbstractOutputPort(Value<int>(42));
   }
   ~TestSystem() override {}
 
@@ -61,16 +61,6 @@ class TestSystem : public LeafSystem<T> {
   std::unique_ptr<Parameters<T>> AllocateParameters() const override {
     return std::make_unique<Parameters<T>>(
         std::make_unique<BasicVector<T>>(2));
-  }
-
-  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const OutputPortDescriptor<T>& descriptor) const override {
-    return std::make_unique<BasicVector<T>>(17);
-  }
-
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<T>& descriptor) const override {
-    return AbstractValue::Make<int>(42);
   }
 
   void SetDefaultParameters(const LeafContext<T>& context,

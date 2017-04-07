@@ -161,17 +161,11 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const final {
-    unused(context);
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
-      const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
-      if (descriptor.get_data_type() == kVectorValued) {
-        output->add_port(std::make_unique<OutputPortValue>(
-            AllocateOutputVector(descriptor)));
-      } else {
-        output->add_port(std::make_unique<OutputPortValue>(
-            AllocateOutputAbstract(descriptor)));
-      }
+      const OutputPort<T>& port = this->get_output_port(i);
+      output->add_port(std::make_unique<OutputPortValue>(
+          port.Allocate(&context)));
     }
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
@@ -382,45 +376,6 @@ class LeafSystem : public System<T> {
     return std::make_unique<Parameters<T>>(std::move(numeric_params));
   }
 
-  /// Given a port descriptor, allocates the vector storage.  The default
-  /// implementation in this class either clones the model_vector (if the port
-  /// was declared via DeclareVectorOutputPort) or else allocates a BasicVector
-  /// (if the port was declared via DeclareOutputPort(kVectorValued, size).
-  /// Subclasses can override this method if the default behavior is not
-  /// sufficient.
-  ///
-  /// The descriptor must match a port declared via DeclareOutputPort or one of
-  /// its wrappers, e.g., DeclareVectorOutputPort.
-  virtual std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const OutputPortDescriptor<T>& descriptor) const {
-    std::unique_ptr<BasicVector<T>> model_result =
-        model_output_values_.CloneVectorModel<T>(descriptor.get_index());
-    if (model_result) {
-      return model_result;
-    }
-    return std::make_unique<BasicVector<T>>(descriptor.size());
-  }
-
-  /// Given a port descriptor, allocates the abstract storage.  The default
-  /// implementation in this class either clones the model_value (if the port
-  /// was declared via DeclareAbstractOutputPort) or aborts.
-  ///
-  /// Subclasses with abstract output ports must either provide a model_value
-  /// when declaring the port, or else override this method.
-  ///
-  /// The descriptor must match a port declared via DeclareOutputPort or one of
-  /// its wrappers, e.g., DeclareAbstractOutputPort.
-  virtual std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<T>& descriptor) const {
-    std::unique_ptr<AbstractValue> model_result =
-        model_output_values_.CloneModel(descriptor.get_index());
-    if (model_result) {
-      return model_result;
-    }
-    DRAKE_ABORT_MSG("A concrete leaf system with abstract output ports must "
-                    "override AllocateOutputAbstract.");
-  }
-
   /// Returns true if there is direct-feedthrough from the given @p input_port
   /// to the given @p output_port, and false otherwise, according to the given
   /// @p sparsity.
@@ -624,31 +579,65 @@ class LeafSystem : public System<T> {
     return this->DeclareAbstractInputPort();
   }
 
+  const LeafOutputPort<T>& DeclareOutputPort(PortDataType data_type, int size) {
+    auto port_info = std::make_unique<LeafOutputPort<T>>(data_type, size);
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
+  }
+
+  const LeafOutputPort<T>& DeclareAbstractOutputPort() {
+    return DeclareOutputPort(kAbstractValued, 0 /* size */);
+  }
+
   /// Declares a vector-valued output port using the given @p model_vector.
   /// This is the best way to declare LeafSystem output ports that require
   /// subclasses of BasicVector.  The port's size will be model_vector.size(),
-  /// and LeafSystem's default implementation of DoAllocateOutputVector will be
-  /// model_vector.Clone().
-  const OutputPortDescriptor<T>& DeclareVectorOutputPort(
+  /// and the default allocator for the port will be model_vector.Clone().
+  const LeafOutputPort<T>& DeclareVectorOutputPort(
       const BasicVector<T>& model_vector) {
-    const int size = model_vector.size();
-    const int next_index = this->get_num_output_ports();
-    model_output_values_.AddVectorModel(next_index, model_vector.Clone());
-    return this->DeclareOutputPort(kVectorValued, size);
+    auto port_info = std::make_unique<LeafOutputPort<T>>(model_vector);
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
   }
 
-  // Avoid shadowing out the no-arg DeclareAbstractOutputPort().
-  using System<T>::DeclareAbstractOutputPort;
+  /// Declares a vector-valued output port using the given vector-valued
+  /// allocation function. If a particular size is required, supply that also;
+  /// a runtime error will occur if the allocator doesn't produce a vector of
+  /// that size when invoked. (Note: currently the size is mandatory.)
+  const LeafOutputPort<T>& DeclareVectorOutputPort(
+      typename LeafOutputPort<T>::AllocVectorCallback vector_alloc_function,
+      int size) {
+    auto port_info =
+        std::make_unique<LeafOutputPort<T>>(vector_alloc_function, size);
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
+  }
 
   /// Declares an abstract-valued output port using the given @p model_value.
   /// This is the best way to declare LeafSystem abstract output ports.
   /// LeafSystem's default implementation of DoAllocateOutputAbstract will be
   /// model_value.Clone().
-  const OutputPortDescriptor<T>& DeclareAbstractOutputPort(
+  const LeafOutputPort<T>& DeclareAbstractOutputPort(
       const AbstractValue& model_value) {
-    const int next_index = this->get_num_output_ports();
-    model_output_values_.AddModel(next_index, model_value.Clone());
-    return this->DeclareAbstractOutputPort();
+    auto port_info = std::make_unique<LeafOutputPort<T>>(model_value);
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
+  }
+
+  /// Declares an abstract-valued output port using the given allocator. This
+  /// is necessary when the appropriate AbstractValue object cannot be
+  /// determined at construction. The allocator may refer to the system's
+  /// data members and Context entries such as parameter values.
+  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+      typename LeafOutputPort<T>::AllocCallback alloc_function) {
+    auto port_info = std::make_unique<LeafOutputPort<T>>(alloc_function);
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
   }
 
   /// Declares a numeric parameter using the given @p model_vector.  This is
@@ -769,9 +758,6 @@ class LeafSystem : public System<T> {
 
   // Model inputs to be used in AllocateOutput{Vector,Abstract}.
   detail::ModelValues model_input_values_;
-
-  // Model outputs to be used in AllocateOutput{Vector,Abstract}.
-  detail::ModelValues model_output_values_;
 
   // Model outputs to be used in AllocateParameters.
   detail::ModelValues model_numeric_parameters_;

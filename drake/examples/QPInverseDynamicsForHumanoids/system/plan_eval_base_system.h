@@ -39,15 +39,6 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
                      const std::string& param_file_name, double dt);
 
   /**
-   * Allocates abstract value types for output @p descriptor. This function
-   * allocates QpInput when @p matches the port for QpInput, and calls
-   * ExtendedAllocateOutputAbstract() to allocate all the other derived class'
-   * custom output types.
-   */
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const final;
-
-  /**
    * Copies QpInput from abstract state to the corresponding output port. Then
    * calls DoExtendedCalcOutput() to handle all the other derived class' custom
    * outputs.
@@ -112,13 +103,6 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   virtual void DoExtendedCalcOutput(
       const systems::Context<double>& context,
       systems::SystemOutput<double>* output) const = 0;
-
-  /**
-   * Derived classes need to implement this to allocate custom outputs.
-   */
-  virtual std::unique_ptr<systems::AbstractValue>
-  ExtendedAllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const = 0;
 
   /**
    * Derived classes need to implement this for custom behaviors.

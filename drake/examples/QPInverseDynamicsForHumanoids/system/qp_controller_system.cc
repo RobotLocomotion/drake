@@ -27,8 +27,10 @@ QpControllerSystem::QpControllerSystem(const RigidBodyTree<double>& robot,
     : robot_(robot), control_dt_(dt) {
   input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
   input_port_index_qp_input_ = DeclareAbstractInputPort().get_index();
-  output_port_index_qp_output_ = DeclareAbstractOutputPort().get_index();
-  output_port_index_debug_info_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_qp_output_ = DeclareAbstractOutputPort(
+      systems::Value<QpOutput>(GetDofNames(robot_))).get_index();
+  output_port_index_debug_info_ = DeclareAbstractOutputPort(
+      systems::Value<lcmt_inverse_dynamics_debug_info>()).get_index();
 
   set_name("QpControllerSystem");
   DeclarePeriodicUnrestrictedUpdate(control_dt_, 0);
@@ -93,21 +95,6 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
     debug.desired_vd[i] = qp_input->desired_dof_motions().value(i);
     debug.solved_vd[i] = qp_output.vd()[i];
     debug.solved_torque[i] = qp_output.dof_torques()[i];
-  }
-}
-
-std::unique_ptr<systems::AbstractValue>
-QpControllerSystem::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  if (descriptor.get_index() == output_port_index_qp_output_) {
-    return systems::AbstractValue::Make<QpOutput>(
-        QpOutput(GetDofNames(robot_)));
-  } else if (descriptor.get_index() == output_port_index_debug_info_) {
-    return systems::AbstractValue::Make<lcmt_inverse_dynamics_debug_info>(
-        lcmt_inverse_dynamics_debug_info());
-  } else {
-    DRAKE_DEMAND(false);
-    return nullptr;
   }
 }
 

@@ -43,9 +43,15 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 
   lcm->Subscribe(channel_, this);
   if (translator_ != nullptr) {
-    DeclareOutputPort(kVectorValued, translator_->get_vector_size());
+    DeclareVectorOutputPort(
+        [this](const Context<double>*) {
+          return this->AllocateVectorOutputValue();
+        },
+        translator->get_vector_size());
   } else {
-    DeclareAbstractOutputPort();
+    DeclareAbstractOutputPort([this](const Context<double>*) {
+      return this->AllocateAbstractOutputValue();
+    });
   }
 
   set_name(make_name(channel_));
@@ -155,7 +161,7 @@ LcmSubscriberSystem::AllocateDiscreteState() const {
     DRAKE_DEMAND(serializer_ == nullptr);
     std::vector<std::unique_ptr<BasicVector<double>>> discrete_state_vec(2);
     discrete_state_vec[kStateIndexMessage] =
-        this->AllocateOutputVector(this->get_output_port(0));
+        this->get_output_port(0).AllocateVector();
     discrete_state_vec[kStateIndexMessageCount] =
         std::make_unique<BasicVector<double>>(1);
     return std::make_unique<DiscreteValues<double>>(
@@ -171,8 +177,7 @@ std::unique_ptr<AbstractValues> LcmSubscriberSystem::AllocateAbstractState()
   if (serializer_ != nullptr) {
     DRAKE_DEMAND(translator_ == nullptr);
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
-    abstract_vals[kStateIndexMessage] =
-        this->AllocateOutputAbstract(this->get_output_port(0));
+    abstract_vals[kStateIndexMessage] = this->get_output_port(0).Allocate();
     abstract_vals[kStateIndexMessageCount] = AbstractValue::Make<int>(0);
     return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
   }
@@ -207,25 +212,20 @@ void LcmSubscriberSystem::DoCalcOutput(const Context<double>& context,
 }
 
 // This is only called if our output port is vector-valued.
-std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
-    const OutputPortDescriptor<double>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_index() == 0);
-  DRAKE_DEMAND(descriptor.get_data_type() == kVectorValued);
+std::unique_ptr<BasicVector<double>>
+LcmSubscriberSystem::AllocateVectorOutputValue() const {
   DRAKE_DEMAND(translator_ != nullptr);
   DRAKE_DEMAND(serializer_ == nullptr);
   auto result = translator_->AllocateOutputVector();
   if (result) {
     return result;
   }
-  return LeafSystem<double>::AllocateOutputVector(descriptor);
+  return std::make_unique<BasicVector<double>>(translator_->get_vector_size());
 }
 
 // This is only called if our output port is abstract-valued.
 std::unique_ptr<systems::AbstractValue>
-LcmSubscriberSystem::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_index() == 0);
-  DRAKE_DEMAND(descriptor.get_data_type() == kAbstractValued);
+LcmSubscriberSystem::AllocateAbstractOutputValue() const {
   DRAKE_DEMAND(translator_ == nullptr);
   DRAKE_DEMAND(serializer_ != nullptr);
   return serializer_->CreateDefaultValue();

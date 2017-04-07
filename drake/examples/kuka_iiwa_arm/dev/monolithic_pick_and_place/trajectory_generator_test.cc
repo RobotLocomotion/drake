@@ -50,8 +50,12 @@ class PlanSourceTester : public systems::LeafSystem<double> {
         plan_iiwa_joint_angles_(q),
         plan_wsg_positions_(wsg_positions),
         num_points_(time.size()),
-        output_port_iiwa_plan_(DeclareAbstractOutputPort().get_index()),
-        output_port_wsg_plan_(DeclareAbstractOutputPort().get_index()) {}
+        output_port_iiwa_plan_(
+            DeclareAbstractOutputPort(systems::Value<robot_plan_t>())
+                .get_index()),
+        output_port_wsg_plan_(
+            DeclareAbstractOutputPort(systems::Value<lcmt_schunk_wsg_command>())
+                .get_index()) {}
 
   const systems::OutputPortDescriptor<double>& get_output_port_iiwa_action()
       const {
@@ -63,24 +67,7 @@ class PlanSourceTester : public systems::LeafSystem<double> {
     return this->get_output_port(output_port_wsg_plan_);
   }
 
- protected:
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override {
-    std::unique_ptr<systems::AbstractValue> return_value;
-    std::unique_ptr<systems::AbstractValue> return_val;
-
-    /* allocate outputs for IiwaStateFeedbackPlanSource and
-     * SchunkWsgTrajectoryGenerator */
-    if (descriptor.get_index() == output_port_iiwa_plan_) {
-      return_val = systems::AbstractValue::Make<robot_plan_t>(robot_plan_t());
-    } else if (descriptor.get_index() == output_port_wsg_plan_) {
-      lcmt_schunk_wsg_command default_command;
-      return_val = systems::AbstractValue::Make<lcmt_schunk_wsg_command>(
-          default_command);
-    }
-    return return_val;
-  }
-
+ private:
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override {
     robot_plan_t& iiwa_action_output =
@@ -121,7 +108,6 @@ class PlanSourceTester : public systems::LeafSystem<double> {
     }
   }
 
- private:
   const RigidBodyTreed& iiwa_tree_;
   const std::vector<double> plan_time_;
   const std::vector<Eigen::VectorXd> plan_iiwa_joint_angles_;

@@ -12,14 +12,14 @@ namespace qp_inverse_dynamics {
 HumanoidStatusTranslatorSystem::HumanoidStatusTranslatorSystem(
     const RigidBodyTree<double>& robot, const std::string& alias_group_path)
     : robot_(robot), alias_group_path_(alias_group_path) {
-  output_port_index_humanoid_status_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_humanoid_status_ = DeclareAbstractOutputPort(
+      [this](const systems::Context<double>*) {
+        return this->AllocateOutputPort();
+      }).get_index();
 }
 
 std::unique_ptr<systems::AbstractValue>
-HumanoidStatusTranslatorSystem::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_index() == output_port_index_humanoid_status_);
-
+HumanoidStatusTranslatorSystem::AllocateOutputPort() const {
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(robot_);
   alias_groups.LoadFromFile(alias_group_path_);
 

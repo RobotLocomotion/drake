@@ -35,7 +35,8 @@ RobotStateEncoder::RobotStateEncoder(
       floating_body_(tree.bodies[1]->getJoint().is_floating()
                          ? tree.bodies[1].get()
                          : nullptr),
-      lcm_message_port_index_(DeclareAbstractOutputPort().get_index()),
+      lcm_message_port_index_(
+          DeclareAbstractOutputPort(Value<robot_state_t>()).get_index()),
       kinematics_results_port_index_(DeclareAbstractInputPort().get_index()),
       contact_results_port_index_(DeclareAbstractInputPort().get_index()),
       effort_port_indices_(DeclareEffortInputPorts()),
@@ -77,11 +78,6 @@ void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
 
   SetStateAndEfforts(kinematics_results, context, &message);
   SetForceTorque(kinematics_results, contact_results, &message);
-}
-
-std::unique_ptr<AbstractValue> RobotStateEncoder::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>& descriptor) const {
-  return make_unique<Value<robot_state_t>>(robot_state_t());
 }
 
 const OutputPortDescriptor<double>& RobotStateEncoder::lcm_message_port()

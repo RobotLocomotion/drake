@@ -29,13 +29,6 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
     return get_output_port(output_port_index_atlas_command_);
   }
 
- protected:
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>& descriptor) const override {
-    return std::make_unique<Value<bot_core::atlas_command_t>>(
-        bot_core::atlas_command_t());
-  }
-
  private:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;

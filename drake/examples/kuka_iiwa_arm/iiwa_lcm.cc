@@ -79,14 +79,7 @@ IiwaCommandSender::IiwaCommandSender()
       torque_input_port_(
           this->DeclareInputPort(
               systems::kVectorValued, kNumJoints).get_index()) {
-  this->DeclareAbstractOutputPort();
-}
-
-std::unique_ptr<systems::AbstractValue>
-IiwaCommandSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  lcmt_iiwa_command msg{};
-  return std::make_unique<systems::Value<lcmt_iiwa_command>>(msg);
+  this->DeclareAbstractOutputPort(systems::Value<lcmt_iiwa_command>());
 }
 
 void IiwaCommandSender::DoCalcOutput(
@@ -179,12 +172,12 @@ void IiwaStatusReceiver::DoCalcOutput(const Context<double>& context,
 IiwaStatusSender::IiwaStatusSender() {
   this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2);
   this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2);
-  this->DeclareAbstractOutputPort();
+  this->DeclareAbstractOutputPort(
+      [this](const Context<double>*) { return this->AllocateOutputPort(); });
 }
 
 std::unique_ptr<systems::AbstractValue>
-IiwaStatusSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
+IiwaStatusSender::AllocateOutputPort() const {
   lcmt_iiwa_status msg{};
   msg.num_joints = kNumJoints;
   msg.joint_position_measured.resize(msg.num_joints, 0);

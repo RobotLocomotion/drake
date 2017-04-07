@@ -15,7 +15,13 @@ namespace rendering {
 
 template <typename T>
 PoseAggregator<T>::PoseAggregator() {
-  this->DeclareAbstractOutputPort();
+  // Declare the output port and provide an allocator for a PoseBundle of length
+  // equal to the concatenation of all inputs. This can't be done with a model
+  // value because we don't know at construction how big the output will be.
+  // The lambda here serves only to bind the `this` pointer to the allocator so
+  // that we can invoke the private method.
+  this->DeclareAbstractOutputPort(
+      [this](const Context<T>*) { return this->AllocateOutputValue(); });
 }
 
 template <typename T>
@@ -125,9 +131,10 @@ void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
   return;
 }
 
+// (This could reasonably be done in the allocation lambda rather than with a
+// separate method.)
 template <typename T>
-std::unique_ptr<AbstractValue> PoseAggregator<T>::AllocateOutputAbstract(
-    const OutputPortDescriptor<T>& descriptor) const {
+std::unique_ptr<AbstractValue> PoseAggregator<T>::AllocateOutputValue() const {
   return AbstractValue::Make(PoseBundle<T>(this->CountNumPoses()));
 }
 

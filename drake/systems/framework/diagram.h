@@ -1151,17 +1151,18 @@ class Diagram : public System<T>,
                            subsystem_descriptor.size());
   }
 
-  // Exposes the given port as an output of the Diagram.
+  // Exposes the given subsystem output port as an output of the Diagram.
   void ExportOutput(const PortIdentifier& port) {
     const System<T>* const sys = port.first;
-    const int port_index = port.second;
     // Fail quickly if this system is not part of the sort order.
     GetSystemIndexOrAbort(sys);
+    const int port_index = port.second;
+    const auto& source_output_port = sys->get_output_port(port_index);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_descriptor = sys->get_output_port(port_index);
-    this->DeclareOutputPort(subsystem_descriptor.get_data_type(),
-                            subsystem_descriptor.size());
+    auto port_info =
+        std::make_unique<DiagramOutputPort<T>>(&source_output_port);
+    this->AddOutputPort(std::move(port_info));
   }
 
   // Evaluates the value of the output port with the given @p id in the given

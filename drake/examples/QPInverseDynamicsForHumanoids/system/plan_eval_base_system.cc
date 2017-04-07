@@ -20,7 +20,9 @@ PlanEvalBaseSystem::PlanEvalBaseSystem(
   DRAKE_DEMAND(control_dt_ > 0);
 
   input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
-  output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_qp_input_ =
+      DeclareAbstractOutputPort(systems::Value<QpInput>(GetDofNames(robot_)))
+          .get_index();
 
   // Declares discrete time update.
   DeclarePeriodicUnrestrictedUpdate(control_dt_, 0);
@@ -46,16 +48,6 @@ void PlanEvalBaseSystem::DoCalcOutput(
 
   // Does extended CalcOutput.
   DoExtendedCalcOutput(context, output);
-}
-
-std::unique_ptr<systems::AbstractValue>
-PlanEvalBaseSystem::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  if (descriptor.get_index() == output_port_index_qp_input_) {
-    return systems::AbstractValue::Make<QpInput>(QpInput(GetDofNames(robot_)));
-  } else {
-    return ExtendedAllocateOutputAbstract(descriptor);
-  }
 }
 
 }  // namespace qp_inverse_dynamics

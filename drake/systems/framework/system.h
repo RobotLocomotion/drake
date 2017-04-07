@@ -21,7 +21,8 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port_value.h"
-#include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/framework/input_port_descriptor.h"
+#include "drake/systems/framework/output_port.h"
 
 namespace drake {
 namespace systems {
@@ -355,7 +356,7 @@ class System {
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name                        Constraint-related functions.
+  /// @name               Constraint-related functions.
   ///
   // @{
 
@@ -503,7 +504,7 @@ class System {
     const int abstract_state_dim = state->get_abstract_state()->size();
 
     // Copy current state to the passed-in state, as specified in the
-    // documentation for DoCalclUnrestrictedUpdate().
+    // documentation for DoCalcUnrestrictedUpdate().
     state->CopyFrom(context.get_state());
 
     if (event.do_unrestricted_update == nullptr) {
@@ -743,8 +744,8 @@ class System {
     return *input_ports_[port_index];
   }
 
-  /// Returns the descriptor of the output port at index @p port_index.
-  const OutputPortDescriptor<T>& get_output_port(int port_index) const {
+  /// Returns the output port at index @p port_index.
+  const OutputPort<T>& get_output_port(int port_index) const {
     if (port_index < 0 || port_index >= get_num_output_ports()) {
       throw std::out_of_range(
           "System " + get_name() + ": Port index " +
@@ -1045,20 +1046,16 @@ class System {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
 
-  /// Adds a port with the specified @p type and @p size to the output topology.
-  /// @return descriptor of declared port.
-  const OutputPortDescriptor<T>& DeclareOutputPort(PortDataType type,
-                                                   int size) {
-    int port_index = get_num_output_ports();
-    output_ports_.push_back(std::make_unique<OutputPortDescriptor<T>>(
-        this, port_index, type, size));
-    return *output_ports_.back();
-  }
-
-  /// Adds an abstract-valued port with to the output topology.
-  /// @return descriptor of declared port.
-  const OutputPortDescriptor<T>& DeclareAbstractOutputPort() {
-    return DeclareOutputPort(kAbstractValued, 0 /* size */);
+  /// Takes ownership of the supplied port object and assigns it an index within
+  /// the array of output ports for this System. The System and index are
+  /// recorded in the port object, and the index is returned. The resulting
+  /// output port object is guaranteed to be the supplied one, so it is
+  /// expressly permitted for the caller to retain a raw pointer to it.
+  OutputPortIndex AddOutputPort(std::unique_ptr<OutputPort<T>> port_info) {
+    OutputPortIndex port_index(get_num_output_ports());
+    port_info->set_system_and_index(this, port_index);
+    output_ports_.push_back(std::move(port_info));
+    return port_index;
   }
   //@}
 
@@ -1349,10 +1346,10 @@ class System {
   virtual System<symbolic::Expression>* DoToSymbolic() const { return nullptr; }
   //@}
 
-  //----------------------------------------------------------------------------
-  /// @name                        Constraint-related functions (protected).
-  ///
-  // @{
+//----------------------------------------------------------------------------
+/// @name             Constraint-related functions (protected).
+///
+// @{
 
   /// Gets the number of constraint equations for this system from the given
   /// context. The context is supplied in case the number of constraints is
@@ -1459,7 +1456,7 @@ class System {
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references
   // to the descriptors will remain valid even if the vector is resized.
   std::vector<std::unique_ptr<InputPortDescriptor<T>>> input_ports_;
-  std::vector<std::unique_ptr<OutputPortDescriptor<T>>> output_ports_;
+  std::vector<std::unique_ptr<OutputPort<T>>> output_ports_;
   const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 
   // TODO(sherm1) Replace these fake cache entries with real cache asap.
