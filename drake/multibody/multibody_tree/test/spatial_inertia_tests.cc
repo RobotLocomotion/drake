@@ -269,6 +269,22 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithNegativeMass) {
   }
 }
 
+// Tests IsPhysicallyValid() fails within the constructor since the COM given is
+// inconsistently too far out for the unit inertia provided.
+GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
+  try {
+    SpatialInertia<double> M(
+        1.0, Vector3d(2.0, 0.0, 0.0),
+        UnitInertia<double>::SolidSphere(1.0));
+    GTEST_FAIL();
+  } catch (std::runtime_error& e) {
+    std::string expected_msg =
+        "The resulting spatial inertia is not physically valid. "
+            "See SpatialInertia::IsPhysicallyValid()";
+    EXPECT_EQ(e.what(), expected_msg);
+  }
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
