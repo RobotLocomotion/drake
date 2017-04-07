@@ -352,6 +352,7 @@ drake_cc_googletest(
     name = "copyable_unique_ptr_test",
     deps = [
         ":common",
+        ":is_dynamic_castable",
     ],
 )
 
