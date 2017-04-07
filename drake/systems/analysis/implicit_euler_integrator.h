@@ -15,14 +15,13 @@ namespace systems {
 
 /**
  * A first-order, fully implicit integrator with second order error estimation.
- * @tparam T A double or Eigen AutoDiffScalar type.
- *
+ * @tparam T The vector element type, which must be a valid Eigen scalar.
  * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
  * this class, please refer to http://drake.mit.edu/cxx_inl.html.
  *
  * Instantiated templates for the following kinds of T's are provided:
  * - double
- * - Eigen::AutoDiffScalar<Eigen::VectorXd>
+ * - AutoDiffXd
  *
  * This integrator uses the following update rule:<pre>
  * x(t+h) = x(t) + h f(t+h,x(t+h))
@@ -105,15 +104,13 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// critically) the implicit integration process. Automatic differentiation is
   /// recommended if the System supports it for reasons of both higher
   /// accuracy and increased speed. Forward differencing (i.e., numerical
-  /// differentiation) yields the best numerically differenced Jacobian accuracy
-  /// for a given unit of computational time: the total error in the
-  /// forward-difference approximation is close to √ε, where ε is machine
-  /// epsilon, from n forward dynamics calls (where n is the number of state
-  /// variables). Central differencing yields the most accurate numerically
-  /// differentiated Jacobian matrix, but expends double the computational
-  /// effort for approximately 50% greater accuracy: the total error in the
-  /// central-difference approximation is close to ε^(2/3), from 2n forward
-  /// dynamics calls. See [Nocedal 2004, pp. 167-169].
+  /// differentiation) exhibits error in the approximation close to √ε, where
+  /// ε is machine epsilon, from n forward dynamics calls (where n is the number
+  /// of state variables). Central differencing yields the most accurate
+  /// numerically differentiated Jacobian matrix, but expends double the
+  /// computational effort for approximately 50% greater accuracy: the total
+  /// error in the central-difference approximation is close to ε^(2/3), from 2n
+  /// forward dynamics calls. See [Nocedal 2004, pp. 167-169].
   ///
   /// - [Nocedal 2004] J. Nocedal and S. Wright. Numerical Optimization.
   ///                  Springer, 2004.
@@ -147,10 +144,9 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// This integrator provides second order error estimates.
   int get_error_estimate_order() const override { return 2; }
 
-  /// @name Statistics functions.
+  /// @name Cumulative statistics functions.
   /// The functions return statistics specific to the implicit integration
-  /// process; much of the focus is on methods for returning statistics
-  /// relevant to the nonlinear system of equations solution process.
+  /// process.
   /// @{
 
   /// Gets the number of ODE function evaluations
@@ -165,49 +161,30 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   /// Gets the number of ODE function evaluations
   /// (calls to CalcTimeDerivatives()) *used only for computing
-  /// the Jacobian matrices* since the last call to ResetStatistics().
+  /// the Jacobian matrices* since the last call to ResetStatistics(). This
+  /// count includes those derivative calculations necessary for computing
+  /// Jacobian matrices during the error estimation process.
   int get_num_derivative_evaluations_for_jacobian() const {
     return num_jacobian_function_evaluations_;
   }
 
-  /// Gets the number of ODE function evaluations (calls to
-  /// CalcTimeDerivatives()) *used only for computing the Jacobian matrices
-  /// needed by the error estimation process* since the last call to
-  /// ResetStatistics().
-  int get_num_error_estimator_derivative_evaluations_for_jacobian() const {
-    return num_err_est_jacobian_function_evaluations_;
-  }
-
   /// Gets the number of loops used in the Newton-Raphson nonlinear systems of
-  /// equation solving process since the last call to ResetStatistics().
+  /// equation solving process since the last call to ResetStatistics(). This
+  /// count includes those Newton-Raphson loops used during the error estimation
+  /// process.
   int get_num_newton_raphson_loops() const { return num_nr_loops_; }
 
-  /// Gets the number of implicit-trapezoid-only loops used in the
-  /// Newton-Raphson nonlinear systems of equation solving process since the
-  /// last call to ResetStatistics().
-  int get_num_error_estimator_newton_raphson_loops() const { return
-        num_err_est_nr_loops_; }
-
-  /// Gets the number of Jacobian reformulations (i.e., the number of times
+  /// Gets the number of Jacobian evaluations (i.e., the number of times
   /// that the Jacobian matrix was reformed) since the last call to
-  /// ResetStatistics().
-  int get_num_jacobian_reformulations() const { return num_jacobian_reforms_; }
-
-  /// Gets the number of implicit-trapezoid-only Jacobian matrix reformulations
-  /// since the last call to ResetStatistics().
-  int get_num_error_estimator_jacobian_reformulations() const {
-    return num_err_est_jacobian_reforms_; }
+  /// ResetStatistics(). This count includes those evaluations necessary
+  /// during the error estimation process.
+  int get_num_jacobian_evaluations() const { return num_jacobian_reforms_; }
 
   /// Gets the number of iteration matrix factorizations since the last
-  /// call to ResetStatistics().
-  int get_num_iteration_matrix_refactors() const {
-    return num_iter_refactors_;
-  }
-
-  /// Gets the number of implicit-trapezoid-only iteration matrix factorizations
-  /// since the last call to ResetStatistics().
-  int get_num_error_estimator_iteration_matrix_refactors() const {
-    return num_err_est_iter_refactors_;
+  /// call to ResetStatistics(). This count includes those refactorizations
+  /// necessary during the error estimation process.
+  int get_num_iteration_matrix_factorizations() const {
+    return num_iter_factorizations_;
   }
 
   /// Gets the number of failed sub-steps (implying step halving was required
@@ -219,6 +196,37 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// Gets the number of step size shrinkages due to sub-step failures.
   int get_num_step_shrinkages_from_substep_failures() const {
     return num_shrinkages_from_substep_failures_;
+  }
+
+  /// @}
+
+  /// @name Error-estimation statistics functions.
+  /// The functions return statistics specific to the error estimation
+  /// process.
+  /// @{
+  /// Gets the number of ODE function evaluations (calls to
+  /// CalcTimeDerivatives()) *used only for computing the Jacobian matrices
+  /// needed by the error estimation process* since the last call to
+  /// ResetStatistics().
+  int get_num_error_estimator_derivative_evaluations_for_jacobian() const {
+    return num_err_est_jacobian_function_evaluations_;
+  }
+
+  /// Gets the number of loops *used in the Newton-Raphson nonlinear systems of
+  /// equation solving process for the error estimation process* since the last
+  /// call to ResetStatistics().
+  int get_num_error_estimator_newton_raphson_loops() const { return
+        num_err_est_nr_loops_; }
+
+  /// Gets the number of Jacobian matrix evaluations *used only during
+  /// the error estimation process* since the last call to ResetStatistics().
+  int get_num_error_estimator_jacobian_evaluations() const {
+    return num_err_est_jacobian_reforms_; }
+
+  /// Gets the number of iteration matrix factorizations *used only during
+  /// the error estimation process* since the last call to ResetStatistics().
+  int get_num_error_estimator_iteration_matrix_factorizations() const {
+    return num_err_est_iter_factorizations_;
   }
 
   /// Gets the number of step size shrinkages due to error control.
@@ -289,7 +297,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   // A QR factorization is necessary for automatic differentiation (current
   // Eigen requirement).
-  Eigen::HouseholderQR<MatrixX<Eigen::AutoDiffScalar<Eigen::VectorXd>>> QR_;
+  Eigen::HouseholderQR<MatrixX<AutoDiffXd>> QR_;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;
@@ -325,13 +333,13 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   // Various combined statistics.
   int num_jacobian_reforms_{0};
-  int num_iter_refactors_{0};
+  int num_iter_factorizations_{0};
   int num_jacobian_function_evaluations_{0};
   int num_nr_loops_{0};
 
   // Implicit trapezoid specific statistics.
   int num_err_est_jacobian_reforms_{0};
-  int num_err_est_iter_refactors_{0};
+  int num_err_est_iter_factorizations_{0};
   int64_t num_err_est_function_evaluations_{0};
   int num_err_est_jacobian_function_evaluations_{0};
   int num_err_est_nr_loops_{0};

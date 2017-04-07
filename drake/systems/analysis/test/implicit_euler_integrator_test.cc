@@ -145,12 +145,14 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
   /// Default spring constant. Corresponds to a frequency of 0.1125 cycles per
   /// second without damping, assuming that mass = 2 (using formula
-  /// F = sqrt(k*mass)/(2*pi), where k is the spring constant).
+  /// f = sqrt(k*mass)/(2*pi), where k is the spring constant, and f is the
+  /// frequency in cycles per second).
   const double spring_k = 1.0;
 
   /// Default spring constant for a stiff spring. Corresponds to a frequency
   /// of 11,254 cycles per second without damping, assuming that mass = 2
-  /// (using formula F = sqrt(k*mass)/(2*pi), where k is the spring constant).
+  /// (using formula f = sqrt(k*mass)/(2*pi), where k is the spring constant,
+  /// and f is the requency in cycles per second).
   const double stiff_spring_k = 1e10;
 
   /// Default semi-stiff (in the computational sense) damping coefficient.
@@ -167,6 +169,17 @@ class ImplicitIntegratorTest : public ::testing::Test {
   /// that the system is overdamped.
   const double stiff_damping_b = 1e8;
 };
+
+// Verifies compilation, nothing else at this point.
+TEST_F(ImplicitIntegratorTest, AutoDiff) {
+  // Create the integrator for a System<AutoDiffXd>.
+  auto system = spring->ToAutoDiffXd();
+  auto context = system->CreateDefaultContext();
+  ImplicitEulerIntegrator<AutoDiffXd> integrator(*system, context.get());
+
+  // TODO(edrumwri): Add test that an automatic differentiation of an implicit
+  // integrator produces the expected result.
+}
 
 TEST_F(ImplicitIntegratorTest, MiscAPI) {
   // Create the integrator for a System<double>.
@@ -222,11 +235,11 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GT(integrator->get_num_derivative_evaluations_for_jacobian(), 0);
   EXPECT_GT(integrator->
       get_num_error_estimator_derivative_evaluations_for_jacobian(), 0);
-  EXPECT_GE(integrator->get_num_jacobian_reformulations(), 0);
-  EXPECT_GE(integrator->get_num_error_estimator_jacobian_reformulations(), 0);
-  EXPECT_GE(integrator->get_num_iteration_matrix_refactors(), 0);
-  EXPECT_GE(integrator->get_num_error_estimator_iteration_matrix_refactors(),
-            0);
+  EXPECT_GE(integrator->get_num_jacobian_evaluations(), 0);
+  EXPECT_GE(integrator->get_num_error_estimator_jacobian_evaluations(), 0);
+  EXPECT_GE(integrator->get_num_iteration_matrix_factorizations(), 0);
+  EXPECT_GE(integrator->
+      get_num_error_estimator_iteration_matrix_factorizations(), 0);
   EXPECT_GE(integrator->get_num_substep_failures(), 0);
   EXPECT_GE(integrator->get_num_step_shrinkages_from_substep_failures(), 0);
   EXPECT_GE(integrator->get_num_step_shrinkages_from_error_control(), 0);

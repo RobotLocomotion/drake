@@ -23,7 +23,7 @@ void ImplicitEulerIntegrator<T>::DoResetStatistics() {
   num_jacobian_function_evaluations_ =
     num_err_est_jacobian_function_evaluations_ = 0;
   num_jacobian_reforms_ = num_err_est_jacobian_reforms_ = 0;
-  num_iter_refactors_ = num_err_est_iter_refactors_ = 0;
+  num_iter_factorizations_ = num_err_est_iter_factorizations_ = 0;
   num_shrinkages_from_error_control_ = 0;
   num_shrinkages_from_substep_failures_ = 0;
   num_substep_failures_ = 0;
@@ -67,9 +67,8 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 // xtplus, taken with respect to the state variables using automatic
 // differentiation.
 template <>
-MatrixX<Eigen::AutoDiffScalar<Eigen::VectorXd>> ImplicitEulerIntegrator<
-    Eigen::AutoDiffScalar<Eigen::VectorXd>>::ComputeADiffJacobianF(
-      const VectorX<Eigen::AutoDiffScalar<Eigen::VectorXd>>& xtplus) {
+MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::ComputeADiffJacobianF(
+    const VectorX<AutoDiffXd>& xtplus) {
         throw std::runtime_error("AutoDiff'd Jacobian not supported from "
                                      "AutoDiff'd ImplicitEulerIntegrator");
 }
@@ -83,7 +82,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
   SPDLOG_DEBUG(drake::log(), "  IE Compute Autodiff Jacobian t={}",
                this->get_context().get_time());
   // Create AutoDiff versions of the state vector.
-  typedef Eigen::AutoDiffScalar<Eigen::VectorXd> Scalar;
+  typedef AutoDiffXd Scalar;
   VectorX<Scalar> a_xtplus = xtplus;
 
   // Set the size of the derivatives and prepare for Jacobian calculation.
@@ -290,10 +289,9 @@ VectorX<T> ImplicitEulerIntegrator<T>::Solve(const MatrixX<T>& A,
 
 // Solves a linear system
 template <>
-VectorX<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-  ImplicitEulerIntegrator<Eigen::AutoDiffScalar<Eigen::VectorXd>>::Solve(
-      const MatrixX<Eigen::AutoDiffScalar<Eigen::VectorXd>>& A,
-      const VectorX<Eigen::AutoDiffScalar<Eigen::VectorXd>>& b) {
+VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
+    const MatrixX<AutoDiffXd>& A,
+    const VectorX<AutoDiffXd>& b) {
   QR_.compute(A);
   return QR_.solve(b);
 }
@@ -394,7 +392,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     // TODO(edrumwri): Allow caller to provide their own solver.
     const int n = xtplus->size();
     A_ = J * (dt / scale) - MatrixX<T>::Identity(n, n);
-    num_iter_refactors_++;
+    num_iter_factorizations_++;
     VectorX<T> dx = Solve(A_, goutput);
     T dx_norm = dx.norm();
 
@@ -536,7 +534,7 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
 
   // Save statistics.
   int saved_num_jacobian_reforms = num_jacobian_reforms_;
-  int saved_num_iter_refactors = num_iter_refactors_;
+  int saved_num_iter_factorizationss = num_iter_factorizations_;
   int64_t saved_num_function_evaluations =
       this->get_num_derivative_evaluations();
   int64_t saved_num_jacobian_function_evaluations =
@@ -556,7 +554,8 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
   // Move statistics to implicit trapezoid-specific.
   num_err_est_jacobian_reforms_ +=
       num_jacobian_reforms_ - saved_num_jacobian_reforms;
-  num_err_est_iter_refactors_ += num_iter_refactors_ - saved_num_iter_refactors;
+  num_err_est_iter_factorizations_ += num_iter_factorizations_ -
+      saved_num_iter_factorizationss;
   num_err_est_function_evaluations_ +=
       this->get_num_derivative_evaluations() - saved_num_function_evaluations;
   num_err_est_jacobian_function_evaluations_ +=
