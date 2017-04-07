@@ -13,7 +13,7 @@ namespace drake {
 namespace {
 
 // Test the estimator dynamics observing a linear system.
-GTEST_TEST(TestLuenberger, ErrorDynamics) {
+GTEST_TEST(LuenbergerObserverTest, ErrorDynamics) {
   Eigen::Matrix3d A;
   Eigen::Matrix<double, 3, 1> B;
   Eigen::Matrix<double, 2, 3> C;
@@ -46,6 +46,8 @@ GTEST_TEST(TestLuenberger, ErrorDynamics) {
   auto context = observer->CreateDefaultContext();
   auto derivatives = observer->AllocateTimeDerivatives();
   auto output = observer->AllocateOutput(*context);
+
+  EXPECT_FALSE(observer->HasAnyDirectFeedthrough());
 
   // The expected dynamics are:
   //  xhatdot = Axhat + Bu + L(y-yhat)
