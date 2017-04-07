@@ -50,6 +50,12 @@ class DiagramState : public State<T> {
   }
 
   /// Returns the substate at @p index.
+  const State<T>* get_substate(int index) const {
+    DRAKE_DEMAND(index >= 0 && index < num_substates());
+    return substates_[index];
+  }
+
+  /// Returns the substate at @p index.
   State<T>* get_mutable_substate(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_substates());
     return substates_[index];
