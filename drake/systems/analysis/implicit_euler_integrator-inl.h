@@ -403,7 +403,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     // applied after *at least* two iterations (p. 121).
     if (i >= 1) {
       // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
-      // efficiently on a number of test problems with *RADAU5* (a fourth order
+      // efficiently on a number of test problems with *RADAU5* (a fifth order
       // implicit integrator), p. 121. We select a value halfway in-between.
       const double kappa = 0.05;
       const T theta = dx_norm / last_dx_norm;

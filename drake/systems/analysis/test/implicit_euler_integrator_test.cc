@@ -143,7 +143,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
   const double mass = 2.0;               // Default particle mass.
   const double constant_force_mag = 10;  // Magnitude of the constant force.
 
-  /// Default spring constant. Corresponds to a frequency of 0.02 cycles per
+  /// Default spring constant. Corresponds to a frequency of 0.1125 cycles per
   /// second without damping.
   const double spring_k = 1.0;
 
@@ -153,14 +153,14 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
   /// Default semi-stiff (in the computational sense) damping coefficient.
   /// For the "modified" spring and damper, this will result in a damping
-  /// ratio of damping_b / (2*sqrt(stiff_spring_k)) = 0.05, meaning that the
-  /// system is underdamped.
+  /// ratio of damping_b / (2*sqrt(mass*stiff_spring_k)) = 0.034, meaning that
+  /// the system is underdamped.
   const double damping_b = 1e4;
 
   /// Default stiff (in the computational sense) damping coefficient. For
   /// the "vanilla" spring and damper, this will result in a damping
-  /// ratio of stiff_damping_b / (2*sqrt(stiff_spring_k)) = 500, meaning that
-  /// the system is overdamped.
+  /// ratio of stiff_damping_b / (2*sqrt(mass*stiff_spring_k)) = 500, meaning
+  /// that the system is overdamped.
   const double stiff_damping_b = 1e8;
 };
 
