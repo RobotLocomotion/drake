@@ -21,6 +21,7 @@ LcmDrivenLoop::LcmDrivenLoop(
   // that this can explicitly query the message.
   sub_context_ = driving_sub_.CreateDefaultContext();
   sub_output_ = driving_sub_.AllocateOutput(*sub_context_);
+  sub_swap_state_ = sub_context_->CloneState();
 
   // Disables simulator's publish on its internal time step.
   stepper_->set_publish_every_time_step(false);
@@ -33,15 +34,31 @@ LcmDrivenLoop::LcmDrivenLoop(
 
 const AbstractValue& LcmDrivenLoop::WaitForMessage() {
   message_count_ = driving_sub_.WaitForMessage(message_count_);
+
+  UpdateActions<double> actions;
+  driving_sub_.CalcNextUpdateTime(*sub_context_, &actions);
+
+  DRAKE_DEMAND(actions.events.size() == 1);
+  if (actions.events.front().action ==
+      DiscreteEvent<double>::kDiscreteUpdateAction) {
+    driving_sub_.CalcDiscreteVariableUpdates(
+        *sub_context_, actions.events.front(),
+        sub_swap_state_->get_mutable_discrete_state());
+  } else if (actions.events.front().action ==
+      DiscreteEvent<double>::kUnrestrictedUpdateAction) {
+    driving_sub_.CalcUnrestrictedUpdate(*sub_context_, actions.events.front(),
+        sub_swap_state_.get());
+  } else {
+    DRAKE_DEMAND(false);
+  }
+  sub_context_->get_mutable_state()->CopyFrom(*sub_swap_state_);
+
   driving_sub_.CalcOutput(*sub_context_, sub_output_.get());
   return *(sub_output_->get_data(0));
 }
 
 void LcmDrivenLoop::RunToSecondsAssumingInitialized(double stop_time) {
   double msg_time;
-
-  if (publish_on_every_received_message_)
-    system_.Publish(stepper_->get_context());
 
   while (true) {
     msg_time = time_converter_->GetTimeInSeconds(WaitForMessage());

@@ -69,9 +69,6 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * continuous state integration (e.g. the I term in a PID). The main message
  * handling loop conceptually is:
  * <pre>
- * if (publish) {
- *   system.Publish(simulator.context);
- * }
  * while(context.time < stop_time) {
  *   msg = wait_for_message("channel");
  *   simulator.StepTo(msg.time);
@@ -102,12 +99,6 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * without a new Lcm message, thus the handler loop is blocking.
  * 3. The computation for the given system should be faster than the incoming
  * message rate.
- *
- * TODO(siyuan): Fix this:
- * LcmSubscriberSystem's output is not guaranteed to be the same given the same
- * context. E.g. if a Lcm messages comes in between two calls to CalcOutput, the
- * second call would return the new message while the "state" in the context
- * remains the same. The LcmSubscriberSystem will be fixed.
  */
 class LcmDrivenLoop {
  public:
@@ -200,6 +191,7 @@ class LcmDrivenLoop {
   // Separate context and output port for the driving subscriber.
   std::unique_ptr<Context<double>> sub_context_;
   std::unique_ptr<SystemOutput<double>> sub_output_;
+  std::unique_ptr<State<double>> sub_swap_state_;
 
   int message_count_{0};
 };
