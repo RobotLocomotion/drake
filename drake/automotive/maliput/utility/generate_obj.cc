@@ -517,6 +517,11 @@ void DrawLaneArrow(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
 // @param h_offset  h value of each vertex (height above road surface)
 void MarkLaneEnds(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
                   double h_offset) {
+  // To avoid crossing boundaries (and tripping assertions) due to
+  // numeric precision issues, we will nudge the arrows inward from
+  // the ends of the lanes by the RoadGeometry's linear_tolerance().
+  const double nudge =
+      lane->segment()->junction()->road_geometry()->linear_tolerance();
   const double max_length = 0.3 * lane->length();
   // Arrows are sized relative to their respective ends.
   const api::RBounds start_rb = lane->lane_bounds(0.);
@@ -527,9 +532,11 @@ void MarkLaneEnds(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
   const double finish_s_size = std::min(max_length,
                                         (finish_rb.r_max - finish_rb.r_min));
 
-  DrawLaneArrow(mesh, lane, grid_unit, 0., start_s_size, h_offset);
   DrawLaneArrow(mesh, lane, grid_unit,
-                lane->length() - finish_s_size, finish_s_size, h_offset);
+                0. + nudge, start_s_size, h_offset);
+  DrawLaneArrow(mesh, lane, grid_unit,
+                lane->length() - finish_s_size - nudge, finish_s_size,
+                h_offset);
 }
 
 
