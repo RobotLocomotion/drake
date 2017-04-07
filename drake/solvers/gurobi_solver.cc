@@ -26,6 +26,76 @@ namespace drake {
 namespace solvers {
 namespace {
 
+// see http://www.gurobi.com/documentation/7.0/examples.pdf
+// First C callbacks example
+
+// TODO(gizatt) This struct can be replaced with a ptr to
+// the GurobiSolver class (or the callback can shell to a 
+// method on that class) once the above TODO(hongkai.dai) is
+// dealt with
+struct GurobiCallbackInformation {
+  MathematicalProgram * prog;
+  std::vector<bool> is_new_variable;
+  GurobiSolver::mipSolCallbackFunction mip_sol_callback;
+  void * mip_sol_callback_usrdata;
+};
+
+static int
+gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
+  GurobiCallbackInformation * callbackInfo = (GurobiCallbackInformation *) usrdata;
+
+  if (where == GRB_CB_POLLING){
+    ;
+  } else if (where == GRB_CB_PRESOLVE) { 
+    ;
+  } else if (where == GRB_CB_SIMPLEX) { 
+    ;
+  } else if (where == GRB_CB_MIP) { 
+    ;
+  } else if (where == GRB_CB_MIPSOL) {
+    int num_total_variables = callbackInfo->is_new_variable.size();
+    std::vector<double> solver_sol_vector(num_total_variables);
+    auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, solver_sol_vector.data());
+    if (error){
+      printf("GRB error: %s\n", GRBgeterrormsg(GRBgetenv(model)));
+    }
+    // TODO(gizatt): If I use the entries from is_new_variable,
+    // I wind up out of alignment. Why? Where are the new vars
+    // coming from?
+    Eigen::VectorXd prog_sol_vector(callbackInfo->prog->num_vars());
+    for (int i = 0; i < num_total_variables; ++i) {
+      prog_sol_vector(i) = solver_sol_vector[i];
+    }
+
+    callbackInfo->prog->SetDecisionVariableValues(prog_sol_vector);
+    
+    auto ret = callbackInfo->mip_sol_callback(*(callbackInfo->prog), callbackInfo->mip_sol_callback_usrdata);
+
+    // The callback may return an assignment of some number of variables as a new
+    // heuristic solution seed. If so, feed those back to Gurobi.
+    if (ret.first.size() > 0){
+      std::vector<double> new_sol(callbackInfo->prog->num_vars(), GRB_UNDEFINED);
+      for (int i = 0; i < ret.first.size(); i++){
+        double val = ret.first[i];
+        int k = callbackInfo->prog->FindDecisionVariableIndex(ret.second[i]);
+        new_sol[k] = val;
+      }
+      error = GRBcbsolution(cbdata, new_sol.data());
+      printf("Injected new sol with error %d, specified %ld vals\n", error, ret.first.size());
+      if (error){
+        printf("GRB error: %s\n", GRBgeterrormsg(GRBgetenv(model)));
+      }
+    }
+  } else if (where == GRB_CB_MIPNODE) {
+    ;
+  } else if (where == GRB_CB_BARRIER) { 
+    ;
+  } else if (where == GRB_CB_MESSAGE) {
+    ;
+  }
+  return 0;
+}
+
 // Checks if the number of variables in the Gurobi model is as expected. This
 // operation can be EXPENSIVE, since it requires calling GRBupdatemodel
 // (Gurobi typically adopts lazy update, where it does not update the model
@@ -592,6 +662,17 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
                                    i, prog.initial_guess()(i));
       DRAKE_DEMAND(!error);
     }
+  }
+
+  GRBupdatemodel(model);
+  
+  if (mip_sol_callback_){
+    GurobiCallbackInformation callbackInfo;
+    callbackInfo.prog = &prog;
+    callbackInfo.is_new_variable = is_new_variable;
+    callbackInfo.mip_sol_callback = mip_sol_callback_;
+    callbackInfo.mip_sol_callback_usrdata = mip_sol_callback_usrdata_;
+    GRBsetcallbackfunc(model, &gurobi_callback, &callbackInfo); 
   }
 
   error = GRBoptimize(model);

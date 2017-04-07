@@ -19,12 +19,28 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   // Gurobi was available during compilation.
   bool available() const override;
 
+  // This passes the model and model environment to a
+  // an external 
+  typedef std::pair<
+    const Eigen::Ref<const Eigen::VectorXd>&,
+    const Eigen::Ref<const VectorXDecisionVariable>&
+  > mipSolCallbackReturn;
+  typedef mipSolCallbackReturn (*mipSolCallbackFunction)(const MathematicalProgram&, void *);
+  void addMIPSolCallback(mipSolCallbackFunction fnc, void * usrdata){
+  	mip_sol_callback_ = fnc;
+  	mip_sol_callback_usrdata_ = usrdata;
+  }
+
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;
 
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
+
+ private:
+  mipSolCallbackFunction mip_sol_callback_ = NULL;
+  void * mip_sol_callback_usrdata_ = NULL;
 };
 
 }  // end namespace solvers
