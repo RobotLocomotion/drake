@@ -415,6 +415,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                        systems::State<T>* state) const override;
 
  private:
+  Matrix3<T> get_inverse_inertia_matrix() const;
   void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
                                     Vector2<T>* fN, Vector2<T>* fF) const;
   void CalcTwoContactSlidingForces(const systems::Context<T>& context,
@@ -441,7 +442,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   void SetAccelerations(const systems::Context<T>& context,
                         systems::VectorBase<T>* const f,
                         const T& fN, const T& fF,
-                        const T& xc, const T& yc) const;
+                        const Vector2<T>& c) const;
   void SetAccelerations(const systems::Context<T>& context,
                         systems::VectorBase<T>* const f,
                         const Vector2<T>& fN, const Vector2<T>& fF,
