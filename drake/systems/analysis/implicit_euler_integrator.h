@@ -16,6 +16,7 @@ namespace systems {
 /**
  * A first-order, fully implicit integrator with second order error estimation.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
  * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
  * this class, please refer to http://drake.mit.edu/cxx_inl.html.
  *

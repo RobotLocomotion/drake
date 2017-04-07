@@ -407,16 +407,16 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
       const T theta = dx_norm / last_dx_norm;
       const T eta = theta / (1 - theta);
 
+      // Look for divergence.
+      if (theta > 1)
+        break;
+
       // Look for convergence using Equation 8.10 from [Hairer, 1996].
       const double k_dot_tol = kappa * this->get_target_accuracy();
       if (eta * dx_norm < k_dot_tol) {
         SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}", eta);
         *xtplus += dx;
         return dt;
-      } else {
-        // Look for divergence.
-        if (theta > 1)
-          break;
       }
     }
 
