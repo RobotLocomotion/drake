@@ -82,7 +82,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @note In Debug builds, this operation aborts if the provided `mass` is
   ///       not strictly positive.
   UnitInertia<T>& SetFromRotationalInertia(
-      const RotationalInertia <T> &I, const T& mass) {
+      const RotationalInertia<T>& I, const T& mass) {
     DRAKE_ASSERT(mass > 0);
     RotationalInertia<T>::operator=(I / mass);
     return *this;

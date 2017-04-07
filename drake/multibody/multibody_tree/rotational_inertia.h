@@ -194,8 +194,11 @@ class RotationalInertia {
   /// approximately equal with each other if:
   ///   - ‖Ia - Ib‖F < p min(‖Ia‖F, ‖Ib‖F)
   ///
-  /// where ‖⋅‖₂ denotes the ℓ²-norm of a vector and ‖⋅‖F the Frobenius norm of
-  /// a matrix, see RotationalInertia::Norm().
+  /// where ‖⋅‖F the Frobenius norm of a matrix, see RotationalInertia::Norm().
+  ///
+  /// @note Given the comparison above is performed relative to the smallest
+  ///       inertia, this method is not appropriate to compare against the zero
+  ///       rotational inertia.
   ///
   /// @param[in] other The spatial inertia to which this spatial inertia will be
   ///                  compared.
