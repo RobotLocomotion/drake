@@ -957,7 +957,7 @@ Vector2<T> Rod2D<T>::CalcStickingContactForces(
 // Returns the inverse of the generalized inertia matrix computed about the
 // center of mass of the rod and expressed in the world frame.
 template <class T>
-Matrix3<T> Rod2D<T>::get_inertia_inertia_matrix() const {
+Matrix3<T> Rod2D<T>::get_inverse_inertia_matrix() const {
   Matrix3<T> iM;
   iM << 1.0 / mass_, 0, 0,
       0, 1.0 / mass_, 0,
@@ -1034,8 +1034,10 @@ void Rod2D<T>::CalcTwoContactSlidingForces(
   const Vector2<T> v_WRo(xdot, ydot);
   const T w_WR(thetadot);
   const Vector2<T> p_WRo(x, y);
-  const Vector2<T> leftdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR, left);
-  const Vector2<T> rightdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR, right);
+  const Vector2<T> leftdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
+                                                            left);
+  const Vector2<T> rightdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
+                                                            right);
 
   // Get the inverse of the generalized inertia matrix.
   Matrix3<T> iM = get_inverse_inertia_matrix();
@@ -1157,7 +1159,7 @@ void Rod2D<T>::CalcTwoContactNoSlidingForces(
   const T& xdot = v(0);
   const T& ydot = v(1);
   const T& thetadot = v(2);
-  
+ 
   // Function name is predicated on two contact points.
   const int nc = 2;
 
@@ -1174,15 +1176,19 @@ void Rod2D<T>::CalcTwoContactNoSlidingForces(
 
   // Find left and right end point locations.
   const T stheta = sin(theta), ctheta = cos(theta);
-  const Vector2<T> left = CalcRodEndpoint(x, y, -1, ctheta, stheta, half_length_);
-  const Vector2<T> right = CalcRodEndpoint(x, y, 1, ctheta, stheta, half_length_);
+  const Vector2<T> left = CalcRodEndpoint(x, y, -1, ctheta, stheta,
+                                          half_length_);
+  const Vector2<T> right = CalcRodEndpoint(x, y, 1, ctheta, stheta,
+                                          half_length_);
 
   // Compute the velocities at the end points.
   const Vector2<T> v_WRo(xdot, ydot);
   const T w_WR(thetadot);
   const Vector2<T> p_WRo(x, y);
-  const Vector2<T> leftdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR, left);
-  const Vector2<T> rightdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR, right);
+  const Vector2<T> leftdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
+                                                            left);
+  const Vector2<T> rightdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
+                                                             right);
 
   // Get the inverse of the generalized inertia matrix.
   Matrix3<T> iM = get_inverse_inertia_matrix();
