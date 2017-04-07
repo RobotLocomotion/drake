@@ -84,11 +84,19 @@ int DoMain() {
       std::make_unique<
           systems::lcm::UtimeMessageToSeconds<lcmt_iiwa_status>>());
 
-  // Waits for the first message, potentially do more initialization here.
+  // Waits for the first message.
   const systems::AbstractValue& first_msg = loop.WaitForMessage();
   double msg_time =
       loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
-  loop.get_mutable_context()->set_time(msg_time);
+
+  systems::Context<double>* diagram_context = loop.get_mutable_context();
+  systems::Context<double>* status_sub_context =
+      diagram->GetMutableSubsystemContext(diagram_context, status_sub);
+  status_sub->SetDefaults(status_sub_context);
+
+  // Explicitly initialization.
+  diagram_context->set_time(msg_time);
+
 
   loop.RunToSecondsAssumingInitialized();
   return 0;
