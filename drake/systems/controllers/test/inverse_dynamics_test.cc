@@ -163,7 +163,7 @@ TEST_F(InverseDynamicsTest, UnderactuatedModelTest) {
       drake::GetDrakePath() + "/examples/SimpleFourBar/FourBar.sdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
-  EXPECT_DEATH(Init(std::move(tree), true), ".*");
+  EXPECT_THROW(Init(std::move(tree), true), std::runtime_error);
 }
 
 }  // namespace
