@@ -144,22 +144,26 @@ class ImplicitIntegratorTest : public ::testing::Test {
   const double constant_force_mag = 10;  // Magnitude of the constant force.
 
   /// Default spring constant. Corresponds to a frequency of 0.1125 cycles per
-  /// second without damping.
+  /// second without damping, assuming that mass = 2 (using formula
+  /// F = sqrt(k*mass)/(2*pi), where k is the spring constant).
   const double spring_k = 1.0;
 
   /// Default spring constant for a stiff spring. Corresponds to a frequency
-  /// of 11,254 cycles per second without damping.
+  /// of 11,254 cycles per second without damping, assuming that mass = 2
+  /// (using formula F = sqrt(k*mass)/(2*pi), where k is the spring constant).
   const double stiff_spring_k = 1e10;
 
   /// Default semi-stiff (in the computational sense) damping coefficient.
-  /// For the "modified" spring and damper, this will result in a damping
-  /// ratio of damping_b / (2*sqrt(mass*stiff_spring_k)) = 0.034, meaning that
+  /// For the "modified" spring and damper, and assuming that mass = 2 and
+  /// stiff_spring_k = 1e10, this will result in a damping ratio of
+  /// damping_b / (2*sqrt(mass*stiff_spring_k)) = 0.035, meaning that
   /// the system is underdamped.
   const double damping_b = 1e4;
 
   /// Default stiff (in the computational sense) damping coefficient. For
-  /// the "vanilla" spring and damper, this will result in a damping
-  /// ratio of stiff_damping_b / (2*sqrt(mass*stiff_spring_k)) = 500, meaning
+  /// the "vanilla" spring and damper, and assuming that mass = 2 and
+  /// stiff_spring_k = 1e10, this will result in a damping ratio of
+  /// stiff_damping_b / (2*sqrt(mass*stiff_spring_k)) = 353, meaning
   /// that the system is overdamped.
   const double stiff_damping_b = 1e8;
 };
