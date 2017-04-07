@@ -32,12 +32,21 @@ drake_cc_library(
 
 drake_cc_library(
     name = "kuka_pick_and_place_monolithic",
-    srcs = [],
+    srcs = ["demo_diagram_builder.cc"],
     hdrs = ["demo_diagram_builder.h",
             "pick_and_place_common.h",
     ],
     deps = [
+        ":iiwa_state_feedback_plan",
+        "//drake/common/trajectories:piecewise_quaternion",
+        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
+        "//drake/lcmtypes:iiwa",
+        "//drake/lcm",
+        "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
     ],

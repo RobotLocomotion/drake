@@ -3,21 +3,26 @@
 #include <memory>
 #include <utility>
 
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/iiwa_state_feedback_plan.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
-using systems::ConstantVectorSource;
 using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
+using systems::DiagramBuilder;
+using lcm::DrakeLcm;
 
 namespace examples {
+using schunk_wsg::SchunkWsgTrajectoryGenerator;
+using schunk_wsg::SchunkWsgStatusSender;
+
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
@@ -85,6 +90,58 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
   auto plant = std::make_unique<RigidBodyPlant<T>>(tree_builder->Build());
   return (std::move(plant));
 }
+
+template <typename T>
+class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
+    : public systems::Diagram<T> {
+ public:
+  /// Constructs the IiwaWsgPlantGeneratorsEstimatorsAndVisualizer.
+  /// This Diagram encapsulses a IiwaAndWsgPlantWithStateEstimator and adds a
+  /// `systems::DrakeVisualizer`, `IiwaStateFeedbackPlanSource`,
+  /// `SchunkWsgTrajectoryGenerator` and  a `SchunkWsgStatusSender` to it. This
+  /// diagram
+  /// is designed for usage within the monolithic pick and place demo.
+  /// @param lcm : A reference to the lcm object to be passed onto the
+  /// Visualizer
+  IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(
+      DrakeLcm* lcm, const double update_interval = 0.001);
+
+  const systems::InputPortDescriptor<T>& get_input_port_iiwa_plan() const {
+    return this->get_input_port(input_port_iiwa_plan_);
+  }
+
+  const systems::InputPortDescriptor<T>& get_input_port_wsg_plan() const {
+    return this->get_input_port(input_port_wsg_plan_);
+  }
+
+  const systems::OutputPortDescriptor<T>& get_output_port_wsg_status() const {
+    return this->get_output_port(output_port_wsg_status_);
+  }
+
+  const systems::OutputPortDescriptor<T>&
+  get_output_port_iiwa_robot_state_est_msg() const {
+    return this->get_output_port(output_port_iiwa_robot_state_msg_);
+  }
+
+  const systems::OutputPortDescriptor<T>&
+  get_output_port_box_robot_state_est_msg() const {
+    return this->get_output_port(output_port_box_robot_state_msg_);
+  }
+
+ private:
+  IiwaAndWsgPlantWithStateEstimator<T>* plant_{nullptr};
+  SchunkWsgStatusSender* wsg_status_sender_{nullptr};
+  PassThrough<T>* pass_through_wsg_state_{nullptr};
+  DrakeVisualizer* drake_visualizer_{nullptr};
+  IiwaStateFeedbackPlanSource* iiwa_trajectory_generator_{nullptr};
+  SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
+
+  int input_port_iiwa_plan_{-1};
+  int input_port_wsg_plan_{-1};
+  int output_port_wsg_status_{-1};
+  int output_port_iiwa_robot_state_msg_{-1};
+  int output_port_box_robot_state_msg_{-1};
+};
 
 }  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
