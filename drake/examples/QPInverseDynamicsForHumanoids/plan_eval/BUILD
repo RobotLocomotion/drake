@@ -17,6 +17,24 @@ package(
 )
 
 drake_cc_library(
+    name = "generic_plan",
+    srcs = [
+        "generic_plan.cc",
+    ],
+    hdrs = [
+        "generic_plan.h",
+    ],
+    deps = [
+        ":plan_eval_utils",
+        "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
+        "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
+        "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
+    ],
+)
+
+drake_cc_library(
     name = "plan_eval_utils",
     srcs = [
         "plan_eval_utils.cc",
@@ -33,9 +51,38 @@ drake_cc_library(
 
 # === test/ ===
 drake_cc_googletest(
+    name = "generic_plan_test",
+    deps = [
+        ":generic_plan",
+        ":test_common",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+    ],
+    data = [
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+)
+
+drake_cc_googletest(
     name = "plan_eval_utils_test",
     deps = [
         ":plan_eval_utils",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_library(
+    name = "test_common",
+    hdrs = [
+        "test/test_common.h",
+    ],
+    deps = [
+        "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
     ],
 )
