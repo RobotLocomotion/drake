@@ -44,6 +44,15 @@ rm libdrake_headers.tar.gz
 cd .. # include/external
 rmdir scratch
 
+# Make a list of the externals.
+extlist=$(mktemp)
+ls -d1 */ | sed "s#/\$##g" > "$extlist"
+# Make a list of the directories for which we have license files.
+liclist=$(mktemp)
+tar tf external_licenses.tar.gz | sed "s#\./##g" | xargs dirname | sort | uniq | grep -v "\." > "$liclist"
+# Confirm those two lists are identical.
+diff "$extlist" "$liclist" || (echo "error: There should be a one-to-many relationship between externals and license files." && false)
+
 # Un-tar the license notices.
 tar -xzf external_licenses.tar.gz
 rm external_licenses.tar.gz
