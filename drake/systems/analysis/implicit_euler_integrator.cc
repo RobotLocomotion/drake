@@ -5,11 +5,8 @@
 namespace drake {
 namespace systems {
 template class ImplicitEulerIntegrator<double>;
+template class ImplicitEulerIntegrator<Eigen::AutoDiffScalar<drake::Vector1d>>;
 }  // namespace systems
 }  // namespace drake
 
-// TODO(edrumwri): correct compile bug from uncommenting line below.
-// template class
-// drake::systems::ImplicitEulerIntegrator<
-// Eigen::AutoDiffScalar<drake::Vector1d>>;
 

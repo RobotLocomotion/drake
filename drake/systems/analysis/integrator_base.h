@@ -844,6 +844,19 @@ class IntegratorBase {
     ++num_ode_evals_;
   }
 
+  /// Evaluates the derivative function (and updates call statistics).
+  /// Subclasses should call this function rather than calling
+  /// system.CalcTimeDerivatives() directly. This version of this function
+  /// exists to allow integrators to count AutoDiff'd systems in derivative
+  /// function evaluations.
+  template <typename U>
+  void CalcTimeDerivatives(const System<U>& system,
+                           const Context<U>& context,
+                           ContinuousState<U>* dxdt) {
+    system.CalcTimeDerivatives(context, dxdt);
+    ++num_ode_evals_;
+  }
+
   /**
    * Sets the working ("in use") accuracy for this integrator. The working
    * accuracy may not be equivalent to the target accuracy when the latter is
@@ -1292,15 +1305,19 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   // Otherwise, if we are going to shrink the step, let's not be shy -- we'll
   // shrink it by at least a factor of kHysteresisLow.
   if (new_step_size < current_step_size) {
-    if (err <= get_accuracy_in_use())
+    if (err <= get_accuracy_in_use()) {
       new_step_size = current_step_size;  // not this time
-    else
-      new_step_size = min(new_step_size, kHysteresisLow * current_step_size);
+    } else {
+      T test_value = kHysteresisLow * current_step_size;
+      new_step_size = min(new_step_size, test_value);
+    }
   }
 
   // Keep the size change within the allowable bounds.
-  new_step_size = min(new_step_size, kMaxGrow * current_step_size);
-  new_step_size = max(new_step_size, kMinShrink * current_step_size);
+  T max_grow_step = kMaxGrow * current_step_size;
+  T min_shrink_step = kMinShrink * current_step_size;
+  new_step_size = min(new_step_size, max_grow_step);
+  new_step_size = max(new_step_size, min_shrink_step);
 
   // Apply user-requested limits on min and max step size.
   // TODO(edrumwri): Introduce some feedback to the user when integrator wants

@@ -252,6 +252,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   void DoResetStatistics() override;
 
  private:
+  VectorX<T> Solve(const MatrixX<T>& A, const VectorX<T>& b);
   T StepOnceAtMostPaired(const T& dt, VectorX<T>* xtplus_euler,
                          VectorX<T>* xtplus_trap);
   T StepAbstract(T dt,
@@ -266,7 +267,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
                           VectorX<T>* xtplus);
   MatrixX<T> ComputeFDiffJacobianF(const VectorX<T>& xtplus);
   MatrixX<T> ComputeCDiffJacobianF(const VectorX<T>& xtplus);
-  Eigen::MatrixXd ComputeADiffJacobianF(const Eigen::VectorXd& xtplus);
+  MatrixX<T> ComputeADiffJacobianF(const VectorX<T>& xtplus);
   VectorX<T> CalcTimeDerivatives(const VectorX<T>& x);
   void CalcErrorNorms(const Context<T>& context, T* q_nrm, T* v_nrm, T* z_nrm);
 
@@ -281,7 +282,11 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   // A simple LU factorization is all that is needed; robustness in the solve
   // comes naturally as dt << 1.
-  Eigen::PartialPivLU<MatrixX<T>> LU_;
+  Eigen::PartialPivLU<MatrixX<double>> LU_;
+
+  // A QR factorization is necessary for automatic differentiation (current
+  // Eigen requirement).
+  Eigen::HouseholderQR<MatrixX<Eigen::AutoDiffScalar<Vector1d>>> QR_;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;

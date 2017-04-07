@@ -66,9 +66,20 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 // Computes the Jacobian of the ordinary differential equations, evaluated at
 // xtplus, taken with respect to the state variables using automatic
 // differentiation.
+template <>
+MatrixX<Eigen::AutoDiffScalar<Vector1d>> ImplicitEulerIntegrator<
+    Eigen::AutoDiffScalar<Vector1d>>::ComputeADiffJacobianF(
+      const VectorX<Eigen::AutoDiffScalar<Vector1d>>& xtplus) {
+        throw std::runtime_error("AutoDiff'd Jacobian not supported from "
+                                     "AutoDiff'd ImplicitEulerIntegrator");
+}
+
+// Computes the Jacobian of the ordinary differential equations, evaluated at
+// xtplus, taken with respect to the state variables using automatic
+// differentiation.
 template <class T>
-Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
-    const Eigen::VectorXd& xtplus) {
+MatrixX<T> ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
+    const VectorX<T>& xtplus) {
   SPDLOG_DEBUG(drake::log(), "  IE Compute Autodiff Jacobian t={}",
                this->get_context().get_time());
   // Create AutoDiff versions of the state vector.
@@ -94,7 +105,7 @@ Eigen::MatrixXd ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
   // Evaluate the derivatives at that state.
   std::unique_ptr<ContinuousState<Scalar>> derivs =
       system->AllocateTimeDerivatives();
-  this->CalcTimeDerivatives(*context, derivs.get());
+  IntegratorBase<T>::CalcTimeDerivatives(*system, *context, derivs.get());
   num_jacobian_function_evaluations_++;
 
   // Get the Jacobian.
@@ -110,7 +121,7 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives(
   Context<T>* context = this->get_mutable_context();
   context->get_mutable_continuous_state()->get_mutable_vector()->
       SetFromVector(x);
-  this->CalcTimeDerivatives(*context, derivs_.get());
+  IntegratorBase<T>::CalcTimeDerivatives(*context, derivs_.get());
   return derivs_->CopyToVector();
 }
 
@@ -120,8 +131,10 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives(
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeFDiffJacobianF(
     const VectorX<T>& xtplus) {
+  using std::abs;
+
   // Set epsilon to the square root of machine precision.
-  double eps = std::sqrt(std::numeric_limits<double>::epsilon());
+  const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
   Context<T>* context = this->get_mutable_context();
   const int n = context->get_continuous_state()->size();
@@ -141,8 +154,10 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeFDiffJacobianF(
   VectorX<T> xtplus_prime = xtplus;
   for (int i = 0; i < n; ++i) {
     // Compute a good increment to the dimension.
-    const double abs_xi = std::abs(xtplus(i));
-    double dxi = (abs_xi > 0) ? eps * abs_xi : eps;
+    const T abs_xi = abs(xtplus(i));
+    T dxi(eps * abs_xi);
+    if (abs_xi <= 0)
+      dxi = eps;
 
     // Update xtplus', minimizing the effect of roundoff error.
     xtplus_prime(i) = xtplus(i) + dxi;
@@ -165,9 +180,11 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeFDiffJacobianF(
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCDiffJacobianF(
     const VectorX<T>& xtplus) {
+  using std::abs;
+
   // Cube root of machine precision (indicated by theory) seems a bit coarse.
   // Pick eps halfway between square root and cube root.
-  double eps = std::pow(std::numeric_limits<double>::epsilon(), 5.0/12);
+  const double eps = std::pow(std::numeric_limits<double>::epsilon(), 5.0/12);
 
   Context<T>* context = this->get_mutable_context();
   const int n = context->get_continuous_state()->size();
@@ -182,12 +199,14 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCDiffJacobianF(
   VectorX<T> xtplus_prime = xtplus;
   for (int i = 0; i < n; ++i) {
     // Compute a good increment to the dimension.
-    const double abs_xi = std::abs(xtplus(i));
-    double dxi = (abs_xi > 0) ? eps * abs_xi : eps;
+    const T abs_xi = abs(xtplus(i));
+    T dxi(eps * abs_xi);
+    if (abs_xi <= 0)
+      dxi = eps;
 
     // Update xtplus', minimizing the effect of roundoff error.
     xtplus_prime(i) = xtplus(i) + dxi;
-    const double dxi_plus = xtplus_prime(i) - xtplus(i);
+    const T dxi_plus = xtplus_prime(i) - xtplus(i);
 
     // Compute f(x+dx).
     VectorX<T> fprime_plus = CalcTimeDerivatives(xtplus_prime);
@@ -195,7 +214,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCDiffJacobianF(
 
     // Update xtplus' again, minimizing the effect of roundoff error.
     xtplus_prime(i) = xtplus(i) - dxi;
-    const double dxi_minus = xtplus(i) - xtplus_prime(i);
+    const T dxi_minus = xtplus(i) - xtplus_prime(i);
 
     // Compute f(x-dx).
     VectorX<T> fprime_minus = CalcTimeDerivatives(xtplus_prime);
@@ -261,6 +280,24 @@ void ImplicitEulerIntegrator<T>::CalcErrorNorms(const Context<T>& context,
   *q_nrm = weighted_dq_->CopyToVector().template lpNorm<Eigen::Infinity>();
 }
 
+// Solves a linear system
+template <class T>
+VectorX<T> ImplicitEulerIntegrator<T>::Solve(const MatrixX<T>& A,
+                                             const VectorX<T>& b) {
+  LU_.compute(A);
+  return LU_.solve(b);
+}
+
+// Solves a linear system
+template <>
+VectorX<Eigen::AutoDiffScalar<Vector1d>>
+  ImplicitEulerIntegrator<Eigen::AutoDiffScalar<Vector1d>>::Solve(
+      const MatrixX<Eigen::AutoDiffScalar<Vector1d>>& A,
+      const VectorX<Eigen::AutoDiffScalar<Vector1d>>& b) {
+  QR_.compute(A);
+  return QR_.solve(b);
+}
+
 // Performs the bulk of the stepping computation for both implicit Euler and
 // implicit trapezoid method- they're very similar.
 // @param dt the integration step size to attempt.
@@ -309,7 +346,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     SPDLOG_DEBUG(drake::log(), "StepAbstract()-- taking explicit Euler step");
 
     // Update the state.
-    this->CalcTimeDerivatives(*context, derivs_.get());
+    IntegratorBase<T>::CalcTimeDerivatives(*context, derivs_.get());
     const T h = this->get_minimum_step_size();
     context->get_mutable_continuous_state()->SetFromVector(
         xt0 + h*derivs_->CopyToVector());
@@ -330,7 +367,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
 
   // Initialize the "last" state update norm; this will be used to detect
   // convergence.
-  double last_dx_norm = std::numeric_limits<double>::infinity();
+  T last_dx_norm = std::numeric_limits<double>::infinity();
 
   // Copy the Jacobian matrix. Copying the Jacobian allows this same step to
   // be repeated multiple times at smaller steps (if necessary) without
@@ -358,9 +395,8 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     const int n = xtplus->size();
     A_ = J * (dt / scale) - MatrixX<T>::Identity(n, n);
     num_iter_refactors_++;
-    LU_.compute(A_);
-    VectorX<T> dx = LU_.solve(goutput);
-    double dx_norm = dx.norm();
+    VectorX<T> dx = Solve(A_, goutput);
+    T dx_norm = dx.norm();
 
     // Compute the convergence rate and check convergence.
     // [Hairer, 1996] notes that this convergence strategy should only be
@@ -370,8 +406,8 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
       // efficiently on a number of test problems with *RADAU5* (a fourth order
       // implicit integrator), p. 121. We select a value halfway in-between.
       const double kappa = 0.05;
-      const double theta = dx_norm / last_dx_norm;
-      const double eta = theta / (1 - theta);
+      const T theta = dx_norm / last_dx_norm;
+      const T eta = theta / (1 - theta);
 
       // Look for convergence using Equation 8.10 from [Hairer, 1996].
       const double k_dot_tol = kappa * this->get_target_accuracy();

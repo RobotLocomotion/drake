@@ -197,7 +197,7 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GT(integrator->get_previous_integration_step_size(), 0.0);
   EXPECT_GT(integrator->get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator->get_num_steps_taken(), 0);
-  EXPECT_GT(integrator->get_num_function_evaluations(), 0);
+  EXPECT_GT(integrator->get_num_derivative_evaluations(), 0);
   EXPECT_GT(integrator->get_num_error_estimator_derivative_evaluations(), 0);
   EXPECT_GT(integrator->get_num_derivative_evaluations_for_jacobian(), 0);
   EXPECT_GT(integrator->
