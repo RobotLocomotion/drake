@@ -1159,7 +1159,7 @@ void Rod2D<T>::CalcTwoContactNoSlidingForces(
   const T& xdot = v(0);
   const T& ydot = v(1);
   const T& thetadot = v(2);
- 
+
   // Function name is predicated on two contact points.
   const int nc = 2;
 
