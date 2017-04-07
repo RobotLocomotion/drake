@@ -83,7 +83,7 @@ class ManipulatorInverseDynamicsController
    * Returns the output port for a lcm message that contains plan eval's
    * debug data.
    */
-  const systems::OutputPortDescriptor<double>&
+  const systems::OutputPort<double>&
   get_output_port_plan_eval_debug_info() const {
     return systems::Diagram<double>::get_output_port(
         output_port_index_plan_eval_debug_);
@@ -93,7 +93,7 @@ class ManipulatorInverseDynamicsController
    * Returns the output port for a lcm message that contains qp inverse
    * dynamics' debug data.
    */
-  const systems::OutputPortDescriptor<double>&
+  const systems::OutputPort<double>&
   get_output_port_inverse_dynamics_debug_info() const {
     return systems::Diagram<double>::get_output_port(
         output_port_index_inverse_dynamics_debug_);
@@ -102,7 +102,7 @@ class ManipulatorInverseDynamicsController
   /**
    * Returns the output port for QpInput from plan eval.
    */
-  const systems::OutputPortDescriptor<double>& get_output_port_qp_input()
+  const systems::OutputPort<double>& get_output_port_qp_input()
       const {
     return systems::Diagram<double>::get_output_port(
         output_port_index_qp_input_);
@@ -111,7 +111,7 @@ class ManipulatorInverseDynamicsController
   /**
    * Returns the output port for QpOutput from inverse dynamics.
    */
-  const systems::OutputPortDescriptor<double>& get_output_port_qp_output()
+  const systems::OutputPort<double>& get_output_port_qp_output()
       const {
     return systems::Diagram<double>::get_output_port(
         output_port_index_qp_output_);

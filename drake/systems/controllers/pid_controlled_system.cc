@@ -72,7 +72,7 @@ template <typename T>
 typename PidControlledSystem<T>::ConnectResult
 PidControlledSystem<T>::ConnectController(
     const InputPortDescriptor<T>& plant_input,
-    const OutputPortDescriptor<T>& plant_output,
+    const OutputPort<T>& plant_output,
     std::unique_ptr<MatrixGain<T>> feedback_selector, const Eigen::VectorXd& Kp,
     const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
     DiagramBuilder<T>* builder) {
@@ -101,7 +101,7 @@ template <typename T>
 typename PidControlledSystem<T>::ConnectResult
 PidControlledSystem<T>::ConnectControllerWithInputSaturation(
     const InputPortDescriptor<T>& plant_input,
-    const OutputPortDescriptor<T>& plant_output,
+    const OutputPort<T>& plant_output,
     std::unique_ptr<MatrixGain<T>> feedback_selector, const Eigen::VectorXd& Kp,
     const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
     const VectorX<T>& min_plant_input, const VectorX<T>& max_plant_input,

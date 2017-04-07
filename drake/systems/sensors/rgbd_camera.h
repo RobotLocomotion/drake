@@ -173,19 +173,19 @@ class RgbdCamera : public LeafSystem<double> {
 
   /// Returns a descriptor of the abstract valued output port that contains an
   /// BGRA image of the type Image<uint8_t>.
-  const OutputPortDescriptor<double>& color_image_output_port() const;
+  const OutputPort<double>& color_image_output_port() const;
 
   /// Returns a descriptor of the abstract valued output port that contains an
   /// Image<float>.
-  const OutputPortDescriptor<double>& depth_image_output_port() const;
+  const OutputPort<double>& depth_image_output_port() const;
 
   /// Returns a descriptor of the abstract valued output port that contains an
   /// label image of the type Image<int16_t>.
-  const OutputPortDescriptor<double>& label_image_output_port() const;
+  const OutputPort<double>& label_image_output_port() const;
 
   /// Returns a descriptor of the vector valued output port that contains an
   /// PoseVector.
-  const OutputPortDescriptor<double>& camera_base_pose_output_port() const;
+  const OutputPort<double>& camera_base_pose_output_port() const;
 
  protected:
   /// Updates all the model frames for the renderer and outputs the rendered

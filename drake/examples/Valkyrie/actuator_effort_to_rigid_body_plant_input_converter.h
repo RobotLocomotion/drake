@@ -12,12 +12,6 @@ namespace systems {
 template <typename T>
 class ActuatorEffortToRigidBodyPlantInputConverter : public LeafSystem<T> {
  public:
-  using System<T>::DeclareInputPort;
-  using System<T>::DeclareOutputPort;
-  using System<T>::set_name;
-  using System<T>::EvalVectorInput;
-  using System<T>::get_input_port;
-
   ActuatorEffortToRigidBodyPlantInputConverter(
       const std::vector<const RigidBodyActuator*>& ordered_actuators);
 
@@ -37,12 +31,12 @@ class ActuatorEffortToRigidBodyPlantInputConverter : public LeafSystem<T> {
       const RigidBodyActuator& actuator);
 
  private:
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
+  // This is the calculator method for the output port.
+  void OutputActuation(const Context<T>& context,
+                       BasicVector<T>* output) const;
 
   std::vector<const RigidBodyActuator*> ordered_actuators_;
   const std::map<const RigidBodyActuator*, int> effort_ports_indices_;
-  int rigid_body_plant_input_port_index_;
   std::map<const RigidBodyActuator*, int> DeclareEffortInputPorts(
       const std::vector<const RigidBodyActuator*>& vector);
 };

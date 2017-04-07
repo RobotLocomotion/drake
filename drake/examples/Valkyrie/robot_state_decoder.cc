@@ -34,21 +34,22 @@ RobotStateDecoder::RobotStateDecoder(const RigidBodyTree<double>& tree)
                          ? tree.bodies[1].get()
                          : nullptr),
       robot_state_message_port_index_(DeclareAbstractInputPort().get_index()),
-      kinematics_cache_port_index_(DeclareAbstractOutputPort().get_index()),
       joint_name_to_body_(CreateJointNameToBodyMap(tree)) {
+  DeclareAbstractOutputPort(
+      KinematicsCache<double>(tree_.CreateKinematicsCache()),
+      &RobotStateDecoder::OutputKinematics);
   set_name("RobotStateDecoder");
 }
 
-void RobotStateDecoder::DoCalcOutput(const Context<double>& context,
-                                     SystemOutput<double>* output) const {
+void RobotStateDecoder::OutputKinematics(const Context<double>& context,
+                                     KinematicsCache<double>* output) const {
   // Input: robot_state_t message.
   const auto& message =
       EvalAbstractInput(context, robot_state_message_port_index_)
           ->GetValue<robot_state_t>();
 
   // Output: KinematicsCache.
-  auto& kinematics_cache = output->GetMutableData(kinematics_cache_port_index_)
-                               ->GetMutableValue<KinematicsCache<double>>();
+  auto& kinematics_cache = *output;
 
   // TODO(tkoolen): don't allocate anew.
   VectorXd q(tree_.get_num_positions());
@@ -160,12 +161,6 @@ void RobotStateDecoder::DoCalcOutput(const Context<double>& context,
 
   kinematics_cache.initialize(q, v);
   tree_.doKinematics(kinematics_cache, true);
-}
-
-std::unique_ptr<AbstractValue> RobotStateDecoder::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>&) const {
-  return std::make_unique<Value<KinematicsCache<double>>>(
-      tree_.CreateKinematicsCache());
 }
 
 std::map<std::string, const RigidBody<double>*>

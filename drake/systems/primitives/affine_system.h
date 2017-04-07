@@ -33,7 +33,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   const InputPortDescriptor<T>& get_input_port() const;
 
   /// Returns the output port containing the output state.
-  const OutputPortDescriptor<T>& get_output_port() const;
+  const OutputPort<T>& get_output_port() const;
 
   /// @name Methods To Be Implemented by Subclasses
   ///
@@ -61,8 +61,8 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   /// Computes @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f] with by calling
   /// `C(t)`, `D(t)`, and `y0(t)` with runtime size checks.  Derived classes
   /// may override this for performance reasons.
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
+  virtual void CalcOutputY(const Context<T>& context,
+                           BasicVector<T>* output_vector) const;
 
   /// Computes @f[ \dot{x}(t) = A(t) x(t) + B(t) u(t) + f_0(t), @f] with by
   /// calling `A(t)`, `B(t)`, and `f0(t)` with runtime size checks.  Derived
@@ -161,8 +161,8 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   /// @}
 
  private:
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const final;
+  void CalcOutputY(const Context<T>& context,
+                   BasicVector<T>* output_vector) const final;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final;

@@ -26,7 +26,7 @@ using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::InputPortDescriptor;
-using systems::OutputPortDescriptor;
+using systems::OutputPort;
 using systems::RigidBodyPlant;
 
 namespace examples {

@@ -39,23 +39,6 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
                      const std::string& param_file_name, double dt);
 
   /**
-   * Allocates abstract value types for output @p descriptor. This function
-   * allocates QpInput when @p matches the port for QpInput, and calls
-   * ExtendedAllocateOutputAbstract() to allocate all the other derived class'
-   * custom output types.
-   */
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const final;
-
-  /**
-   * Copies QpInput from abstract state to the corresponding output port. Then
-   * calls DoExtendedCalcOutput() to handle all the other derived class' custom
-   * outputs.
-   */
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const final;
-
-  /**
    * Calls DoExtendedCalcUnrestrictedUpdate().
    */
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
@@ -74,7 +57,7 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   /**
    * Returns output port for QpInput.
    */
-  inline const systems::OutputPortDescriptor<double>& get_output_port_qp_input()
+  inline const systems::OutputPort<double>& get_output_port_qp_input()
       const {
     return get_output_port(output_port_index_qp_input_);
   }
@@ -107,20 +90,6 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   virtual int get_num_extended_abstract_states() const = 0;
 
   /**
-   * Derived classes need to implement this to computed custom outputs.
-   */
-  virtual void DoExtendedCalcOutput(
-      const systems::Context<double>& context,
-      systems::SystemOutput<double>* output) const = 0;
-
-  /**
-   * Derived classes need to implement this to allocate custom outputs.
-   */
-  virtual std::unique_ptr<systems::AbstractValue>
-  ExtendedAllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const = 0;
-
-  /**
    * Derived classes need to implement this for custom behaviors.
    */
   virtual void DoExtendedCalcUnrestrictedUpdate(
@@ -148,6 +117,10 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   }
 
  private:
+  // Copies QpInput from abstract state to the corresponding output port.
+  void CopyOutQpInput(const systems::Context<double>& context,
+                      QpInput* output) const;
+
   const RigidBodyTree<double>& robot_;
   const double control_dt_{};
 

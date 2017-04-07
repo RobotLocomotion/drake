@@ -33,9 +33,6 @@ class SystemWithAbstractState : public LeafSystem<double> {
   std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
     return std::make_unique<AbstractValues>(PackValue(42));
   }
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
 };
 
 class SystemWithNumericParameters : public LeafSystem<double> {
@@ -48,9 +45,6 @@ class SystemWithNumericParameters : public LeafSystem<double> {
     return std::make_unique<Parameters<double>>(
         std::make_unique<BasicVector<double>>(2));
   }
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
 };
 
 class SystemWithAbstractParameters : public LeafSystem<double> {
@@ -62,9 +56,6 @@ class SystemWithAbstractParameters : public LeafSystem<double> {
   std::unique_ptr<Parameters<double>> AllocateParameters() const override {
     return std::make_unique<Parameters<double>>(PackValue<int>(2048));
   }
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
 };
 
 class DiagramContextTest : public ::testing::Test {

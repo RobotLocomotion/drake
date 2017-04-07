@@ -156,7 +156,7 @@ class PidControlledSystem : public Diagram<T> {
   /// (adders, multiplexers, gains, etc.) as needed.
   static ConnectResult ConnectController(
       const InputPortDescriptor<T>& plant_input,
-      const OutputPortDescriptor<T>& plant_output,
+      const OutputPort<T>& plant_output,
       std::unique_ptr<MatrixGain<T>> feedback_selector,
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
@@ -168,7 +168,7 @@ class PidControlledSystem : public Diagram<T> {
   /// may result in integral windup effects.
   static ConnectResult ConnectControllerWithInputSaturation(
       const InputPortDescriptor<T>& plant_input,
-      const OutputPortDescriptor<T>& plant_output,
+      const OutputPort<T>& plant_output,
       std::unique_ptr<MatrixGain<T>> feedback_selector,
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,

@@ -36,7 +36,10 @@ GripperAction::GripperAction(double desired_update_interval)
     : ActionPrimitive(desired_update_interval,
                       1 /* action_primitive_state_index */),
       internal_state_index_(0),
-      plan_output_port(this->DeclareAbstractOutputPort().get_index()),
+      plan_output_port(this->DeclareAbstractOutputPort(
+                               &GripperAction::AllocatePlanOutputPort,
+                               &GripperAction::OutputCurrentPlan)
+                           .get_index()),
       input_port_primitive_input_(
           this->DeclareAbstractInputPort().get_index()) {}
 
@@ -48,18 +51,12 @@ GripperAction::AllocateExtendedAbstractState() const {
 
   return return_value;
 }
-std::unique_ptr<systems::AbstractValue>
-GripperAction::ExtendedAllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  std::unique_ptr<systems::AbstractValue> return_value;
-  if (descriptor.get_index() == plan_output_port) {
-    lcmt_schunk_wsg_command default_command;
-    default_command.target_position_mm = kMaxWidthInMm;
-    default_command.force = 0.0;
-    return_value =
-        systems::AbstractValue::Make<lcmt_schunk_wsg_command>(default_command);
-  }
-  return return_value;
+
+lcmt_schunk_wsg_command GripperAction::AllocatePlanOutputPort() const {
+  lcmt_schunk_wsg_command default_command;
+  default_command.target_position_mm = kMaxWidthInMm;
+  default_command.force = 0.0;
+  return default_command;
 }
 
 void GripperAction::SetExtendedDefaultState(
@@ -74,6 +71,7 @@ void GripperAction::SetExtendedDefaultState(
   wsg_action_state.plan_duration = 0;
   wsg_action_state.previous_input = GripperActionInput::UNDEFINED;
 }
+
 void GripperAction::DoExtendedCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
@@ -123,16 +121,13 @@ void GripperAction::DoExtendedCalcUnrestrictedUpdate(
   }
 }
 
-void GripperAction::DoExtendedCalcOutput(
+void GripperAction::OutputCurrentPlan(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
-  lcmt_schunk_wsg_command& wsg_plan_output =
-      output->GetMutableData(plan_output_port)
-          ->GetMutableValue<lcmt_schunk_wsg_command>();
+    lcmt_schunk_wsg_command* wsg_plan_output) const {
 
   const InternalState& internal_state =
       context.get_abstract_state<InternalState>(0);
-  wsg_plan_output = internal_state.current_plan;
+  *wsg_plan_output = internal_state.current_plan;
 }
 
 }  // namespace monolithic_pick_and_place

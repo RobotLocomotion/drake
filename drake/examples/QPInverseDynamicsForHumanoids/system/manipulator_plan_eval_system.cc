@@ -27,7 +27,8 @@ ManipulatorPlanEvalSystem::ManipulatorPlanEvalSystem(
   input_port_index_desired_acceleration_ =
       DeclareInputPort(systems::kVectorValued, kAccDim).get_index();
 
-  output_port_index_debug_info_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_debug_info_ = DeclareAbstractOutputPort(
+      &ManipulatorPlanEvalSystem::OutputDebugInfo).get_index();
   set_name("ManipulatorPlanEvalSystem");
 
   abs_state_index_plan_ =
@@ -53,13 +54,11 @@ void ManipulatorPlanEvalSystem::Initialize(systems::State<double>* state) {
                                         get_alias_groups());
 }
 
-void ManipulatorPlanEvalSystem::DoExtendedCalcOutput(
+void ManipulatorPlanEvalSystem::OutputDebugInfo(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+    lcmt_plan_eval_debug_info* output) const {
   // Copies additional debugging info from abstract state to output.
-  lcmt_plan_eval_debug_info& debug =
-      output->GetMutableData(output_port_index_debug_info_)
-          ->GetMutableValue<lcmt_plan_eval_debug_info>();
+  lcmt_plan_eval_debug_info& debug = *output;
   debug = context.get_abstract_state<lcmt_plan_eval_debug_info>(
       abs_state_index_debug_);
 }
@@ -116,18 +115,6 @@ void ManipulatorPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
     debug.nominal_v[i] = plan.desired_velocity()[i];
     debug.nominal_vd[i] = plan.desired_acceleration()[i];
   }
-}
-
-std::unique_ptr<systems::AbstractValue>
-ManipulatorPlanEvalSystem::ExtendedAllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  if (descriptor.get_index() == output_port_index_debug_info_) {
-    return systems::AbstractValue::Make<lcmt_plan_eval_debug_info>(
-        lcmt_plan_eval_debug_info());
-  }
-  std::string msg = "ManipulatorPlanEvalSystem does not have outputport " +
-                    std::to_string(descriptor.get_index());
-  DRAKE_ABORT_MSG(msg.c_str());
 }
 
 }  // namespace qp_inverse_dynamics

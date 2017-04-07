@@ -48,9 +48,9 @@ MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s)
       ego_acceleration_index_{
           this->DeclareVectorInputPort(BasicVector<T>(1)).get_index()},
       traffic_index_{this->DeclareAbstractInputPort().get_index()},
-      lane_index_{this->DeclareAbstractOutputPort(
-                          systems::Value<LaneDirection>(LaneDirection()))
-                      .get_index()} {
+      lane_index_{
+          this->DeclareAbstractOutputPort(&MobilPlanner::CalcLaneDirection)
+              .get_index()} {
   // Validate the provided RoadGeometry.
   DRAKE_DEMAND(road_.num_junctions() > 0);
   DRAKE_DEMAND(road_.junction(0)->num_segments() > 0);
@@ -82,13 +82,13 @@ const systems::InputPortDescriptor<T>& MobilPlanner<T>::traffic_input() const {
 }
 
 template <typename T>
-const systems::OutputPortDescriptor<T>& MobilPlanner<T>::lane_output() const {
+const systems::OutputPort<T>& MobilPlanner<T>::lane_output() const {
   return systems::System<T>::get_output_port(lane_index_);
 }
 
 template <typename T>
-void MobilPlanner<T>::DoCalcOutput(const systems::Context<T>& context,
-                                   systems::SystemOutput<T>* output) const {
+void MobilPlanner<T>::CalcLaneDirection(const systems::Context<T>& context,
+                                        LaneDirection* lane_direction) const {
   // Obtain the parameters.
   const IdmPlannerParameters<T>& idm_params =
       this->template GetNumericParameter<IdmPlannerParameters>(context,
@@ -116,17 +116,13 @@ void MobilPlanner<T>::DoCalcOutput(const systems::Context<T>& context,
       this->template EvalInputValue<PoseBundle<T>>(context, traffic_index_);
   DRAKE_ASSERT(traffic_poses != nullptr);
 
-  LaneDirection* lane_direction =
-      &output->GetMutableData(lane_index_)
-           ->template GetMutableValue<LaneDirection>();
-  DRAKE_ASSERT(lane_direction != nullptr);
-
-  ImplDoCalcLane(*ego_pose, *ego_velocity, *traffic_poses, *ego_accel_command,
-                 idm_params, mobil_params, lane_direction);
+  ImplCalcLaneDirection(*ego_pose, *ego_velocity, *traffic_poses,
+                        *ego_accel_command, idm_params, mobil_params,
+                        lane_direction);
 }
 
 template <typename T>
-void MobilPlanner<T>::ImplDoCalcLane(
+void MobilPlanner<T>::ImplCalcLaneDirection(
     const PoseVector<T>& ego_pose, const FrameVelocity<T>& ego_velocity,
     const PoseBundle<T>& traffic_poses, const BasicVector<T>& ego_accel_command,
     const IdmPlannerParameters<T>& idm_params,

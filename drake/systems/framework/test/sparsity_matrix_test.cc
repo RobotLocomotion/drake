@@ -17,9 +17,14 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
   SparseSystem() {
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
-    this->DeclareOutputPort(kVectorValued, kSize);
-    this->DeclareOutputPort(kVectorValued, kSize);
-    this->DeclareAbstractOutputPort();
+
+    this->DeclareVectorOutputPort(
+        BasicVector<symbolic::Expression>(kSize),
+        &SparseSystem::CalcY0);
+    this->DeclareVectorOutputPort(
+        BasicVector<symbolic::Expression>(kSize),
+        &SparseSystem::CalcY1);
+    this->DeclareAbstractOutputPort(42, &SparseSystem::CalcNothing);
 
     this->DeclareContinuousState(kSize);
     this->DeclareDiscreteState(kSize);
@@ -31,33 +36,34 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
 
   ~SparseSystem() override {}
 
- protected:
-  void DoCalcOutput(const Context<symbolic::Expression>& context,
-                    SystemOutput<symbolic::Expression>* output) const override {
+ private:
+  // Calculation function for output port 0.
+  void CalcY0(const Context<symbolic::Expression>& context,
+              BasicVector<symbolic::Expression>* y0) const {
     const auto& u0 = *(this->EvalVectorInput(context, 0));
     const auto& u1 = *(this->EvalVectorInput(context, 1));
-    auto& y0 = *(output->GetMutableVectorData(0));
-    auto& y1 = *(output->GetMutableVectorData(1));
-
     const auto& xc = context.get_continuous_state_vector();
-    const auto& xd = *(context.get_discrete_state(0));
 
     // Output 0 depends on input 0 and the continuous state.  Input 1 appears in
     // an intermediate computation, but is ultimately cancelled out.
-    y0.set_value(u1.get_value());
-    y0.PlusEqScaled(1, u0);
-    y0.PlusEqScaled(-1, u1);
-    y0.PlusEqScaled(12, xc);
+    y0->set_value(u1.get_value());
+    y0->PlusEqScaled(1, u0);
+    y0->PlusEqScaled(-1, u1);
+    y0->PlusEqScaled(12, xc);
+  }
+
+  // Calculation function for output port 1.
+  void CalcY1(const Context<symbolic::Expression>& context,
+              BasicVector<symbolic::Expression>* y1) const {
+    const auto& u0 = *(this->EvalVectorInput(context, 0));
+    const auto& u1 = *(this->EvalVectorInput(context, 1));
+    const auto& xd = *(context.get_discrete_state(0));
 
     // Output 1 depends on both inputs and the discrete state.
-    y1.set_value(u0.get_value() + u1.get_value() + xd.get_value());
+    y1->set_value(u0.get_value() + u1.get_value() + xd.get_value());
   }
 
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<symbolic::Expression>& descriptor)
-  const override {
-    return AbstractValue::Make<int>(42);
-  }
+  void CalcNothing(const Context<symbolic::Expression>& context, int*) const {}
 };
 
 class SparsityMatrixTest : public ::testing::Test {

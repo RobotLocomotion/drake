@@ -21,7 +21,8 @@ Multiplexer<T>::Multiplexer(std::vector<int> input_sizes)
   }
   const int output_size = std::accumulate(
       input_sizes.begin(), input_sizes.end(), 0, std::plus<int>{});
-  this->DeclareOutputPort(kVectorValued, output_size);
+  this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+                                &Multiplexer::CombineInputsToOutput);
 }
 
 template <typename T>
@@ -30,13 +31,14 @@ Multiplexer<T>::Multiplexer(const systems::BasicVector<T>& model_vector)
   for (int i = 0; i < model_vector.size(); ++i) {
     this->DeclareInputPort(kVectorValued, 1);
   }
-  this->DeclareVectorOutputPort(model_vector);
+  this->DeclareVectorOutputPort(model_vector,
+                                &Multiplexer::CombineInputsToOutput);
 }
 
 template <typename T>
-void Multiplexer<T>::DoCalcOutput(const Context<T>& context,
-                                  SystemOutput<T>* output) const {
-  auto output_vector = System<T>::GetMutableOutputVector(output, 0);
+void Multiplexer<T>::CombineInputsToOutput(
+    const Context<T>& context, BasicVector<T>* output) const {
+  auto output_vector = output->get_mutable_value();
   int output_vector_index{0};
   for (int i = 0; i < this->get_num_input_ports(); ++i) {
     const int input_size = input_sizes_[i];

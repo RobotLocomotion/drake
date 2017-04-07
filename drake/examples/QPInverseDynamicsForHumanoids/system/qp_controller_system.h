@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/lcmt_inverse_dynamics_debug_info.hpp"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -25,12 +26,6 @@ class QpControllerSystem : public systems::LeafSystem<double> {
    * @param dt Control cycle period.
    */
   QpControllerSystem(const RigidBodyTree<double>& robot, double dt);
-
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;
@@ -54,7 +49,7 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   /**
    * Returns the output port for QpOutput.
    */
-  inline const systems::OutputPortDescriptor<double>&
+  inline const systems::OutputPort<double>&
   get_output_port_qp_output() const {
     return get_output_port(output_port_index_qp_output_);
   }
@@ -62,7 +57,7 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   /**
    * Returns the output port for lcmt_inverse_dynamics_debug_info.
    */
-  inline const systems::OutputPortDescriptor<double>&
+  inline const systems::OutputPort<double>&
   get_output_port_debug_info() const {
     return get_output_port(output_port_index_debug_info_);
   }
@@ -70,6 +65,14 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   inline double get_control_dt() const { return control_dt_; }
 
  private:
+  // Copies the QpOutput state variable to the output argument.
+  void CopyOutQpOutput(const systems::Context<double>& context,
+                       QpOutput* output) const;
+
+  // Copies the debug info state variable to the output argument.
+  void CopyOutDebugInfo(const systems::Context<double>& context,
+                        lcmt_inverse_dynamics_debug_info* output) const;
+
   const RigidBodyTree<double>& robot_;
   const double control_dt_{};
 

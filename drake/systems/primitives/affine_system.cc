@@ -35,8 +35,12 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(int num_states,
     this->DeclareDiscreteState(num_states_);
     this->DeclarePeriodicDiscreteUpdate(time_period_, 0.0);
   }
-  if (num_inputs_ > 0) this->DeclareInputPort(kVectorValued, num_inputs_);
-  if (num_outputs_ > 0) this->DeclareOutputPort(kVectorValued, num_outputs_);
+  if (num_inputs_ > 0)
+    this->DeclareInputPort(kVectorValued, num_inputs_);
+  if (num_outputs_ > 0) {
+    this->DeclareVectorOutputPort(BasicVector<T>(num_outputs_),
+                                  &TimeVaryingAffineSystem::CalcOutputY);
+  }
 }
 
 template <typename T>
@@ -47,20 +51,16 @@ const InputPortDescriptor<T>& TimeVaryingAffineSystem<T>::get_input_port()
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& TimeVaryingAffineSystem<T>::get_output_port()
+const OutputPort<T>& TimeVaryingAffineSystem<T>::get_output_port()
     const {
   DRAKE_DEMAND(num_outputs_ > 0);
   return System<T>::get_output_port(0);
 }
 
+// This is the default implementation for this virtual method.
 template <typename T>
-void TimeVaryingAffineSystem<T>::DoCalcOutput(const Context<T>& context,
-                                              SystemOutput<T>* output) const {
-  if (num_outputs_ == 0) return;
-
-  // Evaluates the state output port.
-  BasicVector<T>* output_vector = output->GetMutableVectorData(0);
-
+void TimeVaryingAffineSystem<T>::CalcOutputY(
+    const Context<T>& context, BasicVector<T>* output_vector) const {
   const T t = context.get_time();
 
   VectorX<T> y = y0(t);
@@ -190,13 +190,8 @@ AffineSystem<symbolic::Expression>* AffineSystem<T>::DoToSymbolic() const {
 }
 
 template <typename T>
-void AffineSystem<T>::DoCalcOutput(const Context<T>& context,
-                                   SystemOutput<T>* output) const {
-  if (this->num_outputs() == 0) return;
-
-  // Evaluates the state output port.
-  BasicVector<T>* output_vector = output->GetMutableVectorData(0);
-
+void AffineSystem<T>::CalcOutputY(const Context<T>& context,
+                                  BasicVector<T>* output_vector) const {
   const auto& x =
       dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
           .get_value();

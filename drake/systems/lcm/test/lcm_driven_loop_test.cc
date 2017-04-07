@@ -36,15 +36,16 @@ class DummySys : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySys);
   DummySys() {
     DeclareAbstractInputPort();
-    DeclareOutputPort(systems::kVectorValued, 1);
+    DeclareVectorOutputPort(systems::BasicVector<double>(1),
+                            &DummySys::CalcTimestamp);
   }
 
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override {
+  void CalcTimestamp(const systems::Context<double>& context,
+                     systems::BasicVector<double>* output) const {
     const lcmt_drake_signal* msg =
         EvalInputValue<lcmt_drake_signal>(context, 0);
 
-    auto out_vector = GetMutableOutputVector(output, 0);
+    auto out_vector = output->get_mutable_value();
     out_vector(0) = static_cast<double>(msg->timestamp) / 1e3;
   }
 };

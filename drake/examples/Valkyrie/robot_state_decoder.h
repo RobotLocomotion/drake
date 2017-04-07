@@ -30,21 +30,17 @@ class RobotStateDecoder : public LeafSystem<double> {
 
   RobotStateDecoder& operator=(const RobotStateDecoder&) = delete;
 
- protected:
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override;
-
  private:
+  // This is the calculator method for the output port.
+  void OutputKinematics(const Context<double>& context,
+                        KinematicsCache<double>* output) const;
+
   std::map<std::string, const RigidBody<double>*> CreateJointNameToBodyMap(
       const RigidBodyTree<double>& tree);
 
   const RigidBodyTree<double>& tree_;
   const RigidBody<double>* const floating_body_;
   const int robot_state_message_port_index_;
-  const int kinematics_cache_port_index_;
   const std::map<std::string, const RigidBody<double>*> joint_name_to_body_;
 };
 

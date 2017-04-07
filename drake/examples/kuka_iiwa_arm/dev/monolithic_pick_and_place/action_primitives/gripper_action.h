@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitive_base.h"
+#include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/value.h"
 
@@ -31,7 +32,7 @@ class GripperAction : public ActionPrimitive {
 
   /// This gets the abstract output port corresponding to the
   /// `lcmt_schunk_wsg_command`.
-  const systems::OutputPortDescriptor<double>& get_robot_plan_output_port()
+  const systems::OutputPort<double>& get_robot_plan_output_port()
       const {
     return this->get_output_port(plan_output_port);
   }
@@ -40,23 +41,19 @@ class GripperAction : public ActionPrimitive {
   std::vector<std::unique_ptr<systems::AbstractValue>>
   AllocateExtendedAbstractState() const override;
 
-  std::unique_ptr<systems::AbstractValue>
-  ExtendedAllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   void SetExtendedDefaultState(
       const systems::Context<double>& context,
       systems::State<double>* state) const override;
-
-  void DoExtendedCalcOutput(
-      const systems::Context<double>& context,
-      systems::SystemOutput<double>* output) const override;
 
   void DoExtendedCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
       systems::State<double>* state) const override;
 
  private:
+  lcmt_schunk_wsg_command AllocatePlanOutputPort() const;
+  void OutputCurrentPlan(const systems::Context<double>& context,
+                         lcmt_schunk_wsg_command* wsg_plan_output) const;
+
   // InternalState relevant only to this primitive.
   struct InternalState;
 

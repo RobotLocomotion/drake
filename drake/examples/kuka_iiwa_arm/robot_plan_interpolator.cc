@@ -51,20 +51,26 @@ RobotPlanInterpolator::RobotPlanInterpolator(
   this->set_name("RobotPlanInterpolator");
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       model_path, multibody::joints::kFixed, &tree_);
-
   // TODO(sam.creasey) This implementation doesn't know how to
   // calculate velocities/accelerations for differing numbers of
   // positions and velocities.
   DRAKE_DEMAND(tree_.get_num_positions() == tree_.get_num_velocities());
+  const int num_pv = tree_.get_num_positions() + tree_.get_num_velocities();
 
-  state_input_port_ = this->DeclareInputPort(
-      systems::kVectorValued,
-      tree_.get_num_positions() + tree_.get_num_velocities()).get_index();
-  state_output_port_ = this->DeclareOutputPort(
-      systems::kVectorValued,
-      tree_.get_num_positions() + tree_.get_num_velocities()).get_index();
-  acceleration_output_port_ = this->DeclareOutputPort(
-      systems::kVectorValued, tree_.get_num_velocities()).get_index();
+  state_input_port_ =
+      this->DeclareVectorInputPort(systems::BasicVector<double>(num_pv))
+          .get_index();
+  state_output_port_ =
+      this->DeclareVectorOutputPort(
+              systems::BasicVector<double>(num_pv),
+              &RobotPlanInterpolator::OutputState)
+          .get_index();
+  acceleration_output_port_ =
+      this->DeclareVectorOutputPort(
+              systems::BasicVector<double>(tree_.get_num_velocities()),
+              &RobotPlanInterpolator::OutputAccel)
+          .get_index();
+
   this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
 }
 
@@ -93,25 +99,34 @@ void RobotPlanInterpolator::SetDefaultState(
   state->get_mutable_abstract_state<bool>(kAbsStateIdxInitFlag) = false;
 }
 
-void RobotPlanInterpolator::DoCalcOutput(
-    const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+void RobotPlanInterpolator::OutputState(const systems::Context<double>& context,
+                                  systems::BasicVector<double>* output) const {
   const PlanData& plan = context.get_abstract_state<PlanData>(kAbsStateIdxPlan);
   const bool inited = context.get_abstract_state<bool>(kAbsStateIdxInitFlag);
   DRAKE_DEMAND(inited);
 
   Eigen::VectorBlock<VectorX<double>> output_vec =
-      this->GetMutableOutputVector(output, state_output_port_);
-  Eigen::VectorBlock<VectorX<double>> output_acceleration_vec =
-      this->GetMutableOutputVector(output, acceleration_output_port_);
+      output->get_mutable_value();
 
   const double current_plan_time = context.get_time() - plan.start_time;
   output_vec.head(tree_.get_num_positions()) =
       plan.pp.value(current_plan_time);
   output_vec.tail(tree_.get_num_velocities()) =
       plan.pp_deriv.value(current_plan_time);
-  output_acceleration_vec =
-      plan.pp_double_deriv.value(current_plan_time);
+}
+
+void RobotPlanInterpolator::OutputAccel(
+    const systems::Context<double>& context,
+    systems::BasicVector<double>* output) const {
+  const PlanData& plan = context.get_abstract_state<PlanData>(kAbsStateIdxPlan);
+  const bool inited = context.get_abstract_state<bool>(kAbsStateIdxInitFlag);
+  DRAKE_DEMAND(inited);
+
+  Eigen::VectorBlock<VectorX<double>> output_acceleration_vec =
+      output->get_mutable_value();
+
+  const double current_plan_time = context.get_time() - plan.start_time;
+  output_acceleration_vec = plan.pp_double_deriv.value(current_plan_time);
 }
 
 void RobotPlanInterpolator::MakeFixedPlan(

@@ -14,17 +14,16 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     : tree_(tree) {
   set_name("ContactResultsToLcmSystem");
   DeclareAbstractInputPort(Value<ContactResults<T>>());
-  DeclareAbstractOutputPort(Value<lcmt_contact_results_for_viz>());
+  DeclareAbstractOutputPort(&ContactResultsToLcmSystem::CalcLcmContactOutput);
 }
 
 template <typename T>
-void ContactResultsToLcmSystem<T>::DoCalcOutput(const Context<T>& context,
-                                                SystemOutput<T>* output) const {
+void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
+    const Context<T>& context, lcmt_contact_results_for_viz* output) const {
   // Get input / output.
   const auto& contact_results =
       EvalAbstractInput(context, 0)->template GetValue<ContactResults<T>>();
-  auto& msg = output->GetMutableData(0)
-                  ->template GetMutableValue<lcmt_contact_results_for_viz>();
+  auto& msg = *output;
 
   msg.timestamp = static_cast<int64_t>(context.get_time() * 1e6);
   msg.num_contacts = contact_results.get_num_contacts();

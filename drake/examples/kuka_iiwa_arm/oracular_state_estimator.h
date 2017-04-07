@@ -37,11 +37,13 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
                 systems::kVectorValued,
                 robot.get_num_positions() + robot.get_num_velocities())
             .get_index();
-    output_port_index_msg_ = this->DeclareAbstractOutputPort().get_index();
+    output_port_index_msg_ = this->DeclareAbstractOutputPort(
+                                     &OracularStateEstimation::OutputRobotState)
+                                 .get_index();
   }
 
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override {
+  void OutputRobotState(const systems::Context<T>& context,
+                        bot_core::robot_state_t* output) const {
     const systems::BasicVector<T>* state =
         this->EvalVectorInput(context, input_port_index_state_);
 
@@ -49,9 +51,7 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
     VectorX<T> v = state->get_value().tail(robot_.get_num_velocities());
     KinematicsCache<T> cache = robot_.doKinematics(q, v);
 
-    bot_core::robot_state_t& msg =
-        output->template GetMutableData(output_port_index_msg_)
-            ->template GetMutableValue<bot_core::robot_state_t>();
+    bot_core::robot_state_t& msg = *output;
     msg.utime = static_cast<int64_t>(context.get_time() * 1e6);
 
     // Pose and velocity of floating body in the world frame.
@@ -91,17 +91,11 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
     }
   }
 
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<T>&) const override {
-    return systems::AbstractValue::Make<bot_core::robot_state_t>(
-        bot_core::robot_state_t());
-  }
-
   inline const systems::InputPortDescriptor<T>& get_input_port_state() const {
     return this->get_input_port(input_port_index_state_);
   }
 
-  inline const systems::OutputPortDescriptor<T>& get_output_port_msg() const {
+  inline const systems::OutputPort<T>& get_output_port_msg() const {
     return this->get_output_port(output_port_index_msg_);
   }
 

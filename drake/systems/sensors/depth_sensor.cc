@@ -30,42 +30,46 @@ using rendering::PoseVector;
 
 namespace sensors {
 
-DepthSensor::DepthSensor(const std::string& name,
-                         const RigidBodyTree<double>& tree,
-                         const RigidBodyFrame<double>& frame,
-                         const DepthSensorSpecification& specification)
+DepthSensor::DepthSensor(const std::string &name,
+                         const RigidBodyTree<double> &tree,
+                         const RigidBodyFrame<double> &frame,
+                         const DepthSensorSpecification &specification)
     : name_(name),
       tree_(tree),
       frame_(frame),
       specification_(specification) {
   DRAKE_DEMAND(specification_.min_yaw() <= specification_.max_yaw() &&
-               "min_yaw must be less than or equal to max_yaw.");
+      "min_yaw must be less than or equal to max_yaw.");
   DRAKE_DEMAND(specification_.min_pitch() <= specification_.max_pitch() &&
-               "min_pitch must be less than or equal to max_pitch.");
+      "min_pitch must be less than or equal to max_pitch.");
   if (specification_.min_yaw() == specification_.max_yaw()) {
     DRAKE_DEMAND(specification_.num_yaw_values() == 1 &&
-                 "num_yaw_values must equal 1.");
+        "num_yaw_values must equal 1.");
   } else {
     DRAKE_DEMAND(specification_.num_yaw_values() >= 2 &&
-                 "num_yaw_values must be greater than or equal to 2.");
+        "num_yaw_values must be greater than or equal to 2.");
   }
   if (specification_.min_pitch() == specification_.max_pitch()) {
     DRAKE_DEMAND(specification_.num_pitch_values() == 1 &&
-                 "num_pitch_values must equal 1.");
+        "num_pitch_values must equal 1.");
   } else {
     DRAKE_DEMAND(specification_.num_pitch_values() >= 2 &&
-                 "num_pitch_values must be greater than or equal to 2.");
+        "num_pitch_values must be greater than or equal to 2.");
   }
   DRAKE_DEMAND(specification_.min_range() <= specification_.max_range() &&
-               "min_range must be less than or equal to max_range");
+      "min_range must be less than or equal to max_range");
   input_port_index_ =
       DeclareInputPort(kVectorValued,
                        tree.get_num_positions() + tree.get_num_velocities())
           .get_index();
-  depth_output_port_index_ = DeclareVectorOutputPort(
-      DepthSensorOutput<double>(specification_)).get_index();
-  pose_output_port_index_ = DeclareVectorOutputPort(
-      PoseVector<double>()).get_index();
+  depth_output_port_index_ =
+      DeclareVectorOutputPort(DepthSensorOutput<double>(specification_),
+                              &DepthSensor::CalcDepthOutput)
+          .get_index();
+  pose_output_port_index_ =
+      DeclareVectorOutputPort(PoseVector<double>(),
+                              &DepthSensor::CalcPoseOutput)
+          .get_index();
   PrecomputeRaycastEndpoints();
 }
 
@@ -120,17 +124,18 @@ DepthSensor::get_rigid_body_tree_state_input_port() const {
   return this->get_input_port(input_port_index_);
 }
 
-const OutputPortDescriptor<double>& DepthSensor::get_sensor_state_output_port()
-    const {
+const OutputPort<double>& DepthSensor::get_sensor_state_output_port()
+const {
   return System<double>::get_output_port(depth_output_port_index_);
 }
 
-const OutputPortDescriptor<double>& DepthSensor::get_pose_output_port() const {
+const OutputPort<double>& DepthSensor::get_pose_output_port() const {
   return System<double>::get_output_port(pose_output_port_index_);
 }
 
-void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
-                               systems::SystemOutput<double>* output) const {
+void DepthSensor::CalcDepthOutput(
+    const Context<double>& context,
+    DepthSensorOutput<double>* data_output) const {
   VectorXd u = this->EvalEigenVectorInput(context, 0);
   auto q = u.head(tree_.get_num_positions());
   KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
@@ -159,7 +164,7 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   // TODO(liang.fok) Remove the need for const_cast once GeometryWorld and
   // GeometryQuery are introduced. See:
   // https://github.com/RobotLocomotion/drake/issues/4592#issuecomment-269491752
-  const_cast<RigidBodyTree<double>&>(tree_).collisionRaycast(
+  const_cast<RigidBodyTree<double> &>(tree_).collisionRaycast(
       kinematics_cache, origin, raycast_endpoints_world, distances);
 
   // Applies the min / max range of the sensor. Any measurement that is less
@@ -174,7 +179,7 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
         distances[i] = DepthSensorOutput<double>::kTooFar;
       } else {
         drake::log()->warn("Measured distance was < 0 and != -1: " +
-                           std::to_string(distances[i]));
+            std::to_string(distances[i]));
         distances[i] = DepthSensorOutput<double>::kError;
       }
     } else if (distances[i] > specification_.max_range()) {
@@ -185,17 +190,21 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   }
 
   // Evaluates the output port containing the depth measurements.
-  BasicVector<double>* data_output =
-      output->GetMutableVectorData(depth_output_port_index_);
   DRAKE_ASSERT(data_output != nullptr);
   data_output->SetFromVector(distances);
+}
 
-  // Evaluates the output port containing X_WS.
+// Evaluates the output port containing X_WS.
+void DepthSensor::CalcPoseOutput(const Context<double>& context,
+                                 PoseVector<double>* output) const {
+  VectorXd u = this->EvalEigenVectorInput(context, 0);
+  auto q = u.head(tree_.get_num_positions());
+  KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
+
   const drake::Isometry3<double> X_WS =
       tree_.CalcFramePoseInWorldFrame(kinematics_cache, frame_);
   PoseVector<double>* pose_output =
-      dynamic_cast<PoseVector<double>*>(
-          output->GetMutableVectorData(pose_output_port_index_));
+      dynamic_cast<PoseVector<double>*>(output);
   DRAKE_ASSERT(pose_output != nullptr);
   pose_output->set_translation(
       Eigen::Translation<double, 3>(X_WS.translation()));

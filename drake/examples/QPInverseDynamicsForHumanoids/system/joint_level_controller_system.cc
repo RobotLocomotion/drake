@@ -12,26 +12,27 @@ JointLevelControllerBaseSystem::JointLevelControllerBaseSystem(
     : robot_(robot) {
   input_port_index_qp_output_ = DeclareAbstractInputPort().get_index();
   output_port_index_torque_ =
-      DeclareOutputPort(systems::kVectorValued, robot_.get_num_actuators())
+      DeclareVectorOutputPort(
+          systems::BasicVector<double>(robot_.get_num_actuators()),
+          &JointLevelControllerBaseSystem::CalcActuationTorques)
           .get_index();
 }
 
-void JointLevelControllerBaseSystem::DoCalcOutput(
+void JointLevelControllerBaseSystem::CalcActuationTorques(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+    systems::BasicVector<double>* output) const {
   // Input:
   const QpOutput* qp_output =
       EvalInputValue<QpOutput>(context, input_port_index_qp_output_);
 
   // Output:
-  auto out_vector = GetMutableOutputVector(output, output_port_index_torque_);
+  auto out_vector = output->get_mutable_value();
 
+  // TODO(sherm1) This computation should be cached so it will be evaluated
+  // when first requested and then available for re-use.
   out_vector = robot_.B.transpose() * qp_output->dof_torques();
 
   DRAKE_ASSERT(out_vector.size() == robot_.get_num_actuators());
-
-  // Call Derived class's extended methods.
-  DoCalcExtendedOutput(context, output);
 }
 
 }  // namespace qp_inverse_dynamics

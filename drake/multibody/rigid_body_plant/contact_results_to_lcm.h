@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -28,10 +29,10 @@ class ContactResultsToLcmSystem : public LeafSystem<double> {
    */
   explicit ContactResultsToLcmSystem(const RigidBodyTree<T>& tree);
 
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
-
  private:
+  void CalcLcmContactOutput(const Context<T>& context,
+                            lcmt_contact_results_for_viz* output) const;
+
   const RigidBodyTree<T>& tree_;
 };
 

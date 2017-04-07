@@ -96,8 +96,8 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
 
  private:
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
+  void OutputState(const systems::Context<T>& context,
+                   AcrobotStateVector<T>* output) const;
 
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,

@@ -187,8 +187,8 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   static double get_inv_pfunction_second_derivative(const ArcLength& m);
 
  protected:
-  void DoCalcOutput(const systems::Context<T> &context,
-                    systems::SystemOutput<T> *output) const override;
+  void CopyStateOut(const systems::Context<T> &context,
+                    systems::BasicVector<T>* output) const;
 
   void DoCalcTimeDerivatives(
       const systems::Context<T> &context,

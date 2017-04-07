@@ -30,7 +30,7 @@ class JointLevelControllerBaseSystem : public systems::LeafSystem<double> {
   /**
    * Returns the input port for QpOutput.
    */
-  inline const systems::InputPortDescriptor<double>& get_input_port_qp_output()
+  const systems::InputPortDescriptor<double>& get_input_port_qp_output()
       const {
     return get_input_port(input_port_index_qp_output_);
   }
@@ -38,34 +38,26 @@ class JointLevelControllerBaseSystem : public systems::LeafSystem<double> {
   /**
    * Returns the output port for the torques.
    */
-  inline const systems::OutputPortDescriptor<double>& get_output_port_torque()
+  const systems::OutputPort<double>& get_output_port_torque()
       const {
     return get_output_port(output_port_index_torque_);
   }
 
-  inline const RigidBodyTree<double>& get_robot() const { return robot_; }
+  const RigidBodyTree<double>& get_robot() const { return robot_; }
 
  protected:
   /**
-   * Derived classes can implement custom outputs in this function. It is called
-   * by DoCalcOutput(), and it is safe to assume that output port returned by
-   * get_output_port_torque() is already filled.
+   * Extracts the torques from a QpOutput and outputs them in the actuator order
+   * within the RigidBodyTree passed to the constructor. More specifically, the
+   * output is `tau_act = B^T * qp_output.dof_torques`, where `B` is the
+   * selection matrix that maps the actuator indices to the generalized
+   * coordinate indices.
    */
-  virtual void DoCalcExtendedOutput(
-      const systems::Context<double>& context,
-      systems::SystemOutput<double>* output) const = 0;
+  // TODO(sherm1) This should be cached so it doesn't need to be recomputed.
+  void CalcActuationTorques(const systems::Context<double>& context,
+                            systems::BasicVector<double>* output) const;
 
  private:
-  // Extracts the torques from a QpOutput and output them in the actuator order
-  // within the RigidBodyTree passed to the constructor. More specifically, the
-  // output is `tau_act = B^T * qp_output.dof_torques`, where `B` is the
-  // selection matrix that maps the actuator indices to the generalized
-  // coordinate indices. Then calls DoCalcExtendedOutput(). Derived classes need
-  // to implement DoCalcExtendedOutput(), and can assume that output port
-  // returned by get_output_port_torque() is already filled.
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const final;
-
   const RigidBodyTree<double>& robot_;
 
   int input_port_index_qp_output_{0};
@@ -83,11 +75,6 @@ class TrivialJointLevelControllerSystem
 
   explicit TrivialJointLevelControllerSystem(const RigidBodyTree<double>& robot)
       : JointLevelControllerBaseSystem(robot) {}
-
- private:
-  void DoCalcExtendedOutput(const systems::Context<double>&,
-                            systems::SystemOutput<double>*) const final {
-  }
 };
 
 }  // namespace qp_inverse_dynamics

@@ -43,8 +43,9 @@ class Multiplexer : public LeafSystem<T> {
   explicit Multiplexer(const systems::BasicVector<T>& model_vector);
 
  private:
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
+  // This is the calculator for the output port.
+  void CombineInputsToOutput(const Context<T>& context,
+                             BasicVector<T>* output) const;
 
   const std::vector<int> input_sizes_;
 };

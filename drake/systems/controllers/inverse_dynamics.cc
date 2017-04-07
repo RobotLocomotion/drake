@@ -16,7 +16,9 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>& tree,
   input_port_index_state_ =
       this->DeclareInputPort(kVectorValued, q_dim_ + v_dim_).get_index();
   output_port_index_torque_ =
-      this->DeclareOutputPort(kVectorValued, act_dim_).get_index();
+      this->DeclareVectorOutputPort(BasicVector<T>(act_dim_),
+                                    &InverseDynamics<T>::CalcOutputTorque)
+          .get_index();
 
   // Doesn't declare desired acceleration input port if we are only doing
   // gravity compensation.
@@ -35,8 +37,8 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>& tree,
 }
 
 template <typename T>
-void InverseDynamics<T>::DoCalcOutput(const Context<T>& context,
-                                      SystemOutput<T>* output) const {
+void InverseDynamics<T>::CalcOutputTorque(const Context<T>& context,
+                                          BasicVector<T>* output) const {
   // State input.
   VectorX<T> x = this->EvalEigenVectorInput(context, input_port_index_state_);
 
@@ -64,9 +66,8 @@ void InverseDynamics<T>::DoCalcOutput(const Context<T>& context,
       cache, f_ext, desired_vd,
       !pure_gravity_compensation_ /* include v dependent terms */);
 
-  DRAKE_ASSERT(torque.size() ==
-               System<T>::get_output_port(output_port_index_torque_).size());
-  System<T>::GetMutableOutputVector(output, output_port_index_torque_) = torque;
+  DRAKE_ASSERT(torque.size() == output->size());
+  output->get_mutable_value() = torque;
 }
 
 template class InverseDynamics<double>;

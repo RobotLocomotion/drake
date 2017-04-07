@@ -160,17 +160,11 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const final {
-    unused(context);
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
-      const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
-      if (descriptor.get_data_type() == kVectorValued) {
-        output->add_port(std::make_unique<OutputPortValue>(
-            AllocateOutputVector(descriptor)));
-      } else {
-        output->add_port(std::make_unique<OutputPortValue>(
-            AllocateOutputAbstract(descriptor)));
-      }
+      const OutputPort<T>& port = this->get_output_port(i);
+      output->add_port(std::make_unique<OutputPortValue>(
+          port.Allocate(&context)));
     }
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
@@ -326,7 +320,7 @@ class LeafSystem : public System<T> {
     *dot << this->GetGraphvizId() << ":u" << port.get_index();
   }
 
-  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T> &port,
+  void GetGraphvizOutputPortToken(const OutputPort<T> &port,
                                   std::stringstream *dot) const final {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << this->GetGraphvizId() << ":y" << port.get_index();
@@ -382,45 +376,6 @@ class LeafSystem : public System<T> {
       numeric_params.emplace_back(std::move(param));
     }
     return std::make_unique<Parameters<T>>(std::move(numeric_params));
-  }
-
-  /// Given a port descriptor, allocates the vector storage.  The default
-  /// implementation in this class either clones the model_vector (if the port
-  /// was declared via DeclareVectorOutputPort) or else allocates a BasicVector
-  /// (if the port was declared via DeclareOutputPort(kVectorValued, size).
-  /// Subclasses can override this method if the default behavior is not
-  /// sufficient.
-  ///
-  /// The descriptor must match a port declared via DeclareOutputPort or one of
-  /// its wrappers, e.g., DeclareVectorOutputPort.
-  virtual std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const OutputPortDescriptor<T>& descriptor) const {
-    std::unique_ptr<BasicVector<T>> model_result =
-        model_output_values_.CloneVectorModel<T>(descriptor.get_index());
-    if (model_result) {
-      return model_result;
-    }
-    return std::make_unique<BasicVector<T>>(descriptor.size());
-  }
-
-  /// Given a port descriptor, allocates the abstract storage.  The default
-  /// implementation in this class either clones the model_value (if the port
-  /// was declared via DeclareAbstractOutputPort) or aborts.
-  ///
-  /// Subclasses with abstract output ports must either provide a model_value
-  /// when declaring the port, or else override this method.
-  ///
-  /// The descriptor must match a port declared via DeclareOutputPort or one of
-  /// its wrappers, e.g., DeclareAbstractOutputPort.
-  virtual std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<T>& descriptor) const {
-    std::unique_ptr<AbstractValue> model_result =
-        model_output_values_.CloneModel(descriptor.get_index());
-    if (model_result) {
-      return model_result;
-    }
-    DRAKE_ABORT_MSG("A concrete leaf system with abstract output ports must "
-                    "override AllocateOutputAbstract.");
   }
 
   /// Returns true if there is direct-feedthrough from the given @p input_port
@@ -496,10 +451,10 @@ class LeafSystem : public System<T> {
     return params;
   }
 
-  /// Declares that this System has a simple, fixed-period discrete action.
-  /// The first tick will be at t = period_sec, and it will recur at every
-  /// period_sec thereafter. On the discrete tick, the system may perform
-  /// the given type of action.
+  /// Declares that this System has a simple, fixed-period discrete action. The
+  /// first tick will be at t=offset_sec, if offset_sec > 0, otherwise at
+  /// t=period_sec. It will recur at every period_sec thereafter. On the
+  /// discrete tick, the system may perform the given type of action.
   void DeclarePeriodicAction(double period_sec, double offset_sec,
       const typename DiscreteEvent<T>::ActionType& action) {
     PeriodicEvent<T> event;
@@ -657,31 +612,205 @@ class LeafSystem : public System<T> {
     return this->DeclareAbstractInputPort();
   }
 
-  /// Declares a vector-valued output port using the given @p model_vector.
+  /// Declares a vector-valued output port using the given @p model_vector and
+  /// a function for calculating the port's value at runtime.
   /// This is the best way to declare LeafSystem output ports that require
-  /// subclasses of BasicVector.  The port's size will be model_vector.size(),
-  /// and LeafSystem's default implementation of DoAllocateOutputVector will be
-  /// model_vector.Clone().
-  const OutputPortDescriptor<T>& DeclareVectorOutputPort(
-      const BasicVector<T>& model_vector) {
-    const int size = model_vector.size();
-    const int next_index = this->get_num_output_ports();
-    model_output_values_.AddVectorModel(next_index, model_vector.Clone());
-    return this->DeclareOutputPort(kVectorValued, size);
+  /// subclasses of BasicVector. The port's size will be model_vector.size(),
+  /// and the default allocator for the port will be model_vector.Clone().
+  const LeafOutputPort<T>& DeclareVectorOutputPort(
+      const BasicVector<T>& model_vector,
+      typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function) {
+    auto port_info =
+        std::make_unique<LeafOutputPort<T>>(model_vector, vector_calc_function);
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
   }
 
-  // Avoid shadowing out the no-arg DeclareAbstractOutputPort().
-  using System<T>::DeclareAbstractOutputPort;
+  /// Declares a vector-valued output port using the given vector-valued
+  /// allocation function. If a particular size is required, supply that also;
+  /// a runtime error will occur if the allocator doesn't produce a vector of
+  /// that size when invoked. (Note: currently the size is mandatory.)
+  const LeafOutputPort<T>& DeclareVectorOutputPort(
+      typename LeafOutputPort<T>::AllocVectorCallback vector_alloc_function,
+      int size,
+      typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function) {
+    auto port_info = std::make_unique<LeafOutputPort<T>>(
+        vector_alloc_function, size, vector_calc_function);
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
+  }
 
-  /// Declares an abstract-valued output port using the given @p model_value.
+  /// Declares a vector-valued output port by specifying (1) a model vector of
+  /// type BasicVectorSubtype derived from BasicVector and initialized to the
+  /// correct size and desired initial value, and (2) a calculator function that
+  /// is a class member function (method) with signature:
+  /// @code{.cpp}
+  /// void MySystem::CalcOutputVector(const Context<T>&,
+  ///                                 BasicVectorSubtype*) const;
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>`.
+  template <class MySystem, typename BasicVectorSubtype>
+  const LeafOutputPort<T>& DeclareVectorOutputPort(
+      const BasicVectorSubtype& model_vector,
+      void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    static_assert(std::is_base_of<BasicVector<T>, BasicVectorSubtype>::value,
+                  "Expected vector type derived from BasicVector.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    auto port_info = std::make_unique<LeafOutputPort<T>>(
+        model_vector, [this_ptr, calc](const Context<T>& context,
+                                       BasicVector<T>* result) {
+          auto typed_result = dynamic_cast<BasicVectorSubtype*>(result);
+          DRAKE_DEMAND(typed_result != nullptr);
+          (this_ptr->*calc)(context, typed_result);
+        });
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
+  }
+
+  /// Declares a vector-valued output port by specifying only a calculator
+  /// function that is a class member function (method) with signature:
+  /// @code{.cpp}
+  /// void MySystem::CalcOutputVector(const Context<T>&,
+  ///                                 BasicVectorSubtype*) const;
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>` and
+  /// `BasicVectorSubtype` is derived from `BasicVector<T>` and has a suitable
+  /// default constructor. This will use `BasicVectorSubtype()` as the model
+  /// vector for the output port.
+  template <class MySystem, typename BasicVectorSubtype>
+  const LeafOutputPort<T>& DeclareVectorOutputPort(
+      void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const) {
+    return DeclareVectorOutputPort(BasicVectorSubtype(), calc);
+  }
+
+  /// Declares an abstract-valued output port using the given @p model_value
+  /// and calculation function.
   /// This is the best way to declare LeafSystem abstract output ports.
   /// LeafSystem's default implementation of DoAllocateOutputAbstract will be
   /// model_value.Clone().
-  const OutputPortDescriptor<T>& DeclareAbstractOutputPort(
-      const AbstractValue& model_value) {
-    const int next_index = this->get_num_output_ports();
-    model_output_values_.AddModel(next_index, model_value.Clone());
-    return this->DeclareAbstractOutputPort();
+  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+      const AbstractValue& model_value,
+      typename LeafOutputPort<T>::CalcCallback calc_function) {
+    auto port_info =
+        std::make_unique<LeafOutputPort<T>>(model_value, calc_function);
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
+  }
+
+  /// For an AbstractValue-returning calculator.
+  template <class MySystem>
+  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+      const AbstractValue& model_value,
+      void (MySystem::*calc)(const Context<T>&, AbstractValue*) const) {
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    typename LeafOutputPort<T>::CalcCallback calc_func =
+        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
+          (this_ptr->*calc)(context, result);
+        };
+    // Invoke the above method.
+    return DeclareAbstractOutputPort(model_value, calc_func);
+  }
+
+  /// Declares an abstract-valued output port by specifying a model value of
+  /// copy constructible concrete type `OutputType` and a calculator
+  /// function that is a class member function (method) with signature:
+  /// @code{.cpp}
+  /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>`.
+  template <class MySystem, typename OutputType>
+  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+      const OutputType& model_value,
+      void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    auto port_info = std::make_unique<LeafOutputPort<T>>(
+        Value<OutputType>(model_value),
+        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
+          OutputType& typed_result = result->GetMutableValue<OutputType>();
+          (this_ptr->*calc)(context, &typed_result);
+        });
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
+  }
+
+  /// Declares an abstract-valued output port by specifying only a calculator
+  /// function that is a class member function (method) with signature:
+  /// @code{.cpp}
+  /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>`.
+  /// We infer from that signature that the port's allocator should allocate
+  /// an AbstractValue of type `Value<OutputType>` using OutputType's
+  /// default constructor.
+  template <class MySystem, typename OutputType>
+  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+      void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
+    return DeclareAbstractOutputPort(OutputType(), calc);
+  }
+
+  /// TODO: takes both allocator and calculator member functions
+  template <class MySystem, typename OutputType>
+  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+      OutputType (MySystem::*alloc)(const Context<T>&) const,
+      void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    auto port_info = std::make_unique<LeafOutputPort<T>>(
+        [this_ptr, alloc](const Context<T>* context) {
+          return AbstractValue::Make((this_ptr->*alloc)(*context));
+        },
+        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
+          OutputType& typed_result = result->GetMutableValue<OutputType>();
+          (this_ptr->*calc)(context, &typed_result);
+        });
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
+  }
+
+  /// TODO: variant where the supplied allocator doesn't want a context
+  template <class MySystem, typename OutputType>
+  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+      OutputType (MySystem::*alloc)() const,
+      void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    auto port_info = std::make_unique<LeafOutputPort<T>>(
+        [this_ptr, alloc](const Context<T>*) {  // Swallow the context.
+          return AbstractValue::Make((this_ptr->*alloc)());
+        },
+        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
+          OutputType& typed_result = result->GetMutableValue<OutputType>();
+          (this_ptr->*calc)(context, &typed_result);
+        });
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
+  }
+
+  /// Declares an abstract-valued output port using the given allocator and
+  /// calculation function. The explicit allocator
+  /// is necessary when an appropriate AbstractValue object cannot be
+  /// determined at construction. The allocator may refer to the system's
+  /// data members and Context entries such as parameter values.
+  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+      typename LeafOutputPort<T>::AllocCallback alloc_function,
+      typename LeafOutputPort<T>::CalcCallback calc_function) {
+    auto port_info =
+        std::make_unique<LeafOutputPort<T>>(alloc_function, calc_function);
+    const LeafOutputPort<T>* port_ptr = port_info.get();
+    this->AddOutputPort(std::move(port_info));
+    return *port_ptr;
   }
 
   /// Declares a numeric parameter using the given @p model_vector.  This is
@@ -694,6 +823,24 @@ class LeafSystem : public System<T> {
     const int next_index = model_numeric_parameters_.size();
     model_numeric_parameters_.AddVectorModel(next_index, model_vector.Clone());
     return next_index;
+  }
+
+  template <class Leaf>
+  typename LeafOutputPort<T>::CalcVectorCallback xmake_calc_callback(
+      void (Leaf::*member)(const Context<T>&, BasicVector<T>*) const) {
+    const Leaf* leaf = dynamic_cast<const Leaf*>(this);
+    return [leaf, member](const Context<T>& context, BasicVector<T>* sum) {
+      (leaf->*member)(context, sum);
+    };
+  }
+
+  template <template <typename> class Leaf>
+  typename LeafOutputPort<T>::CalcVectorCallback make_calc_callback(
+      void (Leaf<T>::*member)(const Context<T>&, BasicVector<T>*) const) {
+    const Leaf<T>* leaf = dynamic_cast<const Leaf<T>*>(this);
+    return [leaf, member](const Context<T>& context, BasicVector<T>* sum) {
+      (leaf->*member)(context, sum);
+    };
   }
 
  private:
@@ -812,9 +959,6 @@ class LeafSystem : public System<T> {
 
   // Model inputs to be used in AllocateOutput{Vector,Abstract}.
   detail::ModelValues model_input_values_;
-
-  // Model outputs to be used in AllocateOutput{Vector,Abstract}.
-  detail::ModelValues model_output_values_;
 
   // Model outputs to be used in AllocateParameters.
   detail::ModelValues model_numeric_parameters_;

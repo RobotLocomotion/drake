@@ -17,15 +17,15 @@ static const int kNumJoints = 2;
 
 AcrobotStateReceiver::AcrobotStateReceiver() {
   this->DeclareAbstractInputPort();
-  this->DeclareVectorOutputPort(AcrobotStateVector<double>());
+  this->DeclareVectorOutputPort(&AcrobotStateReceiver::CopyStateOut);
 }
 
-void AcrobotStateReceiver::DoCalcOutput(const Context<double>& context,
-                                        SystemOutput<double>* output) const {
+void AcrobotStateReceiver::CopyStateOut(
+    const Context<double>& context, AcrobotStateVector<double>* output) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& state = input->GetValue<lcmt_acrobot_x>();
-  auto output_vec = this->GetMutableOutputVector(output, 0);
+  auto output_vec = output->get_mutable_value();
 
   output_vec(0) = state.theta1;
   output_vec(1) = state.theta2;
@@ -38,17 +38,14 @@ void AcrobotStateReceiver::DoCalcOutput(const Context<double>& context,
 
 AcrobotCommandSender::AcrobotCommandSender() {
   this->DeclareInputPort(systems::kVectorValued, 1);
-  this->DeclareAbstractOutputPort(systems::Value<lcmt_acrobot_u>());
+  this->DeclareAbstractOutputPort(&AcrobotCommandSender::OutputCommand);
 }
 
-void AcrobotCommandSender::DoCalcOutput(const Context<double>& context,
-                                        SystemOutput<double>* output) const {
-  systems::AbstractValue* mutable_data = output->GetMutableData(0);
-  lcmt_acrobot_u& status = mutable_data->GetMutableValue<lcmt_acrobot_u>();
-
+void AcrobotCommandSender::OutputCommand(const Context<double>& context,
+                                         lcmt_acrobot_u* status) const {
   const systems::BasicVector<double>* command =
       this->EvalVectorInput(context, 0);
-  status.tau = command->GetAtIndex(0);
+  status->tau = command->GetAtIndex(0);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -56,17 +53,17 @@ void AcrobotCommandSender::DoCalcOutput(const Context<double>& context,
 
 AcrobotCommandReceiver::AcrobotCommandReceiver() {
   this->DeclareAbstractInputPort();
-  this->DeclareOutputPort(systems::kVectorValued, 1);
+  this->DeclareVectorOutputPort(systems::BasicVector<double>(1),
+                                &AcrobotCommandReceiver::OutputCommandAsVector);
 }
 
-void AcrobotCommandReceiver::DoCalcOutput(const Context<double>& context,
-                                          SystemOutput<double>* output) const {
+void AcrobotCommandReceiver::OutputCommandAsVector(
+    const Context<double>& context,
+    systems::BasicVector<double>* output) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_acrobot_u>();
-  auto output_vec = this->GetMutableOutputVector(output, 0);
-
-  output_vec(0) = command.tau;
+  output->SetAtIndex(0, command.tau);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -74,19 +71,16 @@ void AcrobotCommandReceiver::DoCalcOutput(const Context<double>& context,
 
 AcrobotStateSender::AcrobotStateSender() {
   this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2);
-  this->DeclareAbstractOutputPort(systems::Value<lcmt_acrobot_x>());
+  this->DeclareAbstractOutputPort(&AcrobotStateSender::OutputState);
 }
 
-void AcrobotStateSender::DoCalcOutput(const Context<double>& context,
-                                      SystemOutput<double>* output) const {
-  systems::AbstractValue* mutable_data = output->GetMutableData(0);
-  lcmt_acrobot_x& status = mutable_data->GetMutableValue<lcmt_acrobot_x>();
-
+void AcrobotStateSender::OutputState(const Context<double>& context,
+                                     lcmt_acrobot_x* status) const {
   const systems::BasicVector<double>* state = this->EvalVectorInput(context, 0);
-  status.theta1 = state->GetAtIndex(0);
-  status.theta2 = state->GetAtIndex(1);
-  status.theta1Dot = state->GetAtIndex(2);
-  status.theta2Dot = state->GetAtIndex(3);
+  status->theta1 = state->GetAtIndex(0);
+  status->theta2 = state->GetAtIndex(1);
+  status->theta1Dot = state->GetAtIndex(2);
+  status->theta2Dot = state->GetAtIndex(3);
 }
 
 }  // namespace acrobot

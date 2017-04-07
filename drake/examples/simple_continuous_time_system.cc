@@ -15,10 +15,12 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
  public:
   SimpleContinuousTimeSystem() {
     const int kSize = 1;  // The dimension of both output (y) and state (x).
-    this->DeclareOutputPort(drake::systems::kVectorValued, kSize);
+    this->DeclareVectorOutputPort(drake::systems::BasicVector<double>(kSize),
+                                  &SimpleContinuousTimeSystem::CopyStateOut);
     this->DeclareContinuousState(kSize);
   }
 
+ private:
   // xdot = -x + x^3
   void DoCalcTimeDerivatives(
       const drake::systems::Context<double>& context,
@@ -29,11 +31,11 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
   }
 
   // y = x
-  void DoCalcOutput(
+  void CopyStateOut(
       const drake::systems::Context<double>& context,
-      drake::systems::SystemOutput<double>* output) const override {
+      drake::systems::BasicVector<double>* output) const  {
     double x = context.get_continuous_state_vector().GetAtIndex(0);
-    output->GetMutableVectorData(0)->SetAtIndex(0, x);
+    output->SetAtIndex(0, x);
   }
 };
 

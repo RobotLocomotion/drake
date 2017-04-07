@@ -40,9 +40,6 @@ class InverseDynamics : public LeafSystem<T> {
    */
   InverseDynamics(const RigidBodyTree<T>& tree, bool pure_gravity_compensation);
 
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
-
   /**
    * Returns the input port for the estimated state.
    */
@@ -59,9 +56,9 @@ class InverseDynamics : public LeafSystem<T> {
   }
 
   /**
-   * Returns the output port for the estimated state.
+   * Returns the output port for the actuation torques.
    */
-  const OutputPortDescriptor<T>& get_output_port_torque() const {
+  const OutputPort<T>& get_output_port_torque() const {
     return this->get_output_port(output_port_index_torque_);
   }
 
@@ -70,6 +67,10 @@ class InverseDynamics : public LeafSystem<T> {
   }
 
  private:
+  // This is the calculator method for the output port.
+  void CalcOutputTorque(const Context<T>& context,
+                        BasicVector<T>* torque) const;
+
   const RigidBodyTree<T>& tree_;
   const bool pure_gravity_compensation_{false};
 

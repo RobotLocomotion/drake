@@ -28,38 +28,32 @@ namespace systems {
 class RobotCommandToDesiredEffortConverter
     : public LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotCommandToDesiredEffortConverter)
+
   RobotCommandToDesiredEffortConverter(
       const std::vector<const RigidBodyActuator*>& actuators);
 
   ~RobotCommandToDesiredEffortConverter() override {}
 
-  // Disable copy and assign.
-  RobotCommandToDesiredEffortConverter(
-      const RobotCommandToDesiredEffortConverter&) = delete;
-
-  RobotCommandToDesiredEffortConverter& operator=(
-      const RobotCommandToDesiredEffortConverter&) = delete;
-
-  /// Descriptor of output port that presents desired effort for @param
-  /// actuator.
-  const OutputPortDescriptor<double>& desired_effort_output_port(
+  /// Output port that presents desired effort for @p actuator.
+  const OutputPort<double>& desired_effort_output_port(
       const RigidBodyActuator& actuator) const;
 
  private:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override;
+  // This is used to construct calculator methods for each output port by
+  // binding a particular actuator to each method.
+  void OutputDesiredEffort(const Context<double>& context,
+                           const RigidBodyActuator& actuator,
+                           BasicVector<double>* output) const;
 
   int robot_command_port_index_;
-  const std::map<const RigidBodyActuator*, int> desired_effort_port_indices_;
-  const std::map<std::string, const RigidBodyActuator*> name_to_actuator_;
+  const std::map<const RigidBodyActuator*, OutputPortIndex>
+      desired_effort_port_indices_;
 
   // Declare one output port for each RigidBodyActuator and store their
-  // descriptors in a map.
-  std::map<const RigidBodyActuator*, int> DeclareDesiredEffortOutputPorts(
-      const std::vector<const RigidBodyActuator*>& actuators);
-
-  // Map from actuator name to actuator.
-  std::map<std::string, const RigidBodyActuator*> CreateNameToActuatorMap(
+  // indexes in a map.
+  std::map<const RigidBodyActuator*, OutputPortIndex>
+  DeclareDesiredEffortOutputPorts(
       const std::vector<const RigidBodyActuator*>& actuators);
 };
 

@@ -36,7 +36,8 @@ LuenbergerObserver<T>::LuenbergerObserver(
   auto x = observed_system_context_->get_continuous_state();
 
   // Output port is the (estimated) state of the observed system.
-  this->DeclareOutputPort(systems::kVectorValued, x->size());
+  this->DeclareVectorOutputPort(systems::BasicVector<T>(x->size()),
+                                &LuenbergerObserver::CalcEstimatedState);
   // TODO(russt): Could overload AllocateContinuousState and AllocateOutput to
   // call AllocateContinuousState on the observed system so that I can use the
   // actual derived class types.
@@ -66,10 +67,10 @@ LuenbergerObserver<T>::LuenbergerObserver(
 }
 
 template <typename T>
-void LuenbergerObserver<T>::DoCalcOutput(
+void LuenbergerObserver<T>::CalcEstimatedState(
     const systems::Context<T>& context,
-    systems::SystemOutput<T>* output) const {
-  output->GetMutableVectorData(0)->set_value(
+    systems::BasicVector<T>* output) const {
+  output->set_value(
       context.get_continuous_state_vector().CopyToVector());
 }
 

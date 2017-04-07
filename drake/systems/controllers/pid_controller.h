@@ -106,7 +106,7 @@ class PidController : public StateFeedbackController<T> {
   void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
                                  std::stringstream* dot) const override;
   /// Appends the Graphviz port for @p port to @p dot.
-  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T>& port,
+  void GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                   std::stringstream* dot) const override;
 
  private:

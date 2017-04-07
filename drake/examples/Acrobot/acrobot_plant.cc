@@ -37,7 +37,7 @@ AcrobotPlant<T>::AcrobotPlant(double m1, double m2, double l1, double l2,
       b2_(b2),
       g_(g) {
   this->DeclareInputPort(systems::kVectorValued, 1);
-  this->DeclareVectorOutputPort(AcrobotStateVector<T>());
+  this->DeclareVectorOutputPort(&AcrobotPlant::OutputState);
   static_assert(AcrobotStateVectorIndices::kNumCoordinates == kNumDOF * 2, "");
   this->DeclareContinuousState(
       AcrobotStateVector<T>(),
@@ -64,9 +64,9 @@ std::unique_ptr<AcrobotPlant<T>> AcrobotPlant<T>::CreateAcrobotMIT() {
 }
 
 template <typename T>
-void AcrobotPlant<T>::DoCalcOutput(const systems::Context<T>& context,
-                                   systems::SystemOutput<T>* output) const {
-  output->GetMutableVectorData(0)->set_value(
+void AcrobotPlant<T>::OutputState(const systems::Context<T>& context,
+                                   AcrobotStateVector<T>* output) const {
+  output->set_value(
       dynamic_cast<const AcrobotStateVector<T>&>(
           context.get_continuous_state_vector())
           .get_value());

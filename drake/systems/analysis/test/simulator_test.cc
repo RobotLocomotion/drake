@@ -271,9 +271,6 @@ class UnrestrictedUpdater : public LeafSystem<double> {
 
   ~UnrestrictedUpdater() override {}
 
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
   void DoCalcNextUpdateTime(const systems::Context<double>& context,
                             systems::UpdateActions<double>* actions)
                               const override {
@@ -456,9 +453,6 @@ class DiscreteSystem : public LeafSystem<double> {
 
   ~DiscreteSystem() override {}
 
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
       drake::systems::DiscreteValues<double>* updates) const override {
@@ -612,9 +606,6 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
     }
 
    private:
-    void DoCalcOutput(const Context<double>& context,
-        SystemOutput<double>* output) const override {}
-
     void DoCalcDiscreteVariableUpdates(const Context<double>& context,
         DiscreteValues<double>* discrete_state) const override {
       discrete_update_times_.push_back(context.get_time());

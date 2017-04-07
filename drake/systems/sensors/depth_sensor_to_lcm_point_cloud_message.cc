@@ -17,13 +17,15 @@ using rendering::PoseVector;
 namespace sensors {
 
 DepthSensorToLcmPointCloudMessage::DepthSensorToLcmPointCloudMessage(
-      const DepthSensorSpecification& spec) : spec_(spec) {
+    const DepthSensorSpecification& spec)
+    : spec_(spec) {
   depth_readings_input_port_index_ =
       DeclareVectorInputPort(DepthSensorOutput<double>(spec_)).get_index();
   pose_input_port_index_ =
       DeclareVectorInputPort(PoseVector<double>()).get_index();
   output_port_index_ =
-      DeclareAbstractOutputPort(systems::Value<bot_core::pointcloud_t>())
+      DeclareAbstractOutputPort(
+          &DepthSensorToLcmPointCloudMessage::CalcPointCloudMessage)
           .get_index();
 }
 
@@ -37,14 +39,14 @@ DepthSensorToLcmPointCloudMessage::pose_input_port() const {
   return this->get_input_port(pose_input_port_index_);
 }
 
-const OutputPortDescriptor<double>&
+const OutputPort<double>&
 DepthSensorToLcmPointCloudMessage::pointcloud_message_output_port() const {
   return System<double>::get_output_port(output_port_index_);
 }
 
-void DepthSensorToLcmPointCloudMessage::DoCalcOutput(
+void DepthSensorToLcmPointCloudMessage::CalcPointCloudMessage(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+    bot_core::pointcloud_t* output) const {
   // Obtains the input.
   const DepthSensorOutput<double>* depth_data =
       this->template EvalVectorInput<DepthSensorOutput>(context,
@@ -62,11 +64,7 @@ void DepthSensorToLcmPointCloudMessage::DoCalcOutput(
   // Obtains the point cloud in the sensor's frame (S).
   const Eigen::Matrix3Xd point_cloud_S = depth_data->GetPointCloud();
 
-  // Obtains the output.
-  bot_core::pointcloud_t& message =
-      output->GetMutableData(output_port_index_)->
-          GetMutableValue<bot_core::pointcloud_t>();
-
+  bot_core::pointcloud_t& message = *output;
   message.frame_id = std::string(RigidBodyTreeConstants::kWorldName);
   message.n_points = point_cloud_S.cols();
   message.points.clear();

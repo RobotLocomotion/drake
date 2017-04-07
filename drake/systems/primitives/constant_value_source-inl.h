@@ -23,13 +23,14 @@ template <typename T>
 ConstantValueSource<T>::ConstantValueSource(
     std::unique_ptr<AbstractValue> value)
     : source_value_(std::move(value)) {
-  this->DeclareAbstractOutputPort(*source_value_);
+  this->DeclareAbstractOutputPort(*source_value_,
+                                  &ConstantValueSource::CopyOutValue);
 }
 
 template <typename T>
-void ConstantValueSource<T>::DoCalcOutput(const Context<T>&,
-                                          SystemOutput<T>* output) const {
-  output->GetMutableData(0)->SetFrom(*source_value_);
+void ConstantValueSource<T>::CopyOutValue(const Context<T>&,
+                                          AbstractValue* value) const {
+  value->SetFrom(*source_value_);
 }
 
 }  // namespace systems

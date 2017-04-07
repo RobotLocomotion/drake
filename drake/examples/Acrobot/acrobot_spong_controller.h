@@ -33,8 +33,9 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
         g_{acrobot_.g()} {
     this->DeclareInputPort(systems::kVectorValued,
                            acrobot_.get_output_port(0).size());
-    this->DeclareOutputPort(systems::kVectorValued,
-                            acrobot_.get_input_port(0).size());
+    this->DeclareVectorOutputPort(
+        systems::BasicVector<T>(acrobot_.get_input_port(0).size()),
+        &AcrobotSpongController::CalcControlTorque);
 
     // Create context for linearization.
     auto context0 = acrobot_.CreateDefaultContext();
@@ -63,8 +64,8 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
     K_ = lqr_result.K;
   }
 
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override {
+  void CalcControlTorque(const systems::Context<T>& context,
+                         systems::BasicVector<T>* output) const {
     const AcrobotStateVector<T>* x = dynamic_cast<const AcrobotStateVector<T>*>(
         this->EvalVectorInput(context, 0));
     DRAKE_ASSERT(x != nullptr);
@@ -155,7 +156,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
     if (u >= ku_upper_bound) u = ku_upper_bound;
     if (u <= ku_lower_bound) u = ku_lower_bound;
 
-    output->GetMutableVectorData(0)->SetAtIndex(0, u);
+    output->SetAtIndex(0, u);
   }
 
  private:

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "bot_core/atlas_command_t.hpp"
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 
@@ -24,22 +25,19 @@ class AtlasJointLevelControllerSystem : public JointLevelControllerBaseSystem {
    */
   explicit AtlasJointLevelControllerSystem(const RigidBodyTree<double>& robot);
 
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   /**
    * Returns the output port for bot_core::atlas_command_t.
    */
-  inline const systems::OutputPortDescriptor<double>&
+  const systems::OutputPort<double>&
   get_output_port_atlas_command() const {
     return get_output_port(output_port_index_atlas_cmd_);
   }
 
  private:
   // Generates an additional bot_core::atlas_command_t output.
-  void DoCalcExtendedOutput(
+  void OutputCommand(
       const systems::Context<double>& context,
-      systems::SystemOutput<double>* output) const override;
+      bot_core::atlas_command_t* output) const;
 
   int output_port_index_atlas_cmd_{0};
 

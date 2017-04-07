@@ -38,12 +38,12 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
     return this->get_input_port(state_input_port_);
   }
 
-  const systems::OutputPortDescriptor<double>&
+  const systems::OutputPort<double>&
   get_state_output_port() const {
     return this->get_output_port(state_output_port_);
   }
 
-  const systems::OutputPortDescriptor<double>&
+  const systems::OutputPort<double>&
   get_acceleration_output_port() const {
     return this->get_output_port(acceleration_output_port_);
   }
@@ -65,14 +65,19 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
 
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;
 
  private:
   struct PlanData;
+
+  // Calculator method for the state output port.
+  void OutputState(const systems::Context<double>& context,
+                   systems::BasicVector<double>* output) const;
+
+  // Calculator method for the accleration output port.
+  void OutputAccel(const systems::Context<double>& context,
+                   systems::BasicVector<double>* output) const;
 
   void MakeFixedPlan(double plan_start_time, const VectorX<double>& q0,
                   systems::State<double>* state) const;

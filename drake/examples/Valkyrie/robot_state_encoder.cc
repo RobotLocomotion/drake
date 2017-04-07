@@ -35,7 +35,9 @@ RobotStateEncoder::RobotStateEncoder(
       floating_body_(tree.bodies[1]->getJoint().is_floating()
                          ? tree.bodies[1].get()
                          : nullptr),
-      lcm_message_port_index_(DeclareAbstractOutputPort().get_index()),
+      lcm_message_port_index_(
+          DeclareAbstractOutputPort(&RobotStateEncoder::OutputRobotState)
+              .get_index()),
       kinematics_results_port_index_(DeclareAbstractInputPort().get_index()),
       contact_results_port_index_(DeclareAbstractInputPort().get_index()),
       effort_port_indices_(DeclareEffortInputPorts()),
@@ -58,10 +60,9 @@ RobotStateEncoder::RobotStateEncoder(
 
 RobotStateEncoder::~RobotStateEncoder() {}
 
-void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
-                                     SystemOutput<double>* output) const {
-  auto& message = output->GetMutableData(lcm_message_port_index_)
-                      ->GetMutableValue<robot_state_t>();
+void RobotStateEncoder::OutputRobotState(const Context<double>& context,
+                                         robot_state_t* output) const {
+  auto& message = *output;
   message.utime = static_cast<int64_t>(context.get_time() * 1e6);
 
   // TODO(siyuan.feng): I explicitly evaluated kinematics and contacts
@@ -79,12 +80,7 @@ void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
   SetForceTorque(kinematics_results, contact_results, &message);
 }
 
-std::unique_ptr<AbstractValue> RobotStateEncoder::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>&) const {
-  return make_unique<Value<robot_state_t>>(robot_state_t());
-}
-
-const OutputPortDescriptor<double>& RobotStateEncoder::lcm_message_port()
+const OutputPort<double>& RobotStateEncoder::lcm_message_port()
     const {
   return get_output_port(lcm_message_port_index_);
 }

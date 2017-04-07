@@ -32,7 +32,9 @@ IiwaMove::IiwaMove(const RigidBodyTree<double>& iiwa,
                       1 /* action_primitive_state_index */),
       internal_state_index_(0),
       input_port_primitive_input_(this->DeclareAbstractInputPort().get_index()),
-      output_port_plan_(this->DeclareAbstractOutputPort().get_index()),
+      output_port_plan_(
+          this->DeclareAbstractOutputPort(&IiwaMove::OutputRobotPlan)
+              .get_index()),
       iiwa_tree_(iiwa) {}
 
 std::vector<std::unique_ptr<systems::AbstractValue>>
@@ -40,16 +42,6 @@ IiwaMove::AllocateExtendedAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> return_value;
   return_value.push_back(std::unique_ptr<systems::AbstractValue>(
       new systems::Value<InternalState>(InternalState())));
-  return return_value;
-}
-
-std::unique_ptr<systems::AbstractValue>
-IiwaMove::ExtendedAllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  std::unique_ptr<systems::AbstractValue> return_value;
-  if (descriptor.get_index() == output_port_plan_) {
-    return_value = systems::AbstractValue::Make<robot_plan_t>(robot_plan_t());
-  }
   return return_value;
 }
 
@@ -128,17 +120,13 @@ void IiwaMove::DoExtendedCalcUnrestrictedUpdate(
   }
 }
 
-void IiwaMove::DoExtendedCalcOutput(
+void IiwaMove::OutputRobotPlan(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
-  // Do the output copy.
-  robot_plan_t& robot_plan_output = output->GetMutableData(output_port_plan_)
-                                        ->GetMutableValue<robot_plan_t>();
-
+    robot_plan_t* robot_plan_output) const {
   const InternalState& internal_state =
       context.get_abstract_state<InternalState>(0);
 
-  robot_plan_output = internal_state.current_plan;
+  *robot_plan_output = internal_state.current_plan;
 }
 
 }  // namespace monolithic_pick_and_place

@@ -727,22 +727,22 @@ const InputPortDescriptor<double>& RgbdCamera::state_input_port() const {
   return System<double>::get_input_port(kPortStateInput);
 }
 
-const OutputPortDescriptor<double>&
+const OutputPort<double>&
 RgbdCamera::color_image_output_port() const {
   return System<double>::get_output_port(kPortColorImage);
 }
 
-const OutputPortDescriptor<double>&
+const OutputPort<double>&
 RgbdCamera::depth_image_output_port() const {
   return System<double>::get_output_port(kPortDepthImage);
 }
 
-const OutputPortDescriptor<double>&
+const OutputPort<double>&
 RgbdCamera::label_image_output_port() const {
   return System<double>::get_output_port(kPortLabelImage);
 }
 
-const OutputPortDescriptor<double>&
+const OutputPort<double>&
 RgbdCamera::camera_base_pose_output_port() const {
   return System<double>::get_output_port(kPortCameraPose);
 }

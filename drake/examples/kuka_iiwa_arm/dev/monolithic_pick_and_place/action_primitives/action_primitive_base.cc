@@ -19,7 +19,11 @@ namespace monolithic_pick_and_place {
 ActionPrimitive::ActionPrimitive(double desired_update_interval,
                                  unsigned int action_primitive_state_index)
     : action_primitive_state_index_(action_primitive_state_index),
-      status_output_port_(this->DeclareAbstractOutputPort().get_index()),
+      status_output_port_(
+          this->DeclareAbstractOutputPort(
+                  ActionPrimitiveState(ActionPrimitiveState::WAITING),
+                  &ActionPrimitive::OutputPrimitiveState)
+              .get_index()),
       update_interval_(desired_update_interval) {
   this->DeclarePeriodicUnrestrictedUpdate(update_interval_, 0);
 }
@@ -43,28 +47,12 @@ void ActionPrimitive::SetDefaultState(const systems::Context<double>& context,
   SetExtendedDefaultState(context, state);
 }
 
-void ActionPrimitive::DoCalcOutput(
+void ActionPrimitive::OutputPrimitiveState(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+    ActionPrimitiveState* primitive_state_output) const {
   // Perform basic calc output logic, i.e set primitive state output.
-  ActionPrimitiveState& primitive_state_output =
-      output->GetMutableData(status_output_port_)
-          ->GetMutableValue<ActionPrimitiveState>();
-  primitive_state_output = context.get_abstract_state<ActionPrimitiveState>(
+  *primitive_state_output = context.get_abstract_state<ActionPrimitiveState>(
       action_primitive_state_index_);
-
-  // Call DoExtendedCalcOutput.
-  DoExtendedCalcOutput(context, output);
-}
-
-std::unique_ptr<systems::AbstractValue> ActionPrimitive::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  if (descriptor.get_index() == status_output_port_) {
-    return systems::AbstractValue::Make<ActionPrimitiveState>(
-        ActionPrimitiveState::WAITING);
-  } else {
-    return ExtendedAllocateOutputAbstract(descriptor);
-  }
 }
 
 }  // namespace monolithic_pick_and_place

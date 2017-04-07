@@ -7,6 +7,8 @@
 #include <memory>
 
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
+#include "drake/lcmt_acrobot_u.hpp"
+#include "drake/lcmt_acrobot_x.hpp"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -21,9 +23,9 @@ class AcrobotStateReceiver : public systems::LeafSystem<double> {
  public:
   AcrobotStateReceiver();
 
- protected:
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+ private:
+  void CopyStateOut(const systems::Context<double>& context,
+                    AcrobotStateVector<double>* output) const;
 };
 
 /// Receives the output of an acrobot controller, and outputs it as an LCM
@@ -33,21 +35,21 @@ class AcrobotCommandSender : public systems::LeafSystem<double> {
  public:
   AcrobotCommandSender();
 
- protected:
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+ private:
+  void OutputCommand(const systems::Context<double>& context,
+                     lcmt_acrobot_u* output) const;
 };
 
-/// Receives the output of an LcmSubsriberSystem that subsribes to the
+/// Receives the output of an LcmSubscriberSystem that subscribes to the
 /// acrobot input channel with LCM type lcmt_acrobot_u, and outputs the
 /// acrobot input as a BasicVector.
 class AcrobotCommandReceiver : public systems::LeafSystem<double> {
  public:
   AcrobotCommandReceiver();
 
- protected:
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+ private:
+  void OutputCommandAsVector(const systems::Context<double>& context,
+                             systems::BasicVector<double>* output) const;
 };
 
 /// Receives the output of an acrobot_plant, and outputs it as an LCM
@@ -57,9 +59,9 @@ class AcrobotStateSender : public systems::LeafSystem<double> {
  public:
   AcrobotStateSender();
 
- protected:
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+ private:
+  void OutputState(const systems::Context<double>& context,
+                   lcmt_acrobot_x* output) const;
 };
 
 }  // namespace acrobot

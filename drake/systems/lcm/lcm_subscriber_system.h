@@ -132,15 +132,6 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   int WaitForMessage(int old_message_count) const;
 
  protected:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override;
-
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
-  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
   void DoCalcNextUpdateTime(const Context<double>& context,
                             UpdateActions<double>* events) const override;
 
@@ -180,6 +171,18 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   // block on notification_ if it's not nullptr.
   void HandleMessage(const std::string& channel, const void* message_buffer,
                      int message_size) override;
+
+  // This pair of methods is used for the output port when we're using a
+  // translator.
+  std::unique_ptr<BasicVector<double>> AllocateTranslatorOutputValue() const;
+  void CalcTranslatorOutputValue(const Context<double>& context,
+                                 BasicVector<double>* output_vector) const;
+
+  // This pair of methods is used for the output port when we're using a
+  // serializer.
+  std::unique_ptr<systems::AbstractValue> AllocateSerializerOutputValue() const;
+  void CalcSerializerOutputValue(const Context<double>& context,
+                                 AbstractValue* output_value) const;
 
   // The channel on which to receive LCM messages.
   const std::string channel_;

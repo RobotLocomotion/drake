@@ -268,8 +268,8 @@ class AutomotiveSimulator {
   // Connects the provided pose and velocity output ports of a vehicle model to
   // the PoseAggregator and adds a PriusVis for visualizing the vehicle.
   void ConnectCarOutputsAndPriusVis(int id,
-    const systems::OutputPortDescriptor<T>& pose_output,
-    const systems::OutputPortDescriptor<T>& velocity_output);
+    const systems::OutputPort<T>& pose_output,
+    const systems::OutputPort<T>& velocity_output);
 
   // Adds an LCM publisher for the given @p system.
   // @pre Start() has NOT been called.
