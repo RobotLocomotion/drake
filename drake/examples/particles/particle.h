@@ -34,8 +34,8 @@ class Particle : public systems::LeafSystem<T> {
   Particle();
 
  protected:
-  void DoCalcOutput(const systems::Context<T>& context,
-      systems::SystemOutput<T>* output) const override;
+  void CopyStateOut(const systems::Context<T>& context,
+                    systems::BasicVector<T>* output) const;
 
   void DoCalcTimeDerivatives(const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;

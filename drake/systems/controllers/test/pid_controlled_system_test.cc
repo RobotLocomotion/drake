@@ -45,13 +45,14 @@ class TestPlant : public LeafSystem<double> {
 class TestPlantWithMinOutputs : public TestPlant {
  public:
   TestPlantWithMinOutputs() {
-    DeclareInputPort(kVectorValued, 1);
-    DeclareOutputPort(kVectorValued, 2);
+    DeclareVectorInputPort(BasicVector<double>(1));
+    DeclareVectorOutputPort(BasicVector<double>(2),
+                            &TestPlantWithMinOutputs::CalcOutputVector);
   }
 
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {
-    auto output_vector = GetMutableOutputVector(output, 0);
+  void CalcOutputVector(const Context<double>& context,
+                        BasicVector<double>* output) const {
+    BasicVector<double>& output_vector = *output;
     output_vector[0] = 1.;
     output_vector[1] = 0.1;
   }
@@ -84,13 +85,14 @@ class TestPlantWithMinOutputs : public TestPlant {
 class TestPlantWithMoreOutputs : public TestPlant {
  public:
   TestPlantWithMoreOutputs() {
-    DeclareInputPort(kVectorValued, 1);
-    DeclareOutputPort(kVectorValued, 6);
+    DeclareVectorInputPort(BasicVector<double>(1));
+    DeclareVectorOutputPort(BasicVector<double>(6),
+                            &TestPlantWithMoreOutputs::CalcOutputVector);
   }
 
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {
-    auto output_vector = GetMutableOutputVector(output, 0);
+  void CalcOutputVector(const Context<double>& context,
+                        BasicVector<double>* output) const {
+    BasicVector<double>& output_vector = *output;
     output_vector[0] = 1.;
     output_vector[1] = 0.1;
     output_vector[2] = 3.14;

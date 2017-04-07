@@ -23,7 +23,7 @@ namespace detail {
 /// should be used sparingly.  In particular, only a few select locations
 /// within the Systems Framework itself should likely call this function.
 ///
-/// @throw exception if invariants are violated or abstract_value is nullptr
+/// @throw exception if invariants are violated or basic_vector is nullptr
 template <typename T>
 void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
   DRAKE_THROW_UNLESS(basic_vector != nullptr);
@@ -42,7 +42,7 @@ void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
 }
 
 /// If @p abstract_value is a VectorValue<T>, then checks some BasicVector
-/// invariants.  If this is not a VectorValue<Scalar>, does nothing.
+/// invariants.  If this is not a VectorValue<T>, does nothing.
 ///
 /// Because this function uses shady implementation tricks, it should ONLY be
 /// called from within DRAKE_ASSERT_VOID or unit test code.

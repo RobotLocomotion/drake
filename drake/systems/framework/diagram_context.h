@@ -125,7 +125,7 @@ class DiagramContext : public Context<T> {
 
   /// Constructs a DiagramContext with the given @p num_subsystems, which is
   /// final: you cannot resize a DiagramContext after construction.
-  explicit DiagramContext(const int num_subsystems)
+  explicit DiagramContext(int num_subsystems)
       : outputs_(num_subsystems), contexts_(num_subsystems),
         state_(std::make_unique<DiagramState<T>>(num_subsystems)) {}
 

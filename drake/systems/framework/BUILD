@@ -156,11 +156,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "system_port_descriptor",
-    srcs = ["system_port_descriptor.cc"],
-    hdrs = ["system_port_descriptor.h"],
+    name = "input_port_descriptor",
+    srcs = [
+        "input_port_descriptor.cc",
+    ],
+    hdrs = [
+        "input_port_descriptor.h",
+        "system_port_descriptor.h",
+    ],
     deps = [
+        ":value",
         "//drake/common",
+        "//drake/common:type_safe_index",
     ],
 )
 
@@ -192,8 +199,8 @@ drake_cc_library(
     srcs = ["input_port_evaluator_interface.cc"],
     hdrs = ["input_port_evaluator_interface.h"],
     deps = [
+        ":input_port_descriptor",
         ":output_port_value",
-        ":system_port_descriptor",
         "//drake/common",
     ],
 )
@@ -237,14 +244,24 @@ drake_cc_library(
 
 drake_cc_library(
     name = "system",
-    srcs = ["system.cc"],
-    hdrs = ["system.h"],
+    srcs = [
+        "output_port.cc",
+        "system.cc",
+    ],
+    hdrs = [
+        "output_port.h",
+        "system.h",
+        "system_port_descriptor.h",
+    ],
     deps = [
         ":cache",
         ":context",
+        ":diagram_context",
+        ":value",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:symbolic",
+        "//drake/common:type_safe_index",
         "//drake/common:unused",
     ],
 )
@@ -510,6 +527,17 @@ drake_cc_googletest(
     deps = [
         ":output_port_value",
         "//drake/common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "output_port_test",
+    deps = [
+        ":leaf_context",
+        ":system",
+        "//drake/common",
+        "//drake/systems/framework/test_utilities",
+        "//drake/systems/primitives:constant_vector_source",
     ],
 )
 

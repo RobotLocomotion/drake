@@ -28,12 +28,12 @@ namespace automotive {
 ///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
 ///   heading is defined around the +z axis, so positive-turn-left
 /// * velocity
-///   (OutputPortDescriptor getter: raw_pose_output())
+///   (OutputPort getter: raw_pose_output())
 ///
 /// output port 1: A PoseVector containing X_WC, where C is the car frame.
-///   (OutputPortDescriptor getter: pose_output())
+///   (OutputPort getter: pose_output())
 /// output port 2: A FrameVelocity containing Xdot_WC, where C is the car frame.
-///   (OutputPortDescriptor getter: velocity_output())
+///   (OutputPort getter: velocity_output())
 ///
 /// @ingroup automotive_plants
 template <typename T>
@@ -51,20 +51,20 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     if (curve_.path_length() == 0.0) {
       throw std::invalid_argument{"empty curve"};
     }
-    this->DeclareVectorOutputPort(SimpleCarState<T>());
-    this->DeclareVectorOutputPort(systems::rendering::PoseVector<T>());
-    this->DeclareVectorOutputPort(systems::rendering::FrameVelocity<T>());
+    this->DeclareVectorOutputPort(&TrajectoryCar::CalcStateOutput);
+    this->DeclareVectorOutputPort(&TrajectoryCar::CalcPoseOutput);
+    this->DeclareVectorOutputPort(&TrajectoryCar::CalcVelocityOutput);
   }
 
   /// See class description for details about the following ports.
   /// @{
-  const systems::OutputPortDescriptor<T>& raw_pose_output() const {
+  const systems::OutputPort<T>& raw_pose_output() const {
     return this->get_output_port(0);
   }
-  const systems::OutputPortDescriptor<T>& pose_output() const {
+  const systems::OutputPort<T>& pose_output() const {
     return this->get_output_port(1);
   }
-  const systems::OutputPortDescriptor<T>& velocity_output() const {
+  const systems::OutputPort<T>& velocity_output() const {
     return this->get_output_port(2);
   }
   /// @}
@@ -76,28 +76,10 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     T heading{0.};
   };
 
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override {
-    SimpleCarState<T>* const output_vector =
-        dynamic_cast<SimpleCarState<T>*>(output->GetMutableVectorData(0));
-    DRAKE_ASSERT(output_vector);
-    ImplCalcOutput(context.get_time(), output_vector);
-
-    systems::rendering::PoseVector<T>* const pose =
-        dynamic_cast<systems::rendering::PoseVector<T>*>(
-            output->GetMutableVectorData(1));
-    DRAKE_ASSERT(pose);
-    ImplCalcPose(context.get_time(), pose);
-
-    systems::rendering::FrameVelocity<T>* const velocity =
-      dynamic_cast<systems::rendering::FrameVelocity<T>*>(
-          output->GetMutableVectorData(2));
-    DRAKE_ASSERT(velocity);
-    ImplCalcVelocity(context.get_time(), velocity);
-  }
-
  private:
-  void ImplCalcOutput(double time, SimpleCarState<T>* output) const {
+  void CalcStateOutput(const systems::Context<T>& context,
+                       SimpleCarState<T>* output) const {
+    const double time = context.get_time();
     const auto raw_pose = CalcRawPose(time);
 
     // Convert raw pose to output type.
@@ -107,8 +89,10 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     output->set_velocity(speed_);
   }
 
-  void ImplCalcPose(double time, systems::rendering::PoseVector<T>* pose)
+  void CalcPoseOutput(const systems::Context<T>& context,
+                      systems::rendering::PoseVector<T>* pose)
       const {
+    const double time = context.get_time();
     const auto raw_pose = CalcRawPose(time);
 
     // Convert the raw pose into a pose vector.
@@ -119,8 +103,10 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     pose->set_rotation(Eigen::Quaternion<T>(rotation));
   }
 
-  void ImplCalcVelocity(double time,
-                        systems::rendering::FrameVelocity<T>* velocity) const {
+  void CalcVelocityOutput(
+      const systems::Context<T>& context,
+      systems::rendering::FrameVelocity<T>* velocity) const {
+    const double time = context.get_time();
     const auto raw_pose = CalcRawPose(time);
 
     // Convert the state derivatives into a spatial velocity.

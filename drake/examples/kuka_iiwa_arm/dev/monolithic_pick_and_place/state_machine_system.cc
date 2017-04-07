@@ -80,8 +80,16 @@ PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
   input_port_wsg_status_ = this->DeclareAbstractInputPort().get_index();
   input_port_wsg_action_status_ = this->DeclareAbstractInputPort().get_index();
   input_port_iiwa_action_status_ = this->DeclareAbstractInputPort().get_index();
-  output_port_iiwa_action_ = this->DeclareAbstractOutputPort().get_index();
-  output_port_wsg_action_ = this->DeclareAbstractOutputPort().get_index();
+  output_port_iiwa_action_ =
+      this->DeclareAbstractOutputPort(
+              IiwaActionInput(),
+              &PickAndPlaceStateMachineSystem::OutputIiwaAction)
+          .get_index();
+  output_port_wsg_action_ =
+      this->DeclareAbstractOutputPort(
+              GripperActionInput(GripperActionInput::CLOSE),
+              &PickAndPlaceStateMachineSystem::OutputGripperAction)
+          .get_index();
   this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
 }
 
@@ -91,21 +99,6 @@ PickAndPlaceStateMachineSystem::AllocateAbstractState() const {
   abstract_vals.push_back(std::unique_ptr<systems::AbstractValue>(
       new systems::Value<InternalState>(InternalState())));
   return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
-}
-
-std::unique_ptr<systems::AbstractValue>
-PickAndPlaceStateMachineSystem::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  std::unique_ptr<systems::AbstractValue> return_val;
-  /* allocate iiwa action and wsg output port */
-  if (descriptor.get_index() == output_port_iiwa_action_) {
-    return_val =
-        systems::AbstractValue::Make<IiwaActionInput>(IiwaActionInput());
-  } else if (descriptor.get_index() == output_port_wsg_action_) {
-    return_val = systems::AbstractValue::Make<GripperActionInput>(
-        GripperActionInput::CLOSE);
-  }
-  return return_val;
 }
 
 void PickAndPlaceStateMachineSystem::SetDefaultState(
@@ -126,24 +119,24 @@ void PickAndPlaceStateMachineSystem::SetDefaultState(
   internal_state.X_WObj_desired = Isometry3<double>::Identity();
 }
 
-void PickAndPlaceStateMachineSystem::DoCalcOutput(
+void PickAndPlaceStateMachineSystem::OutputIiwaAction(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+    IiwaActionInput* iiwa_primitive_input) const {
   /* Call actions based on state machine logic */
-
-  IiwaActionInput& iiwa_primitive_input =
-      output->GetMutableData(output_port_iiwa_action_)
-          ->GetMutableValue<IiwaActionInput>();
-
-  GripperActionInput& wsg_primitive_input =
-      output->GetMutableData(output_port_wsg_action_)
-          ->GetMutableValue<GripperActionInput>();
-
   const InternalState& internal_state =
       context.get_abstract_state<InternalState>(0);
 
-  iiwa_primitive_input = internal_state.iiwa_current_action;
-  wsg_primitive_input = internal_state.wsg_current_action;
+  *iiwa_primitive_input = internal_state.iiwa_current_action;
+}
+
+void PickAndPlaceStateMachineSystem::OutputGripperAction(
+    const systems::Context<double>& context,
+    GripperActionInput* wsg_primitive_input) const {
+  /* Call actions based on state machine logic */
+  const InternalState& internal_state =
+      context.get_abstract_state<InternalState>(0);
+
+  *wsg_primitive_input = internal_state.wsg_current_action;
 }
 
 void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(

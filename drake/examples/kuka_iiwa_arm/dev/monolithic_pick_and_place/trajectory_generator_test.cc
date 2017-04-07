@@ -51,46 +51,29 @@ class PlanSourceTester : public systems::LeafSystem<double> {
         plan_iiwa_joint_angles_(q),
         plan_wsg_positions_(wsg_positions),
         num_points_(time.size()),
-        output_port_iiwa_plan_(DeclareAbstractOutputPort().get_index()),
-        output_port_wsg_plan_(DeclareAbstractOutputPort().get_index()) {}
+        output_port_iiwa_plan_(
+            DeclareAbstractOutputPort(&PlanSourceTester::OutputIiwaPlan)
+                .get_index()),
+        output_port_wsg_plan_(
+            DeclareAbstractOutputPort(&PlanSourceTester::OutputWsgPlan)
+                .get_index()) {}
 
-  const systems::OutputPortDescriptor<double>& get_output_port_iiwa_action()
+  const systems::OutputPort<double>& get_output_port_iiwa_action()
       const {
     return this->get_output_port(output_port_iiwa_plan_);
   }
 
-  const systems::OutputPortDescriptor<double>& get_output_port_wsg_action()
+  const systems::OutputPort<double>& get_output_port_wsg_action()
       const {
     return this->get_output_port(output_port_wsg_plan_);
   }
 
- protected:
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override {
-    std::unique_ptr<systems::AbstractValue> return_value;
-    std::unique_ptr<systems::AbstractValue> return_val;
+ private:
+  void OutputIiwaPlan(const systems::Context<double>& context,
+                      robot_plan_t* output) const {
+    robot_plan_t& iiwa_action_output = *output;
 
-    /* allocate outputs for RobotPlanInterpolator and
-     * SchunkWsgTrajectoryGenerator */
-    if (descriptor.get_index() == output_port_iiwa_plan_) {
-      return_val = systems::AbstractValue::Make<robot_plan_t>(robot_plan_t());
-    } else if (descriptor.get_index() == output_port_wsg_plan_) {
-      lcmt_schunk_wsg_command default_command;
-      return_val = systems::AbstractValue::Make<lcmt_schunk_wsg_command>(
-          default_command);
-    }
-    return return_val;
-  }
-
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override {
-    robot_plan_t& iiwa_action_output =
-        output->GetMutableData(output_port_iiwa_plan_)
-            ->GetMutableValue<robot_plan_t>();
-    lcmt_schunk_wsg_command& wsg_action_output =
-        output->GetMutableData(output_port_wsg_plan_)
-            ->GetMutableValue<lcmt_schunk_wsg_command>();
-    static bool iiwa_plan_started = false, wsg_plan_started = false;
+    static bool iiwa_plan_started = false;
     double time = context.get_time();
     if (time >= plan_time_.at(0)) {
       if (!iiwa_plan_started) {
@@ -105,7 +88,16 @@ class PlanSourceTester : public systems::LeafSystem<double> {
       for (size_t i = 0; i < plan_size; ++i)
         q_mat.col(i) = plan_iiwa_joint_angles_[i];
       iiwa_action_output = EncodeKeyFrames(iiwa_tree_, plan_time_, info, q_mat);
+    }
+  }
 
+  void OutputWsgPlan(const systems::Context<double>& context,
+                     lcmt_schunk_wsg_command* output) const {
+    lcmt_schunk_wsg_command& wsg_action_output = *output;
+
+    static bool wsg_plan_started = false;
+    double time = context.get_time();
+    if (time >= plan_time_.at(0)) {
       if (!wsg_plan_started) {
         wsg_plan_started = true;
         drake::log()->info("Starting Gripper(WSG) plan");
@@ -122,7 +114,6 @@ class PlanSourceTester : public systems::LeafSystem<double> {
     }
   }
 
- private:
   const RigidBodyTreed& iiwa_tree_;
   const std::vector<double> plan_time_;
   const std::vector<Eigen::VectorXd> plan_iiwa_joint_angles_;

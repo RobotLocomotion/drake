@@ -62,10 +62,14 @@ DepthSensor::DepthSensor(const std::string& name,
       DeclareInputPort(kVectorValued,
                        tree.get_num_positions() + tree.get_num_velocities())
           .get_index();
-  depth_output_port_index_ = DeclareVectorOutputPort(
-      DepthSensorOutput<double>(specification_)).get_index();
-  pose_output_port_index_ = DeclareVectorOutputPort(
-      PoseVector<double>()).get_index();
+  depth_output_port_index_ =
+      DeclareVectorOutputPort(DepthSensorOutput<double>(specification_),
+                              &DepthSensor::CalcDepthOutput)
+          .get_index();
+  pose_output_port_index_ =
+      DeclareVectorOutputPort(PoseVector<double>(),
+                              &DepthSensor::CalcPoseOutput)
+          .get_index();
   PrecomputeRaycastEndpoints();
 }
 
@@ -120,17 +124,18 @@ DepthSensor::get_rigid_body_tree_state_input_port() const {
   return this->get_input_port(input_port_index_);
 }
 
-const OutputPortDescriptor<double>& DepthSensor::get_sensor_state_output_port()
-    const {
+const OutputPort<double>& DepthSensor::get_sensor_state_output_port()
+const {
   return System<double>::get_output_port(depth_output_port_index_);
 }
 
-const OutputPortDescriptor<double>& DepthSensor::get_pose_output_port() const {
+const OutputPort<double>& DepthSensor::get_pose_output_port() const {
   return System<double>::get_output_port(pose_output_port_index_);
 }
 
-void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
-                               systems::SystemOutput<double>* output) const {
+void DepthSensor::CalcDepthOutput(
+    const Context<double>& context,
+    DepthSensorOutput<double>* data_output) const {
   VectorXd u = this->EvalEigenVectorInput(context, 0);
   auto q = u.head(tree_.get_num_positions());
   KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
@@ -185,17 +190,21 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   }
 
   // Evaluates the output port containing the depth measurements.
-  BasicVector<double>* data_output =
-      output->GetMutableVectorData(depth_output_port_index_);
   DRAKE_ASSERT(data_output != nullptr);
   data_output->SetFromVector(distances);
+}
 
-  // Evaluates the output port containing X_WS.
+// Evaluates the output port containing X_WS.
+void DepthSensor::CalcPoseOutput(const Context<double>& context,
+                                 PoseVector<double>* output) const {
+  VectorXd u = this->EvalEigenVectorInput(context, 0);
+  auto q = u.head(tree_.get_num_positions());
+  KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
+
   const drake::Isometry3<double> X_WS =
       tree_.CalcFramePoseInWorldFrame(kinematics_cache, frame_);
   PoseVector<double>* pose_output =
-      dynamic_cast<PoseVector<double>*>(
-          output->GetMutableVectorData(pose_output_port_index_));
+      dynamic_cast<PoseVector<double>*>(output);
   DRAKE_ASSERT(pose_output != nullptr);
   pose_output->set_translation(
       Eigen::Translation<double, 3>(X_WS.translation()));

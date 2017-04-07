@@ -32,7 +32,8 @@ IdmController<T>::IdmController(const RoadGeometry& road)
           this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()},
       traffic_index_{this->DeclareAbstractInputPort().get_index()},
       acceleration_index_{
-          this->DeclareVectorOutputPort(systems::BasicVector<T>(1))
+          this->DeclareVectorOutputPort(systems::BasicVector<T>(1),
+                                        &IdmController::CalcAcceleration)
               .get_index()} {
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
 }
@@ -58,19 +59,19 @@ const systems::InputPortDescriptor<T>& IdmController<T>::traffic_input() const {
 }
 
 template <typename T>
-const systems::OutputPortDescriptor<T>& IdmController<T>::acceleration_output()
+const systems::OutputPort<T>& IdmController<T>::acceleration_output()
     const {
   return systems::System<T>::get_output_port(acceleration_index_);
 }
 
 template <typename T>
-void IdmController<T>::DoCalcOutput(const systems::Context<T>& context,
-                                    systems::SystemOutput<T>* output) const {
+void IdmController<T>::CalcAcceleration(
+    const systems::Context<T>& context,
+    systems::BasicVector<T>* accel_output) const {
   // Obtain the parameters.
   const IdmPlannerParameters<T>& idm_params =
       this->template GetNumericParameter<IdmPlannerParameters>(context,
                                                                kIdmParamsIndex);
-
   // Obtain the input/output data structures.
   const PoseVector<T>* const ego_pose =
       this->template EvalVectorInput<PoseVector>(context, ego_pose_index_);
@@ -85,16 +86,12 @@ void IdmController<T>::DoCalcOutput(const systems::Context<T>& context,
       this->template EvalInputValue<PoseBundle<T>>(context, traffic_index_);
   DRAKE_ASSERT(traffic_poses != nullptr);
 
-  systems::BasicVector<T>* const accel_output =
-      output->GetMutableVectorData(acceleration_index_);
-  DRAKE_ASSERT(accel_output != nullptr);
-
-  ImplDoCalcOutput(*ego_pose, *ego_velocity, *traffic_poses, idm_params,
-                   accel_output);
+  ImplCalcAcceleration(*ego_pose, *ego_velocity, *traffic_poses, idm_params,
+                       accel_output);
 }
 
 template <typename T>
-void IdmController<T>::ImplDoCalcOutput(
+void IdmController<T>::ImplCalcAcceleration(
     const PoseVector<T>& ego_pose, const FrameVelocity<T>& ego_velocity,
     const PoseBundle<T>& traffic_poses,
     const IdmPlannerParameters<T>& idm_params,

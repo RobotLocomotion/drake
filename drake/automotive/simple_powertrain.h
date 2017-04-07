@@ -47,7 +47,7 @@ class SimplePowertrain : public systems::LinearSystem<T> {
     return systems::System<T>::get_input_port(0);
   }
 
-  const systems::OutputPortDescriptor<T>& get_force_output_port() const {
+  const systems::OutputPort<T>& get_force_output_port() const {
     return systems::System<T>::get_output_port(0);
   }
 

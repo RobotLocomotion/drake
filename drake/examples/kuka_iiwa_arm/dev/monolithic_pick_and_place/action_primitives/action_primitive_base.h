@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_common.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/sparsity_matrix.h"
@@ -46,7 +47,7 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   /// This gets the abstract output port corresponding to the
   /// `ActionPrimitive` status. Child classes may implement additional getters
   /// as needed.
-  const systems::OutputPortDescriptor<double>& get_status_output_port() const {
+  const systems::OutputPort<double>& get_status_output_port() const {
     return this->get_output_port(status_output_port_);
   }
 
@@ -54,16 +55,8 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState() const final;
 
   // LeafSystem override.
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const final;
-
-  // LeafSystem override.
   void SetDefaultState(const systems::Context<double>& context,
                        systems::State<double>* state) const final;
-
-  // LeafSystemOverride.
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const final;
 
   // LeafSystem override.
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
@@ -83,22 +76,10 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   virtual void SetExtendedDefaultState(const systems::Context<double>& context,
                                        systems::State<double>* state) const = 0;
 
-  /// Derived class need to implement this. This method is used to allocate
-  /// the output unique to the derived class.
-  virtual std::unique_ptr<systems::AbstractValue>
-  ExtendedAllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const = 0;
-
   /// Derived class need to implement this. This method is used to specify the
   /// additional `AbstractState` of the derived class.
   virtual std::vector<std::unique_ptr<systems::AbstractValue>>
   AllocateExtendedAbstractState() const = 0;
-
-  /// Derived class need to implement this. This method can be used to compute
-  /// the output unique to the derived class.
-  virtual void DoExtendedCalcOutput(
-      const systems::Context<double>& context,
-      systems::SystemOutput<double>* output) const = 0;
 
   /// Derived class need to implement this. This method can be used to compute
   /// the unrestricted update unique to the derived class.
@@ -111,6 +92,9 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   }
 
  private:
+  void OutputPrimitiveState(const systems::Context<double>& context,
+                            ActionPrimitiveState* output) const;
+
   const unsigned int action_primitive_state_index_{0};
   int status_output_port_{-1};
   const double update_interval_{0.01};

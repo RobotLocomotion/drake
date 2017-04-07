@@ -34,10 +34,6 @@ class AccelerometerTestLogger : public LeafSystem<double> {
   const InputPortDescriptor<double>& get_acceleration_input_port() const;
 
  private:
-  // No output.
-  void DoCalcOutput(const Context<double>&,
-                    SystemOutput<double>*) const override {}
-
   // Logging is done in this method.
   void DoPublish(const Context<double>& context) const override;
 

@@ -5,6 +5,7 @@
 
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_common.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/synchronous_world_state.h"
 #include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -38,15 +39,6 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
 
-  /**
-   * Allocates abstract value types for output @p descriptor. This function
-   * allocates `IiwaActionInput` when @p matches the port for
-   * `output_port_iiwa_action_`, and 'GripperActionInput` for
-   * `output_port_wsg_action_`.
-   */
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const final;
-
   // This kind of a system is not a direct feedthrough.
   bool DoHasDirectFeedthrough(const systems::SparsityMatrix*,
                               int, int) const final {
@@ -55,9 +47,6 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
 
   void SetDefaultState(const systems::Context<double>& context,
                        systems::State<double>* state) const override;
-
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;
@@ -116,24 +105,30 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   /**
    * Getter for the output port corresponding to the `IiwaActionInput` abstract
    * output.
-   * @return The corresponding `sytems::OutputPortDescriptor`.
+   * @return The corresponding `systems::OutputPort`.
    */
-  const systems::OutputPortDescriptor<double>& get_output_port_iiwa_action()
+  const systems::OutputPort<double>& get_output_port_iiwa_action()
       const {
     return this->get_output_port(output_port_iiwa_action_);
   }
   /**
    * Getter for the output port corresponding to the `GripperActionInput`
    * abstract output.
-   * @return The corresponding `sytems::OutputPortDescriptor`.
+   * @return The corresponding `systems::OutputPort`.
    */
-  const systems::OutputPortDescriptor<double>& get_output_port_wsg_action()
+  const systems::OutputPort<double>& get_output_port_wsg_action()
       const {
     return this->get_output_port(output_port_wsg_action_);
   }
 
  private:
   struct InternalState;
+
+  void OutputIiwaAction(const systems::Context<double>& context,
+                        IiwaActionInput* output) const;
+
+  void OutputGripperAction(const systems::Context<double>& context,
+                           GripperActionInput* output) const;
 
   RigidBodyTree<double> iiwa_tree_{};
   // Input ports.

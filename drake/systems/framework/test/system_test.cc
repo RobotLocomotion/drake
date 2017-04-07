@@ -11,6 +11,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
@@ -53,9 +54,12 @@ class TestSystem : public System<double> {
     return this->DeclareAbstractInputPort();
   }
 
-
-  const OutputPortDescriptor<double>& AddAbstractOutputPort() {
-    return this->DeclareAbstractOutputPort();
+  const OutputPort<double>& AddAbstractOutputPort() {
+    // Create an abstract output port with no allocator or calculator.
+    auto& port = CreateLeafOutputPort(
+        typename LeafOutputPort<double>::AllocCallback(nullptr),
+        typename LeafOutputPort<double>::CalcCallback(nullptr));
+    return port;
   }
 
   bool HasAnyDirectFeedthrough() const override {
@@ -89,9 +93,6 @@ class TestSystem : public System<double> {
       const InputPortDescriptor<double>& descriptor) const override {
     return nullptr;
   }
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
 
   void DoCalcTimeDerivatives(
       const Context<double>& context,
@@ -319,10 +320,18 @@ class ValueIOTestSystem : public System<T> {
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
     this->DeclareAbstractInputPort();
-    this->DeclareAbstractOutputPort();
+    this->CreateLeafOutputPort(
+        Value<std::string>("output"),
+        [this](const Context<T>& context, AbstractValue* output) {
+          this->CalcStringOutput(context, output);
+        });
 
     this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareOutputPort(kVectorValued, 1);
+    this->CreateLeafOutputPort(
+        BasicVector<T>(1),
+        [this](const Context<T>& context, BasicVector<T>* output) {
+          this->CalcVectorOutput(context, output);
+        });
 
     this->set_name("ValueIOTestSystem");
   }
@@ -371,19 +380,20 @@ class ValueIOTestSystem : public System<T> {
     return true;
   }
 
-  // Append "output" to input(0), and sets output(1) = 2 * input(1).
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {
+  // Append "output" to input(0) for output(0).
+  void CalcStringOutput(const Context<T>& context,
+                        AbstractValue* output) const {
     const std::string* str_in =
         this->template EvalInputValue<std::string>(context, 0);
 
-    std::string& str_out =
-        output->GetMutableData(0)->template GetMutableValue<std::string>();
+    std::string& str_out = output->template GetMutableValue<std::string>();
     str_out = *str_in + "output";
+  }
 
+  // Set output(1) = 2 * input(1).
+  void CalcVectorOutput(const Context<T>& context,
+                        BasicVector<T>* vec_out) const {
     const BasicVector<T>* vec_in = this->EvalVectorInput(context, 1);
-    BasicVector<T>* vec_out = output->GetMutableVectorData(1);
-
     vec_out->get_mutable_value() = 2 * vec_in->get_value();
   }
 
@@ -391,12 +401,8 @@ class ValueIOTestSystem : public System<T> {
       const Context<T>& context) const override {
     std::unique_ptr<LeafSystemOutput<T>> output(
         new LeafSystemOutput<T>);
-    output->add_port(
-        std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
-
-    output->add_port(std::make_unique<OutputPortValue>(
-        std::make_unique<BasicVector<T>>(1)));
-
+    output->add_port(this->get_output_port(0).Allocate(context));
+    output->add_port(this->get_output_port(1).Allocate(context));
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
 };

@@ -79,7 +79,7 @@ class OutputPortValue {
   /// the version so that Contexts depending on this %OutputPortValue know to
   /// invalidate their caches. Callers MUST NOT write on the returned pointer if
   /// there is any possibility this %OutputPortValue has been accessed since the
-  /// last time GetMutableVectorData was called.
+  /// last time GetMutableData() was called.
   AbstractValue* GetMutableData() {
     InvalidateAndIncrement();
     return data_.get();
@@ -89,7 +89,7 @@ class OutputPortValue {
   /// the version so that Contexts depending on this %OutputPortValue know to
   /// invalidate their caches. Callers MUST NOT write on the returned pointer if
   /// there is any possibility this %OutputPortValue has been accessed since the
-  /// last time GetMutableVectorData was called.
+  /// last time GetMutableVectorData() was called.
   ///
   /// Throws std::bad_cast if this is not a vector-valued port.
   template <typename T>
@@ -216,8 +216,8 @@ class LeafSystemOutput : public SystemOutput<T> {
     port_values_.emplace_back(std::move(port));
   }
 
- protected:
-  /// Returns a clone that includes a deep copy of all the output ports.
+ private:
+  // Returns a clone that includes a deep copy of all the output port values.
   LeafSystemOutput<T>* DoClone() const override {
     LeafSystemOutput<T>* clone = new LeafSystemOutput<T>();
     for (const auto& port_value : port_values_) {
@@ -226,7 +226,6 @@ class LeafSystemOutput : public SystemOutput<T> {
     return clone;
   }
 
- private:
   std::vector<std::unique_ptr<OutputPortValue>> port_values_;
 };
 

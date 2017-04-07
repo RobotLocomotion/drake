@@ -121,7 +121,7 @@ class DiagramBuilder {
   }
 
   /// Declares that input port @p dest is connected to output port @p src.
-  void Connect(const OutputPortDescriptor<T>& src,
+  void Connect(const OutputPort<T>& src,
                const InputPortDescriptor<T>& dest) {
     DRAKE_DEMAND(src.size() == dest.size());
     PortIdentifier dest_id{dest.get_system(), dest.get_index()};
@@ -168,7 +168,7 @@ class DiagramBuilder {
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.
   /// @return The index of the exported output port of the entire diagram.
-  int ExportOutput(const OutputPortDescriptor<T>& output) {
+  int ExportOutput(const OutputPort<T>& output) {
     ThrowIfSystemNotRegistered(output.get_system());
     int return_id = static_cast<int>(output_port_ids_.size());
     output_port_ids_.push_back(

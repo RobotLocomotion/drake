@@ -94,8 +94,6 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   explicit MaliputRailcar(const LaneDirection& initial_lane_direction);
 
   // System<T> overrides.
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
@@ -113,10 +111,10 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   /// Getter methods for input and output port descriptors.
   /// @{
   const systems::InputPortDescriptor<T>& command_input() const;
-  const systems::OutputPortDescriptor<T>& state_output() const;
-  const systems::OutputPortDescriptor<T>& lane_state_output() const;
-  const systems::OutputPortDescriptor<T>& pose_output() const;
-  const systems::OutputPortDescriptor<T>& velocity_output() const;
+  const systems::OutputPort<T>& state_output() const;
+  const systems::OutputPort<T>& lane_state_output() const;
+  const systems::OutputPort<T>& pose_output() const;
+  const systems::OutputPort<T>& velocity_output() const;
   /// @}
 
   static constexpr T kDefaultInitialS = T(0);
@@ -134,24 +132,20 @@ class MaliputRailcar : public systems::LeafSystem<T> {
                                 systems::State<T>* state) const override;
 
  private:
-  void ImplCalcOutput(
-      const MaliputRailcarState<T>& state,
+  void CalcStateOutput(
+      const systems::Context<T>& context,
       MaliputRailcarState<T>* output) const;
 
-  void ImplCalcLaneOutput(
-      const LaneDirection& lane_direction,
+  void CalcLaneOutput(
+      const systems::Context<T>& context,
       LaneDirection* output) const;
 
-  void ImplCalcPose(
-      const MaliputRailcarParams<T>& params,
-      const MaliputRailcarState<T>& state,
-      const LaneDirection& lane_direction,
+  void CalcPose(
+      const systems::Context<T>& context,
       systems::rendering::PoseVector<T>* pose) const;
 
-  void ImplCalcVelocity(
-      const MaliputRailcarParams<T>& params,
-      const MaliputRailcarState<T>& state,
-      const LaneDirection& lane_direction,
+  void CalcVelocity(
+      const systems::Context<T>& context,
       systems::rendering::FrameVelocity<T>* pose) const;
 
   void ImplCalcTimeDerivatives(
@@ -170,6 +164,28 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   // with or against `s` in the current lane relative to the initial lane.
   T CalcR(const MaliputRailcarParams<T>& params,
           const LaneDirection& lane_direction) const;
+
+  // Finds our parameters in a context.
+  const MaliputRailcarParams<T>& get_parameters(
+      const systems::Context<T>& context) const {
+    return this->template GetNumericParameter<MaliputRailcarParams>(context, 0);
+  }
+
+  // Finds our continuous state in a context.
+  const MaliputRailcarState<T>& get_state(
+      const systems::Context<T>& context) const {
+    const MaliputRailcarState<T>* const state =
+        dynamic_cast<const MaliputRailcarState<T>*>(
+            &context.get_continuous_state_vector());
+    DRAKE_DEMAND(state != nullptr);
+    return *state;
+  }
+
+  // Finds the lane direction state variable in a context.
+  const LaneDirection& get_lane_direction(
+      const systems::Context<T>& context) const {
+    return context.template get_abstract_state<LaneDirection>(0);
+  }
 
   const LaneDirection initial_lane_direction_{};
   int command_input_port_index_{};

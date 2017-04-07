@@ -36,7 +36,8 @@ class RandomSource : public LeafSystem<double> {
   /// @param sampling_interval_sec The sampling interval in seconds.
   RandomSource(int num_outputs, double sampling_interval_sec) {
     this->DeclareDiscreteUpdatePeriodSec(sampling_interval_sec);
-    this->DeclareOutputPort(drake::systems::kVectorValued, num_outputs);
+    this->DeclareVectorOutputPort(BasicVector<double>(num_outputs),
+                                  &RandomSource::CopyStateToOutput);
     this->DeclareDiscreteState(num_outputs);
   }
 
@@ -56,11 +57,9 @@ class RandomSource : public LeafSystem<double> {
   }
 
   // Output is the zero-order hold of the discrete state.
-  void DoCalcOutput(
-      const drake::systems::Context<double>& context,
-      drake::systems::SystemOutput<double>* output) const override {
-    output->GetMutableVectorData(0)->SetFromVector(
-        context.get_discrete_state(0)->CopyToVector());
+  void CopyStateToOutput(const Context<double>& context,
+                         BasicVector<double>* output) const {
+    output->SetFromVector(context.get_discrete_state(0)->CopyToVector());
   }
 
   // Note: currently there is undeclared state in the variables below.

@@ -28,13 +28,14 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
         g_(pendulum.g()) {
     this->DeclareInputPort(systems::kVectorValued,
                            pendulum.get_output_port().size());
-    this->DeclareOutputPort(systems::kVectorValued,
-                            pendulum.get_tau_port().size());
+    this->DeclareVectorOutputPort(
+        systems::BasicVector<T>(pendulum.get_tau_port().size()),
+        &PendulumEnergyShapingController::CalcTau);
   }
 
  private:
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override {
+  void CalcTau(const systems::Context<T>& context,
+               systems::BasicVector<T>* output) const {
     const PendulumStateVector<T>* const state =
         dynamic_cast<const PendulumStateVector<T>*>(
             this->EvalVectorInput(context, 0));
@@ -47,7 +48,7 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
     const T Etilde = .5 * m_ * l_ * l_ * state->thetadot() * state->thetadot() -
         m_ * g_ * l_ * cos(state->theta()) - 1.1 * m_ * g_ * l_;
     const T tau = b_ * state->thetadot() - .1 * state->thetadot() * Etilde;
-    output->GetMutableVectorData(0)->SetAtIndex(0, tau);
+    output->SetAtIndex(0, tau);
   }
 
   const T m_;

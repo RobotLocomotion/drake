@@ -165,11 +165,11 @@ class StateMachineAndPrimitives : public systems::Diagram<T> {
     return this->get_input_port(input_port_wsg_status_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_output_port_iiwa_command() const {
+  const systems::OutputPort<T>& get_output_port_iiwa_command() const {
     return this->get_output_port(output_port_iiwa_command_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_output_port_wsg_command() const {
+  const systems::OutputPort<T>& get_output_port_wsg_command() const {
     return this->get_output_port(output_port_wsg_command_);
   }
 
@@ -227,16 +227,16 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
     return this->get_input_port(input_port_wsg_plan_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_output_port_wsg_status() const {
+  const systems::OutputPort<T>& get_output_port_wsg_status() const {
     return this->get_output_port(output_port_wsg_status_);
   }
 
-  const systems::OutputPortDescriptor<T>&
+  const systems::OutputPort<T>&
   get_output_port_iiwa_robot_state_est_msg() const {
     return this->get_output_port(output_port_iiwa_robot_state_msg_);
   }
 
-  const systems::OutputPortDescriptor<T>&
+  const systems::OutputPort<T>&
   get_output_port_box_robot_state_est_msg() const {
     return this->get_output_port(output_port_box_robot_state_msg_);
   }

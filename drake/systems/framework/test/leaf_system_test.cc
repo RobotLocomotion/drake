@@ -26,8 +26,10 @@ class TestSystem : public LeafSystem<T> {
  public:
   TestSystem() {
     this->set_name("TestSystem");
-    this->DeclareOutputPort(kVectorValued, 17);
-    this->DeclareAbstractOutputPort();
+
+    // We're not providing calculators for these output ports.
+    this->DeclareVectorOutputPort(BasicVector<T>(17), nullptr);
+    this->DeclareAbstractOutputPort(Value<int>(42), nullptr);
   }
   ~TestSystem() override {}
 
@@ -57,9 +59,6 @@ class TestSystem : public LeafSystem<T> {
     this->DeclarePerStepAction(action);
   }
 
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {}
-
   void DoCalcTimeDerivatives(
       const Context<T>& context,
       ContinuousState<T>* derivatives) const override {}
@@ -67,16 +66,6 @@ class TestSystem : public LeafSystem<T> {
   std::unique_ptr<Parameters<T>> AllocateParameters() const override {
     return std::make_unique<Parameters<T>>(
         std::make_unique<BasicVector<T>>(2));
-  }
-
-  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const OutputPortDescriptor<T>& descriptor) const override {
-    return std::make_unique<BasicVector<T>>(17);
-  }
-
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<T>& descriptor) const override {
-    return AbstractValue::Make<int>(42);
   }
 
   void SetDefaultParameters(const LeafContext<T>& context,
@@ -355,15 +344,13 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     this->DeclareVectorInputPort(MyVector2d());
     this->DeclareAbstractInputPort(Value<int>(22));
 
-    this->DeclareOutputPort(kVectorValued, 3);
-    this->DeclareVectorOutputPort(MyVector4d());
-    this->DeclareAbstractOutputPort(Value<std::string>("44"));
+    // We're not providing calculators for these output ports.
+    this->DeclareVectorOutputPort(BasicVector<double>(3), nullptr);
+    this->DeclareVectorOutputPort(MyVector4d(), nullptr);
+    this->DeclareAbstractOutputPort(Value<std::string>("44"), nullptr);
 
     this->DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
   }
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
 };
 
 // Tests that Declare{Vector,Abstract}{Input,Output}Port end up with the
@@ -378,9 +365,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   const InputPortDescriptor<double>& in1 = dut.get_input_port(1);
   const InputPortDescriptor<double>& in2 = dut.get_input_port(2);
 
-  const OutputPortDescriptor<double>& out0 = dut.get_output_port(0);
-  const OutputPortDescriptor<double>& out1 = dut.get_output_port(1);
-  const OutputPortDescriptor<double>& out2 = dut.get_output_port(2);
+  const OutputPort<double>& out0 = dut.get_output_port(0);
+  const OutputPort<double>& out1 = dut.get_output_port(1);
+  const OutputPort<double>& out2 = dut.get_output_port(2);
 
   EXPECT_EQ(in0.get_data_type(), kVectorValued);
   EXPECT_EQ(in1.get_data_type(), kVectorValued);
@@ -469,8 +456,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
       DeclareAbstractState(AbstractValue::Make<int>(1));
       DeclareAbstractState(AbstractValue::Make<std::string>("wow"));
     }
-    void DoCalcOutput(const Context<double>& context,
-                      SystemOutput<double>* output) const override {}
   };
 
   DeclaredModelAbstractStateSystem dut;
@@ -594,12 +579,8 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
   }
 
   void AddAbstractOutputPort() {
-    this->DeclareAbstractOutputPort();
+    this->DeclareAbstractOutputPort(nullptr, nullptr);  // No alloc or calc.
   }
-
- protected:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
 };
 
 
@@ -676,19 +657,24 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
   SymbolicSparsitySystem() {
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
-    this->DeclareOutputPort(kVectorValued, kSize);
-    this->DeclareOutputPort(kVectorValued, kSize);
+
+    this->DeclareVectorOutputPort(BasicVector<T>(kSize),
+                                  &SymbolicSparsitySystem::CalcY0);
+    this->DeclareVectorOutputPort(BasicVector<T>(kSize),
+                                  &SymbolicSparsitySystem::CalcY1);
   }
 
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {
-    const auto& u0 = *(this->EvalVectorInput(context, 0));
+ private:
+  void CalcY0(const Context<T>& context,
+                    BasicVector<T>* y0) const {
     const auto& u1 = *(this->EvalVectorInput(context, 1));
-    auto& y0 = *(output->GetMutableVectorData(0));
-    auto& y1 = *(output->GetMutableVectorData(1));
+    y0->set_value(u1.get_value());
+  }
 
-    y0.set_value(u1.get_value());
-    y1.set_value(u0.get_value());
+  void CalcY1(const Context<T>& context,
+              BasicVector<T>* y1) const {
+    const auto& u0 = *(this->EvalVectorInput(context, 0));
+    y1->set_value(u0.get_value());
   }
 
  protected:
