@@ -663,29 +663,48 @@ class System {
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name                      Utility methods
+  /// @name Functions to avoid RTTI in Diagram, should really be protected.
   //@{
 
+  /// Returns @p context if @p target_system equals `this`, nullptr otherwise.
+  /// Should not be directly called.
   virtual Context<T>* DoGetMutableTargetSystemContext(
-      Context<T>* context, const System<T>* target_system) const {
+      const System<T>* target_system, Context<T>* context) const {
     if (target_system == this)
       return context;
     return nullptr;
   }
 
+  /// Returns @p context if @p target_system equals `this`, nullptr otherwise.
+  /// Should not be directly called.
   virtual const Context<T>* DoGetTargetSystemContext(
-      const Context<T>* context, const System<T>* target_system) const {
+      const System<T>* target_system, const Context<T>* context) const {
     if (target_system == this)
       return context;
     return nullptr;
   }
 
+  /// Returns @p state if @p target_system equals `this`, nullptr otherwise.
+  /// Should not be directly called.
   virtual State<T>* DoGetMutableTargetSystemState(
-      State<T>* state, const System<T>* target_system) const {
+      const System<T>* target_system, State<T>* state) const {
     if (target_system == this)
       return state;
     return nullptr;
   }
+
+  /// Returns @p state if @p target_system equals `this`, nullptr otherwise.
+  /// Should not be directly called.
+  virtual const State<T>* DoGetTargetSystemState(
+      const System<T>* target_system, const State<T>* state) const {
+    if (target_system == this)
+      return state;
+    return nullptr;
+  }
+
+  //----------------------------------------------------------------------------
+  /// @name                      Utility methods
+  //@{
 
   /// Sets the name of the system. It is recommended that the name not include
   /// the character ':', since the path delimiter is "::". When creating a

@@ -1162,8 +1162,7 @@ TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
       ->get_mutable_continuous_state_vector()
       ->SetAtIndex(0, 4);
 
-  big_diagram_->CalcOutput(*big_context_, big_output_.get());
-
+  // Checks states.
   EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator0_)
                 .get_continuous_state_vector()
                 .GetAtIndex(0),
@@ -1181,6 +1180,9 @@ TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
                 .GetAtIndex(0),
             4);
 
+  // Checks output.
+  big_diagram_->CalcOutput(*big_context_, big_output_.get());
+
   EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 1);
   EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 2);
   EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 3);
@@ -1197,31 +1199,43 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 0);
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 0);
 
+  State<double>* big_state = big_context_->get_mutable_state();
   big_diagram_
-      ->GetMutableSubsystemState(big_context_->get_mutable_state(),
-                                 integrator0_)
+      ->GetMutableSubsystemState(big_state, integrator0_)
       ->get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 1);
   big_diagram_
-      ->GetMutableSubsystemState(big_context_->get_mutable_state(),
-                                 integrator1_)
+      ->GetMutableSubsystemState(big_state, integrator1_)
       ->get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 2);
   big_diagram_
-      ->GetMutableSubsystemState(big_context_->get_mutable_state(),
-                                 integrator2_)
+      ->GetMutableSubsystemState(big_state, integrator2_)
       ->get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 3);
   big_diagram_
-      ->GetMutableSubsystemState(big_context_->get_mutable_state(),
-                                 integrator3_)
+      ->GetMutableSubsystemState(big_state, integrator3_)
       ->get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 4);
 
+  // Checks state.
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator0_)
+                .get_continuous_state()->get_vector()[0],
+            1);
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator1_)
+                .get_continuous_state()->get_vector()[0],
+            2);
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator2_)
+                .get_continuous_state()->get_vector()[0],
+            3);
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator3_)
+                .get_continuous_state()->get_vector()[0],
+            4);
+
+  // Checks output.
   big_diagram_->CalcOutput(*big_context_, big_output_.get());
 
   EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 1);
