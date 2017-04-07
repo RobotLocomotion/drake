@@ -94,9 +94,11 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   }
 
   ///
-  /// @name Methods for getting and setting the scheme used to determine the
-  ///       Jacobian matrix necessary for solving the requisite nonlinear system
-  ///       if equations.
+  /// @name Methods for getting and setting the Jacobian scheme.
+  ///
+  /// Methods for getting and setting the scheme used to determine the
+  /// Jacobian matrix necessary for solving the requisite nonlinear system
+  /// if equations.
   /// @{
   /// Selecting the wrong such Jacobian determination scheme will slow (possibly
   /// critically) the implicit integration process. Automatic differentiation is
