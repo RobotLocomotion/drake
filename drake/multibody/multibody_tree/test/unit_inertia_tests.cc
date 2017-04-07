@@ -194,6 +194,7 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
 //  - ShiftFromCentroidInPlace()
 //  - ShiftFromCentroid()
 //  - ShiftToCentroidInPlace()
+//  - ShiftToCentroid()
 GTEST_TEST(UnitInertia, ShiftFromCentroidInPlace) {
   const double r = 2.5;
   const double L = 1.5;
