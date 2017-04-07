@@ -295,6 +295,14 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaVarExpr) {
   fns.push_back([&](const Expression& x) { return fns[2](x) || fns[6](x); });
   fns.push_back([&](const Expression& x) { return !fns[14](x); });
   fns.push_back([&](const Expression& x) { return !fns[15](x); });
+  fns.push_back([&](const Expression& x) {
+    Eigen::Matrix<Expression, 2, 2> m;
+    // clang-format off
+    m << (x * y_), 2.0,
+              2.0, (x * y_);
+    // clang-format on
+    return positive_semidefinite(m);
+  });
 
   vector<pair<Variable, Expression>> substs;
   substs.emplace_back(var_x_, x_);
@@ -352,6 +360,14 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaSubstitution) {
       [&](const vector<Expression>& v) { return fns[2](v) || fns[4](v); });
   fns.push_back([&](const vector<Expression>& v) { return !fns[8](v); });
   fns.push_back([&](const vector<Expression>& v) { return !fns[9](v); });
+  fns.push_back([](const vector<Expression>& v) {
+    Eigen::Matrix<Expression, 2, 2> m;
+    // clang-format off
+    m << (v[0] + v[1]),    (v[1] * 2 - 3.5),
+         (v[1] * 2 - 3.5), (v[0] + v[1]);
+    // clang-format on
+    return positive_semidefinite(m);
+  });
 
   vector<Substitution> substs;
   substs.push_back({{var_x_, 1.0}, {var_y_, 1.0}, {var_z_, 2.0}});
