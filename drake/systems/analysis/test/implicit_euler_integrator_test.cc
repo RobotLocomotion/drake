@@ -148,7 +148,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
   const double spring_k = 1.0;
 
   /// Default spring constant for a stiff spring. Corresponds to a frequency
-  /// of nearly 16k cycles per second without damping.
+  /// of 11,254 cycles per second without damping.
   const double stiff_spring_k = 1e10;
 
   /// Default semi-stiff (in the computational sense) damping coefficient.
