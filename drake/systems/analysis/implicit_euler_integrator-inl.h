@@ -229,8 +229,18 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCDiffJacobianF(
   return J;
 }
 
-// Calculates the norm of the errors of the configuration variables, velocity
-// variables, and auxiliary variables.
+// Calculates the infinity norms of the errors of the configuration variables,
+// velocity variables, and auxiliary variables. Weightings on changes in state
+// variables defined in IntegratorBase (and described in documentation for that
+// class labeled "Methods for weighting state variable errors") should be
+// selected such that "the weight `wᵢ` for state variable `xᵢ` ... makes the
+// product `wᵢ * dxᵢ` unitless." Thus, the three computed norms should be
+// directly comparable.
+// @param q_nrm the infinity norm of the change in position variables.
+// @param v_nrm the infinity norm of the change in velocity variables.
+// @param z_nrm the infinity norm of the change in auxiliary variables.
+// @note If a class of variable (e.g., auxiliary variables) isn't present in
+//       the system, the computed norm will be zero.
 template <class T>
 void ImplicitEulerIntegrator<T>::CalcErrorNorms(const Context<T>& context,
                                                 T* q_nrm, T* v_nrm, T* z_nrm) {

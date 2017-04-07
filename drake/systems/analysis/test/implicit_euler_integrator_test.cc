@@ -58,7 +58,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
 
 // This is a modified spring-mass-damper system for which the acceleration
 // component of the derivative function is discontinuous with respect to the
-// point mass position. Tests the ability of the integrator to deal with
+// point mass state. Tests the ability of the integrator to deal with
 // such discontinuities.
 template <class T>
 class ModifiedSpringMassDamperSystem : public SpringMassDamperSystem<T> {
