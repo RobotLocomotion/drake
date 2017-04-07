@@ -30,9 +30,9 @@ class PoseBundleToDrawMessage : public LeafSystem<double> {
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;
 
-  /// Allocates a draw message.
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>& descriptor) const override;
+ private:
+  // Allocates a draw message.
+  std::unique_ptr<AbstractValue> AllocateOutputValue() const;
 };
 
 }  // namespace rendering

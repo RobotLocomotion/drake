@@ -9,6 +9,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
@@ -51,9 +52,12 @@ class TestSystem : public System<double> {
     return this->DeclareAbstractInputPort();
   }
 
-
-  const OutputPortDescriptor<double>& AddAbstractOutputPort() {
-    return this->DeclareAbstractOutputPort();
+  const OutputPort<double>& AddAbstractOutputPort() {
+    auto port =
+        std::make_unique<LeafOutputPort<double>>(kAbstractValued, 0 /* size */);
+    const OutputPort<double>* port_ptr = port.get();
+    AddOutputPort(std::move(port));
+    return *port_ptr;
   }
 
   bool HasAnyDirectFeedthrough() const override {
@@ -306,10 +310,11 @@ class ValueIOTestSystem : public System<T> {
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
     this->DeclareAbstractInputPort();
-    this->DeclareAbstractOutputPort();
+    this->AddOutputPort(
+        std::make_unique<LeafOutputPort<T>>(kAbstractValued, 0));
 
     this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareOutputPort(kVectorValued, 1);
+    this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(kVectorValued, 1));
 
     this->set_name("ValueIOTestSystem");
   }

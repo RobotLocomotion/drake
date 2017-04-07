@@ -35,7 +35,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
       systems::Context<double>* context,
       const Eigen::Ref<const VectorX<double>> x) const;
 
- protected:
+ private:
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
@@ -72,14 +72,10 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
     return this->get_input_port(torque_input_port_);
   }
 
- protected:
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
+ private:
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
- private:
   const int position_input_port_{};
   const int torque_input_port_{};
 };
@@ -111,7 +107,7 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
     return this->get_output_port(commanded_position_output_port_);
   }
 
- protected:
+ private:
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
@@ -119,7 +115,6 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
       const systems::Context<double>& context,
       systems::DiscreteValues<double>* discrete_state) const override;
 
- private:
   const int measured_position_output_port_{};
   const int commanded_position_output_port_{};
 };
@@ -153,9 +148,8 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
     return this->get_input_port(1);
   }
 
- protected:
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
+ private:
+  std::unique_ptr<systems::AbstractValue> AllocateOutputPort() const;
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;

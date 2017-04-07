@@ -19,7 +19,7 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareOutputPort(kVectorValued, kSize);
     this->DeclareOutputPort(kVectorValued, kSize);
-    this->DeclareAbstractOutputPort();
+    this->DeclareAbstractOutputPort(Value<int>(42));
 
     this->DeclareContinuousState(kSize);
     this->DeclareDiscreteState(kSize);
@@ -51,12 +51,6 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
 
     // Output 1 depends on both inputs and the discrete state.
     y1.set_value(u0.get_value() + u1.get_value() + xd.get_value());
-  }
-
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<symbolic::Expression>& descriptor)
-  const override {
-    return AbstractValue::Make<int>(42);
   }
 };
 

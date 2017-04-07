@@ -84,9 +84,6 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
   std::vector<std::unique_ptr<systems::AbstractValue>>
   ExtendedAllocateAbstractState() const override;
 
-  std::unique_ptr<systems::AbstractValue> ExtendedAllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   int input_port_index_desired_state_{};
   int input_port_index_desired_acceleration_{};
   int output_port_index_debug_info_{};

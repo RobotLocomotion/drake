@@ -30,9 +30,6 @@ class HumanoidStatusTranslatorSystem : public systems::LeafSystem<double> {
   HumanoidStatusTranslatorSystem(const RigidBodyTree<double>& robot,
                                  const std::string& alias_group_path);
 
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   /**
    * Returns the output port for HumanoidStatus.
    */
@@ -49,6 +46,8 @@ class HumanoidStatusTranslatorSystem : public systems::LeafSystem<double> {
   inline const RigidBodyTree<double>& get_robot() const { return robot_; }
 
  private:
+  std::unique_ptr<systems::AbstractValue> AllocateOutputPort() const;
+
   const RigidBodyTree<double>& robot_;
   const std::string alias_group_path_;
 

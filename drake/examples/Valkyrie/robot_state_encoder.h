@@ -54,10 +54,6 @@ class RobotStateEncoder final : public LeafSystem<double> {
   const InputPortDescriptor<double>& effort_port(
       const RigidBodyActuator& actuator) const;
 
- protected:
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
  private:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;

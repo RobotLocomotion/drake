@@ -100,11 +100,12 @@ class PoseAggregator : public LeafSystem<T> {
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
 
-  /// Allocates a PoseBundle of length equal to the concatenation of all inputs.
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<T>& descriptor) const override;
-
  private:
+  // Allocates a PoseBundle of length equal to the concatenation of all inputs.
+  // After binding to `this`, this method has the appropriate signature for
+  // an output port allocation function.
+  std::unique_ptr<AbstractValue> AllocateOutputValue() const;
+
   enum PoseInputType {
     kUnknown = 0,
     kSinglePose = 1,

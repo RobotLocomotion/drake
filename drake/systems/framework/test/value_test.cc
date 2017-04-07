@@ -276,6 +276,14 @@ GTEST_TEST(VectorValueTest, AssignmentOperatorSelf) {
   EXPECT_EQ(6, value.get_value()->get_value().z());
 }
 
+GTEST_TEST(VectorValueTest, ExtractBasicVector) {
+  auto basic_vector = BasicVector<double>::Make({4, 5, 6});
+  const BasicVector<double>* ptr = basic_vector.get();
+  VectorValue<double> value(std::move(basic_vector));
+  auto extracted = value.ExtractBasicVector();
+  EXPECT_EQ(extracted.get(), ptr);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

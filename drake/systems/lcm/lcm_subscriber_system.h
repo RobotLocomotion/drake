@@ -135,12 +135,6 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;
 
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
-  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
   void DoCalcNextUpdateTime(const Context<double>& context,
                             UpdateActions<double>* events) const override;
 
@@ -180,6 +174,10 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   // block on notification_ if it's not nullptr.
   void HandleMessage(const std::string& channel, const void* message_buffer,
                      int message_size) override;
+
+  std::unique_ptr<systems::AbstractValue> AllocateAbstractOutputValue() const;
+
+  std::unique_ptr<BasicVector<double>> AllocateVectorOutputValue() const;
 
   // The channel on which to receive LCM messages.
   const std::string channel_;

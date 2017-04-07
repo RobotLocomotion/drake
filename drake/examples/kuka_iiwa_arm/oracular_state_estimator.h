@@ -37,7 +37,9 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
                 systems::kVectorValued,
                 robot.get_num_positions() + robot.get_num_velocities())
             .get_index();
-    output_port_index_msg_ = this->DeclareAbstractOutputPort().get_index();
+    output_port_index_msg_ = this->DeclareAbstractOutputPort(
+                                     systems::Value<bot_core::robot_state_t>())
+                                 .get_index();
   }
 
   void DoCalcOutput(const systems::Context<T>& context,
@@ -89,12 +91,6 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
       msg.joint_effort[i] = 0;
       i++;
     }
-  }
-
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<T>& descriptor) const override {
-    return systems::AbstractValue::Make<bot_core::robot_state_t>(
-        bot_core::robot_state_t());
   }
 
   inline const systems::InputPortDescriptor<T>& get_input_port_state() const {

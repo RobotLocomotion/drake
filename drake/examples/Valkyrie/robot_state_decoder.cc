@@ -34,7 +34,10 @@ RobotStateDecoder::RobotStateDecoder(const RigidBodyTree<double>& tree)
                          ? tree.bodies[1].get()
                          : nullptr),
       robot_state_message_port_index_(DeclareAbstractInputPort().get_index()),
-      kinematics_cache_port_index_(DeclareAbstractOutputPort().get_index()),
+      kinematics_cache_port_index_(
+          DeclareAbstractOutputPort(
+              Value<KinematicsCache<double>>(tree_.CreateKinematicsCache()))
+              .get_index()),
       joint_name_to_body_(CreateJointNameToBodyMap(tree)) {
   set_name("RobotStateDecoder");
 }
@@ -160,12 +163,6 @@ void RobotStateDecoder::DoCalcOutput(const Context<double>& context,
 
   kinematics_cache.initialize(q, v);
   tree_.doKinematics(kinematics_cache, true);
-}
-
-std::unique_ptr<AbstractValue> RobotStateDecoder::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>& output) const {
-  return std::make_unique<Value<KinematicsCache<double>>>(
-      tree_.CreateKinematicsCache());
 }
 
 std::map<std::string, const RigidBody<double>*>

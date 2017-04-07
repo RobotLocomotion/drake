@@ -40,7 +40,8 @@ ValkyriePDAndFeedForwardController::ValkyriePDAndFeedForwardController(
       Kp_(Kp),
       Kd_(Kd) {
   input_port_index_kinematics_result_ = DeclareAbstractInputPort().get_index();
-  output_port_index_atlas_command_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_atlas_command_ = DeclareAbstractOutputPort(
+      systems::Value<bot_core::atlas_command_t>()).get_index();
 
   if (!Kp_.allFinite())
     throw std::runtime_error("Invalid Kp.");

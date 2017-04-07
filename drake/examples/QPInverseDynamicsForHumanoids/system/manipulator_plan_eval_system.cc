@@ -29,7 +29,8 @@ ManipulatorPlanEvalSystem::ManipulatorPlanEvalSystem(
   input_port_index_desired_acceleration_ =
       DeclareInputPort(systems::kVectorValued, kAccDim).get_index();
 
-  output_port_index_debug_info_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_debug_info_ = DeclareAbstractOutputPort(
+      systems::Value<lcmt_plan_eval_debug_info>()).get_index();
   set_name("ManipulatorPlanEvalSystem");
 }
 
@@ -128,18 +129,6 @@ ManipulatorPlanEvalSystem::ExtendedAllocateAbstractState() const {
           lcmt_plan_eval_debug_info());
 
   return abstract_vals;
-}
-
-std::unique_ptr<systems::AbstractValue>
-ManipulatorPlanEvalSystem::ExtendedAllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  if (descriptor.get_index() == output_port_index_debug_info_) {
-    return systems::AbstractValue::Make<lcmt_plan_eval_debug_info>(
-        lcmt_plan_eval_debug_info());
-  }
-  std::string msg = "ManipulatorPlanEvalSystem does not have outputport " +
-                    std::to_string(descriptor.get_index());
-  DRAKE_ABORT_MSG(msg.c_str());
 }
 
 }  // namespace qp_inverse_dynamics

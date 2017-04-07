@@ -29,9 +29,6 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
 
