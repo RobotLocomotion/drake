@@ -9,7 +9,7 @@ set(sources
   diagram_builder.cc
   diagram_context.cc
   diagram_continuous_state.cc
-  discrete_state.cc
+  discrete_values.cc
   input_port_evaluator_interface.cc
   input_port_value.cc
   leaf_context.cc
@@ -49,7 +49,7 @@ set(installed_headers
   diagram_builder.h
   diagram_context.h
   diagram_continuous_state.h
-  discrete_state.h
+  discrete_values.h
   input_port_evaluator_interface.h
   input_port_value.h
   leaf_context.h

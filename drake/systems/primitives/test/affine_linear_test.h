@@ -55,7 +55,7 @@ class AffineLinearSystemTest : public ::testing::Test {
   std::unique_ptr<BasicVector<double>> state_vector_;
   std::unique_ptr<BasicVector<double>> input_vector_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
-  std::unique_ptr<DiscreteState<double>> updates_;
+  std::unique_ptr<DiscreteValues<double>> updates_;
 
   const Eigen::MatrixXd A_;
   const Eigen::MatrixXd B_;

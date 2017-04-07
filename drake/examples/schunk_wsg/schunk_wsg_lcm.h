@@ -46,9 +46,9 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   /// Latches the input port into the discrete state.
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      systems::DiscreteState<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const override;
 
-  std::unique_ptr<systems::DiscreteState<double>> AllocateDiscreteState()
+  std::unique_ptr<systems::DiscreteValues<double>> AllocateDiscreteState()
       const override;
 
  private:
@@ -64,7 +64,7 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   const int position_index_{};
   // TODO(sam.creasey) I'd prefer to store the trajectory as
   // discrete state, but unfortunately that's not currently possible
-  // as DiscreteState may only contain BasicVector.
+  // as DiscreteValues may only contain BasicVector.
   mutable std::unique_ptr<Trajectory> trajectory_;
 };
 

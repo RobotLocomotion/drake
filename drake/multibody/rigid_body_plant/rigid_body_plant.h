@@ -349,14 +349,14 @@ class RigidBodyPlant : public LeafSystem<T> {
   // LeafSystem<T> overrides.
 
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
-  std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const override;
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteState() const override;
 
   // System<T> overrides.
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
   void DoCalcDiscreteVariableUpdates(const Context<T>& context,
-                                     DiscreteState<T>* updates) const override;
+                                     DiscreteValues<T>* updates) const override;
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
 
