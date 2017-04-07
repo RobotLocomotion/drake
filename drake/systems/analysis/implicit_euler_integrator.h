@@ -22,7 +22,7 @@ namespace systems {
  *
  * Instantiated templates for the following kinds of T's are provided:
  * - double
- * - Eigen::AutoDiffScalar<Eigen::Vector1d>
+ * - Eigen::AutoDiffScalar<Eigen::VectorXd>
  *
  * This integrator uses the following update rule:<pre>
  * x(t+h) = x(t) + h f(t+h,x(t+h))
@@ -289,7 +289,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   // A QR factorization is necessary for automatic differentiation (current
   // Eigen requirement).
-  Eigen::HouseholderQR<MatrixX<Eigen::AutoDiffScalar<Vector1d>>> QR_;
+  Eigen::HouseholderQR<MatrixX<Eigen::AutoDiffScalar<Eigen::VectorXd>>> QR_;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;

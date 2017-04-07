@@ -67,9 +67,9 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 // xtplus, taken with respect to the state variables using automatic
 // differentiation.
 template <>
-MatrixX<Eigen::AutoDiffScalar<Vector1d>> ImplicitEulerIntegrator<
-    Eigen::AutoDiffScalar<Vector1d>>::ComputeADiffJacobianF(
-      const VectorX<Eigen::AutoDiffScalar<Vector1d>>& xtplus) {
+MatrixX<Eigen::AutoDiffScalar<Eigen::VectorXd>> ImplicitEulerIntegrator<
+    Eigen::AutoDiffScalar<Eigen::VectorXd>>::ComputeADiffJacobianF(
+      const VectorX<Eigen::AutoDiffScalar<Eigen::VectorXd>>& xtplus) {
         throw std::runtime_error("AutoDiff'd Jacobian not supported from "
                                      "AutoDiff'd ImplicitEulerIntegrator");
 }
@@ -290,10 +290,10 @@ VectorX<T> ImplicitEulerIntegrator<T>::Solve(const MatrixX<T>& A,
 
 // Solves a linear system
 template <>
-VectorX<Eigen::AutoDiffScalar<Vector1d>>
-  ImplicitEulerIntegrator<Eigen::AutoDiffScalar<Vector1d>>::Solve(
-      const MatrixX<Eigen::AutoDiffScalar<Vector1d>>& A,
-      const VectorX<Eigen::AutoDiffScalar<Vector1d>>& b) {
+VectorX<Eigen::AutoDiffScalar<Eigen::VectorXd>>
+  ImplicitEulerIntegrator<Eigen::AutoDiffScalar<Eigen::VectorXd>>::Solve(
+      const MatrixX<Eigen::AutoDiffScalar<Eigen::VectorXd>>& A,
+      const VectorX<Eigen::AutoDiffScalar<Eigen::VectorXd>>& b) {
   QR_.compute(A);
   return QR_.solve(b);
 }

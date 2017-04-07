@@ -5,7 +5,7 @@
 namespace drake {
 namespace systems {
 template class ImplicitEulerIntegrator<double>;
-template class ImplicitEulerIntegrator<Eigen::AutoDiffScalar<drake::Vector1d>>;
+template class ImplicitEulerIntegrator<Eigen::AutoDiffScalar<Eigen::VectorXd>>;
 }  // namespace systems
 }  // namespace drake
 
