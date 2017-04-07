@@ -246,6 +246,27 @@ GTEST_TEST(SpatialInertia, Shift) {
   const auto I_Xo_W = M_BBtop_W.CalcRotationalInertia();
   EXPECT_NEAR(I_Xo_W(0, 0), I_end, numeric_limits<double>::epsilon());
   EXPECT_NEAR(I_Xo_W(2, 2), I_end, numeric_limits<double>::epsilon());
+
+  // Now check that shifting back to the COM results in the same spatial
+  // inertia.
+  SpatialInertia<double> M_BBcm_W_back = M_BBtop_W.Shift(-p_BcmBtop_W);
+  EXPECT_TRUE(M_BBcm_W_back.IsApprox(M_BBcm_W));
+}
+
+// Tests that it is not possible to create a spatial inertia with negative mass
+// since IsPhysicallyValid() will fail in the constructor.
+GTEST_TEST(SpatialInertia, IsPhysicallyValidWithNegativeMass) {
+  try {
+    SpatialInertia<double> M(
+        -1.0, Vector3d::Zero(),
+        UnitInertia<double>::SolidSphere(1.0));
+    GTEST_FAIL();
+  } catch (std::runtime_error& e) {
+    std::string expected_msg =
+        "The resulting spatial inertia is not physically valid. "
+        "See SpatialInertia::IsPhysicallyValid()";
+    EXPECT_EQ(e.what(), expected_msg);
+  }
 }
 
 }  // namespace

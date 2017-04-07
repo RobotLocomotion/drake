@@ -95,9 +95,9 @@ class SpatialInertia {
   /// or composite body S computed about point P and expressed in frame E.
   ///
   /// This constructor checks for the physical validity of the resulting
-  /// %SpatialInertia with IsPhysicallyValid() and throws an exception in the
-  /// event the provided input parameters lead to non-physically viable spatial
-  /// inertia.
+  /// %SpatialInertia with IsPhysicallyValid() and throws a std::runtime_error
+  /// exception in the event the provided input parameters lead to
+  /// non-physically viable spatial inertia.
   ///
   /// @param[in] mass The mass of the body or composite body S.
   /// @param[in] p_PScm_E The position vector from point P to the center of mass
@@ -107,11 +107,7 @@ class SpatialInertia {
   SpatialInertia(
       const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E) :
       mass_(mass), p_PScm_E_(p_PScm_E), G_SP_E_(G_SP_E) {
-    if (!IsPhysicallyValid()) {
-      throw std::runtime_error(
-          "The resulting spatial inertia is not physically valid."
-          "See SpatialInertia::IsPhysicallyValid()");
-    }
+    CheckInvariants();
   }
 
   /// Get a constant reference to the mass of this spatial inertia.
@@ -307,6 +303,9 @@ class SpatialInertia {
     G_SP_E_.ShiftFromCentroidInPlace(p_QScm_E);
     G_SP_E_.ShiftToCentroidInPlace(p_PScm_E_);
     p_PScm_E_ = p_QScm_E;
+    // This would only mean a bug in the implementation. The Shift operation
+    // should always lead to a valid spatial inertia.
+    DRAKE_ASSERT_VOID(CheckInvariants());
     return *this;
   }
 
@@ -341,6 +340,17 @@ class SpatialInertia {
   // Rotational inertia of body or composite body S computed about point P and
   // expressed in a frame E.
   UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
+
+  // Checks that the SpatialInertia is physically valid and throws an
+  // exception if not. This is mostly used in Debug builds to throw an
+  // appropriate exception.
+  void CheckInvariants() const {
+    if (!IsPhysicallyValid()) {
+      throw std::runtime_error(
+          "The resulting spatial inertia is not physically valid. "
+              "See SpatialInertia::IsPhysicallyValid()");
+    }
+  }
 };
 
 /// Insertion operator to write SpatialInertia objects into a `std::ostream`.

@@ -56,7 +56,7 @@ namespace multibody {
 /// Izz = ∫ (x² + y²) dm
 /// Ixy = - ∫ x y dm
 /// Ixz = - ∫ x z dm
-/// Iyz = - ∫ y z dm  
+/// Iyz = - ∫ y z dm
 /// </pre>
 /// We use the negated convention for products of inertia, so that I serves
 /// to relate angular velocity ω and angular momentum h via `h=I⋅ω`. Be sure
