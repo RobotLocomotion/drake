@@ -15,13 +15,14 @@ namespace systems {
 
 /**
  * A first-order, fully implicit integrator with second order error estimation.
- * @tparam T A double type.
+ * @tparam T A double or Eigen AutoDiffScalar type.
  *
  * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
  * this class, please refer to http://drake.mit.edu/cxx_inl.html.
  *
  * Instantiated templates for the following kinds of T's are provided:
  * - double
+ * - Eigen::AutoDiffScalar<Eigen::Vector1d>
  *
  * This integrator uses the following update rule:<pre>
  * x(t+h) = x(t) + h f(t+h,x(t+h))

@@ -740,6 +740,7 @@ T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
   // The error estimate is derived as follows (thanks to Michael Sherman):
   // x*(t+h) = xᵢₑ(t+h) + O(h²)      [implicit Euler]
   //         = xₜᵣ(t+h) + O(h³)      [implicit trapezoid]
+  // where x*(t+h) is the true (generally unknown) answer that we seek.
   // This implies:
   // xᵢₑ(t+h) + O(h²) = xₜᵣ(t+h) + O(h³)
   // Given that the second order term subsumes the third order one:
