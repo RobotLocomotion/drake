@@ -42,6 +42,8 @@ pkg_tar(
     deps = [
         "@bullet//:license",
         "@eigen//:license",
+        "@fmt//:license",
         "@spdlog//:license",
+        "@tinyobjloader//:license",
     ],
 )
