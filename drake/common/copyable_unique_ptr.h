@@ -20,22 +20,40 @@ namespace drake {
 
  This is similar to `std::unique_ptr` in that it does not permit shared
  ownership of the contained object. However, unlike `std::unique_ptr`,
- %clone_unique_ptr supports copy and assignment operations, by insisting that
- the contained object have a Clone() method that returns a pointer to a
- heap-allocated deep copy of the *concrete* object. The API is modeled as
- closely as possible on the C++11 `std::unique_ptr` API. However, it always uses
- a default deleter.
+ %copyable_unique_ptr supports copy and assignment operations, by insisting that
+ the contained object be "copyable".
+ To be copyable, the class must have either a public copy constructor, or it
+ must be "cloneable" (see @ref is_cloneable_doc "is_cloneable" for definition).
+ A class can be tested for compatibility using a %copyable_unique_ptr utility
+ class. For example, to test the class `Foo`, the following code snippet will
+ evaluate to a boolean reporting its copyability:
 
- There is one notable exception, to mark a careful distinction between writable
- and const access, and for compatibility with cow_unique_ptr, the get() method
+ @code
+ copyable_unique_ptr<Foo>::is_copyable::value;
+ @endcode
+
+ Generally, the API is modeled as closely as possible on the C++11
+ `std::unique_ptr` API. However, there are some exceptions. First, it always
+ uses a default deleter. Second, to mark a careful distinction between writable
+ and const access, the get() method
  is modified to return only a const pointer, with get_mutable() added to return
- a writable pointer. This class is entirely inline and has no computational or
+ a writable pointer.
+
+ This class is entirely inline and has no computational or
  space overhead except when cloning is required; it contains just a single
  pointer and does no reference counting.
 
- @tparam T   The type of the contained object, which *must* have a `Clone()`
-             method. May be an abstract or concrete type.
- @see clone_unqiue_ptr
+ @warning It is very important to have well-designed C++ code. Specifically,
+ if I have a base class `Base` and a derived class `Derived`, doing:
+ @code
+ copyable_unique_ptr<Base> ptr(new Derived(...));
+ @endcode
+ will be considered compilable and correct. However, in order for this to give
+ the expected behavior (of cloning the concrete `Derived` instance), `Base`
+ _cannot_ have a copy constructor.
+
+ @tparam T   The type of the contained object, which *must* be "copyable". May
+             be an abstract or concrete type.
  */
 template <typename T>
 class copyable_unique_ptr {
@@ -44,12 +62,6 @@ class copyable_unique_ptr {
   typedef T* pointer;      ///< Type of a pointer to the contained object.
   typedef T& reference;    ///< Type of a reference to the contained object.
 
-  static_assert(std::is_copy_constructible<T>::value ||
-                is_cloneable<T>::value,
-                "copyable_unique_ptr can only be used with a 'copyable' class"
-                ", requiring either a public copy constructor or a valid "
-                "clone method of the form: `unique_ptr<T> Clone() const`.");
-
   /** @name                    Constructors **/
   /**@{**/
 
@@ -57,18 +69,20 @@ class copyable_unique_ptr {
    The empty() method will return true when called on a default-constructed
    %copyable_unique_ptr.
    **/
-  copyable_unique_ptr() noexcept : p(nullptr) {}
+  copyable_unique_ptr() noexcept : p(nullptr) { validateType(); }
 
   /** Constructor from `nullptr` is the same as the default constructor.
    This is an implicit conversion that allows `nullptr` to be used to
    initialize a %copyable_unique_ptr.
    **/
-  copyable_unique_ptr(std::nullptr_t) noexcept : copyable_unique_ptr() {}
+  copyable_unique_ptr(std::nullptr_t) noexcept : copyable_unique_ptr() {
+    validateType();
+  }
 
   /** Given a pointer to a writable heap-allocated object, take over
    ownership of that object. The `Clone()` method is *not* invoked.
    **/
-  explicit copyable_unique_ptr(T* x) noexcept : p(x) {}
+  explicit copyable_unique_ptr(T* x) noexcept : p(x) { validateType(); }
 
   /** Given a pointer to a read-only object, create a new heap-allocated copy
    of that object via its `Clone()` method and make this %copyable_unique_ptr
@@ -77,21 +91,25 @@ class copyable_unique_ptr {
    empty.
    **/
   explicit copyable_unique_ptr(const T* x)
-      : copyable_unique_ptr(cloneOrNull(x)) {}
+      : copyable_unique_ptr(cloneOrNull(x)) { validateType(); }
 
   /** Given a read-only reference to an object, create a new heap-allocated
    copy of that object via its `Clone()` method and make this
    %copyable_unique_ptr object the owner of the copy. Ownership of the original
    object is not affected.
    **/
-  explicit copyable_unique_ptr(const T& x) : copyable_unique_ptr(&x) {}
+  explicit copyable_unique_ptr(const T& x) : copyable_unique_ptr(&x) {
+    validateType();
+  }
 
   /** Copy constructor is deep; the new %copyable_unique_ptr object contains a
    new copy of the object in the source, created via the source object's
    `Clone()` method. If the source container is empty this one will be empty
    also.
    **/
-  copyable_unique_ptr(const copyable_unique_ptr& src) : p(cloneOrNull(src.p)) {}
+  copyable_unique_ptr(const copyable_unique_ptr& src) : p(cloneOrNull(src.p)) {
+    validateType();
+  }
 
   /** Deep copy construction from a compatible %copyable_unique_ptr. Type `U*`
    must be implicitly convertible to type `T*`. The new %copyable_unique_ptr
@@ -101,13 +119,15 @@ class copyable_unique_ptr {
    **/
   template <class U>
   copyable_unique_ptr(const copyable_unique_ptr<U>& src)
-      : p(cloneOrNull(src.p)) {}
+      : p(cloneOrNull(src.p)) { validateType(); }
 
   /** Move constructor is very fast and leaves the source empty. Ownership
    is transferred from the source to the new %copyable_unique_ptr. If the source
    was empty this one will be empty also. No heap activity occurs.
    **/
-  copyable_unique_ptr(copyable_unique_ptr&& src) noexcept : p(src.release()) {}
+  copyable_unique_ptr(copyable_unique_ptr&& src) noexcept : p(src.release()) {
+    validateType();
+  }
 
   /** Move construction from a compatible %copyable_unique_ptr. Type `U*` must
    be implicitly convertible to type `T*`. Ownership is transferred from the
@@ -115,7 +135,10 @@ class copyable_unique_ptr {
    be empty also. No heap activity occurs.
    **/
   template <class U>
-  copyable_unique_ptr(copyable_unique_ptr<U>&& src) noexcept : p(src.release()) {}
+  copyable_unique_ptr(copyable_unique_ptr<U>&& src) noexcept
+      : p(src.release()) {
+    validateType();
+  }
   /**@}**/
 
   /** @name                   Assignment **/
@@ -313,9 +336,47 @@ class copyable_unique_ptr {
   }
   /**@}**/
 
+  /*! @cond */
+  template <typename V, class>
+  struct is_copyable_ : std::false_type {};
+
+  template <typename V>
+  struct is_copyable_<
+      V, typename std::enable_if<is_cloneable<V>::value ||
+                                 std::is_copy_constructible<V>::value>::type>
+      : std::true_type {};
+
+  /*! @endcond */
+
+  /*!
+   Test for determining if an arbitrary class is compatible with the
+   %copyable_unique_ptr. Usage:
+
+   `copyable_unique_ptr<TestClass>::is_copyable::value`
+
+   Evalutes to true if compatible, false otherwise.
+   */
+  using is_copyable = is_copyable_<T, void_t<>>;
+
  private:
   template <class U> friend class copyable_unique_ptr;
 
+  // Utility method to be invoked in the constructors to insure that this can't
+  // be specialized on an incompatible type, but *still* allow invocation of the
+  // `is_copyable` functionality. Should be invoked by *all* constructors.
+  static void validateType() {
+    // Guarantee that this can only be instantiated on compatible classes.
+    static_assert(is_copyable::value,
+                  "copyable_unique_ptr can only be used with a 'copyable' class"
+                  ", requiring either a public copy constructor or a valid "
+                  "clone method of the form: `unique_ptr<T> Clone() const`.");
+  }
+
+  // SFINAE magic to intelligently select between copy constructor and Clone
+  // method (preferring copy constructor in the presence of both).
+
+  // Selects Clone iff there is no copy constructor and the Clone method is of
+  // the expected form.
   template <typename U>
   static
   typename std::enable_if<!std::is_copy_constructible<U>::value &&
@@ -324,6 +385,7 @@ class copyable_unique_ptr {
     return src->Clone().release();
   };
 
+  // Default to copy constructor if present.
   template <typename U>
   static
   U* cloneOrNull_(const U* src, ...) {
