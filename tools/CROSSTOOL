@@ -351,30 +351,21 @@ toolchain {
   target_cpu: "darwin"
   target_system_name: "local"
 
-  tool_path { name: "ar" path: "/usr/bin/libtool" }
-  tool_path { name: "compat-ld" path: "/usr/bin/ld" }
-  tool_path { name: "cpp" path: "/usr/bin/cpp" }
-  tool_path { name: "dwp" path: "/usr/bin/dwp" }
-  tool_path { name: "gcc" path: "third_party/bazel/tools/cpp/osx_cc_wrapper.sh" }
   cxx_flag: "-std=c++1y"
-  ar_flag: "-static"
-  ar_flag: "-s"
-  ar_flag: "-o"
   linker_flag: "-lstdc++"
   linker_flag: "-undefined"
   linker_flag: "dynamic_lookup"
   linker_flag: "-headerpad_max_install_names"
-  # TODO(ulfjack): This is wrong on so many levels. Figure out a way to auto-detect the proper
-  # setting from the local compiler, and also how to make incremental builds correct.
-  cxx_builtin_include_directory: "/"
-  tool_path { name: "gcov" path: "/usr/bin/gcov" }
-  tool_path { name: "ld" path: "/usr/bin/ld" }
-  tool_path { name: "nm" path: "/usr/bin/nm" }
-  tool_path { name: "objcopy" path: "/usr/bin/objcopy" }
+  ar_flag: "-static"
+  ar_flag: "-s"
+  ar_flag: "-o"
+  cxx_builtin_include_directory: "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain"
+  cxx_builtin_include_directory: "/usr/local/include"
+  cxx_builtin_include_directory: "/usr/include"
+  cxx_builtin_include_directory: "/System/Library/Frameworks"
+  cxx_builtin_include_directory: "/Library/Frameworks"
   objcopy_embed_flag: "-I"
   objcopy_embed_flag: "binary"
-  tool_path { name: "objdump" path: "/usr/bin/objdump" }
-  tool_path { name: "strip" path: "/usr/bin/strip" }
 
   # Anticipated future default.
   unfiltered_cxx_flag: "-no-canonical-prefixes"
@@ -406,6 +397,17 @@ toolchain {
 
   # Anticipated future default.
   linker_flag: "-no-canonical-prefixes"
+
+  tool_path {name: "ld" path: "/usr/bin/ld" }
+  tool_path {name: "cpp" path: "/usr/bin/cpp" }
+  tool_path {name: "dwp" path: "/usr/bin/dwp" }
+  tool_path {name: "gcov" path: "/usr/bin/gcov" }
+  tool_path {name: "nm" path: "/usr/bin/nm" }
+  tool_path {name: "objcopy" path: "/usr/bin/objcopy" }
+  tool_path {name: "objdump" path: "/usr/bin/objdump" }
+  tool_path {name: "strip" path: "/usr/bin/strip" }
+  tool_path {name: "gcc" path: "third_party/bazel/tools/cpp/osx_cc_wrapper.sh" }
+  tool_path {name: "ar" path: "/usr/bin/libtool" }
 
   compilation_mode_flags {
     mode: DBG
