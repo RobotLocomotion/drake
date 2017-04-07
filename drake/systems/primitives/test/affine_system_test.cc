@@ -189,55 +189,66 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
 }
 
 // xdot = rotmat(t)*x, y = x;
-class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double>,
-                                      public ::testing::Test {
+class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double> {
  public:
-  SimpleTimeVaryingAffineSystem() : TimeVaryingAffineSystem(2, 0, 2) {}
+  static constexpr int kNumStates = 2;
+  static constexpr int kNumInputs = 1;
+  static constexpr int kNumOutputs = 2;
+
+  SimpleTimeVaryingAffineSystem()
+      : TimeVaryingAffineSystem(kNumStates, kNumInputs, kNumOutputs) {}
+  ~SimpleTimeVaryingAffineSystem() override {}
 
   Eigen::MatrixXd A(const double& t) const override {
-    Eigen::Matrix2d mat;
+    Eigen::Matrix<double, kNumOutputs, kNumStates> mat;
     mat << std::cos(t), -std::sin(t), std::sin(t), std::cos(t);
     return mat;
   }
   Eigen::MatrixXd B(const double& t) const override {
-    return Eigen::Matrix<double, 2, 0>();
+    return Eigen::Matrix<double, kNumOutputs, kNumInputs>::Ones();
   }
   Eigen::VectorXd f0(const double& t) const override {
-    return Eigen::Matrix<double, 2, 1>::Zero();
+    return Eigen::Matrix<double, kNumOutputs, 1>::Zero();
   }
   Eigen::MatrixXd C(const double& t) const override {
     return Eigen::Matrix2d::Identity();
   }
   Eigen::MatrixXd D(const double& t) const override {
-    return Eigen::Matrix<double, 2, 0>();
+    return Eigen::Matrix<double, kNumOutputs, kNumInputs>::Ones();
   }
   Eigen::VectorXd y0(const double& t) const override {
-    return Eigen::Matrix<double, 2, 1>::Zero();
+    return Eigen::Matrix<double, kNumOutputs, 1>::Ones();
   }
 };
 
-TEST_F(SimpleTimeVaryingAffineSystem, EvalTest) {
+GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
+  SimpleTimeVaryingAffineSystem sys;
   const double t = 2.5;
-  Eigen::Matrix2d A;
-  A << std::cos(t), -std::sin(t), std::sin(t), std::cos(t);
   Eigen::Vector2d x(1, 2);
 
-  auto context = CreateDefaultContext();
+  auto context = sys.CreateDefaultContext();
   context->set_time(t);
   context->get_mutable_continuous_state_vector()->SetFromVector(x);
+  context->FixInputPort(0, BasicVector<double>::Make(42.0));
 
-  auto derivs = AllocateTimeDerivatives();
-  CalcTimeDerivatives(*context, derivs.get());
-  EXPECT_TRUE(CompareMatrices(A * x, derivs->CopyToVector()));
+  auto derivs = sys.AllocateTimeDerivatives();
+  sys.CalcTimeDerivatives(*context, derivs.get());
+  EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
+                              derivs->CopyToVector()));
 
-  auto output = AllocateOutput(*context);
-  CalcOutput(*context, output.get());
-  EXPECT_TRUE(CompareMatrices(x, output->get_vector_data(0)->CopyToVector()));
+  auto output = sys.AllocateOutput(*context);
+  sys.CalcOutput(*context, output.get());
+  EXPECT_TRUE(CompareMatrices(x + sys.y0(t) + 42.0 * sys.D(t),
+                              output->get_vector_data(0)->CopyToVector()));
 }
 
 // Checks that a time-varying affine system will fail if the matrices do not
 // match the specified number of states.
 class IllegalTimeVaryingAffineSystem : public SimpleTimeVaryingAffineSystem {
+ public:
+  IllegalTimeVaryingAffineSystem() : SimpleTimeVaryingAffineSystem() {}
+  ~IllegalTimeVaryingAffineSystem() override {}
+
   Eigen::MatrixXd A(const double& t) const override {
     Eigen::Matrix<double, 3, 2> mat;
     mat << std::cos(t), -std::sin(t), std::sin(t), std::cos(t), 0, 1;
@@ -245,15 +256,16 @@ class IllegalTimeVaryingAffineSystem : public SimpleTimeVaryingAffineSystem {
   }
 };
 
-TEST_F(IllegalTimeVaryingAffineSystem, EvalDeathTest) {
+GTEST_TEST(IllegalTimeVaryingAffineSystemTest, EvalDeathTest) {
+  IllegalTimeVaryingAffineSystem sys;
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   const double t = 2.5;
 
-  auto context = CreateDefaultContext();
+  auto context = sys.CreateDefaultContext();
   context->set_time(t);
 
-  auto derivatives = AllocateTimeDerivatives();
-  ASSERT_DEATH(CalcTimeDerivatives(*context, derivatives.get()), "rows");
+  auto derivatives = sys.AllocateTimeDerivatives();
+  ASSERT_DEATH(sys.CalcTimeDerivatives(*context, derivatives.get()), "rows");
 }
 
 }  // namespace
