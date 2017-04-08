@@ -23,9 +23,9 @@ drake_cc_library(
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/lcmtypes:iiwa",
-        "//drake/util:lcm_util",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
+        "//drake/util:lcm_util",
         "@robotlocomotion_lcmtypes//:lib",
     ],
 )
@@ -33,8 +33,9 @@ drake_cc_library(
 drake_cc_library(
     name = "kuka_pick_and_place_monolithic",
     srcs = [],
-    hdrs = ["demo_diagram_builder.h",
-            "pick_and_place_common.h",
+    hdrs = [
+        "demo_diagram_builder.h",
+        "pick_and_place_common.h",
     ],
     deps = [
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
@@ -47,17 +48,16 @@ drake_cc_binary(
     name = "trajectory_generator_test",
     srcs = ["trajectory_generator_test.cc"],
     deps = [
-        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        ":iiwa_state_feedback_plan",
+        ":kuka_pick_and_place_monolithic",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/lcm",
         "//drake/systems/analysis",
         "//drake/systems/framework",
         "@gflags//:gflags",
-        ":iiwa_state_feedback_plan",
-        ":kuka_pick_and_place_monolithic",
-        
     ],
 )
 

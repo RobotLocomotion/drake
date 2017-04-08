@@ -52,6 +52,11 @@ drake_cc_library(
 # === test/ ===
 drake_cc_googletest(
     name = "generic_plan_test",
+    data = [
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":generic_plan",
         ":test_common",
@@ -59,11 +64,6 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-    ],
-    data = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
-        "//drake/manipulation/models/iiwa_description:models",
     ],
 )
 
