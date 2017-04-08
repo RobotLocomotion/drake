@@ -17,14 +17,8 @@
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {
-using systems::DrakeVisualizer;
-using systems::RigidBodyPlant;
-using systems::DiagramBuilder;
-using lcm::DrakeLcm;
 
 namespace examples {
-using schunk_wsg::SchunkWsgTrajectoryGenerator;
-using schunk_wsg::SchunkWsgStatusSender;
 
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
@@ -83,7 +77,7 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
 
   int id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
   *iiwa_instance = tree_builder->get_model_info_for_instance(id);
-  id = tree_builder->AddFloatingModelInstance("box", kBoxBase,
+  id = tree_builder->AddFloatingModelInstance("box_small", kBoxBase,
                                               Vector3<double>(0, 0, 1));
 
   *box_instance = tree_builder->get_model_info_for_instance(id);
@@ -93,7 +87,7 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
       drake::multibody::joints::kFixed);
   *wsg_instance = tree_builder->get_model_info_for_instance(id);
 
-  auto plant = std::make_unique<RigidBodyPlant<T>>(tree_builder->Build());
+  auto plant = std::make_unique<systems::RigidBodyPlant<T>>(tree_builder->Build());
   return (std::move(plant));
 }
 
@@ -151,7 +145,7 @@ class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
   /// @param lcm : A reference to the lcm object to be passed onto the
   /// Visualizer
   IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(
-      DrakeLcm* lcm, const double update_interval = 0.001);
+      lcm::DrakeLcm* lcm, const double update_interval = 0.001);
 
   const systems::InputPortDescriptor<T>& get_input_port_iiwa_plan() const {
     return this->get_input_port(input_port_iiwa_plan_);
@@ -177,11 +171,11 @@ class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
 
  private:
   IiwaAndWsgPlantWithStateEstimator<T>* plant_{nullptr};
-  SchunkWsgStatusSender* wsg_status_sender_{nullptr};
+  schunk_wsg::SchunkWsgStatusSender* wsg_status_sender_{nullptr};
   PassThrough<T>* pass_through_wsg_state_{nullptr};
-  DrakeVisualizer* drake_visualizer_{nullptr};
+  systems::DrakeVisualizer* drake_visualizer_{nullptr};
   IiwaStateFeedbackPlanSource* iiwa_trajectory_generator_{nullptr};
-  SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
+  schunk_wsg::SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
 
   int input_port_iiwa_plan_{-1};
   int input_port_wsg_plan_{-1};
