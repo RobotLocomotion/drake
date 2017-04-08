@@ -56,11 +56,6 @@ void SimpleCar<T>::DoCalcOutput(const systems::Context<T>& context,
   const SimpleCarParams<T>& params =
       this->template GetNumericParameter<SimpleCarParams>(context, 0);
 
-  // Obtain the input.
-  const DrivingCommand<T>* const input =
-      this->template EvalVectorInput<DrivingCommand>(context, 0);
-  DRAKE_ASSERT(input);
-
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
@@ -82,7 +77,7 @@ void SimpleCar<T>::DoCalcOutput(const systems::Context<T>& context,
   FrameVelocity<T>* const velocity =
       dynamic_cast<FrameVelocity<T>*>(output->GetMutableVectorData(2));
   DRAKE_ASSERT(pose != nullptr);
-  ImplCalcVelocity(params, *state, *input, velocity);
+  ImplCalcVelocity(params, *state, velocity);
 }
 
 template <typename T>
@@ -107,16 +102,17 @@ void SimpleCar<T>::ImplCalcPose(const SimpleCarState<T>& state,
 template <typename T>
 void SimpleCar<T>::ImplCalcVelocity(
     const SimpleCarParams<T>& params, const SimpleCarState<T>& state,
-    const DrivingCommand<T>& input,
     systems::rendering::FrameVelocity<T>* velocity) const {
-  // Calculate the derivatives.
-  SimpleCarState<T> rates;
-  ImplCalcTimeDerivatives(params, state, input, &rates);
+  using std::cos;
+  using std::max;
+  using std::sin;
+
+  const T nonneg_velocity = max(T(0), state.velocity());
 
   // Convert the state derivatives into a spatial velocity.
   multibody::SpatialVelocity<T> output;
-  output.translational().x() = rates.x();
-  output.translational().y() = rates.y();
+  output.translational().x() = nonneg_velocity * cos(state.heading());
+  output.translational().y() = nonneg_velocity * sin(state.heading());
   output.translational().z() = T(0);
   output.rotational().x() = T(0);
   output.rotational().y() = T(0);
