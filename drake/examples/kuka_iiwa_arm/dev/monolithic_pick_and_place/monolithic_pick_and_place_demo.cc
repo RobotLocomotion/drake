@@ -29,11 +29,11 @@ using systems::Simulator;
 
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 namespace {
 
 int DoMain(void) {
-  DrakeLcm lcm;
+  lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
   auto plant = builder.template AddSystem<
@@ -77,12 +77,12 @@ int DoMain(void) {
 }
 
 }  // namespace
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  drake::examples::kuka_iiwa_arm::pick_and_place::DoMain();
+  drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::DoMain();
   return 0;
 }

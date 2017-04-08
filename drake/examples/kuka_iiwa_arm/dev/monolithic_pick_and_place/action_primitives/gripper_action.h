@@ -4,7 +4,7 @@
 #include <string>
 
 #include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_base.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitive_base.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -14,7 +14,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 
 class GripperAction : public ActionPrimitive {
  public:
@@ -54,7 +54,7 @@ class GripperAction : public ActionPrimitive {
   const int input_port_primitive_{};
 };
 
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

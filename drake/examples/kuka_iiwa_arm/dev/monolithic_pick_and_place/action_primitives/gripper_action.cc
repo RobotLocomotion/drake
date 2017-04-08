@@ -3,24 +3,21 @@
 #include <vector>
 
 #include "external/robotlocomotion_lcmtypes/lcmtypes/robotlocomotion/robot_plan_t.hpp"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_base.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitive_base.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-using systems::LeafSystem;
 
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 const double kMinWidthInMm{0};
 const double kMaxWidthInMm{110};
 
 struct GripperAction::InternalState {
-  explicit InternalState() {
+  InternalState() {
     plan.target_position_mm = kMaxWidthInMm; /* Opening */
   }
   ~InternalState() {}
@@ -125,7 +122,7 @@ void GripperAction::DoExtendedCalcOutput(
   }
 }
 
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

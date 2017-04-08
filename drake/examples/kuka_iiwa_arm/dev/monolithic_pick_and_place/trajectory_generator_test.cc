@@ -35,10 +35,8 @@ using systems::Simulator;
 using systems::DiagramBuilder;
 
 namespace examples {
-using schunk_wsg::SchunkWsgTrajectoryGenerator;
-
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 namespace {
 
 class PlanSourceTester : public systems::LeafSystem<double> {
@@ -188,12 +186,12 @@ int DoMain(void) {
 }
 
 }  // namespace
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  drake::examples::kuka_iiwa_arm::pick_and_place::DoMain();
+  drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::DoMain();
   return 0;
 }

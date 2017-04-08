@@ -1,7 +1,7 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "bot_core/robot_state_t.hpp"
 #include "drake/common/drake_path.h"
@@ -15,9 +15,13 @@ using bot_core::robot_state_t;
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
+namespace {
+/* index of iiwastate */
+const int kStateIndex = 0;
+}
 
-using pick_and_place_demo::PickAndPlaceState;
-namespace pick_and_place {
+using monolithic_pick_and_place::PickAndPlaceState;
+namespace monolithic_pick_and_place {
 
 struct PickAndPlaceStateMachineSystem::InternalState {
   InternalState() {
@@ -27,12 +31,26 @@ struct PickAndPlaceStateMachineSystem::InternalState {
   }
   ~InternalState() {}
 
+  // This state is used to decide the current state of the
+  // finite state machine logic.
   PickAndPlaceState pick_and_place_state;
+
+  // The input to be applied to the IiwaMove ActionPrimitive.
   IiwaActionInput iiwa_current_action;
+
+  // A logic flag for the validity of the current IiwaActionInput stored
+  // within the internal state.
   bool iiwa_action_initiated{false};
+
+  // The input to be applied to the GripperAction ActionPrimitive.
   GripperActionInput wsg_current_action;
+
+  // A logic flag for the validity of the current GripperActionInput stored
+  // within the internal state.
   bool wsg_action_initiated{false};
 
+  // Poses used for storing end-points of Iiwa trajectories at various states
+  // of the demo.
   Isometry3<double> X_WEndEffector0, X_WEndEffector1;
 
   // Desired object end pose relative to the base of the iiwa arm.
@@ -111,8 +129,7 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
     systems::State<double>* state) const {
   // Extract Internal state.
   InternalState& internal_state =
-      state->get_mutable_abstract_state<InternalState>(
-          0 /* index of iiwastate */);
+      state->get_mutable_abstract_state<InternalState>(kStateIndex);
 
   IiwaActionInput& iiwa_action_input = internal_state.iiwa_current_action;
   GripperActionInput& wsg_action_input = internal_state.wsg_current_action;
@@ -167,303 +184,292 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
   wsg_action_input = GripperActionInput::UNDEFINED;
   iiwa_action_input.is_valid = false;
 
-  if (context.get_time() > 0.0) {
-    /* state machine logic */
-    switch (internal_state.pick_and_place_state) {
-      case PickAndPlaceState::OPEN_GRIPPER:
-        // change output to gripper action primitive.
+  /* state machine logic */
+  switch (internal_state.pick_and_place_state) {
+    case PickAndPlaceState::OPEN_GRIPPER:
+      // change output to gripper action primitive.
 
-        if (!internal_state.wsg_action_initiated) {
-          drake::log()->info("StateMachine : OPEN_GRIPPER at {}",
-                             context.get_time());
-          // Perform wsg action.
-          wsg_action_input = GripperActionInput::OPEN;
-          internal_state.wsg_action_initiated = true;
-        } else if (wsg_primitive_state == ActionPrimitiveState::WAITING) {
-          // This means that the action was already intiated and primitive
-          // has returned to WAITING state, i.e. it is complete.
-          // resetting wsg_action.
-          internal_state.wsg_action_initiated = false;
-          internal_state.pick_and_place_state =
-              PickAndPlaceState::APPROACH_PICK_PREGRASP;
+      if (!internal_state.wsg_action_initiated) {
+        drake::log()->info("StateMachine : OPEN_GRIPPER at {}",
+                           context.get_time());
+        // Perform wsg action.
+        wsg_action_input = GripperActionInput::OPEN;
+        internal_state.wsg_action_initiated = true;
+      } else if (wsg_primitive_state == ActionPrimitiveState::WAITING) {
+        // This means that the action was already intiated and primitive
+        // has returned to WAITING state, i.e. it is complete.
+        // resetting wsg_action.
+        internal_state.wsg_action_initiated = false;
+        internal_state.pick_and_place_state =
+            PickAndPlaceState::APPROACH_PICK_PREGRASP;
+      }
+      break;
+    case PickAndPlaceState::APPROACH_PICK_PREGRASP:
+
+      if (!internal_state.iiwa_action_initiated) {
+        // Computes the desired end effector pose in the world frame to be
+        // kPreGraspHeightOffset above the object.
+        drake::log()->info("StateMachine : APPROACH_PICK_PREGRASP at {}",
+                           context.get_time());
+        X_WEndEffector0 = world_state_->get_iiwa_end_effector_pose();
+        X_WEndEffector1 = monolithic_pick_and_place::ComputeGraspPose(
+            world_state_->get_object_pose());
+        X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
+
+        // 2 seconds, no via points.
+        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+            world_state_->get_iiwa_q(), 0, 2, X_WEndEffector0, X_WEndEffector1,
+            kLoosePosTol, kLooseRotTol, planner_.get(), &ik_res, &times);
+        DRAKE_DEMAND(res);
+
+        iiwa_action_input.is_valid = true;
+        iiwa_action_input.time = times;
+        iiwa_action_input.q = ik_res.q_sol;
+        internal_state.iiwa_action_initiated = true;
+
+      } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
+        // This means that the action was already intiated and primitive
+        // has returned to WAITING state, i.e. it is complete.
+        // resetting iiwa_action.
+
+        internal_state.iiwa_action_initiated = false;
+        internal_state.pick_and_place_state = PickAndPlaceState::APPROACH_PICK;
+      }
+      break;
+    case PickAndPlaceState::APPROACH_PICK:
+      if (!internal_state.iiwa_action_initiated) {
+        drake::log()->info("StateMachine : APPROACH_PICK at {}",
+                           context.get_time());
+        X_WEndEffector0 = X_WEndEffector1;
+        X_WEndEffector1 = monolithic_pick_and_place::ComputeGraspPose(
+            world_state_->get_object_pose());
+
+        // 1 second, 3 via points. More via points to ensure the end effector
+        // moves in more or less a straight line.
+        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+            world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0, X_WEndEffector1,
+            kTightPosTol, kTightRotTol, planner_.get(), &ik_res, &times);
+        DRAKE_DEMAND(res);
+
+        internal_state.iiwa_action_initiated = true;
+        iiwa_action_input.is_valid = true;
+        iiwa_action_input.time = times;
+        iiwa_action_input.q = ik_res.q_sol;
+
+      } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
+        // This means that the action was already intiated and primitive
+        // has returned to WAITING state, i.e. it is complete.
+        // resetting iiwa_action.
+
+        internal_state.iiwa_action_initiated = false;
+        internal_state.pick_and_place_state = PickAndPlaceState::GRASP;
+      }
+      break;
+    case PickAndPlaceState::GRASP:
+      // change output to gripper action primitive.
+      if (!internal_state.wsg_action_initiated) {
+        // Perform wsg action.
+        drake::log()->info("StateMachine : GRASP at {}", context.get_time());
+        wsg_action_input = GripperActionInput::CLOSE;
+        internal_state.wsg_action_initiated = true;
+      } else if (wsg_primitive_state == ActionPrimitiveState::WAITING) {
+        // This means that the action was already intiated and primitive
+        // has returned to WAITING state, i.e. it is complete.
+        // resetting wsg_action.
+        internal_state.wsg_action_initiated = false;
+        internal_state.pick_and_place_state = PickAndPlaceState::LIFT_FROM_PICK;
+      }
+      break;
+    case PickAndPlaceState::LIFT_FROM_PICK:
+
+      if (!internal_state.iiwa_action_initiated) {
+        drake::log()->info("StateMachine : LIFT_FROM_PICK at {}",
+                           context.get_time());
+        X_WEndEffector0 = X_WEndEffector1;
+        X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
+
+        // 1 seconds, 3 via points.
+        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+            world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0, X_WEndEffector1,
+            kTightPosTol, kTightRotTol, planner_.get(), &ik_res, &times);
+        DRAKE_DEMAND(res);
+
+        internal_state.iiwa_action_initiated = true;
+        iiwa_action_input.is_valid = true;
+        iiwa_action_input.time = times;
+        iiwa_action_input.q = ik_res.q_sol;
+
+      } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
+        // This means that the action was already initiated and primitive
+        // has returned to WAITING state, i.e. it is complete.
+        // resetting iiwa_action.
+
+        internal_state.iiwa_action_initiated = false;
+        internal_state.pick_and_place_state =
+            PickAndPlaceState::APPROACH_PLACE_PREGRASP;
+      }
+      break;
+    case PickAndPlaceState::APPROACH_PLACE_PREGRASP:
+
+      if (!internal_state.iiwa_action_initiated) {
+        drake::log()->info("StateMachine : APPROACH_PLACE_PREGRASP at {}",
+                           context.get_time());
+        int table = monolithic_pick_and_place::get_table(
+            world_state_->get_object_pose(), iiwa_base_);
+
+        // Sets desired place location based on where we picked up the object.
+        // Table 0 is in front of iiwa base, and table 1 is to the left.
+        if (table == 0) {
+          // Table 0 -> table 1.
+          X_IiwaObj_desired.translation() =
+              monolithic_pick_and_place::kPlacePosition1;
+          X_IiwaObj_desired.linear() = Matrix3<double>(
+              AngleAxis<double>(M_PI / 2., Vector3<double>::UnitZ()));
+        } else {
+          // Table 1 -> table 0.
+          X_IiwaObj_desired.translation() =
+              monolithic_pick_and_place::kPlacePosition0;
+          X_IiwaObj_desired.linear().setIdentity();
         }
-        break;
-      case PickAndPlaceState::APPROACH_PICK_PREGRASP:
+        X_WObj_desired = iiwa_base_ * X_IiwaObj_desired;
 
-        if (!internal_state.iiwa_action_initiated) {
-          // Computes the desired end effector pose in the world frame to be
-          // kPreGraspHeightOffset above the object.
-          drake::log()->info("StateMachine : APPROACH_PICK_PREGRASP at {}",
-                             context.get_time());
-          X_WEndEffector0 = world_state_->get_iiwa_end_effector_pose();
-          X_WEndEffector1 = pick_and_place_demo::ComputeGraspPose(
-              world_state_->get_object_pose());
-          X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
+        // Recomputes gripper's pose relative the object since the object
+        // probably moved during transfer.
+        const Isometry3<double> X_ObjEndEffector =
+            world_state_->get_object_pose().inverse() *
+            world_state_->get_iiwa_end_effector_pose();
 
-          // 2 seconds, no via points.
-          bool res = pick_and_place_demo::PlanStraightLineMotion(
-              world_state_->get_iiwa_q(), 0, 2, X_WEndEffector0,
-              X_WEndEffector1, kLoosePosTol, kLooseRotTol, planner_.get(),
-              &ik_res, &times);
-          DRAKE_DEMAND(res);
+        X_WEndEffector0 = X_WEndEffector1;
+        X_WEndEffector1 = X_WObj_desired * X_ObjEndEffector;
+        X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
 
-          iiwa_action_input.is_valid = true;
-          iiwa_action_input.time = times;
-          iiwa_action_input.q = ik_res.q_sol;
-          internal_state.iiwa_action_initiated = true;
+        // 2 seconds, 2 via points. This doesn't have to be a move straight
+        // primitive. I did it this way because I have seen the IK gives a
+        // wild motion that causes the gripper to lose the object.
+        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+            world_state_->get_iiwa_q(), 2, 2, X_WEndEffector0, X_WEndEffector1,
+            kLoosePosTol, kLooseRotTol, planner_.get(), &ik_res, &times);
 
-        } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
-          // This means that the action was already intiated and primitive
-          // has returned to WAITING state, i.e. it is complete.
-          // resetting iiwa_action.
+        DRAKE_DEMAND(res);
 
-          internal_state.iiwa_action_initiated = false;
-          internal_state.pick_and_place_state =
-              PickAndPlaceState::APPROACH_PICK;
-        }
-        break;
-      case PickAndPlaceState::APPROACH_PICK:
-        if (!internal_state.iiwa_action_initiated) {
-          drake::log()->info("StateMachine : APPROACH_PICK at {}",
-                             context.get_time());
-          X_WEndEffector0 = X_WEndEffector1;
-          X_WEndEffector1 = pick_and_place_demo::ComputeGraspPose(
-              world_state_->get_object_pose());
+        internal_state.iiwa_action_initiated = true;
+        iiwa_action_input.is_valid = true;
+        iiwa_action_input.time = times;
+        iiwa_action_input.q = ik_res.q_sol;
+      } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
+        // This means that the action was already intiated and primitive
+        // has returned to WAITING state, i.e. it is complete.
+        // resetting iiwa_action.
 
-          // 1 second, 3 via points. More via points to ensure the end effector
-          // moves in more or less a straight line.
-          bool res = pick_and_place_demo::PlanStraightLineMotion(
-              world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0,
-              X_WEndEffector1, kTightPosTol, kTightRotTol, planner_.get(),
-              &ik_res, &times);
-          DRAKE_DEMAND(res);
+        internal_state.iiwa_action_initiated = false;
+        internal_state.pick_and_place_state = PickAndPlaceState::APPROACH_PLACE;
+      }
+      break;
+    case PickAndPlaceState::APPROACH_PLACE:
+      if (!internal_state.iiwa_action_initiated) {
+        drake::log()->info("StateMachine : APPROACH_PLACE at {}",
+                           context.get_time());
 
-          internal_state.iiwa_action_initiated = true;
-          iiwa_action_input.is_valid = true;
-          iiwa_action_input.time = times;
-          iiwa_action_input.q = ik_res.q_sol;
+        // Recomputes gripper's pose relative the object since the object
+        // probably moved during transfer.
+        const Isometry3<double> X_ObjEndEffector =
+            world_state_->get_object_pose().inverse() *
+            world_state_->get_iiwa_end_effector_pose();
 
-        } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
-          // This means that the action was already intiated and primitive
-          // has returned to WAITING state, i.e. it is complete.
-          // resetting iiwa_action.
+        // Computes the desired end effector pose in the world frame.
+        X_WEndEffector0 = X_WEndEffector1;
+        X_WEndEffector1 = X_WObj_desired * X_ObjEndEffector;
+        // TODO(siyuan): This hack is to prevent the robot from forcefully
+        // pushing the object into the table. Shouldn't be necessary once
+        // we have guarded moves supported by the controller side.
+        X_WEndEffector1.translation()[2] += 0.02;
 
-          internal_state.iiwa_action_initiated = false;
-          internal_state.pick_and_place_state = PickAndPlaceState::GRASP;
-        }
-        break;
-      case PickAndPlaceState::GRASP:
-        // change output to gripper action primitive.
-        if (!internal_state.wsg_action_initiated) {
-          // Perform wsg action.
-          drake::log()->info("StateMachine : GRASP at {}", context.get_time());
-          wsg_action_input = GripperActionInput::CLOSE;
-          internal_state.wsg_action_initiated = true;
-        } else if (wsg_primitive_state == ActionPrimitiveState::WAITING) {
-          // This means that the action was already intiated and primitive
-          // has returned to WAITING state, i.e. it is complete.
-          // resetting wsg_action.
-          internal_state.wsg_action_initiated = false;
-          internal_state.pick_and_place_state =
-              PickAndPlaceState::LIFT_FROM_PICK;
-        }
-        break;
-      case PickAndPlaceState::LIFT_FROM_PICK:
+        // 1 seconds, 3 via points.
+        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+            world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0, X_WEndEffector1,
+            kTightPosTol, kTightRotTol, planner_.get(), &ik_res, &times);
+        DRAKE_DEMAND(res);
 
-        if (!internal_state.iiwa_action_initiated) {
-          drake::log()->info("StateMachine : LIFT_FROM_PICK at {}",
-                             context.get_time());
-          X_WEndEffector0 = X_WEndEffector1;
-          X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
+        internal_state.iiwa_action_initiated = true;
+        iiwa_action_input.is_valid = true;
+        iiwa_action_input.time = times;
+        iiwa_action_input.q = ik_res.q_sol;
+      } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
+        // This means that the action was already intiated and primitive
+        // has returned to WAITING state, i.e. it is complete.
+        // resetting iiwa_action.
 
-          // 1 seconds, 3 via points.
-          bool res = pick_and_place_demo::PlanStraightLineMotion(
-              world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0,
-              X_WEndEffector1, kTightPosTol, kTightRotTol, planner_.get(),
-              &ik_res, &times);
-          DRAKE_DEMAND(res);
+        internal_state.iiwa_action_initiated = false;
+        internal_state.pick_and_place_state = PickAndPlaceState::PLACE;
+      }
+      break;
+    case PickAndPlaceState::PLACE:
+      if (!internal_state.wsg_action_initiated) {
+        drake::log()->info("StateMachine : PLACE at {}", context.get_time());
+        // Perform wsg action.
+        wsg_action_input = GripperActionInput::OPEN;
+        internal_state.wsg_action_initiated = true;
+      } else if (wsg_primitive_state == ActionPrimitiveState::WAITING) {
+        // This means that the action was already intiated and primitive
+        // has returned to WAITING state, i.e. it is complete.
+        // resetting wsg_action.
+        internal_state.wsg_action_initiated = false;
+        internal_state.pick_and_place_state =
+            PickAndPlaceState::LIFT_FROM_PLACE;
+      }
 
-          internal_state.iiwa_action_initiated = true;
-          iiwa_action_input.is_valid = true;
-          iiwa_action_input.time = times;
-          iiwa_action_input.q = ik_res.q_sol;
+      break;
+    case PickAndPlaceState::LIFT_FROM_PLACE:
+      if (!internal_state.iiwa_action_initiated) {
+        drake::log()->info("StateMachine : LIFT_FROM_PLACE at {}",
+                           context.get_time());
 
-        } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
-          // This means that the action was already initiated and primitive
-          // has returned to WAITING state, i.e. it is complete.
-          // resetting iiwa_action.
+        X_WEndEffector0 = X_WEndEffector1;
+        X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
 
-          internal_state.iiwa_action_initiated = false;
-          internal_state.pick_and_place_state =
-              PickAndPlaceState::APPROACH_PLACE_PREGRASP;
-        }
-        break;
-      case PickAndPlaceState::APPROACH_PLACE_PREGRASP:
+        // 1 seconds, 3 via points.
+        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+            world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0, X_WEndEffector1,
+            kTightPosTol, kTightRotTol, planner_.get(), &ik_res, &times);
+        DRAKE_DEMAND(res);
 
-        if (!internal_state.iiwa_action_initiated) {
-          drake::log()->info("StateMachine : APPROACH_PLACE_PREGRASP at {}",
-                             context.get_time());
-          int table = pick_and_place_demo::get_table(
-              world_state_->get_object_pose(), iiwa_base_);
+        internal_state.iiwa_action_initiated = true;
+        iiwa_action_input.is_valid = true;
+        iiwa_action_input.time = times;
+        iiwa_action_input.q = ik_res.q_sol;
+      } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
+        // This means that the action was already intiated and primitive
+        // has returned to WAITING state, i.e. it is complete.
+        // resetting iiwa_action.
 
-          // Sets desired place location based on where we picked up the object.
-          // Table 0 is in front of iiwa base, and table 1 is to the left.
-          if (table == 0) {
-            // Table 0 -> table 1.
-            X_IiwaObj_desired.translation() =
-                pick_and_place_demo::kPlacePosition1;
-            X_IiwaObj_desired.linear() = Matrix3<double>(
-                AngleAxis<double>(M_PI / 2., Vector3<double>::UnitZ()));
-          } else {
-            // Table 1 -> table 0.
-            X_IiwaObj_desired.translation() =
-                pick_and_place_demo::kPlacePosition0;
-            X_IiwaObj_desired.linear().setIdentity();
-          }
-          X_WObj_desired = iiwa_base_ * X_IiwaObj_desired;
+        internal_state.iiwa_action_initiated = false;
+        internal_state.pick_and_place_state = PickAndPlaceState::DONE;
+      }
+      break;
+    case PickAndPlaceState::DONE:
+      if (!internal_state.iiwa_action_initiated) {
+        drake::log()->info("StateMachine : DONE at {}", context.get_time());
+        const std::vector<double> time = {0, 2};
+        std::vector<VectorX<double>> q(2, world_state_->get_iiwa_q());
+        q[1].setZero();
 
-          // Recomputes gripper's pose relative the object since the object
-          // probably moved during transfer.
-          const Isometry3<double> X_ObjEndEffector =
-              world_state_->get_object_pose().inverse() *
-              world_state_->get_iiwa_end_effector_pose();
+        internal_state.iiwa_action_initiated = true;
+        iiwa_action_input.is_valid = true;
+        iiwa_action_input.time = times;
+        iiwa_action_input.q = ik_res.q_sol;
+      } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
+        // This means that the action was already intiated and primitive
+        // has returned to WAITING state, i.e. it is complete.
+        // resetting iiwa_action.
 
-          X_WEndEffector0 = X_WEndEffector1;
-          X_WEndEffector1 = X_WObj_desired * X_ObjEndEffector;
-          X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
-
-          // 2 seconds, 2 via points. This doesn't have to be a move straight
-          // primitive. I did it this way because I have seen the IK gives a
-          // wild motion that causes the gripper to lose the object.
-          bool res = pick_and_place_demo::PlanStraightLineMotion(
-              world_state_->get_iiwa_q(), 2, 2, X_WEndEffector0,
-              X_WEndEffector1, kLoosePosTol, kLooseRotTol, planner_.get(),
-              &ik_res, &times);
-
-          DRAKE_DEMAND(res);
-
-          internal_state.iiwa_action_initiated = true;
-          iiwa_action_input.is_valid = true;
-          iiwa_action_input.time = times;
-          iiwa_action_input.q = ik_res.q_sol;
-        } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
-          // This means that the action was already intiated and primitive
-          // has returned to WAITING state, i.e. it is complete.
-          // resetting iiwa_action.
-
-          internal_state.iiwa_action_initiated = false;
-          internal_state.pick_and_place_state =
-              PickAndPlaceState::APPROACH_PLACE;
-        }
-        break;
-      case PickAndPlaceState::APPROACH_PLACE:
-        if (!internal_state.iiwa_action_initiated) {
-          drake::log()->info("StateMachine : APPROACH_PLACE at {}",
-                             context.get_time());
-
-          // Recomputes gripper's pose relative the object since the object
-          // probably moved during transfer.
-          const Isometry3<double> X_ObjEndEffector =
-              world_state_->get_object_pose().inverse() *
-              world_state_->get_iiwa_end_effector_pose();
-
-          // Computes the desired end effector pose in the world frame.
-          X_WEndEffector0 = X_WEndEffector1;
-          X_WEndEffector1 = X_WObj_desired * X_ObjEndEffector;
-          // TODO(siyuan): This hack is to prevent the robot from forcefully
-          // pushing the object into the table. Shouldn't be necessary once
-          // we have guarded moves supported by the controller side.
-          X_WEndEffector1.translation()[2] += 0.02;
-
-          // 1 seconds, 3 via points.
-          bool res = pick_and_place_demo::PlanStraightLineMotion(
-              world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0,
-              X_WEndEffector1, kTightPosTol, kTightRotTol, planner_.get(),
-              &ik_res, &times);
-          DRAKE_DEMAND(res);
-
-          internal_state.iiwa_action_initiated = true;
-          iiwa_action_input.is_valid = true;
-          iiwa_action_input.time = times;
-          iiwa_action_input.q = ik_res.q_sol;
-        } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
-          // This means that the action was already intiated and primitive
-          // has returned to WAITING state, i.e. it is complete.
-          // resetting iiwa_action.
-
-          internal_state.iiwa_action_initiated = false;
-          internal_state.pick_and_place_state = PickAndPlaceState::PLACE;
-        }
-        break;
-      case PickAndPlaceState::PLACE:
-        if (!internal_state.wsg_action_initiated) {
-          drake::log()->info("StateMachine : PLACE at {}", context.get_time());
-          // Perform wsg action.
-          wsg_action_input = GripperActionInput::OPEN;
-          internal_state.wsg_action_initiated = true;
-        } else if (wsg_primitive_state == ActionPrimitiveState::WAITING) {
-          // This means that the action was already intiated and primitive
-          // has returned to WAITING state, i.e. it is complete.
-          // resetting wsg_action.
-          internal_state.wsg_action_initiated = false;
-          internal_state.pick_and_place_state =
-              PickAndPlaceState::LIFT_FROM_PLACE;
-        }
-
-        break;
-      case PickAndPlaceState::LIFT_FROM_PLACE:
-        if (!internal_state.iiwa_action_initiated) {
-          drake::log()->info("StateMachine : LIFT_FROM_PLACE at {}",
-                             context.get_time());
-
-          X_WEndEffector0 = X_WEndEffector1;
-          X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
-
-          // 1 seconds, 3 via points.
-          bool res = pick_and_place_demo::PlanStraightLineMotion(
-              world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0,
-              X_WEndEffector1, kTightPosTol, kTightRotTol, planner_.get(),
-              &ik_res, &times);
-          DRAKE_DEMAND(res);
-
-          internal_state.iiwa_action_initiated = true;
-          iiwa_action_input.is_valid = true;
-          iiwa_action_input.time = times;
-          iiwa_action_input.q = ik_res.q_sol;
-        } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
-          // This means that the action was already intiated and primitive
-          // has returned to WAITING state, i.e. it is complete.
-          // resetting iiwa_action.
-
-          internal_state.iiwa_action_initiated = false;
-          internal_state.pick_and_place_state = PickAndPlaceState::DONE;
-        }
-        break;
-      case PickAndPlaceState::DONE:
-        if (!internal_state.iiwa_action_initiated) {
-          drake::log()->info("StateMachine : DONE at {}", context.get_time());
-          const std::vector<double> time = {0, 2};
-          std::vector<VectorX<double>> q(2, world_state_->get_iiwa_q());
-          q[1].setZero();
-
-          internal_state.iiwa_action_initiated = true;
-          iiwa_action_input.is_valid = true;
-          iiwa_action_input.time = times;
-          iiwa_action_input.q = ik_res.q_sol;
-        } else if (iiwa_primitive_state == ActionPrimitiveState::WAITING) {
-          // This means that the action was already intiated and primitive
-          // has returned to WAITING state, i.e. it is complete.
-          // resetting iiwa_action.
-
-          internal_state.iiwa_action_initiated = false;
-          internal_state.pick_and_place_state = PickAndPlaceState::OPEN_GRIPPER;
-        }
-        break;
-    }
+        internal_state.iiwa_action_initiated = false;
+        internal_state.pick_and_place_state = PickAndPlaceState::OPEN_GRIPPER;
+      }
+      break;
   }
 }
 
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

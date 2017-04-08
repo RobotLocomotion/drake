@@ -23,7 +23,7 @@ using schunk_wsg::SchunkWsgTrajectoryGenerator;
 using schunk_wsg::SchunkWsgStatusSender;
 
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 
 template <typename T>
 IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
@@ -80,12 +80,6 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
   // Sets up a WSG Status sender.
   wsg_status_sender_ = builder.template AddSystem<SchunkWsgStatusSender>(
       plant_->get_output_port_wsg_state().size(), 0, 0);
-
-  pass_through_wsg_state_ = builder.template AddSystem<PassThrough<T>>(
-      plant_->get_output_port_wsg_state().size());
-
-  builder.Connect(plant_->get_output_port_wsg_state(),
-                  pass_through_wsg_state_->get_input_port());
 
   builder.Connect(plant_->get_output_port_wsg_state(),
                   wsg_status_sender_->get_input_port(0));
@@ -149,7 +143,7 @@ StateMachineAndPrimitives<T>::StateMachineAndPrimitives(
 }
 template class StateMachineAndPrimitives<double>;
 
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
