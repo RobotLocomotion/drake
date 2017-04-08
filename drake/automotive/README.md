@@ -42,7 +42,7 @@ $ bazel run drake/automotive:DEMO_NAME_HERE
 The following demos are available:
 
  * Basic cars driving around on an open plane:
-   `bazel run drake/automotive:demo`
+   `bazel run drake/automotive:demo -- --simple_car_names=foo --num_trajectory_car=1`
 
    This will show one _ado_ car driving in a fixed trajectory, and one _ego_
    car which can be driven anywhere on the infinite plane.  (See "Driving

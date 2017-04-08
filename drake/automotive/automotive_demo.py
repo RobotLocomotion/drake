@@ -210,6 +210,7 @@ def main():
     parser.add_argument("--dry-run", action='store_true',
                         default=False,
                         help="print commands instead of running them")
+    parser.add_argument("--simple_car_names", default="")
     args, tail = parser.parse_known_args()
 
     if '--help' in tail:
@@ -236,10 +237,16 @@ def main():
             else:
                 wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')
 
+        if args.simple_car_names != "":
+            tail.append("--simple_car_names=" + args.simple_car_names)
         the_launcher.launch([demo_path] + tail)
 
         if args.launch_steering_command_driver:
-            the_launcher.launch([steering_command_driver_path])
+            if args.simple_car_names != "":
+                name_list = args.simple_car_names.split(',')
+                for name in name_list:
+                    the_launcher.launch([steering_command_driver_path,
+                                         "--lcm_tag=DRIVING_COMMAND_" + name])
 
         the_launcher.wait(args.duration)
 
