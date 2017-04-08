@@ -210,6 +210,10 @@ def main():
     parser.add_argument("--dry-run", action='store_true',
                         default=False,
                         help="print commands instead of running them")
+    parser.add_argument("--driving_command_gui_names", default="",
+                        help="a comma separated list of vehicle names for " +
+                             "the vehicles for which a driving command GUI " +
+                             "should be launched")
     args, tail = parser.parse_known_args()
 
     if '--help' in tail:
@@ -238,8 +242,12 @@ def main():
 
         the_launcher.launch([demo_path] + tail)
 
-        if args.launch_steering_command_driver:
-            the_launcher.launch([steering_command_driver_path])
+        if args.launch_steering_command_driver and \
+                args.driving_command_gui_names != "":
+            name_list = args.driving_command_gui_names.split(',')
+            for name in name_list:
+                the_launcher.launch([steering_command_driver_path,
+                                     "--lcm_tag=DRIVING_COMMAND_" + name])
 
         the_launcher.wait(args.duration)
 
