@@ -17,5 +17,5 @@ $ ./bazel-bin/drake/examples/kuka_iiwa_arm/kuka_plan_runner
 
 tty3:
 ```
-$ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_state_machine
+$ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_state_machine
 ```

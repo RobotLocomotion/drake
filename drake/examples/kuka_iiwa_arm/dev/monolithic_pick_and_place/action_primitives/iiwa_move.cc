@@ -4,7 +4,7 @@
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "external/robotlocomotion_lcmtypes/lcmtypes/robotlocomotion/robot_plan_t.hpp"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_base.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitive_base.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
@@ -18,7 +18,7 @@ using systems::LeafSystem;
 
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 
 struct IiwaMove::InternalState {
   InternalState() {}
@@ -135,7 +135,7 @@ void IiwaMove::DoExtendedCalcOutput(
   }
 }
 
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

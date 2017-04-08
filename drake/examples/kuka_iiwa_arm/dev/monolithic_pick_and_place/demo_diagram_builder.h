@@ -21,7 +21,7 @@ namespace drake {
 namespace examples {
 
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 
 // The `z` coordinate of the top of the table in the world frame.
 // The quantity 0.736 is the `z` coordinate of the frame associated with the
@@ -87,7 +87,8 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
       drake::multibody::joints::kFixed);
   *wsg_instance = tree_builder->get_model_info_for_instance(id);
 
-  auto plant = std::make_unique<systems::RigidBodyPlant<T>>(tree_builder->Build());
+  auto plant =
+      std::make_unique<systems::RigidBodyPlant<T>>(tree_builder->Build());
   return (std::move(plant));
 }
 
@@ -144,6 +145,10 @@ class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
   /// is designed for usage within the monolithic pick and place demo.
   /// @param lcm : A reference to the lcm object to be passed onto the
   /// Visualizer
+  /// @param update_interval : The update interval of the unrestricted update of
+  /// `IiwaStateFeedbackPlanSource`. This should be smaller than that of
+  /// components
+  /// commanding new plans.
   IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(
       lcm::DrakeLcm* lcm, const double update_interval = 0.001);
 
@@ -172,7 +177,6 @@ class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
  private:
   IiwaAndWsgPlantWithStateEstimator<T>* plant_{nullptr};
   schunk_wsg::SchunkWsgStatusSender* wsg_status_sender_{nullptr};
-  PassThrough<T>* pass_through_wsg_state_{nullptr};
   systems::DrakeVisualizer* drake_visualizer_{nullptr};
   IiwaStateFeedbackPlanSource* iiwa_trajectory_generator_{nullptr};
   schunk_wsg::SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
@@ -184,7 +188,7 @@ class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
   int output_port_box_robot_state_msg_{-1};
 };
 
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

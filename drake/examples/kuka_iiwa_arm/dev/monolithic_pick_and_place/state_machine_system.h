@@ -6,33 +6,31 @@
 #include "bot_core/robot_state_t.hpp"
 #include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/synchronous_world_state.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/sparsity_matrix.h"
 #include "drake/util/lcmUtil.h"
 
 namespace drake {
-using lcm::DrakeLcm;
-
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 
 /**
- * A class that takes state vector and output a bot_core::robot_state_t message.
- * Note that the joint_effort part will be set to zero.
+ * A class that implements the Finite-State-Machine logic for the
+ * Pick-And-Place demo. This system is to be used by coupling the outputs with
+ * the `IiwaMove` and `GripperAction` `ActionPrimitive` systems and the inputs
+ * are
+ * to be supplied from `IiwaStatusSender`, `SchunkWsgStatusSender` and
+ * `OracularStateEstimator` systems.
  */
 class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
  public:
   /**
-   * Constructor for OracularStateEstimation.
-   * @param robot, Reference to the RigidBodyTree. The life span of @p robot
-   * needs to be longer than this instance. Also note that the generated LCM
-   * messages will contain every joint in @p robot.
-   * @param base_body, Reference to the base link in @p robot. Can be either
-   * floating base or a fixed base. @p base_body must be part of @p robot,
-   * and it needs to have a longer life span than this instance.
+   * Constructor for the PickAndPlaceStateMachineSystem
+   * @param iiwa_base, The pose of the base of the IIWA robot system.
+   * @param update_interval : The update interval of the unrestricted update of
+   * this system. This should be bigger than that of the PlanSource components.
    */
   PickAndPlaceStateMachineSystem(const Isometry3<double>& iiwa_base,
                                  const double update_interval = 0.1);
@@ -109,14 +107,13 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   int output_port_iiwa_action_{-1};
   int output_port_wsg_action_{-1};
 
-  RigidBodyTreed rigid_body_tree{};
   const Isometry3<double> iiwa_base_;
 
   const std::unique_ptr<IiwaIkPlanner> planner_{nullptr};
   const std::unique_ptr<SynchronousWorldState> world_state_{nullptr};
 };
 
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

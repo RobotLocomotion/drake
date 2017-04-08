@@ -6,7 +6,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 
 SynchronousWorldState::SynchronousWorldState(const Isometry3<double>& iiwa_base,
                                              const std::string& iiwa_path,
@@ -79,7 +79,7 @@ void SynchronousWorldState::UnpackObjectStatusMessage(
   obj_vel_ = DecodeTwist(obj_msg->twist);
 }
 
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

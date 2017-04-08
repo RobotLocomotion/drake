@@ -43,9 +43,6 @@ drake_cc_library(
     ],
     deps = [
         ":iiwa_state_feedback_plan",
-        "//drake/common/trajectories:piecewise_quaternion",
-        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
-        "//drake/systems/primitives:constant_vector_source",
         "//drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives:action_primitives",
         "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:kuka_pick_and_place",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",

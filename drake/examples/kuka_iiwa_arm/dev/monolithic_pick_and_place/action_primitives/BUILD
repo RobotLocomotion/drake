@@ -11,12 +11,12 @@ load(
 drake_cc_library(
     name = "action_primitives",
     srcs = [
-        "action_primitives_base.cc",
+        "action_primitive_base.cc",
         "iiwa_move.cc",
         "gripper_action.cc",
       ],
     hdrs = [
-        "action_primitives_base.h",
+        "action_primitive_base.h",
         "iiwa_move.h",
         "gripper_action.h",
         "action_primitives_common.h",
@@ -24,7 +24,7 @@ drake_cc_library(
     visibility = ["//drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:__subpackages__"],
     deps = [
         "//drake/examples/kuka_iiwa_arm/dev:iiwa_ik_planner",
-      #  "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:kuka_pick_and_place",
+      #  "//drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:kuka_pick_and_place",
         "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
