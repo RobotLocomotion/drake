@@ -197,6 +197,50 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   }
 
   /**
+   * Add a constraint on potentially all of the variables involved at selected
+   * knot points.
+   * The constraint must expect input vectors of the form: [states, inputs].
+   * And if (include_dt) then: [states, inputs, timestep].
+   * If dt is selected then the final knot point cannot be constrained because
+   * there is no dt decision variable for it.
+   *
+   * An example usage of this constraint would be for velocity obstacles where
+   * one needs to stay at positive distance from an obstacle. Using a distance
+   * state variable, velocity input variable, and dt we can express the
+   * constraint: distance + velocity * dt > 0. Thus, assuming piecewise linear
+   * input interpolation, and an additional distance > 0 constraint, we can be
+   * much more confident that the interpolation scheme won't give use a negative
+   * distance in between knot points.
+   *
+   * @param constraint The constraint to be applied.
+   *
+   * @param time_indices Apply the constraints only at these time
+   * indices (zero offset).
+   *
+   * @param include_dt Whether to bind timestep variable into the constraint
+   * input.
+   */
+  template <typename ConstraintT>
+  void AddGenericKnotPointConstraint(std::shared_ptr<ConstraintT> constraint,
+                                     const std::vector<int>& time_indices,
+                                     bool include_dt) {
+    for (const int i : time_indices) {
+      DRAKE_ASSERT(i < N_);
+      solvers::VariableRefList list;
+      list.emplace_back(x_vars_.segment(i * num_states_, num_states_));
+      list.emplace_back(u_vars_.segment(i * num_inputs_, num_inputs_));
+      if (include_dt) {
+        // Arguments consisting of both include_dt and the final sample index
+        // will fail this assertion.
+        DRAKE_ASSERT(i < N_ - 1);
+        list.emplace_back(h_vars_.segment(i, 1));
+      }
+      opt_problem_.AddConstraint(
+          solvers::Binding<ConstraintT>(constraint, list));
+    }
+  }
+
+  /**
    * Add bounds on a set of time intervals, such that
    * lower_bound(i) <= h_vars_(interval_indices[i]) <= upper_bound(i)
    * where h_vars_[j] is the time interval between j'th and j+1'th sample
