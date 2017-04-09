@@ -5,11 +5,6 @@
 #include <limits>
 #include <string>
 
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <c++/5/bits/ios_base.h>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 
@@ -76,7 +71,7 @@ void ToMatlabArray(const std::string& str,
 
 void internal::PublishCallMatlab(const MatlabRPC& msg) {
   // TODO(russt): Provide option for setting the filename.
-  static never_destroyed<std::ofstream> rpc_file("/tmp/matlab_rpc", std::ofstream::trunc);
+  static never_destroyed<std::ofstream> output("/tmp/matlab_rpc", std::ofstream::trunc);
 
 /*
   if (!named_pipe.is_open()) {
@@ -90,7 +85,7 @@ void internal::PublishCallMatlab(const MatlabRPC& msg) {
   }
 */
 
-  msg.SerializeToOstream(&rpc_file.access());
+  msg.SerializeToOstream(&output.access());
 }
 
 }  // namespace common

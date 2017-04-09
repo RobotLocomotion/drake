@@ -2,6 +2,12 @@
 # Drake common library
 #
 
+drake_find_package(Protobuf REQUIRED)
+include_directories(${Protobuf_INCLUDE_DIRS})
+include_directories(${PROJECT_BINARY_DIR}/..)  # to find generated protobuf headers
+
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS matlab_rpc.proto)
+
 # Generated code.
 set(drake_path_cc ${PROJECT_BINARY_DIR}/generated/drake/common/test/drake_path.cc)
 set(THIS_FILE_IS_USED_BY_CMAKE_TO_CREATE_GENERATED_CODE
@@ -10,6 +16,7 @@ configure_file(drake_path.cc.in ${drake_path_cc})
 
 # List all source files used to build libdrakeCommon.
 set(sources
+  call_matlab.cc ${PROTO_SRCS}
   double_overloads.cc
   drake_assert.cc
   ${drake_path_cc}
@@ -34,6 +41,7 @@ set(sources
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
   autodiff_overloads.h
+  call_matlab.h ${PROTO_HDRS}
   cond.h
   constants.h
   double_overloads.h
@@ -82,7 +90,8 @@ target_link_libraries(drakeCommon
   Eigen3::Eigen
   fmt
   gflags
-  Threads::Threads)
+  Threads::Threads
+  ${PROTOBUF_LIBRARIES})
 
 set(drakeCommon_CFLAGS)
 set(drakeCommon_REQUIRES)

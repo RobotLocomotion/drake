@@ -74,12 +74,11 @@ if(Matlab_FOUND)
     drake_add_mex(publishLCMLog publishLCMLog.cpp)
     target_link_libraries(publishLCMLog lcm)
 
-    drake_add_mex(lcm_call_matlab_client lcm_call_matlab_client.cc)
-    target_link_libraries(lcm_call_matlab_client
+    include_directories(${PROJECT_BINARY_DIR}/..) # to find protobuf generated headers
+    drake_add_mex(call_matlab_client call_matlab_client.cc)
+    target_link_libraries(call_matlab_client
         drakeCommon
-        drakeMexUtil
-        drakeLCMTypes
-        lcm)
+        drakeMexUtil)
   endif()
 endif()
 
