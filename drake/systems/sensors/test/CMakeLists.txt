@@ -11,6 +11,11 @@ if(Bullet_FOUND)
   drake_add_cc_test(depth_sensor_test)
   target_link_libraries(depth_sensor_test
       drakeSensors)
+  if(LCM_FOUND)
+    drake_add_cc_test(depth_sensor_vis_test)
+    target_link_libraries(depth_sensor_vis_test
+        drakeSensors)
+  endif()
 endif()
 
 if(BUILD_TESTING)
