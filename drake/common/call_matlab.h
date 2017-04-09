@@ -4,85 +4,84 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/lcmt_call_matlab.hpp"
+#include "drake/common/matlab_rpc.pb.h"
 
 /// A simple interface for (one-directional) RPC to a simple matlab remote
-/// client.  Methods are provided to serialize our favorite data types into lcm
-/// and then publish.  The interface is modeled after mexCallMATLAB
+/// client.  Methods are provided to serialize our favorite data types into protobuf
+/// and then published via a named pipe.  The interface is modeled after mexCallMATLAB
 ///   https://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html
 /// but we use C++11 to provide a much nicer interface.
 ///
-/// To start the client, simply run lcm_call_matlab_client from your matlab
+/// To start the client, simply run call_matlab_client from your matlab
 /// terminal.
 ///
 /// The primary use case that this was designed for was to make MATLAB plotting
 /// available in C++ without requiring the C++ code to link against MATLAB in
-/// any way... (if MATLAB is not present, the lcm messages simply fall on deaf
+/// any way... (if MATLAB is not present, the messages simply fall on deaf
 /// ears).
 ///
 /// Support for multi-function commands is provided by allowing return values to
 /// be stored on the remote client, and reused by a simple "remote variable
 /// reference" that is kept by the publisher.
 ///
-/// See lcm_call_matlab_test.cc for some simple examples.
+/// See call_matlab_test.cc for some simple examples.
 
 namespace drake {
-namespace lcm {
+namespace common {
 
-/// Serialize our favorite data types into the lcm_matlab_array structure.
-/// To support a calling lcm_call_matlab for a new data type, simply implement
+/// Serialize our favorite data types into the matlab_array structure.
+/// To support a calling call_matlab for a new data type, simply implement
 //  another one of these methods.
 
-class LcmMatlabRemoteVariable;
-void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
-                      drake::lcmt_matlab_array* matlab_array);
+class MatlabRemoteVariable;
+void ToMatlabArray(const MatlabRemoteVariable& var,
+                      MatlabArray* matlab_array);
 
-void ToLcmMatlabArray(double scalar, drake::lcmt_matlab_array* matlab_array);
+void ToMatlabArray(double scalar, MatlabArray* matlab_array);
 
-void ToLcmMatlabArray(
+void ToMatlabArray(
     const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>&
         mat,
-    drake::lcmt_matlab_array* matlab_array);
+    MatlabArray* matlab_array);
 
-void ToLcmMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
-                      drake::lcmt_matlab_array* matlab_array);
+void ToMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
+                      MatlabArray* matlab_array);
 
-void ToLcmMatlabArray(const std::string& str,
-                      drake::lcmt_matlab_array* matlab_array);
+void ToMatlabArray(const std::string& str,
+                      MatlabArray* matlab_array);
 
 // Helper methods for variadic template call in CallMatlab.
 namespace internal {
-inline void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg, int* index) {
+inline void AssembleCallMatlabMsg(MatlabRPC* msg) {
   // Intentionally left blank.  Base case for template recursion.
 }
 
 template <typename T, typename... Types>
-void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg, int* index, T first,
+void AssembleCallMatlabMsg(MatlabRPC* msg, T first,
                               Types... args) {
-  ToLcmMatlabArray(first, &(msg->rhs[*index]));
-  *index += 1;
-  AssembleLcmCallMatlabMsg(msg, index, args...);
+  ToMatlabArray(first, msg->add_rhs());
+  AssembleCallMatlabMsg(msg, args...);
 }
 
 // Simple wrapper to prevent the outside world from needing to worry about
-// creating an lcm::LCM object.
-// TODO(russt): support setting the channel name (via a
-// LcmCallMatlabChannelPush/Pop).
-void PublishLcmCallMatlab(const drake::lcmt_call_matlab& msg);
+// creating a the i/o stream object.
+// TODO(russt): support setting the pipe name (via a
+// CallMatlabChannelPush/Pop).
+void PublishCallMatlab(const MatlabRPC& msg);
 
 }  // namespace internal
 
 // forward declaration:
 template <typename... Types>
-LcmMatlabRemoteVariable LcmCallMatlabSingleOutput(
+MatlabRemoteVariable CallMatlabSingleOutput(
     const std::string& function_name, Types... args);
 
 /// Holds a reference to a variable stored on the matlab client, which can be
 /// passed back into a future lcm_call_matlab call.
-class LcmMatlabRemoteVariable {
+class MatlabRemoteVariable {
  public:
-  LcmMatlabRemoteVariable();
-  //  ~LcmMatlabRemoteVariable(); // TODO(russt): send a destroy message on
+  MatlabRemoteVariable();
+  //  ~MatlabRemoteVariable(); // TODO(russt): send a destroy message on
   //  deletion
 
   int64_t unique_id() const { return unique_id_; }
@@ -106,10 +105,10 @@ class LcmMatlabRemoteVariable {
   /// <pre>
   /// Note: yes, vector indices in Matlab are doubles.
   template <typename... Types>
-  LcmMatlabRemoteVariable operator()(Types... args) const {
-    LcmMatlabRemoteVariable s = AssembleSubstruct(args...);
+  MatlabRemoteVariable operator()(Types... args) const {
+    MatlabRemoteVariable s = AssembleSubstruct(args...);
 
-    return LcmCallMatlabSingleOutput("subsref", *this, s);
+    return CallMatlabSingleOutput("subsref", *this, s);
   }
 
   /// Creates a new remote variable that contains the data at the prescribed
@@ -131,55 +130,46 @@ class LcmMatlabRemoteVariable {
   /// <pre>
   /// Note: yes, vector indices in Matlab are doubles.
   template <typename T, typename... Types>
-  LcmMatlabRemoteVariable subsasgn(T val, Types... args) const {
-    LcmMatlabRemoteVariable s = AssembleSubstruct(args...);
+  MatlabRemoteVariable subsasgn(T val, Types... args) const {
+    MatlabRemoteVariable s = AssembleSubstruct(args...);
 
-    return LcmCallMatlabSingleOutput("subsasgn", *this, s, val);
+    return CallMatlabSingleOutput("subsasgn", *this, s, val);
   }
 
  private:
   // Helper methods for variadic template call in CallMatlab.
-  inline void AssembleSubsPrepMsg(drake::lcmt_call_matlab* msg,
-                                  int* index) const {
+  inline void AssembleSubsPrepMsg(MatlabRPC* msg) const {
     // Intentionally left blank.  Base case for template recursion.
   }
 
   template <typename T, typename... Types>
-  void AssembleSubsPrepMsg(drake::lcmt_call_matlab* msg, int* index, T first,
+  void AssembleSubsPrepMsg(MatlabRPC* msg, T first,
                            Types... args) const {
-    const std::string dummy_field_name = "f" + std::to_string(*index);
-    ToLcmMatlabArray(dummy_field_name, &(msg->rhs[(*index) * 2]));
-    ToLcmMatlabArray(first, &(msg->rhs[(*index) * 2 + 1]));
-    *index += 1;
-    AssembleSubsPrepMsg(msg, index, args...);
+    const std::string dummy_field_name = "f" + std::to_string(msg->rhs_size()+1);
+    ToMatlabArray(dummy_field_name, msg->add_rhs());
+    ToMatlabArray(first, msg->add_rhs());
+    AssembleSubsPrepMsg(msg, args...);
   }
 
   template <typename... Types>
-  LcmMatlabRemoteVariable AssembleSubstruct(Types... args) const {
+  MatlabRemoteVariable AssembleSubstruct(Types... args) const {
     // construct a cell matrix (with one entry for each argument) using
     // e.g., struct2cell('f1',1:2,'f2','test'))
-    LcmMatlabRemoteVariable temp_struct;
+    MatlabRemoteVariable temp_struct;
     {
-      const int num_inputs = sizeof...(args);
+      MatlabRPC msg;
+      msg.add_lhs(temp_struct.unique_id());
 
-      drake::lcmt_call_matlab msg;
-      msg.nlhs = 1;
-      msg.lhs.resize(1);
-      msg.lhs[0] = temp_struct.unique_id_;
+      AssembleSubsPrepMsg(&msg, args...);
 
-      int index = 0;
-      msg.nrhs = 2 * num_inputs;
-      msg.rhs.resize(2 * num_inputs);
-      AssembleSubsPrepMsg(&msg, &index, args...);
-
-      msg.function_name = "struct";
-      internal::PublishLcmCallMatlab(msg);
+      msg.set_function_name("struct");
+      internal::PublishCallMatlab(msg);
     }
-    LcmMatlabRemoteVariable temp_cell =
-        LcmCallMatlabSingleOutput("struct2cell", temp_struct);
+    MatlabRemoteVariable temp_cell =
+        CallMatlabSingleOutput("struct2cell", temp_struct);
 
     // create the substruct
-    return LcmCallMatlabSingleOutput("substruct", "()", temp_cell);
+    return CallMatlabSingleOutput("substruct", "()", temp_cell);
   }
 
  private:
@@ -194,58 +184,52 @@ class LcmMatlabRemoteVariable {
 /// @param function_name Name of the matlab function to call.  Any argument
 ///     that could have been passed to mexCallMATLAB is allowed.
 ///     https://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html
-/// @param argument1 Any data type which has a ToLcmMatlabArray method
+/// @param argument1 Any data type which has a ToMatlabArray method
 /// implemented.
 /// @param argument2 Same as above.
 /// ...
 ///
-/// See lcm_call_matlab_test.cc for some simple examples.
+/// See call_matlab_test.cc for some simple examples.
 template <typename... Types>
-std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
+std::vector<MatlabRemoteVariable> CallMatlab(
     int num_outputs, const std::string& function_name, Types... args) {
-  const int num_inputs = sizeof...(args);
   if (num_outputs < 0) num_outputs = 0;
-  std::vector<LcmMatlabRemoteVariable> remote_vars(num_outputs);
+  std::vector<MatlabRemoteVariable> remote_vars(num_outputs);
 
-  drake::lcmt_call_matlab msg;
-  msg.nlhs = num_outputs;
-  msg.lhs.resize(num_outputs);
+  MatlabRPC msg;
   for (int i = 0; i < num_outputs; i++) {
-    msg.lhs[i] = remote_vars[i].unique_id();
+    msg.add_lhs(remote_vars[i].unique_id());
   }
 
-  int index = 0;
-  msg.nrhs = num_inputs;
-  msg.rhs.resize(num_inputs);
-  internal::AssembleLcmCallMatlabMsg(&msg, &index, args...);
+  internal::AssembleCallMatlabMsg(&msg, args...);
 
-  msg.function_name = function_name;
-  internal::PublishLcmCallMatlab(msg);
+  msg.set_function_name(function_name);
+  internal::PublishCallMatlab(msg);
   return remote_vars;
 }
 
 /// Special cases the call with zero outputs, since it's so common.
 template <typename... Types>
-void LcmCallMatlab(const std::string& function_name, Types... args) {
-  LcmCallMatlab(0, function_name, args...);
+void CallMatlab(const std::string& function_name, Types... args) {
+  CallMatlab(0, function_name, args...);
 }
 
 /// Special cases the call with one output.
 template <typename... Types>
-LcmMatlabRemoteVariable LcmCallMatlabSingleOutput(
+MatlabRemoteVariable CallMatlabSingleOutput(
     const std::string& function_name, Types... args) {
-  std::vector<LcmMatlabRemoteVariable> vars =
-      LcmCallMatlab(1, function_name, args...);
+  std::vector<MatlabRemoteVariable> vars =
+      CallMatlab(1, function_name, args...);
   return vars[0];
 }
 
 /// Creates a new remote variable with the corresponding value set.
 template <typename T>
-LcmMatlabRemoteVariable LcmNewRemoteVariable(T value) {
+MatlabRemoteVariable NewRemoteVariable(T value) {
   // It took some time to figure out how to make a simple "assign" call via
   // mexCallMatlab.  The `deal` method is the trick.
-  return LcmCallMatlabSingleOutput("deal", value);
+  return CallMatlabSingleOutput("deal", value);
 }
 
-}  // namespace lcm
+}  // namespace common
 }  // namespace drake

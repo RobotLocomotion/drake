@@ -27,7 +27,6 @@ set(lcm_dependent_source_files)
 if (lcm_FOUND)
   set(lcm_dependent_source_files
       drake_lcm.cc
-      lcm_call_matlab.cc
       lcm_receive_thread.cc
       lcmt_drake_signal_utils.cc)
 endif()

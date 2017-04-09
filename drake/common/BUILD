@@ -3,6 +3,7 @@
 
 load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -218,6 +219,24 @@ drake_cc_library(
     ],
 )
 
+cc_proto_library(
+    name = "matlab_rpc",
+    srcs = [
+        "matlab_rpc.proto",
+    ],
+)
+
+drake_cc_library(
+    name = "call_matlab",
+    testonly = 1,
+    srcs = ["call_matlab.cc"],
+    hdrs = ["call_matlab.h"],
+    deps = [
+        "common",
+        "matlab_rpc",
+    ],
+)
+
 drake_cc_library(
     name = "monomial",
     srcs = ["monomial.cc"],
@@ -261,8 +280,8 @@ drake_cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        ":common",
         "@gflags//:gflags",
+        ":common",
     ],
 )
 
@@ -290,6 +309,13 @@ drake_cc_googletest(
         ":common",
         ":eigen_matrix_compare",
         ":extract_double",
+    ],
+)
+
+drake_cc_googletest(
+    name = "call_matlab_test",
+    deps = [
+        ":call_matlab",
     ],
 )
 
