@@ -28,21 +28,30 @@ class ArcLane : public Lane {
   ///
   /// @param id,segment,lane_bounds,driveable_bounds,elevation,superelevation
   ///        See documentation for the Lane base class.
-  ArcLane(const api::LaneId& id, const api::Segment* segment,
-          const V2& center, double radius,
-          double theta0, double d_theta,
-          const api::RBounds& lane_bounds,
-          const api::RBounds& driveable_bounds,
+  ///
+  /// N.B. The override ArcLane::ToLanePosition() is currently restricted to
+  /// lanes in which superelevation and elevation change are both zero.
+  ArcLane(const api::LaneId& id, const api::Segment* segment, const V2& center,
+          double radius, double theta0, double d_theta,
+          const api::RBounds& lane_bounds, const api::RBounds& driveable_bounds,
           const CubicPolynomial& elevation,
           const CubicPolynomial& superelevation);
 
   ~ArcLane() override = default;
 
  private:
-  api::LanePosition DoToLanePosition(
-      const api::GeoPosition& geo_pos,
-      api::GeoPosition* nearest_point,
-      double* distance) const override;
+  // Computes the LanePosition from a given GeoPosition.  This function is exact
+  // (to numerical precision) under the assumption that the road is flat
+  // (superelevation is everywhere zero and the elevation has zero gradient),
+  // and a close approximation for lanes exhibiting small elevation changes.
+  //
+  // Note that, when the absolute theta displacement `d_theta_` exceeds 2π, a
+  // unique solution for `s = LanePosition.s` no longer exists.  In this case,
+  // the return value of `s` is that which results in the smallest
+  // `abs(theta_of_p(s))`.
+  api::LanePosition DoToLanePosition(const api::GeoPosition& geo_pos,
+                                     api::GeoPosition* nearest_point,
+                                     double* distance) const override;
 
   V2 xy_of_p(const double p) const override;
   V2 xy_dot_of_p(const double p) const override;
