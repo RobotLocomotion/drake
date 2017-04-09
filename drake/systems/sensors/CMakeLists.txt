@@ -26,6 +26,11 @@ if(VTK_FOUND)
   list(APPEND drakeSensors_HEADERS rgbd_camera.h vtk_util.h)
 endif()
 
+if(LCM_FOUND)
+  list(APPEND drakeSensors_SRC_FILES depth_sensor_vis.cc)
+  list(APPEND drakeSensors_HEADERS depth_sensor_vis.h)
+endif()
+
 add_library_with_exports(LIB_NAME drakeSensors SOURCE_FILES
     ${drakeSensors_SRC_FILES})
 
@@ -37,6 +42,10 @@ target_link_libraries(drakeSensors
 if(VTK_FOUND)
   target_link_libraries(drakeSensors drakeRendering vtkIO vtkRendering)
   target_include_directories(drakeSensors PUBLIC ${VTK_INCLUDE_DIRS})
+endif()
+
+if(LCM_FOUND)
+  target_link_libraries(drakeSensors robotlocomotion-lcmtypes-cpp)
 endif()
 
 drake_install_libraries(drakeSensors)
