@@ -5,10 +5,47 @@
 #include <limits>
 
 #include "drake/common/drake_assert.h"
+#include "drake/math/saturate.h"
 
 namespace drake {
 namespace maliput {
 namespace monolane {
+
+namespace {
+
+// Wraps the input angle θ, casting it onto the range [-π, π].
+static double wrap(double theta) {
+  return std::atan2(std::sin(theta), std::cos(theta));
+}
+
+// Implements the saturate function for angles.  The input θ to be saturated is
+// assumed to lie in the range [-π, π], saturating within the provided range
+// [θ_min, θ_max].  θ_min, θ_max can take on any value, provided that θ_min <=
+// θ_max.  If θ_max > 2π + θ_min, then no saturation occurs.
+double saturate_wrapped(double theta, double theta_min, double theta_max) {
+  DRAKE_DEMAND(-M_PI <= theta);
+  DRAKE_DEMAND(theta <= M_PI);
+  DRAKE_DEMAND(theta_min <= theta_max);
+
+  if (theta_max >= theta_min + 2. * M_PI) return theta;
+
+  const double theta_0 = wrap(theta_min);
+  const double theta_1 = wrap(theta_max);
+
+  // Criteria for returning the unsaturated result.
+  if (theta <= theta_1 && theta_0 <= theta) return theta;
+  if (theta_1 < theta_0 && theta <= theta_1) return theta;
+  if (theta_1 < theta_0 && theta_0 <= theta) return theta;
+
+  // Saturate at the appropriate bound.
+  const double delta_0 = std::min(std::abs(theta - theta_0),
+                                  std::abs(theta - 2. * M_PI - theta_0));
+  const double delta_1 = std::min(std::abs(theta - theta_1),
+                                  std::abs(theta + 2. * M_PI - theta_1));
+  return (delta_0 <= delta_1) ? theta_0 : theta_1;
+}
+
+}  // namespace
 
 ArcLane::ArcLane(const api::LaneId& id, const api::Segment* segment,
                  const V2& center, double radius,
@@ -135,10 +172,49 @@ double ArcLane::heading_dot_of_p(const double p) const {
 }
 
 
-api::LanePosition ArcLane::DoToLanePosition(const api::GeoPosition&,
-                                            api::GeoPosition*,
-                                            double*) const {
-  DRAKE_ABORT();  // TODO(maddog@tri.global) Implement me.
+api::LanePosition ArcLane::DoToLanePosition(
+    const api::GeoPosition& geo_position, api::GeoPosition* nearest_position,
+    double* distance) const {
+  // TODO(jadecastro): Lift the zero superelevation and zero elevation gradient
+  // restriction.
+  const V2 center{cx_, cy_};
+  const V2 p{geo_position.x, geo_position.y};
+  DRAKE_DEMAND(p != center);
+
+  // Define a vector from `p` to the center of the arc.
+  const V2 v = p - center;
+
+  const double theta_min = std::min(theta0_, d_theta_ + theta0_);
+  const double theta_max = std::max(theta0_, d_theta_ + theta0_);
+
+  const double theta_nearest =
+      saturate_wrapped(std::atan2(v(1), v(0)), theta_min, theta_max);
+  const double d_theta_nearest = (d_theta_ > 0.)
+      ? theta_nearest - wrap(theta_min) : wrap(theta_max) - theta_nearest;
+
+  const double d_theta_nearest_unwrapped =
+      (d_theta_nearest < 0.) ? d_theta_nearest + 2. * M_PI : d_theta_nearest;
+  const double s = r_ * d_theta_nearest_unwrapped;
+  const double r_unsaturated = (d_theta_ >= 0.) ? r_ - v.norm() : v.norm() - r_;
+  const double r = math::saturate(r_unsaturated, driveable_bounds(s).r_min,
+                                  driveable_bounds(s).r_max);
+
+  // Calculate the (uniform) road elevation.
+  const double p_scale = r_ * d_theta_;
+  const double h = geo_position.z - elevation().a() * p_scale;
+
+  const api::LanePosition lane_position{s, r, h};
+
+  const api::GeoPosition nearest = ToGeoPosition(lane_position);
+  if (nearest_position != nullptr) {
+    *nearest_position = nearest;
+  }
+  if (distance != nullptr) {
+    const V2 p_to_nearest{p(0) - nearest.x, p(1) - nearest.y};
+    *distance = p_to_nearest.norm();
+  }
+
+  return lane_position;
 }
 
 }  // namespace monolane

@@ -21,6 +21,9 @@ class LineLane : public Lane {
   ///
   /// @param id,segment,lane_bounds,driveable_bounds,elevation,superelevation
   ///        See documentation for the Lane base class.
+  ///
+  /// N.B. The override LineLane::ToLanePosition() is currently restricted to
+  /// lanes in which superelevation and elevation change are both zero.
   LineLane(const api::LaneId& id, const api::Segment* segment,
            const V2& xy0, const V2& dxy,
            const api::RBounds& lane_bounds,
@@ -40,10 +43,12 @@ class LineLane : public Lane {
   ~LineLane() override = default;
 
  private:
-  api::LanePosition DoToLanePosition(
-      const api::GeoPosition& geo_pos,
-      api::GeoPosition* nearest_point,
-      double* distance) const override;
+  // Computes the LanePosition from a given GeoPosition.  This function is valid
+  // under the assumption that the road is flat (superelevation is everywhere
+  // zero and the elevation has zero gradient).
+  api::LanePosition DoToLanePosition(const api::GeoPosition& geo_position,
+                                     api::GeoPosition* nearest_position,
+                                     double* distance) const override;
 
   V2 xy_of_p(const double p) const override;
   V2 xy_dot_of_p(const double p) const override;
