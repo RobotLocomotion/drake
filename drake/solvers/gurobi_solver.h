@@ -21,11 +21,7 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   // This passes the model and model environment to a
   // an external 
-  typedef std::pair<
-    const Eigen::Ref<const Eigen::VectorXd>&,
-    const Eigen::Ref<const VectorXDecisionVariable>&
-  > mipSolCallbackReturn;
-  typedef mipSolCallbackReturn (*mipSolCallbackFunction)(const MathematicalProgram&, void *);
+  typedef void (*mipSolCallbackFunction)(const MathematicalProgram&, void *, Eigen::VectorXd&, VectorXDecisionVariable&);
   void addMIPSolCallback(mipSolCallbackFunction fnc, void * usrdata){
   	mip_sol_callback_ = fnc;
   	mip_sol_callback_usrdata_ = usrdata;

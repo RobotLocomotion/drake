@@ -69,19 +69,21 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
 
     callbackInfo->prog->SetDecisionVariableValues(prog_sol_vector);
     
-    auto ret = callbackInfo->mip_sol_callback(*(callbackInfo->prog), callbackInfo->mip_sol_callback_usrdata);
+    Eigen::VectorXd vals; 
+    VectorXDecisionVariable vars;
+    callbackInfo->mip_sol_callback(*(callbackInfo->prog), callbackInfo->mip_sol_callback_usrdata, vals, vars);
 
     // The callback may return an assignment of some number of variables as a new
     // heuristic solution seed. If so, feed those back to Gurobi.
-    if (ret.first.size() > 0){
+    if (vals.size() > 0){
       std::vector<double> new_sol(callbackInfo->prog->num_vars(), GRB_UNDEFINED);
-      for (int i = 0; i < ret.first.size(); i++){
-        double val = ret.first[i];
-        int k = callbackInfo->prog->FindDecisionVariableIndex(ret.second[i]);
+      for (int i = 0; i < vals.size(); i++){
+        double val = vals[i];
+        int k = callbackInfo->prog->FindDecisionVariableIndex(vars[i]);
         new_sol[k] = val;
       }
       error = GRBcbsolution(cbdata, new_sol.data());
-      printf("Injected new sol with error %d, specified %ld vals\n", error, ret.first.size());
+      printf("Injected new sol with error %d, specified %ld vals\n", error, vals.size());
       if (error){
         printf("GRB error: %s\n", GRBgeterrormsg(GRBgetenv(model)));
       }
