@@ -5,6 +5,7 @@
 #include <limits>
 
 #include "drake/common/drake_assert.h"
+#include "drake/math/saturate.h"
 
 namespace drake {
 namespace maliput {
@@ -135,10 +136,50 @@ double ArcLane::heading_dot_of_p(const double p) const {
 }
 
 
-api::LanePosition ArcLane::DoToLanePosition(const api::GeoPosition&,
-                                            api::GeoPosition*,
-                                            double*) const {
-  DRAKE_ABORT();  // TODO(maddog@tri.global) Implement me.
+api::LanePosition ArcLane::DoToLanePosition(
+    const api::GeoPosition& geo_position, api::GeoPosition* nearest_position,
+    double* distance) const {
+  // TODO(jadecastro): Lift the zero superelevation and zero elevation gradient
+  // restriction.
+  const V2 center{cx_, cy_};
+  const V2 p{geo_position.x, geo_position.y};
+  DRAKE_DEMAND(p != center);
+
+  // Compute the vector from `p` to the center of the arc.
+  const V2 v = p - center;
+  const double theta_min =
+      (theta_of_p(1.) > theta_of_p(0.)) ? theta_of_p(0.) : theta_of_p(1.);
+  const double theta_max =
+      (theta_of_p(1.) > theta_of_p(0.)) ? theta_of_p(1.) : theta_of_p(0.);
+  const double theta_nearest = (std::atan2(v(1), v(0)) >= 0.)
+      ? math::saturate(std::atan2(v(1), v(0)), theta_min, theta_max)
+      : math::saturate(std::atan2(v(1), v(0)) + 2. * M_PI, theta_min,
+                       theta_max);
+
+  const double s = (d_theta_ >= 0.) ? r_ * (theta_nearest - theta0_)
+                                    : -r_ * (theta_nearest - theta0_);
+  const double r = (d_theta_ >= 0.) ? r_ - v.norm() : v.norm() - r_;
+  const double h =
+      geo_position.z - elevation().a();  // The (uniform) road elevation.
+
+  V2 p_nearest = center + r_ * (v / v.norm());
+  if (s == 0.) {
+    p_nearest = xy_of_p(0.);
+  } else if (s ==  r_ * d_theta_) {
+    p_nearest = xy_of_p(1.);
+  }
+
+  const V2 xy_vector = p - p_nearest;
+  const V3 xyz_vector{xy_vector(0), xy_vector(1), h};
+  if (distance != nullptr) *distance = (xyz_vector).norm();
+
+  if (nearest_position != nullptr) {
+    (*nearest_position).x = p_nearest(0);
+    (*nearest_position).y = p_nearest(1);
+    (*nearest_position).z = elevation().a();
+  }
+
+  return api::LanePosition(s, r, h);
 }
 
 }  // namespace monolane

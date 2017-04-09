@@ -39,6 +39,9 @@ class ArcLane : public Lane {
   ~ArcLane() override = default;
 
  private:
+  // Computes the LanePosition from a given GeoPosition.  This function is valid
+  // under the assumption that the road is flat (superelevation is everywhere
+  // zero and the elevation has zero gradient).
   api::LanePosition DoToLanePosition(
       const api::GeoPosition& geo_pos,
       api::GeoPosition* nearest_point,
