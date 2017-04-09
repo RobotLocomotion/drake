@@ -5,6 +5,7 @@
 #include <limits>
 
 #include "drake/common/drake_assert.h"
+#include "drake/math/saturate.h"
 
 namespace drake {
 namespace maliput {
@@ -135,10 +136,36 @@ double ArcLane::heading_dot_of_p(const double p) const {
 }
 
 
-api::LanePosition ArcLane::DoToLanePosition(const api::GeoPosition&,
-                                            api::GeoPosition*,
-                                            double*) const {
-  DRAKE_ABORT();  // TODO(maddog@tri.global) Implement me.
+api::LanePosition ArcLane::DoToLanePosition(
+    const api::GeoPosition& geo_position, api::GeoPosition* nearest_position,
+    double* distance) const {
+  const V2 center{cx_, cy_};
+  const V2 p{geo_position.x, geo_position.y};
+  DRAKE_DEMAND(p != center);
+
+  // Compute the vector from `p` to the center of the arc.
+  const V2 v = p - center;
+  const double theta_nearest = (std::atan2(v(1), v(0)) >= 0.) ?
+      math::saturate(std::atan2(v(1), v(0)), theta_of_p(0.),
+                     theta_of_p(1.)) :
+      math::saturate(std::atan2(v(1), v(0)) + 2. * M_PI, theta_of_p(0.),
+                     theta_of_p(1.));
+  const double s = r_ * (theta_nearest - theta0_);
+  V2 p_nearest = center + r_ * (v / v.norm());
+  if (s == 0.) {
+    p_nearest = xy_of_p(0.);
+  } else if (s ==  r_ * d_theta_) {
+    p_nearest = xy_of_p(1.);
+  }
+
+  // The distance is the length of the vector sum between the s-coordinate in
+  // geo coordinates and the vector connecting `p` and the start of the lane.
+  *distance = (p - p_nearest).norm();
+  (*nearest_position).x = p_nearest(0);
+  (*nearest_position).y = p_nearest(1);
+  (*nearest_position).z = 0.;
+
+  return api::LanePosition(s, 0., 0.);
 }
 
 }  // namespace monolane

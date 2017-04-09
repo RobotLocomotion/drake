@@ -40,10 +40,14 @@ class LineLane : public Lane {
   ~LineLane() override = default;
 
  private:
-  api::LanePosition DoToLanePosition(
-      const api::GeoPosition& geo_pos,
-      api::GeoPosition* nearest_point,
-      double* distance) const override;
+  // Computes the LanePosition from an arbitrary GeoPosition.  This function
+  // discards the z-coordinate in the point, projecting the point and the Lane
+  // onto the x-y plane.  Hence, this function is valid under the assumption
+  // that the provided geo-position is consistent with the
+  // elevation/superelevation of the road.
+  api::LanePosition DoToLanePosition(const api::GeoPosition& geo_position,
+                                     api::GeoPosition* nearest_position,
+                                     double* distance) const override;
 
   V2 xy_of_p(const double p) const override;
   V2 xy_dot_of_p(const double p) const override;
