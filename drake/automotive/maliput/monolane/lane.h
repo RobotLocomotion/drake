@@ -170,6 +170,9 @@ class Lane : public api::Lane {
   ///  * @p p_scale is q_max (and p = q / p_scale);
   ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
   ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
+  ///
+  /// N.B. The override Lane::ToLanePosition() is currently restricted to lanes
+  /// in which superelevation and elevation change are both zero.
   Lane(const api::LaneId& id, const api::Segment* segment,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
