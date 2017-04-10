@@ -817,7 +817,10 @@ void RigidBodyTree<T>::collisionDetectFromPoints(
     normal.col(i) = closest_points[i].normal;
     phi[i] = closest_points[i].distance;
     const DrakeCollision::Element* elementB = closest_points[i].elementB;
-    body_idx.push_back(elementB->get_body()->get_body_index());
+    if (elementB)
+      body_idx.push_back(elementB->get_body()->get_body_index());
+    else
+      body_idx.push_back(-1);
   }
 }
 
