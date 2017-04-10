@@ -189,39 +189,6 @@ class SpatialInertia {
     G_SP_E_.SetToNaN();
   }
 
-  /// Compares this spatial inertia `Ma` to the spatial inertia `Mb` within the
-  /// specified precision `p`. `p` is a dimensionless number specifying
-  /// the a relative precision to which the comparison is performed.
-  /// Denoting by `ma`, `xa` and `Ga` the mass, center of mass and unit inertia,
-  /// respectively, of this spatial inertia `Ma` and by `mb`, `xb` and `Gb` the
-  /// mass, center of mass and unit inertia, respectively, of the spatial
-  /// inertia `Mb`, the spatial inertias `Ma` and `Mb` are considered to be
-  /// approximately equal with each other if:
-  ///   - |ma - mb| < p min(|ma|, |mb|)
-  ///   - ‖xa - xb‖₂ < p min(‖xa‖₂, ‖xb‖₂)
-  ///   - ‖Ga - Gb‖F < p min(‖Ga‖F, ‖Gb‖F)
-  ///
-  /// where ‖⋅‖₂ denotes the ℓ²-norm of a vector and ‖⋅‖F the Frobenius norm of
-  /// a matrix.
-  ///
-  /// @param[in] Mb The spatial inertia to which this spatial inertia will be
-  ///               compared.
-  /// @param[in] p The specified dimensionless precision to which the
-  ///              comparison will be performed.
-  ///              @default std::numeric_limits<double>::epsilon().
-  ///
-  /// @returns `true` if `other` is within the specified `precision`. Returns
-  ///          `false` otherwise.
-  bool IsApprox(const SpatialInertia& Mb,
-                double p = std::numeric_limits<double>::epsilon()) {
-    using std::abs;
-    using std::min;
-    return
-        abs(get_mass() - Mb.get_mass()) < p * min(get_mass(), Mb.get_mass()) &&
-        get_com().isApprox(Mb.get_com(), p) &&
-        get_unit_inertia().IsApprox(Mb.get_unit_inertia(), p);
-  }
-
   /// Adds in a spatial inertia to `this` spatial inertia.
   /// @param[in] M_BP_E A spatial inertia of some body B to be added to
   ///                  `this` spatial inertia. It must be defined about the

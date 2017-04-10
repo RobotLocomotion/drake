@@ -18,6 +18,8 @@ using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using std::numeric_limits;
 
+constexpr double epsilon = std::numeric_limits<double>::epsilon();
+
 // Test default constructor which leaves entries initialized to NaN for a
 // quick detection of uninitialized values.
 GTEST_TEST(SpatialInertia, DefaultConstructor) {
@@ -42,8 +44,9 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
 
   ASSERT_EQ(M.get_mass(), mass);
   ASSERT_EQ(M.get_com(), com);
-  ASSERT_TRUE(M.get_unit_inertia().IsApprox(
-      G, std::numeric_limits<double>::epsilon()));
+  // Asserts we can retrieve the original unit inertia.
+  ASSERT_TRUE(M.get_unit_inertia().CopyToFullMatrix3().isApprox(
+      G.CopyToFullMatrix3(),epsilon));
 
   Matrix6<double> Mmatrix = M.CopyToFullMatrix6();
   Matrix6<double> expected_matrix;
@@ -53,8 +56,7 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   expected_matrix.block<3, 3>(3, 0) =
       expected_matrix.block<3, 3>(0, 3).transpose();
 
-  EXPECT_TRUE(Mmatrix.isApprox(expected_matrix,
-                               numeric_limits<double>::epsilon()));
+  EXPECT_TRUE(Mmatrix.isApprox(expected_matrix, epsilon));
 
   EXPECT_FALSE(M.IsNaN());
   M.SetNaN();
@@ -81,26 +83,6 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
       "[ 0.2500,  5.7500,  0.5000]\n"
       "[-0.2500,  0.5000,  6.0000]\n";
   EXPECT_EQ(expected_string, stream.str());
-}
-
-// Tests comparison to a given precision.
-GTEST_TEST(SpatialInertia, IsApprox) {
-  const double mass = 2.5;
-  const Vector3d com(0.1, -0.2, 0.3);
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
-  UnitInertia<double> G(m(0), m(1), m(2), /* moments of inertia */
-                        p(0), p(1), p(2));/* products of inertia */
-  SpatialInertia<double> M(mass, com, G);
-
-  // Creates a spatial inertia that is approximately equal to M, but not equal.
-  const double precision = 1.0e-14;
-  SpatialInertia<double> other(
-      (1.0 + precision) * mass,
-      (1.0 + precision) * com,
-      UnitInertia<double>((1.0 + precision) * G));
-  EXPECT_TRUE(M.IsApprox(other, 1.1 * precision));
-  EXPECT_FALSE(M.IsApprox(other, 1.0 * precision));
 }
 
 // Verifies the correctness of:
@@ -159,7 +141,8 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
       mass,
       com,
       UnitInertia<double>::SolidBox(2 * L, L, L));
-  EXPECT_TRUE(MPrism_Wo_W.IsApprox(MExpected_Wo_W));
+  EXPECT_TRUE(MPrism_Wo_W.CopyToFullMatrix6().isApprox(
+      MExpected_Wo_W.CopyToFullMatrix6(),epsilon));
 }
 
 // Tests the method SpatialInertia::ReExpress().
@@ -188,19 +171,18 @@ GTEST_TEST(SpatialInertia, ReExpress) {
 
   // The vector p_PCcm changes when re-expressed in another frame from
   // p_PCcm_E = [0, -1, 0] to p_PCcm_W = [0, 0, -1]
-  EXPECT_TRUE(M_CP_W.get_com().isApprox(
-      -Vector3d::UnitZ(), numeric_limits<double>::epsilon()));
+  EXPECT_TRUE(M_CP_W.get_com().isApprox(-Vector3d::UnitZ(), epsilon));
 
   Vector3d moments_E = M_CP_E.get_unit_inertia().get_moments();
   Vector3d moments_W = M_CP_W.get_unit_inertia().get_moments();
   // Since rotation is along the x-axis the first moment about x does
   // not change.
-  EXPECT_NEAR(moments_W(0), moments_E(0), numeric_limits<double>::epsilon());
+  EXPECT_NEAR(moments_W(0), moments_E(0), epsilon);
 
   // The y and z moments swap places after the rotation of 90 degrees about the
   // x axis.
-  EXPECT_NEAR(moments_W(1), moments_E(2), numeric_limits<double>::epsilon());
-  EXPECT_NEAR(moments_W(2), moments_E(1), numeric_limits<double>::epsilon());
+  EXPECT_NEAR(moments_W(1), moments_E(2), epsilon);
+  EXPECT_NEAR(moments_W(2), moments_E(1), epsilon);
 }
 
 // Unit tests the parallel axis theorem shift. The test computes the moment of
@@ -244,13 +226,14 @@ GTEST_TEST(SpatialInertia, Shift) {
       mass * (3 * radius * radius + length * length) / 12  /*About centroid.*/
       + mass * length * length / 4;  /*Parallel axis theorem shift.*/
   const auto I_Xo_W = M_BBtop_W.CalcRotationalInertia();
-  EXPECT_NEAR(I_Xo_W(0, 0), I_end, numeric_limits<double>::epsilon());
-  EXPECT_NEAR(I_Xo_W(2, 2), I_end, numeric_limits<double>::epsilon());
+  EXPECT_NEAR(I_Xo_W(0, 0), I_end, epsilon);
+  EXPECT_NEAR(I_Xo_W(2, 2), I_end, epsilon);
 
   // Now check that shifting back to the COM results in the same spatial
   // inertia.
   SpatialInertia<double> M_BBcm_W_back = M_BBtop_W.Shift(-p_BcmBtop_W);
-  EXPECT_TRUE(M_BBcm_W_back.IsApprox(M_BBcm_W));
+  EXPECT_TRUE(M_BBcm_W_back.CopyToFullMatrix6().isApprox(
+      M_BBcm_W.CopyToFullMatrix6(), epsilon));
 }
 
 // Tests that it is not possible to create a spatial inertia with negative mass
