@@ -1,6 +1,7 @@
 #include "drake/common/copyable_unique_ptr.h"
 
 #include <memory>
+#include <regex>
 #include <sstream>
 
 #include <gtest/gtest.h>
@@ -12,12 +13,26 @@ namespace  {
 
 using std::make_unique;
 using std::move;
+using std::regex;
+using std::regex_match;
 using std::stringstream;
 using std::unique_ptr;
 
 // Convenience alias to keep the test code lines shorter.
 template <typename T>
 using cup = copyable_unique_ptr<T>;
+
+// Helper macro for "expecting" an exception but *also* testing the error
+// message against the provided regular expression.
+#define EXPECT_ERROR_MESSAGE(expression, exception, reg_exp) \
+try { \
+  expression; \
+  GTEST_FAIL(); \
+} catch (const exception& err) { \
+  auto matcher = [](const char* s, const char* re) { \
+    return regex_match(s, regex(re)); }; \
+  EXPECT_PRED2(matcher, err.what(), reg_exp); \
+}
 
 // -------------------- copy functionality tests ------------------------
 // These tests cover the actual copyable semantics. Confirming that the
@@ -38,7 +53,8 @@ enum class Origin {
 // has a *protected* copy constructor. Child classes can invoke it, but it
 // won't be considered copyable.
 struct Base {
-  Base(int v, Origin org=Origin::CONSTRUCT) : origin(org), value(v) {}
+  explicit Base(int v, Origin org = Origin::CONSTRUCT)
+      : origin(org), value(v) {}
   virtual ~Base() {}
 
   Origin origin{Origin::UNINITIALIZED};
@@ -49,28 +65,28 @@ struct Base {
 
 // A class that is copyable, but has no Clone method.
 struct CopyOnly : Base {
-  CopyOnly(int v, Origin org=Origin::CONSTRUCT) : Base(v, org) {}
+  explicit CopyOnly(int v, Origin org = Origin::CONSTRUCT) : Base(v, org) {}
   CopyOnly(const CopyOnly& b) : Base(b) {}
 };
 
 // Confirms that a class with only a public copy constructor is considered
 // copyable and copies appropriately.
 GTEST_TEST(CopyableUniquePtrTest, CopyOnlySuccess) {
-  EXPECT_TRUE(cup<CopyOnly>::is_copyable::value);
+  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CopyOnly>::value);
   cup<CopyOnly> ptr(new CopyOnly(1));
   EXPECT_EQ(ptr->origin, Origin::CONSTRUCT);
   cup<CopyOnly> copy(ptr);
   EXPECT_EQ(copy->origin, Origin::COPY);
   EXPECT_EQ(copy->value, ptr->value);
-  copy->value++;
+  ++copy->value;
   EXPECT_NE(copy->value, ptr->value);
 }
 
 // A fully copyable class (has both copy constructor and Clone). Confirms that
 // in the presence of both, the copy constructor is preferred.
 struct FullyCopyable : Base {
-  FullyCopyable(int v, Origin org=Origin::CONSTRUCT) : Base(v, org) {}
-
+  explicit FullyCopyable(int v, Origin org = Origin::CONSTRUCT)
+      : Base(v, org) {}
   FullyCopyable(const FullyCopyable& b) : Base(b) {}
   unique_ptr<FullyCopyable> Clone() const {
     return make_unique<FullyCopyable>(value, Origin::CLONE);
@@ -79,20 +95,19 @@ struct FullyCopyable : Base {
 
 // Confirms that the copy constructor is preferred when both exist.
 GTEST_TEST(CopyableUniquePtrTest, FullyCopyableSuccess) {
-  EXPECT_TRUE(cup<FullyCopyable>::is_copyable::value);
+  EXPECT_TRUE(is_copyable_unique_ptr_compatible<FullyCopyable>::value);
   cup<FullyCopyable> ptr(new FullyCopyable(1));
   EXPECT_EQ(ptr->origin, Origin::CONSTRUCT);
   cup<FullyCopyable> copy(ptr);
   EXPECT_EQ(copy->origin, Origin::COPY);
   EXPECT_EQ(copy->value, ptr->value);
-  copy->value++;
+  ++copy->value;
   EXPECT_NE(copy->value, ptr->value);
 }
 
 // A class with only a Clone method.
 struct CloneOnly : Base {
-  CloneOnly(int v, Origin org=Origin::CONSTRUCT) : Base(v, org) {}
-  ~CloneOnly() { value = -1; }
+  explicit CloneOnly(int v, Origin org = Origin::CONSTRUCT) : Base(v, org) {}
   CloneOnly(const CloneOnly&) = delete;
   unique_ptr<CloneOnly> Clone() const {
     return make_unique<CloneOnly>(value, Origin::CLONE);
@@ -102,7 +117,7 @@ struct CloneOnly : Base {
 // Confirms that a class that has a proper implementation of Clone, but no
 // copy constructor clones itself.
 GTEST_TEST(CopyableUniquePtrTest, CloneOnlySuccess) {
-  EXPECT_TRUE(cup<CloneOnly>::is_copyable::value);
+  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CloneOnly>::value);
   cup<CloneOnly> ptr(new CloneOnly(1));
   EXPECT_EQ(ptr->origin, Origin::CONSTRUCT);
   cup<CloneOnly> copy(ptr);
@@ -139,22 +154,22 @@ GTEST_TEST(CopyableUniquePtrTest, CopyableAsExpected) {
   // Case 1) True || True --> True
   EXPECT_TRUE(is_cloneable<FullyCopyable>::value);
   EXPECT_TRUE(std::is_copy_constructible<FullyCopyable>::value);
-  EXPECT_TRUE(cup<FullyCopyable>::is_copyable::value);
+  EXPECT_TRUE(is_copyable_unique_ptr_compatible<FullyCopyable>::value);
 
   // Case 2) True || False --> True
   EXPECT_TRUE(is_cloneable<CloneOnly>::value);
   EXPECT_FALSE(std::is_copy_constructible<CloneOnly>::value);
-  EXPECT_TRUE(cup<CloneOnly>::is_copyable::value);
+  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CloneOnly>::value);
 
   // Case 3) False || True --> True
   EXPECT_FALSE(is_cloneable<CopyOnly>::value);
   EXPECT_TRUE(std::is_copy_constructible<CopyOnly>::value);
-  EXPECT_TRUE(cup<CopyOnly>::is_copyable::value);
+  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CopyOnly>::value);
 
   // Case 4) False || False --> False
   EXPECT_FALSE(is_cloneable<Base>::value);
   EXPECT_FALSE(std::is_copy_constructible<Base>::value);
-  EXPECT_FALSE(cup<Base>::is_copyable::value);
+  EXPECT_FALSE(is_copyable_unique_ptr_compatible<Base>::value);
 }
 
 // -----------------------------------------------------------------------
@@ -175,7 +190,8 @@ GTEST_TEST(CopyableUniquePtrTest, ConstructNullPtr) {
 
 // A class that derives from a copyable class.
 struct CloneOnlyChild : CloneOnly {
-  CloneOnlyChild(int v, Origin org=Origin::CONSTRUCT) : CloneOnly(v, org) {}
+  explicit CloneOnlyChild(int v, Origin org = Origin::CONSTRUCT)
+      : CloneOnly(v, org) {}
   CloneOnlyChild(const CloneOnlyChild&) = delete;
   unique_ptr<CloneOnlyChild> Clone() const {
     return make_unique<CloneOnlyChild>(value, Origin::CLONE);
@@ -191,6 +207,7 @@ GTEST_TEST(CopyableUniquePtrTest, ConstructValidPtr) {
 
   CloneOnlyChild* co_ptr;
   cup<CloneOnly> ptr2(co_ptr = new CloneOnlyChild(2));
+  // Shows that type is preserved.
   ASSERT_TRUE(is_dynamic_castable<CloneOnlyChild>(ptr2.get()));
   EXPECT_EQ(ptr2.get(), co_ptr);
 }
@@ -213,12 +230,85 @@ GTEST_TEST(CopyableUniquePtrTest, RefAccessorSemantics) {
   cup<CloneOnly> ptr(new CloneOnly(1));
 
   // The extra parentheses prevent the macro from getting confused.
-  // get is const pointer
-  EXPECT_TRUE((std::is_same<const CloneOnly&, decltype(ptr.get_ref())>::value));
 
+  // Case 1: get_ref() is const, get_mutable_ref() is non-const.
+  EXPECT_TRUE((std::is_same<const CloneOnly&, decltype(ptr.get_ref())>::value));
   // get_mutable is non-const
   EXPECT_TRUE(
       (std::is_same<CloneOnly&, decltype(ptr.get_mutable_ref())>::value));
+
+  // Case 2: dereferencing pointer is non-const reference.
+  EXPECT_FALSE((std::is_same<const CloneOnly&, decltype(*ptr)>::value));
+  EXPECT_TRUE((std::is_same<CloneOnly&, decltype(*ptr)>::value));
+
+  // Case 3: attempting to dereference an empty pointer throws an exception.
+  cup<CloneOnly> empty_ptr;
+  EXPECT_ERROR_MESSAGE(empty_ptr.get_ref(),
+                       std::logic_error,
+                       "Trying to access a reference for a null "
+                       "copyable_unique_ptr.");
+
+  EXPECT_ERROR_MESSAGE(empty_ptr.get_mutable_ref(),
+                       std::logic_error,
+                       "Trying to access a reference for a null "
+                       "copyable_unique_ptr.");
+}
+
+// This tests that a pointer to a const *type* cannot return mutable pointer
+// or reference.
+GTEST_TEST(CopyableUniquePtrTest, DeclaredOnConstType) {
+  cup<const CloneOnly> ptr(new CloneOnly(2));
+  // Being the same as a 'const' type, precludes the possibility of being the
+  // "same" as a non-const type.
+  EXPECT_TRUE((std::is_same<const CloneOnly*, decltype(ptr.get())>::value));
+  EXPECT_TRUE((std::is_same<const CloneOnly&, decltype(ptr.get_ref())>::value));
+}
+
+// This tests the implicit conversion of the pointer to a boolean.
+GTEST_TEST(CopyableUniquePtrTest, ConverstionToBool) {
+  copyable_unique_ptr<CloneOnly> ptr;
+  EXPECT_FALSE(ptr);
+  ptr.reset(new CloneOnly(1));
+  EXPECT_TRUE(ptr);
+}
+
+GTEST_TEST(CopyableUniquePtrTest, ConstructFromUniquePtr) {
+  CloneOnly* base_ptr;
+  unique_ptr<CloneOnly> u_ptr(base_ptr = new CloneOnly(1));
+  EXPECT_EQ(u_ptr.get(), base_ptr);
+  cup<CloneOnly> cup_ptr(move(u_ptr));
+  EXPECT_EQ(u_ptr.get(), nullptr);
+  EXPECT_EQ(cup_ptr.get(), base_ptr);
+
+  CloneOnlyChild* co_ptr;
+  unique_ptr<CloneOnly> u_ptr2(co_ptr = new CloneOnlyChild(2));
+  EXPECT_EQ(u_ptr2.get(), co_ptr);
+  cup<CloneOnly> cup_ptr2(move(u_ptr2));
+  EXPECT_EQ(cup_ptr2.get(), co_ptr);
+  EXPECT_EQ(u_ptr2.get(), nullptr);
+  EXPECT_TRUE(is_dynamic_castable<CloneOnlyChild>(cup_ptr2.get()));
+}
+
+// This tests assignment from an rvalue std::unique_ptr.
+GTEST_TEST(CopyableUniquePtrTest, AssignFromUniquePtr) {
+  CloneOnly* base_ptr;
+  unique_ptr<CloneOnly> u_ptr(base_ptr = new CloneOnly(1));
+  EXPECT_EQ(u_ptr.get(), base_ptr);
+  cup<CloneOnly> cup_ptr;
+  EXPECT_EQ(cup_ptr.get(), nullptr);
+  cup_ptr = move(u_ptr);
+  EXPECT_EQ(u_ptr.get(), nullptr);
+  EXPECT_EQ(cup_ptr.get(), base_ptr);
+
+  CloneOnlyChild* co_ptr;
+  unique_ptr<CloneOnly> u_ptr2(co_ptr = new CloneOnlyChild(2));
+  EXPECT_EQ(u_ptr2.get(), co_ptr);
+  cup<CloneOnly> cup_ptr2;
+  EXPECT_EQ(cup_ptr2.get(), nullptr);
+  cup_ptr2 = move(u_ptr2);
+  EXPECT_EQ(cup_ptr2.get(), co_ptr);
+  EXPECT_EQ(u_ptr2.get(), nullptr);
+  EXPECT_TRUE(is_dynamic_castable<CloneOnlyChild>(cup_ptr2.get()));
 }
 
 // This class allows me to track destruction of instances in copyable_unique_ptr
@@ -226,23 +316,20 @@ GTEST_TEST(CopyableUniquePtrTest, RefAccessorSemantics) {
 // operation. If an instance has been destroyed, live_state will be false,
 // otherwise, no destructor was called.
 struct DestructorTracker : public CloneOnly {
-  DestructorTracker(int v, Origin org=Origin::CONSTRUCT) : CloneOnly(v, org) {}
+  explicit DestructorTracker(int v, Origin org = Origin::CONSTRUCT)
+      : CloneOnly(v, org) {}
   virtual ~DestructorTracker() { live_state = false; }
   DestructorTracker(const DestructorTracker&) = delete;
   unique_ptr<DestructorTracker> Clone() const {
-    return unique_ptr<DestructorTracker>(DoClone());
+    return make_unique<DestructorTracker>(value, Origin::CLONE);
   }
   static bool live_state;
- protected:
-  virtual DestructorTracker* DoClone() const {
-    return new DestructorTracker(value, Origin::CLONE);
-  }
 };
 bool DestructorTracker::live_state = true;
 
 // Confirms destructor works as pointer goes out of scope.
 GTEST_TEST(CopyableUniquePtrTest, Destructor) {
-  // Empty copyable_unique_ptr does not invoke destructor.
+  // Empty copyable_unique_ptr<T> does not invoke T's destructor.
   {
     cup<DestructorTracker> empty;
     DestructorTracker::live_state = true;
@@ -362,6 +449,9 @@ GTEST_TEST(CopyableUniquePtrTest, StreamTest) {
 // Tests the == tests between copyable_unique_ptr and other entities.
 GTEST_TEST(CopyableUniquePtrTest, EqualityTest) {
   CloneOnlyChild* raw;
+  // This assigns the same pointer to *two* unique pointers. However, one
+  // releases the pointer before going out of scope. This facilitates equality
+  // testing for truly equal pointers.
   cup<CloneOnly> ptr(raw = new CloneOnlyChild(1));
   cup<CloneOnlyChild> child_ptr(raw);
   cup<CloneOnlyChild> other_ptr(new CloneOnlyChild(1));
@@ -538,22 +628,9 @@ GTEST_TEST(CopyableUniquePtrTest, MoveDerivedSemantics) {
   EXPECT_EQ(ptr2.get(), raw);
 }
 
-// This class allows detecting destruction of derived class relative to a parent
-// class.
-struct DestructorChild : public DestructorTracker {
-  DestructorChild(int v, Origin org = Origin::CONSTRUCT) :
-      DestructorTracker(v, org) {}
-  DestructorChild(const DestructorChild&) = delete;
-
- protected:
-  DestructorChild* DoClone() const override {
-    return new DestructorChild(value, Origin::CLONE);
-  }
-};
-
 // Tests the simple assignment operator - assignment of pointer.
 GTEST_TEST(CopyableUniquePtrTest, RawPointerAssignmentTest) {
-  DestructorTracker *d_raw = new DestructorTracker(1);
+  DestructorTracker* d_raw = new DestructorTracker(1);
   cup<DestructorTracker> d_ptr;
 
   // Case 1: Assignment of same type pointer into a null pointer.
@@ -571,20 +648,6 @@ GTEST_TEST(CopyableUniquePtrTest, RawPointerAssignmentTest) {
 
   d_ptr.reset();
   EXPECT_EQ(d_ptr.get(), nullptr);
-
-  // Case 3: Assignment of derived type pointer into a null pointer.
-  DestructorChild* c_raw = new DestructorChild(3);
-  DestructorTracker::live_state = true;
-  d_ptr = c_raw;
-  EXPECT_TRUE(DestructorTracker::live_state);
-  EXPECT_EQ(d_ptr.get(), c_raw);
-
-  // Case 4: Assignment of derived type pointer into a non-null pointer.
-  c_raw = new DestructorChild(4);
-  DestructorTracker::live_state = true;
-  d_ptr = c_raw;
-  EXPECT_FALSE(DestructorTracker::live_state);
-  EXPECT_EQ(d_ptr.get(), c_raw);
 }
 
 // Tests the case where a unique_ptr is assigned to by a reference.
@@ -636,80 +699,7 @@ GTEST_TEST(CopyableUniquePtrTest, RefPtrAssignmentTest) {
   EXPECT_NE(ptr.get(), raw);
   EXPECT_EQ(ptr->value, raw->value);
   EXPECT_EQ(src.get(), raw);
-
-  // Tests with pointers to derived classes.
-  DestructorChild* child_raw;
-  cup<DestructorChild> child_src(child_raw = new DestructorChild(15));
-  ptr.reset();
-
-  // Case 3: Assign derived class to null pointer.
-  DestructorTracker::live_state = true;
-  ptr = child_src;
-  EXPECT_TRUE(DestructorTracker::live_state);
-  EXPECT_NE(ptr.get(), child_raw);
-  EXPECT_EQ(ptr->value, child_raw->value);
-  EXPECT_TRUE(is_dynamic_castable<DestructorChild>(ptr.get()));
-  EXPECT_NE(dynamic_cast<const DestructorTracker*>(ptr.get()), nullptr);
-  EXPECT_EQ(child_src.get(), child_raw);
-  raw->value = 32;
-
-  // Case 4: Assign derived to non-null pointer.
-  DestructorTracker::live_state = true;
-  ptr = child_src;
-  EXPECT_FALSE(DestructorTracker::live_state);
-  EXPECT_NE(ptr.get(), child_raw);
-  EXPECT_EQ(ptr->value, child_raw->value);
-  EXPECT_TRUE(is_dynamic_castable<DestructorChild>(ptr.get()));
-  EXPECT_EQ(child_src.get(), child_raw);
 }
 
-// This tests the constructors that generate copies of the input (i.e., from
-// a const pointer or a const reference)
-GTEST_TEST(CopyableUniquePtrTest, ConstructorCopyTest) {
-  CloneOnly src(10);
-  cup<CloneOnly> from_ref(src);
-  EXPECT_NE(from_ref.get(), &src);
-  EXPECT_EQ(from_ref->value, src.value);
-  src.value = 20;
-  EXPECT_NE(from_ref->value, src.value);
-
-  const CloneOnly* src_ptr = &src;
-  cup<CloneOnly> from_ptr(src_ptr);
-  EXPECT_NE(from_ptr.get(), &src);
-  EXPECT_EQ(from_ptr->value, src.value);
-  src.value = 30;
-  EXPECT_NE(from_ptr->value, src.value);
-
-  from_ptr.release();  // Don't call destructor twice
-}
-
-// Suite of tests to catch the debug-build assertions.
-#ifndef DRAKE_ASSERT_IS_DISARMED
-
-// This confirms in debug build, that accessing a null pointer value for a const
-// reference aborts as expected.
-GTEST_TEST(CopyableUniquePtrDeathTest, NullConstAccessorSemantics) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-  cup<CloneOnly> ptr{nullptr};
-  ASSERT_EQ(ptr.get(), nullptr);
-  ASSERT_DEATH(
-      {ptr.get_ref();},
-      "abort: failure at .*copyable_unique_ptr.h:.+ in get.+"
-          "assertion '!empty\\(\\)' failed");
-}
-
-// This confirms in debug build, that accessing a null pointer value for a
-// mutable reference aborts as expected.
-GTEST_TEST(CopyableUniquePtrDeathTest, NullMutableAccessorSemantics) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-  cup<CloneOnly> ptr{nullptr};
-  ASSERT_EQ(ptr.get(), nullptr);
-  ASSERT_DEATH(
-      {ptr.get_mutable_ref();},
-      "abort: failure at .*copyable_unique_ptr.h:.+ in get_mutable.+"
-          "assertion '!empty\\(\\)' failed");
-}
-
-#endif  // DRAKE_ASSERT_IS_DISARMED
 }  // namespace
 }  // namespace drake
