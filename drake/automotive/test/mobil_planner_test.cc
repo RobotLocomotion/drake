@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/automotive/test/idm_test.h"
 
 namespace drake {
 namespace automotive {
@@ -18,11 +17,12 @@ using systems::rendering::FrameVelocity;
 using systems::rendering::PoseBundle;
 using systems::rendering::PoseVector;
 
-constexpr double kEgoXPosition{10.};
-constexpr double kLaneWidth{4.};
-constexpr double kEgoSpeed{10.};
+constexpr double kEgoXPosition{10.};            // meters
+constexpr double kLaneWidth{4.};                // meters
+constexpr double kEgoSpeed{10.};                // m/s
+constexpr double kEgoAccelerationCommand{-1.};  // m/s^2
 
-class MobilPlannerTest : public IdmTest {
+class MobilPlannerTest : public ::testing::Test {
  protected:
   void InitializeDragway(int num_lanes) {
     DRAKE_ASSERT(num_lanes >= 0);
@@ -38,29 +38,20 @@ class MobilPlannerTest : public IdmTest {
     left_lane_index_ = num_lanes - 1;
   }
 
-  int ego_pose_input_index() override {
-    return mp_->ego_pose_input().get_index();
-  }
-  int ego_velocity_input_index() override {
-    return mp_->ego_velocity_input().get_index();
-  }
-  int traffic_input_index() override {
-    return mp_->traffic_input().get_index();
-  }
-  int command_output_index() override {
-    return mp_->driving_command_output().get_index();
-  }
-
   // Initializes MobilPlanner with the dragway at a given LaneDirection.
   void InitializeMobilPlanner(bool initial_with_s) {
     DRAKE_DEMAND(road_ != nullptr);
-    DRAKE_DEMAND(mp_ == nullptr);
     dut_.reset(new MobilPlanner<double>(*road_, initial_with_s));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
 
-    mp_ = dynamic_cast<const MobilPlanner<double>*>(dut_.get());
-    DRAKE_DEMAND(mp_ != nullptr);
+    const auto mp = dynamic_cast<const MobilPlanner<double>*>(dut_.get());
+    DRAKE_DEMAND(mp != nullptr);
+    ego_pose_input_index_ = mp->ego_pose_input().get_index();
+    ego_acceleration_input_index_ = mp->ego_acceleration_input().get_index();
+    ego_velocity_input_index_ = mp->ego_velocity_input().get_index();
+    traffic_input_index_ = mp->traffic_input().get_index();
+    lane_output_index_ = mp->lane_output().get_index();
   }
 
   void ExtractLaneDirectionsFromDragway() {
@@ -99,13 +90,18 @@ class MobilPlannerTest : public IdmTest {
         (lane_index - 0.5 * (num_lanes - 1)) * kLaneWidth, /* y */
         0.);                                               /* z */
     ego_pose->set_translation(translation_ego);
-    context_->FixInputPort(ego_pose_input_index(), std::move(ego_pose));
+    context_->FixInputPort(ego_pose_input_index_, std::move(ego_pose));
 
     Vector6<double> velocity{};
     velocity << 0., /* ωx */ 0., /* ωy */ 0., /* ωz */
         kEgoSpeed, /* vx */ 0., /* vy */ 0.;  /* vz */
     ego_velocity->set_velocity(multibody::SpatialVelocity<double>(velocity));
-    context_->FixInputPort(ego_velocity_input_index(), std::move(ego_velocity));
+    context_->FixInputPort(ego_velocity_input_index_, std::move(ego_velocity));
+
+    // Mock up a command acceleration for the ego car.
+    context_->FixInputPort(
+        ego_acceleration_input_index_,
+        systems::BasicVector<double>::Make(kEgoAccelerationCommand));
 
     // Configure the traffic poses and velocities, inclusive of the ego car,
     // where all cars are traveling at the same x-velocity.
@@ -121,14 +117,22 @@ class MobilPlannerTest : public IdmTest {
     }
     traffic_poses.set_pose(num_lanes, Eigen::Isometry3d(translation_ego));
     traffic_poses.set_velocity(num_lanes, all_velocity);
-    context_->FixInputPort(traffic_input_index(),
+    context_->FixInputPort(traffic_input_index_,
                            systems::AbstractValue::Make(traffic_poses));
   }
 
-  const MobilPlanner<double>* mp_{nullptr};
+  std::unique_ptr<systems::System<double>> dut_;  //< The device under test.
+  std::unique_ptr<systems::Context<double>> context_;
+  std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<maliput::api::RoadGeometry> road_;
   const maliput::api::Segment* segment_;
   std::vector<LaneDirection> lane_directions_{};
+
+  int ego_pose_input_index_{};
+  int ego_velocity_input_index_{};
+  int ego_acceleration_input_index_{};
+  int traffic_input_index_{};
+  int lane_output_index_{};
 
   int right_lane_index_{};
   int left_lane_index_{};
@@ -138,41 +142,30 @@ TEST_F(MobilPlannerTest, Topology) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
-  ASSERT_EQ(3, mp_->get_num_input_ports());
+  ASSERT_EQ(4, dut_->get_num_input_ports());
   const auto& ego_pose_input_descriptor =
-      mp_->get_input_port(ego_pose_input_index());
+      dut_->get_input_port(ego_pose_input_index_);
   EXPECT_EQ(systems::kVectorValued, ego_pose_input_descriptor.get_data_type());
   EXPECT_EQ(7 /* PoseVector input */, ego_pose_input_descriptor.size());
   const auto& ego_velocity_input_descriptor =
-      mp_->get_input_port(ego_velocity_input_index());
+      dut_->get_input_port(ego_velocity_input_index_);
   EXPECT_EQ(systems::kVectorValued,
             ego_velocity_input_descriptor.get_data_type());
   EXPECT_EQ(6 /* FrameVelocity input */, ego_velocity_input_descriptor.size());
+  const auto& ego_acceleration_input_descriptor =
+      dut_->get_input_port(ego_acceleration_input_index_);
+  EXPECT_EQ(systems::kVectorValued,
+            ego_acceleration_input_descriptor.get_data_type());
+  EXPECT_EQ(1 /* acceleration input */,
+            ego_acceleration_input_descriptor.size());
   const auto& traffic_input_descriptor =
-      mp_->get_input_port(traffic_input_index());
+      dut_->get_input_port(traffic_input_index_);
   EXPECT_EQ(systems::kAbstractValued, traffic_input_descriptor.get_data_type());
 
-  ASSERT_EQ(2, mp_->get_num_output_ports());
-  const auto& command_output_descriptor =
-      mp_->get_output_port(command_output_index());
-  EXPECT_EQ(systems::kVectorValued, command_output_descriptor.get_data_type());
-  EXPECT_EQ(2 /* DrivingCommand output */, command_output_descriptor.size());
+  ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& lane_output_descriptor =
-      mp_->get_output_port(mp_->lane_output().get_index());
+      dut_->get_output_port(lane_output_index_);
   EXPECT_EQ(systems::kAbstractValued, lane_output_descriptor.get_data_type());
-}
-
-// Tests that the IDM equations are performing as expected.
-TEST_F(MobilPlannerTest, IdmOutput) {
-  InitializeDragway(2 /* num_lanes */);
-  InitializeMobilPlanner(true /* initial_with_s */);
-
-  // Define a pointer to where the DrivingCommand results end up.
-  const auto result = output_->get_vector_data(command_output_index());
-  const auto command = dynamic_cast<const DrivingCommand<double>*>(result);
-  ASSERT_NE(nullptr, command);
-
-  this->TestIdmPlanner(*command);
 }
 
 // Tests the incentive of the ego car to change lanes when tailgating a car
@@ -188,8 +181,8 @@ TEST_F(MobilPlannerTest, IncentiveWhileTailgating) {
                             40.}); /* left car position */
 
   // Compute the output.
-  const auto result = output_->GetMutableData(mp_->lane_output().get_index());
-  mp_->CalcOutput(*context_, output_.get());
+  const auto result = output_->GetMutableData(lane_output_index_);
+  dut_->CalcOutput(*context_, output_.get());
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the left lane to be more desirable.
@@ -210,8 +203,8 @@ TEST_F(MobilPlannerTest, IncentiveWhileTailgatingInBackwardLane) {
                             -40.}); /* left car position */
 
   // Compute the output.
-  const auto result = output_->GetMutableData(mp_->lane_output().get_index());
-  mp_->CalcOutput(*context_, output_.get());
+  const auto result = output_->GetMutableData(lane_output_index_);
+  dut_->CalcOutput(*context_, output_.get());
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the left lane to be more desirable.
@@ -232,8 +225,8 @@ TEST_F(MobilPlannerTest, IncentiveWhileNotTailgating) {
                             40.}); /* left car position */
 
   // Compute the output.
-  const auto result = output_->GetMutableData(mp_->lane_output().get_index());
-  mp_->CalcOutput(*context_, output_.get());
+  const auto result = output_->GetMutableData(lane_output_index_);
+  dut_->CalcOutput(*context_, output_.get());
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the left lane to be more desirable.
@@ -254,8 +247,8 @@ TEST_F(MobilPlannerTest, PolitenessNoTailgator) {
                             -5.}); /* left car position */
 
   // Compute the output.
-  const auto result = output_->GetMutableData(mp_->lane_output().get_index());
-  mp_->CalcOutput(*context_, output_.get());
+  const auto result = output_->GetMutableData(lane_output_index_);
+  dut_->CalcOutput(*context_, output_.get());
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the right lane to be more desirable.
@@ -276,8 +269,8 @@ TEST_F(MobilPlannerTest, PolitenessWithTailgator) {
                             -40.}); /* left car position */
 
   // Compute the output.
-  const auto result = output_->GetMutableData(mp_->lane_output().get_index());
-  mp_->CalcOutput(*context_, output_.get());
+  const auto result = output_->GetMutableData(lane_output_index_);
+  dut_->CalcOutput(*context_, output_.get());
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the left lane to be more desirable.
@@ -298,8 +291,8 @@ TEST_F(MobilPlannerTest, ThreeLanePolitenessTestPreferLeft) {
                             -40.}); /* leftmost car position */
 
   // Compute the output.
-  const auto result = output_->GetMutableData(mp_->lane_output().get_index());
-  mp_->CalcOutput(*context_, output_.get());
+  const auto result = output_->GetMutableData(lane_output_index_);
+  dut_->CalcOutput(*context_, output_.get());
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the leftmost lane to be more desirable.
@@ -320,8 +313,8 @@ TEST_F(MobilPlannerTest, ThreeLaneIncentiveTestPreferRight) {
                             6.}); /* leftmost car position */
 
   // Compute the output.
-  const auto result = output_->GetMutableData(mp_->lane_output().get_index());
-  mp_->CalcOutput(*context_, output_.get());
+  const auto result = output_->GetMutableData(lane_output_index_);
+  dut_->CalcOutput(*context_, output_.get());
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the rightmost lane to be more desirable.

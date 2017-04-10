@@ -22,6 +22,7 @@ using maliput::api::RoadGeometry;
 using maliput::api::RoadPosition;
 using math::saturate;
 using automotive::pose_selector::RoadOdometry;
+using systems::BasicVector;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseBundle;
 using systems::rendering::PoseVector;
@@ -30,22 +31,54 @@ namespace automotive {
 
 namespace {
 
+static constexpr int kIdmParamsIndex{0};
+static constexpr int kMobilParamsIndex{1};
 static constexpr double kDefaultLargeAccel{1e6};  // m/s^2
 
 }  // namespace
 
 template <typename T>
 MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s)
-    : IdmController<T>(road),
+    : road_(road),
       with_s_(initial_with_s),
-      lane_index_(this->DeclareAbstractOutputPort(
+      ego_pose_index_{
+          this->DeclareVectorInputPort(PoseVector<T>()).get_index()},
+      ego_velocity_index_{
+          this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()},
+      ego_acceleration_index_{
+          this->DeclareVectorInputPort(BasicVector<T>(1)).get_index()},
+      traffic_index_{this->DeclareAbstractInputPort().get_index()},
+      lane_index_{this->DeclareAbstractOutputPort(
                           systems::Value<LaneDirection>(LaneDirection()))
-                      .get_index()) {
+                      .get_index()} {
   // Validate the provided RoadGeometry.
-  DRAKE_DEMAND(this->road().num_junctions() > 0);
-  DRAKE_DEMAND(this->road().junction(0)->num_segments() > 0);
-  DRAKE_DEMAND(this->road().junction(0)->segment(0)->num_lanes() > 0);
+  DRAKE_DEMAND(road_.num_junctions() > 0);
+  DRAKE_DEMAND(road_.junction(0)->num_segments() > 0);
+  DRAKE_DEMAND(road_.junction(0)->segment(0)->num_lanes() > 0);
+  this->DeclareNumericParameter(IdmPlannerParameters<T>());
   this->DeclareNumericParameter(MobilPlannerParameters<T>());
+}
+
+template <typename T>
+const systems::InputPortDescriptor<T>& MobilPlanner<T>::ego_pose_input() const {
+  return systems::System<T>::get_input_port(ego_pose_index_);
+}
+
+template <typename T>
+const systems::InputPortDescriptor<T>& MobilPlanner<T>::ego_velocity_input()
+    const {
+  return systems::System<T>::get_input_port(ego_velocity_index_);
+}
+
+template <typename T>
+const systems::InputPortDescriptor<T>& MobilPlanner<T>::ego_acceleration_input()
+    const {
+  return systems::System<T>::get_input_port(ego_acceleration_index_);
+}
+
+template <typename T>
+const systems::InputPortDescriptor<T>& MobilPlanner<T>::traffic_input() const {
+  return systems::System<T>::get_input_port(traffic_index_);
 }
 
 template <typename T>
@@ -57,52 +90,45 @@ template <typename T>
 void MobilPlanner<T>::DoCalcOutput(const systems::Context<T>& context,
                                    systems::SystemOutput<T>* output) const {
   // Obtain the parameters.
-  DRAKE_DEMAND(context.get_parameters().num_numeric_parameters() == 2);
   const IdmPlannerParameters<T>& idm_params =
-      this->template GetNumericParameter<IdmPlannerParameters>(context, 0);
+      this->template GetNumericParameter<IdmPlannerParameters>(context,
+                                                               kIdmParamsIndex);
   const MobilPlannerParameters<T>& mobil_params =
-      this->template GetNumericParameter<MobilPlannerParameters>(context, 1);
+      this->template GetNumericParameter<MobilPlannerParameters>(
+          context, kMobilParamsIndex);
 
   // Obtain the input/output data structures.
   const PoseVector<T>* const ego_pose =
-      this->template EvalVectorInput<PoseVector>(context,
-                                                 this->ego_pose_index());
+      this->template EvalVectorInput<PoseVector>(context, ego_pose_index_);
   DRAKE_ASSERT(ego_pose != nullptr);
 
   const FrameVelocity<T>* const ego_velocity =
       this->template EvalVectorInput<FrameVelocity>(context,
-                                                    this->ego_velocity_index());
+                                                    ego_velocity_index_);
   DRAKE_ASSERT(ego_velocity != nullptr);
 
+  const BasicVector<T>* const ego_accel_command =
+      this->template EvalVectorInput<BasicVector>(context,
+                                                  ego_acceleration_index_);
+  DRAKE_ASSERT(ego_accel_command != nullptr);
+
   const PoseBundle<T>* const traffic_poses =
-      this->template EvalInputValue<PoseBundle<T>>(context,
-                                                   this->traffic_index());
+      this->template EvalInputValue<PoseBundle<T>>(context, traffic_index_);
   DRAKE_ASSERT(traffic_poses != nullptr);
-
-  systems::BasicVector<T>* const command_output_vector =
-      output->GetMutableVectorData(this->driving_command_index());
-  DRAKE_ASSERT(command_output_vector != nullptr);
-  DrivingCommand<T>* const driving_command =
-      dynamic_cast<DrivingCommand<T>*>(command_output_vector);
-  DRAKE_ASSERT(driving_command != nullptr);
-
-  this->ImplDoCalcOutput(*ego_pose, *ego_velocity, *traffic_poses, idm_params,
-                         driving_command);
 
   LaneDirection* lane_direction =
       &output->GetMutableData(lane_index_)
            ->template GetMutableValue<LaneDirection>();
   DRAKE_ASSERT(lane_direction != nullptr);
 
-  ImplDoCalcLane(*ego_pose, *ego_velocity, *traffic_poses, *driving_command,
+  ImplDoCalcLane(*ego_pose, *ego_velocity, *traffic_poses, *ego_accel_command,
                  idm_params, mobil_params, lane_direction);
 }
 
 template <typename T>
 void MobilPlanner<T>::ImplDoCalcLane(
     const PoseVector<T>& ego_pose, const FrameVelocity<T>& ego_velocity,
-    const PoseBundle<T>& traffic_poses,
-    const DrivingCommand<T>& driving_command,
+    const PoseBundle<T>& traffic_poses, const BasicVector<T>& ego_accel_command,
     const IdmPlannerParameters<T>& idm_params,
     const MobilPlannerParameters<T>& mobil_params,
     LaneDirection* lane_direction) const {
@@ -110,16 +136,16 @@ void MobilPlanner<T>::ImplDoCalcLane(
   DRAKE_DEMAND(mobil_params.IsValid());
 
   const RoadPosition& ego_position =
-      pose_selector::CalcRoadPosition(this->road(), ego_pose.get_isometry());
+      pose_selector::CalcRoadPosition(road_, ego_pose.get_isometry());
   // Prepare a list of (possibly nullptr) Lanes to evaluate.
   std::pair<const Lane*, const Lane*> lanes = std::make_pair(
       ego_position.lane->to_left(), ego_position.lane->to_right());
 
   const Lane* lane = ego_position.lane;
   if (lanes.first != nullptr || lanes.second != nullptr) {
-    const std::pair<T, T> incentives = ComputeIncentives(
-        lanes, idm_params, mobil_params, ego_pose, ego_velocity, traffic_poses,
-        driving_command.acceleration());
+    const std::pair<T, T> incentives =
+        ComputeIncentives(lanes, idm_params, mobil_params, ego_pose,
+                          ego_velocity, traffic_poses, ego_accel_command[0]);
     // Switch to the lane with the highest incentive score greater than zero,
     // staying in the same lane if under the threshold.
     const T threshold = mobil_params.threshold();
@@ -145,12 +171,12 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
   std::pair<T, T> incentives(-kDefaultLargeAccel, -kDefaultLargeAccel);
 
   const RoadPosition& ego_position =
-      pose_selector::CalcRoadPosition(this->road(), ego_pose.get_isometry());
+      pose_selector::CalcRoadPosition(road_, ego_pose.get_isometry());
   DRAKE_DEMAND(ego_position.lane != nullptr);
   RoadOdometry<T> leading_odometry{};
   RoadOdometry<T> trailing_odometry{};
   std::tie(leading_odometry, trailing_odometry) =
-      pose_selector::FindClosestPair(this->road(), ego_pose, traffic_poses);
+      pose_selector::FindClosestPair(road_, ego_pose, traffic_poses);
 
   // Current acceleration of the ego car.
   const RoadOdometry<T>& ego_odometry =
@@ -167,7 +193,7 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
   // Compute the incentive for the left lane.
   if (lanes.first != nullptr) {
     const OdometryPair& odometries = pose_selector::FindClosestPair(
-        this->road(), ego_pose, traffic_poses, lanes.first);
+        road_, ego_pose, traffic_poses, lanes.first);
     ComputeIncentiveOutOfLane(idm_params, mobil_params, odometries,
                               ego_odometry, ego_acceleration,
                               trailing_delta_accel_this, &incentives.first);
@@ -175,7 +201,7 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
   // Compute the incentive for the right lane.
   if (lanes.second != nullptr) {
     const OdometryPair& odometries = pose_selector::FindClosestPair(
-        this->road(), ego_pose, traffic_poses, lanes.second);
+        road_, ego_pose, traffic_poses, lanes.second);
     ComputeIncentiveOutOfLane(idm_params, mobil_params, odometries,
                               ego_odometry, ego_acceleration,
                               trailing_delta_accel_this, &incentives.second);
