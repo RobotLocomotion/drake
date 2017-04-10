@@ -7,8 +7,10 @@
 #include "drake/common/matlab_rpc.pb.h"
 
 /// A simple interface for (one-directional) RPC to a simple matlab remote
-/// client.  Methods are provided to serialize our favorite data types into protobuf
-/// and then published via a named pipe.  The interface is modeled after mexCallMATLAB
+/// client.  Methods are provided to serialize our favorite data types into
+/// protobuf
+/// and then published via a named pipe.  The interface is modeled after
+/// mexCallMATLAB
 ///   https://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html
 /// but we use C++11 to provide a much nicer interface.
 ///
@@ -34,8 +36,7 @@ namespace common {
 //  another one of these methods.
 
 class MatlabRemoteVariable;
-void ToMatlabArray(const MatlabRemoteVariable& var,
-                      MatlabArray* matlab_array);
+void ToMatlabArray(const MatlabRemoteVariable& var, MatlabArray* matlab_array);
 
 void ToMatlabArray(double scalar, MatlabArray* matlab_array);
 
@@ -45,10 +46,9 @@ void ToMatlabArray(
     MatlabArray* matlab_array);
 
 void ToMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
-                      MatlabArray* matlab_array);
+                   MatlabArray* matlab_array);
 
-void ToMatlabArray(const std::string& str,
-                      MatlabArray* matlab_array);
+void ToMatlabArray(const std::string& str, MatlabArray* matlab_array);
 
 // Helper methods for variadic template call in CallMatlab.
 namespace internal {
@@ -57,8 +57,7 @@ inline void AssembleCallMatlabMsg(MatlabRPC* msg) {
 }
 
 template <typename T, typename... Types>
-void AssembleCallMatlabMsg(MatlabRPC* msg, T first,
-                              Types... args) {
+void AssembleCallMatlabMsg(MatlabRPC* msg, T first, Types... args) {
   ToMatlabArray(first, msg->add_rhs());
   AssembleCallMatlabMsg(msg, args...);
 }
@@ -73,8 +72,8 @@ void PublishCallMatlab(const MatlabRPC& msg);
 
 // forward declaration:
 template <typename... Types>
-MatlabRemoteVariable CallMatlabSingleOutput(
-    const std::string& function_name, Types... args);
+MatlabRemoteVariable CallMatlabSingleOutput(const std::string& function_name,
+                                            Types... args);
 
 /// Holds a reference to a variable stored on the matlab client, which can be
 /// passed back into a future lcm_call_matlab call.
@@ -143,9 +142,9 @@ class MatlabRemoteVariable {
   }
 
   template <typename T, typename... Types>
-  void AssembleSubsPrepMsg(MatlabRPC* msg, T first,
-                           Types... args) const {
-    const std::string dummy_field_name = "f" + std::to_string(msg->rhs_size()/2+1);
+  void AssembleSubsPrepMsg(MatlabRPC* msg, T first, Types... args) const {
+    const std::string dummy_field_name =
+        "f" + std::to_string(msg->rhs_size() / 2 + 1);
     ToMatlabArray(dummy_field_name, msg->add_rhs());
     ToMatlabArray(first, msg->add_rhs());
     AssembleSubsPrepMsg(msg, args...);
@@ -191,8 +190,9 @@ class MatlabRemoteVariable {
 ///
 /// See call_matlab_test.cc for some simple examples.
 template <typename... Types>
-std::vector<MatlabRemoteVariable> CallMatlab(
-    int num_outputs, const std::string& function_name, Types... args) {
+std::vector<MatlabRemoteVariable> CallMatlab(int num_outputs,
+                                             const std::string& function_name,
+                                             Types... args) {
   if (num_outputs < 0) num_outputs = 0;
   std::vector<MatlabRemoteVariable> remote_vars(num_outputs);
 
@@ -216,8 +216,8 @@ void CallMatlab(const std::string& function_name, Types... args) {
 
 /// Special cases the call with one output.
 template <typename... Types>
-MatlabRemoteVariable CallMatlabSingleOutput(
-    const std::string& function_name, Types... args) {
+MatlabRemoteVariable CallMatlabSingleOutput(const std::string& function_name,
+                                            Types... args) {
   std::vector<MatlabRemoteVariable> vars =
       CallMatlab(1, function_name, args...);
   return vars[0];

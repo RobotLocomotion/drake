@@ -5,9 +5,9 @@
 #include <limits>
 #include <string>
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -29,8 +29,7 @@ MatlabRemoteVariable::MatlabRemoteVariable()
 // was sufficient for now.
 {}
 
-void ToMatlabArray(const MatlabRemoteVariable& var,
-                      MatlabArray* matlab_array) {
+void ToMatlabArray(const MatlabRemoteVariable& var, MatlabArray* matlab_array) {
   matlab_array->set_type(MatlabArray::REMOTE_VARIABLE_REFERENCE);
   matlab_array->set_rows(1);
   matlab_array->set_cols(1);
@@ -48,7 +47,7 @@ void ToMatlabArray(double var, MatlabArray* matlab_array) {
 }
 
 void ToMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
-                      MatlabArray* matlab_array) {
+                   MatlabArray* matlab_array) {
   matlab_array->set_type(MatlabArray::DOUBLE);
   matlab_array->set_rows(mat.rows());
   matlab_array->set_cols(mat.cols());
@@ -57,8 +56,8 @@ void ToMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
 }
 
 void ToMatlabArray(
-    const Eigen::Ref <
-        const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>& mat,
+    const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>&
+        mat,
     MatlabArray* matlab_array) {
   matlab_array->set_type(MatlabArray::LOGICAL);
   matlab_array->set_rows(mat.rows());
@@ -67,8 +66,7 @@ void ToMatlabArray(
   matlab_array->set_data(mat.data(), num_bytes);
 }
 
-void ToMatlabArray(const std::string& str,
-                      MatlabArray* matlab_array) {
+void ToMatlabArray(const std::string& str, MatlabArray* matlab_array) {
   matlab_array->set_type(MatlabArray::CHAR);
   matlab_array->set_rows(1);
   matlab_array->set_cols(str.length());
@@ -78,7 +76,8 @@ void ToMatlabArray(const std::string& str,
 
 void internal::PublishCallMatlab(const MatlabRPC& message) {
   // TODO(russt): Provide option for setting the filename.
-  static google::protobuf::io::FileOutputStream raw_output(open("/tmp/matlab_rpc", O_WRONLY | O_CREAT, S_IRWXU));
+  static google::protobuf::io::FileOutputStream raw_output(
+      open("/tmp/matlab_rpc", O_WRONLY | O_CREAT, S_IRWXU));
 
   google::protobuf::io::CodedOutputStream output(&raw_output);
 

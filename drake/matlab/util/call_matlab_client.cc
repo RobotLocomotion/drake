@@ -30,19 +30,6 @@
 // TODO(russt): Implement an interface that allows the remote publisher to
 // manually delete a client variable.
 
-/*
-namespace {
-
-  void FlushMatlabEventBuffer(void) {
-    // An ugly hack.  drawnow used to work, but the internet confirms that it
-    // stopped working around R2015.
-    mxArray * time = mxCreateDoubleScalar(0.001);
-    mexCallMATLABsafe(0, nullptr, 1, &time, "pause");
-    mxDestroyArray(time);
-  }
-
-}  // end namespace
-*/
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // TODO(russt): Take filename as an optional input.
@@ -51,16 +38,13 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   google::protobuf::io::CodedInputStream input(&raw_input);
 
   // TODO(russt): Document use of mkfifo?
-  mexPrintf("Listening for messages on %s...\n", filename.c_str());
-
-//  FlushMatlabEventBuffer();
+  mexPrintf("Reading messages from %s ...\n", filename.c_str());
 
   std::map<int64_t, mxArray*> client_vars_;
 
   // Read the size.
   uint32_t size;
   while (input.ReadVarint32(&size)) {
-    mexPrintf("Reading %d bytes\n", size);
     // Tell the stream not to read beyond that size.
     auto limit = input.PushLimit(size);
 
@@ -76,23 +60,22 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     // Release the limit.
     input.PopLimit(limit);
 
-    mexPrintf("%s\n",message.function_name().c_str());
     int i;
     std::vector<mxArray *> lhs(message.lhs_size()), rhs(message.rhs_size());
 
     // Create the input arguments
     for (i = 0; i < message.rhs_size(); i++) {
       int num_bytes = message.rhs(i).data().size();
-//      if (num_bytes == 0) {
-//        mexPrintf("rhs %d seems to have zero bytes.  dropping message %s.\n",
-//                  i, message.function_name().c_str());
-      mexPrintf("type: %d\n", message.rhs(i).type());
-      mexPrintf("rows: %d\n", message.rhs(i).rows());
-      mexPrintf("cols: %d\n", message.rhs(i).cols());
-//        for (int j = 0; j < i; j++) {
-//          mxDestroyArray(rhs[j]);
-//        }
-//      }
+      if (num_bytes == 0) {
+        mexPrintf("rhs %d seems to have zero bytes.  dropping message %s.\n",
+                  i, message.function_name().c_str());
+        mexPrintf("type: %d\n", message.rhs(i).type());
+        mexPrintf("rows: %d\n", message.rhs(i).rows());
+        mexPrintf("cols: %d\n", message.rhs(i).cols());
+        for (int j = 0; j < i; j++) {
+          mxDestroyArray(rhs[j]);
+        }
+      }
 
       switch (message.rhs(i).type()) {
         case drake::common::MatlabArray::REMOTE_VARIABLE_REFERENCE: {
@@ -180,7 +163,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       break;
     }
   }
-//  FlushMatlabEventBuffer();
 
   // Clean up remaining memory.
   for (const auto& iter : client_vars_) {
