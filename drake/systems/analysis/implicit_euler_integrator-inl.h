@@ -67,8 +67,8 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 // xtplus, taken with respect to the state variables using automatic
 // differentiation.
 template <>
-MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::ComputeADiffJacobianF(
-    const VectorX<AutoDiffXd>& xtplus) {
+MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::
+    ComputeAutoDiffJacobian(const VectorX<AutoDiffXd>& xtplus) {
         throw std::runtime_error("AutoDiff'd Jacobian not supported from "
                                      "AutoDiff'd ImplicitEulerIntegrator");
 }
@@ -77,7 +77,7 @@ MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::ComputeADiffJacobianF(
 // xtplus, taken with respect to the state variables using automatic
 // differentiation.
 template <class T>
-MatrixX<T> ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
+MatrixX<T> ImplicitEulerIntegrator<T>::ComputeAutoDiffJacobian(
     const VectorX<T>& xtplus) {
   SPDLOG_DEBUG(drake::log(), "  IE Compute Autodiff Jacobian t={}",
                this->get_context().get_time());
@@ -90,7 +90,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeADiffJacobianF(
   for (int i = 0; i < n_state_dim; ++i)
     a_xtplus[i].derivatives() = VectorX<T>::Unit(n_state_dim, i);
 
-  // Get the system and the context in AutoDiffable format.
+  // Get the system and the context in AutoDiffable format. Inputs must also
+  // be copied to the AutoDiff'd system (which is accomplished using
+  // FixInputPortsFrom()).
   const auto system = this->get_system().ToAutoDiffXd();
   std::unique_ptr<Context<Scalar>> context = system->AllocateContext();
   context->SetTimeStateAndParametersFrom(this->get_context());
@@ -128,7 +130,7 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives(
 // xtplus, taken with respect to the state variables, using a first-order
 // central difference (i.e., numerical differentiation).
 template <class T>
-MatrixX<T> ImplicitEulerIntegrator<T>::ComputeFDiffJacobianF(
+MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
     const VectorX<T>& xtplus) {
   using std::abs;
 
@@ -140,7 +142,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeFDiffJacobianF(
 
   SPDLOG_DEBUG(drake::log(), "  IE Compute Forwarddiff {}-Jacobian t={}",
                n, this->get_context().get_time());
-  SPDLOG_DEBUG(drake::log(), "  computing from state {}", xtplus);
+  SPDLOG_DEBUG(drake::log(), "  computing from state {}", xtplus.transpose());
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
@@ -158,12 +160,15 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeFDiffJacobianF(
     if (abs_xi <= 0)
       dxi = eps;
 
-    // Update xtplus', minimizing the effect of roundoff error.
+    // Update xtplus', minimizing the effect of roundoff error by ensuring that
+    // x and dx differ by an exactly representable number. See p. 192 of
+    // Press, W., Teukolsky, S., Vetterling, W., and Flannery, P. Numerical
+    //   Recipes in C++, 2nd Ed., Cambridge University Press, 2002.
     xtplus_prime(i) = xtplus(i) + dxi;
     dxi = xtplus_prime(i) - xtplus(i);
 
     // Compute f' and set the relevant column of the Jacobian matrix.
-    J.col(i) = (CalcTimeDerivatives(xtplus_prime) - f)/dxi;
+    J.col(i) = (CalcTimeDerivatives(xtplus_prime) - f) / dxi;
     num_jacobian_function_evaluations_++;
 
     // Reset xtplus' to xtplus.
@@ -177,12 +182,12 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeFDiffJacobianF(
 // xtplus, taken with respect to the state variables, using a second-order
 // central difference  (i.e., numerical differentiation).
 template <class T>
-MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCDiffJacobianF(
+MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
     const VectorX<T>& xtplus) {
   using std::abs;
 
   // Cube root of machine precision (indicated by theory) seems a bit coarse.
-  // Pick eps halfway between square root and cube root.
+  // Pick power of eps halfway between 6/12 (i.e., 1/2) and 4/12 (i.e., 1/3).
   const double eps = std::pow(std::numeric_limits<double>::epsilon(), 5.0/12);
 
   Context<T>* context = this->get_mutable_context();
@@ -203,7 +208,10 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCDiffJacobianF(
     if (abs_xi <= 0)
       dxi = eps;
 
-    // Update xtplus', minimizing the effect of roundoff error.
+    // Update xtplus', minimizing the effect of roundoff error, by ensuring that
+    // x and dx differ by an exactly representable number. See p. 192 of
+    // Press, W., Teukolsky, S., Vetterling, W., and Flannery, P. Numerical
+    //   Recipes in C++, 2nd Ed., Cambridge University Press, 2002.
     xtplus_prime(i) = xtplus(i) + dxi;
     const T dxi_plus = xtplus_prime(i) - xtplus(i);
 
@@ -588,13 +596,13 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& tf,
 
   switch (jacobian_scheme_) {
     case JacobianComputationScheme::kForwardDifference:
-      return ComputeFDiffJacobianF(xtplus);
+      return ComputeForwardDiffJacobian(xtplus);
 
     case JacobianComputationScheme::kCentralDifference:
-      return ComputeCDiffJacobianF(xtplus);
+      return ComputeCentralDiffJacobian(xtplus);
 
     case JacobianComputationScheme::kAutomatic:
-      return ComputeADiffJacobianF(xtplus);
+      return ComputeAutoDiffJacobian(xtplus);
 
     default:
       // Should never get here.

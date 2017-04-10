@@ -277,9 +277,9 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   T StepImplicitEuler(const T& dt);
   T StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
                           VectorX<T>* xtplus);
-  MatrixX<T> ComputeFDiffJacobianF(const VectorX<T>& xtplus);
-  MatrixX<T> ComputeCDiffJacobianF(const VectorX<T>& xtplus);
-  MatrixX<T> ComputeADiffJacobianF(const VectorX<T>& xtplus);
+  MatrixX<T> ComputeForwardDiffJacobian(const VectorX<T>& xtplus);
+  MatrixX<T> ComputeCentralDiffJacobian(const VectorX<T>& xtplus);
+  MatrixX<T> ComputeAutoDiffJacobian(const VectorX<T>& xtplus);
   VectorX<T> CalcTimeDerivatives(const VectorX<T>& x);
   void CalcErrorNorms(const Context<T>& context, T* q_nrm, T* v_nrm, T* z_nrm);
 

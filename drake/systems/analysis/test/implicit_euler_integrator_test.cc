@@ -145,13 +145,13 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
   /// Default spring constant. Corresponds to a frequency of 0.1125 cycles per
   /// second without damping, assuming that mass = 2 (using formula
-  /// f = sqrt(k*mass)/(2*pi), where k is the spring constant, and f is the
+  /// f = sqrt(k/mass)/(2*pi), where k is the spring constant, and f is the
   /// frequency in cycles per second).
   const double spring_k = 1.0;
 
   /// Default spring constant for a stiff spring. Corresponds to a frequency
   /// of 11,254 cycles per second without damping, assuming that mass = 2
-  /// (using formula f = sqrt(k*mass)/(2*pi), where k is the spring constant,
+  /// (using formula f = sqrt(k/mass)/(2*pi), where k is the spring constant,
   /// and f is the requency in cycles per second).
   const double stiff_spring_k = 1e10;
 
@@ -170,12 +170,23 @@ class ImplicitIntegratorTest : public ::testing::Test {
   const double stiff_damping_b = 1e8;
 };
 
-// Verifies compilation, nothing else at this point.
+// Verifies compilation and that trying to use automatic differentiated
+// Jacobian with an AutoDiff'd integrator chokes.
 TEST_F(ImplicitIntegratorTest, AutoDiff) {
   // Create the integrator for a System<AutoDiffXd>.
   auto system = spring->ToAutoDiffXd();
   auto context = system->CreateDefaultContext();
   ImplicitEulerIntegrator<AutoDiffXd> integrator(*system, context.get());
+
+  // Set reasonable integrator parameters.
+  integrator.set_maximum_step_size(large_dt);
+  integrator.request_initial_step_size_target(large_dt);
+  integrator.set_target_accuracy(1e-5);
+  integrator.set_minimum_step_size(1e-6);
+  integrator.Initialize();
+
+  // Integrate for one step.
+  EXPECT_THROW(integrator.StepExactlyFixed(large_dt), std::logic_error);
 
   // TODO(edrumwri): Add test that an automatic differentiation of an implicit
   // integrator produces the expected result.
