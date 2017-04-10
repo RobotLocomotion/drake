@@ -1,6 +1,6 @@
 #include "drake/solvers/test/rotation_constraint_visualization.h"
 
-#include "drake/lcm/lcm_call_matlab.h"
+#include "drake/common/call_matlab.h"
 #include "drake/solvers/rotation_constraint.h"
 #include "drake/solvers/rotation_constraint_internal.h"
 
@@ -59,26 +59,26 @@ void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0,
       via_pts(free_axis1, i) *= -1;
     }
   }
-  auto h = lcm::LcmCallMatlab(1, "plot3", via_pts.row(0), via_pts.row(1),
+  auto h = common::CallMatlab(1, "plot3", via_pts.row(0), via_pts.row(1),
                               via_pts.row(2));
-  lcm::LcmCallMatlab("set", h[0], "Color", color);
+  common::CallMatlab("set", h[0], "Color", color);
 }
 }  // namespace
 
 void DrawSphere(const Eigen::RowVector3d& color) {
-  using lcm::LcmCallMatlab;
-  auto xyz_sphere = lcm::LcmCallMatlab(3, "sphere", 40);
+  using common::CallMatlab;
+  auto xyz_sphere = common::CallMatlab(3, "sphere", 40);
   auto h_sphere =
-      LcmCallMatlab(1, "surf", xyz_sphere[0], xyz_sphere[1], xyz_sphere[2]);
-  LcmCallMatlab("set", h_sphere[0], "FaceColor", color);
-  LcmCallMatlab("set", h_sphere[0], "FaceAlpha", 0.2);
-  LcmCallMatlab("set", h_sphere[0], "EdgeColor", color);
-  LcmCallMatlab("set", h_sphere[0], "LineStyle", "none");
+      CallMatlab(1, "surf", xyz_sphere[0], xyz_sphere[1], xyz_sphere[2]);
+  CallMatlab("set", h_sphere[0], "FaceColor", color);
+  CallMatlab("set", h_sphere[0], "FaceAlpha", 0.2);
+  CallMatlab("set", h_sphere[0], "EdgeColor", color);
+  CallMatlab("set", h_sphere[0], "LineStyle", "none");
 }
 
 void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax,
              const Eigen::RowVector3d& color) {
-  using lcm::LcmCallMatlab;
+  using common::CallMatlab;
   if ((bmin.array() < 0).any()) {
     throw std::runtime_error("bmin should be in the first orthant in DrawBox.");
   }
@@ -106,16 +106,16 @@ void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax,
       plane[free_axis1].col(0) = Eigen::Vector2d::Constant(bmin(free_axis1));
       plane[free_axis1].col(1) = Eigen::Vector2d::Constant(bmax(free_axis1));
       plane[fixed_axis] = Eigen::Matrix2d::Constant(bmin(fixed_axis));
-      auto h0 = LcmCallMatlab(1, "surf", plane[0], plane[1], plane[2]);
+      auto h0 = CallMatlab(1, "surf", plane[0], plane[1], plane[2]);
       plane[fixed_axis] = Eigen::Matrix2d::Constant(bmax(fixed_axis));
-      auto h1 = LcmCallMatlab(1, "surf", plane[0], plane[1], plane[2]);
+      auto h1 = CallMatlab(1, "surf", plane[0], plane[1], plane[2]);
 
-      std::array<lcm::LcmMatlabRemoteVariable, 2> h = {{h0[0], h1[0]}};
+      std::array<common::MatlabRemoteVariable, 2> h = {{h0[0], h1[0]}};
       for (int i = 0; i < 2; ++i) {
-        LcmCallMatlab("set", h[i], "FaceColor", color);
-        LcmCallMatlab("set", h[i], "FaceAlpha", 0.2);
-        LcmCallMatlab("set", h[i], "EdgeColor", color);
-        LcmCallMatlab("set", h[i], "LineStyle", "none");
+        CallMatlab("set", h[i], "FaceColor", color);
+        CallMatlab("set", h[i], "FaceAlpha", 0.2);
+        CallMatlab("set", h[i], "EdgeColor", color);
+        CallMatlab("set", h[i], "LineStyle", "none");
       }
     }
   }
