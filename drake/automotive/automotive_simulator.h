@@ -78,20 +78,22 @@ class AutomotiveSimulator {
                         const SimpleCarState<T>& initial_state =
                         SimpleCarState<T>());
 
-  /// Adds an IDM-controlled SimpleCar to this simulation visualized as a Toyota
-  /// Prius.
-  ///
-  /// Refer to AddPriusSimpleCar header for parameter descriptions.
-  int AddIdmControlledSimpleCar(const std::string& model_name,
-                                const SimpleCarState<T>& initial_state =
-                                SimpleCarState<T>());
-
   /// Adds a MOBIL-controlled SimpleCar to this simulation visualized as a
   /// Toyota Prius.
   ///
-  /// Refer to AddPriusSimpleCar header for parameter descriptions.
+  /// @pre Start() has NOT been called.
+  ///
+  /// @param name The car's name, which must be unique among all cars. Otherwise
+  /// a std::runtime_error will be thrown.
+  ///
+  /// @param initial_with_s Initial travel direction in the lane. (See
+  /// MobilPlanner documentation.)
+  ///
+  /// @param initial_state The SimpleCar's initial state.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
   int AddMobilControlledSimpleCar(const std::string& model_name,
-                                  const LaneDirection& initial_lane_direction,
+                                  bool initial_with_s,
                                   const SimpleCarState<T>& initial_state =
                                   SimpleCarState<T>());
 

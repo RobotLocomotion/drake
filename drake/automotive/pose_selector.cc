@@ -52,7 +52,7 @@ const std::pair<RoadOdometry<double>, RoadOdometry<double>> FindClosestPair(
       if (result_trailing.pos.s < s_traffic &&
           s_traffic < result_leading.pos.s) {
         // N.B. The ego car and traffic may reside in different lanes.
-        if (s_traffic >= ego_position.pos.s) {
+        if (s_traffic > ego_position.pos.s) {
           result_leading = RoadOdometry<double>(traffic_position,
                                                 traffic_poses.get_velocity(i));
         } else {
