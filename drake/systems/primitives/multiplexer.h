@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -34,6 +35,12 @@ class Multiplexer : public LeafSystem<T> {
   /// ports where the i-th input has size `input_sizes[i]`, and one vector-
   /// valued output port of size `sum(input_sizes)`.
   explicit Multiplexer(std::vector<int> input_sizes);
+
+  /// Constructs a %Multiplexer with model_vector.size() scalar-valued inputs
+  /// and one vector-valued output port whose size equals the size of
+  /// `model_vector`.  In addition, the output type derives from that of
+  /// `model_vector`.
+  explicit Multiplexer(const systems::BasicVector<T>& model_vector);
 
  private:
   void DoCalcOutput(const Context<T>& context,

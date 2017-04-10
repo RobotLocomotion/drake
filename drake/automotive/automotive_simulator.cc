@@ -3,8 +3,7 @@
 #include <algorithm>
 #include <utility>
 
-#include <unistd.h>
-
+#include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/maliput_railcar_state_translator.h"
@@ -26,6 +25,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/systems/primitives/multiplexer.h"
 
 namespace drake {
 
@@ -50,13 +50,12 @@ AutomotiveSimulator<T>::AutomotiveSimulator(
       builder_->template AddSystem<systems::rendering::PoseAggregator<T>>();
   aggregator_->set_name("pose_aggregator");
 
-  car_vis_applicator_ =
-      builder_->template AddSystem<CarVisApplicator<T>>();
+  car_vis_applicator_ = builder_->template AddSystem<CarVisApplicator<T>>();
   car_vis_applicator_->set_name("car_vis_applicator");
 
   bundle_to_draw_ =
-      builder_->template
-          AddSystem<systems::rendering::PoseBundleToDrawMessage>();
+      builder_
+          ->template AddSystem<systems::rendering::PoseBundleToDrawMessage>();
   bundle_to_draw_->set_name("bundle_to_draw");
 }
 
@@ -84,8 +83,7 @@ systems::DiagramBuilder<T>* AutomotiveSimulator<T>::get_builder() {
 
 template <typename T>
 int AutomotiveSimulator<T>::AddPriusSimpleCar(
-    const std::string& name,
-    const std::string& channel_name,
+    const std::string& name, const std::string& channel_name,
     const SimpleCarState<T>& initial_state) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
@@ -118,52 +116,12 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
 }
 
 template <typename T>
-int AutomotiveSimulator<T>::AddIdmControlledSimpleCar(
-    const std::string& model_name, const SimpleCarState<T>& initial_state) {
-  DRAKE_DEMAND(!has_started());
-  DRAKE_DEMAND(aggregator_ != nullptr);
-  if (road_ == nullptr) {
-    throw std::runtime_error(
-        "AutomotiveSimulator::AddIdmControlledSimpleCar(): "
-        "RoadGeometry not set. Please call SetRoadGeometry() first before "
-        "calling this method.");
-  }
-  const int id = allocate_vehicle_number();
-
-  auto idm_controller = builder_->template AddSystem<IdmController<T>>(*road_);
-  auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
-  simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
-  auto coord_transform =
-      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
-  builder_->Connect(simple_car->state_output(),
-                    coord_transform->get_input_port(0));
-
-  // Wire up the controller.
-  builder_->Connect(*idm_controller, *simple_car);
-  builder_->Connect(simple_car->pose_output(),
-                    idm_controller->ego_pose_input());
-  builder_->Connect(simple_car->velocity_output(),
-                    idm_controller->ego_velocity_input());
-  builder_->Connect(aggregator_->get_output_port(0),
-                    idm_controller->traffic_input());
-
-  // Connect the PoseAggregator.
-  const auto& descriptor = aggregator_->AddSingleInput(model_name, id);
-  builder_->Connect(simple_car->pose_output(),
-                    aggregator_->get_input_port(descriptor.get_index()));
-
-  AddPublisher(*simple_car, id);
-  AddPublisher(*coord_transform, id);
-  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, model_name));
-  return id;
-}
-
-template <typename T>
 int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
-    const std::string& model_name, const LaneDirection& initial_lane_direction,
+    const std::string& name, bool initial_with_s,
     const SimpleCarState<T>& initial_state) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
+  CheckNameUniqueness(name);
   if (road_ == nullptr) {
     throw std::runtime_error(
         "AutomotiveSimulator::AddMobilControlledSimpleCar(): "
@@ -172,48 +130,70 @@ int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
   }
   const int id = allocate_vehicle_number();
 
-  auto mobil_planner = builder_->template AddSystem<MobilPlanner<T>>(
-      *road_, initial_lane_direction);
+  auto mobil_planner =
+      builder_->template AddSystem<MobilPlanner<T>>(*road_, initial_with_s);
+  mobil_planner->set_name(name + "_mobil_planner");
+  auto idm_controller = builder_->template AddSystem<IdmController<T>>(*road_);
+  idm_controller->set_name(name + "_idm_controller");
+
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
+  simple_car->set_name(name + "_simple_car");
+  vehicles_[id] = simple_car;
   simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
-  auto pursuit = builder_->template AddSystem<PurePursuitController<T>>(*road_);
+  auto pursuit = builder_->template AddSystem<PurePursuitController<T>>();
+  pursuit->set_name(name + "_pure_pursuit_controller");
+  auto mux = builder_->template AddSystem<systems::Multiplexer<T>>(
+      DrivingCommand<T>());
+  mux->set_name(name + "_mux");
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+  coord_transform->set_name(name + "_transform");
   builder_->Connect(simple_car->state_output(),
                     coord_transform->get_input_port(0));
 
-  // Wire up the controller.
-  builder_->Connect(*pursuit, *simple_car);
-  builder_->Connect(mobil_planner->driving_command_output(),
-                    pursuit->driving_command_input());
-  builder_->Connect(mobil_planner->lane_output(),
-                    pursuit->lane_input());
-  builder_->Connect(simple_car->pose_output(),
-                    pursuit->ego_pose_input());
-  builder_->Connect(simple_car->pose_output(),
-                    mobil_planner->ego_pose_input());
+  // Wire up MobilPlanner and IdmController.
+  builder_->Connect(simple_car->pose_output(), mobil_planner->ego_pose_input());
   builder_->Connect(simple_car->velocity_output(),
                     mobil_planner->ego_velocity_input());
+  builder_->Connect(idm_controller->acceleration_output(),
+                    mobil_planner->ego_acceleration_input());
   builder_->Connect(aggregator_->get_output_port(0),
                     mobil_planner->traffic_input());
 
-  // Connect the PoseAggregator.
-  const auto& descriptor = aggregator_->AddSingleInput(model_name, id);
   builder_->Connect(simple_car->pose_output(),
-                    aggregator_->get_input_port(descriptor.get_index()));
+                    idm_controller->ego_pose_input());
+  builder_->Connect(simple_car->velocity_output(),
+                    idm_controller->ego_velocity_input());
+  builder_->Connect(aggregator_->get_output_port(0),
+                    idm_controller->traffic_input());
+
+  builder_->Connect(simple_car->pose_output(), pursuit->ego_pose_input());
+  builder_->Connect(mobil_planner->lane_output(), pursuit->lane_input());
+  // Build DrivingCommand via a mux of two scalar outputs (a BasicVector where
+  // row 0 = steering command, row 1 = acceleration command).
+  builder_->Connect(pursuit->steering_command_output(), mux->get_input_port(0));
+  builder_->Connect(idm_controller->acceleration_output(),
+                    mux->get_input_port(1));
+  builder_->Connect(mux->get_output_port(0), simple_car->get_input_port(0));
+
+  // Connect the PoseAggregator.
+  auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
+  const systems::InputPortDescriptor<T>& pose_port = ports.first;
+  const systems::InputPortDescriptor<T>& velocity_port = ports.second;
+  builder_->Connect(simple_car->pose_output(), pose_port);
+  builder_->Connect(simple_car->velocity_output(), velocity_port);
 
   AddPublisher(*simple_car, id);
   AddPublisher(*coord_transform, id);
-  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, model_name));
+  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
   return id;
 }
 
 template <typename T>
-int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
-    const std::string& name,
-    const Curve2<double>& curve,
-    double speed,
-    double start_time) {
+int AutomotiveSimulator<T>::AddPriusTrajectoryCar(const std::string& name,
+                                                  const Curve2<double>& curve,
+                                                  double speed,
+                                                  double start_time) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
   CheckNameUniqueness(name);
@@ -240,25 +220,27 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
 
 template <typename T>
 int AutomotiveSimulator<T>::AddPriusMaliputRailcar(
-    const std::string& name,
-    const LaneDirection& initial_lane_direction,
+    const std::string& name, const LaneDirection& initial_lane_direction,
     const MaliputRailcarParams<T>& params,
     const MaliputRailcarState<T>& initial_state) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
   CheckNameUniqueness(name);
   if (road_ == nullptr) {
-    throw std::runtime_error("AutomotiveSimulator::AddPriusMaliputRailcar(): "
+    throw std::runtime_error(
+        "AutomotiveSimulator::AddPriusMaliputRailcar(): "
         "RoadGeometry not set. Please call SetRoadGeometry() first before "
         "calling this method.");
   }
   if (initial_lane_direction.lane == nullptr) {
-    throw std::runtime_error("AutomotiveSimulator::AddPriusMaliputRailcar(): "
+    throw std::runtime_error(
+        "AutomotiveSimulator::AddPriusMaliputRailcar(): "
         "The provided initial lane is nullptr.");
   }
   if (initial_lane_direction.lane->segment()->junction()->road_geometry() !=
       road_.get()) {
-    throw std::runtime_error("AutomotiveSimulator::AddPriusMaliputRailcar(): "
+    throw std::runtime_error(
+        "AutomotiveSimulator::AddPriusMaliputRailcar(): "
         "The provided initial lane is not within this simulation's "
         "RoadGeometry.");
   }
@@ -282,8 +264,7 @@ int AutomotiveSimulator<T>::AddPriusMaliputRailcar(
 
 template <typename T>
 int AutomotiveSimulator<T>::AddIdmControlledPriusMaliputRailcar(
-    const std::string& name,
-    const LaneDirection& initial_lane_direction,
+    const std::string& name, const LaneDirection& initial_lane_direction,
     const MaliputRailcarParams<T>& params,
     const MaliputRailcarState<T>& initial_state) {
   const int id = AddPriusMaliputRailcar(name, initial_lane_direction, params,
@@ -291,8 +272,7 @@ int AutomotiveSimulator<T>::AddIdmControlledPriusMaliputRailcar(
   const MaliputRailcar<T>* railcar =
       dynamic_cast<const MaliputRailcar<T>*>(vehicles_.at(id));
   DRAKE_DEMAND(railcar != nullptr);
-  auto controller =
-      builder_->template AddSystem<IdmController<T>>(*road_);
+  auto controller = builder_->template AddSystem<IdmController<T>>(*road_);
   controller->set_name(name + "_IdmController");
 
   builder_->Connect(railcar->pose_output(), controller->ego_pose_input());
@@ -306,28 +286,32 @@ int AutomotiveSimulator<T>::AddIdmControlledPriusMaliputRailcar(
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::SetMaliputRailcarAccelerationCommand(int id,
-    double acceleration) {
+void AutomotiveSimulator<T>::SetMaliputRailcarAccelerationCommand(
+    int id, double acceleration) {
   DRAKE_DEMAND(has_started());
   const auto iterator = vehicles_.find(id);
   if (iterator == vehicles_.end()) {
-    throw std::runtime_error("AutomotiveSimulator::"
+    throw std::runtime_error(
+        "AutomotiveSimulator::"
         "SetMaliputRailcarAccelerationCommand(): Failed to find vehicle with "
-        "id " + std::to_string(id) + ".");
+        "id " +
+        std::to_string(id) + ".");
   }
-  MaliputRailcar<T>* railcar = dynamic_cast<MaliputRailcar<T>*>(
-      iterator->second);
+  MaliputRailcar<T>* railcar =
+      dynamic_cast<MaliputRailcar<T>*>(iterator->second);
   if (railcar == nullptr) {
-    throw std::runtime_error("AutomotiveSimulator::"
+    throw std::runtime_error(
+        "AutomotiveSimulator::"
         "SetMaliputRailcarAccelerationCommand(): The vehicle with "
-        "id " + std::to_string(id) + " was not a MaliputRailcar.");
+        "id " +
+        std::to_string(id) + " was not a MaliputRailcar.");
   }
   DRAKE_ASSERT(diagram_ != nullptr);
   DRAKE_ASSERT(simulator_ != nullptr);
   systems::Context<T>* context = diagram_->GetMutableSubsystemContext(
       simulator_->get_mutable_context(), railcar);
   context->FixInputPort(railcar->command_input().get_index(),
-      systems::BasicVector<double>::Make(acceleration));
+                        systems::BasicVector<double>::Make(acceleration));
 }
 
 template <typename T>
@@ -343,7 +327,8 @@ template <typename T>
 const maliput::api::Lane* AutomotiveSimulator<T>::FindLane(
     const std::string& name) const {
   if (road_ == nullptr) {
-    throw std::runtime_error("AutomotiveSimulator::FindLane(): RoadGeometry "
+    throw std::runtime_error(
+        "AutomotiveSimulator::FindLane(): RoadGeometry "
         "not set. Please call SetRoadGeometry() first before calling this "
         "method.");
   }
@@ -359,8 +344,10 @@ const maliput::api::Lane* AutomotiveSimulator<T>::FindLane(
       }
     }
   }
-  throw std::runtime_error("AutomotiveSimulator::FindLane(): Failed to find "
-      "lane named \"" + name + "\".");
+  throw std::runtime_error(
+      "AutomotiveSimulator::FindLane(): Failed to find "
+      "lane named \"" +
+      name + "\".");
 }
 
 template <typename T>
@@ -368,14 +355,11 @@ void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
   std::string filename = road_->id().id;
   std::transform(filename.begin(), filename.end(), filename.begin(),
                  [](char ch) { return ch == ' ' ? '_' : ch; });
-  maliput::utility::GenerateUrdfFile(road_.get(),
-                                     "/tmp", filename,
+  maliput::utility::GenerateUrdfFile(road_.get(), "/tmp", filename,
                                      maliput::utility::ObjFeatures());
   const std::string urdf_filepath = "/tmp/" + filename + ".urdf";
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      urdf_filepath,
-      drake::multibody::joints::kFixed,
-      tree_.get());
+      urdf_filepath, drake::multibody::joints::kFixed, tree_.get());
 }
 
 template <typename T>
@@ -385,7 +369,7 @@ void AutomotiveSimulator<T>::AddPublisher(const MaliputRailcar<T>& system,
   static const MaliputRailcarStateTranslator translator;
   const std::string channel =
       std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE";
-  auto publisher =  builder_->template AddSystem<LcmPublisherSystem>(
+  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
   builder_->Connect(system.state_output(), publisher->get_input_port(0));
 }
@@ -463,8 +447,8 @@ void AutomotiveSimulator<T>::TransmitLoadMessage() {
   const lcmt_viewer_load_robot load_terrain_message =
       multibody::CreateLoadRobotMessage<T>(*tree_);
   lcmt_viewer_load_robot load_message;
-  load_message.num_links = load_car_message.num_links +
-                           load_terrain_message.num_links;
+  load_message.num_links =
+      load_car_message.num_links + load_terrain_message.num_links;
   for (int i = 0; i < load_car_message.num_links; ++i) {
     load_message.link.push_back(load_car_message.link.at(i));
   }
@@ -489,18 +473,16 @@ template <typename T>
 void AutomotiveSimulator<T>::Build() {
   DRAKE_DEMAND(diagram_ == nullptr);
 
-  builder_->Connect(
-      aggregator_->get_output_port(0),
-      car_vis_applicator_->get_car_poses_input_port());
+  builder_->Connect(aggregator_->get_output_port(0),
+                    car_vis_applicator_->get_car_poses_input_port());
   builder_->Connect(
       car_vis_applicator_->get_visual_geometry_poses_output_port(),
       bundle_to_draw_->get_input_port(0));
-  lcm_publisher_ = builder_->AddSystem(
-      LcmPublisherSystem::Make<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW",
-                                                 lcm_.get()));
-  builder_->Connect(
-      bundle_to_draw_->get_output_port(0),
-      lcm_publisher_->get_input_port(0));
+  lcm_publisher_ =
+      builder_->AddSystem(LcmPublisherSystem::Make<lcmt_viewer_draw>(
+          "DRAKE_VIEWER_DRAW", lcm_.get()));
+  builder_->Connect(bundle_to_draw_->get_output_port(0),
+                    lcm_publisher_->get_input_port(0));
 
   diagram_ = builder_->Build();
   diagram_->set_name("AutomotiveSimulator");
@@ -526,7 +508,6 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   simulator_->get_mutable_integrator()->set_maximum_step_size(0.01);
   simulator_->get_mutable_integrator()->set_minimum_step_size(0.01);
 
-  usleep(3 * 1e6);
   simulator_->Initialize();
 }
 
@@ -537,9 +518,10 @@ void AutomotiveSimulator<T>::InitializeSimpleCars() {
     const SimpleCarState<T>& initial_state = pair.second;
 
     systems::VectorBase<T>* context_state =
-        diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(),
-                                             car)
-        ->get_mutable_continuous_state()->get_mutable_vector();
+        diagram_
+            ->GetMutableSubsystemContext(simulator_->get_mutable_context(), car)
+            ->get_mutable_continuous_state()
+            ->get_mutable_vector();
     SimpleCarState<T>* const state =
         dynamic_cast<SimpleCarState<T>*>(context_state);
     DRAKE_ASSERT(state);
@@ -555,7 +537,7 @@ void AutomotiveSimulator<T>::InitializeMaliputRailcars() {
     const MaliputRailcarState<T>& initial_state = pair.second.second;
 
     systems::Context<T>* context = diagram_->GetMutableSubsystemContext(
-         simulator_->get_mutable_context(), car);
+        simulator_->get_mutable_context(), car);
     DRAKE_DEMAND(context != nullptr);
 
     systems::VectorBase<T>* context_state =
@@ -589,8 +571,10 @@ template <typename T>
 void AutomotiveSimulator<T>::CheckNameUniqueness(const std::string& name) {
   for (const auto& vehicle : vehicles_) {
     if (vehicle.second->get_name() == name) {
-      throw std::runtime_error("A vehicle named \"" + name + "\" already "
-          "exists. It has id " + std::to_string(vehicle.first) + ".");
+      throw std::runtime_error("A vehicle named \"" + name +
+                               "\" already "
+                               "exists. It has id " +
+                               std::to_string(vehicle.first) + ".");
     }
   }
 }

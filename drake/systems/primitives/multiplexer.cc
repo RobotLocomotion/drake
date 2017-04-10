@@ -25,6 +25,15 @@ Multiplexer<T>::Multiplexer(std::vector<int> input_sizes)
 }
 
 template <typename T>
+Multiplexer<T>::Multiplexer(const systems::BasicVector<T>& model_vector)
+    : input_sizes_(std::vector<int>(model_vector.size(), 1)) {
+  for (int i = 0; i < model_vector.size(); ++i) {
+    this->DeclareInputPort(kVectorValued, 1);
+  }
+  this->DeclareVectorOutputPort(model_vector);
+}
+
+template <typename T>
 void Multiplexer<T>::DoCalcOutput(const Context<T>& context,
                                   SystemOutput<T>* output) const {
   auto output_vector = System<T>::GetMutableOutputVector(output, 0);
