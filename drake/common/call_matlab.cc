@@ -78,9 +78,9 @@ void ToMatlabArray(const std::string& str,
 
 void internal::PublishCallMatlab(const MatlabRPC& message) {
   // TODO(russt): Provide option for setting the filename.
-  static never_destroyed<google::protobuf::io::FileOutputStream> raw_output(open("/tmp/matlab_rpc", O_WRONLY | O_CREAT, S_IRWXU));
+  static google::protobuf::io::FileOutputStream raw_output(open("/tmp/matlab_rpc", O_WRONLY | O_CREAT, S_IRWXU));
 
-  google::protobuf::io::CodedOutputStream output(&raw_output.access());
+  google::protobuf::io::CodedOutputStream output(&raw_output);
 
   // Write the size.
   const int size = message.ByteSize();

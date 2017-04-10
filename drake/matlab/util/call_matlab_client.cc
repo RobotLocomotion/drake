@@ -56,17 +56,22 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 //  FlushMatlabEventBuffer();
 
   std::map<int64_t, mxArray*> client_vars_;
-  drake::common::MatlabRPC message;
 
   // Read the size.
   uint32_t size;
-  while (!input.ReadVarint32(&size)) {
+  while (input.ReadVarint32(&size)) {
+    mexPrintf("Reading %d bytes\n", size);
     // Tell the stream not to read beyond that size.
     auto limit = input.PushLimit(size);
 
     // Parse the message.
-    if (!message.MergePartialFromCodedStream(&input)) return;
-    if (!input.ConsumedEntireMessage()) return;
+    drake::common::MatlabRPC message;
+    if (!message.MergePartialFromCodedStream(&input)) {
+      mexErrMsgTxt("Failed to read from coded stream");
+    }
+    if (!input.ConsumedEntireMessage()) {
+      mexErrMsgTxt("Failed to consume entire message");
+    }
 
     // Release the limit.
     input.PopLimit(limit);
@@ -81,9 +86,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 //      if (num_bytes == 0) {
 //        mexPrintf("rhs %d seems to have zero bytes.  dropping message %s.\n",
 //                  i, message.function_name().c_str());
-        mexPrintf("type: %d\n", message.rhs(i).type());
-        mexPrintf("rows: %d\n", message.rhs(i).rows());
-        mexPrintf("cols: %d\n", message.rhs(i).cols());
+      mexPrintf("type: %d\n", message.rhs(i).type());
+      mexPrintf("rows: %d\n", message.rhs(i).rows());
+      mexPrintf("cols: %d\n", message.rhs(i).cols());
 //        for (int j = 0; j < i; j++) {
 //          mxDestroyArray(rhs[j]);
 //        }
@@ -146,33 +151,33 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
           }
           return;
       }
+    }
 
-      // Make the actual call to MATLAB.
-      bool trapped_error = mexCallMATLABsafe(
-        static_cast<int>(lhs.size()), lhs.data(),
-        static_cast<int>(rhs.size()), rhs.data(), message.function_name().c_str());
+    // Make the actual call to MATLAB.
+    bool trapped_error = mexCallMATLABsafe(
+      static_cast<int>(lhs.size()), lhs.data(),
+      static_cast<int>(rhs.size()), rhs.data(), message.function_name().c_str());
 
-      if (!trapped_error) {
-        // Assign any local variables that were returned by this call.
-        for (i = 0; i < message.lhs_size(); i++) {
-          // Zap any old variables that will be overwritten by this call.
-          if (client_vars_.find(message.lhs(i)) != client_vars_.end())
-            mxDestroyArray(client_vars_[message.lhs(i)]);
-          client_vars_[message.lhs(i)] = lhs[i];
-        }
+    if (!trapped_error) {
+      // Assign any local variables that were returned by this call.
+      for (i = 0; i < message.lhs_size(); i++) {
+        // Zap any old variables that will be overwritten by this call.
+        if (client_vars_.find(message.lhs(i)) != client_vars_.end())
+          mxDestroyArray(client_vars_[message.lhs(i)]);
+        client_vars_[message.lhs(i)] = lhs[i];
       }
+    }
 
-      // Clean up the input argument data.
-      for (i = 0; i < static_cast<int>(rhs.size()); i++) {
-        // Make sure it's not a client var.
-        if (message.rhs(i).type() !=
-            drake::common::MatlabArray::REMOTE_VARIABLE_REFERENCE)
-          mxDestroyArray(rhs[i]);
-      }
+    // Clean up the input argument data.
+    for (i = 0; i < static_cast<int>(rhs.size()); i++) {
+      // Make sure it's not a client var.
+      if (message.rhs(i).type() !=
+          drake::common::MatlabArray::REMOTE_VARIABLE_REFERENCE)
+        mxDestroyArray(rhs[i]);
+    }
 
-      if (trapped_error) {
-        break;
-      }
+    if (trapped_error) {
+      break;
     }
   }
 //  FlushMatlabEventBuffer();

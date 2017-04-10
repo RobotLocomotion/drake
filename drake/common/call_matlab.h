@@ -145,7 +145,7 @@ class MatlabRemoteVariable {
   template <typename T, typename... Types>
   void AssembleSubsPrepMsg(MatlabRPC* msg, T first,
                            Types... args) const {
-    const std::string dummy_field_name = "f" + std::to_string(msg->rhs_size()+1);
+    const std::string dummy_field_name = "f" + std::to_string(msg->rhs_size()/2+1);
     ToMatlabArray(dummy_field_name, msg->add_rhs());
     ToMatlabArray(first, msg->add_rhs());
     AssembleSubsPrepMsg(msg, args...);
@@ -154,7 +154,7 @@ class MatlabRemoteVariable {
   template <typename... Types>
   MatlabRemoteVariable AssembleSubstruct(Types... args) const {
     // construct a cell matrix (with one entry for each argument) using
-    // e.g., struct2cell('f1',1:2,'f2','test'))
+    // e.g., struct2cell(struct('f1',1:2,'f2','test'))
     MatlabRemoteVariable temp_struct;
     {
       MatlabRPC msg;
