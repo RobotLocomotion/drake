@@ -31,8 +31,9 @@ IdmController<T>::IdmController(const RoadGeometry& road)
       ego_velocity_index_{
           this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()},
       traffic_index_{this->DeclareAbstractInputPort().get_index()},
-      driving_command_index_{
-          this->DeclareVectorOutputPort(DrivingCommand<T>()).get_index()} {
+      acceleration_index_{
+          this->DeclareVectorOutputPort(systems::BasicVector<T>(1))
+              .get_index()} {
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
 }
 
@@ -57,9 +58,9 @@ const systems::InputPortDescriptor<T>& IdmController<T>::traffic_input() const {
 }
 
 template <typename T>
-const systems::OutputPortDescriptor<T>&
-IdmController<T>::driving_command_output() const {
-  return systems::System<T>::get_output_port(driving_command_index_);
+const systems::OutputPortDescriptor<T>& IdmController<T>::acceleration_output()
+    const {
+  return systems::System<T>::get_output_port(acceleration_index_);
 }
 
 template <typename T>
@@ -84,15 +85,12 @@ void IdmController<T>::DoCalcOutput(const systems::Context<T>& context,
       this->template EvalInputValue<PoseBundle<T>>(context, traffic_index_);
   DRAKE_ASSERT(traffic_poses != nullptr);
 
-  systems::BasicVector<T>* const command_output_vector =
-      output->GetMutableVectorData(driving_command_index_);
-  DRAKE_ASSERT(command_output_vector != nullptr);
-  DrivingCommand<T>* const driving_command =
-      dynamic_cast<DrivingCommand<T>*>(command_output_vector);
-  DRAKE_ASSERT(driving_command != nullptr);
+  systems::BasicVector<T>* const accel_output =
+      output->GetMutableVectorData(acceleration_index_);
+  DRAKE_ASSERT(accel_output != nullptr);
 
   ImplDoCalcOutput(*ego_pose, *ego_velocity, *traffic_poses, idm_params,
-                   driving_command);
+                   accel_output);
 }
 
 template <typename T>
@@ -100,7 +98,7 @@ void IdmController<T>::ImplDoCalcOutput(
     const PoseVector<T>& ego_pose, const FrameVelocity<T>& ego_velocity,
     const PoseBundle<T>& traffic_poses,
     const IdmPlannerParameters<T>& idm_params,
-    DrivingCommand<T>* command) const {
+    systems::BasicVector<T>* command) const {
   DRAKE_DEMAND(idm_params.IsValid());
 
   // Find the single closest car ahead.
@@ -123,10 +121,8 @@ void IdmController<T>::ImplDoCalcOutput(
   const T closing_velocity = s_dot_ego - s_dot_lead;
 
   // Compute the acceleration command from the IDM equation.
-  const T command_acceleration = IdmPlanner<T>::Evaluate(
-      idm_params, s_dot_ego, net_distance, closing_velocity);
-  command->set_acceleration(command_acceleration);
-  command->set_steering_angle(0.);
+  (*command)[0] = IdmPlanner<T>::Evaluate(idm_params, s_dot_ego, net_distance,
+                                          closing_velocity);
 }
 
 // These instantiations must match the API documentation in idm_controller.h.

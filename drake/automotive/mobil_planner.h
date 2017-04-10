@@ -5,10 +5,8 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/idm_planner_parameters.h"
 #include "drake/automotive/gen/mobil_planner_parameters.h"
-#include "drake/automotive/idm_controller.h"
 #include "drake/automotive/idm_planner.h"
 #include "drake/automotive/lane_direction.h"
 #include "drake/automotive/maliput/api/lane.h"
@@ -38,9 +36,7 @@ namespace automotive {
 /// "incentive" (the weighted sum of accelerations that the ego car and its
 /// neighbors gain by changing lanes) - is chosen as the new lane request.  The
 /// request is expressed as a LaneDirection, that references a valid lane in the
-/// provided RoadGeometry and the direction of travel.  MobilPlanner also
-/// creates a longitudinal DrivingCommand for the ego car based on the IDM
-/// equation (see IdmPlanner).
+/// provided RoadGeometry and the direction of travel.
 ///
 /// Assumptions:
 ///   1) The planner supports only symmetric lane change rules, without giving
@@ -61,16 +57,15 @@ namespace automotive {
 /// Input Port 1: A FrameVelocity for the ego car.
 ///   (InputPortDescriptor getter: ego_velocity_input())
 ///
-/// Input Port 2: A PoseBundle for the traffic cars, possibly including the ego
+/// Input Port 2: A BasicVector containing the ego car's commanded acceleration
+///   value intercepted from the vehicle's controller (e.g. IdmController).
+///   (InputPortDescriptor getter: ego_acceleration_input())
+///
+/// Input Port 3: A PoseBundle for the traffic cars, possibly including the ego
 ///   car's pose.
 ///   (InputPortDescriptor getter: traffic_input())
 ///
-/// Output Port 0: A DrivingCommand with the following elements:
-///   * steering angle (unused - outputs 0).
-///   * acceleration.
-///   (OutputPortDescriptor getter: driving_command_output())
-///
-/// Output Port 1: A LaneDirection containing a lane that the ego vehicle must
+/// Output Port 0: A LaneDirection containing a lane that the ego vehicle must
 ///   move into and the direction of travel with respect to the lane's canonical
 ///   direction of travel.  LaneDirection must be consistent with the provided
 ///   road.
@@ -83,7 +78,7 @@ namespace automotive {
 ///     Transportation Research Board, v1999, 2007, pp 86-94.
 ///     http://trrjournalonline.trb.org/doi/abs/10.3141/1999-10.
 template <typename T>
-class MobilPlanner : public IdmController<T> {
+class MobilPlanner : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilPlanner)
 
@@ -95,7 +90,13 @@ class MobilPlanner : public IdmController<T> {
                         bool initial_with_s);
 
   /// See the class description for details on the following input ports.
+  /// @{
+  const systems::InputPortDescriptor<T>& ego_pose_input() const;
+  const systems::InputPortDescriptor<T>& ego_velocity_input() const;
+  const systems::InputPortDescriptor<T>& ego_acceleration_input() const;
+  const systems::InputPortDescriptor<T>& traffic_input() const;
   const systems::OutputPortDescriptor<T>& lane_output() const;
+  /// @}
 
  private:
   typedef typename std::pair<const pose_selector::RoadOdometry<T>,
@@ -109,7 +110,7 @@ class MobilPlanner : public IdmController<T> {
   void ImplDoCalcLane(const systems::rendering::PoseVector<T>& ego_pose,
                       const systems::rendering::FrameVelocity<T>& ego_velocity,
                       const systems::rendering::PoseBundle<T>& traffic_poses,
-                      const DrivingCommand<T>& driving_command,
+                      const systems::BasicVector<T>& ego_accel_command,
                       const IdmPlannerParameters<T>& idm_params,
                       const MobilPlannerParameters<T>& mobil_params,
                       LaneDirection* lane_direction) const;
@@ -148,10 +149,15 @@ class MobilPlanner : public IdmController<T> {
       const pose_selector::RoadOdometry<T>& ego_odometry,
       const pose_selector::RoadOdometry<T>& lead_car_odometry) const;
 
+  const maliput::api::RoadGeometry& road_;
   const bool with_s_{true};
 
-  // Index for the lane output port.
-  const int lane_index_;
+  // Indices for the input / output ports.
+  const int ego_pose_index_{};
+  const int ego_velocity_index_{};
+  const int ego_acceleration_index_{};
+  const int traffic_index_{};
+  const int lane_index_{};
 };
 
 }  // namespace automotive
