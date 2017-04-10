@@ -115,15 +115,8 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   // Makes the expected output: should be [kStart + 1, ... kEnd]. kStart is
   // used to initialize the loop's initial context, so it's not used for
   // computation, thus is not reflected in the output.
-  //
-  // TODO(siyuan): fix this:
-  // The extra 0 in the front is due to Simulator calls Publish() in it's
-  // Initialization() which causes the logger to log the extra zero. This
-  // should be fixed in a separate PR that properly address the publish
-  // on initialization behavior.
-  VectorX<double> expected(kEnd - kStart);
-  expected(0) = 0;
-  int ctr = 1;
+  VectorX<double> expected(kEnd - kStart - 1);
+  int ctr = 0;
   for (int i = kStart + 1; i < kEnd; i++) {
     expected(ctr++) = i;
   }

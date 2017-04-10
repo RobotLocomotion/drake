@@ -41,9 +41,6 @@ const int kNumJoints = 7;
 // Create a system which has an integrator on the interpolated
 // reference position for received plans.
 int DoMain() {
-  DRAKE_ABORT_MSG("this example is temporarily broken, and will be "
-      "fixed after #5672 is merged");
-
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
@@ -88,6 +85,11 @@ int DoMain() {
   const systems::AbstractValue& first_msg = loop.WaitForMessage();
   double msg_time =
       loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
+  const lcmt_iiwa_status& first_status = first_msg.GetValue<lcmt_iiwa_status>();
+  VectorX<double> q0(kNumJoints);
+  DRAKE_DEMAND(kNumJoints == first_status.num_joints);
+  for (int i = 0; i < kNumJoints; i++)
+    q0[i] = first_status.joint_position_measured[i];
 
   systems::Context<double>* diagram_context = loop.get_mutable_context();
   systems::Context<double>* status_sub_context =
@@ -96,7 +98,10 @@ int DoMain() {
 
   // Explicit initialization.
   diagram_context->set_time(msg_time);
-
+  auto plan_source_context =
+      diagram->GetMutableSubsystemContext(diagram_context, plan_source);
+  plan_source->Initialize(msg_time, q0,
+                          plan_source_context->get_mutable_state());
 
   loop.RunToSecondsAssumingInitialized();
   return 0;
