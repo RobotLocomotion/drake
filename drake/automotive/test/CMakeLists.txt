@@ -28,6 +28,12 @@ target_link_libraries(monolane_onramp_merge_test drakeAutomotive)
 drake_add_cc_test(pose_selector_test)
 target_link_libraries(pose_selector_test drakeAutomotive)
 
+drake_add_cc_test(pure_pursuit_test)
+target_link_libraries(pure_pursuit_test drakeAutomotive)
+
+drake_add_cc_test(pure_pursuit_controller_test)
+target_link_libraries(pure_pursuit_controller_test drakeAutomotive)
+
 drake_add_cc_test(idm_controller_test)
 target_link_libraries(idm_controller_test drakeAutomotive)
 
