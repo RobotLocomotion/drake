@@ -1,4 +1,4 @@
-#include "drake/common/drake_cloneable.h"
+#include "drake/common/is_cloneable.h"
 
 #include <memory>
 
@@ -55,8 +55,14 @@ class CloneToParent : public Base {
   }
 };
 
-GTEST_TEST(IsCloneableTest, CloneToParentFail) {
-  EXPECT_TRUE(is_cloneable<CloneToParent>::value);
+// This tests the cloneability of a class that *does* have a const Clone()
+// method, but the return type is a parent class type. This is not cloneable
+// because it would amount to:
+//   Base* base_ptr = nullptr;
+//   Derived* ptr = base_ptr;
+// which is clearly invalid.
+GTEST_TEST(IsCloneableTest, CloneUsingInheritedMethod) {
+  EXPECT_FALSE(is_cloneable<CloneToParent>::value);
 }
 
 // A class with no copy constructor and a Clone method with the wrong return
@@ -102,6 +108,8 @@ GTEST_TEST(IsCloneableTest, UnCopyableFail) {
 // NOT CLONEABLE! (But copyable.)
 class BadCloneCopy {
  public:
+  BadCloneCopy() {}
+  BadCloneCopy(const BadCloneCopy& f) = default;
   BadCloneCopy* Clone() const { return new BadCloneCopy(); }
 };
 
@@ -119,6 +127,12 @@ class NoClone {
 
 GTEST_TEST(IsCloneableTest, CopyableButNoCloneFail) {
   EXPECT_FALSE(is_cloneable<NoClone>::value);
+}
+
+// Confirms that a const type is still considered cloneable if the type is
+// cloneable.
+GTEST_TEST(IsCloneableTest, TestConstType) {
+  EXPECT_TRUE(is_cloneable<const CloneOnly>::value);
 }
 
 }  // namespace

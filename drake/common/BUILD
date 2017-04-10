@@ -18,10 +18,8 @@ drake_cc_library(
     ],
     hdrs = [
         "constants.h",
-        "copyable_unique_ptr.h",
         "drake_assert.h",
         "drake_compat.h",
-        "drake_cloneable.h",
         "drake_copyable.h",
         "drake_deprecated.h",
         "drake_optional.h",
@@ -248,6 +246,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "is_cloneable",
+    srcs = [],
+    hdrs = ["is_cloneable.h"],
+)
+
+drake_cc_library(
+    name = "copyable_unique_ptr",
+    srcs = [],
+    hdrs = ["copyable_unique_ptr.h"],
+    deps = [":is_cloneable"],
+)
+
+drake_cc_library(
     name = "reinit_after_move",
     hdrs = ["reinit_after_move.h"],
 )
@@ -375,16 +386,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "drake_cloneable_test",
+    name = "is_cloneable_test",
     deps = [
-        ":common",
+        ":is_cloneable",
     ],
 )
 
 drake_cc_googletest(
     name = "copyable_unique_ptr_test",
     deps = [
-        ":common",
+        ":copyable_unique_ptr",
         ":is_dynamic_castable",
     ],
 )
