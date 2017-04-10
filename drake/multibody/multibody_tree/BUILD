@@ -84,4 +84,22 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "spatial_inertia",
+    srcs = [],
+    hdrs = ["spatial_inertia.h"],
+    deps = [
+        ":unit_inertia",
+        "//drake/math:gradient",
+        "//drake/multibody/multibody_tree/math:spatial_algebra",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spatial_inertia_tests",
+    deps = [
+        ":spatial_inertia",
+    ],
+)
+
 cpplint()

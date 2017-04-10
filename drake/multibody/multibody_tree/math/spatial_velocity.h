@@ -19,23 +19,23 @@ template <typename T> class SpatialForce;
 /// quantities that are pairs of ordinary 3-vectors. Elements 0-2 are
 /// the angular velocity component while elements 3-5 are the translational
 /// velocity. Spatial velocities represent the motion of a "moving frame"
-/// `B` measured with respect to a "measured-in" frame `A`. In addition,
+/// B measured with respect to a "measured-in" frame A. In addition,
 /// the two contained vectors must be expressed in the same "expressed-in"
-/// frame `E`, which may be distinct from either `A` or `B`. Finally,
+/// frame E, which may be distinct from either A or B. Finally,
 /// while angular velocity is identical for any frame fixed to a rigid
 /// body, translational velocity refers to a particular point. Only the
 /// vector values are stored in a %SpatialVelocity object; the three
 /// frames and the point must be understood from context. It is the
 /// responsibility of the user to keep track of them. That is best
 /// accomplished through disciplined notation. In source code we use
-/// monogram notation where capital `V` is used to designate a spatial
-/// velocity quantity. We write a point `P` fixed to body (or frame)
-/// `B` as @f$B_P@f$ which appears in code and comments as `Bp`. Then
+/// monogram notation where capital V is used to designate a spatial
+/// velocity quantity. We write a point P fixed to body (or frame)
+/// B as @f$B_P@f$ which appears in code and comments as `Bp`. Then
 /// we write a particular spatial velocity as `V_ABp_E` where the `_E`
-/// suffix indicates that the expressed-in frame is `E`. This symbol
-/// represents the angular velocity of frame `B` in frame `A`, and the
-/// translational velocity of point `P` in `A`, where `P` is fixed to
-/// frame `B`, with both vectors expressed in `E`. Very often
+/// suffix indicates that the expressed-in frame is E. This symbol
+/// represents the angular velocity of frame B in frame A, and the
+/// translational velocity of point P in A, where P is fixed to
+/// frame B, with both vectors expressed in E. Very often
 /// the point of interest will be the body origin `Bo`; if no point is
 /// shown the origin is understood, so `V_AB_E` means `V_ABo_E`.
 /// For a more detailed introduction on spatial vectors and the monogram
@@ -67,7 +67,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 
   /// SpatialVelocity constructor from an Eigen expression that represents a
   /// six-dimensional vector.
-  /// This constructor will assert the size of `V` is six (6) at compile-time
+  /// This constructor will assert the size of V is six (6) at compile-time
   /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
   /// expressions.
   template <typename Derived>
@@ -75,16 +75,16 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 
   /// In-place shift of a %SpatialVelocity from one point on a rigid body
   /// or frame to another point on the same body or frame.
-  /// `this` spatial velocity `V_ABp_E` of a frame `B` at a point `P` fixed
-  /// on `B`, measured in a frame `A`, and expressed in a frame `E`, is
+  /// `this` spatial velocity `V_ABp_E` of a frame B at a point P fixed
+  /// on B, measured in a frame A, and expressed in a frame E, is
   /// modified to become `V_ABq_E`, representing the velocity of another
-  /// point `Q` on `B` instead (see class comment for more about this
+  /// point Q on B instead (see class comment for more about this
   /// notation). This requires adjusting the translational (linear) velocity
-  /// component to account for the velocity difference between `P` and `Q`
-  /// due to the angular velocity of `B` in `A`.
+  /// component to account for the velocity difference between P and Q
+  /// due to the angular velocity of B in A.
   ///
-  /// We are given the vector from point `P` to point `Q`, as a position
-  /// vector `p_BpBq_E` (or `p_PQ_E`) expressed in the same frame `E` as the
+  /// We are given the vector from point P to point Q, as a position
+  /// vector `p_BpBq_E` (or `p_PQ_E`) expressed in the same frame E as the
   /// spatial velocity. The operation performed, in coordinate-free form, is:
   /// <pre>
   ///   w_AB  = w_AB,  i.e. the angular velocity is unchanged.
@@ -94,20 +94,20 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// respectively.
   ///
   /// For computation, all quantities above must be expressed in a common
-  /// frame `E`; we add an `_E` suffix to each symbol to indicate that.
+  /// frame E; we add an `_E` suffix to each symbol to indicate that.
   ///
   /// This operation is performed in-place modifying the original object.
   ///
   /// @param[in] p_BpBq_E
-  ///   Shift vector from point `P` of body `B` to point `Q` of `B`,
-  ///   expressed in frame `E`. The "from" point `Bp` must be the point
+  ///   Shift vector from point P of body B to point Q of B,
+  ///   expressed in frame E. The "from" point `Bp` must be the point
   ///   whose velocity is currently represented in this spatial velocity,
-  ///   and `E` must be the same expressed-in frame as for this spatial
+  ///   and E must be the same expressed-in frame as for this spatial
   ///   velocity.
   ///
   /// @returns A reference to `this` spatial velocity which is now `V_ABq_E`,
-  ///   that is, the spatial velocity of frame `B` at point `Q`, still
-  ///   measured in frame `A` and expressed in frame `E`.
+  ///   that is, the spatial velocity of frame B at point Q, still
+  ///   measured in frame A and expressed in frame E.
   ///
   /// @see Shift() to compute the shifted spatial velocity without modifying
   ///      this original object.
@@ -123,15 +123,15 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// ShiftInPlace() for more information.
   ///
   /// @param[in] p_BpBq_E
-  ///   Shift vector from point `P` of body `B` to point `Q` of `B`,
-  ///   expressed in frame `E`. The "from" point `Bp` must be the point
+  ///   Shift vector from point P of body B to point Q of B,
+  ///   expressed in frame E. The "from" point `Bp` must be the point
   ///   whose velocity is currently represented in this spatial velocity,
-  ///   and `E` must be the same expressed-in frame as for this spatial
+  ///   and E must be the same expressed-in frame as for this spatial
   ///   velocity.
   ///
   /// @retval V_ABq_E
-  ///   The spatial velocity of frame `B` at point `Q`, measured in frame
-  ///   `A` and expressed in frame `E`.
+  ///   The spatial velocity of frame B at point Q, measured in frame
+  ///   A and expressed in frame E.
   ///
   /// @see ShiftInPlace() to compute the shifted spatial velocity in-place
   ///      modifying the original object.
@@ -139,18 +139,18 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return SpatialVelocity<T>(*this).ShiftInPlace(p_BQ_E);
   }
 
-  /// Given `this` spatial velocity `V_IBp_E` of point `P` of body `B`,
-  /// measured in an inertial frame `I` and expressed in a frame `E`,
+  /// Given `this` spatial velocity `V_IBp_E` of point P of body B,
+  /// measured in an inertial frame I and expressed in a frame E,
   /// this method computes the 6-dimensional dot product with the spatial
-  /// force `F_Bp_E` applied to point `P`, and expressed in the same
-  /// frame `E` in which the spatial velocity is expressed.
+  /// force `F_Bp_E` applied to point P, and expressed in the same
+  /// frame E in which the spatial velocity is expressed.
   /// This dot-product represents the power generated by the spatial force
   /// when its body and application point have `this` spatial velocity.
   /// Although the two spatial vectors must be expressed in the same frame,
   /// the result is independent of that frame.
   ///
   /// @warning The result of this method cannot be interpreted as power unless
-  ///          `this` spatial velocity is measured in an inertial frame `I`,
+  ///          `this` spatial velocity is measured in an inertial frame I,
   ///          which cannot be enforced by this class.
   T dot(const SpatialForce<T>& F_Q_E) const;
 };
