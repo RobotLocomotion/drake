@@ -24,6 +24,12 @@ class FixedOffsetFrame : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FixedOffsetFrame)
 
+  // Users are forced to create new rigid body frames with the Create()
+  // factories.
+  FixedOffsetFrame(const Frame<T>& P, const Isometry3<T>& X_PF);
+
+  FixedOffsetFrame(const Body<T>& P, const Isometry3<T>& X_PF);
+
   /// Creates a physical frame with a fixed pose `X_BF` measured and expressed
   /// in the frame B of the input `body`.
   /// The new %FixedOffsetFrame is added to the MultibodyTree `tree`, which
@@ -80,10 +86,6 @@ class FixedOffsetFrame : public Frame<T> {
   }
 
  private:
-  // Users are forced to create new rigid body frames with the Create()
-  // factories.
-  FixedOffsetFrame(const Frame<T>& P, const Isometry3<T>& X_PF);
-
   // The fixed pose of this frame F measured and expressed in another physical
   // frame P.
   Isometry3<T> X_PF_;

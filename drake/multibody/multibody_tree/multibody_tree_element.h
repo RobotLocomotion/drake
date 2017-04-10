@@ -67,9 +67,6 @@ class MultibodyTreeElement;
 template <template <typename> class ElementType,
     typename T, typename ElementIndexType>
 class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
-  // The owning MultibodyTree has access to protected methods in this class to
-  // set the owning parent tree and its unique index in that tree.
-  friend class MultibodyTree<T>;
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeElement)
 
@@ -149,10 +146,15 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   // their default constructors if they need to.
   MultibodyTreeElement() {}
 
-  // Only derived sub-classes can call these set methods from within their
-  // Create() factories.
-  void set_parent_tree(const MultibodyTree<T>* tree) { parent_tree_ = tree; }
-  void set_index(ElementIndexType index) { index_ = index; }
+  // MultibodyTree<T> is a natural friend of MultibodyTreeElement objects and
+  // therefore it can set the owning parent tree and unique index in that tree.
+  friend class MultibodyTree<T>;
+  void set_parent_tree(
+      const MultibodyTree<T>* tree, ElementIndexType index)
+  {
+    index_ = index;
+    parent_tree_ = tree;
+  }
 
  private:
   const MultibodyTree<T>* parent_tree_{nullptr};

@@ -91,10 +91,14 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// deformations for this body. A rigid body will therefore return zero.
   virtual int get_num_flexible_velocities() const = 0;
 
-  /// Returns a constant reference to the associated BodyFrame in the parent
-  /// MultibodyTree.
+  /// Returns a constant reference to the associated BodyFrame.
   const BodyFrame<T>& get_body_frame() const {
     return body_frame_;
+  }
+
+  /// Returns a mutable pointer to the associated BodyFrame.
+  BodyFrame<T>* get_mutable_body_frame() {
+    return &body_frame_;
   }
 
   /// At MultibodyTree::Compile() time, each body retrieves its topology

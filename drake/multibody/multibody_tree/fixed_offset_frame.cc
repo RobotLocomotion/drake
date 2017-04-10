@@ -14,42 +14,20 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-const FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
-    MultibodyTree<T>* tree,
-    const Body<T>& body, const Isometry3<T>& X_BF) {
-  // Notice that here we cannot use std::make_unique since constructors are made
-  // private to avoid users creating bodies by other means other than calling
-  // Create().
-  // However we can still create a unique_ptr as below where ownership is clear
-  // and an exception would call the destructor.
-  return *tree->AddFrame(
-      std::unique_ptr<FixedOffsetFrame<T>>(
-          new FixedOffsetFrame<T>(body.get_body_frame(), X_BF)));
-}
-
-template <typename T>
-const FixedOffsetFrame<T>& FixedOffsetFrame<T>::Create(
-    MultibodyTree<T>* tree,
-    const Frame<T>& P, const Isometry3<T>& X_PF) {
+FixedOffsetFrame<T>::FixedOffsetFrame(
+    const Frame<T>& P, const Isometry3<T>& X_PF) :
+    Frame<T>(P.get_body()), X_PF_(X_PF) {
   if (dynamic_cast<const BodyFrame<T>*>(&P) == nullptr) {
     throw std::logic_error(
         "Chaining of FixedOffsetFrame frames is not yet supported. "
-            "Therefore we only allow to fix frames to body frames.");
+        "Therefore we only allow to fix frames to body frames.");
   }
-
-  // Notice that here we cannot use std::make_unique since constructors are made
-  // private to avoid users creating bodies by other means other than calling
-  // Create().
-  // However we can still create a unique_ptr as below where ownership is clear
-  // and an exception would call the destructor.
-  return *tree->AddFrame(
-      std::unique_ptr<FixedOffsetFrame<T>>(new FixedOffsetFrame<T>(P, X_PF)));
 }
 
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
-    const Frame<T>& P, const Isometry3<T>& X_PF) :
-    Frame<T>(P.get_body()), X_PF_(X_PF) {}
+    const Body<T>& B, const Isometry3<T>& X_BF) :
+    Frame<T>(B), X_PF_(X_BF) {}
 
 // Explicitly instantiates on the most common scalar types.
 template class FixedOffsetFrame<double>;

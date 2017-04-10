@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -75,16 +76,37 @@ class MultibodyTree {
   ///
   /// @tparam BodyType The type of the specific sub-class of Body to add.
   template <class BodyType>
-  BodyType* AddBody(std::unique_ptr<BodyType> body) {
+  const BodyType& AddBody(std::unique_ptr<BodyType> body) {
     static_assert(std::is_convertible<BodyType*, Body<T>*>::value,
                   "BodyType must be a sub-class of Body<T>.");
+    if (topology_.is_valid) {
+      throw std::logic_error("This MultibodyTree is compiled already. "
+                             "Therefore adding more bodies is not allowed. "
+                             "See documentation for Compile() for details.");
+    }
     if (body == nullptr) {
       throw std::logic_error("Input body is an invalid nullptr.");
     }
-    topology_.invalidate();
+    BodyIndex body_index(0);
+    FrameIndex body_frame_index(0);
+    std::tie(body_index, body_frame_index) = topology_.add_body();
+    DRAKE_ASSERT(body_index == get_num_bodies());
+    DRAKE_ASSERT(body_frame_index == get_num_frames());
+
+    // TODO(amcastro-tri): consider not depending on setting this pointer at
+    // all. Consider also removing MultibodyTreeElement altogether.
+    body->set_parent_tree(this, body_index);
+    Frame<T>* body_frame = body->get_mutable_body_frame();
+    body_frame->set_parent_tree(this, body_frame_index);
+    frames_.push_back(body_frame);
     BodyType* raw_body_ptr = body.get();
     owned_bodies_.push_back(std::move(body));
-    return raw_body_ptr;
+    return *raw_body_ptr;
+  }
+
+  template<template<typename Scalar> class BodyType, typename... Args>
+  const BodyType<T>& AddBody(Args&&... args) {
+    return AddBody(std::make_unique<BodyType<T>>(std::forward<Args>(args)...));
   }
 
   /// Takes ownership of `frame` and adds it to `this` %MultibodyTree. Returns a
@@ -109,17 +131,33 @@ class MultibodyTree {
   /// @tparam FrameType The type of the specific sub-class of Frame to
   ///                   add.
   template <class FrameType>
-  FrameType* AddFrame(std::unique_ptr<FrameType> frame) {
+  const FrameType& AddFrame(std::unique_ptr<FrameType> frame) {
     static_assert(std::is_convertible<FrameType*, Frame<T>*>::value,
                   "FrameType must be a sub-class of Frame<T>.");
+    if (topology_.is_valid) {
+      throw std::logic_error("This MultibodyTree is compiled already. "
+                             "Therefore adding more frames is not allowed. "
+                             "See documentation for Compile() for details.");
+    }
     if (frame == nullptr) {
       throw std::logic_error("Input frame is an invalid nullptr.");
     }
-    topology_.invalidate();
+    FrameIndex frame_index = topology_.add_frame(frame->get_body().get_index());
+    DRAKE_ASSERT(frame_index == get_num_frames());
+    // TODO(amcastro-tri): consider not depending on setting this pointer at
+    // all. Consider also removing MultibodyTreeElement altogether.
+    frame->set_parent_tree(this, frame_index);
     FrameType* raw_frame_ptr = frame.get();
+    frames_.push_back(raw_frame_ptr);
     owned_frames_.push_back(std::move(frame));
-    return raw_frame_ptr;
+    return *raw_frame_ptr;
   }
+
+  template<template<typename Scalar> class FrameType, typename... Args>
+  const FrameType<T>& AddFrame(Args&&... args) {
+    return AddFrame(std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
+  }
+
   /// @}
   // Closes Doxygen section.
 
@@ -128,7 +166,7 @@ class MultibodyTree {
   /// the system including the _world_ body. Therefore the minimum number of
   /// frames in a MultibodyTree is one.
   int get_num_frames() const {
-    return static_cast<int>(owned_frames_.size()) + get_num_bodies();
+    return static_cast<int>(frames_.size());
   }
 
   /// Returns the number of bodies in the MultibodyTree including the *world*
@@ -146,14 +184,6 @@ class MultibodyTree {
   const Body<T>& get_body(BodyIndex body_index) const {
     DRAKE_ASSERT(body_index < get_num_bodies());
     return *owned_bodies_[body_index];
-  }
-
-  /// Returns a mutable reference to the body with unique index `body_index`.
-  /// This method aborts in Debug builds when `body_index` does not correspond
-  /// to a body in this multibody tree.
-  Body<T>& get_mutable_body(BodyIndex body_index) {
-    DRAKE_ASSERT(body_index < get_num_bodies());
-    return *owned_bodies_[body_index].get();
   }
 
   /// Returns `true` if this %MultibodyTree was compiled with Compile() after
@@ -191,9 +221,6 @@ class MultibodyTree {
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckInvariants().
 
-  // Sets a flag to indicate the topology got invalidated.
-  void invalidate_topology() { topology_.invalidate(); }
-
   // Sets a flag indicate the topology is valid.
   void validate_topology() { topology_.validate(); }
 
@@ -204,11 +231,6 @@ class MultibodyTree {
   std::vector<Frame<T>*> frames_;
 
   MultibodyTreeTopology topology_;
-
-  // This is the first stage of the Compile() method. It essentially assigns
-  // indexes to each multibody component so that there is a one-to-one mapping
-  // between multibody topologies and the actual multibody elements.
-  void CreateTopologyAnalogues();
 };
 
 }  // namespace multibody

@@ -18,6 +18,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 namespace drake {
@@ -85,30 +86,23 @@ struct MultibodyTreeTopology {
   // Creates and adds a new BodyTopology to this MultibodyTreeTopology.
   // A unique index is assigned to the newly created BodyTopology and a new
   // FrameTopology is created and associated to the body topology.
-  BodyIndex add_body() {
-    invalidate();
+  std::pair<BodyIndex, FrameIndex> add_body() {
     BodyIndex body_index = BodyIndex(get_num_bodies());
-    FrameIndex body_frame = add_frame(body_index);
-    BodyTopology body(body_index, body_frame);
-    bodies.push_back(body);
-    return body.index;
+    FrameIndex body_frame_index = add_frame(body_index);
+    bodies.emplace_back(body_index, body_frame_index);
+    return std::make_pair(body_index, body_frame_index);
   }
 
   // Creates and adds a FrameTopology to this MultibodyTreeTopology.
   // All physical frames are associated with a body here identified by their
   // unique index, body_index.
   FrameIndex add_frame(BodyIndex body_index) {
-    invalidate();
     FrameIndex frame_index(get_num_frames());
-    FrameTopology frame(frame_index, body_index);
-    frames.push_back(frame);
+    frames.emplace_back(frame_index, body_index);
     return frame_index;
   }
 
   bool is_valid{false};
-
-  // Topology is invalidated when more multibody tree elements are added.
-  void invalidate() { is_valid = false; }
 
   /// Topology gets re-validated by MultibodyTree::Compile().
   void validate() { is_valid = true; }

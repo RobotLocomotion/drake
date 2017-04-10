@@ -42,8 +42,11 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   const Body<double>& world_body = model->get_world_body();
 
   // Adds the upper and lower links of the pendulum.
-  const RigidBody<double>& upper_link = RigidBody<double>::Create(model);
-  const RigidBody<double>& lower_link = RigidBody<double>::Create(model);
+  // Using: const BodyType& AddBody(std::unique_ptr<BodyType> body).
+  const RigidBody<double>& upper_link =
+      model->AddBody(make_unique<RigidBody<double>>());
+  // Using: const BodyType<T>& AddBody(Args&&... args)
+  const RigidBody<double>& lower_link = model->AddBody<RigidBody>();
 
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model->get_num_bodies(), 3);
@@ -63,8 +66,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // directly taking a Body, as shown below, which creates a frame with a fixed
   // offset from the body frame moving with the body.
   const auto& shoulder_outboard_frame =
-      FixedOffsetFrame<double>::Create(
-          model, upper_link.get_body_frame(), X_UlSo);
+      model->AddFrame<FixedOffsetFrame>(upper_link.get_body_frame(), X_UlSo);
 
   // Create frames associated with the pendulum's elbow.
   // An inboard frame Ei is rigidly attached to the upper link. It is located at
@@ -80,10 +82,10 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // taking a Body, i.e. creating a frame with a fixed offset from the upper
   // link body frame.
   const auto& elbow_inboard_frame =
-      FixedOffsetFrame<double>::Create(model, upper_link, X_UlEi);
+      model->AddFrame<FixedOffsetFrame>(upper_link, X_UlEi);
   Isometry3d X_LlEo(Translation3d(0.0, +half_link_length, 0.0));
   const auto& elbow_outboard_frame =
-      FixedOffsetFrame<double>::Create(model, lower_link, X_LlEo);
+      model->AddFrame<FixedOffsetFrame>(lower_link, X_LlEo);
 
   // Verify the new number of frames.
   EXPECT_EQ(model->get_num_frames(), 6);

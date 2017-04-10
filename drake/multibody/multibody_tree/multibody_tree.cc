@@ -1,6 +1,6 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
-#include <map>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -15,52 +15,7 @@ template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // TODO(amcastro-tri): Assign an infinite mass to the "world" body when rigid
   // body mass properties are implemented.
-  RigidBody<T>::Create(this);
-}
-
-template <typename T>
-void MultibodyTree<T>::CreateTopologyAnalogues() {
-  auto& body_topologies = topology_.bodies;
-  auto& frame_topologies = topology_.frames;
-
-  // Clears arrays in case we are re-compiling.
-  topology_.clear();
-  frames_.clear();
-
-  body_topologies.reserve(get_num_bodies());
-  frame_topologies.reserve(get_num_frames());
-
-  for (auto& body : owned_bodies_) {
-    // MultibodyTreeTopology::add_body() generates a BodyIndex and a FrameIndex
-    // associated with the corresponding BodyFrame.
-    BodyIndex body_index = topology_.add_body();
-    FrameIndex frame_index = topology_.bodies[body_index].body_frame;
-    DRAKE_DEMAND(static_cast<int>(frame_index) == static_cast<int>(body_index));
-
-    const Frame<T>& body_frame = body->get_body_frame();
-    Frame<T>* raw_body_frame_ptr =
-        const_cast<Frame<T>*>(&body_frame);
-
-    // All physical frames, including body frames (owned by their respective
-    // bodies), are indexed by a FrameIndex within the frames_ array.
-    frames_.push_back(raw_body_frame_ptr);
-
-    // Set indexes for later convenient use during topology
-    // creation/compilation.
-    body->set_index(body_index);
-    raw_body_frame_ptr->set_index(frame_index);
-  }
-  // At this point there should be as many frames as number of bodies since all
-  // frames are body frames. Other physical frames are added below.
-  DRAKE_ASSERT(topology_.get_num_frames() == get_num_bodies());
-
-  // Create the topology counterparts for owned frames.
-  for (auto& frame : owned_frames_) {
-    BodyIndex body_index = frame->get_body().get_index();
-    FrameIndex frame_index = topology_.add_frame(body_index);
-    frames_.push_back(frame.get());
-    frame->set_index(frame_index);
-  }
+  AddBody(std::make_unique<RigidBody<T>>());
 }
 
 template <typename T>
@@ -74,10 +29,6 @@ void MultibodyTree<T>::Compile() {
             "MultibodyTree.");
   }
 
-  // Crete the topology counterparts to all multibody objects. This process
-  // results in the generation of indexes for each multibody object.
-  CreateTopologyAnalogues();
-
   // TODO(amcastro-tri): This is a brief list of operations to be added in
   // subsequent PR's:
   //   - Compile non-T dependent topological information.
@@ -88,17 +39,11 @@ void MultibodyTree<T>::Compile() {
   // Give bodies the chance to perform any compile-time setup.
   for (const auto& body : owned_bodies_) {
     body->Compile(*this);
-    // TODO(amcastro-tri): consider not depending on setting this pointer at
-    // all. Consider also removing MultibodyTreeElement altogether.
-    body->set_parent_tree(this);
   }
 
   // Give frames the chance to perform any compile-time setup.
   for (const auto& frame : owned_frames_) {
     frame->Compile(*this);
-    // TODO(amcastro-tri): consider not depending on setting this pointer at
-    // all. Consider also removing MultibodyTreeElement altogether.
-    frame->set_parent_tree(this);
   }
 
   validate_topology();
