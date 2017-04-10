@@ -22,6 +22,7 @@ drake_cc_library(
         "gen/idm_planner_parameters.cc",
         "gen/maliput_railcar_params.cc",
         "gen/maliput_railcar_state.cc",
+        "gen/mobil_planner_parameters.cc",
         "gen/simple_car_params.cc",
         "gen/simple_car_state.cc",
     ],
@@ -33,6 +34,7 @@ drake_cc_library(
         "gen/idm_planner_parameters.h",
         "gen/maliput_railcar_params.h",
         "gen/maliput_railcar_state.h",
+        "gen/mobil_planner_parameters.h",
         "gen/simple_car_params.h",
         "gen/simple_car_state.h",
     ],
@@ -134,7 +136,6 @@ drake_cc_library(
         ":generated_vectors",
         ":idm_planner",
         ":pose_selector",
-        ":simple_car",
         "//drake/automotive/maliput/api",
         "//drake/math:saturate",
         "//drake/systems/rendering:pose_bundle",
@@ -171,6 +172,25 @@ drake_cc_library(
         ":lane_direction",
         "//drake/automotive/maliput/api",
         "//drake/math:geometric_transform",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "mobil_planner",
+    srcs = ["mobil_planner.cc"],
+    hdrs = ["mobil_planner.h"],
+    deps = [
+        ":generated_vectors",
+        ":idm_controller",
+        ":idm_planner",
+        ":lane_direction",
+        ":pose_selector",
+        "//drake/automotive/maliput/api",
+        "//drake/common:cond",
+        "//drake/common:symbolic",
+        "//drake/math:saturate",
+        "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
 )
@@ -477,9 +497,16 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "idm_test",
+    testonly = 1,
+    hdrs = ["test/idm_test.h"],
+)
+
 drake_cc_googletest(
     name = "idm_controller_test",
     deps = [
+        ":idm_test",
         "//drake/automotive:idm_controller",
         "//drake/automotive/maliput/dragway",
     ],
@@ -489,6 +516,15 @@ drake_cc_googletest(
     name = "idm_planner_test",
     deps = [
         "//drake/automotive:idm_planner",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mobil_planner_test",
+    deps = [
+        ":idm_test",
+        "//drake/automotive:mobil_planner",
+        "//drake/automotive/maliput/dragway",
     ],
 )
 
