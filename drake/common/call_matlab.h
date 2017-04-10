@@ -8,14 +8,15 @@
 
 /// A simple interface for (one-directional) RPC to a simple matlab remote
 /// client.  Methods are provided to serialize our favorite data types into
-/// protobuf
-/// and then published via a named pipe.  The interface is modeled after
+/// protobuf and then published to a file.  The interface is modeled after
 /// mexCallMATLAB
 ///   https://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html
 /// but we use C++11 to provide a much nicer interface.
 ///
-/// To start the client, simply run call_matlab_client from your matlab
-/// terminal.
+/// To play the remote calls in matlab, simply run call_matlab_client from your
+/// matlab terminal.  For synchronous playback, use a named pipe by running
+///    `mkfifo /tmp/matlab_rpc`
+/// in a bash terminal.
 ///
 /// The primary use case that this was designed for was to make MATLAB plotting
 /// available in C++ without requiring the C++ code to link against MATLAB in
