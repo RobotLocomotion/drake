@@ -15,7 +15,7 @@ template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // TODO(amcastro-tri): Assign an infinite mass to the "world" body when rigid
   // body mass properties are implemented.
-  AddBody(std::make_unique<RigidBody<T>>());
+  AddBody<RigidBody>();
 }
 
 template <typename T>
@@ -26,7 +26,7 @@ void MultibodyTree<T>::Compile() {
   if (topology_is_valid()) {
     throw std::logic_error(
         "Attempting to call MultibodyTree::Compile() on an already compiled "
-            "MultibodyTree.");
+        "MultibodyTree.");
   }
 
   // TODO(amcastro-tri): This is a brief list of operations to be added in

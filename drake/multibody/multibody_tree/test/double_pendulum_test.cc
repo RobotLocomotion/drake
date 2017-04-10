@@ -95,6 +95,14 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   EXPECT_NO_THROW(model->Compile());
   EXPECT_TRUE(model->topology_is_valid());  // Valid after Compile().
 
+  // Asserts that no more bodies can be added after compilation.
+  EXPECT_THROW(model->AddBody<RigidBody>(), std::logic_error);
+  EXPECT_THROW(model->AddFrame<FixedOffsetFrame>(lower_link, X_LlEo),
+               std::logic_error);
+
+  // Asserts re-compilation is not allowed.
+  EXPECT_THROW(model->Compile(), std::logic_error);
+
   // Frame indexes are assigned by MultibodyTree. The number of physical frames
   // equals the number of body frames (one per body) plus the number of
   // additional frames added to the system (like FixedOffsetFrame objects).
