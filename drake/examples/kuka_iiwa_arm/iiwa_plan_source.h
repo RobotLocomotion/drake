@@ -38,7 +38,18 @@ class IiwaPlanSource : public systems::LeafSystem<double> {
     return this->get_input_port(status_input_port_);
   }
 
+  /**
+   * Makes a plan to hold at the measured joint configuration @p q0 starting at
+   * @p plan_start_time. This function needs to be explicitly called before any
+   * simulation. Otherwise this aborts in CalcOutput().
+   */
+  void Initialize(double plan_start_time, const VectorX<double>& q0,
+                  systems::State<double>* state) const;
+
  protected:
+  void SetDefaultState(const systems::Context<double>& context,
+                       systems::State<double>* state) const override;
+
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
 

@@ -177,6 +177,12 @@ class Simulator {
     publish_every_time_step_ = publish;
   }
 
+  /** Sets whether the simulation should invoke Publish in Initialize().
+   */
+  void set_publish_at_initialization(bool publish) {
+    publish_at_initialization_ = publish;
+  }
+
   /** Returns true if the simulation should invoke Publish on the System under
    * simulation every time step.  By default, returns true.
    */
@@ -272,6 +278,8 @@ class Simulator {
     return static_cast<U*>(integrator_.get());
   }
 
+
+
   /**
    * Gets a constant reference to the system.
    * @note a mutable reference is not available.
@@ -310,6 +318,8 @@ class Simulator {
   double target_realtime_rate_{0.};
 
   bool publish_every_time_step_{true};
+
+  bool publish_at_initialization_{true};
 
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.
@@ -372,8 +382,10 @@ void Simulator<T>::Initialize() {
   ResetStatistics();
 
   // Do a publish before the simulation starts.
-  system_.Publish(*context_);
-  ++num_publishes_;
+  if (publish_at_initialization_) {
+    system_.Publish(*context_);
+    ++num_publishes_;
+  }
 
   // Initialize runtime variables.
   initialization_done_ = true;
