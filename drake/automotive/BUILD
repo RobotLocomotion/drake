@@ -497,16 +497,9 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_library(
-    name = "idm_test",
-    testonly = 1,
-    hdrs = ["test/idm_test.h"],
-)
-
 drake_cc_googletest(
     name = "idm_controller_test",
     deps = [
-        ":idm_test",
         "//drake/automotive:idm_controller",
         "//drake/automotive/maliput/dragway",
     ],
@@ -522,7 +515,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mobil_planner_test",
     deps = [
-        ":idm_test",
         "//drake/automotive:mobil_planner",
         "//drake/automotive/maliput/dragway",
     ],
