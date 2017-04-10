@@ -41,6 +41,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lcm_driven_loop",
+    srcs = [
+        "lcm_driven_loop.cc",
+    ],
+    hdrs = [
+        "lcm_driven_loop.h",
+    ],
+    deps = [
+        ":lcm",
+        "//drake/lcm:lcm",
+        "//drake/systems/analysis",
+    ],
+)
+
+drake_cc_library(
     name = "lcmt_drake_signal_translator",
     srcs = ["lcmt_drake_signal_translator.cc"],
     hdrs = ["lcmt_drake_signal_translator.h"],
@@ -52,6 +67,17 @@ drake_cc_library(
 )
 
 # === test ===
+drake_cc_googletest(
+    name = "lcm_driven_loop_test",
+    deps = [
+        "//drake/common:eigen_matrix_compare",
+        "//drake/lcm",
+        "//drake/lcmtypes:drake_signal",
+        "//drake/systems/framework",
+        "//drake/systems/lcm:lcm_driven_loop",
+        "//drake/systems/primitives:signal_logger",
+    ],
+)
 
 drake_cc_googletest(
     name = "lcm_publisher_system_test",
