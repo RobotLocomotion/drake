@@ -408,9 +408,9 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   void DoCalcTimeDerivatives(const systems::Context<T>& context,
                              systems::ContinuousState<T>* derivatives)
                                const override;
-  void DoCalcDiscreteVariableUpdates(const systems::Context<T>& context,
-                                     systems::DiscreteState<T>* discrete_state)
-      const override;
+  void DoCalcDiscreteVariableUpdates(
+      const systems::Context<T>& context,
+      systems::DiscreteValues<T>* discrete_state) const override;
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 

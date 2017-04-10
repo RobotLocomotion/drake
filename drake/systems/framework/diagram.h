@@ -18,7 +18,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
-#include "drake/systems/framework/discrete_state.h"
+#include "drake/systems/framework/discrete_values.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
@@ -114,13 +114,13 @@ class DiagramTimeDerivatives : public DiagramContinuousState<T> {
 /// the constituent discrete states. As the name implies, it is only useful
 /// for the discrete updates.
 template <typename T>
-class DiagramDiscreteVariables : public DiscreteState<T> {
+class DiagramDiscreteVariables : public DiscreteValues<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramDiscreteVariables)
 
   explicit DiagramDiscreteVariables(
-      std::vector<std::unique_ptr<DiscreteState<T>>>&& subdiscretes)
-      : DiscreteState<T>(Flatten(Unpack(subdiscretes))),
+      std::vector<std::unique_ptr<DiscreteValues<T>>>&& subdiscretes)
+      : DiscreteValues<T>(Flatten(Unpack(subdiscretes))),
         subdiscretes_(std::move(subdiscretes)) {}
 
   ~DiagramDiscreteVariables() override {}
@@ -129,23 +129,23 @@ class DiagramDiscreteVariables : public DiscreteState<T> {
     return static_cast<int>(subdiscretes_.size());
   }
 
-  DiscreteState<T>* get_mutable_subdifference(int index) {
+  DiscreteValues<T>* get_mutable_subdifference(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_subdifferences());
     return subdiscretes_[index].get();
   }
 
  private:
   std::vector<BasicVector<T>*> Flatten(
-      const std::vector<DiscreteState<T>*>& in) const {
+      const std::vector<DiscreteValues<T>*>& in) const {
     std::vector<BasicVector<T>*> out;
-    for (const DiscreteState<T>* xd : in) {
+    for (const DiscreteValues<T>* xd : in) {
       const std::vector<BasicVector<T>*>& xd_data = xd->get_data();
       out.insert(out.end(), xd_data.begin(), xd_data.end());
     }
     return out;
   }
 
-  std::vector<std::unique_ptr<DiscreteState<T>>> subdiscretes_;
+  std::vector<std::unique_ptr<DiscreteValues<T>>> subdiscretes_;
 };
 
 }  // namespace internal
@@ -358,15 +358,14 @@ class Diagram : public System<T>,
 
   /// Aggregates the discrete update variables from each subsystem into a
   /// DiagramDiscreteVariables.
-  std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables()
       const override {
-    std::vector<std::unique_ptr<DiscreteState<T>>> sub_differences;
+    std::vector<std::unique_ptr<DiscreteValues<T>>> sub_differences;
     for (const System<T>* const system : sorted_systems_) {
       sub_differences.push_back(system->AllocateDiscreteVariables());
     }
-    return std::unique_ptr<DiscreteState<T>>(
-        new internal::DiagramDiscreteVariables<T>(
-            std::move(sub_differences)));
+    return std::unique_ptr<DiscreteValues<T>>(
+        new internal::DiagramDiscreteVariables<T>(std::move(sub_differences)));
   }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -1180,7 +1179,7 @@ class Diagram : public System<T>,
   /// Handles Update callbacks that were registered in DoCalcNextUpdateTime.
   /// Dispatches the Publish events to the subsystems that requested them.
   void HandleUpdate(
-      const Context<T>& context, DiscreteState<T>* update,
+      const Context<T>& context, DiscreteValues<T>* update,
       const std::vector<std::pair<int, UpdateActions<T>>>& sub_actions) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
@@ -1206,7 +1205,7 @@ class Diagram : public System<T>,
       const Context<T>* subcontext =
           diagram_context->GetSubsystemContext(index);
       DRAKE_DEMAND(subcontext != nullptr);
-      DiscreteState<T>* subdifference =
+      DiscreteValues<T>* subdifference =
           diagram_differences->get_mutable_subdifference(index);
       DRAKE_DEMAND(subdifference != nullptr);
 

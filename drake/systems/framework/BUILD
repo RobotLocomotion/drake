@@ -106,9 +106,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "discrete_state",
-    srcs = ["discrete_state.cc"],
-    hdrs = ["discrete_state.h"],
+    name = "discrete_values",
+    srcs = ["discrete_values.cc"],
+    hdrs = ["discrete_values.h"],
     deps = [
         ":value",
         ":vector",
@@ -124,7 +124,7 @@ drake_cc_library(
     deps = [
         ":abstract_values",
         ":continuous_state",
-        ":discrete_state",
+        ":discrete_values",
         ":value",
         ":vector",
         "//drake/common",
@@ -138,7 +138,7 @@ drake_cc_library(
     hdrs = ["parameters.h"],
     deps = [
         ":abstract_values",
-        ":discrete_state",
+        ":discrete_values",
         "//drake/common",
     ],
 )
@@ -408,9 +408,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "discrete_state_test",
+    name = "discrete_values_test",
     deps = [
-        ":discrete_state",
+        ":discrete_values",
         "//drake/common",
     ],
 )

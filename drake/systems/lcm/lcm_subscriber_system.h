@@ -146,11 +146,12 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
-      DiscreteState<double>* discrete_state) const override {
+      DiscreteValues<double>* discrete_state) const override {
     ProcessMessageAndStoreToDiscreteState(discrete_state);
   }
 
-  std::unique_ptr<DiscreteState<double>> AllocateDiscreteState() const override;
+  std::unique_ptr<DiscreteValues<double>> AllocateDiscreteState()
+      const override;
 
   void SetDefaultState(const Context<double>& context,
                        State<double>* state) const override;
@@ -163,7 +164,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
                       drake::lcm::DrakeLcmInterface* lcm);
 
   void ProcessMessageAndStoreToDiscreteState(
-      DiscreteState<double>* discrete_state) const;
+      DiscreteValues<double>* discrete_state) const;
 
   void ProcessMessageAndStoreToAbstractState(
       AbstractValues* abstract_state) const;

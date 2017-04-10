@@ -7,7 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/continuous_state.h"
-#include "drake/systems/framework/discrete_state.h"
+#include "drake/systems/framework/discrete_values.h"
 
 namespace drake {
 namespace systems {
@@ -27,7 +27,7 @@ class State {
   State()
       : abstract_state_(std::make_unique<AbstractValues>()),
         continuous_state_(std::make_unique<ContinuousState<T>>()),
-        discrete_state_(std::make_unique<DiscreteState<T>>()) {}
+        discrete_state_(std::make_unique<DiscreteValues<T>>()) {}
   virtual ~State() {}
 
   void set_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
@@ -43,16 +43,16 @@ class State {
     return continuous_state_.get();
   }
 
-  void set_discrete_state(std::unique_ptr<DiscreteState<T>> xd) {
+  void set_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
     DRAKE_DEMAND(xd != nullptr);
     discrete_state_ = std::move(xd);
   }
 
-  const DiscreteState<T>* get_discrete_state() const {
+  const DiscreteValues<T>* get_discrete_state() const {
     return discrete_state_.get();
   }
 
-  DiscreteState<T>* get_mutable_discrete_state() {
+  DiscreteValues<T>* get_mutable_discrete_state() {
     return discrete_state_.get();
   }
 
@@ -102,7 +102,7 @@ class State {
  private:
   std::unique_ptr<AbstractValues> abstract_state_;
   std::unique_ptr<ContinuousState<T>> continuous_state_;
-  std::unique_ptr<DiscreteState<T>> discrete_state_;
+  std::unique_ptr<DiscreteValues<T>> discrete_state_;
 };
 
 }  // namespace systems

@@ -10,7 +10,7 @@ namespace kuka_iiwa_arm {
 
 using systems::BasicVector;
 using systems::Context;
-using systems::DiscreteState;
+using systems::DiscreteValues;
 using systems::State;
 using systems::SystemOutput;
 
@@ -40,7 +40,7 @@ void IiwaCommandReceiver::set_initial_position(
 
 void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    DiscreteState<double>* discrete_state) const {
+    DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_iiwa_command>();
@@ -134,8 +134,7 @@ IiwaStatusReceiver::IiwaStatusReceiver()
 
 void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    DiscreteState<double>* discrete_state) const {
-
+    DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& status = input->GetValue<lcmt_iiwa_status>();

@@ -907,7 +907,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   ctx2->get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
 
   // Allocate the discrete variables.
-  std::unique_ptr<DiscreteState<double>> updates =
+  std::unique_ptr<DiscreteValues<double>> updates =
       diagram_.AllocateDiscreteVariables();
 
   // Set the time to 8.5, so only hold2 updates.

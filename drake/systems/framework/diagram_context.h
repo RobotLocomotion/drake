@@ -84,7 +84,7 @@ class DiagramState : public State<T> {
     // pointers to that memory.
     this->set_continuous_state(
         std::make_unique<DiagramContinuousState<T>>(sub_xcs));
-    this->set_discrete_state(std::make_unique<DiscreteState<T>>(sub_xds));
+    this->set_discrete_state(std::make_unique<DiscreteValues<T>>(sub_xds));
     this->set_abstract_state(std::make_unique<AbstractValues>(sub_xms));
   }
 
@@ -218,7 +218,7 @@ class DiagramContext : public Context<T> {
     }
     parameters_ = std::make_unique<Parameters<T>>();
     parameters_->set_numeric_parameters(
-        std::make_unique<DiscreteState<T>>(numeric_params));
+        std::make_unique<DiscreteValues<T>>(numeric_params));
     parameters_->set_abstract_parameters(
         std::make_unique<AbstractValues>(abstract_params));
   }

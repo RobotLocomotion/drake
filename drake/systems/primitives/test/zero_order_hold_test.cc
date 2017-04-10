@@ -108,7 +108,7 @@ TEST_F(ZeroOrderHoldTest, Update) {
   DiscreteEvent<double> update_event;
   update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
 
-  std::unique_ptr<DiscreteState<double>> update =
+  std::unique_ptr<DiscreteValues<double>> update =
       hold_->AllocateDiscreteVariables();
   hold_->CalcDiscreteVariableUpdates(*context_, {update_event}, update.get());
 
@@ -141,7 +141,7 @@ class SymbolicZeroOrderHoldTest : public ::testing::Test {
   std::unique_ptr<ZeroOrderHold<symbolic::Expression>> hold_;
   std::unique_ptr<Context<symbolic::Expression>> context_;
   std::unique_ptr<SystemOutput<symbolic::Expression>> output_;
-  std::unique_ptr<DiscreteState<symbolic::Expression>> update_;
+  std::unique_ptr<DiscreteValues<symbolic::Expression>> update_;
 };
 
 TEST_F(SymbolicZeroOrderHoldTest, Output) {
