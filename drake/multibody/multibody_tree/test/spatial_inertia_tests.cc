@@ -46,7 +46,7 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   ASSERT_EQ(M.get_com(), com);
   // Asserts we can retrieve the original unit inertia.
   ASSERT_TRUE(M.get_unit_inertia().CopyToFullMatrix3().isApprox(
-      G.CopyToFullMatrix3(),epsilon));
+      G.CopyToFullMatrix3(), epsilon));
 
   Matrix6<double> Mmatrix = M.CopyToFullMatrix6();
   Matrix6<double> expected_matrix;
@@ -121,13 +121,13 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
   // together. For this unit tests, the bodies are two cubes side to side. One
   // is located to the left of the world's origin Wo at x = -1.0 and the second
   // one is located to the right of Wo at x = 1.0. Therefore adding these two
-  // spatial inertia objects results in a combined body the shape of a prism
+  // spatial inertia objects results in a combined body with the shape of a box
   // of length 2 * L and squared parallel bases of size L x L.
   // Notice that the about point Wo and the expressed-in frame W is the same as
   // in the two individual components.
-  SpatialInertia<double> MPrism_Wo_W(MLeftBox_Wo_W);
-  MPrism_Wo_W += MRightBox_Wo_W;
-  EXPECT_TRUE(MPrism_Wo_W.IsPhysicallyValid());
+  SpatialInertia<double> MBox_Wo_W(MLeftBox_Wo_W);
+  MBox_Wo_W += MRightBox_Wo_W;
+  EXPECT_TRUE(MBox_Wo_W.IsPhysicallyValid());
 
   // Check that the compound inertia corresponds to that of a larger box of
   // length 4.0.
@@ -141,8 +141,8 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
       mass,
       com,
       UnitInertia<double>::SolidBox(2 * L, L, L));
-  EXPECT_TRUE(MPrism_Wo_W.CopyToFullMatrix6().isApprox(
-      MExpected_Wo_W.CopyToFullMatrix6(),epsilon));
+  EXPECT_TRUE(MBox_Wo_W.CopyToFullMatrix6().isApprox(
+      MExpected_Wo_W.CopyToFullMatrix6(), epsilon));
 }
 
 // Tests the method SpatialInertia::ReExpress().
