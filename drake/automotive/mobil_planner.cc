@@ -259,7 +259,7 @@ const T MobilPlanner<T>::EvaluateIdm(
   // clang-format off
   // TODO(jadecastro): Move this to IdmPlanner::Evaluate().
   const T net_distance =
-      cond(delta > T(0.), saturate(delta - idm_params.bloat_diameter(),
+      cond(delta >= T(0.), saturate(delta - idm_params.bloat_diameter(),
                                    idm_params.distance_lower_limit(),
                                    std::numeric_limits<T>::infinity()),
                           saturate(delta + idm_params.bloat_diameter(),

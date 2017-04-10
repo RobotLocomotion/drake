@@ -157,28 +157,14 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCarInitialState) {
   EXPECT_EQ(state_message.velocity, kVelocity);
 }
 
-GTEST_TEST(AutomotiveSimulatorTest, TestIdmControlledSimpleCar) {
-  // TODO(jwnimmer-tri) Do something better than "0_" here.
-  const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
-
-  const std::string joint_state_name =
-      systems::lcm::LcmPublisherSystem::make_name(kJointStateChannelName);
-
-  // Set up a basic simulation with just a Prius SimpleCar.
-  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
-      std::make_unique<lcm::DrakeMockLcm>());
-
-  const maliput::api::RoadGeometry* road{};
-  EXPECT_NO_THROW(road = simulator->SetRoadGeometry(
-      std::make_unique<const maliput::dragway::RoadGeometry>(
-          maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
-          100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
-
-  const int id = simulator->AddIdmControlledSimpleCar("Foo");
-  EXPECT_EQ(id, 0);
-
-  // Finish all initialization, so that we can test the post-init state.
-  simulator->Start();
+// Returns the x-position of the vehicle based on an lcmt_viewer_draw message.
+// It also checks that the y-position of the vehicle is euqal to the provided y
+// value.
+double GetPosition(const lcmt_viewer_draw& message, double y) {
+  EXPECT_EQ(message.num_links, PriusVis<double>(0, "").num_poses());
+  EXPECT_EQ(message.link_name.at(0), "chassis_floor");
+  EXPECT_DOUBLE_EQ(message.position.at(0).at(1), y);
+  return message.position.at(0).at(0);
 }
 
 GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
@@ -191,22 +177,31 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
   // Set up a basic simulation with just a Prius SimpleCar.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  lcm::DrakeMockLcm* lcm =
+      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
+  ASSERT_NE(lcm, nullptr);
 
-  const maliput::api::RoadGeometry* road{};
-  EXPECT_NO_THROW(road = simulator->SetRoadGeometry(
+  EXPECT_NO_THROW(simulator->SetRoadGeometry(
       std::make_unique<const maliput::dragway::RoadGeometry>(
           maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
           100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
 
-  const maliput::api::Lane* lane =
-     road->junction(0)->segment(0)->lane(0);
-
   const int id = simulator->AddMobilControlledSimpleCar("Foo",
-                                                        LaneDirection(lane));
+                                                        true /* with_s */);
   EXPECT_EQ(id, 0);
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
+
+  // Advances the simulation to allow the MaliputRailcar to begin accelerating.
+  simulator->StepBy(0.005);
+  simulator->StepBy(0.005);
+
+  // Verifies that the MaliputRailcar has moved forward relative to prior to
+  // the nonzero acceleration command being issued.
+  const lcmt_viewer_draw draw_message =
+      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  EXPECT_LT(0., GetPosition(draw_message, 0.));
 }
 
 // Cover AddTrajectoryCar (and thus AddPublisher).
@@ -344,16 +339,6 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
                   draw_message.quaternion.at(i + n).at(j), 1e-8);
     }
   }
-}
-
-// Returns the x-position of the vehicle based on an lcmt_viewer_draw message.
-// It also checks that the y-position of the vehicle is euqal to the provided y
-// value.
-double GetPosition(const lcmt_viewer_draw& message, double y) {
-  EXPECT_EQ(message.num_links, PriusVis<double>(0, "").num_poses());
-  EXPECT_EQ(message.link_name.at(0), "chassis_floor");
-  EXPECT_DOUBLE_EQ(message.position.at(0).at(1), y);
-  return message.position.at(0).at(0);
 }
 
 // Covers AddMaliputRailcar().
