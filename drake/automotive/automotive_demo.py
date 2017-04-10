@@ -195,12 +195,6 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--duration", type=float, default=float('Inf'),
                         help="demo run duration in seconds")
-    parser.add_argument("--steering-command-driver", action='store_true',
-                        dest='launch_steering_command_driver', default=True,
-                        help="launch steering_command_driver (default)")
-    parser.add_argument("--no-steering-command-driver", action='store_false',
-                        dest='launch_steering_command_driver', default=True,
-                        help="don't launch steering_command_driver")
     parser.add_argument("--visualizer", action='store_true',
                         dest='launch_visualizer',
                         default=True, help="launch drake-visualizer (default)")
@@ -210,6 +204,10 @@ def main():
     parser.add_argument("--dry-run", action='store_true',
                         default=False,
                         help="print commands instead of running them")
+    parser.add_argument("--driving_command_gui_names", default="",
+                        help="a comma separated list of vehicle names for " +
+                             "the vehicles for which a driving command GUI " +
+                             "should be launched")
     args, tail = parser.parse_known_args()
 
     if '--help' in tail:
@@ -238,8 +236,11 @@ def main():
 
         the_launcher.launch([demo_path] + tail)
 
-        if args.launch_steering_command_driver:
-            the_launcher.launch([steering_command_driver_path])
+        if args.driving_command_gui_names != "":
+            name_list = args.driving_command_gui_names.split(',')
+            for name in name_list:
+                the_launcher.launch([steering_command_driver_path,
+                                     "--lcm_tag=DRIVING_COMMAND_" + name])
 
         the_launcher.wait(args.duration)
 

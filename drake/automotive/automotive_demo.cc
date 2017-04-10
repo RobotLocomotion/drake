@@ -12,13 +12,18 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
 
+
+DEFINE_int32(num_simple_car, 0, "Number of SimpleCar vehicles. The cars are "
+             "named \"0\", \"1\", \"2\", etc.");
 DEFINE_string(simple_car_names, "",
-              "A comma-separated list (e.g. 'Russ,Jeremy,Liang' would spawn 3 "
-              "cars subscribed to DRIVING_COMMAND_Russ, "
+              "A comma-separated list that specifies the number of SimpleCar "
+              "models to instantiate, their names, and the names of the LCM "
+              "channels to which they subscribe (e.g., 'Russ,Jeremy,Liang' "
+              "would spawn 3 cars subscribed to DRIVING_COMMAND_Russ, "
               "DRIVING_COMMAND_Jeremy, and DRIVING_COMMAND_Liang)");
-DEFINE_int32(num_trajectory_car, 1, "Number of TrajectoryCar vehicles. This "
+DEFINE_int32(num_trajectory_car, 0, "Number of TrajectoryCar vehicles. This "
              "option is currently only applied when the road network is a flat "
-             " plane or a dragway.");
+             "plane or a dragway.");
 DEFINE_int32(num_maliput_railcar, 0, "Number of MaliputRailcar vehicles. This "
              "option is currently only applied when the road network is a "
              "dragway or merge.");
@@ -88,18 +93,32 @@ std::string MakeChannelName(const std::string& name) {
 void AddVehicles(RoadNetworkType road_network_type,
     const maliput::api::RoadGeometry* road_geometry,
     AutomotiveSimulator<double>* simulator) {
-  if (FLAGS_simple_car_names.empty()) {
-    const std::string name = "SimpleCar";
-    const std::string& channel_name = MakeChannelName(name);
-    drake::log()->info("Adding simple car subscribed to {}.", channel_name);
-    simulator->AddPriusSimpleCar(name, channel_name);
-  } else {
-    std::istringstream simple_car_name_stream(FLAGS_simple_car_names);
+  const double kSimpleCarYSpacing{3};
+
+  if (FLAGS_num_simple_car != 0 && !FLAGS_simple_car_names.empty()) {
+    throw std::runtime_error("Both --num_simple_car and --simple_car_names "
+        "specified. Only one can be specified at a time.");
+  }
+  if (FLAGS_num_simple_car != 0 || !FLAGS_simple_car_names.empty()) {
+    std::string simple_car_names = FLAGS_simple_car_names;
+    if (FLAGS_simple_car_names.empty()) {
+      for (int i = 0; i < FLAGS_num_simple_car; ++i) {
+        if (i != 0) {
+          simple_car_names += ",";
+        }
+        simple_car_names += std::to_string(i);
+      }
+    }
+    std::istringstream simple_car_name_stream(simple_car_names);
     std::string name;
+    double y_offset{0};
     while (getline(simple_car_name_stream, name, ',')) {
       const std::string& channel_name = MakeChannelName(name);
       drake::log()->info("Adding simple car subscribed to {}.", channel_name);
-      simulator->AddPriusSimpleCar(name, channel_name);
+      SimpleCarState<double> state;
+      state.set_y(y_offset);
+      simulator->AddPriusSimpleCar(name, channel_name, state);
+      y_offset += kSimpleCarYSpacing;
     }
   }
 
