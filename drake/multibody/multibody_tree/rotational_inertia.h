@@ -187,32 +187,6 @@ class RotationalInertia {
   /// including both lower and upper triangular parts.
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
-  /// Compares `this` inertia to `other` rotational inertia within the
-  /// specified precision `p`. `p` is a dimensionless number specifying
-  /// the a relative precision to which the comparison is performed.
-  /// Two rotational inertia objects `Ia` and `Ib` are considered to be
-  /// approximately equal with each other if:
-  ///   - ‖Ia - Ib‖F < p min(‖Ia‖F, ‖Ib‖F)
-  ///
-  /// where ‖⋅‖F the Frobenius norm of a matrix, see RotationalInertia::Norm().
-  ///
-  /// @note Given the comparison above is performed relative to the smallest
-  ///       inertia, this method is not appropriate to compare against the zero
-  ///       rotational inertia.
-  ///
-  /// @param[in] other The spatial inertia to which this spatial inertia will be
-  ///                  compared.
-  /// @param[in] p The specified dimensionless precision to which the
-  ///              comparison will be performed.
-  ///              @default std::numeric_limits<double>::epsilon().
-  /// @returns `true` if `other` is within the specified `precision`. Returns
-  ///          `false` otherwise.
-  bool IsApprox(const RotationalInertia& other,
-                double p = std::numeric_limits<double>::epsilon()) const {
-    using std::min;
-    return (*this - other).Norm() < p * min(this->Norm(), other.Norm());
-  }
-
   /// Returns the Frobenius norm of this rotational inertia including both lower
   /// and upper triangular elements.
   // The Frobenius norm of a rotational inertia I with moments m and

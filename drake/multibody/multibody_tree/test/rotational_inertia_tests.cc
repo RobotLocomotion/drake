@@ -19,6 +19,8 @@ using Eigen::NumTraits;
 using Eigen::Vector3d;
 using std::sort;
 
+constexpr double epsilon = std::numeric_limits<double>::epsilon();
+
 // Test constructor for a diagonal rotational inertia with all elements equal.
 GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
   const double I0 = 3.14;
@@ -134,9 +136,9 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
   const RotationalInertia<double> I_Ro_F = I_Ro_R.ReExpress(R_FR);
 
   // Verify that now R's z-axis is oriented along F's y-axis.
-  EXPECT_NEAR(I_Ro_F(0, 0), Iperp, Eigen::NumTraits<double>::epsilon());
-  EXPECT_NEAR(I_Ro_F(1, 1), Irr, Eigen::NumTraits<double>::epsilon());
-  EXPECT_NEAR(I_Ro_F(2, 2), Iperp, Eigen::NumTraits<double>::epsilon());
+  EXPECT_NEAR(I_Ro_F(0, 0), Iperp, epsilon);
+  EXPECT_NEAR(I_Ro_F(1, 1), Irr, epsilon);
+  EXPECT_NEAR(I_Ro_F(2, 2), Iperp, epsilon);
 
   // While at it, check if after transformation this still is a physically
   // valid inertia.
@@ -323,7 +325,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
                       wz,  0.0, 0.0,
                      0.0,  0.0, 0.0;
   EXPECT_TRUE(wcross.isApprox(
-      wcross_expected, Eigen::NumTraits<double>::epsilon()));
+      wcross_expected, epsilon));
 
   // Re-express inertia into another frame.
   const RotationalInertia<ADScalar> I_W = I_B.ReExpress(R_WB);
@@ -350,8 +352,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
 
   const Matrix3d Idot_W_expected = Ix * Rdot_x + Iy * Rdot_y + Iz * Rdot_z;
 
-  EXPECT_TRUE(Idot_W.isApprox(
-      Idot_W_expected, Eigen::NumTraits<double>::epsilon()));
+  EXPECT_TRUE(Idot_W.isApprox(Idot_W_expected, epsilon));
 }
 
 }  // namespace
