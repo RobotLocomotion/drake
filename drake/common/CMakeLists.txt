@@ -45,7 +45,6 @@ set(installed_headers
   double_overloads.h
   drake_assert.h
   drake_compat.h
-  drake_copyable.h
   drake_deprecated.h
   drake_optional.h
   drake_path.h
@@ -59,6 +58,7 @@ set(installed_headers
   functional_form.h
   hash.h
   is_approx_equal_abstol.h
+  is_cloneable.h
   monomial.h
   never_destroyed.h
   nice_type_name.h
