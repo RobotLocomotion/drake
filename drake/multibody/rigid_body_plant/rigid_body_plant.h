@@ -235,9 +235,6 @@ class RigidBodyPlant : public LeafSystem<T> {
     }
   }
 
-  // System<T> overrides.
-  bool has_any_direct_feedthrough() const override;
-
   /// Computes the force exerted by the stop when a joint hits its limit,
   /// using a linear stiffness model.
   /// Exposed for unit testing of the formula.
@@ -359,6 +356,9 @@ class RigidBodyPlant : public LeafSystem<T> {
                                      DiscreteState<T>* updates) const override;
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
+
+  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity, int input_port,
+                              int output_port) const override;
 
   // TODO(amcastro-tri): provide proper implementations for these methods to
   // track energy conservation.

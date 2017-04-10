@@ -56,7 +56,11 @@ class TestPlantWithMinOutputs : public TestPlant {
     output_vector[1] = 0.1;
   }
 
-  bool has_any_direct_feedthrough() const override { return false; }
+ protected:
+  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity, int input_port,
+                              int output_port) const override {
+    return false;
+  }
 };
 
 // A plant with an input port zero of size 1 and an output port zero of size 6.
@@ -95,7 +99,11 @@ class TestPlantWithMoreOutputs : public TestPlant {
     output_vector[5] = 498.9;
   }
 
-  bool has_any_direct_feedthrough() const override { return false; }
+ protected:
+  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity, int input_port,
+                              int output_port) const override {
+    return false;
+  }
 };
 
 // Instantiates a PidControlledSystem based on the supplied plant and

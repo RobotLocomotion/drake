@@ -44,9 +44,6 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
       std::unique_ptr<systems::Context<T>> observed_system_context,
       const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
 
-  /// This system is not direct feedthrough.
-  bool has_any_direct_feedthrough() const override { return false; }
-
   /// Provides access to the observer gain.
   const Eigen::MatrixXd& observer_gain() { return observer_gain_; }
 
@@ -62,6 +59,12 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   // Outputs the estimated state.
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
+
+  /// This system is not direct feedthrough.
+  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity, int input_port,
+                              int output_port) const override {
+    return false;
+  }
 
   const std::unique_ptr<systems::System<T>> observed_system_;
   const Eigen::MatrixXd observer_gain_;  // Gain matrix (often called "L").

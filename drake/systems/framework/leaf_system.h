@@ -447,21 +447,11 @@ class LeafSystem : public System<T> {
     DRAKE_ASSERT(output_port >= 0);
     DRAKE_ASSERT(output_port < this->get_num_output_ports());
 
-    // If this System has manually declared that it has no direct-feedthrough
-    // by overriding the deprecated API has_any_direct_feedthrough, accept
-    // that override and skip sparsity analysis.
-    // TODO(david-german-tri): Remove overrides of has_any_direct_feedthrough,
-    // then remove this check.
-    if (!this->has_any_direct_feedthrough()) {
-      return false;
-    }
-
     // If no symbolic sparsity matrix is available, assume direct feedthrough
     // by default.
     if (sparsity == nullptr) {
       return true;
     }
-
     return sparsity->IsConnectedInputToOutput(input_port, output_port);
   }
 

@@ -196,12 +196,6 @@ class System {
     }
   }
 
-  // This method is DEPRECATED. Legacy overrides will be respected, but should
-  // migrate to override LeafSystem::DoHasDirectFeedthrough.
-  virtual bool has_any_direct_feedthrough() const {
-    return (get_num_input_ports() > 0) && (get_num_output_ports() > 0);
-  }
-
   /// Returns `true` if any of the inputs to the system might be directly
   /// fed through to any of its outputs and `false` otherwise.
   ///
