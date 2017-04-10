@@ -75,27 +75,32 @@ class AutomotiveSimulator {
   /// @param initial_state The SimpleCar's initial state.
   ///
   /// @return The ID of the car that was just added to the simulation.
-  int AddPriusSimpleCar(const std::string& name,
-                        const std::string& channel_name,
-                        const SimpleCarState<T>& initial_state =
-                        SimpleCarState<T>());
+  int AddPriusSimpleCar(
+      const std::string& name, const std::string& channel_name,
+      const SimpleCarState<T>& initial_state = SimpleCarState<T>());
 
-  /// Adds an IDM-controlled SimpleCar to this simulation visualized as a Toyota
-  /// Prius.
-  ///
-  /// Refer to AddPriusSimpleCar header for parameter descriptions.
-  int AddIdmControlledSimpleCar(const std::string& model_name,
-                                const SimpleCarState<T>& initial_state =
-                                SimpleCarState<T>());
-
-  /// Adds a MOBIL-controlled SimpleCar to this simulation visualized as a
+  /// Adds a SimpleCar to this simulation controlled by a MOBIL planner coupled
+  /// with a PurePursuitController to perform lateral control of the vehicle,
+  /// along with an IDM longitudinal controller.  The car is visualized as a
   /// Toyota Prius.
   ///
-  /// Refer to AddPriusSimpleCar header for parameter descriptions.
-  int AddMobilControlledSimpleCar(const std::string& model_name,
-                                  const LaneDirection& initial_lane_direction,
-                                  const SimpleCarState<T>& initial_state =
-                                  SimpleCarState<T>());
+  /// @pre Start() has NOT been called.
+  ///
+  /// @pre SetRoadGeometry() was called. Otherwise, a std::runtime_error will be
+  /// thrown.
+  ///
+  /// @param name The car's name, which must be unique among all cars.
+  /// Otherwise a std::runtime_error will be thrown.
+  ///
+  /// @param initial_with_s Initial travel direction in the lane. (See
+  /// MobilPlanner documentation.)
+  ///
+  /// @param initial_state The SimpleCar's initial state.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
+  int AddMobilControlledSimpleCar(
+      const std::string& name, bool initial_with_s,
+      const SimpleCarState<T>& initial_state = SimpleCarState<T>());
 
   /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius. This
   /// includes its EulerFloatingJoint output.

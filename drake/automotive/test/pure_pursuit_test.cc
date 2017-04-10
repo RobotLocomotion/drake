@@ -27,6 +27,8 @@ class PurePursuitTest : public ::testing::Test {
 
 TEST_F(PurePursuitTest, Evaluate) {
   systems::rendering::PoseVector<double> ego_pose;
+  const maliput::api::Lane* const lane =
+      road_->junction(0)->segment(0)->lane(0);
 
   // Set the ego car's pose to be all zeros, and facing parallel to the track in
   // the positive-s direction..
@@ -36,7 +38,7 @@ TEST_F(PurePursuitTest, Evaluate) {
                                                   0. /* y */, 0. /* z */));
 
   double result = PurePursuit<double>::Evaluate(
-      pp_params_, car_params_, true /* with_s */, *road_, ego_pose);
+      pp_params_, car_params_, {lane, true /* with_s */}, ego_pose);
 
   // Expect the steering angle to be zero.
   EXPECT_EQ(0., result);
@@ -46,7 +48,7 @@ TEST_F(PurePursuitTest, Evaluate) {
       Eigen::Translation3d(0. /* s */, 20. /* r */, 0. /* h */));
 
   result = PurePursuit<double>::Evaluate(pp_params_, car_params_,
-                                         true /* with_s */, *road_, ego_pose);
+                                         {lane, true /* with_s */}, ego_pose);
 
   // Expect the steering angle to be between zero and -90-degrees.
   EXPECT_GT(0., result);
@@ -57,7 +59,7 @@ TEST_F(PurePursuitTest, Evaluate) {
       Eigen::Translation3d(0. /* s */, -20. /* r */, 0. /* h */));
 
   result = PurePursuit<double>::Evaluate(pp_params_, car_params_,
-                                         true /* with_s */, *road_, ego_pose);
+                                         {lane, true /* with_s */}, ego_pose);
 
   // Expect the steering angle to be between zero and 90-degrees.
   EXPECT_LT(0., result);
@@ -69,7 +71,7 @@ TEST_F(PurePursuitTest, Evaluate) {
       Eigen::Translation3d(0. /* s */, -1e5 /* r */, 0. /* h */));
 
   result = PurePursuit<double>::Evaluate(pp_params_, car_params_,
-                                         true /* with_s */, *road_, ego_pose);
+                                         {lane, true /* with_s */}, ego_pose);
 
   // Expect the steering angle to be close to but not exceeding 90-degrees.
   EXPECT_NEAR(M_PI_2, result, 1e-2);
@@ -85,7 +87,7 @@ TEST_F(PurePursuitTest, Evaluate) {
                                                   std::sin(yaw * 0.5) /* z */));
 
   result = PurePursuit<double>::Evaluate(pp_params_, car_params_,
-                                         true /* with_s */, *road_, ego_pose);
+                                         {lane, true /* with_s */}, ego_pose);
 
   // Expect the steering angle to be between zero and 90-degrees.
   EXPECT_GT(0., result);
@@ -100,9 +102,11 @@ TEST_F(PurePursuitTest, ComputeGoalPoint) {
       Eigen::Translation3d(50. /* s */, 5. /* r */, 0. /* h */));
   pose.set_rotation(Eigen::Quaternion<double>(0. /* w */, 0. /* x */,
                                               0. /* y */, 0. /* z */));
+  const maliput::api::Lane* const lane =
+      road_->junction(0)->segment(0)->lane(0);
 
   GeoPosition goal_position = PurePursuit<double>::ComputeGoalPoint(
-      10. /* s_lookahead */, true /* with_s */, *road_, pose);
+      10. /* s_lookahead */, {lane, true /* with_s */}, pose);
 
   // Expect the goal point to lie on the lane ordinate.
   EXPECT_EQ(60., goal_position.x);
@@ -111,7 +115,7 @@ TEST_F(PurePursuitTest, ComputeGoalPoint) {
 
   // Flip the pose 180 degrees.
   goal_position = PurePursuit<double>::ComputeGoalPoint(
-      10. /* s_lookahead */, false /* with_s */, *road_, pose);
+      10. /* s_lookahead */, {lane, false /* with_s */}, pose);
 
   // Expect the goal point to lie on the lane ordinate.
   EXPECT_EQ(40., goal_position.x);
@@ -120,7 +124,7 @@ TEST_F(PurePursuitTest, ComputeGoalPoint) {
 
   // Take the lookahead distance to be beyond the end of the lane.
   goal_position = PurePursuit<double>::ComputeGoalPoint(
-      60. /* s_lookahead */, true /* with_s */, *road_, pose);
+      60. /* s_lookahead */, {lane, true /* with_s */}, pose);
 
   // Expect the result to saturate.
   EXPECT_EQ(100., goal_position.x);

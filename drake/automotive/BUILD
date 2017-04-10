@@ -245,7 +245,9 @@ drake_cc_library(
         ":lane_direction",
         ":pose_selector",
         "//drake/automotive/maliput/api",
+        "//drake/common:cond",
         "//drake/common:symbolic",
+        "//drake/math:saturate",
         "//drake/systems/rendering:pose_vector",
     ],
 )
@@ -259,7 +261,6 @@ drake_cc_library(
         ":lane_direction",
         ":pose_selector",
         ":pure_pursuit",
-        "//drake/automotive/maliput/api",
         "//drake/systems/rendering:pose_vector",
     ],
 )
@@ -355,6 +356,7 @@ drake_cc_library(
         "//drake/systems/analysis",
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcmt_drake_signal_translator",
+        "//drake/systems/primitives:multiplexer",
         "//drake/systems/rendering:pose_aggregator",
         "//drake/systems/rendering:pose_bundle_to_draw_message",
     ],

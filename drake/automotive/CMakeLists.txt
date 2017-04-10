@@ -17,6 +17,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/idm_planner_parameters.cc
   gen/maliput_railcar_params.cc
   gen/maliput_railcar_state.cc
+  gen/mobil_planner_parameters.cc
   gen/pure_pursuit_params.cc
   gen/simple_car_params.cc
   gen/simple_car_state.cc
@@ -40,6 +41,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   maliput/utility/generate_obj.cc
   maliput/utility/generate_urdf.cc
   maliput_railcar.cc
+  mobil_planner.cc
   monolane_onramp_merge.cc
   pose_selector.cc
   pure_pursuit.cc
@@ -68,6 +70,7 @@ drake_install_headers(
   idm_controller.h
   idm_planner.h
   maliput_railcar.h
+  mobil_planner.h
   monolane_onramp_merge.h
   road_path.h
   pose_selector.h

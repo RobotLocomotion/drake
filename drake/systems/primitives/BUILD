@@ -335,7 +335,9 @@ drake_cc_googletest(
     deps = [
         ":multiplexer",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:is_dynamic_castable",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities:my_vector",
     ],
 )
 
