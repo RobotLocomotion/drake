@@ -165,6 +165,7 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
 
   // Returns the channel on which the most recent message was received.
   const std::string& get_receive_channel() {
+    std::lock_guard<std::mutex> lock(message_mutex_);
     return channel_;
   }
 
