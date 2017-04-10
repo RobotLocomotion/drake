@@ -22,11 +22,12 @@ bazel build //drake:libdrake.so //drake:libdrake_headers //drake:external_licens
 # Copy off all the package artifacts into a temporary directory.
 # TODO(jamiesnape): Add drake-config.cmake and drake-targets.cmake.
 tmpdir=$(mktemp -d)
-mkdir -p "$tmpdir/lib"
+mkdir -p "$tmpdir/lib/cmake/drake"
 mkdir -p "$tmpdir/include/external/scratch"
 cp bazel-bin/drake/libdrake.so "$tmpdir/lib"
 cp bazel-bin/drake/libdrake_headers.tar.gz "$tmpdir/include/external/scratch"
 cp bazel-bin/drake/external_licenses.tar.gz "$tmpdir/include/external"
+cp tools/drake-config.cmake "$tmpdir/lib/cmake/drake"
 chmod -R 755 "$tmpdir"
 
 # Un-tar the headers. The -P flag and scratch directory are necessary because
