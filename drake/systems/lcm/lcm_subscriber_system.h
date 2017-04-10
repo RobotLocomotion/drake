@@ -1,5 +1,6 @@
 #pragma once
 
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -23,7 +24,7 @@ namespace lcm {
  * Receives LCM messages from a given channel and outputs them to a
  * System<double>'s port. This class stores the most recently processed LCM
  * message in the State. When a LCM message arrives asynchronously, an update
- * event is scheduled to process the message and store it the State at the
+ * event is scheduled to process the message and store it in the State at the
  * earliest possible simulation time. The output is always consistent with the
  * State.
  *
@@ -124,6 +125,12 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
 
+  /**
+   * Blocks the caller until @p old_message_count is different from the
+   * internal message counter, and the internal message counter is returned.
+   */
+  int WaitForMessage(int old_message_count) const;
+
  protected:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;
@@ -168,7 +175,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   void ProcessMessageAndStoreToAbstractState(
       AbstractValues* abstract_state) const;
 
-  // Callback entry point from LCM into this class.
+  // Callback entry point from LCM into this class. Also wakes up one thread
+  // block on notification_ if it's not nullptr.
   void HandleMessage(const std::string& channel, const void* message_buffer,
                      int message_size) override;
 
@@ -185,6 +193,9 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   // The mutex that guards received_message_ and received_message_count_.
   mutable std::mutex received_message_mutex_;
+
+  // A condition variable that's signaled every time the handler is called.
+  mutable std::condition_variable received_message_condition_variable_;
 
   // The bytes of the most recently received LCM message.
   std::vector<uint8_t> received_message_;
