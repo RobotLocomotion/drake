@@ -1,5 +1,4 @@
 #include <cstring>
-#include <fstream>
 #include <map>
 #include <mutex>
 #include <queue>
@@ -8,6 +7,14 @@
 #include <vector>
 
 #include <mex.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/io/zero_copy_stream_impl.h"
+
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/matlab_rpc.pb.h"
@@ -39,41 +46,54 @@ namespace {
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // TODO(russt): Take filename as an optional input.
-  std::string filename = "/tmp/matlab_rpc";
+  const std::string filename = "/tmp/matlab_rpc";
+  google::protobuf::io::FileInputStream raw_input(open(filename.c_str(), O_RDONLY));
+  google::protobuf::io::CodedInputStream input(&raw_input);
 
   // TODO(russt): Document use of mkfifo?
   mexPrintf("Listening for messages on %s...\n", filename.c_str());
 
 //  FlushMatlabEventBuffer();
 
-  std::ifstream input(filename);
   std::map<int64_t, mxArray*> client_vars_;
-  drake::common::MatlabRPC msg;
-  while (msg.ParseFromIstream(&input)) {
-/*
+  drake::common::MatlabRPC message;
+
+  // Read the size.
+  uint32_t size;
+  while (!input.ReadVarint32(&size)) {
+    // Tell the stream not to read beyond that size.
+    auto limit = input.PushLimit(size);
+
+    // Parse the message.
+    if (!message.MergePartialFromCodedStream(&input)) return;
+    if (!input.ConsumedEntireMessage()) return;
+
+    // Release the limit.
+    input.PopLimit(limit);
+
+    mexPrintf("%s\n",message.function_name().c_str());
     int i;
-    std::vector<mxArray *> lhs(msg.lhs_size()), rhs(msg.rhs_size());
+    std::vector<mxArray *> lhs(message.lhs_size()), rhs(message.rhs_size());
 
     // Create the input arguments
-    for (i = 0; i < msg.rhs_size(); i++) {
-      int num_bytes = msg.rhs(i).data().size();
+    for (i = 0; i < message.rhs_size(); i++) {
+      int num_bytes = message.rhs(i).data().size();
 //      if (num_bytes == 0) {
-        mexPrintf("rhs %d seems to have zero bytes.  dropping message %s.\n",
-                  i, msg.function_name().c_str());
-        mexPrintf("type: %d\n", msg.rhs(i).type());
-        mexPrintf("rows: %d\n", msg.rhs(i).rows());
-        mexPrintf("cols: %d\n", msg.rhs(i).cols());
-        for (int j = 0; j < i; j++) {
-          mxDestroyArray(rhs[j]);
-        }
-        return;
+//        mexPrintf("rhs %d seems to have zero bytes.  dropping message %s.\n",
+//                  i, message.function_name().c_str());
+        mexPrintf("type: %d\n", message.rhs(i).type());
+        mexPrintf("rows: %d\n", message.rhs(i).rows());
+        mexPrintf("cols: %d\n", message.rhs(i).cols());
+//        for (int j = 0; j < i; j++) {
+//          mxDestroyArray(rhs[j]);
+//        }
 //      }
 
-      switch (msg.rhs(i).type()) {
+      switch (message.rhs(i).type()) {
         case drake::common::MatlabArray::REMOTE_VARIABLE_REFERENCE: {
           int64_t id;
           DRAKE_DEMAND(static_cast<int>(sizeof(int64_t)) == num_bytes);
-          memcpy(&id, msg.rhs(i).data().data(), num_bytes);
+          memcpy(&id, message.rhs(i).data().data(), num_bytes);
           if (client_vars_.find(id) == client_vars_.end()) {
             mexWarnMsgTxt(
               "rhs referenced unknown local variable.  dropping message.");
@@ -86,34 +106,34 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
           break;
         }
         case drake::common::MatlabArray::DOUBLE: {
-          rhs[i] = mxCreateDoubleMatrix(msg.rhs(i).rows(), msg.rhs(i).cols(),
+          rhs[i] = mxCreateDoubleMatrix(message.rhs(i).rows(), message.rhs(i).cols(),
                                         mxREAL);
-          DRAKE_DEMAND(static_cast<int>(sizeof(double)) * msg.rhs(i).rows() *
-                       msg.rhs(i).cols() ==
+          DRAKE_DEMAND(static_cast<int>(sizeof(double)) * message.rhs(i).rows() *
+                       message.rhs(i).cols() ==
                        num_bytes);
-          memcpy(mxGetPr(rhs[i]), msg.rhs(i).data().data(),
+          memcpy(mxGetPr(rhs[i]), message.rhs(i).data().data(),
                  num_bytes);
           break;
         }
         case drake::common::MatlabArray::CHAR: {
           mwSize dims[2];
-          dims[0] = msg.rhs(i).rows();
-          dims[1] = msg.rhs(i).cols();
+          dims[0] = message.rhs(i).rows();
+          dims[1] = message.rhs(i).cols();
           rhs[i] = mxCreateCharArray(2, dims);
           mxChar *char_data = static_cast<mxChar *>(mxGetData(rhs[i]));
-          DRAKE_DEMAND(msg.rhs(i).rows() * msg.rhs(i).cols() == num_bytes);
-          const std::string &str = msg.rhs(i).data();
+          DRAKE_DEMAND(message.rhs(i).rows() * message.rhs(i).cols() == num_bytes);
+          const std::string &str = message.rhs(i).data();
           for (int j = 0; j < num_bytes; j++) {  // Note: sizeof(mxChar) == 2.
             char_data[j] = static_cast<mxChar>(str[j]);
           }
           break;
         }
         case drake::common::MatlabArray::LOGICAL: {
-          rhs[i] = mxCreateLogicalMatrix(msg.rhs(i).rows(), msg.rhs(i).cols());
-          DRAKE_DEMAND(msg.rhs(i).rows() * msg.rhs(i).cols() == num_bytes);
+          rhs[i] = mxCreateLogicalMatrix(message.rhs(i).rows(), message.rhs(i).cols());
+          DRAKE_DEMAND(message.rhs(i).rows() * message.rhs(i).cols() == num_bytes);
           mxLogical *logical_data =
             static_cast<mxLogical *>(mxGetData(rhs[i]));
-          const std::string &str = msg.rhs(i).data();
+          const std::string &str = message.rhs(i).data();
           for (int j = 0; j < num_bytes; j++) {
             logical_data[j] = static_cast<mxLogical>(str[j]);
           }
@@ -130,22 +150,22 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       // Make the actual call to MATLAB.
       bool trapped_error = mexCallMATLABsafe(
         static_cast<int>(lhs.size()), lhs.data(),
-        static_cast<int>(rhs.size()), rhs.data(), msg.function_name().c_str());
+        static_cast<int>(rhs.size()), rhs.data(), message.function_name().c_str());
 
       if (!trapped_error) {
         // Assign any local variables that were returned by this call.
-        for (i = 0; i < msg.lhs_size(); i++) {
+        for (i = 0; i < message.lhs_size(); i++) {
           // Zap any old variables that will be overwritten by this call.
-          if (client_vars_.find(msg.lhs(i)) != client_vars_.end())
-            mxDestroyArray(client_vars_[msg.lhs(i)]);
-          client_vars_[msg.lhs(i)] = lhs[i];
+          if (client_vars_.find(message.lhs(i)) != client_vars_.end())
+            mxDestroyArray(client_vars_[message.lhs(i)]);
+          client_vars_[message.lhs(i)] = lhs[i];
         }
       }
 
       // Clean up the input argument data.
       for (i = 0; i < static_cast<int>(rhs.size()); i++) {
         // Make sure it's not a client var.
-        if (msg.rhs(i).type() !=
+        if (message.rhs(i).type() !=
             drake::common::MatlabArray::REMOTE_VARIABLE_REFERENCE)
           mxDestroyArray(rhs[i]);
       }
@@ -154,7 +174,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         break;
       }
     }
-*/
   }
 //  FlushMatlabEventBuffer();
 

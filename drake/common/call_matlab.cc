@@ -5,6 +5,13 @@
 #include <limits>
 #include <string>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/io/zero_copy_stream_impl.h"
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 
@@ -69,23 +76,26 @@ void ToMatlabArray(const std::string& str,
   matlab_array->set_data(str.data(), num_bytes);
 }
 
-void internal::PublishCallMatlab(const MatlabRPC& msg) {
+void internal::PublishCallMatlab(const MatlabRPC& message) {
   // TODO(russt): Provide option for setting the filename.
-  static never_destroyed<std::ofstream> output("/tmp/matlab_rpc", std::ofstream::trunc);
+  static never_destroyed<google::protobuf::io::FileOutputStream> raw_output(open("/tmp/matlab_rpc", O_WRONLY | O_CREAT, S_IRWXU));
 
-/*
-  if (!named_pipe.is_open()) {
-    if (mkfifo("/tmp/matlab_rpc", S_IRUSR | S_IWUSR) != 0) {
-      // The only acceptable way for the mkfifo to fail is if
-      // the named pipe already exists.
-      DRAKE_DEMAND(errno == EEXIST);
-    }
+  google::protobuf::io::CodedOutputStream output(&raw_output.access());
 
-    named_pipe.open("/tmp/matlab_rpc", std::ofstream::trunc);
+  // Write the size.
+  const int size = message.ByteSize();
+  output.WriteVarint32(size);
+
+  uint8_t* buffer = output.GetDirectBufferForNBytesAndAdvance(size);
+  if (buffer != NULL) {
+    // Optimization:  The message fits in one buffer, so use the faster
+    // direct-to-array serialization path.
+    message.SerializeWithCachedSizesToArray(buffer);
+  } else {
+    // Slightly-slower path when the message is multiple buffers.
+    message.SerializeWithCachedSizes(&output);
+    DRAKE_DEMAND(!output.HadError());
   }
-*/
-
-  msg.SerializeToOstream(&output.access());
 }
 
 }  // namespace common
