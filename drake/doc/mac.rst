@@ -21,7 +21,7 @@ Install the prerequisites::
     brew upgrade
     brew install autoconf automake bazel clang-format cmake doxygen gcc glib \
       graphviz gtk+ jpeg libpng libtool libyaml mpfr ninja numpy python \
-      qt qwt scipy valgrind vtk5 wget
+      qt@4 qwt-qt4 scipy valgrind vtk5 wget
     pip install -U beautifulsoup4 html5lib lxml PyYAML Sphinx
 
 Add the line::
