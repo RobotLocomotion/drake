@@ -28,7 +28,7 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   const Body<double>& world_body = model->get_world_body();
 
   // Adds a new body to the world.
-  const RigidBody<double>& pendulum = RigidBody<double>::Create(model);
+  const RigidBody<double>& pendulum = model->AddBody<RigidBody>();
 
   // Indexes not valid until Comile() is called.
   EXPECT_FALSE(model->topology_is_valid());
@@ -43,8 +43,7 @@ GTEST_TEST(MultibodyTree, AddBodies) {
 
   // Tests API to access bodies.
   EXPECT_EQ(model->get_body(BodyIndex(1)).get_index(), pendulum.get_index());
-  EXPECT_EQ(model->get_mutable_body(BodyIndex(1)).get_index(),
-            pendulum.get_index());
+  EXPECT_EQ(model->get_body(BodyIndex(1)).get_index(), pendulum.get_index());
 
   // Rigid bodies have no generalized coordinates.
   EXPECT_EQ(pendulum.get_num_flexible_positions(), 0);
@@ -54,14 +53,11 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   // an already compiled MultibodyTree.
   EXPECT_THROW(model->Compile(), std::logic_error);
 
-  // Verifies that more bodies can still be added to an already compiled model.
-  // However, the topology of the multibody tree gets invalidated.
-  EXPECT_NO_THROW(RigidBody<double>::Create(model));
-  EXPECT_FALSE(model->topology_is_valid());
+  // Verifies that after compilation no more bodies can be added.
+  EXPECT_THROW(model->AddBody<RigidBody>(), std::logic_error);
 
-  // Verifies we can re-compile.
-  EXPECT_NO_THROW(model->Compile());
-  EXPECT_TRUE(model->topology_is_valid());
+  // Verifies we cannot re-compile.
+  EXPECT_THROW(model->Compile(), std::logic_error);
 }
 
 // Tests the correctness of MultibodyTreeElement checks to verify one or more
@@ -70,8 +66,8 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   auto model1 = std::make_unique<MultibodyTree<double>>();
   auto model2 = std::make_unique<MultibodyTree<double>>();
 
-  const RigidBody<double>& body1 = RigidBody<double>::Create(model1.get());
-  const RigidBody<double>& body2 = RigidBody<double>::Create(model2.get());
+  const RigidBody<double>& body1 = model1->AddBody<RigidBody>();
+  const RigidBody<double>& body2 = model2->AddBody<RigidBody>();
 
   model1->Compile();
   model2->Compile();
