@@ -83,6 +83,9 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
 
+  /// Creates a body with a BodyFrame associated with it.
+  Body() : body_frame_(*this) {}
+
   /// Returns the number of generalized positions describing flexible
   /// deformations for this body. A rigid body will therefore return zero.
   virtual int get_num_flexible_positions() const = 0;
@@ -106,10 +109,6 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   void Compile(const MultibodyTree<T>& tree) final {
     topology_ = tree.get_topology().bodies[this->get_index()];
   }
-
- protected:
-  // Default constructor. Only sub-classes can use it.
-  Body() : body_frame_(*this) {}
 
  private:
   // Body frame associated with this body.

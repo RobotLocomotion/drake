@@ -21,8 +21,7 @@ MultibodyTree<T>::MultibodyTree() {
 template <typename T>
 void MultibodyTree<T>::Compile() {
   // If the topology is valid it means that this MultibodyTree was already
-  // compiled. Since this is an expensive operation, throw an exception to alert
-  // users.
+  // compiled. Re-compilation is not allowed.
   if (topology_is_valid()) {
     throw std::logic_error(
         "Attempting to call MultibodyTree::Compile() on an already compiled "

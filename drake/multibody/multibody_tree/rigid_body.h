@@ -44,6 +44,7 @@ class RigidBody : public Body<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
 
+  /// Constructs a %RigidBody with the given mass properties.
   // TODO(amcastro-tri): In a future PR this constructor will take a
   // MassProperties object to:
   //   1. Force users to provide all the necessary information at creation.

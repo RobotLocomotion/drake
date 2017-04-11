@@ -150,8 +150,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   // therefore it can set the owning parent tree and unique index in that tree.
   friend class MultibodyTree<T>;
   void set_parent_tree(
-      const MultibodyTree<T>* tree, ElementIndexType index)
-  {
+      const MultibodyTree<T>* tree, ElementIndexType index) {
     index_ = index;
     parent_tree_ = tree;
   }

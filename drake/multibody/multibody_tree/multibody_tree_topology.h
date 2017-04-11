@@ -28,11 +28,11 @@ namespace multibody {
 struct BodyTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyTopology);
 
-  // Default construction with invalid initialization.
+  /// Default construction with invalid initialization.
   BodyTopology() {}
 
-  // Constructs a body topology struct with unique index `body_index` and a
-  // body frame with unique index `frame_index`.
+  /// Constructs a body topology struct with index `body_index` and a body frame
+  /// with index `frame_index`.
   BodyTopology(BodyIndex body_index, FrameIndex frame_index) :
       index(body_index), body_frame(frame_index) {}
 
@@ -55,7 +55,7 @@ struct FrameTopology {
   // Default construction with invalid initialization.
   FrameTopology() {}
 
-  /// Constructs a frame topology for a frame with unique index `frame_index`
+  /// Constructs a frame topology for a frame with index `frame_index`
   /// associated with a body with index `body_index`.
   FrameTopology(FrameIndex frame_index, BodyIndex body_index) :
       index(frame_index), body(body_index) {}
@@ -72,20 +72,23 @@ struct FrameTopology {
 struct MultibodyTreeTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyTreeTopology);
 
-  // Default constructor creates an empty, invalid, topology.
+  /// Default constructor creates an empty, invalid, topology.
   MultibodyTreeTopology() {}
 
-  // Returns the number of bodies in the multibody tree.
-  int get_num_bodies() const {return static_cast<int>(bodies.size()); }
+  /// Returns the number of bodies in the multibody tree.
+  int get_num_bodies() const { return static_cast<int>(bodies.size()); }
 
-  // Returns the number of physical frames in the multibody tree.
+  /// Returns the number of physical frames in the multibody tree.
   int get_num_frames() const {
     return static_cast<int>(frames.size());
   }
 
-  // Creates and adds a new BodyTopology to this MultibodyTreeTopology.
-  // A unique index is assigned to the newly created BodyTopology and a new
-  // FrameTopology is created and associated to the body topology.
+  /// Creates and adds a new BodyTopology to this MultibodyTreeTopology.
+  /// A unique index is assigned to the newly created BodyTopology and a new
+  /// FrameTopology is created and associated to the body topology.
+  /// @returns A std::pair<BodyIndex, FrameIndex> containing the pair of indexes
+  ///          (body_index; body_frame_index) corresponding to the newly added
+  ///          body and body frame topologies.
   std::pair<BodyIndex, FrameIndex> add_body() {
     BodyIndex body_index = BodyIndex(get_num_bodies());
     FrameIndex body_frame_index = add_frame(body_index);
@@ -93,33 +96,27 @@ struct MultibodyTreeTopology {
     return std::make_pair(body_index, body_frame_index);
   }
 
-  // Creates and adds a FrameTopology to this MultibodyTreeTopology.
-  // All physical frames are associated with a body here identified by their
-  // unique index, body_index.
+  /// Creates and adds a FrameTopology to this MultibodyTreeTopology.
+  /// All physical frames are associated with a body here identified by their
+  /// unique index, body_index.
+  /// @returns The FrameIndex to the newly created FrameTopology.
   FrameIndex add_frame(BodyIndex body_index) {
     FrameIndex frame_index(get_num_frames());
     frames.emplace_back(frame_index, body_index);
     return frame_index;
   }
 
+  /// Given the FrameIndex, return a constant reference to the corresponding
+  /// FrameTopology.
+  const FrameTopology& get_frame(FrameIndex index) const {
+    DRAKE_ASSERT(index < get_num_frames());
+    return frames[index];
+  }
+
   bool is_valid{false};
 
   /// Topology gets re-validated by MultibodyTree::Compile().
   void validate() { is_valid = true; }
-
-  bool is_valid_body_id(BodyIndex index) {
-    return index < get_num_bodies();
-  }
-
-  bool is_valid_frame_id(FrameIndex index) {
-    return index < get_num_frames();
-  }
-
-  // Clears arrays.
-  void clear() {
-    bodies.clear();
-    frames.clear();
-  }
 
   std::vector<BodyTopology> bodies;
   std::vector<FrameTopology> frames;

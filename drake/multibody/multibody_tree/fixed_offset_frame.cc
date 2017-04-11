@@ -1,14 +1,12 @@
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 
 #include <exception>
-#include <memory>
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
