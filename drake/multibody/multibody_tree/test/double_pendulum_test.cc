@@ -1,5 +1,6 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
+#include <functional>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -47,6 +48,24 @@ GTEST_TEST(MultibodyTree, CreateModel) {
       model->AddBody(make_unique<RigidBody<double>>());
   // Using: const BodyType<T>& AddBody(Args&&... args)
   const RigidBody<double>& lower_link = model->AddBody<RigidBody>();
+
+  // This is an experiment with std::reference_wrapper to show that we can save
+  // bodies in an array of references.
+  std::vector<std::reference_wrapper<const Body<double>>> bodies;
+  bodies.push_back(world_body);
+  bodies.push_back(upper_link);
+  bodies.push_back(lower_link);
+
+  // Verify that vector "bodies" effectively holds valid references to the
+  // actual body elements in the tree.
+  // Unfortunately we need the ugly get() method since operator.() is not
+  // overloaded.
+  EXPECT_TRUE(bodies[world_body.get_index()].get().get_index() ==
+      world_body.get_index());
+  EXPECT_TRUE(bodies[upper_link.get_index()].get().get_index() ==
+      upper_link.get_index());
+  EXPECT_TRUE(bodies[lower_link.get_index()].get().get_index() ==
+      lower_link.get_index());
 
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model->get_num_bodies(), 3);
