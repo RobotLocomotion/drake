@@ -40,6 +40,7 @@ set(installed_headers
   double_overloads.h
   drake_assert.h
   drake_compat.h
+  drake_copyable.h
   drake_deprecated.h
   drake_optional.h
   drake_path.h
