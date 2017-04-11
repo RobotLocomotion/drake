@@ -21,7 +21,7 @@ template <typename T>
 struct is_cloneable_helper<
     T,
     typename std::enable_if<std::is_convertible<
-        decltype(std::declval<const T>().Clone().release())&, T*>::value>::type>
+        decltype(std::declval<const T>().Clone().release()), T*>::value>::type>
     : std::true_type {};
 
 }  // namespace is_cloneable_detail
@@ -61,7 +61,7 @@ struct is_cloneable_helper<
  the `unique_ptr` must point to a heap-allocated deep copy of the _concrete_
  object. This test can confirm the proper signature, but cannot confirm the
  heap-allocated deep copy. A Clone() method that doesn't return such a copy of
- the _concrete_ object, should be considered a malformed function.
+ the _concrete_ object should be considered a malformed function.
 
  @tparam  T  The class to test for cloneability.
  */
