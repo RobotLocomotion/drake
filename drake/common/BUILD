@@ -27,6 +27,7 @@ drake_cc_library(
         "eigen_types.h",
         "never_destroyed.h",
         "text_logging.h",
+        "unused.h",
     ],
     deps = [
         "@eigen//:eigen",

@@ -949,8 +949,8 @@ class Diagram : public System<T>,
   std::unique_ptr<Diagram<NewType>> ConvertScalarType(
       std::function<std::unique_ptr<System<NewType>>(
           const System<
-              std::enable_if_t<!std::is_same<T1, double>::value, double>>&)>
-          converter) const {
+              std::enable_if_t<!std::is_same<T1, double>::value,
+                               double>>&)>) const {
     DRAKE_ABORT_MSG(
         "Scalar type conversion is only supported from Diagram<double>.");
   }
@@ -961,8 +961,7 @@ class Diagram : public System<T>,
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type
-  DoCalcNextUpdateTimeImpl(const Context<T1>& context,
-                           UpdateActions<T1>* actions) const {
+  DoCalcNextUpdateTimeImpl(const Context<T1>&, UpdateActions<T1>*) const {
     DRAKE_ABORT_MSG(
         "The default implementation of Diagram<T>::DoCalcNextUpdateTime "
         "only works with types that are drake::is_numeric.");

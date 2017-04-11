@@ -68,6 +68,7 @@ set(installed_headers
   text_logging.h
   text_logging_gflags.h
   trig_poly.h
+  unused.h
   )
 
 # List headers that are needed by code here but should not

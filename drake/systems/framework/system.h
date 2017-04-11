@@ -14,6 +14,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
@@ -854,17 +855,25 @@ class System {
   /// Appends a Graphviz fragment to the @p dot stream.  The fragment must be
   /// valid Graphviz when wrapped in a `digraph` or `subgraph` stanza.  Does
   /// nothing by default.
-  virtual void GetGraphvizFragment(std::stringstream *dot) const {}
+  virtual void GetGraphvizFragment(std::stringstream* dot) const {
+    unused(dot);
+  }
 
   /// Appends a fragment to the @p dot stream identifying the graphviz node
   /// representing @p port. Does nothing by default.
-  virtual void GetGraphvizInputPortToken(const InputPortDescriptor<T> &port,
-                                         std::stringstream *dot) const {}
+  virtual void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+                                         std::stringstream* dot) const {
+    unused(port);
+    unused(dot);
+  }
 
   /// Appends a fragment to the @p dot stream identifying the graphviz node
   /// representing @p port. Does nothing by default.
-  virtual void GetGraphvizOutputPortToken(const OutputPortDescriptor<T> &port,
-                                          std::stringstream *dot) const {}
+  virtual void GetGraphvizOutputPortToken(const OutputPortDescriptor<T>& port,
+                                          std::stringstream* dot) const {
+    unused(port);
+    unused(dot);
+  }
 
   /// Returns an opaque integer that uniquely identifies this system in the
   /// Graphviz output.
@@ -1120,8 +1129,8 @@ class System {
                                      ContinuousState<T>* derivatives) const {
     // This default implementation is only valid for Systems with no continuous
     // state. Other Systems must override this method!
+    unused(context);
     DRAKE_DEMAND(derivatives->size() == 0);
-    return;
   }
 
   /// Implement this in your concrete System if you want it to take some action
@@ -1132,7 +1141,9 @@ class System {
   /// This method is called only from the public non-virtual Publish() which
   /// will have already error-checked `context` so you may assume that it is
   /// valid for this %System.
-  virtual void DoPublish(const Context<T>& context) const {}
+  virtual void DoPublish(const Context<T>& context) const {
+    unused(context);
+  }
 
   /// Updates the @p discrete_state on sample events.
   /// Override it, along with DoCalcNextUpdateTime(), if your System has any
@@ -1146,7 +1157,10 @@ class System {
   /// has the same constituent structure as was produced by
   /// AllocateDiscreteVariables().
   virtual void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context, DiscreteValues<T>* discrete_state) const {}
+      const Context<T>& context, DiscreteValues<T>* discrete_state) const {
+    unused(context);
+    unused(discrete_state);
+  }
 
   /// Updates the @p state *in an unrestricted fashion* on unrestricted update
   /// events. Override this function if you need your System to update
@@ -1169,7 +1183,10 @@ class System {
   //              note just the changes since usually only a small subset will
   //              be changed by this method.
   virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
-                                        State<T>* state) const {}
+                                        State<T>* state) const {
+    unused(context);
+    unused(state);
+  }
 
   /// Computes the next time at which this System must perform a discrete
   /// action.
@@ -1187,6 +1204,7 @@ class System {
   /// DoPublish and DoCalcDifferenceUpdates will be used by default.
   virtual void DoCalcNextUpdateTime(const Context<T>& context,
                                     UpdateActions<T>* actions) const {
+    unused(context);
     actions->time = std::numeric_limits<T>::infinity();
   }
 
@@ -1197,6 +1215,7 @@ class System {
   /// non-physical systems. You may assume that `context` has already
   /// been validated before it is passed to you here.
   virtual T DoCalcPotentialEnergy(const Context<T>& context) const {
+    unused(context);
     return T(0);
   }
 
@@ -1206,6 +1225,7 @@ class System {
   /// non-physical systems. You may assume that `context` has already
   /// been validated before it is passed to you here.
   virtual T DoCalcKineticEnergy(const Context<T>& context) const {
+    unused(context);
     return T(0);
   }
 
@@ -1218,6 +1238,7 @@ class System {
   /// You may assume that `context` has already been validated before it is
   /// passed to you here.
   virtual T DoCalcConservativePower(const Context<T>& context) const {
+    unused(context);
     return T(0);
   }
 
@@ -1234,6 +1255,7 @@ class System {
   /// You may assume that `context` has already been validated before it is
   /// passed to you here.
   virtual T DoCalcNonConservativePower(const Context<T>& context) const {
+    unused(context);
     return T(0);
   }
 
@@ -1258,6 +1280,7 @@ class System {
   virtual void DoMapQDotToVelocity(const Context<T>& context,
                                    const Eigen::Ref<const VectorX<T>>& qdot,
                                    VectorBase<T>* generalized_velocity) const {
+    unused(context);
     // In the particular case where generalized velocity and generalized
     // configuration are not even the same size, we detect this error and abort.
     // This check will thus not identify cases where the generalized velocity
@@ -1291,6 +1314,7 @@ class System {
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       VectorBase<T>* qdot) const {
+    unused(context);
     // In the particular case where generalized velocity and generalized
     // configuration are not even the same size, we detect this error and abort.
     // This check will thus not identify cases where the generalized velocity
@@ -1344,6 +1368,7 @@ class System {
   /// @sa get_num_constraint_equations() for parameter documentation.
   /// @returns zero by default
   virtual int do_get_num_constraint_equations(const Context<T>& context) const {
+    unused(context);
     return 0;
   }
 
@@ -1391,6 +1416,8 @@ class System {
                                                const Eigen::MatrixXd& J,
                                                const Eigen::VectorXd& lambda)
                                                    const {
+    unused(J);
+    unused(lambda);
     DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
     const auto& gv = context.get_continuous_state()->get_generalized_velocity();
     return Eigen::VectorXd::Zero(gv.size());
@@ -1403,6 +1430,7 @@ class System {
   /// @sa CalcConstraintErrorNorm() for parameter documentation.
   virtual double DoCalcConstraintErrorNorm(const Context<T>& context,
                                            const Eigen::VectorXd& error) const {
+    unused(context);
     return error.norm();
   }
 
