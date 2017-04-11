@@ -649,8 +649,11 @@ TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
   ImplicitEulerIntegrator<double> integrator(*mod_spring_damper,
                                              context.get());
   integrator.set_maximum_step_size(dt);
-  integrator.set_minimum_step_size(1e-4);
   integrator.set_minimum_step_size_exceeded_throws(false);
+
+  // Setting the minimum step size speeds the unit test without (in this case)
+  // affecting solution accuracy.
+  integrator.set_minimum_step_size(1e-3);
 
   // Set the initial position and initial velocity.
   const double initial_position = 1e-8;

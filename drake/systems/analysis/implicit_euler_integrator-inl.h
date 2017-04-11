@@ -422,6 +422,9 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
                  goutput.norm(), q_nrm, v_nrm, z_nrm);
     T dx_norm = max(q_nrm, max(v_nrm, z_nrm));
 
+    // Update the state.
+    *xtplus += dx;
+
     // Compute the convergence rate and check convergence.
     // [Hairer, 1996] notes that this convergence strategy should only be
     // applied after *at least* two iterations (p. 121).
@@ -441,7 +444,6 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
         SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}", eta);
-        *xtplus += dx;
         return dt;
       }
     }
@@ -449,8 +451,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
 
-    // Update the state and compute g(xⁱ⁺¹).
-    *xtplus += dx;
+    // Compute g(xⁱ⁺¹).
     goutput = g(*xtplus);
 
     // Recompute the Jacobian matrix.
