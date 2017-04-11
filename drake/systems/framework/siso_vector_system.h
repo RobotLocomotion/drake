@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -208,6 +209,7 @@ class SisoVectorSystem : public LeafSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* derivatives) const {
+    unused(context, input, state);
     DRAKE_THROW_UNLESS(derivatives->size() == 0);
   }
 
@@ -228,6 +230,7 @@ class SisoVectorSystem : public LeafSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* discrete_updates) const {
+    unused(context, input, state);
     DRAKE_THROW_UNLESS(discrete_updates->size() == 0);
   }
 };
