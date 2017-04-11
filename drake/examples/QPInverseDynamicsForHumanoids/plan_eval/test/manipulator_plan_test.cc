@@ -287,6 +287,14 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
   }
 }
 
+// Tests if the cloned fields are the same as the original.
+TEST_F(ManipPlanTest, TestClone) {
+  dut_ = std::make_unique<ManipulatorMoveEndEffectorPlan<double>>();
+  dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+
+  TestGenericClone();
+}
+
 }  // namespace qp_inverse_dynamics
 }  // namespace examples
 }  // namespace drake

@@ -78,7 +78,7 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanMessageGenericPlanDerived(
 template <typename T>
 GenericPlan<T>* ManipulatorMoveEndEffectorPlan<T>::CloneGenericPlanDerived()
     const {
-  return new ManipulatorMoveEndEffectorPlan();
+  return new ManipulatorMoveEndEffectorPlan(*this);
 }
 
 template class ManipulatorMoveEndEffectorPlan<double>;

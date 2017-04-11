@@ -93,6 +93,25 @@ class GenericPlanTest : public ::testing::Test {
     return expected_pose_acc;
   }
 
+  // Tests clone for the any derived classes that does not introduce new member
+  // fields.
+  void TestGenericClone() const {
+    std::unique_ptr<GenericPlan<double>> clone = dut_->Clone();
+    EXPECT_EQ(dut_->get_planned_contact_state(),
+        clone->get_planned_contact_state());
+    EXPECT_TRUE(
+        dut_->get_dof_trajectory().is_approx(clone->get_dof_trajectory(), 1e-12));
+
+    const auto& trajs = dut_->get_body_trajectories();
+    const auto& cloned_trajs = clone->get_body_trajectories();
+    EXPECT_EQ(trajs.size(), cloned_trajs.size());
+    for (const auto& traj_pair : trajs) {
+      auto it = cloned_trajs.find(traj_pair.first);
+      EXPECT_TRUE(it != cloned_trajs.end());
+      EXPECT_TRUE(it->second.is_approx(traj_pair.second, 1e-12));
+    }
+  }
+
   std::unique_ptr<RigidBodyTree<double>> robot_{nullptr};
   std::unique_ptr<param_parsers::RigidBodyTreeAliasGroups<double>>
       alias_groups_{nullptr};

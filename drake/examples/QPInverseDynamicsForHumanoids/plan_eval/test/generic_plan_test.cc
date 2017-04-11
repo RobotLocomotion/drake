@@ -108,20 +108,7 @@ TEST_F(DummyPlanTest, TestInitialize) {
 
 // Tests if the cloned fields are the same as the original.
 TEST_F(DummyPlanTest, TestClone) {
-  std::unique_ptr<GenericPlan<double>> clone = dut_->Clone();
-  EXPECT_EQ(dut_->get_planned_contact_state(),
-            clone->get_planned_contact_state());
-  EXPECT_TRUE(
-      dut_->get_dof_trajectory().is_approx(clone->get_dof_trajectory(), 1e-12));
-
-  const auto& trajs = dut_->get_body_trajectories();
-  const auto& cloned_trajs = clone->get_body_trajectories();
-  EXPECT_EQ(trajs.size(), cloned_trajs.size());
-  for (const auto& traj_pair : trajs) {
-    auto it = cloned_trajs.find(traj_pair.first);
-    EXPECT_TRUE(it != cloned_trajs.end());
-    EXPECT_TRUE(it->second.is_approx(traj_pair.second, 1e-12));
-  }
+  TestGenericClone();
 }
 
 // Checks the generated QpInput vs expected.
