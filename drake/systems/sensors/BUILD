@@ -91,6 +91,35 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "depth_sensor_to_lcm_point_cloud_message",
+    srcs = [
+        "depth_sensor_to_lcm_point_cloud_message.cc",
+    ],
+    hdrs = [
+        "depth_sensor_to_lcm_point_cloud_message.h",
+    ],
+    deps = [
+        ":depth_sensor",
+        "//drake/multibody:rigid_body_tree",
+        "@bot_core_lcmtypes//:lib",
+    ],
+)
+
+drake_cc_binary(
+    name = "depth_sensor_to_lcm_point_cloud_message_demo",
+    srcs = [
+        "depth_sensor_to_lcm_point_cloud_message_demo.cc",
+    ],
+    deps = [
+        ":depth_sensor_to_lcm_point_cloud_message",
+        "//drake/common:text_logging_gflags",
+        "//drake/lcm",
+        "//drake/systems/analysis",
+        "//drake/systems/lcm",
+    ],
+)
+
+drake_cc_library(
     name = "gyroscope",
     srcs = [
         "gyroscope.cc",
@@ -195,6 +224,16 @@ drake_cc_googletest(
         ":depth_sensor",
         "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "depth_sensor_to_lcm_point_cloud_message_test",
+    srcs = ["test/depth_sensor_to_lcm_point_cloud_message_test.cc"],
+    deps = [
+        ":depth_sensor_to_lcm_point_cloud_message",
+        "//drake/common:drake_path",
+        "//drake/lcm:mock",
     ],
 )
 
